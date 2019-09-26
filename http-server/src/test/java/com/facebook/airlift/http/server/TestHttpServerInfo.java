@@ -15,8 +15,8 @@
  */
 package com.facebook.airlift.http.server;
 
-import io.airlift.node.NodeConfig;
-import io.airlift.node.NodeInfo;
+import com.facebook.airlift.node.NodeConfig;
+import com.facebook.airlift.node.NodeInfo;
 import org.testng.annotations.Test;
 
 import java.net.URI;

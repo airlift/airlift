@@ -16,7 +16,7 @@
 package com.facebook.airlift.http.server;
 
 import com.google.common.annotations.VisibleForTesting;
-import io.airlift.node.NodeInfo;
+import com.facebook.airlift.node.NodeInfo;
 
 import javax.inject.Inject;
 

@@ -14,7 +14,7 @@ import com.facebook.airlift.http.server.testing.TestingHttpServerModule;
 import com.facebook.airlift.jaxrs.JaxrsModule;
 import com.facebook.airlift.json.JsonModule;
 import com.facebook.airlift.json.ObjectMapperProvider;
-import io.airlift.node.testing.TestingNodeModule;
+import com.facebook.airlift.node.testing.TestingNodeModule;
 import io.airlift.testing.Closeables;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;

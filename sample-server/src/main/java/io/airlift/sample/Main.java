@@ -28,7 +28,7 @@ import com.facebook.airlift.jmx.http.rpc.JmxHttpRpcModule;
 import com.facebook.airlift.json.JsonModule;
 import com.facebook.airlift.log.LogJmxModule;
 import com.facebook.airlift.log.Logger;
-import io.airlift.node.NodeModule;
+import com.facebook.airlift.node.NodeModule;
 import io.airlift.tracetoken.TraceTokenModule;
 import org.weakref.jmx.guice.MBeanModule;
 

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.node;
+package com.facebook.airlift.node;
 
 import com.google.common.net.InetAddresses;
 import org.testng.annotations.Test;
@@ -21,9 +21,9 @@ import org.testng.annotations.Test;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-import static io.airlift.node.NodeConfig.AddressSource.FQDN;
-import static io.airlift.node.NodeConfig.AddressSource.HOSTNAME;
-import static io.airlift.node.NodeConfig.AddressSource.IP;
+import static com.facebook.airlift.node.NodeConfig.AddressSource.FQDN;
+import static com.facebook.airlift.node.NodeConfig.AddressSource.HOSTNAME;
+import static com.facebook.airlift.node.NodeConfig.AddressSource.IP;
 import static io.airlift.testing.Assertions.assertGreaterThanOrEqual;
 import static io.airlift.testing.Assertions.assertNotEquals;
 import static org.testng.Assert.assertEquals;

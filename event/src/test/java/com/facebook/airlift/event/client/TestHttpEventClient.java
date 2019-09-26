@@ -21,7 +21,7 @@ import com.facebook.airlift.discovery.client.testing.StaticHttpServiceSelector;
 import com.facebook.airlift.http.client.HttpClient;
 import com.facebook.airlift.http.client.HttpClientConfig;
 import com.facebook.airlift.http.client.jetty.JettyHttpClient;
-import io.airlift.node.NodeInfo;
+import com.facebook.airlift.node.NodeInfo;
 import io.airlift.units.Duration;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;

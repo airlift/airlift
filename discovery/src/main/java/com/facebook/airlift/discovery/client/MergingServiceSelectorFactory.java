@@ -1,6 +1,6 @@
 package com.facebook.airlift.discovery.client;
 
-import io.airlift.node.NodeInfo;
+import com.facebook.airlift.node.NodeInfo;
 
 import static java.util.Objects.requireNonNull;
 

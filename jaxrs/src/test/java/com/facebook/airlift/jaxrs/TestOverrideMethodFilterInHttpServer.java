@@ -25,7 +25,7 @@ import com.facebook.airlift.http.client.jetty.JettyHttpClient;
 import com.facebook.airlift.http.server.testing.TestingHttpServer;
 import com.facebook.airlift.http.server.testing.TestingHttpServerModule;
 import com.facebook.airlift.json.JsonModule;
-import io.airlift.node.testing.TestingNodeModule;
+import com.facebook.airlift.node.testing.TestingNodeModule;
 import io.airlift.testing.Closeables;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;

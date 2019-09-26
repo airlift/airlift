@@ -28,7 +28,7 @@ import com.facebook.airlift.http.client.RequestStats;
 import com.facebook.airlift.http.client.Response;
 import com.facebook.airlift.http.client.ResponseHandler;
 import com.facebook.airlift.log.Logger;
-import io.airlift.node.NodeInfo;
+import com.facebook.airlift.node.NodeInfo;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 

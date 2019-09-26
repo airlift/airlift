@@ -26,7 +26,7 @@ import com.facebook.airlift.discovery.client.ServiceAnnouncement;
 import com.facebook.airlift.discovery.client.ServiceAnnouncement.ServiceAnnouncementBuilder;
 import com.facebook.airlift.http.server.HttpServerInfo;
 import com.facebook.airlift.http.server.TheAdminServlet;
-import io.airlift.node.NodeInfo;
+import com.facebook.airlift.node.NodeInfo;
 
 import javax.inject.Inject;
 import javax.inject.Provider;

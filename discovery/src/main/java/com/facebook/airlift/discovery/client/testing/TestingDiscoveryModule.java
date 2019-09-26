@@ -28,7 +28,7 @@ import com.facebook.airlift.discovery.client.ServiceAnnouncement;
 import com.facebook.airlift.discovery.client.ServiceSelector;
 import com.facebook.airlift.discovery.client.ServiceSelectorFactory;
 import com.facebook.airlift.discovery.client.ServiceSelectorManager;
-import io.airlift.node.NodeInfo;
+import com.facebook.airlift.node.NodeInfo;
 
 import javax.inject.Singleton;
 

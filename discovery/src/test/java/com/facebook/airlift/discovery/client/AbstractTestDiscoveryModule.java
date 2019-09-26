@@ -23,7 +23,7 @@ import com.google.inject.Module;
 import com.facebook.airlift.configuration.ConfigurationFactory;
 import com.facebook.airlift.configuration.ConfigurationModule;
 import com.facebook.airlift.json.JsonModule;
-import io.airlift.node.testing.TestingNodeModule;
+import com.facebook.airlift.node.testing.TestingNodeModule;
 import org.testng.annotations.Test;
 
 import java.net.URI;

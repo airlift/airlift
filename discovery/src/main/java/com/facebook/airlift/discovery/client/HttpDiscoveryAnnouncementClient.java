@@ -25,7 +25,7 @@ import com.facebook.airlift.http.client.Request;
 import com.facebook.airlift.http.client.Response;
 import com.facebook.airlift.http.client.ResponseHandler;
 import com.facebook.airlift.json.JsonCodec;
-import io.airlift.node.NodeInfo;
+import com.facebook.airlift.node.NodeInfo;
 import io.airlift.units.Duration;
 
 import javax.inject.Inject;

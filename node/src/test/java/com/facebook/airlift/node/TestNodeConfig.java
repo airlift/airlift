@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.node;
+package com.facebook.airlift.node;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.net.InetAddresses;
@@ -26,8 +26,8 @@ import javax.validation.constraints.Pattern;
 import java.util.Map;
 import java.util.UUID;
 
-import static io.airlift.node.NodeConfig.AddressSource.HOSTNAME;
-import static io.airlift.node.NodeConfig.AddressSource.IP;
+import static com.facebook.airlift.node.NodeConfig.AddressSource.HOSTNAME;
+import static com.facebook.airlift.node.NodeConfig.AddressSource.IP;
 import static io.airlift.testing.ValidationAssertions.assertFailsValidation;
 import static io.airlift.testing.ValidationAssertions.assertValidates;
 

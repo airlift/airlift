@@ -1,8 +1,8 @@
-package io.airlift.node.testing;
+package com.facebook.airlift.node.testing;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import io.airlift.node.NodeInfo;
+import com.facebook.airlift.node.NodeInfo;
 import org.testng.annotations.Test;
 
 import java.net.InetAddress;

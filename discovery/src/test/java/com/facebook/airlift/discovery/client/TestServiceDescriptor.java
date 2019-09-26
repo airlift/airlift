@@ -18,8 +18,8 @@ package com.facebook.airlift.discovery.client;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
 import com.facebook.airlift.json.JsonCodec;
-import io.airlift.node.NodeConfig;
-import io.airlift.node.NodeInfo;
+import com.facebook.airlift.node.NodeConfig;
+import com.facebook.airlift.node.NodeInfo;
 import org.testng.annotations.Test;
 
 import java.util.Map;

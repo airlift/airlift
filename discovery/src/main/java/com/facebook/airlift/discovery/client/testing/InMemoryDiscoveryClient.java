@@ -24,7 +24,7 @@ import com.facebook.airlift.discovery.client.DiscoveryLookupClient;
 import com.facebook.airlift.discovery.client.ServiceAnnouncement;
 import com.facebook.airlift.discovery.client.ServiceDescriptor;
 import com.facebook.airlift.discovery.client.ServiceDescriptors;
-import io.airlift.node.NodeInfo;
+import com.facebook.airlift.node.NodeInfo;
 import io.airlift.units.Duration;
 
 import javax.inject.Inject;

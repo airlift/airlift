@@ -18,7 +18,7 @@ package com.facebook.airlift.discovery.client;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.facebook.airlift.discovery.client.testing.InMemoryDiscoveryClient;
-import io.airlift.node.NodeInfo;
+import com.facebook.airlift.node.NodeInfo;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;

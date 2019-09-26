@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.node.testing;
+package com.facebook.airlift.node.testing;
 
 import com.google.common.net.InetAddresses;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
-import io.airlift.node.NodeConfig;
-import io.airlift.node.NodeInfo;
+import com.facebook.airlift.node.NodeConfig;
+import com.facebook.airlift.node.NodeInfo;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;

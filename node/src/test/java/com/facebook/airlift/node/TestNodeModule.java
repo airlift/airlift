@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.node;
+package com.facebook.airlift.node;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.net.InetAddresses;

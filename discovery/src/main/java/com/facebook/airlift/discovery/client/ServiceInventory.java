@@ -21,7 +21,7 @@ import com.facebook.airlift.http.client.HttpClient;
 import com.facebook.airlift.http.client.Request.Builder;
 import com.facebook.airlift.json.JsonCodec;
 import com.facebook.airlift.log.Logger;
-import io.airlift.node.NodeInfo;
+import com.facebook.airlift.node.NodeInfo;
 import io.airlift.units.Duration;
 import org.weakref.jmx.Managed;
 

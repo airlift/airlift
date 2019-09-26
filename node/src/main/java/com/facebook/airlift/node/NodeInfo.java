@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.node;
+package com.facebook.airlift.node;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.InetAddresses;
 import com.google.inject.Singleton;
-import io.airlift.node.NodeConfig.AddressSource;
+import com.facebook.airlift.node.NodeConfig.AddressSource;
 import org.weakref.jmx.Managed;
 
 import javax.inject.Inject;

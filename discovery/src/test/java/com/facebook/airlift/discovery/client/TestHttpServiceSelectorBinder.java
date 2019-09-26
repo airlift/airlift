@@ -25,7 +25,7 @@ import com.facebook.airlift.configuration.ConfigurationFactory;
 import com.facebook.airlift.configuration.ConfigurationModule;
 import com.facebook.airlift.discovery.client.testing.InMemoryDiscoveryClient;
 import com.facebook.airlift.discovery.client.testing.TestingDiscoveryModule;
-import io.airlift.node.testing.TestingNodeModule;
+import com.facebook.airlift.node.testing.TestingNodeModule;
 import org.testng.annotations.Test;
 
 import java.net.URI;

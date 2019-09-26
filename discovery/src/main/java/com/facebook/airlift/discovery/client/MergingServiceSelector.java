@@ -3,7 +3,7 @@ package com.facebook.airlift.discovery.client;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.FluentFuture;
 import com.google.common.util.concurrent.ListenableFuture;
-import io.airlift.node.NodeInfo;
+import com.facebook.airlift.node.NodeInfo;
 
 import java.util.HashSet;
 import java.util.List;
