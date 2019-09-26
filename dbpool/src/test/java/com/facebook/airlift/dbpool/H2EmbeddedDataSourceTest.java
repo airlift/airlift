@@ -62,7 +62,7 @@ public class H2EmbeddedDataSourceTest
         try {
             H2EmbeddedDataSourceConfig config = new H2EmbeddedDataSourceConfig()
                     .setFilename(file.getAbsolutePath())
-                    .setInitScript("io/airlift/dbpool/h2.ddl")
+                    .setInitScript("com/facebook/airlift/dbpool/h2.ddl")
                     .setCipher(Cipher.AES)
                     .setFilePassword("filePassword");
 
@@ -87,7 +87,7 @@ public class H2EmbeddedDataSourceTest
         Statement statement = null;
         ResultSet resultSet = null;
         try {
-            URL url = Resources.getResource("io/airlift/dbpool/h2.ddl");
+            URL url = Resources.getResource("com/facebook/airlift/dbpool/h2.ddl");
             Resources.asByteSource(url).copyTo(Files.asByteSink(initScript));
 
             H2EmbeddedDataSourceConfig config = new H2EmbeddedDataSourceConfig()
@@ -137,7 +137,7 @@ public class H2EmbeddedDataSourceTest
     {
         H2EmbeddedDataSourceConfig config = new H2EmbeddedDataSourceConfig()
                 // Filename left as null
-                .setInitScript("io/airlift/dbpool/h2.ddl")
+                .setInitScript("com/facebook/airlift/dbpool/h2.ddl")
                 .setCipher(Cipher.AES)
                 .setFilePassword("filePassword");
 
@@ -150,7 +150,7 @@ public class H2EmbeddedDataSourceTest
     {
         H2EmbeddedDataSourceConfig config = new H2EmbeddedDataSourceConfig()
                 .setFilename("")
-                .setInitScript("io/airlift/dbpool/h2.ddl")
+                .setInitScript("com/facebook/airlift/dbpool/h2.ddl")
                 .setCipher(Cipher.AES)
                 .setFilePassword("filePassword");
 

@@ -238,7 +238,7 @@ public class TestH2EmbeddedDataSourceModule
         }
 
         properties.put(prefix + "db.filename", filename);
-        properties.put(prefix + "db.init-script", "io/airlift/dbpool/h2.ddl");
+        properties.put(prefix + "db.init-script", "com/facebook/airlift/dbpool/h2.ddl");
         properties.put(prefix + "db.cipher", "AES");
         properties.put(prefix + "db.file-password", "filePassword");
         return properties;
