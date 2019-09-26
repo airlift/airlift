@@ -1,6 +1,6 @@
 package com.facebook.airlift.stats;
 
-import io.airlift.testing.TestingTicker;
+import com.facebook.airlift.testing.TestingTicker;
 import org.testng.annotations.Test;
 
 import java.util.concurrent.TimeUnit;

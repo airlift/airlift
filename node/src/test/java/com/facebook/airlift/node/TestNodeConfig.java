@@ -28,8 +28,8 @@ import java.util.UUID;
 
 import static com.facebook.airlift.node.NodeConfig.AddressSource.HOSTNAME;
 import static com.facebook.airlift.node.NodeConfig.AddressSource.IP;
-import static io.airlift.testing.ValidationAssertions.assertFailsValidation;
-import static io.airlift.testing.ValidationAssertions.assertValidates;
+import static com.facebook.airlift.testing.ValidationAssertions.assertFailsValidation;
+import static com.facebook.airlift.testing.ValidationAssertions.assertValidates;
 
 public class TestNodeConfig
 {

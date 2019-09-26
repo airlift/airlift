@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.testing;
+package com.facebook.airlift.testing;
 
 import com.google.common.collect.Sets;
 import org.testng.annotations.Test;
@@ -23,18 +23,18 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static io.airlift.testing.Assertions.assertBetweenExclusive;
-import static io.airlift.testing.Assertions.assertBetweenInclusive;
-import static io.airlift.testing.Assertions.assertContains;
-import static io.airlift.testing.Assertions.assertEqualsIgnoreCase;
-import static io.airlift.testing.Assertions.assertEqualsIgnoreOrder;
-import static io.airlift.testing.Assertions.assertGreaterThan;
-import static io.airlift.testing.Assertions.assertGreaterThanOrEqual;
-import static io.airlift.testing.Assertions.assertInstanceOf;
-import static io.airlift.testing.Assertions.assertLessThan;
-import static io.airlift.testing.Assertions.assertLessThanOrEqual;
-import static io.airlift.testing.TestAssertions.SubComparable.createSubComparable;
-import static io.airlift.testing.TestAssertions.SuperComparable.createSuperComparable;
+import static com.facebook.airlift.testing.Assertions.assertBetweenExclusive;
+import static com.facebook.airlift.testing.Assertions.assertBetweenInclusive;
+import static com.facebook.airlift.testing.Assertions.assertContains;
+import static com.facebook.airlift.testing.Assertions.assertEqualsIgnoreCase;
+import static com.facebook.airlift.testing.Assertions.assertEqualsIgnoreOrder;
+import static com.facebook.airlift.testing.Assertions.assertGreaterThan;
+import static com.facebook.airlift.testing.Assertions.assertGreaterThanOrEqual;
+import static com.facebook.airlift.testing.Assertions.assertInstanceOf;
+import static com.facebook.airlift.testing.Assertions.assertLessThan;
+import static com.facebook.airlift.testing.Assertions.assertLessThanOrEqual;
+import static com.facebook.airlift.testing.TestAssertions.SubComparable.createSubComparable;
+import static com.facebook.airlift.testing.TestAssertions.SuperComparable.createSuperComparable;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;

@@ -24,7 +24,7 @@ import java.net.URI;
 import static com.facebook.airlift.http.client.Request.Builder.prepareGet;
 import static com.facebook.airlift.http.client.Request.Builder.preparePut;
 import static com.facebook.airlift.http.client.StaticBodyGenerator.createStaticBodyGenerator;
-import static io.airlift.testing.EquivalenceTester.equivalenceTester;
+import static com.facebook.airlift.testing.EquivalenceTester.equivalenceTester;
 
 public class TestRequest
 {

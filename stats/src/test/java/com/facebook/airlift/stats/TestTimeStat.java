@@ -16,7 +16,7 @@
 package com.facebook.airlift.stats;
 
 import com.facebook.airlift.stats.TimeStat.BlockTimer;
-import io.airlift.testing.TestingTicker;
+import com.facebook.airlift.testing.TestingTicker;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 

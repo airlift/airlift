@@ -7,7 +7,7 @@ import org.weakref.jmx.testing.TestingMBeanServer;
 
 import javax.management.MBeanServer;
 
-import static io.airlift.testing.Assertions.assertInstanceOf;
+import static com.facebook.airlift.testing.Assertions.assertInstanceOf;
 
 public class TestTestingJmxModule
 {

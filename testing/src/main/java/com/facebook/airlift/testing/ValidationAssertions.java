@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.testing;
+package com.facebook.airlift.testing;
 
 import com.google.common.annotations.Beta;
 import org.apache.bval.jsr.ApacheValidationProvider;

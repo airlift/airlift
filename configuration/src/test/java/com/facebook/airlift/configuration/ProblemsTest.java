@@ -19,8 +19,8 @@ import com.google.inject.ConfigurationException;
 import com.google.inject.spi.Message;
 import org.testng.annotations.Test;
 
-import static io.airlift.testing.Assertions.assertContains;
-import static io.airlift.testing.Assertions.assertContainsAllOf;
+import static com.facebook.airlift.testing.Assertions.assertContains;
+import static com.facebook.airlift.testing.Assertions.assertContainsAllOf;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 

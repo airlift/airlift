@@ -1,4 +1,4 @@
-package io.airlift.testing;
+package com.facebook.airlift.testing;
 
 import org.testng.annotations.Test;
 

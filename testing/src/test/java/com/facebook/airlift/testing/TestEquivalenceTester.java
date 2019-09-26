@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.testing;
+package com.facebook.airlift.testing;
 
 /*
  * Derived from http://code.google.com/p/kawala
@@ -22,31 +22,31 @@ package io.airlift.testing;
  */
 
 import com.google.common.collect.ComparisonChain;
-import io.airlift.testing.EquivalenceTester.ElementCheckFailure;
-import io.airlift.testing.EquivalenceTester.PairCheckFailure;
+import com.facebook.airlift.testing.EquivalenceTester.ElementCheckFailure;
+import com.facebook.airlift.testing.EquivalenceTester.PairCheckFailure;
 import org.testng.annotations.Test;
 
 import java.util.List;
 
 import static com.google.common.collect.Lists.newArrayList;
-import static io.airlift.testing.Assertions.assertEqualsIgnoreOrder;
-import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_CLASS_CAST_EXCEPTION;
-import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_EQUAL;
-import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_EQUAL_TO_NULL;
-import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_NOT_EQUAL;
-import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_NOT_REFLEXIVE;
-import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.EQUAL;
-import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.EQUAL_NULL_EXCEPTION;
-import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.EQUAL_TO_NULL;
-import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.EQUAL_TO_UNRELATED_CLASS;
-import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.EQUAL_TO_UNRELATED_CLASS_CLASS_CAST_EXCEPTION;
-import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.HASH_CODE_NOT_SAME;
-import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.NOT_EQUAL;
-import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.NOT_GREATER_THAN;
-import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.NOT_LESS_THAN;
-import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.NOT_REFLEXIVE;
-import static io.airlift.testing.EquivalenceTester.comparisonTester;
-import static io.airlift.testing.EquivalenceTester.equivalenceTester;
+import static com.facebook.airlift.testing.Assertions.assertEqualsIgnoreOrder;
+import static com.facebook.airlift.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_CLASS_CAST_EXCEPTION;
+import static com.facebook.airlift.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_EQUAL;
+import static com.facebook.airlift.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_EQUAL_TO_NULL;
+import static com.facebook.airlift.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_NOT_EQUAL;
+import static com.facebook.airlift.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_NOT_REFLEXIVE;
+import static com.facebook.airlift.testing.EquivalenceTester.EquivalenceFailureType.EQUAL;
+import static com.facebook.airlift.testing.EquivalenceTester.EquivalenceFailureType.EQUAL_NULL_EXCEPTION;
+import static com.facebook.airlift.testing.EquivalenceTester.EquivalenceFailureType.EQUAL_TO_NULL;
+import static com.facebook.airlift.testing.EquivalenceTester.EquivalenceFailureType.EQUAL_TO_UNRELATED_CLASS;
+import static com.facebook.airlift.testing.EquivalenceTester.EquivalenceFailureType.EQUAL_TO_UNRELATED_CLASS_CLASS_CAST_EXCEPTION;
+import static com.facebook.airlift.testing.EquivalenceTester.EquivalenceFailureType.HASH_CODE_NOT_SAME;
+import static com.facebook.airlift.testing.EquivalenceTester.EquivalenceFailureType.NOT_EQUAL;
+import static com.facebook.airlift.testing.EquivalenceTester.EquivalenceFailureType.NOT_GREATER_THAN;
+import static com.facebook.airlift.testing.EquivalenceTester.EquivalenceFailureType.NOT_LESS_THAN;
+import static com.facebook.airlift.testing.EquivalenceTester.EquivalenceFailureType.NOT_REFLEXIVE;
+import static com.facebook.airlift.testing.EquivalenceTester.comparisonTester;
+import static com.facebook.airlift.testing.EquivalenceTester.equivalenceTester;
 import static java.util.Objects.requireNonNull;
 import static org.testng.Assert.assertEquals;
 import static org.testng.FileAssert.fail;

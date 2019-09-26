@@ -2,7 +2,7 @@ package com.facebook.airlift.http.client;
 
 import org.testng.annotations.Test;
 
-import static io.airlift.testing.EquivalenceTester.equivalenceTester;
+import static com.facebook.airlift.testing.EquivalenceTester.equivalenceTester;
 import static org.testng.Assert.assertEquals;
 
 public class TestHeaderName

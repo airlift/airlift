@@ -21,7 +21,7 @@ import org.testng.annotations.Test;
 
 import javax.inject.Inject;
 
-import static io.airlift.testing.Assertions.assertContains;
+import static com.facebook.airlift.testing.Assertions.assertContains;
 import static org.testng.Assert.fail;
 
 public class TestBootstrap

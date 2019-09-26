@@ -21,7 +21,7 @@ import org.testng.annotations.Test;
 
 import java.net.URI;
 
-import static io.airlift.testing.Closeables.closeQuietly;
+import static com.facebook.airlift.testing.Closeables.closeQuietly;
 import static org.testng.Assert.assertEquals;
 
 public class TestHttpServerInfo

@@ -3,7 +3,7 @@ package com.facebook.airlift.stats;
 import io.airlift.units.Duration;
 import org.testng.annotations.Test;
 
-import static io.airlift.testing.Assertions.assertGreaterThanOrEqual;
+import static com.facebook.airlift.testing.Assertions.assertGreaterThanOrEqual;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.testng.Assert.assertEquals;
 

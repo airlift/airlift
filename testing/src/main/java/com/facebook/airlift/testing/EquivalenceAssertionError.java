@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.testing;
+package com.facebook.airlift.testing;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
-import io.airlift.testing.EquivalenceTester.ElementCheckFailure;
+import com.facebook.airlift.testing.EquivalenceTester.ElementCheckFailure;
 
 import java.util.List;
 

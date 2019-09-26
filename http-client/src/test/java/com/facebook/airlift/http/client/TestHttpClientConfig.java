@@ -35,7 +35,7 @@ import static com.facebook.airlift.http.client.HttpClientConfig.JAVAX_NET_SSL_TR
 import static com.facebook.airlift.http.client.HttpClientConfig.JAVAX_NET_SSL_TRUST_STORE_PASSWORD;
 import static com.facebook.airlift.http.client.KerberosNameType.HOSTBASED_SERVICE;
 import static com.facebook.airlift.http.client.KerberosNameType.USER_NAME;
-import static io.airlift.testing.ValidationAssertions.assertFailsValidation;
+import static com.facebook.airlift.testing.ValidationAssertions.assertFailsValidation;
 import static io.airlift.units.DataSize.Unit.GIGABYTE;
 import static io.airlift.units.DataSize.Unit.KILOBYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;

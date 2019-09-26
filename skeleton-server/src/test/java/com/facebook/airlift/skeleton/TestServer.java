@@ -13,7 +13,7 @@ import com.facebook.airlift.jmx.JmxHttpModule;
 import com.facebook.airlift.jmx.JmxModule;
 import com.facebook.airlift.json.JsonModule;
 import com.facebook.airlift.node.testing.TestingNodeModule;
-import io.airlift.testing.Closeables;
+import com.facebook.airlift.testing.Closeables;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;

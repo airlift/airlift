@@ -14,7 +14,7 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 
-import static io.airlift.testing.Closeables.closeQuietly;
+import static com.facebook.airlift.testing.Closeables.closeQuietly;
 
 public class TestJettyHttpClientSocksProxy
         extends AbstractHttpClientTest

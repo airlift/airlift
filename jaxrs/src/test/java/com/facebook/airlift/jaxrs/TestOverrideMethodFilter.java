@@ -29,7 +29,7 @@ import java.net.URI;
 import java.security.Principal;
 import java.util.Collection;
 
-import static io.airlift.testing.Assertions.assertEqualsIgnoreCase;
+import static com.facebook.airlift.testing.Assertions.assertEqualsIgnoreCase;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 

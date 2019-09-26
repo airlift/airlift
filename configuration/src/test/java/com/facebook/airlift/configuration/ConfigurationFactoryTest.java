@@ -33,7 +33,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import static com.facebook.airlift.configuration.ConfigBinder.configBinder;
-import static io.airlift.testing.Assertions.assertContainsAllOf;
+import static com.facebook.airlift.testing.Assertions.assertContainsAllOf;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.fail;

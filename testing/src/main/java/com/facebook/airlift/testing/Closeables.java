@@ -1,4 +1,4 @@
-package io.airlift.testing;
+package com.facebook.airlift.testing;
 
 import java.io.Closeable;
 import java.io.IOException;

@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
 import static com.facebook.airlift.dbpool.H2EmbeddedDataSourceConfig.AllowLiterals;
 import static com.facebook.airlift.dbpool.H2EmbeddedDataSourceConfig.Cipher;
 import static com.facebook.airlift.dbpool.H2EmbeddedDataSourceConfig.CompressLob;
-import static io.airlift.testing.ValidationAssertions.assertFailsValidation;
+import static com.facebook.airlift.testing.ValidationAssertions.assertFailsValidation;
 
 public class TestH2EmbeddedDataSourceConfig
 {

@@ -4,7 +4,7 @@ import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import io.airlift.slice.Slice;
-import io.airlift.testing.TestingTicker;
+import com.facebook.airlift.testing.TestingTicker;
 import org.testng.annotations.Test;
 
 import java.io.IOException;

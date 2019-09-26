@@ -10,7 +10,7 @@ import com.facebook.airlift.http.client.spnego.KerberosConfig;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 
-import static io.airlift.testing.Closeables.closeQuietly;
+import static com.facebook.airlift.testing.Closeables.closeQuietly;
 
 public class TestAsyncJettyHttpClient
         extends AbstractHttpClientTest

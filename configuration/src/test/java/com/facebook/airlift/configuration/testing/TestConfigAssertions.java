@@ -30,7 +30,7 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
-import static io.airlift.testing.Assertions.assertContains;
+import static com.facebook.airlift.testing.Assertions.assertContains;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotSame;
 import static org.testng.Assert.fail;

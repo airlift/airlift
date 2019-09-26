@@ -24,8 +24,8 @@ import java.net.UnknownHostException;
 import static com.facebook.airlift.node.NodeConfig.AddressSource.FQDN;
 import static com.facebook.airlift.node.NodeConfig.AddressSource.HOSTNAME;
 import static com.facebook.airlift.node.NodeConfig.AddressSource.IP;
-import static io.airlift.testing.Assertions.assertGreaterThanOrEqual;
-import static io.airlift.testing.Assertions.assertNotEquals;
+import static com.facebook.airlift.testing.Assertions.assertGreaterThanOrEqual;
+import static com.facebook.airlift.testing.Assertions.assertNotEquals;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 

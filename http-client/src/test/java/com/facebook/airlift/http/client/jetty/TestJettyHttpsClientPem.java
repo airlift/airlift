@@ -17,7 +17,7 @@ import java.util.concurrent.TimeoutException;
 
 import static com.google.common.io.Resources.getResource;
 import static com.facebook.airlift.http.client.Request.Builder.prepareGet;
-import static io.airlift.testing.Closeables.closeQuietly;
+import static com.facebook.airlift.testing.Closeables.closeQuietly;
 
 public class TestJettyHttpsClientPem
         extends AbstractHttpClientTest

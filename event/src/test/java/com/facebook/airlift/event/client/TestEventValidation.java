@@ -23,7 +23,7 @@ import java.util.List;
 import static com.facebook.airlift.event.client.EventTypeMetadata.getEventTypeMetadata;
 import static com.facebook.airlift.event.client.EventTypeMetadata.getEventTypeMetadataNested;
 import static com.facebook.airlift.event.client.EventTypeMetadata.getValidEventTypeMetadata;
-import static io.airlift.testing.Assertions.assertContains;
+import static com.facebook.airlift.testing.Assertions.assertContains;
 import static org.testng.Assert.assertEquals;
 
 public class TestEventValidation

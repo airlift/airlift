@@ -28,7 +28,7 @@ import java.util.UUID;
 import static com.facebook.airlift.discovery.client.ServiceDescriptor.ServiceDescriptorBuilder;
 import static com.facebook.airlift.discovery.client.ServiceDescriptor.serviceDescriptor;
 import static com.facebook.airlift.json.JsonCodec.jsonCodec;
-import static io.airlift.testing.EquivalenceTester.equivalenceTester;
+import static com.facebook.airlift.testing.EquivalenceTester.equivalenceTester;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;

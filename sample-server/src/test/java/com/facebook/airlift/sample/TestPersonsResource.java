@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import static com.google.common.collect.Lists.newArrayList;
-import static io.airlift.testing.Assertions.assertInstanceOf;
+import static com.facebook.airlift.testing.Assertions.assertInstanceOf;
 import static org.testng.Assert.assertEquals;
 
 @Test(singleThreaded = true)

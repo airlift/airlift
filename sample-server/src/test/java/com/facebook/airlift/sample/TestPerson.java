@@ -17,7 +17,7 @@ package com.facebook.airlift.sample;
 
 import org.testng.annotations.Test;
 
-import static io.airlift.testing.EquivalenceTester.equivalenceTester;
+import static com.facebook.airlift.testing.EquivalenceTester.equivalenceTester;
 
 public class TestPerson
 {

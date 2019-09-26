@@ -32,7 +32,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 import static com.facebook.airlift.http.client.HttpClientBinder.httpClientBinder;
-import static io.airlift.testing.Assertions.assertInstanceOf;
+import static com.facebook.airlift.testing.Assertions.assertInstanceOf;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.testng.Assert.assertEquals;
