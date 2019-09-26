@@ -1,6 +1,6 @@
 package com.facebook.airlift.http.client.jetty;
 
-import io.airlift.stats.Distribution;
+import com.facebook.airlift.stats.Distribution;
 import org.eclipse.jetty.client.DuplexConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.PoolingHttpDestination;

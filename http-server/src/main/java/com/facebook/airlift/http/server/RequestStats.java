@@ -15,9 +15,9 @@
  */
 package com.facebook.airlift.http.server;
 
-import io.airlift.stats.CounterStat;
-import io.airlift.stats.DistributionStat;
-import io.airlift.stats.TimeStat;
+import com.facebook.airlift.stats.CounterStat;
+import com.facebook.airlift.stats.DistributionStat;
+import com.facebook.airlift.stats.TimeStat;
 import io.airlift.units.Duration;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;

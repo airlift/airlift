@@ -16,9 +16,9 @@
 package com.facebook.airlift.http.client;
 
 import com.google.common.annotations.Beta;
-import io.airlift.stats.CounterStat;
-import io.airlift.stats.DistributionStat;
-import io.airlift.stats.TimeStat;
+import com.facebook.airlift.stats.CounterStat;
+import com.facebook.airlift.stats.DistributionStat;
+import com.facebook.airlift.stats.TimeStat;
 import io.airlift.units.Duration;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;

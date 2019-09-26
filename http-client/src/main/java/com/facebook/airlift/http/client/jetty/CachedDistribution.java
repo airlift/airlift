@@ -1,6 +1,6 @@
 package com.facebook.airlift.http.client.jetty;
 
-import io.airlift.stats.Distribution;
+import com.facebook.airlift.stats.Distribution;
 import org.weakref.jmx.Managed;
 
 import javax.annotation.concurrent.GuardedBy;
