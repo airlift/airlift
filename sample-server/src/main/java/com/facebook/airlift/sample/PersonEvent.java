@@ -1,4 +1,4 @@
-package io.airlift.sample;
+package com.facebook.airlift.sample;
 
 import com.facebook.airlift.event.client.EventField;
 import com.facebook.airlift.event.client.EventType;

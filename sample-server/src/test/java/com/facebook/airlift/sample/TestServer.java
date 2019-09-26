@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.sample;
+package com.facebook.airlift.sample;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
@@ -52,8 +52,8 @@ import static com.facebook.airlift.http.client.StaticBodyGenerator.createStaticB
 import static com.facebook.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static com.facebook.airlift.json.JsonCodec.listJsonCodec;
 import static com.facebook.airlift.json.JsonCodec.mapJsonCodec;
-import static io.airlift.sample.PersonEvent.personAdded;
-import static io.airlift.sample.PersonEvent.personRemoved;
+import static com.facebook.airlift.sample.PersonEvent.personAdded;
+import static com.facebook.airlift.sample.PersonEvent.personRemoved;
 import static io.airlift.testing.Assertions.assertEqualsIgnoreOrder;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;

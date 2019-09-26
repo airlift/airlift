@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.sample;
+package com.facebook.airlift.sample;
 
 import com.google.common.collect.ImmutableList;
 import com.facebook.airlift.event.client.InMemoryEventClient;
@@ -25,9 +25,9 @@ import javax.ws.rs.core.Response;
 
 import java.net.URI;
 
-import static io.airlift.sample.PersonEvent.personAdded;
-import static io.airlift.sample.PersonEvent.personRemoved;
-import static io.airlift.sample.PersonEvent.personUpdated;
+import static com.facebook.airlift.sample.PersonEvent.personAdded;
+import static com.facebook.airlift.sample.PersonEvent.personRemoved;
+import static com.facebook.airlift.sample.PersonEvent.personUpdated;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 

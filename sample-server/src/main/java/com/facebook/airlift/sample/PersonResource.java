@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.sample;
+package com.facebook.airlift.sample;
 
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
@@ -29,7 +29,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
-import static io.airlift.sample.PersonRepresentation.from;
+import static com.facebook.airlift.sample.PersonRepresentation.from;
 import static java.util.Objects.requireNonNull;
 
 @Path("/v1/person/{id: \\w+}")
