@@ -9,7 +9,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
@@ -33,13 +33,15 @@ public class BoundedExecutor
         implements Executor
 {
     private static final Logger log = Logger.get(BoundedExecutor.class);
+    private static final AtomicIntegerFieldUpdater<BoundedExecutor> QUEUE_SIZE_UPDATER = AtomicIntegerFieldUpdater.newUpdater(BoundedExecutor.class, "queueSize");
 
     private final Queue<Runnable> queue = new ConcurrentLinkedQueue<>();
-    private final AtomicInteger queueSize = new AtomicInteger(0);
     private final AtomicBoolean failed = new AtomicBoolean();
 
     private final Executor coreExecutor;
     private final int maxThreads;
+    // WARNING: all accesses must go through QUEUE_SIZE_UPDATER
+    private volatile int queueSize;
 
     public BoundedExecutor(Executor coreExecutor, int maxThreads)
     {
@@ -56,7 +58,7 @@ public class BoundedExecutor
 
         queue.add(task);
 
-        int size = queueSize.incrementAndGet();
+        int size = QUEUE_SIZE_UPDATER.incrementAndGet(this);
         if (size <= maxThreads) {
             // If able to grab a permit (aka size <= maxThreads), then we are short exactly one draining thread
             try {
@@ -81,6 +83,6 @@ public class BoundedExecutor
                 log.error(e, "Task failed");
             }
         }
-        while (queueSize.getAndDecrement() > maxThreads);
+        while (QUEUE_SIZE_UPDATER.getAndDecrement(this) > maxThreads);
     }
 }
