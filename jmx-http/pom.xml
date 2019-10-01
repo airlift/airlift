@@ -6,7 +6,7 @@
 
     <parent>
         <artifactId>airlift</artifactId>
-        <groupId>io.airlift</groupId>
+        <groupId>com.facebook.airlift</groupId>
         <version>0.185-SNAPSHOT</version>
     </parent>
 
@@ -16,24 +16,24 @@
 
     <dependencies>
         <dependency>
-            <groupId>io.airlift</groupId>
+            <groupId>com.facebook.airlift</groupId>
             <artifactId>discovery</artifactId>
             <exclusions>
                 <!-- only the binder is used, not the client -->
                 <exclusion>
-                    <groupId>io.airlift</groupId>
+                    <groupId>com.facebook.airlift</groupId>
                     <artifactId>http-client</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
 
         <dependency>
-            <groupId>io.airlift</groupId>
+            <groupId>com.facebook.airlift</groupId>
             <artifactId>json</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>io.airlift</groupId>
+            <groupId>com.facebook.airlift</groupId>
             <artifactId>jaxrs</artifactId>
         </dependency>
 
@@ -74,30 +74,30 @@
 
         <!-- used by tests but also needed transitively -->
         <dependency>
-            <groupId>io.airlift</groupId>
+            <groupId>com.facebook.airlift</groupId>
             <artifactId>node</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>io.airlift</groupId>
+            <groupId>com.facebook.airlift</groupId>
             <artifactId>http-server</artifactId>
         </dependency>
 
         <!-- for testing -->
         <dependency>
-            <groupId>io.airlift</groupId>
+            <groupId>com.facebook.airlift</groupId>
             <artifactId>testing</artifactId>
             <scope>test</scope>
         </dependency>
 
         <dependency>
-            <groupId>io.airlift</groupId>
+            <groupId>com.facebook.airlift</groupId>
             <artifactId>bootstrap</artifactId>
             <scope>test</scope>
         </dependency>
 
         <dependency>
-            <groupId>io.airlift</groupId>
+            <groupId>com.facebook.airlift</groupId>
             <artifactId>http-client</artifactId>
             <scope>test</scope>
         </dependency>

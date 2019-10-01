@@ -58,7 +58,7 @@
             <outputDirectory>/</outputDirectory>
             <useStrictFiltering>true</useStrictFiltering>
             <includes>
-                <include>io.airlift:launcher:tar.gz:bin:*</include>
+                <include>com.facebook.airlift:launcher:tar.gz:bin:*</include>
             </includes>
         </dependencySet>
 
@@ -70,7 +70,7 @@
                 <filtered>true</filtered>
             </unpackOptions>
             <includes>
-                <include>io.airlift:launcher:tar.gz:properties:*</include>
+                <include>com.facebook.airlift:launcher:tar.gz:properties:*</include>
             </includes>
         </dependencySet>
     </dependencySets>
