@@ -21,6 +21,9 @@ import com.google.common.collect.ImmutableSortedMap;
 import com.google.inject.ConfigurationException;
 import io.airlift.configuration.Problems.Monitor;
 
+import javax.validation.Constraint;
+
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -168,6 +171,13 @@ public class ConfigurationMetadata<T>
         if (config.value().isEmpty()) {
             problems.addError("@Config method [%s] annotation has an empty value", configMethod.toGenericString());
             isValid = false;
+        }
+
+        for (Annotation annotation : configMethod.getDeclaredAnnotations()) {
+            if (annotation.annotationType().isAnnotationPresent(Constraint.class)) {
+                problems.addError("@Config method [%s] annotation %s should be placed on a getter", configMethod.toGenericString(), annotation);
+                isValid = false;
+            }
         }
 
         if (legacyConfig != null) {
