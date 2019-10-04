@@ -20,6 +20,8 @@ import com.google.inject.ConfigurationException;
 import io.airlift.configuration.ConfigurationMetadata.AttributeMetadata;
 import org.testng.annotations.Test;
 
+import javax.validation.constraints.Min;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -806,6 +808,16 @@ public class ConfigurationMetadataTest
         monitor.assertNumberOfErrors(1);
         monitor.assertNumberOfWarnings(0);
         monitor.assertMatchingErrorRecorded("@ConfigSecuritySensitive method", "setValue", "is not annotated with @Config.");
+    }
+
+    @Test
+    public void testMisplacedValidationAnnotation()
+    {
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata.getConfigurationMetadata(MisplacedValidationAnnotationClass.class, monitor);
+        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded("@Config method", "MisplacedValidationAnnotationClass.setValue(int)", "annotation @javax.validation.constraints.Min", "should be placed on a getter");
     }
 
     private void verifyMetaData(ConfigurationMetadata<?> metadata, Class<?> configClass, String description, boolean securitySensitive, Map<String, Set<String>> attributeProperties)
@@ -1780,6 +1792,23 @@ public class ConfigurationMetadataTest
         public void setValue(int value)
         {
             this.value = Integer.toString(value);
+        }
+    }
+
+    public static class MisplacedValidationAnnotationClass
+    {
+        private int value;
+
+        public int getValue()
+        {
+            return value;
+        }
+
+        @Config("value")
+        @Min(10)
+        public void setValue(int value)
+        {
+            this.value = value;
         }
     }
 }
