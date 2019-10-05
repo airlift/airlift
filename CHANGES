@@ -1,5 +1,7 @@
 0.185
 
+- Fix a bug introduced in 0.184 causing Enum's fromString(String) method to be
+  ignored.
 - When a class defines fromString(String) method, valueOf(String) method or
   a String-parameterized constructor, attempt the conversion using only first
   available conversion method.

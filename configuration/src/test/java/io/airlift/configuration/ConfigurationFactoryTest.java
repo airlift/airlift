@@ -362,6 +362,27 @@ public class ConfigurationFactoryTest
     }
 
     @Test
+    public void testEnumWithFromString()
+    {
+        TestMonitor monitor = new TestMonitor();
+        Injector injector = createInjector(ImmutableMap.of("value", "yes"), monitor, binder -> configBinder(binder).bindConfig(EnumWithFromStringClass.class));
+        assertSame(injector.getInstance(EnumWithFromStringClass.class).value, EnumWithFromStringClass.Value.TRUE);
+        monitor.assertNumberOfErrors(0);
+        monitor.assertNumberOfWarnings(0);
+
+        monitor = new TestMonitor();
+        try {
+            createInjector(ImmutableMap.of("value", "TRUE"), monitor, binder -> configBinder(binder).bindConfig(EnumWithFromStringClass.class));
+            fail("Expected an exception in object creation due to failed coercion");
+        }
+        catch (CreationException e) {
+            monitor.assertNumberOfErrors(1);
+            monitor.assertNumberOfWarnings(0);
+            monitor.assertMatchingErrorRecorded("Could not coerce value 'TRUE' to", "(property 'value')", "EnumWithFromStringClass");
+        }
+    }
+
+    @Test
     public void testValueOf()
     {
         TestMonitor monitor = new TestMonitor();
@@ -597,6 +618,39 @@ public class ConfigurationFactoryTest
             }
 
             public Value(String ignored) {}
+        }
+
+        private Value value;
+
+        public Value getValue()
+        {
+            return value;
+        }
+
+        @Config("value")
+        public void setValue(Value value)
+        {
+            this.value = value;
+        }
+    }
+
+    public static class EnumWithFromStringClass
+    {
+        public enum Value
+        {
+            TRUE, FALSE;
+
+            public static Value fromString(String string)
+            {
+                switch (requireNonNull(string, "string is null")) {
+                    case "yes":
+                        return TRUE;
+                    case "no":
+                        return FALSE;
+                    default:
+                        throw new IllegalArgumentException("Invalid value: " + string);
+                }
+            }
         }
 
         private Value value;
