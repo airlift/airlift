@@ -1,3 +1,9 @@
+0.185
+
+- When a class defines fromString(String) method, valueOf(String) method or
+  a String-parameterized constructor, attempt the conversion using only first
+  available conversion method.
+
 0.184
 
 - Match enums case-insensitively in configuration.
