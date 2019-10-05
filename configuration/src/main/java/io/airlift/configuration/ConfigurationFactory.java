@@ -585,6 +585,22 @@ public class ConfigurationFactory
             return null;
         }
 
+        // Look for a static fromString(String) method. This is used in preference
+        // to the built-in valueOf() method for enums.
+        try {
+            Method fromString = type.getMethod("fromString", String.class);
+            if (fromString.getReturnType().isAssignableFrom(type)) {
+                try {
+                    return fromString.invoke(null, value);
+                }
+                catch (ReflectiveOperationException e) {
+                    return null;
+                }
+            }
+        }
+        catch (NoSuchMethodException ignored) {
+        }
+
         if (type.isEnum()) {
             try {
                 return Enum.valueOf(type.asSubclass(Enum.class), value);
@@ -602,21 +618,6 @@ public class ConfigurationFactory
                 }
             }
             return match;
-        }
-
-        // Look for a static fromString(String) method
-        try {
-            Method fromString = type.getMethod("fromString", String.class);
-            if (fromString.getReturnType().isAssignableFrom(type)) {
-                try {
-                    return fromString.invoke(null, value);
-                }
-                catch (ReflectiveOperationException e) {
-                    return null;
-                }
-            }
-        }
-        catch (NoSuchMethodException ignored) {
         }
 
         // Look for a static valueOf(String) method
