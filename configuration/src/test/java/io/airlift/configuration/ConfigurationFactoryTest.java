@@ -16,6 +16,7 @@
 package io.airlift.configuration;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.CreationException;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -32,10 +33,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.testing.Assertions.assertContainsAllOf;
+import static java.util.Objects.requireNonNull;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertSame;
 import static org.testng.Assert.fail;
 
 public class ConfigurationFactoryTest
@@ -336,6 +340,69 @@ public class ConfigurationFactoryTest
         }
     }
 
+    @Test
+    public void testFromString()
+    {
+        TestMonitor monitor = new TestMonitor();
+        Injector injector = createInjector(ImmutableMap.of("value", "value-good-for-fromString"), monitor, binder -> configBinder(binder).bindConfig(FromStringClass.class));
+        assertSame(injector.getInstance(FromStringClass.class).value, FromStringClass.Value.FROM_STRING_VALUE);
+        monitor.assertNumberOfErrors(0);
+        monitor.assertNumberOfWarnings(0);
+
+        monitor = new TestMonitor();
+        try {
+            createInjector(ImmutableMap.of("value", "value-good-for-valueOf"), monitor, binder -> configBinder(binder).bindConfig(FromStringClass.class));
+            fail("Expected an exception in object creation due to failed coercion");
+        }
+        catch (CreationException e) {
+            monitor.assertNumberOfErrors(1);
+            monitor.assertNumberOfWarnings(0);
+            monitor.assertMatchingErrorRecorded("Could not coerce value 'value-good-for-valueOf' to", "(property 'value')", "FromStringClass");
+        }
+    }
+
+    @Test
+    public void testValueOf()
+    {
+        TestMonitor monitor = new TestMonitor();
+        Injector injector = createInjector(ImmutableMap.of("value", "value-good-for-valueOf"), monitor, binder -> configBinder(binder).bindConfig(ValueOfClass.class));
+        assertSame(injector.getInstance(ValueOfClass.class).value, ValueOfClass.Value.VALUE_OF_VALUE);
+        monitor.assertNumberOfErrors(0);
+        monitor.assertNumberOfWarnings(0);
+
+        monitor = new TestMonitor();
+        try {
+            createInjector(ImmutableMap.of("value", "anything"), monitor, binder -> configBinder(binder).bindConfig(ValueOfClass.class));
+            fail("Expected an exception in object creation due to failed coercion");
+        }
+        catch (CreationException e) {
+            monitor.assertNumberOfErrors(1);
+            monitor.assertNumberOfWarnings(0);
+            monitor.assertMatchingErrorRecorded("Could not coerce value 'anything' to", "(property 'value')", "ValueOfClass");
+        }
+    }
+
+    @Test
+    public void testStringConstructor()
+    {
+        TestMonitor monitor = new TestMonitor();
+        Injector injector = createInjector(ImmutableMap.of("value", "constructor-value"), monitor, binder -> configBinder(binder).bindConfig(StringConstructorClass.class));
+        assertEquals(injector.getInstance(StringConstructorClass.class).value.string, "constructor-argument: constructor-value");
+        monitor.assertNumberOfErrors(0);
+        monitor.assertNumberOfWarnings(0);
+
+        monitor = new TestMonitor();
+        try {
+            createInjector(ImmutableMap.of("value", "bad-value"), monitor, binder -> configBinder(binder).bindConfig(StringConstructorClass.class));
+            fail("Expected an exception in object creation due to failed coercion");
+        }
+        catch (CreationException e) {
+            monitor.assertNumberOfErrors(1);
+            monitor.assertNumberOfWarnings(0);
+            monitor.assertMatchingErrorRecorded("Could not coerce value 'bad-value' to", "(property 'value')", "StringConstructorClass");
+        }
+    }
+
     private static Injector createInjector(Map<String, String> properties, TestMonitor monitor, Module module)
     {
         ConfigurationFactory configurationFactory = new ConfigurationFactory(properties, null, monitor);
@@ -508,6 +575,97 @@ public class ConfigurationFactoryTest
         public void setIntValue(int value)
         {
             this.myIntValue = value;
+        }
+    }
+
+    public static class FromStringClass
+    {
+        public static class Value
+        {
+            static final Value FROM_STRING_VALUE = new Value("");
+
+            public static Value fromString(String value)
+            {
+                checkArgument("value-good-for-fromString".equals(value));
+                return FROM_STRING_VALUE;
+            }
+
+            public static Value valueOf(String value)
+            {
+                checkArgument("value-good-for-valueOf".equals(value));
+                return new Value("");
+            }
+
+            public Value(String ignored) {}
+        }
+
+        private Value value;
+
+        public Value getValue()
+        {
+            return value;
+        }
+
+        @Config("value")
+        public void setValue(Value value)
+        {
+            this.value = value;
+        }
+    }
+
+    public static class ValueOfClass
+    {
+        public static class Value
+        {
+            static final Value VALUE_OF_VALUE = new Value("");
+
+            public static Value valueOf(String value)
+            {
+                checkArgument("value-good-for-valueOf".equals(value));
+                return VALUE_OF_VALUE;
+            }
+
+            public Value(String ignored) {}
+        }
+
+        private Value value;
+
+        public Value getValue()
+        {
+            return value;
+        }
+
+        @Config("value")
+        public void setValue(Value value)
+        {
+            this.value = value;
+        }
+    }
+
+    public static class StringConstructorClass
+    {
+        public static class Value
+        {
+            private final String string;
+
+            public Value(String string)
+            {
+                checkArgument(!"bad-value".equals(string));
+                this.string = "constructor-argument: " + requireNonNull(string, "string is null");
+            }
+        }
+
+        private Value value;
+
+        public Value getValue()
+        {
+            return value;
+        }
+
+        @Config("value")
+        public void setValue(Value value)
+        {
+            this.value = value;
         }
     }
 }

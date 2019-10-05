@@ -608,28 +608,43 @@ public class ConfigurationFactory
         try {
             Method fromString = type.getMethod("fromString", String.class);
             if (fromString.getReturnType().isAssignableFrom(type)) {
-                return fromString.invoke(null, value);
+                try {
+                    return fromString.invoke(null, value);
+                }
+                catch (ReflectiveOperationException e) {
+                    return null;
+                }
             }
         }
-        catch (Throwable ignored) {
+        catch (NoSuchMethodException ignored) {
         }
 
         // Look for a static valueOf(String) method
         try {
             Method valueOf = type.getMethod("valueOf", String.class);
             if (valueOf.getReturnType().isAssignableFrom(type)) {
-                return valueOf.invoke(null, value);
+                try {
+                    return valueOf.invoke(null, value);
+                }
+                catch (ReflectiveOperationException e) {
+                    return null;
+                }
             }
         }
-        catch (Throwable ignored) {
+        catch (NoSuchMethodException ignored) {
         }
 
         // Look for a constructor taking a string
         try {
             Constructor<?> constructor = type.getConstructor(String.class);
-            return constructor.newInstance(value);
+            try {
+                return constructor.newInstance(value);
+            }
+            catch (ReflectiveOperationException e) {
+                return null;
+            }
         }
-        catch (Throwable ignored) {
+        catch (NoSuchMethodException ignored) {
         }
 
         return null;
