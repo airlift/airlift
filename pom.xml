@@ -26,6 +26,7 @@
         <air.java.version>1.8.0-40</air.java.version>
 
         <dep.airlift.version>0.185-SNAPSHOT</dep.airlift.version>
+        <dep.units.version>1.4-SNAPSHOT</dep.units.version>
         <dep.packaging.version>${dep.airlift.version}</dep.packaging.version>
         <dep.jetty.version>9.4.14.v20181114</dep.jetty.version>
         <dep.jersey.version>2.26</dep.jersey.version>
@@ -223,8 +224,14 @@
 
             <dependency>
                 <groupId>io.airlift</groupId>
-                <artifactId>units</artifactId>
-                <version>1.0</version>
+                <artifactId>units-units</artifactId>
+                <version>${dep.units.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>units-validation</artifactId>
+                <version>${dep.units.version}</version>
             </dependency>
 
             <dependency>
