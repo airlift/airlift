@@ -1,3 +1,7 @@
+0.185
+
+- Add TDigest and DecayTDigest data structures.
+
 0.184
 
 - Match enums case-insensitively in configuration.
