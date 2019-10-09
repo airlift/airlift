@@ -5,6 +5,7 @@
 - When a class defines fromString(String) method, valueOf(String) method or
   a String-parameterized constructor, attempt the conversion using only first
   available conversion method.
+- Add TDigest and DecayTDigest data structures.
 
 0.184
 
