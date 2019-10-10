@@ -87,7 +87,7 @@ public class TestJettyHttpsClient
         super.testConnectTimeout();
     }
 
-    @Test(expectedExceptions = {IOException.class})
+    @Test(expectedExceptions = IOException.class)
     public void testCertHostnameMismatch()
             throws Exception
     {
