@@ -161,7 +161,7 @@ public class TestJsonModule
     private Map<String, Object> createCarMap()
             throws IOException
     {
-        return objectMapper.readValue(objectMapper.writeValueAsString(CAR), new TypeReference<Object>() {});
+        return objectMapper.readValue(objectMapper.writeValueAsString(CAR), new TypeReference<Map<String, Object>>() {});
     }
 
     public static class Car
