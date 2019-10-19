@@ -15,6 +15,8 @@
  */
 package io.airlift.discovery.client;
 
+import io.joj.reflect.annotation.AnnotationBuilder;
+
 public final class ServiceTypes
 {
     private ServiceTypes()
@@ -23,6 +25,8 @@ public final class ServiceTypes
 
     public static ServiceType serviceType(String type)
     {
-        return new ServiceTypeImpl(type);
+        return AnnotationBuilder.builderFor(ServiceType.class)
+                .with(ServiceType::value).returning(type)
+                .build();
     }
 }
