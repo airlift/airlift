@@ -10,6 +10,7 @@
   available conversion method.
 - Validate placement of bean validation annotation in configuration classes.
 - Add TDigest and DecayTDigest data structures.
+- Use t-digest for Distribution and TimeDistribution.
 
 0.184
 
