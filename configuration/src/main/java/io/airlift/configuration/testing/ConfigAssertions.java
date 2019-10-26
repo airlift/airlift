@@ -32,6 +32,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentMap;
 
+import static java.lang.String.format;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNotNull;
@@ -352,7 +353,7 @@ public final class ConfigAssertions
             return configClass.newInstance();
         }
         catch (Exception e) {
-            AssertionError error = new AssertionError(String.format("Exception creating default instance of %s", configClass.getName()));
+            AssertionError error = new AssertionError(format("Exception creating default instance of %s", configClass.getName()));
             error.initCause(e);
             throw error;
         }
@@ -364,7 +365,7 @@ public final class ConfigAssertions
             return getter.invoke(actual);
         }
         catch (Exception e) {
-            AssertionError error = new AssertionError(String.format("Exception invoking %s", getter.toGenericString()));
+            AssertionError error = new AssertionError(format("Exception invoking %s", getter.toGenericString()));
             error.initCause(e);
             throw error;
         }
