@@ -27,11 +27,13 @@ import net.sf.cglib.proxy.MethodProxy;
 import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentMap;
 
+import static java.lang.Boolean.FALSE;
 import static java.lang.String.format;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotEquals;
@@ -99,6 +101,14 @@ public final class ConfigAssertions
             Object expectedAttributeValue = expectedAttributeValues.get(attribute.getName());
 
             assertEquals(expectedAttributeValue, actualAttributeValue, attribute.getName());
+
+            String property = attribute.getInjectionPoint().getProperty();
+            if (property != null && property.contains("experimental")) {
+                Object value = actualAttributeValue;
+                if (value != null && !FALSE.equals(value) && !Optional.empty().equals(value)) {
+                    fail(format("Experimental attribute '%s' has unexpected default value: %s", property, value));
+                }
+            }
         }
     }
 
