@@ -38,7 +38,6 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -78,7 +77,6 @@ public class TestServer
 
     @BeforeMethod
     public void setup()
-            throws Exception
     {
         Bootstrap app = new Bootstrap(
                 new TestingNodeModule(),
@@ -104,7 +102,6 @@ public class TestServer
 
     @AfterMethod(alwaysRun = true)
     public void teardown()
-            throws Exception
     {
         try {
             if (lifeCycleManager != null) {
@@ -118,18 +115,17 @@ public class TestServer
 
     @Test
     public void testEmpty()
-            throws Exception
     {
         List<Object> response = client.execute(
                 prepareGet().setUri(uriFor("/v1/person")).build(),
                 createJsonResponseHandler(listCodec));
 
-        assertEquals(response, Collections.<Object>emptyList());
+        assertEquals(response, ImmutableList.of());
     }
 
     @Test
     public void testGetAll()
-            throws IOException, ExecutionException, InterruptedException
+            throws IOException
     {
         store.put("bar", new Person("bar@example.com", "Mr Bar"));
         store.put("foo", new Person("foo@example.com", "Mr Foo"));

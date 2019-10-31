@@ -54,7 +54,6 @@ public class TestMBeanResource
 
     @BeforeClass
     public void setup()
-            throws Exception
     {
         Bootstrap app = new Bootstrap(
                 new TestingNodeModule(),
@@ -76,7 +75,6 @@ public class TestMBeanResource
 
     @AfterClass(alwaysRun = true)
     public void teardown()
-            throws Exception
     {
         try {
             if (lifeCycleManager != null) {
@@ -101,7 +99,6 @@ public class TestMBeanResource
 
     @Test
     public void testGetHtmlPage()
-            throws Exception
     {
         StringResponse response = client.execute(
                 prepareGet().setUri(uriFor("/v1/jmx")).build(),

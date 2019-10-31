@@ -39,11 +39,9 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Response.Status;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-import static com.google.common.base.Throwables.throwIfUnchecked;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
 import static java.lang.String.format;
@@ -96,7 +94,6 @@ public class TestOverrideMethodFilterInHttpServer
 
     @Test
     public void testDeleteViaQueryParam()
-            throws Exception
     {
         client.execute(buildRequestWithQueryParam(POST, DELETE), createStatusResponseHandler());
 
@@ -108,7 +105,6 @@ public class TestOverrideMethodFilterInHttpServer
 
     @Test
     public void testPutViaQueryParam()
-            throws Exception
     {
         client.execute(buildRequestWithQueryParam(POST, PUT), createStatusResponseHandler());
 
@@ -120,7 +116,6 @@ public class TestOverrideMethodFilterInHttpServer
 
     @Test
     public void testPostViaQueryParam()
-            throws Exception
     {
         client.execute(buildRequestWithQueryParam(POST, POST), createStatusResponseHandler());
 
@@ -132,7 +127,6 @@ public class TestOverrideMethodFilterInHttpServer
 
     @Test
     public void testDeleteViaHeader()
-            throws Exception
     {
         client.execute(buildRequestWithHeader(POST, DELETE), createStatusResponseHandler());
 
@@ -144,7 +138,6 @@ public class TestOverrideMethodFilterInHttpServer
 
     @Test
     public void testPutViaHeader()
-            throws Exception
     {
         client.execute(buildRequestWithHeader(POST, PUT), createStatusResponseHandler());
 
@@ -156,7 +149,6 @@ public class TestOverrideMethodFilterInHttpServer
 
     @Test
     public void testPostViaHeader()
-            throws Exception
     {
         client.execute(buildRequestWithHeader(POST, POST), createStatusResponseHandler());
 
@@ -167,7 +159,6 @@ public class TestOverrideMethodFilterInHttpServer
     }
 
     private void assertNonOverridableMethod(Request request)
-            throws IOException, ExecutionException, InterruptedException
     {
         StatusResponse response = client.execute(request, createStatusResponseHandler());
 
@@ -190,7 +181,7 @@ public class TestOverrideMethodFilterInHttpServer
 
     @Test
     public void testNonOverridableMethodsWithHeader()
-            throws IOException, ExecutionException, InterruptedException
+            throws ExecutionException
     {
         assertNonOverridableMethod(buildRequestWithHeader(GET, POST));
         assertNonOverridableMethod(buildRequestWithHeader(GET, DELETE));
@@ -207,7 +198,7 @@ public class TestOverrideMethodFilterInHttpServer
 
     @Test
     public void testNonOverridableMethodsWithQueryParam()
-            throws IOException, ExecutionException, InterruptedException
+            throws ExecutionException
     {
         assertNonOverridableMethod(buildRequestWithQueryParam(GET, POST));
         assertNonOverridableMethod(buildRequestWithQueryParam(GET, DELETE));
@@ -284,27 +275,21 @@ public class TestOverrideMethodFilterInHttpServer
         }
     }
 
-    private static TestingHttpServer createServer(final TestResource resource)
+    private static TestingHttpServer createServer(TestResource resource)
     {
-        try {
-            List<Module> modules = ImmutableList.<Module>builder()
-                    .add(new TestingNodeModule())
-                    .add(new JaxrsModule())
-                    .add(new JsonModule())
-                    .add(new TestingHttpServerModule())
-                    .add(binder -> jaxrsBinder(binder).bindInstance(resource))
-                    .build();
+        List<Module> modules = ImmutableList.<Module>builder()
+                .add(new TestingNodeModule())
+                .add(new JaxrsModule())
+                .add(new JsonModule())
+                .add(new TestingHttpServerModule())
+                .add(binder -> jaxrsBinder(binder).bindInstance(resource))
+                .build();
 
-            return new Bootstrap(modules)
-                    .strictConfig()
-                    .doNotInitializeLogging()
-                    .quiet()
-                    .initialize()
-                    .getInstance(TestingHttpServer.class);
-        }
-        catch (Exception e) {
-            throwIfUnchecked(e);
-            throw new RuntimeException(e);
-        }
+        return new Bootstrap(modules)
+                .strictConfig()
+                .doNotInitializeLogging()
+                .quiet()
+                .initialize()
+                .getInstance(TestingHttpServer.class);
     }
 }

@@ -53,10 +53,9 @@ import static org.weakref.jmx.ObjectNames.generatedNameOf;
 @Test(singleThreaded = true)
 public class TestMBeanServerResource
 {
+    private final MBeanServer platformMBeanServer = ManagementFactory.getPlatformMBeanServer();
     private LifeCycleManager lifeCycleManager;
-    private TestingHttpServer server;
     private MBeanServerConnection mbeanServerConnection;
-    private MBeanServer platformMBeanServer = ManagementFactory.getPlatformMBeanServer();
     private TestMBean testMBean;
     private ObjectName testMBeanName;
 
@@ -80,7 +79,7 @@ public class TestMBeanServerResource
                 .initialize();
 
         lifeCycleManager = injector.getInstance(LifeCycleManager.class);
-        server = injector.getInstance(TestingHttpServer.class);
+        TestingHttpServer server = injector.getInstance(TestingHttpServer.class);
 
         testMBean = injector.getInstance(TestMBean.class);
         testMBeanName = new ObjectName(generatedNameOf(TestMBean.class));

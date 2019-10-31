@@ -46,7 +46,6 @@ public class TestHttpClientBinder
 {
     @Test
     public void testConfigDefaults()
-            throws Exception
     {
         Injector injector = new Bootstrap(
                 binder -> httpClientBinder(binder)
@@ -63,7 +62,6 @@ public class TestHttpClientBinder
 
     @Test
     public void testGlobalFilterBinding()
-            throws Exception
     {
         HttpRequestFilter globalFilter1 = (r) -> r;
         HttpRequestFilter globalFilter2 = (r) -> r;
@@ -100,7 +98,6 @@ public class TestHttpClientBinder
 
     @Test
     public void testBindingMultipleFiltersAndClients()
-            throws Exception
     {
         Injector injector = new Bootstrap(
                 binder -> {
@@ -124,7 +121,6 @@ public class TestHttpClientBinder
 
     @Test
     public void testBindClientWithFilter()
-            throws Exception
     {
         Injector injector = new Bootstrap(
                 binder -> httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
@@ -142,7 +138,6 @@ public class TestHttpClientBinder
 
     @Test
     public void testWithoutFilters()
-            throws Exception
     {
         Injector injector = new Bootstrap(
                 binder -> httpClientBinder(binder).bindHttpClient("foo", FooClient.class))
@@ -155,7 +150,6 @@ public class TestHttpClientBinder
 
     @Test
     public void testAliases()
-            throws Exception
     {
         Injector injector = new Bootstrap(
                 binder -> httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
@@ -173,7 +167,6 @@ public class TestHttpClientBinder
 
     @Test
     public void testBindClientWithAliases()
-            throws Exception
     {
         Injector injector = new Bootstrap(
                 binder -> httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
@@ -190,7 +183,6 @@ public class TestHttpClientBinder
 
     @Test
     public void testMultipleClients()
-            throws Exception
     {
         Injector injector = new Bootstrap(
                 binder -> {
@@ -208,7 +200,6 @@ public class TestHttpClientBinder
 
     @Test
     public void testClientShutdown()
-            throws Exception
     {
         Injector injector = new Bootstrap(
                 binder -> {
