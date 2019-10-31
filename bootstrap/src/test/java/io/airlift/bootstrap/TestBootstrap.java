@@ -15,13 +15,21 @@
  */
 package io.airlift.bootstrap;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.ConfigurationException;
 import com.google.inject.ProvisionException;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import static io.airlift.bootstrap.Bootstrap.replaceEnvironmentVariables;
 import static io.airlift.testing.Assertions.assertContains;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
 public class TestBootstrap
@@ -56,6 +64,42 @@ public class TestBootstrap
         catch (ProvisionException e) {
             assertContains(e.getErrorMessages().iterator().next().getMessage(), "circular dependencies are disabled");
         }
+    }
+
+    @Test
+    public void testEnvironmentVariableReplacement()
+    {
+        Map<String, String> original = ImmutableMap.<String, String>builder()
+                .put("apple", "apple-value")
+                .put("grape", "${ENV:GRAPE}")
+                .put("peach", "${ENV:PEACH}")
+                .put("grass", "${ENV:!!!}")
+                .put("pear", "${ENV:X_PEAR}")
+                .put("cherry", "${ENV:X_CHERRY}")
+                .put("orange", "orange-value")
+                .build();
+
+        Map<String, String> environment = ImmutableMap.<String, String>builder()
+                .put("GRAPE", "env-grape")
+                .put("X_CHERRY", "env-cherry")
+                .build();
+
+        List<String> errors = new ArrayList<>();
+        Map<String, String> actual = replaceEnvironmentVariables(original, environment, (key, error) -> errors.add(error));
+
+        Map<String, String> expected = ImmutableMap.<String, String>builder()
+                .put("apple", "apple-value")
+                .put("grape", "env-grape")
+                .put("grass", "${ENV:!!!}")
+                .put("cherry", "env-cherry")
+                .put("orange", "orange-value")
+                .build();
+
+        assertEquals(actual, expected);
+
+        assertThat(errors).containsExactly(
+                "Configuration property 'peach' references unset environment variable 'PEACH'",
+                "Configuration property 'pear' references unset environment variable 'X_PEAR'");
     }
 
     public static class Instance {}
