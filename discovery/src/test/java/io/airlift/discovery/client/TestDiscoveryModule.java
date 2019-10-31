@@ -24,7 +24,6 @@ public class TestDiscoveryModule
 
     @Test
     public void testExecutorShutdown()
-            throws Exception
     {
         Bootstrap app = new Bootstrap(
                 new JsonModule(),

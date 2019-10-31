@@ -57,7 +57,6 @@ public class TestServer
 
     @AfterMethod(alwaysRun = true)
     public void teardown()
-            throws Exception
     {
         try {
             if (lifeCycleManager != null) {
@@ -71,7 +70,6 @@ public class TestServer
 
     @Test
     public void testNothing()
-            throws Exception
     {
         StatusResponse response = client.execute(
                 prepareGet().setUri(uriFor("/v1/jmx/mbean")).build(),

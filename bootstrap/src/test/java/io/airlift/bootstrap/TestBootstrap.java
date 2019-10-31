@@ -36,7 +36,6 @@ public class TestBootstrap
 {
     @Test
     public void testRequiresExplicitBindings()
-            throws Exception
     {
         Bootstrap bootstrap = new Bootstrap();
         try {
@@ -50,7 +49,6 @@ public class TestBootstrap
 
     @Test
     public void testDoesNotAllowCircularDependencies()
-            throws Exception
     {
         Bootstrap bootstrap = new Bootstrap(binder -> {
             binder.bind(InstanceA.class);

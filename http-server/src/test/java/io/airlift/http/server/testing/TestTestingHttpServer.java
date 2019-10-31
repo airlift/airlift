@@ -143,7 +143,6 @@ public class TestTestingHttpServer
 
     @Test
     public void testGuiceInjectionWithoutFilters()
-            throws Exception
     {
         DummyServlet servlet = new DummyServlet();
 
@@ -176,7 +175,6 @@ public class TestTestingHttpServer
 
     @Test
     public void testGuiceInjectionWithFilters()
-            throws Exception
     {
         DummyServlet servlet = new DummyServlet();
         DummyFilter filter = new DummyFilter();
@@ -213,7 +211,6 @@ public class TestTestingHttpServer
 
     @Test
     public void testGuiceInjectionWithResources()
-            throws Exception
     {
         DummyServlet servlet = new DummyServlet();
 
@@ -294,7 +291,6 @@ public class TestTestingHttpServer
 
         @Override
         public synchronized void init(ServletConfig config)
-                throws ServletException
         {
             sampleInitParam = config.getInitParameter("sampleInitParameter");
         }
@@ -311,7 +307,6 @@ public class TestTestingHttpServer
 
         @Override
         protected synchronized void doGet(HttpServletRequest req, HttpServletResponse resp)
-                throws ServletException, IOException
         {
             ++callCount;
             resp.setStatus(HttpServletResponse.SC_OK);
@@ -329,10 +324,7 @@ public class TestTestingHttpServer
         }
 
         @Override
-        public void init(FilterConfig filterConfig)
-                throws ServletException
-        {
-        }
+        public void init(FilterConfig filterConfig) {}
 
         @Override
         public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain)
