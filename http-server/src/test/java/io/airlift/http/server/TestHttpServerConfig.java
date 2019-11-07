@@ -22,10 +22,13 @@ import io.airlift.units.Duration;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.testng.annotations.Test;
 
+import javax.validation.constraints.AssertTrue;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import static io.airlift.testing.ValidationAssertions.assertFailsValidation;
 import static io.airlift.units.DataSize.Unit.GIGABYTE;
 import static io.airlift.units.DataSize.Unit.KILOBYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
@@ -176,6 +179,19 @@ public class TestHttpServerConfig
                 .setHttp2StreamIdleTimeout(new Duration(23, SECONDS));
 
         ConfigAssertions.assertFullMapping(properties, expected);
+    }
+
+    @Test
+    public void testInvalidHttpsConfiguration()
+    {
+        assertFailsValidation(
+                new HttpServerConfig()
+                        .setHttpsEnabled(true)
+                        // keystore path not set
+                        .setKeystorePassword("keystore password"),
+                "httpsConfigurationValid",
+                "Keystore path/password must be provided when HTTPS is enabled",
+                AssertTrue.class);
     }
 
     private List<String> getJettyDefaultExcludedCiphers()
