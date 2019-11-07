@@ -27,6 +27,7 @@ import io.airlift.units.MaxDataSize;
 import io.airlift.units.MinDataSize;
 import io.airlift.units.MinDuration;
 
+import javax.validation.constraints.AssertTrue;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
@@ -223,6 +224,12 @@ public class HttpServerConfig
     {
         this.keystorePassword = keystorePassword;
         return this;
+    }
+
+    @AssertTrue(message = "Keystore path/password must be provided when HTTPS is enabled")
+    public boolean isHttpsConfigurationValid()
+    {
+        return !isHttpsEnabled() || (getKeystorePath() != null && getKeystorePassword() != null);
     }
 
     public String getKeyManagerPassword()
