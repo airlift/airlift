@@ -33,16 +33,20 @@ public class DecayTDigest
 
     public DecayTDigest(double compression, double alpha)
     {
-        this(compression, alpha, alpha == 0.0 ? noOpTicker() : Ticker.systemTicker());
+        this(new TDigest(compression), alpha, alpha == 0.0 ? noOpTicker() : Ticker.systemTicker());
     }
 
-    DecayTDigest(double compression, double alpha, Ticker ticker)
+    private DecayTDigest(TDigest digest, double alpha, Ticker ticker)
     {
-        digest = new TDigest(compression);
+        this(digest, alpha, ticker, TimeUnit.NANOSECONDS.toSeconds(ticker.read()));
+    }
 
+    private DecayTDigest(TDigest digest, double alpha, Ticker ticker, long landmarkInSeconds)
+    {
+        this.digest = digest;
         this.alpha = alpha;
         this.ticker = ticker;
-        landmarkInSeconds = TimeUnit.NANOSECONDS.toSeconds(ticker.read());
+        this.landmarkInSeconds = landmarkInSeconds;
     }
 
     public double getMin()
@@ -150,5 +154,10 @@ public class DecayTDigest
                 return 0;
             }
         };
+    }
+
+    public DecayTDigest duplicate()
+    {
+        return new DecayTDigest(TDigest.copyOf(digest), alpha, ticker, landmarkInSeconds);
     }
 }

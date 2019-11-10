@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static java.util.Objects.requireNonNull;
 
 @ThreadSafe
 public class Distribution
@@ -25,14 +26,18 @@ public class Distribution
 
     public Distribution()
     {
-        digest = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, 0);
-        total = new DecayCounter(0);
+        this(0);
     }
 
     public Distribution(double alpha)
     {
-        digest = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
-        total = new DecayCounter(alpha);
+        this(new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha), new DecayCounter(alpha));
+    }
+
+    private Distribution(DecayTDigest digest, DecayCounter total)
+    {
+        this.digest = requireNonNull(digest, "digest is null");
+        this.total = requireNonNull(total, "total is null");
     }
 
     public synchronized void add(long value)
@@ -45,6 +50,11 @@ public class Distribution
     {
         digest.add(value, count);
         total.add(value * count);
+    }
+
+    public synchronized Distribution duplicate()
+    {
+        return new Distribution(digest.duplicate(), total.duplicate());
     }
 
     @Managed

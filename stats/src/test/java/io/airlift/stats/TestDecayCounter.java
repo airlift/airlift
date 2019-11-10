@@ -5,6 +5,7 @@ import org.testng.annotations.Test;
 
 import java.util.concurrent.TimeUnit;
 
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
 public class TestDecayCounter
@@ -33,5 +34,19 @@ public class TestDecayCounter
 
         double expected = 2 + 1 / Math.E;
         assertTrue(Math.abs(counter.getCount() - expected) < 1e-9);
+    }
+
+    @Test
+    public void testDuplicate()
+    {
+        TestingTicker ticker = new TestingTicker();
+
+        DecayCounter counter = new DecayCounter(ExponentialDecay.oneMinute(), ticker);
+        counter.add(1);
+        ticker.increment(1, TimeUnit.MINUTES);
+
+        DecayCounter copy = counter.duplicate();
+        assertEquals(copy.getCount(), counter.getCount());
+        assertEquals(copy.getAlpha(), counter.getAlpha());
     }
 }

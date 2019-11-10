@@ -38,9 +38,20 @@ public class DecayCounter
 
     public DecayCounter(double alpha, Ticker ticker)
     {
+        this(0, alpha, ticker, TimeUnit.NANOSECONDS.toSeconds(ticker.read()));
+    }
+
+    private DecayCounter(double count, double alpha, Ticker ticker, long landmarkInSeconds)
+    {
+        this.count = count;
         this.alpha = alpha;
         this.ticker = ticker;
-        landmarkInSeconds = getTickInSeconds();
+        this.landmarkInSeconds = landmarkInSeconds;
+    }
+
+    public DecayCounter duplicate()
+    {
+        return new DecayCounter(count, alpha, ticker, landmarkInSeconds);
     }
 
     public synchronized void add(long value)
