@@ -27,7 +27,11 @@ openssl pkcs8 -topk8 -inform pem -outform pem -passout pass:airlift -in rsa.clie
 openssl pkcs8 -topk8 -inform pem -outform pem -passout pass:airlift -in dsa.client.pkcs8.key -out dsa.client.pkcs8.key.encrypted
 openssl pkcs8 -topk8 -inform pem -outform pem -passout pass:airlift -in ec.client.pkcs8.key -out ec.client.pkcs8.key.encrypted
 
-# extract public key from private key
+# extract PKCS1 public key from private key
+# RSA seems to be the only supported format for PKCS1 public keys
+openssl rsa -pubout -inform pem -in rsa.client.pkcs8.key -RSAPublicKey_out -out rsa.client.pkcs1.pub
+
+# extract PKCS8 public key from private key
 openssl rsa -pubout -inform pem -outform pem -in rsa.client.pkcs8.key -out rsa.client.pkcs8.pub
 openssl dsa -pubout -inform pem -outform pem -in dsa.client.pkcs8.key -out dsa.client.pkcs8.pub
 openssl ec -pubout -inform pem -outform pem -in ec.client.pkcs8.key -out ec.client.pkcs8.pub

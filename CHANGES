@@ -1,3 +1,7 @@
+0.187
+
+- Add support for PEM encoded public keys in PKCS #1 format.
+
 0.186
 
 - Allow setting config values from environment variables.

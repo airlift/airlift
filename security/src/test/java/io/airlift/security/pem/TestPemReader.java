@@ -36,14 +36,17 @@ import java.util.regex.Matcher;
 import static com.google.common.collect.Iterables.getOnlyElement;
 import static com.google.common.io.Files.asCharSource;
 import static io.airlift.security.pem.PemReader.PRIVATE_KEY_PATTERN;
+import static io.airlift.security.pem.PemReader.PUBLIC_KEY_PATTERN;
 import static io.airlift.security.pem.PemReader.dsaPkcs1ToPkcs8;
 import static io.airlift.security.pem.PemReader.ecPkcs1ToPkcs8;
+import static io.airlift.security.pem.PemReader.isPem;
 import static io.airlift.security.pem.PemReader.loadKeyStore;
 import static io.airlift.security.pem.PemReader.loadPrivateKey;
 import static io.airlift.security.pem.PemReader.loadPublicKey;
 import static io.airlift.security.pem.PemReader.loadTrustStore;
 import static io.airlift.security.pem.PemReader.readCertificateChain;
 import static io.airlift.security.pem.PemReader.rsaPkcs1ToPkcs8;
+import static io.airlift.security.pem.PemReader.rsaPublicKeyPkcs1ToPkcs8;
 import static io.airlift.security.pem.PemWriter.writeCertificate;
 import static io.airlift.security.pem.PemWriter.writePrivateKey;
 import static io.airlift.security.pem.PemWriter.writePublicKey;
@@ -114,6 +117,7 @@ public class TestPemReader
             throws Exception
     {
         testLoadPublicKey("rsa.client.crt", "rsa.client.pkcs8.pub");
+        testLoadPublicKey("rsa.client.crt", "rsa.client.pkcs1.pub");
         testLoadPublicKey("ec.client.crt", "ec.client.pkcs8.pub");
         testLoadPublicKey("dsa.client.crt", "dsa.client.pkcs8.pub");
     }
@@ -121,13 +125,24 @@ public class TestPemReader
     private static void testLoadPublicKey(String certFile, String keyFile)
             throws Exception
     {
-        PublicKey publicKey = loadPublicKey(getResourceFile(keyFile));
+        File file = getResourceFile(keyFile);
+        assertTrue(isPem(file));
+        PublicKey publicKey = loadPublicKey(file);
         assertNotNull(publicKey);
         X509Certificate certificate = getOnlyElement(readCertificateChain(getResourceFile(certFile)));
         assertEquals(publicKey, certificate.getPublicKey());
 
         String encodedPrivateKey = writePublicKey(publicKey);
         assertEquals(publicKey, loadPublicKey(encodedPrivateKey));
+    }
+
+    @Test
+    public void testRsaPublicKeyPkcs1ToPkcs8()
+            throws Exception
+    {
+        byte[] pkcs8 = loadPublicKeyData("rsa.client.pkcs8.pub");
+        byte[] pkcs1 = loadPublicKeyData("rsa.client.pkcs1.pub");
+        assertEquals(rsaPublicKeyPkcs1ToPkcs8(pkcs1), pkcs8);
     }
 
     @Test
@@ -184,8 +199,24 @@ public class TestPemReader
     private static byte[] loadPrivateKeyData(String keyFile)
             throws IOException, KeyStoreException
     {
-        String privateKey = asCharSource(getResourceFile(keyFile), US_ASCII).read();
+        File file = getResourceFile(keyFile);
+        assertTrue(isPem(file));
+        String privateKey = asCharSource(file, US_ASCII).read();
         Matcher matcher = PRIVATE_KEY_PATTERN.matcher(privateKey);
+        if (!matcher.find()) {
+            throw new KeyStoreException("did not find a private key");
+        }
+        byte[] data = PemReader.base64Decode(matcher.group(2));
+        return data;
+    }
+
+    private static byte[] loadPublicKeyData(String keyFile)
+            throws IOException, KeyStoreException
+    {
+        File file = getResourceFile(keyFile);
+        assertTrue(isPem(file));
+        String privateKey = asCharSource(file, US_ASCII).read();
+        Matcher matcher = PUBLIC_KEY_PATTERN.matcher(privateKey);
         if (!matcher.find()) {
             throw new KeyStoreException("did not find a private key");
         }
