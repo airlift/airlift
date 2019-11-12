@@ -54,6 +54,7 @@ import java.util.regex.Pattern;
 import static com.google.common.io.Files.asCharSource;
 import static io.airlift.security.der.DerUtils.decodeSequence;
 import static io.airlift.security.der.DerUtils.decodeSequenceOptionalElement;
+import static io.airlift.security.der.DerUtils.encodeBitString;
 import static io.airlift.security.der.DerUtils.encodeOctetString;
 import static io.airlift.security.der.DerUtils.encodeOid;
 import static io.airlift.security.der.DerUtils.encodeSequence;
@@ -78,8 +79,8 @@ public final class PemReader
                     "-+END\\s+.*PRIVATE\\s+KEY[^-]*-+",                       // Footer
             CASE_INSENSITIVE);
 
-    private static final Pattern PUBLIC_KEY_PATTERN = Pattern.compile(
-            "-+BEGIN\\s+.*PUBLIC\\s+KEY[^-]*-+(?:\\s|\\r|\\n)+" + // Header
+    static final Pattern PUBLIC_KEY_PATTERN = Pattern.compile(
+            "-+BEGIN\\s+(?:(.*)\\s+)?PUBLIC\\s+KEY[^-]*-+(?:\\s|\\r|\\n)+" + // Header
                     "([a-z0-9+/=\\r\\n]+)" +                      // Base64 text
                     "-+END\\s+.*PUBLIC\\s+KEY[^-]*-+",            // Footer
             CASE_INSENSITIVE);
@@ -104,9 +105,24 @@ public final class PemReader
 
     public static boolean isPem(String data)
     {
-        return CERT_PATTERN.matcher(data).find() ||
-                PUBLIC_KEY_PATTERN.matcher(data).find() ||
-                PRIVATE_KEY_PATTERN.matcher(data).find();
+        return isPemCertificate(data) ||
+                isPemPublicKey(data) ||
+                isPemPrivateKey(data);
+    }
+
+    private static boolean isPemPrivateKey(String data)
+    {
+        return PRIVATE_KEY_PATTERN.matcher(data).find();
+    }
+
+    private static boolean isPemPublicKey(String data)
+    {
+        return PUBLIC_KEY_PATTERN.matcher(data).find();
+    }
+
+    private static boolean isPemCertificate(String data)
+    {
+        return CERT_PATTERN.matcher(data).find();
     }
 
     public static KeyStore loadTrustStore(File certificateChainFile)
@@ -254,15 +270,21 @@ public final class PemReader
                 pkcs8Key = ecPkcs1ToPkcs8(pkcs1Key);
                 break;
             default:
-                throw new InvalidKeySpecException("Key type must be one of " + SUPPORTED_KEY_TYPES);
+                throw new InvalidKeySpecException(pkcs1KeyType + " private key in PKCS 1 format is not supported");
         }
         try {
             KeyFactory keyFactory = KeyFactory.getInstance(pkcs1KeyType);
             return keyFactory.generatePrivate(new PKCS8EncodedKeySpec(pkcs8Key));
         }
         catch (InvalidKeySpecException e) {
-            throw new InvalidKeySpecException(format("Invalid PKCS 1 %s private key", pkcs1KeyType), e);
+            throw new InvalidKeySpecException(format("Invalid %s private key in PKCS 1 format", pkcs1KeyType), e);
         }
+    }
+
+    static byte[] rsaPublicKeyPkcs1ToPkcs8(byte[] pkcs1)
+    {
+        byte[] keyIdentifier = encodeSequence(RSA_KEY_OID, DER_NULL);
+        return encodeSequence(keyIdentifier, encodeBitString(0, pkcs1));
     }
 
     static byte[] rsaPkcs1ToPkcs8(byte[] pkcs1)
@@ -308,20 +330,34 @@ public final class PemReader
         if (!matcher.find()) {
             throw new KeyStoreException("did not find a public key");
         }
-        String data = matcher.group(1);
-        byte[] encodedKey = base64Decode(data);
+        String keyType = matcher.group(1);
+        String base64Key = matcher.group(2);
+        byte[] encodedKey = base64Decode(base64Key);
 
-        X509EncodedKeySpec encodedKeySpec = new X509EncodedKeySpec(encodedKey);
-
-        for (String algorithm : SUPPORTED_KEY_TYPES) {
-            try {
-                KeyFactory keyFactory = KeyFactory.getInstance(algorithm);
-                return keyFactory.generatePublic(encodedKeySpec);
+        if (keyType == null) {
+            X509EncodedKeySpec encodedKeySpec = new X509EncodedKeySpec(encodedKey);
+            for (String algorithm : SUPPORTED_KEY_TYPES) {
+                try {
+                    KeyFactory keyFactory = KeyFactory.getInstance(algorithm);
+                    return keyFactory.generatePublic(encodedKeySpec);
+                }
+                catch (InvalidKeySpecException ignore) {
+                }
             }
-            catch (InvalidKeySpecException ignore) {
-            }
+            throw new InvalidKeySpecException("Key type must be one of " + SUPPORTED_KEY_TYPES);
         }
-        throw new InvalidKeySpecException("Key type must be one of " + SUPPORTED_KEY_TYPES);
+
+        if (!"RSA".equals(keyType)) {
+            throw new InvalidKeySpecException(format("%s public key in PKCS 1 format is not supported", keyType));
+        }
+        try {
+            byte[] pkcs8Key = rsaPublicKeyPkcs1ToPkcs8(encodedKey);
+            KeyFactory keyFactory = KeyFactory.getInstance(keyType);
+            return keyFactory.generatePublic(new X509EncodedKeySpec(pkcs8Key));
+        }
+        catch (InvalidKeySpecException e) {
+            throw new InvalidKeySpecException(format("Invalid %s private key in PKCS 1 format", keyType), e);
+        }
     }
 
     private static boolean matches(PrivateKey privateKey, Certificate certificate)
