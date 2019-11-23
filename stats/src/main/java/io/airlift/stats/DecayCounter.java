@@ -130,7 +130,7 @@ public class DecayCounter
         return TimeUnit.NANOSECONDS.toSeconds(ticker.read());
     }
 
-    public DecayCounterSnapshot snapshot()
+    public synchronized DecayCounterSnapshot snapshot()
     {
         return new DecayCounterSnapshot(getCount(), getRate());
     }
