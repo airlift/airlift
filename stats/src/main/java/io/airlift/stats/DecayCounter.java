@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Ticker;
 import org.weakref.jmx.Managed;
 
+import javax.annotation.concurrent.ThreadSafe;
+
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
@@ -20,7 +22,8 @@ import static java.util.Objects.requireNonNull;
  * http://dimacs.rutgers.edu/~graham/pubs/papers/fwddecay.pdf
  * to not have to rely on a timer that decays the value periodically
  */
-public class DecayCounter
+@ThreadSafe
+public final class DecayCounter
 {
     // needs to be such that Math.exp(alpha * seconds) does not grow too big
     static final long RESCALE_THRESHOLD_SECONDS = 50;
