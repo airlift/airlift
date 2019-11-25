@@ -249,16 +249,14 @@ final class DenseHll
         }
 
         if (delta > MAX_DELTA) {
-            int overflow = delta - MAX_DELTA;
+            byte overflow = (byte) (delta - MAX_DELTA);
 
-            if (!setOverflow(bucket, overflow)) {
-                // grow overflows arrays if necessary
-                overflowBuckets = Ints.ensureCapacity(overflowBuckets, overflows + 1, OVERFLOW_GROW_INCREMENT);
-                overflowValues = Bytes.ensureCapacity(overflowValues, overflows + 1, OVERFLOW_GROW_INCREMENT);
-
-                overflowBuckets[overflows] = bucket;
-                overflowValues[overflows] = (byte) overflow;
-                overflows++;
+            int overflowEntry = findOverflowEntry(bucket);
+            if (overflowEntry != -1) {
+                setOverflow(overflowEntry, overflow);
+            }
+            else {
+                addOverflow(bucket, overflow);
             }
 
             delta = MAX_DELTA;
@@ -272,6 +270,16 @@ final class DenseHll
         }
     }
 
+    private int findOverflowEntry(int bucket)
+    {
+        for (int i = 0; i < overflows; i++) {
+            if (overflowBuckets[i] == bucket) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     private int getOverflow(int bucket)
     {
         for (int i = 0; i < overflows; i++) {
@@ -280,20 +288,6 @@ final class DenseHll
             }
         }
         return 0;
-    }
-
-    /**
-     * Returns false if not overflow bucket matching the given bucket id was found
-     */
-    private boolean setOverflow(int bucket, int overflow)
-    {
-        for (int i = 0; i < overflows; i++) {
-            if (overflowBuckets[i] == bucket) {
-                overflowValues[i] = (byte) overflow;
-                return true;
-            }
-        }
-        return false;
     }
 
     public Slice serialize()
@@ -448,48 +442,104 @@ final class DenseHll
                     numberOfBuckets(other.indexBitLength)));
         }
 
-        int baseline = Math.max(this.baseline, other.baseline);
+        int newBaseline = Math.max(this.baseline, other.baseline);
         int baselineCount = 0;
 
-        int overflows = 0;
-        int[] overflowBuckets = new int[OVERFLOW_GROW_INCREMENT];
-        byte[] overflowValues = new byte[OVERFLOW_GROW_INCREMENT];
+        int bucket = 0;
+        for (int i = 0; i < deltas.length; i++) {
+            int newSlot = 0;
 
-        int numberOfBuckets = numberOfBuckets(indexBitLength);
-        for (int i = 0; i < numberOfBuckets; i++) {
-            int value = Math.max(getValue(i), other.getValue(i));
+            byte slot1 = deltas[i];
+            byte slot2 = other.deltas[i];
 
-            int delta = value - baseline;
-            if (delta == 0) {
-                baselineCount++;
+            for (int shift = 4; shift >= 0; shift -= 4) {
+                int delta1 = (slot1 >>> shift) & 0b1111;
+                int delta2 = (slot2 >>> shift) & 0b1111;
+
+                int value1 = this.baseline + delta1;
+                int value2 = other.baseline + delta2;
+
+                int overflowEntry = -1;
+                if (delta1 == MAX_DELTA) {
+                    overflowEntry = findOverflowEntry(bucket);
+                    if (overflowEntry != -1) {
+                        value1 += overflowValues[overflowEntry];
+                    }
+                }
+
+                if (delta2 == MAX_DELTA) {
+                    value2 += other.getOverflow(bucket);
+                }
+
+                int newValue = Math.max(value1, value2);
+                int newDelta = newValue - newBaseline;
+
+                if (newDelta == 0) {
+                    baselineCount++;
+                }
+
+                newDelta = updateOverflow(bucket, overflowEntry, newDelta);
+
+                newSlot <<= 4;
+                newSlot |= newDelta;
+                bucket++;
             }
-            else if (delta > MAX_DELTA) {
-                // grow overflows arrays if necessary
-                overflowBuckets = Ints.ensureCapacity(overflowBuckets, overflows + 1, OVERFLOW_GROW_INCREMENT);
-                overflowValues = Bytes.ensureCapacity(overflowValues, overflows + 1, OVERFLOW_GROW_INCREMENT);
 
-                overflowBuckets[overflows] = i;
-                overflowValues[overflows] = (byte) (delta - MAX_DELTA);
-
-                overflows++;
-
-                delta = MAX_DELTA;
-            }
-
-            setDelta(i, delta);
+            this.deltas[i] = (byte) newSlot;
         }
 
-        this.baseline = (byte) baseline;
+        this.baseline = (byte) newBaseline;
         this.baselineCount = baselineCount;
-        this.overflows = overflows;
-        this.overflowBuckets = overflowBuckets;
-        this.overflowValues = overflowValues;
 
         // all baseline values in one of the HLLs lost to the values
         // in the other HLL, so we need to adjust the final baseline
         adjustBaselineIfNeeded();
 
         return this;
+    }
+
+    private int updateOverflow(int bucket, int overflowEntry, int delta)
+    {
+        if (delta > MAX_DELTA) {
+            if (overflowEntry != -1) {
+                // update existing overflow
+                setOverflow(overflowEntry, (byte) (delta - MAX_DELTA));
+            }
+            else {
+                addOverflow(bucket, (byte) (delta - MAX_DELTA));
+            }
+            delta = MAX_DELTA;
+        }
+        else if (overflowEntry != -1) {
+            removeOverflow(overflowEntry);
+        }
+
+        return delta;
+    }
+
+    private void setOverflow(int overflowEntry, byte overflow)
+    {
+        overflowValues[overflowEntry] = overflow;
+    }
+
+    private void removeOverflow(int overflowEntry)
+    {
+        // remove existing overflow
+        overflowBuckets[overflowEntry] = overflowBuckets[overflows - 1];
+        overflowValues[overflowEntry] = overflowValues[overflows - 1];
+        overflows--;
+    }
+
+    private void addOverflow(int bucket, byte overflow)
+    {
+        // add new delta
+        overflowBuckets = Ints.ensureCapacity(overflowBuckets, overflows + 1, OVERFLOW_GROW_INCREMENT);
+        overflowValues = Bytes.ensureCapacity(overflowValues, overflows + 1, OVERFLOW_GROW_INCREMENT);
+
+        overflowBuckets[overflows] = bucket;
+        overflowValues[overflows] = overflow;
+
+        overflows++;
     }
 
     public static int estimatedInMemorySize(int indexBitLength)
