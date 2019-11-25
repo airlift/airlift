@@ -14,9 +14,11 @@
 package io.airlift.stats.cardinality;
 
 import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Measurement;
+import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
@@ -32,14 +34,18 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 @State(Scope.Thread)
-@OutputTimeUnit(TimeUnit.SECONDS)
+@OutputTimeUnit(TimeUnit.MICROSECONDS)
+@BenchmarkMode(Mode.AverageTime)
 @Fork(5)
 @Warmup(iterations = 5, time = 500, timeUnit = TimeUnit.MILLISECONDS)
 @Measurement(iterations = 10, time = 500, timeUnit = TimeUnit.MILLISECONDS)
 public class BenchmarkDenseHll
 {
+    private static final int LARGE_CARDINALITY = 1_000_000;
+    private static final int SMALL_CARDINALITY = 100;
+
     @Benchmark
-    public DenseHll benchmarkInsert(Data data)
+    public DenseHll benchmarkInsert(InsertData data)
     {
         for (long hash : data.hashes) {
             data.instance.insertHash(hash);
@@ -48,8 +54,14 @@ public class BenchmarkDenseHll
         return data.instance;
     }
 
+    @Benchmark
+    public DenseHll benchmarkMerge(MergeData data)
+    {
+        return data.base.mergeWith(data.toMerge);
+    }
+
     @State(Scope.Thread)
-    public static class Data
+    public static class InsertData
     {
         public final DenseHll instance = new DenseHll(11);
         public final long[] hashes = new long[500];
@@ -59,6 +71,30 @@ public class BenchmarkDenseHll
         {
             for (int i = 0; i < hashes.length; i++) {
                 hashes[i] = ThreadLocalRandom.current().nextLong();
+            }
+        }
+    }
+
+    @State(Scope.Thread)
+    public static class MergeData
+    {
+        public DenseHll base;
+        public DenseHll toMerge;
+
+        @Setup(Level.Iteration)
+        public void initialize()
+        {
+            base = new DenseHll(12);
+            for (int i = 0; i < LARGE_CARDINALITY; i++) {
+                base.insertHash(ThreadLocalRandom.current().nextLong());
+            }
+
+            // Small cardinality so we can do an apples-to-apples comparison
+            // between dense/dense vs dense/sparse merge. Sparse only supports
+            // small cardinalities.
+            toMerge = new DenseHll(12);
+            for (int i = 0; i < SMALL_CARDINALITY; i++) {
+                toMerge.insertHash(ThreadLocalRandom.current().nextLong());
             }
         }
     }
