@@ -22,12 +22,22 @@ import io.airlift.stats.DecayCounter.DecayCounterSnapshot;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
 
+import javax.annotation.concurrent.ThreadSafe;
+
 import java.util.concurrent.atomic.AtomicLong;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * Event statistics.
+ * <p>
+ * <em>Thread-safety:</em> instances of {@code CounterStat} are thread-safe. However,
+ * there is no consistency guarantee when using {@link #reset} or {@link #resetTo} concurrently
+ * with {@link #update} or {@link #merge}.
+ */
 @Beta
-public class CounterStat
+@ThreadSafe
+public final class CounterStat
 {
     private final AtomicLong count = new AtomicLong(0);
     private final DecayCounter oneMinute = new DecayCounter(ExponentialDecay.oneMinute());
@@ -51,6 +61,13 @@ public class CounterStat
         count.addAndGet(counterStat.getTotalCount());
     }
 
+    /**
+     * Resets counters.
+     * <p>
+     * Note: this method is guaranteed to obliterate effect of previous {@link #update} or {@link #merge}
+     * invocations. When it invoked concurrently with {@link #update} or {@link #merge}, the result is
+     * indeterminate.
+     */
     @Managed
     public void reset()
     {
