@@ -84,6 +84,9 @@ public class HyperLogLog
             ((SparseHll) instance).mergeWith((SparseHll) other.instance);
             instance = makeDenseIfNecessary((SparseHll) instance);
         }
+        else if (instance instanceof DenseHll && other.instance instanceof SparseHll) {
+            ((DenseHll) instance).mergeWith((SparseHll) other.instance);
+        }
         else {
             DenseHll dense = instance.toDense();
             dense.mergeWith(other.instance.toDense());

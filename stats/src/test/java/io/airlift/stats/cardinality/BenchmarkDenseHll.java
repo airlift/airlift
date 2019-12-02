@@ -55,7 +55,13 @@ public class BenchmarkDenseHll
     }
 
     @Benchmark
-    public DenseHll benchmarkMerge(MergeData data)
+    public DenseHll benchmarkMergeWithDense(MergeWithDenseData data)
+    {
+        return data.base.mergeWith(data.toMerge);
+    }
+
+    @Benchmark
+    public DenseHll benchmarkMergeWithSparse(MergeWithSparseData data)
     {
         return data.base.mergeWith(data.toMerge);
     }
@@ -63,7 +69,7 @@ public class BenchmarkDenseHll
     @State(Scope.Thread)
     public static class InsertData
     {
-        public final DenseHll instance = new DenseHll(11);
+        public final DenseHll instance = new DenseHll(12);
         public final long[] hashes = new long[500];
 
         @Setup(Level.Iteration)
@@ -76,7 +82,7 @@ public class BenchmarkDenseHll
     }
 
     @State(Scope.Thread)
-    public static class MergeData
+    public static class MergeWithDenseData
     {
         public DenseHll base;
         public DenseHll toMerge;
@@ -93,6 +99,27 @@ public class BenchmarkDenseHll
             // between dense/dense vs dense/sparse merge. Sparse only supports
             // small cardinalities.
             toMerge = new DenseHll(12);
+            for (int i = 0; i < SMALL_CARDINALITY; i++) {
+                toMerge.insertHash(ThreadLocalRandom.current().nextLong());
+            }
+        }
+    }
+
+    @State(Scope.Thread)
+    public static class MergeWithSparseData
+    {
+        public DenseHll base;
+        public SparseHll toMerge;
+
+        @Setup(Level.Iteration)
+        public void initialize()
+        {
+            base = new DenseHll(12);
+            for (int i = 0; i < LARGE_CARDINALITY; i++) {
+                base.insertHash(ThreadLocalRandom.current().nextLong());
+            }
+
+            toMerge = new SparseHll(12);
             for (int i = 0; i < SMALL_CARDINALITY; i++) {
                 toMerge.insertHash(ThreadLocalRandom.current().nextLong());
             }

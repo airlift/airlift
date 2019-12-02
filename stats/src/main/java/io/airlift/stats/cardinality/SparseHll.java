@@ -151,7 +151,12 @@ final class SparseHll
     public DenseHll toDense()
     {
         DenseHll result = new DenseHll(indexBitLength);
+        eachBucket(result::insert);
+        return result;
+    }
 
+    public void eachBucket(BucketListener listener)
+    {
         for (int i = 0; i < numberOfEntries; i++) {
             int entry = entries[i];
 
@@ -170,10 +175,8 @@ final class SparseHll
                 zeros = bits + decodeBucketValue(entry);
             }
 
-            result.insert(bucket, zeros + 1); // + 1 because HLL stores leading number of zeros + 1
+            listener.visit(bucket, zeros + 1);
         }
-
-        return result;
     }
 
     @Override

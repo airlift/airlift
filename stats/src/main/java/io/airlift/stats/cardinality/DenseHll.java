@@ -478,6 +478,23 @@ final class DenseHll
         return this;
     }
 
+    /**
+     * Returns "this" for chaining
+     */
+    public DenseHll mergeWith(SparseHll other)
+    {
+        if (indexBitLength != other.getIndexBitLength()) {
+            throw new IllegalArgumentException(String.format(
+                    "Cannot merge HLLs with different number of buckets: %s vs %s",
+                    numberOfBuckets(indexBitLength),
+                    numberOfBuckets(other.getIndexBitLength())));
+        }
+
+        other.eachBucket(this::insert);
+
+        return this;
+    }
+
     private int findOverflowEntry(int bucket)
     {
         for (int i = 0; i < overflows; i++) {
