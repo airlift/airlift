@@ -270,26 +270,6 @@ final class DenseHll
         }
     }
 
-    private int findOverflowEntry(int bucket)
-    {
-        for (int i = 0; i < overflows; i++) {
-            if (overflowBuckets[i] == bucket) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    private int getOverflow(int bucket)
-    {
-        for (int i = 0; i < overflows; i++) {
-            if (overflowBuckets[i] == bucket) {
-                return overflowValues[i];
-            }
-        }
-        return 0;
-    }
-
     public Slice serialize()
     {
         int size = estimatedSerializedSize();
@@ -496,6 +476,26 @@ final class DenseHll
         adjustBaselineIfNeeded();
 
         return this;
+    }
+
+    private int findOverflowEntry(int bucket)
+    {
+        for (int i = 0; i < overflows; i++) {
+            if (overflowBuckets[i] == bucket) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private int getOverflow(int bucket)
+    {
+        for (int i = 0; i < overflows; i++) {
+            if (overflowBuckets[i] == bucket) {
+                return overflowValues[i];
+            }
+        }
+        return 0;
     }
 
     private int updateOverflow(int bucket, int overflowEntry, int delta)
