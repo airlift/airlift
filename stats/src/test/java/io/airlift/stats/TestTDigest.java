@@ -219,6 +219,19 @@ public class TestTDigest
     }
 
     @Test
+    public void testCopyEmpty()
+    {
+        TDigest digest = new TDigest();
+        TDigest copy = TDigest.copyOf(digest);
+        assertSimilar(copy, digest);
+
+        // ensure the internal arrays are initialized properly
+        copy.add(10);
+        assertEquals(copy.getCount(), 1.0);
+        assertEquals(copy.valueAt(0.5), 10.0);
+    }
+
+    @Test
     public void testMerge()
     {
         TDigest first = new TDigest();
