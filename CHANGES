@@ -1,6 +1,12 @@
 0.187
 
+- Fix thread safety for snapshot() in DecayCounter.
+- Require keystore configuration for HTTP server when HTTPS is enabled.
+- Limit total size of HTTP request log.
+- Improve HLL merge performance.
 - Add support for PEM encoded public keys in PKCS #1 format.
+- Add method for duplicating a Distribution object.
+- Add TestingClock.
 
 0.186
 
