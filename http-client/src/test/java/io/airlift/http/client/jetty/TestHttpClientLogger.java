@@ -540,6 +540,12 @@ public class TestHttpClientLogger
         }
 
         @Override
+        public Request onResponseContentDemanded(Response.DemandedContentListener listener)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public Request onResponseSuccess(Response.SuccessListener listener)
         {
             throw new UnsupportedOperationException();

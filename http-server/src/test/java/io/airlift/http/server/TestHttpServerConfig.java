@@ -194,9 +194,9 @@ public class TestHttpServerConfig
                 AssertTrue.class);
     }
 
-    private List<String> getJettyDefaultExcludedCiphers()
+    private static List<String> getJettyDefaultExcludedCiphers()
     {
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         return Arrays.asList(sslContextFactory.getExcludeCipherSuites());
     }
 }

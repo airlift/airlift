@@ -212,7 +212,7 @@ public class HttpServer
             HttpConfiguration httpsConfiguration = new HttpConfiguration(baseHttpConfiguration);
             httpsConfiguration.addCustomizer(new SecureRequestCustomizer());
 
-            SslContextFactory sslContextFactory = new SslContextFactory();
+            SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
             Optional<KeyStore> pemKeyStore = tryLoadPemKeyStore(config);
             if (pemKeyStore.isPresent()) {
                 sslContextFactory.setKeyStore(pemKeyStore.get());
@@ -286,7 +286,7 @@ public class HttpServer
             if (config.isHttpsEnabled()) {
                 adminConfiguration.addCustomizer(new SecureRequestCustomizer());
 
-                SslContextFactory sslContextFactory = new SslContextFactory();
+                SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
                 sslContextFactory.setKeyStorePath(config.getKeystorePath());
                 sslContextFactory.setKeyStorePassword(config.getKeystorePassword());
                 if (config.getKeyManagerPassword() != null) {
