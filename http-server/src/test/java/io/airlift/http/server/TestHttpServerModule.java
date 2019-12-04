@@ -22,14 +22,17 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 import com.google.common.net.MediaType;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Scopes;
 import io.airlift.configuration.ConfigurationFactory;
 import io.airlift.configuration.ConfigurationModule;
+import io.airlift.event.client.AbstractEventClient;
+import io.airlift.event.client.EventClient;
 import io.airlift.event.client.EventModule;
-import io.airlift.event.client.InMemoryEventClient;
 import io.airlift.event.client.InMemoryEventModule;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.HttpStatus;
@@ -56,10 +59,11 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
@@ -67,6 +71,7 @@ import static com.google.common.net.HttpHeaders.LOCATION;
 import static com.google.common.net.HttpHeaders.REFERER;
 import static com.google.common.net.HttpHeaders.USER_AGENT;
 import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
+import static com.google.common.util.concurrent.Futures.nonCancellationPropagating;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
 import static io.airlift.http.client.Request.Builder.prepareGet;
@@ -257,16 +262,18 @@ public class TestHttpServerModule
                 .put("http-server.log.path", new File(tempDir, "http-request.log").getAbsolutePath())
                 .build();
 
+        SingleUseEventClient eventClient = new SingleUseEventClient();
+
         ConfigurationFactory configFactory = new ConfigurationFactory(properties);
         Injector injector = Guice.createInjector(new HttpServerModule(),
                 new TestingNodeModule(),
                 new ConfigurationModule(configFactory),
                 new InMemoryEventModule(),
                 new TraceTokenModule(),
+                binder -> newSetBinder(binder, EventClient.class).addBinding().toInstance(eventClient),
                 binder -> binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(EchoServlet.class).in(Scopes.SINGLETON));
 
         HttpServerInfo httpServerInfo = injector.getInstance(HttpServerInfo.class);
-        InMemoryEventClient eventClient = injector.getInstance(InMemoryEventClient.class);
         EchoServlet echoServlet = (EchoServlet) injector.getInstance(Key.get(Servlet.class, TheServlet.class));
 
         HttpServer server = injector.getInstance(HttpServer.class);
@@ -311,9 +318,7 @@ public class TestHttpServerModule
             server.stop();
         }
 
-        List<Object> events = eventClient.getEvents();
-        assertEquals(events.size(), 1);
-        HttpRequestEvent event = (HttpRequestEvent) events.get(0);
+        HttpRequestEvent event = (HttpRequestEvent) eventClient.getEvent().get(10, TimeUnit.SECONDS);
 
         assertEquals(event.getClientAddress(), echoServlet.remoteAddress);
         assertEquals(event.getProtocol(), "http");
@@ -362,6 +367,24 @@ public class TestHttpServerModule
             if (responseBody != null) {
                 response.getOutputStream().write(responseBody.getBytes(UTF_8));
             }
+        }
+    }
+
+    private static class SingleUseEventClient
+            extends AbstractEventClient
+    {
+        private final SettableFuture<Object> future = SettableFuture.create();
+
+        @Override
+        protected synchronized <T> void postEvent(T event)
+        {
+            checkState(!future.isDone(), "event already posted");
+            future.set(event);
+        }
+
+        public ListenableFuture<Object> getEvent()
+        {
+            return nonCancellationPropagating(future);
         }
     }
 }
