@@ -42,7 +42,6 @@ public final class EchoServlet
     private byte[] requestBytes;
 
     private int responseStatusCode = 200;
-    private String responseStatusMessage;
     private final ListMultimap<String, String> responseHeaders = ArrayListMultimap.create();
     private String responseBody;
 
@@ -63,12 +62,8 @@ public final class EchoServlet
 
         requestBytes = ByteStreams.toByteArray(request.getInputStream());
 
-        if (responseStatusMessage != null) {
-            response.sendError(responseStatusCode, responseStatusMessage);
-        }
-        else {
-            response.setStatus(responseStatusCode);
-        }
+        response.setStatus(responseStatusCode);
+
         for (Map.Entry<String, String> entry : responseHeaders.entries()) {
             response.addHeader(entry.getKey(), entry.getValue());
         }
@@ -124,11 +119,6 @@ public final class EchoServlet
     public void setResponseStatusCode(int responseStatusCode)
     {
         this.responseStatusCode = responseStatusCode;
-    }
-
-    public void setResponseStatusMessage(String responseStatusMessage)
-    {
-        this.responseStatusMessage = responseStatusMessage;
     }
 
     public void addResponseHeader(String name, String value)

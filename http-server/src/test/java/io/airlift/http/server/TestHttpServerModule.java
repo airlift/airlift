@@ -207,7 +207,6 @@ public class TestHttpServerModule
             response = client.execute(prepareGet().setUri(httpUri.resolve("/filter")).build(), createStatusResponseHandler());
 
             assertEquals(response.getStatusCode(), HttpServletResponse.SC_PAYMENT_REQUIRED);
-            assertEquals(response.getStatusMessage(), "filtered");
 
             // test http resources
             assertResource(httpUri, client, "", "welcome user!");

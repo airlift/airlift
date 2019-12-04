@@ -44,7 +44,7 @@ class DummyFilter
 
         String requestURI = request.getRequestURI();
         if ("/filter".equals(requestURI)) {
-            response.sendError(HttpServletResponse.SC_PAYMENT_REQUIRED, "filtered");
+            response.sendError(HttpServletResponse.SC_PAYMENT_REQUIRED);
             return;
         }
         chain.doFilter(request, response);

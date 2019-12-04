@@ -29,8 +29,6 @@ public interface Response
 {
     int getStatusCode();
 
-    String getStatusMessage();
-
     @Nullable
     default String getHeader(String name)
     {

@@ -68,7 +68,7 @@ public class JsonResponseHandler<T>
     {
         if (!successfulResponseCodes.contains(response.getStatusCode())) {
             throw new UnexpectedResponseException(
-                    String.format("Expected response code to be %s, but was %d: %s", successfulResponseCodes, response.getStatusCode(), response.getStatusMessage()),
+                    String.format("Expected response code to be %s, but was %d", successfulResponseCodes, response.getStatusCode()),
                     request,
                     response);
         }

@@ -64,9 +64,9 @@ public class FullJsonResponseHandler<T>
         byte[] bytes = readResponseBytes(response);
         String contentType = response.getHeader(CONTENT_TYPE);
         if ((contentType == null) || !MediaType.parse(contentType).is(MEDIA_TYPE_JSON)) {
-            return new JsonResponse<>(response.getStatusCode(), response.getStatusMessage(), response.getHeaders(), bytes);
+            return new JsonResponse<>(response.getStatusCode(), response.getHeaders(), bytes);
         }
-        return new JsonResponse<>(response.getStatusCode(), response.getStatusMessage(), response.getHeaders(), jsonCodec, bytes);
+        return new JsonResponse<>(response.getStatusCode(), response.getHeaders(), jsonCodec, bytes);
     }
 
     private static byte[] readResponseBytes(Response response)
@@ -82,7 +82,6 @@ public class FullJsonResponseHandler<T>
     public static class JsonResponse<T>
     {
         private final int statusCode;
-        private final String statusMessage;
         private final ListMultimap<HeaderName, String> headers;
         private final boolean hasValue;
         private final byte[] jsonBytes;
@@ -90,10 +89,9 @@ public class FullJsonResponseHandler<T>
         private final T value;
         private final IllegalArgumentException exception;
 
-        public JsonResponse(int statusCode, String statusMessage, ListMultimap<HeaderName, String> headers, byte[] responseBytes)
+        public JsonResponse(int statusCode, ListMultimap<HeaderName, String> headers, byte[] responseBytes)
         {
             this.statusCode = statusCode;
-            this.statusMessage = statusMessage;
             this.headers = ImmutableListMultimap.copyOf(headers);
 
             this.hasValue = false;
@@ -104,10 +102,9 @@ public class FullJsonResponseHandler<T>
         }
 
         @SuppressWarnings("ThrowableInstanceNeverThrown")
-        public JsonResponse(int statusCode, String statusMessage, ListMultimap<HeaderName, String> headers, JsonCodec<T> jsonCodec, byte[] jsonBytes)
+        public JsonResponse(int statusCode, ListMultimap<HeaderName, String> headers, JsonCodec<T> jsonCodec, byte[] jsonBytes)
         {
             this.statusCode = statusCode;
-            this.statusMessage = statusMessage;
             this.headers = ImmutableListMultimap.copyOf(headers);
 
             this.jsonBytes = requireNonNull(jsonBytes, "jsonBytes is null");
@@ -129,11 +126,6 @@ public class FullJsonResponseHandler<T>
         public int getStatusCode()
         {
             return statusCode;
-        }
-
-        public String getStatusMessage()
-        {
-            return statusMessage;
         }
 
         @Nullable
@@ -201,7 +193,6 @@ public class FullJsonResponseHandler<T>
         {
             return toStringHelper(this)
                     .add("statusCode", statusCode)
-                    .add("statusMessage", statusMessage)
                     .add("headers", headers)
                     .add("hasValue", hasValue)
                     .add("value", value)

@@ -1,3 +1,7 @@
+0.188
+
+- Remove status message support from HTTP client.
+
 0.187
 
 - Fix thread safety for snapshot() in DecayCounter.

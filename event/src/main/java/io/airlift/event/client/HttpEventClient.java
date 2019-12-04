@@ -169,14 +169,10 @@ public class HttpEventClient
             try {
                 InputStream inputStream = response.getInputStream();
                 String responseBody = CharStreams.toString(new InputStreamReader(inputStream));
-                log.debug("Posting event to %s failed: status_code=%d status_line=%s body=%s", request.getUri(), statusCode, response.getStatusMessage(), responseBody);
+                log.debug("Posting event to %s failed: status_code=%d body=%s", request.getUri(), statusCode, responseBody);
             }
             catch (IOException bodyError) {
-                log.debug("Posting event to %s failed: status_code=%d status_line=%s error=%s",
-                        request.getUri(),
-                        statusCode,
-                        response.getStatusMessage(),
-                        bodyError.getMessage());
+                log.debug("Posting event to %s failed: status_code=%d error=%s", request.getUri(), statusCode, bodyError.getMessage());
             }
             return null;
         }

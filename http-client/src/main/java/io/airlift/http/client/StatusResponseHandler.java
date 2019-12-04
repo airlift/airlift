@@ -48,30 +48,23 @@ public class StatusResponseHandler
     @Override
     public StatusResponse handle(Request request, Response response)
     {
-        return new StatusResponse(response.getStatusCode(), response.getStatusMessage(), response.getHeaders());
+        return new StatusResponse(response.getStatusCode(), response.getHeaders());
     }
 
     public static class StatusResponse
     {
         private final int statusCode;
-        private final String statusMessage;
         private final ListMultimap<HeaderName, String> headers;
 
-        public StatusResponse(int statusCode, String statusMessage, ListMultimap<HeaderName, String> headers)
+        public StatusResponse(int statusCode, ListMultimap<HeaderName, String> headers)
         {
             this.statusCode = statusCode;
-            this.statusMessage = statusMessage;
             this.headers = ImmutableListMultimap.copyOf(headers);
         }
 
         public int getStatusCode()
         {
             return statusCode;
-        }
-
-        public String getStatusMessage()
-        {
-            return statusMessage;
         }
 
         @Nullable

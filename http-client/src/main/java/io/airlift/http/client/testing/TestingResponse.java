@@ -44,12 +44,6 @@ public class TestingResponse
     }
 
     @Override
-    public String getStatusMessage()
-    {
-        return status.reason();
-    }
-
-    @Override
     public ListMultimap<HeaderName, String> getHeaders()
     {
         return headers;
@@ -73,7 +67,6 @@ public class TestingResponse
     {
         return toStringHelper(this)
                 .add("statusCode", getStatusCode())
-                .add("statusMessage", getStatusMessage())
                 .add("headers", getHeaders())
                 .toString();
     }
