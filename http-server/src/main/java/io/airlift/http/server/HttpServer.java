@@ -16,6 +16,7 @@
 package io.airlift.http.server;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Ints;
@@ -71,7 +72,6 @@ import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -99,7 +99,6 @@ public class HttpServer
 
     private final Optional<ZonedDateTime> certificateExpiration;
 
-    @SuppressWarnings("deprecation")
     public HttpServer(HttpServerInfo httpServerInfo,
             NodeInfo nodeInfo,
             HttpServerConfig config,
@@ -434,7 +433,7 @@ public class HttpServer
 
         // TODO: support for other auth schemes (digest, etc)
         securityHandler.setAuthenticator(new BasicAuthenticator());
-        securityHandler.setConstraintMappings(Arrays.asList(constraintMapping));
+        securityHandler.setConstraintMappings(ImmutableList.of(constraintMapping));
         return securityHandler;
     }
 
