@@ -190,7 +190,7 @@ public class TDigest
 
         if (centroidCount == means.length) {
             if (means.length < maxSize) {
-                ensureCapacity(Math.min(means.length * 2, maxSize));
+                ensureCapacity(Math.min(Math.max(means.length * 2, INITIAL_CAPACITY), maxSize));
             }
             else {
                 merge(internalCompressionFactor(compression));
