@@ -31,15 +31,13 @@ public class UnexpectedResponseException
 {
     private final Request request;
     private final int statusCode;
-    private final String statusMessage;
     private final ListMultimap<HeaderName, String> headers;
 
     public UnexpectedResponseException(Request request, Response response)
     {
-        this(String.format("%d: %s", response.getStatusCode(), response.getStatusMessage()),
+        this("HTTP " + response.getStatusCode(),
                 request,
                 response.getStatusCode(),
-                response.getStatusMessage(),
                 ImmutableListMultimap.copyOf(response.getHeaders()));
     }
 
@@ -48,27 +46,20 @@ public class UnexpectedResponseException
         this(message,
                 request,
                 response.getStatusCode(),
-                response.getStatusMessage(),
                 ImmutableListMultimap.copyOf(response.getHeaders()));
     }
 
-    public UnexpectedResponseException(String message, Request request, int statusCode, String statusMessage, ListMultimap<HeaderName, String> headers)
+    public UnexpectedResponseException(String message, Request request, int statusCode, ListMultimap<HeaderName, String> headers)
     {
         super(message);
         this.request = request;
         this.statusCode = statusCode;
-        this.statusMessage = statusMessage;
         this.headers = ImmutableListMultimap.copyOf(headers);
     }
 
     public int getStatusCode()
     {
         return statusCode;
-    }
-
-    public String getStatusMessage()
-    {
-        return statusMessage;
     }
 
     @Nullable
@@ -94,7 +85,6 @@ public class UnexpectedResponseException
         return toStringHelper(this)
                 .add("request", request)
                 .add("statusCode", statusCode)
-                .add("statusMessage", statusMessage)
                 .add("headers", headers)
                 .toString();
     }

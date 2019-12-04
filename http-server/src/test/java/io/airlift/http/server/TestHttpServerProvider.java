@@ -281,7 +281,6 @@ public class TestHttpServerProvider
             StatusResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri().resolve("/filter")).build(), createStatusResponseHandler());
 
             assertEquals(response.getStatusCode(), HttpServletResponse.SC_PAYMENT_REQUIRED);
-            assertEquals(response.getStatusMessage(), "filtered");
         }
     }
 

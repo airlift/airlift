@@ -61,14 +61,12 @@ public class StringResponseHandler
                 MediaType mediaType = MediaType.parse(contentType);
                 return new StringResponse(
                         response.getStatusCode(),
-                        response.getStatusMessage(),
                         response.getHeaders(),
                         new String(ByteStreams.toByteArray(response.getInputStream()), mediaType.charset().or(UTF_8)));
             }
 
             return new StringResponse(
                     response.getStatusCode(),
-                    response.getStatusMessage(),
                     response.getHeaders(),
                     new String(ByteStreams.toByteArray(response.getInputStream()), UTF_8));
         }
@@ -80,14 +78,12 @@ public class StringResponseHandler
     public static class StringResponse
     {
         private final int statusCode;
-        private final String statusMessage;
         private final ListMultimap<HeaderName, String> headers;
         private final String body;
 
-        public StringResponse(int statusCode, String statusMessage, ListMultimap<HeaderName, String> headers, String body)
+        public StringResponse(int statusCode, ListMultimap<HeaderName, String> headers, String body)
         {
             this.statusCode = statusCode;
-            this.statusMessage = statusMessage;
             this.headers = ImmutableListMultimap.copyOf(headers);
             this.body = body;
         }
@@ -95,11 +91,6 @@ public class StringResponseHandler
         public int getStatusCode()
         {
             return statusCode;
-        }
-
-        public String getStatusMessage()
-        {
-            return statusMessage;
         }
 
         public String getBody()

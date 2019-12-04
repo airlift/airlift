@@ -32,12 +32,6 @@ class JettyResponse
     }
 
     @Override
-    public String getStatusMessage()
-    {
-        return response.getReason();
-    }
-
-    @Override
     public ListMultimap<HeaderName, String> getHeaders()
     {
         return headers;
@@ -60,7 +54,6 @@ class JettyResponse
     {
         return toStringHelper(this)
                 .add("statusCode", getStatusCode())
-                .add("statusMessage", getStatusMessage())
                 .add("headers", getHeaders())
                 .toString();
     }
