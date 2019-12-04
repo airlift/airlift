@@ -531,6 +531,14 @@ public class JettyHttpClient
             value = responseHandler.handle(request, jettyResponse);
         }
         finally {
+            if (jettyResponse != null) {
+                try {
+                    jettyResponse.getInputStream().close();
+                }
+                catch (IOException ignored) {
+                    // ignore errors closing the stream
+                }
+            }
             if (recordRequestComplete) {
                 recordRequestComplete(stats, request, requestStart, jettyResponse, responseStart);
             }
