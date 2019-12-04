@@ -361,6 +361,10 @@ public class TDigest
 
     private void merge(double compression)
     {
+        if (centroidCount == 0) {
+            return;
+        }
+
         initializeIndexes();
 
         DoubleArrays.quickSortIndirect(indexes, means, 0, centroidCount);
