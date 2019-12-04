@@ -142,6 +142,11 @@ public class TestTDigest
         TDigest deserialized = TDigest.deserialize(digest.serialize());
 
         assertSimilar(deserialized, digest);
+
+        // ensure the internal arrays are initialized properly
+        deserialized.add(10);
+        assertEquals(deserialized.getCount(), 1.0);
+        assertEquals(deserialized.valueAt(0.5), 10.0);
     }
 
     @Test
