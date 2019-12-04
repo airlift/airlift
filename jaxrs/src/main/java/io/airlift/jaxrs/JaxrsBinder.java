@@ -1,9 +1,15 @@
 package io.airlift.jaxrs;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Binder;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
+import org.glassfish.jersey.server.wadl.internal.WadlResource;
+import org.glassfish.jersey.server.wadl.processor.OptionsMethodProcessor;
+import org.glassfish.jersey.server.wadl.processor.WadlModelProcessor;
+
+import java.util.Collection;
 
 import static com.google.inject.Scopes.SINGLETON;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
@@ -46,5 +52,10 @@ public class JaxrsBinder
     public void bindInstance(Object instance)
     {
         resourceBinder.addBinding().toInstance(instance);
+    }
+
+    public static Collection<Class<?>> getBuiltinResources()
+    {
+        return ImmutableList.of(WadlResource.class, WadlModelProcessor.class, OptionsMethodProcessor.class);
     }
 }
