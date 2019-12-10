@@ -7,6 +7,7 @@ import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import ch.qos.logback.core.util.FileSize;
+import com.google.common.math.LongMath;
 import io.airlift.units.DataSize;
 
 import java.io.File;
@@ -47,6 +48,10 @@ final class RollingFileHandler
         rollingPolicy.setMaxHistory(maxHistory);
         rollingPolicy.setTimeBasedFileNamingAndTriggeringPolicy(triggeringPolicy);
         rollingPolicy.setParent(fileAppender);
+
+        // Limit total log files occupancy on disk. Ideally we would keep exactly
+        // `maxHistory` files (not logging periods). This is closest currently possible.
+        rollingPolicy.setTotalSizeCap(new FileSize(LongMath.saturatedMultiply(maxSizeInBytes, maxHistory)));
 
         triggeringPolicy.setContext(context);
         triggeringPolicy.setTimeBasedRollingPolicy(rollingPolicy);
