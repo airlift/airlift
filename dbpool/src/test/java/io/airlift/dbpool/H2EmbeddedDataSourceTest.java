@@ -18,7 +18,7 @@ package io.airlift.dbpool;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import io.airlift.dbpool.H2EmbeddedDataSourceConfig.Cipher;
-import org.h2.jdbc.JdbcSQLException;
+import org.h2.jdbc.JdbcSQLSyntaxErrorException;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -109,7 +109,7 @@ public class H2EmbeddedDataSourceTest
         }
     }
 
-    @Test(expectedExceptions = JdbcSQLException.class)
+    @Test(expectedExceptions = JdbcSQLSyntaxErrorException.class)
     public void testInitFromInvalidDdlThrows()
             throws Exception
     {

@@ -54,8 +54,7 @@ public class H2EmbeddedDataSource
 
         // build jdbc url connection string
         StringBuilder jdbcUrlBuilder = new StringBuilder()
-                .append("jdbc:h2:").append(config.getFilename())
-                .append(";MVCC=").append(config.isMvccEnabled());
+                .append("jdbc:h2:").append(config.getFilename());
 
         if (config.getCipher() != Cipher.NONE) {
             jdbcUrlBuilder.append(";CIPHER=").append(config.getCipher());
