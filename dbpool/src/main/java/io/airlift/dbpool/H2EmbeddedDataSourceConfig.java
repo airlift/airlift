@@ -16,8 +16,8 @@
 package io.airlift.dbpool;
 
 import io.airlift.configuration.Config;
-import io.airlift.configuration.ConfigDescription;
 import io.airlift.configuration.ConfigSecuritySensitive;
+import io.airlift.configuration.DefunctConfig;
 
 import javax.validation.constraints.NotNull;
 
@@ -37,6 +37,7 @@ import javax.validation.constraints.NotNull;
  * }
  * </pre>
  */
+@DefunctConfig("db.mvcc.enabled")
 public class H2EmbeddedDataSourceConfig
         extends ManagedDataSourceConfig<H2EmbeddedDataSourceConfig>
 {
@@ -64,7 +65,6 @@ public class H2EmbeddedDataSourceConfig
     private int cacheSize = 16384;
     private long maxLengthInplaceLob = 1024;
     private long maxMemoryRows = 10000;
-    private boolean mvccEnabled = true;
 
     /**
      * Database filename
@@ -228,19 +228,6 @@ public class H2EmbeddedDataSourceConfig
     public H2EmbeddedDataSourceConfig setMaxMemoryRows(long maxMemoryRows)
     {
         this.maxMemoryRows = maxMemoryRows;
-        return this;
-    }
-
-    public boolean isMvccEnabled()
-    {
-        return mvccEnabled;
-    }
-
-    @Config("db.mvcc.enabled")
-    @ConfigDescription("Enable MVCC mode for higher concurrency")
-    public H2EmbeddedDataSourceConfig setMvccEnabled(boolean mvccEnabled)
-    {
-        this.mvccEnabled = mvccEnabled;
         return this;
     }
 }
