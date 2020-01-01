@@ -222,7 +222,7 @@ public class TestHttpClientLogger
         assertThat(lines).size().isGreaterThanOrEqualTo(1);
     }
 
-    private class TestRequest
+    private static class TestRequest
             implements Request
     {
         private final HttpVersion protocolVersion;
