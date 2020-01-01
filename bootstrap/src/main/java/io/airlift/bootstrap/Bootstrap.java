@@ -230,8 +230,10 @@ public class Bootstrap
         // so we can calculate the unused properties
         unusedProperties.keySet().removeAll(configurationFactory.getUsedProperties());
 
-        for (String key : unusedProperties.keySet()) {
-            messages.add(new Message(format("Configuration property '%s' was not used", key)));
+        if (strictConfig) {
+            for (String key : unusedProperties.keySet()) {
+                messages.add(new Message(format("Configuration property '%s' was not used", key)));
+            }
         }
 
         // Log effective configuration

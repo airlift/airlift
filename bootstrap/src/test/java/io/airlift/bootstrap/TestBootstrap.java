@@ -17,7 +17,9 @@ package io.airlift.bootstrap;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.ConfigurationException;
+import com.google.inject.CreationException;
 import com.google.inject.ProvisionException;
+import com.google.inject.spi.Message;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
@@ -29,6 +31,7 @@ import java.util.Map;
 import static io.airlift.bootstrap.Bootstrap.replaceEnvironmentVariables;
 import static io.airlift.testing.Assertions.assertContains;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
@@ -98,6 +101,27 @@ public class TestBootstrap
         assertThat(errors).containsExactly(
                 "Configuration property 'peach' references unset environment variable 'PEACH'",
                 "Configuration property 'pear' references unset environment variable 'X_PEAR'");
+    }
+
+    @Test
+    public void testStrictConfig()
+    {
+        Bootstrap bootstrap = new Bootstrap()
+                .strictConfig()
+                .setRequiredConfigurationProperty("test-required", "foo");
+
+        assertThatThrownBy(bootstrap::initialize)
+                .isInstanceOfSatisfying(CreationException.class, e ->
+                        assertThat(e.getErrorMessages()).containsExactly(
+                                new Message("Configuration property 'test-required' was not used")));
+    }
+
+    @Test
+    public void testNonStrictConfig()
+    {
+        new Bootstrap()
+                .setRequiredConfigurationProperty("test-required", "foo")
+                .initialize();
     }
 
     public static class Instance {}

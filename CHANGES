@@ -1,5 +1,6 @@
 0.188
 
+- Fix a Bootstrap regression that forced strict config mode.
 - Fix IndexOutOfBounds when updating t-digest after copy.
 - Fix mbeans page access over HTTPS.
 - Limit total size of server.log.
