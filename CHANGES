@@ -5,7 +5,7 @@
 - Fix mbeans page access over HTTPS.
 - Limit total size of server.log.
 - Remove status message support from HTTP client.
-- Update to Jetty 9.4.25.v20191220.
+- Update to Jetty 9.4.20.v20190813.
 
 0.187
 
