@@ -22,10 +22,12 @@ import javax.annotation.concurrent.NotThreadSafe;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -332,7 +334,7 @@ public class QuantileDigest
                 while (iterator.hasNext() && sum > (1.0 - iterator.peek()) * weightedCount) {
                     iterator.next();
 
-                    // we know the min value ever seen, so cap the percentile to provide better error
+                    // we know the min value ever visited, so cap the percentile to provide better error
                     // bounds in this case
                     long value = Math.max(lowerBound(node), min);
 
@@ -380,7 +382,7 @@ public class QuantileDigest
                 while (iterator.hasNext() && sum > iterator.peek() * weightedCount) {
                     iterator.next();
 
-                    // we know the max value ever seen, so cap the percentile to provide better error
+                    // we know the max value ever visited, so cap the percentile to provide better error
                     // bounds in this case
                     long value = Math.min(upperBound(node), max);
 
@@ -979,6 +981,34 @@ public class QuantileDigest
         return callback.process(node);
     }
 
+    public QuantileDigestIterator iterator()
+    {
+        return new QuantileDigestIterator(
+                root,
+                lefts,
+                rights,
+                counts,
+                levels,
+                values,
+                weightedCount,
+                min,
+                max);
+    }
+
+    public QuantileDigestIterator reverseIterator()
+    {
+        return new ReverseQuantileDigestIterator(
+                root,
+                lefts,
+                rights,
+                counts,
+                levels,
+                values,
+                weightedCount,
+                min,
+                max);
+    }
+
     /**
      * Computes the maximum error of the current digest
      */
@@ -1191,6 +1221,11 @@ public class QuantileDigest
 
     private long upperBound(int node)
     {
+        return upperBound(node, levels, values);
+    }
+
+    private static long upperBound(int node, byte[] levels, long[] values)
+    {
         // set all lsb below level to 1 (we're looking for the highest value of the range covered by this node)
         long mask = 0;
 
@@ -1201,6 +1236,11 @@ public class QuantileDigest
     }
 
     private long lowerBound(int node)
+    {
+        return lowerBound(node, levels, values);
+    }
+
+    private static long lowerBound(int node, byte[] levels, long[] values)
     {
         // set all lsb below level to 0 (we're looking for the lowest value of the range covered by this node)
         long mask = 0;
@@ -1314,5 +1354,193 @@ public class QuantileDigest
         MiddleFunction DEFAULT = (lowerBound, upperBound) -> lowerBound + (upperBound - lowerBound) / 2.0;
 
         double middle(long lowerBound, long upperBound);
+    }
+
+    public static class QuantileDigestIterator
+    {
+        private final int[] lefts; // left children
+        private final int[] rights; // right children
+        private final int[] stack; // array stack
+        private final double[] counts; // counts of nodes
+        private final byte[] levels; // levels in tree of nodes
+        private final long[] values; // values of nodes
+        private final double weightedCount; // total count of tree nodes
+        private final long min;
+        private final long max;
+        private final BitSet visited;
+
+        private int currentNode = -1; // current node in tree
+        private int stackPosition = -1; // current head position in stack array
+        private double cumulativeCount; // cumulative count of nodes in iteration
+        private double previousCumulativeCount; // previous value of cumulative count (0 if first element)
+        private boolean advanced; // iterator position state
+
+        public QuantileDigestIterator(
+                int root,
+                int[] lefts,
+                int[] rights,
+                double[] counts,
+                byte[] levels,
+                long[] values,
+                double weightedCount,
+                long min,
+                long max)
+        {
+            this.weightedCount = weightedCount;
+            this.lefts = lefts;
+            this.rights = rights;
+            this.counts = counts;
+            this.levels = levels;
+            this.values = values;
+            this.min = min;
+            this.max = max;
+            visited = new BitSet(values.length);
+            int height = MAX_BITS - Long.numberOfLeadingZeros(min ^ max) + 1;
+            stack = new int[height + 1]; // tree height + 1 additional slot for sentinel
+            push(root);
+        }
+
+        public long upperBoundValue()
+        {
+            validateCurrentNodePosition();
+            return Math.min(upperBound(currentNode, levels, values), max);
+        }
+
+        public long lowerBoundValue()
+        {
+            validateCurrentNodePosition();
+            return Math.max(lowerBound(currentNode, levels, values), min);
+        }
+
+        public double count()
+        {
+            validateCurrentNodePosition();
+            return counts[currentNode];
+        }
+
+        public double cumulativeCount()
+        {
+            validateCurrentNodePosition();
+            return cumulativeCount;
+        }
+
+        public double lowerBoundQuantile()
+        {
+            validateCurrentNodePosition();
+            return previousCumulativeCount / weightedCount;
+        }
+
+        public double upperBoundQuantile()
+        {
+            validateCurrentNodePosition();
+            return cumulativeCount / weightedCount;
+        }
+
+        public boolean hasNext()
+        {
+            if (advanced) {
+                return stackIsNotEmpty();
+            }
+            moveToNextNode();
+            advanced = true;
+            return stackIsNotEmpty(); // if we advanced to the next value, we will always be at a valid position in the stack
+        }
+
+        public void advance()
+        {
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
+            advanced = false;
+        }
+
+        private void moveToNextNode()
+        {
+            // Post-order traversal to the next node in quantile digest
+            while (stackIsNotEmpty()) {
+                int node = pop();
+
+                if (node == -1) {
+                    continue;
+                }
+
+                int right = rights[node];
+                int left = lefts[node];
+
+                if (visited.get(node)) {
+                    push(right);
+
+                    if (counts[node] > 0) {
+                        previousCumulativeCount = cumulativeCount;
+                        cumulativeCount += counts[node];
+                        currentNode = node;
+                        return;
+                    }
+                }
+                else {
+                    push(node);
+                    push(left);
+                    visited.set(node);
+                }
+            }
+
+            currentNode = -1;
+        }
+
+        private void validateCurrentNodePosition()
+        {
+            if (currentNode == -1) {
+                throw new NoSuchElementException();
+            }
+        }
+
+        private boolean stackIsNotEmpty()
+        {
+            return stackPosition >= 0;
+        }
+
+        private void push(int element)
+        {
+            stackPosition += 1;
+            stack[stackPosition] = element;
+        }
+
+        private int pop()
+        {
+            int value = stack[stackPosition];
+            stackPosition -= 1;
+            return value;
+        }
+    }
+
+    private static class ReverseQuantileDigestIterator
+            extends QuantileDigestIterator
+    {
+        ReverseQuantileDigestIterator(
+                int root,
+                int[] lefts,
+                int[] rights,
+                double[] counts,
+                byte[] levels,
+                long[] values,
+                double weightedCount,
+                long min,
+                long max)
+        {
+            // rights and lefts swapped to reverse order of iteration
+            super(root, rights, lefts, counts, levels, values, weightedCount, min, max);
+        }
+
+        @Override
+        public double lowerBoundQuantile()
+        {
+            return 1 - super.upperBoundQuantile();
+        }
+
+        @Override
+        public double upperBoundQuantile()
+        {
+            return 1 - super.lowerBoundQuantile();
+        }
     }
 }
