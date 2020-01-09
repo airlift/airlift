@@ -23,6 +23,11 @@ final class NetUtils
 {
     private NetUtils() {}
 
+    /**
+     * @deprecated Using this method is strongly discouraged, as in practice there is
+     * no guarantee that the returned port number will be available for subsequent bind.
+     */
+    @Deprecated
     public static int findUnusedPort()
             throws IOException
     {
