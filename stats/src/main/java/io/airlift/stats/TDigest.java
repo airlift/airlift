@@ -14,13 +14,14 @@
 package io.airlift.stats;
 
 import com.google.common.collect.Ordering;
+import com.google.common.primitives.Doubles;
+import com.google.common.primitives.Ints;
 import io.airlift.slice.SizeOf;
 import io.airlift.slice.Slice;
 import io.airlift.slice.SliceInput;
 import io.airlift.slice.SliceOutput;
 import io.airlift.slice.Slices;
 import it.unimi.dsi.fastutil.doubles.DoubleArrays;
-import it.unimi.dsi.fastutil.ints.IntArrays;
 import org.openjdk.jol.info.ClassLayout;
 
 import javax.annotation.concurrent.NotThreadSafe;
@@ -369,7 +370,7 @@ public class TDigest
 
         DoubleArrays.quickSortIndirect(indexes, means, 0, centroidCount);
         if (backwards) {
-            IntArrays.reverse(indexes, 0, centroidCount);
+            Ints.reverse(indexes, 0, centroidCount);
         }
 
         double centroidMean = means[indexes[0]];
@@ -422,8 +423,8 @@ public class TDigest
         centroidCount = lastCentroid + 1;
 
         if (backwards) {
-            DoubleArrays.reverse(tempMeans, 0, centroidCount);
-            DoubleArrays.reverse(tempWeights, 0, centroidCount);
+            Doubles.reverse(tempMeans, 0, centroidCount);
+            Doubles.reverse(tempWeights, 0, centroidCount);
         }
         backwards = !backwards;
 
