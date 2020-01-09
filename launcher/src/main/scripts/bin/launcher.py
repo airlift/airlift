@@ -214,6 +214,7 @@ def build_java_execution(options, daemon):
     command = ['java', '-cp', classpath]
     command += jvm_properties + system_properties
     command += [main_class]
+    command += options.arguments
 
     if options.verbose:
         print(command)
@@ -354,6 +355,7 @@ def create_parser():
     parser.add_option('--log-levels-file', metavar='FILE', help='Defaults to ETC_DIR/log.properties')
     parser.add_option('--data-dir', metavar='DIR', help='Defaults to INSTALL_PATH')
     parser.add_option('--pid-file', metavar='FILE', help='Defaults to DATA_DIR/var/run/launcher.pid')
+    parser.add_option('--arg', action='append', metavar='ARG', dest='arguments', help='Add a program argument of the Java application')
     parser.add_option('--launcher-log-file', metavar='FILE', help='Defaults to DATA_DIR/var/log/launcher.log (only in daemon mode)')
     parser.add_option('--server-log-file', metavar='FILE', help='Defaults to DATA_DIR/var/log/server.log (only in daemon mode)')
     parser.add_option('-D', action='append', metavar='NAME=VALUE', dest='properties', help='Set a Java system property')
@@ -437,6 +439,8 @@ def main():
     for k, v in node_properties.items():
         if k not in o.properties:
             o.properties[k] = v
+
+    o.arguments = options.arguments or []
 
     if o.verbose:
         print_options(o)
