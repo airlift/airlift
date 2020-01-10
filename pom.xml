@@ -29,6 +29,7 @@
         <dep.packaging.version>${dep.airlift.version}</dep.packaging.version>
         <dep.jetty.version>9.4.20.v20190813</dep.jetty.version>
         <dep.jersey.version>2.26</dep.jersey.version>
+        <dep.slice.version>0.36</dep.slice.version>
     </properties>
 
     <organization>
