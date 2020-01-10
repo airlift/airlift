@@ -7,7 +7,7 @@
     <parent>
         <artifactId>airlift</artifactId>
         <groupId>com.facebook.airlift</groupId>
-        <version>0.188</version>
+        <version>0.189-SNAPSHOT</version>
     </parent>
 
     <properties>
