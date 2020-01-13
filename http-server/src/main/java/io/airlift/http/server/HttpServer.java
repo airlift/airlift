@@ -348,13 +348,7 @@ public class HttpServer
          */
         HandlerCollection handlers = new HandlerCollection();
 
-        for (HttpResourceBinding resource : resources) {
-            GzipHandler gzipHandler = new GzipHandler();
-            gzipHandler.setHandler(new ClassPathResourceHandler(resource.getBaseUri(), resource.getClassPathResourceBase(), resource.getWelcomeFiles()));
-            handlers.addHandler(gzipHandler);
-        }
-
-        handlers.addHandler(createServletContext(theServlet, parameters, filters, tokenManager, loginService, "http", "https"));
+        handlers.addHandler(createServletContext(theServlet, resources, parameters, filters, tokenManager, loginService, "http", "https"));
 
         RequestLogHandler statsRecorder = new RequestLogHandler();
         statsRecorder.setRequestLog(new StatsRecordingHandler(stats));
@@ -366,7 +360,7 @@ public class HttpServer
 
         HandlerList rootHandlers = new HandlerList();
         if (theAdminServlet != null && config.isAdminEnabled()) {
-            rootHandlers.addHandler(createServletContext(theAdminServlet, adminParameters, adminFilters, tokenManager, loginService, "admin"));
+            rootHandlers.addHandler(createServletContext(theAdminServlet, resources, adminParameters, adminFilters, tokenManager, loginService, "admin"));
         }
         rootHandlers.addHandler(statsHandler);
         server.setHandler(rootHandlers);
@@ -378,6 +372,7 @@ public class HttpServer
     }
 
     private static ServletContextHandler createServletContext(Servlet theServlet,
+            Set<HttpResourceBinding> resources,
             Map<String, String> parameters,
             Set<Filter> filters,
             TraceTokenManager tokenManager,
@@ -399,6 +394,14 @@ public class HttpServer
         // -- user provided filters
         for (Filter filter : filters) {
             context.addFilter(new FilterHolder(filter), "/*", null);
+        }
+        // -- static resources
+        for (HttpResourceBinding resource : resources) {
+            ClassPathResourceFilter servlet = new ClassPathResourceFilter(
+                    resource.getBaseUri(),
+                    resource.getClassPathResourceBase(),
+                    resource.getWelcomeFiles());
+            context.addFilter(new FilterHolder(servlet), servlet.getBaseUri() + "/*", null);
         }
         // -- gzip handler
         context.setGzipHandler(new GzipHandler());
