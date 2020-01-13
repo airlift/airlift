@@ -20,10 +20,11 @@ import com.google.common.io.ByteStreams;
 import com.google.common.net.HttpHeaders;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 
 import javax.annotation.Nullable;
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpFilter;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -40,8 +41,8 @@ import static java.util.Objects.requireNonNull;
  * Intended to serve a couple of static files e.g. for javascript or HTML.
  */
 // Forked from https://github.com/NessComputing/components-ness-httpserver/
-public class ClassPathResourceHandler
-        extends AbstractHandler
+public class ClassPathResourceFilter
+        extends HttpFilter
 {
     private static final MimeTypes MIME_TYPES;
 
@@ -55,12 +56,7 @@ public class ClassPathResourceHandler
     private final String classPathResourceBase;
     private final List<String> welcomeFiles;
 
-    public ClassPathResourceHandler(String baseUri, String classPathResourceBase, String... welcomeFiles)
-    {
-        this(baseUri, classPathResourceBase, ImmutableList.copyOf(welcomeFiles));
-    }
-
-    public ClassPathResourceHandler(String baseUri, String classPathResourceBase, List<String> welcomeFiles)
+    public ClassPathResourceFilter(String baseUri, String classPathResourceBase, List<String> welcomeFiles)
     {
         requireNonNull(baseUri, "baseUri is null");
         requireNonNull(classPathResourceBase, "classPathResourceBase is null");
@@ -83,33 +79,32 @@ public class ClassPathResourceHandler
         this.welcomeFiles = files.build();
     }
 
-    @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-            throws IOException
+    public String getBaseUri()
     {
-        if (baseRequest.isHandled()) {
-            return;
-        }
+        return baseUri;
+    }
 
+    @Override
+    public void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+            throws IOException, ServletException
+    {
         String resourcePath = getResourcePath(request);
         if (resourcePath == null) {
+            chain.doFilter(request, response);
             return;
         }
 
         if (resourcePath.isEmpty()) {
             response.setStatus(HttpServletResponse.SC_TEMPORARY_REDIRECT);
             response.setHeader(HttpHeaders.LOCATION, response.encodeRedirectURL(baseUri + "/"));
-            baseRequest.setHandled(true);
             return;
         }
 
         URL resource = getResource(resourcePath);
         if (resource == null) {
+            chain.doFilter(request, response);
             return;
         }
-
-        // When a request hits this handler, it will serve something. Either data or an error.
-        baseRequest.setHandled(true);
 
         String method = request.getMethod();
         boolean skipContent = false;
