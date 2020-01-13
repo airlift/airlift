@@ -190,7 +190,7 @@ public class QuantileDigest
         levels = new byte[nodeCount];
         values = new long[nodeCount];
 
-        int[] stack = new int[(Integer.highestOneBit(nodeCount - 1) << 1) + 1]; // log2 ceiling
+        int[] stack = new int[height];
         int top = -1;
 
         // The nodes are organized in a left-to-right post-order sequence, so

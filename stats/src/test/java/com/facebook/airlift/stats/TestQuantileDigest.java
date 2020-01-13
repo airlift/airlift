@@ -816,7 +816,7 @@ public class TestQuantileDigest
     }
 
     @Test(invocationCount = 1000)
-    public void testSerializationRandom()
+    public void testSerializationRandomPositiveIntegers()
             throws Exception
     {
         QuantileDigest digest = new QuantileDigest(1);
@@ -824,6 +824,22 @@ public class TestQuantileDigest
         List<Integer> values = new ArrayList<>();
         for (int i = 0; i < 1000; i++) {
             values.add(ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE));
+        }
+
+        addAll(digest, values);
+
+        assertTrue(digest.equivalent(deserialize(digest.serialize())), format("Serialization roundtrip failed for input: %s", values));
+    }
+
+    @Test(invocationCount = 1000)
+    public void testSerializationRandom()
+            throws Exception
+    {
+        QuantileDigest digest = new QuantileDigest(1);
+
+        List<Integer> values = new ArrayList<>();
+        for (int i = 0; i < 1000; i++) {
+            values.add(ThreadLocalRandom.current().nextInt());
         }
 
         addAll(digest, values);
