@@ -33,7 +33,6 @@ import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
-import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.client.util.PathContentProvider;
 import org.eclipse.jetty.http2.client.HTTP2Client;
@@ -102,6 +101,7 @@ public class JettyHttpClient
     private final long maxContentLength;
     private final long requestTimeoutMillis;
     private final long idleTimeoutMillis;
+    private final int requestBufferSizeInBytes;
     private final boolean recordRequestComplete;
     private final boolean logEnabled;
     private final QueuedThreadPoolMBean queuedThreadPoolMBean;
@@ -153,6 +153,7 @@ public class JettyHttpClient
         maxContentLength = config.getMaxContentLength().toBytes();
         requestTimeoutMillis = config.getRequestTimeout().toMillis();
         idleTimeoutMillis = config.getIdleTimeout().toMillis();
+        requestBufferSizeInBytes = toIntExact(config.getRequestBufferSize().toBytes());
         recordRequestComplete = config.getRecordRequestComplete();
 
         creationLocation.fillInStackTrace();
@@ -613,7 +614,7 @@ public class JettyHttpClient
         if (bodyGenerator != null) {
             if (bodyGenerator instanceof StaticBodyGenerator) {
                 StaticBodyGenerator staticBodyGenerator = (StaticBodyGenerator) bodyGenerator;
-                jettyRequest.content(new BytesContentProvider(staticBodyGenerator.getBody()));
+                jettyRequest.content(new ChunkedBytesContentProvider(staticBodyGenerator.getBody(), requestBufferSizeInBytes));
             }
             else if (bodyGenerator instanceof FileBodyGenerator) {
                 Path path = ((FileBodyGenerator) bodyGenerator).getPath();

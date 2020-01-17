@@ -51,6 +51,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -467,8 +468,16 @@ public abstract class AbstractHttpClientTest
     public void testPutMethodWithStaticBodyGenerator()
             throws Exception
     {
+        testPutMethodWithStaticBodyGenerator(new byte[] {1, 2, 5});
+        byte[] largeBody = new byte[1024 * 1024];
+        ThreadLocalRandom.current().nextBytes(largeBody);
+        testPutMethodWithStaticBodyGenerator(largeBody);
+    }
+
+    public void testPutMethodWithStaticBodyGenerator(byte[] body)
+            throws Exception
+    {
         URI uri = baseURI.resolve("/road/to/nowhere");
-        byte[] body = {1, 2, 5};
         Request request = preparePut()
                 .setUri(uri)
                 .addHeader("foo", "bar")
