@@ -9,6 +9,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import java.net.URI;
 
+import static java.lang.Boolean.TRUE;
 import static org.eclipse.jetty.http.HttpHeader.AUTHORIZATION;
 
 class AuthorizationPreservingHttpClient
@@ -45,6 +46,6 @@ class AuthorizationPreservingHttpClient
 
     private static boolean isPreserveAuthorization(Request request)
     {
-        return (boolean) request.getAttributes().get(PRESERVE_AUTHORIZATION_KEY);
+        return TRUE.equals(request.getAttributes().get(PRESERVE_AUTHORIZATION_KEY));
     }
 }
