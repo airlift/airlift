@@ -226,10 +226,10 @@ public class HttpServerConfig
         return this;
     }
 
-    @AssertTrue(message = "Keystore path/password must be provided when HTTPS is enabled")
+    @AssertTrue(message = "Keystore path must be provided when HTTPS is enabled")
     public boolean isHttpsConfigurationValid()
     {
-        return !isHttpsEnabled() || (getKeystorePath() != null && getKeystorePassword() != null);
+        return !isHttpsEnabled() || getKeystorePath() != null;
     }
 
     public String getKeyManagerPassword()
