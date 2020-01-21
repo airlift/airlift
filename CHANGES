@@ -1,3 +1,7 @@
+0.191
+
+- Do not require keystore password for HTTPS.
+
 0.190
 
 - Allow using servlet filters for static resources.
