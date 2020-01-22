@@ -15,6 +15,7 @@
  */
 package io.airlift.discovery.client;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.io.CharStreams;
 import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
@@ -40,6 +41,7 @@ import java.util.function.Supplier;
 
 import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
+import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
 import static io.airlift.http.client.JsonBodyGenerator.jsonBodyGenerator;
 import static io.airlift.http.client.Request.Builder.prepareDelete;
 import static io.airlift.http.client.Request.Builder.preparePut;
@@ -86,7 +88,7 @@ public class HttpDiscoveryAnnouncementClient
 
         Announcement announcement = new Announcement(nodeInfo.getEnvironment(), nodeInfo.getNodeId(), nodeInfo.getPool(), nodeInfo.getLocation(), services);
         Request request = preparePut()
-                .setUri(URI.create(uri + "/v1/announcement/" + nodeInfo.getNodeId()))
+                .setUri(createAnnouncementLocation(uri, nodeInfo.getNodeId()))
                 .setHeader("User-Agent", nodeInfo.getNodeId())
                 .setHeader("Content-Type", MEDIA_TYPE_JSON.toString())
                 .setBodyGenerator(jsonBodyGenerator(announcementCodec, announcement))
@@ -132,10 +134,19 @@ public class HttpDiscoveryAnnouncementClient
         }
 
         Request request = prepareDelete()
-                .setUri(URI.create(uri + "/v1/announcement/" + nodeInfo.getNodeId()))
+                .setUri(createAnnouncementLocation(uri, nodeInfo.getNodeId()))
                 .setHeader("User-Agent", nodeInfo.getNodeId())
                 .build();
         return httpClient.executeAsync(request, new DiscoveryResponseHandler<>("Unannouncement", uri));
+    }
+
+    @VisibleForTesting
+    static URI createAnnouncementLocation(URI baseUri, String nodeId)
+    {
+        return uriBuilderFrom(baseUri)
+                .appendPath("/v1/announcement")
+                .appendPath(nodeId)
+                .build();
     }
 
     private static Duration extractMaxAge(Response response)

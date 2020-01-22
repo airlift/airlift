@@ -1,6 +1,7 @@
 0.191
 
 - Do not require keystore password for HTTPS.
+- Allow trailing slash in discovery URI configuration.
 
 0.190
 
