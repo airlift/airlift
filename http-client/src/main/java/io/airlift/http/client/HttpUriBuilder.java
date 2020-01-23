@@ -2,7 +2,6 @@ package io.airlift.http.client;
 
 import com.google.common.annotations.Beta;
 import com.google.common.base.Ascii;
-import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.LinkedListMultimap;
@@ -19,6 +18,8 @@ import java.util.Iterator;
 import java.util.Map;
 
 import static com.google.common.base.CharMatcher.ascii;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
 import static java.lang.Character.forDigit;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
@@ -82,8 +83,8 @@ public class HttpUriBuilder
     public HttpUriBuilder host(String host)
     {
         requireNonNull(host, "host is null");
-        Preconditions.checkArgument(!host.startsWith("["), "host starts with a bracket");
-        Preconditions.checkArgument(!host.endsWith("]"), "host ends with a bracket");
+        checkArgument(!host.startsWith("["), "host starts with a bracket");
+        checkArgument(!host.endsWith("]"), "host ends with a bracket");
         if (host.contains(":")) {
             host = "[" + host + "]";
         }
@@ -93,7 +94,7 @@ public class HttpUriBuilder
 
     public HttpUriBuilder port(int port)
     {
-        Preconditions.checkArgument(port >= 1 && port <= 65535, "port must be in the range 1-65535");
+        checkArgument(port >= 1 && port <= 65535, "port must be in the range 1-65535");
         this.port = port;
         return this;
     }
@@ -232,7 +233,7 @@ public class HttpUriBuilder
 
     public URI build()
     {
-        Preconditions.checkState(scheme != null, "scheme has not been set");
+        checkState(scheme != null, "scheme has not been set");
         return URI.create(toString());
     }
 
@@ -280,19 +281,19 @@ public class HttpUriBuilder
      */
     private static String percentDecode(String encoded)
     {
-        Preconditions.checkArgument(ascii().matchesAllOf(encoded), "string must be ASCII");
+        checkArgument(ascii().matchesAllOf(encoded), "string must be ASCII");
 
         ByteArrayOutputStream out = new ByteArrayOutputStream(encoded.length());
         for (int i = 0; i < encoded.length(); i++) {
             char c = encoded.charAt(i);
 
             if (c == '%') {
-                Preconditions.checkArgument(i + 2 < encoded.length(), "percent encoded value is truncated");
+                checkArgument(i + 2 < encoded.length(), "percent encoded value is truncated");
 
                 int high = Character.digit(encoded.charAt(i + 1), 16);
                 int low = Character.digit(encoded.charAt(i + 2), 16);
 
-                Preconditions.checkArgument(high != -1 && low != -1, "percent encoded value is not a valid hex string: ", encoded.substring(i, i + 2));
+                checkArgument(high != -1 && low != -1, "percent encoded value is not a valid hex string: ", encoded.substring(i, i + 2));
 
                 int value = (high << 4) | (low);
                 out.write(value);
