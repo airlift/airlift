@@ -2,6 +2,7 @@
 
 - Do not require keystore password for HTTPS.
 - Allow trailing slash in discovery URI configuration.
+- Require host to be set in HttpUriBuilder.
 
 0.190
 

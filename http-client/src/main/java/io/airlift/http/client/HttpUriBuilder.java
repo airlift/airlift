@@ -68,6 +68,8 @@ public class HttpUriBuilder
     public static HttpUriBuilder uriBuilderFrom(URI uri)
     {
         requireNonNull(uri, "uri is null");
+        checkArgument(uri.getScheme() != null, "URI does not have a scheme: %s", uri);
+        checkArgument(uri.getHost() != null, "URI does not have a host: %s", uri);
 
         return new HttpUriBuilder(uri);
     }
@@ -234,6 +236,7 @@ public class HttpUriBuilder
     public URI build()
     {
         checkState(scheme != null, "scheme has not been set");
+        checkState(host != null, "host has not been set");
         return URI.create(toString());
     }
 

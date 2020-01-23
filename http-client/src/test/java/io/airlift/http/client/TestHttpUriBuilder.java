@@ -7,6 +7,7 @@ import java.net.URI;
 
 import static io.airlift.http.client.HttpUriBuilder.uriBuilder;
 import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.testng.Assert.assertEquals;
 
 public class TestHttpUriBuilder
@@ -348,10 +349,29 @@ public class TestHttpUriBuilder
         assertEquals(uri.toASCIIString(), "http://www.example.com/%60%23%25%5E%7B%7D%7C%5B%5D%3C%3E%3F%C3%A1%C3%A9%C3%AD%C3%B3%C3%BA");
     }
 
-    @Test(expectedExceptions = IllegalStateException.class, expectedExceptionsMessageRegExp = ".*scheme.*")
-    public void testVerifiesSchemeIsSet()
+    @Test
+    public void testVerifyOnBuild()
     {
-        uriBuilder().build();
+        assertThatThrownBy(() -> uriBuilder().build())
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("scheme has not been set");
+
+        assertThatThrownBy(() -> uriBuilder().scheme("http").build())
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("host has not been set");
+    }
+
+    @Test
+    public void testVerifyOnCreate()
+    {
+        assertThatThrownBy(() -> uriBuilderFrom(URI.create("./foo")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("URI does not have a scheme: ./foo");
+
+        // URI does not allow underscores in hosts due to https://bugs.openjdk.java.net/browse/JDK-8019345
+        assertThatThrownBy(() -> uriBuilderFrom(URI.create("http://test_foo/abc")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("URI does not have a host: http://test_foo/abc");
     }
 
     @Test
