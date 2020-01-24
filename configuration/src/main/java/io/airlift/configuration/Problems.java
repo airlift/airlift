@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.IllegalFormatException;
 import java.util.List;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Collections.emptyList;
 
 class Problems
@@ -76,6 +77,13 @@ class Problems
     public List<Message> getErrors()
     {
         return ImmutableList.copyOf(errors);
+    }
+
+    void record(Problems problems)
+    {
+        checkArgument(problems != this, "Can not add problems to itself");
+        errors.addAll(problems.errors);
+        warnings.addAll(problems.warnings);
     }
 
     public void addError(String format, Object... params)
