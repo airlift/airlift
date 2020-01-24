@@ -612,7 +612,7 @@ public class ConfigurationFactory
             try {
                 return Enum.valueOf(type.asSubclass(Enum.class), value);
             }
-            catch (IllegalArgumentException e) {
+            catch (IllegalArgumentException ignored) {
             }
             Object match = null;
             for (Enum<?> option : type.asSubclass(Enum.class).getEnumConstants()) {

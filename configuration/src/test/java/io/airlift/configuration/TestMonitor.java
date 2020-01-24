@@ -27,8 +27,8 @@ import static org.testng.Assert.fail;
 class TestMonitor
         implements Problems.Monitor
 {
-    private List<Message> errors = new ArrayList<>();
-    private List<Message> warnings = new ArrayList<>();
+    private final List<Message> errors = new ArrayList<>();
+    private final List<Message> warnings = new ArrayList<>();
 
     @Override
     public void onError(Message error)
@@ -59,6 +59,7 @@ class TestMonitor
             for (String part : parts) {
                 if (!warning.getMessage().contains(part)) {
                     matched = false;
+                    break;
                 }
             }
             if (matched) {
@@ -76,6 +77,7 @@ class TestMonitor
             for (String part : parts) {
                 if (!error.getMessage().contains(part)) {
                     matched = false;
+                    break;
                 }
             }
             if (matched) {
@@ -96,7 +98,7 @@ class TestMonitor
         return messageListAsString(warnings);
     }
 
-    private String messageListAsString(List<Message> list)
+    private static String messageListAsString(List<Message> list)
     {
         StringBuilder builder = new StringBuilder();
         for (Message message : list) {

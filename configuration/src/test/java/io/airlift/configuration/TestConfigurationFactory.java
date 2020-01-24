@@ -77,7 +77,7 @@ public class TestConfigurationFactory
         monitor.assertNumberOfWarnings(0);
         assertNotNull(annotatedSetter);
         assertEquals(annotatedSetter.getStringValue(), "some value");
-        assertEquals(annotatedSetter.isBooleanValue(), true);
+        assertTrue(annotatedSetter.isBooleanValue());
     }
 
     @Test
