@@ -42,6 +42,16 @@ class TestMonitor
         warnings.add(warning);
     }
 
+    public List<Message> getErrors()
+    {
+        return errors;
+    }
+
+    public List<Message> getWarnings()
+    {
+        return warnings;
+    }
+
     public void assertNumberOfErrors(int expected)
     {
         assertEquals(errors.size(), expected, String.format("Number of errors is incorrect, actual errors: %s", errorsString()));

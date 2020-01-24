@@ -366,12 +366,14 @@ public class ConfigurationFactory
         Problems problems = new Problems(monitor);
 
         for (AttributeMetadata attribute : configurationMetadata.getAttributes().values()) {
+            Problems attributeProblems = new Problems(monitor);
             try {
-                setConfigProperty(instance, attribute, prefix, problems);
+                setConfigProperty(instance, attribute, prefix, attributeProblems);
             }
             catch (InvalidConfigurationException e) {
-                problems.addError(e.getCause(), e.getMessage());
+                attributeProblems.addError(e.getCause(), e.getMessage());
             }
+            problems.record(attributeProblems);
         }
 
         // Check that none of the defunct properties are still in use
@@ -383,6 +385,9 @@ public class ConfigurationFactory
                 }
             }
         }
+
+        // if there already problems, don't run the bean validation as it typically reports duplicate errors
+        problems.throwIfHasErrors();
 
         for (ConstraintViolation<?> violation : validate(instance)) {
             String propertyFieldName = violation.getPropertyPath().toString();
