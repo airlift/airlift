@@ -526,8 +526,10 @@ public class ConfigurationFactory
     private Object getInjectedValue(AttributeMetadata attribute, ConfigurationMetadata.InjectionPointMetaData injectionPoint, String prefix)
             throws InvalidConfigurationException
     {
-        // Get the property value
         String name = prefix + injectionPoint.getProperty();
+        usedProperties.add(name);
+
+        // Get the property value
         String value = properties.get(name);
         String printableValue = value;
         if (attribute.isSecuritySensitive()) {
@@ -549,7 +551,6 @@ public class ConfigurationFactory
                     name,
                     injectionPoint.getSetter().toGenericString()));
         }
-        usedProperties.add(name);
         return finalValue;
     }
 
