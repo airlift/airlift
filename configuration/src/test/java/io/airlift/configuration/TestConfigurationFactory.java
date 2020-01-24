@@ -397,11 +397,26 @@ public class TestConfigurationFactory
         assertEquals(configurationFactory.getUsedProperties(), ImmutableSet.of("string-value", "boolean-value"));
     }
 
+    @Test
+    public void testUsedPropertiesWithFailure()
+    {
+        Map<String, String> properties = new TreeMap<>();
+        properties.put("string-value", "some value");
+        properties.put("boolean-value", "invalid");
+
+        ConfigurationFactory configurationFactory = new ConfigurationFactory(properties, null, new TestMonitor());
+        configurationFactory.registerConfigurationClasses(ImmutableList.of(binder -> configBinder(binder).bindConfig(AnnotatedSetter.class)));
+        List<Message> messages = configurationFactory.validateRegisteredConfigurationProvider();
+        assertMessagesMatch(messages, ImmutableList.of(".*Invalid value 'invalid' for type boolean \\(property 'boolean-value'\\).*AnnotatedSetter.*"));
+        assertEquals(configurationFactory.getUsedProperties(), properties.keySet());
+    }
+
     private static Injector createInjector(Map<String, String> properties, TestMonitor monitor, Module module)
     {
         ConfigurationFactory configurationFactory = new ConfigurationFactory(properties, null, monitor);
         configurationFactory.registerConfigurationClasses(ImmutableList.of(module));
         List<Message> messages = configurationFactory.validateRegisteredConfigurationProvider();
+        assertEquals(configurationFactory.getUsedProperties(), properties.keySet());
         return Guice.createInjector(new ConfigurationModule(configurationFactory), module, new ValidationErrorModule(messages));
     }
 
