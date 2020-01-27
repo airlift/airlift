@@ -33,6 +33,11 @@
 
         <dependency>
             <groupId>com.facebook.airlift</groupId>
+            <artifactId>http-utils</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.facebook.airlift</groupId>
             <artifactId>event</artifactId>
             <exclusions>
                 <!-- only the event interface is used, not the client -->
@@ -210,4 +215,3 @@
         </dependency>
     </dependencies>
 </project>
-

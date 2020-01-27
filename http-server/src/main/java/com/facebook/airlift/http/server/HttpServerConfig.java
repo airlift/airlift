@@ -112,6 +112,8 @@ public class HttpServerConfig
     private int adminPort;
     private int adminMinThreads = 2;
     private int adminMaxThreads = 200;
+    private int timeoutThreads = 1;
+    private int timeoutConcurrency = 1;
 
     private boolean showStackTrace = true;
 
@@ -442,6 +444,32 @@ public class HttpServerConfig
     public HttpServerConfig setThreadMaxIdleTime(Duration threadMaxIdleTime)
     {
         this.threadMaxIdleTime = threadMaxIdleTime;
+        return this;
+    }
+
+    @Min(1)
+    public int getTimeoutThreads()
+    {
+        return timeoutThreads;
+    }
+
+    @Config("http-server.timeout-threads")
+    public HttpServerConfig setTimeoutThreads(int timeoutThreads)
+    {
+        this.timeoutThreads = timeoutThreads;
+        return this;
+    }
+
+    @Min(1)
+    public int getTimeoutConcurrency()
+    {
+        return timeoutConcurrency;
+    }
+
+    @Config("http-server.timeout-concurrency")
+    public HttpServerConfig setTimeoutConcurrency(int timeoutConcurrency)
+    {
+        this.timeoutConcurrency = timeoutConcurrency;
         return this;
     }
 

@@ -17,6 +17,7 @@ package com.facebook.airlift.http.server;
 
 import com.facebook.airlift.event.client.EventClient;
 import com.facebook.airlift.http.server.HttpServerBinder.HttpResourceBinding;
+import com.facebook.airlift.http.utils.jetty.ConcurrentScheduler;
 import com.facebook.airlift.node.NodeInfo;
 import com.facebook.airlift.security.pem.PemReader;
 import com.facebook.airlift.tracetoken.TraceTokenManager;
@@ -50,6 +51,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
 
@@ -79,6 +81,7 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 
+import static com.facebook.airlift.http.utils.jetty.ConcurrentScheduler.createConcurrentScheduler;
 import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Preconditions.checkState;
 import static java.lang.Math.toIntExact;
@@ -159,6 +162,10 @@ public class HttpServer
             this.requestLog = null;
         }
 
+        ConcurrentScheduler concurrentScheduler = createConcurrentScheduler(
+                "http-server-timeout",
+                config.getTimeoutConcurrency(),
+                config.getTimeoutThreads());
         // set up HTTP connector
         ServerConnector httpConnector;
         if (config.isHttpEnabled()) {
@@ -182,6 +189,7 @@ public class HttpServer
                     httpServerInfo.getHttpChannel(),
                     server,
                     null,
+                    concurrentScheduler,
                     firstNonNull(acceptors, -1),
                     firstNonNull(selectors, -1),
                     http1,
@@ -252,6 +260,7 @@ public class HttpServer
                     httpServerInfo.getHttpsChannel(),
                     server,
                     null,
+                    concurrentScheduler,
                     firstNonNull(acceptors, -1),
                     firstNonNull(selectors, -1),
                     sslConnectionFactory,
@@ -302,6 +311,7 @@ public class HttpServer
                         httpServerInfo.getAdminChannel(),
                         server,
                         adminThreadPool,
+                        concurrentScheduler,
                         0,
                         -1,
                         sslConnectionFactory,
@@ -315,6 +325,7 @@ public class HttpServer
                         httpServerInfo.getAdminChannel(),
                         server,
                         adminThreadPool,
+                        concurrentScheduler,
                         -1,
                         -1,
                         http1,
@@ -600,12 +611,13 @@ public class HttpServer
             ServerSocketChannel channel,
             Server server,
             Executor executor,
+            Scheduler scheduler,
             int acceptors,
             int selectors,
             ConnectionFactory... factories)
             throws IOException
     {
-        ServerConnector connector = new ServerConnector(server, executor, null, null, acceptors, selectors, factories);
+        ServerConnector connector = new ServerConnector(server, executor, scheduler, null, acceptors, selectors, factories);
         connector.open(channel);
         return connector;
     }
