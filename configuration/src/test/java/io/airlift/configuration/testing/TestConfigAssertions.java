@@ -489,7 +489,8 @@ public class TestConfigAssertions
                 .setMyEnumSecondOption(null)
                 .setShortOption((short) 0)
                 .setStringOption(null)
-                .setValueClassOption(null));
+                .setValueClassOption(null)
+                .setSlatedForRemovalOption(null));
     }
 
     @Test

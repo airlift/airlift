@@ -53,6 +53,8 @@ public class Config1
 
     ValueClass valueClassOption;
 
+    String slatedForRemovalOption;
+
     public String getStringOption()
     {
         return stringOption;
@@ -266,6 +268,21 @@ public class Config1
     public Config1 setValueClassOption(ValueClass valueClassOption)
     {
         this.valueClassOption = valueClassOption;
+        return this;
+    }
+
+    @Deprecated
+    public String getSlatedForRemovalOption()
+    {
+        return slatedForRemovalOption;
+    }
+
+    @Config("slatedForRemovalOption")
+    @SlatedForRemoval(after = "2018-01")
+    @Deprecated
+    public Config1 setSlatedForRemovalOption(String slatedForRemovalOption)
+    {
+        this.slatedForRemovalOption = slatedForRemovalOption;
         return this;
     }
 }

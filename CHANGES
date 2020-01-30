@@ -1,3 +1,8 @@
+0.193
+
+- Add @SlatedForRemoval to support additional deprecation step when
+  configuration property is being removed.
+
 0.192
 
 - Update to Jetty 9.4.26.v20200117.

@@ -365,6 +365,15 @@ public class ConfigurationFactory
 
         Problems problems = new Problems(monitor);
 
+        configurationMetadata.getReplacedProperties().forEach((replacedProperty, newProperty) -> {
+            if (properties.containsKey(prefix + replacedProperty)) {
+                problems.addError(
+                        "Configuration property '%s' has been replaced with '%s'",
+                        prefix + replacedProperty,
+                        prefix + newProperty);
+            }
+        });
+
         for (AttributeMetadata attribute : configurationMetadata.getAttributes().values()) {
             Problems attributeProblems = new Problems(monitor);
             try {

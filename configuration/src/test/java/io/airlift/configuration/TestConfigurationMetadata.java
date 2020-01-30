@@ -645,6 +645,16 @@ public class TestConfigurationMetadata
     }
 
     @Test
+    public void testSlatedForRemovalOnNonDeprecatedSetterClass()
+    {
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata.getConfigurationMetadata(SlatedForRemovalOnNonDeprecatedSetterClass.class, monitor);
+        monitor.assertNumberOfErrors(0);
+        monitor.assertNumberOfWarnings(1);
+        monitor.assertMatchingWarningRecorded("@SlatedForRemoval method", "setValue(java.lang.String)", "should be @Deprecated");
+    }
+
+    @Test
     public void testDeprecatedConfigClass()
             throws Exception
     {
@@ -1547,6 +1557,23 @@ public class TestConfigurationMetadata
         public void setIntValue(int value)
         {
             this.value = Integer.toString(value);
+        }
+    }
+
+    public static class SlatedForRemovalOnNonDeprecatedSetterClass
+    {
+        private String value;
+
+        public String getValue()
+        {
+            return value;
+        }
+
+        @Config("value")
+        @SlatedForRemoval(after = "2018-01")
+        public void setValue(String value)
+        {
+            this.value = value;
         }
     }
 

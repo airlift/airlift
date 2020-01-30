@@ -76,6 +76,7 @@ public class TestConfig
             .put("myEnumOption", "FOO")
             .put("myEnumSecondOption", "bar") // lowercase
             .put("valueClassOption", "a value class")
+            .put("slatedForRemovalOption.slated-for-removal-2018-01", "an option being removed")
             .build();
 
     @Test
@@ -188,6 +189,7 @@ public class TestConfig
         assertEquals(MyEnum.FOO, config.getMyEnumOption());
         assertEquals(MyEnum.BAR, config.getMyEnumSecondOption());
         assertEquals(config.getValueClassOption().getValue(), "a value class");
+        assertEquals(config.getSlatedForRemovalOption(), "an option being removed");
     }
 
     @Test

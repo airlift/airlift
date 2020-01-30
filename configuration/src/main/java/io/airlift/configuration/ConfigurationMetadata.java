@@ -15,6 +15,7 @@
  */
 package io.airlift.configuration;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.inject.ConfigurationException;
@@ -27,12 +28,15 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.time.YearMonth;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
@@ -70,6 +74,7 @@ public class ConfigurationMetadata<T>
     private final Problems problems;
     private final Constructor<T> constructor;
     private final Map<String, AttributeMetadata> attributes;
+    private final Map<String, String> replacedProperties;
     private final Set<String> defunctConfig;
 
     private ConfigurationMetadata(Class<T> configClass, Monitor monitor)
@@ -117,7 +122,9 @@ public class ConfigurationMetadata<T>
         }
         this.constructor = constructor;
 
-        this.attributes = ImmutableSortedMap.copyOf(buildAttributeMetadata(configClass));
+        Attributes attributes = buildAttributeMetadata(configClass);
+        this.attributes = ImmutableSortedMap.copyOf(attributes.getAttributes());
+        this.replacedProperties = ImmutableMap.copyOf(attributes.getReplacedProperties());
 
         // find invalid config methods not skipped by findConfigMethods()
         for (Class<?> clazz = configClass; (clazz != null) && !clazz.equals(Object.class); clazz = clazz.getSuperclass()) {
@@ -153,6 +160,11 @@ public class ConfigurationMetadata<T>
         return attributes;
     }
 
+    public Map<String, String> getReplacedProperties()
+    {
+        return replacedProperties;
+    }
+
     Problems getProblems()
     {
         return problems;
@@ -162,6 +174,7 @@ public class ConfigurationMetadata<T>
     {
         Config config = configMethod.getAnnotation(Config.class);
         LegacyConfig legacyConfig = configMethod.getAnnotation(LegacyConfig.class);
+        SlatedForRemoval slatedForRemoval = configMethod.getAnnotation(SlatedForRemoval.class);
 
         if (config == null) {
             problems.addError("Method [%s] must have @Config annotation", configMethod.toGenericString());
@@ -207,6 +220,20 @@ public class ConfigurationMetadata<T>
             }
         }
 
+        if (slatedForRemoval != null) {
+            try {
+                getAfter(slatedForRemoval);
+            }
+            catch (DateTimeParseException e) {
+                problems.addError("@SlatedForRemoval method [%s] annotation has invalid value: %s", configMethod.toGenericString(), e.toString());
+                isValid = false;
+            }
+
+            if (!configMethod.isAnnotationPresent(Deprecated.class)) {
+                problems.addWarning("@SlatedForRemoval method [%s] should be @Deprecated", configMethod.toGenericString());
+            }
+        }
+
         return isValid;
     }
 
@@ -229,9 +256,10 @@ public class ConfigurationMetadata<T>
         return true;
     }
 
-    private Map<String, AttributeMetadata> buildAttributeMetadata(Class<T> configClass)
+    private Attributes buildAttributeMetadata(Class<T> configClass)
     {
         Map<String, AttributeMetadata> attributes = new HashMap<>();
+        Map<String, String> replacedProperties = new HashMap<>();
         for (Method configMethod : findConfigMethods(configClass)) {
             AttributeMetadata attribute = buildAttributeMetadata(configClass, configMethod);
 
@@ -240,6 +268,10 @@ public class ConfigurationMetadata<T>
                     problems.addError("Configuration class [%s] Multiple methods are annotated for @Config attribute [%s]", configClass.getName(), attribute.getName());
                 }
                 attributes.put(attribute.getName(), attribute);
+            }
+
+            if (!Objects.equals(getConfiguredPropertyName(configMethod), getEffectivePropertyName(configMethod))) {
+                replacedProperties.put(getConfiguredPropertyName(configMethod), getEffectivePropertyName(configMethod));
             }
         }
 
@@ -268,7 +300,15 @@ public class ConfigurationMetadata<T>
             }
         }
 
-        return attributes;
+        // Find orphan @SlatedForRemoval methods, in order to report errors
+        Collection<Method> slatedForRemovalMethods = findSlatedForRemovalMethods(configClass);
+        for (Method method : slatedForRemovalMethods) {
+            if (!method.isAnnotationPresent(Config.class)) {
+                problems.addError("@SlatedForRemoval method [%s] is not annotated with @Config.", method.toGenericString());
+            }
+        }
+
+        return new Attributes(attributes, replacedProperties);
     }
 
     private AttributeMetadata buildAttributeMetadata(Class<T> configClass, Method configMethod)
@@ -279,7 +319,8 @@ public class ConfigurationMetadata<T>
             return null;
         }
 
-        String propertyName = configMethod.getAnnotation(Config.class).value();
+        String configuredPropertyName = getConfiguredPropertyName(configMethod);
+        String propertyName = getEffectivePropertyName(configMethod);
         final boolean securitySensitive = configMethod.isAnnotationPresent(ConfigSecuritySensitive.class);
 
         // verify parameters
@@ -306,8 +347,8 @@ public class ConfigurationMetadata<T>
             }
         }
 
-        if (defunctConfig.contains(propertyName)) {
-            problems.addError("@Config property '%s' on method [%s] is defunct on class [%s]", propertyName, configMethod, configClass);
+        if (defunctConfig.contains(configuredPropertyName)) {
+            problems.addError("@Config property '%s' on method [%s] is defunct on class [%s]", configuredPropertyName, configMethod, configClass);
         }
 
         // Add the injection point for the current setter/property
@@ -323,6 +364,26 @@ public class ConfigurationMetadata<T>
         }
 
         return builder.build();
+    }
+
+    private static String getEffectivePropertyName(Method configMethod)
+    {
+        String propertyName = getConfiguredPropertyName(configMethod);
+        if (configMethod.isAnnotationPresent(SlatedForRemoval.class)) {
+            YearMonth after = getAfter(configMethod.getAnnotation(SlatedForRemoval.class));
+            propertyName += SlatedForRemoval.PROPERTY_SUFFIX + SlatedForRemoval.PROPERTY_DATE_FORMAT.format(after);
+        }
+        return propertyName;
+    }
+
+    private static YearMonth getAfter(SlatedForRemoval annotation)
+    {
+        return SlatedForRemoval.VALUE_DATE_FORMAT.parse(annotation.after(), YearMonth::from);
+    }
+
+    private static String getConfiguredPropertyName(Method configMethod)
+    {
+        return configMethod.getAnnotation(Config.class).value();
     }
 
     @Override
@@ -356,6 +417,28 @@ public class ConfigurationMetadata<T>
         return toStringHelper(this)
                 .add("configClass", configClass)
                 .toString();
+    }
+
+    private static class Attributes
+    {
+        private final Map<String, AttributeMetadata> attributes;
+        private final Map<String, String> replacedProperties;
+
+        public Attributes(Map<String, AttributeMetadata> attributes, Map<String, String> replacedProperties)
+        {
+            this.attributes = ImmutableMap.copyOf(requireNonNull(attributes, "attributes is null"));
+            this.replacedProperties = ImmutableMap.copyOf(requireNonNull(replacedProperties, "replacedProperties is null"));
+        }
+
+        public Map<String, AttributeMetadata> getAttributes()
+        {
+            return attributes;
+        }
+
+        public Map<String, String> getReplacedProperties()
+        {
+            return replacedProperties;
+        }
     }
 
     public static class InjectionPointMetaData
@@ -609,6 +692,11 @@ public class ConfigurationMetadata<T>
     private static Collection<Method> findSensitiveConfigMethods(Class<?> configClass)
     {
         return findAnnotatedMethods(configClass, ConfigSecuritySensitive.class);
+    }
+
+    private static Collection<Method> findSlatedForRemovalMethods(Class<?> configClass)
+    {
+        return findAnnotatedMethods(configClass, SlatedForRemoval.class);
     }
 
     /**

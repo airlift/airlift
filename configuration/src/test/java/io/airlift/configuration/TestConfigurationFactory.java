@@ -233,6 +233,49 @@ public class TestConfigurationFactory
     }
 
     @Test
+    public void testConfigurationWithSlatedForRemoval()
+    {
+        Map<String, String> properties = new TreeMap<>();
+        properties.put("example.value", "some value");
+        TestMonitor monitor = new TestMonitor();
+        Injector injector = createInjector(properties, monitor, binder -> configBinder(binder).bindConfig(SlatedForRemovalPresent.class, "example"));
+        SlatedForRemovalPresent config = injector.getInstance(SlatedForRemovalPresent.class);
+        monitor.assertNumberOfErrors(0);
+        monitor.assertNumberOfWarnings(0);
+        assertNotNull(config);
+        assertEquals(config.getValue(), "some value");
+        assertEquals(config.getSlatedForRemoval(), null);
+    }
+
+    @Test
+    public void testConfigurationUsingSlatedForRemoval()
+    {
+        Map<String, String> properties = new TreeMap<>();
+        properties.put("example.value", "some value");
+        properties.put("example.doomed-value.slated-for-removal-2018-01", "some doomed value");
+        TestMonitor monitor = new TestMonitor();
+        Injector injector = createInjector(properties, monitor, binder -> configBinder(binder).bindConfig(SlatedForRemovalPresent.class, "example"));
+        SlatedForRemovalPresent config = injector.getInstance(SlatedForRemovalPresent.class);
+        monitor.assertNumberOfErrors(0);
+        monitor.assertNumberOfWarnings(1);
+        monitor.assertMatchingWarningRecorded("Configuration property 'example.doomed-value.slated-for-removal-2018-01' is deprecated and should not be used");
+        assertNotNull(config);
+        assertEquals(config.getValue(), "some value");
+        assertEquals(config.getSlatedForRemoval(), "some doomed value");
+    }
+
+    @Test
+    public void testConfigurationUsingOriginalOfSlatedForRemoval()
+    {
+        assertInvalidConfig(
+                ImmutableMap.of(
+                        "example.value", "some value",
+                        "example.doomed-value", "some doomed value"),
+                binder -> configBinder(binder).bindConfig(SlatedForRemovalPresent.class, "example"),
+                "Error: Configuration property 'example.doomed-value' has been replaced with 'example.doomed-value.slated-for-removal-2018-01'");
+    }
+
+    @Test
     public void testSuccessfulBeanValidation()
     {
         Map<String, String> properties = new HashMap<>();
@@ -609,6 +652,37 @@ public class TestConfigurationFactory
         public void setStringValue(String stringValue)
         {
             this.stringValue = stringValue;
+        }
+    }
+
+    public static class SlatedForRemovalPresent
+    {
+        private String value;
+        private String slatedForRemoval;
+
+        public String getValue()
+        {
+            return value;
+        }
+
+        @Config("value")
+        public void setValue(String value)
+        {
+            this.value = value;
+        }
+
+        @Deprecated
+        public String getSlatedForRemoval()
+        {
+            return slatedForRemoval;
+        }
+
+        @Config("doomed-value")
+        @SlatedForRemoval(after = "2018-01")
+        @Deprecated
+        public void setSlatedForRemoval(String slatedForRemoval)
+        {
+            this.slatedForRemoval = slatedForRemoval;
         }
     }
 
