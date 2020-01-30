@@ -136,10 +136,10 @@ public class TestConfigurationFactory
     {
         assertInvalidConfig(
                 ImmutableMap.<String, String>builder()
-                    .put("string-value", "this is a")
-                    .put("string-a", "this is a")
-                    .put("string-b", "this is b")
-                    .build(),
+                        .put("string-value", "this is a")
+                        .put("string-a", "this is a")
+                        .put("string-b", "this is b")
+                        .build(),
                 binder -> configBinder(binder).bindConfig(LegacyConfigPresent.class),
                 ImmutableList.of(".*string-value.* conflicts with property 'string-a' .*"),
                 ImmutableList.of(".*Configuration property 'string-value' has been replaced. Use 'string-a' instead."));
@@ -150,10 +150,10 @@ public class TestConfigurationFactory
     {
         assertInvalidConfig(
                 ImmutableMap.<String, String>builder()
-                    .put("string-value", "this is the old value")
-                    .put("string-a", "this is a")
-                    .put("string-b", "this is b")
-                    .build(),
+                        .put("string-value", "this is the old value")
+                        .put("string-a", "this is a")
+                        .put("string-b", "this is b")
+                        .build(),
                 binder -> configBinder(binder).bindConfig(LegacyConfigPresent.class),
                 ImmutableList.of(".*string-value.* conflicts with property 'string-a' .*"),
                 ImmutableList.of(".*Configuration property 'string-value' has been replaced. Use 'string-a' instead."));
@@ -213,9 +213,9 @@ public class TestConfigurationFactory
     {
         assertInvalidConfig(
                 ImmutableMap.<String, String>builder()
-                    .put("string-value", "this is a")
-                    .put("defunct-value", "this shouldn't work")
-                    .build(),
+                        .put("string-value", "this is a")
+                        .put("defunct-value", "this shouldn't work")
+                        .build(),
                 binder -> configBinder(binder).bindConfig(DefunctConfigPresent.class),
                 ".*Defunct property 'defunct-value'.*DefunctConfigPresent.*");
     }
@@ -225,9 +225,9 @@ public class TestConfigurationFactory
     {
         assertInvalidConfig(
                 ImmutableMap.<String, String>builder()
-                    .put("example.string-value", "this is a")
-                    .put("example.defunct-value", "this shouldn't work")
-                    .build(),
+                        .put("example.string-value", "this is a")
+                        .put("example.defunct-value", "this shouldn't work")
+                        .build(),
                 binder -> configBinder(binder).bindConfig(DefunctConfigPresent.class, "example"),
                 ".*Defunct property 'example.defunct-value'.*DefunctConfigPresent.*");
     }
