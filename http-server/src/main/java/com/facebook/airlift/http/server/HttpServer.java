@@ -357,9 +357,11 @@ public class HttpServer
 
         handlers.addHandler(createServletContext(theServlet, parameters, filters, tokenManager, loginService, "http", "https"));
 
-        RequestLogHandler statsRecorder = new RequestLogHandler();
-        statsRecorder.setRequestLog(new StatsRecordingHandler(stats));
-        handlers.addHandler(statsRecorder);
+        if (config.isRequestStatsEnabled()) {
+            RequestLogHandler statsRecorder = new RequestLogHandler();
+            statsRecorder.setRequestLog(new StatsRecordingHandler(stats));
+            handlers.addHandler(statsRecorder);
+        }
 
         // add handlers to Jetty
         StatisticsHandler statsHandler = new StatisticsHandler();

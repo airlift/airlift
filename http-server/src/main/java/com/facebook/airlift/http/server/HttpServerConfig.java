@@ -83,6 +83,7 @@ public class HttpServerConfig
 
     private String logPath = "var/log/http-request.log";
     private boolean logEnabled = true;
+    private boolean requestStatsEnabled = true;
     private int logHistory = 15;
     private int logQueueSize = 10_000;
     private DataSize logMaxFileSize = new DataSize(100, MEGABYTE);
@@ -329,6 +330,18 @@ public class HttpServerConfig
     public HttpServerConfig setLogEnabled(boolean logEnabled)
     {
         this.logEnabled = logEnabled;
+        return this;
+    }
+
+    public boolean isRequestStatsEnabled()
+    {
+        return requestStatsEnabled;
+    }
+
+    @Config("http-server.request-stats.enabled")
+    public HttpServerConfig setRequestStatsEnabled(boolean requestStatsEnabled)
+    {
+        this.requestStatsEnabled = requestStatsEnabled;
         return this;
     }
 
