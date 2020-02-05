@@ -1,3 +1,7 @@
+0.192
+
+- Update to Jetty 9.4.26.v20200117.
+
 0.191
 
 - Do not require keystore password for HTTPS.
