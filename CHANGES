@@ -3,6 +3,7 @@
 - Do not require keystore password for HTTPS.
 - Allow trailing slash in discovery URI configuration.
 - Require host to be set in HttpUriBuilder.
+- Update to Jetty 9.4.26.v20200117.
 
 0.190
 
