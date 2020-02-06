@@ -488,6 +488,21 @@ public class QuantileDigest
         return builder.build();
     }
 
+    /**
+     * Scale all the counts by the given scale factor.
+     */
+    public void scale(double scaleFactor) {
+        checkArgument(scaleFactor > ZERO_WEIGHT_THRESHOLD, "scale factor must be > 0");
+        // Scale all the counts.
+        for (int i = 0; i < counts.length; i++) {
+            counts[i] *= scaleFactor;
+        }
+        weightedCount *= scaleFactor;
+
+        // Compress to scaled digest.
+        compress();
+    }
+
     private static final class HistogramBuilderStateHolder
     {
         double sum;
