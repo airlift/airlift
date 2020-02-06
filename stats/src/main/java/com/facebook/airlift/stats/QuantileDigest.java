@@ -305,6 +305,22 @@ public class QuantileDigest
     }
 
     /**
+     * Scale all the counts by the given scale factor.
+     */
+    public void scale(double scaleFactor)
+    {
+        checkArgument(scaleFactor > 0, "scale factor must be > 0");
+        // Scale all the counts.
+        for (int i = 0; i < counts.length; i++) {
+            counts[i] *= scaleFactor;
+        }
+        weightedCount *= scaleFactor;
+
+        // Compress the scaled digest.
+        compress();
+    }
+
+    /**
      * Get a lower bound on the quantiles for the given proportions. A returned q quantile is guaranteed to be within
      * the q - maxError and q quantiles.
      * <p>
