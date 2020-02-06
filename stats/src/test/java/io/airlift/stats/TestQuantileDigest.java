@@ -790,8 +790,6 @@ public class TestQuantileDigest
 
         // Scale up the counts.
         digest.scale(4);
-
-        // After scaling.
         assertEquals(digest.getHistogram(asList(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L)),
                 asList(new QuantileDigest.Bucket(0, Double.NaN),
                         new QuantileDigest.Bucket(4, 0),
