@@ -499,7 +499,7 @@ public class QuantileDigest
         }
         weightedCount *= scaleFactor;
 
-        // Compress to scaled digest.
+        // Compress the scaled digest.
         compress();
     }
 
