@@ -1,3 +1,7 @@
+0.193
+
+- Present explicit error messaging from launcher.py when Java is not installed.
+
 0.192
 
 - Update to Jetty 9.4.26.v20200117.

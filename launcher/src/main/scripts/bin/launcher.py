@@ -3,6 +3,7 @@
 import errno
 import os
 import platform
+import subprocess
 import sys
 import traceback
 
@@ -188,6 +189,11 @@ def build_java_execution(options, daemon):
         raise Exception('Launcher config file is missing: %s' % options.launcher_config)
     if options.log_levels_set and not exists(options.log_levels):
         raise Exception('Log levels file is missing: %s' % options.log_levels)
+
+    try:
+        subprocess.check_output(['java', '-version'], stderr=subprocess.STDOUT)
+    except (OSError, subprocess.CalledProcessError):
+        raise Exception('Java is not installed')
 
     properties = options.properties.copy()
 
