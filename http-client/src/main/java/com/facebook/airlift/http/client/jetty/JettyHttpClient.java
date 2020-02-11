@@ -14,7 +14,6 @@ import com.facebook.airlift.http.client.spnego.KerberosConfig;
 import com.facebook.airlift.http.client.spnego.SpnegoAuthentication;
 import com.facebook.airlift.http.client.spnego.SpnegoAuthenticationProtocolHandler;
 import com.facebook.airlift.http.client.spnego.SpnegoAuthenticationStore;
-import com.facebook.airlift.http.utils.jetty.ConcurrentScheduler;
 import com.facebook.airlift.security.pem.PemReader;
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.HostAndPort;
@@ -75,11 +74,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import static com.facebook.airlift.http.client.jetty.AuthorizationPreservingHttpClient.setPreserveAuthorization;
+import static com.facebook.airlift.http.utils.jetty.ConcurrentScheduler.createConcurrentScheduler;
 import static com.google.common.base.MoreObjects.toStringHelper;
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static java.lang.Math.max;
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
@@ -435,14 +433,12 @@ public class JettyHttpClient
     private static Scheduler createScheduler(String name, int timeoutConcurrency, int timeoutThreads)
     {
         Scheduler scheduler;
-        String threadName = "http-client-" + name + "-scheduler";
+        String threadName = "http-client-" + name + "-timeout";
         if ((timeoutConcurrency == 1) && (timeoutThreads == 1)) {
             scheduler = new ScheduledExecutorScheduler(threadName, true);
         }
         else {
-            checkArgument(timeoutConcurrency >= 1, "timeoutConcurrency must be at least one");
-            int threads = max(1, timeoutThreads / timeoutConcurrency);
-            scheduler = new ConcurrentScheduler(timeoutConcurrency, threads, threadName);
+            scheduler = createConcurrentScheduler(threadName, timeoutConcurrency, timeoutThreads);
         }
 
         try {

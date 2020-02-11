@@ -1,65 +1,81 @@
 package com.facebook.airlift.http.utils.jetty;
 
+import com.facebook.airlift.concurrent.ConcurrentScheduledExecutor;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.thread.Scheduler;
 
-import java.util.concurrent.ScheduledExecutorService;
+import javax.annotation.concurrent.GuardedBy;
+
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
-import static com.facebook.airlift.concurrent.Threads.daemonThreadsNamed;
 import static com.google.common.base.Preconditions.checkArgument;
+import static java.lang.Math.max;
 import static java.util.Objects.requireNonNull;
 
-// based on ScheduledExecutorScheduler
 public class ConcurrentScheduler
         extends AbstractLifeCycle
         implements Scheduler
 {
+    private final int schedulerCount;
     private final int threadsPerScheduler;
-    private final ScheduledExecutorService[] schedulers;
-    private final ThreadFactory threadFactory;
+    private final String threadBaseName;
 
-    public ConcurrentScheduler(int schedulerCount, int threadsPerScheduler, String threadBaseName)
+    @GuardedBy("this")
+    private volatile ConcurrentScheduledExecutor concurrentScheduler;
+
+    public ConcurrentScheduler(
+            int schedulerCount,
+            int threadsPerScheduler,
+            String threadBaseName)
     {
         checkArgument(schedulerCount > 0, "schedulerCount must be at least one");
-        this.schedulers = new ScheduledThreadPoolExecutor[schedulerCount];
         checkArgument(threadsPerScheduler > 0, "threadsPerScheduler must be at least one");
+
+        this.schedulerCount = schedulerCount;
         this.threadsPerScheduler = threadsPerScheduler;
-        requireNonNull(threadBaseName, "threadBaseName is null");
-        threadFactory = daemonThreadsNamed(threadBaseName + "-timeout-%s");
+        this.threadBaseName = requireNonNull(threadBaseName, "threadBaseName is null");
+    }
+
+    public static ConcurrentScheduler createConcurrentScheduler(
+            String threadBaseName,
+            int concurrency,
+            int totalThreads)
+    {
+        checkArgument(concurrency >= 1, "concurrency must be at least one");
+        int threadsPerScheduler = max(1, totalThreads / concurrency);
+        return new ConcurrentScheduler(concurrency, threadsPerScheduler, threadBaseName);
     }
 
     @Override
     protected void doStart()
     {
-        for (int i = 0; i < schedulers.length; i++) {
-            ScheduledThreadPoolExecutor scheduledExecutorService = new ScheduledThreadPoolExecutor(threadsPerScheduler, threadFactory);
-            scheduledExecutorService.setRemoveOnCancelPolicy(true);
-            schedulers[i] = scheduledExecutorService;
+        synchronized (this) {
+            if (concurrentScheduler == null) {
+                concurrentScheduler = new ConcurrentScheduledExecutor(schedulerCount, threadsPerScheduler, threadBaseName, true);
+            }
         }
     }
 
     @Override
     protected void doStop()
     {
-        for (int i = 0; i < schedulers.length; i++) {
-            schedulers[i].shutdownNow();
-            schedulers[i] = null;
+        synchronized (this) {
+            if (concurrentScheduler != null) {
+                concurrentScheduler.shutdownNow();
+                concurrentScheduler = null;
+            }
         }
     }
 
     @Override
     public Task schedule(Runnable task, long delay, TimeUnit unit)
     {
-        ScheduledExecutorService scheduler = schedulers[ThreadLocalRandom.current().nextInt(schedulers.length)];
+        ConcurrentScheduledExecutor scheduler = this.concurrentScheduler;
         if (scheduler == null) {
             return () -> false;
         }
-
+        // can throw RejectedExecutionException if it is shutting down, but that is ok
         ScheduledFuture<?> result = scheduler.schedule(task, delay, unit);
         return () -> result.cancel(false);
     }
