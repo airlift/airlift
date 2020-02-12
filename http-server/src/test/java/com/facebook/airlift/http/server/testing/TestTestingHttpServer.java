@@ -274,7 +274,7 @@ public class TestTestingHttpServer
         NodeInfo nodeInfo = new NodeInfo("test");
         HttpServerConfig config = new HttpServerConfig().setHttpPort(0);
         HttpServerInfo httpServerInfo = new HttpServerInfo(config, nodeInfo);
-        return new TestingHttpServer(httpServerInfo, nodeInfo, config, servlet, params);
+        return new TestingHttpServer(httpServerInfo, nodeInfo, config, servlet, ImmutableMap.of(), params);
     }
 
     private static TestingHttpServer createTestingHttpServerWithFilter(DummyServlet servlet, Map<String, String> params, DummyFilter filter)
@@ -283,7 +283,7 @@ public class TestTestingHttpServer
         NodeInfo nodeInfo = new NodeInfo("test");
         HttpServerConfig config = new HttpServerConfig().setHttpPort(0);
         HttpServerInfo httpServerInfo = new HttpServerInfo(config, nodeInfo);
-        return new TestingHttpServer(httpServerInfo, nodeInfo, config, servlet, params, ImmutableSet.of(filter), ImmutableSet.of());
+        return new TestingHttpServer(httpServerInfo, nodeInfo, config, servlet, ImmutableMap.of(), params, ImmutableSet.of(filter), ImmutableSet.of());
     }
 
     static class DummyServlet

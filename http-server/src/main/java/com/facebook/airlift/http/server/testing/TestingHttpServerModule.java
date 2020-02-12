@@ -27,9 +27,11 @@ import com.google.inject.Module;
 import com.google.inject.Scopes;
 
 import javax.servlet.Filter;
+import javax.servlet.Servlet;
 
 import static com.facebook.airlift.configuration.ConfigBinder.configBinder;
 import static com.facebook.airlift.http.server.HttpServerBinder.HttpResourceBinding;
+import static com.google.inject.multibindings.MapBinder.newMapBinder;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 
 public class TestingHttpServerModule
@@ -63,6 +65,7 @@ public class TestingHttpServerModule
         binder.bind(HttpServerInfo.class).in(Scopes.SINGLETON);
         binder.bind(TestingHttpServer.class).in(Scopes.SINGLETON);
         binder.bind(HttpServer.class).to(Key.get(TestingHttpServer.class));
+        newMapBinder(binder, String.class, Servlet.class, TheServlet.class);
         newSetBinder(binder, Filter.class, TheServlet.class);
         newSetBinder(binder, HttpResourceBinding.class, TheServlet.class);
         binder.bind(AnnouncementHttpServerInfo.class).to(LocalAnnouncementHttpServerInfo.class);

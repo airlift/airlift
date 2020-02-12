@@ -27,6 +27,7 @@ import com.facebook.airlift.log.Logging;
 import com.facebook.airlift.node.NodeConfig;
 import com.facebook.airlift.node.NodeInfo;
 import com.facebook.airlift.tracetoken.TraceTokenManager;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
 import org.testng.annotations.AfterMethod;
@@ -551,6 +552,7 @@ public class TestHttpServerProvider
                 nodeInfo,
                 config,
                 servlet,
+                ImmutableMap.of(),
                 ImmutableSet.of(new DummyFilter()),
                 ImmutableSet.of(),
                 ImmutableSet.of(),

@@ -106,7 +106,8 @@ public class HttpServer
     public HttpServer(HttpServerInfo httpServerInfo,
             NodeInfo nodeInfo,
             HttpServerConfig config,
-            Servlet theServlet,
+            Servlet defaultServlet,
+            Map<String, Servlet> servlets,
             Map<String, String> parameters,
             Set<Filter> filters,
             Set<HttpResourceBinding> resources,
@@ -123,7 +124,8 @@ public class HttpServer
         requireNonNull(httpServerInfo, "httpServerInfo is null");
         requireNonNull(nodeInfo, "nodeInfo is null");
         requireNonNull(config, "config is null");
-        requireNonNull(theServlet, "theServlet is null");
+        requireNonNull(defaultServlet, "defaultServlet is null");
+        requireNonNull(servlets, "servlets is null");
 
         QueuedThreadPool threadPool = new QueuedThreadPool(config.getMaxThreads());
         threadPool.setMinThreads(config.getMinThreads());
@@ -366,7 +368,7 @@ public class HttpServer
             handlers.addHandler(gzipHandler);
         }
 
-        handlers.addHandler(createServletContext(theServlet, parameters, filters, tokenManager, loginService, "http", "https"));
+        handlers.addHandler(createServletContext(defaultServlet, servlets, parameters, filters, tokenManager, loginService, "http", "https"));
 
         if (config.isRequestStatsEnabled()) {
             RequestLogHandler statsRecorder = new RequestLogHandler();
@@ -380,7 +382,7 @@ public class HttpServer
 
         HandlerList rootHandlers = new HandlerList();
         if (theAdminServlet != null && config.isAdminEnabled()) {
-            rootHandlers.addHandler(createServletContext(theAdminServlet, adminParameters, adminFilters, tokenManager, loginService, "admin"));
+            rootHandlers.addHandler(createServletContext(theAdminServlet, ImmutableMap.of(), adminParameters, adminFilters, tokenManager, loginService, "admin"));
         }
         rootHandlers.addHandler(statsHandler);
         server.setHandler(rootHandlers);
@@ -391,7 +393,9 @@ public class HttpServer
                 .map(date -> ZonedDateTime.ofInstant(date.toInstant(), ZoneId.systemDefault()));
     }
 
-    private static ServletContextHandler createServletContext(Servlet theServlet,
+    private static ServletContextHandler createServletContext(
+            Servlet defaultServlet,
+            Map<String, Servlet> servlets,
             Map<String, String> parameters,
             Set<Filter> filters,
             TraceTokenManager tokenManager,
@@ -418,9 +422,15 @@ public class HttpServer
         context.setGzipHandler(new GzipHandler());
 
         // -- the servlet
-        ServletHolder servletHolder = new ServletHolder(theServlet);
+        ServletHolder servletHolder = new ServletHolder(defaultServlet);
         servletHolder.setInitParameters(ImmutableMap.copyOf(parameters));
         context.addServlet(servletHolder, "/*");
+
+        for (Map.Entry<String, Servlet> servlet : servlets.entrySet()) {
+            ServletHolder holder = new ServletHolder(servlet.getValue());
+            holder.setInitParameters(ImmutableMap.copyOf(parameters));
+            context.addServlet(holder, servlet.getKey());
+        }
 
         // Starting with Jetty 9 there is no way to specify connectors directly, but
         // there is this wonky @ConnectorName virtual hosts automatically added

@@ -45,6 +45,7 @@ public class TestingHttpServer
             NodeInfo nodeInfo,
             HttpServerConfig config,
             @TheServlet Servlet servlet,
+            @TheServlet Map<String, Servlet> servlets,
             @TheServlet Map<String, String> initParameters)
             throws IOException
     {
@@ -52,6 +53,7 @@ public class TestingHttpServer
                 nodeInfo,
                 config,
                 servlet,
+                servlets,
                 initParameters,
                 ImmutableSet.of(),
                 ImmutableSet.of());
@@ -63,6 +65,7 @@ public class TestingHttpServer
             NodeInfo nodeInfo,
             HttpServerConfig config,
             @TheServlet Servlet servlet,
+            @TheServlet Map<String, Servlet> servlets,
             @TheServlet Map<String, String> initParameters,
             @TheServlet Set<Filter> filters,
             @TheServlet Set<HttpResourceBinding> resources)
@@ -72,6 +75,7 @@ public class TestingHttpServer
                 nodeInfo,
                 config.setLogEnabled(false),
                 servlet,
+                servlets,
                 initParameters,
                 ImmutableSet.copyOf(filters),
                 ImmutableSet.copyOf(resources),

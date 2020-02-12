@@ -46,7 +46,8 @@ public class HttpServerProvider
     private final HttpServerInfo httpServerInfo;
     private final NodeInfo nodeInfo;
     private final HttpServerConfig config;
-    private final Servlet theServlet;
+    private final Servlet defaultServlet;
+    private final Map<String, Servlet> servlets;
     private final Set<HttpResourceBinding> resources;
     private Map<String, String> servletInitParameters = ImmutableMap.of();
     private Servlet theAdminServlet;
@@ -63,7 +64,8 @@ public class HttpServerProvider
     public HttpServerProvider(HttpServerInfo httpServerInfo,
             NodeInfo nodeInfo,
             HttpServerConfig config,
-            @TheServlet Servlet theServlet,
+            @TheServlet Servlet defaultServlet,
+            @TheServlet Map<String, Servlet> servlets,
             @TheServlet Set<Filter> filters,
             @TheServlet Set<HttpResourceBinding> resources,
             @TheAdminServlet Set<Filter> adminFilters,
@@ -73,7 +75,8 @@ public class HttpServerProvider
         requireNonNull(httpServerInfo, "httpServerInfo is null");
         requireNonNull(nodeInfo, "nodeInfo is null");
         requireNonNull(config, "config is null");
-        requireNonNull(theServlet, "theServlet is null");
+        requireNonNull(defaultServlet, "defaultServlet is null");
+        requireNonNull(servlets, "servlets is null");
         requireNonNull(filters, "filters is null");
         requireNonNull(resources, "resources is null");
         requireNonNull(adminFilters, "adminFilters is null");
@@ -83,7 +86,8 @@ public class HttpServerProvider
         this.httpServerInfo = httpServerInfo;
         this.nodeInfo = nodeInfo;
         this.config = config;
-        this.theServlet = theServlet;
+        this.defaultServlet = defaultServlet;
+        this.servlets = servlets;
         this.filters = ImmutableSet.copyOf(filters);
         this.resources = ImmutableSet.copyOf(resources);
         this.adminFilters = ImmutableSet.copyOf(adminFilters);
@@ -134,7 +138,8 @@ public class HttpServerProvider
             HttpServer httpServer = new HttpServer(httpServerInfo,
                     nodeInfo,
                     config,
-                    theServlet,
+                    defaultServlet,
+                    servlets,
                     servletInitParameters,
                     filters,
                     resources,

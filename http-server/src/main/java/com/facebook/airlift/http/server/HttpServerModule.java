@@ -22,9 +22,11 @@ import com.google.inject.Module;
 import com.google.inject.Scopes;
 
 import javax.servlet.Filter;
+import javax.servlet.Servlet;
 
 import static com.facebook.airlift.configuration.ConfigBinder.configBinder;
 import static com.facebook.airlift.event.client.EventBinder.eventBinder;
+import static com.google.inject.multibindings.MapBinder.newMapBinder;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
@@ -65,6 +67,7 @@ public class HttpServerModule
         newExporter(binder).export(HttpServer.class).withGeneratedName();
         binder.bind(HttpServerInfo.class).in(Scopes.SINGLETON);
         binder.bind(RequestStats.class).in(Scopes.SINGLETON);
+        newMapBinder(binder, String.class, Servlet.class, TheServlet.class);
         newSetBinder(binder, Filter.class, TheServlet.class);
         newSetBinder(binder, Filter.class, TheAdminServlet.class);
         newSetBinder(binder, HttpResourceBinding.class, TheServlet.class);
