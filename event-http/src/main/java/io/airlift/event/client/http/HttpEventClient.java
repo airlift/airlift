@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.event.client;
+package io.airlift.event.client.http;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharStreams;
@@ -21,6 +21,11 @@ import com.google.common.net.MediaType;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.airlift.discovery.client.HttpServiceSelector;
 import io.airlift.discovery.client.ServiceType;
+import io.airlift.event.client.EventClient;
+import io.airlift.event.client.EventSubmissionFailedException;
+import io.airlift.event.client.ForEventClient;
+import io.airlift.event.client.JsonEventWriter;
+import io.airlift.event.client.ServiceUnavailableException;
 import io.airlift.http.client.BodyGenerator;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.Request;

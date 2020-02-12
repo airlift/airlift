@@ -13,13 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.event.client;
+package io.airlift.event.client.http;
 
 import com.google.inject.Binder;
 import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
+import io.airlift.event.client.EventClient;
+import io.airlift.event.client.EventModule;
+import io.airlift.event.client.EventTypeMetadata;
+import io.airlift.event.client.ForEventClient;
+import io.airlift.event.client.JsonEventWriter;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;

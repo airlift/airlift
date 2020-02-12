@@ -34,13 +34,6 @@
         <dependency>
             <groupId>io.airlift</groupId>
             <artifactId>event</artifactId>
-            <exclusions>
-                <!-- only the event interface is used, not the client -->
-                <exclusion>
-                    <groupId>io.airlift</groupId>
-                    <artifactId>http-client</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>

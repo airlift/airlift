@@ -13,11 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.event.client;
+package io.airlift.event.client.http;
 
 import com.google.common.io.CharStreams;
 import io.airlift.discovery.client.HttpServiceSelector;
 import io.airlift.discovery.client.testing.StaticHttpServiceSelector;
+import io.airlift.event.client.EventTypeMetadata;
+import io.airlift.event.client.FixedDummyEventClass;
+import io.airlift.event.client.JsonEventWriter;
+import io.airlift.event.client.ServiceUnavailableException;
+import io.airlift.event.client.TestingUtils;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.jetty.JettyHttpClient;

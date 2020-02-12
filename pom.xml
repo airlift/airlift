@@ -62,6 +62,7 @@
         <module>dbpool</module>
         <module>discovery</module>
         <module>event</module>
+        <module>event-http</module>
         <module>http-client</module>
         <module>http-server</module>
         <module>jaxrs</module>
@@ -120,6 +121,19 @@
             <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>event</artifactId>
+                <version>${dep.airlift.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>event</artifactId>
+                <version>${dep.airlift.version}</version>
+                <type>test-jar</type>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>event-http</artifactId>
                 <version>${dep.airlift.version}</version>
             </dependency>
 

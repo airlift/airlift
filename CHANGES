@@ -1,5 +1,6 @@
 0.193
 
+- Move HTTP event client to new event-http module.
 - Remove deprecated NullEventModule.
 - Present explicit error messaging from launcher.py when Java is not installed.
 
