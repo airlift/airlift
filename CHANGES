@@ -1,5 +1,6 @@
 0.193
 
+- Remove deprecated NullEventModule.
 - Present explicit error messaging from launcher.py when Java is not installed.
 
 0.192
