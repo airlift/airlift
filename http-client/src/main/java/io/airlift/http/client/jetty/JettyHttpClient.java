@@ -100,10 +100,6 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 public class JettyHttpClient
         implements io.airlift.http.client.HttpClient
 {
-    static {
-        JettyLogging.setup();
-    }
-
     private static final String STATS_KEY = "airlift_stats";
     private static final long SWEEP_PERIOD_MILLIS = 5000;
 
