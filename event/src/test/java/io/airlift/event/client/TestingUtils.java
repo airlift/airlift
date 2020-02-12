@@ -26,7 +26,7 @@ import java.util.UUID;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-final class TestingUtils
+public final class TestingUtils
 {
     private TestingUtils() {}
 
