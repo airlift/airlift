@@ -60,6 +60,7 @@
         <module>bootstrap</module>
         <module>configuration</module>
         <module>concurrent</module>
+        <module>http-utils</module>
         <module>dbpool</module>
         <module>discovery</module>
         <module>event</module>
@@ -97,6 +98,12 @@
             <dependency>
                 <groupId>com.facebook.airlift</groupId>
                 <artifactId>concurrent</artifactId>
+                <version>${dep.airlift.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.facebook.airlift</groupId>
+                <artifactId>http-utils</artifactId>
                 <version>${dep.airlift.version}</version>
             </dependency>
 

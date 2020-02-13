@@ -14,6 +14,7 @@ import com.facebook.airlift.http.client.spnego.KerberosConfig;
 import com.facebook.airlift.http.client.spnego.SpnegoAuthentication;
 import com.facebook.airlift.http.client.spnego.SpnegoAuthenticationProtocolHandler;
 import com.facebook.airlift.http.client.spnego.SpnegoAuthenticationStore;
+import com.facebook.airlift.http.utils.jetty.ConcurrentScheduler;
 import com.facebook.airlift.security.pem.PemReader;
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.HostAndPort;

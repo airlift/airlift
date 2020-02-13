@@ -57,6 +57,11 @@
 
         <dependency>
             <groupId>com.facebook.airlift</groupId>
+            <artifactId>http-utils</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.facebook.airlift</groupId>
             <artifactId>json</artifactId>
         </dependency>
 

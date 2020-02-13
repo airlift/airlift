@@ -1,4 +1,4 @@
-package com.facebook.airlift.http.client.jetty;
+package com.facebook.airlift.http.utils.jetty;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -15,7 +15,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
 
 // based on ScheduledExecutorScheduler
-class ConcurrentScheduler
+public class ConcurrentScheduler
         extends AbstractLifeCycle
         implements Scheduler
 {
@@ -23,7 +23,7 @@ class ConcurrentScheduler
     private final ScheduledExecutorService[] schedulers;
     private final ThreadFactory threadFactory;
 
-    ConcurrentScheduler(int schedulerCount, int threadsPerScheduler, String threadBaseName)
+    public ConcurrentScheduler(int schedulerCount, int threadsPerScheduler, String threadBaseName)
     {
         checkArgument(schedulerCount > 0, "schedulerCount must be at least one");
         this.schedulers = new ScheduledThreadPoolExecutor[schedulerCount];
