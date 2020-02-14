@@ -36,6 +36,11 @@ public class DecayTDigest
         this(new TDigest(compression), alpha, alpha == 0.0 ? noOpTicker() : Ticker.systemTicker());
     }
 
+    public DecayTDigest(double compression, double alpha, Ticker ticker)
+    {
+        this(new TDigest(compression), alpha, ticker);
+    }
+
     private DecayTDigest(TDigest digest, double alpha, Ticker ticker)
     {
         this(digest, alpha, ticker, TimeUnit.NANOSECONDS.toSeconds(ticker.read()));
@@ -129,7 +134,7 @@ public class DecayTDigest
             index++;
 
             min = Math.min(min, digest.means[i]);
-            max = Math.min(max, digest.means[i]);
+            max = Math.max(max, digest.means[i]);
         }
 
         digest.centroidCount = index;
