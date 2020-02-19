@@ -31,6 +31,7 @@ import java.util.concurrent.TimeoutException;
 import static com.facebook.airlift.concurrent.Threads.daemonThreadsNamed;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static java.lang.Math.max;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
@@ -65,6 +66,16 @@ public class ConcurrentScheduledExecutor
             schedulersBuilder.add(scheduledExecutorService);
         }
         schedulers = schedulersBuilder.build();
+    }
+
+    public static ConcurrentScheduledExecutor createConcurrentScheduledExecutor(
+            String threadBaseName,
+            int concurrency,
+            int totalThreads)
+    {
+        checkArgument(concurrency >= 1, "concurrency must be at least one");
+        int threadsPerScheduler = max(1, totalThreads / concurrency);
+        return new ConcurrentScheduledExecutor(concurrency, threadsPerScheduler, threadBaseName);
     }
 
     @Override
