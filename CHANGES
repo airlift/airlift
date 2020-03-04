@@ -3,6 +3,7 @@
 - Move HTTP event client to new event-http module.
 - Remove deprecated NullEventModule.
 - Present explicit error messaging from launcher.py when Java is not installed.
+- Update to Jetty 9.4.27.v20200227.
 
 0.192
 
