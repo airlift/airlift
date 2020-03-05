@@ -190,10 +190,11 @@ def build_java_execution(options, daemon):
     if options.log_levels_set and not exists(options.log_levels):
         raise Exception('Log levels file is missing: %s' % options.log_levels)
 
-    try:
-        subprocess.check_output(['java', '-version'], stderr=subprocess.STDOUT)
-    except (OSError, subprocess.CalledProcessError):
-        raise Exception('Java is not installed')
+    with open(os.devnull, 'w') as devnull:
+        try:
+            subprocess.check_call(['java', '-version'], stdout=devnull, stderr=devnull)
+        except (OSError, subprocess.CalledProcessError):
+            raise Exception('Java is not installed')
 
     properties = options.properties.copy()
 
