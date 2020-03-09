@@ -1,3 +1,6 @@
+0.194
+- Add CacheStatsMBean for reporting Guava cache statistics.
+
 0.193
 
 - Move HTTP event client to new event-http module.
