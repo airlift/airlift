@@ -38,7 +38,7 @@ import static java.lang.String.format;
  */
 public final class LifeCycleManager
 {
-    private final Logger log = Logger.get(getClass());
+    private final Logger log = Logger.get(LifeCycleManager.class);
     private final AtomicReference<State> state = new AtomicReference<>(State.LATENT);
     private final Queue<Object> managedInstances = new ConcurrentLinkedQueue<>();
     private final LifeCycleMethodsMap methodsMap;
@@ -107,6 +107,7 @@ public final class LifeCycleManager
 
         Thread thread = new Thread(() -> {
             try {
+                log.info("JVM is shutting down, cleaning up");
                 stop();
             }
             catch (Exception e) {
@@ -117,7 +118,7 @@ public final class LifeCycleManager
         Runtime.getRuntime().addShutdownHook(thread);
 
         state.set(State.STARTED);
-        log.info("Life cycle startup complete. System ready.");
+        log.info("Life cycle startup complete");
     }
 
     /**
@@ -193,7 +194,7 @@ public final class LifeCycleManager
         }
 
         state.set(State.STOPPED);
-        log.info("Life cycle stopped.");
+        log.info("Life cycle stopped");
     }
 
     /**
