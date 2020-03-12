@@ -56,7 +56,9 @@ class JettyResponseFuture<T, E extends Exception>
         try {
             stats.recordRequestCanceled();
             state.set(JettyAsyncHttpState.CANCELED);
-            jettyRequest.abort(new CancellationException());
+            if (mayInterruptIfRunning) {
+                jettyRequest.abort(new CancellationException());
+            }
             return super.cancel(mayInterruptIfRunning);
         }
         catch (Throwable e) {
