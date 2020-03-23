@@ -219,7 +219,7 @@ def build_java_execution(options, daemon):
     classpath = pathjoin(options.install_path, 'lib', '*')
 
     command = ['java', '-cp', classpath]
-    command += jvm_properties + system_properties
+    command += jvm_properties + options.jvm_options + system_properties
     command += [main_class]
 
     if options.verbose:
@@ -363,6 +363,7 @@ def create_parser():
     parser.add_option('--pid-file', metavar='FILE', help='Defaults to DATA_DIR/var/run/launcher.pid')
     parser.add_option('--launcher-log-file', metavar='FILE', help='Defaults to DATA_DIR/var/log/launcher.log (only in daemon mode)')
     parser.add_option('--server-log-file', metavar='FILE', help='Defaults to DATA_DIR/var/log/server.log (only in daemon mode)')
+    parser.add_option('-J', action='append', metavar='OPT', dest='jvm_options', help='Set a JVM option')
     parser.add_option('-D', action='append', metavar='NAME=VALUE', dest='properties', help='Set a Java system property')
     return parser
 
@@ -425,6 +426,7 @@ def main():
     o.config_path = realpath(options.config or pathjoin(o.etc_dir, 'config.properties'))
     o.log_levels = realpath(options.log_levels_file or pathjoin(o.etc_dir, 'log.properties'))
     o.log_levels_set = bool(options.log_levels_file)
+    o.jvm_options = options.jvm_options or []
 
     if options.node_config and not exists(o.node_config):
         parser.error('Node config file is missing: %s' % o.node_config)
