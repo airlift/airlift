@@ -1,5 +1,6 @@
 0.194
 - Add CacheStatsMBean for reporting Guava cache statistics.
+- Allow passing additional JVM options in launcher.
 
 0.193
 

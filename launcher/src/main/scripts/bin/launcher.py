@@ -219,7 +219,7 @@ def build_java_execution(options, daemon):
     classpath = pathjoin(options.install_path, 'lib', '*')
 
     command = ['java', '-cp', classpath]
-    command += jvm_properties + system_properties
+    command += jvm_properties + options.jvm_options + system_properties
     command += [main_class]
 
     if options.verbose:
@@ -363,6 +363,7 @@ def create_parser():
     parser.add_option('--pid-file', metavar='FILE', help='Defaults to DATA_DIR/var/run/launcher.pid')
     parser.add_option('--launcher-log-file', metavar='FILE', help='Defaults to DATA_DIR/var/log/launcher.log (only in daemon mode)')
     parser.add_option('--server-log-file', metavar='FILE', help='Defaults to DATA_DIR/var/log/server.log (only in daemon mode)')
+    parser.add_option('-J', action='append', metavar='OPT', dest='jvm_options', help='Pass Java options')
     parser.add_option('-D', action='append', metavar='NAME=VALUE', dest='properties', help='Set a Java system property')
     return parser
 
@@ -440,6 +441,7 @@ def main():
     o.launcher_log = realpath(options.launcher_log_file or pathjoin(o.data_dir, 'var/log/launcher.log'))
     o.server_log = realpath(options.server_log_file or pathjoin(o.data_dir, 'var/log/server.log'))
 
+    o.jvm_options = options.jvm_options or ()
     o.properties = parse_properties(parser, options.properties or {})
     for k, v in node_properties.items():
         if k not in o.properties:
