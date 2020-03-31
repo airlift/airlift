@@ -43,6 +43,7 @@ public class TDigest
     private static final int FORMAT_TAG = 0;
     private static final int T_DIGEST_SIZE = ClassLayout.parseClass(TDigest.class).instanceSize();
     private static final int INITIAL_CAPACITY = 1;
+    private static final int FUDGE_FACTOR = 10;
 
     private final int maxSize;
     private final double compression;
@@ -95,7 +96,7 @@ public class TDigest
         checkArgument(compression >= 10, "compression factor too small (< 10)");
 
         this.compression = compression;
-        this.maxSize = (int) (10 * compression);
+        this.maxSize = (int) (5 * (internalCompressionFactor(compression) + FUDGE_FACTOR));
         this.totalWeight = totalWeight;
         this.min = min;
         this.max = max;
