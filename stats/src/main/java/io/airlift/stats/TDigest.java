@@ -26,6 +26,7 @@ import org.openjdk.jol.info.ClassLayout;
 import javax.annotation.concurrent.NotThreadSafe;
 
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -195,6 +196,9 @@ public class TDigest
             }
             else {
                 merge(internalCompressionFactor(compression));
+                if (centroidCount >= means.length) {
+                    throw new AssertionError("Invalid size estimation for T-Digest: " + Base64.getEncoder().encodeToString(serializeInternal().getBytes()));
+                }
             }
         }
 
@@ -316,7 +320,11 @@ public class TDigest
     public Slice serialize()
     {
         merge(compression);
+        return serializeInternal();
+    }
 
+    private Slice serializeInternal()
+    {
         Slice result = Slices.allocate(serializedSizeInBytes());
         SliceOutput output = result.getOutput();
 
