@@ -7,11 +7,17 @@ import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import ch.qos.logback.core.util.FileSize;
+import com.google.common.base.Joiner;
 import com.google.common.math.LongMath;
 import io.airlift.units.DataSize;
 
 import java.io.File;
-import java.util.logging.ErrorManager;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Handler;
 import java.util.logging.LogRecord;
 
@@ -20,6 +26,7 @@ import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.logging.ErrorManager.CLOSE_FAILURE;
 import static java.util.logging.ErrorManager.FORMAT_FAILURE;
+import static java.util.logging.ErrorManager.OPEN_FAILURE;
 import static java.util.logging.ErrorManager.WRITE_FAILURE;
 
 final class LegacyRollingFileHandler
@@ -37,7 +44,22 @@ final class LegacyRollingFileHandler
 
         ContextBase context = new ContextBase();
 
-        recoverTempFiles(filename);
+        // if the log file is a symlink, the user likely was running the new logger implementation and then reverted to the legacy version
+        if (Files.isSymbolicLink(Paths.get(filename))) {
+            try {
+                Files.delete(Paths.get(filename));
+            }
+            catch (IOException e) {
+                throw new UncheckedIOException("Unable to remove symlink: " + filename, e);
+            }
+        }
+
+        try {
+            recoverTempFiles(filename);
+        }
+        catch (IOException e) {
+            reportError(null, e, OPEN_FAILURE);
+        }
 
         RollingFileAppender<String> fileAppender = new RollingFileAppender<>();
         TimeBasedRollingPolicy<String> rollingPolicy = new TimeBasedRollingPolicy<>();
@@ -141,7 +163,8 @@ final class LegacyRollingFileHandler
         }
     }
 
-    private void recoverTempFiles(String logPath)
+    static void recoverTempFiles(String logPath)
+            throws IOException
     {
         // Logback has a tendency to leave around temp files if it is interrupted.
         // These .tmp files are log files that are about to be compressed.
@@ -154,13 +177,17 @@ final class LegacyRollingFileHandler
             return;
         }
 
+        List<String> errorMessages = new ArrayList<>();
         for (File tempFile : tempFiles) {
             String newName = tempFile.getName().substring(0, tempFile.getName().length() - TEMP_FILE_EXTENSION.length());
             File newFile = new File(tempFile.getParent(), newName + LOG_FILE_EXTENSION);
 
             if (!tempFile.renameTo(newFile)) {
-                reportError(format("Could not rename temp file [%s] to [%s]", tempFile, newFile), null, ErrorManager.OPEN_FAILURE);
+                errorMessages.add(format("Could not rename temp file [%s] to [%s]", tempFile, newFile));
             }
+        }
+        if (!errorMessages.isEmpty()) {
+            throw new IOException("Error recovering temp files\n" + Joiner.on("\n").join(errorMessages));
         }
     }
 }
