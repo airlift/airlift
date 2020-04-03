@@ -16,6 +16,8 @@
 package io.airlift.log;
 
 import com.google.common.collect.ImmutableSortedMap;
+import io.airlift.log.RollingFileHandler.CompressionType;
+import io.airlift.units.DataSize;
 
 import javax.annotation.concurrent.GuardedBy;
 
@@ -34,6 +36,7 @@ import java.util.logging.Handler;
 import java.util.logging.LogManager;
 
 import static com.google.common.collect.Maps.fromProperties;
+import static io.airlift.log.RollingFileHandler.createRollingFileHandler;
 
 /**
  * Initializes the logging subsystem.
@@ -105,11 +108,17 @@ public class Logging
         consoleHandler = null;
     }
 
-    public void logToFile(String logPath, int maxHistory, long maxSizeInBytes, Format format)
+    public void logToFile(boolean legacyLoggerImplementation, String logPath, int maxHistory, DataSize maxFileSize, DataSize maxTotalSize, CompressionType compressionType, Format format)
     {
         log.info("Logging to %s", logPath);
 
-        LegacyRollingFileHandler handler = new LegacyRollingFileHandler(logPath, maxHistory, maxSizeInBytes, format);
+        Handler handler;
+        if (legacyLoggerImplementation) {
+            handler = new LegacyRollingFileHandler(logPath, maxHistory, maxFileSize.toBytes(), format);
+        }
+        else {
+            handler = createRollingFileHandler(logPath, maxFileSize, maxTotalSize, compressionType, format);
+        }
         ROOT.addHandler(handler);
     }
 
@@ -184,7 +193,14 @@ public class Logging
     public void configure(LoggingConfiguration config)
     {
         if (config.getLogPath() != null) {
-            logToFile(config.getLogPath(), config.getMaxHistory(), config.getMaxSize().toBytes(), config.getFormat());
+            logToFile(
+                    config.isLegacyLoggerImplementationEnabled(),
+                    config.getLogPath(),
+                    config.getMaxHistory(),
+                    config.getMaxSize(),
+                    config.getMaxTotalSize(),
+                    config.getCompression(),
+                    config.getFormat());
         }
 
         if (!config.isConsoleEnabled()) {
