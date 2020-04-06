@@ -228,7 +228,7 @@ def build_java_execution(options, daemon):
 
     env = os.environ.copy()
 
-    # set process name: https://github.com/electrum/procname
+    # set process name: https://github.com/airlift/procname
     process_name = launcher_properties.get('process-name', '')
     if len(process_name) > 0:
         system = platform.system() + '-' + platform.machine()
