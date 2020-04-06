@@ -5,6 +5,7 @@
 - Forbid direct binder.install() in AbstractConfigurationAwareModule.
 - Add CacheStatsMBean for reporting Guava cache statistics.
 - Add utility combine() method for ConfigurationAwareModule.
+- Add support for setting process name on Linux aarch64.
 - Allow passing additional JVM options in launcher.
 - Clean up logging in LifeCycleManager.
 
