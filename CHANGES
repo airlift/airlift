@@ -1,6 +1,12 @@
 0.194
+
+- Fix DecayTDigest.rescale() handling of max of means.
+- Fix potential IndexOutOfBounds in t-digest.
+- Forbid direct binder.install() in AbstractConfigurationAwareModule.
 - Add CacheStatsMBean for reporting Guava cache statistics.
+- Add utility combine() method for ConfigurationAwareModule.
 - Allow passing additional JVM options in launcher.
+- Clean up logging in LifeCycleManager.
 
 0.193
 
