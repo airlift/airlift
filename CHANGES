@@ -1,5 +1,6 @@
 0.195
 
+- Only forbid binder.install() for ConfigurationAwareModule.
 - Publish Maven BOM.
 
 0.194

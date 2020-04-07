@@ -106,8 +106,8 @@ public abstract class AbstractConfigurationAwareModule
         protected Object handleInvocation(Object proxy, Method method, Object[] args)
                 throws Throwable
         {
-            if (INSTALL_METHOD.equals(method)) {
-                throw new RuntimeException("binder.install() should not be called, use super.install() instead");
+            if (INSTALL_METHOD.equals(method) && (args[0] instanceof ConfigurationAwareModule)) {
+                throw new IllegalStateException("Use super.install() for ConfigurationAwareModule, not binder.install()");
             }
 
             return method.invoke(delegate, args);
