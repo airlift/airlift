@@ -109,8 +109,8 @@ public class Logging
     {
         log.info("Logging to %s", logPath);
 
-        RollingFileHandler rollingFileHandler = new RollingFileHandler(logPath, maxHistory, maxSizeInBytes, format);
-        ROOT.addHandler(rollingFileHandler);
+        LegacyRollingFileHandler handler = new LegacyRollingFileHandler(logPath, maxHistory, maxSizeInBytes, format);
+        ROOT.addHandler(handler);
     }
 
     public Level getRootLevel()

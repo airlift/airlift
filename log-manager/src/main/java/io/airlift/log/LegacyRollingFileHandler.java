@@ -22,7 +22,7 @@ import static java.util.logging.ErrorManager.CLOSE_FAILURE;
 import static java.util.logging.ErrorManager.FORMAT_FAILURE;
 import static java.util.logging.ErrorManager.WRITE_FAILURE;
 
-final class RollingFileHandler
+final class LegacyRollingFileHandler
         extends Handler
 {
     private static final String TEMP_FILE_EXTENSION = ".tmp";
@@ -31,7 +31,7 @@ final class RollingFileHandler
 
     private final AsyncAppenderBase<String> asyncAppender;
 
-    public RollingFileHandler(String filename, int maxHistory, long maxSizeInBytes, Format format)
+    public LegacyRollingFileHandler(String filename, int maxHistory, long maxSizeInBytes, Format format)
     {
         setFormatter(format.getFormatter());
 
