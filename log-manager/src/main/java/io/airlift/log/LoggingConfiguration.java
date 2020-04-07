@@ -16,12 +16,13 @@
 package io.airlift.log;
 
 import io.airlift.configuration.Config;
+import io.airlift.configuration.DefunctConfig;
 import io.airlift.configuration.LegacyConfig;
 import io.airlift.units.DataSize;
 
-import static io.airlift.units.DataSize.Unit.BYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
 
+@DefunctConfig("log.max-size-in-bytes")
 public class LoggingConfiguration
 {
     private boolean consoleEnabled = true;
@@ -53,20 +54,6 @@ public class LoggingConfiguration
     public LoggingConfiguration setLogPath(String logPath)
     {
         this.logPath = logPath;
-        return this;
-    }
-
-    @Deprecated
-    public long getMaxSizeInBytes()
-    {
-        return maxSize.toBytes();
-    }
-
-    @Deprecated
-    @Config("log.max-size-in-bytes")
-    public LoggingConfiguration setMaxSizeInBytes(long maxSize)
-    {
-        this.maxSize = new DataSize(maxSize, BYTE);
         return this;
     }
 
