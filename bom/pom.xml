@@ -155,6 +155,8 @@
                 <artifactId>flatten-maven-plugin</artifactId>
                 <version>1.2.2</version>
                 <configuration>
+                    <outputDirectory>${project.build.directory}</outputDirectory>
+                    <flattenedPomFilename>pom.xml</flattenedPomFilename>
                     <flattenMode>bom</flattenMode>
                     <pomElements>
                         <properties>remove</properties>
@@ -164,17 +166,9 @@
                 </configuration>
                 <executions>
                     <execution>
-                        <id>flatten</id>
                         <phase>process-resources</phase>
                         <goals>
                             <goal>flatten</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>flatten.clean</id>
-                        <phase>clean</phase>
-                        <goals>
-                            <goal>clean</goal>
                         </goals>
                     </execution>
                 </executions>
