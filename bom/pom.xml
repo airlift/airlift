@@ -8,6 +8,7 @@
         <version>0.195-SNAPSHOT</version>
     </parent>
 
+    <name>bom</name>
     <artifactId>bom</artifactId>
     <packaging>pom</packaging>
 
