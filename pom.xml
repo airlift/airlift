@@ -55,6 +55,9 @@
     </scm>
 
     <modules>
+        <!-- bom -->
+        <module>bom</module>
+
         <!-- components -->
         <module>bootstrap</module>
         <module>configuration</module>

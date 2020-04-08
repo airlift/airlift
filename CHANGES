@@ -1,3 +1,7 @@
+0.195
+
+- Publish Maven BOM.
+
 0.194
 
 - Fix DecayTDigest.rescale() handling of max of means.
