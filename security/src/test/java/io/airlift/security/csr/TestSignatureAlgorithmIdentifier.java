@@ -20,6 +20,7 @@ import org.testng.annotations.Test;
 import java.util.Map.Entry;
 
 import static com.google.common.io.BaseEncoding.base16;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 
 public class TestSignatureAlgorithmIdentifier
@@ -28,11 +29,19 @@ public class TestSignatureAlgorithmIdentifier
     public void test()
             throws Exception
     {
+        int verifiedCount = 0;
         for (Entry<String, SignatureAlgorithmIdentifier> entry : SignatureAlgorithmIdentifier.getAllSignatureAlgorithmIdentifiers().entrySet()) {
             SignatureAlgorithmIdentifier signatureAlgorithmIdentifier = entry.getValue();
             assertEquals(signatureAlgorithmIdentifier.getName(), entry.getKey());
 
-            AlgorithmIdentifier algorithmIdentifier = new DefaultSignatureAlgorithmIdentifierFinder().find(entry.getKey());
+            AlgorithmIdentifier algorithmIdentifier;
+            try {
+                algorithmIdentifier = new DefaultSignatureAlgorithmIdentifierFinder().find(entry.getKey());
+            }
+            catch (IllegalArgumentException e) {
+                // Bouncy is missing some algorithms the JVM supports
+                continue;
+            }
             assertEquals(
                     signatureAlgorithmIdentifier.getOid(),
                     algorithmIdentifier.getAlgorithm().getId());
@@ -41,6 +50,8 @@ public class TestSignatureAlgorithmIdentifier
                     base16().encode(algorithmIdentifier.getAlgorithm().getEncoded("DER")));
             assertEquals(algorithmIdentifier, algorithmIdentifier);
             assertEquals(algorithmIdentifier.hashCode(), algorithmIdentifier.hashCode());
+            verifiedCount++;
         }
+        assertThat(verifiedCount).as("Algorithm identifiers verified").isGreaterThanOrEqualTo(10);
     }
 }
