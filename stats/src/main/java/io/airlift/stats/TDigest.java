@@ -405,7 +405,7 @@ public class TDigest
             double entryMean = means[index];
 
             double tentativeWeight = centroidWeight + entryWeight;
-            double tentativeQuantile = (weightSoFar + tentativeWeight) / totalWeight;
+            double tentativeQuantile = Math.min((weightSoFar + tentativeWeight) / totalWeight, 1);
 
             double maxClusterWeight = totalWeight * Math.min(currentQuantileMaxClusterSize, maxRelativeClusterSize(tentativeQuantile, normalizer));
             if (tentativeWeight <= maxClusterWeight) {
