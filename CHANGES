@@ -1,3 +1,8 @@
+0.196
+
+- Add new rolling log file implementation. The legacy implementation can be used
+  by setting the "log.legacy-implementation.enabled" config property.
+
 0.195
 
 - Only forbid binder.install() for ConfigurationAwareModule.

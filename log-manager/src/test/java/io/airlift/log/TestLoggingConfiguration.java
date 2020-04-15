@@ -15,7 +15,9 @@ package io.airlift.log;
 
 import com.google.common.collect.ImmutableMap;
 import io.airlift.configuration.testing.ConfigAssertions;
+import io.airlift.log.RollingFileHandler.CompressionType;
 import io.airlift.units.DataSize;
+import io.airlift.units.DataSize.Unit;
 import org.testng.annotations.Test;
 
 import java.util.Map;
@@ -32,9 +34,11 @@ public class TestLoggingConfiguration
                 .setConsoleEnabled(true)
                 .setLogPath(null)
                 .setMaxSize(new DataSize(100, DataSize.Unit.MEGABYTE))
-                .setMaxSizeInBytes(new DataSize(100, DataSize.Unit.MEGABYTE).toBytes())
+                .setMaxTotalSize(new DataSize(1, Unit.GIGABYTE))
+                .setCompression(CompressionType.GZIP)
                 .setMaxHistory(30)
-                .setLevelsFile(null));
+                .setLevelsFile(null)
+                .setLegacyLoggerImplementationEnabled(false));
     }
 
     @Test
@@ -44,18 +48,22 @@ public class TestLoggingConfiguration
                 .put("log.enable-console", "false")
                 .put("log.path", "/tmp/log.log")
                 .put("log.max-size", "1kB")
-                .put("log.max-size-in-bytes", "1024")
+                .put("log.max-total-size", "33kB")
+                .put("log.compression", "NONE")
                 .put("log.max-history", "3")
                 .put("log.levels-file", "/tmp/levels.txt")
+                .put("log.legacy-implementation.enabled", "true")
                 .build();
 
         LoggingConfiguration expected = new LoggingConfiguration()
                 .setConsoleEnabled(false)
                 .setLogPath("/tmp/log.log")
                 .setMaxSize(new DataSize(1, KILOBYTE))
-                .setMaxSizeInBytes(1024)
+                .setMaxTotalSize(new DataSize(33, KILOBYTE))
+                .setCompression(CompressionType.NONE)
                 .setMaxHistory(3)
-                .setLevelsFile("/tmp/levels.txt");
+                .setLevelsFile("/tmp/levels.txt")
+                .setLegacyLoggerImplementationEnabled(true);
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }

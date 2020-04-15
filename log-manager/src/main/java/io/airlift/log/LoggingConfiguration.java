@@ -16,19 +16,28 @@
 package io.airlift.log;
 
 import io.airlift.configuration.Config;
+import io.airlift.configuration.ConfigDescription;
+import io.airlift.configuration.DefunctConfig;
 import io.airlift.configuration.LegacyConfig;
+import io.airlift.log.RollingFileHandler.CompressionType;
 import io.airlift.units.DataSize;
 
-import static io.airlift.units.DataSize.Unit.BYTE;
+import javax.validation.constraints.NotNull;
+
+import static io.airlift.units.DataSize.Unit.GIGABYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
 
+@DefunctConfig("log.max-size-in-bytes")
 public class LoggingConfiguration
 {
     private boolean consoleEnabled = true;
     private String logPath;
     private DataSize maxSize = new DataSize(100, MEGABYTE);
+    private DataSize maxTotalSize = new DataSize(1, GIGABYTE);
+    private CompressionType compression = CompressionType.GZIP;
     private int maxHistory = 30;
     private String levelsFile;
+    private boolean legacyLoggerImplementationEnabled;
 
     public boolean isConsoleEnabled()
     {
@@ -55,38 +64,55 @@ public class LoggingConfiguration
         return this;
     }
 
-    @Deprecated
-    public long getMaxSizeInBytes()
-    {
-        return maxSize.toBytes();
-    }
-
-    @Deprecated
-    @Config("log.max-size-in-bytes")
-    public LoggingConfiguration setMaxSizeInBytes(long maxSize)
-    {
-        this.maxSize = new DataSize(maxSize, BYTE);
-        return this;
-    }
-
     public DataSize getMaxSize()
     {
         return maxSize;
     }
 
     @Config("log.max-size")
+    @ConfigDescription("Maximum size of each log file")
     public LoggingConfiguration setMaxSize(DataSize maxSize)
     {
         this.maxSize = maxSize;
         return this;
     }
 
+    public DataSize getMaxTotalSize()
+    {
+        return maxTotalSize;
+    }
+
+    @Config("log.max-total-size")
+    @ConfigDescription("Maximum size of all log files")
+    public LoggingConfiguration setMaxTotalSize(DataSize maxTotalSize)
+    {
+        this.maxTotalSize = maxTotalSize;
+        return this;
+    }
+
+    @NotNull
+    public CompressionType getCompression()
+    {
+        return compression;
+    }
+
+    @Config("log.compression")
+    @ConfigDescription("Compression type for log files")
+    public LoggingConfiguration setCompression(CompressionType compression)
+    {
+        this.compression = compression;
+        return this;
+    }
+
+    @Deprecated
     public int getMaxHistory()
     {
         return maxHistory;
     }
 
+    @Deprecated
     @Config("log.max-history")
+    @ConfigDescription("Maximum number of log files to retain")
     public LoggingConfiguration setMaxHistory(int maxHistory)
     {
         this.maxHistory = maxHistory;
@@ -102,6 +128,18 @@ public class LoggingConfiguration
     public LoggingConfiguration setLevelsFile(String levelsFile)
     {
         this.levelsFile = levelsFile;
+        return this;
+    }
+
+    public boolean isLegacyLoggerImplementationEnabled()
+    {
+        return legacyLoggerImplementationEnabled;
+    }
+
+    @Config("log.legacy-implementation.enabled")
+    public LoggingConfiguration setLegacyLoggerImplementationEnabled(boolean enabled)
+    {
+        this.legacyLoggerImplementationEnabled = enabled;
         return this;
     }
 }
