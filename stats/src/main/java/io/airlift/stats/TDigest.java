@@ -13,6 +13,7 @@
  */
 package io.airlift.stats;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Ints;
@@ -97,7 +98,7 @@ public class TDigest
         checkArgument(compression >= 10, "compression factor too small (< 10)");
 
         this.compression = compression;
-        this.maxSize = (int) (5 * (internalCompressionFactor(compression) + FUDGE_FACTOR));
+        this.maxSize = (int) (6 * (internalCompressionFactor(compression) + FUDGE_FACTOR)); // 5 * size + size (for centroids + new values)
         this.totalWeight = totalWeight;
         this.min = min;
         this.max = max;
@@ -438,6 +439,18 @@ public class TDigest
 
         System.arraycopy(tempMeans, 0, means, 0, centroidCount);
         System.arraycopy(tempWeights, 0, weights, 0, centroidCount);
+    }
+
+    @VisibleForTesting
+    void forceMerge()
+    {
+        merge(internalCompressionFactor(compression));
+    }
+
+    @VisibleForTesting
+    int getCentroidCount()
+    {
+        return centroidCount;
     }
 
     private void mergeIfNeeded(double compression)

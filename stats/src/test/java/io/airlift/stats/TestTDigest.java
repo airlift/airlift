@@ -14,8 +14,11 @@
 package io.airlift.stats;
 
 import com.google.common.collect.Lists;
+import com.google.common.io.Resources;
+import io.airlift.slice.Slices;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -257,6 +260,25 @@ public class TestTDigest
         assertEquals(merged.valueAt(1), 8.0);
     }
 
+    @Test
+    public void testUnmergeable()
+            throws IOException
+    {
+        // Tests an edge case where centroids cannot be merged and an attempting to add another value fails because of lack of room in the buffer
+        byte[] serialized = Resources.toByteArray(Resources.getResource("io/airlift/stats/unmergeable-tdigest"));
+        TDigest digest = TDigest.deserialize(Slices.wrappedBuffer(serialized));
+
+        // validate the assumption
+        int centroids = digest.getCentroidCount();
+        digest.forceMerge();
+        assertEquals(digest.getCentroidCount(), centroids, "Assumption that digest is not mergeable no longer holds");
+
+        for (int i = 0; i < 1000; i++) {
+            // add some values somewhere in the middle of the distribution
+            digest.add(interpolate(ThreadLocalRandom.current().nextGaussian(), -1, digest.getMin(), 1, digest.getMax()));
+        }
+    }
+
     private void addAll(TDigest digest, List<Integer> values)
     {
         for (int value : values) {
@@ -269,5 +291,10 @@ public class TestTDigest
         assertEquals(actual.getMin(), expected.getMin());
         assertEquals(actual.getMax(), expected.getMax());
         assertEquals(actual.getCount(), expected.getCount());
+    }
+
+    private static double interpolate(double x, double x0, double y0, double x1, double y1)
+    {
+        return y0 + (x - x0) / (x1 - x0) * (y1 - y0);
     }
 }
