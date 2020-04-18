@@ -15,6 +15,7 @@
  */
 package io.airlift.discovery.client;
 
+import org.testng.SkipException;
 import org.testng.annotations.Test;
 
 import static io.airlift.testing.EquivalenceTester.equivalenceTester;
@@ -28,11 +29,15 @@ public class TestServiceTypes
     @ServiceType("banana")
     private final ServiceType bananaServiceType;
 
+    @ServiceType("quot\"ation-and-\\backslash")
+    private final ServiceType serviceTypeWithCharacters;
+
     public TestServiceTypes()
     {
         try {
             this.appleServiceType = getClass().getDeclaredField("appleServiceType").getAnnotation(ServiceType.class);
             this.bananaServiceType = getClass().getDeclaredField("bananaServiceType").getAnnotation(ServiceType.class);
+            this.serviceTypeWithCharacters = getClass().getDeclaredField("serviceTypeWithCharacters").getAnnotation(ServiceType.class);
         }
         catch (NoSuchFieldException e) {
             throw new RuntimeException(e);
@@ -48,7 +53,12 @@ public class TestServiceTypes
     @Test
     public void testToString()
     {
+        if (System.getProperty("java.version").startsWith("1.8.")) {
+            throw new SkipException("Incompatible Java version: " + System.getProperty("java.version"));
+        }
+
         assertEquals(ServiceTypes.serviceType("apple").toString(), appleServiceType.toString());
+        assertEquals(ServiceTypes.serviceType("quot\"ation-and-\\backslash").toString(), serviceTypeWithCharacters.toString());
     }
 
     @Test
