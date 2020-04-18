@@ -114,4 +114,18 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <!-- Note: this overrides default argLine defined in parent pom -->
+                    <!-- TODO leverage https://github.com/airlift/airbase/pull/216 -->
+                    <argLine>-Djdk.attach.allowAttachSelf=true</argLine>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

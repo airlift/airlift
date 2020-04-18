@@ -18,7 +18,6 @@ package io.airlift.jmx;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.net.HostAndPort;
 import io.airlift.log.Logger;
-import sun.management.Agent;
 import sun.management.jmxremote.ConnectorBootstrap;
 import sun.rmi.server.UnicastRef;
 
@@ -76,7 +75,7 @@ class JmxAgent8
             System.setProperty("com.sun.management.jmxremote.ssl", "false");
 
             try {
-                Agent.startAgent();
+                AgentClassHolder.AGENT_CLASS.getMethod("startAgent").invoke(null);
             }
             catch (Exception e) {
                 throwIfUnchecked(e);
@@ -111,7 +110,7 @@ class JmxAgent8
         RemoteObject registry;
         int actualRegistryPort;
         try {
-            jmxServer = getField(Agent.class, JMXConnectorServer.class, "jmxServer");
+            jmxServer = getField(AgentClassHolder.AGENT_CLASS, JMXConnectorServer.class, "jmxServer");
             registry = getField(ConnectorBootstrap.class, RemoteObject.class, "registry");
 
             if (jmxServer == null || registry == null) {
@@ -158,6 +157,20 @@ class JmxAgent8
         }
         catch (ClassCastException e) {
             throw new IllegalArgumentException(format("Field %s in class %s is not of type %s, actual: %s", name, clazz.getName(), returnType.getName(), field.getType().getName()), e);
+        }
+    }
+
+    private static class AgentClassHolder
+    {
+        public static final Class<?> AGENT_CLASS;
+
+        static {
+            try {
+                AGENT_CLASS = Class.forName("sun.management.Agent");
+            }
+            catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 }
