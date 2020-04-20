@@ -1,3 +1,7 @@
+0.196
+
+- Do not start JmxAgent by default.
+
 0.195
 
 - Only forbid binder.install() for ConfigurationAwareModule.

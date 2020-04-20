@@ -29,6 +29,7 @@ import java.util.Objects;
 import java.util.Properties;
 
 import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
 
 class JmxAgent9
         implements JmxAgent
@@ -45,27 +46,20 @@ class JmxAgent9
     public JmxAgent9(JmxConfig config)
             throws IOException
     {
-        int registryPort;
+        int registryPort = requireNonNull(config.getRmiRegistryPort(), "RMI registry port is not configured");
         Integer existingRegistryPort = Integer.getInteger(JMX_REGISTRY_PORT);
-        Integer configuredRegistryPort = config.getRmiRegistryPort();
+
         if (existingRegistryPort != null) {
-            if (configuredRegistryPort != null && !existingRegistryPort.equals(configuredRegistryPort)) {
+            if (existingRegistryPort != registryPort) {
                 throw new RuntimeException(format(
                         "System property '%s=%s' does match configured RMI registry port %s",
-                        JMX_REGISTRY_PORT, existingRegistryPort, configuredRegistryPort));
+                        JMX_REGISTRY_PORT, existingRegistryPort, registryPort));
             }
             if (existingRegistryPort.equals(0)) {
                 throw new RuntimeException(format(
                         "JMX agent already running on an unknown port (system property '%s' is 0)",
                         JMX_REGISTRY_PORT));
             }
-            registryPort = existingRegistryPort;
-        }
-        else if (configuredRegistryPort != null) {
-            registryPort = configuredRegistryPort;
-        }
-        else {
-            registryPort = NetUtils.findUnusedPort();
         }
 
         int serverPort = 0;

@@ -16,8 +16,8 @@
 package io.airlift.jmx;
 
 import com.google.inject.Binder;
-import com.google.inject.Module;
 import com.google.inject.Scopes;
+import io.airlift.configuration.AbstractConfigurationAwareModule;
 import io.airlift.discovery.client.ServiceAnnouncement;
 
 import javax.inject.Inject;
@@ -26,16 +26,17 @@ import javax.management.MBeanServer;
 
 import java.lang.management.ManagementFactory;
 
+import static com.google.common.base.Preconditions.checkState;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 public class JmxModule
-        implements Module
+        extends AbstractConfigurationAwareModule
 {
     @Override
-    public void configure(Binder binder)
+    protected void setup(Binder binder)
     {
         binder.disableCircularProxies();
 
@@ -45,15 +46,25 @@ public class JmxModule
         newExporter(binder).export(StackTraceMBean.class).withGeneratedName();
         binder.bind(StackTraceMBean.class).in(Scopes.SINGLETON);
 
-        discoveryBinder(binder).bindServiceAnnouncement(JmxAnnouncementProvider.class);
+        JmxConfig jmxConfig = buildConfigObject(JmxConfig.class);
 
-        if (JavaVersion.current().getMajor() < 9) {
-            binder.bind(JmxAgent8.class).in(Scopes.SINGLETON);
-            binder.bind(JmxAgent.class).to(JmxAgent8.class);
+        if (jmxConfig.getRmiRegistryPort() == null) {
+            // Do not export JmxAgent by default for security reasons.
+            // Also, exporting it at randomly picked port was proven to be unreliable in certain environments.
+
+            checkState(jmxConfig.getRmiServerPort() == null, "RMI registry port must be configured when RMI server port is configured");
         }
         else {
-            binder.bind(JmxAgent9.class).in(Scopes.SINGLETON);
-            binder.bind(JmxAgent.class).to(JmxAgent9.class);
+            discoveryBinder(binder).bindServiceAnnouncement(JmxAnnouncementProvider.class);
+
+            if (JavaVersion.current().getMajor() < 9) {
+                binder.bind(JmxAgent8.class).in(Scopes.SINGLETON);
+                binder.bind(JmxAgent.class).to(JmxAgent8.class);
+            }
+            else {
+                binder.bind(JmxAgent9.class).in(Scopes.SINGLETON);
+                binder.bind(JmxAgent.class).to(JmxAgent9.class);
+            }
         }
     }
 
