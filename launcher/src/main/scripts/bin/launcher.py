@@ -69,16 +69,21 @@ def try_lock(f):
         return False
 
 
-def open_read_write(f, mode):
+def open_pidfile(f, mode):
     """Open file in read/write mode (without truncating it)"""
-    return os.fdopen(os.open(f, O_RDWR | O_CREAT, mode), 'r+')
+    fd = os.open(f, O_RDWR | O_CREAT, mode)
+    if hasattr(os, 'set_inheritable'):
+        # See https://docs.python.org/3/library/os.html#inheritance-of-file-descriptors
+        # Since Python 3.4
+        os.set_inheritable(fd, True)
+    return os.fdopen(fd, 'r+')
 
 
 class Process:
     def __init__(self, path):
         makedirs(dirname(path))
         self.path = path
-        self.pid_file = open_read_write(path, 0o600)
+        self.pid_file = open_pidfile(path, 0o600)
         self.refresh()
 
     def refresh(self):
@@ -277,11 +282,6 @@ def start(process, options):
         process.write_pid(pid)
         print('Started as %s' % pid)
         return
-
-    if hasattr(os, "set_inheritable"):
-        # See https://docs.python.org/3/library/os.html#inheritance-of-file-descriptors
-        # Since Python 3.4
-        os.set_inheritable(process.pid_file.fileno(), True)
 
     os.setsid()
 
