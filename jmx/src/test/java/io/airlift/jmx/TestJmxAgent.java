@@ -25,7 +25,7 @@ public class TestJmxAgent
 
         HostAndPort address = JmxAgent8.getRunningAgentAddress(null, null);
 
-        JmxAgent agent = new JmxAgent8(new JmxConfig());
+        JmxAgent agent = new JmxAgent8(new JmxConfig().setRmiRegistryPort(8012));
         if (address == null) {
             // if agent wasn't running, it must have been started by the instantiation of JmxAgent
             address = JmxAgent8.getRunningAgentAddress(null, null);
@@ -48,7 +48,7 @@ public class TestJmxAgent
             throw new SkipException("Incompatible Java version: " + JavaVersion.current());
         }
 
-        JmxAgent agent = new JmxAgent9(new JmxConfig());
+        JmxAgent agent = new JmxAgent9(new JmxConfig().setRmiRegistryPort(8012));
 
         JMXServiceURL url = agent.getUrl();
 

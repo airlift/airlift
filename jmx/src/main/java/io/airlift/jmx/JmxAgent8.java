@@ -35,6 +35,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Throwables.throwIfUnchecked;
 import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
 
 class JmxAgent8
         implements JmxAgent
@@ -47,21 +48,15 @@ class JmxAgent8
     public JmxAgent8(JmxConfig config)
             throws IOException
     {
+        int registryPort = requireNonNull(config.getRmiRegistryPort(), "RMI registry port is not configured");
+
         // first, see if the jmx agent is already started (e.g., via command line properties passed to the jvm)
-        HostAndPort address = getRunningAgentAddress(config.getRmiRegistryPort(), config.getRmiServerPort());
+        HostAndPort address = getRunningAgentAddress(registryPort, config.getRmiServerPort());
         if (address != null) {
             log.info("JMX agent already running and listening on %s", address);
         }
         else {
             // otherwise, start it manually
-            int registryPort;
-            if (config.getRmiRegistryPort() == null) {
-                registryPort = NetUtils.findUnusedPort();
-            }
-            else {
-                registryPort = config.getRmiRegistryPort();
-            }
-
             int serverPort = 0;
             if (config.getRmiServerPort() != null) {
                 serverPort = config.getRmiServerPort();
