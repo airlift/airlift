@@ -135,4 +135,17 @@ public class TestLogging
         assertFalse(logger.isDebugEnabled());
         assertFalse(logger.isInfoEnabled());
     }
+
+    @Test
+    public void testClearLevel()
+            throws Exception
+    {
+        Logging logging = Logging.initialize();
+        Logger logger = Logger.get("testClearLevel");
+
+        logging.setLevel("testClearLevel", Level.DEBUG);
+        assertTrue(logger.isDebugEnabled());
+        logging.clearLevel("testClearLevel");
+        assertFalse(logger.isDebugEnabled());
+    }
 }
