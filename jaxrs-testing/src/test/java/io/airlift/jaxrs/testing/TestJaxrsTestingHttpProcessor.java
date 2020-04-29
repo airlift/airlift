@@ -7,16 +7,17 @@ import io.airlift.http.client.testing.TestingHttpClient;
 import org.testng.annotations.Test;
 
 import javax.ws.rs.GET;
+import javax.ws.rs.HeaderParam;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import java.net.URI;
 
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
-import static java.lang.String.format;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
@@ -31,12 +32,14 @@ public class TestJaxrsTestingHttpProcessor
     {
         Request request = prepareGet()
                 .setUri(URI.create("http://fake.invalid/get-it/get/xyz"))
+                .setHeader("X-Test", "abc")
                 .build();
 
         StringResponse response = HTTP_CLIENT.execute(request, createStringResponseHandler());
 
         assertEquals(response.getStatusCode(), HttpStatus.OK.code());
         assertEquals(response.getBody(), "Got xyz");
+        assertEquals(response.getHeader("X-Test-Out"), "Got abc");
     }
 
     @Test
@@ -72,9 +75,13 @@ public class TestJaxrsTestingHttpProcessor
         @Path("get/{id}")
         @GET
         @Produces(MediaType.TEXT_PLAIN)
-        public String getId(@PathParam("id") String id)
+        public Response getId(
+                @HeaderParam("X-Test") String test,
+                @PathParam("id") String id)
         {
-            return format("Got %s", id);
+            return Response.ok("Got " + id)
+                    .header("X-Test-Out", "Got " + test)
+                    .build();
         }
 
         @Path("fail/{message}")
