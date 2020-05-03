@@ -1,6 +1,7 @@
 0.196
 
 - Do not start JmxAgent by default.
+- Deprecate Closeables.closeQuietly.
 
 0.195
 

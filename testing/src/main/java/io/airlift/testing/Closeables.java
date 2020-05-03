@@ -11,6 +11,12 @@ public final class Closeables
     {
     }
 
+    /**
+     * @deprecated Usage of this method is discouraged, as it may hide real problems.
+     * Use {@link #closeAll(Closeable...)} instead and, if necessary, suppress exceptions
+     * explicitly.
+     */
+    @Deprecated
     public static void closeQuietly(Closeable... closeables)
     {
         if (closeables == null) {
