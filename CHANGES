@@ -1,7 +1,10 @@
 0.196
 
 - Do not start JmxAgent by default.
+- Fix liveness detection for launcher run command on Python 3.4+.
+- Fix size estimation error when updating a t-digest.
 - Deprecate Closeables.closeQuietly.
+- Add @FileExists validation.
 
 0.195
 
