@@ -24,6 +24,7 @@
         <air.check.skip-jacoco>true</air.check.skip-jacoco>
         <air.check.skip-license>true</air.check.skip-license>
         <air.java.version>1.8.0-40</air.java.version>
+        <air.javadoc.lint>-missing</air.javadoc.lint>
 
         <dep.airlift.version>0.196-SNAPSHOT</dep.airlift.version>
         <dep.packaging.version>${dep.airlift.version}</dep.packaging.version>
