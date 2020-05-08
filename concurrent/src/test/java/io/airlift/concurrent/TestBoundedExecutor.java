@@ -1,6 +1,5 @@
 package io.airlift.concurrent;
 
-import com.google.common.util.concurrent.Uninterruptibles;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -8,12 +7,14 @@ import org.testng.annotations.Test;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.google.common.util.concurrent.Uninterruptibles.awaitUninterruptibly;
+import static java.util.concurrent.Executors.newCachedThreadPool;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
@@ -25,21 +26,18 @@ public class TestBoundedExecutor
 
     @BeforeClass
     public void setUp()
-            throws Exception
     {
-        executorService = Executors.newCachedThreadPool();
+        executorService = newCachedThreadPool();
     }
 
     @AfterClass(alwaysRun = true)
     public void tearDown()
-            throws Exception
     {
         executorService.shutdownNow();
     }
 
     @Test
     public void testCounter()
-            throws Exception
     {
         int maxThreads = 1;
         BoundedExecutor boundedExecutor = new BoundedExecutor(executorService, maxThreads); // Enforce single thread
@@ -56,7 +54,7 @@ public class TestBoundedExecutor
             boundedExecutor.execute(() -> {
                 try {
                     initializeLatch.countDown();
-                    Uninterruptibles.awaitUninterruptibly(startLatch); // Wait for the go signal
+                    awaitUninterruptibly(startLatch); // Wait for the go signal
 
                     // Intentional distinct read and write calls
                     int initialCount = counter.get();
@@ -68,7 +66,7 @@ public class TestBoundedExecutor
             });
         }
 
-        assertTrue(Uninterruptibles.awaitUninterruptibly(initializeLatch, 1, TimeUnit.MINUTES)); // Wait for pre-load tasks to initialize
+        assertTrue(awaitUninterruptibly(initializeLatch, 1, TimeUnit.MINUTES)); // Wait for pre-load tasks to initialize
         startLatch.countDown(); // Signal go for stage1 threads
 
         // Concurrently submitted tasks
@@ -85,39 +83,35 @@ public class TestBoundedExecutor
             });
         }
 
-        assertTrue(Uninterruptibles.awaitUninterruptibly(completeLatch, 1, TimeUnit.MINUTES)); // Wait for tasks to complete
+        assertTrue(awaitUninterruptibly(completeLatch, 1, TimeUnit.MINUTES)); // Wait for tasks to complete
         assertEquals(counter.get(), totalTasks);
     }
 
     @Test
     public void testSingleThreadBound()
-            throws Exception
     {
         testBound(1, 100_000);
     }
 
     @Test
     public void testDoubleThreadBound()
-            throws Exception
     {
         testBound(2, 100_000);
     }
 
     @Test
     public void testTripleThreadBound()
-            throws Exception
     {
         testBound(3, 100_000);
     }
 
     @Test
     public void testExecutorCorruptionDetection()
-            throws Exception
     {
         AtomicBoolean reject = new AtomicBoolean();
         Executor executor = command -> {
             if (reject.get()) {
-                throw new RejectedExecutionException();
+                throw new RejectedExecutionException("Reject for testing");
             }
             executorService.execute(command);
         };
@@ -125,24 +119,19 @@ public class TestBoundedExecutor
 
         // Force the underlying executor to fail
         reject.set(true);
-        try {
-            boundedExecutor.execute(() -> fail("Should not be run"));
-            fail("Execute should fail");
-        }
-        catch (Exception e) {
-        }
+        assertThatThrownBy(() -> boundedExecutor.execute(() -> fail("Should not be run")))
+                .isInstanceOf(RejectedExecutionException.class)
+                .hasMessage("Reject for testing");
 
         // Recover the underlying executor, but all new tasks should fail
         reject.set(false);
-        try {
-            boundedExecutor.execute(() -> fail("Should not be run"));
-            fail("Execute should still fail");
-        }
-        catch (Exception e) {
-        }
+        assertThatThrownBy(() -> boundedExecutor.execute(() -> fail("Should not be run")))
+                .isInstanceOf(RejectedExecutionException.class)
+                .hasMessage("BoundedExecutor is in a failed state");
     }
 
-    private void testBound(final int maxThreads, int stageTasks)
+    @SuppressWarnings("SameParameterValue")
+    private void testBound(int maxThreads, int stageTasks)
     {
         BoundedExecutor boundedExecutor = new BoundedExecutor(executorService, maxThreads);
 
@@ -158,7 +147,7 @@ public class TestBoundedExecutor
             boundedExecutor.execute(() -> {
                 try {
                     initializeLatch.countDown();
-                    Uninterruptibles.awaitUninterruptibly(startLatch); // Wait for the go signal
+                    awaitUninterruptibly(startLatch); // Wait for the go signal
                     int count = activeThreadCount.incrementAndGet();
                     if (count < 1 || count > maxThreads) {
                         failed.set(true);
@@ -171,7 +160,7 @@ public class TestBoundedExecutor
             });
         }
 
-        assertTrue(Uninterruptibles.awaitUninterruptibly(initializeLatch, 1, TimeUnit.MINUTES)); // Wait for pre-load tasks to initialize
+        assertTrue(awaitUninterruptibly(initializeLatch, 1, TimeUnit.MINUTES)); // Wait for pre-load tasks to initialize
         startLatch.countDown(); // Signal go for stage1 threads
 
         // Concurrently submitted tasks
@@ -190,7 +179,7 @@ public class TestBoundedExecutor
             });
         }
 
-        assertTrue(Uninterruptibles.awaitUninterruptibly(completeLatch, 1, TimeUnit.MINUTES)); // Wait for tasks to complete
+        assertTrue(awaitUninterruptibly(completeLatch, 1, TimeUnit.MINUTES)); // Wait for tasks to complete
 
         assertFalse(failed.get());
     }
