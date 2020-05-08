@@ -8,10 +8,10 @@ import javax.annotation.concurrent.ThreadSafe;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.google.common.base.Preconditions.checkState;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -52,13 +52,15 @@ public class BoundedExecutor
     @Override
     public void execute(Runnable task)
     {
-        checkState(!failed.get(), "BoundedExecutor is in a failed state");
+        if (failed.get()) {
+            throw new RejectedExecutionException("BoundedExecutor is in a failed state");
+        }
 
         queue.add(task);
 
         int size = queueSize.incrementAndGet();
         if (size <= maxThreads) {
-            // If able to grab a permit (aka size <= maxThreads), then we are short exactly one draining thread
+            // If able to grab a permit, then we are short exactly one draining thread
             try {
                 coreExecutor.execute(this::drainQueue);
             }
