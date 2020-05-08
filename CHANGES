@@ -1,3 +1,7 @@
+0.198
+
+- Use RejectedExecutionException in BoundedExecutor.
+
 0.197
 
 - Change HttpUriBuilder to not render default port for HTTP and HTTPS.
