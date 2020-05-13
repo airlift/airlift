@@ -200,7 +200,7 @@ public class HttpUriBuilder
         if (host != null) {
             builder.append(host);
         }
-        if (port != -1) {
+        if (!isDefaultPort()) {
             builder.append(':');
             builder.append(port);
         }
@@ -231,6 +231,13 @@ public class HttpUriBuilder
         }
 
         return builder.toString();
+    }
+
+    private boolean isDefaultPort()
+    {
+        return port == -1 ||
+                ("http".equalsIgnoreCase(scheme) && port == 80) ||
+                ("https".equalsIgnoreCase(scheme) && port == 443);
     }
 
     public URI build()

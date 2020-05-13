@@ -235,10 +235,10 @@ public class TestHttpUriBuilder
     public void testReplacePort()
     {
         URI uri = uriBuilderFrom(URI.create("http://www.example.com:8081/"))
-                .port(80)
+                .port(801)
                 .build();
 
-        assertEquals(uri.toASCIIString(), "http://www.example.com:80/");
+        assertEquals(uri.toASCIIString(), "http://www.example.com:801/");
     }
 
     @Test
@@ -249,6 +249,18 @@ public class TestHttpUriBuilder
                 .build();
 
         assertEquals(uri.toASCIIString(), "http://www.example.com");
+
+        uri = uriBuilderFrom(URI.create("http://www.example.com:8081"))
+                .port(80)
+                .build();
+
+        assertEquals(uri.toASCIIString(), "http://www.example.com");
+
+        uri = uriBuilderFrom(URI.create("https://www.example.com:8081"))
+                .port(443)
+                .build();
+
+        assertEquals(uri.toASCIIString(), "https://www.example.com");
     }
 
     @Test
