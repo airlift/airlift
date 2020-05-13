@@ -1,3 +1,9 @@
+0.197
+
+- Change HttpUriBuilder to not render default port for HTTP and HTTPS.
+- Add optional support Forwarded and X-Forwarded headers in proxied environments.
+- Add Logging.clearLevel(loggerName) to unset a log level.
+
 0.196
 
 - Do not start JmxAgent by default.
