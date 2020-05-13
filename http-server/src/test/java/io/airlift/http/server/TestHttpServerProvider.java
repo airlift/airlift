@@ -17,11 +17,14 @@ package io.airlift.http.server;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
+import com.google.common.net.HostAndPort;
 import io.airlift.event.client.NullEventClient;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.HttpClient.HttpResponseFuture;
 import io.airlift.http.client.HttpClientConfig;
+import io.airlift.http.client.HttpUriBuilder;
 import io.airlift.http.client.Request;
+import io.airlift.http.client.Request.Builder;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
 import io.airlift.http.client.jetty.JettyHttpClient;
@@ -44,6 +47,7 @@ import java.io.UncheckedIOException;
 import java.net.URI;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -51,6 +55,9 @@ import static com.google.common.io.Files.asCharSink;
 import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
 import static com.google.common.io.Resources.getResource;
+import static com.google.common.net.HttpHeaders.X_FORWARDED_FOR;
+import static com.google.common.net.HttpHeaders.X_FORWARDED_HOST;
+import static com.google.common.net.HttpHeaders.X_FORWARDED_PROTO;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
@@ -282,6 +289,51 @@ public class TestHttpServerProvider
 
             assertEquals(response.getStatusCode(), HttpServletResponse.SC_PAYMENT_REQUIRED);
         }
+    }
+
+    @Test
+    public void testForwardedEnabled()
+            throws Exception
+    {
+        config.setForwardedEnabled(true);
+        ForwardedServlet servlet = new ForwardedServlet();
+        createServer(servlet);
+        server.start();
+
+        assertForward(servlet, Optional.of("unknown"), Optional.empty(), Optional.empty());
+        assertForward(servlet, Optional.of("https"), Optional.empty(), Optional.empty());
+
+        assertForward(servlet, Optional.empty(), Optional.of("example.com:1234"), Optional.empty());
+
+        assertForward(servlet, Optional.empty(), Optional.empty(), Optional.of("remote.example.com"));
+
+        assertForward(servlet, Optional.of("unknown"), Optional.of("example.com:1234"), Optional.of("remote.example.com"));
+        assertForward(servlet, Optional.of("https"), Optional.of("example.com:1234"), Optional.of("remote.example.com"));
+    }
+
+    private void assertForward(ForwardedServlet servlet, Optional<String> proto, Optional<String> host, Optional<String> remoteHost)
+    {
+        servlet.reset();
+
+        HttpUriBuilder uriBuilder = HttpUriBuilder.uriBuilderFrom(httpServerInfo.getHttpUri()).replacePath("/some/path");
+        try (HttpClient client = new JettyHttpClient()) {
+            Builder builder = prepareGet()
+                    .setUri(uriBuilder.build());
+            proto.ifPresent(value -> builder.addHeader(X_FORWARDED_PROTO, value));
+            host.ifPresent(value -> builder.addHeader(X_FORWARDED_HOST, value));
+            remoteHost.ifPresent(value -> builder.addHeader(X_FORWARDED_FOR, value));
+            StringResponse response = client.execute(builder.build(), createStringResponseHandler());
+            assertEquals(response.getStatusCode(), 200);
+        }
+
+        proto.ifPresent(uriBuilder::scheme);
+        host.map(HostAndPort::fromString).ifPresent(uriBuilder::hostAndPort);
+        URI forwardedUri = uriBuilder.build();
+        assertEquals(servlet.getRequestUrl(), forwardedUri.toString());
+        assertEquals(servlet.getScheme(), forwardedUri.getScheme());
+        assertEquals(servlet.getIsSecure(), (Boolean) forwardedUri.getScheme().equals("https"));
+
+        remoteHost.ifPresent(value -> assertEquals(servlet.getRemoteAddress(), value));
     }
 
     @Test
