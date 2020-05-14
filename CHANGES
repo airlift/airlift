@@ -2,6 +2,7 @@
 
 - Fix SNI handling for HTTP server.
 - Include server URL for HTTP client IOException.
+- Log full stack trace for discovery client errors.
 
 205
 
