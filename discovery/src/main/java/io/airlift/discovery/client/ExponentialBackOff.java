@@ -47,9 +47,8 @@ class ExponentialBackOff
     {
         if (serverUp) {
             serverUp = false;
-            log.error("%s: %s", serverDownMessage, t.getMessage());
+            log.error(t, serverDownMessage);
         }
-        log.debug(t, serverDownMessage);
 
         if (currentWaitInMillis <= 0) {
             currentWaitInMillis = initialWait;
