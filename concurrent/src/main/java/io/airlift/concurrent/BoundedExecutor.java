@@ -8,10 +8,9 @@ import javax.annotation.concurrent.ThreadSafe;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.google.common.base.Preconditions.checkState;
+import static java.lang.Math.max;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -36,7 +35,6 @@ public class BoundedExecutor
 
     private final Queue<Runnable> queue = new ConcurrentLinkedQueue<>();
     private final AtomicInteger queueSize = new AtomicInteger(0);
-    private final AtomicBoolean failed = new AtomicBoolean();
 
     private final Executor coreExecutor;
     private final int maxThreads;
@@ -52,19 +50,15 @@ public class BoundedExecutor
     @Override
     public void execute(Runnable task)
     {
-        checkState(!failed.get(), "BoundedExecutor is in a failed state");
-
         queue.add(task);
 
         int size = queueSize.incrementAndGet();
         if (size <= maxThreads) {
-            // If able to grab a permit (aka size <= maxThreads), then we are short exactly one draining thread
             try {
                 coreExecutor.execute(this::drainQueue);
             }
             catch (Throwable e) {
-                failed.set(true);
-                log.error("BoundedExecutor state corrupted due to underlying executor failure");
+                decrementAndGetQueueSize();
                 throw e;
             }
         }
@@ -72,15 +66,26 @@ public class BoundedExecutor
 
     private void drainQueue()
     {
-        // INVARIANT: queue has at least one task available when this method is called
-        do {
-            try {
-                queue.poll().run();
+        while (true) {
+            Runnable task = queue.poll();
+
+            if (task != null) {
+                try {
+                    task.run();
+                }
+                catch (Throwable e) {
+                    log.error(e, "Task failed");
+                }
             }
-            catch (Throwable e) {
-                log.error(e, "Task failed");
+
+            if ((decrementAndGetQueueSize() == 0) && (task == null)) {
+                return;
             }
         }
-        while (queueSize.getAndDecrement() > maxThreads);
+    }
+
+    private int decrementAndGetQueueSize()
+    {
+        return queueSize.updateAndGet(current -> max(current - 1, 0));
     }
 }
