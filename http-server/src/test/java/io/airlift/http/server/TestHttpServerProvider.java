@@ -295,7 +295,7 @@ public class TestHttpServerProvider
     public void testForwardedEnabled()
             throws Exception
     {
-        config.setForwardedEnabled(true);
+        config.setProcessForwarded(true);
         ForwardedServlet servlet = new ForwardedServlet();
         createServer(servlet);
         server.start();
