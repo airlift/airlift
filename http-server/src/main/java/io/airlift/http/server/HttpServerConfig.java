@@ -89,7 +89,7 @@ public class HttpServerConfig
     private DataSize logMaxFileSize = new DataSize(100, MEGABYTE);
     private boolean logCompressionEnabled = true;
 
-    private boolean forwardedEnabled;
+    private boolean processForwarded;
 
     private Integer httpAcceptorThreads;
     private Integer httpSelectorThreads;
@@ -353,16 +353,16 @@ public class HttpServerConfig
         return this;
     }
 
-    public boolean isForwardedEnabled()
+    public boolean isProcessForwarded()
     {
-        return forwardedEnabled;
+        return processForwarded;
     }
 
     @Config("http-server.process-forwarded")
     @ConfigDescription("Process Forwarded and X-Forwarded headers (for proxied environments)")
-    public HttpServerConfig setForwardedEnabled(boolean forwardedEnabled)
+    public HttpServerConfig setProcessForwarded(boolean processForwarded)
     {
-        this.forwardedEnabled = forwardedEnabled;
+        this.processForwarded = processForwarded;
         return this;
     }
 

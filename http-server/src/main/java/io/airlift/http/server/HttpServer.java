@@ -139,7 +139,7 @@ public class HttpServer
         HttpConfiguration baseHttpConfiguration = new HttpConfiguration();
         baseHttpConfiguration.setSendServerVersion(false);
         baseHttpConfiguration.setSendXPoweredBy(false);
-        if (config.isForwardedEnabled()) {
+        if (config.isProcessForwarded()) {
             baseHttpConfiguration.addCustomizer(new ForwardedRequestCustomizer());
         }
         if (config.getMaxRequestHeaderSize() != null) {
