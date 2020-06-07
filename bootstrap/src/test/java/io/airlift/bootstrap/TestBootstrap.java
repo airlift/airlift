@@ -17,7 +17,6 @@ package io.airlift.bootstrap;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.ConfigurationException;
-import com.google.inject.CreationException;
 import com.google.inject.ProvisionException;
 import com.google.inject.spi.Message;
 import org.testng.annotations.Test;
@@ -111,8 +110,8 @@ public class TestBootstrap
                 .setRequiredConfigurationProperty("test-required", "foo");
 
         assertThatThrownBy(bootstrap::initialize)
-                .isInstanceOfSatisfying(CreationException.class, e ->
-                        assertThat(e.getErrorMessages()).containsExactly(
+                .isInstanceOfSatisfying(ApplicationConfigurationException.class, e ->
+                        assertThat(e.getErrors()).containsExactly(
                                 new Message("Configuration property 'test-required' was not used")));
     }
 
