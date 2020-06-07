@@ -32,7 +32,6 @@ import io.airlift.configuration.ConfigurationInspector;
 import io.airlift.configuration.ConfigurationInspector.ConfigAttribute;
 import io.airlift.configuration.ConfigurationInspector.ConfigRecord;
 import io.airlift.configuration.ConfigurationModule;
-import io.airlift.configuration.ValidationErrorModule;
 import io.airlift.configuration.WarningsMonitor;
 import io.airlift.log.Logger;
 import io.airlift.log.Logging;
@@ -170,10 +169,7 @@ public class Bootstrap
 
         Thread.currentThread().setUncaughtExceptionHandler((thread, throwable) -> log.error(throwable, "Uncaught exception in thread %s", thread.getName()));
 
-        List<Message> messages = new ArrayList<>();
-
         Map<String, String> requiredProperties;
-        ConfigurationFactory configurationFactory;
         if (requiredConfigurationProperties == null) {
             // initialize configuration
             log.info("Loading configuration");
@@ -203,15 +199,17 @@ public class Bootstrap
         properties.putAll(getSystemProperties());
 
         // replace environment variables in property values
+        List<Message> errors = new ArrayList<>();
         properties = replaceEnvironmentVariables(properties, System.getenv(), (key, error) -> {
             unusedProperties.remove(key);
-            messages.add(new Message(error));
+            errors.add(new Message(error));
         });
 
         // create configuration factory
         properties = ImmutableSortedMap.copyOf(properties);
 
-        configurationFactory = new ConfigurationFactory(properties, log::warn);
+        List<Message> warnings = new ArrayList<>();
+        ConfigurationFactory configurationFactory = new ConfigurationFactory(properties, warning -> warnings.add(new Message(warning)));
 
         // initialize logging
         if (logging != null) {
@@ -224,30 +222,45 @@ public class Bootstrap
         configurationFactory.registerConfigurationClasses(modules);
 
         // Validate configuration classes
-        messages.addAll(configurationFactory.validateRegisteredConfigurationProvider());
+        errors.addAll(configurationFactory.validateRegisteredConfigurationProvider());
 
         // at this point all config file properties should be used
         // so we can calculate the unused properties
         unusedProperties.keySet().removeAll(configurationFactory.getUsedProperties());
 
-        if (strictConfig) {
-            for (String key : unusedProperties.keySet()) {
-                messages.add(new Message(format("Configuration property '%s' was not used", key)));
-            }
+        for (String key : unusedProperties.keySet()) {
+            Message message = new Message(format("Configuration property '%s' was not used", key));
+            (strictConfig ? errors : warnings).add(message);
+        }
+
+        // If there are configuration errors, fail-fast to keep output clean
+        if (!errors.isEmpty()) {
+            throw new ApplicationConfigurationException(errors, warnings);
         }
 
         // Log effective configuration
         if (!quiet) {
-            logConfiguration(configurationFactory, unusedProperties);
+            logConfiguration(configurationFactory);
+        }
+
+        // Log any warnings
+        if (!warnings.isEmpty()) {
+            StringBuilder message = new StringBuilder();
+            message.append("Configuration warnings\n");
+            message.append("==========\n\n");
+            message.append("Configuration should be updated:\n\n");
+            for (int index = 0; index < warnings.size(); index++) {
+                message.append(format("%s) %s\n", index + 1, warnings.get(index)));
+            }
+            message.append("\n");
+            message.append("==========");
+            log.warn(message.toString());
         }
 
         // system modules
         Builder<Module> moduleList = ImmutableList.builder();
         moduleList.add(new LifeCycleModule());
         moduleList.add(new ConfigurationModule(configurationFactory));
-        if (!messages.isEmpty()) {
-            moduleList.add(new ValidationErrorModule(messages));
-        }
         moduleList.add(binder -> binder.bind(WarningsMonitor.class).toInstance(log::warn));
 
         // disable broken Guice "features"
@@ -272,21 +285,12 @@ public class Bootstrap
         return injector;
     }
 
-    private void logConfiguration(ConfigurationFactory configurationFactory, Map<String, String> unusedProperties)
+    private void logConfiguration(ConfigurationFactory configurationFactory)
     {
         ColumnPrinter columnPrinter = makePrinterForConfiguration(configurationFactory);
 
         try (PrintWriter out = new PrintWriter(new LoggingWriter(log))) {
             columnPrinter.print(out);
-        }
-
-        // Warn about unused properties
-        if (!unusedProperties.isEmpty()) {
-            log.warn("UNUSED PROPERTIES");
-            for (String unusedProperty : unusedProperties.keySet()) {
-                log.warn("%s", unusedProperty);
-            }
-            log.warn("");
         }
     }
 

@@ -19,6 +19,8 @@ import com.google.inject.ConfigurationException;
 import com.google.inject.spi.Message;
 import org.testng.annotations.Test;
 
+import java.util.List;
+
 import static io.airlift.testing.Assertions.assertContains;
 import static io.airlift.testing.Assertions.assertContainsAllOf;
 import static org.testng.Assert.assertEquals;
@@ -32,9 +34,9 @@ public class ProblemsTest
         Problems problems = new Problems();
         problems.addError("message %d", 1);
 
-        Message[] errors = problems.getErrors().toArray(new Message[] {});
-        assertEquals(errors.length, 1);
-        assertContainsAllOf(errors[0].toString(), "Error", "message 1");
+        List<Message> errors = problems.getErrors();
+        assertEquals(errors.size(), 1);
+        assertEquals(errors.get(0).getMessage(), "message 1");
 
         assertEquals(problems.getWarnings().size(), 0, "Found unexpected warnings in problem object");
 
@@ -54,10 +56,10 @@ public class ProblemsTest
         problems.addError("message %d", 1);
         problems.addError("message %d", 2);
 
-        Message[] errors = problems.getErrors().toArray(new Message[] {});
-        assertEquals(errors.length, 2);
-        assertContainsAllOf(errors[0].toString(), "Error", "message 1");
-        assertContainsAllOf(errors[1].toString(), "Error", "message 2");
+        List<Message> errors = problems.getErrors();
+        assertEquals(errors.size(), 2);
+        assertEquals(errors.get(0).getMessage(), "message 1");
+        assertEquals(errors.get(1).getMessage(), "message 2");
 
         assertEquals(problems.getWarnings().size(), 0, "Found unexpected warnings in problem object");
 
@@ -76,9 +78,9 @@ public class ProblemsTest
         Problems problems = new Problems();
         problems.addError("message %d", "NaN");
 
-        Message[] errors = problems.getErrors().toArray(new Message[] {});
-        assertEquals(errors.length, 1);
-        assertContainsAllOf(errors[0].toString(), "Error", "message %d", "NaN", "IllegalFormatConversionException");
+        List<Message> errors = problems.getErrors();
+        assertEquals(errors.size(), 1);
+        assertContainsAllOf(errors.get(0).getMessage(), "message %d", "NaN", "IllegalFormatConversionException");
 
         assertEquals(problems.getWarnings().size(), 0, "Found unexpected warnings in problem object");
 
@@ -99,9 +101,9 @@ public class ProblemsTest
 
         assertEquals(problems.getErrors().size(), 0, "Found unexpected errors in problem object");
 
-        Message[] warnings = problems.getWarnings().toArray(new Message[] {});
-        assertEquals(warnings.length, 1);
-        assertContainsAllOf(warnings[0].toString(), "Warning", "message 1");
+        List<Message> warnings = problems.getWarnings();
+        assertEquals(warnings.size(), 1);
+        assertEquals(warnings.get(0).getMessage(), "message 1");
 
         try {
             problems.throwIfHasErrors();
@@ -120,10 +122,10 @@ public class ProblemsTest
 
         assertEquals(problems.getErrors().size(), 0, "Found unexpected errors in problem object");
 
-        Message[] warnings = problems.getWarnings().toArray(new Message[] {});
-        assertEquals(warnings.length, 2);
-        assertContainsAllOf(warnings[0].toString(), "Warning", "message 1");
-        assertContainsAllOf(warnings[1].toString(), "Warning", "message 2");
+        List<Message> warnings = problems.getWarnings();
+        assertEquals(warnings.size(), 2);
+        assertEquals(warnings.get(0).getMessage(), "message 1");
+        assertEquals(warnings.get(1).getMessage(), "message 2");
 
         try {
             problems.throwIfHasErrors();
@@ -141,9 +143,9 @@ public class ProblemsTest
 
         assertEquals(problems.getErrors().size(), 0, "Found unexpected errors in problem object");
 
-        Message[] warnings = problems.getWarnings().toArray(new Message[] {});
-        assertEquals(warnings.length, 1);
-        assertContainsAllOf(warnings[0].toString(), "Warning", "message %d", "NaN", "IllegalFormatConversionException");
+        List<Message> warnings = problems.getWarnings();
+        assertEquals(warnings.size(), 1);
+        assertContainsAllOf(warnings.get(0).getMessage(), "message %d", "NaN", "IllegalFormatConversionException");
 
         try {
             problems.throwIfHasErrors();
@@ -164,16 +166,16 @@ public class ProblemsTest
         problems.addWarning("message w%d", 2);
         problems.addWarning("message w%d", 3);
 
-        Message[] errors = problems.getErrors().toArray(new Message[] {});
-        assertEquals(errors.length, 2);
-        assertContainsAllOf(errors[0].toString(), "Error", "message e1");
-        assertContainsAllOf(errors[1].toString(), "Error", "message e2");
+        List<Message> errors = problems.getErrors();
+        assertEquals(errors.size(), 2);
+        assertEquals(errors.get(0).getMessage(), "message e1");
+        assertEquals(errors.get(1).getMessage(), "message e2");
 
-        Message[] warnings = problems.getWarnings().toArray(new Message[] {});
-        assertEquals(warnings.length, 3);
-        assertContainsAllOf(warnings[0].toString(), "Warning", "message w1");
-        assertContainsAllOf(warnings[1].toString(), "Warning", "message w2");
-        assertContainsAllOf(warnings[2].toString(), "Warning", "message w3");
+        List<Message> warnings = problems.getWarnings();
+        assertEquals(warnings.size(), 3);
+        assertEquals(warnings.get(0).getMessage(), "message w1");
+        assertEquals(warnings.get(1).getMessage(), "message w2");
+        assertEquals(warnings.get(2).getMessage(), "message w3");
 
         try {
             problems.throwIfHasErrors();
@@ -217,6 +219,6 @@ public class ProblemsTest
         problems.addWarning("3");
         problems.addError("2");
 
-        assertContains(monitor.getResult(), "E-Error: 1, W-Warning: 1, W-Warning: 2, W-Warning: 3, E-Error: 2");
+        assertContains(monitor.getResult(), "E-1, W-1, W-2, W-3, E-2");
     }
 }

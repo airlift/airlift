@@ -88,14 +88,14 @@ class Problems
 
     public void addError(String format, Object... params)
     {
-        Message message = new Message("Error: " + format(format, params));
+        Message message = new Message(format(format, params));
         errors.add(message);
         monitor.onError(message);
     }
 
     public void addError(Throwable e, String format, Object... params)
     {
-        Message message = new Message(emptyList(), "Error: " + format(format, params), e);
+        Message message = new Message(emptyList(), format(format, params), e);
         errors.add(message);
         monitor.onError(message);
     }
@@ -107,7 +107,7 @@ class Problems
 
     public void addWarning(String format, Object... params)
     {
-        Message message = new Message("Warning: " + format(format, params));
+        Message message = new Message(format(format, params));
         warnings.add(message);
         monitor.onWarning(message);
     }
