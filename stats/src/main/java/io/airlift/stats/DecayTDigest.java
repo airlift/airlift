@@ -74,7 +74,13 @@ public class DecayTDigest
 
     public double getCount()
     {
-        double result = digest.getCount() / weight(alpha, nowInSeconds(), landmarkInSeconds);
+        rescaleIfNeeded();
+
+        double result = digest.getCount();
+
+        if (alpha > 0.0) {
+            result /= weight(alpha, nowInSeconds(), landmarkInSeconds);
+        }
 
         if (result < ZERO_WEIGHT_THRESHOLD) {
             result = 0;
@@ -90,16 +96,23 @@ public class DecayTDigest
 
     public void add(double value, double weight)
     {
+        rescaleIfNeeded();
+
+        if (alpha > 0.0) {
+            weight *= weight(alpha, nowInSeconds(), landmarkInSeconds);
+        }
+
+        digest.add(value, weight);
+    }
+
+    private void rescaleIfNeeded()
+    {
         if (alpha > 0.0) {
             long nowInSeconds = nowInSeconds();
             if (nowInSeconds - landmarkInSeconds >= RESCALE_THRESHOLD_SECONDS) {
                 rescale(nowInSeconds);
             }
-
-            weight *= weight(alpha, nowInSeconds, landmarkInSeconds);
         }
-
-        digest.add(value, weight);
     }
 
     public double valueAt(double quantile)
