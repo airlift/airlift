@@ -13,6 +13,7 @@
  */
 package io.airlift.stats;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ticker;
 
 import java.util.List;
@@ -22,8 +23,14 @@ import static io.airlift.stats.ExponentialDecay.weight;
 
 public class DecayTDigest
 {
-    private static final long RESCALE_THRESHOLD_SECONDS = 50;
-    private static final double ZERO_WEIGHT_THRESHOLD = 1e-5;
+    @VisibleForTesting
+    static final long RESCALE_THRESHOLD_SECONDS = 50;
+    @VisibleForTesting
+    static final double ZERO_WEIGHT_THRESHOLD = 1e-5;
+
+    // We scale every weight by this factor to ensure that weights in the underlying
+    // digest are >= 1.
+    private static final double SCALE_FACTOR = 1 / ZERO_WEIGHT_THRESHOLD;
 
     private final TDigest digest;
 
@@ -79,7 +86,7 @@ public class DecayTDigest
         double result = digest.getCount();
 
         if (alpha > 0.0) {
-            result /= weight(alpha, nowInSeconds(), landmarkInSeconds);
+            result /= (weight(alpha, nowInSeconds(), landmarkInSeconds) * SCALE_FACTOR);
         }
 
         if (result < ZERO_WEIGHT_THRESHOLD) {
@@ -99,7 +106,7 @@ public class DecayTDigest
         rescaleIfNeeded();
 
         if (alpha > 0.0) {
-            weight *= weight(alpha, nowInSeconds(), landmarkInSeconds);
+            weight *= weight(alpha, nowInSeconds(), landmarkInSeconds) * SCALE_FACTOR;
         }
 
         digest.add(value, weight);
@@ -138,7 +145,8 @@ public class DecayTDigest
         for (int i = 0; i < digest.centroidCount; i++) {
             double weight = digest.weights[i] / factor;
 
-            if (weight < ZERO_WEIGHT_THRESHOLD) {
+            // values with a scaled weight below 1 are effectively below the ZERO_WEIGHT_THRESHOLD
+            if (weight < 1) {
                 continue;
             }
 
