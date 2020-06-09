@@ -1,5 +1,6 @@
 0.199
 
+- Move combine method to ConfigurationAwareModule.
 - Add missing JAXB dependency for jaxrs-testing.
 
 0.198

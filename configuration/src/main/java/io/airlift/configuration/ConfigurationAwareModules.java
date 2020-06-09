@@ -14,32 +14,18 @@
 
 package io.airlift.configuration;
 
-import com.google.inject.Binder;
 import com.google.inject.Module;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static java.util.Objects.requireNonNull;
-
-public class ConfigurationAwareModules
+public final class ConfigurationAwareModules
 {
     private ConfigurationAwareModules() {}
 
+    /**
+     * @deprecated use {@link ConfigurationAwareModule#combine}
+     */
+    @Deprecated
     public static Module combine(Module... modules)
     {
-        checkArgument(modules.length > 0, "No modules given");
-        if (modules.length == 1) {
-            return modules[0];
-        }
-        return new AbstractConfigurationAwareModule()
-        {
-            @Override
-            protected void setup(Binder binder)
-            {
-                for (Module module : modules) {
-                    requireNonNull(module, "module is null");
-                    install(module);
-                }
-            }
-        };
+        return ConfigurationAwareModule.combine(modules);
     }
 }
