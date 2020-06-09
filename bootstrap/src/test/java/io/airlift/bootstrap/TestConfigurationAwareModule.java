@@ -20,6 +20,7 @@ import com.google.inject.Key;
 import com.google.inject.Module;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
 import io.airlift.configuration.Config;
+import io.airlift.configuration.ConfigurationAwareModule;
 import org.testng.annotations.Test;
 
 import static com.google.inject.name.Names.named;
@@ -55,6 +56,40 @@ public class TestConfigurationAwareModule
         assertThatThrownBy(bootstrap::initialize).isInstanceOfSatisfying(CreationException.class, e ->
                 assertThat(e.getErrorMessages()).hasOnlyOneElementSatisfying(m ->
                         assertThat(m.getMessage()).endsWith("Use super.install() for ConfigurationAwareModule, not binder.install()")));
+    }
+
+    @Test
+    public void testCombine()
+    {
+        Module combined = ConfigurationAwareModule.combine(
+                new AbstractConfigurationAwareModule()
+                {
+                    @Override
+                    protected void setup(Binder binder)
+                    {
+                        assertTrue(buildConfigObject(FooConfig.class).isFoo());
+                        binder.bind(String.class).annotatedWith(named("foo")).toInstance("fooInstance");
+                    }
+                },
+                new AbstractConfigurationAwareModule()
+                {
+                    @Override
+                    protected void setup(Binder binder)
+                    {
+                        assertTrue(buildConfigObject(BarConfig.class).isBar());
+                        binder.bind(String.class).annotatedWith(named("bar")).toInstance("barInstance");
+                    }
+                });
+
+        Injector injector = new Bootstrap(combined)
+                .strictConfig()
+                .doNotInitializeLogging()
+                .setRequiredConfigurationProperty("foo.enabled", "true")
+                .setRequiredConfigurationProperty("bar.enabled", "true")
+                .initialize();
+
+        assertEquals(injector.getInstance(Key.get(String.class, named("foo"))), "fooInstance");
+        assertEquals(injector.getInstance(Key.get(String.class, named("bar"))), "barInstance");
     }
 
     public static class FooModule
