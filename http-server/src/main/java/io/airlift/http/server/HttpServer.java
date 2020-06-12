@@ -23,7 +23,6 @@ import com.google.common.primitives.Ints;
 import io.airlift.event.client.EventClient;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.node.NodeInfo;
-import io.airlift.security.pem.PemReader;
 import io.airlift.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.io.ConnectionStatistics;
@@ -62,33 +61,30 @@ import javax.servlet.Filter;
 import javax.servlet.Servlet;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.channels.ServerSocketChannel;
-import java.security.GeneralSecurityException;
 import java.security.KeyStore;
-import java.security.KeyStoreException;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeoutException;
 
 import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Preconditions.checkState;
+import static io.airlift.concurrent.Threads.daemonThreadsNamed;
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static java.time.temporal.ChronoUnit.DAYS;
 import static java.util.Collections.list;
 import static java.util.Comparator.naturalOrder;
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
 public class HttpServer
 {
@@ -97,8 +93,8 @@ public class HttpServer
     private final DelimitedRequestLog requestLog;
     private ConnectionStats httpConnectionStats;
     private ConnectionStats httpsConnectionStats;
-
-    private final Optional<ZonedDateTime> certificateExpiration;
+    private ScheduledExecutorService scheduledExecutorService;
+    private Optional<SslContextFactory.Server> sslContextFactory = Optional.empty();
 
     public HttpServer(HttpServerInfo httpServerInfo,
             NodeInfo nodeInfo,
@@ -114,13 +110,15 @@ public class HttpServer
             LoginService loginService,
             TraceTokenManager tokenManager,
             RequestStats stats,
-            EventClient eventClient)
+            EventClient eventClient,
+            Optional<SslContextFactory.Server> maybeSslContextFactory)
             throws IOException
     {
         requireNonNull(httpServerInfo, "httpServerInfo is null");
         requireNonNull(nodeInfo, "nodeInfo is null");
         requireNonNull(config, "config is null");
         requireNonNull(theServlet, "theServlet is null");
+        requireNonNull(maybeSslContextFactory, "maybeSslContextFactory is null");
 
         QueuedThreadPool threadPool = new QueuedThreadPool(config.getMaxThreads());
         threadPool.setMinThreads(config.getMinThreads());
@@ -207,47 +205,14 @@ public class HttpServer
             server.addConnector(httpConnector);
         }
 
-        List<String> includedCipherSuites = config.getHttpsIncludedCipherSuites();
-        List<String> excludedCipherSuites = config.getHttpsExcludedCipherSuites();
-
         // set up NIO-based HTTPS connector
         ServerConnector httpsConnector;
         if (config.isHttpsEnabled()) {
             HttpConfiguration httpsConfiguration = new HttpConfiguration(baseHttpConfiguration);
             httpsConfiguration.addCustomizer(new SecureRequestCustomizer());
 
-            SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-            Optional<KeyStore> pemKeyStore = tryLoadPemKeyStore(config);
-            if (pemKeyStore.isPresent()) {
-                sslContextFactory.setKeyStore(pemKeyStore.get());
-                sslContextFactory.setKeyStorePassword("");
-            }
-            else {
-                sslContextFactory.setKeyStorePath(config.getKeystorePath());
-                sslContextFactory.setKeyStorePassword(config.getKeystorePassword());
-                if (config.getKeyManagerPassword() != null) {
-                    sslContextFactory.setKeyManagerPassword(config.getKeyManagerPassword());
-                }
-            }
-            if (config.getTrustStorePath() != null) {
-                Optional<KeyStore> pemTrustStore = tryLoadPemTrustStore(config);
-                if (pemTrustStore.isPresent()) {
-                    sslContextFactory.setTrustStore(pemTrustStore.get());
-                    sslContextFactory.setTrustStorePassword("");
-                }
-                else {
-                    sslContextFactory.setTrustStorePath(config.getTrustStorePath());
-                    sslContextFactory.setTrustStorePassword(config.getTrustStorePassword());
-                }
-            }
-
-            sslContextFactory.setIncludeCipherSuites(includedCipherSuites.toArray(new String[0]));
-            sslContextFactory.setExcludeCipherSuites(excludedCipherSuites.toArray(new String[0]));
-            sslContextFactory.setSecureRandomAlgorithm(config.getSecureRandomAlgorithm());
-            sslContextFactory.setWantClientAuth(true);
-            sslContextFactory.setSslSessionTimeout((int) config.getSslSessionTimeout().getValue(SECONDS));
-            sslContextFactory.setSslSessionCacheSize(config.getSslSessionCacheSize());
-            SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory, "http/1.1");
+            this.sslContextFactory = Optional.of(this.sslContextFactory.orElseGet(() -> createReloadingSslContextFactory(config)));
+            SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory.get(), "http/1.1");
 
             Integer acceptors = config.getHttpsAcceptorThreads();
             Integer selectors = config.getHttpsSelectorThreads();
@@ -290,17 +255,8 @@ public class HttpServer
             if (config.isHttpsEnabled()) {
                 adminConfiguration.addCustomizer(new SecureRequestCustomizer());
 
-                SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-                sslContextFactory.setKeyStorePath(config.getKeystorePath());
-                sslContextFactory.setKeyStorePassword(config.getKeystorePassword());
-                if (config.getKeyManagerPassword() != null) {
-                    sslContextFactory.setKeyManagerPassword(config.getKeyManagerPassword());
-                }
-                sslContextFactory.setSecureRandomAlgorithm(config.getSecureRandomAlgorithm());
-                sslContextFactory.setWantClientAuth(true);
-                sslContextFactory.setIncludeCipherSuites(includedCipherSuites.toArray(new String[0]));
-                sslContextFactory.setExcludeCipherSuites(excludedCipherSuites.toArray(new String[0]));
-                SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory, "http/1.1");
+                this.sslContextFactory = Optional.of(this.sslContextFactory.orElseGet(() -> createReloadingSslContextFactory(config)));
+                SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory.get(), "http/1.1");
                 adminConnector = createServerConnector(
                         httpServerInfo.getAdminChannel(),
                         server,
@@ -368,11 +324,6 @@ public class HttpServer
         }
         rootHandlers.addHandler(statsHandler);
         server.setHandler(rootHandlers);
-
-        certificateExpiration = loadAllX509Certificates(config).stream()
-                .map(X509Certificate::getNotAfter)
-                .min(naturalOrder())
-                .map(date -> ZonedDateTime.ofInstant(date.toInstant(), ZoneId.systemDefault()));
     }
 
     private static ServletContextHandler createServletContext(Servlet theServlet,
@@ -467,53 +418,34 @@ public class HttpServer
                 config.isLogCompressionEnabled());
     }
 
-    private static Optional<KeyStore> tryLoadPemKeyStore(HttpServerConfig config)
+    private Set<X509Certificate> getCertificates()
     {
-        File keyStoreFile = new File(config.getKeystorePath());
-        try {
-            if (!PemReader.isPem(keyStoreFile)) {
-                return Optional.empty();
+        ImmutableSet.Builder<X509Certificate> certificates = ImmutableSet.builder();
+        this.sslContextFactory.ifPresent(factory -> {
+            try {
+                KeyStore keystore = factory.getKeyStore();
+                for (String alias : list(keystore.aliases())) {
+                    Certificate certificate = keystore.getCertificate(alias);
+                    if (certificate instanceof X509Certificate) {
+                        certificates.add((X509Certificate) certificate);
+                    }
+                }
             }
-        }
-        catch (IOException e) {
-            throw new IllegalArgumentException("Error reading key store file: " + keyStoreFile, e);
-        }
-
-        try {
-            return Optional.of(PemReader.loadKeyStore(keyStoreFile, keyStoreFile, Optional.ofNullable(config.getKeystorePassword())));
-        }
-        catch (IOException | GeneralSecurityException e) {
-            throw new IllegalArgumentException("Error loading PEM key store: " + keyStoreFile, e);
-        }
-    }
-
-    private static Optional<KeyStore> tryLoadPemTrustStore(HttpServerConfig config)
-    {
-        File trustStoreFile = new File(config.getTrustStorePath());
-        try {
-            if (!PemReader.isPem(trustStoreFile)) {
-                return Optional.empty();
+            catch (Exception ignored) {
             }
-        }
-        catch (IOException e) {
-            throw new IllegalArgumentException("Error reading trust store file: " + trustStoreFile, e);
-        }
+        });
 
-        try {
-            if (PemReader.readCertificateChain(trustStoreFile).isEmpty()) {
-                throw new IllegalArgumentException("PEM trust store file does not contain any certificates: " + trustStoreFile);
-            }
-            return Optional.of(PemReader.loadTrustStore(trustStoreFile));
-        }
-        catch (IOException | GeneralSecurityException e) {
-            throw new IllegalArgumentException("Error loading PEM trust store: " + trustStoreFile, e);
-        }
+        return certificates.build();
     }
 
     @Managed
     public Long getDaysUntilCertificateExpiration()
     {
-        return certificateExpiration.map(date -> ZonedDateTime.now().until(date, DAYS))
+        return getCertificates().stream()
+                .map(X509Certificate::getNotAfter)
+                .min(naturalOrder())
+                .map(date -> ZonedDateTime.ofInstant(date.toInstant(), ZoneId.systemDefault()))
+                .map(date -> ZonedDateTime.now().until(date, DAYS))
                 .orElse(null);
     }
 
@@ -560,6 +492,9 @@ public class HttpServer
         server.setStopTimeout(1);
         try {
             server.stop();
+            if (scheduledExecutorService != null) {
+                scheduledExecutorService.shutdown();
+            }
         }
         catch (TimeoutException ignored) {
         }
@@ -575,29 +510,13 @@ public class HttpServer
         server.join();
     }
 
-    private static Set<X509Certificate> loadAllX509Certificates(HttpServerConfig config)
+    private SslContextFactory.Server createReloadingSslContextFactory(HttpServerConfig config)
     {
-        ImmutableSet.Builder<X509Certificate> certificates = ImmutableSet.builder();
-        if (config.isHttpsEnabled()) {
-            try (InputStream keystoreInputStream = new FileInputStream(config.getKeystorePath())) {
-                KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-                keystore.load(keystoreInputStream, config.getKeystorePassword().toCharArray());
-
-                for (String alias : list(keystore.aliases())) {
-                    try {
-                        Certificate certificate = keystore.getCertificate(alias);
-                        if (certificate instanceof X509Certificate) {
-                            certificates.add((X509Certificate) certificate);
-                        }
-                    }
-                    catch (KeyStoreException ignored) {
-                    }
-                }
-            }
-            catch (Exception ignored) {
-            }
+        if (scheduledExecutorService == null) {
+            scheduledExecutorService = newSingleThreadScheduledExecutor(daemonThreadsNamed("HttpServerScheduler"));
         }
-        return certificates.build();
+
+        return new ReloadableSslContextFactoryProvider(config, scheduledExecutorService).getSslContextFactory();
     }
 
     private static ServerConnector createServerConnector(
