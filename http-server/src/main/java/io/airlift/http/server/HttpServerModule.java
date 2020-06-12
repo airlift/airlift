@@ -20,10 +20,12 @@ import com.google.inject.Module;
 import com.google.inject.Scopes;
 import io.airlift.discovery.client.AnnouncementHttpServerInfo;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import javax.servlet.Filter;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
+import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.event.client.EventBinder.eventBinder;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
@@ -68,6 +70,7 @@ public class HttpServerModule
         newSetBinder(binder, Filter.class, TheServlet.class);
         newSetBinder(binder, Filter.class, TheAdminServlet.class);
         newSetBinder(binder, HttpResourceBinding.class, TheServlet.class);
+        newOptionalBinder(binder, SslContextFactory.Server.class);
 
         newExporter(binder).export(RequestStats.class).withGeneratedName();
 

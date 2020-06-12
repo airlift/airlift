@@ -72,6 +72,7 @@ public class HttpServerConfig
     private String trustStorePassword;
     private String secureRandomAlgorithm;
     private List<String> includedCipherSuites = ImmutableList.of();
+    private Duration sslContextRefreshTime = new Duration(1, MINUTES);
 
     /**
      * This property is initialized with Jetty's default excluded ciphers list.
@@ -314,6 +315,19 @@ public class HttpServerConfig
                 .trimResults()
                 .omitEmptyStrings()
                 .splitToList(requireNonNull(excludedCipherSuites, "excludedCipherSuites is null"));
+        return this;
+    }
+
+    @MinDuration("1s")
+    public Duration getSslContextRefreshTime()
+    {
+        return sslContextRefreshTime;
+    }
+
+    @Config("http-server.https.ssl-context.refresh-time")
+    public HttpServerConfig setSslContextRefreshTime(Duration sslContextRefreshTime)
+    {
+        this.sslContextRefreshTime = sslContextRefreshTime;
         return this;
     }
 

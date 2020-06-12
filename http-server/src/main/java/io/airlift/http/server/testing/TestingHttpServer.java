@@ -33,6 +33,7 @@ import javax.servlet.Servlet;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 public class TestingHttpServer
@@ -82,7 +83,8 @@ public class TestingHttpServer
                 null,
                 new TraceTokenManager(),
                 new RequestStats(),
-                new NullEventClient());
+                new NullEventClient(),
+                Optional.empty());
         this.httpServerInfo = httpServerInfo;
     }
 

@@ -606,7 +606,8 @@ public class TestHttpServerProvider
                 ImmutableSet.of(),
                 ImmutableSet.of(),
                 new RequestStats(),
-                new NullEventClient());
+                new NullEventClient(),
+                Optional.empty());
         serverProvider.setTheAdminServlet(new DummyServlet());
         serverProvider.setLoginService(loginServiceProvider.get());
         serverProvider.setTokenManager(new TraceTokenManager());

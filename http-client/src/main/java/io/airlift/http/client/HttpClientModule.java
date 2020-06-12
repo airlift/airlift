@@ -26,14 +26,17 @@ import com.google.inject.TypeLiteral;
 import io.airlift.configuration.ConfigDefaults;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.http.client.spnego.KerberosConfig;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
 
 import java.lang.annotation.Annotation;
+import java.util.Optional;
 import java.util.Set;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
+import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static java.util.Objects.requireNonNull;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
@@ -64,6 +67,9 @@ public class HttpClientModule
         // bind the configuration
         configBinder(binder).bindConfig(KerberosConfig.class);
         configBinder(binder).bindConfig(HttpClientConfig.class, annotation, name);
+
+        // Allow users to bind their own SslContextFactory
+        newOptionalBinder(binder, SslContextFactory.Client.class);
 
         // bind the client
         binder.bind(HttpClient.class).annotatedWith(annotation).toProvider(new HttpClientProvider(name, annotation)).in(Scopes.SINGLETON);
@@ -107,13 +113,14 @@ public class HttpClientModule
         {
             KerberosConfig kerberosConfig = injector.getInstance(KerberosConfig.class);
             HttpClientConfig config = injector.getInstance(Key.get(HttpClientConfig.class, annotation));
+            Optional<SslContextFactory.Client> sslContextFactory = injector.getInstance(Key.get(new TypeLiteral<Optional<SslContextFactory.Client>>() {}));
 
             Set<HttpRequestFilter> filters = ImmutableSet.<HttpRequestFilter>builder()
                     .addAll(injector.getInstance(Key.get(new TypeLiteral<Set<HttpRequestFilter>>() {}, GlobalFilter.class)))
                     .addAll(injector.getInstance(Key.get(new TypeLiteral<Set<HttpRequestFilter>>() {}, annotation)))
                     .build();
 
-            return new JettyHttpClient(name, config, kerberosConfig, ImmutableList.copyOf(filters));
+            return new JettyHttpClient(name, config, kerberosConfig, ImmutableList.copyOf(filters), sslContextFactory);
         }
     }
 }

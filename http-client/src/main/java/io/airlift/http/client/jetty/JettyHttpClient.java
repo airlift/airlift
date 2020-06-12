@@ -145,6 +145,16 @@ public class JettyHttpClient
             KerberosConfig kerberosConfig,
             Iterable<? extends HttpRequestFilter> requestFilters)
     {
+        this(name, config, kerberosConfig, requestFilters, Optional.empty());
+    }
+
+    public JettyHttpClient(
+            String name,
+            HttpClientConfig config,
+            KerberosConfig kerberosConfig,
+            Iterable<? extends HttpRequestFilter> requestFilters,
+            Optional<SslContextFactory.Client> maybeSslContextFactory)
+    {
         this.name = requireNonNull(name, "name is null");
 
         requireNonNull(config, "config is null");
@@ -157,36 +167,7 @@ public class JettyHttpClient
 
         creationLocation.fillInStackTrace();
 
-        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
-        sslContextFactory.setEndpointIdentificationAlgorithm(config.isVerifyHostname() ? "HTTPS" : null);
-
-        if (config.getKeyStorePath() != null) {
-            Optional<KeyStore> pemKeyStore = tryLoadPemKeyStore(config);
-            if (pemKeyStore.isPresent()) {
-                sslContextFactory.setKeyStore(pemKeyStore.get());
-                sslContextFactory.setKeyStorePassword("");
-            }
-            else {
-                sslContextFactory.setKeyStorePath(config.getKeyStorePath());
-                sslContextFactory.setKeyStorePassword(config.getKeyStorePassword());
-            }
-        }
-        if (config.getTrustStorePath() != null) {
-            Optional<KeyStore> pemTrustStore = tryLoadPemTrustStore(config);
-            if (pemTrustStore.isPresent()) {
-                sslContextFactory.setTrustStore(pemTrustStore.get());
-                sslContextFactory.setTrustStorePassword("");
-            }
-            else {
-                sslContextFactory.setTrustStorePath(config.getTrustStorePath());
-                sslContextFactory.setTrustStorePassword(config.getTrustStorePassword());
-            }
-        }
-        sslContextFactory.setSecureRandomAlgorithm(config.getSecureRandomAlgorithm());
-        List<String> includedCipherSuites = config.getHttpsIncludedCipherSuites();
-        List<String> excludedCipherSuites = config.getHttpsExcludedCipherSuites();
-        sslContextFactory.setIncludeCipherSuites(includedCipherSuites.toArray(new String[0]));
-        sslContextFactory.setExcludeCipherSuites(excludedCipherSuites.toArray(new String[0]));
+        SslContextFactory.Client sslContextFactory = maybeSslContextFactory.orElseGet(() -> getSslContextFactory(config));
 
         HttpClientTransport transport;
         if (config.isHttp2Enabled()) {
@@ -369,6 +350,42 @@ public class JettyHttpClient
             }
             distribution.add(NANOSECONDS.toMillis(finished - responseStarted));
         });
+    }
+
+    private static SslContextFactory.Client getSslContextFactory(HttpClientConfig config)
+    {
+        SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
+        sslContextFactory.setEndpointIdentificationAlgorithm(config.isVerifyHostname() ? "HTTPS" : null);
+
+        if (config.getKeyStorePath() != null) {
+            Optional<KeyStore> pemKeyStore = tryLoadPemKeyStore(config);
+            if (pemKeyStore.isPresent()) {
+                sslContextFactory.setKeyStore(pemKeyStore.get());
+                sslContextFactory.setKeyStorePassword("");
+            }
+            else {
+                sslContextFactory.setKeyStorePath(config.getKeyStorePath());
+                sslContextFactory.setKeyStorePassword(config.getKeyStorePassword());
+            }
+        }
+        if (config.getTrustStorePath() != null) {
+            Optional<KeyStore> pemTrustStore = tryLoadPemTrustStore(config);
+            if (pemTrustStore.isPresent()) {
+                sslContextFactory.setTrustStore(pemTrustStore.get());
+                sslContextFactory.setTrustStorePassword("");
+            }
+            else {
+                sslContextFactory.setTrustStorePath(config.getTrustStorePath());
+                sslContextFactory.setTrustStorePassword(config.getTrustStorePassword());
+            }
+        }
+        sslContextFactory.setSecureRandomAlgorithm(config.getSecureRandomAlgorithm());
+        List<String> includedCipherSuites = config.getHttpsIncludedCipherSuites();
+        List<String> excludedCipherSuites = config.getHttpsExcludedCipherSuites();
+        sslContextFactory.setIncludeCipherSuites(includedCipherSuites.toArray(new String[0]));
+        sslContextFactory.setExcludeCipherSuites(excludedCipherSuites.toArray(new String[0]));
+
+        return sslContextFactory;
     }
 
     private static Optional<KeyStore> tryLoadPemKeyStore(HttpClientConfig config)
