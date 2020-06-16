@@ -1,6 +1,8 @@
 0.198
 
+- Fix failures when inserting values into DecayTDigest.
 - Use RejectedExecutionException in BoundedExecutor.
+- Improve configuration error reporting.
 
 0.197
 
