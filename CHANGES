@@ -1,3 +1,7 @@
+0.199
+
+- Add missing JAXB dependency for jaxrs-testing.
+
 0.198
 
 - Fix failures when inserting values into DecayTDigest.
