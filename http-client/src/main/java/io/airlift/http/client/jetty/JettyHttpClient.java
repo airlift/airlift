@@ -158,7 +158,8 @@ public class JettyHttpClient
         creationLocation.fillInStackTrace();
 
         SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
-        sslContextFactory.setEndpointIdentificationAlgorithm("HTTPS");
+        sslContextFactory.setEndpointIdentificationAlgorithm(config.isVerifyHostname() ? "HTTPS" : null);
+
         if (config.getKeyStorePath() != null) {
             Optional<KeyStore> pemKeyStore = tryLoadPemKeyStore(config);
             if (pemKeyStore.isPresent()) {
