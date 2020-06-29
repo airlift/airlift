@@ -102,6 +102,20 @@ public class HttpClientConfig
     private DataSize logBufferSize = new DataSize(1, MEGABYTE);
     private Duration logFlushInterval = new Duration(10, SECONDS);
     private boolean logCompressionEnabled = true;
+    private boolean verifyHostname = true;
+
+    public boolean isVerifyHostname()
+    {
+        return verifyHostname;
+    }
+
+    @Config("http-client.https.hostname-verification")
+    @ConfigDescription("Verify that server hostname matches the server certificate")
+    public HttpClientConfig setVerifyHostname(boolean verifyHostname)
+    {
+        this.verifyHostname = verifyHostname;
+        return this;
+    }
 
     public boolean isHttp2Enabled()
     {
