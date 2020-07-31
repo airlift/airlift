@@ -16,6 +16,7 @@ package io.airlift.http.server;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
 import io.airlift.event.client.NullEventClient;
+import io.airlift.http.server.HttpServer.ClientCertificate;
 import io.airlift.node.NodeInfo;
 import io.airlift.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.client.HttpClient;
@@ -211,6 +212,7 @@ public class TestHttpServerCipher
                 ImmutableSet.of(new DummyFilter()),
                 ImmutableSet.of(),
                 ImmutableSet.of(),
+                ClientCertificate.NONE,
                 new RequestStats(),
                 new NullEventClient(),
                 Optional.empty());

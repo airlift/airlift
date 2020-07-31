@@ -1,5 +1,6 @@
 package io.airlift.http.server;
 
+import io.airlift.http.server.HttpServer.ClientCertificate;
 import io.airlift.log.Logger;
 import io.airlift.security.pem.PemReader;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -41,7 +42,9 @@ final class ReloadableSslContextFactoryProvider
     private final int sslSessionTimeoutSeconds;
     private final int sslSessionCacheSize;
 
-    public ReloadableSslContextFactoryProvider(HttpServerConfig config, ScheduledExecutorService scheduledExecutor)
+    private final ClientCertificate clientCertificate;
+
+    public ReloadableSslContextFactoryProvider(HttpServerConfig config, ScheduledExecutorService scheduledExecutor, ClientCertificate clientCertificate)
     {
         requireNonNull(config, "config is null");
         requireNonNull(scheduledExecutor, "scheduledExecutor is null");
@@ -59,6 +62,8 @@ final class ReloadableSslContextFactoryProvider
         secureRandomAlgorithm = config.getSecureRandomAlgorithm();
         sslSessionTimeoutSeconds = toIntExact(config.getSslSessionTimeout().roundTo(SECONDS));
         sslSessionCacheSize = config.getSslSessionCacheSize();
+
+        this.clientCertificate = requireNonNull(clientCertificate, "clientCertificate is null");
 
         this.sslContextFactory = buildContextFactory();
         long refreshTime = config.getSslContextRefreshTime().toMillis();
@@ -94,7 +99,19 @@ final class ReloadableSslContextFactoryProvider
         sslContextFactory.setIncludeCipherSuites(includedCipherSuites.toArray(new String[0]));
         sslContextFactory.setExcludeCipherSuites(excludedCipherSuites.toArray(new String[0]));
         sslContextFactory.setSecureRandomAlgorithm(secureRandomAlgorithm);
-        sslContextFactory.setWantClientAuth(true);
+        switch (clientCertificate) {
+            case NONE:
+                // no changes
+                break;
+            case REQUESTED:
+                sslContextFactory.setWantClientAuth(true);
+                break;
+            case REQUIRED:
+                sslContextFactory.setNeedClientAuth(true);
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported client certificate value: " + clientCertificate);
+        }
         sslContextFactory.setSslSessionTimeout(sslSessionTimeoutSeconds);
         sslContextFactory.setSslSessionCacheSize(sslSessionCacheSize);
 

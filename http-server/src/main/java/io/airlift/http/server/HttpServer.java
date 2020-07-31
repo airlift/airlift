@@ -88,6 +88,10 @@ import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
 public class HttpServer
 {
+    public enum ClientCertificate {
+        NONE, REQUESTED, REQUIRED
+    }
+
     private final Server server;
     private final boolean registerErrorHandler;
     private final DelimitedRequestLog requestLog;
@@ -106,6 +110,7 @@ public class HttpServer
             Servlet theAdminServlet,
             Map<String, String> adminParameters,
             Set<Filter> adminFilters,
+            ClientCertificate clientCertificate,
             MBeanServer mbeanServer,
             LoginService loginService,
             TraceTokenManager tokenManager,
@@ -119,6 +124,7 @@ public class HttpServer
         requireNonNull(config, "config is null");
         requireNonNull(theServlet, "theServlet is null");
         requireNonNull(maybeSslContextFactory, "maybeSslContextFactory is null");
+        requireNonNull(clientCertificate, "clientCertificate is null");
 
         QueuedThreadPool threadPool = new QueuedThreadPool(config.getMaxThreads());
         threadPool.setMinThreads(config.getMinThreads());
@@ -211,7 +217,7 @@ public class HttpServer
             HttpConfiguration httpsConfiguration = new HttpConfiguration(baseHttpConfiguration);
             httpsConfiguration.addCustomizer(new SecureRequestCustomizer());
 
-            this.sslContextFactory = Optional.of(this.sslContextFactory.orElseGet(() -> createReloadingSslContextFactory(config)));
+            this.sslContextFactory = Optional.of(this.sslContextFactory.orElseGet(() -> createReloadingSslContextFactory(config, clientCertificate)));
             SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory.get(), "http/1.1");
 
             Integer acceptors = config.getHttpsAcceptorThreads();
@@ -255,7 +261,7 @@ public class HttpServer
             if (config.isHttpsEnabled()) {
                 adminConfiguration.addCustomizer(new SecureRequestCustomizer());
 
-                this.sslContextFactory = Optional.of(this.sslContextFactory.orElseGet(() -> createReloadingSslContextFactory(config)));
+                this.sslContextFactory = Optional.of(this.sslContextFactory.orElseGet(() -> createReloadingSslContextFactory(config, clientCertificate)));
                 SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory.get(), "http/1.1");
                 adminConnector = createServerConnector(
                         httpServerInfo.getAdminChannel(),
@@ -510,13 +516,13 @@ public class HttpServer
         server.join();
     }
 
-    private SslContextFactory.Server createReloadingSslContextFactory(HttpServerConfig config)
+    private SslContextFactory.Server createReloadingSslContextFactory(HttpServerConfig config, ClientCertificate clientCertificate)
     {
         if (scheduledExecutorService == null) {
             scheduledExecutorService = newSingleThreadScheduledExecutor(daemonThreadsNamed("HttpServerScheduler"));
         }
 
-        return new ReloadableSslContextFactoryProvider(config, scheduledExecutorService).getSslContextFactory();
+        return new ReloadableSslContextFactoryProvider(config, scheduledExecutorService, clientCertificate).getSslContextFactory();
     }
 
     private static ServerConnector createServerConnector(
