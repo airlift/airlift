@@ -12,69 +12,98 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 
+import static java.lang.Math.toIntExact;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * This class constructs and reloads an SslContextFactory.Server instance on a schedule.
  */
-class ReloadableSslContextFactoryProvider
+final class ReloadableSslContextFactoryProvider
 {
     private static final Logger log = Logger.get(ReloadableSslContextFactoryProvider.class);
 
     private final SslContextFactory.Server sslContextFactory;
-    private final HttpServerConfig config;
+
+    private final List<String> includedCipherSuites;
+    private final List<String> excludedCipherSuites;
+
+    private final String keystorePath;
+    private final String keystorePassword;
+    private final String keyManagerPassword;
+
+    private final String trustStorePath;
+    private final String trustStorePassword;
+
+    private final String secureRandomAlgorithm;
+
+    private final int sslSessionTimeoutSeconds;
+    private final int sslSessionCacheSize;
 
     public ReloadableSslContextFactoryProvider(HttpServerConfig config, ScheduledExecutorService scheduledExecutor)
     {
-        this.config = config;
-        this.sslContextFactory = buildContextFactory(config);
+        requireNonNull(config, "config is null");
+        requireNonNull(scheduledExecutor, "scheduledExecutor is null");
+
+        includedCipherSuites = config.getHttpsIncludedCipherSuites();
+        excludedCipherSuites = config.getHttpsExcludedCipherSuites();
+
+        keystorePath = config.getKeystorePath();
+        keystorePassword = config.getKeystorePassword();
+        keyManagerPassword = config.getKeyManagerPassword();
+
+        trustStorePath = config.getTrustStorePath();
+        trustStorePassword = config.getTrustStorePassword();
+
+        secureRandomAlgorithm = config.getSecureRandomAlgorithm();
+        sslSessionTimeoutSeconds = toIntExact(config.getSslSessionTimeout().roundTo(SECONDS));
+        sslSessionCacheSize = config.getSslSessionCacheSize();
+
+        this.sslContextFactory = buildContextFactory();
         long refreshTime = config.getSslContextRefreshTime().toMillis();
         scheduledExecutor.scheduleWithFixedDelay(this::reload, refreshTime, refreshTime, MILLISECONDS);
     }
 
-    private static SslContextFactory.Server buildContextFactory(HttpServerConfig config)
+    private SslContextFactory.Server buildContextFactory()
     {
-        List<String> includedCipherSuites = config.getHttpsIncludedCipherSuites();
-        List<String> excludedCipherSuites = config.getHttpsExcludedCipherSuites();
-
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        Optional<KeyStore> pemKeyStore = tryLoadPemKeyStore(config);
+        Optional<KeyStore> pemKeyStore = tryLoadPemKeyStore(keystorePath, keystorePassword);
         if (pemKeyStore.isPresent()) {
             sslContextFactory.setKeyStore(pemKeyStore.get());
             sslContextFactory.setKeyStorePassword("");
         }
         else {
-            sslContextFactory.setKeyStorePath(config.getKeystorePath());
-            sslContextFactory.setKeyStorePassword(config.getKeystorePassword());
-            if (config.getKeyManagerPassword() != null) {
-                sslContextFactory.setKeyManagerPassword(config.getKeyManagerPassword());
+            sslContextFactory.setKeyStorePath(keystorePath);
+            sslContextFactory.setKeyStorePassword(keystorePassword);
+            if (keyManagerPassword != null) {
+                sslContextFactory.setKeyManagerPassword(keyManagerPassword);
             }
         }
-        if (config.getTrustStorePath() != null) {
-            Optional<KeyStore> pemTrustStore = tryLoadPemTrustStore(config);
+        if (trustStorePath != null) {
+            Optional<KeyStore> pemTrustStore = tryLoadPemTrustStore(trustStorePath);
             if (pemTrustStore.isPresent()) {
                 sslContextFactory.setTrustStore(pemTrustStore.get());
                 sslContextFactory.setTrustStorePassword("");
             }
             else {
-                sslContextFactory.setTrustStorePath(config.getTrustStorePath());
-                sslContextFactory.setTrustStorePassword(config.getTrustStorePassword());
+                sslContextFactory.setTrustStorePath(trustStorePath);
+                sslContextFactory.setTrustStorePassword(trustStorePassword);
             }
         }
         sslContextFactory.setIncludeCipherSuites(includedCipherSuites.toArray(new String[0]));
         sslContextFactory.setExcludeCipherSuites(excludedCipherSuites.toArray(new String[0]));
-        sslContextFactory.setSecureRandomAlgorithm(config.getSecureRandomAlgorithm());
+        sslContextFactory.setSecureRandomAlgorithm(secureRandomAlgorithm);
         sslContextFactory.setWantClientAuth(true);
-        sslContextFactory.setSslSessionTimeout((int) config.getSslSessionTimeout().getValue(SECONDS));
-        sslContextFactory.setSslSessionCacheSize(config.getSslSessionCacheSize());
+        sslContextFactory.setSslSessionTimeout(sslSessionTimeoutSeconds);
+        sslContextFactory.setSslSessionCacheSize(sslSessionCacheSize);
 
         return sslContextFactory;
     }
 
-    private static Optional<KeyStore> tryLoadPemKeyStore(HttpServerConfig config)
+    private static Optional<KeyStore> tryLoadPemKeyStore(String path, String password)
     {
-        File keyStoreFile = new File(config.getKeystorePath());
+        File keyStoreFile = new File(path);
         try {
             if (!PemReader.isPem(keyStoreFile)) {
                 return Optional.empty();
@@ -85,16 +114,16 @@ class ReloadableSslContextFactoryProvider
         }
 
         try {
-            return Optional.of(PemReader.loadKeyStore(keyStoreFile, keyStoreFile, Optional.ofNullable(config.getKeystorePassword())));
+            return Optional.of(PemReader.loadKeyStore(keyStoreFile, keyStoreFile, Optional.ofNullable(password)));
         }
         catch (IOException | GeneralSecurityException e) {
             throw new IllegalArgumentException("Error loading PEM key store: " + keyStoreFile, e);
         }
     }
 
-    private static Optional<KeyStore> tryLoadPemTrustStore(HttpServerConfig config)
+    private static Optional<KeyStore> tryLoadPemTrustStore(String path)
     {
-        File trustStoreFile = new File(config.getTrustStorePath());
+        File trustStoreFile = new File(path);
         try {
             if (!PemReader.isPem(trustStoreFile)) {
                 return Optional.empty();
@@ -123,10 +152,10 @@ class ReloadableSslContextFactoryProvider
         return this.sslContextFactory;
     }
 
-    public synchronized void reload()
+    private synchronized void reload()
     {
         try {
-            SslContextFactory.Server updatedFactory = buildContextFactory(this.config);
+            SslContextFactory.Server updatedFactory = buildContextFactory();
             updatedFactory.start();
             this.sslContextFactory.reload(factory -> factory.setSslContext(updatedFactory.getSslContext()));
         }
