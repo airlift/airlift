@@ -1,5 +1,9 @@
 0.199
 
+- Add certificate reloading to HTTP server. By default certificates are reloaded
+  once a minute. This can be controlled with 'http-server.https.ssl-context.refresh-time'.
+- Add Guice binding for HTTP server client certificate requirement.
+  Note: client certificates are no longer requested by default.
 - Move combine method to ConfigurationAwareModule.
 - Add missing JAXB dependency for jaxrs-testing.
 
