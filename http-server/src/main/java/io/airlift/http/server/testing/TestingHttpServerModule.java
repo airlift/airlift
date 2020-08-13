@@ -21,6 +21,7 @@ import com.google.inject.Module;
 import com.google.inject.Scopes;
 import io.airlift.discovery.client.AnnouncementHttpServerInfo;
 import io.airlift.http.server.HttpServer;
+import io.airlift.http.server.HttpServer.ClientCertificate;
 import io.airlift.http.server.HttpServerConfig;
 import io.airlift.http.server.HttpServerInfo;
 import io.airlift.http.server.LocalAnnouncementHttpServerInfo;
@@ -29,6 +30,7 @@ import io.airlift.http.server.TheServlet;
 import javax.servlet.Filter;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
+import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 
@@ -62,6 +64,7 @@ public class TestingHttpServerModule
 
         binder.bind(HttpServerInfo.class).in(Scopes.SINGLETON);
         binder.bind(TestingHttpServer.class).in(Scopes.SINGLETON);
+        newOptionalBinder(binder, ClientCertificate.class).setDefault().toInstance(ClientCertificate.NONE);
         binder.bind(HttpServer.class).to(Key.get(TestingHttpServer.class));
         newSetBinder(binder, Filter.class, TheServlet.class);
         newSetBinder(binder, HttpResourceBinding.class, TheServlet.class);

@@ -1,3 +1,7 @@
+0.200
+
+- Add client certificate support to testing http server.
+
 0.199
 
 - Add certificate reloading to HTTP server. By default certificates are reloaded
