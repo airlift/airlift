@@ -4,7 +4,7 @@
 
     <artifactId>airlift</artifactId>
     <packaging>pom</packaging>
-    <version>0.200-SNAPSHOT</version>
+    <version>200-SNAPSHOT</version>
 
     <name>airlift</name>
     <description>Airlift</description>
@@ -26,7 +26,7 @@
         <air.java.version>1.8.0-40</air.java.version>
         <air.javadoc.lint>-missing</air.javadoc.lint>
 
-        <dep.airlift.version>0.200-SNAPSHOT</dep.airlift.version>
+        <dep.airlift.version>200-SNAPSHOT</dep.airlift.version>
         <dep.packaging.version>${dep.airlift.version}</dep.packaging.version>
         <dep.jetty.version>9.4.27.v20200227</dep.jetty.version>
         <dep.jersey.version>2.26</dep.jersey.version>

@@ -7,7 +7,7 @@
     <parent>
         <artifactId>airlift</artifactId>
         <groupId>io.airlift</groupId>
-        <version>0.200-SNAPSHOT</version>
+        <version>200-SNAPSHOT</version>
     </parent>
 
     <properties>
