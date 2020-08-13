@@ -55,7 +55,8 @@ public class TestingHttpServer
                 servlet,
                 initParameters,
                 ImmutableSet.of(),
-                ImmutableSet.of());
+                ImmutableSet.of(),
+                ClientCertificate.NONE);
     }
 
     @Inject
@@ -66,7 +67,8 @@ public class TestingHttpServer
             @TheServlet Servlet servlet,
             @TheServlet Map<String, String> initParameters,
             @TheServlet Set<Filter> filters,
-            @TheServlet Set<HttpResourceBinding> resources)
+            @TheServlet Set<HttpResourceBinding> resources,
+            ClientCertificate clientCertificate)
             throws IOException
     {
         super(httpServerInfo,
@@ -79,7 +81,7 @@ public class TestingHttpServer
                 null,
                 null,
                 ImmutableSet.of(),
-                ClientCertificate.NONE,
+                clientCertificate,
                 null,
                 null,
                 new TraceTokenManager(),
