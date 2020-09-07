@@ -3,6 +3,7 @@ package io.airlift.testing;
 import java.io.Closeable;
 import java.io.IOException;
 
+import static com.google.common.base.Throwables.propagateIfPossible;
 import static java.util.Objects.requireNonNull;
 
 public final class Closeables
@@ -36,17 +37,30 @@ public final class Closeables
     public static void closeAll(Closeable... closeables)
             throws IOException
     {
+        try {
+            closeAll((AutoCloseable[]) closeables);
+        }
+        catch (Exception e) {
+            propagateIfPossible(e, IOException.class);
+            // Unreachable
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void closeAll(AutoCloseable... closeables)
+            throws Exception
+    {
         if (closeables == null) {
             return;
         }
-        IOException rootCause = null;
-        for (Closeable closeable : closeables) {
+        Throwable rootCause = null;
+        for (AutoCloseable closeable : closeables) {
             try {
                 if (closeable != null) {
                     closeable.close();
                 }
             }
-            catch (IOException e) {
+            catch (Throwable e) {
                 if (rootCause == null) {
                     rootCause = e;
                 }
@@ -55,18 +69,10 @@ public final class Closeables
                     rootCause.addSuppressed(e);
                 }
             }
-            catch (Throwable e) {
-                if (rootCause == null) {
-                    rootCause = new IOException(e);
-                }
-                else if (rootCause != e) {
-                    // Self-suppression not permitted
-                    rootCause.addSuppressed(e);
-                }
-            }
         }
         if (rootCause != null) {
-            throw rootCause;
+            propagateIfPossible(rootCause, Exception.class);
+            throw new RuntimeException(rootCause);
         }
     }
 
