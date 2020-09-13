@@ -316,6 +316,20 @@ public class TestTDigest
         }
     }
 
+    @Test
+    public void testTwoValueTDigest()
+    {
+        TDigest digest = new TDigest();
+        digest.add(10, 99999.999999999);
+        digest.add(10, 99999.999999999);
+        assertEquals(10.0, digest.valueAt(0.75));
+
+        digest = new TDigest();
+        digest.add(10, 99999.999999999);
+        digest.add(20, 99999.999999999);
+        assertEquals(20.0, digest.valueAt(0.75));
+    }
+
     private void addAll(TDigest digest, List<Integer> values)
     {
         for (int value : values) {

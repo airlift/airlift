@@ -298,7 +298,7 @@ public class TDigest
         int currentCentroid = 0;
         while (index < quantiles.size()) {
             double delta = (weights[currentCentroid] + weights[currentCentroid + 1]) / 2;
-            while (currentCentroid < centroidCount - 1 && weightSoFar + delta <= offsets.get(index)) {
+            while (currentCentroid < centroidCount - 1 && weightSoFar + delta < offsets.get(index)) {
                 weightSoFar += delta;
                 currentCentroid++;
                 if (currentCentroid < centroidCount - 1) {
