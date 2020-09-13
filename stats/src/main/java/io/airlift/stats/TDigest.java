@@ -276,7 +276,7 @@ public class TDigest
         double weightSoFar = weights[0] / 2;
         for (int i = 0; i < centroidCount - 1; i++) {
             double delta = (weights[i] + weights[i + 1]) / 2;
-            if (weightSoFar + delta > offset) {
+            if (weightSoFar + delta >= offset) {
                 // single-sample cluster and the quantile falls within that cluster
                 if (weights[i] == 1 && offset - weightSoFar < weights[i] / 2) {
                     return means[i];
