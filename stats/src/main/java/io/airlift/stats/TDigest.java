@@ -14,6 +14,8 @@
 package io.airlift.stats;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Ints;
@@ -29,12 +31,13 @@ import javax.annotation.concurrent.NotThreadSafe;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.lang.Double.isInfinite;
 import static java.lang.Double.isNaN;
+import static java.util.Collections.nCopies;
 import static java.util.Objects.requireNonNull;
 
 @NotThreadSafe
@@ -239,83 +242,108 @@ public class TDigest
 
     public double valueAt(double quantile)
     {
-        checkArgument(quantile >= 0 && quantile <= 1, "quantile should be in [0, 1] range");
+        return Iterables.getOnlyElement(valuesAt(ImmutableList.of(quantile)));
+    }
+
+    public List<Double> valuesAt(List<Double> quantiles)
+    {
+        if (quantiles.isEmpty()) {
+            return ImmutableList.of();
+        }
+
+        checkArgument(Ordering.natural().isOrdered(quantiles), "quantiles must be sorted in increasing order");
+        checkArgument(quantiles.get(0) >= 0 && quantiles.get(quantiles.size() - 1) <= 1, "quantiles should be in [0, 1] range");
 
         if (centroidCount == 0) {
-            return Double.NaN;
+            return nCopies(quantiles.size(), Double.NaN);
         }
 
         mergeIfNeeded(internalCompressionFactor(compression));
 
         if (centroidCount == 1) {
-            return means[0];
+            return nCopies(quantiles.size(), means[0]);
         }
 
-        // offset into the theoretical sequence of all values
-        double offset = quantile * totalWeight;
+        // offsets into the theoretical sequence of all values
+        List<Double> offsets = quantiles.stream()
+                .map(quantile -> quantile * totalWeight)
+                .collect(toImmutableList());
 
-        if (offset < 1) {
-            return min;
+        ImmutableList.Builder<Double> valuesAtQuantiles = ImmutableList.builder();
+
+        int index = 0;
+        // lowest value
+        while (index < quantiles.size() && offsets.get(index) < 1) {
+            valuesAtQuantiles.add(min);
+            index++;
         }
-
-        if (offset > totalWeight - 1) {
-            return max;
-        }
-
         // between bottom and first centroid
-        if (weights[0] > 1 && offset < weights[0] / 2) {
-            return min + interpolate(offset, 1, min, weights[0] / 2, means[0]);
+        while (index < quantiles.size() && weights[0] > 1 && offsets.get(index) < weights[0] / 2) {
+            valuesAtQuantiles.add(min + interpolate(offsets.get(index), 1, min, weights[0] / 2, means[0]));
+            index++;
         }
-
-        // between last centroid and top
-        if (weights[centroidCount - 1] > 1 && totalWeight - offset <= weights[centroidCount - 1] / 2) {
+        // between last centroid and top, but not the greatest value
+        while (index < quantiles.size() && offsets.get(index) <= totalWeight - 1 && weights[centroidCount - 1] > 1 && totalWeight - offsets.get(index) <= weights[centroidCount - 1] / 2) {
             // we interpolate back from the end, so the value is negative
-            return max + interpolate(totalWeight - offset, 1, max, weights[centroidCount - 1] / 2, means[centroidCount - 1]);
+            valuesAtQuantiles.add(max + interpolate(totalWeight - offsets.get(index), 1, max, weights[centroidCount - 1] / 2, means[centroidCount - 1]));
+            index++;
+        }
+        // greatest value
+        if (index < quantiles.size() && offsets.get(index) > totalWeight - 1) {
+            valuesAtQuantiles.addAll(nCopies(quantiles.size() - index, max));
+            return valuesAtQuantiles.build();
         }
 
         double weightSoFar = weights[0] / 2;
-        for (int i = 0; i < centroidCount - 1; i++) {
-            double delta = (weights[i] + weights[i + 1]) / 2;
-            if (weightSoFar + delta > offset) {
-                // single-sample cluster and the quantile falls within that cluster
-                if (weights[i] == 1 && offset - weightSoFar < weights[i] / 2) {
-                    return means[i];
-                }
-
-                // single-sample cluster and the quantile falls within that cluster
-                if (weights[i + 1] == 1 && offset - weightSoFar >= weights[i] / 2) {
-                    return means[i + 1];
-                }
-
-                // At this point, at most one cluster has a single sample
-                // If either has a single sample, we exclude its weight
-                if (weights[i] == 1) {
-                    weightSoFar += weights[i] / 2;
-                    delta = weights[i + 1] / 2;
-                }
-                else if (weights[i + 1] == 1) {
-                    delta = weights[i] / 2;
-                }
-
-                return means[i] + interpolate(offset - weightSoFar, 0, means[i], delta, means[i + 1]);
+        int currentCentroid = 0;
+        while (index < quantiles.size()) {
+            double delta = (weights[currentCentroid] + weights[currentCentroid + 1]) / 2;
+            while (currentCentroid < centroidCount - 1 && weightSoFar + delta <= offsets.get(index)) {
+                weightSoFar += delta;
+                currentCentroid++;
+                delta = (weights[currentCentroid] + weights[currentCentroid + 1]) / 2;
             }
-
-            weightSoFar += delta;
+            // past the last centroid
+            if (currentCentroid == centroidCount - 1) {
+                // between last centroid and top, but not the greatest value
+                while (index < quantiles.size() && offsets.get(index) <= totalWeight - 1 && weights[centroidCount - 1] > 1 && totalWeight - offsets.get(index) <= weights[centroidCount - 1] / 2) {
+                    // we interpolate back from the end, so the value is negative
+                    valuesAtQuantiles.add(max + interpolate(totalWeight - offsets.get(index), 1, max, weights[centroidCount - 1] / 2, means[centroidCount - 1]));
+                    index++;
+                }
+                // greatest value
+                if (index < quantiles.size() && offsets.get(index) > totalWeight - 1) {
+                    valuesAtQuantiles.addAll(nCopies(quantiles.size() - index, max));
+                    return valuesAtQuantiles.build();
+                }
+            }
+            else {
+                // single-sample cluster on the left (current centroid) and the quantile falls within that cluster
+                if (weights[currentCentroid] == 1 && offsets.get(index) - weightSoFar < weights[currentCentroid] / 2) {
+                    valuesAtQuantiles.add(means[currentCentroid]);
+                }
+                // single-sample cluster on the right (next centroid) and the quantile falls within that cluster
+                else if (weights[currentCentroid + 1] == 1 && offsets.get(index) - weightSoFar >= weights[currentCentroid] / 2) {
+                    valuesAtQuantiles.add(means[currentCentroid + 1]);
+                }
+                // the quantile falls within a multi-sample cluster. If the other cluster is single-sample, we can exclude it from interpolation
+                else {
+                    double interpolationOffset = offsets.get(index) - weightSoFar;
+                    double interpolationSectionLength = delta;
+                    if (weights[currentCentroid] == 1) {
+                        interpolationOffset -= weights[currentCentroid] / 2;
+                        interpolationSectionLength = weights[currentCentroid + 1] / 2;
+                    }
+                    else if (weights[currentCentroid + 1] == 1) {
+                        interpolationSectionLength = weights[currentCentroid] / 2;
+                    }
+                    valuesAtQuantiles.add(means[currentCentroid] + interpolate(interpolationOffset, 0, means[currentCentroid], interpolationSectionLength, means[currentCentroid + 1]));
+                }
+                index++;
+            }
         }
 
-        // Should never reach here. We handled the case of offset being
-        // between the last centroid and the top above
-        throw new AssertionError();
-    }
-
-    public List<Double> valuesAt(List<Double> quantiles)
-    {
-        checkArgument(Ordering.natural().isOrdered(quantiles), "quantiles must be sorted in increasing order");
-
-        // TODO: optimize and compute in a single pass
-        return quantiles.stream()
-                .map(this::valueAt)
-                .collect(Collectors.toList());
+        return valuesAtQuantiles.build();
     }
 
     public Slice serialize()

@@ -13,6 +13,7 @@
  */
 package io.airlift.stats;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
 import io.airlift.slice.Slices;
@@ -23,7 +24,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.IntStream;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.util.Arrays.asList;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertThrows;
@@ -38,6 +41,7 @@ public class TestTDigest
         assertTrue(Double.isNaN(digest.valueAt(0.5)));
         assertTrue(Double.isNaN(digest.getMin()));
         assertTrue(Double.isNaN(digest.getMax()));
+        assertEquals(digest.valuesAt(ImmutableList.of(0.1, 0.2, 0.5, 0.9)), ImmutableList.of(Double.NaN, Double.NaN, Double.NaN, Double.NaN));
     }
 
     @Test
@@ -69,6 +73,7 @@ public class TestTDigest
         assertEquals(digest.valueAt(0.9), 19.0);
         assertEquals(digest.valueAt(0.949999999), 19.0);
         assertEquals(digest.valueAt(0.95), 1_000_000.0);
+        assertEquals(digest.valuesAt(ImmutableList.of(0.89999999, 0.9, 0.949999999, 0.95)), ImmutableList.of(18.0, 19.0, 19.0, 1_000_000.0));
     }
 
     @Test
@@ -82,6 +87,7 @@ public class TestTDigest
 
         assertEquals(digest.valueAt(0.998), 999.0);
         assertEquals(digest.valueAt(0.999), 1_000_000.0);
+        assertEquals(digest.valuesAt(ImmutableList.of(0.998, 0.999)), ImmutableList.of(999.0, 1_000_000.0));
     }
 
     @Test
@@ -95,6 +101,12 @@ public class TestTDigest
         assertEquals(digest.valueAt(0.25 - 1e-10), 15, 1e-10);
         assertEquals(digest.valueAt(0.5 - 1e-10), 20, 1e-10);
         assertEquals(digest.valueAt(0.5), 32, 1e-10);
+
+        List<Double> quantiles = ImmutableList.of(0.25 - 1e-10, 0.25, 0.4, 0.5 - 1e-10, 0.5);
+        List<Double> values = digest.valuesAt(quantiles);
+        for (int i = 0; i < quantiles.size(); i++) {
+            assertEquals(values.get(i), digest.valueAt(quantiles.get(i)));
+        }
     }
 
     @Test
@@ -107,10 +119,19 @@ public class TestTDigest
             values[i] = i;
         }
 
-        for (double quantile = 0; quantile <= 1; quantile += 1e-3) {
-            double expected = values[(int) Math.floor(quantile * values.length)];
-            assertEquals(digest.valueAt(quantile), expected);
-        }
+        List<Double> quantiles = IntStream.range(0, 1000)
+                .mapToDouble(i -> i * 1e-3)
+                .boxed()
+                .collect(toImmutableList());
+        List<Double> expectedValues = quantiles.stream()
+                .map(quantile -> values[(int) Math.floor(quantile * values.length)])
+                .collect(toImmutableList());
+        List<Double> valuesAtQuantilesSingle = quantiles.stream()
+                .map(digest::valueAt)
+                .collect(toImmutableList());
+        List<Double> valuesAtQuantilesMultiple = digest.valuesAt(quantiles);
+        assertEquals(expectedValues, valuesAtQuantilesSingle);
+        assertEquals(expectedValues, valuesAtQuantilesMultiple);
     }
 
     @Test
@@ -123,6 +144,9 @@ public class TestTDigest
         assertEquals(digest.valueAt(0), value, 0.001f);
         assertEquals(digest.valueAt(0.5), value, 0.001f);
         assertEquals(digest.valueAt(1), value, 0.001f);
+        assertEquals(
+                digest.valuesAt(ImmutableList.of(0d, 0.5d, 1d)),
+                ImmutableList.of(digest.valueAt(0), digest.valueAt(0.5), digest.valueAt(1)));
     }
 
     @Test
@@ -136,6 +160,7 @@ public class TestTDigest
         assertEquals(digest.valueAt(0.3), 1.0);
         assertEquals(digest.valueAt(0.9), 2.0);
         assertEquals(digest.valueAt(1), 2.0);
+        assertEquals(digest.valuesAt(ImmutableList.of(0d, 0.3d, 0.9d, 1d)), ImmutableList.of(1.0, 1.0, 2.0, 2.0));
     }
 
     @Test
