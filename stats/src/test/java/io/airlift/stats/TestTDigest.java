@@ -164,6 +164,18 @@ public class TestTDigest
     }
 
     @Test
+    public void testFirstInnerAndLastCentroid()
+    {
+        TDigest digest = new TDigest();
+        digest.add(1);
+        digest.add(2);
+        digest.add(3);
+        digest.add(4);
+
+        assertEquals(digest.valuesAt(ImmutableList.of(0d, 0.6d, 1d)), ImmutableList.of(1.0, 3.0, 4.0));
+    }
+
+    @Test
     public void testSerializationEmpty()
     {
         TDigest digest = new TDigest();
