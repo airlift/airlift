@@ -301,7 +301,9 @@ public class TDigest
             while (currentCentroid < centroidCount - 1 && weightSoFar + delta <= offsets.get(index)) {
                 weightSoFar += delta;
                 currentCentroid++;
-                delta = (weights[currentCentroid] + weights[currentCentroid + 1]) / 2;
+                if (currentCentroid < centroidCount - 1) {
+                    delta = (weights[currentCentroid] + weights[currentCentroid + 1]) / 2;
+                }
             }
             // past the last centroid
             if (currentCentroid == centroidCount - 1) {
