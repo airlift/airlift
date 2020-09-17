@@ -15,7 +15,6 @@
  */
 package io.airlift.discovery.client;
 
-import org.testng.SkipException;
 import org.testng.annotations.Test;
 
 import static io.airlift.testing.EquivalenceTester.equivalenceTester;
@@ -48,17 +47,6 @@ public class TestServiceTypes
     public void testValue()
     {
         assertEquals(ServiceTypes.serviceType("type").value(), "type");
-    }
-
-    @Test
-    public void testToString()
-    {
-        if (System.getProperty("java.version").startsWith("1.8.")) {
-            throw new SkipException("Incompatible Java version: " + System.getProperty("java.version"));
-        }
-
-        assertEquals(ServiceTypes.serviceType("apple").toString(), appleServiceType.toString());
-        assertEquals(ServiceTypes.serviceType("quot\"ation-and-\\backslash").toString(), serviceTypeWithCharacters.toString());
     }
 
     @Test
