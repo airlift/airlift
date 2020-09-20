@@ -77,11 +77,24 @@ public class TestBootstrap
                 .put("pear", "${ENV:X_PEAR}")
                 .put("cherry", "${ENV:X_CHERRY}")
                 .put("orange", "orange-value")
+                .put("watermelon", "${ENV:WATER}${ENV:MELON}")
+                .put("blueberry", "${ENV:BLUE}${ENV:BERRY}")
+                .put("contaminated-lemon", "${ENV:!!!}${ENV:LEMON}")
+                .put("mixed-fruit", "mango-value:${ENV:BANANA}:${ENV:COCONUT}")
+                .put("no-recursive-replacement", "${ENV:FIRST}, ${ENV:SECOND}")
                 .build();
 
         Map<String, String> environment = ImmutableMap.<String, String>builder()
                 .put("GRAPE", "env-grape")
                 .put("X_CHERRY", "env-cherry")
+                .put("WATER", "env-water")
+                .put("MELON", "env-melon")
+                .put("BERRY", "env-berry")
+                .put("LEMON", "env-lemon")
+                .put("BANANA", "env-banana")
+                .put("COCONUT", "env-coconut")
+                .put("FIRST", "env-first:${ENV:SECOND}:")
+                .put("SECOND", "env-second:${ENV:FIRST}")
                 .build();
 
         List<String> errors = new ArrayList<>();
@@ -93,13 +106,18 @@ public class TestBootstrap
                 .put("grass", "${ENV:!!!}")
                 .put("cherry", "env-cherry")
                 .put("orange", "orange-value")
+                .put("watermelon", "env-waterenv-melon")
+                .put("contaminated-lemon", "${ENV:!!!}env-lemon")
+                .put("mixed-fruit", "mango-value:env-banana:env-coconut")
+                .put("no-recursive-replacement", "env-first:${ENV:SECOND}:, env-second:${ENV:FIRST}")
                 .build();
 
         assertEquals(actual, expected);
 
         assertThat(errors).containsExactly(
                 "Configuration property 'peach' references unset environment variable 'PEACH'",
-                "Configuration property 'pear' references unset environment variable 'X_PEAR'");
+                "Configuration property 'pear' references unset environment variable 'X_PEAR'",
+                "Configuration property 'blueberry' references unset environment variable 'BLUE'");
     }
 
     @Test

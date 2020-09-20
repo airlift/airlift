@@ -53,6 +53,7 @@ import java.util.regex.Pattern;
 import static io.airlift.configuration.ConfigurationLoader.getSystemProperties;
 import static io.airlift.configuration.ConfigurationLoader.loadPropertiesFrom;
 import static java.lang.String.format;
+import static java.util.regex.Matcher.quoteReplacement;
 
 /**
  * Entry point for an application built using the platform codebase.
@@ -321,18 +322,20 @@ public class Bootstrap
     {
         Map<String, String> replaced = new HashMap<>();
         properties.forEach((propertyKey, propertyValue) -> {
+            // TODO: replace StringBuffer with StringBuilder after upgrading to Java 9
+            StringBuffer replacedPropertyValue = new StringBuffer();
             Matcher matcher = ENV_PATTERN.matcher(propertyValue);
-            if (!matcher.matches()) {
-                replaced.put(propertyKey, propertyValue);
-                return;
+            while (matcher.find()) {
+                String envName = matcher.group(1);
+                String envValue = environment.get(envName);
+                if (envValue == null) {
+                    onError.accept(propertyKey, format("Configuration property '%s' references unset environment variable '%s'", propertyKey, envName));
+                    return;
+                }
+                matcher.appendReplacement(replacedPropertyValue, quoteReplacement(envValue));
             }
-            String envName = matcher.group(1);
-            String envValue = environment.get(envName);
-            if (envValue == null) {
-                onError.accept(propertyKey, format("Configuration property '%s' references unset environment variable '%s'", propertyKey, envName));
-                return;
-            }
-            replaced.put(propertyKey, envValue);
+            matcher.appendTail(replacedPropertyValue);
+            replaced.put(propertyKey, replacedPropertyValue.toString());
         });
         return replaced;
     }
