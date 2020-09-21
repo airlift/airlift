@@ -278,12 +278,12 @@ public class TDigest
             index++;
         }
         // between bottom and first centroid
-        while (index < quantiles.size() && weights[0] > 1 && offsets.get(index) < weights[0] / 2) {
+        while (index < quantiles.size() && offsets.get(index) < weights[0] / 2) {
             valuesAtQuantiles.add(min + interpolate(offsets.get(index), 1, min, weights[0] / 2, means[0]));
             index++;
         }
         // between last centroid and top, but not the greatest value
-        while (index < quantiles.size() && offsets.get(index) <= totalWeight - 1 && weights[centroidCount - 1] > 1 && totalWeight - offsets.get(index) <= weights[centroidCount - 1] / 2) {
+        while (index < quantiles.size() && offsets.get(index) <= totalWeight - 1 && totalWeight - offsets.get(index) <= weights[centroidCount - 1] / 2) {
             // we interpolate back from the end, so the value is negative
             valuesAtQuantiles.add(max + interpolate(totalWeight - offsets.get(index), 1, max, weights[centroidCount - 1] / 2, means[centroidCount - 1]));
             index++;
