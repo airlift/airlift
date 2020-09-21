@@ -330,6 +330,55 @@ public class TestTDigest
         assertEquals(20.0, digest.valueAt(0.75));
     }
 
+    @Test
+    public void testValuesAtSimpleCases()
+    {
+        TDigest digest = new TDigest();
+
+        // empty quantiles list
+        assertEquals(ImmutableList.of(), digest.valuesAt(ImmutableList.of()));
+
+        // quantiles not sorted
+        assertThrows(IllegalArgumentException.class, () -> digest.valuesAt(ImmutableList.of(0.9, 0.1)));
+
+        // quantile out of range [0, 1]
+        assertThrows(IllegalArgumentException.class, () -> digest.valuesAt(ImmutableList.of(-0.9, 0.9)));
+
+        // empty digest
+        assertEquals(ImmutableList.of(Double.NaN, Double.NaN), digest.valuesAt(ImmutableList.of(0.5, 0.75)));
+
+        // single centroid
+        digest.add(10);
+        assertEquals(ImmutableList.of(10.0, 10.0, 10.0, 10.0), digest.valuesAt(ImmutableList.of(0.0, 0.5, 0.75, 1.0)));
+    }
+
+    @Test
+    public void testValuesAt()
+    {
+        TDigest digest = new TDigest();
+        addAll(digest, ImmutableList.of(10, 20, 30, 40));
+        // quantiles at centroid borders
+        assertEquals(ImmutableList.of(10.0, 20.0, 30.0, 40.0, 40.0), digest.valuesAt(ImmutableList.of(0.0, 0.25, 0.5, 0.75, 1.0)));
+        // quantiles inside centroids
+        assertEquals(ImmutableList.of(10.0, 10.0, 20.0, 20.0, 30.0, 30.0, 40.0, 40.0), digest.valuesAt(ImmutableList.of(0.001, 0.249, 0.251, 0.499, 0.501, 0.749, 0.751, 0.999)));
+
+        digest = new TDigest();
+        digest.add(10, 2);
+        digest.add(20, 2);
+        // min value and value at offset 1
+        assertEquals(ImmutableList.of(10.0, 10.0), digest.valuesAt(ImmutableList.of(0.1, 0.25)));
+        // short-circuit to last centroid
+        assertEquals(ImmutableList.of(20.0, 20.0), digest.valuesAt(ImmutableList.of(0.9, 1.0)));
+
+        digest = new TDigest();
+        digest.add(10, 4);
+        digest.add(20, 4);
+        // min value and value at offset 1
+        assertEquals(ImmutableList.of(10.0, 10.0), digest.valuesAt(ImmutableList.of(0.1, 0.125)));
+        // short-circuit to last centroid
+        assertEquals(ImmutableList.of(20.0, 20.0, 20.0), digest.valuesAt(ImmutableList.of(0.75, 0.875, 1.0)));
+    }
+
     private void addAll(TDigest digest, List<Integer> values)
     {
         for (int value : values) {
