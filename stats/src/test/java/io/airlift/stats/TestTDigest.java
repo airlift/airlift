@@ -380,6 +380,15 @@ public class TestTDigest
         assertEquals(ImmutableList.of(10.0, 10.0), digest.valuesAt(ImmutableList.of(0.1, 0.125)));
         // short-circuit to last centroid
         assertEquals(ImmutableList.of(20.0, 20.0, 20.0), digest.valuesAt(ImmutableList.of(0.75, 0.875, 1.0)));
+
+        digest = new TDigest();
+        digest.add(10, 4);
+        digest.add(20, 1);
+        digest.add(30, 1);
+        digest.add(40, 2);
+        digest.add(50, 2);
+        // single-element vs multi-element clusters
+        assertEquals(ImmutableList.of(19.5, 20.0, 20.0, 30.0, 30.0, 30.999999999999996, 44.5, 45.50000000000001), digest.valuesAt(ImmutableList.of(0.39, 0.41, 0.49, 0.51, 0.59, 0.61, 0.79, 0.81)));
     }
 
     private void addAll(TDigest digest, List<Integer> values)
