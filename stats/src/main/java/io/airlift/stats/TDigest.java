@@ -283,13 +283,13 @@ public class TDigest
             index++;
         }
         // between last centroid and top, but not the greatest value
-        while (index < quantiles.size() && offsets.get(index) <= totalWeight - 1 && totalWeight - offsets.get(index) <= weights[centroidCount - 1] / 2) {
+        while (index < quantiles.size() && offsets.get(index) <= totalWeight - 1 && totalWeight - offsets.get(index) <= weights[centroidCount - 1] / 2 && weights[centroidCount - 1] / 2 > 1) {
             // we interpolate back from the end, so the value is negative
             valuesAtQuantiles.add(max + interpolate(totalWeight - offsets.get(index), 1, max, weights[centroidCount - 1] / 2, means[centroidCount - 1]));
             index++;
         }
         // greatest value
-        if (index < quantiles.size() && offsets.get(index) > totalWeight - 1) {
+        if (index < quantiles.size() && offsets.get(index) >= totalWeight - 1) {
             valuesAtQuantiles.addAll(nCopies(quantiles.size() - index, max));
             return valuesAtQuantiles.build();
         }
@@ -308,13 +308,13 @@ public class TDigest
             // past the last centroid
             if (currentCentroid == centroidCount - 1) {
                 // between last centroid and top, but not the greatest value
-                while (index < quantiles.size() && offsets.get(index) <= totalWeight - 1) {
+                while (index < quantiles.size() && offsets.get(index) <= totalWeight - 1 && weights[centroidCount - 1] / 2 > 1) {
                     // we interpolate back from the end, so the value is negative
                     valuesAtQuantiles.add(max + interpolate(totalWeight - offsets.get(index), 1, max, weights[centroidCount - 1] / 2, means[centroidCount - 1]));
                     index++;
                 }
                 // greatest value
-                if (index < quantiles.size() && offsets.get(index) > totalWeight - 1) {
+                if (index < quantiles.size()) {
                     valuesAtQuantiles.addAll(nCopies(quantiles.size() - index, max));
                     return valuesAtQuantiles.build();
                 }

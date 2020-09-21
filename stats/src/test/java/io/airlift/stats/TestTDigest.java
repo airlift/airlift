@@ -369,6 +369,9 @@ public class TestTDigest
         assertEquals(ImmutableList.of(10.0, 10.0), digest.valuesAt(ImmutableList.of(0.1, 0.25)));
         // short-circuit to last centroid
         assertEquals(ImmutableList.of(20.0, 20.0), digest.valuesAt(ImmutableList.of(0.9, 1.0)));
+        assertEquals(ImmutableList.of(20.0, 20.0), digest.valuesAt(ImmutableList.of(0.75, 1.0)));
+        // pass through the structure until last centroid
+        assertEquals(ImmutableList.of(15.0, 20.0), digest.valuesAt(ImmutableList.of(0.5, 1.0)));
 
         digest = new TDigest();
         digest.add(10, 4);
