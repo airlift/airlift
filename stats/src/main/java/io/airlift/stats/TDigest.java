@@ -298,7 +298,7 @@ public class TDigest
         int currentCentroid = 0;
         while (index < quantiles.size()) {
             double delta = (weights[currentCentroid] + weights[currentCentroid + 1]) / 2;
-            while (currentCentroid < centroidCount - 1 && weightSoFar + delta < offsets.get(index)) {
+            while (currentCentroid < centroidCount - 1 && weightSoFar + delta <= offsets.get(index)) {
                 weightSoFar += delta;
                 currentCentroid++;
                 if (currentCentroid < centroidCount - 1) {
@@ -308,7 +308,7 @@ public class TDigest
             // past the last centroid
             if (currentCentroid == centroidCount - 1) {
                 // between last centroid and top, but not the greatest value
-                while (index < quantiles.size() && offsets.get(index) <= totalWeight - 1 && weights[centroidCount - 1] > 1 && totalWeight - offsets.get(index) <= weights[centroidCount - 1] / 2) {
+                while (index < quantiles.size() && offsets.get(index) <= totalWeight - 1) {
                     // we interpolate back from the end, so the value is negative
                     valuesAtQuantiles.add(max + interpolate(totalWeight - offsets.get(index), 1, max, weights[centroidCount - 1] / 2, means[centroidCount - 1]));
                     index++;
