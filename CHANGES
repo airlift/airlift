@@ -1,3 +1,7 @@
+201
+
+- Allow expanding environment variables within config values.
+
 200
 
 - Add client certificate support to testing http server.
