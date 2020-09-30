@@ -98,7 +98,7 @@ public class HttpServer
     private ConnectionStats httpConnectionStats;
     private ConnectionStats httpsConnectionStats;
     private ScheduledExecutorService scheduledExecutorService;
-    private Optional<SslContextFactory.Server> sslContextFactory = Optional.empty();
+    private Optional<SslContextFactory.Server> sslContextFactory;
 
     public HttpServer(HttpServerInfo httpServerInfo,
             NodeInfo nodeInfo,
@@ -133,6 +133,8 @@ public class HttpServer
         threadPool.setDetailedDump(true);
         server = new Server(threadPool);
         registerErrorHandler = config.isShowStackTrace();
+
+        this.sslContextFactory = maybeSslContextFactory;
 
         if (mbeanServer != null) {
             // export jmx mbeans if a server was provided
