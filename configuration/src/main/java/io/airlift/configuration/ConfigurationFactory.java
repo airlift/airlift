@@ -17,6 +17,7 @@ package io.airlift.configuration;
 
 import com.google.common.annotations.Beta;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Splitter;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -27,6 +28,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimaps;
+import com.google.common.reflect.TypeToken;
 import com.google.inject.Binding;
 import com.google.inject.ConfigurationException;
 import com.google.inject.Key;
@@ -63,6 +65,7 @@ import java.util.function.Function;
 
 import static com.google.common.base.CaseFormat.LOWER_CAMEL;
 import static com.google.common.base.CaseFormat.UPPER_CAMEL;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.Sets.newConcurrentHashSet;
 import static io.airlift.configuration.ConfigurationMetadata.getConfigurationMetadata;
 import static io.airlift.configuration.Problems.exceptionFor;
@@ -73,6 +76,10 @@ public class ConfigurationFactory
 {
     @GuardedBy("VALIDATOR")
     private static final Validator VALIDATOR;
+
+    private static final TypeToken<List<String>> LIST_OF_STRINGS_TYPE_TOKEN = new TypeToken<List<String>>() {};
+
+    private static final Splitter VALUE_SPLITTER = Splitter.on(",").omitEmptyStrings().trimResults();
 
     static {
         // this prevents bval from using the thread context classloader
@@ -632,6 +639,11 @@ public class ConfigurationFactory
                 }
             }
             return match;
+        }
+
+        if (LIST_OF_STRINGS_TYPE_TOKEN.isSubtypeOf(TypeToken.of(type))) {
+            return VALUE_SPLITTER.splitToStream(value)
+                    .collect(toImmutableList());
         }
 
         // Look for a static valueOf(String) method

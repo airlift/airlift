@@ -393,6 +393,16 @@ public class TestConfigurationFactory
     }
 
     @Test
+    public void testListOfStrings()
+    {
+        TestMonitor monitor = new TestMonitor();
+        Injector injector = createInjector(ImmutableMap.of("values", "ala, ma ,kota, "), monitor, binder -> configBinder(binder).bindConfig(ListOfStringsClass.class));
+        assertEquals(injector.getInstance(ListOfStringsClass.class).getValues(), ImmutableList.of("ala", "ma", "kota"));
+        monitor.assertNumberOfErrors(0);
+        monitor.assertNumberOfWarnings(0);
+    }
+
+    @Test
     public void testValueOf()
     {
         TestMonitor monitor = new TestMonitor();
@@ -769,6 +779,22 @@ public class TestConfigurationFactory
         public void setValue(Value value)
         {
             this.value = value;
+        }
+    }
+
+    public static class ListOfStringsClass
+    {
+        private List<String> values;
+
+        public List<String> getValues()
+        {
+            return values;
+        }
+
+        @Config("values")
+        public void setValues(List<String> values)
+        {
+            this.values = values;
         }
     }
 
