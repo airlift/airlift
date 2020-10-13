@@ -19,6 +19,7 @@ import com.google.common.annotations.Beta;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Binder;
 import com.google.inject.Module;
+import com.google.inject.util.Modules;
 
 import java.util.List;
 
@@ -50,6 +51,37 @@ public interface ConfigurationAwareModule
                 for (Module module : modules) {
                     install(module);
                 }
+            }
+        };
+    }
+
+    static Modules.OverriddenModuleBuilder override(Module... modules)
+    {
+        return override(ImmutableList.copyOf(modules));
+    }
+
+    static Modules.OverriddenModuleBuilder override(Iterable<? extends Module> modules)
+    {
+        return new Modules.OverriddenModuleBuilder()
+        {
+            @Override
+            public Module with(Module... overrides)
+            {
+                return with(ImmutableList.copyOf(overrides));
+            }
+
+            @Override
+            public Module with()
+            {
+                return combine(modules);
+            }
+
+            @Override
+            public Module with(Iterable<? extends Module> overrides)
+            {
+                Module overriden = Modules.override(combine(modules))
+                        .with(combine(overrides));
+                return combine(overriden);
             }
         };
     }
