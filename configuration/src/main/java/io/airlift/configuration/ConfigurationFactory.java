@@ -622,7 +622,8 @@ public class ConfigurationFactory
             }
             Object match = null;
             for (Enum<?> option : type.asSubclass(Enum.class).getEnumConstants()) {
-                if (option.name().equalsIgnoreCase(value)) {
+                String enumValue = value.replace("-", "_");
+                if (option.name().equalsIgnoreCase(enumValue)) {
                     if (match != null) {
                         // Ambiguity
                         return null;
