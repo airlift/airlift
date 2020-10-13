@@ -354,6 +354,45 @@ public class TestConfigurationFactory
     }
 
     @Test
+    public void testEnum()
+    {
+        TestMonitor monitor = new TestMonitor();
+        Injector injector = createInjector(ImmutableMap.of("value", "value"), monitor, binder -> configBinder(binder).bindConfig(EnumClass.class));
+        assertSame(injector.getInstance(EnumClass.class).value, EnumClass.Value.VALUE);
+        monitor.assertNumberOfErrors(0);
+        monitor.assertNumberOfWarnings(0);
+    }
+
+    @Test
+    public void testEnumValueWithUnderscores()
+    {
+        TestMonitor monitor = new TestMonitor();
+        Injector injector = createInjector(ImmutableMap.of("value", "value_with_underscores"), monitor, binder -> configBinder(binder).bindConfig(EnumClass.class));
+        assertSame(injector.getInstance(EnumClass.class).value, EnumClass.Value.VALUE_WITH_UNDERSCORES);
+        monitor.assertNumberOfErrors(0);
+        monitor.assertNumberOfWarnings(0);
+    }
+
+    @Test
+    public void testEnumValueWithMinusesInsteadOfUnderscores()
+    {
+        TestMonitor monitor = new TestMonitor();
+        Injector injector = createInjector(ImmutableMap.of("value", "value-with-underscores"), monitor, binder -> configBinder(binder).bindConfig(EnumClass.class));
+        assertSame(injector.getInstance(EnumClass.class).value, EnumClass.Value.VALUE_WITH_UNDERSCORES);
+        monitor.assertNumberOfErrors(0);
+        monitor.assertNumberOfWarnings(0);
+    }
+
+    @Test
+    public void testInvalidEnumValue()
+    {
+        assertInvalidConfig(
+                ImmutableMap.of("value", "invalid value"),
+                binder -> configBinder(binder).bindConfig(EnumWithFromStringClass.class),
+                ".*Invalid value 'invalid value' for type.*\\(property 'value'\\).*EnumWithFromStringClass.*");
+    }
+
+    @Test
     public void testValueOf()
     {
         TestMonitor monitor = new TestMonitor();
@@ -696,6 +735,27 @@ public class TestConfigurationFactory
                         throw new IllegalArgumentException("Invalid value: " + string);
                 }
             }
+        }
+
+        private Value value;
+
+        public Value getValue()
+        {
+            return value;
+        }
+
+        @Config("value")
+        public void setValue(Value value)
+        {
+            this.value = value;
+        }
+    }
+
+    public static class EnumClass
+    {
+        public enum Value
+        {
+            VALUE, VALUE_WITH_UNDERSCORES;
         }
 
         private Value value;
