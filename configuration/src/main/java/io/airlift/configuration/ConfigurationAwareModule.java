@@ -15,7 +15,6 @@
  */
 package io.airlift.configuration;
 
-import com.google.common.annotations.Beta;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Binder;
 import com.google.inject.Module;
@@ -24,7 +23,6 @@ import java.util.List;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-@Beta
 public interface ConfigurationAwareModule
         extends Module
 {
