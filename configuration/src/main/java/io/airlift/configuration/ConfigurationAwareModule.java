@@ -35,7 +35,7 @@ public interface ConfigurationAwareModule
         return combine(ImmutableList.copyOf(modules));
     }
 
-    static Module combine(Iterable<Module> modulesIterable)
+    static Module combine(Iterable<? extends Module> modulesIterable)
     {
         List<Module> modules = ImmutableList.copyOf(modulesIterable);
         checkArgument(!modules.isEmpty(), "no modules provided");
