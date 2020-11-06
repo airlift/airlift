@@ -22,8 +22,11 @@ import com.google.common.primitives.Ints;
 import io.airlift.json.JsonCodec;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.util.Optional;
 import java.util.Set;
 
+import static com.google.common.io.BaseEncoding.base16;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
 import static java.lang.String.format;
@@ -69,16 +72,16 @@ public class JsonResponseHandler<T>
     {
         if (!successfulResponseCodes.contains(response.getStatusCode())) {
             throw new UnexpectedResponseException(
-                    format("Expected response code to be %s, but was %d", successfulResponseCodes, response.getStatusCode()),
+                    format("Expected response code to be %s, but was %d; %s", successfulResponseCodes, response.getStatusCode(), reportResponseContent(response)),
                     request,
                     response);
         }
         String contentType = response.getHeader(CONTENT_TYPE);
         if (contentType == null) {
-            throw new UnexpectedResponseException("Content-Type is not set for response", request, response);
+            throw new UnexpectedResponseException("Content-Type is not set for response; " + reportResponseContent(response), request, response);
         }
         if (!MediaType.parse(contentType).is(MEDIA_TYPE_JSON)) {
-            throw new UnexpectedResponseException("Expected application/json response from server but got " + contentType, request, response);
+            throw new UnexpectedResponseException(format("Expected application/json response from server but got %s; %s", contentType, reportResponseContent(response)), request, response);
         }
         byte[] bytes;
         try {
@@ -94,5 +97,36 @@ public class JsonResponseHandler<T>
             String json = new String(bytes, UTF_8);
             throw new IllegalArgumentException(format("Unable to create %s from JSON response:\n[%s]", jsonCodec.getType(), json), e);
         }
+    }
+
+    private static String reportResponseContent(Response response)
+    {
+        byte[] bytes = new byte[1024];
+        int read;
+        try {
+            read = ByteStreams.read(response.getInputStream(), bytes, 0, bytes.length);
+        }
+        catch (IOException e) {
+            return "Error reading response from server";
+        }
+
+        if (read == 0) {
+            return "Response empty";
+        }
+
+        Charset assumedCharset = Optional.ofNullable(response.getHeader(CONTENT_TYPE))
+                .flatMap(input -> {
+                    try {
+                        return Optional.of(MediaType.parse(input));
+                    }
+                    catch (RuntimeException ignore) {
+                        return Optional.empty();
+                    }
+                })
+                .flatMap(mediaType -> mediaType.charset().toJavaUtil())
+                .orElse(UTF_8);
+
+        String interpretedResponse = new String(bytes, 0, read, assumedCharset);
+        return format("Response: [%s...] [%s...]", interpretedResponse, base16().encode(bytes, 0, read));
     }
 }

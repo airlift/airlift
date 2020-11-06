@@ -46,13 +46,27 @@ public class TestJsonResponseHandler
         }
     }
 
-    @Test(expectedExceptions = UnexpectedResponseException.class, expectedExceptionsMessageRegExp = "Expected application/json response from server but got text/plain; charset=utf-8")
+    @Test(
+            expectedExceptions = UnexpectedResponseException.class,
+            expectedExceptionsMessageRegExp = "\\QExpected response code to be [200, 201, 202, 203, 204, 205, 206], but was 500; " +
+                    "Response: [Failed to process your request: java.io.IOException: Out of disk space\n" +
+                    "\tat java.nio.file.Files.createTempFile(Files.java:867)...] " +
+                    "[4661696C656420746F2070726F6365737320796F757220726571756573743A206A6176612E696F2E494F457863657074696F6E3A204F7574" +
+                    "206F66206469736B2073706163650A096174206A6176612E6E696F2E66696C652E46696C65732E63726561746554656D7046696C652846696" +
+                    "C65732E6A6176613A38363729...]")
+    public void testFailureResponse()
+    {
+        handler.handle(null, mockResponse(INTERNAL_SERVER_ERROR, PLAIN_TEXT_UTF_8, "Failed to process your request: java.io.IOException: Out of disk space\n" +
+                "\tat java.nio.file.Files.createTempFile(Files.java:867)"));
+    }
+
+    @Test(expectedExceptions = UnexpectedResponseException.class, expectedExceptionsMessageRegExp = "\\QExpected application/json response from server but got text/plain; charset=utf-8; Response: [hello...] [68656C6C6F...]")
     public void testNonJsonResponse()
     {
         handler.handle(null, mockResponse(OK, PLAIN_TEXT_UTF_8, "hello"));
     }
 
-    @Test(expectedExceptions = UnexpectedResponseException.class, expectedExceptionsMessageRegExp = "Content-Type is not set for response")
+    @Test(expectedExceptions = UnexpectedResponseException.class, expectedExceptionsMessageRegExp = "\\QContent-Type is not set for response; Response: [hello...] [68656C6C6F...]")
     public void testMissingContentType()
     {
         handler.handle(null, new TestingResponse(OK, ImmutableListMultimap.<String, String>of(), "hello".getBytes(UTF_8)));
