@@ -15,6 +15,7 @@ package io.airlift.concurrent;
 
 import java.io.Closeable;
 
+import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 public class SetThreadName
@@ -26,7 +27,7 @@ public class SetThreadName
     {
         requireNonNull(format, "format is null");
         originalThreadName = Thread.currentThread().getName();
-        Thread.currentThread().setName(String.format(format, args) + "-" + Thread.currentThread().getId());
+        Thread.currentThread().setName(format(format, args) + "-" + Thread.currentThread().getId());
     }
 
     @Override

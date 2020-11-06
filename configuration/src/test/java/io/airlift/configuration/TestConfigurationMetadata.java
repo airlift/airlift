@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static io.airlift.testing.EquivalenceTester.equivalenceTester;
+import static java.lang.String.format;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
@@ -831,7 +832,7 @@ public class TestConfigurationMetadata
         else {
             try {
                 configClass.getDeclaredConstructor();
-                fail(String.format("Expected configClass [%s] not to have a constructor", configClass.getName()));
+                fail(format("Expected configClass [%s] not to have a constructor", configClass.getName()));
             }
             catch (NoSuchMethodException expected) {
             }

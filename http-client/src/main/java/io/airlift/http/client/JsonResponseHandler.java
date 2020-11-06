@@ -26,6 +26,7 @@ import java.util.Set;
 
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
+import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class JsonResponseHandler<T>
@@ -68,7 +69,7 @@ public class JsonResponseHandler<T>
     {
         if (!successfulResponseCodes.contains(response.getStatusCode())) {
             throw new UnexpectedResponseException(
-                    String.format("Expected response code to be %s, but was %d", successfulResponseCodes, response.getStatusCode()),
+                    format("Expected response code to be %s, but was %d", successfulResponseCodes, response.getStatusCode()),
                     request,
                     response);
         }
@@ -91,7 +92,7 @@ public class JsonResponseHandler<T>
         }
         catch (IllegalArgumentException e) {
             String json = new String(bytes, UTF_8);
-            throw new IllegalArgumentException(String.format("Unable to create %s from JSON response:\n[%s]", jsonCodec.getType(), json), e);
+            throw new IllegalArgumentException(format("Unable to create %s from JSON response:\n[%s]", jsonCodec.getType(), json), e);
         }
     }
 }

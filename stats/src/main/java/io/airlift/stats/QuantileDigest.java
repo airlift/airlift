@@ -1117,7 +1117,7 @@ public class QuantileDigest
 
             for (int node : entry.getValue()) {
                 if (levels[node] == 0) {
-                    builder.append(String.format("\t\t%s [label=\"%s:[%s]@%s\\n%s\", shape=rect, style=filled,color=%s];\n",
+                    builder.append(format("\t\t%s [label=\"%s:[%s]@%s\\n%s\", shape=rect, style=filled,color=%s];\n",
                             idFor(node),
                             node,
                             lowerBound(node),
@@ -1126,7 +1126,7 @@ public class QuantileDigest
                             counts[node] > 0 ? "salmon2" : "white"));
                 }
                 else {
-                    builder.append(String.format("\t\t%s [label=\"%s:[%s..%s]@%s\\n%s\", shape=rect, style=filled,color=%s];\n",
+                    builder.append(format("\t\t%s [label=\"%s:[%s..%s]@%s\\n%s\", shape=rect, style=filled,color=%s];\n",
                             idFor(node),
                             node,
                             lowerBound(node),
@@ -1161,7 +1161,7 @@ public class QuantileDigest
 
     private static String idFor(int node)
     {
-        return String.format("node_%x", node);
+        return format("node_%x", node);
     }
 
     /**
@@ -1285,7 +1285,7 @@ public class QuantileDigest
 
         public String toString()
         {
-            return String.format("[count: %f, mean: %f]", count, mean);
+            return format("[count: %f, mean: %f]", count, mean);
         }
     }
 

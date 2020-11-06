@@ -194,7 +194,7 @@ public class TestDelimitedRequestLog
         assertEquals(event.getResponseContentInterarrivalStats(), responseContentInterarrivalStats);
 
         String actual = asCharSource(file, UTF_8).read();
-        String expected = String.format("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+        String expected = format("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
                 ISO_FORMATTER.format(Instant.ofEpochMilli(timestamp)),
                 ip,
                 method,

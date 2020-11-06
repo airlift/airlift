@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static io.airlift.discovery.client.DiscoveryAnnouncementClient.DEFAULT_DELAY;
+import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -68,8 +69,8 @@ public class CachingServiceSelector
         this.errorBackOff = new ExponentialBackOff(
                 new Duration(1, MILLISECONDS),
                 new Duration(1, SECONDS),
-                String.format("Discovery server connect succeeded for refresh (%s/%s)", type, pool),
-                String.format("Cannot connect to discovery server for refresh (%s/%s)", type, pool),
+                format("Discovery server connect succeeded for refresh (%s/%s)", type, pool),
+                format("Cannot connect to discovery server for refresh (%s/%s)", type, pool),
                 log);
     }
 

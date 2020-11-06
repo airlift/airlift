@@ -17,16 +17,18 @@ package io.airlift.event.client;
 
 import java.io.IOException;
 
+import static java.lang.String.format;
+
 public class InvalidEventException
         extends IOException
 {
     public InvalidEventException(String message, Object... args)
     {
-        super(String.format(message, args));
+        super(format(message, args));
     }
 
     public InvalidEventException(Throwable cause, String message, Object... args)
     {
-        super(String.format(message, args), cause);
+        super(format(message, args), cause);
     }
 }

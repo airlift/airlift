@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 import static com.google.common.math.DoubleMath.fuzzyEquals;
 import static java.lang.Math.min;
+import static java.lang.String.format;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
@@ -138,6 +139,6 @@ public class TestTimeStat
             return;
         }
 
-        fail(String.format("%s expected:<%s> to be between <%s> and <%s>", name, value, minValue, maxValue));
+        fail(format("%s expected:<%s> to be between <%s> and <%s>", name, value, minValue, maxValue));
     }
 }

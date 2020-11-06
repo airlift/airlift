@@ -35,6 +35,7 @@ import static io.airlift.stats.cardinality.Utils.computeIndex;
 import static io.airlift.stats.cardinality.Utils.computeValue;
 import static io.airlift.stats.cardinality.Utils.linearCounting;
 import static io.airlift.stats.cardinality.Utils.numberOfBuckets;
+import static java.lang.String.format;
 
 @NotThreadSafe
 final class DenseHll
@@ -120,7 +121,7 @@ final class DenseHll
             }
         }
         else {
-            throw new IllegalArgumentException(String.format("Invalid format tag: %d", formatTag));
+            throw new IllegalArgumentException(format("Invalid format tag: %d", formatTag));
         }
 
         baselineCount = 0;
@@ -416,7 +417,7 @@ final class DenseHll
     public DenseHll mergeWith(DenseHll other)
     {
         if (indexBitLength != other.indexBitLength) {
-            throw new IllegalArgumentException(String.format(
+            throw new IllegalArgumentException(format(
                     "Cannot merge HLLs with different number of buckets: %s vs %s",
                     numberOfBuckets(indexBitLength),
                     numberOfBuckets(other.indexBitLength)));
@@ -484,7 +485,7 @@ final class DenseHll
     public DenseHll mergeWith(SparseHll other)
     {
         if (indexBitLength != other.getIndexBitLength()) {
-            throw new IllegalArgumentException(String.format(
+            throw new IllegalArgumentException(format(
                     "Cannot merge HLLs with different number of buckets: %s vs %s",
                     numberOfBuckets(indexBitLength),
                     numberOfBuckets(other.getIndexBitLength())));
