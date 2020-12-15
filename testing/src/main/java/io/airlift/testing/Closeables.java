@@ -103,13 +103,13 @@ public final class Closeables
         }
     }
 
-    public static <T extends Throwable> T closeAllSuppress(T rootCause, Closeable... closeables)
+    public static <T extends Throwable> T closeAllSuppress(T rootCause, AutoCloseable... closeables)
     {
         requireNonNull(rootCause, "rootCause is null");
         if (closeables == null) {
             return rootCause;
         }
-        for (Closeable closeable : closeables) {
+        for (AutoCloseable closeable : closeables) {
             try {
                 if (closeable != null) {
                     closeable.close();
