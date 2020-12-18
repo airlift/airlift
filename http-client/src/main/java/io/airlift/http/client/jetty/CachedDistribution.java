@@ -16,7 +16,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  * todo remove this when https://github.com/martint/jmxutils/issues/26 is implemented
  */
 @ThreadSafe
-class CachedDistribution
+public class CachedDistribution
 {
     private final Supplier<Distribution> distributionSupplier;
 

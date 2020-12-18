@@ -1,6 +1,7 @@
 202
 
 - Update to Jetty 9.4.30.v20200611.
+- Fix http client distribution JMX metrics.
 
 201
 
