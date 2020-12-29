@@ -4,4 +4,4 @@
 
 Airlift is a framework for building REST services in Java.
 
-This project is used as the foundation for distributed systems like [Presto](https://prestosql.io).
+This project is used as the foundation for distributed systems like [Trino (formerly PrestoSQL)](https://trino.io).
