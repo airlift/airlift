@@ -275,7 +275,7 @@ public class TestOverrideMethodFilterInHttpServer
         }
     }
 
-    private static TestingHttpServer createServer(TestResource resource)
+    public static TestingHttpServer createServer(Object resource)
     {
         List<Module> modules = ImmutableList.<Module>builder()
                 .add(new TestingNodeModule())

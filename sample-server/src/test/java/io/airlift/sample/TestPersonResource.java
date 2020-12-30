@@ -61,7 +61,7 @@ public class TestPersonResource
         Response response = resource.get("foo", MockUriInfo.from(URI.create("http://localhost/v1/person/1")));
         assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
         assertEquals(response.getEntity(), new PersonRepresentation("foo@example.com", "Mr Foo", URI.create("http://localhost/v1/person/1")));
-        assertNull(response.getMetadata().get("Content-Type")); // content type is set by jersey based on @Produces
+        assertNull(response.getMetadata().get("Content-Type")); // content type is set by JAX-RS based on @Produces
     }
 
     @Test(expectedExceptions = NullPointerException.class)
@@ -77,7 +77,7 @@ public class TestPersonResource
 
         assertEquals(response.getStatus(), Response.Status.CREATED.getStatusCode());
         assertNull(response.getEntity());
-        assertNull(response.getMetadata().get("Content-Type")); // content type is set by jersey based on @Produces
+        assertNull(response.getMetadata().get("Content-Type")); // content type is set by JAX-RS based on @Produces
 
         assertEquals(store.get("foo"), new Person("foo@example.com", "Mr Foo"));
 
@@ -106,7 +106,7 @@ public class TestPersonResource
 
         assertEquals(response.getStatus(), Response.Status.NO_CONTENT.getStatusCode());
         assertNull(response.getEntity());
-        assertNull(response.getMetadata().get("Content-Type")); // content type is set by jersey based on @Produces
+        assertNull(response.getMetadata().get("Content-Type")); // content type is set by JAX-RS based on @Produces
 
         assertEquals(store.get("foo"), new Person("bar@example.com", "Mr Bar"));
 
