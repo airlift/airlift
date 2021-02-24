@@ -58,7 +58,6 @@ public class JaxrsModule
         jaxrsBinder(binder).bind(JsonMapper.class);
         jaxrsBinder(binder).bind(SmileMapper.class);
         jaxrsBinder(binder).bind(ParsingExceptionMapper.class);
-        jaxrsBinder(binder).bind(OverrideMethodFilter.class);
 
         newSetBinder(binder, Object.class, JaxrsResource.class).permitDuplicates();
     }
