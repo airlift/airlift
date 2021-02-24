@@ -20,6 +20,7 @@ import ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import ch.qos.logback.core.status.ErrorStatus;
 import ch.qos.logback.core.util.FileSize;
+import com.google.common.math.LongMath;
 import io.airlift.log.Logger;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
@@ -66,6 +67,10 @@ class DefaultHttpClientLogger
         if (compressionEnabled) {
             rollingPolicy.setFileNamePattern(rollingPolicy.getFileNamePattern() + ".gz");
         }
+
+        // Limit total log files occupancy on disk. Ideally we would keep exactly
+        // `maxHistory` files (not logging periods). This is closest currently possible.
+        rollingPolicy.setTotalSizeCap(new FileSize(LongMath.saturatedMultiply(maxFileSizeInBytes, maxHistory)));
 
         triggeringPolicy.setContext(context);
         triggeringPolicy.setTimeBasedRollingPolicy(rollingPolicy);
