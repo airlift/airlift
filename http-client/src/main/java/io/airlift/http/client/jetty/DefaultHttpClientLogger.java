@@ -60,7 +60,7 @@ class DefaultHttpClientLogger
         TimeBasedRollingPolicy<HttpRequestEvent> rollingPolicy = new TimeBasedRollingPolicy<>();
 
         rollingPolicy.setContext(context);
-        rollingPolicy.setMaxHistory(maxHistory);
+        rollingPolicy.setMaxHistory(maxHistory); // limits number of logging periods (i.e. days) kept
         rollingPolicy.setTimeBasedFileNamingAndTriggeringPolicy(triggeringPolicy);
         rollingPolicy.setParent(fileAppender);
         rollingPolicy.setFileNamePattern(filename + "-%d{yyyy-MM-dd}.%i.log");
