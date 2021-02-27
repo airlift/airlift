@@ -1,6 +1,7 @@
 203
 
 - Limit total size of HTTP client log.
+- Remove HTTP method override filter.
 
 202
 
