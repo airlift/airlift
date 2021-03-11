@@ -169,8 +169,11 @@ def create_symlink(source, target):
     """Create a symlink, removing the target first if it is a symlink"""
     if symlink_exists(target):
         os.remove(target)
-    if exists(source):
-        os.symlink(source, target)
+    if not exists(source):
+        raise Exception(
+            "Failed to create symlink at '%s': %s doesn't exist" % (target, source)
+        )
+    os.symlink(source, target)
 
 
 def create_app_symlinks(options):
