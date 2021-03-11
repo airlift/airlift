@@ -16,7 +16,7 @@ from signal import SIGTERM, SIGKILL
 from stat import S_ISLNK
 from time import sleep
 
-COMMANDS = ['run', 'start', 'stop', 'restart', 'kill', 'status']
+COMMANDS = ["run", "start", "stop", "restart", "kill", "status"]
 
 LSB_NOT_RUNNING = 3
 LSB_STATUS_UNKNOWN = 4
@@ -24,11 +24,15 @@ LSB_STATUS_UNKNOWN = 4
 
 def find_install_path(f):
     """Find canonical parent of bin/launcher.py"""
-    if basename(f) != 'launcher.py':
-        raise Exception("Expected file '%s' to be 'launcher.py' not '%s'" % (f, basename(f)))
+    if basename(f) != "launcher.py":
+        raise Exception(
+            "Expected file '%s' to be 'launcher.py' not '%s'" % (f, basename(f))
+        )
     p = realpath(dirname(f))
-    if basename(p) != 'bin':
-        raise Exception("Expected file '%s' directory to be 'bin' not '%s" % (f, basename(p)))
+    if basename(p) != "bin":
+        raise Exception(
+            "Expected file '%s' directory to be 'bin' not '%s" % (f, basename(p))
+        )
     return dirname(p)
 
 
@@ -45,7 +49,7 @@ def load_properties(f):
     """Load key/value pairs from a file"""
     properties = {}
     for line in load_lines(f):
-        k, v = line.split('=', 1)
+        k, v = line.split("=", 1)
         properties[k.strip()] = v.strip()
     return properties
 
@@ -53,9 +57,9 @@ def load_properties(f):
 def load_lines(f):
     """Load lines from a file, ignoring blank or comment lines"""
     lines = []
-    for line in open(f, 'r').readlines():
+    for line in open(f, "r").readlines():
         line = line.strip()
-        if len(line) > 0 and not line.startswith('#'):
+        if len(line) > 0 and not line.startswith("#"):
             lines.append(line)
     return lines
 
@@ -72,11 +76,11 @@ def try_lock(f):
 def open_pidfile(f, mode):
     """Open file in read/write mode (without truncating it)"""
     fd = os.open(f, O_RDWR | O_CREAT, mode)
-    if hasattr(os, 'set_inheritable'):
+    if hasattr(os, "set_inheritable"):
         # See https://docs.python.org/3/library/os.html#inheritance-of-file-descriptors
         # Since Python 3.4
         os.set_inheritable(fd, True)
-    return os.fdopen(fd, 'r+')
+    return os.fdopen(fd, "r+")
 
 
 class Process:
@@ -90,13 +94,13 @@ class Process:
         self.locked = try_lock(self.pid_file)
 
     def clear_pid(self):
-        assert self.locked, 'pid file not locked by us'
+        assert self.locked, "pid file not locked by us"
         self.pid_file.seek(0)
         self.pid_file.truncate()
 
     def write_pid(self, pid):
         self.clear_pid()
-        self.pid_file.write(str(pid) + '\n')
+        self.pid_file.write(str(pid) + "\n")
         self.pid_file.flush()
 
     def alive(self):
@@ -109,10 +113,10 @@ class Process:
             os.kill(pid, 0)
             return True
         except OSError as e:
-            raise Exception('Signaling pid %s failed: %s' % (pid, e))
+            raise Exception("Signaling pid %s failed: %s" % (pid, e))
 
     def read_pid(self):
-        assert not self.locked, 'pid file is locked by us'
+        assert not self.locked, "pid file is locked by us"
         self.pid_file.seek(0)
         line = self.pid_file.readline().strip()
         if len(line) == 0:
@@ -123,7 +127,9 @@ class Process:
         except ValueError:
             raise Exception("Pid file '%s' contains garbage: %s" % (self.path, line))
         if pid <= 0:
-            raise Exception("Pid file '%s' contains an invalid pid: %s" % (self.path, pid))
+            raise Exception(
+                "Pid file '%s' contains an invalid pid: %s" % (self.path, pid)
+            )
         return pid
 
 
@@ -151,7 +157,7 @@ def symlink_exists(p):
     try:
         st = os.lstat(p)
         if not S_ISLNK(st.st_mode):
-            raise Exception('Path exists and is not a symlink: %s' % p)
+            raise Exception("Path exists and is not a symlink: %s" % p)
         return True
     except OSError as e:
         if e.errno != errno.ENOENT:
@@ -174,56 +180,55 @@ def create_app_symlinks(options):
     This is needed to support programs that reference 'etc/xyz' from within
     their config files: log.levels-file=etc/log.properties
     """
-    if options.etc_dir != pathjoin(options.data_dir, 'etc'):
-        create_symlink(
-            options.etc_dir,
-            pathjoin(options.data_dir, 'etc'))
+    if options.etc_dir != pathjoin(options.data_dir, "etc"):
+        create_symlink(options.etc_dir, pathjoin(options.data_dir, "etc"))
 
     if options.install_path != options.data_dir:
         create_symlink(
-            pathjoin(options.install_path, 'plugin'),
-            pathjoin(options.data_dir, 'plugin'))
+            pathjoin(options.install_path, "plugin"),
+            pathjoin(options.data_dir, "plugin"),
+        )
 
 
 def build_java_execution(options, daemon):
     if not exists(options.config_path):
-        raise Exception('Config file is missing: %s' % options.config_path)
+        raise Exception("Config file is missing: %s" % options.config_path)
     if not exists(options.jvm_config):
-        raise Exception('JVM config file is missing: %s' % options.jvm_config)
+        raise Exception("JVM config file is missing: %s" % options.jvm_config)
     if not exists(options.launcher_config):
-        raise Exception('Launcher config file is missing: %s' % options.launcher_config)
+        raise Exception("Launcher config file is missing: %s" % options.launcher_config)
     if options.log_levels_set and not exists(options.log_levels):
-        raise Exception('Log levels file is missing: %s' % options.log_levels)
+        raise Exception("Log levels file is missing: %s" % options.log_levels)
 
-    with open(os.devnull, 'w') as devnull:
+    with open(os.devnull, "w") as devnull:
         try:
-            subprocess.check_call(['java', '-version'], stdout=devnull, stderr=devnull)
+            subprocess.check_call(["java", "-version"], stdout=devnull, stderr=devnull)
         except (OSError, subprocess.CalledProcessError):
-            raise Exception('Java is not installed')
+            raise Exception("Java is not installed")
 
     properties = options.properties.copy()
 
     if exists(options.log_levels):
-        properties['log.levels-file'] = options.log_levels
+        properties["log.levels-file"] = options.log_levels
 
     if daemon:
-        properties['log.output-file'] = options.server_log
-        properties['log.enable-console'] = 'false'
+        properties["log.output-file"] = options.server_log
+        properties["log.enable-console"] = "false"
 
     jvm_properties = load_lines(options.jvm_config)
     launcher_properties = load_properties(options.launcher_config)
 
     try:
-        main_class = launcher_properties['main-class']
+        main_class = launcher_properties["main-class"]
     except KeyError:
         raise Exception("Launcher config is missing 'main-class' property")
 
-    properties['config'] = options.config_path
+    properties["config"] = options.config_path
 
-    system_properties = ['-D%s=%s' % i for i in properties.items()]
-    classpath = pathjoin(options.install_path, 'lib', '*')
+    system_properties = ["-D%s=%s" % i for i in properties.items()]
+    classpath = pathjoin(options.install_path, "lib", "*")
 
-    command = ['java', '-cp', classpath]
+    command = ["java", "-cp", classpath]
     command += jvm_properties + options.jvm_options + system_properties
     command += [main_class]
 
@@ -234,20 +239,22 @@ def build_java_execution(options, daemon):
     env = os.environ.copy()
 
     # set process name: https://github.com/airlift/procname
-    process_name = launcher_properties.get('process-name', '')
+    process_name = launcher_properties.get("process-name", "")
     if len(process_name) > 0:
-        system = platform.system() + '-' + platform.machine()
-        shim = pathjoin(options.install_path, 'bin', 'procname', system, 'libprocname.so')
+        system = platform.system() + "-" + platform.machine()
+        shim = pathjoin(
+            options.install_path, "bin", "procname", system, "libprocname.so"
+        )
         if exists(shim):
-            env['LD_PRELOAD'] = (env.get('LD_PRELOAD', '') + ':' + shim).strip()
-            env['PROCNAME'] = process_name
+            env["LD_PRELOAD"] = (env.get("LD_PRELOAD", "") + ":" + shim).strip()
+            env["PROCNAME"] = process_name
 
     return command, env
 
 
 def run(process, options):
     if process.alive():
-        print('Already running as %s' % process.read_pid())
+        print("Already running as %s" % process.read_pid())
         return
 
     create_app_symlinks(options)
@@ -265,7 +272,7 @@ def run(process, options):
 
 def start(process, options):
     if process.alive():
-        print('Already running as %s' % process.read_pid())
+        print("Already running as %s" % process.read_pid())
         return
 
     create_app_symlinks(options)
@@ -280,7 +287,7 @@ def start(process, options):
     pid = os.fork()
     if pid > 0:
         process.write_pid(pid)
-        print('Started as %s' % pid)
+        print("Started as %s" % pid)
         return
 
     os.setsid()
@@ -294,7 +301,7 @@ def start(process, options):
 
 def terminate(process, signal, message):
     if not process.alive():
-        print('Not running')
+        print("Not running")
         return
 
     pid = process.read_pid()
@@ -304,7 +311,7 @@ def terminate(process, signal, message):
             os.kill(pid, signal)
         except OSError as e:
             if e.errno != errno.ESRCH:
-                raise Exception('Signaling pid %s failed: %s' % (pid, e))
+                raise Exception("Signaling pid %s failed: %s" % (pid, e))
 
         if not process.alive():
             process.clear_pid()
@@ -312,74 +319,116 @@ def terminate(process, signal, message):
 
         sleep(0.1)
 
-    print('%s %s' % (message, pid))
+    print("%s %s" % (message, pid))
 
 
 def stop(process):
-    terminate(process, SIGTERM, 'Stopped')
+    terminate(process, SIGTERM, "Stopped")
 
 
 def kill(process):
-    terminate(process, SIGKILL, 'Killed')
+    terminate(process, SIGKILL, "Killed")
 
 
 def status(process):
     if not process.alive():
-        print('Not running')
+        print("Not running")
         sys.exit(LSB_NOT_RUNNING)
-    print('Running as %s' % process.read_pid())
+    print("Running as %s" % process.read_pid())
 
 
 def handle_command(command, options):
     process = Process(options.pid_file)
-    if command == 'run':
+    if command == "run":
         run(process, options)
-    elif command == 'start':
+    elif command == "start":
         start(process, options)
-    elif command == 'stop':
+    elif command == "stop":
         stop(process)
-    elif command == 'restart':
+    elif command == "restart":
         stop(process)
         start(process, options)
-    elif command == 'kill':
+    elif command == "kill":
         kill(process)
-    elif command == 'status':
+    elif command == "status":
         status(process)
     else:
-        raise AssertionError('Unhandled command: ' + command)
+        raise AssertionError("Unhandled command: " + command)
 
 
 def create_parser():
-    commands = 'Commands: ' + ', '.join(COMMANDS)
-    parser = OptionParser(prog='launcher', usage='usage: %prog [options] command', description=commands)
-    parser.add_option('-v', '--verbose', action='store_true', default=False, help='Run verbosely')
-    parser.add_option('--etc-dir', metavar='DIR', help='Defaults to INSTALL_PATH/etc')
-    parser.add_option('--launcher-config', metavar='FILE', help='Defaults to INSTALL_PATH/bin/launcher.properties')
-    parser.add_option('--node-config', metavar='FILE', help='Defaults to ETC_DIR/node.properties')
-    parser.add_option('--jvm-config', metavar='FILE', help='Defaults to ETC_DIR/jvm.config')
-    parser.add_option('--config', metavar='FILE', help='Defaults to ETC_DIR/config.properties')
-    parser.add_option('--log-levels-file', metavar='FILE', help='Defaults to ETC_DIR/log.properties')
-    parser.add_option('--data-dir', metavar='DIR', help='Defaults to INSTALL_PATH')
-    parser.add_option('--pid-file', metavar='FILE', help='Defaults to DATA_DIR/var/run/launcher.pid')
-    parser.add_option('--launcher-log-file', metavar='FILE', help='Defaults to DATA_DIR/var/log/launcher.log (only in daemon mode)')
-    parser.add_option('--server-log-file', metavar='FILE', help='Defaults to DATA_DIR/var/log/server.log (only in daemon mode)')
-    parser.add_option('-J', action='append', metavar='OPT', dest='jvm_options', help='Set a JVM option')
-    parser.add_option('-D', action='append', metavar='NAME=VALUE', dest='properties', help='Set a Java system property')
+    commands = "Commands: " + ", ".join(COMMANDS)
+    parser = OptionParser(
+        prog="launcher", usage="usage: %prog [options] command", description=commands
+    )
+    parser.add_option(
+        "-v", "--verbose", action="store_true", default=False, help="Run verbosely"
+    )
+    parser.add_option("--etc-dir", metavar="DIR", help="Defaults to INSTALL_PATH/etc")
+    parser.add_option(
+        "--launcher-config",
+        metavar="FILE",
+        help="Defaults to INSTALL_PATH/bin/launcher.properties",
+    )
+    parser.add_option(
+        "--node-config", metavar="FILE", help="Defaults to ETC_DIR/node.properties"
+    )
+    parser.add_option(
+        "--jvm-config", metavar="FILE", help="Defaults to ETC_DIR/jvm.config"
+    )
+    parser.add_option(
+        "--config", metavar="FILE", help="Defaults to ETC_DIR/config.properties"
+    )
+    parser.add_option(
+        "--log-levels-file", metavar="FILE", help="Defaults to ETC_DIR/log.properties"
+    )
+    parser.add_option("--data-dir", metavar="DIR", help="Defaults to INSTALL_PATH")
+    parser.add_option(
+        "--pid-file", metavar="FILE", help="Defaults to DATA_DIR/var/run/launcher.pid"
+    )
+    parser.add_option(
+        "--launcher-log-file",
+        metavar="FILE",
+        help="Defaults to DATA_DIR/var/log/launcher.log (only in daemon mode)",
+    )
+    parser.add_option(
+        "--server-log-file",
+        metavar="FILE",
+        help="Defaults to DATA_DIR/var/log/server.log (only in daemon mode)",
+    )
+    parser.add_option(
+        "-J",
+        action="append",
+        metavar="OPT",
+        dest="jvm_options",
+        help="Set a JVM option",
+    )
+    parser.add_option(
+        "-D",
+        action="append",
+        metavar="NAME=VALUE",
+        dest="properties",
+        help="Set a Java system property",
+    )
     return parser
 
 
 def parse_properties(parser, args):
     properties = {}
     for arg in args:
-        if '=' not in arg:
-            parser.error('property is malformed: %s' % arg)
-        key, value = [i.strip() for i in arg.split('=', 1)]
-        if key == 'config':
-            parser.error('cannot specify config using -D option (use --config)')
-        if key == 'log.output-file':
-            parser.error('cannot specify server log using -D option (use --server-log-file)')
-        if key == 'log.levels-file':
-            parser.error('cannot specify log levels using -D option (use --log-levels-file)')
+        if "=" not in arg:
+            parser.error("property is malformed: %s" % arg)
+        key, value = [i.strip() for i in arg.split("=", 1)]
+        if key == "config":
+            parser.error("cannot specify config using -D option (use --config)")
+        if key == "log.output-file":
+            parser.error(
+                "cannot specify server log using -D option (use --server-log-file)"
+            )
+        if key == "log.levels-file":
+            parser.error(
+                "cannot specify log levels using -D option (use --log-levels-file)"
+            )
         properties[key] = value
     return properties
 
@@ -402,45 +451,57 @@ def main():
 
     if len(args) != 1:
         if len(args) == 0:
-            parser.error('command name not specified')
+            parser.error("command name not specified")
         else:
-            parser.error('too many arguments')
+            parser.error("too many arguments")
     command = args[0]
 
     if command not in COMMANDS:
-        parser.error('unsupported command: %s' % command)
+        parser.error("unsupported command: %s" % command)
 
     try:
         install_path = find_install_path(sys.argv[0])
     except Exception as e:
-        print('ERROR: %s' % e)
+        print("ERROR: %s" % e)
         sys.exit(LSB_STATUS_UNKNOWN)
 
     o = Options()
     o.verbose = options.verbose
     o.install_path = install_path
-    o.launcher_config = realpath(options.launcher_config or pathjoin(o.install_path, 'bin/launcher.properties'))
-    o.etc_dir = realpath(options.etc_dir or pathjoin(o.install_path, 'etc'))
-    o.node_config = realpath(options.node_config or pathjoin(o.etc_dir, 'node.properties'))
-    o.jvm_config = realpath(options.jvm_config or pathjoin(o.etc_dir, 'jvm.config'))
-    o.config_path = realpath(options.config or pathjoin(o.etc_dir, 'config.properties'))
-    o.log_levels = realpath(options.log_levels_file or pathjoin(o.etc_dir, 'log.properties'))
+    o.launcher_config = realpath(
+        options.launcher_config or pathjoin(o.install_path, "bin/launcher.properties")
+    )
+    o.etc_dir = realpath(options.etc_dir or pathjoin(o.install_path, "etc"))
+    o.node_config = realpath(
+        options.node_config or pathjoin(o.etc_dir, "node.properties")
+    )
+    o.jvm_config = realpath(options.jvm_config or pathjoin(o.etc_dir, "jvm.config"))
+    o.config_path = realpath(options.config or pathjoin(o.etc_dir, "config.properties"))
+    o.log_levels = realpath(
+        options.log_levels_file or pathjoin(o.etc_dir, "log.properties")
+    )
     o.log_levels_set = bool(options.log_levels_file)
     o.jvm_options = options.jvm_options or []
 
     if options.node_config and not exists(o.node_config):
-        parser.error('Node config file is missing: %s' % o.node_config)
+        parser.error("Node config file is missing: %s" % o.node_config)
 
     node_properties = {}
     if exists(o.node_config):
         node_properties = load_properties(o.node_config)
 
-    data_dir = node_properties.get('node.data-dir')
+    data_dir = node_properties.get("node.data-dir")
     o.data_dir = realpath(options.data_dir or data_dir or o.install_path)
 
-    o.pid_file = realpath(options.pid_file or pathjoin(o.data_dir, 'var/run/launcher.pid'))
-    o.launcher_log = realpath(options.launcher_log_file or pathjoin(o.data_dir, 'var/log/launcher.log'))
-    o.server_log = realpath(options.server_log_file or pathjoin(o.data_dir, 'var/log/server.log'))
+    o.pid_file = realpath(
+        options.pid_file or pathjoin(o.data_dir, "var/run/launcher.pid")
+    )
+    o.launcher_log = realpath(
+        options.launcher_log_file or pathjoin(o.data_dir, "var/log/launcher.log")
+    )
+    o.server_log = realpath(
+        options.server_log_file or pathjoin(o.data_dir, "var/log/server.log")
+    )
 
     o.properties = parse_properties(parser, options.properties or {})
     for k, v in node_properties.items():
@@ -458,9 +519,9 @@ def main():
         if o.verbose:
             traceback.print_exc()
         else:
-            print('ERROR: %s' % e)
+            print("ERROR: %s" % e)
         sys.exit(LSB_STATUS_UNKNOWN)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
