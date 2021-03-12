@@ -195,11 +195,6 @@ def build_java_execution(options, daemon):
     if options.log_levels_set and not exists(options.log_levels):
         raise Exception('Log levels file is missing: %s' % options.log_levels)
 
-    with open(os.devnull, 'w') as devnull:
-        try:
-            subprocess.check_call(['java', '-version'], stdout=devnull, stderr=devnull)
-        except (OSError, subprocess.CalledProcessError):
-            raise Exception('Java is not installed')
 
     properties = options.properties.copy()
 
@@ -223,15 +218,27 @@ def build_java_execution(options, daemon):
     system_properties = ['-D%s=%s' % i for i in properties.items()]
     classpath = pathjoin(options.install_path, 'lib', '*')
 
-    command = ['java', '-cp', classpath]
+
+    env = os.environ.copy()
+
+    java_executable = 'java' # subject to configuration maybe
+    if 'JAVA_HOME' in env:
+        java_exceutable = pathjoin(env['JAVA_HOME'], 'bin', java_executable)
+
+    with open(os.devnull, 'w') as devnull:
+        try:
+            subprocess.check_call([java_executable, '-version'], stdout=devnull, stderr=devnull)
+        except (OSError, subprocess.CalledProcessError):
+            raise Exception('Java is not installed')
+
+
+    command = [java_executable, '-cp', classpath]
     command += jvm_properties + options.jvm_options + system_properties
     command += [main_class]
 
     if options.verbose:
         print(command)
         print("")
-
-    env = os.environ.copy()
 
     # set process name: https://github.com/airlift/procname
     process_name = launcher_properties.get('process-name', '')
