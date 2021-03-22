@@ -1,3 +1,7 @@
+204
+
+- Fix running ConfigAssertions on Java 16.
+
 203
 
 - Limit total size of HTTP client log.
