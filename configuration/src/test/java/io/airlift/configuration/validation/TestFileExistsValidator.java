@@ -50,8 +50,8 @@ public class TestFileExistsValidator
     public void testInvalidType()
     {
         assertThatThrownBy(() -> VALIDATOR.validate(new TestedBean(new BigDecimal(100))))
-            .isInstanceOf(ValidationException.class)
-            .hasMessage("java.lang.IllegalArgumentException: Unsupported type for @FileExists: java.math.BigDecimal");
+                .isInstanceOf(ValidationException.class)
+                .hasMessage("java.lang.IllegalArgumentException: Unsupported type for @FileExists: java.math.BigDecimal");
     }
 
     @Test

@@ -15,8 +15,6 @@
  */
 package io.airlift.jaxrs.testing;
 
-import com.google.common.base.Preconditions;
-
 import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
@@ -26,6 +24,7 @@ import javax.ws.rs.core.Variant;
 import java.util.Date;
 import java.util.List;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
 
 public class MockRequest
@@ -163,7 +162,7 @@ public class MockRequest
             throws IllegalArgumentException
     {
         requireNonNull(variants, "variants is null");
-        Preconditions.checkArgument(!variants.isEmpty(), "variants is empty");
+        checkArgument(!variants.isEmpty(), "variants is empty");
 
         return selectVariant;
     }

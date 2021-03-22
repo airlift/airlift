@@ -15,8 +15,6 @@
  */
 package io.airlift.http.server;
 
-import com.google.common.base.Preconditions;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -31,6 +29,8 @@ import javax.servlet.http.HttpServletResponseWrapper;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Locale;
+
+import static com.google.common.base.Preconditions.checkState;
 
 class TimingFilter
         implements Filter
@@ -78,7 +78,7 @@ class TimingFilter
         public ServletOutputStream getOutputStream()
                 throws IOException
         {
-            Preconditions.checkState(printWriter == null, "getWriter() has already been called");
+            checkState(printWriter == null, "getWriter() has already been called");
             if (outputStream == null) {
                 outputStream = new TimedServletOutputStream(super.getOutputStream());
             }
@@ -89,7 +89,7 @@ class TimingFilter
         public PrintWriter getWriter()
                 throws IOException
         {
-            Preconditions.checkState(outputStream == null, "getOutputStream() has already been called");
+            checkState(outputStream == null, "getOutputStream() has already been called");
             if (printWriter == null) {
                 printWriter = new TimedPrintWriter(super.getWriter());
             }

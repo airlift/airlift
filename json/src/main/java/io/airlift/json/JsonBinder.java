@@ -19,13 +19,13 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.KeyDeserializer;
 import com.fasterxml.jackson.databind.Module;
-import com.google.common.base.Preconditions;
 import com.google.inject.Binder;
 import com.google.inject.TypeLiteral;
 import com.google.inject.binder.LinkedBindingBuilder;
 import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static java.util.Objects.requireNonNull;
 
@@ -87,7 +87,7 @@ public class JsonBinder
 
         Class<?> type = jsonSerializer.handledType();
         requireNonNull(type, "jsonSerializer.handledType is null");
-        Preconditions.checkArgument(type == Object.class, "jsonSerializer.handledType can not be Object.class");
+        checkArgument(type == Object.class, "jsonSerializer.handledType can not be Object.class");
         serializerMapBinder.addBinding(type).toInstance(jsonSerializer);
     }
 }

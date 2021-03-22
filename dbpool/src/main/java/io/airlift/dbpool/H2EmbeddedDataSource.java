@@ -16,7 +16,6 @@
 package io.airlift.dbpool;
 
 import com.google.common.io.Resources;
-import com.google.common.primitives.Ints;
 import io.airlift.dbpool.H2EmbeddedDataSourceConfig.Cipher;
 import org.h2.jdbcx.JdbcDataSource;
 import org.h2.util.ScriptReader;
@@ -32,6 +31,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import static java.lang.Math.toIntExact;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -72,7 +72,7 @@ public class H2EmbeddedDataSource
         else {
             dataSource.setPassword("");
         }
-        dataSource.setLoginTimeout(Ints.checkedCast(config.getMaxConnectionWait().roundTo(SECONDS)));
+        dataSource.setLoginTimeout(toIntExact(config.getMaxConnectionWait().roundTo(SECONDS)));
 
         // connect to database and initialize database
         Connection connection = getConnection();

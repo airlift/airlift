@@ -15,7 +15,6 @@
  */
 package io.airlift.sample;
 
-import com.google.common.base.Preconditions;
 import io.airlift.configuration.Config;
 import io.airlift.configuration.LegacyConfig;
 import io.airlift.units.Duration;
@@ -24,6 +23,7 @@ import javax.validation.constraints.NotNull;
 
 import java.util.concurrent.TimeUnit;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
 
 public class StoreConfig
@@ -41,7 +41,7 @@ public class StoreConfig
     public StoreConfig setTtl(Duration ttl)
     {
         requireNonNull(ttl, "ttl must not be null");
-        Preconditions.checkArgument(ttl.toMillis() > 0, "ttl must be > 0");
+        checkArgument(ttl.toMillis() > 0, "ttl must be > 0");
 
         this.ttl = ttl;
         return this;

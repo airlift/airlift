@@ -1,7 +1,6 @@
 package io.airlift.stats;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
 import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
@@ -1080,7 +1079,7 @@ public class QuantileDigest
         long branch = values[child] & (1L << (levels[parent] - 1));
         checkState(branch == 0 && isLeft || branch != 0 && !isLeft, "Value of child node is inconsistent with its branch");
 
-        Preconditions.checkState(counts[parent] > 0 ||
+        checkState(counts[parent] > 0 ||
                         counts[child] > 0 || otherChild != -1,
                 "Found a linear chain of zero-weight nodes");
     }
