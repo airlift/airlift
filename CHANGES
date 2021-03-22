@@ -1,3 +1,7 @@
+208
+
+- Java 11 is now required.
+
 207
 
 - Fix spurious reload of HTTP server SSL context after start.
