@@ -16,7 +16,6 @@
 package io.airlift.event.client;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Primitives;
 import org.joda.time.DateTime;
@@ -31,6 +30,7 @@ import java.net.InetAddress;
 import java.time.Instant;
 import java.util.Map;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static java.time.format.DateTimeFormatter.ISO_INSTANT;
 import static java.util.Objects.requireNonNull;
 
@@ -208,7 +208,7 @@ enum EventDataType
     static void validateFieldValueType(Object value, Class<?> expectedType)
     {
         requireNonNull(value, "value is null");
-        Preconditions.checkArgument(expectedType.isInstance(value),
+        checkArgument(expectedType.isInstance(value),
                 "Expected 'value' to be a " + expectedType.getSimpleName() +
                         " but it is a " + value.getClass().getName());
     }

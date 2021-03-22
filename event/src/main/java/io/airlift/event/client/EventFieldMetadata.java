@@ -17,7 +17,6 @@ package io.airlift.event.client;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.annotations.Beta;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 
@@ -32,6 +31,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.google.common.base.MoreObjects.firstNonNull;
+import static com.google.common.base.Preconditions.checkArgument;
 import static io.airlift.event.client.EventDataType.validateFieldValueType;
 
 @Beta
@@ -56,8 +56,8 @@ public class EventFieldMetadata
 
     EventFieldMetadata(String name, Method method, Optional<EventDataType> eventDataType, Optional<EventTypeMetadata<?>> nestedType, Optional<ContainerType> containerType)
     {
-        Preconditions.checkArgument(eventDataType.isPresent() || nestedType.isPresent(), "both eventDataType and nestedType are unset");
-        Preconditions.checkArgument(!eventDataType.isPresent() || !nestedType.isPresent(), "both eventDataType and nestedType are set");
+        checkArgument(eventDataType.isPresent() || nestedType.isPresent(), "both eventDataType and nestedType are unset");
+        checkArgument(!eventDataType.isPresent() || !nestedType.isPresent(), "both eventDataType and nestedType are set");
 
         this.name = name;
         this.method = method;

@@ -15,7 +15,6 @@
  */
 package io.airlift.configuration;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.inject.ConfigurationException;
@@ -36,6 +35,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
 
 public class ConfigurationMetadata<T>
@@ -271,7 +271,7 @@ public class ConfigurationMetadata<T>
 
     private AttributeMetadata buildAttributeMetadata(Class<T> configClass, Method configMethod)
     {
-        Preconditions.checkArgument(configMethod.isAnnotationPresent(Config.class));
+        checkArgument(configMethod.isAnnotationPresent(Config.class));
 
         if (!validateAnnotations(configMethod)) {
             return null;
@@ -378,7 +378,7 @@ public class ConfigurationMetadata<T>
             requireNonNull(configClass);
             requireNonNull(property);
             requireNonNull(setter);
-            Preconditions.checkArgument(!property.isEmpty());
+            checkArgument(!property.isEmpty());
 
             this.configClass = configClass;
             this.property = property;
@@ -556,7 +556,7 @@ public class ConfigurationMetadata<T>
         {
             requireNonNull(configClass);
             requireNonNull(name);
-            Preconditions.checkArgument(!name.isEmpty());
+            checkArgument(!name.isEmpty());
 
             this.configClass = configClass;
             this.name = name;

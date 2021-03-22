@@ -15,7 +15,6 @@
  */
 package io.airlift.dbpool;
 
-import com.google.common.primitives.Ints;
 import io.airlift.units.Duration;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
@@ -36,6 +35,7 @@ import java.util.logging.Logger;
 
 import static io.airlift.units.Duration.nanosSince;
 import static java.lang.Math.ceil;
+import static java.lang.Math.toIntExact;
 
 public abstract class ManagedDataSource
         implements DataSource
@@ -53,7 +53,7 @@ public abstract class ManagedDataSource
             throw new NullPointerException("maxConnectionWait is null");
         }
         semaphore = new ManagedSemaphore(maxConnections);
-        maxConnectionWaitMillis.set(Ints.checkedCast(maxConnectionWait.toMillis()));
+        maxConnectionWaitMillis.set(toIntExact(maxConnectionWait.toMillis()));
     }
 
     @Override
@@ -143,7 +143,7 @@ public abstract class ManagedDataSource
             throw new NullPointerException("maxConnectionWait is null");
         }
 
-        int millis = Ints.checkedCast(maxConnectionWait.toMillis());
+        int millis = toIntExact(maxConnectionWait.toMillis());
         if (millis < 1) {
             throw new IllegalArgumentException("maxConnectionWait must be greater than 1 millisecond");
         }

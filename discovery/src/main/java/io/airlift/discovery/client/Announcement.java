@@ -16,12 +16,12 @@
 package io.airlift.discovery.client;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Set;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
 
 public class Announcement
@@ -38,7 +38,7 @@ public class Announcement
         requireNonNull(nodeId, "nodeId is null");
         requireNonNull(services, "services is null");
         requireNonNull(pool, "pool is null");
-        Preconditions.checkArgument(!services.isEmpty(), "services is empty");
+        checkArgument(!services.isEmpty(), "services is empty");
 
         this.environment = environment;
         this.nodeId = nodeId;

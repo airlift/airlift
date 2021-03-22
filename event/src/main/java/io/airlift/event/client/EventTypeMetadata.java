@@ -16,7 +16,6 @@
 package io.airlift.event.client;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -37,6 +36,7 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.Iterables.getFirst;
 import static io.airlift.event.client.AnnotationUtils.findAnnotatedMethods;
 import static io.airlift.event.client.EventDataType.getEventDataType;
@@ -88,7 +88,7 @@ public final class EventTypeMetadata<T>
         requireNonNull(eventClass, "eventClass is null");
         requireNonNull(errors, "errors is null");
         requireNonNull(metadataClasses, "metadataClasses is null");
-        Preconditions.checkState(!metadataClasses.containsKey(eventClass), "metadataClasses contains eventClass");
+        checkState(!metadataClasses.containsKey(eventClass), "metadataClasses contains eventClass");
 
         this.eventClass = eventClass;
         this.errors = errors;

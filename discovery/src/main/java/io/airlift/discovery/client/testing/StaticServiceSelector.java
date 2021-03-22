@@ -15,7 +15,6 @@
  */
 package io.airlift.discovery.client.testing;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.Futures;
@@ -25,6 +24,7 @@ import io.airlift.discovery.client.ServiceSelector;
 
 import java.util.List;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static io.airlift.discovery.client.ServiceSelectorConfig.DEFAULT_POOL;
 import static java.util.Objects.requireNonNull;
 
@@ -55,8 +55,8 @@ public class StaticServiceSelector
         }
 
         for (ServiceDescriptor descriptor : serviceDescriptors) {
-            Preconditions.checkArgument(descriptor.getType().equals(type));
-            Preconditions.checkArgument(descriptor.getPool().equals(pool));
+            checkArgument(descriptor.getType().equals(type));
+            checkArgument(descriptor.getPool().equals(pool));
         }
         this.serviceDescriptors = ImmutableList.copyOf(serviceDescriptors);
     }

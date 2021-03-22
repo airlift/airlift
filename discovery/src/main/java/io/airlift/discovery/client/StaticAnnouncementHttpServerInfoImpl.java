@@ -15,11 +15,10 @@
  */
 package io.airlift.discovery.client;
 
-import com.google.common.base.Preconditions;
-
 import java.net.URI;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static com.google.common.base.Preconditions.checkArgument;
 
 public class StaticAnnouncementHttpServerInfoImpl
         implements AnnouncementHttpServerInfo
@@ -32,11 +31,11 @@ public class StaticAnnouncementHttpServerInfoImpl
 
     public StaticAnnouncementHttpServerInfoImpl(URI httpUri, URI httpExternalUri, URI httpsUri, URI httpsExternalUri)
     {
-        Preconditions.checkArgument(
+        checkArgument(
                 (httpUri == null && httpExternalUri == null) ||
                         (httpUri != null && httpExternalUri != null),
                 "httpUri and httpExternalUri must both be null or both non-null");
-        Preconditions.checkArgument(
+        checkArgument(
                 (httpsUri == null && httpsExternalUri == null) ||
                         (httpsUri != null && httpsExternalUri != null),
                 "httpsUri and httpsExternalUri must both be null or both non-null");

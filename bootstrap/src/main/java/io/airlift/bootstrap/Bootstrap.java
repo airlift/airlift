@@ -17,7 +17,6 @@ package io.airlift.bootstrap;
 
 import com.google.common.annotations.Beta;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableSortedMap;
@@ -50,6 +49,7 @@ import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.google.common.base.Preconditions.checkState;
 import static io.airlift.configuration.ConfigurationLoader.getSystemProperties;
 import static io.airlift.configuration.ConfigurationLoader.loadPropertiesFrom;
 import static java.lang.String.format;
@@ -160,7 +160,7 @@ public class Bootstrap
 
     public Injector initialize()
     {
-        Preconditions.checkState(!initialized, "Already initialized");
+        checkState(!initialized, "Already initialized");
         initialized = true;
 
         Logging logging = null;
