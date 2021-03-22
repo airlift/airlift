@@ -322,8 +322,7 @@ public class Bootstrap
     {
         Map<String, String> replaced = new HashMap<>();
         properties.forEach((propertyKey, propertyValue) -> {
-            // TODO: replace StringBuffer with StringBuilder after upgrading to Java 9
-            StringBuffer replacedPropertyValue = new StringBuffer();
+            StringBuilder replacedPropertyValue = new StringBuilder();
             Matcher matcher = ENV_PATTERN.matcher(propertyValue);
             while (matcher.find()) {
                 String envName = matcher.group(1);

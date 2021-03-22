@@ -1,3 +1,7 @@
+204
+
+- Drop support for Java 8
+
 203
 
 - Limit total size of HTTP client log.

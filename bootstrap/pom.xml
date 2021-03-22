@@ -4,7 +4,6 @@
     <artifactId>bootstrap</artifactId>
     <packaging>jar</packaging>
     <name>bootstrap</name>
-
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airlift</artifactId>
@@ -71,24 +70,5 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.gaul</groupId>
-                <artifactId>modernizer-maven-plugin</artifactId>
-                <configuration>
-                    <exclusions>
-                        <!-- TODO: remove after upgrading to Java 9 -->
-                        <!-- Modernizer detects uses of StringBuffer and requires to use StringBuilder instead.
-                             In Bootstrap.replaceEnvironmentVariables, StringBuffer is used in Matcher.appendReplacement and Matcher.appendTail.
-                             To replace StringBuffer with StringBuilder, Java 9 or above is required.
-                             This violation exclusion allows us to use StringBuffer before upgrading to Java 9. -->
-                        <exclusion>java/lang/StringBuffer."&lt;init&gt;":()V</exclusion>
-                    </exclusions>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 </project>
 

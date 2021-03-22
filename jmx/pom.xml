@@ -4,7 +4,6 @@
     <artifactId>jmx</artifactId>
     <packaging>jar</packaging>
     <name>jmx</name>
-
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airlift</artifactId>
@@ -71,30 +70,5 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-    <profiles>
-        <profile>
-            <!-- TODO: remove after upgrade to Java 9 -->
-            <!-- IntelliJ incorrectly loads "system" dependencies in "compile" scope. This is problematic
-                 for running programs from IntelliJ using Java 9, because it places tools.jar in the classpath.
-                 This hack allows us to only include tools.jar during compilation from the command line. -->
-            <id>lib/tools.jar</id>
-            <activation>
-                <jdk>[1.8,1.9)</jdk>
-                <property>
-                    <name>!idea.maven.embedder.version</name>
-                </property>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>com.sun</groupId>
-                    <artifactId>tools</artifactId>
-                    <version>1.8</version>
-                    <scope>system</scope>
-                    <systemPath>${java.home}/../lib/tools.jar</systemPath>
-                </dependency>
-            </dependencies>
-        </profile>
-    </profiles>
 </project>
 
