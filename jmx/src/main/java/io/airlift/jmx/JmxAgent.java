@@ -13,9 +13,115 @@
  */
 package io.airlift.jmx;
 
+import com.google.common.net.HostAndPort;
+import com.sun.tools.attach.AttachNotSupportedException;
+import com.sun.tools.attach.VirtualMachine;
+import io.airlift.log.Logger;
+
+import javax.inject.Inject;
 import javax.management.remote.JMXServiceURL;
 
-interface JmxAgent
+import java.io.IOException;
+import java.util.Objects;
+import java.util.Properties;
+
+import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
+
+public class JmxAgent
 {
-    JMXServiceURL getUrl();
+    private static final Logger log = Logger.get(JmxAgent.class);
+
+    private static final String JMX_REGISTRY_PORT = "com.sun.management.jmxremote.port";
+    private static final String JMX_SERVER_PORT = "com.sun.management.jmxremote.rmi.port";
+    private static final String ALLOW_SELF_ATTACH = "jdk.attach.allowAttachSelf";
+
+    private final JMXServiceURL url;
+
+    @Inject
+    public JmxAgent(JmxConfig config)
+            throws IOException
+    {
+        int registryPort = requireNonNull(config.getRmiRegistryPort(), "RMI registry port is not configured");
+        Integer existingRegistryPort = Integer.getInteger(JMX_REGISTRY_PORT);
+
+        if (existingRegistryPort != null) {
+            if (existingRegistryPort != registryPort) {
+                throw new RuntimeException(format(
+                        "System property '%s=%s' does match configured RMI registry port %s",
+                        JMX_REGISTRY_PORT, existingRegistryPort, registryPort));
+            }
+            if (existingRegistryPort.equals(0)) {
+                throw new RuntimeException(format(
+                        "JMX agent already running on an unknown port (system property '%s' is 0)",
+                        JMX_REGISTRY_PORT));
+            }
+        }
+
+        int serverPort = 0;
+        Integer existingServerPort = Integer.getInteger(JMX_SERVER_PORT);
+        Integer configuredServerPort = config.getRmiServerPort();
+        if (!Objects.equals(existingServerPort, configuredServerPort)) {
+            throw new RuntimeException(format(
+                    "System property '%s=%s' does match configured RMI server port %s",
+                    JMX_SERVER_PORT, existingServerPort, configuredServerPort));
+        }
+        if (configuredServerPort != null && !configuredServerPort.equals(0)) {
+            serverPort = configuredServerPort;
+        }
+
+        // this is how the JDK JMX agent constructs its URL
+        JMXServiceURL jmxUrl = new JMXServiceURL("rmi", null, registryPort);
+        HostAndPort address = HostAndPort.fromParts(jmxUrl.getHost(), jmxUrl.getPort());
+
+        if (existingRegistryPort == null) {
+            startJmxAgent(registryPort, serverPort);
+            log.info("JMX agent started and listening on %s", address);
+        }
+        else {
+            log.info("JMX agent already running and listening on %s", address);
+        }
+
+        this.url = new JMXServiceURL(format("service:jmx:rmi:///jndi/rmi://%s:%s/jmxrmi", address.getHost(), address.getPort()));
+    }
+
+    public JMXServiceURL getUrl()
+    {
+        return url;
+    }
+
+    private static void startJmxAgent(int registryPort, int serverPort)
+            throws IOException
+    {
+        try {
+            VirtualMachine virtualMachine = VirtualMachine.attach(Long.toString(getProcessId()));
+            try {
+                virtualMachine.startLocalManagementAgent();
+
+                Properties properties = new Properties();
+                properties.setProperty(JMX_REGISTRY_PORT, Integer.toString(registryPort));
+                properties.setProperty(JMX_SERVER_PORT, Integer.toString(serverPort));
+                properties.setProperty("com.sun.management.jmxremote.authenticate", "false");
+                properties.setProperty("com.sun.management.jmxremote.ssl", "false");
+                virtualMachine.startManagementAgent(properties);
+            }
+            finally {
+                virtualMachine.detach();
+            }
+        }
+        catch (AttachNotSupportedException e) {
+            throw new RuntimeException(e);
+        }
+        catch (IOException e) {
+            if (!Boolean.getBoolean(ALLOW_SELF_ATTACH)) {
+                throw new IOException(format("%s (try adding '-D%s=true' to the JVM config)", e, ALLOW_SELF_ATTACH));
+            }
+            throw e;
+        }
+    }
+
+    private static long getProcessId()
+    {
+        return ProcessHandle.current().pid();
+    }
 }
