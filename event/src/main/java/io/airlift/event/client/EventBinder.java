@@ -16,7 +16,6 @@
 package io.airlift.event.client;
 
 import com.google.common.annotations.Beta;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Binder;
 import com.google.inject.TypeLiteral;
@@ -24,6 +23,7 @@ import com.google.inject.multibindings.Multibinder;
 
 import java.util.List;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static io.airlift.event.client.EventTypeMetadata.getEventTypeMetadata;
 import static java.util.Objects.requireNonNull;
@@ -57,7 +57,7 @@ public class EventBinder
     public void bindGenericEventClient(List<Class<?>> eventTypes)
     {
         requireNonNull(eventTypes, "eventTypes is null");
-        Preconditions.checkArgument(!eventTypes.isEmpty(), "eventTypes is empty");
+        checkArgument(!eventTypes.isEmpty(), "eventTypes is empty");
 
         Binder sourcedBinder = binder.withSource(getCaller());
         Multibinder<EventTypeMetadata<?>> metadataBinder = newSetBinder(binder, new TypeLiteral<EventTypeMetadata<?>>() {});

@@ -1,6 +1,5 @@
 package io.airlift.concurrent;
 
-import com.google.common.base.Preconditions;
 import io.airlift.log.Logger;
 
 import javax.annotation.concurrent.ThreadSafe;
@@ -12,6 +11,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -44,7 +44,7 @@ public class BoundedExecutor
     public BoundedExecutor(Executor coreExecutor, int maxThreads)
     {
         requireNonNull(coreExecutor, "coreExecutor is null");
-        Preconditions.checkArgument(maxThreads > 0, "maxThreads must be greater than zero");
+        checkArgument(maxThreads > 0, "maxThreads must be greater than zero");
         this.coreExecutor = coreExecutor;
         this.maxThreads = maxThreads;
     }

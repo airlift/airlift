@@ -13,7 +13,7 @@
  */
 package io.airlift.stats.cardinality;
 
-import com.google.common.base.Preconditions;
+import static com.google.common.base.Preconditions.checkArgument;
 
 final class Utils
 {
@@ -37,13 +37,13 @@ final class Utils
 
     public static boolean isPowerOf2(long value)
     {
-        Preconditions.checkArgument(value > 0, "value must be positive");
+        checkArgument(value > 0, "value must be positive");
         return (value & (value - 1)) == 0;
     }
 
     public static int indexBitLength(int numberOfBuckets)
     {
-        Preconditions.checkArgument(isPowerOf2(numberOfBuckets), "numberOfBuckets must be a power of 2, actual: %s", numberOfBuckets);
+        checkArgument(isPowerOf2(numberOfBuckets), "numberOfBuckets must be a power of 2, actual: %s", numberOfBuckets);
         // 2**N has N trailing zeros, and we've asserted numberOfBuckets == 2**N
         return Integer.numberOfTrailingZeros(numberOfBuckets);
     }

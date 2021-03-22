@@ -15,7 +15,6 @@
  */
 package io.airlift.discovery.client;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -33,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static io.airlift.discovery.client.DiscoveryAnnouncementClient.DEFAULT_DELAY;
 import static java.util.Objects.requireNonNull;
@@ -77,7 +77,7 @@ public class CachingServiceSelector
     public void start()
     {
         if (started.compareAndSet(false, true)) {
-            Preconditions.checkState(!executor.isShutdown(), "CachingServiceSelector has been destroyed");
+            checkState(!executor.isShutdown(), "CachingServiceSelector has been destroyed");
 
             // if discovery is available, get the initial set of servers before starting
             try {
