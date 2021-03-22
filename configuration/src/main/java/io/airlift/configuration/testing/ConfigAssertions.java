@@ -16,7 +16,6 @@
 package io.airlift.configuration.testing;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.MapMaker;
 import io.airlift.configuration.ConfigurationFactory;
 import io.airlift.configuration.ConfigurationMetadata;
 import io.airlift.configuration.ConfigurationMetadata.AttributeMetadata;
@@ -30,9 +29,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.concurrent.ConcurrentMap;
 
-import static java.lang.String.format;
+import static com.google.common.collect.Sets.newConcurrentHashSet;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNotNull;
@@ -51,9 +49,7 @@ public final class ConfigAssertions
         }
     }
 
-    private ConfigAssertions()
-    {
-    }
+    private ConfigAssertions() {}
 
     public static <T> void assertDefaults(Map<String, Object> expectedAttributeValues, Class<T> configClass)
     {
@@ -61,7 +57,7 @@ public final class ConfigAssertions
 
         // verify all supplied attributes are supported
         if (!metadata.getAttributes().keySet().containsAll(expectedAttributeValues.keySet())) {
-            TreeSet<String> unsupportedAttributes = new TreeSet<>(expectedAttributeValues.keySet());
+            Set<String> unsupportedAttributes = new TreeSet<>(expectedAttributeValues.keySet());
             unsupportedAttributes.removeAll(metadata.getAttributes().keySet());
             fail("Unsupported attributes: " + unsupportedAttributes);
         }
@@ -74,14 +70,14 @@ public final class ConfigAssertions
             }
         }
         if (!nonDeprecatedAttributes.containsAll(expectedAttributeValues.keySet())) {
-            TreeSet<String> unsupportedAttributes = new TreeSet<>(expectedAttributeValues.keySet());
+            Set<String> unsupportedAttributes = new TreeSet<>(expectedAttributeValues.keySet());
             unsupportedAttributes.removeAll(nonDeprecatedAttributes);
             fail("Deprecated attributes: " + unsupportedAttributes);
         }
 
         // verify all attributes are tested
         if (!expectedAttributeValues.keySet().containsAll(nonDeprecatedAttributes)) {
-            TreeSet<String> untestedAttributes = new TreeSet<>(nonDeprecatedAttributes);
+            Set<String> untestedAttributes = new TreeSet<>(nonDeprecatedAttributes);
             untestedAttributes.removeAll(expectedAttributeValues.keySet());
             fail("Untested attributes: " + untestedAttributes);
         }
@@ -107,7 +103,7 @@ public final class ConfigAssertions
         assertNotNull(properties, "properties");
         assertNotNull(expected, "expected");
 
-        Class<T> configClass = (Class<T>) expected.getClass();
+        Class<T> configClass = getClass(expected);
         ConfigurationMetadata<T> metadata = ConfigurationMetadata.getValidConfigurationMetadata(configClass);
 
         // verify all supplied properties are supported and not deprecated
@@ -121,7 +117,7 @@ public final class ConfigAssertions
             }
         }
         if (!properties.keySet().equals(nonDeprecatedProperties)) {
-            TreeSet<String> untestedProperties = new TreeSet<>(nonDeprecatedProperties);
+            Set<String> untestedProperties = new TreeSet<>(nonDeprecatedProperties);
             untestedProperties.removeAll(properties.keySet());
             fail("Untested properties " + untestedProperties);
         }
@@ -164,7 +160,7 @@ public final class ConfigAssertions
             suppliedDeprecatedProperties.addAll(evenOlderProperties.keySet());
         }
         if (!suppliedDeprecatedProperties.containsAll(knownDeprecatedProperties)) {
-            TreeSet<String> untestedDeprecatedProperties = new TreeSet<>(knownDeprecatedProperties);
+            Set<String> untestedDeprecatedProperties = new TreeSet<>(knownDeprecatedProperties);
             untestedDeprecatedProperties.removeAll(suppliedDeprecatedProperties);
             fail("Untested deprecated properties: " + untestedDeprecatedProperties);
         }
@@ -191,14 +187,14 @@ public final class ConfigAssertions
             }
         }
         if (!supportedProperties.containsAll(propertyNames)) {
-            TreeSet<String> unsupportedProperties = new TreeSet<>(propertyNames);
+            Set<String> unsupportedProperties = new TreeSet<>(propertyNames);
             unsupportedProperties.removeAll(supportedProperties);
             fail("Unsupported properties: " + unsupportedProperties);
         }
 
         // check for usage of deprecated properties
         if (!allowDeprecatedProperties && !nonDeprecatedProperties.containsAll(propertyNames)) {
-            TreeSet<String> deprecatedProperties = new TreeSet<>(propertyNames);
+            Set<String> deprecatedProperties = new TreeSet<>(propertyNames);
             deprecatedProperties.removeAll(nonDeprecatedProperties);
             fail("Deprecated properties: " + deprecatedProperties);
         }
@@ -237,7 +233,7 @@ public final class ConfigAssertions
 
         T config = recordedConfigData.getInstance();
 
-        Class<T> configClass = (Class<T>) config.getClass();
+        Class<T> configClass = getClass(config);
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getValidConfigurationMetadata(configClass);
 
         // collect information about the attributes that have been set
@@ -274,36 +270,36 @@ public final class ConfigAssertions
         assertDefaults(attributeValues, configClass);
     }
 
+    @SuppressWarnings("unchecked")
     public static <T> T recordDefaults(Class<T> type)
     {
-        final T instance = newDefaultInstance(type);
-        T proxy = (T) Enhancer.create(type, new Class<?>[] {$$RecordingConfigProxy.class}, new MethodInterceptor()
-        {
-            private final ConcurrentMap<Method, Object> invokedMethods = new MapMaker().makeMap();
+        T instance = newDefaultInstance(type);
 
+        return (T) Enhancer.create(type, new Class<?>[] {$$RecordingConfigProxy.class}, new MethodInterceptor()
+        {
+            private final Set<Method> invokedMethods = newConcurrentHashSet();
+
+            @SuppressWarnings("ObjectEquality")
             @Override
             public Object intercept(Object proxy, Method method, Object[] args, MethodProxy methodProxy)
                     throws Throwable
             {
                 if (GET_RECORDING_CONFIG_METHOD.equals(method)) {
-                    return new $$RecordedConfigData<>(instance, ImmutableSet.copyOf(invokedMethods.keySet()));
+                    return new $$RecordedConfigData<>(instance, ImmutableSet.copyOf(invokedMethods));
                 }
 
-                invokedMethods.put(method, Boolean.TRUE);
+                invokedMethods.add(method);
 
                 Object result = methodProxy.invoke(instance, args);
                 if (result == instance) {
                     return proxy;
                 }
-                else {
-                    return result;
-                }
+                return result;
             }
         });
-
-        return proxy;
     }
 
+    @SuppressWarnings("unchecked")
     static <T> $$RecordedConfigData<T> getRecordedConfig(T config)
     {
         if (!(config instanceof $$RecordingConfigProxy)) {
@@ -341,6 +337,12 @@ public final class ConfigAssertions
         $$RecordedConfigData<T> $$getRecordedConfig();
     }
 
+    @SuppressWarnings("unchecked")
+    private static <T> Class<T> getClass(T object)
+    {
+        return (Class<T>) object.getClass();
+    }
+
     private static <T> T newInstance(Class<T> configClass, Map<String, String> properties)
     {
         ConfigurationFactory configurationFactory = new ConfigurationFactory(properties);
@@ -350,12 +352,10 @@ public final class ConfigAssertions
     private static <T> T newDefaultInstance(Class<T> configClass)
     {
         try {
-            return configClass.newInstance();
+            return configClass.getConstructor().newInstance();
         }
-        catch (Exception e) {
-            AssertionError error = new AssertionError(format("Exception creating default instance of %s", configClass.getName()));
-            error.initCause(e);
-            throw error;
+        catch (ReflectiveOperationException e) {
+            throw new AssertionError("Exception creating default instance of " + configClass.getName(), e);
         }
     }
 
@@ -364,10 +364,8 @@ public final class ConfigAssertions
         try {
             return getter.invoke(actual);
         }
-        catch (Exception e) {
-            AssertionError error = new AssertionError(format("Exception invoking %s", getter.toGenericString()));
-            error.initCause(e);
-            throw error;
+        catch (ReflectiveOperationException e) {
+            throw new AssertionError("Exception invoking " + getter.toGenericString(), e);
         }
     }
 }
