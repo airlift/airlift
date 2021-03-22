@@ -271,6 +271,12 @@
                 <version>2.0.1</version>
             </dependency>
 
+            <dependency>
+                <groupId>net.bytebuddy</groupId>
+                <artifactId>byte-buddy</artifactId>
+                <version>1.10.22</version>
+            </dependency>
+
             <!-- jetty -->
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>

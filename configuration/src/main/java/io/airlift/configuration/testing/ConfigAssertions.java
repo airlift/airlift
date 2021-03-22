@@ -19,9 +19,10 @@ import com.google.common.collect.ImmutableSet;
 import io.airlift.configuration.ConfigurationFactory;
 import io.airlift.configuration.ConfigurationMetadata;
 import io.airlift.configuration.ConfigurationMetadata.AttributeMetadata;
-import net.sf.cglib.proxy.Enhancer;
-import net.sf.cglib.proxy.MethodInterceptor;
-import net.sf.cglib.proxy.MethodProxy;
+import net.bytebuddy.ByteBuddy;
+import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
+import net.bytebuddy.implementation.InvocationHandlerAdapter;
+import net.bytebuddy.matcher.ElementMatchers;
 
 import java.lang.reflect.Method;
 import java.util.HashSet;
@@ -270,32 +271,43 @@ public final class ConfigAssertions
         assertDefaults(attributeValues, configClass);
     }
 
-    @SuppressWarnings("unchecked")
     public static <T> T recordDefaults(Class<T> type)
     {
+        Class<? extends T> loaded = new ByteBuddy()
+                .subclass(type)
+                .implement($$RecordingConfigProxy.class)
+                .method(ElementMatchers.any())
+                .intercept(createInvocationHandler(type))
+                .make()
+                .load(type.getClassLoader(), ClassLoadingStrategy.Default.WRAPPER)
+                .getLoaded();
+
+        try {
+            return loaded.getConstructor().newInstance();
+        }
+        catch (ReflectiveOperationException e) {
+            throw new AssertionError("Failed to instantiate proxy class for " + type.getName(), e);
+        }
+    }
+
+    @SuppressWarnings("ObjectEquality")
+    private static <T> InvocationHandlerAdapter createInvocationHandler(Class<T> type)
+    {
         T instance = newDefaultInstance(type);
+        Set<Method> invokedMethods = newConcurrentHashSet();
 
-        return (T) Enhancer.create(type, new Class<?>[] {$$RecordingConfigProxy.class}, new MethodInterceptor()
-        {
-            private final Set<Method> invokedMethods = newConcurrentHashSet();
-
-            @SuppressWarnings("ObjectEquality")
-            @Override
-            public Object intercept(Object proxy, Method method, Object[] args, MethodProxy methodProxy)
-                    throws Throwable
-            {
-                if (GET_RECORDING_CONFIG_METHOD.equals(method)) {
-                    return new $$RecordedConfigData<>(instance, ImmutableSet.copyOf(invokedMethods));
-                }
-
-                invokedMethods.add(method);
-
-                Object result = methodProxy.invoke(instance, args);
-                if (result == instance) {
-                    return proxy;
-                }
-                return result;
+        return InvocationHandlerAdapter.of((proxy, method, args) -> {
+            if (GET_RECORDING_CONFIG_METHOD.equals(method)) {
+                return new $$RecordedConfigData<>(instance, ImmutableSet.copyOf(invokedMethods));
             }
+
+            invokedMethods.add(method);
+
+            Object result = method.invoke(instance, args);
+            if (result == instance) {
+                return proxy;
+            }
+            return result;
         });
     }
 
