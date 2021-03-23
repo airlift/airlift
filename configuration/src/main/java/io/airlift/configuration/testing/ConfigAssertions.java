@@ -20,11 +20,17 @@ import com.google.common.collect.MapMaker;
 import io.airlift.configuration.ConfigurationFactory;
 import io.airlift.configuration.ConfigurationMetadata;
 import io.airlift.configuration.ConfigurationMetadata.AttributeMetadata;
-import net.sf.cglib.proxy.Enhancer;
-import net.sf.cglib.proxy.MethodInterceptor;
-import net.sf.cglib.proxy.MethodProxy;
+import net.bytebuddy.ByteBuddy;
+import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
+import net.bytebuddy.implementation.MethodDelegation;
+import net.bytebuddy.implementation.bind.annotation.AllArguments;
+import net.bytebuddy.implementation.bind.annotation.Origin;
+import net.bytebuddy.implementation.bind.annotation.RuntimeType;
+import net.bytebuddy.implementation.bind.annotation.This;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -33,6 +39,9 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentMap;
 
 import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
+import static net.bytebuddy.implementation.MethodDelegation.to;
+import static net.bytebuddy.matcher.ElementMatchers.any;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNotNull;
@@ -40,17 +49,6 @@ import static org.testng.Assert.fail;
 
 public final class ConfigAssertions
 {
-    private static final Method GET_RECORDING_CONFIG_METHOD;
-
-    static {
-        try {
-            GET_RECORDING_CONFIG_METHOD = $$RecordingConfigProxy.class.getMethod("$$getRecordedConfig");
-        }
-        catch (NoSuchMethodException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     private ConfigAssertions()
     {
     }
@@ -277,31 +275,55 @@ public final class ConfigAssertions
     public static <T> T recordDefaults(Class<T> type)
     {
         final T instance = newDefaultInstance(type);
-        T proxy = (T) Enhancer.create(type, new Class<?>[] {$$RecordingConfigProxy.class}, new MethodInterceptor()
+        ConfigDefaultsInterceptor interceptor = new ConfigDefaultsInterceptor(instance);
+
+        try {
+            return new ByteBuddy()
+                    .subclass(type)
+                    .implement($$RecordingConfigProxy.class)
+                    .defineMethod("$$getRecordedConfig", $$RecordedConfigData.class, Modifier.PUBLIC)
+                    .intercept(MethodDelegation.to(interceptor))
+                    .method(any())
+                    .intercept(to(interceptor))
+                    .make()
+                    .load(type.getClassLoader(), ClassLoadingStrategy.Default.WRAPPER)
+                    .getLoaded()
+                    .getDeclaredConstructor()
+                    .newInstance();
+        }
+        catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static class ConfigDefaultsInterceptor<T>
+    {
+        private final ConcurrentMap<Method, Object> invokedMethods = new MapMaker().makeMap();
+        private final T instance;
+
+        public ConfigDefaultsInterceptor(T instance)
         {
-            private final ConcurrentMap<Method, Object> invokedMethods = new MapMaker().makeMap();
+            this.instance = requireNonNull(instance, "instance is null");
+        }
 
-            @Override
-            public Object intercept(Object proxy, Method method, Object[] args, MethodProxy methodProxy)
-                    throws Throwable
-            {
-                if (GET_RECORDING_CONFIG_METHOD.equals(method)) {
-                    return new $$RecordedConfigData<>(instance, ImmutableSet.copyOf(invokedMethods.keySet()));
-                }
+        @RuntimeType
+        public Object delegate(@This(optional = true) Object proxy, @Origin Method method, @AllArguments Object[] args) throws Exception
+        {
+            invokedMethods.put(method, Boolean.TRUE);
+            Object result = method.invoke(instance, args);
 
-                invokedMethods.put(method, Boolean.TRUE);
-
-                Object result = methodProxy.invoke(instance, args);
-                if (result == instance) {
-                    return proxy;
-                }
-                else {
-                    return result;
-                }
+            if (result == instance) {
+                return proxy;
             }
-        });
 
-        return proxy;
+            return result;
+        }
+
+        @RuntimeType
+        public $$RecordedConfigData<T> $$getRecordedConfig()
+        {
+            return new $$RecordedConfigData<>(instance, ImmutableSet.copyOf(invokedMethods.keySet()));
+        }
     }
 
     static <T> $$RecordedConfigData<T> getRecordedConfig(T config)

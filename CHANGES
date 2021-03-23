@@ -1,3 +1,7 @@
+204
+
+- Use ByteBuddy instead of cglib
+
 203
 
 - Limit total size of HTTP client log.
