@@ -997,7 +997,7 @@ public abstract class AbstractHttpClientTest
                 throws RuntimeException
         {
             if (response.getStatusCode() != expectedStatusCode) {
-                throw new UnexpectedResponseException(request, response);
+                throw new UnexpectedResponseException(format("Unexpected status code %s, expected %s", response.getStatusCode(), expectedStatusCode), request, response);
             }
             return response.getStatusCode();
         }

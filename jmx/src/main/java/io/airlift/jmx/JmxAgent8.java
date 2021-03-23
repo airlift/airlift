@@ -90,7 +90,7 @@ class JmxAgent8
             log.info("JMX agent started and listening on %s", address);
         }
 
-        this.url = new JMXServiceURL(String.format("service:jmx:rmi:///jndi/rmi://%s:%s/jmxrmi", address.getHost(), address.getPort()));
+        this.url = new JMXServiceURL(format("service:jmx:rmi:///jndi/rmi://%s:%s/jmxrmi", address.getHost(), address.getPort()));
     }
 
     public JMXServiceURL getUrl()

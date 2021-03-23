@@ -32,6 +32,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -129,7 +130,7 @@ public class H2EmbeddedDataSource
     {
         Statement statement = connection.createStatement();
         try {
-            String command = String.format("SET %s %s", name, value);
+            String command = format("SET %s %s", name, value);
             int count = statement.executeUpdate(command);
             if (count != 0) {
                 throw new SQLException("Failed to execute command: " + command);

@@ -15,6 +15,8 @@
  */
 package io.airlift.event.client;
 
+import static java.lang.String.format;
+
 @SuppressWarnings("UnusedDeclaration")
 @EventType("ChainedCircular")
 public class ChainedCircularEventClass
@@ -63,7 +65,7 @@ public class ChainedCircularEventClass
         @Override
         public String toString()
         {
-            return String.format("ChainedPart{%s}", name);
+            return format("ChainedPart{%s}", name);
         }
     }
 }

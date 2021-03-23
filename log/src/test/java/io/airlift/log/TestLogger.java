@@ -26,6 +26,7 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
+import static java.lang.String.format;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
@@ -205,7 +206,7 @@ public class TestLogger
         logger.debug(format, param);
 
         assertLogLike(Level.SEVERE, ImmutableList.of("Invalid format", "DEBUG", format, param), IllegalArgumentException.class);
-        assertLog(Level.FINE, String.format("'%s' [%s]", format, param));
+        assertLog(Level.FINE, format("'%s' [%s]", format, param));
     }
 
     @Test
@@ -216,7 +217,7 @@ public class TestLogger
         logger.info(format, param);
 
         assertLogLike(Level.SEVERE, ImmutableList.of("Invalid format", "INFO", format, param), IllegalArgumentException.class);
-        assertLog(Level.INFO, String.format("'%s' [%s]", format, param));
+        assertLog(Level.INFO, format("'%s' [%s]", format, param));
     }
 
     @Test
@@ -227,7 +228,7 @@ public class TestLogger
         logger.warn(format, param);
 
         assertLogLike(Level.SEVERE, ImmutableList.of("Invalid format", "WARN", format, param), IllegalArgumentException.class);
-        assertLog(Level.WARNING, String.format("'%s' [%s]", format, param));
+        assertLog(Level.WARNING, format("'%s' [%s]", format, param));
     }
 
     @Test
@@ -238,7 +239,7 @@ public class TestLogger
         logger.error(format, param);
 
         assertLogLike(Level.SEVERE, ImmutableList.of("Invalid format", "ERROR", format, param), IllegalArgumentException.class);
-        assertLog(Level.SEVERE, String.format("'%s' [%s]", format, param));
+        assertLog(Level.SEVERE, format("'%s' [%s]", format, param));
     }
 
     @Test
@@ -250,7 +251,7 @@ public class TestLogger
         logger.warn(exception, format, param);
 
         assertLogLike(Level.SEVERE, ImmutableList.of("Invalid format", "WARN", format, param), IllegalArgumentException.class);
-        assertLog(Level.WARNING, String.format("'%s' [%s]", format, param), exception);
+        assertLog(Level.WARNING, format("'%s' [%s]", format, param), exception);
     }
 
     @Test
@@ -262,7 +263,7 @@ public class TestLogger
         logger.error(exception, format, param);
 
         assertLogLike(Level.SEVERE, ImmutableList.of("Invalid format", "ERROR", format, param), IllegalArgumentException.class);
-        assertLog(Level.SEVERE, String.format("'%s' [%s]", format, param), exception);
+        assertLog(Level.SEVERE, format("'%s' [%s]", format, param), exception);
     }
 
     private void assertLog(Level level, String message, Throwable exception)

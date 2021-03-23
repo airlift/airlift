@@ -33,14 +33,6 @@ public class UnexpectedResponseException
     private final int statusCode;
     private final ListMultimap<HeaderName, String> headers;
 
-    public UnexpectedResponseException(Request request, Response response)
-    {
-        this("HTTP " + response.getStatusCode(),
-                request,
-                response.getStatusCode(),
-                ImmutableListMultimap.copyOf(response.getHeaders()));
-    }
-
     public UnexpectedResponseException(String message, Request request, Response response)
     {
         this(message,

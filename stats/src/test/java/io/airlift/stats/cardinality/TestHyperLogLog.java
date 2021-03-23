@@ -24,6 +24,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import static io.airlift.slice.testing.SliceAssertions.assertSlicesEqual;
 import static io.airlift.stats.cardinality.TestUtils.sequence;
+import static java.lang.String.format;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
@@ -65,7 +66,7 @@ public class TestHyperLogLog
             for (Map.Entry<Integer, Stats> entry : errors.entrySet()) {
                 // Give an extra error margin. This is mostly a sanity check to catch egregious errors
                 assertTrue(entry.getValue().stdev() <= expectedStandardError * 1.1,
-                        String.format("Failed at p = %s, cardinality = %s. Expected std error = %s, actual = %s",
+                        format("Failed at p = %s, cardinality = %s. Expected std error = %s, actual = %s",
                                 indexBits,
                                 entry.getKey(),
                                 expectedStandardError,

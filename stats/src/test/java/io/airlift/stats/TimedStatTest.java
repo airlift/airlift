@@ -26,6 +26,7 @@ import java.util.concurrent.locks.LockSupport;
 
 import static io.airlift.testing.Assertions.assertGreaterThanOrEqual;
 import static java.lang.Math.min;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
@@ -125,6 +126,6 @@ public class TimedStatTest
             return;
         }
 
-        fail(String.format("%s expected:<%s> to be between <%s> and <%s>", name, value, minValue, maxValue));
+        fail(format("%s expected:<%s> to be between <%s> and <%s>", name, value, minValue, maxValue));
     }
 }

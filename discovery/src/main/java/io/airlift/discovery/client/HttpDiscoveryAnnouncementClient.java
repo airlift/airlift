@@ -45,6 +45,7 @@ import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
 import static io.airlift.http.client.JsonBodyGenerator.jsonBodyGenerator;
 import static io.airlift.http.client.Request.Builder.prepareDelete;
 import static io.airlift.http.client.Request.Builder.preparePut;
+import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
@@ -101,7 +102,7 @@ public class HttpDiscoveryAnnouncementClient
             {
                 int statusCode = response.getStatusCode();
                 if (!isSuccess(statusCode)) {
-                    throw new DiscoveryException(String.format("Announcement failed with status code %s: %s", statusCode, getBodyForError(response)));
+                    throw new DiscoveryException(format("Announcement failed with status code %s: %s", statusCode, getBodyForError(response)));
                 }
 
                 Duration maxAge = extractMaxAge(response);

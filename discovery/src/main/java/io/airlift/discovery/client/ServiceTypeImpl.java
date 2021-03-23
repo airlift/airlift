@@ -17,6 +17,7 @@ package io.airlift.discovery.client;
 
 import java.lang.annotation.Annotation;
 
+import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 class ServiceTypeImpl
@@ -37,7 +38,7 @@ class ServiceTypeImpl
 
     public String toString()
     {
-        return String.format("@%s(value=\"%s\")", ServiceType.class.getName(), value.replace("\"", "\\\""));
+        return format("@%s(value=\"%s\")", ServiceType.class.getName(), value.replace("\"", "\\\""));
     }
 
     @Override

@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static io.airlift.event.client.TypeParameterUtils.getTypeParameters;
+import static java.lang.String.format;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -97,7 +98,7 @@ public class TestTypeParametersUtils
 
     private static void assertInstanceOf(Type type, Class<?> clazz)
     {
-        assertTrue(clazz.isInstance(type), String.format("[%s] is not instance of %s", type, clazz.getSimpleName()));
+        assertTrue(clazz.isInstance(type), format("[%s] is not instance of %s", type, clazz.getSimpleName()));
     }
 
     private Type[] getParameters(String fieldName)

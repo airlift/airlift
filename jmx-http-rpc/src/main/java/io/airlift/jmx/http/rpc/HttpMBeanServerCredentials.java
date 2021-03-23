@@ -15,6 +15,8 @@
  */
 package io.airlift.jmx.http.rpc;
 
+import static java.lang.String.format;
+
 public class HttpMBeanServerCredentials
 {
     private final String username;
@@ -54,7 +56,7 @@ public class HttpMBeanServerCredentials
 
     public String toBasicAuthHeader()
     {
-        return "Basic " + HttpMBeanServerRpc.base64Encode(String.format("%s:%s", username == null ? "" : username, password == null ? "" : password));
+        return "Basic " + HttpMBeanServerRpc.base64Encode(format("%s:%s", username == null ? "" : username, password == null ? "" : password));
     }
 
     private static boolean equals(Object left, Object right)

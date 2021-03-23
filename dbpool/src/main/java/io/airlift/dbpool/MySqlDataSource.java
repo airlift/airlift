@@ -24,6 +24,8 @@ import javax.sql.PooledConnection;
 import java.sql.SQLException;
 import java.util.UUID;
 
+import static java.lang.String.format;
+
 public class MySqlDataSource
         extends ManagedDataSource
 {
@@ -97,6 +99,6 @@ public class MySqlDataSource
         if (lastException != null) {
             throw lastException;
         }
-        throw new SQLException(String.format("No mysql servers of type '%s' available in pool '%s'", serviceSelector.getType(), serviceSelector.getPool()));
+        throw new SQLException(format("No mysql servers of type '%s' available in pool '%s'", serviceSelector.getType(), serviceSelector.getPool()));
     }
 }

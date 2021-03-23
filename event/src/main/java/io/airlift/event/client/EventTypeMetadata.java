@@ -42,6 +42,7 @@ import static io.airlift.event.client.AnnotationUtils.findAnnotatedMethods;
 import static io.airlift.event.client.EventDataType.getEventDataType;
 import static io.airlift.event.client.EventFieldMetadata.ContainerType;
 import static io.airlift.event.client.TypeParameterUtils.getTypeParameters;
+import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 public final class EventTypeMetadata<T>
@@ -60,7 +61,7 @@ public final class EventTypeMetadata<T>
         EventTypeMetadata<T> metadata = getEventTypeMetadata(eventClass);
         if (!metadata.getErrors().isEmpty()) {
             String errors = Joiner.on('\n').join(metadata.getErrors());
-            throw new IllegalArgumentException(String.format("Invalid event class [%s]:%n%s", eventClass.getName(), errors));
+            throw new IllegalArgumentException(format("Invalid event class [%s]:%n%s", eventClass.getName(), errors));
         }
         return metadata;
     }
@@ -400,14 +401,14 @@ public final class EventTypeMetadata<T>
 
     public void addMethodError(String format, Method method, Object... args)
     {
-        String prefix = String.format("@X method [%s] ", method.toGenericString());
+        String prefix = format("@X method [%s] ", method.toGenericString());
         addClassError(prefix + format, args);
     }
 
     public void addClassError(String format, Object... args)
     {
-        String message = String.format(format, args);
-        message = String.format("Event class [%s] %s", eventClass, message);
+        String message = format(format, args);
+        message = format("Event class [%s] %s", eventClass, message);
         message = message.replace("@X", EventField.class.getSimpleName());
         errors.add(message);
     }
