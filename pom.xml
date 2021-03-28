@@ -29,7 +29,7 @@
         <dep.airlift.version>204-SNAPSHOT</dep.airlift.version>
         <dep.packaging.version>${dep.airlift.version}</dep.packaging.version>
         <dep.jetty.version>9.4.30.v20200611</dep.jetty.version>
-        <dep.jersey.version>2.26</dep.jersey.version>
+        <dep.jersey.version>2.31</dep.jersey.version>
     </properties>
 
     <organization>
@@ -356,7 +356,7 @@
                 <exclusions>
                     <exclusion>
                         <groupId>org.glassfish.hk2.external</groupId>
-                        <artifactId>javax.inject</artifactId>
+                        <artifactId>jakarta.inject</artifactId>
                     </exclusion>
                     <exclusion>
                         <groupId>org.glassfish.hk2.external</groupId>
@@ -372,7 +372,7 @@
                 <exclusions>
                     <exclusion>
                         <groupId>org.glassfish.hk2.external</groupId>
-                        <artifactId>javax.inject</artifactId>
+                        <artifactId>jakarta.inject</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -384,7 +384,7 @@
                 <exclusions>
                     <exclusion>
                         <groupId>org.glassfish.hk2.external</groupId>
-                        <artifactId>javax.inject</artifactId>
+                        <artifactId>jakarta.inject</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -402,7 +402,7 @@
                 <exclusions>
                     <exclusion>
                         <groupId>org.glassfish.hk2.external</groupId>
-                        <artifactId>javax.inject</artifactId>
+                        <artifactId>jakarta.inject</artifactId>
                     </exclusion>
                     <exclusion>
                         <groupId>org.glassfish.hk2.external</groupId>
@@ -418,7 +418,7 @@
                 <exclusions>
                     <exclusion>
                         <groupId>org.glassfish.hk2.external</groupId>
-                        <artifactId>javax.inject</artifactId>
+                        <artifactId>jakarta.inject</artifactId>
                     </exclusion>
                     <exclusion>
                         <groupId>org.glassfish.hk2.external</groupId>
