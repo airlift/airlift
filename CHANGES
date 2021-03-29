@@ -1,6 +1,7 @@
 204
 
 - Fix running ConfigAssertions on Java 16.
+- Update to Jetty 9.4.39.v20210325.
 
 203
 
