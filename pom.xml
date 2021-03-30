@@ -30,7 +30,7 @@
 
         <dep.airlift.version>204-SNAPSHOT</dep.airlift.version>
         <dep.packaging.version>${dep.airlift.version}</dep.packaging.version>
-        <dep.jetty.version>9.4.30.v20200611</dep.jetty.version>
+        <dep.jetty.version>11.0.2</dep.jetty.version>
         <dep.jersey.version>2.26</dep.jersey.version>
     </properties>
 
