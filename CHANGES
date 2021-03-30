@@ -2,6 +2,8 @@
 
 - Fix running ConfigAssertions on Java 16.
 - Update to Jetty 9.4.39.v20210325.
+- Allow using dashes in enum config values.
+- Add support for list of strings as config values.
 
 203
 
