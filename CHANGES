@@ -1,6 +1,7 @@
 205
 
 - Add form data body builder for HTTP client.
+- Add JSON Web Key Sets (JWKS) decoder and service.
 
 204
 
