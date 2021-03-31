@@ -1,3 +1,7 @@
+205
+
+- Add form data body builder for HTTP client.
+
 204
 
 - Fix running ConfigAssertions on Java 16.
