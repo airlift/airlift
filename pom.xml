@@ -32,6 +32,7 @@
         <dep.packaging.version>${dep.airlift.version}</dep.packaging.version>
         <dep.jetty.version>9.4.39.v20210325</dep.jetty.version>
         <dep.jersey.version>2.26</dep.jersey.version>
+        <dep.jjwt.version>0.11.2</dep.jjwt.version>
     </properties>
 
     <organization>
@@ -83,6 +84,7 @@
         <module>node</module>
         <module>packaging</module>
         <module>security</module>
+        <module>security-jwks</module>
         <module>stats</module>
         <module>testing</module>
         <module>trace-token</module>
@@ -257,6 +259,24 @@
                 <groupId>com.h2database</groupId>
                 <artifactId>h2</artifactId>
                 <version>1.4.200</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-api</artifactId>
+                <version>${dep.jjwt.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-impl</artifactId>
+                <version>${dep.jjwt.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-jackson</artifactId>
+                <version>${dep.jjwt.version}</version>
             </dependency>
 
             <dependency>
