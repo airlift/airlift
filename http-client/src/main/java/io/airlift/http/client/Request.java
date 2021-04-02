@@ -183,6 +183,11 @@ public final class Request
             return new Builder().setMethod("DELETE");
         }
 
+        public static Builder preparePatch()
+        {
+            return new Builder().setMethod("PATCH");
+        }
+
         public static Builder fromRequest(Request request)
         {
             return new Builder()
