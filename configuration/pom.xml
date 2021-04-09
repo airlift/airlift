@@ -62,7 +62,7 @@
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
-            <optional>true</optional>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
