@@ -19,7 +19,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMultiset;
 
 import static java.lang.String.format;
-import static org.testng.Assert.assertNotNull;
+import static java.util.Objects.requireNonNull;
 
 public final class Assertions
 {
@@ -42,8 +42,8 @@ public final class Assertions
 
     public static void assertContains(String actual, String expectedPart, String message)
     {
-        assertNotNull(actual, "actual is null");
-        assertNotNull(expectedPart, "expectedPart is null");
+        requireNonNull(actual, "actual is null");
+        requireNonNull(expectedPart, "expectedPart is null");
         if (actual.contains(expectedPart)) {
             // ok
             return;
@@ -58,7 +58,7 @@ public final class Assertions
 
     public static void assertEqualsIgnoreCase(String actual, String expected, String message)
     {
-        assertNotNull(actual, "actual is null");
+        requireNonNull(actual, "actual is null");
         if (actual.equalsIgnoreCase(expected)) {
             // ok
             return;
@@ -95,7 +95,7 @@ public final class Assertions
 
     public static <T extends Comparable<T>> void assertGreaterThan(T actual, T expected, String message)
     {
-        assertNotNull(actual, "actual is null");
+        requireNonNull(actual, "actual is null");
         try {
             if (actual.compareTo(expected) > 0) {
                 if (!(expected.compareTo(actual) < 0)) {
@@ -128,7 +128,7 @@ public final class Assertions
 
     public static <T extends Comparable<T>> void assertGreaterThanOrEqual(T actual, T expected, String message)
     {
-        assertNotNull(actual, "actual is null");
+        requireNonNull(actual, "actual is null");
         try {
             int compareValue = actual.compareTo(expected);
             if (compareValue >= 0) {
@@ -164,7 +164,7 @@ public final class Assertions
 
     public static <T extends Comparable<T>> void assertLessThan(T actual, T expected, String message)
     {
-        assertNotNull(actual, "actual is null");
+        requireNonNull(actual, "actual is null");
         try {
             if (actual.compareTo(expected) < 0) {
                 if (!(expected.compareTo(actual) > 0)) {
@@ -197,7 +197,7 @@ public final class Assertions
 
     public static <T extends Comparable<T>> void assertLessThanOrEqual(T actual, T expected, String message)
     {
-        assertNotNull(actual, "actual is null");
+        requireNonNull(actual, "actual is null");
         try {
             int compareValue = actual.compareTo(expected);
             if (compareValue <= 0) {
@@ -232,7 +232,7 @@ public final class Assertions
 
     public static <T extends Comparable<T>> void assertBetweenInclusive(T actual, T lowerBound, T upperBound, String message)
     {
-        assertNotNull(actual, "actual is null");
+        requireNonNull(actual, "actual is null");
         try {
             if (actual.compareTo(lowerBound) >= 0 && actual.compareTo(upperBound) <= 0) {
                 // ok
@@ -259,7 +259,7 @@ public final class Assertions
 
     public static <T extends Comparable<T>> void assertBetweenExclusive(T actual, T lowerBound, T upperBound, String message)
     {
-        assertNotNull(actual, "actual is null");
+        requireNonNull(actual, "actual is null");
         try {
             if (actual.compareTo(lowerBound) > 0 && actual.compareTo(upperBound) < 0) {
                 // ok
@@ -286,8 +286,8 @@ public final class Assertions
 
     public static <T, U extends T> void assertInstanceOf(T actual, Class<U> expectedType, String message)
     {
-        assertNotNull(actual, "actual is null");
-        assertNotNull(expectedType, "expectedType is null");
+        requireNonNull(actual, "actual is null");
+        requireNonNull(expectedType, "expectedType is null");
         if (expectedType.isInstance(actual)) {
             // ok
             return;
@@ -302,8 +302,8 @@ public final class Assertions
 
     public static void assertEqualsIgnoreOrder(Iterable<?> actual, Iterable<?> expected, String message)
     {
-        assertNotNull(actual, "actual is null");
-        assertNotNull(expected, "expected is null");
+        requireNonNull(actual, "actual is null");
+        requireNonNull(expected, "expected is null");
 
         ImmutableMultiset<?> actualSet = ImmutableMultiset.copyOf(actual);
         ImmutableMultiset<?> expectedSet = ImmutableMultiset.copyOf(expected);
