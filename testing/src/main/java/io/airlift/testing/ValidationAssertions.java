@@ -27,8 +27,6 @@ import java.lang.annotation.Annotation;
 import java.util.Set;
 
 import static java.lang.String.format;
-import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.fail;
 
 @Beta
 public final class ValidationAssertions
@@ -52,8 +50,9 @@ public final class ValidationAssertions
 
     public static void assertValidates(Object object, String message)
     {
-        assertTrue(validate(object).isEmpty(),
-                format("%sexpected:<%s> to pass validation", toMessageString(message), object));
+        if (!validate(object).isEmpty()) {
+            throw new AssertionError(format("%sexpected:<%s> to pass validation", toMessageString(message), object));
+        }
     }
 
     public static <T> void assertFailsValidation(T object, String field, String expectedErrorMessage, Class<? extends Annotation> annotation, String message)
@@ -64,7 +63,8 @@ public final class ValidationAssertions
             if (annotation.isInstance(violation.getConstraintDescriptor().getAnnotation()) &&
                     violation.getPropertyPath().toString().equals(field)) {
                 if (!violation.getMessage().equals(expectedErrorMessage)) {
-                    fail(format("%sexpected %s.%s for <%s> to fail validation for %s with message '%s', but message was '%s'",
+                    throw new AssertionError(format(
+                            "%sexpected %s.%s for <%s> to fail validation for %s with message '%s', but message was '%s'",
                             toMessageString(message),
                             object.getClass().getName(),
                             field,
@@ -77,7 +77,8 @@ public final class ValidationAssertions
             }
         }
 
-        fail(format("%sexpected %s.%s for <%s> to fail validation for %s with message '%s'",
+        throw new AssertionError(format(
+                "%sexpected %s.%s for <%s> to fail validation for %s with message '%s'",
                 toMessageString(message),
                 object.getClass().getName(),
                 field,

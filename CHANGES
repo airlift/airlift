@@ -3,7 +3,7 @@
 - Add form data body builder for HTTP client.
 - Add JSON Web Key Sets (JWKS) decoder and service.
 - Update to Jetty 9.4.40.v20210413.
-- Remove TestNG dependency from ConfigAssertions.
+- Remove TestNG dependency from ConfigAssertions and testing module.
 
 204
 
