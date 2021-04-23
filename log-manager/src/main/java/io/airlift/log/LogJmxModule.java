@@ -15,7 +15,6 @@
  */
 package io.airlift.log;
 
-import com.google.common.annotations.Beta;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Provides;
@@ -25,7 +24,6 @@ import javax.inject.Singleton;
 
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
-@Beta
 public class LogJmxModule
         implements Module
 {

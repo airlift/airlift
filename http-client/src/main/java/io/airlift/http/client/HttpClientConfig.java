@@ -15,7 +15,6 @@
  */
 package io.airlift.http.client;
 
-import com.google.common.annotations.Beta;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.HostAndPort;
@@ -42,7 +41,6 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-@Beta
 public class HttpClientConfig
 {
     public static final String JAVAX_NET_SSL_KEY_STORE = "javax.net.ssl.keyStore";

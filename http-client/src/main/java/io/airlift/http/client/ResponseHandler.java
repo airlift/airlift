@@ -15,9 +15,6 @@
  */
 package io.airlift.http.client;
 
-import com.google.common.annotations.Beta;
-
-@Beta
 public interface ResponseHandler<T, E extends Exception>
 {
     T handleException(Request request, Exception exception)

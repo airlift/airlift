@@ -15,7 +15,6 @@
  */
 package io.airlift.http.client;
 
-import com.google.common.annotations.Beta;
 import io.airlift.stats.CounterStat;
 import io.airlift.stats.DistributionStat;
 import io.airlift.stats.TimeStat;
@@ -27,7 +26,6 @@ import javax.inject.Inject;
 
 import static io.airlift.http.client.HttpStatus.familyForStatusCode;
 
-@Beta
 public class RequestStats
 {
     private final CounterStat allResponse = new CounterStat();

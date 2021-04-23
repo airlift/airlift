@@ -15,10 +15,8 @@
  */
 package io.airlift.http.client;
 
-import com.google.common.annotations.Beta;
 import io.airlift.json.JsonCodec;
 
-@Beta
 public class JsonBodyGenerator<T>
         extends StaticBodyGenerator
 {

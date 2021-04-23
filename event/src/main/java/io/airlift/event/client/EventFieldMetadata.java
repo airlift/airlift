@@ -16,7 +16,6 @@
 package io.airlift.event.client;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.google.common.annotations.Beta;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 
@@ -34,7 +33,6 @@ import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Preconditions.checkArgument;
 import static io.airlift.event.client.EventDataType.validateFieldValueType;
 
-@Beta
 public class EventFieldMetadata
 {
     public static enum ContainerType

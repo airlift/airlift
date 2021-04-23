@@ -15,7 +15,6 @@
  */
 package io.airlift.bootstrap;
 
-import com.google.common.annotations.Beta;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
@@ -92,7 +91,6 @@ public class Bootstrap
         this.modules = ImmutableList.copyOf(modules);
     }
 
-    @Beta
     public Bootstrap setRequiredConfigurationProperty(String key, String value)
     {
         if (this.requiredConfigurationProperties == null) {
@@ -102,7 +100,6 @@ public class Bootstrap
         return this;
     }
 
-    @Beta
     public Bootstrap setRequiredConfigurationProperties(Map<String, String> requiredConfigurationProperties)
     {
         if (this.requiredConfigurationProperties == null) {
@@ -112,7 +109,6 @@ public class Bootstrap
         return this;
     }
 
-    @Beta
     public Bootstrap setOptionalConfigurationProperty(String key, String value)
     {
         if (this.optionalConfigurationProperties == null) {
@@ -122,7 +118,6 @@ public class Bootstrap
         return this;
     }
 
-    @Beta
     public Bootstrap setOptionalConfigurationProperties(Map<String, String> optionalConfigurationProperties)
     {
         if (this.optionalConfigurationProperties == null) {
@@ -132,7 +127,6 @@ public class Bootstrap
         return this;
     }
 
-    @Beta
     public Bootstrap doNotInitializeLogging()
     {
         this.initializeLogging = false;

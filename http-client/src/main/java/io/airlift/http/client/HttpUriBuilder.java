@@ -1,6 +1,5 @@
 package io.airlift.http.client;
 
-import com.google.common.annotations.Beta;
 import com.google.common.base.Ascii;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
@@ -28,7 +27,6 @@ import static java.util.Objects.requireNonNull;
 /**
  * An RFC-3986-compatible HTTP URI builder
  */
-@Beta
 public class HttpUriBuilder
 {
     private String scheme;

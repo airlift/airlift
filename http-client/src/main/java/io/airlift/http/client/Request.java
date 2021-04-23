@@ -15,7 +15,6 @@
  */
 package io.airlift.http.client;
 
-import com.google.common.annotations.Beta;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
@@ -29,7 +28,6 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
 
-@Beta
 public final class Request
 {
     private final URI uri;
@@ -155,7 +153,6 @@ public final class Request
                 preserveAuthorizationOnRedirect);
     }
 
-    @Beta
     public static final class Builder
     {
         public static Builder prepareHead()

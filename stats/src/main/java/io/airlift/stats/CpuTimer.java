@@ -13,7 +13,6 @@
  */
 package io.airlift.stats;
 
-import com.google.common.annotations.Beta;
 import io.airlift.units.Duration;
 
 import java.lang.management.ManagementFactory;
@@ -22,7 +21,6 @@ import java.lang.management.ThreadMXBean;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
-@Beta
 public class CpuTimer
 {
     private static final ThreadMXBean THREAD_MX_BEAN = ManagementFactory.getThreadMXBean();

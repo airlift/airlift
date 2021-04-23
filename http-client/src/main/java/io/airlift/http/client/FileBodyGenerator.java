@@ -1,14 +1,11 @@
 package io.airlift.http.client;
 
-import com.google.common.annotations.Beta;
-
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static java.util.Objects.requireNonNull;
 
-@Beta
 public class FileBodyGenerator
         implements BodyGenerator
 {

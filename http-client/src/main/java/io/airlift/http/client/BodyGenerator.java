@@ -15,11 +15,8 @@
  */
 package io.airlift.http.client;
 
-import com.google.common.annotations.Beta;
-
 import java.io.OutputStream;
 
-@Beta
 public interface BodyGenerator
 {
     void write(OutputStream out)

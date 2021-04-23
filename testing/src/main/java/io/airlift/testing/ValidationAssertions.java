@@ -15,7 +15,6 @@
  */
 package io.airlift.testing;
 
-import com.google.common.annotations.Beta;
 import org.apache.bval.jsr.ApacheValidationProvider;
 
 import javax.annotation.concurrent.GuardedBy;
@@ -28,7 +27,6 @@ import java.util.Set;
 
 import static java.lang.String.format;
 
-@Beta
 public final class ValidationAssertions
 {
     @GuardedBy("VALIDATOR")

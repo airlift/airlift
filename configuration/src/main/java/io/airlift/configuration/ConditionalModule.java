@@ -13,7 +13,6 @@
  */
 package io.airlift.configuration;
 
-import com.google.common.annotations.Beta;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 
@@ -22,7 +21,6 @@ import java.util.function.Predicate;
 import static io.airlift.configuration.ConfigurationModule.installModules;
 import static java.util.Objects.requireNonNull;
 
-@Beta
 public class ConditionalModule<T>
         extends AbstractConfigurationAwareModule
 {

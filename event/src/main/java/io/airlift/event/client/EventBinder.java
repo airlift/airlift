@@ -15,7 +15,6 @@
  */
 package io.airlift.event.client;
 
-import com.google.common.annotations.Beta;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Binder;
 import com.google.inject.TypeLiteral;
@@ -28,7 +27,6 @@ import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static io.airlift.event.client.EventTypeMetadata.getEventTypeMetadata;
 import static java.util.Objects.requireNonNull;
 
-@Beta
 public class EventBinder
 {
     public static EventBinder eventBinder(Binder binder)

@@ -15,7 +15,6 @@
  */
 package io.airlift.configuration;
 
-import com.google.common.annotations.Beta;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
 import com.google.common.cache.CacheBuilder;
@@ -138,7 +137,6 @@ public class ConfigurationFactory
     /**
      * Marks the specified property as consumed.
      */
-    @Beta
     public void consumeProperty(String property)
     {
         requireNonNull(property, "property is null");
@@ -153,7 +151,6 @@ public class ConfigurationFactory
     /**
      * Registers all configuration classes in the module so they can be part of configuration inspection.
      */
-    @Beta
     public void registerConfigurationClasses(Module module)
     {
         registerConfigurationClasses(ImmutableList.of(module));

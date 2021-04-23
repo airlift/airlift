@@ -1,6 +1,5 @@
 package io.airlift.discovery.client;
 
-import com.google.common.annotations.Beta;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.Futures;
@@ -14,7 +13,6 @@ import java.util.concurrent.ExecutionException;
 
 import static java.util.Objects.requireNonNull;
 
-@Beta
 public class ServiceSelectorManager
 {
     private final Set<ServiceSelector> serviceSelectors;

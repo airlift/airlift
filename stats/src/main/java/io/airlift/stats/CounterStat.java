@@ -17,7 +17,6 @@ package io.airlift.stats;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.annotations.Beta;
 import io.airlift.stats.DecayCounter.DecayCounterSnapshot;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
@@ -35,7 +34,6 @@ import static java.util.Objects.requireNonNull;
  * there is no consistency guarantee when using {@link #reset} or {@link #resetTo} concurrently
  * with {@link #update} or {@link #merge}.
  */
-@Beta
 @ThreadSafe
 public final class CounterStat
 {

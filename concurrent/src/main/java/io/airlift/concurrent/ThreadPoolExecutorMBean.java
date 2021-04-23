@@ -1,6 +1,5 @@
 package io.airlift.concurrent;
 
-import com.google.common.annotations.Beta;
 import io.airlift.units.Duration;
 import org.weakref.jmx.Managed;
 
@@ -9,7 +8,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
-@Beta
 public class ThreadPoolExecutorMBean
 {
     private final ThreadPoolExecutor threadPoolExecutor;

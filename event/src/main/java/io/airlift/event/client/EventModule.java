@@ -13,14 +13,12 @@
  */
 package io.airlift.event.client;
 
-import com.google.common.annotations.Beta;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 
-@Beta
 public class EventModule
         implements Module
 {

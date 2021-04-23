@@ -15,12 +15,10 @@
  */
 package io.airlift.http.client;
 
-import com.google.common.annotations.Beta;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.io.Closeable;
 
-@Beta
 public interface HttpClient
         extends Closeable
 {

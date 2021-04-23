@@ -13,7 +13,6 @@
  */
 package io.airlift.configuration;
 
-import com.google.common.annotations.Beta;
 import com.google.common.reflect.AbstractInvocationHandler;
 import com.google.inject.Binder;
 import com.google.inject.Module;
@@ -25,7 +24,6 @@ import static com.google.common.base.Preconditions.checkState;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static java.util.Objects.requireNonNull;
 
-@Beta
 public abstract class AbstractConfigurationAwareModule
         implements ConfigurationAwareModule
 {

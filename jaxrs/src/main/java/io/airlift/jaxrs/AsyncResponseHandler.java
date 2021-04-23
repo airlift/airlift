@@ -13,7 +13,6 @@
  */
 package io.airlift.jaxrs;
 
-import com.google.common.annotations.Beta;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -32,7 +31,6 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static javax.ws.rs.core.Response.status;
 
-@Beta
 public class AsyncResponseHandler
 {
     private final AsyncResponse asyncResponse;
