@@ -172,9 +172,7 @@ final class ReloadableSslContextFactoryProvider
     private synchronized void reload()
     {
         try {
-            SslContextFactory.Server updatedFactory = buildContextFactory();
-            updatedFactory.start();
-            this.sslContextFactory.reload(factory -> factory.setSslContext(updatedFactory.getSslContext()));
+            this.sslContextFactory.reload(factory -> {});
         }
         catch (Exception e) {
             log.warn(e, "Unable to reload SslContext.");

@@ -425,7 +425,8 @@ public class HttpServer
                 config.isLogCompressionEnabled());
     }
 
-    private Set<X509Certificate> getCertificates()
+    @VisibleForTesting
+    Set<X509Certificate> getCertificates()
     {
         ImmutableSet.Builder<X509Certificate> certificates = ImmutableSet.builder();
         this.sslContextFactory.ifPresent(factory -> {
