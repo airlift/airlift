@@ -88,7 +88,8 @@ import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
 public class HttpServer
 {
-    public enum ClientCertificate {
+    public enum ClientCertificate
+    {
         NONE, REQUESTED, REQUIRED
     }
 
