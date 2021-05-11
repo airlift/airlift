@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import io.airlift.event.client.EventClient;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
+import io.airlift.log.Logger;
 import io.airlift.node.NodeInfo;
 import io.airlift.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
@@ -90,6 +91,8 @@ public class HttpServer
     public enum ClientCertificate {
         NONE, REQUESTED, REQUIRED
     }
+
+    private static final Logger log = Logger.get(HttpServer.class);
 
     private final Server server;
     private final boolean registerErrorHandler;
@@ -439,7 +442,8 @@ public class HttpServer
                     }
                 }
             }
-            catch (Exception ignored) {
+            catch (Exception e) {
+                log.error(e, "Error reading certificates");
             }
         });
 
