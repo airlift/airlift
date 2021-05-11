@@ -166,7 +166,7 @@ final class ReloadableSslContextFactoryProvider
      */
     public SslContextFactory.Server getSslContextFactory()
     {
-        return this.sslContextFactory;
+        return sslContextFactory;
     }
 
     private synchronized void reload()
