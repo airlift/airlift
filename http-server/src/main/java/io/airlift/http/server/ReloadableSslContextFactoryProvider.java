@@ -65,7 +65,7 @@ final class ReloadableSslContextFactoryProvider
 
         this.clientCertificate = requireNonNull(clientCertificate, "clientCertificate is null");
 
-        this.sslContextFactory = buildContextFactory();
+        sslContextFactory = buildContextFactory();
         long refreshTime = config.getSslContextRefreshTime().toMillis();
         scheduledExecutor.scheduleWithFixedDelay(this::reload, refreshTime, refreshTime, MILLISECONDS);
     }
@@ -166,13 +166,13 @@ final class ReloadableSslContextFactoryProvider
      */
     public SslContextFactory.Server getSslContextFactory()
     {
-        return this.sslContextFactory;
+        return sslContextFactory;
     }
 
     private synchronized void reload()
     {
         try {
-            this.sslContextFactory.reload(factory -> {});
+            sslContextFactory.reload(factory -> {});
         }
         catch (Exception e) {
             log.warn(e, "Unable to reload SslContext.");
