@@ -32,22 +32,44 @@ import io.airlift.http.server.HttpServer.ClientCertificate;
 import io.airlift.log.Logging;
 import io.airlift.node.NodeConfig;
 import io.airlift.node.NodeInfo;
+import io.airlift.testing.TempFile;
 import io.airlift.tracetoken.TraceTokenManager;
+import io.airlift.units.Duration;
+import org.bouncycastle.cert.X509CertificateHolder;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
+import org.bouncycastle.operator.ContentSigner;
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
 
+import javax.security.auth.x500.X500Principal;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import java.io.EOFException;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
+import java.math.BigInteger;
 import java.net.URI;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.KeyStore;
+import java.security.PrivateKey;
+import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Base64;
+import java.util.Date;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
@@ -579,6 +601,24 @@ public class TestHttpServerProvider
         createAndStartServer();
     }
 
+    @Test
+    public void testKeystoreReloading()
+            throws Exception
+    {
+        try (TempFile tempFile = new TempFile()) {
+            appendCertificate(tempFile.file(), "certificate-1");
+            config.setSslContextRefreshTime(new Duration(5, SECONDS))
+                    .setKeystorePath(tempFile.file().getAbsolutePath())
+                    .setKeystorePassword("airlift")
+                    .setHttpsEnabled(true)
+                    .setHttpEnabled(false);
+            createAndStartServer();
+            assertEventually(() -> assertEquals(server.getCertificates().size(), 1));
+            appendCertificate(tempFile.file(), "certificate-2");
+            assertEventually(() -> assertEquals(server.getCertificates().size(), 2));
+        }
+    }
+
     private void createAndStartServer()
             throws Exception
     {
@@ -618,5 +658,65 @@ public class TestHttpServerProvider
         serverProvider.setLoginService(loginServiceProvider.get());
         serverProvider.setTokenManager(new TraceTokenManager());
         server = serverProvider.get();
+    }
+
+    private static void appendCertificate(File keyStoreFile, String alias)
+            throws Exception
+    {
+        KeyStore keyStore = KeyStore.getInstance("JKS");
+        char[] password = "airlift".toCharArray();
+        try (InputStream inStream = new FileInputStream(keyStoreFile)) {
+            keyStore.load(inStream, password);
+        }
+        catch (EOFException ignored) { // reading an empty file produces EOFException
+            keyStore.load(null, password);
+        }
+
+        KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+        generator.initialize(2048);
+        KeyPair keyPair = generator.generateKeyPair();
+        PrivateKey privateKey = keyPair.getPrivate();
+
+        X500Principal issuer = new X500Principal("CN=Airlift Test, OU=Airlift, O=Airlift, L=Palo Alto, ST=CA, C=US");
+        JcaX509v3CertificateBuilder builder = new JcaX509v3CertificateBuilder(
+                issuer,
+                BigInteger.valueOf(System.currentTimeMillis()),
+                Date.from(Instant.now()),
+                Date.from(Instant.now().plus(365, ChronoUnit.DAYS)),
+                issuer,
+                keyPair.getPublic());
+        ContentSigner signer = new JcaContentSignerBuilder("SHA256WithRSA").build(privateKey);
+        X509CertificateHolder certHolder = builder.build(signer);
+        Certificate cert = new JcaX509CertificateConverter().getCertificate(certHolder);
+
+        keyStore.setKeyEntry(alias, privateKey, password, new Certificate[] {cert});
+        try (OutputStream outStream = new FileOutputStream(keyStoreFile)) {
+            keyStore.store(outStream, password);
+        }
+    }
+
+    private static void assertEventually(Runnable assertion)
+    {
+        long start = System.nanoTime();
+        Duration timeout = new Duration(30, SECONDS);
+        while (!Thread.currentThread().isInterrupted()) {
+            try {
+                assertion.run();
+                return;
+            }
+            catch (Exception | AssertionError e) {
+                if (Duration.nanosSince(start).compareTo(timeout) > 0) {
+                    throw e;
+                }
+            }
+            try {
+                //noinspection BusyWait
+                Thread.sleep(50);
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            }
+        }
     }
 }

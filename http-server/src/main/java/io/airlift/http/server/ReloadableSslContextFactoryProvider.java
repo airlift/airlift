@@ -9,7 +9,6 @@ import java.io.File;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -27,9 +26,6 @@ final class ReloadableSslContextFactoryProvider
 
     private final SslContextFactory.Server sslContextFactory;
 
-    private final List<String> includedCipherSuites;
-    private final List<String> excludedCipherSuites;
-
     private final String keystorePath;
     private final String keystorePassword;
     private final String keyManagerPassword;
@@ -37,20 +33,10 @@ final class ReloadableSslContextFactoryProvider
     private final String trustStorePath;
     private final String trustStorePassword;
 
-    private final String secureRandomAlgorithm;
-
-    private final int sslSessionTimeoutSeconds;
-    private final int sslSessionCacheSize;
-
-    private final ClientCertificate clientCertificate;
-
     public ReloadableSslContextFactoryProvider(HttpServerConfig config, ScheduledExecutorService scheduledExecutor, ClientCertificate clientCertificate)
     {
         requireNonNull(config, "config is null");
         requireNonNull(scheduledExecutor, "scheduledExecutor is null");
-
-        includedCipherSuites = config.getHttpsIncludedCipherSuites();
-        excludedCipherSuites = config.getHttpsExcludedCipherSuites();
 
         keystorePath = config.getKeystorePath();
         keystorePassword = config.getKeystorePassword();
@@ -59,20 +45,33 @@ final class ReloadableSslContextFactoryProvider
         trustStorePath = config.getTrustStorePath();
         trustStorePassword = config.getTrustStorePassword();
 
-        secureRandomAlgorithm = config.getSecureRandomAlgorithm();
-        sslSessionTimeoutSeconds = toIntExact(config.getSslSessionTimeout().roundTo(SECONDS));
-        sslSessionCacheSize = config.getSslSessionCacheSize();
+        sslContextFactory = new SslContextFactory.Server();
+        sslContextFactory.setIncludeCipherSuites(config.getHttpsIncludedCipherSuites().toArray(new String[0]));
+        sslContextFactory.setExcludeCipherSuites(config.getHttpsExcludedCipherSuites().toArray(new String[0]));
+        sslContextFactory.setSecureRandomAlgorithm(config.getSecureRandomAlgorithm());
+        switch (clientCertificate) {
+            case NONE:
+                // no changes
+                break;
+            case REQUESTED:
+                sslContextFactory.setWantClientAuth(true);
+                break;
+            case REQUIRED:
+                sslContextFactory.setNeedClientAuth(true);
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported client certificate value: " + clientCertificate);
+        }
+        sslContextFactory.setSslSessionTimeout(toIntExact(config.getSslSessionTimeout().roundTo(SECONDS)));
+        sslContextFactory.setSslSessionCacheSize(config.getSslSessionCacheSize());
+        loadContextFactory(sslContextFactory);
 
-        this.clientCertificate = requireNonNull(clientCertificate, "clientCertificate is null");
-
-        this.sslContextFactory = buildContextFactory();
         long refreshTime = config.getSslContextRefreshTime().toMillis();
         scheduledExecutor.scheduleWithFixedDelay(this::reload, refreshTime, refreshTime, MILLISECONDS);
     }
 
-    private SslContextFactory.Server buildContextFactory()
+    private void loadContextFactory(SslContextFactory sslContextFactory)
     {
-        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         Optional<KeyStore> pemKeyStore = tryLoadPemKeyStore(keystorePath, keystorePassword);
         if (pemKeyStore.isPresent()) {
             sslContextFactory.setKeyStore(pemKeyStore.get());
@@ -96,26 +95,6 @@ final class ReloadableSslContextFactoryProvider
                 sslContextFactory.setTrustStorePassword(trustStorePassword);
             }
         }
-        sslContextFactory.setIncludeCipherSuites(includedCipherSuites.toArray(new String[0]));
-        sslContextFactory.setExcludeCipherSuites(excludedCipherSuites.toArray(new String[0]));
-        sslContextFactory.setSecureRandomAlgorithm(secureRandomAlgorithm);
-        switch (clientCertificate) {
-            case NONE:
-                // no changes
-                break;
-            case REQUESTED:
-                sslContextFactory.setWantClientAuth(true);
-                break;
-            case REQUIRED:
-                sslContextFactory.setNeedClientAuth(true);
-                break;
-            default:
-                throw new IllegalArgumentException("Unsupported client certificate value: " + clientCertificate);
-        }
-        sslContextFactory.setSslSessionTimeout(sslSessionTimeoutSeconds);
-        sslContextFactory.setSslSessionCacheSize(sslSessionCacheSize);
-
-        return sslContextFactory;
     }
 
     private static Optional<KeyStore> tryLoadPemKeyStore(String path, String password)
@@ -172,9 +151,7 @@ final class ReloadableSslContextFactoryProvider
     private synchronized void reload()
     {
         try {
-            SslContextFactory.Server updatedFactory = buildContextFactory();
-            updatedFactory.start();
-            this.sslContextFactory.reload(factory -> factory.setSslContext(updatedFactory.getSslContext()));
+            sslContextFactory.reload(this::loadContextFactory);
         }
         catch (Exception e) {
             log.warn(e, "Unable to reload SslContext.");
