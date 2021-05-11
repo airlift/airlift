@@ -1,3 +1,7 @@
+206
+
+- Fix SNI handling for HTTP server.
+
 205
 
 - Add form data body builder for HTTP client.
