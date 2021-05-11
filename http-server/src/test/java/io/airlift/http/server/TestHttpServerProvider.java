@@ -71,7 +71,6 @@ import java.util.Base64;
 import java.util.Date;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 import static com.google.common.io.Files.asCharSink;
 import static com.google.common.io.MoreFiles.deleteRecursively;
@@ -88,6 +87,7 @@ import static io.airlift.testing.Assertions.assertContains;
 import static io.airlift.testing.Assertions.assertInstanceOf;
 import static io.airlift.testing.Assertions.assertNotEquals;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -514,7 +514,7 @@ public class TestHttpServerProvider
             HttpResponseFuture<?> future = client.executeAsync(request, createStatusResponseHandler());
 
             // wait until the servlet starts processing the request
-            servlet.getLatch().await(1, TimeUnit.SECONDS);
+            servlet.getLatch().await(1, SECONDS);
 
             // stop server while the request is still active
             server.stop();
@@ -524,7 +524,7 @@ public class TestHttpServerProvider
 
             // request should fail rather than sleeping the full duration
             try {
-                future.get(5, TimeUnit.SECONDS);
+                future.get(5, SECONDS);
                 fail("expected exception");
             }
             catch (ExecutionException e) {
@@ -607,7 +607,7 @@ public class TestHttpServerProvider
         File keyStoreFile = File.createTempFile("test", ".keystore");
         try {
             appendCertificate(keyStoreFile, "certificate-1");
-            config.setSslContextRefreshTime(new Duration(5, TimeUnit.SECONDS))
+            config.setSslContextRefreshTime(new Duration(5, SECONDS))
                     .setKeystorePath(keyStoreFile.getAbsolutePath())
                     .setKeystorePassword("airlift")
                     .setHttpsEnabled(true)
@@ -698,7 +698,7 @@ public class TestHttpServerProvider
     private static void assertEventually(Runnable assertion)
     {
         long start = System.nanoTime();
-        Duration timeout = new Duration(30, TimeUnit.SECONDS);
+        Duration timeout = new Duration(30, SECONDS);
         while (!Thread.currentThread().isInterrupted()) {
             try {
                 assertion.run();
