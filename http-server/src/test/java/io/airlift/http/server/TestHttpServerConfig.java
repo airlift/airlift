@@ -59,6 +59,8 @@ public class TestHttpServerConfig
                 .setTrustStorePath(null)
                 .setTrustStorePassword(null)
                 .setSslContextRefreshTime(new Duration(1, MINUTES))
+                .setAutomaticHttpsSharedSecret(null)
+                .setAutomaticHttpsSharedSecret(null)
                 .setProcessForwarded(false)
                 .setLogPath("var/log/http-request.log")
                 .setLogEnabled(true)
@@ -109,6 +111,7 @@ public class TestHttpServerConfig
                 .put("http-server.https.ssl-session-timeout", "7h")
                 .put("http-server.https.ssl-session-cache-size", "456")
                 .put("http-server.https.ssl-context.refresh-time", "10m")
+                .put("http-server.https.automatic-shared-secret", "automatic-secret")
                 .put("http-server.process-forwarded", "true")
                 .put("http-server.log.path", "/log")
                 .put("http-server.log.enabled", "false")
@@ -156,6 +159,7 @@ public class TestHttpServerConfig
                 .setTrustStorePassword("truststore password")
                 .setSecureRandomAlgorithm("NativePRNG")
                 .setSslContextRefreshTime(new Duration(10, MINUTES))
+                .setAutomaticHttpsSharedSecret("automatic-secret")
                 .setProcessForwarded(true)
                 .setLogPath("/log")
                 .setLogEnabled(false)
@@ -200,7 +204,7 @@ public class TestHttpServerConfig
                 new HttpServerConfig()
                         .setHttpsEnabled(true),
                 "httpsConfigurationValid",
-                "Keystore path must be provided when HTTPS is enabled",
+                "Keystore path or automatic HTTPS shared secret must be provided when HTTPS is enabled",
                 AssertTrue.class);
     }
 

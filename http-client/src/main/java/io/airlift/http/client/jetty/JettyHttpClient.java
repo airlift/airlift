@@ -53,6 +53,7 @@ import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
 
 import javax.annotation.PreDestroy;
+import javax.security.auth.x500.X500Principal;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -64,7 +65,12 @@ import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.KeyStore;
+import java.security.SecureRandom;
+import java.security.cert.X509Certificate;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -82,9 +88,12 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.http.client.jetty.AuthorizationPreservingHttpClient.setPreserveAuthorization;
+import static io.airlift.security.cert.CertificateBuilder.certificateBuilder;
 import static java.lang.Math.max;
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.time.temporal.ChronoUnit.YEARS;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -369,8 +378,11 @@ public class JettyHttpClient
             sslContextFactory.setKeyStorePassword(keyStorePassword);
         }
 
-        if (config.getTrustStorePath() != null) {
+        if (config.getTrustStorePath() != null || config.getAutomaticHttpsSharedSecret() != null) {
             KeyStore trustStore = loadTrustStore(config.getTrustStorePath(), config.getTrustStorePassword());
+            if (config.getAutomaticHttpsSharedSecret() != null) {
+                addAutomaticTrust(config.getAutomaticHttpsSharedSecret(), trustStore, config.getNodeEnvironment());
+            }
             sslContextFactory.setTrustStore(trustStore);
             sslContextFactory.setTrustStorePassword("");
         }
@@ -442,6 +454,36 @@ public class JettyHttpClient
         }
         catch (IOException | GeneralSecurityException e) {
             throw new IllegalArgumentException("Error loading Java trust store: " + truststorePath, e);
+        }
+    }
+
+    private static void addAutomaticTrust(String sharedSecret, KeyStore keyStore, String commonName)
+    {
+        try {
+            byte[] seed = sharedSecret.getBytes(UTF_8);
+            SecureRandom secureRandom = SecureRandom.getInstance("SHA1PRNG");
+            secureRandom.setSeed(seed);
+
+            KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+            generator.initialize(2048, secureRandom);
+            KeyPair keyPair = generator.generateKeyPair();
+
+            X500Principal subject = new X500Principal("CN=" + commonName);
+            LocalDate notBefore = LocalDate.now();
+            LocalDate notAfter = notBefore.plus(10, YEARS);
+            X509Certificate certificateServer = certificateBuilder()
+                    .setKeyPair(keyPair)
+                    .setSerialNumber(System.currentTimeMillis())
+                    .setIssuer(subject)
+                    .setNotBefore(notBefore)
+                    .setNotAfter(notAfter)
+                    .setSubject(subject)
+                    .buildSelfSigned();
+
+            keyStore.setCertificateEntry(commonName, certificateServer);
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 

@@ -73,6 +73,7 @@ public class HttpServerConfig
     private String secureRandomAlgorithm;
     private List<String> includedCipherSuites = ImmutableList.of();
     private Duration sslContextRefreshTime = new Duration(1, MINUTES);
+    private String automaticHttpsSharedSecret;
 
     /**
      * This property is initialized with Jetty's default excluded ciphers list.
@@ -229,10 +230,10 @@ public class HttpServerConfig
         return this;
     }
 
-    @AssertTrue(message = "Keystore path must be provided when HTTPS is enabled")
+    @AssertTrue(message = "Keystore path or automatic HTTPS shared secret must be provided when HTTPS is enabled")
     public boolean isHttpsConfigurationValid()
     {
-        return !isHttpsEnabled() || getKeystorePath() != null;
+        return !isHttpsEnabled() || getKeystorePath() != null || getAutomaticHttpsSharedSecret() != null;
     }
 
     public String getKeyManagerPassword()
@@ -328,6 +329,19 @@ public class HttpServerConfig
     public HttpServerConfig setSslContextRefreshTime(Duration sslContextRefreshTime)
     {
         this.sslContextRefreshTime = sslContextRefreshTime;
+        return this;
+    }
+
+    public String getAutomaticHttpsSharedSecret()
+    {
+        return automaticHttpsSharedSecret;
+    }
+
+    @ConfigSecuritySensitive
+    @Config("http-server.https.automatic-shared-secret")
+    public HttpServerConfig setAutomaticHttpsSharedSecret(String automaticHttpsSharedSecret)
+    {
+        this.automaticHttpsSharedSecret = automaticHttpsSharedSecret;
         return this;
     }
 
