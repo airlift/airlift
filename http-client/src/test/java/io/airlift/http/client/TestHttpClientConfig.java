@@ -69,6 +69,8 @@ public class TestHttpClientConfig
                 .setSecureRandomAlgorithm(null)
                 .setHttpsIncludedCipherSuites("")
                 .setHttpsExcludedCipherSuites(String.join(",", getJettyDefaultExcludedCiphers()))
+                .setAutomaticHttpsSharedSecret(null)
+                .setNodeEnvironment(null)
                 .setAuthenticationEnabled(false)
                 .setKerberosServicePrincipalPattern("${SERVICE}@${HOST}")
                 .setKerberosRemoteServiceName(null)
@@ -114,6 +116,8 @@ public class TestHttpClientConfig
                 .put("http-client.secure-random-algorithm", "NativePRNG")
                 .put("http-client.https.included-cipher", "TLS_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA")
                 .put("http-client.https.excluded-cipher", "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA")
+                .put("http-client.https.automatic-shared-secret", "automatic-secret")
+                .put("node.environment", "environment-for-automatic-secret")
                 .put("http-client.key-store-path", "key-store")
                 .put("http-client.key-store-password", "key-store-password")
                 .put("http-client.trust-store-path", "trust-store")
@@ -164,6 +168,8 @@ public class TestHttpClientConfig
                 .setSecureRandomAlgorithm("NativePRNG")
                 .setHttpsIncludedCipherSuites("TLS_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA")
                 .setHttpsExcludedCipherSuites("TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA")
+                .setAutomaticHttpsSharedSecret("automatic-secret")
+                .setNodeEnvironment("environment-for-automatic-secret")
                 .setAuthenticationEnabled(true)
                 .setKerberosServicePrincipalPattern("${SERVICE}")
                 .setKerberosRemoteServiceName("airlift")
@@ -215,7 +221,7 @@ public class TestHttpClientConfig
 
     private List<String> getJettyDefaultExcludedCiphers()
     {
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory sslContextFactory = new SslContextFactory.Client();
         return Arrays.asList(sslContextFactory.getExcludeCipherSuites());
     }
 }

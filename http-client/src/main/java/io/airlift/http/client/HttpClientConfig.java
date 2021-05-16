@@ -28,6 +28,7 @@ import io.airlift.units.MaxDataSize;
 import io.airlift.units.MinDataSize;
 import io.airlift.units.MinDuration;
 
+import javax.validation.constraints.AssertTrue;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
@@ -65,6 +66,8 @@ public class HttpClientConfig
     private String trustStorePassword = System.getProperty(JAVAX_NET_SSL_TRUST_STORE_PASSWORD);
     private String secureRandomAlgorithm;
     private List<String> includedCipherSuites = ImmutableList.of();
+    private String automaticHttpsSharedSecret;
+    private String nodeEnvironment;
 
     /**
      * This property is initialized with Jetty's default excluded ciphers list.
@@ -370,6 +373,38 @@ public class HttpClientConfig
                 .omitEmptyStrings()
                 .splitToList(requireNonNull(excludedCipherSuites, "excludedCipherSuites is null"));
         return this;
+    }
+
+    public String getAutomaticHttpsSharedSecret()
+    {
+        return automaticHttpsSharedSecret;
+    }
+
+    @ConfigSecuritySensitive
+    @Config("http-client.https.automatic-shared-secret")
+    public HttpClientConfig setAutomaticHttpsSharedSecret(String automaticHttpsSharedSecret)
+    {
+        this.automaticHttpsSharedSecret = automaticHttpsSharedSecret;
+        return this;
+    }
+
+    public String getNodeEnvironment()
+    {
+        return nodeEnvironment;
+    }
+
+    // this is only here to simplify setup
+    @Config("node.environment")
+    public HttpClientConfig setNodeEnvironment(String nodeEnvironment)
+    {
+        this.nodeEnvironment = nodeEnvironment;
+        return this;
+    }
+
+    @AssertTrue(message = "Node environment must be provided when automatic HTTPS is enabled")
+    public boolean isHttpsConfigurationValid()
+    {
+        return getAutomaticHttpsSharedSecret() == null || getNodeEnvironment() != null;
     }
 
     public boolean getAuthenticationEnabled()

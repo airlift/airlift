@@ -1,5 +1,6 @@
 package io.airlift.http.server;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashCode;
 import com.google.common.io.Files;
 import io.airlift.http.server.HttpServer.ClientCertificate;
@@ -7,19 +8,35 @@ import io.airlift.log.Logger;
 import io.airlift.security.pem.PemReader;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
+import javax.security.auth.x500.X500Principal;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.security.GeneralSecurityException;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.KeyStore;
+import java.security.SecureRandom;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.hash.Hashing.sha256;
+import static io.airlift.security.cert.CertificateBuilder.certificateBuilder;
 import static java.lang.Math.toIntExact;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.time.temporal.ChronoUnit.YEARS;
+import static java.util.Collections.list;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -37,10 +54,13 @@ final class ReloadableSslContextFactoryProvider
     private final String keystorePassword;
     private final String keyManagerPassword;
 
+    private final String automaticHttpsSharedSecret;
+    private final String environment;
+
     private final Optional<FileWatch> trustStoreFile;
     private final String trustStorePassword;
 
-    public ReloadableSslContextFactoryProvider(HttpServerConfig config, ScheduledExecutorService scheduledExecutor, ClientCertificate clientCertificate)
+    public ReloadableSslContextFactoryProvider(HttpServerConfig config, ScheduledExecutorService scheduledExecutor, ClientCertificate clientCertificate, String environment)
     {
         requireNonNull(config, "config is null");
         requireNonNull(scheduledExecutor, "scheduledExecutor is null");
@@ -48,6 +68,9 @@ final class ReloadableSslContextFactoryProvider
         keystoreFile = Optional.ofNullable(config.getKeystorePath()).map(File::new).map(FileWatch::new);
         keystorePassword = config.getKeystorePassword();
         keyManagerPassword = config.getKeyManagerPassword();
+
+        automaticHttpsSharedSecret = config.getAutomaticHttpsSharedSecret();
+        this.environment = requireNonNull(environment, "environment is null");
 
         trustStoreFile = Optional.ofNullable(config.getTrustStorePath()).map(File::new).map(FileWatch::new);
         trustStorePassword = config.getTrustStorePassword();
@@ -80,8 +103,21 @@ final class ReloadableSslContextFactoryProvider
     private void loadContextFactory(SslContextFactory.Server sslContextFactory)
     {
         KeyStore keyStore = loadKeyStore(keystoreFile.map(FileWatch::getFile), keystorePassword, keyManagerPassword);
+
+        String password = "";
+        if (keyManagerPassword != null) {
+            password = keyManagerPassword;
+        }
+        else if (keystorePassword != null) {
+            password = keystorePassword;
+        }
+
+        if (automaticHttpsSharedSecret != null) {
+            addAutomaticKeyForCurrentNode(automaticHttpsSharedSecret, keyStore, environment, password);
+        }
+
         sslContextFactory.setKeyStore(keyStore);
-        sslContextFactory.setKeyStorePassword(firstNonNullOrEmpty(keyManagerPassword, keystorePassword));
+        sslContextFactory.setKeyStorePassword(password);
 
         if (trustStoreFile.isPresent()) {
             sslContextFactory.setTrustStore(loadTrustStore(trustStoreFile.get().getFile(), trustStorePassword));
@@ -90,8 +126,54 @@ final class ReloadableSslContextFactoryProvider
         else {
             // Backwards compatibility for with Jetty's internal behavior
             sslContextFactory.setTrustStore(keyStore);
-            sslContextFactory.setKeyStorePassword(firstNonNullOrEmpty(keyManagerPassword, keystorePassword));
+            sslContextFactory.setKeyStorePassword(password);
         }
+    }
+
+    public static void addAutomaticKeyForCurrentNode(String sharedSecret, KeyStore keyStore, String commonName, String keyManagerPassword)
+    {
+        try {
+            byte[] seed = sharedSecret.getBytes(UTF_8);
+            SecureRandom secureRandom = SecureRandom.getInstance("SHA1PRNG");
+            secureRandom.setSeed(seed);
+
+            KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+            generator.initialize(2048, secureRandom);
+            KeyPair keyPair = generator.generateKeyPair();
+
+            X500Principal subject = new X500Principal("CN=" + commonName);
+            LocalDate notBefore = LocalDate.now();
+            LocalDate notAfter = notBefore.plus(10, YEARS);
+            X509Certificate certificateServer = certificateBuilder()
+                    .setKeyPair(keyPair)
+                    .setSerialNumber(System.currentTimeMillis())
+                    .setIssuer(subject)
+                    .setNotBefore(notBefore)
+                    .setNotAfter(notAfter)
+                    .setSubject(subject)
+                    .addSanIpAddresses(getAllLocalIpAddresses())
+                    .buildSelfSigned();
+
+            char[] password = keyManagerPassword == null ? new char[0] : keyManagerPassword.toCharArray();
+            keyStore.setKeyEntry(commonName, keyPair.getPrivate(), password, new Certificate[] {certificateServer});
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static List<InetAddress> getAllLocalIpAddresses()
+            throws SocketException
+    {
+        ImmutableList.Builder<InetAddress> list = ImmutableList.builder();
+        for (NetworkInterface networkInterface : list(NetworkInterface.getNetworkInterfaces())) {
+            for (InetAddress address : list(networkInterface.getInetAddresses())) {
+                if (!address.isAnyLocalAddress() && !address.isLinkLocalAddress() && !address.isMulticastAddress()) {
+                    list.add(address);
+                }
+            }
+        }
+        return list.build();
     }
 
     private static KeyStore loadKeyStore(Optional<File> keystoreFile, String keystorePassword, String keyManagerPassword)
@@ -167,17 +249,6 @@ final class ReloadableSslContextFactoryProvider
         catch (Exception e) {
             log.warn(e, "Unable to reload SslContext.");
         }
-    }
-
-    private static String firstNonNullOrEmpty(String first, String second)
-    {
-        if (first != null) {
-            return first;
-        }
-        if (second != null) {
-            return second;
-        }
-        return "";
     }
 
     private static class FileWatch
