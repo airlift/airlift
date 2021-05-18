@@ -5,6 +5,7 @@ import java.io.UncheckedIOException;
 import java.net.ConnectException;
 
 import static com.google.common.base.Throwables.throwIfUnchecked;
+import static com.google.common.io.ByteStreams.toByteArray;
 
 public final class ResponseHandlerUtils
 {
@@ -15,12 +16,27 @@ public final class ResponseHandlerUtils
     public static RuntimeException propagate(Request request, Throwable exception)
     {
         if (exception instanceof ConnectException) {
-            throw new UncheckedIOException("Server refused connection: " + request.getUri().toASCIIString(), (ConnectException) exception);
+            throw new UncheckedIOException("Server refused connection: " + urlFor(request), (ConnectException) exception);
         }
         if (exception instanceof IOException) {
-            throw new UncheckedIOException((IOException) exception);
+            throw new UncheckedIOException("Failed communicating with server: " + urlFor(request), (IOException) exception);
         }
         throwIfUnchecked(exception);
         throw new RuntimeException(exception);
+    }
+
+    public static byte[] readResponseBytes(Request request, Response response)
+    {
+        try {
+            return toByteArray(response.getInputStream());
+        }
+        catch (IOException e) {
+            throw new UncheckedIOException("Failed reading response from server: " + urlFor(request), e);
+        }
+    }
+
+    private static String urlFor(Request request)
+    {
+        return request.getUri().toASCIIString();
     }
 }

@@ -1,6 +1,7 @@
 206
 
 - Fix SNI handling for HTTP server.
+- Include server URL for HTTP client IOException.
 
 205
 

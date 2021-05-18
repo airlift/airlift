@@ -12,6 +12,8 @@ import static com.google.common.net.HttpHeaders.WWW_AUTHENTICATE;
 import static io.airlift.http.client.HttpStatus.UNAUTHORIZED;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.eclipse.jetty.http.HttpHeader.NEGOTIATE;
 
 public class TestJettyHttpsClientSpnego
@@ -42,15 +44,18 @@ public class TestJettyHttpsClientSpnego
         super.testConnectTimeout();
     }
 
-    @Test(expectedExceptions = UncheckedIOException.class, expectedExceptionsMessageRegExp = ".* Failed to establish LoginContext for request .*")
+    @Test
     public void testNegotiateAuthScheme()
-            throws Exception
     {
         servlet.addResponseHeader(WWW_AUTHENTICATE, NEGOTIATE.asString());
         servlet.setResponseStatusCode(UNAUTHORIZED.code());
 
         Request request = prepareGet().setUri(baseURI).build();
 
-        executeRequest(request, createStringResponseHandler());
+        assertThatThrownBy(() -> executeRequest(request, createStringResponseHandler()))
+                .isInstanceOf(UncheckedIOException.class)
+                .hasMessageStartingWith("Failed reading response from server: ")
+                .satisfies(e -> assertThat(e.getCause().getMessage())
+                        .contains(" Failed to establish LoginContext for request "));
     }
 }
