@@ -16,16 +16,15 @@
 package io.airlift.http.client;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.io.ByteStreams;
 import com.google.common.net.MediaType;
 import com.google.common.primitives.Ints;
 import io.airlift.json.JsonCodec;
 
-import java.io.IOException;
 import java.util.Set;
 
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
+import static io.airlift.http.client.ResponseHandlerUtils.readResponseBytes;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class JsonResponseHandler<T>
@@ -72,6 +71,7 @@ public class JsonResponseHandler<T>
                     request,
                     response);
         }
+
         String contentType = response.getHeader(CONTENT_TYPE);
         if (contentType == null) {
             throw new UnexpectedResponseException("Content-Type is not set for response", request, response);
@@ -79,13 +79,9 @@ public class JsonResponseHandler<T>
         if (!MediaType.parse(contentType).is(MEDIA_TYPE_JSON)) {
             throw new UnexpectedResponseException("Expected application/json response from server but got " + contentType, request, response);
         }
-        byte[] bytes;
-        try {
-            bytes = ByteStreams.toByteArray(response.getInputStream());
-        }
-        catch (IOException e) {
-            throw new RuntimeException("Error reading response from server");
-        }
+
+        byte[] bytes = readResponseBytes(request, response);
+
         try {
             return jsonCodec.fromJson(bytes);
         }

@@ -17,20 +17,19 @@ package io.airlift.http.client;
 
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
-import com.google.common.io.ByteStreams;
 import com.google.common.net.MediaType;
 import io.airlift.http.client.FullJsonResponseHandler.JsonResponse;
 import io.airlift.json.JsonCodec;
 
 import javax.annotation.Nullable;
 
-import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.List;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
+import static io.airlift.http.client.ResponseHandlerUtils.readResponseBytes;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
@@ -61,22 +60,12 @@ public class FullJsonResponseHandler<T>
     @Override
     public JsonResponse<T> handle(Request request, Response response)
     {
-        byte[] bytes = readResponseBytes(response);
+        byte[] bytes = readResponseBytes(request, response);
         String contentType = response.getHeader(CONTENT_TYPE);
         if ((contentType == null) || !MediaType.parse(contentType).is(MEDIA_TYPE_JSON)) {
             return new JsonResponse<>(response.getStatusCode(), response.getHeaders(), bytes);
         }
         return new JsonResponse<>(response.getStatusCode(), response.getHeaders(), jsonCodec, bytes);
-    }
-
-    private static byte[] readResponseBytes(Response response)
-    {
-        try {
-            return ByteStreams.toByteArray(response.getInputStream());
-        }
-        catch (IOException e) {
-            throw new RuntimeException("Error reading response from server", e);
-        }
     }
 
     public static class JsonResponse<T>
