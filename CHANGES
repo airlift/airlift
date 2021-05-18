@@ -4,6 +4,7 @@
 - Include server URL for HTTP client IOException.
 - Log full stack trace for discovery client errors.
 - Allow trailing slash for discovery client URI.
+- Only reload HTTP server SSL context when files change.
 
 205
 
