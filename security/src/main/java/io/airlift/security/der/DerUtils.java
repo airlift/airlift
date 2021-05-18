@@ -16,16 +16,21 @@ package io.airlift.security.der;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteArrayDataOutput;
-import com.google.common.io.ByteStreams;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.math.BigInteger;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.io.ByteStreams.newDataOutput;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -34,10 +39,17 @@ import static java.util.Objects.requireNonNull;
  */
 public final class DerUtils
 {
-    private static final int SEQUENCE_TAG = 0x30;
-    private static final int BIT_STRING_TAG = 0x03;
-    private static final int OCTET_STRING_TAG = 0x04;
-    private static final int OBJECT_IDENTIFIER_TAG = 0x06;
+    private static final DateTimeFormatter UTC_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyMMddHHmmssX")
+            .withZone(ZoneOffset.UTC);
+
+    public static final int SEQUENCE_TAG = 0x30;
+    public static final int BOOLEAN_TAG = 0x01;
+    public static final int INTEGER_TAG = 0x02;
+    public static final int BIT_STRING_TAG = 0x03;
+    public static final int OCTET_STRING_TAG = 0x04;
+    public static final int NULL_TAG = 0x05;
+    public static final int OBJECT_IDENTIFIER_TAG = 0x06;
+    public static final int UTC_TIME_TAG = 0x17;
 
     private DerUtils() {}
 
@@ -46,19 +58,7 @@ public final class DerUtils
      */
     public static byte[] encodeSequence(byte[]... encodedValues)
     {
-        int length = 0;
-        for (byte[] encodedValue : encodedValues) {
-            length += encodedValue.length;
-        }
-        byte[] lengthEncoded = encodeLength(length);
-
-        ByteArrayDataOutput out = ByteStreams.newDataOutput(1 + lengthEncoded.length + length);
-        out.write(SEQUENCE_TAG);
-        out.write(lengthEncoded);
-        for (byte[] entry : encodedValues) {
-            out.write(entry);
-        }
-        return out.toByteArray();
+        return encodeConstructed(SEQUENCE_TAG, encodedValues);
     }
 
     /**
@@ -124,7 +124,7 @@ public final class DerUtils
         checkArgument(padBits >= 0 && padBits < 8, "Invalid pad bits");
 
         byte[] lengthEncoded = encodeLength(value.length + 1);
-        ByteArrayDataOutput out = ByteStreams.newDataOutput(2 + lengthEncoded.length + value.length);
+        ByteArrayDataOutput out = newDataOutput(2 + lengthEncoded.length + value.length);
         out.write(BIT_STRING_TAG);
         out.write(lengthEncoded);
         out.write(padBits);
@@ -133,16 +133,52 @@ public final class DerUtils
     }
 
     /**
+     * Encodes an integer.
+     */
+    public static byte[] encodeBooleanTrue()
+    {
+        return new byte[] {BOOLEAN_TAG, 0x01, (byte) 0xFF};
+    }
+
+    /**
+     * Encodes an integer.
+     */
+    public static byte[] encodeInteger(long value)
+    {
+        return encodeInteger(BigInteger.valueOf(value));
+    }
+
+    /**
+     * Encodes an integer.
+     */
+    public static byte[] encodeInteger(BigInteger value)
+    {
+        return encodeTag(INTEGER_TAG, value.toByteArray());
+    }
+
+    /**
      * Encodes an octet string.
      */
     public static byte[] encodeOctetString(byte[] value)
     {
-        byte[] lengthEncoded = encodeLength(value.length);
-        ByteArrayDataOutput out = ByteStreams.newDataOutput(2 + lengthEncoded.length + value.length);
-        out.write(OCTET_STRING_TAG);
-        out.write(lengthEncoded);
-        out.write(value);
-        return out.toByteArray();
+        return encodeTag(OCTET_STRING_TAG, value);
+    }
+
+    /**
+     * Encodes an octet string.
+     */
+    public static byte[] encodeUtcTime(String value)
+    {
+        return encodeTag(UTC_TIME_TAG, value.getBytes(UTF_8));
+    }
+
+    /**
+     * Encodes an octet string.
+     */
+    public static byte[] encodeUtcTime(Instant value)
+    {
+        String utcTime = UTC_TIME_FORMATTER.format(value);
+        return encodeTag(UTC_TIME_TAG, utcTime.getBytes(UTF_8));
     }
 
     /**
@@ -244,5 +280,62 @@ public final class DerUtils
             out.write(part);
         }
         out.write(number & 0x7f);
+    }
+
+    public static byte[] encodeNull()
+    {
+        return new byte[] {NULL_TAG, 0x00};
+    }
+
+    public static byte[] encodeTag(int tag, byte[] body)
+    {
+        checkArgument(tag >= 0 && tag < 32, "Invalid tag: %s", tag);
+        requireNonNull(body, "body is null");
+        return encodeTagInternal(tag, body);
+    }
+
+    public static byte[] encodeContextSpecificTag(int tag, byte[] body)
+    {
+        checkArgument(tag >= 0 && tag < 32, "Invalid tag: %s", tag);
+        requireNonNull(body, "body is null");
+        int privateTag = tag | 0x80;
+        return encodeTagInternal(privateTag, body);
+    }
+
+    private static byte[] encodeTagInternal(int tag, byte[] body)
+    {
+        checkArgument(tag >= 0 && tag < 256, "Invalid tag: %s", tag);
+        byte[] lengthEncoded = encodeLength(body.length);
+        ByteArrayDataOutput out = newDataOutput(1 + lengthEncoded.length + body.length);
+        out.write(tag);
+        out.write(lengthEncoded);
+        out.write(body);
+        return out.toByteArray();
+    }
+
+    public static byte[] encodeContextSpecificSequence(int tag, byte[]...encodedValues)
+    {
+        checkArgument(tag >= 0 && tag < 32, "Invalid tag: %s", tag);
+        requireNonNull(encodedValues, "body is null");
+        int privateTag = tag | 0xA0;
+
+        return encodeConstructed(privateTag, encodedValues);
+    }
+
+    private static byte[] encodeConstructed(int privateTag, byte[]... encodedValues)
+    {
+        int length = 0;
+        for (byte[] encodedValue : encodedValues) {
+            length += encodedValue.length;
+        }
+        byte[] lengthEncoded = encodeLength(length);
+
+        ByteArrayDataOutput out = newDataOutput(1 + lengthEncoded.length + length);
+        out.write(privateTag);
+        out.write(lengthEncoded);
+        for (byte[] entry : encodedValues) {
+            out.write(entry);
+        }
+        return out.toByteArray();
     }
 }
