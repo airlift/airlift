@@ -15,11 +15,13 @@
  */
 package io.airlift.discovery.client;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.io.ByteStreams;
 import com.google.common.net.HttpHeaders;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.airlift.http.client.CacheControl;
 import io.airlift.http.client.HttpClient;
+import io.airlift.http.client.HttpUriBuilder;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.Request.Builder;
 import io.airlift.http.client.RequestStats;
@@ -35,6 +37,7 @@ import javax.inject.Inject;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Optional;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -43,6 +46,7 @@ import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static io.airlift.discovery.client.DiscoveryAnnouncementClient.DEFAULT_DELAY;
 import static io.airlift.http.client.HttpStatus.NOT_MODIFIED;
 import static io.airlift.http.client.HttpStatus.OK;
+import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
@@ -113,13 +117,8 @@ public class HttpDiscoveryLookupClient
             return immediateFailedFuture(new DiscoveryException("No discovery servers are available"));
         }
 
-        uri = URI.create(uri + "/v1/service/" + type + "/");
-        if (pool != null) {
-            uri = uri.resolve(pool);
-        }
-
         Builder requestBuilder = prepareGet()
-                .setUri(uri)
+                .setUri(createServiceLocation(uri, type, Optional.ofNullable(pool)))
                 .setHeader("User-Agent", nodeInfo.getNodeId());
         if (serviceDescriptors != null && serviceDescriptors.getETag() != null) {
             requestBuilder.setHeader(HttpHeaders.ETAG, serviceDescriptors.getETag());
@@ -173,6 +172,16 @@ public class HttpDiscoveryLookupClient
             }
         }
         return DEFAULT_DELAY;
+    }
+
+    @VisibleForTesting
+    static URI createServiceLocation(URI baseUri, String type, Optional<String> pool)
+    {
+        HttpUriBuilder builder = uriBuilderFrom(baseUri)
+                .appendPath("/v1/service")
+                .appendPath(type);
+        pool.ifPresent(builder::appendPath);
+        return builder.build();
     }
 
     private class DiscoveryResponseHandler<T>

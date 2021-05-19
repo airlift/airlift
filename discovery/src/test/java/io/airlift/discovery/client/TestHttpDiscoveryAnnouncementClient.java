@@ -12,9 +12,12 @@ public class TestHttpDiscoveryAnnouncementClient
     @Test
     public void testCreateAnnouncementLocation()
     {
-        String nodeId = "ffff";
-        URI expected = URI.create("http://example.com:8080/v1/announcement/" + nodeId);
-        assertEquals(createAnnouncementLocation(URI.create("http://example.com:8080"), nodeId), expected);
-        assertEquals(createAnnouncementLocation(URI.create("http://example.com:8080/"), nodeId), expected);
+        URI expected = URI.create("http://example.com:8080/v1/announcement/abc");
+        assertEquals(createAnnouncementLocation(URI.create("http://example.com:8080"), "abc"), expected);
+        assertEquals(createAnnouncementLocation(URI.create("http://example.com:8080/"), "abc"), expected);
+
+        expected = URI.create("https://example.com:8080/v1/announcement/abc");
+        assertEquals(createAnnouncementLocation(URI.create("https://example.com:8080"), "abc"), expected);
+        assertEquals(createAnnouncementLocation(URI.create("https://example.com:8080/"), "abc"), expected);
     }
 }
