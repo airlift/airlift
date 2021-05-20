@@ -16,16 +16,13 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
  * The annotated element must represent a file location which exists.
- *
- * <p>
  * Supported types are:
  * <ul>
  *     <li>{@code Path}</li>
  *     <li>{@code File}</li>
  *     <li>{@code String}</li>
  * </ul>
- * </p>
- *
+ * <p>
  * Note that constraint message is ignored as it's created by {@code FileExistsValidator}.
  */
 @Target({FIELD, METHOD, PARAMETER, ANNOTATION_TYPE, TYPE_USE})
