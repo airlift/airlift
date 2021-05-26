@@ -30,6 +30,7 @@ import java.util.function.Consumer;
 import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
 import static io.airlift.configuration.ConfigurationLoader.loadProperties;
+import static io.airlift.configuration.ConfigurationLoader.loadPropertiesFrom;
 import static org.testng.Assert.assertEquals;
 
 public class TestConfigurationLoader
@@ -121,6 +122,29 @@ public class TestConfigurationLoader
 
         System.clearProperty("key1");
         System.clearProperty("config");
+    }
+
+    @Test
+    public void testSpecialCharacterFromFile()
+        throws IOException
+    {
+        File file = createConfigFile(out -> {
+            out.println("english-key: user");
+            out.println("korean-key: 사용자");
+            out.println("chinese-key: 用户");
+            out.println("arabic-key: المستعمل");
+            out.println("japanese-key: ユーザー");
+            out.println("special-character-key: ~!@#$%^^&**()_+-=<>?:{}[];:',.");
+        });
+
+        Map<String, String> properties = loadPropertiesFrom(file.getAbsolutePath());
+
+        assertEquals(properties.get("english-key"), "user");
+        assertEquals(properties.get("korean-key"), "사용자");
+        assertEquals(properties.get("chinese-key"), "用户");
+        assertEquals(properties.get("arabic-key"), "المستعمل");
+        assertEquals(properties.get("japanese-key"), "ユーザー");
+        assertEquals(properties.get("special-character-key"), "~!@#$%^^&**()_+-=<>?:{}[];:',.");
     }
 
     private File createConfigFile(Consumer<PrintStream> contentProvider)
