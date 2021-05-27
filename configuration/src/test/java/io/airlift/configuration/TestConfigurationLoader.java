@@ -126,7 +126,7 @@ public class TestConfigurationLoader
 
     @Test
     public void testSpecialCharacterFromFile()
-        throws IOException
+            throws IOException
     {
         File file = createConfigFile(out -> {
             out.println("english-key: user");
