@@ -10,6 +10,7 @@
   ConditionalModule.conditionalModule.
 - Remove support for joda-time from event module.
 - Migrate to ListenableFuture<Void> for future signaling.
+- Add Error Prone format string annotations to Logger.
 
 206
 

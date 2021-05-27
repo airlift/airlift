@@ -15,6 +15,8 @@
  */
 package io.airlift.log;
 
+import com.google.errorprone.annotations.FormatMethod;
+
 import java.util.IllegalFormatException;
 
 import static java.lang.String.format;
@@ -90,6 +92,7 @@ public class Logger
      * @param format a format string compatible with String.format()
      * @param args arguments for the format string
      */
+    @FormatMethod
     public void debug(String format, Object... args)
     {
         if (logger.isLoggable(FINE)) {
@@ -119,6 +122,7 @@ public class Logger
      * @param format a format string compatible with String.format()
      * @param args arguments for the format string
      */
+    @FormatMethod
     public void debug(Throwable exception, String format, Object... args)
     {
         if (logger.isLoggable(FINE)) {
@@ -157,6 +161,7 @@ public class Logger
      * @param format a format string compatible with String.format()
      * @param args arguments for the format string
      */
+    @FormatMethod
     public void info(String format, Object... args)
     {
         if (logger.isLoggable(INFO)) {
@@ -207,6 +212,7 @@ public class Logger
      * @param format a format string compatible with String.format()
      * @param args arguments for the format string
      */
+    @FormatMethod
     public void warn(Throwable exception, String format, Object... args)
     {
         if (logger.isLoggable(WARNING)) {
@@ -235,6 +241,7 @@ public class Logger
      * @param format a format string compatible with String.format()
      * @param args arguments for the format string
      */
+    @FormatMethod
     public void warn(String format, Object... args)
     {
         warn(null, format, args);
@@ -275,6 +282,7 @@ public class Logger
      * @param format a format string compatible with String.format()
      * @param args arguments for the format string
      */
+    @FormatMethod
     public void error(Throwable exception, String format, Object... args)
     {
         if (logger.isLoggable(SEVERE)) {
@@ -320,6 +328,7 @@ public class Logger
      * @param format a format string compatible with String.format()
      * @param args arguments for the format string
      */
+    @FormatMethod
     public void error(String format, Object... args)
     {
         error(null, format, args);
