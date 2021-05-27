@@ -22,7 +22,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
@@ -30,6 +29,7 @@ import java.util.TreeMap;
 
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.collect.Maps.fromProperties;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public final class ConfigurationLoader
 {
@@ -60,8 +60,7 @@ public final class ConfigurationLoader
             throws IOException
     {
         Properties properties = new Properties();
-        try (Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(path),
-            StandardCharsets.UTF_8))) {
+        try (Reader reader = new BufferedReader(new InputStreamReader(new FileInputStream(path), UTF_8))) {
             properties.load(reader);
         }
 
