@@ -9,6 +9,7 @@
 - Deprecate ConditionalModule.installModuleIf and introduce
   ConditionalModule.conditionalModule.
 - Migrate to ListenableFuture<Void> for future signaling.
+- Add Error Prone format string annotations to Logger.
 
 206
 
