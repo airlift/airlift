@@ -7,7 +7,6 @@ import io.airlift.http.client.HttpRequestFilter;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.TestingRequestFilter;
-import io.airlift.http.client.spnego.KerberosConfig;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 
@@ -21,7 +20,7 @@ public class TestJettyHttpClient
     @BeforeClass
     public void setUpHttpClient()
     {
-        httpClient = new JettyHttpClient("test-shared", createClientConfig(), new KerberosConfig(), ImmutableList.of(new TestingRequestFilter()));
+        httpClient = new JettyHttpClient("test-shared", createClientConfig(), ImmutableList.of(new TestingRequestFilter()));
     }
 
     @AfterClass(alwaysRun = true)
@@ -48,7 +47,7 @@ public class TestJettyHttpClient
     public <T, E extends Exception> T executeRequest(HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
-        try (JettyHttpClient client = new JettyHttpClient("test-private", config, new KerberosConfig(), ImmutableList.<HttpRequestFilter>of(new TestingRequestFilter()))) {
+        try (JettyHttpClient client = new JettyHttpClient("test-private", config, ImmutableList.<HttpRequestFilter>of(new TestingRequestFilter()))) {
             return client.execute(request, responseHandler);
         }
     }

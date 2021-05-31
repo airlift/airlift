@@ -21,6 +21,7 @@ import com.google.common.net.HostAndPort;
 import io.airlift.configuration.Config;
 import io.airlift.configuration.ConfigDescription;
 import io.airlift.configuration.ConfigSecuritySensitive;
+import io.airlift.configuration.DefunctConfig;
 import io.airlift.configuration.LegacyConfig;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
@@ -34,7 +35,6 @@ import javax.validation.constraints.NotNull;
 
 import java.util.List;
 
-import static io.airlift.http.client.KerberosNameType.HOSTBASED_SERVICE;
 import static io.airlift.units.DataSize.Unit.GIGABYTE;
 import static io.airlift.units.DataSize.Unit.KILOBYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
@@ -42,6 +42,17 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+@DefunctConfig({
+        "http-client.authentication.enabled",
+        "http-client.authentication.krb5.name-type",
+        "http-client.authentication.krb5.principal",
+        "http-client.authentication.krb5.remote-service-name",
+        "http-client.authentication.krb5.service-principal-pattern",
+        "http.authentication.krb5.config",
+        "http.authentication.krb5.credential-cache",
+        "http.authentication.krb5.keytab",
+        "http.authentication.krb5.use-canonical-hostname"
+})
 public class HttpClientConfig
 {
     public static final String JAVAX_NET_SSL_KEY_STORE = "javax.net.ssl.keyStore";
@@ -76,11 +87,6 @@ public class HttpClientConfig
      */
     private List<String> excludedCipherSuites = ImmutableList.of("^.*_(MD5|SHA|SHA1)$", "^TLS_RSA_.*$", "^SSL_.*$", "^.*_NULL_.*$", "^.*_anon_.*$");
 
-    private boolean authenticationEnabled;
-    private String kerberosServicePrincipalPattern = "${SERVICE}@${HOST}";
-    private String kerberosPrincipal;
-    private String kerberosRemoteServiceName;
-    private KerberosNameType kerberosNameType = HOSTBASED_SERVICE;
     private int selectorCount = 2;
     private boolean recordRequestComplete = true;
     private boolean connectBlocking;
@@ -405,71 +411,6 @@ public class HttpClientConfig
     public boolean isHttpsConfigurationValid()
     {
         return getAutomaticHttpsSharedSecret() == null || getNodeEnvironment() != null;
-    }
-
-    public boolean getAuthenticationEnabled()
-    {
-        return authenticationEnabled;
-    }
-
-    @Config("http-client.authentication.enabled")
-    @ConfigDescription("Enable client authentication")
-    public HttpClientConfig setAuthenticationEnabled(boolean enabled)
-    {
-        this.authenticationEnabled = enabled;
-        return this;
-    }
-
-    public String getKerberosServicePrincipalPattern()
-    {
-        return kerberosServicePrincipalPattern;
-    }
-
-    @Config("http-client.authentication.krb5.service-principal-pattern")
-    @ConfigDescription("Set kerberos service principal pattern")
-    public HttpClientConfig setKerberosServicePrincipalPattern(String kerberosServicePrincipalPattern)
-    {
-        this.kerberosServicePrincipalPattern = kerberosServicePrincipalPattern;
-        return this;
-    }
-
-    public String getKerberosPrincipal()
-    {
-        return kerberosPrincipal;
-    }
-
-    @Config("http-client.authentication.krb5.principal")
-    @ConfigDescription("Set kerberos client principal")
-    public HttpClientConfig setKerberosPrincipal(String kerberosClientPrincipal)
-    {
-        this.kerberosPrincipal = kerberosClientPrincipal;
-        return this;
-    }
-
-    public String getKerberosRemoteServiceName()
-    {
-        return kerberosRemoteServiceName;
-    }
-
-    @Config("http-client.authentication.krb5.remote-service-name")
-    @ConfigDescription("Set kerberos service principal name")
-    public HttpClientConfig setKerberosRemoteServiceName(String serviceName)
-    {
-        this.kerberosRemoteServiceName = serviceName;
-        return this;
-    }
-
-    public KerberosNameType getKerberosNameType()
-    {
-        return kerberosNameType;
-    }
-
-    @Config("http-client.authentication.krb5.name-type")
-    @ConfigDescription("Set kerberos GSS name type")
-    public HttpClientConfig setKerberosNameType(KerberosNameType nameType)
-    {
-        this.kerberosNameType = nameType;
-        return this;
     }
 
     @NotNull

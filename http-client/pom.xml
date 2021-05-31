@@ -126,11 +126,6 @@
             <optional>true</optional>
         </dependency>
 
-        <dependency>
-            <groupId>net.jodah</groupId>
-            <artifactId>failsafe</artifactId>
-        </dependency>
-
         <!-- used by tests but also needed transitively -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>

@@ -33,8 +33,6 @@ import static io.airlift.http.client.HttpClientConfig.JAVAX_NET_SSL_KEY_STORE;
 import static io.airlift.http.client.HttpClientConfig.JAVAX_NET_SSL_KEY_STORE_PASSWORD;
 import static io.airlift.http.client.HttpClientConfig.JAVAX_NET_SSL_TRUST_STORE;
 import static io.airlift.http.client.HttpClientConfig.JAVAX_NET_SSL_TRUST_STORE_PASSWORD;
-import static io.airlift.http.client.KerberosNameType.HOSTBASED_SERVICE;
-import static io.airlift.http.client.KerberosNameType.USER_NAME;
 import static io.airlift.testing.ValidationAssertions.assertFailsValidation;
 import static io.airlift.units.DataSize.Unit.GIGABYTE;
 import static io.airlift.units.DataSize.Unit.KILOBYTE;
@@ -71,11 +69,6 @@ public class TestHttpClientConfig
                 .setHttpsExcludedCipherSuites(String.join(",", getJettyDefaultExcludedCiphers()))
                 .setAutomaticHttpsSharedSecret(null)
                 .setNodeEnvironment(null)
-                .setAuthenticationEnabled(false)
-                .setKerberosServicePrincipalPattern("${SERVICE}@${HOST}")
-                .setKerberosRemoteServiceName(null)
-                .setKerberosPrincipal(null)
-                .setKerberosNameType(HOSTBASED_SERVICE)
                 .setHttp2InitialSessionReceiveWindowSize(new DataSize(16, MEGABYTE))
                 .setHttp2InitialStreamReceiveWindowSize(new DataSize(16, MEGABYTE))
                 .setHttp2InputBufferSize(new DataSize(8, KILOBYTE))
@@ -122,11 +115,6 @@ public class TestHttpClientConfig
                 .put("http-client.key-store-password", "key-store-password")
                 .put("http-client.trust-store-path", "trust-store")
                 .put("http-client.trust-store-password", "trust-store-password")
-                .put("http-client.authentication.enabled", "true")
-                .put("http-client.authentication.krb5.service-principal-pattern", "${SERVICE}")
-                .put("http-client.authentication.krb5.remote-service-name", "airlift")
-                .put("http-client.authentication.krb5.principal", "airlift-client")
-                .put("http-client.authentication.krb5.name-type", "USER_NAME")
                 .put("http-client.http2.session-receive-window-size", "7MB")
                 .put("http-client.http2.stream-receive-window-size", "7MB")
                 .put("http-client.http2.input-buffer-size", "1MB")
@@ -170,11 +158,6 @@ public class TestHttpClientConfig
                 .setHttpsExcludedCipherSuites("TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA")
                 .setAutomaticHttpsSharedSecret("automatic-secret")
                 .setNodeEnvironment("environment-for-automatic-secret")
-                .setAuthenticationEnabled(true)
-                .setKerberosServicePrincipalPattern("${SERVICE}")
-                .setKerberosRemoteServiceName("airlift")
-                .setKerberosPrincipal("airlift-client")
-                .setKerberosNameType(USER_NAME)
                 .setHttp2InitialSessionReceiveWindowSize(new DataSize(7, MEGABYTE))
                 .setHttp2InitialStreamReceiveWindowSize(new DataSize(7, MEGABYTE))
                 .setHttp2InputBufferSize(new DataSize(1, MEGABYTE))
