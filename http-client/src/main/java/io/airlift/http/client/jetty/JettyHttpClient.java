@@ -13,10 +13,6 @@ import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.StaticBodyGenerator;
 import io.airlift.http.client.jetty.HttpClientLogger.RequestInfo;
 import io.airlift.http.client.jetty.HttpClientLogger.ResponseInfo;
-import io.airlift.http.client.spnego.KerberosConfig;
-import io.airlift.http.client.spnego.SpnegoAuthentication;
-import io.airlift.http.client.spnego.SpnegoAuthenticationProtocolHandler;
-import io.airlift.http.client.spnego.SpnegoAuthenticationStore;
 import io.airlift.security.pem.PemReader;
 import io.airlift.units.Duration;
 import org.eclipse.jetty.client.DuplexConnectionPool;
@@ -26,8 +22,6 @@ import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.PoolingHttpDestination;
 import org.eclipse.jetty.client.Socks4Proxy;
-import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
-import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Response;
@@ -148,22 +142,20 @@ public class JettyHttpClient
 
     public JettyHttpClient(String name, HttpClientConfig config)
     {
-        this(name, config, new KerberosConfig(), ImmutableList.of());
+        this(name, config, ImmutableList.of());
     }
 
     public JettyHttpClient(
             String name,
             HttpClientConfig config,
-            KerberosConfig kerberosConfig,
             Iterable<? extends HttpRequestFilter> requestFilters)
     {
-        this(name, config, kerberosConfig, requestFilters, Optional.empty());
+        this(name, config, requestFilters, Optional.empty());
     }
 
     public JettyHttpClient(
             String name,
             HttpClientConfig config,
-            KerberosConfig kerberosConfig,
             Iterable<? extends HttpRequestFilter> requestFilters,
             Optional<SslContextFactory.Client> maybeSslContextFactory)
     {
@@ -199,22 +191,6 @@ public class JettyHttpClient
         // request and response buffer size
         httpClient.setRequestBufferSize(toIntExact(config.getRequestBufferSize().toBytes()));
         httpClient.setResponseBufferSize(toIntExact(config.getResponseBufferSize().toBytes()));
-
-        // Kerberos authentication
-        if (config.getAuthenticationEnabled()) {
-            AuthenticationStore store = new SpnegoAuthenticationStore(new SpnegoAuthentication(
-                    kerberosConfig.getKeytab(),
-                    kerberosConfig.getConfig(),
-                    kerberosConfig.getCredentialCache(),
-                    config.getKerberosServicePrincipalPattern(),
-                    config.getKerberosPrincipal(),
-                    config.getKerberosRemoteServiceName(),
-                    config.getKerberosNameType(),
-                    kerberosConfig.isUseCanonicalHostname()));
-            httpClient.setAuthenticationStore(store);
-            httpClient.getProtocolHandlers().remove(WWWAuthenticationProtocolHandler.NAME);
-            httpClient.getProtocolHandlers().put(new SpnegoAuthenticationProtocolHandler(httpClient));
-        }
 
         httpClient.setMaxConnectionsPerDestination(config.getMaxConnectionsPerServer());
         httpClient.setMaxRequestsQueuedPerDestination(config.getMaxRequestsQueuedPerDestination());

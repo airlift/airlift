@@ -6,7 +6,6 @@ import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.TestingRequestFilter;
-import io.airlift.http.client.spnego.KerberosConfig;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -32,7 +31,7 @@ public class TestJettyHttpsClient
     @BeforeClass
     public void setUpHttpClient()
     {
-        httpClient = new JettyHttpClient("test-shared", createClientConfig(), createKerberosConfig(), ImmutableList.of(new TestingRequestFilter()));
+        httpClient = new JettyHttpClient("test-shared", createClientConfig(), ImmutableList.of(new TestingRequestFilter()));
     }
 
     @AfterClass(alwaysRun = true)
@@ -52,11 +51,6 @@ public class TestJettyHttpsClient
                 .setTrustStorePassword("changeit");
     }
 
-    protected KerberosConfig createKerberosConfig()
-    {
-        return new KerberosConfig();
-    }
-
     @Override
     public <T, E extends Exception> T executeRequest(Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
@@ -73,7 +67,7 @@ public class TestJettyHttpsClient
                 .setTrustStorePath(getResource("localhost.truststore").getPath())
                 .setTrustStorePassword("changeit");
 
-        try (JettyHttpClient client = new JettyHttpClient("test-private", config, createKerberosConfig(), ImmutableList.of(new TestingRequestFilter()))) {
+        try (JettyHttpClient client = new JettyHttpClient("test-private", config, ImmutableList.of(new TestingRequestFilter()))) {
             return client.execute(request, responseHandler);
         }
     }

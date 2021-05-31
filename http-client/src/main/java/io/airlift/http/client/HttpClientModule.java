@@ -25,7 +25,6 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import io.airlift.configuration.ConfigDefaults;
 import io.airlift.http.client.jetty.JettyHttpClient;
-import io.airlift.http.client.spnego.KerberosConfig;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import javax.inject.Inject;
@@ -65,7 +64,6 @@ public class HttpClientModule
         this.binder = requireNonNull(binder, "binder is null");
 
         // bind the configuration
-        configBinder(binder).bindConfig(KerberosConfig.class);
         configBinder(binder).bindConfig(HttpClientConfig.class, annotation, name);
 
         // Allow users to bind their own SslContextFactory
@@ -111,7 +109,6 @@ public class HttpClientModule
         @Override
         public HttpClient get()
         {
-            KerberosConfig kerberosConfig = injector.getInstance(KerberosConfig.class);
             HttpClientConfig config = injector.getInstance(Key.get(HttpClientConfig.class, annotation));
             Optional<SslContextFactory.Client> sslContextFactory = injector.getInstance(Key.get(new TypeLiteral<Optional<SslContextFactory.Client>>() {}));
 
@@ -120,7 +117,7 @@ public class HttpClientModule
                     .addAll(injector.getInstance(Key.get(new TypeLiteral<Set<HttpRequestFilter>>() {}, annotation)))
                     .build();
 
-            return new JettyHttpClient(name, config, kerberosConfig, ImmutableList.copyOf(filters), sslContextFactory);
+            return new JettyHttpClient(name, config, ImmutableList.copyOf(filters), sslContextFactory);
         }
     }
 }

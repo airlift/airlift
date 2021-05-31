@@ -4,6 +4,7 @@
 - Fix spurious reload of HTTP server SSL context after start.
 - Fix support for SNI for single label domains and IP addresses.
 - Disable HTTP server admin port by default.
+- Remove Kerberos support from HTTP client.
 - Add automatic HTTPS configuration.
 - Deprecate ConfigurationModule.installModules.
 - Deprecate ConditionalModule.installModuleIf and introduce
