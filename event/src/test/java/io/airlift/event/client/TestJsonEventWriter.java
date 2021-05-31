@@ -17,11 +17,11 @@ package io.airlift.event.client;
 
 import com.google.common.collect.ImmutableList;
 import io.airlift.event.client.NestedDummyEventClass.NestedPart;
-import org.joda.time.DateTime;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayOutputStream;
+import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
 
@@ -56,7 +56,7 @@ public class TestJsonEventWriter
             throws Exception
     {
         FixedDummyEventClass event = new FixedDummyEventClass(
-                "localhost", new DateTime("2011-09-09T01:59:59.999Z"), UUID.fromString("1ea8ca34-db36-11e0-b76f-8b7d505ab1ad"), 123, null);
+                "localhost", Instant.parse("2011-09-09T01:59:59.999Z"), UUID.fromString("1ea8ca34-db36-11e0-b76f-8b7d505ab1ad"), 123, null);
 
         assertEventJson(createEventGenerator(ImmutableList.of(event)), "nullValue.json");
     }
@@ -66,7 +66,7 @@ public class TestJsonEventWriter
             throws Exception
     {
         NestedDummyEventClass nestedEvent = new NestedDummyEventClass(
-                "localhost", new DateTime("2011-09-09T01:48:08.888Z"), UUID.fromString("6b598c2a-0a95-4f3f-9298-5a4d70ca13fc"), 9999, "nested",
+                "localhost", Instant.parse("2011-09-09T01:48:08.888Z"), UUID.fromString("6b598c2a-0a95-4f3f-9298-5a4d70ca13fc"), 9999, "nested",
                 ImmutableList.of("abc", "xyz"),
                 new NestedPart("first", new NestedPart("second", new NestedPart("third", null))),
                 ImmutableList.of(new NestedPart("listFirst", new NestedPart("listSecond", null)), new NestedPart("listThird", null)));

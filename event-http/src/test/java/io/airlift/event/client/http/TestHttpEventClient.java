@@ -35,7 +35,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.joda.time.DateTime;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -50,6 +49,7 @@ import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.URI;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -83,7 +83,7 @@ public class TestHttpEventClient
         client = newEventClient(Collections.<URI>emptyList());
 
         try {
-            client.post(new FixedDummyEventClass("host", new DateTime(), UUID.randomUUID(), 1, "foo")).get();
+            client.post(new FixedDummyEventClass("host", Instant.now(), UUID.randomUUID(), 1, "foo")).get();
         }
         catch (ExecutionException e) {
             throwIfUnchecked(e.getCause());
@@ -97,7 +97,7 @@ public class TestHttpEventClient
     {
         client = newEventClient(Collections.<URI>emptyList());
 
-        client.post(new FixedDummyEventClass("host", new DateTime(), UUID.randomUUID(), 1, "foo"));
+        client.post(new FixedDummyEventClass("host", Instant.now(), UUID.randomUUID(), 1, "foo"));
 
         assertNull(servlet.lastPath);
         assertNull(servlet.lastBody);

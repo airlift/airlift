@@ -18,10 +18,6 @@ package io.airlift.event.client;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Primitives;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.ISODateTimeFormat;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -136,15 +132,6 @@ enum EventDataType
         }
     },
 
-    DATETIME(DateTime.class) {
-        public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
-                throws IOException
-        {
-            validateFieldValueType(value, DateTime.class);
-            jsonGenerator.writeString(ISO_DATETIME_FORMAT.print((DateTime) value));
-        }
-    },
-
     ENUM(Enum.class) {
         public void writeFieldValue(JsonGenerator jsonGenerator, Object value)
                 throws IOException
@@ -171,8 +158,6 @@ enum EventDataType
             jsonGenerator.writeString(value.toString());
         }
     };
-
-    private static final DateTimeFormatter ISO_DATETIME_FORMAT = ISODateTimeFormat.dateTime().withZone(DateTimeZone.UTC);
 
     private static final Map<Class<?>, EventDataType> byType;
 

@@ -18,8 +18,8 @@ package io.airlift.event.client;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
-import org.joda.time.DateTime;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -33,7 +33,7 @@ public class NestedDummyEventClass
     private final NestedPart nestedPart;
     private final List<NestedPart> nestedParts;
 
-    public NestedDummyEventClass(String host, DateTime timestamp, UUID uuid,
+    public NestedDummyEventClass(String host, Instant timestamp, UUID uuid,
             int intValue, String stringValue,
             List<String> strings,
             NestedPart nestedPart,
