@@ -15,20 +15,19 @@
  */
 package io.airlift.event.client;
 
-import org.joda.time.DateTime;
-
+import java.time.Instant;
 import java.util.UUID;
 
 @EventType("FixedDummy")
 public class FixedDummyEventClass
 {
     private final String host;
-    private final DateTime timestamp;
+    private final Instant timestamp;
     private final UUID uuid;
     private int intValue;
     private final String stringValue;
 
-    public FixedDummyEventClass(String host, DateTime timestamp, UUID uuid, int intValue, String stringValue)
+    public FixedDummyEventClass(String host, Instant timestamp, UUID uuid, int intValue, String stringValue)
     {
         this.host = host;
         this.timestamp = timestamp;
@@ -44,7 +43,7 @@ public class FixedDummyEventClass
     }
 
     @EventField(fieldMapping = EventField.EventFieldMapping.TIMESTAMP)
-    public DateTime getTimestamp()
+    public Instant getTimestamp()
     {
         return timestamp;
     }

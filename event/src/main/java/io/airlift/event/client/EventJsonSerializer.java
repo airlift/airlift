@@ -18,11 +18,11 @@ package io.airlift.event.client;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import org.joda.time.DateTime;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.time.Instant;
 import java.util.UUID;
 
 import static java.util.Objects.requireNonNull;
@@ -84,7 +84,7 @@ public class EventJsonSerializer<T>
         }
         else {
             jsonGenerator.writeFieldName("timestamp");
-            EventDataType.DATETIME.writeFieldValue(jsonGenerator, new DateTime());
+            EventDataType.INSTANT.writeFieldValue(jsonGenerator, Instant.now());
         }
 
         jsonGenerator.writeObjectFieldStart("data");
