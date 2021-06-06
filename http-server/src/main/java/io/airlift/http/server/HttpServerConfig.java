@@ -112,7 +112,7 @@ public class HttpServerConfig
 
     private String userAuthFile;
 
-    private boolean adminEnabled = true;
+    private boolean adminEnabled;
     private int adminPort;
     private int adminMinThreads = 2;
     private int adminMaxThreads = 200;
