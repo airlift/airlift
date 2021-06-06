@@ -73,7 +73,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeoutException;
 
 import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -501,15 +500,10 @@ public class HttpServer
     public void stop()
             throws Exception
     {
-        // TODO: set to 0 and remove try/catch on Jetty 9.4.9
-        server.setStopTimeout(1);
-        try {
-            server.stop();
-            if (scheduledExecutorService != null) {
-                scheduledExecutorService.shutdown();
-            }
-        }
-        catch (TimeoutException ignored) {
+        server.setStopTimeout(0);
+        server.stop();
+        if (scheduledExecutorService != null) {
+            scheduledExecutorService.shutdown();
         }
         if (requestLog != null) {
             requestLog.stop();
