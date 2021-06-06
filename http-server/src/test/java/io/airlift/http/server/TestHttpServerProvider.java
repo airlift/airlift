@@ -17,7 +17,6 @@ package io.airlift.http.server;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.io.Files;
 import com.google.common.net.HostAndPort;
 import io.airlift.event.client.NullEventClient;
 import io.airlift.http.client.HttpClient;
@@ -87,17 +86,18 @@ import static io.airlift.http.client.StatusResponseHandler.createStatusResponseH
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
 import static io.airlift.http.server.TestHttpServerInfo.closeChannels;
 import static io.airlift.testing.Assertions.assertContains;
-import static io.airlift.testing.Assertions.assertInstanceOf;
 import static io.airlift.testing.Assertions.assertNotEquals;
+import static io.airlift.testing.Closeables.closeAll;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.nio.file.Files.createTempDirectory;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.fail;
 
 @Test(singleThreaded = true)
 public class TestHttpServerProvider
@@ -119,7 +119,7 @@ public class TestHttpServerProvider
     public void setup()
             throws IOException
     {
-        tempDir = Files.createTempDir().getCanonicalFile(); // getCanonicalFile needed to get around Issue 365 (http://code.google.com/p/guava-libraries/issues/detail?id=365)
+        tempDir = createTempDirectory(getClass().getSimpleName()).toFile();
         config = new HttpServerConfig()
                 .setHttpPort(0)
                 .setHttpsPort(0)
@@ -135,15 +135,9 @@ public class TestHttpServerProvider
     public void teardown()
             throws Exception
     {
-        closeChannels(httpServerInfo);
-        try {
-            if (server != null) {
-                server.stop();
-            }
-        }
-        finally {
-            deleteRecursively(tempDir.toPath(), ALLOW_INSECURE);
-        }
+        closeAll((server != null) ? (AutoCloseable) server::stop : null,
+                () -> closeChannels(httpServerInfo),
+                () -> deleteRecursively(tempDir.toPath(), ALLOW_INSECURE));
     }
 
     @Test
@@ -170,8 +164,6 @@ public class TestHttpServerProvider
     @Test
     public void testHttpDisabled()
     {
-        closeChannels(httpServerInfo);
-
         config.setHttpEnabled(false);
         httpServerInfo = new HttpServerInfo(config, nodeInfo);
 
@@ -191,8 +183,6 @@ public class TestHttpServerProvider
     @Test
     public void testHttpsEnabled()
     {
-        closeChannels(httpServerInfo);
-
         config.setHttpsEnabled(true);
         httpServerInfo = new HttpServerInfo(config, nodeInfo);
 
@@ -220,8 +210,6 @@ public class TestHttpServerProvider
     @Test
     public void testAdminEnabled()
     {
-        closeChannels(httpServerInfo);
-
         config.setAdminEnabled(true);
         httpServerInfo = new HttpServerInfo(config, nodeInfo);
 
@@ -249,8 +237,6 @@ public class TestHttpServerProvider
     @Test
     public void testHttpsAndAdminEnabled()
     {
-        closeChannels(httpServerInfo);
-
         config.setHttpsEnabled(true)
                 .setAdminEnabled(true);
         httpServerInfo = new HttpServerInfo(config, nodeInfo);
@@ -537,7 +523,7 @@ public class TestHttpServerProvider
         try (HttpClient client = new JettyHttpClient()) {
             StringResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStringResponseHandler());
             assertEquals(response.getStatusCode(), 500);
-            assertTrue(!response.getBody().contains("ErrorServlet.java"));
+            assertThat(response.getBody()).doesNotContain("ErrorServlet.java");
         }
     }
 
@@ -554,7 +540,7 @@ public class TestHttpServerProvider
             HttpResponseFuture<?> future = client.executeAsync(request, createStatusResponseHandler());
 
             // wait until the servlet starts processing the request
-            servlet.getLatch().await(1, SECONDS);
+            servlet.getSleeping().get(1, SECONDS);
 
             // stop server while the request is still active
             server.stop();
@@ -563,27 +549,24 @@ public class TestHttpServerProvider
             server.join();
 
             // request should fail rather than sleeping the full duration
-            try {
-                future.get(5, SECONDS);
-                fail("expected exception");
-            }
-            catch (ExecutionException e) {
-                assertInstanceOf(e.getCause(), UncheckedIOException.class);
-            }
+            assertThatThrownBy(() -> future.get(5, SECONDS))
+                    .isInstanceOf(ExecutionException.class)
+                    .hasCauseInstanceOf(UncheckedIOException.class)
+                    .hasMessageContaining("Failed communicating with server");
         }
     }
 
-    @Test(expectedExceptions = IllegalStateException.class, expectedExceptionsMessageRegExp = "Insufficient configured threads: .*")
+    @Test
     public void testInsufficientThreadsHttp()
-            throws Exception
     {
         config.setMaxThreads(1);
-        createAndStartServer();
+
+        assertThatThrownBy(this::createAndStartServer)
+                .hasMessageStartingWith("Insufficient configured threads: ");
     }
 
-    @Test(expectedExceptions = IllegalStateException.class, expectedExceptionsMessageRegExp = "Insufficient configured threads: .*")
+    @Test
     public void testInsufficientThreadsHttps()
-            throws Exception
     {
         config.setHttpEnabled(false)
                 .setHttpsEnabled(true)
@@ -591,7 +574,9 @@ public class TestHttpServerProvider
                 .setKeystorePath(getResource("test.keystore").getPath())
                 .setKeystorePassword("airlift")
                 .setMaxThreads(1);
-        createAndStartServer();
+
+        assertThatThrownBy(this::createAndStartServer)
+                .hasMessageStartingWith("Insufficient configured threads: ");
     }
 
     @Test
@@ -617,11 +602,11 @@ public class TestHttpServerProvider
                 .setHttpsPort(0)
                 .setKeystorePath(new File(getResource("test.keystore").toURI()).getAbsolutePath())
                 .setKeystorePassword("airlift");
+
         createAndStartServer();
-        Long daysUntilCertificateExpiration = server.getDaysUntilCertificateExpiration();
-        assertNotNull(daysUntilCertificateExpiration);
+
         // todo this should be positive but the certificate is expired
-        assertTrue(daysUntilCertificateExpiration < 0);
+        assertThat(server.getDaysUntilCertificateExpiration()).isLessThan(0);
     }
 
     @Test
@@ -630,17 +615,20 @@ public class TestHttpServerProvider
     {
         config.setHttpEnabled(true)
                 .setHttpsPort(0);
+
         createAndStartServer();
+
         assertNull(server.getDaysUntilCertificateExpiration());
     }
 
-    @Test(expectedExceptions = IllegalStateException.class, expectedExceptionsMessageRegExp = "Insufficient configured threads: .*")
+    @Test
     public void testInsufficientThreadsAdmin()
-            throws Exception
     {
         config.setAdminEnabled(true)
                 .setAdminMaxThreads(1);
-        createAndStartServer();
+
+        assertThatThrownBy(this::createAndStartServer)
+                .hasMessageStartingWith("Insufficient configured threads: ");
     }
 
     @Test
@@ -670,7 +658,6 @@ public class TestHttpServerProvider
     private void createAndStartServer(HttpServlet servlet)
             throws Exception
     {
-        closeChannels(httpServerInfo);
         httpServerInfo = new HttpServerInfo(config, nodeInfo);
         createServer(servlet);
         server.start();

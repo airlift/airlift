@@ -15,19 +15,22 @@
  */
 package io.airlift.http.server;
 
+import com.google.common.util.concurrent.SettableFuture;
+
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
 
+import static com.google.common.util.concurrent.Futures.nonCancellationPropagating;
 import static javax.servlet.http.HttpServletResponse.SC_OK;
 
 class DummyServlet
         extends HttpServlet
 {
-    private final CountDownLatch latch = new CountDownLatch(1);
+    private final SettableFuture<?> sleeping = SettableFuture.create();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -41,7 +44,7 @@ class DummyServlet
 
         try {
             if (request.getParameter("sleep") != null) {
-                latch.countDown();
+                sleeping.set(null);
                 Thread.sleep(Long.parseLong(request.getParameter("sleep")));
             }
         }
@@ -50,8 +53,8 @@ class DummyServlet
         }
     }
 
-    public CountDownLatch getLatch()
+    public Future<?> getSleeping()
     {
-        return latch;
+        return nonCancellationPropagating(sleeping);
     }
 }
