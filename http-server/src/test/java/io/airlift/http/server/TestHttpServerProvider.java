@@ -65,6 +65,7 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
 import java.security.PrivateKey;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
@@ -90,6 +91,7 @@ import static io.airlift.testing.Assertions.assertInstanceOf;
 import static io.airlift.testing.Assertions.assertNotEquals;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -160,20 +162,13 @@ public class TestHttpServerProvider
         assertNull(httpServerInfo.getHttpsExternalUri());
         assertNull(httpServerInfo.getHttpsChannel());
 
-        assertTrue(config.isAdminEnabled());
-        assertNotNull(httpServerInfo.getAdminUri());
-        assertNotNull(httpServerInfo.getAdminExternalUri());
-        assertNotNull(httpServerInfo.getAdminChannel());
-        assertEquals(httpServerInfo.getAdminUri().getScheme(), httpServerInfo.getAdminExternalUri().getScheme());
-        assertEquals(httpServerInfo.getAdminUri().getPort(), httpServerInfo.getAdminExternalUri().getPort());
-        assertEquals(httpServerInfo.getAdminUri().getScheme(), "http");
-
-        assertNotEquals(httpServerInfo.getHttpUri().getPort(), httpServerInfo.getAdminUri().getPort());
+        assertNull(httpServerInfo.getAdminUri());
+        assertNull(httpServerInfo.getAdminExternalUri());
+        assertNull(httpServerInfo.getAdminChannel());
     }
 
     @Test
     public void testHttpDisabled()
-            throws Exception
     {
         closeChannels(httpServerInfo);
 
@@ -188,21 +183,46 @@ public class TestHttpServerProvider
         assertNull(httpServerInfo.getHttpsExternalUri());
         assertNull(httpServerInfo.getHttpsChannel());
 
-        assertNotNull(httpServerInfo.getAdminUri());
-        assertNotNull(httpServerInfo.getAdminExternalUri());
-        assertNotNull(httpServerInfo.getAdminChannel());
-        assertEquals(httpServerInfo.getAdminUri().getScheme(), httpServerInfo.getAdminExternalUri().getScheme());
-        assertEquals(httpServerInfo.getAdminUri().getPort(), httpServerInfo.getAdminExternalUri().getPort());
-        assertEquals(httpServerInfo.getAdminUri().getScheme(), "http");
+        assertNull(httpServerInfo.getAdminUri());
+        assertNull(httpServerInfo.getAdminExternalUri());
+        assertNull(httpServerInfo.getAdminChannel());
     }
 
     @Test
-    public void testAdminDisabled()
-            throws Exception
+    public void testHttpsEnabled()
     {
         closeChannels(httpServerInfo);
 
-        config.setAdminEnabled(false);
+        config.setHttpsEnabled(true);
+        httpServerInfo = new HttpServerInfo(config, nodeInfo);
+
+        assertNotNull(httpServerInfo.getHttpUri());
+        assertNotNull(httpServerInfo.getHttpExternalUri());
+        assertNotNull(httpServerInfo.getHttpChannel());
+        assertEquals(httpServerInfo.getHttpUri().getScheme(), httpServerInfo.getHttpExternalUri().getScheme());
+        assertEquals(httpServerInfo.getHttpUri().getPort(), httpServerInfo.getHttpExternalUri().getPort());
+        assertEquals(httpServerInfo.getHttpUri().getScheme(), "http");
+
+        assertNotNull(httpServerInfo.getHttpsUri());
+        assertNotNull(httpServerInfo.getHttpsExternalUri());
+        assertNotNull(httpServerInfo.getHttpsChannel());
+        assertEquals(httpServerInfo.getHttpsUri().getScheme(), httpServerInfo.getHttpsExternalUri().getScheme());
+        assertEquals(httpServerInfo.getHttpsUri().getPort(), httpServerInfo.getHttpsExternalUri().getPort());
+        assertEquals(httpServerInfo.getHttpsUri().getScheme(), "https");
+
+        assertNull(httpServerInfo.getAdminUri());
+        assertNull(httpServerInfo.getAdminExternalUri());
+        assertNull(httpServerInfo.getAdminChannel());
+
+        assertNotEquals(httpServerInfo.getHttpUri().getPort(), httpServerInfo.getHttpsUri().getPort());
+    }
+
+    @Test
+    public void testAdminEnabled()
+    {
+        closeChannels(httpServerInfo);
+
+        config.setAdminEnabled(true);
         httpServerInfo = new HttpServerInfo(config, nodeInfo);
 
         assertNotNull(httpServerInfo.getHttpUri());
@@ -216,18 +236,23 @@ public class TestHttpServerProvider
         assertNull(httpServerInfo.getHttpsExternalUri());
         assertNull(httpServerInfo.getHttpsChannel());
 
-        assertNull(httpServerInfo.getAdminUri());
-        assertNull(httpServerInfo.getAdminExternalUri());
-        assertNull(httpServerInfo.getAdminChannel());
+        assertNotNull(httpServerInfo.getAdminUri());
+        assertNotNull(httpServerInfo.getAdminExternalUri());
+        assertNotNull(httpServerInfo.getAdminChannel());
+        assertEquals(httpServerInfo.getAdminUri().getScheme(), httpServerInfo.getAdminExternalUri().getScheme());
+        assertEquals(httpServerInfo.getAdminUri().getPort(), httpServerInfo.getAdminExternalUri().getPort());
+        assertEquals(httpServerInfo.getAdminUri().getScheme(), "http");
+
+        assertNotEquals(httpServerInfo.getHttpUri().getPort(), httpServerInfo.getAdminUri().getPort());
     }
 
     @Test
-    public void testHttpsEnabled()
-            throws Exception
+    public void testHttpsAndAdminEnabled()
     {
         closeChannels(httpServerInfo);
 
-        config.setHttpsEnabled(true);
+        config.setHttpsEnabled(true)
+                .setAdminEnabled(true);
         httpServerInfo = new HttpServerInfo(config, nodeInfo);
 
         assertNotNull(httpServerInfo.getHttpUri());
@@ -401,7 +426,6 @@ public class TestHttpServerProvider
             throws Exception
     {
         config.setHttpEnabled(false)
-                .setAdminEnabled(false)
                 .setHttpsEnabled(true)
                 .setHttpsPort(0)
                 .setKeystorePath(getResource("clientcert-java/server.keystore").getPath())
@@ -437,7 +461,6 @@ public class TestHttpServerProvider
             throws Exception
     {
         config.setHttpEnabled(false)
-                .setAdminEnabled(false)
                 .setHttpsEnabled(true)
                 .setHttpsPort(0)
                 .setKeystorePath(getResource("clientcert-pem/server.pem").getPath())
@@ -571,16 +594,18 @@ public class TestHttpServerProvider
         createAndStartServer();
     }
 
-    @Test(expectedExceptions = RuntimeException.class, expectedExceptionsMessageRegExp = ".+Cannot recover key.+")
+    @Test
     public void testInsufficientPasswordToAccessKeystore()
-            throws Exception
     {
         config.setHttpEnabled(false)
                 .setHttpsEnabled(true)
                 .setHttpsPort(0)
                 .setKeystorePath(getResource("test.keystore.with.two.passwords").getPath())
                 .setKeystorePassword("airlift");
-        createAndStartServer();
+
+        assertThatThrownBy(this::createAndStartServer)
+                .hasRootCauseInstanceOf(UnrecoverableKeyException.class)
+                .hasRootCauseMessage("Cannot recover key");
     }
 
     @Test
@@ -613,7 +638,8 @@ public class TestHttpServerProvider
     public void testInsufficientThreadsAdmin()
             throws Exception
     {
-        config.setAdminMaxThreads(1);
+        config.setAdminEnabled(true)
+                .setAdminMaxThreads(1);
         createAndStartServer();
     }
 
