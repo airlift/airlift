@@ -19,9 +19,10 @@ import io.airlift.node.NodeConfig;
 import io.airlift.node.NodeInfo;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
 import java.net.URI;
 
-import static io.airlift.testing.Closeables.closeQuietly;
+import static io.airlift.testing.Closeables.closeAll;
 import static org.testng.Assert.assertEquals;
 
 public class TestHttpServerInfo
@@ -62,7 +63,8 @@ public class TestHttpServerInfo
     }
 
     static void closeChannels(HttpServerInfo info)
+            throws IOException
     {
-        closeQuietly(info.getHttpChannel(), info.getHttpsChannel(), info.getAdminChannel());
+        closeAll(info.getHttpChannel(), info.getHttpsChannel(), info.getAdminChannel());
     }
 }
