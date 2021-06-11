@@ -45,6 +45,30 @@ public final class MoreFutures
     private MoreFutures() {}
 
     /**
+     * Transforms a ListenableFuture&lt;T&gt; to ListenableFuture&lt;Void&gt;.
+     */
+    public static <T> ListenableFuture<Void> asVoid(ListenableFuture<T> future)
+    {
+        return Futures.transform(future, MoreFutures::toVoid, directExecutor());
+    }
+
+    /**
+     * Converts a value to Void.
+     *
+     * This is useful for providing named fluent style Future transforms to Void values.
+     * <p>
+     * Example:
+     * <pre>
+     * ListenableFuture<Void> voidFuture = FluentFuture.from(future)
+     *         .transform(MoreFutures::toVoid, directExecutor())
+     * </pre>
+     */
+    public static <T> Void toVoid(T value)
+    {
+        return null;
+    }
+
+    /**
      * Cancels the destination Future if the source Future is cancelled.
      */
     public static <X, Y> void propagateCancellation(ListenableFuture<? extends X> source, Future<? extends Y> destination, boolean mayInterruptIfRunning)
