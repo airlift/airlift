@@ -52,7 +52,7 @@ public class TestAsyncSemaphore
 
         AtomicInteger count = new AtomicInteger();
 
-        List<ListenableFuture<?>> futures = new ArrayList<>();
+        List<ListenableFuture<Void>> futures = new ArrayList<>();
         for (int i = 0; i < 1000; i++) {
             futures.add(asyncSemaphore.submit(count::incrementAndGet));
         }
@@ -72,7 +72,7 @@ public class TestAsyncSemaphore
         AtomicInteger count = new AtomicInteger();
         AtomicInteger concurrency = new AtomicInteger();
 
-        List<ListenableFuture<?>> futures = new ArrayList<>();
+        List<ListenableFuture<Void>> futures = new ArrayList<>();
         for (int i = 0; i < 1000; i++) {
             futures.add(asyncSemaphore.submit((Runnable) () -> {
                 count.incrementAndGet();
@@ -98,7 +98,7 @@ public class TestAsyncSemaphore
         AtomicInteger count = new AtomicInteger();
         AtomicInteger concurrency = new AtomicInteger();
 
-        List<ListenableFuture<?>> futures = new ArrayList<>();
+        List<ListenableFuture<Void>> futures = new ArrayList<>();
         for (int i = 0; i < 1000; i++) {
             futures.add(asyncSemaphore.submit(() -> {
                 count.incrementAndGet();
@@ -159,9 +159,9 @@ public class TestAsyncSemaphore
         AtomicInteger concurrency = new AtomicInteger();
         CountDownLatch completionLatch = new CountDownLatch(1000);
 
-        List<ListenableFuture<?>> futures = new ArrayList<>();
+        List<ListenableFuture<Void>> futures = new ArrayList<>();
         for (int i = 0; i < 1000; i++) {
-            ListenableFuture<?> future = asyncSemaphore.submit(() -> assertFailedConcurrency(concurrency));
+            ListenableFuture<Void> future = asyncSemaphore.submit(() -> assertFailedConcurrency(concurrency));
             addCallback(future, completionCallback(successCount, failureCount, completionLatch), directExecutor());
             futures.add(future);
         }
@@ -169,7 +169,7 @@ public class TestAsyncSemaphore
         // Wait for all tasks and callbacks to complete
         completionLatch.await(1, TimeUnit.MINUTES);
 
-        for (ListenableFuture<?> future : futures) {
+        for (ListenableFuture<Void> future : futures) {
             try {
                 future.get();
                 fail();
@@ -194,10 +194,10 @@ public class TestAsyncSemaphore
             throw assertFailedConcurrency(concurrency);
         });
 
-        List<ListenableFuture<?>> futures = new ArrayList<>();
+        List<ListenableFuture<Void>> futures = new ArrayList<>();
         for (int i = 0; i < 1000; i++) {
             // Should never execute this future
-            ListenableFuture<?> future = asyncSemaphore.submit(() -> fail(null));
+            ListenableFuture<Void> future = asyncSemaphore.submit(() -> fail(null));
             addCallback(future, completionCallback(successCount, failureCount, completionLatch), directExecutor());
             futures.add(future);
         }
@@ -205,7 +205,7 @@ public class TestAsyncSemaphore
         // Wait for all tasks and callbacks to complete
         completionLatch.await(1, TimeUnit.MINUTES);
 
-        for (ListenableFuture<?> future : futures) {
+        for (ListenableFuture<Void> future : futures) {
             try {
                 future.get();
                 fail();
@@ -232,12 +232,12 @@ public class TestAsyncSemaphore
             throw assertFailedConcurrency(concurrency);
         });
 
-        Queue<ListenableFuture<?>> futures = new ConcurrentLinkedQueue<>();
+        Queue<ListenableFuture<Void>> futures = new ConcurrentLinkedQueue<>();
         for (int i = 0; i < 100; i++) {
             executor.execute(() -> {
                 Uninterruptibles.awaitUninterruptibly(startLatch, 1, TimeUnit.MINUTES);
                 // Should never execute this future
-                ListenableFuture<?> future = asyncSemaphore.submit(() -> fail(null));
+                ListenableFuture<Void> future = asyncSemaphore.submit(() -> fail(null));
                 futures.add(future);
                 addCallback(future, completionCallback(successCount, failureCount, completionLatch), directExecutor());
             });
@@ -249,7 +249,7 @@ public class TestAsyncSemaphore
         Uninterruptibles.awaitUninterruptibly(completionLatch, 1, TimeUnit.MINUTES);
 
         // Make sure they all report failure
-        for (ListenableFuture<?> future : futures) {
+        for (ListenableFuture<Void> future : futures) {
             try {
                 future.get();
                 fail();
@@ -268,7 +268,7 @@ public class TestAsyncSemaphore
     {
         AsyncSemaphore<Object> asyncSemaphore = new AsyncSemaphore<>(1, executor, object -> Futures.immediateFuture(null));
 
-        List<ListenableFuture<?>> futures = new ArrayList<>();
+        List<ListenableFuture<Void>> futures = new ArrayList<>();
         for (int i = 0; i < 1000; i++) {
             futures.add(asyncSemaphore.submit(new Object()));
         }

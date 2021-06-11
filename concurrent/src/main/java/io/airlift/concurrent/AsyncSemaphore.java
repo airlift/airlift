@@ -54,7 +54,7 @@ public class AsyncSemaphore<T>
         this.submitter = requireNonNull(submitter, "submitter is null");
     }
 
-    public ListenableFuture<?> submit(T task)
+    public ListenableFuture<Void> submit(T task)
     {
         QueuedTask<T> queuedTask = new QueuedTask<>(task);
         queuedTasks.add(queuedTask);
@@ -118,7 +118,7 @@ public class AsyncSemaphore<T>
     private static class QueuedTask<T>
     {
         private final T task;
-        private final SettableFuture<?> settableFuture = SettableFuture.create();
+        private final SettableFuture<Void> settableFuture = SettableFuture.create();
 
         private QueuedTask(T task)
         {
@@ -140,7 +140,7 @@ public class AsyncSemaphore<T>
             settableFuture.set(null);
         }
 
-        public ListenableFuture<?> getCompletionFuture()
+        public ListenableFuture<Void> getCompletionFuture()
         {
             return settableFuture;
         }
