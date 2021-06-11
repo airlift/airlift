@@ -3,6 +3,7 @@
 - Deprecate ConfigurationModule.installModules.
 - Deprecate ConditionalModule.installModuleIf and introduce
   ConditionalModule.conditionalModule.
+- Migrate to ListenableFuture<Void> for future signaling.
 
 206
 
