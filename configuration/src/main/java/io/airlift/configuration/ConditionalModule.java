@@ -24,14 +24,32 @@ import static java.util.Objects.requireNonNull;
 public class ConditionalModule<T>
         extends AbstractConfigurationAwareModule
 {
+    /**
+     * @deprecated Use {@link #conditionalModule} instead
+     */
+    @Deprecated
     public static <T> Module installModuleIf(Class<T> config, Predicate<T> predicate, Module module, Module otherwise)
     {
-        return combine(
-                installModuleIf(config, predicate, module),
-                installModuleIf(config, predicate.negate(), otherwise));
+        return conditionalModule(config, predicate, module, otherwise);
     }
 
+    /**
+     * @deprecated Use {@link #conditionalModule} instead
+     */
+    @Deprecated
     public static <T> Module installModuleIf(Class<T> config, Predicate<T> predicate, Module module)
+    {
+        return conditionalModule(config, predicate, module);
+    }
+
+    public static <T> Module conditionalModule(Class<T> config, Predicate<T> predicate, Module module, Module otherwise)
+    {
+        return combine(
+                conditionalModule(config, predicate, module),
+                conditionalModule(config, predicate.negate(), otherwise));
+    }
+
+    public static <T> Module conditionalModule(Class<T> config, Predicate<T> predicate, Module module)
     {
         return new ConditionalModule<>(config, predicate, module);
     }
