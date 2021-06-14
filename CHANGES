@@ -1,6 +1,8 @@
 207
 
 - Deprecate ConfigurationModule.installModules.
+- Deprecate ConditionalModule.installModuleIf and introduce
+  ConditionalModule.conditionalModule.
 
 206
 
