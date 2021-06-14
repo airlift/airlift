@@ -43,6 +43,10 @@ public class ConfigurationModule
         configurationFactory.getConfigurationProviders().forEach(configurationProvider -> bindConfigurationProvider(binder, configurationProvider));
     }
 
+    /**
+     * @deprecated Use {@link ConfigurationAwareModule#combine}
+     */
+    @Deprecated
     public static ConfigurationAwareModule installModules(Module... modules)
     {
         return new AbstractConfigurationAwareModule()
