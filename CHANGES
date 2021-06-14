@@ -1,3 +1,7 @@
+207
+
+- Deprecate ConfigurationModule.installModules.
+
 206
 
 - Fix SNI handling for HTTP server.

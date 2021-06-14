@@ -18,7 +18,7 @@ import com.google.inject.Module;
 
 import java.util.function.Predicate;
 
-import static io.airlift.configuration.ConfigurationModule.installModules;
+import static io.airlift.configuration.ConfigurationAwareModule.combine;
 import static java.util.Objects.requireNonNull;
 
 public class ConditionalModule<T>
@@ -26,7 +26,7 @@ public class ConditionalModule<T>
 {
     public static <T> Module installModuleIf(Class<T> config, Predicate<T> predicate, Module module, Module otherwise)
     {
-        return installModules(
+        return combine(
                 installModuleIf(config, predicate, module),
                 installModuleIf(config, predicate.negate(), otherwise));
     }
