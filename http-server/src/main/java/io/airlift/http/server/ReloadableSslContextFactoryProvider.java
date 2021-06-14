@@ -190,6 +190,7 @@ final class ReloadableSslContextFactoryProvider
         public FileWatch(File file)
         {
             this.file = requireNonNull(file, "file is null");
+            updateState();
         }
 
         public File getFile()

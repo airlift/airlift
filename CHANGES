@@ -1,5 +1,6 @@
 207
 
+- Fix spurious reload of HTTP server SSL context after start.
 - Deprecate ConfigurationModule.installModules.
 - Deprecate ConditionalModule.installModuleIf and introduce
   ConditionalModule.conditionalModule.
