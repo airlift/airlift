@@ -150,13 +150,14 @@ public class JettyHttpClient
             HttpClientConfig config,
             Iterable<? extends HttpRequestFilter> requestFilters)
     {
-        this(name, config, requestFilters, Optional.empty());
+        this(name, config, requestFilters, Optional.empty(), Optional.empty());
     }
 
     public JettyHttpClient(
             String name,
             HttpClientConfig config,
             Iterable<? extends HttpRequestFilter> requestFilters,
+            Optional<String> environment,
             Optional<SslContextFactory.Client> maybeSslContextFactory)
     {
         this.name = requireNonNull(name, "name is null");
@@ -171,7 +172,7 @@ public class JettyHttpClient
 
         creationLocation.fillInStackTrace();
 
-        SslContextFactory.Client sslContextFactory = maybeSslContextFactory.orElseGet(() -> getSslContextFactory(config));
+        SslContextFactory.Client sslContextFactory = maybeSslContextFactory.orElseGet(() -> getSslContextFactory(config, environment));
 
         HttpClientTransport transport;
         if (config.isHttp2Enabled()) {
@@ -340,7 +341,7 @@ public class JettyHttpClient
         });
     }
 
-    private static SslContextFactory.Client getSslContextFactory(HttpClientConfig config)
+    private static SslContextFactory.Client getSslContextFactory(HttpClientConfig config, Optional<String> environment)
     {
         SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
         sslContextFactory.setSNIProvider(SslContextFactory.Client.SniProvider.NON_DOMAIN_SNI_PROVIDER);
@@ -357,7 +358,8 @@ public class JettyHttpClient
         if (config.getTrustStorePath() != null || config.getAutomaticHttpsSharedSecret() != null) {
             KeyStore trustStore = loadTrustStore(config.getTrustStorePath(), config.getTrustStorePassword());
             if (config.getAutomaticHttpsSharedSecret() != null) {
-                addAutomaticTrust(config.getAutomaticHttpsSharedSecret(), trustStore, config.getNodeEnvironment());
+                addAutomaticTrust(config.getAutomaticHttpsSharedSecret(), trustStore, environment
+                        .orElseThrow(() -> new IllegalArgumentException("Environment must be provided when automatic HTTPS is enabled")));
             }
             sslContextFactory.setTrustStore(trustStore);
             sslContextFactory.setTrustStorePassword("");

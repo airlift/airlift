@@ -18,6 +18,7 @@ package io.airlift.http.client;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Binder;
+import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Module;
@@ -25,9 +26,9 @@ import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import io.airlift.configuration.ConfigDefaults;
 import io.airlift.http.client.jetty.JettyHttpClient;
+import io.airlift.node.NodeInfo;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
-import javax.inject.Inject;
 import javax.inject.Provider;
 
 import java.lang.annotation.Annotation;
@@ -93,6 +94,7 @@ public class HttpClientModule
         private final String name;
         private final Class<? extends Annotation> annotation;
         private Injector injector;
+        private NodeInfo nodeInfo;
 
         private HttpClientProvider(String name, Class<? extends Annotation> annotation)
         {
@@ -106,10 +108,17 @@ public class HttpClientModule
             this.injector = injector;
         }
 
+        @Inject(optional = true)
+        public void setNodeInfo(NodeInfo nodeInfo)
+        {
+            this.nodeInfo = nodeInfo;
+        }
+
         @Override
         public HttpClient get()
         {
             HttpClientConfig config = injector.getInstance(Key.get(HttpClientConfig.class, annotation));
+            Optional<String> environment = Optional.ofNullable(nodeInfo).map(NodeInfo::getEnvironment);
             Optional<SslContextFactory.Client> sslContextFactory = injector.getInstance(Key.get(new TypeLiteral<Optional<SslContextFactory.Client>>() {}));
 
             Set<HttpRequestFilter> filters = ImmutableSet.<HttpRequestFilter>builder()
@@ -117,7 +126,7 @@ public class HttpClientModule
                     .addAll(injector.getInstance(Key.get(new TypeLiteral<Set<HttpRequestFilter>>() {}, annotation)))
                     .build();
 
-            return new JettyHttpClient(name, config, ImmutableList.copyOf(filters), sslContextFactory);
+            return new JettyHttpClient(name, config, ImmutableList.copyOf(filters), environment, sslContextFactory);
         }
     }
 }
