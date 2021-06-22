@@ -306,10 +306,9 @@ public class TestHttpServerProvider
                 .setHttp2Enabled(false)
                 .setTrustStorePath(getResource("test.truststore").getPath())
                 .setTrustStorePassword("airlift")
-                .setAutomaticHttpsSharedSecret("shared-secret")
-                .setNodeEnvironment("test");
+                .setAutomaticHttpsSharedSecret("shared-secret");
 
-        try (JettyHttpClient httpClient = new JettyHttpClient(http1ClientConfig)) {
+        try (JettyHttpClient httpClient = createJettyClient(http1ClientConfig)) {
             verifyUri(httpClient, URI.create("https://localhost:" + httpServerInfo.getHttpsUri().getPort()));
             verifyUri(httpClient, URI.create("https://127.0.0.1:" + httpServerInfo.getHttpsUri().getPort()));
         }
@@ -426,10 +425,9 @@ public class TestHttpServerProvider
                 .setKeyStorePassword("airlift")
                 .setTrustStorePath(getResource("clientcert-java/client.truststore").getPath())
                 .setTrustStorePassword("airlift")
-                .setAutomaticHttpsSharedSecret("shared-secret")
-                .setNodeEnvironment("test");
+                .setAutomaticHttpsSharedSecret("shared-secret");
 
-        try (JettyHttpClient httpClient = new JettyHttpClient(clientConfig)) {
+        try (JettyHttpClient httpClient = createJettyClient(clientConfig)) {
             for (String host : ImmutableList.of("localhost", "127.0.0.1")) {
                 URI uri = URI.create("https://" + host + ":" + httpServerInfo.getHttpsUri().getPort());
                 StringResponse response = httpClient.execute(
@@ -647,6 +645,11 @@ public class TestHttpServerProvider
             appendCertificate(tempFile.file(), "certificate-2");
             assertEventually(() -> assertEquals(server.getCertificates().size(), 2));
         }
+    }
+
+    private JettyHttpClient createJettyClient(HttpClientConfig config)
+    {
+        return new JettyHttpClient("test", config, ImmutableList.of(), Optional.of(nodeInfo.getEnvironment()), Optional.empty());
     }
 
     private void createAndStartServer()
