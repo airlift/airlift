@@ -295,6 +295,7 @@ public class TestHttpServerModule
 
         long beforeRequest = System.currentTimeMillis();
         long afterRequest;
+        HttpRequestEvent event;
         try (JettyHttpClient client = new JettyHttpClient()) {
             // test servlet bound correctly
             StringResponse response = client.execute(
@@ -312,12 +313,12 @@ public class TestHttpServerModule
             assertEquals(response.getStatusCode(), responseCode);
             assertEquals(response.getBody(), responseBody);
             assertEquals(response.getHeader("Content-Type"), responseContentType);
+
+            event = (HttpRequestEvent) eventClient.getEvent().get(10, TimeUnit.SECONDS);
         }
         finally {
             server.stop();
         }
-
-        HttpRequestEvent event = (HttpRequestEvent) eventClient.getEvent().get(10, TimeUnit.SECONDS);
 
         assertEquals(event.getClientAddress(), echoServlet.remoteAddress);
         assertEquals(event.getProtocol(), "http");
