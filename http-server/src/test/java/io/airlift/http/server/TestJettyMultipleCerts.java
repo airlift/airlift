@@ -62,6 +62,7 @@ public class TestJettyMultipleCerts
         };
 
         HttpServerConfig config = new HttpServerConfig()
+                .setLogEnabled(false)
                 .setHttpEnabled(false)
                 .setHttpPort(0)
                 .setHttpsEnabled(true)
