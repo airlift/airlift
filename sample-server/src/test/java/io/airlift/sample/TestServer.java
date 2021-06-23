@@ -23,7 +23,9 @@ import io.airlift.bootstrap.LifeCycleManager;
 import io.airlift.event.client.InMemoryEventClient;
 import io.airlift.event.client.InMemoryEventModule;
 import io.airlift.http.client.HttpClient;
+import io.airlift.http.client.Request;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
+import io.airlift.http.client.StringResponseHandler.StringResponse;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.http.server.testing.TestingHttpServer;
 import io.airlift.http.server.testing.TestingHttpServerModule;
@@ -47,6 +49,7 @@ import static io.airlift.http.client.Request.Builder.preparePost;
 import static io.airlift.http.client.Request.Builder.preparePut;
 import static io.airlift.http.client.StaticBodyGenerator.createStaticBodyGenerator;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
+import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
 import static io.airlift.json.JsonCodec.listJsonCodec;
 import static io.airlift.json.JsonCodec.mapJsonCodec;
 import static io.airlift.sample.PersonEvent.personAdded;
@@ -56,9 +59,11 @@ import static java.net.HttpURLConnection.HTTP_BAD_METHOD;
 import static java.net.HttpURLConnection.HTTP_CREATED;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_NO_CONTENT;
+import static java.net.HttpURLConnection.HTTP_OK;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
@@ -230,6 +235,21 @@ public class TestServer
         assertEquals(response.getStatusCode(), HTTP_BAD_METHOD);
 
         assertNull(store.get("foo"));
+    }
+
+    @Test
+    public void testOptions()
+    {
+        StringResponse response = client.execute(
+                new Request.Builder()
+                        .setMethod("OPTIONS")
+                        .setUri(uriFor("/v1/person"))
+                        .build(),
+                createStringResponseHandler());
+
+        assertThat(response.getStatusCode()).isEqualTo(HTTP_OK);
+        assertThat(response.getHeader(CONTENT_TYPE)).isEqualTo("application/vnd.sun.wadl+xml");
+        assertThat(response.getBody()).startsWith("<?xml ").contains("<application ");
     }
 
     private URI uriFor(String path)

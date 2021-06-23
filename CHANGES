@@ -3,6 +3,7 @@
 - Java 11 is now required.
 - Fix spurious reload of HTTP server SSL context after start.
 - Fix support for SNI for single label domains and IP addresses.
+- Fix JAXB error for OPTIONS requests to JAX-RS resources.
 - Disable HTTP server admin port by default.
 - Remove Kerberos support from HTTP client.
 - Add automatic HTTPS configuration.
