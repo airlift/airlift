@@ -31,7 +31,6 @@ import io.airlift.jaxrs.JaxrsModule;
 import io.airlift.json.JsonCodec;
 import io.airlift.json.JsonModule;
 import io.airlift.node.testing.TestingNodeModule;
-import io.airlift.testing.Closeables;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -40,7 +39,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 
 import static io.airlift.http.client.JsonResponseHandler.createJsonResponseHandler;
 import static io.airlift.http.client.Request.Builder.prepareDelete;
@@ -54,6 +52,10 @@ import static io.airlift.json.JsonCodec.mapJsonCodec;
 import static io.airlift.sample.PersonEvent.personAdded;
 import static io.airlift.sample.PersonEvent.personRemoved;
 import static io.airlift.testing.Assertions.assertEqualsIgnoreOrder;
+import static java.net.HttpURLConnection.HTTP_BAD_METHOD;
+import static java.net.HttpURLConnection.HTTP_CREATED;
+import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
+import static java.net.HttpURLConnection.HTTP_NO_CONTENT;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -63,8 +65,6 @@ import static org.testng.Assert.assertNull;
 @Test(singleThreaded = true)
 public class TestServer
 {
-    private static final int NOT_ALLOWED = 405;
-
     private HttpClient client;
     private TestingHttpServer server;
 
@@ -109,7 +109,7 @@ public class TestServer
             }
         }
         finally {
-            Closeables.closeQuietly(client);
+            client.close();
         }
     }
 
@@ -141,7 +141,7 @@ public class TestServer
 
     @Test
     public void testGetSingle()
-            throws IOException, ExecutionException, InterruptedException
+            throws IOException
     {
         store.put("foo", new Person("foo@example.com", "Mr Foo"));
 
@@ -159,7 +159,7 @@ public class TestServer
 
     @Test
     public void testPut()
-            throws IOException, ExecutionException, InterruptedException
+            throws IOException
     {
         String json = Resources.toString(Resources.getResource("single.json"), UTF_8);
 
@@ -171,7 +171,7 @@ public class TestServer
                         .build(),
                 createStatusResponseHandler());
 
-        assertEquals(response.getStatusCode(), javax.ws.rs.core.Response.Status.CREATED.getStatusCode());
+        assertEquals(response.getStatusCode(), HTTP_CREATED);
 
         assertEquals(store.get("foo"), new Person("foo@example.com", "Mr Foo"));
 
@@ -181,7 +181,6 @@ public class TestServer
 
     @Test
     public void testDelete()
-            throws IOException, ExecutionException, InterruptedException
     {
         store.put("foo", new Person("foo@example.com", "Mr Foo"));
 
@@ -192,7 +191,7 @@ public class TestServer
                         .build(),
                 createStatusResponseHandler());
 
-        assertEquals(response.getStatusCode(), javax.ws.rs.core.Response.Status.NO_CONTENT.getStatusCode());
+        assertEquals(response.getStatusCode(), HTTP_NO_CONTENT);
 
         assertNull(store.get("foo"));
 
@@ -203,7 +202,6 @@ public class TestServer
 
     @Test
     public void testDeleteMissing()
-            throws IOException, ExecutionException, InterruptedException
     {
         StatusResponse response = client.execute(
                 prepareDelete()
@@ -212,12 +210,12 @@ public class TestServer
                         .build(),
                 createStatusResponseHandler());
 
-        assertEquals(response.getStatusCode(), javax.ws.rs.core.Response.Status.NOT_FOUND.getStatusCode());
+        assertEquals(response.getStatusCode(), HTTP_NOT_FOUND);
     }
 
     @Test
     public void testPostNotAllowed()
-            throws IOException, ExecutionException, InterruptedException
+            throws IOException
     {
         String json = Resources.toString(Resources.getResource("single.json"), UTF_8);
 
@@ -229,7 +227,7 @@ public class TestServer
                         .build(),
                 createStatusResponseHandler());
 
-        assertEquals(response.getStatusCode(), NOT_ALLOWED);
+        assertEquals(response.getStatusCode(), HTTP_BAD_METHOD);
 
         assertNull(store.get("foo"));
     }
