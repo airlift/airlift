@@ -18,6 +18,9 @@ import java.net.URI;
 
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
+import static java.net.HttpURLConnection.HTTP_OK;
+import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
@@ -67,6 +70,21 @@ public class TestJaxrsTestingHttpProcessor
 
         StringResponse response = HTTP_CLIENT.execute(request, createStringResponseHandler());
         assertEquals(response.getStatusCode(), 404);
+    }
+
+    @Test
+    public void testOptions()
+    {
+        Request request = new Request.Builder()
+                .setMethod("OPTIONS")
+                .setUri(URI.create("http://fake.invalid/get-it/get/xyz"))
+                .build();
+
+        StringResponse response = HTTP_CLIENT.execute(request, createStringResponseHandler());
+
+        assertThat(response.getStatusCode()).isEqualTo(HTTP_OK);
+        assertThat(response.getHeader(CONTENT_TYPE)).isEqualTo("application/vnd.sun.wadl+xml");
+        assertThat(response.getBody()).startsWith("<?xml ").contains("<application ");
     }
 
     @Path("get-it")
