@@ -31,9 +31,9 @@ final class RollingFileHandler
 
     private final AsyncAppenderBase<String> asyncAppender;
 
-    public RollingFileHandler(String filename, int maxHistory, long maxSizeInBytes)
+    public RollingFileHandler(String filename, int maxHistory, long maxSizeInBytes, Format format)
     {
-        setFormatter(new StaticFormatter());
+        setFormatter(format.getFormatter());
 
         ContextBase context = new ContextBase();
 

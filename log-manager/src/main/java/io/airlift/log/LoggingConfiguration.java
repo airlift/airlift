@@ -29,6 +29,7 @@ public class LoggingConfiguration
     private DataSize maxSize = new DataSize(100, MEGABYTE);
     private int maxHistory = 30;
     private String levelsFile;
+    private Format format = Format.TEXT;
 
     public boolean isConsoleEnabled()
     {
@@ -102,6 +103,18 @@ public class LoggingConfiguration
     public LoggingConfiguration setLevelsFile(String levelsFile)
     {
         this.levelsFile = levelsFile;
+        return this;
+    }
+
+    public Format getFormat()
+    {
+        return format;
+    }
+
+    @Config("log.format")
+    public LoggingConfiguration setFormat(Format format)
+    {
+        this.format = format;
         return this;
     }
 }
