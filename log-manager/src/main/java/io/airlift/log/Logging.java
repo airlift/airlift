@@ -111,11 +111,11 @@ public class Logging
         consoleHandler = null;
     }
 
-    public void logToFile(String logPath, int maxHistory, long maxSizeInBytes)
+    public void logToFile(String logPath, int maxHistory, long maxSizeInBytes, Format format)
     {
         log.info("Logging to %s", logPath);
 
-        RollingFileHandler rollingFileHandler = new RollingFileHandler(logPath, maxHistory, maxSizeInBytes);
+        RollingFileHandler rollingFileHandler = new RollingFileHandler(logPath, maxHistory, maxSizeInBytes, format);
         ROOT.addHandler(rollingFileHandler);
     }
 
@@ -190,7 +190,7 @@ public class Logging
     public void configure(LoggingConfiguration config)
     {
         if (config.getLogPath() != null) {
-            logToFile(config.getLogPath(), config.getMaxHistory(), config.getMaxSize().toBytes());
+            logToFile(config.getLogPath(), config.getMaxHistory(), config.getMaxSize().toBytes(), config.getFormat());
         }
 
         if (!config.isConsoleEnabled()) {

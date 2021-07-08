@@ -34,7 +34,8 @@ public class TestLoggingConfiguration
                 .setMaxSize(new DataSize(100, DataSize.Unit.MEGABYTE))
                 .setMaxSizeInBytes(new DataSize(100, DataSize.Unit.MEGABYTE).toBytes())
                 .setMaxHistory(30)
-                .setLevelsFile(null));
+                .setLevelsFile(null)
+                .setFormat(Format.TEXT));
     }
 
     @Test
@@ -47,6 +48,7 @@ public class TestLoggingConfiguration
                 .put("log.max-size-in-bytes", "1024")
                 .put("log.max-history", "3")
                 .put("log.levels-file", "/tmp/levels.txt")
+                .put("log.format", "json")
                 .build();
 
         LoggingConfiguration expected = new LoggingConfiguration()
@@ -55,7 +57,8 @@ public class TestLoggingConfiguration
                 .setMaxSize(new DataSize(1, KILOBYTE))
                 .setMaxSizeInBytes(1024)
                 .setMaxHistory(3)
-                .setLevelsFile("/tmp/levels.txt");
+                .setLevelsFile("/tmp/levels.txt")
+                .setFormat(Format.JSON);
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }
