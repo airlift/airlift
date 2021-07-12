@@ -39,6 +39,7 @@ public abstract class AbstractConfigurationAwareModule
     @Override
     public final synchronized void configure(Binder binder)
     {
+        checkState(configurationFactory != null, "configurationFactory was not set");
         checkState(this.binder == null, "re-entry not allowed");
         this.binder = requireNonNull(binder, "binder is null");
         try {
