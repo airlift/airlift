@@ -17,13 +17,14 @@ package io.airlift.http.server.testing;
 
 import com.google.inject.Binder;
 import com.google.inject.Key;
-import com.google.inject.Module;
 import com.google.inject.Scopes;
+import io.airlift.configuration.AbstractConfigurationAwareModule;
 import io.airlift.discovery.client.AnnouncementHttpServerInfo;
 import io.airlift.http.server.HttpServer;
 import io.airlift.http.server.HttpServer.ClientCertificate;
 import io.airlift.http.server.HttpServerConfig;
 import io.airlift.http.server.HttpServerInfo;
+import io.airlift.http.server.HttpsConfig;
 import io.airlift.http.server.LocalAnnouncementHttpServerInfo;
 import io.airlift.http.server.TheServlet;
 
@@ -31,11 +32,12 @@ import javax.servlet.Filter;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
+import static io.airlift.configuration.ConditionalModule.conditionalModule;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 
 public class TestingHttpServerModule
-        implements Module
+        extends AbstractConfigurationAwareModule
 {
     private final int httpPort;
 
@@ -50,17 +52,12 @@ public class TestingHttpServerModule
     }
 
     @Override
-    public void configure(Binder binder)
+    protected void setup(Binder binder)
     {
         binder.disableCircularProxies();
 
         configBinder(binder).bindConfig(HttpServerConfig.class);
-        configBinder(binder).bindConfigDefaults(HttpServerConfig.class, config -> {
-            config.setHttpPort(httpPort);
-            if (httpPort == 0) {
-                config.setHttpsPort(0);
-            }
-        });
+        configBinder(binder).bindConfigDefaults(HttpServerConfig.class, config -> config.setHttpPort(httpPort));
 
         binder.bind(HttpServerInfo.class).in(Scopes.SINGLETON);
         binder.bind(TestingHttpServer.class).in(Scopes.SINGLETON);
@@ -69,5 +66,15 @@ public class TestingHttpServerModule
         newSetBinder(binder, Filter.class, TheServlet.class);
         newSetBinder(binder, HttpResourceBinding.class, TheServlet.class);
         binder.bind(AnnouncementHttpServerInfo.class).to(LocalAnnouncementHttpServerInfo.class);
+
+        newOptionalBinder(binder, HttpsConfig.class);
+        install(conditionalModule(HttpServerConfig.class, HttpServerConfig::isHttpsEnabled, moduleBinder -> {
+            configBinder(moduleBinder).bindConfig(HttpsConfig.class);
+            configBinder(moduleBinder).bindConfigDefaults(HttpsConfig.class, config -> {
+                if (httpPort == 0) {
+                    config.setHttpsPort(0);
+                }
+            });
+        }));
     }
 }

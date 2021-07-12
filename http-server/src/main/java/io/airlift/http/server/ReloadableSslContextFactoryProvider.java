@@ -60,7 +60,7 @@ final class ReloadableSslContextFactoryProvider
     private final Optional<FileWatch> trustStoreFile;
     private final String trustStorePassword;
 
-    public ReloadableSslContextFactoryProvider(HttpServerConfig config, ScheduledExecutorService scheduledExecutor, ClientCertificate clientCertificate, String environment)
+    public ReloadableSslContextFactoryProvider(HttpsConfig config, ScheduledExecutorService scheduledExecutor, ClientCertificate clientCertificate, String environment)
     {
         requireNonNull(config, "config is null");
         requireNonNull(scheduledExecutor, "scheduledExecutor is null");
