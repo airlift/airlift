@@ -26,6 +26,7 @@ import io.airlift.units.Duration;
 import io.airlift.units.MaxDataSize;
 import io.airlift.units.MinDataSize;
 import io.airlift.units.MinDuration;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import javax.validation.constraints.AssertTrue;
 import javax.validation.constraints.Min;
@@ -75,11 +76,7 @@ public class HttpServerConfig
     private Duration sslContextRefreshTime = new Duration(1, MINUTES);
     private String automaticHttpsSharedSecret;
 
-    /**
-     * This property is initialized with Jetty's default excluded ciphers list.
-     * @see org.eclipse.jetty.util.ssl.SslContextFactory#SslContextFactory(boolean, String)
-     */
-    private List<String> excludedCipherSuites = ImmutableList.of("^.*_(MD5|SHA|SHA1)$", "^TLS_RSA_.*$", "^SSL_.*$", "^.*_NULL_.*$", "^.*_anon_.*$");
+    private List<String> excludedCipherSuites = ImmutableList.copyOf(new SslContextFactory.Server().getExcludeCipherSuites());
 
     private Duration sslSessionTimeout = new Duration(4, HOURS);
     private int sslSessionCacheSize = 10_000;
