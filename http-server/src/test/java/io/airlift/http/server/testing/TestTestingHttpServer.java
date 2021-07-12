@@ -56,6 +56,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
@@ -281,7 +282,7 @@ public class TestTestingHttpServer
         NodeInfo nodeInfo = new NodeInfo("test");
         HttpServerConfig config = new HttpServerConfig().setHttpPort(0);
         HttpServerInfo httpServerInfo = new HttpServerInfo(config, nodeInfo);
-        return new TestingHttpServer(httpServerInfo, nodeInfo, config, servlet, params, ImmutableSet.of(filter), ImmutableSet.of(), ClientCertificate.NONE);
+        return new TestingHttpServer(httpServerInfo, nodeInfo, config, Optional.empty(), servlet, params, ImmutableSet.of(filter), ImmutableSet.of(), ClientCertificate.NONE);
     }
 
     static class DummyServlet

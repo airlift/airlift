@@ -24,12 +24,10 @@ import com.google.common.io.Files;
 import com.google.common.net.MediaType;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
-import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Scopes;
-import io.airlift.configuration.ConfigurationFactory;
-import io.airlift.configuration.ConfigurationModule;
+import io.airlift.bootstrap.Bootstrap;
 import io.airlift.event.client.AbstractEventClient;
 import io.airlift.event.client.EventClient;
 import io.airlift.event.client.EventModule;
@@ -114,20 +112,23 @@ public class TestHttpServerModule
 
     @Test
     public void testCanConstructServer()
-            throws Exception
     {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
-                .put("node.environment", "test")
                 .put("http-server.http.port", "0")
                 .put("http-server.log.path", new File(tempDir, "http-request.log").getAbsolutePath())
                 .build();
 
-        ConfigurationFactory configFactory = new ConfigurationFactory(properties);
-        Injector injector = Guice.createInjector(new HttpServerModule(),
+        Bootstrap app = new Bootstrap(
+                new HttpServerModule(),
                 new TestingNodeModule(),
-                new ConfigurationModule(configFactory),
                 new EventModule(),
                 binder -> binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(DummyServlet.class));
+
+        Injector injector = app
+                .setRequiredConfigurationProperties(properties)
+                .strictConfig()
+                .doNotInitializeLogging()
+                .initialize();
 
         HttpServer server = injector.getInstance(HttpServer.class);
         assertNotNull(server);
@@ -138,17 +139,21 @@ public class TestHttpServerModule
             throws Exception
     {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
-                .put("node.environment", "test")
                 .put("http-server.http.port", "0")
                 .put("http-server.log.path", new File(tempDir, "http-request.log").getAbsolutePath())
                 .build();
 
-        ConfigurationFactory configFactory = new ConfigurationFactory(properties);
-        Injector injector = Guice.createInjector(new HttpServerModule(),
+        Bootstrap app = new Bootstrap(
+                new HttpServerModule(),
                 new TestingNodeModule(),
-                new ConfigurationModule(configFactory),
                 new EventModule(),
                 binder -> binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(DummyServlet.class));
+
+        Injector injector = app
+                .setRequiredConfigurationProperties(properties)
+                .strictConfig()
+                .doNotInitializeLogging()
+                .initialize();
 
         NodeInfo nodeInfo = injector.getInstance(NodeInfo.class);
         HttpServer server = injector.getInstance(HttpServer.class);
@@ -172,15 +177,13 @@ public class TestHttpServerModule
             throws Exception
     {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
-                .put("node.environment", "test")
                 .put("http-server.http.port", "0")
                 .put("http-server.log.path", new File(tempDir, "http-request.log").getAbsolutePath())
                 .build();
 
-        ConfigurationFactory configFactory = new ConfigurationFactory(properties);
-        Injector injector = Guice.createInjector(new HttpServerModule(),
+        Bootstrap app = new Bootstrap(
+                new HttpServerModule(),
                 new TestingNodeModule(),
-                new ConfigurationModule(configFactory),
                 new EventModule(),
                 binder -> {
                     binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(DummyServlet.class);
@@ -190,6 +193,12 @@ public class TestHttpServerModule
                     httpServerBinder(binder).bindResource("path", "webapp/user").withWelcomeFile("user-welcome.txt");
                     httpServerBinder(binder).bindResource("path", "webapp/user2");
                 });
+
+        Injector injector = app
+                .setRequiredConfigurationProperties(properties)
+                .strictConfig()
+                .doNotInitializeLogging()
+                .initialize();
 
         HttpServerInfo httpServerInfo = injector.getInstance(HttpServerInfo.class);
 
@@ -256,21 +265,25 @@ public class TestHttpServerModule
             throws Exception
     {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
-                .put("node.environment", "test")
                 .put("http-server.http.port", "0")
                 .put("http-server.log.path", new File(tempDir, "http-request.log").getAbsolutePath())
                 .build();
 
         SingleUseEventClient eventClient = new SingleUseEventClient();
 
-        ConfigurationFactory configFactory = new ConfigurationFactory(properties);
-        Injector injector = Guice.createInjector(new HttpServerModule(),
+        Bootstrap app = new Bootstrap(
+                new HttpServerModule(),
                 new TestingNodeModule(),
-                new ConfigurationModule(configFactory),
                 new InMemoryEventModule(),
                 new TraceTokenModule(),
                 binder -> newSetBinder(binder, EventClient.class).addBinding().toInstance(eventClient),
                 binder -> binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(EchoServlet.class).in(Scopes.SINGLETON));
+
+        Injector injector = app
+                .setRequiredConfigurationProperties(properties)
+                .strictConfig()
+                .doNotInitializeLogging()
+                .initialize();
 
         HttpServerInfo httpServerInfo = injector.getInstance(HttpServerInfo.class);
         EchoServlet echoServlet = (EchoServlet) injector.getInstance(Key.get(Servlet.class, TheServlet.class));

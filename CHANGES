@@ -1,3 +1,7 @@
+208
+
+- Only bind HTTPS config for HTTP server when HTTPS is enabled.
+
 207
 
 - Java 11 is now required.

@@ -64,7 +64,8 @@ public class TestJettyMultipleCerts
         HttpServerConfig config = new HttpServerConfig()
                 .setHttpEnabled(false)
                 .setHttpPort(0)
-                .setHttpsEnabled(true)
+                .setHttpsEnabled(true);
+        HttpsConfig httpsConfig = new HttpsConfig()
                 .setHttpsPort(0)
                 .setKeystorePath(getResource("multiple-certs/server.p12").getPath())
                 .setKeystorePassword("airlift");
@@ -74,11 +75,12 @@ public class TestJettyMultipleCerts
                 .setEnvironment("test")
                 .setNodeInternalAddress("localhost"));
 
-        HttpServerInfo httpServerInfo = new HttpServerInfo(config, nodeInfo);
+        HttpServerInfo httpServerInfo = new HttpServerInfo(config, Optional.of(httpsConfig), nodeInfo);
         HttpServerProvider serverProvider = new HttpServerProvider(
                 httpServerInfo,
                 nodeInfo,
                 config,
+                Optional.of(httpsConfig),
                 servlet,
                 ImmutableSet.of(new DummyFilter()),
                 ImmutableSet.of(),

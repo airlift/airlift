@@ -49,6 +49,7 @@ public class HttpServerProvider
     private final HttpServerInfo httpServerInfo;
     private final NodeInfo nodeInfo;
     private final HttpServerConfig config;
+    private final Optional<HttpsConfig> httpsConfig;
     private final Servlet theServlet;
     private final Set<HttpResourceBinding> resources;
     private final ClientCertificate clientCertificate;
@@ -68,6 +69,7 @@ public class HttpServerProvider
     public HttpServerProvider(HttpServerInfo httpServerInfo,
             NodeInfo nodeInfo,
             HttpServerConfig config,
+            Optional<HttpsConfig> httpsConfig,
             @TheServlet Servlet theServlet,
             @TheServlet Set<Filter> filters,
             @TheServlet Set<HttpResourceBinding> resources,
@@ -80,6 +82,7 @@ public class HttpServerProvider
         requireNonNull(httpServerInfo, "httpServerInfo is null");
         requireNonNull(nodeInfo, "nodeInfo is null");
         requireNonNull(config, "config is null");
+        requireNonNull(httpsConfig, "httpsConfig is null");
         requireNonNull(theServlet, "theServlet is null");
         requireNonNull(filters, "filters is null");
         requireNonNull(resources, "resources is null");
@@ -92,6 +95,7 @@ public class HttpServerProvider
         this.httpServerInfo = httpServerInfo;
         this.nodeInfo = nodeInfo;
         this.config = config;
+        this.httpsConfig = httpsConfig;
         this.theServlet = theServlet;
         this.filters = ImmutableSet.copyOf(filters);
         this.resources = ImmutableSet.copyOf(resources);
@@ -142,9 +146,11 @@ public class HttpServerProvider
     public HttpServer get()
     {
         try {
-            HttpServer httpServer = new HttpServer(httpServerInfo,
+            HttpServer httpServer = new HttpServer(
+                    httpServerInfo,
                     nodeInfo,
                     config,
+                    httpsConfig,
                     theServlet,
                     servletInitParameters,
                     filters,

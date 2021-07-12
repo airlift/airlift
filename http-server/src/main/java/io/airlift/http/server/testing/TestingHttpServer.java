@@ -21,6 +21,7 @@ import io.airlift.http.server.HttpServer;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.http.server.HttpServerConfig;
 import io.airlift.http.server.HttpServerInfo;
+import io.airlift.http.server.HttpsConfig;
 import io.airlift.http.server.RequestStats;
 import io.airlift.http.server.TheServlet;
 import io.airlift.node.NodeInfo;
@@ -52,6 +53,7 @@ public class TestingHttpServer
         this(httpServerInfo,
                 nodeInfo,
                 config,
+                Optional.empty(),
                 servlet,
                 initParameters,
                 ImmutableSet.of(),
@@ -64,6 +66,7 @@ public class TestingHttpServer
             HttpServerInfo httpServerInfo,
             NodeInfo nodeInfo,
             HttpServerConfig config,
+            Optional<HttpsConfig> httpsConfig,
             @TheServlet Servlet servlet,
             @TheServlet Map<String, String> initParameters,
             @TheServlet Set<Filter> filters,
@@ -74,6 +77,7 @@ public class TestingHttpServer
         super(httpServerInfo,
                 nodeInfo,
                 config.setLogEnabled(false),
+                httpsConfig,
                 servlet,
                 initParameters,
                 ImmutableSet.copyOf(filters),
