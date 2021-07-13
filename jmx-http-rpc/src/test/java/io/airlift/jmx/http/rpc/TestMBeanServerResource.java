@@ -74,7 +74,6 @@ public class TestMBeanServerResource
                 });
 
         Injector injector = app
-                .strictConfig()
                 .doNotInitializeLogging()
                 .initialize();
 

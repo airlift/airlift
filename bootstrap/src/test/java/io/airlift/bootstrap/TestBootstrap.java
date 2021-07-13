@@ -124,7 +124,6 @@ public class TestBootstrap
     public void testStrictConfig()
     {
         Bootstrap bootstrap = new Bootstrap()
-                .strictConfig()
                 .setRequiredConfigurationProperty("test-required", "foo");
 
         assertThatThrownBy(bootstrap::initialize)
@@ -133,11 +132,13 @@ public class TestBootstrap
                                 new Message("Configuration property 'test-required' was not used")));
     }
 
+    @SuppressWarnings("removal")
     @Test
     public void testNonStrictConfig()
     {
         new Bootstrap()
                 .setRequiredConfigurationProperty("test-required", "foo")
+                .nonStrictConfig()
                 .initialize();
     }
 

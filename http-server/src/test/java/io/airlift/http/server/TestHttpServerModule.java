@@ -126,7 +126,6 @@ public class TestHttpServerModule
 
         Injector injector = app
                 .setRequiredConfigurationProperties(properties)
-                .strictConfig()
                 .doNotInitializeLogging()
                 .initialize();
 
@@ -151,7 +150,6 @@ public class TestHttpServerModule
 
         Injector injector = app
                 .setRequiredConfigurationProperties(properties)
-                .strictConfig()
                 .doNotInitializeLogging()
                 .initialize();
 
@@ -196,7 +194,6 @@ public class TestHttpServerModule
 
         Injector injector = app
                 .setRequiredConfigurationProperties(properties)
-                .strictConfig()
                 .doNotInitializeLogging()
                 .initialize();
 
@@ -281,7 +278,6 @@ public class TestHttpServerModule
 
         Injector injector = app
                 .setRequiredConfigurationProperties(properties)
-                .strictConfig()
                 .doNotInitializeLogging()
                 .initialize();
 
