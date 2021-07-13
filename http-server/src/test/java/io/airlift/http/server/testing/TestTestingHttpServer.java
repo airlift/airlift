@@ -157,7 +157,6 @@ public class TestTestingHttpServer
                 });
 
         Injector injector = app
-                .strictConfig()
                 .doNotInitializeLogging()
                 .initialize();
 
@@ -191,7 +190,6 @@ public class TestTestingHttpServer
                 });
 
         Injector injector = app
-                .strictConfig()
                 .doNotInitializeLogging()
                 .initialize();
 
@@ -229,7 +227,6 @@ public class TestTestingHttpServer
                 });
 
         Injector injector = app
-                .strictConfig()
                 .doNotInitializeLogging()
                 .initialize();
 

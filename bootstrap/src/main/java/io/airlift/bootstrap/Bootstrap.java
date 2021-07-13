@@ -76,7 +76,7 @@ public class Bootstrap
     private Map<String, String> optionalConfigurationProperties;
     private boolean initializeLogging = true;
     private boolean quiet;
-    private boolean strictConfig;
+    private boolean strictConfig = true;
     private boolean requireExplicitBindings = true;
 
     private boolean initialized;
@@ -139,9 +139,23 @@ public class Bootstrap
         return this;
     }
 
+    /**
+     * @deprecated non-strict config is deprecated
+     */
+    @Deprecated(forRemoval = true)
     public Bootstrap strictConfig()
     {
         this.strictConfig = true;
+        return this;
+    }
+
+    /**
+     * @deprecated non-strict config is deprecated
+     */
+    @Deprecated(forRemoval = true)
+    public Bootstrap nonStrictConfig()
+    {
+        this.strictConfig = false;
         return this;
     }
 

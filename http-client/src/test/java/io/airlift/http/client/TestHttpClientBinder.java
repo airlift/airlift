@@ -53,7 +53,6 @@ public class TestHttpClientBinder
                         .withConfigDefaults(config -> config.setRequestTimeout(new Duration(33, MINUTES))),
                 new TraceTokenModule())
                 .quiet()
-                .strictConfig()
                 .initialize();
 
         JettyHttpClient httpClient = (JettyHttpClient) injector.getInstance(Key.get(HttpClient.class, FooClient.class));
@@ -80,7 +79,6 @@ public class TestHttpClientBinder
                 },
                 new TraceTokenModule())
                 .quiet()
-                .strictConfig()
                 .initialize();
 
         JettyHttpClient fooClient = (JettyHttpClient) injector.getInstance(Key.get(HttpClient.class, FooClient.class));
@@ -112,7 +110,6 @@ public class TestHttpClientBinder
                 },
                 new TraceTokenModule())
                 .quiet()
-                .strictConfig()
                 .initialize();
 
         assertFilterCount(injector.getInstance(Key.get(HttpClient.class, FooClient.class)), 3);
@@ -129,7 +126,6 @@ public class TestHttpClientBinder
                         .withTracing(),
                 new TraceTokenModule())
                 .quiet()
-                .strictConfig()
                 .initialize();
 
         HttpClient httpClient = injector.getInstance(Key.get(HttpClient.class, FooClient.class));
@@ -142,7 +138,6 @@ public class TestHttpClientBinder
         Injector injector = new Bootstrap(
                 binder -> httpClientBinder(binder).bindHttpClient("foo", FooClient.class))
                 .quiet()
-                .strictConfig()
                 .initialize();
 
         assertNotNull(injector.getInstance(Key.get(HttpClient.class, FooClient.class)));
@@ -156,7 +151,6 @@ public class TestHttpClientBinder
                         .withAlias(FooAlias1.class)
                         .withAliases(ImmutableList.of(FooAlias2.class, FooAlias3.class)))
                 .quiet()
-                .strictConfig()
                 .initialize();
 
         HttpClient client = injector.getInstance(Key.get(HttpClient.class, FooClient.class));
@@ -173,7 +167,6 @@ public class TestHttpClientBinder
                         .withAlias(FooAlias1.class)
                         .withAlias(FooAlias2.class))
                 .quiet()
-                .strictConfig()
                 .initialize();
 
         HttpClient client = injector.getInstance(Key.get(HttpClient.class, FooClient.class));
@@ -190,7 +183,6 @@ public class TestHttpClientBinder
                     httpClientBinder(binder).bindHttpClient("bar", BarClient.class);
                 })
                 .quiet()
-                .strictConfig()
                 .initialize();
 
         HttpClient fooClient = injector.getInstance(Key.get(HttpClient.class, FooClient.class));
@@ -207,7 +199,6 @@ public class TestHttpClientBinder
                     httpClientBinder(binder).bindHttpClient("bar", BarClient.class);
                 })
                 .quiet()
-                .strictConfig()
                 .initialize();
 
         HttpClient fooClient = injector.getInstance(Key.get(HttpClient.class, FooClient.class));

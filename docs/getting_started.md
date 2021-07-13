@@ -178,7 +178,7 @@ public class Service
                 new EventModule(),
                 new JsonModule(),
                 new JaxrsModule());
-        app.strictConfig().initialize();
+        app.initialize();
     }
 
     private Service()

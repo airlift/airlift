@@ -39,5 +39,5 @@ modules here.
 Once the bootstrap instance is created, the Service is started via:
 
 ```
-app.strictConfig().initialize();
+app.initialize();
 ```
