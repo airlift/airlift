@@ -267,6 +267,7 @@ public class Bootstrap
         // disable broken Guice "features"
         moduleList.add(Binder::disableCircularProxies);
         moduleList.add(Binder::requireExplicitBindings);
+        moduleList.add(Binder::requireExactBindingAnnotations);
 
         moduleList.addAll(modules);
 
