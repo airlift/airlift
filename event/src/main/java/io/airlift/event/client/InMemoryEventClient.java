@@ -18,6 +18,7 @@ package io.airlift.event.client;
 import com.google.common.collect.ImmutableList;
 
 import javax.annotation.concurrent.GuardedBy;
+import javax.inject.Inject;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -28,6 +29,9 @@ public class InMemoryEventClient
 {
     @GuardedBy("this")
     private final List<Object> events = new ArrayList<>();
+
+    @Inject
+    public InMemoryEventClient() {}
 
     @Override
     protected synchronized <T> void postEvent(T event)

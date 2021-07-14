@@ -25,6 +25,7 @@ import io.airlift.tracetoken.TraceTokenModule;
 import io.airlift.units.Duration;
 import org.testng.annotations.Test;
 
+import javax.inject.Inject;
 import javax.inject.Qualifier;
 
 import java.lang.annotation.ElementType;
@@ -258,6 +259,9 @@ public class TestHttpClientBinder
     public static class AnotherHttpRequestFilter
             implements HttpRequestFilter
     {
+        @Inject
+        public AnotherHttpRequestFilter() {}
+
         @Override
         public Request filterRequest(Request request)
         {

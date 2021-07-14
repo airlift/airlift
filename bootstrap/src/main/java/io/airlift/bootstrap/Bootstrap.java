@@ -268,6 +268,7 @@ public class Bootstrap
         moduleList.add(Binder::disableCircularProxies);
         moduleList.add(Binder::requireExplicitBindings);
         moduleList.add(Binder::requireExactBindingAnnotations);
+        moduleList.add(Binder::requireAtInjectOnConstructors);
 
         moduleList.addAll(modules);
 

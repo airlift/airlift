@@ -15,6 +15,7 @@
  */
 package io.airlift.http.server;
 
+import javax.inject.Inject;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -29,6 +30,9 @@ import java.io.IOException;
 class DummyFilter
         implements Filter
 {
+    @Inject
+    public DummyFilter() {}
+
     @Override
     public void init(FilterConfig filterConfig)
             throws ServletException

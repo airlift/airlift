@@ -17,6 +17,7 @@ package io.airlift.jaxrs;
 
 import com.google.common.base.Throwables;
 
+import javax.inject.Inject;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
@@ -28,6 +29,9 @@ import javax.ws.rs.ext.Provider;
 public class ParsingExceptionMapper
         implements ExceptionMapper<ParsingException>
 {
+    @Inject
+    public ParsingExceptionMapper() {}
+
     @Override
     public Response toResponse(ParsingException e)
     {
