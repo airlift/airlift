@@ -77,7 +77,6 @@ public class Bootstrap
     private boolean initializeLogging = true;
     private boolean quiet;
     private boolean strictConfig = true;
-    private boolean requireExplicitBindings = true;
 
     private boolean initialized;
 
@@ -156,13 +155,6 @@ public class Bootstrap
     public Bootstrap nonStrictConfig()
     {
         this.strictConfig = false;
-        return this;
-    }
-
-    @SuppressWarnings("unused")
-    public Bootstrap requireExplicitBindings(boolean requireExplicitBindings)
-    {
-        this.requireExplicitBindings = requireExplicitBindings;
         return this;
     }
 
@@ -274,9 +266,7 @@ public class Bootstrap
 
         // disable broken Guice "features"
         moduleList.add(Binder::disableCircularProxies);
-        if (requireExplicitBindings) {
-            moduleList.add(Binder::requireExplicitBindings);
-        }
+        moduleList.add(Binder::requireExplicitBindings);
 
         moduleList.addAll(modules);
 
