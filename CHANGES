@@ -2,6 +2,7 @@
 
 - Only bind HTTPS config for HTTP server when HTTPS is enabled.
 - Make strict config default for Bootstrap. Non-strict is deprecated.
+- Require explicit Guice bindings for Bootstrap.
 
 207
 
