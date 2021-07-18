@@ -59,7 +59,7 @@ public final class MoreFutures
      * <p>
      * Example:
      * <pre>
-     * ListenableFuture<Void> voidFuture = FluentFuture.from(future)
+     * ListenableFuture&lt;Void&gt; voidFuture = FluentFuture.from(future)
      *         .transform(MoreFutures::toVoid, directExecutor())
      * </pre>
      */
