@@ -92,7 +92,6 @@ public class TestServer
                 new MainModule());
 
         Injector injector = app
-                .strictConfig()
                 .doNotInitializeLogging()
                 .initialize();
 

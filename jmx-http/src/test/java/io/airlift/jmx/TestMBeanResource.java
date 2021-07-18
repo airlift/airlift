@@ -65,7 +65,6 @@ public class TestMBeanResource
 
         Injector injector = app
                 .quiet()
-                .strictConfig()
                 .initialize();
 
         lifeCycleManager = injector.getInstance(LifeCycleManager.class);

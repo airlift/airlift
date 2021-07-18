@@ -76,8 +76,7 @@ public class Bootstrap
     private Map<String, String> optionalConfigurationProperties;
     private boolean initializeLogging = true;
     private boolean quiet;
-    private boolean strictConfig;
-    private boolean requireExplicitBindings = true;
+    private boolean strictConfig = true;
 
     private boolean initialized;
 
@@ -139,16 +138,23 @@ public class Bootstrap
         return this;
     }
 
+    /**
+     * @deprecated non-strict config is deprecated
+     */
+    @Deprecated(forRemoval = true)
     public Bootstrap strictConfig()
     {
         this.strictConfig = true;
         return this;
     }
 
-    @SuppressWarnings("unused")
-    public Bootstrap requireExplicitBindings(boolean requireExplicitBindings)
+    /**
+     * @deprecated non-strict config is deprecated
+     */
+    @Deprecated(forRemoval = true)
+    public Bootstrap nonStrictConfig()
     {
-        this.requireExplicitBindings = requireExplicitBindings;
+        this.strictConfig = false;
         return this;
     }
 
@@ -260,9 +266,9 @@ public class Bootstrap
 
         // disable broken Guice "features"
         moduleList.add(Binder::disableCircularProxies);
-        if (requireExplicitBindings) {
-            moduleList.add(Binder::requireExplicitBindings);
-        }
+        moduleList.add(Binder::requireExplicitBindings);
+        moduleList.add(Binder::requireExactBindingAnnotations);
+        moduleList.add(Binder::requireAtInjectOnConstructors);
 
         moduleList.addAll(modules);
 

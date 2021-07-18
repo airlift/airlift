@@ -22,6 +22,7 @@ import com.google.inject.Scopes;
 import io.airlift.node.NodeInfo;
 
 import javax.annotation.PreDestroy;
+import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 
@@ -126,6 +127,9 @@ public class DiscoveryModule
             implements Provider<ScheduledExecutorService>
     {
         private ScheduledExecutorService executor;
+
+        @Inject
+        public DiscoveryExecutorProvider() {}
 
         @Override
         public ScheduledExecutorService get()

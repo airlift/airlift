@@ -47,6 +47,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
 
+import javax.inject.Inject;
 import javax.servlet.Filter;
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
@@ -126,7 +127,6 @@ public class TestHttpServerModule
 
         Injector injector = app
                 .setRequiredConfigurationProperties(properties)
-                .strictConfig()
                 .doNotInitializeLogging()
                 .initialize();
 
@@ -151,7 +151,6 @@ public class TestHttpServerModule
 
         Injector injector = app
                 .setRequiredConfigurationProperties(properties)
-                .strictConfig()
                 .doNotInitializeLogging()
                 .initialize();
 
@@ -196,7 +195,6 @@ public class TestHttpServerModule
 
         Injector injector = app
                 .setRequiredConfigurationProperties(properties)
-                .strictConfig()
                 .doNotInitializeLogging()
                 .initialize();
 
@@ -281,7 +279,6 @@ public class TestHttpServerModule
 
         Injector injector = app
                 .setRequiredConfigurationProperties(properties)
-                .strictConfig()
                 .doNotInitializeLogging()
                 .initialize();
 
@@ -363,6 +360,9 @@ public class TestHttpServerModule
         private final ListMultimap<String, String> responseHeaders = ArrayListMultimap.create();
         public String responseBody;
         private String remoteAddress;
+
+        @Inject
+        public EchoServlet() {}
 
         @Override
         protected void service(HttpServletRequest request, HttpServletResponse response)

@@ -35,7 +35,6 @@ public class TestConfigurationAwareModule
     public void testConfigAvailable()
     {
         Injector injector = new Bootstrap(new FooModule())
-                .strictConfig()
                 .doNotInitializeLogging()
                 .setRequiredConfigurationProperty("foo.enabled", "true")
                 .setRequiredConfigurationProperty("bar.enabled", "true")
@@ -50,7 +49,6 @@ public class TestConfigurationAwareModule
     public void testInvalidInstall()
     {
         Bootstrap bootstrap = new Bootstrap(new BrokenInstallModule())
-                .strictConfig()
                 .doNotInitializeLogging();
 
         assertThatThrownBy(bootstrap::initialize).isInstanceOfSatisfying(CreationException.class, e ->
@@ -82,7 +80,6 @@ public class TestConfigurationAwareModule
                 });
 
         Injector injector = new Bootstrap(combined)
-                .strictConfig()
                 .doNotInitializeLogging()
                 .setRequiredConfigurationProperty("foo.enabled", "true")
                 .setRequiredConfigurationProperty("bar.enabled", "true")

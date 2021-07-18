@@ -32,6 +32,7 @@ import org.testng.annotations.Test;
 import org.weakref.jmx.MBeanExporter;
 import org.weakref.jmx.Managed;
 
+import javax.inject.Inject;
 import javax.management.Attribute;
 import javax.management.AttributeList;
 import javax.management.MBeanException;
@@ -74,7 +75,6 @@ public class TestMBeanServerResource
                 });
 
         Injector injector = app
-                .strictConfig()
                 .doNotInitializeLogging()
                 .initialize();
 
@@ -258,6 +258,9 @@ public class TestMBeanServerResource
         private String value;
         private Object objectValue;
         public boolean noArgsMethodInvoked;
+
+        @Inject
+        public TestMBean() {}
 
         @Managed
         public String getValue()

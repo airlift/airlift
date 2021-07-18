@@ -15,11 +15,16 @@
  */
 package io.airlift.http.client;
 
+import javax.inject.Inject;
+
 import static io.airlift.http.client.Request.Builder.fromRequest;
 
 public class TestingRequestFilter
         implements HttpRequestFilter
 {
+    @Inject
+    public TestingRequestFilter() {}
+
     @Override
     public Request filterRequest(Request request)
     {

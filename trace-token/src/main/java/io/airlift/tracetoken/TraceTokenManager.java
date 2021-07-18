@@ -15,6 +15,8 @@
  */
 package io.airlift.tracetoken;
 
+import javax.inject.Inject;
+
 import java.util.concurrent.atomic.AtomicLong;
 
 import static java.lang.String.format;
@@ -27,6 +29,9 @@ public class TraceTokenManager
     private final AtomicLong sequence = new AtomicLong();
 
     private final ThreadLocal<String> token = new ThreadLocal<>();
+
+    @Inject
+    public TraceTokenManager() {}
 
     public void registerRequestToken(String token)
     {

@@ -28,6 +28,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 
+import javax.inject.Inject;
 import javax.management.ObjectName;
 import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.OpenType;
@@ -65,6 +66,7 @@ public class JmxHttpModule
     public static class TabularDataSerializer
             extends StdSerializer<TabularData>
     {
+        @Inject
         public TabularDataSerializer()
         {
             super(TabularData.class, true);
@@ -100,6 +102,7 @@ public class JmxHttpModule
     public static class CompositeDataSerializer
             extends StdSerializer<CompositeData>
     {
+        @Inject
         public CompositeDataSerializer()
         {
             super(CompositeData.class, true);

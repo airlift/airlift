@@ -17,6 +17,7 @@ package io.airlift.http.server;
 
 import com.google.common.util.concurrent.SettableFuture;
 
+import javax.inject.Inject;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -31,6 +32,9 @@ class DummyServlet
         extends HttpServlet
 {
     private final SettableFuture<?> sleeping = SettableFuture.create();
+
+    @Inject
+    public DummyServlet() {}
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
