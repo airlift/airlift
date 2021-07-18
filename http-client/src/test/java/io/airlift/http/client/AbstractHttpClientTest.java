@@ -515,7 +515,7 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
-    public void TestOverrideMethodFilterInHttpServertestPutMethodWithFileBodyGenerator()
+    public void testOverrideMethodFilterInHttpServertestPutMethodWithFileBodyGenerator()
             throws Exception
     {
         byte[] contents = "hello world".getBytes(UTF_8);

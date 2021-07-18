@@ -29,7 +29,7 @@ import static org.testng.Assert.fail;
 public class ProblemsTest
 {
     @Test
-    public void TestOneError()
+    public void testOneError()
     {
         Problems problems = new Problems();
         problems.addError("message %d", 1);
@@ -50,7 +50,7 @@ public class ProblemsTest
     }
 
     @Test
-    public void TestTwoErrors()
+    public void testTwoErrors()
     {
         Problems problems = new Problems();
         problems.addError("message %d", 1);
@@ -73,7 +73,7 @@ public class ProblemsTest
     }
 
     @Test
-    public void TestFormatError()
+    public void testFormatError()
     {
         Problems problems = new Problems();
         problems.addError("message %d", "NaN");
@@ -94,7 +94,7 @@ public class ProblemsTest
     }
 
     @Test
-    public void TestOneWarning()
+    public void testOneWarning()
     {
         Problems problems = new Problems();
         problems.addWarning("message %d", 1);
@@ -114,7 +114,7 @@ public class ProblemsTest
     }
 
     @Test
-    public void TestTwoWarnings()
+    public void testTwoWarnings()
     {
         Problems problems = new Problems();
         problems.addWarning("message %d", 1);
@@ -136,7 +136,7 @@ public class ProblemsTest
     }
 
     @Test
-    public void TestFormatWarning()
+    public void testFormatWarning()
     {
         Problems problems = new Problems();
         problems.addWarning("message %d", "NaN");
@@ -156,7 +156,7 @@ public class ProblemsTest
     }
 
     @Test
-    public void TestErrorsAndWarnings()
+    public void testErrorsAndWarnings()
     {
         Problems problems = new Problems();
         problems.addError("message e%d", 1);
@@ -208,7 +208,7 @@ public class ProblemsTest
     }
 
     @Test
-    public void TestMonitor()
+    public void testMonitor()
     {
         SimpleMonitor monitor = new SimpleMonitor();
         Problems problems = new Problems(monitor);
