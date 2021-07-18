@@ -349,7 +349,7 @@ public final class ConfigAssertions
         }
     }
 
-    @SuppressWarnings("checkstyle:TypeName")
+    @SuppressWarnings({"checkstyle:TypeName", "checkstyle:MethodName"})
     public interface $$RecordingConfigProxy<T>
     {
         $$RecordedConfigData<T> $$getRecordedConfig();
