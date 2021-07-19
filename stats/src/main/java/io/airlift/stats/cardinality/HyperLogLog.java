@@ -120,6 +120,11 @@ public class HyperLogLog
         instance = instance.toDense();
     }
 
+    public int getIndexBitLength()
+    {
+        return instance.getIndexBitLength();
+    }
+
     @VisibleForTesting
     void verify()
     {
