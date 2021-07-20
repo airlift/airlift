@@ -266,6 +266,14 @@ public class ConfigurationMetadata<T>
             }
         }
 
+        // Find orphan @ConfigHidden methods, in order to report errors
+        Collection<Method> hiddenMethods = findHiddenConfigMethods(configClass);
+        for (Method method : hiddenMethods) {
+            if (!method.isAnnotationPresent(Config.class)) {
+                problems.addError("@ConfigHidden method [%s] is not annotated with @Config.", method.toGenericString());
+            }
+        }
+
         return attributes;
     }
 
@@ -279,6 +287,7 @@ public class ConfigurationMetadata<T>
 
         String propertyName = configMethod.getAnnotation(Config.class).value();
         final boolean securitySensitive = configMethod.isAnnotationPresent(ConfigSecuritySensitive.class);
+        final boolean hidden = configMethod.isAnnotationPresent(ConfigHidden.class);
 
         // verify parameters
         if (!validateSetter(configMethod)) {
@@ -288,7 +297,7 @@ public class ConfigurationMetadata<T>
         // determine the attribute name
         String attributeName = configMethod.getName().substring(3);
 
-        AttributeMetaDataBuilder builder = new AttributeMetaDataBuilder(configClass, attributeName, securitySensitive);
+        AttributeMetaDataBuilder builder = new AttributeMetaDataBuilder(configClass, attributeName, securitySensitive, hidden);
 
         if (configMethod.isAnnotationPresent(ConfigDescription.class)) {
             builder.setDescription(configMethod.getAnnotation(ConfigDescription.class).value());
@@ -443,12 +452,13 @@ public class ConfigurationMetadata<T>
         private final String name;
         private final String description;
         private final boolean securitySensitive;
+        private final boolean hidden;
         private final Method getter;
 
         private final InjectionPointMetaData injectionPoint;
         private final Set<InjectionPointMetaData> legacyInjectionPoints;
 
-        public AttributeMetadata(Class<?> configClass, String name, String description, boolean securitySensitive, Method getter,
+        public AttributeMetadata(Class<?> configClass, String name, String description, boolean securitySensitive, boolean hidden, Method getter,
                 InjectionPointMetaData injectionPoint, Set<InjectionPointMetaData> legacyInjectionPoints)
         {
             requireNonNull(configClass);
@@ -461,6 +471,7 @@ public class ConfigurationMetadata<T>
             this.name = name;
             this.description = description;
             this.securitySensitive = securitySensitive;
+            this.hidden = hidden;
             this.getter = getter;
 
             this.injectionPoint = injectionPoint;
@@ -485,6 +496,11 @@ public class ConfigurationMetadata<T>
         public boolean isSecuritySensitive()
         {
             return securitySensitive;
+        }
+
+        public boolean isHidden()
+        {
+            return hidden;
         }
 
         public Method getGetter()
@@ -551,8 +567,9 @@ public class ConfigurationMetadata<T>
         private InjectionPointMetaData injectionPoint;
         private final Set<InjectionPointMetaData> legacyInjectionPoints = new HashSet<>();
         private final boolean securitySensitive;
+        private final boolean hidden;
 
-        public AttributeMetaDataBuilder(Class<?> configClass, String name, boolean securitySensitive)
+        public AttributeMetaDataBuilder(Class<?> configClass, String name, boolean securitySensitive, boolean hidden)
         {
             requireNonNull(configClass);
             requireNonNull(name);
@@ -561,6 +578,7 @@ public class ConfigurationMetadata<T>
             this.configClass = configClass;
             this.name = name;
             this.securitySensitive = securitySensitive;
+            this.hidden = hidden;
         }
 
         public void setDescription(String description)
@@ -602,7 +620,7 @@ public class ConfigurationMetadata<T>
                 return null;
             }
 
-            return new AttributeMetadata(configClass, name, description, securitySensitive, getter, injectionPoint, legacyInjectionPoints);
+            return new AttributeMetadata(configClass, name, description, securitySensitive, hidden, getter, injectionPoint, legacyInjectionPoints);
         }
     }
 
@@ -619,6 +637,11 @@ public class ConfigurationMetadata<T>
     private static Collection<Method> findSensitiveConfigMethods(Class<?> configClass)
     {
         return findAnnotatedMethods(configClass, ConfigSecuritySensitive.class);
+    }
+
+    private static Collection<Method> findHiddenConfigMethods(Class<?> configClass)
+    {
+        return findAnnotatedMethods(configClass, ConfigHidden.class);
     }
 
     /**

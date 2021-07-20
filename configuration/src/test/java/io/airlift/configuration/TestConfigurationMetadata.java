@@ -84,6 +84,20 @@ public class TestConfigurationMetadata
     }
 
     @Test
+    public void testSetterHiddenClass()
+            throws Exception
+    {
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(SetterHiddenClass.class, monitor);
+        Map<String, Set<String>> expectedAttributes = new HashMap();
+        expectedAttributes.put("Value", ImmutableSet.of("value"));
+
+        verifyMetaData(metadata, SetterHiddenClass.class, "description", false, true, expectedAttributes);
+        monitor.assertNumberOfErrors(0);
+        monitor.assertNumberOfWarnings(0);
+    }
+
+    @Test
     public void testSubSetterConfigClass()
             throws Exception
     {
@@ -811,6 +825,21 @@ public class TestConfigurationMetadata
     }
 
     @Test
+    public void testLegacyConfigHiddenClass()
+            throws Exception
+    {
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(LegacyConfigHiddenClass.class, monitor);
+        Map<String, Set<String>> expectedAttributes = new HashMap<>();
+        expectedAttributes.put("Value", ImmutableSet.of("value", "replacedValue"));
+
+        verifyMetaData(metadata, LegacyConfigHiddenClass.class, null, false, false /* don't care */, expectedAttributes);
+        monitor.assertNumberOfErrors(1);
+        monitor.assertNumberOfWarnings(0);
+        monitor.assertMatchingErrorRecorded("@ConfigHidden method", "setValue", "is not annotated with @Config.");
+    }
+
+    @Test
     public void testMisplacedValidationAnnotation()
     {
         TestMonitor monitor = new TestMonitor();
@@ -821,6 +850,12 @@ public class TestConfigurationMetadata
     }
 
     private void verifyMetaData(ConfigurationMetadata<?> metadata, Class<?> configClass, String description, boolean securitySensitive, Map<String, Set<String>> attributeProperties)
+            throws Exception
+    {
+        verifyMetaData(metadata, configClass, description, securitySensitive, false, attributeProperties);
+    }
+
+    private void verifyMetaData(ConfigurationMetadata<?> metadata, Class<?> configClass, String description, boolean securitySensitive, boolean hidden, Map<String, Set<String>> attributeProperties)
             throws Exception
     {
         assertEquals(metadata.getConfigClass(), configClass);
@@ -850,6 +885,7 @@ public class TestConfigurationMetadata
             assertEquals(namesToTest, attributeProperties.get(name));
             assertEquals(attribute.getDescription(), description);
             assertEquals(attribute.isSecuritySensitive(), securitySensitive);
+            assertEquals(attribute.isHidden(), hidden);
         }
     }
 
@@ -891,6 +927,29 @@ public class TestConfigurationMetadata
 
         @Config("value")
         @ConfigSecuritySensitive
+        @ConfigDescription("description")
+        public void setValue(String value)
+        {
+            this.value = value;
+        }
+
+        public void setValue(Object value)
+        {
+            this.value = String.valueOf(value);
+        }
+    }
+
+    public static class SetterHiddenClass
+    {
+        private String value;
+
+        public String getValue()
+        {
+            return value;
+        }
+
+        @Config("value")
+        @ConfigHidden
         @ConfigDescription("description")
         public void setValue(String value)
         {
@@ -1789,6 +1848,30 @@ public class TestConfigurationMetadata
         @Deprecated
         @LegacyConfig("replacedValue")
         @ConfigSecuritySensitive
+        public void setValue(int value)
+        {
+            this.value = Integer.toString(value);
+        }
+    }
+
+    public static class LegacyConfigHiddenClass
+    {
+        private String value;
+
+        public String getValue()
+        {
+            return value;
+        }
+
+        @Config("value")
+        public void setValue(String value)
+        {
+            this.value = value;
+        }
+
+        @Deprecated
+        @LegacyConfig("replacedValue")
+        @ConfigHidden
         public void setValue(int value)
         {
             this.value = Integer.toString(value);
