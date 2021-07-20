@@ -48,6 +48,7 @@ public class TestConfigurationInspector
     public static class ConfigWithOptionalValue
     {
         private String stringValue;
+        private boolean booleanValue;
 
         @Config("stringValue")
         public ConfigWithOptionalValue setStringValue(String stringValue)
@@ -59,6 +60,19 @@ public class TestConfigurationInspector
         public Optional<String> getStringValue()
         {
             return Optional.ofNullable(stringValue);
+        }
+
+        @Config("booleanValue")
+        @ConfigHidden
+        public ConfigWithOptionalValue setHiddenValue(boolean booleanValue)
+        {
+            this.booleanValue = booleanValue;
+            return this;
+        }
+
+        public Optional<Boolean> getHiddenValue()
+        {
+            return Optional.ofNullable(booleanValue);
         }
     }
 }

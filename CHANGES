@@ -1,3 +1,7 @@
+209
+
+- Add @ConfigHidden annotation to prevent listing config values.  
+
 208
 
 - Add support for basic JSON logging.

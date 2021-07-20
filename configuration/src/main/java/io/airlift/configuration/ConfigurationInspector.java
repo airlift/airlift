@@ -109,6 +109,10 @@ public class ConfigurationInspector
                     description = "";
                 }
 
+                if (attribute.isHidden()) {
+                    continue;
+                }
+
                 builder.add(new ConfigAttribute(attribute.getName(), propertyName, defaultValue, currentValue, description, attribute.isSecuritySensitive()));
             }
             attributes = builder.build();
