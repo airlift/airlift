@@ -30,6 +30,8 @@ import com.google.inject.Stage;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import javax.inject.Singleton;
+
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -363,6 +365,34 @@ public class TestLifeCycleManager
 
         lifeCycleManager.stop();
         assertEquals(stateLog, ImmutableList.of("postBarProvider", "postBarInstance", "preBarInstance", "preBarProvider"));
+    }
+
+    @Test
+    public void testProviderMethod()
+    {
+        Injector injector = Guice.createInjector(
+                Stage.PRODUCTION,
+                new LifeCycleModule(),
+                new Module()
+                {
+                    @Override
+                    public void configure(Binder binder) {}
+
+                    @Provides
+                    @Singleton
+                    public BarInstance create()
+                    {
+                        return new BarInstance();
+                    }
+                });
+
+        LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
+
+        lifeCycleManager.start();
+        assertEquals(stateLog, ImmutableList.of("postBarInstance"));
+
+        lifeCycleManager.stop();
+        assertEquals(stateLog, ImmutableList.of("postBarInstance", "preBarInstance"));
     }
 
     @Test
