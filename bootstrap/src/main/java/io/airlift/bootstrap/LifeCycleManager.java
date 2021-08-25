@@ -220,7 +220,7 @@ public final class LifeCycleManager
         log.debug("Stopping %s", obj.getClass().getName());
         LifeCycleMethods methods = methodsMap.get(obj.getClass());
         for (Method preDestroy : methods.methodsFor(PreDestroy.class)) {
-            log.debug("\t%s()", preDestroy.getName());
+            log.debug("- invoke %s::%s()", preDestroy.getDeclaringClass().getName(), preDestroy.getName());
             try {
                 preDestroy.invoke(obj);
             }
@@ -236,7 +236,7 @@ public final class LifeCycleManager
         log.debug("Starting %s", obj.getClass().getName());
         LifeCycleMethods methods = methodsMap.get(obj.getClass());
         for (Method postConstruct : methods.methodsFor(PostConstruct.class)) {
-            log.debug("\t%s()", postConstruct.getName());
+            log.debug("- invoke %s::%s()", postConstruct.getDeclaringClass().getName(), postConstruct.getName());
             try {
                 postConstruct.invoke(obj);
             }
