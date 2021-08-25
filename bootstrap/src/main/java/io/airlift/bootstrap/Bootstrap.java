@@ -278,9 +278,7 @@ public class Bootstrap
         LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
 
         // Start services
-        if (lifeCycleManager.size() > 0) {
-            lifeCycleManager.start();
-        }
+        lifeCycleManager.start();
 
         return injector;
     }
