@@ -118,7 +118,7 @@ public final class LifeCycleManager
         Runtime.getRuntime().addShutdownHook(thread);
 
         state.set(State.STARTED);
-        log.info("Life cycle startup complete");
+        log.info("Life cycle started");
     }
 
     /**
