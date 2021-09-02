@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.util.Collections;
@@ -81,12 +80,7 @@ public class Logging
             ROOT.removeHandler(handler);
         }
 
-        rewireStdStreams();
-    }
-
-    private void rewireStdStreams()
-    {
-        logConsole(new NonCloseableOutputStream(System.err));
+        enableConsole();
         log.info("Logging to stderr");
 
         redirectStdStreams();
@@ -98,9 +92,9 @@ public class Logging
         System.setErr(new PrintStream(new LoggingOutputStream(Logger.get("stderr")), true));
     }
 
-    private synchronized void logConsole(OutputStream stream)
+    private synchronized void enableConsole()
     {
-        consoleHandler = new OutputStreamHandler(stream);
+        consoleHandler = new OutputStreamHandler(System.err);
         ROOT.addHandler(consoleHandler);
     }
 
