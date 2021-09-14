@@ -41,10 +41,12 @@ import java.util.Optional;
 
 import static com.google.inject.name.Names.named;
 import static io.airlift.configuration.ConfigBinder.configBinder;
+import static io.airlift.configuration.SwitchModule.switchModule;
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
@@ -260,6 +262,46 @@ public class TestConfig
                         new ConfigurationBinding<>(Key.get(AnotherConfig.class), AnotherConfig.class, Optional.empty())));
     }
 
+    @Test
+    public void testSwitchModule()
+    {
+        Module a = binder -> binder.bind(String.class).toInstance("used value a");
+        Module b = binder -> binder.bind(String.class).toInstance("used value b");
+
+        Module module = new AbstractConfigurationAwareModule()
+        {
+            @Override
+            protected void setup(Binder binder)
+            {
+                ConfigBinder configBinder = configBinder(binder);
+                configBinder.bindConfig(SwitchConfig.class);
+
+                install(switchModule(
+                        SwitchConfig.class,
+                        SwitchConfig::getValue,
+                        value -> {
+                            switch (value) {
+                                case A:
+                                    return a;
+                                case B:
+                                    return b;
+                                default:
+                                    throw new RuntimeException("Not supported value: " + value);
+                            }
+                        }));
+            }
+        };
+
+        assertEquals(
+                createInjector(ImmutableMap.of("value", "a"), module).getInstance(String.class),
+                "used value a");
+        assertEquals(
+                createInjector(ImmutableMap.of("value", "b"), module).getInstance(String.class),
+                "used value b");
+        assertThatThrownBy(() -> createInjector(ImmutableMap.of("value", "c"), module))
+                .hasStackTraceContaining("Not supported value: C");
+    }
+
     private static Injector createInjector(Map<String, String> properties, Module module)
     {
         ConfigurationFactory configurationFactory = new ConfigurationFactory(properties);
@@ -329,5 +371,26 @@ public class TestConfig
             this.stringOption = stringOption;
             return this;
         }
+    }
+
+    public static class SwitchConfig
+    {
+        SwitchValue value;
+
+        public SwitchValue getValue()
+        {
+            return value;
+        }
+
+        @Config("value")
+        public void setValue(SwitchValue value)
+        {
+            this.value = value;
+        }
+    }
+
+    public enum SwitchValue
+    {
+        A, B, C
     }
 }
