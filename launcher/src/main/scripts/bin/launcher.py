@@ -15,6 +15,7 @@ from os.path import join as pathjoin
 from signal import SIGTERM, SIGKILL
 from stat import S_ISLNK
 from time import sleep
+from glob import glob
 
 COMMANDS = ['run', 'start', 'stop', 'restart', 'kill', 'status']
 
@@ -223,7 +224,13 @@ def build_java_execution(options, daemon):
     system_properties = ['-D%s=%s' % i for i in properties.items()]
     classpath = pathjoin(options.install_path, 'lib', '*')
 
+    jmx_exporter_jars = glob(pathjoin(options.install_path, 'lib', 'jmx_prometheus_javaagent-*.jar'))
+
     command = ['java', '-cp', classpath]
+
+    if jmx_exporter_jars:
+        command += ['-javaagent:%s=9100:%s' % (jmx_exporter_jars[0],options.prometheus_config)]
+
     command += jvm_properties + options.jvm_options + system_properties
     command += [main_class]
 
@@ -359,6 +366,7 @@ def create_parser():
     parser.add_option('--jvm-config', metavar='FILE', help='Defaults to ETC_DIR/jvm.config')
     parser.add_option('--config', metavar='FILE', help='Defaults to ETC_DIR/config.properties')
     parser.add_option('--log-levels-file', metavar='FILE', help='Defaults to ETC_DIR/log.properties')
+    parser.add_option('--prometheus-config', metavar='FILE', help='Defaults to ETC_DIR/prometheus-config.yaml')
     parser.add_option('--data-dir', metavar='DIR', help='Defaults to INSTALL_PATH')
     parser.add_option('--pid-file', metavar='FILE', help='Defaults to DATA_DIR/var/run/launcher.pid')
     parser.add_option('--launcher-log-file', metavar='FILE', help='Defaults to DATA_DIR/var/log/launcher.log (only in daemon mode)')
@@ -424,6 +432,7 @@ def main():
     o.node_config = realpath(options.node_config or pathjoin(o.etc_dir, 'node.properties'))
     o.jvm_config = realpath(options.jvm_config or pathjoin(o.etc_dir, 'jvm.config'))
     o.config_path = realpath(options.config or pathjoin(o.etc_dir, 'config.properties'))
+    o.prometheus_config = realpath(options.prometheus_config or pathjoin(o.etc_dir, 'prometheus-config.yaml'))
     o.log_levels = realpath(options.log_levels_file or pathjoin(o.etc_dir, 'log.properties'))
     o.log_levels_set = bool(options.log_levels_file)
     o.jvm_options = options.jvm_options or []
