@@ -8,18 +8,7 @@ import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.log.Logging;
 import io.airlift.testing.Closeables;
 import io.airlift.units.Duration;
-import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.SecureRequestCustomizer;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
@@ -48,6 +37,7 @@ import java.nio.channels.UnresolvedAddressException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -92,7 +82,7 @@ import static org.testng.Assert.fail;
 public abstract class AbstractHttpClientTest
 {
     protected EchoServlet servlet;
-    protected Server server;
+    protected TestingHttpServer server;
     protected URI baseURI;
     private String scheme = "http";
     private String host = "127.0.0.1";
@@ -129,47 +119,9 @@ public abstract class AbstractHttpClientTest
     {
         servlet = new EchoServlet();
 
-        Server server = new Server();
+        TestingHttpServer server = new TestingHttpServer(Optional.ofNullable(keystore), servlet);
 
-        HttpConfiguration httpConfiguration = new HttpConfiguration();
-        httpConfiguration.setSendServerVersion(false);
-        httpConfiguration.setSendXPoweredBy(false);
-
-        ServerConnector connector;
-        if (keystore != null) {
-            httpConfiguration.addCustomizer(new SecureRequestCustomizer());
-
-            SslContextFactory sslContextFactory = new SslContextFactory.Client();
-            sslContextFactory.setKeyStorePath(keystore);
-            sslContextFactory.setKeyStorePassword("changeit");
-            SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory, "http/1.1");
-
-            connector = new ServerConnector(server, sslConnectionFactory, new HttpConnectionFactory(httpConfiguration));
-        }
-        else {
-            HttpConnectionFactory http1 = new HttpConnectionFactory(httpConfiguration);
-            HTTP2CServerConnectionFactory http2c = new HTTP2CServerConnectionFactory(httpConfiguration);
-
-            connector = new ServerConnector(server, http1, http2c);
-        }
-
-        connector.setIdleTimeout(30000);
-        connector.setName(scheme);
-
-        server.addConnector(connector);
-
-        ServletHolder servletHolder = new ServletHolder(servlet);
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
-        context.setGzipHandler(new GzipHandler());
-        context.addServlet(servletHolder, "/*");
-        HandlerCollection handlers = new HandlerCollection();
-        handlers.addHandler(context);
-        server.setHandler(handlers);
-
-        this.server = server;
-        server.start();
-
-        baseURI = new URI(scheme, null, host, connector.getLocalPort(), null, null, null);
+        baseURI = new URI(scheme, null, server.getHostAndPort().getHost(), server.getHostAndPort().getPort(), null, null, null);
     }
 
     @AfterMethod(alwaysRun = true)
@@ -177,8 +129,7 @@ public abstract class AbstractHttpClientTest
             throws Exception
     {
         if (server != null) {
-            server.setStopTimeout(3000);
-            server.stop();
+            server.close();
         }
     }
 
