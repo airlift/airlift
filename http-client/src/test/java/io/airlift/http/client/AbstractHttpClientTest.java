@@ -86,7 +86,7 @@ public abstract class AbstractHttpClientTest
     protected URI baseURI;
     private String scheme = "http";
     private String host = "127.0.0.1";
-    private String keystore;
+    protected String keystore;
 
     protected AbstractHttpClientTest()
     {

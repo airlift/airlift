@@ -1,6 +1,7 @@
 209
 
-- Add @ConfigHidden annotation to prevent listing config values.  
+- Add @ConfigHidden annotation to prevent listing config values.
+- Add http proxy support in http client
 
 208
 

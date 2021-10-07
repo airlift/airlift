@@ -18,6 +18,8 @@ package io.airlift.http.client;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.HostAndPort;
+import com.google.inject.ConfigurationException;
+import com.google.inject.spi.Message;
 import io.airlift.configuration.Config;
 import io.airlift.configuration.ConfigDescription;
 import io.airlift.configuration.ConfigSecuritySensitive;
@@ -29,6 +31,7 @@ import io.airlift.units.MaxDataSize;
 import io.airlift.units.MinDataSize;
 import io.airlift.units.MinDuration;
 
+import javax.annotation.PostConstruct;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
@@ -70,6 +73,8 @@ public class HttpClientConfig
     private DataSize requestBufferSize = new DataSize(4, KILOBYTE);
     private DataSize responseBufferSize = new DataSize(16, KILOBYTE);
     private HostAndPort socksProxy;
+    private HostAndPort httpProxy;
+    private boolean secureProxy;
     private String keyStorePath = System.getProperty(JAVAX_NET_SSL_KEY_STORE);
     private String keyStorePassword = System.getProperty(JAVAX_NET_SSL_KEY_STORE_PASSWORD);
     private String trustStorePath = System.getProperty(JAVAX_NET_SSL_TRUST_STORE);
@@ -281,6 +286,30 @@ public class HttpClientConfig
     public HttpClientConfig setSocksProxy(HostAndPort socksProxy)
     {
         this.socksProxy = socksProxy;
+        return this;
+    }
+
+    public HostAndPort getHttpProxy()
+    {
+        return httpProxy;
+    }
+
+    @Config("http-client.http-proxy")
+    public HttpClientConfig setHttpProxy(HostAndPort httpProxy)
+    {
+        this.httpProxy = httpProxy;
+        return this;
+    }
+
+    public boolean isSecureProxy()
+    {
+        return secureProxy;
+    }
+
+    @Config("http-client.http-proxy.secure")
+    public HttpClientConfig setSecureProxy(boolean secureProxy)
+    {
+        this.secureProxy = secureProxy;
         return this;
     }
 
@@ -631,5 +660,19 @@ public class HttpClientConfig
     {
         this.logCompressionEnabled = logCompressionEnabled;
         return this;
+    }
+
+    @PostConstruct
+    public void validate()
+    {
+        if (socksProxy != null && httpProxy != null) {
+            throw new ConfigurationException(ImmutableList.of(
+                    new Message("Only one proxy can be configured for HttpClient")));
+        }
+
+        if (secureProxy && httpProxy == null) {
+            throw new ConfigurationException(ImmutableList.of(
+                    new Message("http-client.http-proxy.secure can be enabled only when http-client.http-proxy is set")));
+        }
     }
 }

@@ -17,6 +17,7 @@ package io.airlift.http.client;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.net.HostAndPort;
+import com.google.inject.ConfigurationException;
 import io.airlift.configuration.testing.ConfigAssertions;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
@@ -39,6 +40,7 @@ import static io.airlift.units.DataSize.Unit.KILOBYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SuppressWarnings("deprecation")
 public class TestHttpClientConfig
@@ -60,6 +62,8 @@ public class TestHttpClientConfig
                 .setRequestBufferSize(new DataSize(4, KILOBYTE))
                 .setResponseBufferSize(new DataSize(16, KILOBYTE))
                 .setSocksProxy(null)
+                .setHttpProxy(null)
+                .setSecureProxy(false)
                 .setKeyStorePath(System.getProperty(JAVAX_NET_SSL_KEY_STORE))
                 .setKeyStorePassword(System.getProperty(JAVAX_NET_SSL_KEY_STORE_PASSWORD))
                 .setTrustStorePath(System.getProperty(JAVAX_NET_SSL_TRUST_STORE))
@@ -105,6 +109,8 @@ public class TestHttpClientConfig
                 .put("http-client.request-buffer-size", "42kB")
                 .put("http-client.response-buffer-size", "43kB")
                 .put("http-client.socks-proxy", "localhost:1080")
+                .put("http-client.http-proxy", "localhost:8080")
+                .put("http-client.http-proxy.secure", "true")
                 .put("http-client.secure-random-algorithm", "NativePRNG")
                 .put("http-client.https.included-cipher", "TLS_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA")
                 .put("http-client.https.excluded-cipher", "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA")
@@ -147,6 +153,8 @@ public class TestHttpClientConfig
                 .setRequestBufferSize(new DataSize(42, KILOBYTE))
                 .setResponseBufferSize(new DataSize(43, KILOBYTE))
                 .setSocksProxy(HostAndPort.fromParts("localhost", 1080))
+                .setHttpProxy(HostAndPort.fromParts("localhost", 8080))
+                .setSecureProxy(true)
                 .setKeyStorePath("key-store")
                 .setKeyStorePassword("key-store-password")
                 .setTrustStorePath("trust-store")
@@ -197,6 +205,26 @@ public class TestHttpClientConfig
         assertFailsValidation(new HttpClientConfig().setConnectTimeout(null), "connectTimeout", "may not be null", NotNull.class);
         assertFailsValidation(new HttpClientConfig().setRequestTimeout(null), "requestTimeout", "may not be null", NotNull.class);
         assertFailsValidation(new HttpClientConfig().setIdleTimeout(null), "idleTimeout", "may not be null", NotNull.class);
+    }
+
+    @Test
+    public void testInvalidProxyConfiguration()
+    {
+        HttpClientConfig clientConfig = new HttpClientConfig()
+                .setSocksProxy(HostAndPort.fromParts("localhost", 1080))
+                .setHttpProxy(HostAndPort.fromParts("localhost", 8080));
+        assertThatThrownBy(() -> clientConfig.validate())
+                .isInstanceOf(ConfigurationException.class)
+                .hasMessageContaining("Only one proxy can be configured for HttpClient");
+    }
+
+    @Test
+    public void testInvalidHttpProxyConfiguration()
+    {
+        HttpClientConfig clientConfig = new HttpClientConfig().setSecureProxy(true);
+        assertThatThrownBy(() -> clientConfig.validate())
+                .isInstanceOf(ConfigurationException.class)
+                .hasMessageContaining("http-client.http-proxy.secure can be enabled only when http-client.http-proxy is set");
     }
 
     private List<String> getJettyDefaultExcludedCiphers()

@@ -19,7 +19,9 @@ import org.eclipse.jetty.client.DuplexConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpExchange;
+import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.HttpRequest;
+import org.eclipse.jetty.client.Origin.Address;
 import org.eclipse.jetty.client.PoolingHttpDestination;
 import org.eclipse.jetty.client.Socks4Proxy;
 import org.eclipse.jetty.client.api.ContentProvider;
@@ -212,6 +214,10 @@ public class JettyHttpClient
         HostAndPort socksProxy = config.getSocksProxy();
         if (socksProxy != null) {
             httpClient.getProxyConfiguration().getProxies().add(new Socks4Proxy(socksProxy.getHost(), socksProxy.getPortOrDefault(1080)));
+        }
+        HostAndPort httpProxy = config.getHttpProxy();
+        if (httpProxy != null) {
+            httpClient.getProxyConfiguration().getProxies().add(new HttpProxy(new Address(httpProxy.getHost(), httpProxy.getPortOrDefault(8080)), config.isSecureProxy()));
         }
 
         httpClient.setByteBufferPool(new MappedByteBufferPool());
