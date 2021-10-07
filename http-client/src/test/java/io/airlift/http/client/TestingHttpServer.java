@@ -13,8 +13,10 @@
  */
 package io.airlift.http.client;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.net.HostAndPort;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
@@ -29,7 +31,9 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import javax.servlet.Servlet;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import static java.util.Objects.requireNonNull;
 
@@ -42,6 +46,12 @@ public class TestingHttpServer
     public TestingHttpServer(Optional<String> keystore, Servlet servlet)
             throws Exception
     {
+        this(keystore, servlet, httpConfiguration -> {}, ImmutableList.of());
+    }
+
+    public TestingHttpServer(Optional<String> keystore, Servlet servlet, Consumer<HttpConfiguration> configurationDecorator, List<Handler> additionalHandler)
+            throws Exception
+    {
         requireNonNull(keystore, "keyStore is null");
         requireNonNull(servlet, "servlet is null");
 
@@ -50,6 +60,7 @@ public class TestingHttpServer
         HttpConfiguration httpConfiguration = new HttpConfiguration();
         httpConfiguration.setSendServerVersion(false);
         httpConfiguration.setSendXPoweredBy(false);
+        configurationDecorator.accept(httpConfiguration);
 
         ServerConnector connector;
         if (keystore.isPresent()) {
@@ -80,6 +91,8 @@ public class TestingHttpServer
         context.addServlet(servletHolder, "/*");
         HandlerCollection handlers = new HandlerCollection();
         handlers.addHandler(context);
+
+        additionalHandler.forEach(handlers::addHandler);
 
         server.setHandler(handlers);
 
