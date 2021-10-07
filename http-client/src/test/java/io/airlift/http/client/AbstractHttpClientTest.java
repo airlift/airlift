@@ -239,7 +239,6 @@ public abstract class AbstractHttpClientTest
             throws Exception
     {
         HttpClientConfig config = createClientConfig();
-        config.setConnectTimeout(new Duration(5, MILLISECONDS));
 
         Request request = prepareGet()
                 .setUri(new URI(scheme, null, host, 70_000, "/", null, null))
