@@ -13,6 +13,7 @@
 
     <properties>
         <air.main.basedir>${project.parent.basedir}</air.main.basedir>
+        <dep.bouncycastle.version>1.69</dep.bouncycastle.version>
     </properties>
 
     <dependencies>
@@ -38,14 +39,14 @@
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk15on</artifactId>
-            <version>1.58</version>
+            <version>${dep.bouncycastle.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcpkix-jdk15on</artifactId>
-            <version>1.58</version>
+            <version>${dep.bouncycastle.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
