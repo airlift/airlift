@@ -179,6 +179,9 @@ public class NodeConfig
 
     public enum AddressSource
     {
-        HOSTNAME, FQDN, IP
+        HOSTNAME,
+        FQDN,
+        IP,
+        IP_ENCODED_AS_HOSTNAME
     }
 }

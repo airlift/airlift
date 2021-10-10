@@ -313,6 +313,9 @@ public class TestHttpServerProvider
         try (JettyHttpClient httpClient = createJettyClient(http1ClientConfig)) {
             verifyUri(httpClient, URI.create("https://localhost:" + httpServerInfo.getHttpsUri().getPort()));
             verifyUri(httpClient, URI.create("https://127.0.0.1:" + httpServerInfo.getHttpsUri().getPort()));
+            verifyUri(httpClient, URI.create("https://127-0-0-1.ip:" + httpServerInfo.getHttpsUri().getPort()));
+            verifyUri(httpClient, URI.create("https://[::1]:" + httpServerInfo.getHttpsUri().getPort()));
+            verifyUri(httpClient, URI.create("https://x--1.ip:" + httpServerInfo.getHttpsUri().getPort()));
         }
     }
 

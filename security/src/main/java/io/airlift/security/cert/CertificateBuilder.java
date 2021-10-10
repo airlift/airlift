@@ -160,7 +160,7 @@ public class CertificateBuilder
         return this;
     }
 
-    public CertificateBuilder addSanDnsNamees(List<String> dnsNames)
+    public CertificateBuilder addSanDnsNames(List<String> dnsNames)
     {
         requireNonNull(dnsNames, "dnsNames is null");
         dnsNames.forEach(this::addSanDnsName);
