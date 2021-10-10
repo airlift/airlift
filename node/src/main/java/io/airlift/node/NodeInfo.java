@@ -36,6 +36,7 @@ import java.util.UUID;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
+import static io.airlift.node.AddressToHostname.encodeAddressAsHostname;
 import static java.util.Objects.requireNonNull;
 
 @Singleton
@@ -266,6 +267,8 @@ public class NodeInfo
         switch (addressSource) {
             case IP:
                 return InetAddresses.toAddrString(findInternalIp());
+            case IP_ENCODED_AS_HOSTNAME:
+                return encodeAddressAsHostname(findInternalIp());
             case HOSTNAME:
                 return getLocalHost().getHostName();
             case FQDN:

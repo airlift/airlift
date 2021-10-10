@@ -5,6 +5,7 @@ import com.google.common.hash.HashCode;
 import com.google.common.io.Files;
 import io.airlift.http.server.HttpServer.ClientCertificate;
 import io.airlift.log.Logger;
+import io.airlift.node.AddressToHostname;
 import io.airlift.security.pem.PemReader;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
@@ -31,6 +32,7 @@ import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.hash.Hashing.sha256;
 import static io.airlift.security.cert.CertificateBuilder.certificateBuilder;
 import static java.lang.Math.toIntExact;
@@ -144,6 +146,10 @@ final class ReloadableSslContextFactoryProvider
             X500Principal subject = new X500Principal("CN=" + commonName);
             LocalDate notBefore = LocalDate.now();
             LocalDate notAfter = notBefore.plus(10, YEARS);
+            List<InetAddress> allLocalIpAddresses = getAllLocalIpAddresses();
+            List<String> ipAddressMappedNames = allLocalIpAddresses.stream()
+                    .map(AddressToHostname::encodeAddressAsHostname)
+                    .collect(toImmutableList());
             X509Certificate certificateServer = certificateBuilder()
                     .setKeyPair(keyPair)
                     .setSerialNumber(System.currentTimeMillis())
@@ -151,7 +157,8 @@ final class ReloadableSslContextFactoryProvider
                     .setNotBefore(notBefore)
                     .setNotAfter(notAfter)
                     .setSubject(subject)
-                    .addSanIpAddresses(getAllLocalIpAddresses())
+                    .addSanIpAddresses(allLocalIpAddresses)
+                    .addSanDnsNames(ipAddressMappedNames)
                     .buildSelfSigned();
 
             char[] password = keyManagerPassword == null ? new char[0] : keyManagerPassword.toCharArray();

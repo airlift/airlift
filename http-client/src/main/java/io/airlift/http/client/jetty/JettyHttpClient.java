@@ -56,6 +56,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
@@ -84,6 +86,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.http.client.jetty.AuthorizationPreservingHttpClient.setPreserveAuthorization;
+import static io.airlift.node.AddressToHostname.tryDecodeHostnameToAddress;
 import static io.airlift.security.cert.CertificateBuilder.certificateBuilder;
 import static java.lang.Math.max;
 import static java.lang.Math.toIntExact;
@@ -227,10 +230,18 @@ public class JettyHttpClient
         httpClient.addBean(queuedThreadPool, true);
         httpClient.setScheduler(createScheduler(name, config.getTimeoutConcurrency(), config.getTimeoutThreads()));
 
-        httpClient.setSocketAddressResolver(new JettyAsyncSocketAddressResolver(
+        JettyAsyncSocketAddressResolver resolver = new JettyAsyncSocketAddressResolver(
                 httpClient.getExecutor(),
                 httpClient.getScheduler(),
-                config.getConnectTimeout().toMillis()));
+                config.getConnectTimeout().toMillis());
+        httpClient.setSocketAddressResolver((host, port, promise) -> {
+            Optional<InetAddress> inetAddress = tryDecodeHostnameToAddress(host);
+            if (inetAddress.isPresent()) {
+                promise.succeeded(ImmutableList.of(new InetSocketAddress(inetAddress.get(), port)));
+                return;
+            }
+            resolver.resolve(host, port, promise);
+        });
 
         // Jetty client connections can sometimes get stuck while closing which reduces
         // the available connections.  The Jetty Sweeper periodically scans the active
