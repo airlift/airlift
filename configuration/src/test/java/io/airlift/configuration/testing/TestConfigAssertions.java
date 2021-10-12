@@ -29,6 +29,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import static io.airlift.testing.Assertions.assertContains;
 import static org.testng.Assert.assertEquals;
@@ -539,6 +540,46 @@ public class TestConfigAssertions
 
         if (pass) {
             fail("Expected AssertionError");
+        }
+    }
+
+    @Test
+    public void testArrayDefaults()
+    {
+        Map<String, Object> expectedAttributeValues = new HashMap<>();
+        expectedAttributeValues.put("Fields", null);
+        ConfigAssertions.assertDefaults(expectedAttributeValues, PersonFieldsConfig.class);
+    }
+
+    @Test
+    public void testExplicitArrayPropertyMappings()
+    {
+        Map<String, String> properties = new ImmutableMap.Builder<String, String>()
+                .put("fields", "name,email,phone,homePage")
+                .build();
+
+        PersonFieldsConfig expected = new PersonFieldsConfig()
+                .setFields("name,email,phone,homePage");
+
+        ConfigAssertions.assertFullMapping(properties, expected);
+    }
+
+    public static class PersonFieldsConfig
+    {
+        private String[] fields;
+
+        public String[] getFields()
+        {
+            return fields;
+        }
+
+        @Config("fields")
+        public PersonFieldsConfig setFields(String fields)
+        {
+            if (Objects.nonNull(fields)) {
+                this.fields = fields.split(",");
+            }
+            return this;
         }
     }
 
