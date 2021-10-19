@@ -32,6 +32,8 @@ public class Logger
 {
     private final java.util.logging.Logger logger;
 
+    private static final Object[] NO_ARGS = {};
+
     Logger(java.util.logging.Logger logger)
     {
         this.logger = requireNonNull(logger, "logger is null");
@@ -74,11 +76,12 @@ public class Logger
      * Logs a message at DEBUG level.
      *
      * @param exception an exception associated with the debug message being logged
-     * @param message a literal message to log
+     * @param format a format string compatible with String.format()
      */
-    public void debug(Throwable exception, String message)
+    @FormatMethod
+    public void debug(Throwable exception, String format)
     {
-        logger.log(FINE, message, exception);
+        debug(exception, () -> formatMessageWithoutParameters(format));
     }
 
     /**
@@ -94,11 +97,12 @@ public class Logger
     /**
      * Logs a message at DEBUG level.
      *
-     * @param message a literal message to log
+     * @param format a format string compatible with String.format()
      */
-    public void debug(String message)
+    @FormatMethod
+    public void debug(String format)
     {
-        logger.log(FINE, message);
+        debug(null, format);
     }
 
     /**
@@ -153,11 +157,12 @@ public class Logger
     /**
      * Logs a message at INFO level.
      *
-     * @param message a literal message to log
+     * @param format a format string compatible with String.format()
      */
-    public void info(String message)
+    @FormatMethod
+    public void info(String format)
     {
-        logger.log(INFO, message);
+        info(() -> formatMessageWithoutParameters(format));
     }
 
     /**
@@ -194,11 +199,12 @@ public class Logger
      * Logs a message at WARN level.
      *
      * @param exception an exception associated with the warning being logged
-     * @param message a literal message to log
+     * @param format a format string compatible with String.format()
      */
-    public void warn(Throwable exception, String message)
+    @FormatMethod
+    public void warn(Throwable exception, String format)
     {
-        logger.log(WARNING, message, exception);
+        warn(exception, () -> formatMessageWithoutParameters(format));
     }
 
     /**
@@ -214,11 +220,12 @@ public class Logger
     /**
      * Logs a message at WARN level.
      *
-     * @param message a literal message to log
+     * @param format a format string compatible with String.format()
      */
-    public void warn(String message)
+    @FormatMethod
+    public void warn(String format)
     {
-        logger.log(WARNING, message);
+        warn(null, format);
     }
 
     /**
@@ -275,11 +282,12 @@ public class Logger
      * Logs a message at ERROR level.
      *
      * @param exception an exception associated with the error being logged
-     * @param message a literal message to log
+     * @param format a format string compatible with String.format()
      */
-    public void error(Throwable exception, String message)
+    @FormatMethod
+    public void error(Throwable exception, String format)
     {
-        logger.log(SEVERE, message, exception);
+        error(exception, () -> formatMessageWithoutParameters(format));
     }
 
     /**
@@ -295,11 +303,12 @@ public class Logger
     /**
      * Logs a message at ERROR level.
      *
-     * @param message a literal message to log
+     * @param format a format string compatible with String.format()
      */
-    public void error(String message)
+    @FormatMethod
+    public void error(String format)
     {
-        logger.severe(message);
+        error(null, format);
     }
 
     /**
@@ -375,6 +384,19 @@ public class Logger
         catch (IllegalFormatException e) {
             logger.log(SEVERE, format("Invalid format string while trying to log: %s '%s' %s", level, format, asList(args)), e);
             message = format("'%s' %s", format, asList(args));
+        }
+        return message;
+    }
+
+    private String formatMessageWithoutParameters(String format)
+    {
+        String message;
+        try {
+            message = format(format, NO_ARGS);
+        }
+        catch (IllegalFormatException e) {
+            // compatibility fallback
+            message = format;
         }
         return message;
     }
