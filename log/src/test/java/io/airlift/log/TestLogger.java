@@ -78,9 +78,16 @@ public class TestLogger
     public void testDebugFormat()
     {
         inner.setLevel(Level.FINE);
-        logger.debug("hello, %s", "you");
 
+        // message-only version
+        logger.debug("hello, %s", "you");
         assertLog(Level.FINE, "hello, you");
+
+        // throwable with message
+        @SuppressWarnings("ThrowableInstanceNeverThrown")
+        Throwable exception = new Throwable();
+        logger.debug(exception, "got exception: %s", "foo");
+        assertLog(Level.FINE, "got exception: foo", exception);
     }
 
     @Test
