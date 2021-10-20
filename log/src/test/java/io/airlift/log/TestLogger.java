@@ -91,12 +91,37 @@ public class TestLogger
     }
 
     @Test
+    public void testDebugFormatNoArgs()
+    {
+        inner.setLevel(Level.FINE);
+
+        // message-only version
+        logger.debug("hello, %%");
+        assertLog(Level.FINE, "hello, %%");
+
+        // throwable with message
+        @SuppressWarnings("ThrowableInstanceNeverThrown")
+        Throwable exception = new Throwable();
+        logger.debug(exception, "got exception: %%");
+        assertLog(Level.FINE, "got exception: %%", exception);
+    }
+
+    @Test
     public void testInfoFormat()
     {
         inner.setLevel(Level.INFO);
         logger.info("hello, %s", "you");
 
         assertLog(Level.INFO, "hello, you");
+    }
+
+    @Test
+    public void testInfoFormatNoArgs()
+    {
+        inner.setLevel(Level.INFO);
+        logger.info("hello, %%");
+
+        assertLog(Level.INFO, "hello, %%");
     }
 
     @Test
@@ -113,6 +138,22 @@ public class TestLogger
         Throwable exception = new Throwable();
         logger.warn(exception, "got exception: %s", "foo");
         assertLog(Level.WARNING, "got exception: foo", exception);
+    }
+
+    @Test
+    public void testWarnFormatNoArgs()
+    {
+        inner.setLevel(Level.WARNING);
+
+        // message-only version
+        logger.warn("hello, %%");
+        assertLog(Level.WARNING, "hello, %%");
+
+        // throwable with message
+        @SuppressWarnings("ThrowableInstanceNeverThrown")
+        Throwable exception = new Throwable();
+        logger.warn(exception, "got exception: %%");
+        assertLog(Level.WARNING, "got exception: %%", exception);
     }
 
     @Test
@@ -134,6 +175,21 @@ public class TestLogger
         Throwable exception2 = new Throwable("the message");
         logger.error(exception2);
         assertLog(Level.SEVERE, exception2.getMessage(), exception2);
+    }
+
+    @Test
+    public void testErrorFormatNoArgs()
+    {
+        // message-only version
+        logger.error("hello, %%");
+        assertLog(Level.SEVERE, "hello, %%");
+
+        // throwable with message
+        @SuppressWarnings("ThrowableInstanceNeverThrown")
+        Throwable exception = new Throwable();
+
+        logger.error(exception, "got exception: %%");
+        assertLog(Level.SEVERE, "got exception: %%", exception);
     }
 
     @Test
