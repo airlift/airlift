@@ -49,6 +49,9 @@ import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
 
 import javax.annotation.PreDestroy;
+import javax.net.ssl.SNIHostName;
+import javax.net.ssl.SNIServerName;
+import javax.net.ssl.SSLEngine;
 import javax.security.auth.x500.X500Principal;
 
 import java.io.File;
@@ -85,6 +88,7 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.net.InetAddresses.isInetAddress;
 import static io.airlift.http.client.jetty.AuthorizationPreservingHttpClient.setPreserveAuthorization;
 import static io.airlift.node.AddressToHostname.tryDecodeHostnameToAddress;
 import static io.airlift.security.cert.CertificateBuilder.certificateBuilder;
@@ -357,7 +361,7 @@ public class JettyHttpClient
     private static SslContextFactory.Client getSslContextFactory(HttpClientConfig config, Optional<String> environment)
     {
         SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
-        sslContextFactory.setSNIProvider(SslContextFactory.Client.SniProvider.NON_DOMAIN_SNI_PROVIDER);
+        sslContextFactory.setSNIProvider(JettyHttpClient::getSniServerNames);
         sslContextFactory.setEndpointIdentificationAlgorithm(config.isVerifyHostname() ? "HTTPS" : null);
 
         String keyStorePassword = firstNonNull(config.getKeyStorePassword(), "");
@@ -390,6 +394,22 @@ public class JettyHttpClient
         sslContextFactory.setExcludeCipherSuites(excludedCipherSuites.toArray(new String[0]));
 
         return sslContextFactory;
+    }
+
+    private static List<SNIServerName> getSniServerNames(SSLEngine sslEngine, List<SNIServerName> serverNames)
+    {
+        // work around the JDK TLS implementation not allowing single label domains
+        if (serverNames.isEmpty()) {
+            String host = sslEngine.getPeerHost();
+            if (host != null && !isInetAddress(host) && !host.contains(".")) {
+                try {
+                    return List.of(new SNIHostName(host));
+                }
+                catch (IllegalArgumentException ignored) {
+                }
+            }
+        }
+        return serverNames;
     }
 
     private static KeyStore loadKeyStore(String keystorePath, String keystorePassword)

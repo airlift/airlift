@@ -7,6 +7,8 @@
   compatibility with SNI when using automatic HTTPS configuration.
 - Add new rolling log file implementation. The legacy implementation can be used
   by setting the "log.legacy-implementation.enabled" config property.
+- Fix Jetty SNI for Java 17 by removing support for literal IP addresses,
+  as these are not allowed per the TLS specification.
 
 208
 

@@ -17,6 +17,7 @@ import com.google.common.net.InetAddresses;
 
 import java.net.Inet4Address;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Optional;
 
 public final class AddressToHostname
@@ -52,6 +53,14 @@ public final class AddressToHostname
         else {
             ipString = ipString.replace('-', '.');
         }
-        return Optional.of(InetAddresses.forString(ipString));
+
+        byte[] address = InetAddresses.forString(ipString).getAddress();
+
+        try {
+            return Optional.of(InetAddress.getByAddress(hostname, address));
+        }
+        catch (UnknownHostException e) {
+            throw new IllegalArgumentException(e);
+        }
     }
 }

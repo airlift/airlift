@@ -88,6 +88,7 @@ import static io.airlift.http.server.TestHttpServerInfo.closeChannels;
 import static io.airlift.testing.Assertions.assertContains;
 import static io.airlift.testing.Assertions.assertNotEquals;
 import static io.airlift.testing.Closeables.closeAll;
+import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.Files.createTempDirectory;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -311,16 +312,15 @@ public class TestHttpServerProvider
                 .setAutomaticHttpsSharedSecret("shared-secret");
 
         try (JettyHttpClient httpClient = createJettyClient(http1ClientConfig)) {
-            verifyUri(httpClient, URI.create("https://localhost:" + httpServerInfo.getHttpsUri().getPort()));
-            verifyUri(httpClient, URI.create("https://127.0.0.1:" + httpServerInfo.getHttpsUri().getPort()));
-            verifyUri(httpClient, URI.create("https://127-0-0-1.ip:" + httpServerInfo.getHttpsUri().getPort()));
-            verifyUri(httpClient, URI.create("https://[::1]:" + httpServerInfo.getHttpsUri().getPort()));
-            verifyUri(httpClient, URI.create("https://x--1.ip:" + httpServerInfo.getHttpsUri().getPort()));
+            verifyHttps(httpClient, "localhost");
+            verifyHttps(httpClient, "127-0-0-1.ip");
+            verifyHttps(httpClient, "x--1.ip");
         }
     }
 
-    private void verifyUri(JettyHttpClient httpClient, URI uri)
+    private void verifyHttps(JettyHttpClient httpClient, String name)
     {
+        URI uri = URI.create(format("https://%s:%s", name, httpServerInfo.getHttpsUri().getPort()));
         StatusResponse response = httpClient.execute(prepareGet().setUri(uri).build(), createStatusResponseHandler());
 
         assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
@@ -431,17 +431,9 @@ public class TestHttpServerProvider
                 .setTrustStorePassword("airlift")
                 .setAutomaticHttpsSharedSecret("shared-secret");
 
-        try (JettyHttpClient httpClient = createJettyClient(clientConfig)) {
-            for (String host : ImmutableList.of("localhost", "127.0.0.1")) {
-                URI uri = URI.create("https://" + host + ":" + httpServerInfo.getHttpsUri().getPort());
-                StringResponse response = httpClient.execute(
-                        prepareGet().setUri(uri).build(),
-                        createStringResponseHandler());
-
-                assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
-                assertEquals(response.getBody(), "CN=testing,OU=Client,O=Airlift,L=Palo Alto,ST=CA,C=US");
-            }
-        }
+        assertClientCertificateRequest(clientConfig, "localhost");
+        assertClientCertificateRequest(clientConfig, "127-0-0-1.ip");
+        assertClientCertificateRequest(clientConfig, "x--1.ip");
     }
 
     @Test
@@ -463,15 +455,14 @@ public class TestHttpServerProvider
                 .setKeyStorePassword("airlift")
                 .setTrustStorePath(getResource("clientcert-pem/ca.crt").getPath());
 
-        assertClientCertificateRequest(clientConfig);
+        assertClientCertificateRequest(clientConfig, "localhost");
     }
 
-    private void assertClientCertificateRequest(HttpClientConfig clientConfig)
+    private void assertClientCertificateRequest(HttpClientConfig clientConfig, String name)
     {
-        try (JettyHttpClient httpClient = new JettyHttpClient(clientConfig)) {
-            StringResponse response = httpClient.execute(
-                    prepareGet().setUri(httpServerInfo.getHttpsUri()).build(),
-                    createStringResponseHandler());
+        try (JettyHttpClient httpClient = createJettyClient(clientConfig)) {
+            URI uri = URI.create(format("https://%s:%s", name, httpServerInfo.getHttpsUri().getPort()));
+            StringResponse response = httpClient.execute(prepareGet().setUri(uri).build(), createStringResponseHandler());
 
             assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
             assertEquals(response.getBody(), "CN=testing,OU=Client,O=Airlift,L=Palo Alto,ST=CA,C=US");
