@@ -16,6 +16,7 @@ package io.airlift.http.server;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Closer;
+import com.google.common.net.HostAndPort;
 import io.airlift.event.client.NullEventClient;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
@@ -34,18 +35,18 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
+import java.util.List;
 import java.util.Optional;
 
 import static com.google.common.io.Resources.getResource;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.testng.Assert.assertEquals;
 
 public class TestJettyMultipleCerts
 {
-    private static final String SINGLE = "single";
-
     @Test
     public void test()
             throws Exception
@@ -110,38 +111,51 @@ public class TestJettyMultipleCerts
                     .setTrustStorePassword("airlift"));
             closer.register(client);
 
-            tryHost(client, "localhost", httpServerInfo.getHttpsUri().getPort());
-            tryHost(client, "127.0.0.1", httpServerInfo.getHttpsUri().getPort());
+            int httpsPort = httpServerInfo.getHttpsUri().getPort();
 
-            // this only work if "single" was manually added to /etc/hosts
-            if (doesDomainResolveToLocalhost(SINGLE)) {
-                tryHost(client, SINGLE, httpServerInfo.getHttpsUri().getPort());
+            tryHost(client, HostAndPort.fromParts("localhost", httpsPort));
+
+            for (String name : List.of("127.0.0.1", "::1")) {
+                assertThatThrownBy(() -> tryHost(client, HostAndPort.fromParts(name, httpsPort)))
+                        .hasMessageStartingWith(name + " Failed communicating with server")
+                        .hasRootCauseMessage("No subject alternative names present");
+            }
+
+            // test is skipped unless name is manually added to /etc/hosts:
+            //
+            // 127.0.0.1 single1 single2 single3 single4
+            //
+            for (String name : List.of("single1", "single2", "single3", "single4")) {
+                if (doesDomainResolveToLocalhost(name)) {
+                    tryHost(client, HostAndPort.fromParts(name, httpsPort));
+                }
             }
         }
     }
 
-    private boolean doesDomainResolveToLocalhost(String single)
+    private static boolean doesDomainResolveToLocalhost(String name)
     {
         try {
-            return ImmutableList.copyOf(InetAddress.getAllByName(single)).contains(InetAddress.getByAddress(new byte[] {127, 0, 0, 1}));
+            InetAddress localhost = InetAddress.getByAddress(new byte[] {127, 0, 0, 1});
+            return ImmutableList.copyOf(InetAddress.getAllByName(name)).contains(localhost);
         }
         catch (UnknownHostException ignored) {
             return false;
         }
     }
 
-    private void tryHost(JettyHttpClient client, String hostname, int port)
+    private static void tryHost(JettyHttpClient client, HostAndPort address)
     {
         try {
             StatusResponse statusResponse = client.execute(
                     prepareGet()
-                            .setUri(URI.create("https://" + hostname + ":" + port + "/"))
+                            .setUri(URI.create("https://" + address))
                             .build(),
                     createStatusResponseHandler());
             assertEquals(statusResponse.getStatusCode(), 200);
         }
         catch (Exception e) {
-            throw new RuntimeException(hostname + " FAILED", e);
+            throw new RuntimeException(address.getHost() + " " + e.getMessage(), e);
         }
     }
 }
