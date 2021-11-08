@@ -109,7 +109,7 @@ public class ConfigurationInspector
                     description = "";
                 }
 
-                if (attribute.isHidden()) {
+                if (attribute.isHidden() && !Boolean.getBoolean("config.includeHidden")) {
                     continue;
                 }
 
