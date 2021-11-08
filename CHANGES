@@ -1,6 +1,7 @@
 209
 
 - Add @ConfigHidden annotation to prevent listing config values.
+  These can be shown via the "config.includeHidden" system property.
 - Add http proxy support in http client
 - Add IP_ENCODED_AS_HOSTNAME to internal address source. This ensures
   compatibility with SNI when using automatic HTTPS configuration.
