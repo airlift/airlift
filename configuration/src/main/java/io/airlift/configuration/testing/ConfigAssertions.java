@@ -94,7 +94,7 @@ public final class ConfigAssertions
             Object actualAttributeValue = invoke(actual, getter);
             Object expectedAttributeValue = expectedAttributeValues.get(attribute.getName());
 
-            if (!Objects.equals(actualAttributeValue, expectedAttributeValue)) {
+            if (!Objects.deepEquals(actualAttributeValue, expectedAttributeValue)) {
                 throw new AssertionError(notEquals(attribute.getName(), actualAttributeValue, expectedAttributeValue));
             }
         }
@@ -211,7 +211,7 @@ public final class ConfigAssertions
             }
             Object actualAttributeValue = invoke(actual, getter);
             Object expectedAttributeValue = invoke(expected, getter);
-            if (!Objects.equals(actualAttributeValue, expectedAttributeValue)) {
+            if (!Objects.deepEquals(actualAttributeValue, expectedAttributeValue)) {
                 throw new AssertionError(notEquals(attribute.getName(), actualAttributeValue, expectedAttributeValue));
             }
         }
@@ -227,7 +227,7 @@ public final class ConfigAssertions
             Object actualAttributeValue = invoke(actual, getter);
             Object expectedAttributeValue = invoke(expected, getter);
 
-            if (Objects.equals(actualAttributeValue, expectedAttributeValue)) {
+            if (Objects.deepEquals(actualAttributeValue, expectedAttributeValue)) {
                 throw new AssertionError("Attribute value matches the default: " + attribute.getName());
             }
         }
