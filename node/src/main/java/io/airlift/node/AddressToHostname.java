@@ -37,7 +37,7 @@ public final class AddressToHostname
             // start with a `:` so we prefix with an `x`
             ipString = "x" + ipString.replace(':', '-');
         }
-        return ipString + ".ip";
+        return ipString + IP_ENCODED_SUFFIX;
     }
 
     public static Optional<InetAddress> tryDecodeHostnameToAddress(String hostname)
