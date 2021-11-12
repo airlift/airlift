@@ -95,6 +95,7 @@ public class JmxGcMonitor
                 ManagementFactory.getPlatformMBeanServer().removeNotificationListener(objectName, notificationListener);
             }
             catch (JMException ignored) {
+                log.warn("Failed to unregister GC listener");
             }
         }
     }
