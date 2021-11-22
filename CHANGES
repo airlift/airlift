@@ -1,3 +1,6 @@
+210
+- Add support for logging to a tcp socket by setting "log.path" to "tcp://host:port".
+
 209
 
 - Add @ConfigHidden annotation to prevent listing config values.
