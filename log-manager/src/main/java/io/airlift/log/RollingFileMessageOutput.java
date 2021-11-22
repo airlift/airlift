@@ -34,36 +34,25 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Handler;
-import java.util.logging.LogRecord;
+import java.util.logging.ErrorManager;
+import java.util.logging.Formatter;
 import java.util.zip.GZIPOutputStream;
 
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
 import static java.lang.Math.toIntExact;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static java.util.Objects.requireNonNull;
 import static java.util.UUID.randomUUID;
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
-import static java.util.logging.ErrorManager.CLOSE_FAILURE;
-import static java.util.logging.ErrorManager.FLUSH_FAILURE;
-import static java.util.logging.ErrorManager.FORMAT_FAILURE;
 import static java.util.logging.ErrorManager.GENERIC_FAILURE;
-import static java.util.logging.ErrorManager.OPEN_FAILURE;
-import static java.util.logging.ErrorManager.WRITE_FAILURE;
 
-final class RollingFileHandler
-        extends Handler
+final class RollingFileMessageOutput
+        implements MessageOutput
 {
     public enum CompressionType
     {
@@ -84,15 +73,11 @@ final class RollingFileHandler
     }
 
     private static final int MAX_OPEN_NEW_LOG_ATTEMPTS = 100;
-    private static final int MAX_BATCH_COUNT = 1024;
     private static final int MAX_BATCH_BYTES = toIntExact(new DataSize(1, MEGABYTE).toBytes());
-
     private static final String TEMP_PREFIX = ".tmp.";
     private static final String DELETED_PREFIX = ".deleted.";
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("-yyyyMMdd.HHmmss");
-
-    private static final byte[] POISON_MESSAGE = new byte[0];
 
     private final Path symlink;
     private final long maxFileSize;
@@ -103,30 +88,28 @@ final class RollingFileHandler
     @GuardedBy("this")
     private LogFileName currentOutputFileName;
     @GuardedBy("this")
-    private OutputStream currentOutputStream;
-    @GuardedBy("this")
     private long currentFileSize;
-    private final LogHistoryManager historyManager;
+    @GuardedBy("this")
+    private OutputStream currentOutputStream;
 
-    private final BlockingQueue<byte[]> queue = new ArrayBlockingQueue<>(MAX_BATCH_COUNT);
-    private final AtomicBoolean closed = new AtomicBoolean();
-    private final Thread thread;
+    private final LogHistoryManager historyManager;
 
     private final ExecutorService compressionExecutor;
 
-    public static RollingFileHandler createRollingFileHandler(
+    public static BufferedHandler createRollingFileHandler(
             String filename,
             DataSize maxFileSize,
             DataSize maxTotalSize,
             CompressionType compressionType,
-            Format format)
+            Formatter formatter)
     {
-        RollingFileHandler handler = new RollingFileHandler(filename, maxFileSize, maxTotalSize, compressionType, format);
+        RollingFileMessageOutput output = new RollingFileMessageOutput(filename, maxFileSize, maxTotalSize, compressionType);
+        BufferedHandler handler = new BufferedHandler(output, formatter);
         handler.start();
         return handler;
     }
 
-    private RollingFileHandler(String filename, DataSize maxFileSize, DataSize maxTotalSize, CompressionType compressionType, Format format)
+    private RollingFileMessageOutput(String filename, DataSize maxFileSize, DataSize maxTotalSize, CompressionType compressionType)
     {
         requireNonNull(filename, "filename is null");
         requireNonNull(maxFileSize, "maxFileSize is null");
@@ -137,12 +120,6 @@ final class RollingFileHandler
         this.compressionType = compressionType;
 
         symlink = Paths.get(filename);
-
-        thread = new Thread(this::logging);
-        thread.setName("log-writer");
-        thread.setDaemon(true);
-
-        setFormatter(format.getFormatter());
 
         // ensure log directory can be created
         try {
@@ -157,8 +134,9 @@ final class RollingFileHandler
             LegacyRollingFileHandler.recoverTempFiles(filename);
         }
         catch (IOException e) {
-            reportError(null, e, OPEN_FAILURE);
+            new ErrorManager().error("Unable to recover legacy logging temp files", e, GENERIC_FAILURE);
         }
+
         if (Files.exists(symlink)) {
             try {
                 // if existing link file is a legacy log file, rename it to so link file can be recreated as a symlink
@@ -200,87 +178,35 @@ final class RollingFileHandler
         }
     }
 
-    private void start()
-    {
-        thread.start();
-    }
-
-    public synchronized Set<LogFileName> getFiles()
-    {
-        ImmutableSet.Builder<LogFileName> files = ImmutableSet.<LogFileName>builder()
-                .addAll(historyManager.getFiles());
-        if (currentOutputFileName != null) {
-            files.add(currentOutputFileName);
-        }
-        return files.build();
-    }
-
-    @Override
-    public void publish(LogRecord record)
-    {
-        // if closed messages are dropped
-        if (closed.get()) {
-            return;
-        }
-
-        if (!isLoggable(record)) {
-            return;
-        }
-
-        byte[] message;
-        try {
-            message = getFormatter().format(record).getBytes(UTF_8);
-        }
-        catch (Exception e) {
-            // catch any exception to assure logging always works
-            reportError(null, e, FORMAT_FAILURE);
-            return;
-        }
-
-        try {
-            putUninterruptibly(queue, message);
-        }
-        catch (Exception e) {
-            // catch any exception to assure logging always works
-            reportError(null, e, WRITE_FAILURE);
-        }
-
-        // if closed while queueing, try to remove the message just to clean up
-        if (closed.get()) {
-            queue.remove(message);
-        }
-    }
-
     @Override
     public synchronized void flush()
+            throws IOException
     {
+        if (currentOutputStream != null) {
+            currentOutputStream.flush();
+        }
+    }
+
+    @Override
+    public synchronized void close()
+            throws IOException
+    {
+        IOException exception = new IOException("Exception thrown attempting to close the file output.");
+
         if (currentOutputStream != null) {
             try {
                 currentOutputStream.flush();
             }
-            catch (Exception e) {
-                reportError(null, e, FLUSH_FAILURE);
+            catch (IOException e) {
+                exception.addSuppressed(e);
+            }
+            try {
+                currentOutputStream.close();
+            }
+            catch (IOException e) {
+                exception.addSuppressed(e);
             }
         }
-    }
-
-    @Override
-    public void close()
-    {
-        closed.set(true);
-
-        putUninterruptibly(queue, POISON_MESSAGE);
-
-        // wait for logging to finish
-        try {
-            thread.join();
-        }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
-        // there shouldn't be any queued methods, but be safe
-        queue.clear();
 
         // wait for compression to finish
         if (compressionExecutor != null) {
@@ -292,103 +218,35 @@ final class RollingFileHandler
                 Thread.currentThread().interrupt();
             }
         }
+
+        currentOutputStream = null;
+        currentOutputFile = null;
+        currentOutputFileName = null;
+        currentFileSize = 0;
+
+        if (exception.getSuppressed().length > 0) {
+            throw exception;
+        }
     }
 
-    private void logging()
+    @Override
+    public synchronized void writeMessage(byte[] message)
+            throws IOException
     {
-        while (!closed.get() || !queue.isEmpty()) {
-            processQueue();
-        }
-
-        // logging is closed, so close the current output file
-        synchronized (this) {
+        if (currentFileSize + message.length > maxFileSize) {
             try {
-                currentOutputStream.flush();
+                rollFile();
             }
             catch (IOException e) {
-                reportError("Could not flush output stream", e, CLOSE_FAILURE);
-            }
-            try {
-                currentOutputStream.close();
-            }
-            catch (IOException e) {
-                reportError("Could not close output stream", e, CLOSE_FAILURE);
-            }
-            currentOutputFile = null;
-            currentOutputFileName = null;
-            currentOutputStream = null;
-            currentFileSize = 0;
-        }
-
-        // there shouldn't be any queued methods, but be safe
-        queue.clear();
-    }
-
-    private void processQueue()
-    {
-        List<byte[]> batch = new ArrayList<>(MAX_BATCH_COUNT);
-        boolean poisonMessageSeen = false;
-        while (!closed.get() || !poisonMessageSeen) {
-            if (queue.isEmpty()) {
-                try {
-                    batch.add(queue.take());
-                }
-                catch (InterruptedException ignored) {
-                }
-            }
-            else {
-                queue.drainTo(batch, MAX_BATCH_COUNT);
-            }
-
-            int poisonMessageIndex = getPoisonMessageIndex(batch);
-            if (poisonMessageIndex >= 0) {
-                poisonMessageSeen = true;
-                batch = batch.subList(0, poisonMessageIndex);
-            }
-
-            logMessageBatch(batch);
-            batch.clear();
-        }
-    }
-
-    private static int getPoisonMessageIndex(List<byte[]> messages)
-    {
-        for (int i = 0; i < messages.size(); i++) {
-            if (messages.get(i) == POISON_MESSAGE) {
-                return i;
+                // It is possible the roll worked, but there was a problem cleaning up, and it is possible it failed;
+                // Either way, roll will be attempted again once file grows by maxFileSize.
+                currentFileSize = 0;
+                throw new IOException("Error rolling log file", e);
             }
         }
-        return -1;
-    }
-
-    private synchronized void logMessageBatch(List<byte[]> batch)
-    {
-        for (byte[] message : batch) {
-            if (currentFileSize + message.length > maxFileSize) {
-                try {
-                    rollFile();
-                }
-                catch (IOException e) {
-                    // It is possible the roll worked, but there was a problem cleaning up, and it is possible it failed;
-                    // Either way, roll will be attempted again once file grows by maxFileSize.
-                    currentFileSize = 0;
-
-                    reportError("Error rolling log file", e, GENERIC_FAILURE);
-                }
-            }
-
-            historyManager.pruneLogFilesIfNecessary(currentFileSize + message.length);
-
-            currentFileSize += message.length;
-            try {
-                currentOutputStream.write(message);
-            }
-            catch (Exception e) {
-                reportError(null, e, WRITE_FAILURE);
-            }
-        }
-        // always flush at the end of a batch, so logs aren't delayed
-        flush();
+        historyManager.pruneLogFilesIfNecessary(currentFileSize + message.length);
+        currentFileSize += message.length;
+        currentOutputStream.write(message);
     }
 
     private synchronized void rollFile()
@@ -432,7 +290,14 @@ final class RollingFileHandler
                 Path originalFile = currentOutputFile;
                 LogFileName originalLogFileName = currentOutputFileName;
                 long originalFileSize = currentFileSize;
-                compressionExecutor.submit(() -> compressInternal(originalFile, originalLogFileName, originalFileSize));
+                compressionExecutor.submit(() -> {
+                    try {
+                        compressInternal(originalFile, originalLogFileName, originalFileSize);
+                    }
+                    catch (IOException e) {
+                        exception.addSuppressed(e);
+                    }
+                });
             }
         }
 
@@ -458,6 +323,7 @@ final class RollingFileHandler
     }
 
     private void compressInternal(Path originalFile, LogFileName originalLogFileName, long originalFileSize)
+            throws IOException
     {
         tryCleanupTempFiles(symlink);
 
@@ -471,8 +337,7 @@ final class RollingFileHandler
             ByteStreams.copy(input, gzipOutputStream);
         }
         catch (IOException e) {
-            reportError("Unable to compress log file", e, GENERIC_FAILURE);
-            return;
+            throw new IOException("Unable to compress log file", e);
         }
 
         // Size can only be checked after the gzip stream is closed
@@ -481,8 +346,7 @@ final class RollingFileHandler
             compressedSize = Files.size(tempFile);
         }
         catch (IOException e) {
-            reportError("Unable to get size of compress log file", e, GENERIC_FAILURE);
-            return;
+            throw new IOException("Unable to get size of compress log file", e);
         }
 
         // file movement must be done while holding the lock to ensure there isn't a roll during the movement
@@ -494,7 +358,7 @@ final class RollingFileHandler
                     Files.deleteIfExists(tempFile);
                 }
                 catch (IOException e) {
-                    reportError("Unable to delete compress log file", e, GENERIC_FAILURE);
+                    throw new IOException("Unable to delete compress log file", e);
                 }
                 return;
             }
@@ -531,7 +395,7 @@ final class RollingFileHandler
                 }
                 catch (IOException ignored) {
                     // delete and move failed, there is nothing that can be done
-                    reportError("Unable to delete original file after compression", deleteException, GENERIC_FAILURE);
+                    throw new IOException("Unable to delete original file after compression", deleteException);
                 }
             }
         }
@@ -566,24 +430,13 @@ final class RollingFileHandler
         }
     }
 
-    private static <T> void putUninterruptibly(BlockingQueue<T> queue, T element)
+    public synchronized Set<LogFileName> getFiles()
     {
-        boolean interrupted = false;
-        try {
-            while (true) {
-                try {
-                    queue.put(element);
-                    return;
-                }
-                catch (InterruptedException e) {
-                    interrupted = true;
-                }
-            }
+        ImmutableSet.Builder<LogFileName> files = ImmutableSet.<LogFileName>builder()
+                .addAll(historyManager.getFiles());
+        if (currentOutputFileName != null) {
+            files.add(currentOutputFileName);
         }
-        finally {
-            if (interrupted) {
-                Thread.currentThread().interrupt();
-            }
-        }
+        return files.build();
     }
 }

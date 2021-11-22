@@ -36,9 +36,9 @@ import static com.google.common.io.MoreFiles.asByteSource;
 import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
 import static io.airlift.log.Format.TEXT;
-import static io.airlift.log.RollingFileHandler.CompressionType.GZIP;
-import static io.airlift.log.RollingFileHandler.CompressionType.NONE;
-import static io.airlift.log.RollingFileHandler.createRollingFileHandler;
+import static io.airlift.log.RollingFileMessageOutput.CompressionType.GZIP;
+import static io.airlift.log.RollingFileMessageOutput.CompressionType.NONE;
+import static io.airlift.log.RollingFileMessageOutput.createRollingFileHandler;
 import static io.airlift.units.DataSize.Unit.BYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -47,7 +47,7 @@ import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertTrue;
 
 @Test(timeOut = 5 * 60 * 1000)
-public class TestRollingFileHandler
+public class TestRollingFileMessageOutput
 {
     @Test
     public void testBasicLogging()
@@ -56,7 +56,7 @@ public class TestRollingFileHandler
         Path tempDir = Files.createTempDirectory("logging-test");
         try {
             Path masterFile = tempDir.resolve("launcher.log");
-            RollingFileHandler handler = createRollingFileHandler(masterFile.toString(), new DataSize(1, MEGABYTE), new DataSize(10, MEGABYTE), NONE, TEXT);
+            BufferedHandler handler = createRollingFileHandler(masterFile.toString(), new DataSize(1, MEGABYTE), new DataSize(10, MEGABYTE), NONE, TEXT.getFormatter());
 
             assertTrue(Files.exists(masterFile));
             assertTrue(Files.isSymbolicLink(masterFile));
@@ -95,12 +95,12 @@ public class TestRollingFileHandler
         Path tempDir = Files.createTempDirectory("logging-test");
         try {
             Path masterFile = tempDir.resolve("launcher.log");
-            RollingFileHandler handler = createRollingFileHandler(
+            BufferedHandler handler = createRollingFileHandler(
                     masterFile.toString(),
                     new DataSize(message.length() * 5, BYTE),
                     new DataSize(message.length() * 2 + message.length() * 5 + message.length() * 5, BYTE), // 2 messages + 2 closed files
                     NONE,
-                    TEXT);
+                    TEXT.getFormatter());
 
             // use a handler that prints the raw message
             handler.setFormatter(new Formatter()
@@ -178,12 +178,12 @@ public class TestRollingFileHandler
         Path tempDir = Files.createTempDirectory("logging-test");
         try {
             Path masterFile = tempDir.resolve("launcher.log");
-            RollingFileHandler handler = createRollingFileHandler(
+            BufferedHandler handler = createRollingFileHandler(
                     masterFile.toString(),
                     new DataSize(message.length() * 5, BYTE),
                     new DataSize(message.length() + message.length() * 5 + expectedCompressedSize, BYTE), // one message, one uncompressed file, one compressed file
                     GZIP,
-                    TEXT);
+                    TEXT.getFormatter());
 
             // use a handler that prints the raw message
             handler.setFormatter(new Formatter()
@@ -234,36 +234,6 @@ public class TestRollingFileHandler
         }
     }
 
-    private static void assertCompression(Path masterFile, RollingFileHandler handler, String message, int expectedFileCount, int expectedLineCount, int expectedCompressedSize)
-            throws Exception
-    {
-        Set<LogFileName> compressedFileNames = waitForCompression(handler, expectedFileCount);
-        assertEquals(compressedFileNames.size(), expectedFileCount - 1);
-
-        for (LogFileName compressedFileName : compressedFileNames) {
-            Path compressedFile = masterFile.resolveSibling(compressedFileName.getFileName());
-
-            assertEquals(Files.size(compressedFile), expectedCompressedSize);
-
-            List<String> lines = new GzippedByteSource(asByteSource(compressedFile))
-                    .asCharSource(UTF_8)
-                    .readLines();
-            assertEquals(lines.size(), expectedLineCount);
-            assertTrue(lines.stream().allMatch(message.trim()::equals));
-        }
-    }
-
-    private static void assertLogSizes(Path masterFile, RollingFileHandler handler, int expectedLines, int lineSize, int expectedFileCount)
-            throws Exception
-    {
-        Set<LogFileName> files = waitForExactFiles(handler, expectedFileCount);
-        assertEquals(files.size(), expectedFileCount);
-
-        List<String> lines = waitForExactLines(masterFile, expectedLines);
-        assertEquals(lines.size(), expectedLines);
-        assertEquals(Files.size(masterFile), (expectedLines) * lineSize);
-    }
-
     @Test
     public void testClosedHandler()
             throws Exception
@@ -271,7 +241,7 @@ public class TestRollingFileHandler
         Path tempDir = Files.createTempDirectory("logging-test");
         try {
             Path masterFile = tempDir.resolve("launcher.log");
-            RollingFileHandler handler = createRollingFileHandler(masterFile.toString(), new DataSize(1, MEGABYTE), new DataSize(10, MEGABYTE), NONE, TEXT);
+            BufferedHandler handler = createRollingFileHandler(masterFile.toString(), new DataSize(1, MEGABYTE), new DataSize(10, MEGABYTE), NONE, TEXT.getFormatter());
 
             handler.publish(new LogRecord(Level.SEVERE, "apple"));
             handler.publish(new LogRecord(Level.SEVERE, "banana"));
@@ -304,7 +274,7 @@ public class TestRollingFileHandler
         Path tempDir = Files.createTempDirectory("logging-test");
         try {
             Path masterFile = tempDir.resolve("launcher.log");
-            RollingFileHandler handler = createRollingFileHandler(masterFile.toString(), new DataSize(1, MEGABYTE), new DataSize(10, MEGABYTE), NONE, TEXT);
+            BufferedHandler handler = createRollingFileHandler(masterFile.toString(), new DataSize(1, MEGABYTE), new DataSize(10, MEGABYTE), NONE, TEXT.getFormatter());
 
             Path firstLogFile = Files.readSymbolicLink(masterFile);
 
@@ -322,7 +292,7 @@ public class TestRollingFileHandler
             handler.close();
 
             // open new handler
-            handler = createRollingFileHandler(masterFile.toString(), new DataSize(1, MEGABYTE), new DataSize(10, MEGABYTE), NONE, TEXT);
+            handler = createRollingFileHandler(masterFile.toString(), new DataSize(1, MEGABYTE), new DataSize(10, MEGABYTE), NONE, TEXT.getFormatter());
 
             assertNotEquals(Files.readSymbolicLink(masterFile), firstLogFile);
 
@@ -369,11 +339,11 @@ public class TestRollingFileHandler
             legacyHandler.close();
 
             // open new handler
-            RollingFileHandler newHandler = createRollingFileHandler(masterFile.toString(), new DataSize(1, MEGABYTE), new DataSize(10, MEGABYTE), NONE, TEXT);
+            BufferedHandler newHandler = createRollingFileHandler(masterFile.toString(), new DataSize(1, MEGABYTE), new DataSize(10, MEGABYTE), NONE, TEXT.getFormatter());
 
             assertTrue(Files.isSymbolicLink(masterFile));
             // should be tracking legacy file and new file
-            assertEquals(newHandler.getFiles().size(), 2);
+            assertEquals(((RollingFileMessageOutput) newHandler.getMessageOutput()).getFiles().size(), 2);
 
             newHandler.publish(new LogRecord(Level.SEVERE, "cherry"));
             newHandler.publish(new LogRecord(Level.SEVERE, "date"));
@@ -388,47 +358,6 @@ public class TestRollingFileHandler
         }
         finally {
             deleteRecursively(tempDir, ALLOW_INSECURE);
-        }
-    }
-
-    private static List<String> waitForExactLines(Path masterFile, int exactCount)
-            throws IOException, InterruptedException
-    {
-        while (true) {
-            List<String> lines = Files.readAllLines(masterFile, UTF_8);
-            if (lines.size() == exactCount) {
-                return lines;
-            }
-            Thread.sleep(10);
-        }
-    }
-
-    private static Set<LogFileName> waitForExactFiles(RollingFileHandler fileHandler, int exactCount)
-            throws Exception
-    {
-        while (true) {
-            Set<LogFileName> files = fileHandler.getFiles();
-            if (files.size() == exactCount) {
-                return files;
-            }
-            Thread.sleep(10);
-        }
-    }
-
-    private static Set<LogFileName> waitForCompression(RollingFileHandler fileHandler, int exactCount)
-            throws Exception
-    {
-        while (true) {
-            Set<LogFileName> files = fileHandler.getFiles();
-            if (files.size() == exactCount) {
-                Set<LogFileName> compressedFiles = files.stream()
-                        .filter(LogFileName::isCompressed)
-                        .collect(toImmutableSet());
-                if (compressedFiles.size() == exactCount - 1) {
-                    return compressedFiles;
-                }
-            }
-            Thread.sleep(10);
         }
     }
 
@@ -447,6 +376,77 @@ public class TestRollingFileHandler
                 throws IOException
         {
             return new GZIPInputStream(source.openStream());
+        }
+    }
+
+    private static void assertCompression(Path masterFile, BufferedHandler handler, String message, int expectedFileCount, int expectedLineCount, int expectedCompressedSize)
+            throws Exception
+    {
+        Set<LogFileName> compressedFileNames = waitForCompression((RollingFileMessageOutput) handler.getMessageOutput(), expectedFileCount);
+        assertEquals(compressedFileNames.size(), expectedFileCount - 1);
+
+        for (LogFileName compressedFileName : compressedFileNames) {
+            Path compressedFile = masterFile.resolveSibling(compressedFileName.getFileName());
+
+            assertEquals(Files.size(compressedFile), expectedCompressedSize);
+
+            List<String> lines = new GzippedByteSource(asByteSource(compressedFile))
+                    .asCharSource(UTF_8)
+                    .readLines();
+            assertEquals(lines.size(), expectedLineCount);
+            assertTrue(lines.stream().allMatch(message.trim()::equals));
+        }
+    }
+
+    private static void assertLogSizes(Path masterFile, BufferedHandler handler, int expectedLines, int lineSize, int expectedFileCount)
+            throws Exception
+    {
+        Set<LogFileName> files = waitForExactFiles((RollingFileMessageOutput) handler.getMessageOutput(), expectedFileCount);
+        assertEquals(files.size(), expectedFileCount);
+
+        List<String> lines = waitForExactLines(masterFile, expectedLines);
+        assertEquals(lines.size(), expectedLines);
+        assertEquals(Files.size(masterFile), (expectedLines) * lineSize);
+    }
+
+    private static List<String> waitForExactLines(Path masterFile, int exactCount)
+            throws IOException, InterruptedException
+    {
+        while (true) {
+            List<String> lines = Files.readAllLines(masterFile, UTF_8);
+            if (lines.size() == exactCount) {
+                return lines;
+            }
+            Thread.sleep(10);
+        }
+    }
+
+    private static Set<LogFileName> waitForExactFiles(RollingFileMessageOutput fileHandler, int exactCount)
+            throws Exception
+    {
+        while (true) {
+            Set<LogFileName> files = fileHandler.getFiles();
+            if (files.size() == exactCount) {
+                return files;
+            }
+            Thread.sleep(10);
+        }
+    }
+
+    private static Set<LogFileName> waitForCompression(RollingFileMessageOutput fileHandler, int exactCount)
+            throws Exception
+    {
+        while (true) {
+            Set<LogFileName> files = fileHandler.getFiles();
+            if (files.size() == exactCount) {
+                Set<LogFileName> compressedFiles = files.stream()
+                        .filter(LogFileName::isCompressed)
+                        .collect(toImmutableSet());
+                if (compressedFiles.size() == exactCount - 1) {
+                    return compressedFiles;
+                }
+            }
+            Thread.sleep(10);
         }
     }
 }

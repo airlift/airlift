@@ -16,7 +16,7 @@
 package io.airlift.log;
 
 import com.google.common.collect.ImmutableSortedMap;
-import io.airlift.log.RollingFileHandler.CompressionType;
+import io.airlift.log.RollingFileMessageOutput.CompressionType;
 import io.airlift.units.DataSize;
 
 import javax.annotation.concurrent.GuardedBy;
@@ -36,7 +36,7 @@ import java.util.logging.Handler;
 import java.util.logging.LogManager;
 
 import static com.google.common.collect.Maps.fromProperties;
-import static io.airlift.log.RollingFileHandler.createRollingFileHandler;
+import static io.airlift.log.RollingFileMessageOutput.createRollingFileHandler;
 
 /**
  * Initializes the logging subsystem.
@@ -117,7 +117,7 @@ public class Logging
             handler = new LegacyRollingFileHandler(logPath, maxHistory, maxFileSize.toBytes(), format);
         }
         else {
-            handler = createRollingFileHandler(logPath, maxFileSize, maxTotalSize, compressionType, format);
+            handler = createRollingFileHandler(logPath, maxFileSize, maxTotalSize, compressionType, format.getFormatter());
         }
         ROOT.addHandler(handler);
     }
