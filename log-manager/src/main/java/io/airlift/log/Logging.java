@@ -16,6 +16,7 @@
 package io.airlift.log;
 
 import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.net.HostAndPort;
 import io.airlift.log.RollingFileMessageOutput.CompressionType;
 import io.airlift.units.DataSize;
 
@@ -37,6 +38,7 @@ import java.util.logging.LogManager;
 
 import static com.google.common.collect.Maps.fromProperties;
 import static io.airlift.log.RollingFileMessageOutput.createRollingFileHandler;
+import static io.airlift.log.SocketMessageOutput.createSocketHandler;
 
 /**
  * Initializes the logging subsystem.
@@ -122,6 +124,16 @@ public class Logging
         ROOT.addHandler(handler);
     }
 
+    private void logToSocket(String logPath, Format format)
+    {
+        if (!logPath.startsWith("tcp://") || logPath.lastIndexOf("/") > 6) {
+            throw new IllegalArgumentException("LogPath for sockets must begin with tcp:// and not contain any path component.");
+        }
+        HostAndPort hostAndPort = HostAndPort.fromString(logPath.replace("tcp://", ""));
+        Handler handler = createSocketHandler(hostAndPort, format.getFormatter());
+        ROOT.addHandler(handler);
+    }
+
     public Level getRootLevel()
     {
         return getLevel(ROOT_LOGGER_NAME);
@@ -193,14 +205,19 @@ public class Logging
     public void configure(LoggingConfiguration config)
     {
         if (config.getLogPath() != null) {
-            logToFile(
-                    config.isLegacyLoggerImplementationEnabled(),
-                    config.getLogPath(),
-                    config.getMaxHistory(),
-                    config.getMaxSize(),
-                    config.getMaxTotalSize(),
-                    config.getCompression(),
-                    config.getFormat());
+            if (config.getLogPath().startsWith("tcp://")) {
+                logToSocket(config.getLogPath(), config.getFormat());
+            }
+            else {
+                logToFile(
+                        config.isLegacyLoggerImplementationEnabled(),
+                        config.getLogPath(),
+                        config.getMaxHistory(),
+                        config.getMaxSize(),
+                        config.getMaxTotalSize(),
+                        config.getCompression(),
+                        config.getFormat());
+            }
         }
 
         if (!config.isConsoleEnabled()) {
