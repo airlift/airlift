@@ -19,7 +19,7 @@ import io.airlift.configuration.Config;
 import io.airlift.configuration.ConfigDescription;
 import io.airlift.configuration.DefunctConfig;
 import io.airlift.configuration.LegacyConfig;
-import io.airlift.log.RollingFileHandler.CompressionType;
+import io.airlift.log.RollingFileMessageOutput.CompressionType;
 import io.airlift.units.DataSize;
 
 import javax.validation.constraints.NotNull;
