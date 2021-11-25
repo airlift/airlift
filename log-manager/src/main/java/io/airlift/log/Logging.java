@@ -15,6 +15,7 @@
  */
 package io.airlift.log;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.net.HostAndPort;
 import io.airlift.log.RollingFileMessageOutput.CompressionType;
@@ -33,10 +34,13 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
+import java.util.logging.Formatter;
 import java.util.logging.Handler;
 import java.util.logging.LogManager;
 
 import static com.google.common.collect.Maps.fromProperties;
+import static io.airlift.configuration.ConfigurationLoader.loadPropertiesFrom;
+import static io.airlift.configuration.ConfigurationUtils.replaceEnvironmentVariables;
 import static io.airlift.log.RollingFileMessageOutput.createRollingFileHandler;
 import static io.airlift.log.SocketMessageOutput.createSocketHandler;
 
@@ -52,6 +56,7 @@ public class Logging
     private static final Logger log = Logger.get(Logging.class);
     private static final String ROOT_LOGGER_NAME = "";
     private static final java.util.logging.Logger ROOT = java.util.logging.Logger.getLogger("");
+
     private static Logging instance;
     private static final PrintStream stdErr = System.err;
 
@@ -111,27 +116,27 @@ public class Logging
         consoleHandler = null;
     }
 
-    public void logToFile(boolean legacyLoggerImplementation, String logPath, int maxHistory, DataSize maxFileSize, DataSize maxTotalSize, CompressionType compressionType, Format format)
+    public void logToFile(boolean legacyLoggerImplementation, String logPath, int maxHistory, DataSize maxFileSize, DataSize maxTotalSize, CompressionType compressionType, Formatter formatter)
     {
         log.info("Logging to %s", logPath);
 
         Handler handler;
         if (legacyLoggerImplementation) {
-            handler = new LegacyRollingFileHandler(logPath, maxHistory, maxFileSize.toBytes(), format);
+            handler = new LegacyRollingFileHandler(logPath, maxHistory, maxFileSize.toBytes(), formatter);
         }
         else {
-            handler = createRollingFileHandler(logPath, maxFileSize, maxTotalSize, compressionType, format.getFormatter(), new BufferedHandlerErrorManager(stdErr));
+            handler = createRollingFileHandler(logPath, maxFileSize, maxTotalSize, compressionType, formatter, new BufferedHandlerErrorManager(stdErr));
         }
         ROOT.addHandler(handler);
     }
 
-    private void logToSocket(String logPath, Format format)
+    private void logToSocket(String logPath, Formatter formatter)
     {
         if (!logPath.startsWith("tcp://") || logPath.lastIndexOf("/") > 6) {
             throw new IllegalArgumentException("LogPath for sockets must begin with tcp:// and not contain any path component.");
         }
         HostAndPort hostAndPort = HostAndPort.fromString(logPath.replace("tcp://", ""));
-        Handler handler = createSocketHandler(hostAndPort, format.getFormatter(), new BufferedHandlerErrorManager(stdErr));
+        Handler handler = createSocketHandler(hostAndPort, formatter, new BufferedHandlerErrorManager(stdErr));
         ROOT.addHandler(handler);
     }
 
@@ -205,9 +210,19 @@ public class Logging
 
     public void configure(LoggingConfiguration config)
     {
+        Map<String, String> logAnnotations = ImmutableMap.of();
+        if (config.getLogAnnotationFile() != null) {
+            try {
+                logAnnotations = replaceEnvironmentVariables(loadPropertiesFrom(config.getLogAnnotationFile()));
+            }
+            catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+
         if (config.getLogPath() != null) {
             if (config.getLogPath().startsWith("tcp://")) {
-                logToSocket(config.getLogPath(), config.getFormat());
+                logToSocket(config.getLogPath(), config.getFormat().createFormatter(logAnnotations));
             }
             else {
                 logToFile(
@@ -217,7 +232,7 @@ public class Logging
                         config.getMaxSize(),
                         config.getMaxTotalSize(),
                         config.getCompression(),
-                        config.getFormat());
+                        config.getFormat().createFormatter(logAnnotations));
             }
         }
 

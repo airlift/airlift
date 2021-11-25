@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Throwables;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.Objects;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
@@ -18,6 +19,7 @@ public class JsonRecord
     private final String loggerName;
     private final String message;
     private final Throwable throwable;
+    private final Map<String, String> logAnnotations;
 
     @JsonCreator
     public JsonRecord(
@@ -26,7 +28,8 @@ public class JsonRecord
             @JsonProperty("thread") String thread,
             @JsonProperty("logger") String loggerName,
             @JsonProperty("message") String message,
-            Throwable throwable)
+            Throwable throwable,
+            Map<String, String> logAnnotations)
     {
         this.timestamp = requireNonNull(timestamp);
         this.level = requireNonNull(level);
@@ -34,6 +37,7 @@ public class JsonRecord
         this.loggerName = loggerName;
         this.message = message;
         this.throwable = throwable;
+        this.logAnnotations = (logAnnotations == null || logAnnotations.isEmpty()) ? null : logAnnotations;
     }
 
     @JsonProperty
@@ -91,6 +95,12 @@ public class JsonRecord
             return null;
         }
         return Throwables.getStackTraceAsString(throwable);
+    }
+
+    @JsonProperty("annotations")
+    public Map<String, String> getLogAnnotations()
+    {
+        return logAnnotations;
     }
 
     @Override
