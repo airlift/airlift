@@ -1,5 +1,8 @@
 package io.airlift.log;
 
+import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableMap;
+
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.Instant;
@@ -9,6 +12,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.SignStyle;
 import java.util.Locale;
+import java.util.Map;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
 
@@ -19,11 +23,13 @@ import static java.time.temporal.ChronoField.MINUTE_OF_HOUR;
 import static java.time.temporal.ChronoField.MONTH_OF_YEAR;
 import static java.time.temporal.ChronoField.SECOND_OF_MINUTE;
 import static java.time.temporal.ChronoField.YEAR;
+import static java.util.Objects.requireNonNull;
 
 class StaticFormatter
         extends Formatter
 {
     private static final ZoneId SYSTEM_ZONE = ZoneId.systemDefault().normalized();
+    private final Map<String, String> logAnnotations;
 
     private static final DateTimeFormatter TIMESTAMP_FORMATTER = new DateTimeFormatterBuilder()
             .parseCaseInsensitive()
@@ -42,6 +48,16 @@ class StaticFormatter
             .appendValue(MILLI_OF_SECOND, 3)
             .appendOffset("+HHMM", "Z")
             .toFormatter(Locale.US);
+
+    public StaticFormatter()
+    {
+        this(ImmutableMap.of());
+    }
+
+    public StaticFormatter(Map<String, String> logAnnotations)
+    {
+        this.logAnnotations = ImmutableMap.copyOf(requireNonNull(logAnnotations, "logAnnotations is null"));
+    }
 
     @Override
     @SuppressWarnings("NonSynchronizedMethodOverridesSynchronizedMethod")
@@ -62,8 +78,14 @@ class StaticFormatter
                 .append('\t')
                 .append(Thread.currentThread().getName())
                 .append('\t')
-                .append(record.getLoggerName())
-                .append('\t')
+                .append(record.getLoggerName());
+
+        if (!logAnnotations.isEmpty()) {
+            stringWriter.append('\t')
+                    .append(Joiner.on(",").withKeyValueSeparator("=").join(logAnnotations));
+        }
+
+        stringWriter.append('\t')
                 .append(record.getMessage());
 
         if (record.getThrown() != null) {

@@ -3,20 +3,30 @@ package io.airlift.log;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableMap;
 import io.airlift.json.JsonCodec;
 import io.airlift.json.JsonCodecFactory;
 import io.airlift.json.ObjectMapperProvider;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.Map;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
+
+import static java.util.Objects.requireNonNull;
 
 public class JsonFormatter
         extends Formatter
 {
     private static final JsonCodec<JsonRecord> CODEC = new JsonCodecFactory(new ObjectMapperProvider()).jsonCodec(JsonRecord.class);
     private static final JsonFactory jsonFactory = new JsonFactory();
+    private final Map<String, String> logAnnotations;
+
+    public JsonFormatter(Map<String, String> logAnnotations)
+    {
+        this.logAnnotations = ImmutableMap.copyOf(requireNonNull(logAnnotations, "logAnnotations is null"));
+    }
 
     @Override
     public String format(LogRecord record)
@@ -27,20 +37,22 @@ public class JsonFormatter
                 Thread.currentThread().getName(),
                 record.getLoggerName(),
                 record.getMessage(),
-                record.getThrown());
+                record.getThrown(),
+                logAnnotations);
 
         try {
-            return new StringWriter().append(CODEC.toJson(jsonRecord)).append("\n").toString();
+            return toString(jsonRecord);
         }
         catch (IllegalArgumentException outer) {
             try {
-                return new StringWriter().append(CODEC.toJson(new JsonRecord(
+                return toString(new JsonRecord(
                         record.getInstant(),
                         Level.fromJulLevel(record.getLevel()),
                         Thread.currentThread().getName(),
                         record.getLoggerName(),
                         outer.getMessage(),
-                        outer))).append("\n").toString();
+                        outer,
+                        logAnnotations));
             }
             catch (IllegalArgumentException inner) {
                 inner.addSuppressed(outer);
@@ -71,5 +83,10 @@ public class JsonFormatter
             throw new RuntimeException("Unable to generate json logs", e);
         }
         return stringWriter.append("\n").toString();
+    }
+
+    private static String toString(JsonRecord jsonRecord)
+    {
+        return CODEC.toJson(jsonRecord) + "\n";
     }
 }

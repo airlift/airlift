@@ -14,6 +14,7 @@
 package io.airlift.log;
 
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.io.ByteSource;
 import io.airlift.units.DataSize;
 import org.testng.annotations.Test;
@@ -50,6 +51,8 @@ import static org.testng.Assert.assertTrue;
 @Test(timeOut = 5 * 60 * 1000)
 public class TestRollingFileMessageOutput
 {
+    public static final ImmutableMap<String, String> TESTING_ANNOTATIONS = ImmutableMap.of("environment", "testing");
+
     @Test
     public void testBasicLogging()
             throws Exception
@@ -57,7 +60,8 @@ public class TestRollingFileMessageOutput
         Path tempDir = Files.createTempDirectory("logging-test");
         try {
             Path masterFile = tempDir.resolve("launcher.log");
-            BufferedHandler handler = createRollingFileHandler(masterFile.toString(), new DataSize(1, MEGABYTE), new DataSize(10, MEGABYTE), NONE, TEXT.getFormatter(), new ErrorManager());
+
+            BufferedHandler handler = createRollingFileHandler(masterFile.toString(), new DataSize(1, MEGABYTE), new DataSize(10, MEGABYTE), NONE, TEXT.createFormatter(TESTING_ANNOTATIONS), new ErrorManager());
 
             assertTrue(Files.exists(masterFile));
             assertTrue(Files.isSymbolicLink(masterFile));
@@ -66,6 +70,11 @@ public class TestRollingFileMessageOutput
 
             List<String> lines = waitForExactLines(masterFile, 1);
             assertEquals(lines.size(), 1);
+            assertEquals(
+                    lines.stream()
+                            .filter(line -> line.contains("environment=testing"))
+                            .count(),
+                    1);
             assertEquals(
                     lines.stream()
                             .filter(line -> line.contains("apple"))
@@ -101,7 +110,7 @@ public class TestRollingFileMessageOutput
                     new DataSize(message.length() * 5, BYTE),
                     new DataSize(message.length() * 2 + message.length() * 5 + message.length() * 5, BYTE), // 2 messages + 2 closed files
                     NONE,
-                    TEXT.getFormatter(),
+                    TEXT.createFormatter(ImmutableMap.of()),
                     new ErrorManager());
 
             // use a handler that prints the raw message
@@ -185,7 +194,7 @@ public class TestRollingFileMessageOutput
                     new DataSize(message.length() * 5, BYTE),
                     new DataSize(message.length() + message.length() * 5 + expectedCompressedSize, BYTE), // one message, one uncompressed file, one compressed file
                     GZIP,
-                    TEXT.getFormatter(),
+                    TEXT.createFormatter(ImmutableMap.of()),
                     new ErrorManager());
 
             // use a handler that prints the raw message
@@ -201,9 +210,9 @@ public class TestRollingFileMessageOutput
             assertLogSizes(masterFile, handler, 0, message.length(), 1);
 
             // fill the first file
-            for (int i = 0; i < 5; i++) {
+            for (int i = 1; i < 6; i++) {
                 handler.publish(new LogRecord(Level.SEVERE, message));
-                assertLogSizes(masterFile, handler, i + 1, message.length(), 1);
+                assertLogSizes(masterFile, handler, i, message.length(), 1);
             }
 
             // log one more message which will trigger roll and compression
@@ -244,7 +253,7 @@ public class TestRollingFileMessageOutput
         Path tempDir = Files.createTempDirectory("logging-test");
         try {
             Path masterFile = tempDir.resolve("launcher.log");
-            BufferedHandler handler = createRollingFileHandler(masterFile.toString(), new DataSize(1, MEGABYTE), new DataSize(10, MEGABYTE), NONE, TEXT.getFormatter(), new ErrorManager());
+            BufferedHandler handler = createRollingFileHandler(masterFile.toString(), new DataSize(1, MEGABYTE), new DataSize(10, MEGABYTE), NONE, TEXT.createFormatter(TESTING_ANNOTATIONS), new ErrorManager());
 
             handler.publish(new LogRecord(Level.SEVERE, "apple"));
             handler.publish(new LogRecord(Level.SEVERE, "banana"));
@@ -277,7 +286,7 @@ public class TestRollingFileMessageOutput
         Path tempDir = Files.createTempDirectory("logging-test");
         try {
             Path masterFile = tempDir.resolve("launcher.log");
-            BufferedHandler handler = createRollingFileHandler(masterFile.toString(), new DataSize(1, MEGABYTE), new DataSize(10, MEGABYTE), NONE, TEXT.getFormatter(), new ErrorManager());
+            BufferedHandler handler = createRollingFileHandler(masterFile.toString(), new DataSize(1, MEGABYTE), new DataSize(10, MEGABYTE), NONE, TEXT.createFormatter(TESTING_ANNOTATIONS), new ErrorManager());
 
             Path firstLogFile = Files.readSymbolicLink(masterFile);
 
@@ -295,7 +304,7 @@ public class TestRollingFileMessageOutput
             handler.close();
 
             // open new handler
-            handler = createRollingFileHandler(masterFile.toString(), new DataSize(1, MEGABYTE), new DataSize(10, MEGABYTE), NONE, TEXT.getFormatter(), new ErrorManager());
+            handler = createRollingFileHandler(masterFile.toString(), new DataSize(1, MEGABYTE), new DataSize(10, MEGABYTE), NONE, TEXT.createFormatter(TESTING_ANNOTATIONS), new ErrorManager());
 
             assertNotEquals(Files.readSymbolicLink(masterFile), firstLogFile);
 
@@ -324,7 +333,7 @@ public class TestRollingFileMessageOutput
         try {
             // open a legacy handler
             Path masterFile = tempDir.resolve("launcher.log");
-            LegacyRollingFileHandler legacyHandler = new LegacyRollingFileHandler(masterFile.toString(), 10, new DataSize(1, MEGABYTE).toBytes(), TEXT);
+            LegacyRollingFileHandler legacyHandler = new LegacyRollingFileHandler(masterFile.toString(), 10, new DataSize(1, MEGABYTE).toBytes(), TEXT.createFormatter(TESTING_ANNOTATIONS));
 
             assertTrue(Files.isRegularFile(masterFile));
 
@@ -342,7 +351,7 @@ public class TestRollingFileMessageOutput
             legacyHandler.close();
 
             // open new handler
-            BufferedHandler newHandler = createRollingFileHandler(masterFile.toString(), new DataSize(1, MEGABYTE), new DataSize(10, MEGABYTE), NONE, TEXT.getFormatter(), new ErrorManager());
+            BufferedHandler newHandler = createRollingFileHandler(masterFile.toString(), new DataSize(1, MEGABYTE), new DataSize(10, MEGABYTE), NONE, TEXT.createFormatter(TESTING_ANNOTATIONS), new ErrorManager());
 
             assertTrue(Files.isSymbolicLink(masterFile));
             // should be tracking legacy file and new file

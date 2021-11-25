@@ -19,6 +19,7 @@ import io.airlift.configuration.Config;
 import io.airlift.configuration.ConfigDescription;
 import io.airlift.configuration.DefunctConfig;
 import io.airlift.configuration.LegacyConfig;
+import io.airlift.configuration.validation.FileExists;
 import io.airlift.log.RollingFileMessageOutput.CompressionType;
 import io.airlift.units.DataSize;
 
@@ -37,6 +38,7 @@ public class LoggingConfiguration
     private CompressionType compression = CompressionType.GZIP;
     private int maxHistory = 30;
     private String levelsFile;
+    private String logAnnotationFile;
     private Format format = Format.TEXT;
     private boolean legacyLoggerImplementationEnabled;
 
@@ -153,6 +155,19 @@ public class LoggingConfiguration
     public LoggingConfiguration setLegacyLoggerImplementationEnabled(boolean enabled)
     {
         this.legacyLoggerImplementationEnabled = enabled;
+        return this;
+    }
+
+    @FileExists
+    public String getLogAnnotationFile()
+    {
+        return logAnnotationFile;
+    }
+
+    @Config("log.annotation-file")
+    public LoggingConfiguration setLogAnnotationFile(String logAnnotationFile)
+    {
+        this.logAnnotationFile = logAnnotationFile;
         return this;
     }
 }

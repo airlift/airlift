@@ -1,21 +1,22 @@
 package io.airlift.log;
 
+import java.util.Map;
 import java.util.logging.Formatter;
 
 public enum Format
 {
     JSON {
-        public Formatter getFormatter()
+        public Formatter createFormatter(Map<String, String> logAnnotations)
         {
-            return new JsonFormatter();
+            return new JsonFormatter(logAnnotations);
         }
     },
     TEXT {
-        public Formatter getFormatter()
+        public Formatter createFormatter(Map<String, String> logAnnotations)
         {
-            return new StaticFormatter();
+            return new StaticFormatter(logAnnotations);
         }
     };
 
-    public abstract Formatter getFormatter();
+    public abstract Formatter createFormatter(Map<String, String> logAnnotations);
 }

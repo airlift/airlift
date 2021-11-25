@@ -18,8 +18,10 @@ import io.airlift.configuration.testing.ConfigAssertions;
 import io.airlift.log.RollingFileMessageOutput.CompressionType;
 import io.airlift.units.DataSize;
 import io.airlift.units.DataSize.Unit;
+import org.assertj.core.util.Files;
 import org.testng.annotations.Test;
 
+import java.io.File;
 import java.util.Map;
 
 import static io.airlift.units.DataSize.Unit.KILOBYTE;
@@ -39,12 +41,15 @@ public class TestLoggingConfiguration
                 .setMaxHistory(30)
                 .setLevelsFile(null)
                 .setFormat(Format.TEXT)
-                .setLegacyLoggerImplementationEnabled(false));
+                .setLegacyLoggerImplementationEnabled(false)
+                .setLogAnnotationFile(null));
     }
 
     @Test
     public void testExplicitPropertyMappings()
     {
+        File annotationFile = Files.newTemporaryFile();
+
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("log.enable-console", "false")
                 .put("log.path", "/tmp/log.log")
@@ -55,6 +60,7 @@ public class TestLoggingConfiguration
                 .put("log.levels-file", "/tmp/levels.txt")
                 .put("log.format", "json")
                 .put("log.legacy-implementation.enabled", "true")
+                .put("log.annotation-file", annotationFile.getAbsolutePath())
                 .build();
 
         LoggingConfiguration expected = new LoggingConfiguration()
@@ -66,7 +72,8 @@ public class TestLoggingConfiguration
                 .setMaxHistory(3)
                 .setLevelsFile("/tmp/levels.txt")
                 .setFormat(Format.JSON)
-                .setLegacyLoggerImplementationEnabled(true);
+                .setLegacyLoggerImplementationEnabled(true)
+                .setLogAnnotationFile(annotationFile.getAbsolutePath());
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }
