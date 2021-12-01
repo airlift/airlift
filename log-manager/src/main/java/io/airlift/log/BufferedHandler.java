@@ -10,6 +10,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.logging.ErrorManager;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
 import java.util.logging.LogRecord;
@@ -33,9 +34,10 @@ class BufferedHandler
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicLong droppedMessages = new AtomicLong(0);
 
-    public BufferedHandler(MessageOutput messageOutput, Formatter formatter)
+    public BufferedHandler(MessageOutput messageOutput, Formatter formatter, ErrorManager errorManager)
     {
         this.messageOutput = requireNonNull(messageOutput, "messageOutput is null");
+        setErrorManager(requireNonNull(errorManager, "errorManager is null"));
         setFormatter(requireNonNull(formatter, "formatter is null"));
 
         thread = new Thread(this::logging);

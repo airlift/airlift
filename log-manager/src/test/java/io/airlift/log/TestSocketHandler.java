@@ -10,6 +10,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Executors;
+import java.util.logging.ErrorManager;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
@@ -29,7 +30,7 @@ public class TestSocketHandler
 
         try (ServerSocket serverSocket = new ServerSocket(0)) {
             Executors.newSingleThreadExecutor().submit(() -> {
-                BufferedHandler handler = createSocketHandler(HostAndPort.fromParts("localhost", serverSocket.getLocalPort()), TEXT.getFormatter());
+                BufferedHandler handler = createSocketHandler(HostAndPort.fromParts("localhost", serverSocket.getLocalPort()), TEXT.getFormatter(), new ErrorManager());
                 for (int i = 0; i < data.length; i++) {
                     handler.publish(new LogRecord(levels[i], data[i]));
                 }
@@ -58,7 +59,7 @@ public class TestSocketHandler
         int unallocatedPort = serverSocket.getLocalPort();
         serverSocket.close();
 
-        BufferedHandler handler = createSocketHandler(HostAndPort.fromParts("localhost", unallocatedPort), TEXT.getFormatter());
+        BufferedHandler handler = createSocketHandler(HostAndPort.fromParts("localhost", unallocatedPort), TEXT.getFormatter(), new ErrorManager());
         handler.publish(new LogRecord(Level.SEVERE, "rutabaga"));
         handler.flush();
         handler.close();

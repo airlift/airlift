@@ -53,6 +53,7 @@ public class Logging
     private static final String ROOT_LOGGER_NAME = "";
     private static final java.util.logging.Logger ROOT = java.util.logging.Logger.getLogger("");
     private static Logging instance;
+    private static final PrintStream stdErr = System.err;
 
     // hard reference to loggers for which we set the level
     @GuardedBy("this")
@@ -119,7 +120,7 @@ public class Logging
             handler = new LegacyRollingFileHandler(logPath, maxHistory, maxFileSize.toBytes(), format);
         }
         else {
-            handler = createRollingFileHandler(logPath, maxFileSize, maxTotalSize, compressionType, format.getFormatter());
+            handler = createRollingFileHandler(logPath, maxFileSize, maxTotalSize, compressionType, format.getFormatter(), new BufferedHandlerErrorManager(stdErr));
         }
         ROOT.addHandler(handler);
     }
@@ -130,7 +131,7 @@ public class Logging
             throw new IllegalArgumentException("LogPath for sockets must begin with tcp:// and not contain any path component.");
         }
         HostAndPort hostAndPort = HostAndPort.fromString(logPath.replace("tcp://", ""));
-        Handler handler = createSocketHandler(hostAndPort, format.getFormatter());
+        Handler handler = createSocketHandler(hostAndPort, format.getFormatter(), new BufferedHandlerErrorManager(stdErr));
         ROOT.addHandler(handler);
     }
 
