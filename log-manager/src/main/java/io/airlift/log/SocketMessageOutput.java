@@ -10,6 +10,7 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.logging.ErrorManager;
 import java.util.logging.Formatter;
 
 import static java.util.Objects.requireNonNull;
@@ -34,10 +35,10 @@ public class SocketMessageOutput
         this.socketAddress = new InetSocketAddress(hostAndPort.getHost(), hostAndPort.getPort());
     }
 
-    public static BufferedHandler createSocketHandler(HostAndPort hostAndPort, Formatter formatter)
+    public static BufferedHandler createSocketHandler(HostAndPort hostAndPort, Formatter formatter, ErrorManager errorManager)
     {
         SocketMessageOutput output = new SocketMessageOutput(hostAndPort);
-        BufferedHandler handler = new BufferedHandler(output, formatter);
+        BufferedHandler handler = new BufferedHandler(output, formatter, errorManager);
         handler.start();
         return handler;
     }
