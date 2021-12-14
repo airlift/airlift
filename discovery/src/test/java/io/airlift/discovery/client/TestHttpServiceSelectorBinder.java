@@ -30,7 +30,7 @@ import org.testng.annotations.Test;
 
 import java.net.URI;
 
-import static com.google.common.collect.Iterables.getOnlyElement;
+import static com.google.common.collect.MoreCollectors.onlyElement;
 import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
 import static io.airlift.discovery.client.ServiceTypes.serviceType;
@@ -51,7 +51,7 @@ public class TestHttpServiceSelectorBinder
         discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple").addProperty("http", "fake://server-http").build()));
 
         HttpServiceSelector selector = injector.getInstance(Key.get(HttpServiceSelector.class, serviceType("apple")));
-        assertEquals(getOnlyElement(selector.selectHttpService()), URI.create("fake://server-http"));
+        assertEquals(selector.selectHttpService().stream().collect(onlyElement()), URI.create("fake://server-http"));
     }
 
     @Test
@@ -67,7 +67,7 @@ public class TestHttpServiceSelectorBinder
         discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple").addProperty("http", "fake://server-http").build()));
 
         HttpServiceSelector selector = injector.getInstance(Key.get(HttpServiceSelector.class, serviceType("apple")));
-        assertEquals(getOnlyElement(selector.selectHttpService()), URI.create("fake://server-http"));
+        assertEquals(selector.selectHttpService().stream().collect(onlyElement()), URI.create("fake://server-http"));
 
         ServiceSelectorManager manager = injector.getInstance(ServiceSelectorManager.class);
         assertEquals(manager.getServiceSelectors().size(), 1);
@@ -88,7 +88,7 @@ public class TestHttpServiceSelectorBinder
         discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple").addProperty("https", "fake://server-https").build()));
 
         HttpServiceSelector selector = injector.getInstance(Key.get(HttpServiceSelector.class, serviceType("apple")));
-        assertEquals(getOnlyElement(selector.selectHttpService()), URI.create("fake://server-https"));
+        assertEquals(selector.selectHttpService().stream().collect(onlyElement()), URI.create("fake://server-https"));
     }
 
     @Test

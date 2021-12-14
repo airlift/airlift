@@ -16,7 +16,6 @@
 package io.airlift.discovery.client;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.common.io.Resources;
 import io.airlift.json.JsonCodec;
 import org.testng.annotations.Test;
@@ -24,6 +23,7 @@ import org.testng.annotations.Test;
 import java.util.List;
 import java.util.Map;
 
+import static com.google.common.collect.MoreCollectors.onlyElement;
 import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
 import static io.airlift.json.JsonCodec.jsonCodec;
 import static io.airlift.json.JsonCodec.mapJsonCodec;
@@ -53,7 +53,7 @@ public class TestAnnouncement
 
         // set id in expected
         List<Map<String, Object>> services = toServices(expected.get("services"));
-        services.get(0).put("id", Iterables.getOnlyElement(announcement.getServices()).getId().toString());
+        services.get(0).put("id", announcement.getServices().stream().collect(onlyElement()).getId().toString());
 
         assertEquals(actual, expected);
     }

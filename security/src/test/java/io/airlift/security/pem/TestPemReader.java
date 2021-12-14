@@ -33,7 +33,7 @@ import java.util.Collections;
 import java.util.Optional;
 import java.util.regex.Matcher;
 
-import static com.google.common.collect.Iterables.getOnlyElement;
+import static com.google.common.collect.MoreCollectors.onlyElement;
 import static com.google.common.io.Files.asCharSource;
 import static io.airlift.security.pem.PemReader.PRIVATE_KEY_PATTERN;
 import static io.airlift.security.pem.PemReader.PUBLIC_KEY_PATTERN;
@@ -129,7 +129,7 @@ public class TestPemReader
         assertTrue(isPem(file));
         PublicKey publicKey = loadPublicKey(file);
         assertNotNull(publicKey);
-        X509Certificate certificate = getOnlyElement(readCertificateChain(getResourceFile(certFile)));
+        X509Certificate certificate = readCertificateChain(getResourceFile(certFile)).stream().collect(onlyElement());
         assertEquals(publicKey, certificate.getPublicKey());
 
         String encodedPrivateKey = writePublicKey(publicKey);
@@ -185,7 +185,7 @@ public class TestPemReader
 
         assertX509Certificate(x509Certificate, expectedName);
 
-        X509Certificate certificateCopy = getOnlyElement(readCertificateChain(writeCertificate(x509Certificate)));
+        X509Certificate certificateCopy = readCertificateChain(writeCertificate(x509Certificate)).stream().collect(onlyElement());
         assertX509Certificate(certificateCopy, expectedName);
     }
 

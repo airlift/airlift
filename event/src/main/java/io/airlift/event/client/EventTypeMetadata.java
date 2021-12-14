@@ -37,7 +37,6 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.collect.Iterables.getFirst;
 import static io.airlift.event.client.AnnotationUtils.findAnnotatedMethods;
 import static io.airlift.event.client.EventDataType.getEventDataType;
 import static io.airlift.event.client.EventFieldMetadata.ContainerType;
@@ -200,9 +199,9 @@ public final class EventTypeMetadata<T>
             }
         }
 
-        this.uuidField = getFirst(specialFields.get(EventFieldMapping.UUID), null);
-        this.timestampField = getFirst(specialFields.get(EventFieldMapping.TIMESTAMP), null);
-        this.hostField = getFirst(specialFields.get(EventFieldMapping.HOST), null);
+        this.uuidField = specialFields.get(EventFieldMapping.UUID).stream().findFirst().orElse(null);
+        this.timestampField = specialFields.get(EventFieldMapping.TIMESTAMP).stream().findFirst().orElse(null);
+        this.hostField = specialFields.get(EventFieldMapping.HOST).stream().findFirst().orElse(null);
         this.fields = ImmutableSortedMap.copyOf(fields);
 
         if (getErrors().isEmpty() && this.fields.isEmpty()) {

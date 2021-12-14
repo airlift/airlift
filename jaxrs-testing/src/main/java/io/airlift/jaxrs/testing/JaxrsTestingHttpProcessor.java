@@ -42,7 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static com.google.common.collect.Iterables.getOnlyElement;
+import static com.google.common.collect.MoreCollectors.onlyElement;
 
 public class JaxrsTestingHttpProcessor
         implements TestingHttpClient.Processor
@@ -95,7 +95,7 @@ public class JaxrsTestingHttpProcessor
             request.getBodyGenerator().write(byteArrayOutputStream);
             byteArrayOutputStream.close();
             byte[] bytes = byteArrayOutputStream.toByteArray();
-            Entity<byte[]> entity = Entity.entity(bytes, (String) getOnlyElement(requestHeaders.get("Content-Type")));
+            Entity<byte[]> entity = Entity.entity(bytes, (String) requestHeaders.get("Content-Type").stream().collect(onlyElement()));
             invocation = invocationBuilder.build(request.getMethod(), entity);
         }
 
