@@ -2,7 +2,6 @@ package io.airlift.http.client;
 
 import com.google.common.base.Ascii;
 import com.google.common.base.Splitter;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.net.HostAndPort;
@@ -19,6 +18,7 @@ import java.util.Map;
 import static com.google.common.base.CharMatcher.ascii;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.Streams.stream;
 import static java.lang.Character.forDigit;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
@@ -178,7 +178,7 @@ public class HttpUriBuilder
     {
         requireNonNull(name, "name is null");
 
-        if (Iterables.isEmpty(values)) {
+        if (stream(values).findAny().isEmpty()) {
             params.put(name, null);
         }
 

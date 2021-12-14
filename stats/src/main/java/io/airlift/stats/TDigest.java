@@ -15,7 +15,6 @@ package io.airlift.stats;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Ints;
@@ -35,6 +34,7 @@ import java.util.List;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.MoreCollectors.onlyElement;
 import static java.lang.Double.isInfinite;
 import static java.lang.Double.isNaN;
 import static java.util.Collections.nCopies;
@@ -242,7 +242,7 @@ public class TDigest
 
     public double valueAt(double quantile)
     {
-        return Iterables.getOnlyElement(valuesAt(ImmutableList.of(quantile)));
+        return valuesAt(ImmutableList.of(quantile)).stream().collect(onlyElement());
     }
 
     public List<Double> valuesAt(List<Double> quantiles)

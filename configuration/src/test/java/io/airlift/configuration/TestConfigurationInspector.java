@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.common.collect.Iterables.getOnlyElement;
+import static com.google.common.collect.MoreCollectors.onlyElement;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static org.testng.Assert.assertEquals;
 
@@ -42,7 +42,7 @@ public class TestConfigurationInspector
         Map<String, String> properties = ImmutableMap.of("stringValue", "string");
         ConfigurationFactory configurationFactory = new ConfigurationFactory(properties);
         configurationFactory.registerConfigurationClasses(binder -> configBinder(binder).bindConfig(ConfigWithOptionalValue.class));
-        return getOnlyElement(new ConfigurationInspector().inspect(configurationFactory));
+        return new ConfigurationInspector().inspect(configurationFactory).stream().collect(onlyElement());
     }
 
     public static class ConfigWithOptionalValue

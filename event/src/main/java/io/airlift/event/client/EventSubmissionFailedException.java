@@ -19,9 +19,8 @@ import com.google.common.collect.ImmutableMap;
 
 import java.net.URI;
 import java.util.Map;
+import java.util.Objects;
 
-import static com.google.common.base.Predicates.notNull;
-import static com.google.common.collect.Iterables.find;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
@@ -36,7 +35,7 @@ public class EventSubmissionFailedException
 
         requireNonNull(causes, "causes is null");
 
-        Throwable cause = find(causes.values(), notNull(), null);
+        Throwable cause = causes.values().stream().filter(Objects::nonNull).findFirst().orElse(null);
         initCause(cause);
 
         this.causes = ImmutableMap.copyOf(causes);

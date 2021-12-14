@@ -16,7 +16,6 @@
 package io.airlift.discovery.client.testing;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.airlift.discovery.client.ServiceDescriptor;
@@ -25,6 +24,7 @@ import io.airlift.discovery.client.ServiceSelector;
 import java.util.List;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.collect.Streams.stream;
 import static io.airlift.discovery.client.ServiceSelectorConfig.DEFAULT_POOL;
 import static java.util.Objects.requireNonNull;
 
@@ -44,7 +44,7 @@ public class StaticServiceSelector
     {
         requireNonNull(serviceDescriptors, "serviceDescriptors is null");
 
-        ServiceDescriptor serviceDescriptor = Iterables.getFirst(serviceDescriptors, null);
+        ServiceDescriptor serviceDescriptor = stream(serviceDescriptors).findFirst().orElse(null);
         if (serviceDescriptor != null) {
             this.type = serviceDescriptor.getType();
             this.pool = serviceDescriptor.getPool();
