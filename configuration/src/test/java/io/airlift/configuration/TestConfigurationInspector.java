@@ -42,7 +42,9 @@ public class TestConfigurationInspector
         Map<String, String> properties = ImmutableMap.of("stringValue", "string");
         ConfigurationFactory configurationFactory = new ConfigurationFactory(properties);
         configurationFactory.registerConfigurationClasses(binder -> configBinder(binder).bindConfig(ConfigWithOptionalValue.class));
-        return new ConfigurationInspector().inspect(configurationFactory).stream().collect(onlyElement());
+        return new ConfigurationInspector()
+                .inspect(configurationFactory).stream()
+                .collect(onlyElement());
     }
 
     public static class ConfigWithOptionalValue
