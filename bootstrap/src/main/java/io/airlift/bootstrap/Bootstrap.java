@@ -15,7 +15,6 @@
  */
 package io.airlift.bootstrap;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableSortedMap;
@@ -44,15 +43,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.function.BiConsumer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static com.google.common.base.Preconditions.checkState;
 import static io.airlift.configuration.ConfigurationLoader.getSystemProperties;
 import static io.airlift.configuration.ConfigurationLoader.loadPropertiesFrom;
+import static io.airlift.configuration.ConfigurationUtils.replaceEnvironmentVariables;
 import static java.lang.String.format;
-import static java.util.regex.Matcher.quoteReplacement;
 
 /**
  * Entry point for an application built using the platform codebase.
@@ -67,8 +63,6 @@ import static java.util.regex.Matcher.quoteReplacement;
  */
 public class Bootstrap
 {
-    private static final Pattern ENV_PATTERN = Pattern.compile("\\$\\{ENV:([a-zA-Z][a-zA-Z0-9_]*)}");
-
     private final Logger log = Logger.get("Bootstrap");
     private final List<Module> modules;
 
@@ -309,30 +303,5 @@ public class Bootstrap
             }
         }
         return columnPrinter;
-    }
-
-    @VisibleForTesting
-    static Map<String, String> replaceEnvironmentVariables(
-            Map<String, String> properties,
-            Map<String, String> environment,
-            BiConsumer<String, String> onError)
-    {
-        Map<String, String> replaced = new HashMap<>();
-        properties.forEach((propertyKey, propertyValue) -> {
-            StringBuilder replacedPropertyValue = new StringBuilder();
-            Matcher matcher = ENV_PATTERN.matcher(propertyValue);
-            while (matcher.find()) {
-                String envName = matcher.group(1);
-                String envValue = environment.get(envName);
-                if (envValue == null) {
-                    onError.accept(propertyKey, format("Configuration property '%s' references unset environment variable '%s'", propertyKey, envName));
-                    return;
-                }
-                matcher.appendReplacement(replacedPropertyValue, quoteReplacement(envValue));
-            }
-            matcher.appendTail(replacedPropertyValue);
-            replaced.put(propertyKey, replacedPropertyValue.toString());
-        });
-        return replaced;
     }
 }
