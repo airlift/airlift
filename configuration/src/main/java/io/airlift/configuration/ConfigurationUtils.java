@@ -13,7 +13,7 @@ import static java.util.regex.Matcher.quoteReplacement;
 
 public class ConfigurationUtils
 {
-    private static final Pattern ENV_PATTERN = Pattern.compile("\\$\\{ENV:([a-zA-Z][a-zA-Z0-9_]*)}");
+    private static final Pattern ENV_PATTERN = Pattern.compile("\\$\\{ENV:([a-zA-Z][a-zA-Z0-9_-]*)}");
 
     private ConfigurationUtils() {}
 
