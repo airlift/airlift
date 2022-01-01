@@ -1,3 +1,6 @@
+212
+- Fix log file rename on startup.
+
 211
 - Fix deadlock in logging error reporting.
 
