@@ -44,6 +44,7 @@ import java.util.zip.GZIPOutputStream;
 
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
 import static java.lang.Math.toIntExact;
+import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static java.util.Objects.requireNonNull;
@@ -144,7 +145,7 @@ final class RollingFileMessageOutput
         if (Files.exists(symlink)) {
             try {
                 // if existing link file is a legacy log file, rename it to so link file can be recreated as a symlink
-                BasicFileAttributes attributes = Files.readAttributes(symlink, BasicFileAttributes.class);
+                BasicFileAttributes attributes = Files.readAttributes(symlink, BasicFileAttributes.class, NOFOLLOW_LINKS);
                 if (attributes.isDirectory()) {
                     throw new IllegalArgumentException("Log file is an existing directory: " + filename);
                 }

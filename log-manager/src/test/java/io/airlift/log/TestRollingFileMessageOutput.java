@@ -33,18 +33,22 @@ import java.util.logging.LogRecord;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.common.io.MoreFiles.asByteSource;
 import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
 import static io.airlift.log.Format.TEXT;
+import static io.airlift.log.LogFileName.parseHistoryLogFileName;
 import static io.airlift.log.RollingFileMessageOutput.CompressionType.GZIP;
 import static io.airlift.log.RollingFileMessageOutput.CompressionType.NONE;
 import static io.airlift.log.RollingFileMessageOutput.createRollingFileHandler;
 import static io.airlift.units.DataSize.Unit.BYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.function.Predicate.not;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertTrue;
 
@@ -62,6 +66,7 @@ public class TestRollingFileMessageOutput
             Path masterFile = tempDir.resolve("launcher.log");
 
             BufferedHandler handler = createRollingFileHandler(masterFile.toString(), new DataSize(1, MEGABYTE), new DataSize(10, MEGABYTE), NONE, TEXT.createFormatter(TESTING_ANNOTATIONS), new ErrorManager());
+            assertLogDirectory(masterFile);
 
             assertTrue(Files.exists(masterFile));
             assertTrue(Files.isSymbolicLink(masterFile));
@@ -89,7 +94,10 @@ public class TestRollingFileMessageOutput
                             .filter(line -> line.contains("banana"))
                             .count(),
                     1);
+
+            assertLogDirectory(masterFile);
             handler.close();
+            assertLogDirectory(masterFile);
         }
         finally {
             deleteRecursively(tempDir, ALLOW_INSECURE);
@@ -122,6 +130,7 @@ public class TestRollingFileMessageOutput
                     return record.getMessage();
                 }
             });
+            assertLogDirectory(masterFile);
 
             assertLogSizes(masterFile, handler, 0, message.length(), 1);
 
@@ -130,38 +139,45 @@ public class TestRollingFileMessageOutput
                 handler.publish(new LogRecord(Level.SEVERE, message));
                 assertLogSizes(masterFile, handler, i + 1, message.length(), 1);
             }
+            assertLogDirectory(masterFile);
 
             // fill the second file
             for (int i = 0; i < 5; i++) {
                 handler.publish(new LogRecord(Level.SEVERE, message));
                 assertLogSizes(masterFile, handler, i + 1, message.length(), 2);
             }
+            assertLogDirectory(masterFile);
 
             // Log 2 messages to the second file (before pruning)
             for (int i = 0; i < 2; i++) {
                 handler.publish(new LogRecord(Level.SEVERE, message));
                 assertLogSizes(masterFile, handler, i + 1, message.length(), 3);
             }
+            assertLogDirectory(masterFile);
 
             // fill the third (first file is pruned)
             for (int i = 0; i < 3; i++) {
                 handler.publish(new LogRecord(Level.SEVERE, message));
                 assertLogSizes(masterFile, handler, i + 3, message.length(), 2);
             }
+            assertLogDirectory(masterFile);
 
             // Log 2 messages to the forth file (before pruning)
             for (int i = 0; i < 2; i++) {
                 handler.publish(new LogRecord(Level.SEVERE, message));
                 assertLogSizes(masterFile, handler, i + 1, message.length(), 3);
             }
+            assertLogDirectory(masterFile);
 
             // fill the forth (another file is pruned)
             for (int i = 0; i < 3; i++) {
                 handler.publish(new LogRecord(Level.SEVERE, message));
                 assertLogSizes(masterFile, handler, i + 3, message.length(), 2);
             }
+            assertLogDirectory(masterFile);
 
             handler.close();
+            assertLogDirectory(masterFile);
         }
         finally {
             deleteRecursively(tempDir, ALLOW_INSECURE);
@@ -206,6 +222,7 @@ public class TestRollingFileMessageOutput
                     return record.getMessage();
                 }
             });
+            assertLogDirectory(masterFile);
 
             assertLogSizes(masterFile, handler, 0, message.length(), 1);
 
@@ -214,10 +231,12 @@ public class TestRollingFileMessageOutput
                 handler.publish(new LogRecord(Level.SEVERE, message));
                 assertLogSizes(masterFile, handler, i, message.length(), 1);
             }
+            assertLogDirectory(masterFile);
 
             // log one more message which will trigger roll and compression
             handler.publish(new LogRecord(Level.SEVERE, message));
             assertCompression(masterFile, handler, message, 2, 5, expectedCompressedSize);
+            assertLogDirectory(masterFile);
 
             // fill the second file
             for (int i = 0; i < 4; i++) {
@@ -225,10 +244,12 @@ public class TestRollingFileMessageOutput
                 // sizes can't really be tested while logging due to compression
             }
             assertCompression(masterFile, handler, message, 2, 5, expectedCompressedSize);
+            assertLogDirectory(masterFile);
 
             // log one more message which will trigger roll and compression
             handler.publish(new LogRecord(Level.SEVERE, message));
             assertCompression(masterFile, handler, message, 3, 5, expectedCompressedSize);
+            assertLogDirectory(masterFile);
 
             // fill the third file
             for (int i = 0; i < 4; i++) {
@@ -238,8 +259,10 @@ public class TestRollingFileMessageOutput
             // the oldest log file should have been pruned
             assertLogSizes(masterFile, handler, 5, message.length(), 2);
             assertCompression(masterFile, handler, message, 2, 5, expectedCompressedSize);
+            assertLogDirectory(masterFile);
 
             handler.close();
+            assertLogDirectory(masterFile);
         }
         finally {
             deleteRecursively(tempDir, ALLOW_INSECURE);
@@ -287,7 +310,7 @@ public class TestRollingFileMessageOutput
         try {
             Path masterFile = tempDir.resolve("launcher.log");
             BufferedHandler handler = createRollingFileHandler(masterFile.toString(), new DataSize(1, MEGABYTE), new DataSize(10, MEGABYTE), NONE, TEXT.createFormatter(TESTING_ANNOTATIONS), new ErrorManager());
-
+            assertLogDirectory(masterFile);
             Path firstLogFile = Files.readSymbolicLink(masterFile);
 
             handler.publish(new LogRecord(Level.SEVERE, "apple"));
@@ -301,11 +324,14 @@ public class TestRollingFileMessageOutput
                             .count(),
                     2);
 
+            assertLogDirectory(masterFile);
             handler.close();
+            assertLogDirectory(masterFile);
 
             // open new handler
             handler = createRollingFileHandler(masterFile.toString(), new DataSize(1, MEGABYTE), new DataSize(10, MEGABYTE), NONE, TEXT.createFormatter(TESTING_ANNOTATIONS), new ErrorManager());
 
+            assertLogDirectory(masterFile);
             assertNotEquals(Files.readSymbolicLink(masterFile), firstLogFile);
 
             handler.publish(new LogRecord(Level.SEVERE, "cherry"));
@@ -317,6 +343,10 @@ public class TestRollingFileMessageOutput
                             .filter(line -> line.contains("cherry"))
                             .count(),
                     1);
+
+            assertLogDirectory(masterFile);
+            handler.close();
+            assertLogDirectory(masterFile);
         }
         finally {
             deleteRecursively(tempDir, ALLOW_INSECURE);
@@ -352,6 +382,7 @@ public class TestRollingFileMessageOutput
 
             // open new handler
             BufferedHandler newHandler = createRollingFileHandler(masterFile.toString(), new DataSize(1, MEGABYTE), new DataSize(10, MEGABYTE), NONE, TEXT.createFormatter(TESTING_ANNOTATIONS), new ErrorManager());
+            assertLogDirectory(masterFile);
 
             assertTrue(Files.isSymbolicLink(masterFile));
             // should be tracking legacy file and new file
@@ -367,6 +398,10 @@ public class TestRollingFileMessageOutput
                             .filter(line -> line.contains("cherry") || line.contains("date"))
                             .count(),
                     2);
+
+            assertLogDirectory(masterFile);
+            newHandler.close();
+            assertLogDirectory(masterFile);
         }
         finally {
             deleteRecursively(tempDir, ALLOW_INSECURE);
@@ -388,6 +423,21 @@ public class TestRollingFileMessageOutput
                 throws IOException
         {
             return new GZIPInputStream(source.openStream());
+        }
+    }
+
+    private static void assertLogDirectory(Path masterFile)
+            throws Exception
+    {
+        assertTrue(Files.isDirectory(masterFile.getParent()));
+        assertTrue(Files.isSymbolicLink(masterFile));
+        List<Path> logFiles = Files.list(masterFile.getParent())
+                .filter(not(masterFile::equals))
+                .collect(toImmutableList());
+        for (Path logFile : logFiles) {
+            assertFalse(Files.isSymbolicLink(logFile));
+            assertTrue(Files.isRegularFile(logFile));
+            assertTrue(parseHistoryLogFileName(masterFile.getFileName().toString(), logFile.getFileName().toString()).isPresent());
         }
     }
 
