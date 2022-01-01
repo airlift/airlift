@@ -134,7 +134,7 @@ public class TestLogFileName
     public void testGenerateNextLogFileName()
     {
         // note: no actual files are created here
-        LogFileName logFileName = LogFileName.generateNextLogFileName(Paths.get(BASE_NAME), Optional.empty());
+        LogFileName logFileName = LogFileName.generateNextLogFileName(Paths.get(BASE_NAME), LocalDateTime.now(), Optional.empty());
         assertEquals(logFileName.getIndex(), OptionalInt.of(0));
         assertEquals(logFileName.getLegacyIndex(), OptionalInt.empty());
 

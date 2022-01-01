@@ -151,21 +151,21 @@ final class LogFileName
         return Optional.of(new LogFileName(historyFileName, dateTime, OptionalInt.empty(), OptionalInt.of(legacyIndex), slug, compressed));
     }
 
-    public static LogFileName generateNextLogFileName(Path masterLogFile, Optional<String> compressionExtension)
+    public static LogFileName generateNextLogFileName(Path masterLogFile, LocalDateTime currentDateTime, Optional<String> compressionExtension)
     {
-        LocalDateTime dateTime = LocalDateTime.now().withNano(0);
-        String suffix = DATE_TIME_FORMATTER.format(dateTime);
+        currentDateTime = currentDateTime.withNano(0);
+        String suffix = DATE_TIME_FORMATTER.format(currentDateTime);
         for (int index = 0; index < MAX_GENERATED_INDEX; index++) {
             String newFileName = masterLogFile.getFileName() + suffix + (index > 0 ? "-" + index : "");
             Path newFile = masterLogFile.resolveSibling(newFileName);
             if (!fileAlreadyExists(newFile, compressionExtension)) {
-                return new LogFileName(newFileName, dateTime, OptionalInt.of(index), OptionalInt.empty(), Optional.empty(), false);
+                return new LogFileName(newFileName, currentDateTime, OptionalInt.of(index), OptionalInt.empty(), Optional.empty(), false);
             }
         }
         // something strange is happening, just use a random UUID, so we continue logging
         String slug = randomUUID().toString();
         String randomFileName = masterLogFile.getFileName() + suffix + "--" + slug;
-        return new LogFileName(randomFileName, dateTime, OptionalInt.of(0), OptionalInt.empty(), Optional.of(slug), false);
+        return new LogFileName(randomFileName, currentDateTime, OptionalInt.of(0), OptionalInt.empty(), Optional.of(slug), false);
     }
 
     private static boolean fileAlreadyExists(Path newFile, Optional<String> compressionExtension)

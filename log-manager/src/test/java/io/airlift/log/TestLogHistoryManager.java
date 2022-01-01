@@ -19,6 +19,7 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -141,7 +142,7 @@ public class TestLogHistoryManager
     private static LogFileName createTestFile(Path masterLogName)
             throws IOException
     {
-        LogFileName logFileName = LogFileName.generateNextLogFileName(masterLogName, Optional.empty());
+        LogFileName logFileName = LogFileName.generateNextLogFileName(masterLogName, LocalDateTime.now(), Optional.empty());
         Files.write(masterLogName.resolveSibling(logFileName.getFileName()), new byte[FILE_SIZE], CREATE_NEW);
         return logFileName;
     }

@@ -41,6 +41,7 @@ import java.util.logging.LogManager;
 import static com.google.common.collect.Maps.fromProperties;
 import static io.airlift.configuration.ConfigurationLoader.loadPropertiesFrom;
 import static io.airlift.configuration.ConfigurationUtils.replaceEnvironmentVariables;
+import static io.airlift.log.RollingFileMessageOutput.FileTimeRoller.SYSTEM_FILE_TIME_ROLLER;
 import static io.airlift.log.RollingFileMessageOutput.createRollingFileHandler;
 import static io.airlift.log.SocketMessageOutput.createSocketHandler;
 
@@ -125,7 +126,7 @@ public class Logging
             handler = new LegacyRollingFileHandler(logPath, maxHistory, maxFileSize.toBytes(), formatter);
         }
         else {
-            handler = createRollingFileHandler(logPath, maxFileSize, maxTotalSize, compressionType, formatter, new BufferedHandlerErrorManager(stdErr));
+            handler = createRollingFileHandler(logPath, maxFileSize, maxTotalSize, compressionType, formatter, new BufferedHandlerErrorManager(stdErr), SYSTEM_FILE_TIME_ROLLER);
         }
         ROOT.addHandler(handler);
     }

@@ -13,6 +13,8 @@
  */
 package io.airlift.log;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Ticker;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.MoreFiles;
@@ -31,6 +33,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -38,6 +41,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.LongSupplier;
 import java.util.logging.ErrorManager;
 import java.util.logging.Formatter;
 import java.util.zip.GZIPOutputStream;
@@ -84,6 +88,7 @@ final class RollingFileMessageOutput
     private final long maxFileSize;
     private final CompressionType compressionType;
     private final Formatter formatter;
+    private final FileTimeRoller fileTimeRoller;
 
     @GuardedBy("this")
     private Path currentOutputFile;
@@ -104,25 +109,34 @@ final class RollingFileMessageOutput
             DataSize maxTotalSize,
             CompressionType compressionType,
             Formatter formatter,
-            ErrorManager errorManager)
+            ErrorManager errorManager,
+            FileTimeRoller fileTimeRoller)
     {
-        RollingFileMessageOutput output = new RollingFileMessageOutput(filename, maxFileSize, maxTotalSize, compressionType, formatter);
+        RollingFileMessageOutput output = new RollingFileMessageOutput(filename, maxFileSize, maxTotalSize, compressionType, formatter, fileTimeRoller);
         BufferedHandler handler = new BufferedHandler(output, formatter, errorManager);
         handler.start();
         return handler;
     }
 
-    private RollingFileMessageOutput(String filename, DataSize maxFileSize, DataSize maxTotalSize, CompressionType compressionType, Formatter formatter)
+    private RollingFileMessageOutput(
+            String filename,
+            DataSize maxFileSize,
+            DataSize maxTotalSize,
+            CompressionType compressionType,
+            Formatter formatter,
+            FileTimeRoller fileTimeRoller)
     {
         requireNonNull(filename, "filename is null");
         requireNonNull(maxFileSize, "maxFileSize is null");
         requireNonNull(maxTotalSize, "maxTotalSize is null");
         requireNonNull(compressionType, "compressionType is null");
         requireNonNull(formatter, "formatter is null");
+        requireNonNull(fileTimeRoller, "fileTimeRoller is null");
 
         this.maxFileSize = maxFileSize.toBytes();
         this.compressionType = compressionType;
         this.formatter = formatter;
+        this.fileTimeRoller = fileTimeRoller;
 
         symlink = Paths.get(filename);
 
@@ -238,7 +252,7 @@ final class RollingFileMessageOutput
     public synchronized void writeMessage(byte[] message)
             throws IOException
     {
-        if (currentFileSize + message.length > maxFileSize) {
+        if (currentFileSize + message.length > maxFileSize || fileTimeRoller.shouldRoll()) {
             try {
                 rollFile();
             }
@@ -264,7 +278,8 @@ final class RollingFileMessageOutput
         OutputStream newOutputStream = null;
         for (int i = 0; i < MAX_OPEN_NEW_LOG_ATTEMPTS; i++) {
             try {
-                newFileName = LogFileName.generateNextLogFileName(symlink, compressionType.getExtension());
+                // Note: use the current date time from the file time roller for the file name, to ensure tests work as expected
+                newFileName = LogFileName.generateNextLogFileName(symlink, fileTimeRoller.currentDateTime(), compressionType.getExtension());
                 newFile = symlink.resolveSibling(newFileName.getFileName());
                 newOutputStream = new BufferedOutputStream(Files.newOutputStream(newFile, CREATE_NEW), MAX_BATCH_BYTES);
                 break;
@@ -310,6 +325,7 @@ final class RollingFileMessageOutput
         currentOutputFileName = newFileName;
         currentOutputStream = newOutputStream;
         currentFileSize = 0;
+        fileTimeRoller.updateNextRollTime(newFileName.getDateTime());
 
         // update symlink
         try {
@@ -443,5 +459,49 @@ final class RollingFileMessageOutput
             files.add(currentOutputFileName);
         }
         return files.build();
+    }
+
+    @VisibleForTesting
+    static class FileTimeRoller
+    {
+        public static final FileTimeRoller SYSTEM_FILE_TIME_ROLLER = new FileTimeRoller(System::currentTimeMillis, Ticker.systemTicker());
+
+        private final LongSupplier systemTimeMillis;
+        private final Ticker ticker;
+
+        @GuardedBy("this")
+        private long lastRollNanos;
+
+        @GuardedBy("this")
+        private long nanosToNextRoll;
+
+        public FileTimeRoller(LongSupplier systemTimeMillis, Ticker ticker)
+        {
+            this.systemTimeMillis = requireNonNull(systemTimeMillis, "systemTimeMillis is null");
+            this.ticker = requireNonNull(ticker, "ticker is null");
+        }
+
+        public LocalDateTime currentDateTime()
+        {
+            return LocalDateTime.ofInstant(Instant.ofEpochMilli(systemTimeMillis.getAsLong()), ZoneId.systemDefault());
+        }
+
+        public synchronized boolean shouldRoll()
+        {
+            return ticker.read() - lastRollNanos >= nanosToNextRoll;
+        }
+
+        @VisibleForTesting
+        synchronized long getNextRollNanos()
+        {
+            return lastRollNanos + nanosToNextRoll;
+        }
+
+        public synchronized void updateNextRollTime(LocalDateTime logFileCreateTime)
+        {
+            lastRollNanos = ticker.read();
+            long epochMilli = logFileCreateTime.toLocalDate().plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli();
+            nanosToNextRoll = TimeUnit.MILLISECONDS.toNanos(epochMilli - systemTimeMillis.getAsLong());
+        }
     }
 }
