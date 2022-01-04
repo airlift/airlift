@@ -35,7 +35,6 @@ import io.airlift.log.Logging;
 import io.airlift.log.LoggingConfiguration;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -281,8 +280,8 @@ public class Bootstrap
     {
         ColumnPrinter columnPrinter = makePrinterForConfiguration(configurationFactory);
 
-        try (PrintWriter out = new PrintWriter(new LoggingWriter(log))) {
-            columnPrinter.print(out);
+        for (String line : columnPrinter.generateOutput()) {
+            log.info(line);
         }
     }
 

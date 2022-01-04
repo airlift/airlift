@@ -17,7 +17,6 @@ package io.airlift.bootstrap;
 
 import com.google.common.collect.ImmutableList;
 
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -64,14 +63,7 @@ class ColumnPrinter
         data.add(ImmutableList.copyOf(values));
     }
 
-    public void print(PrintWriter out)
-    {
-        for (String line : generateOutput()) {
-            out.println(line.trim());
-        }
-    }
-
-    private List<String> generateOutput()
+    public List<String> generateOutput()
     {
         List<String> lines = new ArrayList<>();
         lines.add(printRow(columnNames));
@@ -87,7 +79,7 @@ class ColumnPrinter
         for (int i = 0; i < values.size(); i++) {
             sb.append(value(values.get(i), columnWidths.get(i) + margin));
         }
-        return sb.toString();
+        return sb.toString().trim();
     }
 
     private static String value(String value, int width)
