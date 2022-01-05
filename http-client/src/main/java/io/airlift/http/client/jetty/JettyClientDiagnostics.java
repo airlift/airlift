@@ -33,6 +33,6 @@ class JettyClientDiagnostics
             return;
         }
 
-        log.debug(httpClient.dump());
+        log.debug(httpClient::dump);
     }
 }

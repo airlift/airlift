@@ -1,3 +1,9 @@
+213
+- Add new methods to Logger which get the message from a Supplier provided by the caller
+- Make Logger methods with no format string parameters interpret the
+  message as a format string, falling back to verbatim message for compatibility
+- Annotate Logger methods with no format string parameters with @FormatMethod
+
 211
 - Fix deadlock in logging error reporting.
 

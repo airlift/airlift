@@ -16,6 +16,7 @@
 package io.airlift.discovery.client;
 
 import com.google.common.collect.ImmutableList;
+import com.google.errorprone.annotations.FormatMethod;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.Request.Builder;
 import io.airlift.json.JsonCodec;
@@ -176,6 +177,7 @@ public class ServiceInventory
         }
     }
 
+    @FormatMethod
     private void logServerError(String message, Object... args)
     {
         if (serverUp.compareAndSet(true, false)) {

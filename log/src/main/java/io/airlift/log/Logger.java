@@ -18,6 +18,7 @@ package io.airlift.log;
 import com.google.errorprone.annotations.FormatMethod;
 
 import java.util.IllegalFormatException;
+import java.util.function.Supplier;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -30,6 +31,8 @@ import static java.util.logging.Level.WARNING;
 public class Logger
 {
     private final java.util.logging.Logger logger;
+
+    private static final Object[] NO_ARGS = {};
 
     Logger(java.util.logging.Logger logger)
     {
@@ -59,24 +62,47 @@ public class Logger
     }
 
     /**
-     * Logs a message at DEBUG level.
+     * Logs a message, provided by the given supplier, at DEBUG level.
      *
      * @param exception an exception associated with the debug message being logged
-     * @param message a literal message to log
+     * @param messageSupplier a {@link Supplier} of the pre-formatted message
      */
-    public void debug(Throwable exception, String message)
+    public void debug(Throwable exception, Supplier<String> messageSupplier)
     {
-        logger.log(FINE, message, exception);
+        logger.log(FINE, exception, messageSupplier);
     }
 
     /**
      * Logs a message at DEBUG level.
      *
-     * @param message a literal message to log
+     * @param exception an exception associated with the debug message being logged
+     * @param format a format string compatible with String.format()
      */
-    public void debug(String message)
+    @FormatMethod
+    public void debug(Throwable exception, String format)
     {
-        logger.log(FINE, message);
+        debug(exception, () -> formatMessageWithoutParameters(format));
+    }
+
+    /**
+     * Logs a message, provided by the given supplier, at DEBUG level.
+     *
+     * @param messageSupplier a {@link Supplier} of the pre-formatted message
+     */
+    public void debug(Supplier<String> messageSupplier)
+    {
+        debug(null, messageSupplier);
+    }
+
+    /**
+     * Logs a message at DEBUG level.
+     *
+     * @param format a format string compatible with String.format()
+     */
+    @FormatMethod
+    public void debug(String format)
+    {
+        debug(null, format);
     }
 
     /**
@@ -115,19 +141,28 @@ public class Logger
     @FormatMethod
     public void debug(Throwable exception, String format, Object... args)
     {
-        if (logger.isLoggable(FINE)) {
-            logger.log(FINE, formatMessage(format, "DEBUG", args), exception);
-        }
+        debug(exception, () -> formatMessage(format, "DEBUG", args));
+    }
+
+    /**
+     * Logs a message, provided by the given supplier, at INFO level.
+     *
+     * @param messageSupplier a {@link Supplier} of the pre-formatted message
+     */
+    public void info(Supplier<String> messageSupplier)
+    {
+        logger.log(INFO, messageSupplier);
     }
 
     /**
      * Logs a message at INFO level.
      *
-     * @param message a literal message to log
+     * @param format a format string compatible with String.format()
      */
-    public void info(String message)
+    @FormatMethod
+    public void info(String format)
     {
-        logger.log(INFO, message);
+        info(() -> formatMessageWithoutParameters(format));
     }
 
     /**
@@ -146,30 +181,51 @@ public class Logger
     @FormatMethod
     public void info(String format, Object... args)
     {
-        if (logger.isLoggable(INFO)) {
-            logger.log(INFO, formatMessage(format, "INFO", args));
-        }
+        info(() -> formatMessage(format, "INFO", args));
+    }
+
+    /**
+     * Logs a message, provided by the given supplier, at WARN level.
+     *
+     * @param exception an exception associated with the warning being logged
+     * @param messageSupplier a {@link Supplier} of the pre-formatted message
+     */
+    public void warn(Throwable exception, Supplier<String> messageSupplier)
+    {
+        logger.log(WARNING, exception, messageSupplier);
     }
 
     /**
      * Logs a message at WARN level.
      *
      * @param exception an exception associated with the warning being logged
-     * @param message a literal message to log
+     * @param format a format string compatible with String.format()
      */
-    public void warn(Throwable exception, String message)
+    @FormatMethod
+    public void warn(Throwable exception, String format)
     {
-        logger.log(WARNING, message, exception);
+        warn(exception, () -> formatMessageWithoutParameters(format));
+    }
+
+    /**
+     * Logs a message, provided by the given supplier, at WARN level.
+     *
+     * @param messageSupplier a {@link Supplier} of the pre-formatted message
+     */
+    public void warn(Supplier<String> messageSupplier)
+    {
+        warn(null, messageSupplier);
     }
 
     /**
      * Logs a message at WARN level.
      *
-     * @param message a literal message to log
+     * @param format a format string compatible with String.format()
      */
-    public void warn(String message)
+    @FormatMethod
+    public void warn(String format)
     {
-        logger.log(WARNING, message);
+        warn(null, format);
     }
 
     /**
@@ -189,9 +245,7 @@ public class Logger
     @FormatMethod
     public void warn(Throwable exception, String format, Object... args)
     {
-        if (logger.isLoggable(WARNING)) {
-            logger.log(WARNING, formatMessage(format, "WARN", args), exception);
-        }
+        warn(exception, () -> formatMessage(format, "WARN", args));
     }
 
     /**
@@ -214,24 +268,47 @@ public class Logger
     }
 
     /**
-     * Logs a message at ERROR level.
+     * Logs a message, provided by the given supplier, at ERROR level.
      *
      * @param exception an exception associated with the error being logged
-     * @param message a literal message to log
+     * @param messageSupplier a {@link Supplier} of the pre-formatted message
      */
-    public void error(Throwable exception, String message)
+    public void error(Throwable exception, Supplier<String> messageSupplier)
     {
-        logger.log(SEVERE, message, exception);
+        logger.log(SEVERE, exception, messageSupplier);
     }
 
     /**
      * Logs a message at ERROR level.
      *
-     * @param message a literal message to log
+     * @param exception an exception associated with the error being logged
+     * @param format a format string compatible with String.format()
      */
-    public void error(String message)
+    @FormatMethod
+    public void error(Throwable exception, String format)
     {
-        logger.severe(message);
+        error(exception, () -> formatMessageWithoutParameters(format));
+    }
+
+    /**
+     * Logs a message, provided by the given supplier, at ERROR level.
+     *
+     * @param messageSupplier a {@link Supplier} of the pre-formatted message
+     */
+    public void error(Supplier<String> messageSupplier)
+    {
+        error(null, messageSupplier);
+    }
+
+    /**
+     * Logs a message at ERROR level.
+     *
+     * @param format a format string compatible with String.format()
+     */
+    @FormatMethod
+    public void error(String format)
+    {
+        error(null, format);
     }
 
     /**
@@ -251,9 +328,7 @@ public class Logger
     @FormatMethod
     public void error(Throwable exception, String format, Object... args)
     {
-        if (logger.isLoggable(SEVERE)) {
-            logger.log(SEVERE, formatMessage(format, "ERROR", args), exception);
-        }
+        error(exception, () -> formatMessage(format, "ERROR", args));
     }
 
     /**
@@ -268,9 +343,7 @@ public class Logger
      */
     public void error(Throwable exception)
     {
-        if (logger.isLoggable(SEVERE)) {
-            logger.log(SEVERE, exception.getMessage(), exception);
-        }
+        error(exception, exception::getMessage);
     }
 
     /**
@@ -311,6 +384,19 @@ public class Logger
         catch (IllegalFormatException e) {
             logger.log(SEVERE, format("Invalid format string while trying to log: %s '%s' %s", level, format, asList(args)), e);
             message = format("'%s' %s", format, asList(args));
+        }
+        return message;
+    }
+
+    private String formatMessageWithoutParameters(String format)
+    {
+        String message;
+        try {
+            message = format(format, NO_ARGS);
+        }
+        catch (IllegalFormatException e) {
+            // compatibility fallback
+            message = format;
         }
         return message;
     }
