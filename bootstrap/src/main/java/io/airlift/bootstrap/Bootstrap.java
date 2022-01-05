@@ -240,16 +240,18 @@ public class Bootstrap
 
         // Log any warnings
         if (!warnings.isEmpty()) {
-            StringBuilder message = new StringBuilder();
-            message.append("Configuration warnings\n");
-            message.append("==========\n\n");
-            message.append("Configuration should be updated:\n\n");
-            for (int index = 0; index < warnings.size(); index++) {
-                message.append(format("%s) %s\n", index + 1, warnings.get(index)));
-            }
-            message.append("\n");
-            message.append("==========");
-            log.warn(message.toString());
+            log.warn(() -> {
+                StringBuilder message = new StringBuilder();
+                message.append("Configuration warnings\n");
+                message.append("==========\n\n");
+                message.append("Configuration should be updated:\n\n");
+                for (int index = 0; index < warnings.size(); index++) {
+                    message.append(format("%s) %s\n", index + 1, warnings.get(index)));
+                }
+                message.append("\n");
+                message.append("==========");
+                return message.toString();
+            });
         }
 
         // system modules

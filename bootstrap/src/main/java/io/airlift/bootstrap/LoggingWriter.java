@@ -50,7 +50,7 @@ class LoggingWriter
                 if (line == null) {
                     break;
                 }
-                logger.info(line);
+                logger.info("%s", line);
             }
             catch (IOException e) {
                 throw new Error(e); // should never get here

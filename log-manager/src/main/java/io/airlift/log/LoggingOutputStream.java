@@ -49,6 +49,6 @@ class LoggingOutputStream
             return;
         }
 
-        logger.info(record);
+        logger.info("%s", record);
     }
 }
