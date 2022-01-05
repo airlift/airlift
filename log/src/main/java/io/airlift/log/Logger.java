@@ -18,6 +18,7 @@ package io.airlift.log;
 import com.google.errorprone.annotations.FormatMethod;
 
 import java.util.IllegalFormatException;
+import java.util.function.Supplier;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -59,6 +60,17 @@ public class Logger
     }
 
     /**
+     * Logs a message, provided by the given supplier, at DEBUG level.
+     *
+     * @param exception an exception associated with the debug message being logged
+     * @param messageSupplier a {@link Supplier} of the pre-formatted message
+     */
+    public void debug(Throwable exception, Supplier<String> messageSupplier)
+    {
+        logger.log(FINE, exception, messageSupplier);
+    }
+
+    /**
      * Logs a message at DEBUG level.
      *
      * @param exception an exception associated with the debug message being logged
@@ -67,6 +79,16 @@ public class Logger
     public void debug(Throwable exception, String message)
     {
         logger.log(FINE, message, exception);
+    }
+
+    /**
+     * Logs a message, provided by the given supplier, at DEBUG level.
+     *
+     * @param messageSupplier a {@link Supplier} of the pre-formatted message
+     */
+    public void debug(Supplier<String> messageSupplier)
+    {
+        debug(null, messageSupplier);
     }
 
     /**
@@ -115,9 +137,17 @@ public class Logger
     @FormatMethod
     public void debug(Throwable exception, String format, Object... args)
     {
-        if (logger.isLoggable(FINE)) {
-            logger.log(FINE, formatMessage(format, "DEBUG", args), exception);
-        }
+        debug(exception, () -> formatMessage(format, "DEBUG", args));
+    }
+
+    /**
+     * Logs a message, provided by the given supplier, at INFO level.
+     *
+     * @param messageSupplier a {@link Supplier} of the pre-formatted message
+     */
+    public void info(Supplier<String> messageSupplier)
+    {
+        logger.log(INFO, messageSupplier);
     }
 
     /**
@@ -146,9 +176,18 @@ public class Logger
     @FormatMethod
     public void info(String format, Object... args)
     {
-        if (logger.isLoggable(INFO)) {
-            logger.log(INFO, formatMessage(format, "INFO", args));
-        }
+        info(() -> formatMessage(format, "INFO", args));
+    }
+
+    /**
+     * Logs a message, provided by the given supplier, at WARN level.
+     *
+     * @param exception an exception associated with the warning being logged
+     * @param messageSupplier a {@link Supplier} of the pre-formatted message
+     */
+    public void warn(Throwable exception, Supplier<String> messageSupplier)
+    {
+        logger.log(WARNING, exception, messageSupplier);
     }
 
     /**
@@ -160,6 +199,16 @@ public class Logger
     public void warn(Throwable exception, String message)
     {
         logger.log(WARNING, message, exception);
+    }
+
+    /**
+     * Logs a message, provided by the given supplier, at WARN level.
+     *
+     * @param messageSupplier a {@link Supplier} of the pre-formatted message
+     */
+    public void warn(Supplier<String> messageSupplier)
+    {
+        warn(null, messageSupplier);
     }
 
     /**
@@ -189,9 +238,7 @@ public class Logger
     @FormatMethod
     public void warn(Throwable exception, String format, Object... args)
     {
-        if (logger.isLoggable(WARNING)) {
-            logger.log(WARNING, formatMessage(format, "WARN", args), exception);
-        }
+        warn(exception, () -> formatMessage(format, "WARN", args));
     }
 
     /**
@@ -214,6 +261,17 @@ public class Logger
     }
 
     /**
+     * Logs a message, provided by the given supplier, at ERROR level.
+     *
+     * @param exception an exception associated with the error being logged
+     * @param messageSupplier a {@link Supplier} of the pre-formatted message
+     */
+    public void error(Throwable exception, Supplier<String> messageSupplier)
+    {
+        logger.log(SEVERE, exception, messageSupplier);
+    }
+
+    /**
      * Logs a message at ERROR level.
      *
      * @param exception an exception associated with the error being logged
@@ -222,6 +280,16 @@ public class Logger
     public void error(Throwable exception, String message)
     {
         logger.log(SEVERE, message, exception);
+    }
+
+    /**
+     * Logs a message, provided by the given supplier, at ERROR level.
+     *
+     * @param messageSupplier a {@link Supplier} of the pre-formatted message
+     */
+    public void error(Supplier<String> messageSupplier)
+    {
+        error(null, messageSupplier);
     }
 
     /**
@@ -251,9 +319,7 @@ public class Logger
     @FormatMethod
     public void error(Throwable exception, String format, Object... args)
     {
-        if (logger.isLoggable(SEVERE)) {
-            logger.log(SEVERE, formatMessage(format, "ERROR", args), exception);
-        }
+        error(exception, () -> formatMessage(format, "ERROR", args));
     }
 
     /**
@@ -268,9 +334,7 @@ public class Logger
      */
     public void error(Throwable exception)
     {
-        if (logger.isLoggable(SEVERE)) {
-            logger.log(SEVERE, exception.getMessage(), exception);
-        }
+        error(exception, exception::getMessage);
     }
 
     /**

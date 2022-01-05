@@ -1,3 +1,6 @@
+213
+- Add new methods to Logger which get the message from a Supplier provided by the caller
+
 211
 - Fix deadlock in logging error reporting.
 
