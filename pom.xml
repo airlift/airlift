@@ -30,7 +30,6 @@
 
         <dep.airlift.version>213-SNAPSHOT</dep.airlift.version>
         <dep.packaging.version>${dep.airlift.version}</dep.packaging.version>
-        <dep.jetty.version>9.4.44.v20210927</dep.jetty.version>
         <dep.jersey.version>2.26</dep.jersey.version>
         <dep.jjwt.version>0.11.2</dep.jjwt.version>
     </properties>
@@ -301,9 +300,9 @@
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-bom</artifactId>
+                <version>9.4.44.v20210927</version>
                 <type>pom</type>
                 <scope>import</scope>
-                <version>${dep.jetty.version}</version>
             </dependency>
 
             <!-- jersey -->
