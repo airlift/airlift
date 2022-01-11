@@ -16,6 +16,8 @@ package io.airlift.log;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.ByteSource;
+import io.airlift.log.RollingFileMessageOutput.FileTimeRoller;
+import io.airlift.testing.TestingTicker;
 import io.airlift.units.DataSize;
 import org.testng.annotations.Test;
 
@@ -24,8 +26,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.ErrorManager;
 import java.util.logging.Formatter;
 import java.util.logging.Level;
@@ -46,7 +53,11 @@ import static io.airlift.log.RollingFileMessageOutput.createRollingFileHandler;
 import static io.airlift.units.DataSize.Unit.BYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.concurrent.TimeUnit.DAYS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.function.Predicate.not;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
@@ -57,6 +68,9 @@ public class TestRollingFileMessageOutput
 {
     public static final ImmutableMap<String, String> TESTING_ANNOTATIONS = ImmutableMap.of("environment", "testing");
 
+    private static final long TESTING_NOW = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).plusMinutes(10).toInstant().toEpochMilli();
+    private static final FileTimeRoller TESTING_FILE_TIME_ROLLER = new FileTimeRoller(() -> TESTING_NOW, new TestingTicker());
+
     @Test
     public void testBasicLogging()
             throws Exception
@@ -65,7 +79,14 @@ public class TestRollingFileMessageOutput
         try {
             Path masterFile = tempDir.resolve("launcher.log");
 
-            BufferedHandler handler = createRollingFileHandler(masterFile.toString(), new DataSize(1, MEGABYTE), new DataSize(10, MEGABYTE), NONE, TEXT.createFormatter(TESTING_ANNOTATIONS), new ErrorManager());
+            BufferedHandler handler = createRollingFileHandler(
+                    masterFile.toString(),
+                    new DataSize(1, MEGABYTE),
+                    new DataSize(10, MEGABYTE),
+                    NONE,
+                    TEXT.createFormatter(TESTING_ANNOTATIONS),
+                    new ErrorManager(),
+                    TESTING_FILE_TIME_ROLLER);
             assertLogDirectory(masterFile);
 
             assertTrue(Files.exists(masterFile));
@@ -119,7 +140,8 @@ public class TestRollingFileMessageOutput
                     new DataSize(message.length() * 2 + message.length() * 5 + message.length() * 5, BYTE), // 2 messages + 2 closed files
                     NONE,
                     TEXT.createFormatter(ImmutableMap.of()),
-                    new ErrorManager());
+                    new ErrorManager(),
+                    TESTING_FILE_TIME_ROLLER);
 
             // use a handler that prints the raw message
             handler.setFormatter(new Formatter()
@@ -185,6 +207,72 @@ public class TestRollingFileMessageOutput
     }
 
     @Test
+    public void testRollDaily()
+            throws Exception
+    {
+        String message = Strings.padEnd("", 99, 'x') + "\n";
+
+        Path tempDir = Files.createTempDirectory("logging-test");
+        try {
+            TestingTicker ticker = new TestingTicker();
+            AtomicLong systemMillis = new AtomicLong(TESTING_NOW);
+
+            Path masterFile = tempDir.resolve("launcher.log");
+            BufferedHandler handler = createRollingFileHandler(
+                    masterFile.toString(),
+                    new DataSize(1, MEGABYTE),
+                    new DataSize(10, MEGABYTE),
+                    NONE,
+                    TEXT.createFormatter(TESTING_ANNOTATIONS),
+                    new ErrorManager(),
+                    new FileTimeRoller(systemMillis::get, ticker));
+
+            // use a handler that prints the raw message
+            handler.setFormatter(new Formatter()
+            {
+                @Override
+                public String format(LogRecord record)
+                {
+                    return record.getMessage();
+                }
+            });
+            assertLogDirectory(masterFile);
+
+            assertLogSizes(masterFile, handler, 0, message.length(), 1);
+
+            // log some messages
+            for (int i = 0; i < 5; i++) {
+                handler.publish(new LogRecord(Level.SEVERE, message));
+                assertLogSizes(masterFile, handler, i + 1, message.length(), 1);
+            }
+            assertLogDirectory(masterFile);
+
+            for (int rollCount = 1; rollCount < 5; rollCount++) {
+                // advance one day
+                ticker.increment(1, DAYS);
+                systemMillis.addAndGet(DAYS.toMillis(1));
+
+                // log one message, which causes log file to roll
+                handler.publish(new LogRecord(Level.SEVERE, message));
+                assertLogSizes(masterFile, handler, 1, message.length(), 1 + rollCount);
+
+                // log some more messages
+                for (int i = 1; i < 5; i++) {
+                    handler.publish(new LogRecord(Level.SEVERE, message));
+                    assertLogSizes(masterFile, handler, i + 1, message.length(), 1 + rollCount);
+                }
+                assertLogDirectory(masterFile);
+            }
+
+            handler.close();
+            assertLogDirectory(masterFile);
+        }
+        finally {
+            deleteRecursively(tempDir, ALLOW_INSECURE);
+        }
+    }
+
+    @Test
     public void testCompression()
             throws Exception
     {
@@ -211,7 +299,8 @@ public class TestRollingFileMessageOutput
                     new DataSize(message.length() + message.length() * 5 + expectedCompressedSize, BYTE), // one message, one uncompressed file, one compressed file
                     GZIP,
                     TEXT.createFormatter(ImmutableMap.of()),
-                    new ErrorManager());
+                    new ErrorManager(),
+                    TESTING_FILE_TIME_ROLLER);
 
             // use a handler that prints the raw message
             handler.setFormatter(new Formatter()
@@ -276,7 +365,14 @@ public class TestRollingFileMessageOutput
         Path tempDir = Files.createTempDirectory("logging-test");
         try {
             Path masterFile = tempDir.resolve("launcher.log");
-            BufferedHandler handler = createRollingFileHandler(masterFile.toString(), new DataSize(1, MEGABYTE), new DataSize(10, MEGABYTE), NONE, TEXT.createFormatter(TESTING_ANNOTATIONS), new ErrorManager());
+            BufferedHandler handler = createRollingFileHandler(
+                    masterFile.toString(),
+                    new DataSize(1, MEGABYTE),
+                    new DataSize(10, MEGABYTE),
+                    NONE,
+                    TEXT.createFormatter(TESTING_ANNOTATIONS),
+                    new ErrorManager(),
+                    TESTING_FILE_TIME_ROLLER);
 
             handler.publish(new LogRecord(Level.SEVERE, "apple"));
             handler.publish(new LogRecord(Level.SEVERE, "banana"));
@@ -309,7 +405,14 @@ public class TestRollingFileMessageOutput
         Path tempDir = Files.createTempDirectory("logging-test");
         try {
             Path masterFile = tempDir.resolve("launcher.log");
-            BufferedHandler handler = createRollingFileHandler(masterFile.toString(), new DataSize(1, MEGABYTE), new DataSize(10, MEGABYTE), NONE, TEXT.createFormatter(TESTING_ANNOTATIONS), new ErrorManager());
+            BufferedHandler handler = createRollingFileHandler(
+                    masterFile.toString(),
+                    new DataSize(1, MEGABYTE),
+                    new DataSize(10, MEGABYTE),
+                    NONE,
+                    TEXT.createFormatter(TESTING_ANNOTATIONS),
+                    new ErrorManager(),
+                    TESTING_FILE_TIME_ROLLER);
             assertLogDirectory(masterFile);
             Path firstLogFile = Files.readSymbolicLink(masterFile);
 
@@ -329,7 +432,14 @@ public class TestRollingFileMessageOutput
             assertLogDirectory(masterFile);
 
             // open new handler
-            handler = createRollingFileHandler(masterFile.toString(), new DataSize(1, MEGABYTE), new DataSize(10, MEGABYTE), NONE, TEXT.createFormatter(TESTING_ANNOTATIONS), new ErrorManager());
+            handler = createRollingFileHandler(
+                    masterFile.toString(),
+                    new DataSize(1, MEGABYTE),
+                    new DataSize(10, MEGABYTE),
+                    NONE,
+                    TEXT.createFormatter(TESTING_ANNOTATIONS),
+                    new ErrorManager(),
+                    TESTING_FILE_TIME_ROLLER);
 
             assertLogDirectory(masterFile);
             assertNotEquals(Files.readSymbolicLink(masterFile), firstLogFile);
@@ -381,7 +491,14 @@ public class TestRollingFileMessageOutput
             legacyHandler.close();
 
             // open new handler
-            BufferedHandler newHandler = createRollingFileHandler(masterFile.toString(), new DataSize(1, MEGABYTE), new DataSize(10, MEGABYTE), NONE, TEXT.createFormatter(TESTING_ANNOTATIONS), new ErrorManager());
+            BufferedHandler newHandler = createRollingFileHandler(
+                    masterFile.toString(),
+                    new DataSize(1, MEGABYTE),
+                    new DataSize(10, MEGABYTE),
+                    NONE,
+                    TEXT.createFormatter(TESTING_ANNOTATIONS),
+                    new ErrorManager(),
+                    TESTING_FILE_TIME_ROLLER);
             assertLogDirectory(masterFile);
 
             assertTrue(Files.isSymbolicLink(masterFile));
@@ -406,6 +523,46 @@ public class TestRollingFileMessageOutput
         finally {
             deleteRecursively(tempDir, ALLOW_INSECURE);
         }
+    }
+
+    @Test
+    public void testDateRoll()
+    {
+        assertDateRoll(0);
+        assertDateRoll(1_234_567);
+        assertDateRoll(-1_234_567);
+        assertDateRoll(Long.MIN_VALUE + 1_234_567);
+        assertDateRoll(Long.MAX_VALUE - 1_234_567);
+    }
+
+    private void assertDateRoll(long initialSystemNanos)
+    {
+        // use an arbitrary ticker (System.nanoTime())
+        TestingTicker ticker = new TestingTicker(initialSystemNanos);
+
+        // use an arbitrary test time
+        LocalDateTime testDateTime = LocalDateTime.of(2022, 3, 4, 5, 6, 7, (int) MILLISECONDS.toNanos(89));
+
+        // set system time (System.currentTimeMillis()) to just after test time
+        AtomicLong systemTime = new AtomicLong(testDateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
+        systemTime.addAndGet(1234);
+
+        // verify next roll time
+        FileTimeRoller fileTimeRoller = new FileTimeRoller(systemTime::get, ticker);
+        fileTimeRoller.updateNextRollTime(testDateTime);
+        assertFalse(fileTimeRoller.shouldRoll());
+
+        // verify exact roll time
+        long nextRollNanos = fileTimeRoller.getNextRollNanos();
+        long nextRollSystemMillis = systemTime.get() + NANOSECONDS.toMillis(nextRollNanos - ticker.read());
+        LocalDateTime nextRollTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(nextRollSystemMillis), ZoneId.systemDefault());
+        assertThat(nextRollTime).isEqualTo(testDateTime.toLocalDate().plusDays(1).atStartOfDay());
+
+        // advance time and verify should role change
+        ticker.increment(nextRollNanos - ticker.read() - 1, NANOSECONDS);
+        assertFalse(fileTimeRoller.shouldRoll());
+        ticker.increment(1, NANOSECONDS);
+        assertTrue(fileTimeRoller.shouldRoll());
     }
 
     private static class GzippedByteSource
@@ -468,7 +625,7 @@ public class TestRollingFileMessageOutput
 
         List<String> lines = waitForExactLines(masterFile, expectedLines);
         assertEquals(lines.size(), expectedLines);
-        assertEquals(Files.size(masterFile), (expectedLines) * lineSize);
+        assertEquals(Files.size(masterFile), (long) (expectedLines) * lineSize);
     }
 
     private static List<String> waitForExactLines(Path masterFile, int exactCount)

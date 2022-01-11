@@ -11,6 +11,13 @@ public class TestingTicker
 {
     private long time;
 
+    public TestingTicker() {}
+
+    public TestingTicker(long initialValue)
+    {
+        this.time = initialValue;
+    }
+
     @Override
     public long read()
     {
