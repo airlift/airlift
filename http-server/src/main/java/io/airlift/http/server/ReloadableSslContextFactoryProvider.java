@@ -209,7 +209,7 @@ final class ReloadableSslContextFactoryProvider
 
         try (InputStream in = new FileInputStream(file)) {
             KeyStore keyStore = KeyStore.getInstance("JKS");
-            keyStore.load(in, keystorePassword.toCharArray());
+            keyStore.load(in, Optional.ofNullable(keystorePassword).map(String::toCharArray).orElse(null));
             return keyStore;
         }
         catch (IOException | GeneralSecurityException e) {
