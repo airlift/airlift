@@ -1,3 +1,6 @@
+214
+- Fix log file rename in launcher script.
+
 212
 - Fix log file rename on startup.
 

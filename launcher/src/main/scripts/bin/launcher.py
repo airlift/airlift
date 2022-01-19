@@ -10,7 +10,7 @@ import traceback
 from fcntl import flock, LOCK_EX, LOCK_NB
 from optparse import OptionParser
 from os import O_RDWR, O_CREAT, O_WRONLY, O_APPEND
-from os.path import basename, dirname, exists, realpath
+from os.path import abspath, basename, dirname, exists, realpath
 from os.path import join as pathjoin
 from signal import SIGTERM, SIGKILL
 from stat import S_ISLNK
@@ -440,7 +440,7 @@ def main():
 
     o.pid_file = realpath(options.pid_file or pathjoin(o.data_dir, 'var/run/launcher.pid'))
     o.launcher_log = realpath(options.launcher_log_file or pathjoin(o.data_dir, 'var/log/launcher.log'))
-    o.server_log = realpath(options.server_log_file or pathjoin(o.data_dir, 'var/log/server.log'))
+    o.server_log = abspath(options.server_log_file or pathjoin(o.data_dir, 'var/log/server.log'))
 
     o.properties = parse_properties(parser, options.properties or {})
     for k, v in node_properties.items():
