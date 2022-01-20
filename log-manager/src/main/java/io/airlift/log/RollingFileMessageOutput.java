@@ -143,14 +143,16 @@ final class RollingFileMessageOutput
             new ErrorManager().error("Unable to recover legacy logging temp files", e, GENERIC_FAILURE);
         }
 
-        if (Files.exists(symlink)) {
+        if (Files.exists(symlink, NOFOLLOW_LINKS)) {
             try {
-                // if existing link file is a legacy log file, rename it to so link file can be recreated as a symlink
-                BasicFileAttributes attributes = Files.readAttributes(symlink, BasicFileAttributes.class, NOFOLLOW_LINKS);
-                if (attributes.isDirectory()) {
+                // verify existing file is not a directory or a symlink to a directory
+                // Note: do not use NOFOLLOW here, as we want to know if target is a directory
+                if (Files.isDirectory(symlink)) {
                     throw new IllegalArgumentException("Log file is an existing directory: " + filename);
                 }
-                if (attributes.isRegularFile()) {
+                // if existing symlink file is a legacy (non-symlink) log file, rename it so file can be recreated as a symlink
+                if (!Files.isSymbolicLink(symlink)) {
+                    BasicFileAttributes attributes = Files.readAttributes(symlink, BasicFileAttributes.class);
                     LocalDateTime createTime = LocalDateTime.ofInstant(attributes.creationTime().toInstant(), ZoneId.systemDefault()).withNano(0);
                     Path logFile = symlink.resolveSibling(symlink.getFileName() + DATE_TIME_FORMATTER.format(createTime) + "--" + randomUUID());
                     Files.move(symlink, logFile, ATOMIC_MOVE);
