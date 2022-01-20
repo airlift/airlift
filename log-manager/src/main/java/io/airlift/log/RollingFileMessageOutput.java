@@ -241,7 +241,7 @@ final class RollingFileMessageOutput
     public synchronized void writeMessage(byte[] message)
             throws IOException
     {
-        if (currentFileSize + message.length > maxFileSize) {
+        if (currentFileSize > 0 && (currentFileSize + message.length > maxFileSize)) {
             try {
                 rollFile();
             }
