@@ -15,19 +15,37 @@
  */
 package io.airlift.bootstrap;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+
+import static java.util.concurrent.Executors.newSingleThreadExecutor;
 
 public class ExecutedInstance
-        extends Executed
+        implements Runnable
 {
+    private final ExecutorService executor = newSingleThreadExecutor();
     private final CountDownLatch startLatch = new CountDownLatch(1);
     private final CountDownLatch endLatch = new CountDownLatch(1);
 
     @Inject
     public ExecutedInstance()
     {
+    }
+
+    @PostConstruct
+    public void startExecution()
+    {
+        executor.submit(this);
+    }
+
+    @PreDestroy
+    public void stopExecution()
+    {
+        executor.shutdownNow();
     }
 
     public void waitForStart()
