@@ -105,6 +105,36 @@ public class TestRollingFileMessageOutput
     }
 
     @Test
+    public void testBrokenLink()
+            throws Exception
+    {
+        Path tempDir = Files.createTempDirectory("logging-test");
+        try {
+            Path masterFile = tempDir.resolve("launcher.log");
+            // start with a broken symlink
+            Files.createSymbolicLink(masterFile, tempDir.resolve("launcher.log.broken"));
+
+            BufferedHandler handler = createRollingFileHandler(masterFile.toString(), new DataSize(1, MEGABYTE), new DataSize(10, MEGABYTE), NONE, TEXT.createFormatter(TESTING_ANNOTATIONS), new ErrorManager());
+            assertLogDirectory(masterFile);
+
+            assertTrue(Files.exists(masterFile));
+            assertTrue(Files.isSymbolicLink(masterFile));
+
+            handler.publish(new LogRecord(Level.SEVERE, "apple"));
+
+            List<String> lines = waitForExactLines(masterFile, 1);
+            assertEquals(lines.size(), 1);
+
+            assertLogDirectory(masterFile);
+            handler.close();
+            assertLogDirectory(masterFile);
+        }
+        finally {
+            deleteRecursively(tempDir, ALLOW_INSECURE);
+        }
+    }
+
+    @Test
     public void testRollAndPrune()
             throws Exception
     {
