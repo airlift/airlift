@@ -44,6 +44,7 @@ import java.util.zip.GZIPOutputStream;
 
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
 import static java.lang.Math.toIntExact;
+import static java.lang.String.format;
 import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
@@ -280,7 +281,7 @@ final class RollingFileMessageOutput
 
         // The new file is open, so we will always switch to this new output stream
         // If any error occurs, with the cleanup steps, we add them to this exception as suppressed and throw at the end
-        IOException exception = new IOException(String.format("Unable to %s log file", currentOutputStream == null ? "setup initial" : "roll"));
+        IOException exception = new IOException(format("Unable to %s log file", currentOutputStream == null ? "setup initial" : "roll"));
 
         // close and optionally compress the currently open log (there is no open log during initial setup)
         if (currentOutputStream != null) {
@@ -313,13 +314,11 @@ final class RollingFileMessageOutput
 
         // update symlink
         try {
-            if (Files.exists(symlink)) {
-                Files.delete(symlink);
-            }
+            Files.deleteIfExists(symlink);
             Files.createSymbolicLink(symlink, newFile);
         }
         catch (IOException e) {
-            exception.addSuppressed(new IOException("Unable to update symlink", e));
+            exception.addSuppressed(new IOException(format("Unable to update symlink %s to %s", symlink, newFile), e));
         }
 
         if (exception.getSuppressed().length > 0) {
