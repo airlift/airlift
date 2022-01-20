@@ -47,6 +47,7 @@ import static io.airlift.units.DataSize.Unit.BYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.function.Predicate.not;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
@@ -128,6 +129,46 @@ public class TestRollingFileMessageOutput
             assertLogDirectory(masterFile);
             handler.close();
             assertLogDirectory(masterFile);
+        }
+        finally {
+            deleteRecursively(tempDir, ALLOW_INSECURE);
+        }
+    }
+
+    @Test
+    public void testExistingDirectory()
+            throws Exception
+    {
+        Path tempDir = Files.createTempDirectory("logging-test");
+        try {
+            Path masterFile = tempDir.resolve("launcher.log");
+
+            // master file is a directory
+            Files.createDirectories(masterFile);
+            assertThatThrownBy(() -> createRollingFileHandler(
+                    masterFile.toString(),
+                    new DataSize(1, MEGABYTE),
+                    new DataSize(10, MEGABYTE),
+                    NONE,
+                    TEXT.createFormatter(TESTING_ANNOTATIONS),
+                    new ErrorManager()))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Log file is an existing directory");
+            Files.delete(masterFile);
+
+            // master file is a symlink to a directory
+            Path someDirectory = tempDir.resolve("launcher.log.directory");
+            Files.createDirectories(someDirectory);
+            Files.createSymbolicLink(masterFile, someDirectory);
+            assertThatThrownBy(() -> createRollingFileHandler(
+                    masterFile.toString(),
+                    new DataSize(1, MEGABYTE),
+                    new DataSize(10, MEGABYTE),
+                    NONE,
+                    TEXT.createFormatter(TESTING_ANNOTATIONS),
+                    new ErrorManager()))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Log file is an existing directory");
         }
         finally {
             deleteRecursively(tempDir, ALLOW_INSECURE);
