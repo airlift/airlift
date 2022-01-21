@@ -317,7 +317,7 @@ final class RollingFileMessageOutput
         // update symlink
         try {
             Files.deleteIfExists(symlink);
-            Files.createSymbolicLink(symlink, newFile);
+            Files.createSymbolicLink(symlink, newFile.getFileName());
         }
         catch (IOException e) {
             exception.addSuppressed(new IOException(format("Unable to update symlink %s to %s", symlink, newFile), e));
