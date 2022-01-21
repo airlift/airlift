@@ -51,6 +51,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 @Test(timeOut = 5 * 60 * 1000)
@@ -502,6 +503,12 @@ public class TestRollingFileMessageOutput
     {
         assertTrue(Files.isDirectory(masterFile.getParent()));
         assertTrue(Files.isSymbolicLink(masterFile));
+
+        Path symbolicLinkTarget = Files.readSymbolicLink(masterFile);
+        assertFalse(symbolicLinkTarget.isAbsolute());
+        assertEquals(symbolicLinkTarget.getNameCount(), 1);
+        assertNull(symbolicLinkTarget.getParent());
+
         List<Path> logFiles = Files.list(masterFile.getParent())
                 .filter(not(masterFile::equals))
                 .collect(toImmutableList());
