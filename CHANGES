@@ -1,6 +1,7 @@
 214
 - Fix log file rename in launcher script.
 - Remove Executed class from bootstrap module.
+- Add "bootstrap.quiet" configuration property.
 
 212
 - Fix log file rename on startup.

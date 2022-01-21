@@ -206,6 +206,8 @@ public class Bootstrap
         List<Message> warnings = new ArrayList<>();
         ConfigurationFactory configurationFactory = new ConfigurationFactory(properties, warning -> warnings.add(new Message(warning)));
 
+        Boolean quietConfig = configurationFactory.build(BootstrapConfig.class).getQuiet();
+
         // initialize logging
         if (logging != null) {
             log.info("Initializing logging");
@@ -234,7 +236,7 @@ public class Bootstrap
         }
 
         // Log effective configuration
-        if (!quiet) {
+        if (!((quietConfig == null) ? quiet : quietConfig)) {
             logConfiguration(configurationFactory);
         }
 
