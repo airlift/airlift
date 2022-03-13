@@ -19,7 +19,7 @@ import io.airlift.configuration.Config;
 import io.airlift.configuration.DefunctConfig;
 
 /**
- * see <a href="http://dev.mysql.com/doc/refman/5.0/en/connector-j-reference-configuration-properties.html">http://dev.mysql.com/doc/refman/5.0/en/connector-j-reference-configuration-properties.html</a>
+ * see <a href="https://dev.mysql.com/doc/connector-j/8.0/en/connector-j-reference-configuration-properties.html">https://dev.mysql.com/doc/connector-j/8.0/en/connector-j-reference-configuration-properties.html</a>
  */
 @DefunctConfig({"db.host", "db.port", "db.database", "db.ssl.enabled"})
 public class MySqlDataSourceConfig
