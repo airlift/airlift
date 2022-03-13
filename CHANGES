@@ -1,3 +1,6 @@
+215
+- Upgrade to MySQL Connector/J 8.0.22 in dbpool.
+
 214
 - Fix log file rename in launcher script.
 - Remove Executed class from bootstrap module.
