@@ -1,18 +1,23 @@
 215
-- Upgrade to MySQL Connector/J 8.0.22 in dbpool.
 
-214
-- Fix log file rename in launcher script.
+- Upgrade to MySQL Connector/J 8.0.22 in dbpool.
 - Remove Executed class from bootstrap module.
 - Add "bootstrap.quiet" configuration property.
 
+214
+
+- Fix log file rename in launcher script.
+
 212
+
 - Fix log file rename on startup.
 
 211
+
 - Fix deadlock in logging error reporting.
 
 210
+
 - Add support for logging to a tcp socket by setting "log.path" to "tcp://host:port".
 
 209
