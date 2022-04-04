@@ -15,7 +15,6 @@
  */
 package io.airlift.jaxrs;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.inject.Binder;
 import com.google.inject.Key;
 import com.google.inject.Module;
@@ -23,6 +22,7 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import io.airlift.http.server.TheServlet;
 import org.glassfish.jersey.server.ResourceConfig;
+import org.glassfish.jersey.server.model.Resource;
 import org.glassfish.jersey.servlet.ServletContainer;
 
 import javax.inject.Inject;
@@ -31,9 +31,11 @@ import javax.ws.rs.core.Application;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
 
@@ -69,17 +71,28 @@ public class JaxrsModule
     }
 
     @Provides
-    public static ResourceConfig createResourceConfig(Application application)
+    public static ResourceConfig createResourceConfig(Application application, @JaxrsResource Set<Object> jaxRsSingletons)
     {
-        return ResourceConfig.forApplication(application);
+        ResourceConfig resourceConfig = ResourceConfig.forApplication(application);
+        jaxRsSingletons.stream()
+                .flatMap(o -> asProgrammaticResource(o).stream())
+                .forEach(resourceConfig::registerResources);
+        return resourceConfig;
     }
 
     @Provides
     @TheServlet
     public static Map<String, String> createTheServletParams()
     {
-        Map<String, String> initParams = new HashMap<>();
-        return initParams;
+        return new HashMap<>();
+    }
+
+    private static Optional<Resource> asProgrammaticResource(Object o)
+    {
+        if (o instanceof Resource) {
+            return Optional.of((Resource) o);
+        }
+        return Optional.empty();
     }
 
     public static class JaxRsApplication
@@ -90,7 +103,10 @@ public class JaxrsModule
         @Inject
         public JaxRsApplication(@JaxrsResource Set<Object> jaxRsSingletons)
         {
-            this.jaxRsSingletons = ImmutableSet.copyOf(jaxRsSingletons);
+            this.jaxRsSingletons = jaxRsSingletons
+                    .stream()
+                    .filter(o -> asProgrammaticResource(o).isEmpty())
+                    .collect(toImmutableSet());
         }
 
         @Override
