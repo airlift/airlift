@@ -23,22 +23,17 @@ import io.airlift.units.DataSize;
 
 import javax.annotation.concurrent.GuardedBy;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Properties;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
 import java.util.logging.LogManager;
 
-import static com.google.common.collect.Maps.fromProperties;
 import static io.airlift.configuration.ConfigurationLoader.loadPropertiesFrom;
 import static io.airlift.configuration.ConfigurationUtils.replaceEnvironmentVariables;
 import static io.airlift.log.RollingFileMessageOutput.createRollingFileHandler;
@@ -150,15 +145,10 @@ public class Logging
         setLevel(ROOT_LOGGER_NAME, newLevel);
     }
 
-    public void setLevels(File file)
+    public void setLevels(String file)
             throws IOException
     {
-        Properties properties = new Properties();
-        try (InputStream inputStream = new FileInputStream(file)) {
-            properties.load(inputStream);
-        }
-
-        fromProperties(properties).forEach((loggerName, value) ->
+        loadPropertiesFrom(file).forEach((loggerName, value) ->
                 setLevel(loggerName, Level.valueOf(value.toUpperCase(Locale.US))));
     }
 
@@ -242,7 +232,7 @@ public class Logging
 
         if (config.getLevelsFile() != null) {
             try {
-                setLevels(new File(config.getLevelsFile()));
+                setLevels(config.getLevelsFile());
             }
             catch (IOException e) {
                 throw new UncheckedIOException(e);

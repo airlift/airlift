@@ -3,6 +3,7 @@
 - Upgrade to MySQL Connector/J 8.0.22 in dbpool.
 - Remove Executed class from bootstrap module.
 - Add "bootstrap.quiet" configuration property.
+- Trim whitespace when loading configuration of log levels.
 
 214
 
