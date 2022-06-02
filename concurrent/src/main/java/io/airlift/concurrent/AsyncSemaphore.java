@@ -13,13 +13,12 @@
  */
 package io.airlift.concurrent;
 
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 
 import javax.annotation.concurrent.ThreadSafe;
 
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
@@ -27,7 +26,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Verify.verify;
+import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.util.concurrent.Futures.immediateCancelledFuture;
+import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
+import static io.airlift.concurrent.MoreFutures.allAsListWithCancellationOnFailure;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -37,16 +41,58 @@ import static java.util.Objects.requireNonNull;
  * to do the bulk of its work asynchronously.
  */
 @ThreadSafe
-public class AsyncSemaphore<T>
+public class AsyncSemaphore<T, R>
 {
-    private final Queue<QueuedTask<T>> queuedTasks = new ConcurrentLinkedQueue<>();
+    private final Queue<QueuedTask<T, R>> queuedTasks = new ConcurrentLinkedQueue<>();
     private final AtomicInteger counter = new AtomicInteger();
     private final Runnable runNextTask = this::runNext;
     private final int maxPermits;
     private final Executor submitExecutor;
-    private final Function<T, ListenableFuture<?>> submitter;
+    private final Function<T, ListenableFuture<R>> submitter;
 
-    public AsyncSemaphore(int maxPermits, Executor submitExecutor, Function<T, ListenableFuture<?>> submitter)
+    /**
+     * Process a list of tasks as a single unit
+     * (similar to {@link com.google.common.util.concurrent.Futures#allAsList(ListenableFuture[])})
+     * with limiting the number of tasks running in parallel.
+     * <p>
+     * This method may be useful for limiting the number of concurrent requests sent to a remote server when
+     * trying to load multiple related entities concurrently:
+     * <p>
+     * For example:
+     * <pre>{@code
+     * List<Integer> userIds = Lists.of(1, 2, 3);
+     * ListenableFuture<List<UserInfo>> future = processAll(ids, client::getUserInfoById, 2, executor);
+     * List<UserInfo> userInfos = future.get(...);
+     * }</pre>
+     *
+     * @param tasks tasks to process
+     * @param submitter task submitter
+     * @param maxConcurrency maximum number of tasks allowed to run in parallel
+     * @param submitExecutor task submission executor
+     * @return {@link ListenableFuture} containing a list of values returned by the {@code tasks}.
+     * The order of elements in the list matches the order of {@code tasks}.
+     * If the result future is cancelled all the remaining tasks are cancelled (submitted tasks will be cancelled, pending tasks will not be submitted).
+     * If any of the submitted tasks fails or are cancelled, the result future is too.
+     * If any of the submitted tasks fails or are cancelled, the remaining tasks are cancelled.
+     */
+    public static <T, R> ListenableFuture<List<R>> processAll(List<T> tasks, Function<T, ListenableFuture<R>> submitter, int maxConcurrency, Executor submitExecutor)
+    {
+        SettableFuture<List<R>> resultFuture = SettableFuture.create();
+        AsyncSemaphore<T, R> semaphore = new AsyncSemaphore<>(maxConcurrency, submitExecutor, task -> {
+            if (resultFuture.isCancelled()) {
+                // Task cancellation tends to happen in task submission order, which can race with subsequent task submissions after previous cancellations.
+                // This eager check prevents this race from occurring, and can reduce the number of unnecessary submissions.
+                return immediateCancelledFuture();
+            }
+            return submitter.apply(task);
+        });
+        resultFuture.setFuture(allAsListWithCancellationOnFailure(tasks.stream()
+                .map(semaphore::submit)
+                .collect(toImmutableList())));
+        return resultFuture;
+    }
+
+    public AsyncSemaphore(int maxPermits, Executor submitExecutor, Function<T, ListenableFuture<R>> submitter)
     {
         checkArgument(maxPermits > 0, "must have at least one permit");
         this.maxPermits = maxPermits;
@@ -54,9 +100,9 @@ public class AsyncSemaphore<T>
         this.submitter = requireNonNull(submitter, "submitter is null");
     }
 
-    public ListenableFuture<Void> submit(T task)
+    public ListenableFuture<R> submit(T task)
     {
-        QueuedTask<T> queuedTask = new QueuedTask<>(task);
+        QueuedTask<T, R> queuedTask = new QueuedTask<>(task);
         queuedTasks.add(queuedTask);
         acquirePermit();
         return queuedTask.getCompletionFuture();
@@ -80,45 +126,32 @@ public class AsyncSemaphore<T>
 
     private void runNext()
     {
-        final QueuedTask<T> queuedTask = queuedTasks.poll();
-        ListenableFuture<?> future = submitTask(queuedTask.getTask());
-        FutureCallback<Object> callback = new FutureCallback<Object>()
-        {
-            @Override
-            public void onSuccess(Object result)
-            {
-                queuedTask.markCompleted();
-                releasePermit();
-            }
-
-            @Override
-            public void onFailure(Throwable t)
-            {
-                queuedTask.markFailure(t);
-                releasePermit();
-            }
-        };
-        Futures.addCallback(future, callback, directExecutor());
+        QueuedTask<T, R> queuedTask = queuedTasks.poll();
+        verify(queuedTask != null);
+        if (!queuedTask.getCompletionFuture().isDone()) {
+            queuedTask.setFuture(submitTask(queuedTask.getTask()));
+        }
+        queuedTask.getCompletionFuture().addListener(this::releasePermit, directExecutor());
     }
 
-    private ListenableFuture<?> submitTask(T task)
+    private ListenableFuture<R> submitTask(T task)
     {
         try {
-            ListenableFuture<?> future = submitter.apply(task);
+            ListenableFuture<R> future = submitter.apply(task);
             if (future == null) {
-                return Futures.immediateFailedFuture(new NullPointerException("Submitter returned a null future for task: " + task));
+                return immediateFailedFuture(new NullPointerException("Submitter returned a null future for task: " + task));
             }
             return future;
         }
         catch (Exception e) {
-            return Futures.immediateFailedFuture(e);
+            return immediateFailedFuture(e);
         }
     }
 
-    private static class QueuedTask<T>
+    private static class QueuedTask<T, R>
     {
         private final T task;
-        private final SettableFuture<Void> settableFuture = SettableFuture.create();
+        private final SettableFuture<R> settableFuture = SettableFuture.create();
 
         private QueuedTask(T task)
         {
@@ -130,17 +163,12 @@ public class AsyncSemaphore<T>
             return task;
         }
 
-        public void markFailure(Throwable throwable)
+        public void setFuture(ListenableFuture<R> future)
         {
-            settableFuture.setException(throwable);
+            settableFuture.setFuture(future);
         }
 
-        public void markCompleted()
-        {
-            settableFuture.set(null);
-        }
-
-        public ListenableFuture<Void> getCompletionFuture()
+        public ListenableFuture<R> getCompletionFuture()
         {
             return settableFuture;
         }

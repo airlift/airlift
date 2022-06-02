@@ -24,6 +24,7 @@ import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static io.airlift.concurrent.MoreFutures.addTimeout;
 import static io.airlift.concurrent.MoreFutures.allAsList;
+import static io.airlift.concurrent.MoreFutures.allAsListWithCancellationOnFailure;
 import static io.airlift.concurrent.MoreFutures.checkSuccess;
 import static io.airlift.concurrent.MoreFutures.failedFuture;
 import static io.airlift.concurrent.MoreFutures.firstCompletedFuture;
@@ -45,6 +46,7 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -716,6 +718,21 @@ public class TestMoreFutures
         assertFailure(() -> checkSuccess(SettableFuture.create(), "msg"), expect(IllegalArgumentException.class, "future not done yet"));
 
         assertFailure(() -> checkSuccess(null, "msg"), expect(NullPointerException.class, "future is null"));
+    }
+
+    @Test
+    public void testAllAsListWithCancellationOnFailure()
+    {
+        SettableFuture<Void> future1 = SettableFuture.create();
+        SettableFuture<Void> future2 = SettableFuture.create();
+        ListenableFuture<List<Void>> listFuture = allAsListWithCancellationOnFailure(ImmutableList.of(future1, future2));
+        assertThat(listFuture).isNotDone();
+        future1.setException(new RuntimeException("future failure"));
+        assertThat(listFuture)
+                .failsWithin(0, SECONDS)
+                .withThrowableOfType(ExecutionException.class)
+                .withMessageContaining("future failure");
+        assertThat(future2).isCancelled();
     }
 
     private static void assertGetUncheckedListenable(Function<ListenableFuture<Object>, Object> getter)
