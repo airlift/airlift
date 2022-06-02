@@ -1,5 +1,6 @@
 package io.airlift.concurrent;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.FluentFuture;
 import com.google.common.util.concurrent.FutureCallback;
@@ -616,6 +617,21 @@ public final class MoreFutures
         requireNonNull(exceptionCallback, "exceptionCallback is null");
 
         addExceptionCallback(future, t -> exceptionCallback.run(), executor);
+    }
+
+    /**
+     * Same as {@link com.google.common.util.concurrent.Futures#allAsList(ListenableFuture[])}, but additionally cancels any remaining component Futures
+     * if the result has already failed.
+     *
+     * @param futures futures to combine
+     * @return a future that provides a list of the results of the component futures
+     */
+    public static <V> ListenableFuture<List<V>> allAsListWithCancellationOnFailure(Iterable<? extends ListenableFuture<? extends V>> futures)
+    {
+        List<ListenableFuture<? extends V>> futuresSnapshot = ImmutableList.copyOf(futures);
+        ListenableFuture<List<V>> listFuture = Futures.allAsList(futuresSnapshot);
+        addExceptionCallback(listFuture, () -> futuresSnapshot.forEach(future -> future.cancel(true)));
+        return listFuture;
     }
 
     private static class UnmodifiableCompletableFuture<V>
