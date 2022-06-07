@@ -24,5 +24,5 @@ openssl x509 -req -days 9999 -in client.csr -CA ca.crt -CAkey ca.key -set_serial
 openssl pkcs12 -name client -inkey client.key -in client.crt -export -passout pass:airlift -out client.keystore
 
 # create client truststore
-keytool -import -noprompt -alias ca -file ca.crt -storetype pkcs12 -storepass airlift -keystore client.truststore
+keytool -import -noprompt -alias ca1 -file ca.crt -storetype pkcs12 -storepass airlift -keystore client.truststore
 
