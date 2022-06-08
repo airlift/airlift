@@ -1,13 +1,17 @@
 216
 
 - Remove dbpool module.
+- Trim whitespace when loading configuration of log levels.
+- Support Jersey programmatic resources.
+- Add SwitchModule.
+- Add AsyncSemaphore.processAll() method.
+- Regenerate testing certificates using secure crypto algorithms.
 
 215
 
 - Upgrade to MySQL Connector/J 8.0.22 in dbpool.
 - Remove Executed class from bootstrap module.
 - Add "bootstrap.quiet" configuration property.
-- Trim whitespace when loading configuration of log levels.
 
 214
 
