@@ -1,3 +1,7 @@
+217
+
+- Auto detect records for Jackson serialization
+
 216
 
 - Remove dbpool module.
