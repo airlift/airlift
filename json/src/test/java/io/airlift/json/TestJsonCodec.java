@@ -31,6 +31,8 @@ import static com.fasterxml.jackson.core.StreamReadConstraints.DEFAULT_MAX_STRIN
 import static io.airlift.json.JsonCodec.jsonCodec;
 import static io.airlift.json.JsonCodec.listJsonCodec;
 import static io.airlift.json.JsonCodec.mapJsonCodec;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
@@ -258,6 +260,35 @@ public class TestJsonCodec
         assertFalse(jsonCodec.toJsonWithLengthLimit(people, 5000).isPresent());
         assertFalse(jsonCodec.toJsonWithLengthLimit(people, 10381).isPresent());
         assertTrue(jsonCodec.toJsonWithLengthLimit(people, 10382).isPresent());
+    }
+
+    @Test
+    public void testTrailingContent()
+    {
+        JsonCodec<ImmutablePerson> codec = jsonCodec(ImmutablePerson.class);
+
+        String json = "{\"name\":\"Me\",\"rocks\":true}";
+        assertEquals(codec.fromJson(json).getName(), "Me");
+
+        String jsonWithTrailingContent = json + " trailer";
+        assertThatThrownBy(() -> codec.fromJson(jsonWithTrailingContent))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Invalid JSON string for [simple type, class io.airlift.json.ImmutablePerson]")
+                .hasStackTraceContaining("Unrecognized token 'trailer': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')");
+
+        assertThatThrownBy(() -> codec.fromJson(jsonWithTrailingContent.getBytes(UTF_8)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Invalid JSON bytes for [simple type, class io.airlift.json.ImmutablePerson]")
+                .hasStackTraceContaining("Unrecognized token 'trailer': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')");
+
+        String jsonWithTrailingJsonContent = json + " \"valid json value\"";
+        assertThatThrownBy(() -> codec.fromJson(jsonWithTrailingJsonContent))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Found characters after the expected end of input");
+
+        assertThatThrownBy(() -> codec.fromJson(jsonWithTrailingJsonContent.getBytes(UTF_8)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Found characters after the expected end of input");
     }
 
     @Test

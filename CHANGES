@@ -1,3 +1,9 @@
+247
+
+- Fail decoding with JsonCodec when content is not single JSON value.
+  Previously the codec decoded first JSON value only, ignoring the rest
+  of the payload.
+
 246
 
 - Exclude getter-like record methods from JSON serialization
