@@ -1,13 +1,18 @@
 package io.airlift.log;
 
 import com.google.common.annotations.VisibleForTesting;
+import io.airlift.units.Duration;
 import org.weakref.jmx.Managed;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.ErrorManager;
@@ -17,6 +22,7 @@ import java.util.logging.LogRecord;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.logging.ErrorManager.CLOSE_FAILURE;
 import static java.util.logging.ErrorManager.FLUSH_FAILURE;
 import static java.util.logging.ErrorManager.FORMAT_FAILURE;
@@ -25,20 +31,37 @@ import static java.util.logging.ErrorManager.WRITE_FAILURE;
 class BufferedHandler
         extends Handler
 {
+    private static final Logger log = Logger.get(BufferedHandler.class);
     private static final int MAX_BATCH_COUNT = 1024;
     private static final byte[] POISON_MESSAGE = new byte[0];
+    private static final int MIN_WAIT_MILLIS = 100;
+    private static final int MAX_WAIT_MILLIS = 360000;
+    private static final int MAX_RETRY_BATCH_COUNT = 8192;
 
     private final MessageOutput messageOutput;
     private final Thread thread;
+    private final ScheduledExecutorService scheduler =
+            Executors.newScheduledThreadPool(1);
+    private ScheduledFuture<?> retrySchedule;
     private final BlockingQueue<byte[]> queue = new ArrayBlockingQueue<>(MAX_BATCH_COUNT);
+    private BlockingQueue<byte[]> retryQueue = new ArrayBlockingQueue<>(MAX_BATCH_COUNT);
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicLong droppedMessages = new AtomicLong(0);
+    private final AtomicLong retryMessages = new AtomicLong(0);
+    private AtomicLong initialDelay = new AtomicLong(100);
+    private final ExponentialBackOff errorBackOff;
 
     public BufferedHandler(MessageOutput messageOutput, Formatter formatter, ErrorManager errorManager)
     {
         this.messageOutput = requireNonNull(messageOutput, "messageOutput is null");
         setErrorManager(requireNonNull(errorManager, "errorManager is null"));
         setFormatter(requireNonNull(formatter, "formatter is null"));
+        errorBackOff = new ExponentialBackOff(
+                new Duration(MIN_WAIT_MILLIS, MILLISECONDS),
+                new Duration(MAX_WAIT_MILLIS, MILLISECONDS),
+                "Log TCP listener is up",
+                "Log TCP listener is down",
+                log);
 
         thread = new Thread(this::logging);
         thread.setName("log-writer");
@@ -165,7 +188,28 @@ class BufferedHandler
 
             logMessageBatch(batch);
             batch.clear();
+
+            if (!retryQueue.isEmpty() && (retrySchedule == null || retrySchedule.isCancelled())) {
+                retrySchedule = scheduler.schedule(this::processRetryQueue, initialDelay.get(), MILLISECONDS);
+            }
         }
+    }
+
+    private void processRetryQueue()
+    {
+        boolean isSuccess = logRetryMessageBatch();
+        if (isSuccess) {
+            errorBackOff.success();
+            initialDelay = new AtomicLong(100);
+            if (retryQueue.size() == 0) {
+                retryQueue = new ArrayBlockingQueue<>(MAX_BATCH_COUNT);
+            }
+        }
+        else {
+            initialDelay = new AtomicLong(errorBackOff.failed().toMillis());
+            log.warn("Processing log records to TCP listener failed. Next retry will happen in %sms", initialDelay);
+        }
+        retrySchedule.cancel(true);
     }
 
     private synchronized void logMessageBatch(List<byte[]> batch)
@@ -175,11 +219,41 @@ class BufferedHandler
                 messageOutput.writeMessage(message);
             }
             catch (Exception e) {
+                boolean isSuccess = offerUninterruptibly(retryQueue, message);
+                if (!isSuccess && retryQueue.remainingCapacity() == 0 && retryQueue.size() < MAX_RETRY_BATCH_COUNT) {
+                    retryQueue = new ArrayBlockingQueue<>(2 * retryQueue.size(), false, retryQueue);
+                    isSuccess = offerUninterruptibly(retryQueue, message);
+                }
+                if (isSuccess) {
+                    retryMessages.getAndIncrement();
+                }
+                else {
+                    droppedMessages.getAndIncrement();
+                }
                 reportError(null, e, WRITE_FAILURE);
             }
         }
         // always flush at the end of a batch, so logs aren't delayed
         flush();
+    }
+
+    private synchronized boolean logRetryMessageBatch()
+    {
+        boolean success = true;
+        for (Iterator<byte[]> it = retryQueue.iterator(); it.hasNext(); ) {
+            try {
+                messageOutput.writeMessage(it.next());
+                it.remove();
+            }
+            catch (Exception e) {
+                reportError(null, e, WRITE_FAILURE);
+                success = false;
+                break;
+            }
+        }
+        // always flush at the end of a batch, so logs aren't delayed
+        flush();
+        return success;
     }
 
     private static <T> void putUninterruptibly(BlockingQueue<T> queue, T element)
@@ -203,6 +277,18 @@ class BufferedHandler
         }
     }
 
+    private static <T> boolean offerUninterruptibly(BlockingQueue<T> queue, T element)
+    {
+        boolean isSuccess = false;
+        try {
+            isSuccess = queue.offer(element, 10, MILLISECONDS);
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        return isSuccess;
+    }
+
     private static int getPoisonMessageIndex(List<byte[]> messages)
     {
         for (int i = 0; i < messages.size(); i++) {
@@ -217,5 +303,11 @@ class BufferedHandler
     public long getDroppedMessages()
     {
         return droppedMessages.get();
+    }
+
+    @Managed
+    public long getRetryMessages()
+    {
+        return retryMessages.get();
     }
 }

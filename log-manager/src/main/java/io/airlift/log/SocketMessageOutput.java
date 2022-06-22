@@ -84,7 +84,7 @@ public class SocketMessageOutput
             throw new IOException("Exception caught connecting via socket to " + socketAddress.getHostName()
                     + " on port " + socketAddress.getPort() + ". "
                     + "There were " + connectionFailures + " failures attempting to write the log message. "
-                    + (connectionFailures == MAX_WRITE_ATTEMPTS_PER_MESSAGE ? "The log message was likely dropped." : "The log message was sent."), lastException);
+                    + (connectionFailures == MAX_WRITE_ATTEMPTS_PER_MESSAGE ? "The log message will be retried." : "The log message was sent."), lastException);
         }
     }
 
