@@ -156,8 +156,6 @@ public final class Announcer
 
                 // wait 80% of the suggested delay
                 expectedDelay = new Duration(expectedDelay.toMillis() * 0.8, MILLISECONDS);
-                log.debug("Service announcement succeeded after %s. Next request will happen within %s", Duration.nanosSince(requestStart), expectedDelay);
-
                 scheduleNextAnnouncement(expectedDelay);
             }
 
@@ -165,8 +163,6 @@ public final class Announcer
             public void onFailure(Throwable t)
             {
                 Duration duration = errorBackOff.failed(t);
-                // todo this is a duplicate log message and should be remove after root cause of announcement delay is determined
-                log.error("Service announcement failed after %s. Next request will happen within %s", Duration.nanosSince(requestStart), expectedDelay);
                 scheduleNextAnnouncement(duration);
             }
         }, executor);

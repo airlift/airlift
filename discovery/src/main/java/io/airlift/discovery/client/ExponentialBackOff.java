@@ -11,11 +11,15 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 class ExponentialBackOff
 {
+    private static final long ERROR_LOGGING_DELAY_NANOS = MILLISECONDS.toNanos(500);
+
     private final long initialWait;
     private final long maxWait;
     private final String serverUpMessage;
     private final String serverDownMessage;
     private final Logger log;
+
+    private final long requestStart = System.nanoTime();
 
     @GuardedBy("this")
     private boolean serverUp = true;
@@ -46,8 +50,11 @@ class ExponentialBackOff
     public synchronized Duration failed(Throwable t)
     {
         if (serverUp) {
-            serverUp = false;
-            log.error(t, serverDownMessage);
+            // skip logging until 500ms has passed
+            if ((System.nanoTime() - requestStart) >= ERROR_LOGGING_DELAY_NANOS) {
+                serverUp = false;
+                log.error(t, serverDownMessage);
+            }
         }
 
         if (currentWaitInMillis <= 0) {
