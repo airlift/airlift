@@ -21,6 +21,9 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 public class HttpsConfig
 {
     private int httpsPort = 8443;
+
+    private String httpsProvider;
+    private String httpsProtocol = "TLS";
     private String keystorePath;
     private String keystorePassword;
     private String keyManagerPassword;
@@ -45,6 +48,30 @@ public class HttpsConfig
     public HttpsConfig setHttpsPort(int httpsPort)
     {
         this.httpsPort = httpsPort;
+        return this;
+    }
+
+    public String getHttpsProvider()
+    {
+        return httpsProvider;
+    }
+
+    @Config("http-server.https.provider")
+    public HttpsConfig setHttpsProvider(String httpsProvider)
+    {
+        this.httpsProvider = httpsProvider;
+        return this;
+    }
+
+    public String getHttpsProtocol()
+    {
+        return httpsProtocol;
+    }
+
+    @Config("http-server.https.protocol")
+    public HttpsConfig setHttpsProtocol(String httpsProtocol)
+    {
+        this.httpsProtocol = httpsProtocol;
         return this;
     }
 
