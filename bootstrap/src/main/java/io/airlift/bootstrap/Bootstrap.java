@@ -215,7 +215,7 @@ public class Bootstrap
         }
 
         // Register configuration classes defined in the modules
-        configurationFactory.registerConfigurationClasses(modules);
+        errors.addAll(configurationFactory.registerConfigurationClasses(modules));
 
         // Validate configuration classes
         errors.addAll(configurationFactory.validateRegisteredConfigurationProvider());
