@@ -14,7 +14,6 @@
 package io.airlift.bootstrap;
 
 import com.google.inject.Binder;
-import com.google.inject.CreationException;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Module;
@@ -24,7 +23,6 @@ import io.airlift.configuration.ConfigurationAwareModule;
 import org.testng.annotations.Test;
 
 import static com.google.inject.name.Names.named;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
@@ -51,9 +49,9 @@ public class TestConfigurationAwareModule
         Bootstrap bootstrap = new Bootstrap(new BrokenInstallModule())
                 .doNotInitializeLogging();
 
-        assertThatThrownBy(bootstrap::initialize).isInstanceOfSatisfying(CreationException.class, e ->
-                assertThat(e.getErrorMessages()).hasOnlyOneElementSatisfying(m ->
-                        assertThat(m.getMessage()).endsWith("Use super.install() for ConfigurationAwareModule, not binder.install()")));
+        assertThatThrownBy(bootstrap::initialize)
+                .isInstanceOf(ApplicationConfigurationException.class)
+                .hasMessageContaining("Use super.install() for ConfigurationAwareModule, not binder.install()");
     }
 
     @Test

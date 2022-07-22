@@ -81,6 +81,41 @@ public class TestBootstrap
                 .initialize();
     }
 
+    @Test
+    public void testUserErrorsReported()
+    {
+        Bootstrap bootstrap = new Bootstrap(binder -> {
+            throw new RuntimeException("happy user error");
+        });
+
+        assertThatThrownBy(bootstrap::initialize)
+                .isInstanceOfSatisfying(ApplicationConfigurationException.class, e -> {
+                    assertThat(e.getErrors().stream().map(Message::getMessage)).containsExactly(
+                            "An exception was caught and reported. Message: happy user error");
+                    // also check stacktrace printout
+                    assertThat(e).hasStackTraceContaining("An exception was caught and reported. Message: happy user error");
+                });
+    }
+
+    @Test
+    public void testUserErrorsReportedWithConfigurationProblem()
+    {
+        Bootstrap bootstrap = new Bootstrap(binder -> {
+            throw new RuntimeException("happy user error");
+        })
+                .setRequiredConfigurationProperty("test-required", "foo");
+
+        assertThatThrownBy(bootstrap::initialize)
+                .isInstanceOfSatisfying(ApplicationConfigurationException.class, e -> {
+                    assertThat(e.getErrors().stream().map(Message::getMessage)).containsExactlyInAnyOrder(
+                            "Configuration property 'test-required' was not used",
+                            "An exception was caught and reported. Message: happy user error");
+                    // also check stacktrace printout
+                    assertThat(e).hasStackTraceContaining("Configuration property 'test-required' was not used");
+                    assertThat(e).hasStackTraceContaining("An exception was caught and reported. Message: happy user error");
+                });
+    }
+
     public static class Instance {}
 
     public static class InstanceA

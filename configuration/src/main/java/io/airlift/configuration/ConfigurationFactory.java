@@ -149,14 +149,23 @@ public class ConfigurationFactory
     }
 
     /**
-     * Registers all configuration classes in the module so they can be part of configuration inspection.
+     * Registers all configuration classes in the module, so they can be part
+     * of configuration inspection.
+     *
+     * @return A collection of Guice errors encountered
      */
-    public void registerConfigurationClasses(Module module)
+    public Collection<Message> registerConfigurationClasses(Module module)
     {
-        registerConfigurationClasses(ImmutableList.of(module));
+        return registerConfigurationClasses(ImmutableList.of(module));
     }
 
-    public void registerConfigurationClasses(Collection<? extends Module> modules)
+    /**
+     * Registers all configuration classes in the modules, so they can be part
+     * of configuration inspection.
+     *
+     * @return A collection of Guice errors encountered
+     */
+    public Collection<Message> registerConfigurationClasses(Collection<? extends Module> modules)
     {
         // some modules need access to configuration factory so they can lazy register additional config classes
         // initialize configuration factory
@@ -164,6 +173,8 @@ public class ConfigurationFactory
                 .filter(ConfigurationAwareModule.class::isInstance)
                 .map(ConfigurationAwareModule.class::cast)
                 .forEach(module -> module.setConfigurationFactory(this));
+
+        List<Message> errors = new ArrayList<>();
 
         for (Element element : Elements.getElements(modules)) {
             element.acceptVisitor(new DefaultElementVisitor<Void>()
@@ -195,8 +206,17 @@ public class ConfigurationFactory
                     }
                     return null;
                 }
+
+                @Override
+                public Void visit(Message error)
+                {
+                    errors.add(error);
+                    return null;
+                }
             });
         }
+
+        return errors;
     }
 
     void registerConfigurationProvider(ConfigurationProvider<?> configurationProvider, Optional<Object> bindingSource)
