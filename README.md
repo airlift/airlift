@@ -25,7 +25,7 @@ Airlift takes the best-of-breed libraries from the Java ecosystem and glues them
 - TBD - Discovery
 - TBD - Events
 - TBD - HTTP server
-- TBD - HTTP client
+- [HTTP client](http-client/README.md)
 - TBD - Packaging
 - TBD - Logging
 - TBD - Tracing
