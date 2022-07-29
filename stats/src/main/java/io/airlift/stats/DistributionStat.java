@@ -31,6 +31,14 @@ public class DistributionStat
         allTime.add(value);
     }
 
+    public void add(long value, long count)
+    {
+        oneMinute.add(value, count);
+        fiveMinutes.add(value, count);
+        fifteenMinutes.add(value, count);
+        allTime.add(value, count);
+    }
+
     @Managed
     @Nested
     public Distribution getOneMinute()
