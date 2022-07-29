@@ -1,3 +1,7 @@
+218
+
+- Add method add(value, count) to the DistributionStat.
+
 217
 
 - Auto detect records for Jackson serialization
