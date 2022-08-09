@@ -1,6 +1,7 @@
 218
 
 - Add method add(value, count) to the DistributionStat.
+- Update to Byte Buddy 1.12.13.
 
 217
 
