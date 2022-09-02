@@ -81,6 +81,7 @@
         <module>log-manager</module>
         <module>node</module>
         <module>packaging</module>
+        <module>random</module>
         <module>security</module>
         <module>security-jwks</module>
         <module>stats</module>

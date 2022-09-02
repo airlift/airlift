@@ -1,3 +1,7 @@
+219
+
+- Add WeightedRandomSelector for randomized selection of elements from a collection.
+
 218
 
 - Add method add(value, count) to the DistributionStat.
