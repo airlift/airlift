@@ -13,7 +13,6 @@
  */
 package io.airlift.http.client;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.net.HostAndPort;
 import org.eclipse.jetty.proxy.ConnectHandler;
 import org.eclipse.jetty.proxy.ProxyServlet;
@@ -28,8 +27,11 @@ public class TestingHttpProxy
     public TestingHttpProxy(Optional<String> keystore)
             throws Exception
     {
-        ProxyServlet servlet = new ProxyServlet();
-        this.server = new TestingHttpServer(keystore, servlet, httpConfiguration -> httpConfiguration.setSendDateHeader(false), ImmutableList.of(new ConnectHandler()));
+        this.server = new TestingHttpServer(
+                keystore,
+                new ProxyServlet(),
+                config -> config.setSendDateHeader(false),
+                Optional.of(new ConnectHandler()));
     }
 
     public HostAndPort getHostAndPort()
