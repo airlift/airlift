@@ -1,6 +1,7 @@
 219
 
-- Report errors thrown from Guice modules during bootstraping together with errors from config validator.
+- Report errors thrown from Guice modules during bootstraping together
+  with errors from config validator.
 
 218
 
