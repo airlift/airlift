@@ -137,9 +137,11 @@
             <artifactId>jmx-http</artifactId>
         </dependency>
 
+        <!-- used by tests but also needed transitively -->
         <dependency>
             <groupId>io.airlift</groupId>
             <artifactId>http-client</artifactId>
+            <scope>runtime</scope>
         </dependency>
 
         <!-- for testing -->
