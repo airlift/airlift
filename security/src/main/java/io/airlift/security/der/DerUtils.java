@@ -313,7 +313,7 @@ public final class DerUtils
         return out.toByteArray();
     }
 
-    public static byte[] encodeContextSpecificSequence(int tag, byte[]...encodedValues)
+    public static byte[] encodeContextSpecificSequence(int tag, byte[]... encodedValues)
     {
         checkArgument(tag >= 0 && tag < 32, "Invalid tag: %s", tag);
         requireNonNull(encodedValues, "body is null");
