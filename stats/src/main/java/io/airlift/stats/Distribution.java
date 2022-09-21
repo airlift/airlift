@@ -2,7 +2,6 @@ package io.airlift.stats;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableList;
 import org.weakref.jmx.Managed;
 
 import javax.annotation.concurrent.GuardedBy;
@@ -19,8 +18,9 @@ import static java.util.Objects.requireNonNull;
 @ThreadSafe
 public class Distribution
 {
+    private final double alpha;
     @GuardedBy("this")
-    private final DecayTDigest digest;
+    private DecayTDigest digest;
 
     private final DecayCounter total;
 
@@ -31,11 +31,12 @@ public class Distribution
 
     public Distribution(double alpha)
     {
-        this(new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha), new DecayCounter(alpha));
+        this(alpha, new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha), new DecayCounter(alpha));
     }
 
-    private Distribution(DecayTDigest digest, DecayCounter total)
+    private Distribution(double alpha, DecayTDigest digest, DecayCounter total)
     {
+        this.alpha = alpha;
         this.digest = requireNonNull(digest, "digest is null");
         this.total = requireNonNull(total, "total is null");
     }
@@ -54,7 +55,14 @@ public class Distribution
 
     public synchronized Distribution duplicate()
     {
-        return new Distribution(digest.duplicate(), total.duplicate());
+        return new Distribution(alpha, digest.duplicate(), total.duplicate());
+    }
+
+    @Managed
+    public synchronized void reset()
+    {
+        total.reset();
+        digest = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
     }
 
     @Managed
@@ -169,7 +177,7 @@ public class Distribution
 
     public synchronized DistributionSnapshot snapshot()
     {
-        List<Double> quantiles = digest.valuesAt(ImmutableList.of(0.01, 0.05, 0.10, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99));
+        List<Double> quantiles = digest.valuesAt(List.of(0.01, 0.05, 0.10, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99));
         return new DistributionSnapshot(
                 getCount(),
                 getTotal(),

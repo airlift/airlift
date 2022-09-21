@@ -141,6 +141,15 @@ public class TimeStat
                 getAllTime().snapshot());
     }
 
+    @Managed
+    public void reset()
+    {
+        oneMinute.reset();
+        fiveMinutes.reset();
+        fifteenMinutes.reset();
+        allTime.reset();
+    }
+
     public static class TimeDistributionStatSnapshot
     {
         private final TimeDistributionSnapshot oneMinute;
