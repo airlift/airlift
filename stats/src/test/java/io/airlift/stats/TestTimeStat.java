@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import static com.google.common.math.DoubleMath.fuzzyEquals;
 import static java.lang.Math.min;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
@@ -68,6 +69,37 @@ public class TestTimeStat
         assertPercentile("tp75", allTime.getP75(), values, 0.75);
         assertPercentile("tp90", allTime.getP90(), values, 0.90);
         assertPercentile("tp99", allTime.getP99(), values, 0.99);
+    }
+
+    @Test
+    public void testReset()
+    {
+        TimeStat stat = new TimeStat();
+        for (long value = 0; value < VALUES; value++) {
+            stat.add(value, TimeUnit.MILLISECONDS);
+        }
+
+        assertEquals(stat.getAllTime().getCount(), (double) VALUES);
+        assertEquals(stat.getOneMinute().getCount(), (double) VALUES);
+        assertEquals(stat.getFiveMinutes().getCount(), (double) VALUES);
+        assertEquals(stat.getFifteenMinutes().getCount(), (double) VALUES);
+
+        assertNotEquals(stat.getAllTime().getAvg(), Double.NaN);
+        assertNotEquals(stat.getOneMinute().getAvg(), Double.NaN);
+        assertNotEquals(stat.getFiveMinutes().getAvg(), Double.NaN);
+        assertNotEquals(stat.getFifteenMinutes().getAvg(), Double.NaN);
+
+        stat.reset();
+
+        assertEquals(stat.getAllTime().getCount(), 0D);
+        assertEquals(stat.getOneMinute().getCount(), 0D);
+        assertEquals(stat.getFiveMinutes().getCount(), 0D);
+        assertEquals(stat.getFifteenMinutes().getCount(), 0D);
+
+        assertEquals(stat.getAllTime().getAvg(), Double.NaN);
+        assertEquals(stat.getOneMinute().getAvg(), Double.NaN);
+        assertEquals(stat.getFiveMinutes().getAvg(), Double.NaN);
+        assertEquals(stat.getFifteenMinutes().getAvg(), Double.NaN);
     }
 
     @Test

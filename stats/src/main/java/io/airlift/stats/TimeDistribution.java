@@ -18,8 +18,9 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class TimeDistribution
 {
+    private final double alpha;
     @GuardedBy("this")
-    private final DecayTDigest digest;
+    private DecayTDigest digest;
     @GuardedBy("this")
     private final DecayCounter total;
     private final TimeUnit unit;
@@ -31,11 +32,7 @@ public class TimeDistribution
 
     public TimeDistribution(TimeUnit unit)
     {
-        requireNonNull(unit, "unit is null");
-
-        digest = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, 0);
-        total = new DecayCounter(0);
-        this.unit = unit;
+        this(0, unit);
     }
 
     public TimeDistribution(double alpha)
@@ -46,7 +43,7 @@ public class TimeDistribution
     public TimeDistribution(double alpha, TimeUnit unit)
     {
         requireNonNull(unit, "unit is null");
-
+        this.alpha = alpha;
         digest = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
         total = new DecayCounter(alpha);
         this.unit = unit;
@@ -149,7 +146,7 @@ public class TimeDistribution
 
     private double convertToUnit(double nanos)
     {
-        return nanos * 1.0 / unit.toNanos(1);
+        return nanos / unit.toNanos(1);
     }
 
     public TimeDistributionSnapshot snapshot()
@@ -165,6 +162,13 @@ public class TimeDistribution
                 getMax(),
                 getAvg(),
                 getUnit());
+    }
+
+    @Managed
+    public synchronized void reset()
+    {
+        total.reset();
+        digest = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
     }
 
     public static class TimeDistributionSnapshot
