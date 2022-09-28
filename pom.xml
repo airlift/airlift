@@ -25,7 +25,7 @@
         <air.check.skip-license>true</air.check.skip-license>
         <air.javadoc.lint>all,-missing</air.javadoc.lint>
 
-        <project.build.targetJdk>11</project.build.targetJdk>
+        <project.build.targetJdk>17</project.build.targetJdk>
         <air.modernizer.java-version>8</air.modernizer.java-version>
 
         <dep.airlift.version>220-SNAPSHOT</dep.airlift.version>
