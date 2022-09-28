@@ -144,10 +144,21 @@ public class TestTimeStat
             return null;
         });
 
+        try {
+            stat.time(() -> {
+                ticker.increment(20, TimeUnit.MILLISECONDS);
+                throw new Exception("thrown by time");
+            });
+            fail("Exception should have been thrown");
+        }
+        catch (Exception e) {
+            assertEquals(e.getMessage(), "thrown by time");
+        }
+
         TimeDistribution allTime = stat.getAllTime();
-        assertEquals(allTime.getCount(), 1.0);
+        assertEquals(allTime.getCount(), 2.0);
         assertEquals(allTime.getMin(), 0.010);
-        assertEquals(allTime.getMax(), 0.010);
+        assertEquals(allTime.getMax(), 0.020);
     }
 
     @Test
