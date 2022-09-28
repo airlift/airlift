@@ -29,6 +29,7 @@ import static com.google.common.math.DoubleMath.fuzzyEquals;
 import static java.lang.Math.min;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotEquals;
+import static org.testng.Assert.assertThrows;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
@@ -69,6 +70,23 @@ public class TestTimeStat
         assertPercentile("tp75", allTime.getP75(), values, 0.75);
         assertPercentile("tp90", allTime.getP90(), values, 0.90);
         assertPercentile("tp99", allTime.getP99(), values, 0.99);
+    }
+
+    @Test
+    public void testAddIllegalDoubles()
+    {
+        TimeStat stat = new TimeStat();
+
+        assertThrows(IllegalArgumentException.class, () -> stat.add(-1.0, TimeUnit.MILLISECONDS));
+        assertThrows(IllegalArgumentException.class, () -> stat.add(Double.NaN, TimeUnit.MILLISECONDS));
+        assertThrows(IllegalArgumentException.class, () -> stat.add(Double.POSITIVE_INFINITY, TimeUnit.MILLISECONDS));
+        assertThrows(IllegalArgumentException.class, () -> stat.add(Double.NEGATIVE_INFINITY, TimeUnit.MILLISECONDS));
+        assertThrows(IllegalArgumentException.class, () -> stat.add(1.0d / 0.0d, TimeUnit.MILLISECONDS));
+
+        stat.add(0.0, TimeUnit.MILLISECONDS); // 0.0 is valid
+        assertEquals(stat.getAllTime().getCount(), 1.0);
+        assertEquals(stat.getAllTime().getMin(), 0.0);
+        assertEquals(stat.getAllTime().getMax(), 0.0);
     }
 
     @Test
@@ -156,6 +174,21 @@ public class TestTimeStat
         TimeDistribution allTime = stat.getAllTime();
         assertEquals(allTime.getMin(), 1000.0);
         assertEquals(allTime.getMax(), 1000.0);
+    }
+
+    @Test
+    public void testAddNanos()
+    {
+        TimeStat stat = new TimeStat(ticker, TimeUnit.NANOSECONDS);
+        stat.add(1, TimeUnit.MILLISECONDS);
+        stat.addNanos(1L);
+
+        TimeDistribution allTime = stat.getAllTime();
+        assertEquals(allTime.getMin(), 1.0);
+        assertEquals(allTime.getMax(), 1000000.0);
+        assertEquals(allTime.getCount(), 2.0);
+
+        assertThrows(IllegalArgumentException.class, () -> stat.addNanos(-1));
     }
 
     private static void assertPercentile(String name, double value, List<Long> values, double percentile)
