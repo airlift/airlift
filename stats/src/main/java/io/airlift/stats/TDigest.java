@@ -37,6 +37,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.MoreCollectors.onlyElement;
 import static java.lang.Double.isInfinite;
 import static java.lang.Double.isNaN;
+import static java.lang.Math.toIntExact;
 import static java.util.Collections.nCopies;
 import static java.util.Objects.requireNonNull;
 
@@ -46,7 +47,7 @@ public class TDigest
     public static final double DEFAULT_COMPRESSION = 100;
 
     private static final int FORMAT_TAG = 0;
-    private static final int T_DIGEST_SIZE = ClassLayout.parseClass(TDigest.class).instanceSize();
+    private static final int T_DIGEST_SIZE = toIntExact(ClassLayout.parseClass(TDigest.class).instanceSize());
     private static final int INITIAL_CAPACITY = 1;
     private static final int FUDGE_FACTOR = 10;
 

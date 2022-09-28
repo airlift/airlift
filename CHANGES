@@ -3,6 +3,8 @@
 - Report errors thrown from Guice modules during bootstraping together
   with errors from config validator.
 - Update to Jetty 9.4.49.v20220914.
+- Upgrade to Airbase 130.
+- Upgrade to JOL 0.16 in stats.
 
 218
 

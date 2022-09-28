@@ -40,7 +40,7 @@ import static java.util.Comparator.comparingInt;
 final class SparseHll
         implements HllInstance
 {
-    private static final int SPARSE_INSTANCE_SIZE = ClassLayout.parseClass(SparseHll.class).instanceSize();
+    private static final int SPARSE_INSTANCE_SIZE = toIntExact(ClassLayout.parseClass(SparseHll.class).instanceSize());
 
     // 6 bits to encode the number of zeros after the truncated hash
     // and be able to fit the encoded value in an integer
