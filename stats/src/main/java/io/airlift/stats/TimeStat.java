@@ -93,9 +93,12 @@ public class TimeStat
             throws Exception
     {
         long start = ticker.read();
-        T result = callable.call();
-        addNanos(ticker.read() - start);
-        return result;
+        try {
+            return callable.call();
+        }
+        finally {
+            addNanos(ticker.read() - start);
+        }
     }
 
     public BlockTimer time()
