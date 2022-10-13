@@ -22,9 +22,11 @@ import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.logging.LogManager;
 
 import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
@@ -147,5 +149,19 @@ public class TestLogging
         assertTrue(logger.isDebugEnabled());
         logging.clearLevel("testClearLevel");
         assertFalse(logger.isDebugEnabled());
+    }
+
+    @Test
+    public void testReconfigure()
+    {
+        LoggingConfiguration configuration = new LoggingConfiguration();
+        configuration.setLogPath(new File(tempDir, "reconfigure.log").getPath());
+        Logging logging = Logging.initialize();
+        logging.configure(configuration);
+        java.util.logging.Logger root = java.util.logging.Logger.getLogger("");
+        int configuredHandlerCount = root.getHandlers().length;
+
+        logging.configure(configuration);
+        assertEquals( root.getHandlers().length, configuredHandlerCount);
     }
 }
