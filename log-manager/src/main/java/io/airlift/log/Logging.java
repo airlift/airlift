@@ -81,15 +81,22 @@ public class Logging
 
     private Logging()
     {
-        ROOT.setLevel(Level.INFO.toJulLevel());
+        resetConfiguration();
+        log.info("Logging to stderr");
+
+        redirectStdStreams();
+    }
+
+    private void resetConfiguration()
+    {
+        // Reset named loggers, remove their handlers, and reset root to INFO
+        LogManager.getLogManager().reset();
+
         for (Handler handler : ROOT.getHandlers()) {
             ROOT.removeHandler(handler);
         }
 
         enableConsole();
-        log.info("Logging to stderr");
-
-        redirectStdStreams();
     }
 
     private static void redirectStdStreams()
@@ -209,6 +216,8 @@ public class Logging
                 throw new UncheckedIOException(e);
             }
         }
+
+        resetConfiguration();
 
         if (config.getLogPath() != null) {
             if (config.getLogPath().startsWith("tcp://")) {

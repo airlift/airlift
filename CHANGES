@@ -1,3 +1,7 @@
+220
+
+- Fix duplicate logging appender when re-configuring logging.
+
 219
 
 - Report errors thrown from Guice modules during bootstraping together
