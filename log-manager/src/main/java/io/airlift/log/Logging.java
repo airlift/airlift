@@ -100,7 +100,7 @@ public class Logging
 
     private synchronized void enableConsole()
     {
-        consoleHandler = new OutputStreamHandler(System.err);
+        consoleHandler = new OutputStreamHandler(stdErr);
         ROOT.addHandler(consoleHandler);
     }
 
