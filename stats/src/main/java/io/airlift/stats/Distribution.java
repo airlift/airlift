@@ -7,17 +7,27 @@ import org.weakref.jmx.Managed;
 import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.ThreadSafe;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static com.google.common.base.Verify.verify;
 import static java.util.Objects.requireNonNull;
 
 @ThreadSafe
 public class Distribution
 {
+    private static final double[] SNAPSHOT_QUANTILES = new double[]{0.01, 0.05, 0.10, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99};
+    private static final double[] PERCENTILES;
+
+    static {
+        PERCENTILES = new double[100];
+        for (int i = 0; i < 100; ++i) {
+            PERCENTILES[i] = (i / 100.0);
+        }
+    }
+
     private final double alpha;
     @GuardedBy("this")
     private DecayTDigest digest;
@@ -152,19 +162,16 @@ public class Distribution
     @Managed
     public Map<Double, Double> getPercentiles()
     {
-        List<Double> percentiles = new ArrayList<>(100);
-        for (int i = 0; i < 100; ++i) {
-            percentiles.add(i / 100.0);
-        }
-
-        List<Double> values;
+        double[] values;
         synchronized (this) {
-            values = digest.valuesAt(percentiles);
+            values = digest.valuesAt(PERCENTILES);
         }
 
-        Map<Double, Double> result = new LinkedHashMap<>(values.size());
-        for (int i = 0; i < percentiles.size(); ++i) {
-            result.put(percentiles.get(i), values.get(i));
+        verify(values.length == PERCENTILES.length, "result length mismatch");
+
+        Map<Double, Double> result = new LinkedHashMap<>(values.length);
+        for (int i = 0; i < values.length; ++i) {
+            result.put(PERCENTILES[i], values[i]);
         }
 
         return result;
@@ -175,24 +182,41 @@ public class Distribution
         return digest.valuesAt(percentiles);
     }
 
-    public synchronized DistributionSnapshot snapshot()
+    public synchronized double[] getPercentiles(double... percentiles)
     {
-        List<Double> quantiles = digest.valuesAt(List.of(0.01, 0.05, 0.10, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99));
+        return digest.valuesAt(percentiles);
+    }
+
+    public DistributionSnapshot snapshot()
+    {
+        double totalCount;
+        double digestCount;
+        double min;
+        double max;
+        double[] quantiles;
+        synchronized (this) {
+            totalCount = total.getCount();
+            digestCount = digest.getCount();
+            min = digest.getMin();
+            max = digest.getMax();
+            quantiles = digest.valuesAt(SNAPSHOT_QUANTILES);
+        }
+        double average = totalCount / digestCount;
         return new DistributionSnapshot(
-                getCount(),
-                getTotal(),
-                quantiles.get(0),
-                quantiles.get(1),
-                quantiles.get(2),
-                quantiles.get(3),
-                quantiles.get(4),
-                quantiles.get(5),
-                quantiles.get(6),
-                quantiles.get(7),
-                quantiles.get(8),
-                getMin(),
-                getMax(),
-                getAvg());
+                digestCount,
+                totalCount,
+                quantiles[0], // p01
+                quantiles[1], // p05
+                quantiles[2], // p10
+                quantiles[3], // p25
+                quantiles[4], // p50
+                quantiles[5], // p75
+                quantiles[6], // p90
+                quantiles[7], // p95
+                quantiles[8], // p99
+                min,
+                max,
+                average);
     }
 
     public static class DistributionSnapshot
