@@ -6,18 +6,27 @@ import org.weakref.jmx.Managed;
 
 import javax.annotation.concurrent.GuardedBy;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static com.google.common.base.Verify.verify;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class TimeDistribution
 {
+    private static final double[] SNAPSHOT_QUANTILES = new double[]{0.5, 0.75, 0.9, 0.95, 0.99};
+    private static final double[] PERCENTILES;
+
+    static {
+        PERCENTILES = new double[100];
+        for (int i = 0; i < 100; ++i) {
+            PERCENTILES[i] = (i / 100.0);
+        }
+    }
+
     private final double alpha;
     @GuardedBy("this")
     private DecayTDigest digest;
@@ -118,19 +127,15 @@ public class TimeDistribution
     @Managed
     public Map<Double, Double> getPercentiles()
     {
-        List<Double> percentiles = new ArrayList<>(100);
-        for (int i = 0; i < 100; ++i) {
-            percentiles.add(i / 100.0);
-        }
-
-        List<Double> values;
+        double[] values;
         synchronized (this) {
-            values = digest.valuesAt(percentiles);
+            values = digest.valuesAt(PERCENTILES);
         }
+        verify(values.length == PERCENTILES.length, "values length mismatch");
 
-        Map<Double, Double> result = new LinkedHashMap<>(values.size());
-        for (int i = 0; i < percentiles.size(); ++i) {
-            result.put(percentiles.get(i), convertToUnit(values.get(i)));
+        Map<Double, Double> result = new LinkedHashMap<>(values.length);
+        for (int i = 0; i < values.length; ++i) {
+            result.put(PERCENTILES[i], values[i]);
         }
 
         return result;
@@ -146,22 +151,41 @@ public class TimeDistribution
 
     private double convertToUnit(double nanos)
     {
-        return nanos / unit.toNanos(1);
+        return convertToUnit(nanos, (double) unit.toNanos(1));
+    }
+
+    private static double convertToUnit(double nanos, double unitNanos)
+    {
+        return nanos / unitNanos;
     }
 
     public TimeDistributionSnapshot snapshot()
     {
+        double totalCount;
+        double digestCount;
+        double min;
+        double max;
+        double[] quantiles;
+        synchronized (this) {
+            totalCount = total.getCount();
+            digestCount = digest.getCount();
+            min = digest.getMin();
+            max = digest.getMax();
+            quantiles = digest.valuesAt(SNAPSHOT_QUANTILES);
+        }
+        double unitNanos = (double) unit.toNanos(1);
+        double average = convertToUnit(totalCount, unitNanos) / digestCount;
         return new TimeDistributionSnapshot(
-                getCount(),
-                getP50(),
-                getP75(),
-                getP90(),
-                getP95(),
-                getP99(),
-                getMin(),
-                getMax(),
-                getAvg(),
-                getUnit());
+                digestCount,
+                convertToUnit(quantiles[0], unitNanos), // p50
+                convertToUnit(quantiles[1], unitNanos), // p75
+                convertToUnit(quantiles[2], unitNanos), // p90
+                convertToUnit(quantiles[3], unitNanos), // p95
+                convertToUnit(quantiles[4], unitNanos), // p99
+                convertToUnit(min, unitNanos),
+                convertToUnit(max, unitNanos),
+                average,
+                unit);
     }
 
     @Managed
