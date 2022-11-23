@@ -4,10 +4,9 @@ import com.google.common.annotations.VisibleForTesting;
 import org.weakref.jmx.Managed;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.ErrorManager;
@@ -69,6 +68,9 @@ class BufferedHandler
         }
 
         try {
+            if (queue.remainingCapacity() == 0) {
+                queue.remove();
+            }
             putUninterruptibly(queue, message);
         }
         catch (Exception e) {
@@ -143,43 +145,30 @@ class BufferedHandler
 
     private void processQueue()
     {
-        List<byte[]> batch = new ArrayList<>(MAX_BATCH_COUNT);
+        byte[] message = new byte[0];
         boolean poisonMessageSeen = false;
         while (!closed.get() || !poisonMessageSeen) {
-            if (queue.isEmpty()) {
-                try {
-                    batch.add(queue.take());
-                }
-                catch (InterruptedException ignored) {
-                }
-            }
-            else {
-                queue.drainTo(batch, MAX_BATCH_COUNT);
-            }
-
-            int poisonMessageIndex = getPoisonMessageIndex(batch);
-            if (poisonMessageIndex >= 0) {
-                poisonMessageSeen = true;
-                batch = batch.subList(0, poisonMessageIndex);
-            }
-
-            logMessageBatch(batch);
-            batch.clear();
-        }
-    }
-
-    private synchronized void logMessageBatch(List<byte[]> batch)
-    {
-        for (byte[] message : batch) {
             try {
-                messageOutput.writeMessage(message);
+                message = queue.poll(1, TimeUnit.MILLISECONDS);
             }
-            catch (Exception e) {
-                reportError(null, e, WRITE_FAILURE);
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
+
+            if (message == POISON_MESSAGE) {
+                poisonMessageSeen = true;
+            }
+            else if (message != null) {
+                try {
+                    messageOutput.writeMessage(message);
+                }
+                catch (Exception e) {
+                    droppedMessages.getAndIncrement();
+                    reportError(null, e, WRITE_FAILURE);
+                }
+            }
+            flush();
         }
-        // always flush at the end of a batch, so logs aren't delayed
-        flush();
     }
 
     private static <T> void putUninterruptibly(BlockingQueue<T> queue, T element)
@@ -201,16 +190,6 @@ class BufferedHandler
                 Thread.currentThread().interrupt();
             }
         }
-    }
-
-    private static int getPoisonMessageIndex(List<byte[]> messages)
-    {
-        for (int i = 0; i < messages.size(); i++) {
-            if (messages.get(i) == POISON_MESSAGE) {
-                return i;
-            }
-        }
-        return -1;
     }
 
     @Managed

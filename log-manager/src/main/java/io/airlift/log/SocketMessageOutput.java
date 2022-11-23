@@ -1,6 +1,7 @@
 package io.airlift.log;
 
 import com.google.common.net.HostAndPort;
+import io.airlift.units.Duration;
 import org.weakref.jmx.Managed;
 
 import javax.annotation.concurrent.GuardedBy;
@@ -9,6 +10,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.ErrorManager;
 import java.util.logging.Formatter;
@@ -18,11 +20,18 @@ import static java.util.Objects.requireNonNull;
 public class SocketMessageOutput
         implements MessageOutput
 {
+    private static final Logger log = Logger.get(SocketMessageOutput.class);
     private static final int CONNECTION_TIMEOUT_MILLIS = 100;
     private static final int MAX_WRITE_ATTEMPTS_PER_MESSAGE = 5;
 
     private final InetSocketAddress socketAddress;
     private final AtomicLong failedConnections = new AtomicLong(0);
+    private final ExponentialBackOff errorBackOff = new ExponentialBackOff(
+            new Duration(100, TimeUnit.MILLISECONDS),
+            new Duration(60, TimeUnit.SECONDS),
+                    "Log TCP listener is up",
+                    "Log TCP listener is down",
+                    log);
 
     @GuardedBy("this")
     private Socket socket;
@@ -49,6 +58,7 @@ public class SocketMessageOutput
     {
         IOException lastException = null;
         int connectionFailures = 0;
+        AtomicLong initialDelay;
         for (int i = 0; i < MAX_WRITE_ATTEMPTS_PER_MESSAGE; i++) {
             if (socket == null || socket.isClosed() || currentOutputStream == null) {
                 try {
@@ -62,12 +72,19 @@ public class SocketMessageOutput
                     currentOutputStream = null;
                     lastException = e;
                     connectionFailures++;
+                    initialDelay = new AtomicLong(errorBackOff.failed().toMillis());
+                    try {
+                        Thread.sleep(initialDelay.get());
+                    }
+                    catch (InterruptedException ignored) {
+                    }
                     continue;
                 }
             }
 
             try {
                 currentOutputStream.write(message);
+                errorBackOff.success();
                 break;
             }
             catch (IOException e) {
@@ -75,11 +92,18 @@ public class SocketMessageOutput
                 socket = null;
                 currentOutputStream = null;
                 connectionFailures++;
+                initialDelay = new AtomicLong(errorBackOff.failed().toMillis());
+                try {
+                    Thread.sleep(initialDelay.get());
+                }
+                catch (InterruptedException ignored) {
+                }
                 lastException = e;
             }
         }
 
         if (connectionFailures > 0) {
+            errorBackOff.reset();
             failedConnections.addAndGet(connectionFailures);
             throw new IOException("Exception caught connecting via socket to " + socketAddress.getHostName()
                     + " on port " + socketAddress.getPort() + ". "

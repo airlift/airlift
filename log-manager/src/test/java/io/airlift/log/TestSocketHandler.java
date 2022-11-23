@@ -36,6 +36,12 @@ public class TestSocketHandler
                     handler.publish(new LogRecord(levels[i], data[i]));
                 }
                 handler.flush();
+                try {
+                    Thread.sleep(500);
+                }
+                catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
                 handler.close();
             });
 
@@ -60,11 +66,23 @@ public class TestSocketHandler
         int unallocatedPort = serverSocket.getLocalPort();
         serverSocket.close();
 
-        BufferedHandler handler = createSocketHandler(HostAndPort.fromParts("localhost", unallocatedPort), TEXT.createFormatter(ImmutableMap.of()), new ErrorManager());
-        handler.publish(new LogRecord(Level.SEVERE, "rutabaga"));
+        final String[] data = {"apple", "banana", "orange"};
+        final Level[] levels = {Level.SEVERE, Level.INFO, Level.WARNING};
+
+        BufferedHandler handler = createSocketHandler(HostAndPort.fromParts("localhost", 5170), TEXT.createFormatter(ImmutableMap.of()), new ErrorManager());
+        for (int i = 0; i < data.length; i++) {
+            handler.publish(new LogRecord(levels[i], data[i]));
+        }
         handler.flush();
+        try {
+            Thread.sleep(10000);
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
         handler.close();
 
-        assertEquals(((SocketMessageOutput) handler.getMessageOutput()).getFailedConnections(), 5);
+        assertEquals(((SocketMessageOutput) handler.getMessageOutput()).getFailedConnections(), 15);
+        assertEquals(handler.getDroppedMessages(), 3);
     }
 }

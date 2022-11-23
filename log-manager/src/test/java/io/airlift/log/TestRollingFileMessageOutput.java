@@ -352,6 +352,7 @@ public class TestRollingFileMessageOutput
 
             handler.publish(new LogRecord(Level.SEVERE, "apple"));
             handler.publish(new LogRecord(Level.SEVERE, "banana"));
+            Thread.sleep(100);
 
             handler.close();
 
