@@ -54,6 +54,8 @@ public class ObjectMapperProvider
     private Map<Class<?>, JsonSerializer<?>> jsonSerializers;
     private Map<Class<?>, JsonDeserializer<?>> jsonDeserializers;
 
+    private final Set<JsonSubType> jsonSubTypes = new HashSet<>();
+
     private final Set<Module> modules = new HashSet<>();
 
     @Inject
@@ -140,6 +142,18 @@ public class ObjectMapperProvider
         return this;
     }
 
+    @Inject(optional = true)
+    public void setJsonSubTypes(Set<JsonSubType> jsonSubTypes)
+    {
+        this.jsonSubTypes.addAll(jsonSubTypes);
+    }
+
+    public ObjectMapperProvider withJsonSubTypes(Set<JsonSubType> jsonSubTypes)
+    {
+        setJsonSubTypes(jsonSubTypes);
+        return this;
+    }
+
     @Override
     public ObjectMapper get()
     {
@@ -192,6 +206,10 @@ public class ObjectMapperProvider
                 }
             }
             modules.add(module);
+        }
+
+        for (JsonSubType jsonSubType : jsonSubTypes) {
+            modules.addAll(jsonSubType.modules());
         }
 
         for (Module module : modules) {
