@@ -15,8 +15,11 @@ package io.airlift.stats;
 
 import io.airlift.units.Duration;
 
+import javax.annotation.Nullable;
+
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
+import java.util.Optional;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -24,6 +27,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 public class CpuTimer
 {
     private static final ThreadMXBean THREAD_MX_BEAN = ManagementFactory.getThreadMXBean();
+    private static final Duration ZERO_NANOS = new Duration(0, NANOSECONDS);
 
     private final long wallStartTime;
     private final long cpuStartTime;
@@ -35,9 +39,15 @@ public class CpuTimer
 
     public CpuTimer()
     {
+        this(true);
+    }
+
+    public CpuTimer(boolean collectUserTime)
+    {
         wallStartTime = System.nanoTime();
         cpuStartTime = THREAD_MX_BEAN.getCurrentThreadCpuTime();
-        userStartTime = THREAD_MX_BEAN.getCurrentThreadUserTime();
+        // ThreadMXBean will return -1 if user CPU time collection is not supported
+        userStartTime = collectUserTime ? THREAD_MX_BEAN.getCurrentThreadUserTime() : -1;
 
         intervalWallStart = wallStartTime;
         intervalCpuStart = cpuStartTime;
@@ -48,12 +58,14 @@ public class CpuTimer
     {
         long currentWallTime = System.nanoTime();
         long currentCpuTime = THREAD_MX_BEAN.getCurrentThreadCpuTime();
-        long currentUserTime = THREAD_MX_BEAN.getCurrentThreadUserTime();
+        // ThreadMXBean will return -1 if user CPU time collection is not supported
+        long currentUserTime = intervalUserStart == -1 ? -1 : THREAD_MX_BEAN.getCurrentThreadUserTime();
 
         CpuDuration cpuDuration = new CpuDuration(
                 nanosBetween(intervalWallStart, currentWallTime),
                 nanosBetween(intervalCpuStart, currentCpuTime),
-                nanosBetween(intervalUserStart, currentUserTime));
+                // currentUserTime is -1 when ThreadMXBean does not support user collection or when collectUserTime is false
+                currentUserTime == -1 ? null : nanosBetween(intervalUserStart, currentUserTime));
 
         intervalWallStart = currentWallTime;
         intervalCpuStart = currentCpuTime;
@@ -66,24 +78,28 @@ public class CpuTimer
     {
         long currentWallTime = System.nanoTime();
         long currentCpuTime = THREAD_MX_BEAN.getCurrentThreadCpuTime();
-        long currentUserTime = THREAD_MX_BEAN.getCurrentThreadUserTime();
+        // ThreadMXBean will return -1 if user CPU time collection is not supported
+        long currentUserTime = intervalUserStart == -1 ? -1 : THREAD_MX_BEAN.getCurrentThreadUserTime();
 
         return new CpuDuration(
                 nanosBetween(intervalWallStart, currentWallTime),
                 nanosBetween(intervalCpuStart, currentCpuTime),
-                nanosBetween(intervalUserStart, currentUserTime));
+                // currentUserTime is -1 when ThreadMXBean does not support user collection or when collectUserTime is false
+                currentUserTime == -1 ? null : nanosBetween(intervalUserStart, currentUserTime));
     }
 
     public CpuDuration elapsedTime()
     {
         long currentWallTime = System.nanoTime();
         long currentCpuTime = THREAD_MX_BEAN.getCurrentThreadCpuTime();
-        long currentUserTime = THREAD_MX_BEAN.getCurrentThreadUserTime();
+        // ThreadMXBean will return -1 if user CPU time collection is not supported
+        long currentUserTime = userStartTime == -1 ? -1 : THREAD_MX_BEAN.getCurrentThreadUserTime();
 
         return new CpuDuration(
                 nanosBetween(wallStartTime, currentWallTime),
                 nanosBetween(cpuStartTime, currentCpuTime),
-                nanosBetween(userStartTime, currentUserTime));
+                // currentUserTime is -1 when ThreadMXBean does not support user collection or when collectUserTime is false
+                currentUserTime == -1 ? null : nanosBetween(userStartTime, currentUserTime));
     }
 
     private static Duration nanosBetween(long start, long end)
@@ -95,16 +111,15 @@ public class CpuTimer
     {
         private final Duration wall;
         private final Duration cpu;
+        @Nullable
         private final Duration user;
 
         public CpuDuration()
         {
-            this.wall = new Duration(0, NANOSECONDS);
-            this.cpu = new Duration(0, NANOSECONDS);
-            this.user = new Duration(0, NANOSECONDS);
+            this(ZERO_NANOS, ZERO_NANOS, ZERO_NANOS);
         }
 
-        public CpuDuration(Duration wall, Duration cpu, Duration user)
+        public CpuDuration(Duration wall, Duration cpu, @Nullable Duration user)
         {
             this.wall = wall;
             this.cpu = cpu;
@@ -121,9 +136,24 @@ public class CpuTimer
             return cpu;
         }
 
+        public boolean hasUser()
+        {
+            return user != null;
+        }
+
+        /**
+         * This method will report zero duration when no user time was collected. Check {@link CpuDuration#hasUser()} or use {@link CpuDuration#getUserIfPresent()}
+         * in order distinguish a true zero user CPU time from no value being present.
+         * @return The {@link CpuDuration#user} value if present, otherwise returns a value of zero nanoseconds
+         */
         public Duration getUser()
         {
-            return user;
+            return user == null ? ZERO_NANOS : user;
+        }
+
+        public Optional<Duration> getUserIfPresent()
+        {
+            return Optional.ofNullable(user);
         }
 
         public CpuDuration add(CpuDuration cpuDuration)
@@ -131,7 +161,7 @@ public class CpuTimer
             return new CpuDuration(
                     addDurations(wall, cpuDuration.wall),
                     addDurations(cpu, cpuDuration.cpu),
-                    addDurations(user, cpuDuration.user));
+                    (user == null || cpuDuration.user == null) ? null : addDurations(user, cpuDuration.user));
         }
 
         public CpuDuration subtract(CpuDuration cpuDuration)
@@ -139,7 +169,7 @@ public class CpuTimer
             return new CpuDuration(
                     subtractDurations(wall, cpuDuration.wall),
                     subtractDurations(cpu, cpuDuration.cpu),
-                    subtractDurations(user, cpuDuration.user));
+                    (user == null || cpuDuration.user == null) ? null : subtractDurations(user, cpuDuration.user));
         }
 
         private static Duration addDurations(Duration a, Duration b)
