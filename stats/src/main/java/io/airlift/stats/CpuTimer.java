@@ -13,6 +13,7 @@
  */
 package io.airlift.stats;
 
+import com.google.common.base.Ticker;
 import io.airlift.units.Duration;
 
 import javax.annotation.Nullable;
@@ -22,6 +23,7 @@ import java.lang.management.ThreadMXBean;
 import java.util.Optional;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 public class CpuTimer
@@ -29,6 +31,7 @@ public class CpuTimer
     private static final ThreadMXBean THREAD_MX_BEAN = ManagementFactory.getThreadMXBean();
     private static final Duration ZERO_NANOS = new Duration(0, NANOSECONDS);
 
+    private final Ticker ticker;
     private final long wallStartTime;
     private final long cpuStartTime;
     private final long userStartTime;
@@ -39,12 +42,18 @@ public class CpuTimer
 
     public CpuTimer()
     {
-        this(true);
+        this(Ticker.systemTicker(), true);
     }
 
     public CpuTimer(boolean collectUserTime)
     {
-        wallStartTime = System.nanoTime();
+        this(Ticker.systemTicker(), collectUserTime);
+    }
+
+    public CpuTimer(Ticker ticker, boolean collectUserTime)
+    {
+        this.ticker = requireNonNull(ticker, "ticker is null");
+        wallStartTime = ticker.read();
         cpuStartTime = THREAD_MX_BEAN.getCurrentThreadCpuTime();
         // ThreadMXBean will return -1 if user CPU time collection is not supported
         userStartTime = collectUserTime ? THREAD_MX_BEAN.getCurrentThreadUserTime() : -1;
@@ -56,7 +65,7 @@ public class CpuTimer
 
     public CpuDuration startNewInterval()
     {
-        long currentWallTime = System.nanoTime();
+        long currentWallTime = ticker.read();
         long currentCpuTime = THREAD_MX_BEAN.getCurrentThreadCpuTime();
         // ThreadMXBean will return -1 if user CPU time collection is not supported
         long currentUserTime = intervalUserStart == -1 ? -1 : THREAD_MX_BEAN.getCurrentThreadUserTime();
@@ -76,7 +85,7 @@ public class CpuTimer
 
     public CpuDuration elapsedIntervalTime()
     {
-        long currentWallTime = System.nanoTime();
+        long currentWallTime = ticker.read();
         long currentCpuTime = THREAD_MX_BEAN.getCurrentThreadCpuTime();
         // ThreadMXBean will return -1 if user CPU time collection is not supported
         long currentUserTime = intervalUserStart == -1 ? -1 : THREAD_MX_BEAN.getCurrentThreadUserTime();
@@ -90,7 +99,7 @@ public class CpuTimer
 
     public CpuDuration elapsedTime()
     {
-        long currentWallTime = System.nanoTime();
+        long currentWallTime = ticker.read();
         long currentCpuTime = THREAD_MX_BEAN.getCurrentThreadCpuTime();
         // ThreadMXBean will return -1 if user CPU time collection is not supported
         long currentUserTime = userStartTime == -1 ? -1 : THREAD_MX_BEAN.getCurrentThreadUserTime();

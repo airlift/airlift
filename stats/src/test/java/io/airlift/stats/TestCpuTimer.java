@@ -1,7 +1,12 @@
 package io.airlift.stats;
 
+import io.airlift.testing.TestingTicker;
 import org.testng.annotations.Test;
 
+import static io.airlift.units.Duration.succinctDuration;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
@@ -37,5 +42,22 @@ public class TestCpuTimer
 
         assertFalse(withUser.subtract(withoutUser).hasUser());
         assertFalse(withoutUser.subtract(withUser).hasUser());
+    }
+
+    @Test
+    public void testNullTicker()
+    {
+        assertThatExceptionOfType(NullPointerException.class)
+                .isThrownBy(() -> new CpuTimer(null, true))
+                .withMessage("ticker is null");
+    }
+
+    @Test
+    public void testCustomTicker()
+    {
+        TestingTicker ticker = new TestingTicker();
+        CpuTimer timer = new CpuTimer(ticker, true);
+        ticker.increment(1, SECONDS);
+        assertEquals(timer.elapsedTime().getWall(), succinctDuration(1, SECONDS));
     }
 }
