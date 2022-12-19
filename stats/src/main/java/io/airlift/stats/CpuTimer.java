@@ -63,6 +63,16 @@ public class CpuTimer
         intervalUserStart = userStartTime;
     }
 
+    public long getWallStartTimeNanos()
+    {
+        return wallStartTime;
+    }
+
+    public long getIntervalWallStartNanos()
+    {
+        return intervalWallStart;
+    }
+
     public CpuDuration startNewInterval()
     {
         long currentWallTime = ticker.read();
