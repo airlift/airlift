@@ -56,8 +56,6 @@ public class ObjectMapperProvider
 
     private final Set<Module> modules = new HashSet<>();
 
-    private static final boolean HAS_JAVA_RECORDS = hasJavaRecords();
-
     @Inject
     public ObjectMapperProvider()
     {
@@ -72,9 +70,7 @@ public class ObjectMapperProvider
         modules.add(new JavaTimeModule());
         modules.add(new GuavaModule());
         modules.add(new ParameterNamesModule());
-        if (HAS_JAVA_RECORDS) {
-            modules.add(new RecordAutoDetectModule());
-        }
+        modules.add(new RecordAutoDetectModule());
 
         try {
             getClass().getClassLoader().loadClass("org.joda.time.DateTime");
@@ -198,16 +194,5 @@ public class ObjectMapperProvider
     private <T> void addKeySerializer(SimpleModule module, Class<?> type, JsonSerializer<?> keySerializer)
     {
         module.addKeySerializer((Class<? extends T>) type, (JsonSerializer<T>) keySerializer);
-    }
-
-    private static boolean hasJavaRecords()
-    {
-        try {
-            Class.forName("java.lang.Record");
-            return true;
-        }
-        catch (ClassNotFoundException e) {
-            return false;
-        }
     }
 }
