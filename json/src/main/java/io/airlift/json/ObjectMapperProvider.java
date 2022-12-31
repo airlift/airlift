@@ -90,10 +90,22 @@ public class ObjectMapperProvider
         this.jsonSerializers = ImmutableMap.copyOf(jsonSerializers);
     }
 
+    public ObjectMapperProvider withJsonSerializers(Map<Class<?>, JsonSerializer<?>> jsonSerializers)
+    {
+        setJsonSerializers(jsonSerializers);
+        return this;
+    }
+
     @Inject(optional = true)
     public void setJsonDeserializers(Map<Class<?>, JsonDeserializer<?>> jsonDeserializers)
     {
         this.jsonDeserializers = ImmutableMap.copyOf(jsonDeserializers);
+    }
+
+    public ObjectMapperProvider withJsonDeserializers(Map<Class<?>, JsonDeserializer<?>> jsonDeserializers)
+    {
+        setJsonDeserializers(jsonDeserializers);
+        return this;
     }
 
     @Inject(optional = true)
@@ -102,16 +114,34 @@ public class ObjectMapperProvider
         this.keySerializers = keySerializers;
     }
 
+    public ObjectMapperProvider withKeySerializers(@JsonKeySerde Map<Class<?>, JsonSerializer<?>> keySerializers)
+    {
+        setKeySerializers(keySerializers);
+        return this;
+    }
+
     @Inject(optional = true)
     public void setKeyDeserializers(@JsonKeySerde Map<Class<?>, KeyDeserializer> keyDeserializers)
     {
         this.keyDeserializers = keyDeserializers;
     }
 
+    public ObjectMapperProvider withKeyDeserializers(@JsonKeySerde Map<Class<?>, KeyDeserializer> keyDeserializers)
+    {
+        setKeyDeserializers(keyDeserializers);
+        return this;
+    }
+
     @Inject(optional = true)
     public void setModules(Set<Module> modules)
     {
         this.modules.addAll(modules);
+    }
+
+    public ObjectMapperProvider withModules(Set<Module> modules)
+    {
+        setModules(modules);
+        return this;
     }
 
     @Override
