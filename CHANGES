@@ -4,6 +4,7 @@
 - Make CpuTimer user time collection optional.
 - Add custom ticker support to CpuTimer.
 - Add primitive methods to TDigest stats to avoid unnecessary boxing.
+- Support configs bound with prefix in ConditionalModule.
 
 219
 
