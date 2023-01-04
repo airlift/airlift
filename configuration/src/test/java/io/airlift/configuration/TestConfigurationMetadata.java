@@ -966,7 +966,7 @@ public class TestConfigurationMetadata
     {
         @Config("value")
         @ConfigDescription("description")
-        public void setValue(String value);
+        void setValue(String value);
     }
 
     public static class SetterInterfaceImpl

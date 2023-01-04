@@ -35,7 +35,7 @@ import static io.airlift.event.client.EventDataType.validateFieldValueType;
 
 public class EventFieldMetadata
 {
-    public static enum ContainerType
+    public enum ContainerType
     {
         ITERABLE, MAP, MULTIMAP;
 

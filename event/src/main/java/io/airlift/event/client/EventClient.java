@@ -31,13 +31,13 @@ public interface EventClient
     <T> ListenableFuture<Void> post(EventGenerator<T> eventGenerator)
             throws IllegalArgumentException;
 
-    public interface EventGenerator<T>
+    interface EventGenerator<T>
     {
         void generate(EventPoster<T> eventPoster)
                 throws IOException;
     }
 
-    public interface EventPoster<T>
+    interface EventPoster<T>
     {
         void post(T event)
                 throws IOException;
