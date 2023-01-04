@@ -1,3 +1,10 @@
+220
+
+- Change target Java version to 17.
+- Make CpuTimer user time collection optional.
+- Add custom ticker support to CpuTimer.
+- Add primitive methods to TDigest stats to avoid unnecessary boxing.
+
 219
 
 - Report errors thrown from Guice modules during bootstraping together
