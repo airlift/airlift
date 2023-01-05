@@ -1,6 +1,7 @@
 223
 
 - Deprecate custom HTTP client BodyGenerator implementations
+- Update to Jetty 10.0.13
 
 222
 

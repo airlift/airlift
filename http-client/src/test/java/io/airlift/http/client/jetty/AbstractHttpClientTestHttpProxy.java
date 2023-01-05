@@ -85,13 +85,6 @@ public abstract class AbstractHttpClientTestHttpProxy
         super.testConnectionRefused();
     }
 
-    @Test(expectedExceptions = RuntimeException.class)
-    public void testBadPort()
-            throws Exception
-    {
-        super.testBadPort();
-    }
-
     @Test(expectedExceptions = IOException.class)
     public void testUnresolvableHost()
             throws Exception
@@ -136,12 +129,9 @@ public abstract class AbstractHttpClientTestHttpProxy
         public T handle(Request request, Response response)
                 throws E
         {
-            if (response.getStatusCode() == BAD_GATEWAY.code()) {
+            if ((response.getStatusCode() == BAD_GATEWAY.code()) ||
+                    (response.getStatusCode() == BAD_REQUEST.code())) {
                 return delegate.handleException(request, new IOException());
-            }
-
-            if (response.getStatusCode() == BAD_REQUEST.code()) {
-                return delegate.handleException(request, new RuntimeException());
             }
 
             return delegate.handle(request, response);

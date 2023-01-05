@@ -46,6 +46,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 
 import static io.airlift.http.client.TraceTokenRequestFilter.TRACETOKEN_HEADER;
 import static io.airlift.http.client.jetty.HttpRequestEvent.NO_RESPONSE;
@@ -97,7 +98,7 @@ public class TestHttpClientLogger
         long responseSize = 345;
         long requestTimestamp = System.currentTimeMillis();
 
-        HttpFields headers = new HttpFields();
+        HttpFields.Mutable headers = HttpFields.build();
         headers.add(TRACETOKEN_HEADER, "test-token");
 
         Request request = new TestRequest(HTTP_2, method, uri, headers);
@@ -149,7 +150,7 @@ public class TestHttpClientLogger
         URI uri = new URI("http://www.google.com");
         long requestTimestamp = System.currentTimeMillis();
 
-        HttpFields headers = new HttpFields();
+        HttpFields.Mutable headers = HttpFields.build();
         headers.add(TRACETOKEN_HEADER, "test-token");
         Request request = new TestRequest(HTTP_1_1, method, uri, headers);
 
@@ -189,7 +190,7 @@ public class TestHttpClientLogger
     {
         long now = System.currentTimeMillis();
 
-        Request request = new TestRequest(HTTP_1_1, "GET", new URI("http://www.google.com"), new HttpFields());
+        Request request = new TestRequest(HTTP_1_1, "GET", new URI("http://www.google.com"), HttpFields.from());
 
         DefaultHttpClientLogger logger = new DefaultHttpClientLogger(
                 file.getAbsolutePath(),
@@ -336,6 +337,12 @@ public class TestHttpClientLogger
         }
 
         @Override
+        public Request headers(Consumer<HttpFields.Mutable> consumer)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public Request header(String name, String value)
         {
             throw new UnsupportedOperationException();
@@ -397,6 +404,18 @@ public class TestHttpClientLogger
 
         @Override
         public Request content(ContentProvider content, String contentType)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Content getBody()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Request body(Content content)
         {
             throw new UnsupportedOperationException();
         }

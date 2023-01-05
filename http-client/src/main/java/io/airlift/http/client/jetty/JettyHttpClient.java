@@ -24,17 +24,16 @@ import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.Origin.Address;
 import org.eclipse.jetty.client.Socks4Proxy;
-import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
-import org.eclipse.jetty.client.util.BytesContentProvider;
+import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
-import org.eclipse.jetty.client.util.PathContentProvider;
+import org.eclipse.jetty.client.util.PathRequestContent;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.HttpCookieStore;
@@ -74,7 +73,6 @@ import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
@@ -101,6 +99,8 @@ import static java.time.temporal.ChronoUnit.YEARS;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static org.eclipse.jetty.client.ConnectionPoolAccessor.getActiveConnections;
+import static org.eclipse.jetty.client.ConnectionPoolAccessor.getIdleConnections;
 
 public class JettyHttpClient
         implements io.airlift.http.client.HttpClient
@@ -182,6 +182,7 @@ public class JettyHttpClient
 
         HttpClientTransport transport;
         if (config.isHttp2Enabled()) {
+            checkArgument(maybeSslContextFactory.isEmpty(), "SslContextFactory must not be provided when HTTP/2 is enabled");
             HTTP2Client client = new HTTP2Client();
             client.setInitialSessionRecvWindow(toIntExact(config.getHttp2InitialSessionReceiveWindowSize().toBytes()));
             client.setInitialStreamRecvWindow(toIntExact(config.getHttp2InitialStreamReceiveWindowSize().toBytes()));
@@ -190,10 +191,13 @@ public class JettyHttpClient
             transport = new HttpClientTransportOverHTTP2(client);
         }
         else {
-            transport = new HttpClientTransportOverHTTP(config.getSelectorCount());
+            ClientConnector connector = new ClientConnector();
+            connector.setSelectors(config.getSelectorCount());
+            connector.setSslContextFactory(sslContextFactory);
+            transport = new HttpClientTransportOverHTTP(connector);
         }
 
-        httpClient = new AuthorizationPreservingHttpClient(transport, sslContextFactory);
+        httpClient = new AuthorizationPreservingHttpClient(transport);
 
         // request and response buffer size
         httpClient.setRequestBufferSize(toIntExact(config.getRequestBufferSize().toBytes()));
@@ -217,18 +221,15 @@ public class JettyHttpClient
 
         HostAndPort socksProxy = config.getSocksProxy();
         if (socksProxy != null) {
-            httpClient.getProxyConfiguration().getProxies().add(new Socks4Proxy(socksProxy.getHost(), socksProxy.getPortOrDefault(1080)));
+            httpClient.getProxyConfiguration().addProxy(new Socks4Proxy(socksProxy.getHost(), socksProxy.getPortOrDefault(1080)));
         }
         HostAndPort httpProxy = config.getHttpProxy();
         if (httpProxy != null) {
-            httpClient.getProxyConfiguration().getProxies().add(new HttpProxy(new Address(httpProxy.getHost(), httpProxy.getPortOrDefault(8080)), config.isSecureProxy()));
+            httpClient.getProxyConfiguration().addProxy(new HttpProxy(new Address(httpProxy.getHost(), httpProxy.getPortOrDefault(8080)), config.isSecureProxy()));
         }
 
         httpClient.setByteBufferPool(new MappedByteBufferPool());
-        QueuedThreadPool queuedThreadPool = createExecutor(name, config.getMinThreads(), config.getMaxThreads());
-        httpClient.setExecutor(queuedThreadPool);
-        // add queuedThreadPool as a managed bean to get its state in the client dumps
-        httpClient.addBean(queuedThreadPool, true);
+        httpClient.setExecutor(createExecutor(name, config.getMinThreads(), config.getMaxThreads()));
         httpClient.setScheduler(createScheduler(name, config.getTimeoutConcurrency(), config.getTimeoutThreads()));
 
         JettyAsyncSocketAddressResolver resolver = new JettyAsyncSocketAddressResolver(
@@ -294,10 +295,10 @@ public class JettyHttpClient
         this.queuedThreadPoolMBean = new QueuedThreadPoolMBean((QueuedThreadPool) httpClient.getExecutor());
 
         this.activeConnectionsPerDestination = new ConnectionPoolDistribution(httpClient,
-                (distribution, connectionPool) -> distribution.add(connectionPool.getActiveConnections().size()));
+                (distribution, connectionPool) -> distribution.add(getActiveConnections(connectionPool).size()));
 
         this.idleConnectionsPerDestination = new ConnectionPoolDistribution(httpClient,
-                (distribution, connectionPool) -> distribution.add(connectionPool.getIdleConnections().size()));
+                (distribution, connectionPool) -> distribution.add(getIdleConnections(connectionPool).size()));
 
         this.queuedRequestsPerDestination = new DestinationDistribution(httpClient,
                 (distribution, destination) -> distribution.add(destination.getHttpExchanges().size()));
@@ -599,12 +600,7 @@ public class JettyHttpClient
             if (cause instanceof Exception) {
                 return responseHandler.handleException(request, (Exception) cause);
             }
-            else if ((cause instanceof NoClassDefFoundError) && cause.getMessage().endsWith("ALPNClientConnection")) {
-                return responseHandler.handleException(request, new RuntimeException("HTTPS cannot be used when HTTP/2 is enabled", cause));
-            }
-            else {
-                return responseHandler.handleException(request, new RuntimeException(cause));
-            }
+            return responseHandler.handleException(request, new RuntimeException(cause));
         }
 
         // process response
@@ -699,22 +695,18 @@ public class JettyHttpClient
 
         jettyRequest.method(finalRequest.getMethod());
 
-        for (Entry<String, String> entry : finalRequest.getHeaders().entries()) {
-            jettyRequest.header(entry.getKey(), entry.getValue());
-        }
+        jettyRequest.headers(headers -> finalRequest.getHeaders().forEach(headers::add));
 
         BodyGenerator bodyGenerator = finalRequest.getBodyGenerator();
         if (bodyGenerator != null) {
-            if (bodyGenerator instanceof StaticBodyGenerator) {
-                StaticBodyGenerator staticBodyGenerator = (StaticBodyGenerator) bodyGenerator;
-                jettyRequest.content(new BytesContentProvider(staticBodyGenerator.getBody()));
+            if (bodyGenerator instanceof StaticBodyGenerator generator) {
+                jettyRequest.body(new BytesRequestContent(generator.getBody()));
             }
-            else if (bodyGenerator instanceof FileBodyGenerator) {
-                Path path = ((FileBodyGenerator) bodyGenerator).getPath();
-                jettyRequest.content(fileContentProvider(path));
+            else if (bodyGenerator instanceof FileBodyGenerator generator) {
+                jettyRequest.body(fileContent(generator.getPath()));
             }
             else {
-                jettyRequest.content(new BytesContentProvider(generateBody(bodyGenerator)));
+                jettyRequest.body(new BytesRequestContent(generateBody(bodyGenerator)));
             }
         }
 
@@ -729,22 +721,10 @@ public class JettyHttpClient
         return jettyRequest;
     }
 
-    private static ContentProvider fileContentProvider(Path path)
+    private static PathRequestContent fileContent(Path path)
     {
         try {
-            PathContentProvider provider = new PathContentProvider(null, path);
-            provider.setByteBufferPool(new ByteBufferPool()
-            {
-                @Override
-                public ByteBuffer acquire(int size, boolean direct)
-                {
-                    return ByteBuffer.allocate(size);
-                }
-
-                @Override
-                public void release(ByteBuffer buffer) {}
-            });
-            return provider;
+            return new PathRequestContent(path);
         }
         catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -890,12 +870,13 @@ public class JettyHttpClient
     @SuppressWarnings("UnusedDeclaration")
     public String dumpDestination(URI uri)
     {
-        Destination destination = httpClient.getDestination(uri.getScheme(), uri.getHost(), uri.getPort());
-        if (destination == null) {
-            return null;
-        }
-
-        return dumpDestination(destination);
+        return httpClient.getDestinations().stream()
+                .filter(destination -> Objects.equals(destination.getScheme(), uri.getScheme()))
+                .filter(destination -> Objects.equals(destination.getHost(), uri.getHost()))
+                .filter(destination -> destination.getPort() == uri.getPort())
+                .findFirst()
+                .map(JettyHttpClient::dumpDestination)
+                .orElse(null);
     }
 
     private static String dumpDestination(Destination destination)
@@ -925,7 +906,7 @@ public class JettyHttpClient
                 .map(HttpExchange::getRequest)
                 .collect(Collectors.toList());
 
-        ((AbstractConnectionPool) httpDestination.getConnectionPool()).getActiveConnections().stream()
+        getActiveConnections((AbstractConnectionPool) httpDestination.getConnectionPool()).stream()
                 .filter(HttpConnectionOverHTTP.class::isInstance)
                 .map(HttpConnectionOverHTTP.class::cast)
                 .map(connection -> connection.getHttpChannel().getHttpExchange())

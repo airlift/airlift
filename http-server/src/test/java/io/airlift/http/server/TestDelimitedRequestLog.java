@@ -132,7 +132,7 @@ public class TestDelimitedRequestLog
         long responseSize = 32311;
         int responseCode = 200;
         String responseContentType = "response/type";
-        HttpURI uri = new HttpURI("http://www.example.com/aaa+bbb/ccc?param=hello%20there&other=true");
+        HttpURI uri = HttpURI.from("http://www.example.com/aaa+bbb/ccc?param=hello%20there&other=true");
         long beginToDispatchMillis = 333;
         long firstToLastContentTimeInMillis = 444;
         long beginToEndMillis = 555;

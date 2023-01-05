@@ -64,7 +64,7 @@ public class TestingHttpServer
         if (keystore.isPresent()) {
             httpConfiguration.addCustomizer(new SecureRequestCustomizer());
 
-            SslContextFactory sslContextFactory = new SslContextFactory.Client();
+            SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
             sslContextFactory.setKeyStorePath(keystore.get());
             sslContextFactory.setKeyStorePassword("changeit");
             SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory, "http/1.1");
@@ -85,14 +85,15 @@ public class TestingHttpServer
 
         ServletHolder servletHolder = new ServletHolder(servlet);
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
-        context.setGzipHandler(new GzipHandler());
         context.addServlet(servletHolder, "/*");
 
         HandlerCollection handlers = new HandlerCollection();
         additionalHandle.ifPresent(handlers::addHandler);
         handlers.addHandler(context);
 
-        server.setHandler(handlers);
+        GzipHandler gzipHandler = new GzipHandler();
+        gzipHandler.setHandler(handlers);
+        server.setHandler(gzipHandler);
 
         this.server = server;
         this.server.start();
