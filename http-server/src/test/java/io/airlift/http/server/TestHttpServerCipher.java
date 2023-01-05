@@ -20,6 +20,8 @@ import io.airlift.http.server.HttpServer.ClientCertificate;
 import io.airlift.node.NodeInfo;
 import io.airlift.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -199,7 +201,11 @@ public class TestHttpServerCipher
         sslContextFactory.setExcludeCipherSuites();
         sslContextFactory.setKeyStorePath(KEY_STORE_PATH);
         sslContextFactory.setKeyStorePassword(KEY_STORE_PASSWORD);
-        HttpClient httpClient = new HttpClient(sslContextFactory);
+
+        ClientConnector connector = new ClientConnector();
+        connector.setSslContextFactory(sslContextFactory);
+
+        HttpClient httpClient = new HttpClient(new HttpClientTransportDynamic(connector));
         httpClient.start();
         return httpClient;
     }

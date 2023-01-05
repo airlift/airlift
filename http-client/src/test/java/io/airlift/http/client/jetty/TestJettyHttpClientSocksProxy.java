@@ -62,15 +62,6 @@ public class TestJettyHttpClientSocksProxy
     }
 
     @Override
-    @Test(expectedExceptions = IOException.class, expectedExceptionsMessageRegExp = ".*SOCKS4 .*")
-    public void testBadPort()
-            throws Exception
-    {
-        // todo this should be handled by jetty client before connecting to the socks proxy
-        super.testBadPort();
-    }
-
-    @Override
     @Test(enabled = false)
     public void testConnectTimeout()
             throws Exception

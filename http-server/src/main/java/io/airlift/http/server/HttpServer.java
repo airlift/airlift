@@ -225,7 +225,7 @@ public class HttpServer
         ServerConnector httpsConnector;
         if (config.isHttpsEnabled()) {
             HttpConfiguration httpsConfiguration = new HttpConfiguration(baseHttpConfiguration);
-            httpsConfiguration.addCustomizer(new SecureRequestCustomizer());
+            setSecureRequestCustomizer(httpsConfiguration);
 
             HttpsConfig httpsConfig = maybeHttpsConfig.orElseThrow();
             this.sslContextFactory = Optional.of(this.sslContextFactory.orElseGet(() -> createReloadingSslContextFactory(httpsConfig, clientCertificate, nodeInfo.getEnvironment())));
@@ -270,7 +270,7 @@ public class HttpServer
             adminThreadPool.setIdleTimeout(toIntExact(config.getThreadMaxIdleTime().toMillis()));
 
             if (config.isHttpsEnabled()) {
-                adminConfiguration.addCustomizer(new SecureRequestCustomizer());
+                setSecureRequestCustomizer(adminConfiguration);
 
                 HttpsConfig httpsConfig = maybeHttpsConfig.orElseThrow();
                 this.sslContextFactory = Optional.of(this.sslContextFactory.orElseGet(() -> createReloadingSslContextFactory(httpsConfig, clientCertificate, nodeInfo.getEnvironment())));
@@ -344,6 +344,14 @@ public class HttpServer
         server.setHandler(rootHandlers);
     }
 
+    private static void setSecureRequestCustomizer(HttpConfiguration configuration)
+    {
+        configuration.setCustomizers(ImmutableList.<HttpConfiguration.Customizer>builder()
+                .add(new SecureRequestCustomizer(false))
+                .addAll(configuration.getCustomizers())
+                .build());
+    }
+
     private static ServletContextHandler createServletContext(Servlet theServlet,
             Set<HttpResourceBinding> resources,
             Map<String, String> parameters,
@@ -377,7 +385,7 @@ public class HttpServer
             context.addFilter(new FilterHolder(servlet), servlet.getBaseUri() + "/*", null);
         }
         // -- gzip handler
-        context.setGzipHandler(new GzipHandler());
+        context.insertHandler(new GzipHandler());
 
         // -- the servlet
         ServletHolder servletHolder = new ServletHolder(theServlet);
