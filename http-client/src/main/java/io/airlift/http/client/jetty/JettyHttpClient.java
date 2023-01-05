@@ -15,14 +15,14 @@ import io.airlift.http.client.jetty.HttpClientLogger.RequestInfo;
 import io.airlift.http.client.jetty.HttpClientLogger.ResponseInfo;
 import io.airlift.security.pem.PemReader;
 import io.airlift.units.Duration;
-import org.eclipse.jetty.client.DuplexConnectionPool;
+import org.eclipse.jetty.client.AbstractConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
+import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.Origin.Address;
-import org.eclipse.jetty.client.PoolingHttpDestination;
 import org.eclipse.jetty.client.Socks4Proxy;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Destination;
@@ -918,14 +918,14 @@ public class JettyHttpClient
 
     private static List<org.eclipse.jetty.client.api.Request> getRequestForDestination(Destination destination)
     {
-        PoolingHttpDestination poolingHttpDestination = (PoolingHttpDestination) destination;
-        Queue<HttpExchange> httpExchanges = poolingHttpDestination.getHttpExchanges();
+        HttpDestination httpDestination = (HttpDestination) destination;
+        Queue<HttpExchange> httpExchanges = httpDestination.getHttpExchanges();
 
         List<org.eclipse.jetty.client.api.Request> requests = httpExchanges.stream()
                 .map(HttpExchange::getRequest)
                 .collect(Collectors.toList());
 
-        ((DuplexConnectionPool) poolingHttpDestination.getConnectionPool()).getActiveConnections().stream()
+        ((AbstractConnectionPool) httpDestination.getConnectionPool()).getActiveConnections().stream()
                 .filter(HttpConnectionOverHTTP.class::isInstance)
                 .map(HttpConnectionOverHTTP.class::cast)
                 .map(connection -> connection.getHttpChannel().getHttpExchange())

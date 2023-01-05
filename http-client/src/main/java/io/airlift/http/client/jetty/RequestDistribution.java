@@ -2,7 +2,7 @@ package io.airlift.http.client.jetty;
 
 import io.airlift.stats.Distribution;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.PoolingHttpDestination;
+import org.eclipse.jetty.client.HttpDestination;
 
 import java.util.List;
 
@@ -20,8 +20,8 @@ class RequestDistribution
             long now = System.nanoTime();
             Distribution distribution = new Distribution();
             httpClient.getDestinations().stream()
-                    .filter(PoolingHttpDestination.class::isInstance)
-                    .map(PoolingHttpDestination.class::cast)
+                    .filter(HttpDestination.class::isInstance)
+                    .map(HttpDestination.class::cast)
                     .map(JettyHttpClient::getRequestListenersForDestination)
                     .flatMap(List::stream)
                     .forEach(listener -> processor.process(distribution, listener, now));
