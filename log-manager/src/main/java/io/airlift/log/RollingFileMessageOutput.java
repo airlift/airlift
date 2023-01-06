@@ -113,7 +113,7 @@ final class RollingFileMessageOutput
     {
         RollingFileMessageOutput output = new RollingFileMessageOutput(filename, maxFileSize, maxTotalSize, compressionType, formatter);
         BufferedHandler handler = new BufferedHandler(output, formatter, errorManager);
-        handler.start();
+        handler.initialize();
         return handler;
     }
 
