@@ -1,8 +1,10 @@
 package io.airlift.log;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Multiset;
 import com.google.common.io.ByteStreams;
 import com.google.common.net.HostAndPort;
+import com.google.common.util.concurrent.RateLimiter;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -10,14 +12,16 @@ import java.io.InputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.concurrent.Executors;
 import java.util.logging.ErrorManager;
+import java.util.logging.Formatter;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
 import static io.airlift.log.Format.TEXT;
-import static io.airlift.log.SocketMessageOutput.createSocketHandler;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 @Test(timeOut = 5 * 60 * 1000)
 public class TestSocketHandler
@@ -65,6 +69,14 @@ public class TestSocketHandler
         handler.flush();
         handler.close();
 
-        assertEquals(((SocketMessageOutput) handler.getMessageOutput()).getFailedConnections(), 5);
+        assertTrue(((SocketMessageOutput) handler.getMessageOutput()).getFailedConnections() > 0);
+    }
+
+    private static BufferedHandler createSocketHandler(HostAndPort hostAndPort, Formatter formatter, ErrorManager errorManager)
+    {
+        SocketMessageOutput output = new SocketMessageOutput(hostAndPort);
+        BufferedHandler handler = new BufferedHandler(output, formatter, Multiset::toString, errorManager, RateLimiter.create(10), Duration.ofMillis(100), 512, 1024);
+        handler.initialize();
+        return handler;
     }
 }

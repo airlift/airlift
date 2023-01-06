@@ -1,5 +1,6 @@
 package io.airlift.log;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.net.HostAndPort;
 import org.weakref.jmx.Managed;
 
@@ -29,7 +30,8 @@ public class SocketMessageOutput
     @GuardedBy("this")
     private OutputStream currentOutputStream;
 
-    private SocketMessageOutput(HostAndPort hostAndPort)
+    @VisibleForTesting
+    SocketMessageOutput(HostAndPort hostAndPort)
     {
         requireNonNull(hostAndPort, "hostAndPort is null");
         this.socketAddress = new InetSocketAddress(hostAndPort.getHost(), hostAndPort.getPort());
@@ -39,7 +41,7 @@ public class SocketMessageOutput
     {
         SocketMessageOutput output = new SocketMessageOutput(hostAndPort);
         BufferedHandler handler = new BufferedHandler(output, formatter, errorManager);
-        handler.start();
+        handler.initialize();
         return handler;
     }
 
@@ -48,6 +50,7 @@ public class SocketMessageOutput
             throws IOException
     {
         IOException lastException = null;
+        boolean success = false;
         int connectionFailures = 0;
         for (int i = 0; i < MAX_WRITE_ATTEMPTS_PER_MESSAGE; i++) {
             if (socket == null || socket.isClosed() || currentOutputStream == null) {
@@ -68,6 +71,7 @@ public class SocketMessageOutput
 
             try {
                 currentOutputStream.write(message);
+                success = true;
                 break;
             }
             catch (IOException e) {
@@ -81,10 +85,14 @@ public class SocketMessageOutput
 
         if (connectionFailures > 0) {
             failedConnections.addAndGet(connectionFailures);
-            throw new IOException("Exception caught connecting via socket to " + socketAddress.getHostName()
-                    + " on port " + socketAddress.getPort() + ". "
-                    + "There were " + connectionFailures + " failures attempting to write the log message. "
-                    + (connectionFailures == MAX_WRITE_ATTEMPTS_PER_MESSAGE ? "The log message was likely dropped." : "The log message was sent."), lastException);
+            if (!success) {
+                throw new IOException(
+                        "Exception caught connecting via socket to %s:%s. There were %s failures attempting to write the log message.".formatted(
+                                socketAddress.getHostName(),
+                                socketAddress.getPort(),
+                                connectionFailures),
+                        lastException);
+            }
         }
     }
 
