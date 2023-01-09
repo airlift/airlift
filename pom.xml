@@ -13,7 +13,7 @@
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airbase</artifactId>
-        <version>130</version>
+        <version>132</version>
     </parent>
 
     <inceptionYear>2010</inceptionYear>
@@ -386,6 +386,10 @@
                 <artifactId>jersey-test-framework-core</artifactId>
                 <version>${dep.jersey.version}</version>
                 <exclusions>
+                    <exclusion>
+                        <groupId>javax.servlet</groupId>
+                        <artifactId>javax.servlet-api</artifactId>
+                    </exclusion>
                     <exclusion>
                         <groupId>junit</groupId>
                         <artifactId>junit</artifactId>
