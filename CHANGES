@@ -1,3 +1,7 @@
+221
+
+- Fix hang in logger shutdown.
+
 220
 
 - Change target Java version to 17.
