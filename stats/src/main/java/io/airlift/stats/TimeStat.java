@@ -27,6 +27,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static java.util.Objects.requireNonNull;
 
 public class TimeStat
 {
@@ -62,29 +63,42 @@ public class TimeStat
 
     public void add(double value, TimeUnit timeUnit)
     {
-        add(new Duration(value, timeUnit));
+        requireNonNull(timeUnit, "timeUnit is null");
+        if (!Double.isFinite(value)) {
+            throw new IllegalArgumentException("value is not finite: " + value);
+        }
+        if (value < 0) {
+            throw new IllegalArgumentException("value is negative: " + value);
+        }
+        addNanos((long) Math.floor((value * timeUnit.toNanos(1)) + 0.5d));
     }
 
     public void add(Duration duration)
     {
-        add((long) duration.getValue(TimeUnit.NANOSECONDS));
+        addNanos((long) duration.getValue(TimeUnit.NANOSECONDS));
     }
 
-    private void add(long value)
+    public void addNanos(long nanos)
     {
-        oneMinute.add(value);
-        fiveMinutes.add(value);
-        fifteenMinutes.add(value);
-        allTime.add(value);
+        if (nanos < 0) {
+            throw new IllegalArgumentException("value is negative: " + nanos);
+        }
+        oneMinute.add(nanos);
+        fiveMinutes.add(nanos);
+        fifteenMinutes.add(nanos);
+        allTime.add(nanos);
     }
 
     public <T> T time(Callable<T> callable)
             throws Exception
     {
         long start = ticker.read();
-        T result = callable.call();
-        add(ticker.read() - start);
-        return result;
+        try {
+            return callable.call();
+        }
+        finally {
+            addNanos(ticker.read() - start);
+        }
     }
 
     public BlockTimer time()
@@ -100,7 +114,7 @@ public class TimeStat
         @Override
         public void close()
         {
-            add(ticker.read() - start);
+            addNanos(ticker.read() - start);
         }
     }
 
@@ -139,6 +153,15 @@ public class TimeStat
                 getFiveMinutes().snapshot(),
                 getFifteenMinutes().snapshot(),
                 getAllTime().snapshot());
+    }
+
+    @Managed
+    public void reset()
+    {
+        oneMinute.reset();
+        fiveMinutes.reset();
+        fifteenMinutes.reset();
+        allTime.reset();
     }
 
     public static class TimeDistributionStatSnapshot

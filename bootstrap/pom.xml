@@ -8,7 +8,7 @@
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airlift</artifactId>
-        <version>218-SNAPSHOT</version>
+        <version>222-SNAPSHOT</version>
     </parent>
 
     <properties>
@@ -50,6 +50,7 @@
         <dependency>
             <groupId>javax.inject</groupId>
             <artifactId>javax.inject</artifactId>
+            <scope>runtime</scope>
         </dependency>
 
         <!-- for testing -->

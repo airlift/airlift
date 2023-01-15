@@ -13,7 +13,6 @@
  */
 package io.airlift.http.client;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.net.HostAndPort;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.server.Handler;
@@ -31,7 +30,6 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import javax.servlet.Servlet;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -46,10 +44,10 @@ public class TestingHttpServer
     public TestingHttpServer(Optional<String> keystore, Servlet servlet)
             throws Exception
     {
-        this(keystore, servlet, httpConfiguration -> {}, ImmutableList.of());
+        this(keystore, servlet, httpConfiguration -> {}, Optional.empty());
     }
 
-    public TestingHttpServer(Optional<String> keystore, Servlet servlet, Consumer<HttpConfiguration> configurationDecorator, List<Handler> additionalHandler)
+    public TestingHttpServer(Optional<String> keystore, Servlet servlet, Consumer<HttpConfiguration> configurationDecorator, Optional<Handler> additionalHandle)
             throws Exception
     {
         requireNonNull(keystore, "keyStore is null");
@@ -89,10 +87,10 @@ public class TestingHttpServer
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
         context.setGzipHandler(new GzipHandler());
         context.addServlet(servletHolder, "/*");
-        HandlerCollection handlers = new HandlerCollection();
-        handlers.addHandler(context);
 
-        additionalHandler.forEach(handlers::addHandler);
+        HandlerCollection handlers = new HandlerCollection();
+        additionalHandle.ifPresent(handlers::addHandler);
+        handlers.addHandler(context);
 
         server.setHandler(handlers);
 

@@ -132,6 +132,11 @@ public class DecayTDigest
         return digest.valuesAt(quantiles);
     }
 
+    public double[] valuesAt(double... quantiles)
+    {
+        return digest.valuesAt(quantiles);
+    }
+
     private void rescale(long newLandmarkInSeconds)
     {
         // rescale the weights based on a new landmark to avoid numerical overflow issues

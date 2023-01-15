@@ -7,7 +7,7 @@
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airlift</artifactId>
-        <version>218-SNAPSHOT</version>
+        <version>222-SNAPSHOT</version>
     </parent>
 
     <properties>
@@ -77,6 +77,12 @@
         </dependency>
 
         <!-- for testing -->
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>

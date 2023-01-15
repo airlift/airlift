@@ -35,6 +35,7 @@ import static io.airlift.stats.cardinality.Utils.computeIndex;
 import static io.airlift.stats.cardinality.Utils.computeValue;
 import static io.airlift.stats.cardinality.Utils.linearCounting;
 import static io.airlift.stats.cardinality.Utils.numberOfBuckets;
+import static java.lang.Math.toIntExact;
 
 @NotThreadSafe
 final class DenseHll
@@ -46,7 +47,7 @@ final class DenseHll
     private static final int MAX_DELTA = (1 << BITS_PER_BUCKET) - 1;
     private static final int BUCKET_MASK = (1 << BITS_PER_BUCKET) - 1;
 
-    private static final int DENSE_INSTANCE_SIZE = ClassLayout.parseClass(DenseHll.class).instanceSize();
+    private static final int DENSE_INSTANCE_SIZE = toIntExact(ClassLayout.parseClass(DenseHll.class).instanceSize());
     private static final int OVERFLOW_GROW_INCREMENT = 5;
 
     private final byte indexBitLength;

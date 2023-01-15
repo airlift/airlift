@@ -25,6 +25,7 @@ import javax.inject.Inject;
 import static io.airlift.testing.Assertions.assertContains;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
 public class TestBootstrap
@@ -79,6 +80,51 @@ public class TestBootstrap
                 .setRequiredConfigurationProperty("test-required", "foo")
                 .nonStrictConfig()
                 .initialize();
+    }
+
+    @Test
+    public void testUserErrorsReported()
+    {
+        Bootstrap bootstrap = new Bootstrap(binder -> {
+            throw new RuntimeException("happy user error");
+        });
+
+        assertThatThrownBy(bootstrap::initialize)
+                .isInstanceOfSatisfying(ApplicationConfigurationException.class, e -> {
+                    assertThat(e.getErrors().stream().map(Message::getMessage)).containsExactly(
+                            "An exception was caught and reported. Message: happy user error");
+                    // also check stacktrace printout
+                    assertThat(e).hasStackTraceContaining("An exception was caught and reported. Message: happy user error");
+                });
+    }
+
+    @Test
+    public void testUserErrorsReportedWithConfigurationProblem()
+    {
+        Bootstrap bootstrap = new Bootstrap(binder -> {
+            throw new RuntimeException("happy user error");
+        })
+                .setRequiredConfigurationProperty("test-required", "foo");
+
+        assertThatThrownBy(bootstrap::initialize)
+                .isInstanceOfSatisfying(ApplicationConfigurationException.class, e -> {
+                    assertThat(e.getErrors().stream().map(Message::getMessage)).containsExactlyInAnyOrder(
+                            "Configuration property 'test-required' was not used",
+                            "An exception was caught and reported. Message: happy user error");
+                    // also check stacktrace printout
+                    assertThat(e).hasStackTraceContaining("Configuration property 'test-required' was not used");
+                    assertThat(e).hasStackTraceContaining("An exception was caught and reported. Message: happy user error");
+                });
+    }
+
+    @Test
+    public void testLoggingConfiguredOnce()
+    {
+        java.util.logging.Logger root = java.util.logging.Logger.getLogger("");
+        new Bootstrap().setOptionalConfigurationProperty("log.path", "tcp://0.0.0.0:0").initialize();
+        int configuredHandlerCount = root.getHandlers().length;
+        new Bootstrap().setOptionalConfigurationProperty("log.path", "tcp://0.0.0.0:0").initialize();
+        assertEquals(root.getHandlers().length, configuredHandlerCount);
     }
 
     public static class Instance {}

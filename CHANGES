@@ -1,3 +1,28 @@
+221
+
+- Fix hang in logger shutdown.
+
+220
+
+- Change target Java version to 17.
+- Make CpuTimer user time collection optional.
+- Add custom ticker support to CpuTimer.
+- Add primitive methods to TDigest stats to avoid unnecessary boxing.
+- Support configs bound with prefix in ConditionalModule.
+
+219
+
+- Report errors thrown from Guice modules during bootstraping together
+  with errors from config validator.
+- Update to Jetty 9.4.49.v20220914.
+- Upgrade to Airbase 130.
+- Upgrade to JOL 0.16 in stats.
+
+218
+
+- Add method add(value, count) to the DistributionStat.
+- Update to Byte Buddy 1.12.13.
+
 217
 
 - Auto detect records for Jackson serialization

@@ -34,6 +34,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static io.airlift.stats.ExponentialDecay.weight;
 import static io.airlift.stats.QuantileDigest.MiddleFunction.DEFAULT;
+import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 
 /**
@@ -57,7 +58,7 @@ import static java.lang.String.format;
 public class QuantileDigest
 {
     private static final int MAX_BITS = 64;
-    private static final int QUANTILE_DIGEST_SIZE = ClassLayout.parseClass(QuantileDigest.class).instanceSize();
+    private static final int QUANTILE_DIGEST_SIZE = toIntExact(ClassLayout.parseClass(QuantileDigest.class).instanceSize());
 
     // needs to be such that Math.exp(alpha * seconds) does not grow too big
     static final long RESCALE_THRESHOLD_SECONDS = 50;

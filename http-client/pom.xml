@@ -7,7 +7,7 @@
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airlift</artifactId>
-        <version>218-SNAPSHOT</version>
+        <version>222-SNAPSHOT</version>
     </parent>
 
     <properties>
@@ -135,6 +135,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
+            <scope>runtime</scope>
         </dependency>
 
         <!-- for testing -->

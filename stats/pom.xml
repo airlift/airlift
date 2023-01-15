@@ -8,7 +8,7 @@
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airlift</artifactId>
-        <version>218-SNAPSHOT</version>
+        <version>222-SNAPSHOT</version>
     </parent>
 
     <properties>
@@ -66,7 +66,7 @@
         <dependency>
             <groupId>org.openjdk.jol</groupId>
             <artifactId>jol-core</artifactId>
-            <version>0.2</version>
+            <version>0.16</version>
         </dependency>
 
         <!-- for testing -->

@@ -4,7 +4,7 @@
 
     <artifactId>airlift</artifactId>
     <packaging>pom</packaging>
-    <version>218-SNAPSHOT</version>
+    <version>222-SNAPSHOT</version>
 
     <name>airlift</name>
     <description>Airlift</description>
@@ -13,7 +13,7 @@
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airbase</artifactId>
-        <version>119</version>
+        <version>130</version>
     </parent>
 
     <inceptionYear>2010</inceptionYear>
@@ -25,10 +25,10 @@
         <air.check.skip-license>true</air.check.skip-license>
         <air.javadoc.lint>all,-missing</air.javadoc.lint>
 
-        <project.build.targetJdk>11</project.build.targetJdk>
+        <project.build.targetJdk>17</project.build.targetJdk>
         <air.modernizer.java-version>8</air.modernizer.java-version>
 
-        <dep.airlift.version>218-SNAPSHOT</dep.airlift.version>
+        <dep.airlift.version>222-SNAPSHOT</dep.airlift.version>
         <dep.packaging.version>${dep.airlift.version}</dep.packaging.version>
         <dep.jersey.version>2.26</dep.jersey.version>
         <dep.jjwt.version>0.11.2</dep.jjwt.version>
@@ -262,20 +262,20 @@
             <dependency>
                 <groupId>net.bytebuddy</groupId>
                 <artifactId>byte-buddy</artifactId>
-                <version>1.12.6</version>
+                <version>1.12.13</version>
             </dependency>
 
             <dependency>
                 <groupId>com.google.errorprone</groupId>
                 <artifactId>error_prone_annotations</artifactId>
-                <version>2.7.1</version>
+                <version>2.15.0</version>
             </dependency>
 
             <!-- jetty -->
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-bom</artifactId>
-                <version>9.4.44.v20210927</version>
+                <version>9.4.49.v20220914</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

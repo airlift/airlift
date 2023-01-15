@@ -62,6 +62,9 @@ public class Logging
     @GuardedBy("this")
     private OutputStreamHandler consoleHandler;
 
+    @GuardedBy("this")
+    private boolean configured;
+
     /**
      * Sets up default logging:
      * <p>
@@ -198,8 +201,14 @@ public class Logging
         return levels.build();
     }
 
-    public void configure(LoggingConfiguration config)
+    public synchronized void configure(LoggingConfiguration config)
     {
+        if (configured) {
+            log.warn("Logging already configured; ignoring new configuration.");
+            return;
+        }
+        configured = true;
+
         Map<String, String> logAnnotations = ImmutableMap.of();
         if (config.getLogAnnotationFile() != null) {
             try {

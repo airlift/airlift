@@ -6,10 +6,12 @@ import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.OperationsPerInvocation;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
+import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
+import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.profile.GCProfiler;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
@@ -17,8 +19,12 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.VerboseMode;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+
+import static com.google.common.collect.ImmutableList.toImmutableList;
 
 @OutputTimeUnit(TimeUnit.SECONDS)
 @Fork(3)
@@ -54,12 +60,16 @@ public class BenchmarkTDigest
         }
     }
 
-    @State(Scope.Thread)
+    @State(Scope.Benchmark)
     public static class Digest
     {
         private TDigest digest1;
         private TDigest digest2;
         private Slice serializedDigest;
+        @Param("100")
+        private int quantileCount;
+        private double[] quantilesArray;
+        private List<Double> quantilesList;
 
         @Setup
         public void setup(Data data)
@@ -67,6 +77,9 @@ public class BenchmarkTDigest
             digest1 = makeDigest(data.values1);
             digest2 = makeDigest(data.values2);
             serializedDigest = digest1.serialize();
+            quantilesArray = makeQuantiles(quantileCount);
+            quantilesList = Arrays.stream(quantilesArray).boxed()
+                    .collect(toImmutableList());
         }
 
         private TDigest makeDigest(long[] values)
@@ -76,6 +89,16 @@ public class BenchmarkTDigest
                 result.add(value);
             }
             return result;
+        }
+
+        private static double[] makeQuantiles(int quantileCount)
+        {
+            double[] quantiles = new double[quantileCount];
+            double increment = quantileCount == 1 ? 0.5 : 1.0 / quantileCount;
+            for (int i = 0; i < quantileCount; i++) {
+                quantiles[i] = (i + 1) * increment;
+            }
+            return quantiles;
         }
     }
 
@@ -116,6 +139,29 @@ public class BenchmarkTDigest
     public Slice benchmarkSerialize(Digest data)
     {
         return data.digest1.serialize();
+    }
+
+    @Benchmark
+    public void benchmarkValueAt(Digest data, Blackhole blackhole)
+    {
+        blackhole.consume(data.digest1.valueAt(0.25));
+        blackhole.consume(data.digest1.valueAt(0.5));
+        blackhole.consume(data.digest1.valueAt(0.75));
+        blackhole.consume(data.digest1.valueAt(0.9));
+        blackhole.consume(data.digest1.valueAt(0.95));
+        blackhole.consume(data.digest1.valueAt(0.99));
+    }
+
+    @Benchmark
+    public double[] benchmarkValuesAtArray(Digest data)
+    {
+        return data.digest1.valuesAt(data.quantilesArray);
+    }
+
+    @Benchmark
+    public List<Double> benchmarkValuesAtList(Digest data)
+    {
+        return data.digest1.valuesAt(data.quantilesList);
     }
 
     public static void main(String[] args)

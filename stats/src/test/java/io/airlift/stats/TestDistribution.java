@@ -7,6 +7,21 @@ import static org.testng.Assert.assertEquals;
 public class TestDistribution
 {
     @Test
+    public void testReset()
+    {
+        Distribution distribution = new Distribution(0.1);
+
+        distribution.add(10);
+        assertEquals(distribution.getCount(), 1D);
+        assertEquals(distribution.getAvg(), 10D);
+
+        distribution.reset();
+
+        assertEquals(distribution.getCount(), 0D);
+        assertEquals(distribution.getAvg(), Double.NaN);
+    }
+
+    @Test
     public void testDuplicate()
     {
         Distribution distribution = new Distribution(0.1);

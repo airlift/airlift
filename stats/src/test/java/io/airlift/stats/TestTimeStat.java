@@ -28,6 +28,8 @@ import java.util.concurrent.TimeUnit;
 import static com.google.common.math.DoubleMath.fuzzyEquals;
 import static java.lang.Math.min;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotEquals;
+import static org.testng.Assert.assertThrows;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
@@ -71,6 +73,54 @@ public class TestTimeStat
     }
 
     @Test
+    public void testAddIllegalDoubles()
+    {
+        TimeStat stat = new TimeStat();
+
+        assertThrows(IllegalArgumentException.class, () -> stat.add(-1.0, TimeUnit.MILLISECONDS));
+        assertThrows(IllegalArgumentException.class, () -> stat.add(Double.NaN, TimeUnit.MILLISECONDS));
+        assertThrows(IllegalArgumentException.class, () -> stat.add(Double.POSITIVE_INFINITY, TimeUnit.MILLISECONDS));
+        assertThrows(IllegalArgumentException.class, () -> stat.add(Double.NEGATIVE_INFINITY, TimeUnit.MILLISECONDS));
+        assertThrows(IllegalArgumentException.class, () -> stat.add(1.0d / 0.0d, TimeUnit.MILLISECONDS));
+
+        stat.add(0.0, TimeUnit.MILLISECONDS); // 0.0 is valid
+        assertEquals(stat.getAllTime().getCount(), 1.0);
+        assertEquals(stat.getAllTime().getMin(), 0.0);
+        assertEquals(stat.getAllTime().getMax(), 0.0);
+    }
+
+    @Test
+    public void testReset()
+    {
+        TimeStat stat = new TimeStat();
+        for (long value = 0; value < VALUES; value++) {
+            stat.add(value, TimeUnit.MILLISECONDS);
+        }
+
+        assertEquals(stat.getAllTime().getCount(), (double) VALUES);
+        assertEquals(stat.getOneMinute().getCount(), (double) VALUES);
+        assertEquals(stat.getFiveMinutes().getCount(), (double) VALUES);
+        assertEquals(stat.getFifteenMinutes().getCount(), (double) VALUES);
+
+        assertNotEquals(stat.getAllTime().getAvg(), Double.NaN);
+        assertNotEquals(stat.getOneMinute().getAvg(), Double.NaN);
+        assertNotEquals(stat.getFiveMinutes().getAvg(), Double.NaN);
+        assertNotEquals(stat.getFifteenMinutes().getAvg(), Double.NaN);
+
+        stat.reset();
+
+        assertEquals(stat.getAllTime().getCount(), 0D);
+        assertEquals(stat.getOneMinute().getCount(), 0D);
+        assertEquals(stat.getFiveMinutes().getCount(), 0D);
+        assertEquals(stat.getFifteenMinutes().getCount(), 0D);
+
+        assertEquals(stat.getAllTime().getAvg(), Double.NaN);
+        assertEquals(stat.getOneMinute().getAvg(), Double.NaN);
+        assertEquals(stat.getFiveMinutes().getAvg(), Double.NaN);
+        assertEquals(stat.getFifteenMinutes().getAvg(), Double.NaN);
+    }
+
+    @Test
     public void testEmpty()
     {
         TimeStat stat = new TimeStat();
@@ -94,10 +144,21 @@ public class TestTimeStat
             return null;
         });
 
+        try {
+            stat.time(() -> {
+                ticker.increment(20, TimeUnit.MILLISECONDS);
+                throw new Exception("thrown by time");
+            });
+            fail("Exception should have been thrown");
+        }
+        catch (Exception e) {
+            assertEquals(e.getMessage(), "thrown by time");
+        }
+
         TimeDistribution allTime = stat.getAllTime();
-        assertEquals(allTime.getCount(), 1.0);
+        assertEquals(allTime.getCount(), 2.0);
         assertEquals(allTime.getMin(), 0.010);
-        assertEquals(allTime.getMax(), 0.010);
+        assertEquals(allTime.getMax(), 0.020);
     }
 
     @Test
@@ -124,6 +185,21 @@ public class TestTimeStat
         TimeDistribution allTime = stat.getAllTime();
         assertEquals(allTime.getMin(), 1000.0);
         assertEquals(allTime.getMax(), 1000.0);
+    }
+
+    @Test
+    public void testAddNanos()
+    {
+        TimeStat stat = new TimeStat(ticker, TimeUnit.NANOSECONDS);
+        stat.add(1, TimeUnit.MILLISECONDS);
+        stat.addNanos(1L);
+
+        TimeDistribution allTime = stat.getAllTime();
+        assertEquals(allTime.getMin(), 1.0);
+        assertEquals(allTime.getMax(), 1000000.0);
+        assertEquals(allTime.getCount(), 2.0);
+
+        assertThrows(IllegalArgumentException.class, () -> stat.addNanos(-1));
     }
 
     private static void assertPercentile(String name, double value, List<Long> values, double percentile)

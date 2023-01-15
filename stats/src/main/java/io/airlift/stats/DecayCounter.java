@@ -133,9 +133,11 @@ public final class DecayCounter
         return TimeUnit.NANOSECONDS.toSeconds(ticker.read());
     }
 
-    public synchronized DecayCounterSnapshot snapshot()
+    public DecayCounterSnapshot snapshot()
     {
-        return new DecayCounterSnapshot(getCount(), getRate());
+        // synchronization on getCount() is sufficient
+        double count = getCount();
+        return new DecayCounterSnapshot(count, count * alpha);
     }
 
     @Override

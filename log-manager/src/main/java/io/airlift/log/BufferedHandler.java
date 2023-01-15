@@ -124,9 +124,7 @@ class BufferedHandler
 
     private void logging()
     {
-        while (!closed.get() || !queue.isEmpty()) {
-            processQueue();
-        }
+        processQueue();
 
         // logging is closed, so close the current output file
         synchronized (messageOutput) {
@@ -145,7 +143,7 @@ class BufferedHandler
     {
         List<byte[]> batch = new ArrayList<>(MAX_BATCH_COUNT);
         boolean poisonMessageSeen = false;
-        while (!closed.get() || !poisonMessageSeen) {
+        while (!poisonMessageSeen) {
             if (queue.isEmpty()) {
                 try {
                     batch.add(queue.take());

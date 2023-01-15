@@ -54,9 +54,9 @@ public class ObjectMapperProvider
     private Map<Class<?>, JsonSerializer<?>> jsonSerializers;
     private Map<Class<?>, JsonDeserializer<?>> jsonDeserializers;
 
-    private final Set<Module> modules = new HashSet<>();
+    private final Set<JsonSubType> jsonSubTypes = new HashSet<>();
 
-    private static final boolean HAS_JAVA_RECORDS = hasJavaRecords();
+    private final Set<Module> modules = new HashSet<>();
 
     @Inject
     public ObjectMapperProvider()
@@ -72,9 +72,7 @@ public class ObjectMapperProvider
         modules.add(new JavaTimeModule());
         modules.add(new GuavaModule());
         modules.add(new ParameterNamesModule());
-        if (HAS_JAVA_RECORDS) {
-            modules.add(new RecordAutoDetectModule());
-        }
+        modules.add(new RecordAutoDetectModule());
 
         try {
             getClass().getClassLoader().loadClass("org.joda.time.DateTime");
@@ -90,10 +88,22 @@ public class ObjectMapperProvider
         this.jsonSerializers = ImmutableMap.copyOf(jsonSerializers);
     }
 
+    public ObjectMapperProvider withJsonSerializers(Map<Class<?>, JsonSerializer<?>> jsonSerializers)
+    {
+        setJsonSerializers(jsonSerializers);
+        return this;
+    }
+
     @Inject(optional = true)
     public void setJsonDeserializers(Map<Class<?>, JsonDeserializer<?>> jsonDeserializers)
     {
         this.jsonDeserializers = ImmutableMap.copyOf(jsonDeserializers);
+    }
+
+    public ObjectMapperProvider withJsonDeserializers(Map<Class<?>, JsonDeserializer<?>> jsonDeserializers)
+    {
+        setJsonDeserializers(jsonDeserializers);
+        return this;
     }
 
     @Inject(optional = true)
@@ -102,16 +112,46 @@ public class ObjectMapperProvider
         this.keySerializers = keySerializers;
     }
 
+    public ObjectMapperProvider withKeySerializers(@JsonKeySerde Map<Class<?>, JsonSerializer<?>> keySerializers)
+    {
+        setKeySerializers(keySerializers);
+        return this;
+    }
+
     @Inject(optional = true)
     public void setKeyDeserializers(@JsonKeySerde Map<Class<?>, KeyDeserializer> keyDeserializers)
     {
         this.keyDeserializers = keyDeserializers;
     }
 
+    public ObjectMapperProvider withKeyDeserializers(@JsonKeySerde Map<Class<?>, KeyDeserializer> keyDeserializers)
+    {
+        setKeyDeserializers(keyDeserializers);
+        return this;
+    }
+
     @Inject(optional = true)
     public void setModules(Set<Module> modules)
     {
         this.modules.addAll(modules);
+    }
+
+    public ObjectMapperProvider withModules(Set<Module> modules)
+    {
+        setModules(modules);
+        return this;
+    }
+
+    @Inject(optional = true)
+    public void setJsonSubTypes(Set<JsonSubType> jsonSubTypes)
+    {
+        this.jsonSubTypes.addAll(jsonSubTypes);
+    }
+
+    public ObjectMapperProvider withJsonSubTypes(Set<JsonSubType> jsonSubTypes)
+    {
+        setJsonSubTypes(jsonSubTypes);
+        return this;
     }
 
     @Override
@@ -168,6 +208,10 @@ public class ObjectMapperProvider
             modules.add(module);
         }
 
+        for (JsonSubType jsonSubType : jsonSubTypes) {
+            modules.addAll(jsonSubType.modules());
+        }
+
         for (Module module : modules) {
             objectMapper.registerModule(module);
         }
@@ -198,16 +242,5 @@ public class ObjectMapperProvider
     private <T> void addKeySerializer(SimpleModule module, Class<?> type, JsonSerializer<?> keySerializer)
     {
         module.addKeySerializer((Class<? extends T>) type, (JsonSerializer<T>) keySerializer);
-    }
-
-    private static boolean hasJavaRecords()
-    {
-        try {
-            Class.forName("java.lang.Record");
-            return true;
-        }
-        catch (ClassNotFoundException e) {
-            return false;
-        }
     }
 }
