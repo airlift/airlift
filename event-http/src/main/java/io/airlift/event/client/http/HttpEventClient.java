@@ -26,7 +26,6 @@ import io.airlift.event.client.EventSubmissionFailedException;
 import io.airlift.event.client.ForEventClient;
 import io.airlift.event.client.JsonEventWriter;
 import io.airlift.event.client.ServiceUnavailableException;
-import io.airlift.http.client.BodyGenerator;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.RequestStats;
@@ -39,16 +38,18 @@ import org.weakref.jmx.Managed;
 
 import javax.inject.Inject;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 
 import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static io.airlift.http.client.Request.Builder.preparePost;
+import static io.airlift.http.client.StaticBodyGenerator.createStaticBodyGenerator;
 import static java.util.Objects.requireNonNull;
 
 public class HttpEventClient
@@ -114,34 +115,28 @@ public class HttpEventClient
             return immediateFailedFuture(new ServiceUnavailableException(serviceSelector.getType(), serviceSelector.getPool()));
         }
 
+        byte[] events = writeEvents(eventWriter, eventGenerator);
+
         // todo this doesn't really work due to returning the future which can fail without being retried
         Request request = preparePost()
                 .setUri(uris.get(0).resolve("/v2/event"))
                 .setHeader("User-Agent", nodeInfo.getNodeId())
                 .setHeader("Content-Type", MEDIA_TYPE_JSON.toString())
-                .setBodyGenerator(new JsonEntityWriter<>(eventWriter, eventGenerator))
+                .setBodyGenerator(createStaticBodyGenerator(events))
                 .build();
         return httpClient.executeAsync(request, new EventResponseHandler(serviceSelector.getType(), serviceSelector.getPool()));
     }
 
-    private static class JsonEntityWriter<T>
-            implements BodyGenerator
+    private static <T> byte[] writeEvents(JsonEventWriter eventWriter, EventGenerator<T> events)
     {
-        private final JsonEventWriter eventWriter;
-        private final EventGenerator<T> events;
-
-        public JsonEntityWriter(JsonEventWriter eventWriter, EventGenerator<T> events)
-        {
-            this.eventWriter = requireNonNull(eventWriter, "eventWriter is null");
-            this.events = requireNonNull(events, "events is null");
-        }
-
-        @Override
-        public void write(OutputStream out)
-                throws Exception
-        {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        try {
             eventWriter.writeEvents(events, out);
         }
+        catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        return out.toByteArray();
     }
 
     private static class EventResponseHandler
