@@ -19,6 +19,10 @@ import java.io.OutputStream;
 
 public interface BodyGenerator
 {
+    /**
+     * @deprecated use {@link StaticBodyGenerator}, {@link JsonBodyGenerator}, or {@link FileBodyGenerator}
+     */
+    @Deprecated
     void write(OutputStream out)
             throws Exception;
 }
