@@ -54,6 +54,7 @@ import javax.net.ssl.SNIServerName;
 import javax.net.ssl.SSLEngine;
 import javax.security.auth.x500.X500Principal;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -713,7 +714,7 @@ public class JettyHttpClient
                 jettyRequest.content(fileContentProvider(path));
             }
             else {
-                jettyRequest.content(new BodyGeneratorContentProvider(bodyGenerator, httpClient.getExecutor()));
+                jettyRequest.content(new BytesContentProvider(generateBody(bodyGenerator)));
             }
         }
 
@@ -748,6 +749,20 @@ public class JettyHttpClient
         catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    @SuppressWarnings("deprecation")
+    private static byte[] generateBody(BodyGenerator generator)
+    {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        try {
+            generator.write(out);
+        }
+        catch (Exception e) {
+            throwIfUnchecked(e);
+            throw new RuntimeException(e);
+        }
+        return out.toByteArray();
     }
 
     public List<HttpRequestFilter> getRequestFilters()
