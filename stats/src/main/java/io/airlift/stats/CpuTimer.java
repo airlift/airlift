@@ -163,6 +163,7 @@ public class CpuTimer
         /**
          * This method will report zero duration when no user time was collected. Check {@link CpuDuration#hasUser()} or use {@link CpuDuration#getUserIfPresent()}
          * in order distinguish a true zero user CPU time from no value being present.
+         *
          * @return The {@link CpuDuration#user} value if present, otherwise returns a value of zero nanoseconds
          */
         public Duration getUser()
