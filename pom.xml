@@ -13,7 +13,7 @@
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airbase</artifactId>
-        <version>132</version>
+        <version>133</version>
     </parent>
 
     <inceptionYear>2010</inceptionYear>
@@ -72,6 +72,7 @@
         <module>http-server</module>
         <module>jaxrs</module>
         <module>jaxrs-testing</module>
+        <module>openmetrics</module>
         <module>jmx-http-rpc</module>
         <module>jmx-http</module>
         <module>jmx</module>
@@ -202,6 +203,12 @@
             <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>node</artifactId>
+                <version>${dep.airlift.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>openmetrics</artifactId>
                 <version>${dep.airlift.version}</version>
             </dependency>
 
