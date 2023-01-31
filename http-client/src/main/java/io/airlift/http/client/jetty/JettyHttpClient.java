@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.net.HostAndPort;
 import com.google.common.primitives.Ints;
 import io.airlift.http.client.BodyGenerator;
+import io.airlift.http.client.ByteBufferBodyGenerator;
 import io.airlift.http.client.FileBodyGenerator;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.HttpRequestFilter;
@@ -28,6 +29,7 @@ import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
+import org.eclipse.jetty.client.util.ByteBufferRequestContent;
 import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.client.util.PathRequestContent;
@@ -701,6 +703,9 @@ public class JettyHttpClient
         if (bodyGenerator != null) {
             if (bodyGenerator instanceof StaticBodyGenerator generator) {
                 jettyRequest.body(new BytesRequestContent(generator.getBody()));
+            }
+            else if (bodyGenerator instanceof ByteBufferBodyGenerator generator) {
+                jettyRequest.body(new ByteBufferRequestContent(generator.getByteBuffers()));
             }
             else if (bodyGenerator instanceof FileBodyGenerator generator) {
                 jettyRequest.body(fileContent(generator.getPath()));
