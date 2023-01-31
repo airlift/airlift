@@ -280,8 +280,11 @@ public class Bootstrap
 
     private void logConfiguration(ConfigurationFactory configurationFactory)
     {
-        ColumnPrinter columnPrinter = makePrinterForConfiguration(configurationFactory);
+        if (!log.isInfoEnabled()) {
+            return;
+        }
 
+        ColumnPrinter columnPrinter = makePrinterForConfiguration(configurationFactory);
         for (String line : columnPrinter.generateOutput()) {
             log.info(line);
         }
