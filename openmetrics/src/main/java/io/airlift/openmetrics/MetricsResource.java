@@ -286,13 +286,22 @@ public class MetricsResource
 
     private Optional<Metric> getMetricFromTarget(ManagedClass managedClass, String metricName, String description)
     {
-        if (managedClass.getTargetClass() == CounterStat.class) {
-            return Optional.of(Counter.from(metricName, (CounterStat) managedClass.getTarget(), description));
+        Object target;
+        try {
+            target = managedClass.getTarget();
+        }
+        catch (IllegalStateException ignored) {
+            return Optional.empty();
         }
 
-        if (managedClass.getTargetClass() == TimeDistribution.class) {
-            return Optional.of(Summary.from(metricName, (TimeDistribution) managedClass.getTarget(), description));
+        if (target instanceof CounterStat counterStat) {
+            return Optional.of(Counter.from(metricName, counterStat, description));
         }
+
+        if (target instanceof TimeDistribution timeDistribution) {
+            return Optional.of(Summary.from(metricName, timeDistribution, description));
+        }
+
         return Optional.empty();
     }
 
