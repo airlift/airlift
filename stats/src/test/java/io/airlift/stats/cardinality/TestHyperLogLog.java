@@ -14,7 +14,6 @@
 package io.airlift.stats.cardinality;
 
 import io.airlift.slice.Slice;
-import org.openjdk.jol.info.ClassLayout;
 import org.testng.annotations.Test;
 
 import java.util.HashMap;
@@ -22,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
+import static io.airlift.slice.SizeOf.instanceSize;
 import static io.airlift.slice.testing.SliceAssertions.assertSlicesEqual;
 import static io.airlift.stats.cardinality.TestUtils.sequence;
 import static java.lang.Math.toIntExact;
@@ -81,7 +81,7 @@ public class TestHyperLogLog
     {
         assertEquals(
                 HyperLogLog.newInstance(8).estimatedInMemorySize(),
-                toIntExact(ClassLayout.parseClass(HyperLogLog.class).instanceSize() + (new SparseHll(10)).estimatedInMemorySize()));
+                toIntExact(instanceSize(HyperLogLog.class) + (new SparseHll(10)).estimatedInMemorySize()));
     }
 
     @Test

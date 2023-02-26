@@ -16,15 +16,14 @@ package io.airlift.stats.cardinality;
 import com.google.common.annotations.VisibleForTesting;
 import io.airlift.slice.Murmur3Hash128;
 import io.airlift.slice.Slice;
-import org.openjdk.jol.info.ClassLayout;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static io.airlift.slice.SizeOf.instanceSize;
 import static io.airlift.stats.cardinality.Utils.indexBitLength;
-import static java.lang.Math.toIntExact;
 
 public class HyperLogLog
 {
-    private static final int INSTANCE_SIZE = toIntExact(ClassLayout.parseClass(HyperLogLog.class).instanceSize());
+    private static final int INSTANCE_SIZE = instanceSize(HyperLogLog.class);
     private static final int MAX_NUMBER_OF_BUCKETS = 65536;
     private HllInstance instance;
 

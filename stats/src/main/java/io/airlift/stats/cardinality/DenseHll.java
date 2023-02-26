@@ -20,7 +20,6 @@ import io.airlift.slice.BasicSliceInput;
 import io.airlift.slice.DynamicSliceOutput;
 import io.airlift.slice.SizeOf;
 import io.airlift.slice.Slice;
-import org.openjdk.jol.info.ClassLayout;
 
 import javax.annotation.concurrent.NotThreadSafe;
 
@@ -30,12 +29,12 @@ import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
+import static io.airlift.slice.SizeOf.instanceSize;
 import static io.airlift.stats.cardinality.Utils.alpha;
 import static io.airlift.stats.cardinality.Utils.computeIndex;
 import static io.airlift.stats.cardinality.Utils.computeValue;
 import static io.airlift.stats.cardinality.Utils.linearCounting;
 import static io.airlift.stats.cardinality.Utils.numberOfBuckets;
-import static java.lang.Math.toIntExact;
 
 @NotThreadSafe
 final class DenseHll
@@ -47,7 +46,7 @@ final class DenseHll
     private static final int MAX_DELTA = (1 << BITS_PER_BUCKET) - 1;
     private static final int BUCKET_MASK = (1 << BITS_PER_BUCKET) - 1;
 
-    private static final int DENSE_INSTANCE_SIZE = toIntExact(ClassLayout.parseClass(DenseHll.class).instanceSize());
+    private static final int DENSE_INSTANCE_SIZE = instanceSize(DenseHll.class);
     private static final int OVERFLOW_GROW_INCREMENT = 5;
 
     private final byte indexBitLength;

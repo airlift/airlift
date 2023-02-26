@@ -20,7 +20,6 @@ import io.airlift.slice.BasicSliceInput;
 import io.airlift.slice.DynamicSliceOutput;
 import io.airlift.slice.SizeOf;
 import io.airlift.slice.Slice;
-import org.openjdk.jol.info.ClassLayout;
 
 import javax.annotation.concurrent.NotThreadSafe;
 
@@ -28,6 +27,7 @@ import java.util.Arrays;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
+import static io.airlift.slice.SizeOf.instanceSize;
 import static io.airlift.slice.SizeOf.sizeOf;
 import static io.airlift.stats.cardinality.Utils.computeIndex;
 import static io.airlift.stats.cardinality.Utils.linearCounting;
@@ -40,7 +40,7 @@ import static java.util.Comparator.comparingInt;
 final class SparseHll
         implements HllInstance
 {
-    private static final int SPARSE_INSTANCE_SIZE = toIntExact(ClassLayout.parseClass(SparseHll.class).instanceSize());
+    private static final int SPARSE_INSTANCE_SIZE = instanceSize(SparseHll.class);
 
     // 6 bits to encode the number of zeros after the truncated hash
     // and be able to fit the encoded value in an integer
