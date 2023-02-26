@@ -21,7 +21,6 @@ import io.airlift.slice.Slice;
 import io.airlift.slice.SliceInput;
 import io.airlift.slice.SliceOutput;
 import io.airlift.slice.Slices;
-import org.openjdk.jol.info.ClassLayout;
 
 import javax.annotation.concurrent.NotThreadSafe;
 
@@ -31,9 +30,9 @@ import java.util.List;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
+import static io.airlift.slice.SizeOf.instanceSize;
 import static java.lang.Double.isInfinite;
 import static java.lang.Double.isNaN;
-import static java.lang.Math.toIntExact;
 import static java.util.Objects.requireNonNull;
 
 @NotThreadSafe
@@ -42,7 +41,7 @@ public class TDigest
     public static final double DEFAULT_COMPRESSION = 100;
 
     private static final int FORMAT_TAG = 0;
-    private static final int T_DIGEST_SIZE = toIntExact(ClassLayout.parseClass(TDigest.class).instanceSize());
+    private static final int T_DIGEST_SIZE = instanceSize(TDigest.class);
     private static final int INITIAL_CAPACITY = 1;
     private static final int FUDGE_FACTOR = 10;
 

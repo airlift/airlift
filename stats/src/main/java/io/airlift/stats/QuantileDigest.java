@@ -15,7 +15,6 @@ import io.airlift.slice.SizeOf;
 import io.airlift.slice.Slice;
 import io.airlift.slice.SliceInput;
 import io.airlift.slice.SliceOutput;
-import org.openjdk.jol.info.ClassLayout;
 
 import javax.annotation.concurrent.NotThreadSafe;
 
@@ -32,9 +31,9 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
+import static io.airlift.slice.SizeOf.instanceSize;
 import static io.airlift.stats.ExponentialDecay.weight;
 import static io.airlift.stats.QuantileDigest.MiddleFunction.DEFAULT;
-import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 
 /**
@@ -58,7 +57,7 @@ import static java.lang.String.format;
 public class QuantileDigest
 {
     private static final int MAX_BITS = 64;
-    private static final int QUANTILE_DIGEST_SIZE = toIntExact(ClassLayout.parseClass(QuantileDigest.class).instanceSize());
+    private static final int QUANTILE_DIGEST_SIZE = instanceSize(QuantileDigest.class);
 
     // needs to be such that Math.exp(alpha * seconds) does not grow too big
     static final long RESCALE_THRESHOLD_SECONDS = 50;
