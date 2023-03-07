@@ -171,7 +171,7 @@ final class SparseHll
             // if zeros > EXTENDED_BITS_LENGTH - indexBits, it means all those bits were zeros,
             // so look at the entry value, which contains the number of leading 0 *after* EXTENDED_BITS_LENGTH
             int bits = EXTENDED_PREFIX_BITS - indexBitLength;
-            if (zeros > bits) {
+            if (zeros >= bits) {
                 zeros = bits + decodeBucketValue(entry);
             }
 
