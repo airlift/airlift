@@ -13,7 +13,7 @@
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airbase</artifactId>
-        <version>133</version>
+        <version>134</version>
     </parent>
 
     <inceptionYear>2010</inceptionYear>
@@ -32,7 +32,6 @@
         <dep.packaging.version>${dep.airlift.version}</dep.packaging.version>
         <dep.jersey.version>2.26</dep.jersey.version>
         <dep.jjwt.version>0.11.2</dep.jjwt.version>
-        <dep.slice.version>0.45</dep.slice.version>
     </properties>
 
     <organization>
@@ -270,7 +269,7 @@
             <dependency>
                 <groupId>net.bytebuddy</groupId>
                 <artifactId>byte-buddy</artifactId>
-                <version>1.12.13</version>
+                <version>1.14.0</version>
             </dependency>
 
             <dependency>
