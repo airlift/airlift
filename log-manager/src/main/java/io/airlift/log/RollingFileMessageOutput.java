@@ -13,6 +13,7 @@
  */
 package io.airlift.log;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.MoreFiles;
@@ -22,6 +23,7 @@ import io.airlift.units.DataSize;
 import javax.annotation.concurrent.GuardedBy;
 
 import java.io.BufferedOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -34,6 +36,8 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -137,7 +141,7 @@ final class RollingFileMessageOutput
 
         // convert from legacy logger
         try {
-            LegacyRollingFileHandler.recoverTempFiles(filename);
+            recoverLegacyTempFiles(filename);
         }
         catch (IOException e) {
             new ErrorManager().error("Unable to recover legacy logging temp files", e, GENERIC_FAILURE);
@@ -444,5 +448,36 @@ final class RollingFileMessageOutput
             files.add(currentOutputFileName);
         }
         return files.build();
+    }
+
+    private static final String TEMP_FILE_EXTENSION = ".tmp";
+    private static final String LOG_FILE_EXTENSION = ".log";
+
+    static void recoverLegacyTempFiles(String logPath)
+            throws IOException
+    {
+        // Logback has a tendency to leave around temp files if it is interrupted.
+        // These .tmp files are log files that are about to be compressed.
+        // This method recovers them so that they aren't orphaned.
+
+        File logPathFile = new File(logPath).getParentFile();
+        File[] tempFiles = logPathFile.listFiles((dir, name) -> name.endsWith(TEMP_FILE_EXTENSION));
+
+        if (tempFiles == null) {
+            return;
+        }
+
+        List<String> errorMessages = new ArrayList<>();
+        for (File tempFile : tempFiles) {
+            String newName = tempFile.getName().substring(0, tempFile.getName().length() - TEMP_FILE_EXTENSION.length());
+            File newFile = new File(tempFile.getParent(), newName + LOG_FILE_EXTENSION);
+
+            if (!tempFile.renameTo(newFile)) {
+                errorMessages.add(format("Could not rename temp file [%s] to [%s]", tempFile, newFile));
+            }
+        }
+        if (!errorMessages.isEmpty()) {
+            throw new IOException("Error recovering temp files\n" + Joiner.on("\n").join(errorMessages));
+        }
     }
 }

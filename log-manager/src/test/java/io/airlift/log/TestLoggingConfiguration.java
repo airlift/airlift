@@ -38,10 +38,8 @@ public class TestLoggingConfiguration
                 .setMaxSize(new DataSize(100, DataSize.Unit.MEGABYTE))
                 .setMaxTotalSize(new DataSize(1, Unit.GIGABYTE))
                 .setCompression(CompressionType.GZIP)
-                .setMaxHistory(30)
                 .setLevelsFile(null)
                 .setFormat(Format.TEXT)
-                .setLegacyLoggerImplementationEnabled(false)
                 .setLogAnnotationFile(null));
     }
 
@@ -56,10 +54,8 @@ public class TestLoggingConfiguration
                 .put("log.max-size", "1kB")
                 .put("log.max-total-size", "33kB")
                 .put("log.compression", "NONE")
-                .put("log.max-history", "3")
                 .put("log.levels-file", "/tmp/levels.txt")
                 .put("log.format", "json")
-                .put("log.legacy-implementation.enabled", "true")
                 .put("log.annotation-file", annotationFile.getAbsolutePath())
                 .build();
 
@@ -69,10 +65,8 @@ public class TestLoggingConfiguration
                 .setMaxSize(new DataSize(1, KILOBYTE))
                 .setMaxTotalSize(new DataSize(33, KILOBYTE))
                 .setCompression(CompressionType.NONE)
-                .setMaxHistory(3)
                 .setLevelsFile("/tmp/levels.txt")
                 .setFormat(Format.JSON)
-                .setLegacyLoggerImplementationEnabled(true)
                 .setLogAnnotationFile(annotationFile.getAbsolutePath());
 
         ConfigAssertions.assertFullMapping(properties, expected);

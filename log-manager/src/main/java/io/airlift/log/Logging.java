@@ -114,18 +114,10 @@ public class Logging
         consoleHandler = null;
     }
 
-    public void logToFile(boolean legacyLoggerImplementation, String logPath, int maxHistory, DataSize maxFileSize, DataSize maxTotalSize, CompressionType compressionType, Formatter formatter)
+    public void logToFile(String logPath, DataSize maxFileSize, DataSize maxTotalSize, CompressionType compressionType, Formatter formatter)
     {
         log.info("Logging to %s", logPath);
-
-        Handler handler;
-        if (legacyLoggerImplementation) {
-            handler = new LegacyRollingFileHandler(logPath, maxHistory, maxFileSize.toBytes(), formatter);
-        }
-        else {
-            handler = createRollingFileHandler(logPath, maxFileSize, maxTotalSize, compressionType, formatter, new BufferedHandlerErrorManager(stdErr));
-        }
-        ROOT.addHandler(handler);
+        ROOT.addHandler(createRollingFileHandler(logPath, maxFileSize, maxTotalSize, compressionType, formatter, new BufferedHandlerErrorManager(stdErr)));
     }
 
     private void logToSocket(String logPath, Formatter formatter)
@@ -224,12 +216,8 @@ public class Logging
                 logToSocket(config.getLogPath(), config.getFormat().createFormatter(logAnnotations));
             }
             else {
-                @SuppressWarnings("deprecation")
-                int maxHistory = config.getMaxHistory();
                 logToFile(
-                        config.isLegacyLoggerImplementationEnabled(),
                         config.getLogPath(),
-                        maxHistory,
                         config.getMaxSize(),
                         config.getMaxTotalSize(),
                         config.getCompression(),

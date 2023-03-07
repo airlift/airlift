@@ -28,7 +28,11 @@ import javax.validation.constraints.NotNull;
 import static io.airlift.units.DataSize.Unit.GIGABYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
 
-@DefunctConfig("log.max-size-in-bytes")
+@DefunctConfig({
+        "log.legacy-implementation.enabled",
+        "log.max-history",
+        "log.max-size-in-bytes",
+})
 public class LoggingConfiguration
 {
     private boolean consoleEnabled = true;
@@ -40,7 +44,6 @@ public class LoggingConfiguration
     private String levelsFile;
     private String logAnnotationFile;
     private Format format = Format.TEXT;
-    private boolean legacyLoggerImplementationEnabled;
 
     public boolean isConsoleEnabled()
     {
@@ -107,21 +110,6 @@ public class LoggingConfiguration
         return this;
     }
 
-    @Deprecated
-    public int getMaxHistory()
-    {
-        return maxHistory;
-    }
-
-    @Deprecated
-    @Config("log.max-history")
-    @ConfigDescription("Maximum number of log files to retain")
-    public LoggingConfiguration setMaxHistory(int maxHistory)
-    {
-        this.maxHistory = maxHistory;
-        return this;
-    }
-
     public String getLevelsFile()
     {
         return levelsFile;
@@ -143,18 +131,6 @@ public class LoggingConfiguration
     public LoggingConfiguration setFormat(Format format)
     {
         this.format = format;
-        return this;
-    }
-
-    public boolean isLegacyLoggerImplementationEnabled()
-    {
-        return legacyLoggerImplementationEnabled;
-    }
-
-    @Config("log.legacy-implementation.enabled")
-    public LoggingConfiguration setLegacyLoggerImplementationEnabled(boolean enabled)
-    {
-        this.legacyLoggerImplementationEnabled = enabled;
         return this;
     }
 

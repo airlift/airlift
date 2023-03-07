@@ -46,6 +46,8 @@ import static io.airlift.log.RollingFileMessageOutput.createRollingFileHandler;
 import static io.airlift.units.DataSize.Unit.BYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.nio.file.StandardOpenOption.APPEND;
+import static java.nio.file.StandardOpenOption.CREATE;
 import static java.util.function.Predicate.not;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.testng.Assert.assertEquals;
@@ -433,14 +435,13 @@ public class TestRollingFileMessageOutput
         // test history visibility
         Path tempDir = Files.createTempDirectory("logging-test");
         try {
-            // open a legacy handler
+            // simulate legacy handler
             Path masterFile = tempDir.resolve("launcher.log");
-            LegacyRollingFileHandler legacyHandler = new LegacyRollingFileHandler(masterFile.toString(), 10, new DataSize(1, MEGABYTE).toBytes(), TEXT.createFormatter(TESTING_ANNOTATIONS));
+
+            Files.writeString(masterFile, new StaticFormatter().formatMessage(new LogRecord(Level.SEVERE, "apple")), CREATE, APPEND);
+            Files.writeString(masterFile, new StaticFormatter().formatMessage(new LogRecord(Level.SEVERE, "banana")), CREATE, APPEND);
 
             assertTrue(Files.isRegularFile(masterFile));
-
-            legacyHandler.publish(new LogRecord(Level.SEVERE, "apple"));
-            legacyHandler.publish(new LogRecord(Level.SEVERE, "banana"));
 
             List<String> lines = waitForExactLines(masterFile, 2);
             assertEquals(lines.size(), 2);
@@ -449,8 +450,6 @@ public class TestRollingFileMessageOutput
                             .filter(line -> line.contains("apple") || line.contains("banana"))
                             .count(),
                     2);
-
-            legacyHandler.close();
 
             // open new handler
             BufferedHandler newHandler = createRollingFileHandler(masterFile.toString(), new DataSize(1, MEGABYTE), new DataSize(10, MEGABYTE), NONE, TEXT.createFormatter(TESTING_ANNOTATIONS), new ErrorManager());
