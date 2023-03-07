@@ -5,6 +5,7 @@
 225
 
 - Upgrade to Slice 0.45
+- Remove legacy logging implementation
 
 224
 
