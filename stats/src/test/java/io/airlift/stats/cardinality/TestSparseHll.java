@@ -31,6 +31,22 @@ public class TestSparseHll
     private static final int SPARSE_HLL_INSTANCE_SIZE = instanceSize(SparseHll.class);
 
     @Test(dataProvider = "bits")
+    public void testNumberOfZeros(int indexBitLength)
+    {
+        for (int i = 0; i < 64 - indexBitLength; i++) {
+            long hash = 1L << i;
+            int expectedValue = Long.numberOfLeadingZeros(hash << indexBitLength) + 1;
+
+            SparseHll sparseHll = new SparseHll(indexBitLength);
+            sparseHll.insertHash(hash);
+            sparseHll.eachBucket((bucket, value) -> {
+                assertEquals(bucket, 0);
+                assertEquals(value, expectedValue);
+            });
+        }
+    }
+
+    @Test(dataProvider = "bits")
     public void testMerge(int prefixBitLength)
             throws Exception
     {
