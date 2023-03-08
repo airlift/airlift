@@ -6,7 +6,6 @@ import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.log.Logging;
-import io.airlift.testing.Closeables;
 import io.airlift.units.Duration;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.testng.SkipException;
@@ -63,7 +62,6 @@ import static io.airlift.http.client.StringResponseHandler.createStringResponseH
 import static io.airlift.testing.Assertions.assertBetweenInclusive;
 import static io.airlift.testing.Assertions.assertGreaterThanOrEqual;
 import static io.airlift.testing.Assertions.assertLessThan;
-import static io.airlift.testing.Closeables.closeQuietly;
 import static io.airlift.units.Duration.nanosSince;
 import static java.lang.String.format;
 import static java.lang.Thread.currentThread;
@@ -1062,7 +1060,9 @@ public abstract class AbstractHttpClientTest
         @Override
         public void close()
         {
-            clientSockets.forEach(Closeables::closeQuietly);
+            for (Socket socket : clientSockets) {
+                closeQuietly(socket);
+            }
             closeQuietly(serverSocket);
         }
 
@@ -1143,5 +1143,16 @@ public abstract class AbstractHttpClientTest
     private static <E extends Exception> E castThrowable(Throwable t)
     {
         return (E) t;
+    }
+
+    protected static void closeQuietly(Closeable closeable)
+    {
+        try {
+            if (closeable != null) {
+                closeable.close();
+            }
+        }
+        catch (IOException | RuntimeException ignored) {
+        }
     }
 }

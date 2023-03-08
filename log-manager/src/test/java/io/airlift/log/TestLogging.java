@@ -25,6 +25,7 @@ import java.io.IOException;
 
 import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
+import static java.nio.file.Files.createTempDirectory;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
@@ -37,7 +38,7 @@ public class TestLogging
     public void setup()
             throws IOException
     {
-        tempDir = Files.createTempDir();
+        tempDir = createTempDirectory(null).toFile();
     }
 
     @AfterMethod(alwaysRun = true)

@@ -33,6 +33,7 @@ public class ByteBufferBodyGenerator
         return byteBuffers;
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public void write(OutputStream out)
     {

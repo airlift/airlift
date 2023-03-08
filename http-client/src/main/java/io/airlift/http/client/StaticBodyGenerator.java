@@ -43,6 +43,7 @@ public class StaticBodyGenerator
         return body;
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public void write(OutputStream out)
             throws Exception

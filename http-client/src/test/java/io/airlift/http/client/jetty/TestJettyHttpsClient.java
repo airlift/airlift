@@ -16,7 +16,6 @@ import java.util.concurrent.TimeoutException;
 
 import static com.google.common.io.Resources.getResource;
 import static io.airlift.http.client.Request.Builder.prepareGet;
-import static io.airlift.testing.Closeables.closeQuietly;
 
 public class TestJettyHttpsClient
         extends AbstractHttpClientTest

@@ -13,7 +13,6 @@ import io.airlift.jmx.JmxHttpModule;
 import io.airlift.jmx.JmxModule;
 import io.airlift.json.JsonModule;
 import io.airlift.node.testing.TestingNodeModule;
-import io.airlift.testing.Closeables;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -57,13 +56,10 @@ public class TestServer
     @AfterMethod(alwaysRun = true)
     public void teardown()
     {
-        try {
+        try (HttpClient ignored = client) {
             if (lifeCycleManager != null) {
                 lifeCycleManager.stop();
             }
-        }
-        finally {
-            Closeables.closeQuietly(client);
         }
     }
 

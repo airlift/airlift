@@ -15,7 +15,6 @@ import io.airlift.jaxrs.JaxrsModule;
 import io.airlift.json.JsonModule;
 import io.airlift.json.ObjectMapperProvider;
 import io.airlift.node.testing.TestingNodeModule;
-import io.airlift.testing.Closeables;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
@@ -75,13 +74,10 @@ public class TestMBeanResource
     @AfterClass(alwaysRun = true)
     public void teardown()
     {
-        try {
+        try (HttpClient ignored = client) {
             if (lifeCycleManager != null) {
                 lifeCycleManager.stop();
             }
-        }
-        finally {
-            Closeables.closeQuietly(client);
         }
     }
 
