@@ -35,7 +35,7 @@ public class MetricsConfig
     @ConfigDescription("JMX object names to include when retrieving all metrics.")
     public MetricsConfig setJmxObjectNames(List<String> jmxObjectNames)
     {
-        ImmutableList.Builder objectNames = ImmutableList.builder();
+        ImmutableList.Builder<ObjectName> objectNames = ImmutableList.builder();
 
         for (String jmxObjectName : jmxObjectNames) {
             try {

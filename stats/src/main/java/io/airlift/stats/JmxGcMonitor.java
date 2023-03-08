@@ -260,7 +260,9 @@ public class JmxGcMonitor
         {
             ImmutableMap.Builder<String, MemoryUsage> map = ImmutableMap.builder();
             TabularData tabularData = (TabularData) compositeData.get(attributeName);
-            for (CompositeData entry : (Collection<CompositeData>) tabularData.values()) {
+            @SuppressWarnings("unchecked")
+            Collection<CompositeData> values = (Collection<CompositeData>) tabularData.values();
+            for (CompositeData entry : values) {
                 map.put((String) entry.get("key"), MemoryUsage.from((CompositeData) entry.get("value")));
             }
             return map.build();

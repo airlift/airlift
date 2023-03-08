@@ -9,8 +9,6 @@ import io.airlift.http.client.TestingRequestFilter;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 
-import static io.airlift.testing.Closeables.closeQuietly;
-
 public class TestAsyncJettyHttpClient
         extends AbstractHttpClientTest
 {

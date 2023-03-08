@@ -75,7 +75,7 @@ public class TestConfigurationMetadata
     {
         TestMonitor monitor = new TestMonitor();
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(SetterSensitiveClass.class, monitor);
-        Map<String, Set<String>> expectedAttributes = new HashMap();
+        Map<String, Set<String>> expectedAttributes = new HashMap<>();
         expectedAttributes.put("Value", ImmutableSet.of("value"));
 
         verifyMetaData(metadata, SetterSensitiveClass.class, "description", true, expectedAttributes);
@@ -89,7 +89,7 @@ public class TestConfigurationMetadata
     {
         TestMonitor monitor = new TestMonitor();
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(SetterHiddenClass.class, monitor);
-        Map<String, Set<String>> expectedAttributes = new HashMap();
+        Map<String, Set<String>> expectedAttributes = new HashMap<>();
         expectedAttributes.put("Value", ImmutableSet.of("value"));
 
         verifyMetaData(metadata, SetterHiddenClass.class, "description", false, true, expectedAttributes);

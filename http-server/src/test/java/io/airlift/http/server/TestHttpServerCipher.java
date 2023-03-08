@@ -14,7 +14,6 @@
 package io.airlift.http.server;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.io.Files;
 import io.airlift.event.client.NullEventClient;
 import io.airlift.http.server.HttpServer.ClientCertificate;
 import io.airlift.node.NodeInfo;
@@ -39,6 +38,7 @@ import java.util.concurrent.ExecutionException;
 import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
 import static com.google.common.io.Resources.getResource;
+import static java.nio.file.Files.createTempDirectory;
 import static org.testng.Assert.fail;
 
 @Test(singleThreaded = true)
@@ -66,7 +66,7 @@ public class TestHttpServerCipher
     public void setup()
             throws IOException
     {
-        tempDir = Files.createTempDir();
+        tempDir = createTempDirectory(null).toFile();
     }
 
     @AfterMethod(alwaysRun = true)

@@ -20,7 +20,6 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.ByteStreams;
-import com.google.common.io.Files;
 import com.google.common.net.MediaType;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
@@ -79,6 +78,7 @@ import static io.airlift.http.client.StatusResponseHandler.createStatusResponseH
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
 import static io.airlift.http.server.HttpServerBinder.httpServerBinder;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.nio.file.Files.createTempDirectory;
 import static java.util.Collections.nCopies;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -100,7 +100,7 @@ public class TestHttpServerModule
     public void setup()
             throws IOException
     {
-        tempDir = Files.createTempDir().getCanonicalFile(); // getCanonicalFile needed to get around Issue 365 (http://code.google.com/p/guava-libraries/issues/detail?id=365)
+        tempDir = createTempDirectory(null).toFile();
     }
 
     @AfterMethod(alwaysRun = true)

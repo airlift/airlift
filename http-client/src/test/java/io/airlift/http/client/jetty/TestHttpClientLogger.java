@@ -223,6 +223,7 @@ public class TestHttpClientLogger
         assertThat(lines).size().isGreaterThanOrEqualTo(1);
     }
 
+    @SuppressWarnings("deprecation")
     private static class TestRequest
             implements Request
     {

@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
@@ -157,7 +158,7 @@ public class ObjectMapperProvider
     @Override
     public ObjectMapper get()
     {
-        ObjectMapper objectMapper = new ObjectMapper(jsonFactory);
+        JsonMapper.Builder objectMapper = JsonMapper.builder(jsonFactory);
 
         // ignore unknown fields (for backwards compatibility)
         objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
@@ -170,7 +171,7 @@ public class ObjectMapperProvider
 
         // Skip fields that are null or absent (Optional) when serializing objects.
         // This only applies to mapped object fields, not containers like Map or List.
-        objectMapper.setDefaultPropertyInclusion(JsonInclude.Value.construct(JsonInclude.Include.NON_ABSENT, JsonInclude.Include.ALWAYS));
+        objectMapper.defaultPropertyInclusion(JsonInclude.Value.construct(JsonInclude.Include.NON_ABSENT, JsonInclude.Include.ALWAYS));
 
         // disable auto detection of json properties... all properties must be explicit
         objectMapper.disable(MapperFeature.AUTO_DETECT_CREATORS);
@@ -212,11 +213,9 @@ public class ObjectMapperProvider
             modules.addAll(jsonSubType.modules());
         }
 
-        for (Module module : modules) {
-            objectMapper.registerModule(module);
-        }
+        objectMapper.addModules(modules);
 
-        return objectMapper;
+        return objectMapper.build();
     }
 
     //

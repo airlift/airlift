@@ -91,10 +91,7 @@ public class JaxrsTestingHttpProcessor
             invocation = invocationBuilder.build(request.getMethod());
         }
         else {
-            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            request.getBodyGenerator().write(byteArrayOutputStream);
-            byteArrayOutputStream.close();
-            byte[] bytes = byteArrayOutputStream.toByteArray();
+            byte[] bytes = getRequestBody(request);
             Entity<byte[]> entity = Entity.entity(bytes, (String) requestHeaders.get("Content-Type").stream().collect(onlyElement()));
             invocation = invocationBuilder.build(request.getMethod(), entity);
         }
@@ -134,5 +131,15 @@ public class JaxrsTestingHttpProcessor
             log.warn("%-8s %s -> OK", request.getMethod(), request.getUri());
         }
         return new TestingResponse(HttpStatus.fromStatusCode(result.getStatus()), responseHeaders.build(), result.readEntity(byte[].class));
+    }
+
+    @SuppressWarnings("deprecation")
+    private static byte[] getRequestBody(Request request)
+            throws Exception
+    {
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            request.getBodyGenerator().write(out);
+            return out.toByteArray();
+        }
     }
 }

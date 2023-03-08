@@ -224,10 +224,12 @@ public class Logging
                 logToSocket(config.getLogPath(), config.getFormat().createFormatter(logAnnotations));
             }
             else {
+                @SuppressWarnings("deprecation")
+                int maxHistory = config.getMaxHistory();
                 logToFile(
                         config.isLegacyLoggerImplementationEnabled(),
                         config.getLogPath(),
-                        config.getMaxHistory(),
+                        maxHistory,
                         config.getMaxSize(),
                         config.getMaxTotalSize(),
                         config.getCompression(),

@@ -15,7 +15,6 @@
  */
 package io.airlift.configuration;
 
-import com.google.common.io.Files;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -30,6 +29,7 @@ import java.util.function.Consumer;
 import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
 import static io.airlift.configuration.ConfigurationLoader.loadProperties;
+import static java.nio.file.Files.createTempDirectory;
 import static org.testng.Assert.assertEquals;
 
 public class TestConfigurationLoader
@@ -40,8 +40,7 @@ public class TestConfigurationLoader
     public void setup()
             throws IOException
     {
-        tempDir = Files.createTempDir()
-                .getCanonicalFile(); // getCanonicalFile needed to get around Issue 365 (http://code.google.com/p/guava-libraries/issues/detail?id=365)
+        tempDir = createTempDirectory(null).toFile();
     }
 
     @AfterClass(alwaysRun = true)
