@@ -1,8 +1,9 @@
 226
 
-- Update to Jersey 2.39
+- Fix incorrect value reporting in sparse HLL
 - Update to Airbase 134
 - Update to Jetty 10.0.14
+- Update to Jersey 2.39
 
 225
 
