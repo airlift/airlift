@@ -1,3 +1,7 @@
+227
+
+- Exclude jakarta.ws.rs-api from jaxrs
+
 226
 
 - Fix incorrect value reporting in sparse HLL
