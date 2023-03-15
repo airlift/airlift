@@ -1,3 +1,7 @@
+228
+
+- Exclude Hamcrest from jaxrs-testing
+
 227
 
 - Exclude jakarta.ws.rs-api from jaxrs

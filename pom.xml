@@ -433,6 +433,10 @@
                         <artifactId>jakarta.inject</artifactId>
                     </exclusion>
                     <exclusion>
+                        <groupId>org.hamcrest</groupId>
+                        <artifactId>hamcrest</artifactId>
+                    </exclusion>
+                    <exclusion>
                         <groupId>org.junit.jupiter</groupId>
                         <artifactId>junit-jupiter</artifactId>
                     </exclusion>
@@ -444,6 +448,10 @@
                 <artifactId>jersey-test-framework-provider-inmemory</artifactId>
                 <version>${dep.jersey.version}</version>
                 <exclusions>
+                    <exclusion>
+                        <groupId>org.hamcrest</groupId>
+                        <artifactId>hamcrest</artifactId>
+                    </exclusion>
                     <exclusion>
                         <groupId>org.junit.jupiter</groupId>
                         <artifactId>junit-jupiter</artifactId>
