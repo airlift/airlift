@@ -20,6 +20,7 @@ import com.google.common.collect.ListMultimap;
 
 import javax.annotation.Nullable;
 
+import java.net.URI;
 import java.util.List;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
@@ -27,7 +28,8 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 public class UnexpectedResponseException
         extends RuntimeException
 {
-    private final Request request;
+    private final URI requestUri;
+    private final String requestMethod;
     private final int statusCode;
     private final ListMultimap<HeaderName, String> headers;
 
@@ -50,7 +52,8 @@ public class UnexpectedResponseException
     public UnexpectedResponseException(String message, Request request, int statusCode, ListMultimap<HeaderName, String> headers)
     {
         super(message);
-        this.request = request;
+        this.requestUri = request != null ? request.getUri() : null;
+        this.requestMethod = request != null ? request.getMethod() : null;
         this.statusCode = statusCode;
         this.headers = ImmutableListMultimap.copyOf(headers);
     }
@@ -81,7 +84,7 @@ public class UnexpectedResponseException
     public String toString()
     {
         return toStringHelper(this)
-                .add("request", request)
+                .add("request", requestMethod + " " + requestUri)
                 .add("statusCode", statusCode)
                 .add("headers", headers)
                 .toString();
