@@ -24,13 +24,11 @@ import java.io.IOException;
 class LoggingOutputStream
         extends ByteArrayOutputStream
 {
-    private final String lineSeparator;
     private final Logger logger;
 
     public LoggingOutputStream(Logger logger)
     {
         this.logger = logger;
-        lineSeparator = System.getProperty("line.separator");
     }
 
     /**
@@ -44,7 +42,10 @@ class LoggingOutputStream
         String record = this.toString();
         reset();
 
-        if (record.isEmpty() || record.equals(lineSeparator)) {
+        // Strip trailing new line typically added when this class is used via System.out.println
+        record = record.stripTrailing();
+
+        if (record.isEmpty()) {
             // avoid empty records
             return;
         }
