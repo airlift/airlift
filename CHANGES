@@ -1,3 +1,7 @@
+229
+
+- Strip trailing whitespace when redirecting standard output streams to log
+
 228
 
 - Exclude Hamcrest from jaxrs-testing
