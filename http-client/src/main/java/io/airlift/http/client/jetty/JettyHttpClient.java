@@ -574,6 +574,9 @@ public class JettyHttpClient
             addLoggingListener(jettyRequest, requestTimestamp);
         }
 
+        RequestSizeListener requestSize = new RequestSizeListener();
+        jettyRequest.onRequestContent(requestSize);
+
         // fire the request
         jettyRequest.send(listener);
 
@@ -624,7 +627,7 @@ public class JettyHttpClient
                 }
             }
             if (recordRequestComplete) {
-                recordRequestComplete(stats, request, requestStart, jettyResponse, responseStart);
+                recordRequestComplete(stats, request, requestSize.getBytes(), requestStart, jettyResponse, responseStart);
             }
         }
         return value;
@@ -640,7 +643,10 @@ public class JettyHttpClient
 
         HttpRequest jettyRequest = buildJettyRequest(request, new JettyRequestListener(request.getUri()));
 
-        JettyResponseFuture<T, E> future = new JettyResponseFuture<>(request, jettyRequest, responseHandler, stats, recordRequestComplete);
+        RequestSizeListener requestSize = new RequestSizeListener();
+        jettyRequest.onRequestContent(requestSize);
+
+        JettyResponseFuture<T, E> future = new JettyResponseFuture<>(request, jettyRequest, requestSize::getBytes, responseHandler, stats, recordRequestComplete);
 
         BufferingResponseListener listener = new BufferingResponseListener(future, Ints.saturatedCast(maxContentLength));
 
@@ -1006,7 +1012,7 @@ public class JettyHttpClient
         return "anonymous" + NAME_COUNTER.incrementAndGet();
     }
 
-    static void recordRequestComplete(RequestStats requestStats, Request request, long requestStart, JettyResponse response, long responseStart)
+    static void recordRequestComplete(RequestStats requestStats, Request request, long requestBytes, long requestStart, JettyResponse response, long responseStart)
     {
         if (response == null) {
             return;
@@ -1017,9 +1023,26 @@ public class JettyHttpClient
 
         requestStats.recordResponseReceived(request.getMethod(),
                 response.getStatusCode(),
-                response.getBytesRead(),
+                requestBytes,
                 response.getBytesRead(),
                 requestProcessingTime,
                 responseProcessingTime);
+    }
+
+    private static class RequestSizeListener
+            implements org.eclipse.jetty.client.api.Request.ContentListener
+    {
+        private long bytes;
+
+        @Override
+        public void onContent(org.eclipse.jetty.client.api.Request request, ByteBuffer content)
+        {
+            bytes += content.remaining();
+        }
+
+        public long getBytes()
+        {
+            return bytes;
+        }
     }
 }

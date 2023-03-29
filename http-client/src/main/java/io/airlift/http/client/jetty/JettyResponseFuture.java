@@ -10,6 +10,7 @@ import org.eclipse.jetty.client.api.Response;
 import java.io.InputStream;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.LongSupplier;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static java.util.Objects.requireNonNull;
@@ -31,14 +32,22 @@ class JettyResponseFuture<T, E extends Exception>
     private final AtomicReference<JettyAsyncHttpState> state = new AtomicReference<>(JettyAsyncHttpState.WAITING_FOR_CONNECTION);
     private final Request request;
     private final org.eclipse.jetty.client.api.Request jettyRequest;
+    private final LongSupplier requestSize;
     private final ResponseHandler<T, E> responseHandler;
     private final RequestStats stats;
     private final boolean recordRequestComplete;
 
-    JettyResponseFuture(Request request, org.eclipse.jetty.client.api.Request jettyRequest, ResponseHandler<T, E> responseHandler, RequestStats stats, boolean recordRequestComplete)
+    JettyResponseFuture(
+            Request request,
+            org.eclipse.jetty.client.api.Request jettyRequest,
+            LongSupplier requestSize,
+            ResponseHandler<T, E> responseHandler,
+            RequestStats stats,
+            boolean recordRequestComplete)
     {
         this.request = requireNonNull(request, "request is null");
         this.jettyRequest = requireNonNull(jettyRequest, "jettyRequest is null");
+        this.requestSize = requireNonNull(requestSize, "requestSize is null");
         this.responseHandler = requireNonNull(responseHandler, "responseHandler is null");
         this.stats = requireNonNull(stats, "stats is null");
         this.recordRequestComplete = recordRequestComplete;
@@ -100,7 +109,7 @@ class JettyResponseFuture<T, E extends Exception>
         }
         finally {
             if (recordRequestComplete) {
-                JettyHttpClient.recordRequestComplete(stats, request, requestStart, jettyResponse, responseStart);
+                JettyHttpClient.recordRequestComplete(stats, request, requestSize.getAsLong(), requestStart, jettyResponse, responseStart);
             }
         }
         return value;

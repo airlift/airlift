@@ -3,6 +3,7 @@
 - Strip trailing whitespace when redirecting standard output streams to log
 - Add openmetrics and security-jwks to BOM
 - Add getProperty method to AbstractConfigurationAwareModule
+- Fix HTTP client request size statistic
 
 228
 
