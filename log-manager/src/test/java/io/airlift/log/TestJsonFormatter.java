@@ -20,7 +20,14 @@ public class TestJsonFormatter
     @Test
     public void testMinimalJsonErrorLogLine()
     {
-        JsonRecord original = new JsonRecord(Instant.now(), Level.DEBUG, "thread-0", "TestLogger", "Test Log Message", new Exception("Test Exception 1"), ImmutableMap.of());
+        JsonRecord original = new JsonRecord(
+                Instant.now(),
+                Level.DEBUG,
+                "thread-0",
+                "TestLogger",
+                "Test Log Message",
+                new Exception("Test Exception 1"),
+                ImmutableMap.of());
 
         RuntimeException exception = new RuntimeException("Test Exception 2");
         String minimalJsonErrorLogLine = (new JsonFormatter(ImmutableMap.of())).minimalJsonErrorLogLine(original, exception);
@@ -29,17 +36,38 @@ public class TestJsonFormatter
 
         assertEquals(
                 jsonCodec(JsonRecord.class).fromJson(minimalJsonErrorLogLine),
-                new JsonRecord(original.getTimestamp(), Level.ERROR, null, null, exception.getMessage(), null, ImmutableMap.of()));
+                new JsonRecord(
+                        original.getTimestamp(),
+                        Level.ERROR,
+                        null,
+                        null,
+                        exception.getMessage(),
+                        null,
+                        ImmutableMap.of()));
     }
 
     @Test
     public void testRoundTrip()
     {
-        JsonRecord original = new JsonRecord(Instant.now(), Level.DEBUG, "thread-0", "TestLogger", "Test Log Message", new Exception("Test Exception 1"), ImmutableMap.of());
+        JsonRecord original = new JsonRecord(
+                Instant.now(),
+                Level.DEBUG,
+                "thread-0",
+                "TestLogger",
+                "Test Log Message",
+                new Exception("Test Exception 1"),
+                ImmutableMap.of());
 
         assertEquals(
                 jsonCodec(JsonRecord.class).fromJson(jsonCodec(JsonRecord.class).toJson(original)),
-                new JsonRecord(original.getTimestamp(), original.getLevel(), original.getThread(), original.getLoggerName(), original.getMessage(), null, ImmutableMap.of()));
+                new JsonRecord(
+                        original.getTimestamp(),
+                        original.getLevel(),
+                        original.getThread(),
+                        original.getLoggerName(),
+                        original.getMessage(),
+                        null,
+                        ImmutableMap.of()));
     }
 
     @Test
