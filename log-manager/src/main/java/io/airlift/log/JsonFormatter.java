@@ -7,6 +7,7 @@ import com.google.common.collect.ImmutableMap;
 import io.airlift.json.JsonCodec;
 import io.airlift.json.JsonCodecFactory;
 import io.airlift.json.ObjectMapperProvider;
+import io.opentelemetry.context.Context;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -38,6 +39,7 @@ public class JsonFormatter
                 record.getLoggerName(),
                 record.getMessage(),
                 record.getThrown(),
+                Context.current(),
                 logAnnotations);
 
         try {
@@ -52,6 +54,7 @@ public class JsonFormatter
                         record.getLoggerName(),
                         outer.getMessage(),
                         outer,
+                        Context.current(),
                         logAnnotations));
             }
             catch (IllegalArgumentException inner) {
