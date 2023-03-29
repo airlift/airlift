@@ -19,10 +19,12 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimap;
+import io.opentelemetry.api.trace.SpanBuilder;
 
 import java.net.URI;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -34,6 +36,7 @@ public final class Request
     private final String method;
     private final ListMultimap<String, String> headers;
     private final BodyGenerator bodyGenerator;
+    private final Optional<SpanBuilder> spanBuilder;
     private final boolean followRedirects;
     private final boolean preserveAuthorizationOnRedirect;
 
@@ -43,7 +46,7 @@ public final class Request
     @Deprecated
     public Request(URI uri, String method, ListMultimap<String, String> headers, BodyGenerator bodyGenerator)
     {
-        this(uri, method, headers, bodyGenerator, true, false);
+        this(uri, method, headers, bodyGenerator, Optional.empty(), true, false);
     }
 
     private Request(
@@ -51,6 +54,7 @@ public final class Request
             String method,
             ListMultimap<String, String> headers,
             BodyGenerator bodyGenerator,
+            Optional<SpanBuilder> spanBuilder,
             boolean followRedirects,
             boolean preserveAuthorizationOnRedirect)
     {
@@ -65,6 +69,7 @@ public final class Request
         this.method = method;
         this.headers = ImmutableListMultimap.copyOf(headers);
         this.bodyGenerator = bodyGenerator;
+        this.spanBuilder = requireNonNull(spanBuilder, "spanBuilder is null");
         this.followRedirects = followRedirects;
         this.preserveAuthorizationOnRedirect = preserveAuthorizationOnRedirect;
     }
@@ -103,6 +108,11 @@ public final class Request
         return bodyGenerator;
     }
 
+    public Optional<SpanBuilder> getSpanBuilder()
+    {
+        return spanBuilder;
+    }
+
     public boolean isFollowRedirects()
     {
         return followRedirects;
@@ -121,6 +131,7 @@ public final class Request
                 .add("method", method)
                 .add("headers", headers)
                 .add("bodyGenerator", bodyGenerator)
+                .add("spanBuilder", spanBuilder.isPresent() ? "present" : "empty")
                 .add("followRedirects", followRedirects)
                 .add("preserveAuthorizationOnRedirect", preserveAuthorizationOnRedirect)
                 .toString();
@@ -137,6 +148,7 @@ public final class Request
                 Objects.equals(method, r.method) &&
                 Objects.equals(headers, r.headers) &&
                 Objects.equals(bodyGenerator, r.bodyGenerator) &&
+                Objects.equals(spanBuilder, r.spanBuilder) &&
                 Objects.equals(followRedirects, r.followRedirects) &&
                 Objects.equals(preserveAuthorizationOnRedirect, r.preserveAuthorizationOnRedirect);
     }
@@ -149,6 +161,7 @@ public final class Request
                 method,
                 headers,
                 bodyGenerator,
+                spanBuilder,
                 followRedirects,
                 preserveAuthorizationOnRedirect);
     }
@@ -192,6 +205,7 @@ public final class Request
                     .setMethod(request.getMethod())
                     .addHeaders(request.getHeaders())
                     .setBodyGenerator(request.getBodyGenerator())
+                    .setSpanBuilder(request.getSpanBuilder().orElse(null))
                     .setFollowRedirects(request.isFollowRedirects())
                     .setPreserveAuthorizationOnRedirect(request.isPreserveAuthorizationOnRedirect());
         }
@@ -200,6 +214,7 @@ public final class Request
         private String method;
         private final ListMultimap<String, String> headers = ArrayListMultimap.create();
         private BodyGenerator bodyGenerator;
+        private SpanBuilder spanBuilder;
         private boolean followRedirects = true;
         private boolean preserveAuthorizationOnRedirect;
 
@@ -240,6 +255,12 @@ public final class Request
             return this;
         }
 
+        public Builder setSpanBuilder(SpanBuilder spanBuilder)
+        {
+            this.spanBuilder = spanBuilder;
+            return this;
+        }
+
         public Builder setFollowRedirects(boolean followRedirects)
         {
             this.followRedirects = followRedirects;
@@ -259,6 +280,7 @@ public final class Request
                     method,
                     headers,
                     bodyGenerator,
+                    Optional.ofNullable(spanBuilder),
                     followRedirects,
                     preserveAuthorizationOnRedirect);
         }
