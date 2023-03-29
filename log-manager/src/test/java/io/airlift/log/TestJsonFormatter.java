@@ -1,6 +1,13 @@
 package io.airlift.log;
 
 import com.google.common.collect.ImmutableMap;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanId;
+import io.opentelemetry.api.trace.TraceId;
+import io.opentelemetry.context.Context;
+import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
+import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.testng.annotations.Test;
 
@@ -27,6 +34,7 @@ public class TestJsonFormatter
                 "TestLogger",
                 "Test Log Message",
                 new Exception("Test Exception 1"),
+                Context.root(),
                 ImmutableMap.of());
 
         RuntimeException exception = new RuntimeException("Test Exception 2");
@@ -43,6 +51,7 @@ public class TestJsonFormatter
                         null,
                         exception.getMessage(),
                         null,
+                        Context.root(),
                         ImmutableMap.of()));
     }
 
@@ -66,6 +75,7 @@ public class TestJsonFormatter
                 "TestLogger",
                 "Test Log Message",
                 new Exception("Test Exception 1"),
+                Context.root(),
                 ImmutableMap.of());
 
         assertEquals(
@@ -77,6 +87,7 @@ public class TestJsonFormatter
                         original.getLoggerName(),
                         original.getMessage(),
                         null,
+                        Context.root(),
                         ImmutableMap.of()));
     }
 
@@ -105,6 +116,46 @@ public class TestJsonFormatter
         assertEquals(jsonMap.get("throwableClass"), testException.getClass().getName());
         assertEquals(jsonMap.get("throwableMessage"), testException.getMessage());
         assertEquals(jsonMap.get("stackTrace"), getStackTraceAsString(testException));
+    }
+
+    @Test
+    public void testLogContext()
+    {
+        InMemorySpanExporter exporter = InMemorySpanExporter.create();
+
+        SdkTracerProvider tracerProvider = SdkTracerProvider.builder()
+                .addSpanProcessor(SimpleSpanProcessor.create(exporter))
+                .build();
+
+        try (tracerProvider) {
+            Span span = tracerProvider.get("test")
+                    .spanBuilder("test-span")
+                    .startSpan();
+
+            String traceId = span.getSpanContext().getTraceId();
+            String spanId = span.getSpanContext().getSpanId();
+            String traceFlags = span.getSpanContext().getTraceFlags().asHex();
+
+            assertThat(TraceId.isValid(traceId)).isTrue();
+            assertThat(SpanId.isValid(spanId)).isTrue();
+            assertThat(traceFlags).isEqualTo("01");
+
+            LogRecord record = new LogRecord(Level.DEBUG.toJulLevel(), "Test Log Message");
+
+            String logMessage;
+            try (var ignored = span.makeCurrent()) {
+                logMessage = (new JsonFormatter(ImmutableMap.of())).format(record);
+            }
+            finally {
+                span.end();
+            }
+
+            Map<String, Object> jsonMap = mapJsonCodec(String.class, Object.class).fromJson(logMessage);
+
+            assertThat(jsonMap.get("traceId")).isEqualTo(traceId);
+            assertThat(jsonMap.get("spanId")).isEqualTo(spanId);
+            assertThat(jsonMap.get("traceFlags")).isEqualTo(traceFlags);
+        }
     }
 
     @Test

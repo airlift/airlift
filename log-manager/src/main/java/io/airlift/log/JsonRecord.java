@@ -3,10 +3,15 @@ package io.airlift.log;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Throwables;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanContext;
+import io.opentelemetry.api.trace.TraceFlags;
+import io.opentelemetry.context.Context;
 
 import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static java.util.Objects.requireNonNull;
@@ -19,6 +24,7 @@ public class JsonRecord
     private final String loggerName;
     private final String message;
     private final Throwable throwable;
+    private final Optional<SpanContext> spanContext;
     private final Map<String, String> logAnnotations;
 
     @JsonCreator
@@ -29,6 +35,7 @@ public class JsonRecord
             @JsonProperty("logger") String loggerName,
             @JsonProperty("message") String message,
             Throwable throwable,
+            Context context,
             Map<String, String> logAnnotations)
     {
         this.timestamp = requireNonNull(timestamp);
@@ -37,6 +44,10 @@ public class JsonRecord
         this.loggerName = loggerName;
         this.message = message;
         this.throwable = throwable;
+        this.spanContext = Optional.ofNullable(context)
+                .map(Span::fromContext)
+                .map(Span::getSpanContext)
+                .filter(SpanContext::isValid);
         this.logAnnotations = (logAnnotations == null || logAnnotations.isEmpty()) ? null : logAnnotations;
     }
 
@@ -95,6 +106,24 @@ public class JsonRecord
             return null;
         }
         return Throwables.getStackTraceAsString(throwable);
+    }
+
+    @JsonProperty
+    public Optional<String> getTraceId()
+    {
+        return spanContext.map(SpanContext::getTraceId);
+    }
+
+    @JsonProperty
+    public Optional<String> getSpanId()
+    {
+        return spanContext.map(SpanContext::getSpanId);
+    }
+
+    @JsonProperty
+    public Optional<String> getTraceFlags()
+    {
+        return spanContext.map(SpanContext::getTraceFlags).map(TraceFlags::asHex);
     }
 
     @JsonProperty("annotations")
