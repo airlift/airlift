@@ -5,6 +5,10 @@ import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.RequestStats;
 import io.airlift.http.client.ResponseHandler;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.StatusCode;
+import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import org.eclipse.jetty.client.api.Response;
 
 import java.io.InputStream;
@@ -34,6 +38,7 @@ class JettyResponseFuture<T, E extends Exception>
     private final org.eclipse.jetty.client.api.Request jettyRequest;
     private final LongSupplier requestSize;
     private final ResponseHandler<T, E> responseHandler;
+    private final Span span;
     private final RequestStats stats;
     private final boolean recordRequestComplete;
 
@@ -42,6 +47,7 @@ class JettyResponseFuture<T, E extends Exception>
             org.eclipse.jetty.client.api.Request jettyRequest,
             LongSupplier requestSize,
             ResponseHandler<T, E> responseHandler,
+            Span span,
             RequestStats stats,
             boolean recordRequestComplete)
     {
@@ -49,6 +55,7 @@ class JettyResponseFuture<T, E extends Exception>
         this.jettyRequest = requireNonNull(jettyRequest, "jettyRequest is null");
         this.requestSize = requireNonNull(requestSize, "requestSize is null");
         this.responseHandler = requireNonNull(responseHandler, "responseHandler is null");
+        this.span = requireNonNull(span, "span is null");
         this.stats = requireNonNull(stats, "stats is null");
         this.recordRequestComplete = recordRequestComplete;
     }
@@ -63,6 +70,7 @@ class JettyResponseFuture<T, E extends Exception>
     public boolean cancel(boolean mayInterruptIfRunning)
     {
         try {
+            span.setStatus(StatusCode.ERROR, "cancelled");
             stats.recordRequestCanceled();
             state.set(JettyAsyncHttpState.CANCELED);
             jettyRequest.abort(new CancellationException());
@@ -72,12 +80,21 @@ class JettyResponseFuture<T, E extends Exception>
             setException(e);
             return true;
         }
+        finally {
+            span.end();
+        }
     }
 
     void completed(Response response, InputStream content)
     {
         if (state.get() == JettyAsyncHttpState.CANCELED) {
             return;
+        }
+
+        span.setAttribute(SemanticAttributes.HTTP_STATUS_CODE, response.getStatus());
+
+        if (request.getBodyGenerator() != null) {
+            span.setAttribute(SemanticAttributes.HTTP_REQUEST_CONTENT_LENGTH, requestSize.getAsLong());
         }
 
         T value;
@@ -91,6 +108,9 @@ class JettyResponseFuture<T, E extends Exception>
         }
         state.set(JettyAsyncHttpState.DONE);
         set(value);
+
+        span.setStatus(StatusCode.OK);
+        span.end();
     }
 
     private T processResponse(Response response, InputStream content)
@@ -108,6 +128,9 @@ class JettyResponseFuture<T, E extends Exception>
             value = responseHandler.handle(request, jettyResponse);
         }
         finally {
+            if (jettyResponse != null) {
+                span.setAttribute(SemanticAttributes.HTTP_RESPONSE_CONTENT_LENGTH, jettyResponse.getBytesRead());
+            }
             if (recordRequestComplete) {
                 JettyHttpClient.recordRequestComplete(stats, request, requestSize.getAsLong(), requestStart, jettyResponse, responseStart);
             }
@@ -156,6 +179,9 @@ class JettyResponseFuture<T, E extends Exception>
         }
 
         setException(throwable);
+
+        span.setStatus(StatusCode.ERROR, throwable.getMessage());
+        span.recordException(throwable, Attributes.of(SemanticAttributes.EXCEPTION_ESCAPED, true));
     }
 
     @Override

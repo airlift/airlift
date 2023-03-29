@@ -27,6 +27,9 @@ import com.google.inject.TypeLiteral;
 import io.airlift.configuration.ConfigDefaults;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.node.NodeInfo;
+import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.api.trace.TracerProvider;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import javax.inject.Provider;
@@ -95,6 +98,8 @@ public class HttpClientModule
         private final Class<? extends Annotation> annotation;
         private Injector injector;
         private NodeInfo nodeInfo;
+        private OpenTelemetry openTelemetry = OpenTelemetry.noop();
+        private Tracer tracer = TracerProvider.noop().get("noop");
 
         private HttpClientProvider(String name, Class<? extends Annotation> annotation)
         {
@@ -114,6 +119,18 @@ public class HttpClientModule
             this.nodeInfo = nodeInfo;
         }
 
+        @Inject(optional = true)
+        public void setOpenTelemetry(OpenTelemetry openTelemetry)
+        {
+            this.openTelemetry = openTelemetry;
+        }
+
+        @Inject(optional = true)
+        public void setTracer(Tracer tracer)
+        {
+            this.tracer = tracer;
+        }
+
         @Override
         public HttpClient get()
         {
@@ -126,7 +143,7 @@ public class HttpClientModule
                     .addAll(injector.getInstance(Key.get(new TypeLiteral<Set<HttpRequestFilter>>() {}, annotation)))
                     .build();
 
-            return new JettyHttpClient(name, config, ImmutableList.copyOf(filters), environment, sslContextFactory);
+            return new JettyHttpClient(name, config, ImmutableList.copyOf(filters), openTelemetry, tracer, environment, sslContextFactory);
         }
     }
 }

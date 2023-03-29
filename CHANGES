@@ -2,6 +2,7 @@
 
 - Strip trailing whitespace when redirecting standard output streams to log
 - Add OpenTelemetry tracing module
+- Add OpenTelemetry tracing to HTTP client
 - Add openmetrics and security-jwks to BOM
 - Add getProperty method to AbstractConfigurationAwareModule
 - Fix HTTP client request size statistic
