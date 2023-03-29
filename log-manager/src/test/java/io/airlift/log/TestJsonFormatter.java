@@ -47,6 +47,16 @@ public class TestJsonFormatter
     }
 
     @Test
+    public void testMinimalRecordFormatting()
+    {
+        LogRecord record = new LogRecord(Level.DEBUG.toJulLevel(), "Testing");
+        record.setLoggerName("TestLogger");
+
+        assertThat((new JsonFormatter(ImmutableMap.of())).format(record))
+                .matches("\\{\"timestamp\":\".*\",\"level\":\"DEBUG\",\"thread\":\".*\",\"logger\":\"TestLogger\",\"message\":\"Testing\"}\n");
+    }
+
+    @Test
     public void testRoundTrip()
     {
         JsonRecord original = new JsonRecord(
