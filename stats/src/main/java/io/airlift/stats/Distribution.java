@@ -8,7 +8,6 @@ import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.ThreadSafe;
 
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
@@ -175,11 +174,6 @@ public class Distribution
         }
 
         return result;
-    }
-
-    public synchronized List<Double> getPercentiles(List<Double> percentiles)
-    {
-        return digest.valuesAt(percentiles);
     }
 
     public synchronized double[] getPercentiles(double... percentiles)
