@@ -42,7 +42,6 @@ import static io.airlift.log.Format.TEXT;
 import static io.airlift.log.LogFileName.parseHistoryLogFileName;
 import static io.airlift.log.RollingFileMessageOutput.CompressionType.GZIP;
 import static io.airlift.log.RollingFileMessageOutput.CompressionType.NONE;
-import static io.airlift.log.RollingFileMessageOutput.createRollingFileHandler;
 import static io.airlift.units.DataSize.Unit.BYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -495,6 +494,20 @@ public class TestRollingFileMessageOutput
         {
             return new GZIPInputStream(source.openStream());
         }
+    }
+
+    private static BufferedHandler createRollingFileHandler(
+            String filename,
+            DataSize maxFileSize,
+            DataSize maxTotalSize,
+            RollingFileMessageOutput.CompressionType compressionType,
+            Formatter formatter,
+            ErrorManager errorManager)
+    {
+        RollingFileMessageOutput output = new RollingFileMessageOutput(filename, maxFileSize, maxTotalSize, compressionType, formatter);
+        BufferedHandler handler = new BufferedHandler(output, formatter, errorManager);
+        handler.initialize();
+        return handler;
     }
 
     private static void assertLogDirectory(Path masterFile)

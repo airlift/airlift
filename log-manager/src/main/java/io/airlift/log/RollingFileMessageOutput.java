@@ -103,21 +103,7 @@ final class RollingFileMessageOutput
 
     private final ExecutorService compressionExecutor;
 
-    public static BufferedHandler createRollingFileHandler(
-            String filename,
-            DataSize maxFileSize,
-            DataSize maxTotalSize,
-            CompressionType compressionType,
-            Formatter formatter,
-            ErrorManager errorManager)
-    {
-        RollingFileMessageOutput output = new RollingFileMessageOutput(filename, maxFileSize, maxTotalSize, compressionType, formatter);
-        BufferedHandler handler = new BufferedHandler(output, formatter, errorManager);
-        handler.initialize();
-        return handler;
-    }
-
-    private RollingFileMessageOutput(String filename, DataSize maxFileSize, DataSize maxTotalSize, CompressionType compressionType, Formatter formatter)
+    RollingFileMessageOutput(String filename, DataSize maxFileSize, DataSize maxTotalSize, CompressionType compressionType, Formatter formatter)
     {
         requireNonNull(filename, "filename is null");
         requireNonNull(maxFileSize, "maxFileSize is null");

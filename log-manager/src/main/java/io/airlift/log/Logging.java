@@ -15,29 +15,39 @@
  */
 package io.airlift.log;
 
+import com.google.common.base.VerifyException;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.net.HostAndPort;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.SettableFuture;
 import io.airlift.log.RollingFileMessageOutput.CompressionType;
 import io.airlift.units.DataSize;
+import org.weakref.jmx.MBeanExport;
+import org.weakref.jmx.MBeanExporter;
 
 import javax.annotation.concurrent.GuardedBy;
 
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
 import java.util.logging.LogManager;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.util.concurrent.Futures.addCallback;
+import static com.google.common.util.concurrent.Futures.transform;
+import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static io.airlift.configuration.ConfigurationLoader.loadPropertiesFrom;
 import static io.airlift.configuration.ConfigurationUtils.replaceEnvironmentVariables;
-import static io.airlift.log.RollingFileMessageOutput.createRollingFileHandler;
-import static io.airlift.log.SocketMessageOutput.createSocketHandler;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Initializes the logging subsystem.
@@ -64,6 +74,9 @@ public class Logging
 
     @GuardedBy("this")
     private boolean configured;
+
+    private final SettableFuture<MBeanExporter> mBeanExporterAvailableFuture = SettableFuture.create();
+    private final SettableFuture<List<MBeanExport>> mBeanExportsFuture = SettableFuture.create();
 
     /**
      * Sets up default logging:
@@ -95,6 +108,33 @@ public class Logging
         redirectStdStreams();
     }
 
+    public void exportMBeans(MBeanExporter exporter)
+    {
+        // Logging can be initialized before MBean export, so the export process must be lazy
+        mBeanExporterAvailableFuture.set(exporter);
+    }
+
+    public void unexportMBeans()
+    {
+        addCallback(
+                mBeanExportsFuture,
+                new FutureCallback<>()
+                {
+                    @Override
+                    public void onSuccess(List<MBeanExport> exports)
+                    {
+                        exports.forEach(MBeanExport::unexport);
+                    }
+
+                    @Override
+                    public void onFailure(Throwable t)
+                    {
+                        throw new VerifyException("Unexpected code path! Should not fail here", t);
+                    }
+                },
+                directExecutor());
+    }
+
     private static void redirectStdStreams()
     {
         System.setOut(new PrintStream(new LoggingOutputStream(Logger.get("stdout")), true));
@@ -114,19 +154,28 @@ public class Logging
         consoleHandler = null;
     }
 
-    public void logToFile(String logPath, DataSize maxFileSize, DataSize maxTotalSize, CompressionType compressionType, Formatter formatter)
+    private void logToFile(String logPath, DataSize maxFileSize, DataSize maxTotalSize, CompressionType compressionType, Formatter formatter, List<LogMBeanExport> mBeanExportCollector)
     {
         log.info("Logging to %s", logPath);
-        ROOT.addHandler(createRollingFileHandler(logPath, maxFileSize, maxTotalSize, compressionType, formatter, new BufferedHandlerErrorManager(stdErr)));
+        RollingFileMessageOutput output = new RollingFileMessageOutput(logPath, maxFileSize, maxTotalSize, compressionType, formatter);
+        BufferedHandler handler = new BufferedHandler(output, formatter, new BufferedHandlerErrorManager(stdErr));
+        handler.initialize();
+        mBeanExportCollector.add(new LogMBeanExport(handler, BufferedHandler.class, "RollingFileMessageOutput"));
+
+        ROOT.addHandler(handler);
     }
 
-    private void logToSocket(String logPath, Formatter formatter)
+    private void logToSocket(String logPath, Formatter formatter, List<LogMBeanExport> mBeanExportCollector)
     {
         if (!logPath.startsWith("tcp://") || logPath.lastIndexOf("/") > 6) {
             throw new IllegalArgumentException("LogPath for sockets must begin with tcp:// and not contain any path component.");
         }
         HostAndPort hostAndPort = HostAndPort.fromString(logPath.replace("tcp://", ""));
-        Handler handler = createSocketHandler(hostAndPort, formatter, new BufferedHandlerErrorManager(stdErr));
+        SocketMessageOutput output = new SocketMessageOutput(hostAndPort);
+        BufferedHandler handler = new BufferedHandler(output, formatter, new BufferedHandlerErrorManager(stdErr));
+        handler.initialize();
+        mBeanExportCollector.add(new LogMBeanExport(handler, BufferedHandler.class, "SocketMessageOutput"));
+
         ROOT.addHandler(handler);
     }
 
@@ -201,6 +250,8 @@ public class Logging
         }
         configured = true;
 
+        List<LogMBeanExport> mBeanExportCollector = new ArrayList<>();
+
         Map<String, String> logAnnotations = ImmutableMap.of();
         if (config.getLogAnnotationFile() != null) {
             try {
@@ -213,7 +264,7 @@ public class Logging
 
         if (config.getLogPath() != null) {
             if (config.getLogPath().startsWith("tcp://")) {
-                logToSocket(config.getLogPath(), config.getFormat().createFormatter(logAnnotations));
+                logToSocket(config.getLogPath(), config.getFormat().createFormatter(logAnnotations), mBeanExportCollector);
             }
             else {
                 logToFile(
@@ -221,7 +272,8 @@ public class Logging
                         config.getMaxSize(),
                         config.getMaxTotalSize(),
                         config.getCompression(),
-                        config.getFormat().createFormatter(logAnnotations));
+                        config.getFormat().createFormatter(logAnnotations),
+                        mBeanExportCollector);
             }
         }
 
@@ -236,6 +288,24 @@ public class Logging
             catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
+        }
+
+        // Export MBeans when the exporter becomes available
+        mBeanExportsFuture.setFuture(transform(
+                mBeanExporterAvailableFuture,
+                exporter -> mBeanExportCollector.stream()
+                        .map(export -> exporter.exportWithGeneratedName(export.object(), export.type(), export.name()))
+                        .collect(toImmutableList()),
+                directExecutor()));
+    }
+
+    private record LogMBeanExport(Object object, Class<?> type, String name)
+    {
+        private LogMBeanExport
+        {
+            requireNonNull(object, "object is null");
+            requireNonNull(type, "type is null");
+            requireNonNull(name, "name is null");
         }
     }
 }
