@@ -17,10 +17,11 @@ package io.airlift.jaxrs;
 
 import com.google.inject.Binder;
 import com.google.inject.Key;
-import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import io.airlift.configuration.AbstractConfigurationAwareModule;
 import io.airlift.http.server.TheServlet;
+import io.airlift.jaxrs.tracing.JaxrsTracingModule;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.model.Resource;
 import org.glassfish.jersey.servlet.ServletContainer;
@@ -40,7 +41,7 @@ import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
 
 public class JaxrsModule
-        implements Module
+        extends AbstractConfigurationAwareModule
 {
     public JaxrsModule() {}
 
@@ -51,7 +52,7 @@ public class JaxrsModule
     }
 
     @Override
-    public void configure(Binder binder)
+    protected void setup(Binder binder)
     {
         binder.disableCircularProxies();
 
@@ -62,6 +63,10 @@ public class JaxrsModule
         jaxrsBinder(binder).bind(ParsingExceptionMapper.class);
 
         newSetBinder(binder, Object.class, JaxrsResource.class).permitDuplicates();
+
+        if (getProperty("tracing.enabled").map(Boolean::parseBoolean).orElse(false)) {
+            install(new JaxrsTracingModule());
+        }
     }
 
     @Provides
