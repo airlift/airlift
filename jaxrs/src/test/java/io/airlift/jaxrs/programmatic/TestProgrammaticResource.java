@@ -15,10 +15,11 @@
  */
 package io.airlift.jaxrs.programmatic;
 
-import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
+import io.airlift.bootstrap.Bootstrap;
 import io.airlift.jaxrs.JaxrsModule;
+import io.airlift.json.JsonModule;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.model.Resource;
 import org.glassfish.jersey.server.model.ResourceMethod;
@@ -49,7 +50,7 @@ public class TestProgrammaticResource
         Resource resource = builder.build();
 
         Module module = binder -> jaxrsBinder(binder).bindInstance(resource);
-        Injector injector = Guice.createInjector(module, new JaxrsModule());
+        Injector injector = new Bootstrap(module, new JaxrsModule(), new JsonModule()).quiet().initialize();
         ResourceConfig resourceConfig = injector.getInstance(ResourceConfig.class);
 
         List<ResourceMethod> foundMethods = resourceConfig.getResources().stream()
