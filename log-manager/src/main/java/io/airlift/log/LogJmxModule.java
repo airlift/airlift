@@ -19,9 +19,13 @@ import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import org.weakref.jmx.MBeanExporter;
 
+import javax.annotation.PreDestroy;
+import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import static java.util.Objects.requireNonNull;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 public class LogJmxModule
@@ -34,6 +38,7 @@ public class LogJmxModule
 
         binder.bind(LoggingMBean.class).in(Scopes.SINGLETON);
         newExporter(binder).export(LoggingMBean.class).as("io.airlift.log:name=Logging");
+        binder.bind(LogExporter.class).asEagerSingleton();
     }
 
     @Provides
@@ -41,5 +46,23 @@ public class LogJmxModule
     public Logging getLogging()
     {
         return Logging.initialize();
+    }
+
+    public static class LogExporter
+    {
+        private final Logging logging;
+
+        @Inject
+        public LogExporter(Logging logging, MBeanExporter exporter)
+        {
+            this.logging = requireNonNull(logging, "logging is null");
+            logging.exportMBeans(requireNonNull(exporter, "exporter is null"));
+        }
+
+        @PreDestroy
+        public void destroy()
+        {
+            logging.unexportMBeans();
+        }
     }
 }

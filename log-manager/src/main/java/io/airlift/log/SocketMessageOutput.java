@@ -1,6 +1,5 @@
 package io.airlift.log;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.net.HostAndPort;
 import org.weakref.jmx.Managed;
 
@@ -11,8 +10,6 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.logging.ErrorManager;
-import java.util.logging.Formatter;
 
 import static java.util.Objects.requireNonNull;
 
@@ -30,19 +27,10 @@ public class SocketMessageOutput
     @GuardedBy("this")
     private OutputStream currentOutputStream;
 
-    @VisibleForTesting
     SocketMessageOutput(HostAndPort hostAndPort)
     {
         requireNonNull(hostAndPort, "hostAndPort is null");
         this.socketAddress = new InetSocketAddress(hostAndPort.getHost(), hostAndPort.getPort());
-    }
-
-    public static BufferedHandler createSocketHandler(HostAndPort hostAndPort, Formatter formatter, ErrorManager errorManager)
-    {
-        SocketMessageOutput output = new SocketMessageOutput(hostAndPort);
-        BufferedHandler handler = new BufferedHandler(output, formatter, errorManager);
-        handler.initialize();
-        return handler;
     }
 
     @Override
