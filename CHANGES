@@ -1,6 +1,7 @@
 229
 
 - Strip trailing whitespace when redirecting standard output streams to log
+- Add openmetrics and security-jwks to BOM
 
 228
 
