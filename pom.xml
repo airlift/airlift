@@ -13,7 +13,7 @@
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airbase</artifactId>
-        <version>134</version>
+        <version>136</version>
     </parent>
 
     <inceptionYear>2010</inceptionYear>
@@ -88,6 +88,7 @@
         <module>stats</module>
         <module>testing</module>
         <module>trace-token</module>
+        <module>tracing</module>
 
         <!-- skeleton / sample code -->
         <module>skeleton-server</module>
