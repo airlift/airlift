@@ -19,6 +19,7 @@ import com.google.inject.Module;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.Optional;
 
 import static com.google.common.base.Preconditions.checkState;
 import static io.airlift.configuration.ConfigBinder.configBinder;
@@ -48,6 +49,11 @@ public abstract class AbstractConfigurationAwareModule
         finally {
             this.binder = null;
         }
+    }
+
+    protected Optional<String> getProperty(String name)
+    {
+        return Optional.ofNullable(configurationFactory.getProperties().get(name));
     }
 
     protected synchronized <T> T buildConfigObject(Class<T> configClass)
