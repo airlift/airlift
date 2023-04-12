@@ -118,6 +118,12 @@
 
             <dependency>
                 <groupId>io.airlift</groupId>
+                <artifactId>openmetrics</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
                 <artifactId>security</artifactId>
                 <version>${project.version}</version>
             </dependency>
