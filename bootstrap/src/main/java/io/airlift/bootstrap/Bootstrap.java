@@ -161,8 +161,6 @@ public class Bootstrap
             logging = Logging.initialize();
         }
 
-        Thread.currentThread().setUncaughtExceptionHandler((thread, throwable) -> log.error(throwable, "Uncaught exception in thread %s", thread.getName()));
-
         Map<String, String> requiredProperties;
         if (requiredConfigurationProperties == null) {
             // initialize configuration

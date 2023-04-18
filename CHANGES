@@ -1,3 +1,7 @@
+230
+
+- Remove broken uncaught exception handler from Bootstrap
+
 229
 
 - Strip trailing whitespace when redirecting standard output streams to log
