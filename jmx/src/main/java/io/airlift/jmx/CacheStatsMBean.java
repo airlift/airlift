@@ -46,6 +46,12 @@ public class CacheStatsMBean
     }
 
     @Managed
+    public long getLoadCount()
+    {
+        return cache.stats().loadCount();
+    }
+
+    @Managed
     public long getRequestCount()
     {
         return cache.stats().requestCount();

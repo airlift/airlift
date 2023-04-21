@@ -2,6 +2,7 @@
 
 - Remove broken uncaught exception handler from Bootstrap
 - Switch logging BufferedHandler to full non-blocking implementation
+- Expose cache load count in JMX cache stats
 
 229
 
