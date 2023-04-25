@@ -39,11 +39,13 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 
+import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNull;
@@ -245,7 +247,7 @@ public class MetricsResource
                 .replace(",", "_");
     }
 
-    private List<Metric> getMetricsRecursively(String prefix, ManagedClass managedClass)
+    private List<Metric> getMetricsRecursively(String prefix, List<Map.Entry<String, String>> labels, ManagedClass managedClass)
     {
         String metricName = sanitizeMetricName(prefix);
 
@@ -259,20 +261,20 @@ public class MetricsResource
                 ManagedClass child = managedClass.getChildren().get(attributeName);
                 if (child != null) {
                     // The managed class is directly translatable to an openmetrics type, don't recurse any further
-                    Optional<Metric> metricFromTarget = getMetricFromTarget(child, metricAndAttribute, attributeDescription);
+                    Optional<Metric> metricFromTarget = getMetricFromTarget(child, metricAndAttribute, labels, attributeDescription);
                     if (metricFromTarget.isPresent()) {
                         metrics.add(metricFromTarget.get());
                     }
                     else {
                         // Recurse this nested child
-                        metrics.addAll(getMetricsRecursively(metricAndAttribute, child));
+                        metrics.addAll(getMetricsRecursively(metricAndAttribute, labels, child));
                     }
                 }
                 else {
                     // Attempt to infer a numeric gauge
                     Object attributeValue = managedClass.invokeAttribute(attributeName);
                     if (attributeValue instanceof Number) {
-                        metrics.add(Gauge.from(metricAndAttribute, List.of(), (Number) attributeValue, attributeDescription));
+                        metrics.add(Gauge.from(metricAndAttribute, labels, (Number) attributeValue, attributeDescription));
                     }
                 }
             }
@@ -284,7 +286,7 @@ public class MetricsResource
         return metrics.build();
     }
 
-    private Optional<Metric> getMetricFromTarget(ManagedClass managedClass, String metricName, String description)
+    private Optional<Metric> getMetricFromTarget(ManagedClass managedClass, String metricName, List<Map.Entry<String, String>> labels, String description)
     {
         Object target;
         try {
@@ -295,11 +297,11 @@ public class MetricsResource
         }
 
         if (target instanceof CounterStat counterStat) {
-            return Optional.of(Counter.from(metricName, List.of(), counterStat, description));
+            return Optional.of(Counter.from(metricName, labels, counterStat, description));
         }
 
         if (target instanceof TimeDistribution timeDistribution) {
-            return Optional.of(Summary.from(metricName, List.of(), timeDistribution, description));
+            return Optional.of(Summary.from(metricName, labels, timeDistribution, description));
         }
 
         return Optional.empty();
@@ -319,7 +321,21 @@ public class MetricsResource
         Map<String, ManagedClass> managedClasses = this.mbeanExporter.getManagedClasses();
 
         return managedClasses.keySet().stream()
-                .map(objectName -> getMetricsRecursively(objectName, managedClasses.get(objectName)))
+                .map(name -> {
+                    ObjectName objectName;
+                    try {
+                        objectName = new ObjectName(name);
+                    }
+                    catch (MalformedObjectNameException e) {
+                        // objectName is a string representation of an existing ObjectName
+                        throw new RuntimeException(e);
+                    }
+                    List<Map.Entry<String, String>> labels = Stream.concat(
+                                    objectName.getKeyPropertyList().entrySet().stream().sorted(Map.Entry.comparingByKey()),
+                                    Stream.of(new AbstractMap.SimpleEntry<>("domain", objectName.getDomain())))
+                            .collect(Collectors.toList());
+                    return getMetricsRecursively(objectName.getDomain(), labels, managedClasses.get(name));
+                })
                 .flatMap(List::stream);
     }
 
