@@ -147,6 +147,8 @@ public class MetricsResource
         StringBuilder metricNameBuilder = new StringBuilder("JMX_")
                 .append(objectName.getDomain().replace(".", "_"));
 
+        // TODO name and type are not necessary here since they're included in labels
+        // but to remove them, lookup by name needs to support labels too, or does it?
         if (objectName.getKeyProperty("name") != null) {
             metricNameBuilder.append(NAME_SEPARATOR)
                     .append(objectName.getKeyProperty("name"));
@@ -175,7 +177,7 @@ public class MetricsResource
             try {
                 String attributeName = attributeNameFromMetricName(jmxMetricName);
                 return objectNamesFromMetricName(jmxMetricName).stream()
-                        .map(objectName -> getMetric(objectName, attributeName, jmxMetricName, ""))
+                        .map(objectName -> getMetric(objectName, attributeName, jmxMetricName, getLabels(objectName), ""))
                         .flatMap(Optional::stream)
                         .map(Metric::getMetricExposition)
                         .findFirst();
@@ -194,7 +196,7 @@ public class MetricsResource
         }
     }
 
-    private Optional<Metric> getMetric(ObjectName objectName, String attributeName, String metricName, String description)
+    private Optional<Metric> getMetric(ObjectName objectName, String attributeName, String metricName, List<Map.Entry<String, String>> labels, String description)
     {
         try {
             Object attributeValue = mbeanServer.getAttribute(objectName, attributeName);
@@ -204,7 +206,7 @@ public class MetricsResource
             }
 
             if (attributeValue instanceof Number) {
-                return Optional.of(Gauge.from(metricName, List.of(), (Number) attributeValue, description));
+                return Optional.of(Gauge.from(metricName, labels, (Number) attributeValue, description));
             }
 
             return Optional.empty();
@@ -217,6 +219,7 @@ public class MetricsResource
 
     private String inferAttributesForObjectName(ObjectName objectName)
     {
+        List<Map.Entry<String, String>> labels = getLabels(objectName);
         StringBuilder expositions = new StringBuilder();
         try {
             MBeanInfo mbeanInfo = mbeanServer.getMBeanInfo(objectName);
@@ -224,7 +227,7 @@ public class MetricsResource
                 String attributeName = mBeanAttributeInfo.getName();
                 String description = mBeanAttributeInfo.getDescription();
                 try {
-                    getMetric(objectName, attributeName, mBeanNameToMetricName(objectName, attributeName), description)
+                    getMetric(objectName, attributeName, mBeanNameToMetricName(objectName, attributeName), labels, description)
                             .ifPresent(value -> expositions.append(value.getMetricExposition()));
                 }
                 catch (RuntimeException e) {
@@ -236,6 +239,15 @@ public class MetricsResource
             log.debug(e, "Unable to get MBeanInfo for object %s, skipping", objectName.getCanonicalName());
         }
         return expositions.toString();
+    }
+
+    private static List<Map.Entry<String, String>> getLabels(ObjectName objectName)
+    {
+        List<Map.Entry<String, String>> labels = Stream.concat(
+                        objectName.getKeyPropertyList().entrySet().stream().sorted(Map.Entry.comparingByKey()),
+                        Stream.of(new AbstractMap.SimpleEntry<>("domain", objectName.getDomain())))
+                .collect(Collectors.toList());
+        return labels;
     }
 
     private String sanitizeMetricName(String name)
@@ -330,11 +342,7 @@ public class MetricsResource
                         // objectName is a string representation of an existing ObjectName
                         throw new RuntimeException(e);
                     }
-                    List<Map.Entry<String, String>> labels = Stream.concat(
-                                    objectName.getKeyPropertyList().entrySet().stream().sorted(Map.Entry.comparingByKey()),
-                                    Stream.of(new AbstractMap.SimpleEntry<>("domain", objectName.getDomain())))
-                            .collect(Collectors.toList());
-                    return getMetricsRecursively(objectName.getDomain(), labels, managedClasses.get(name));
+                    return getMetricsRecursively(objectName.getDomain(), getLabels(objectName), managedClasses.get(name));
                 })
                 .flatMap(List::stream);
     }
