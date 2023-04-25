@@ -202,7 +202,7 @@ public class MetricsResource
             }
 
             if (attributeValue instanceof Number) {
-                return Optional.of(Gauge.from(metricName, (Number) attributeValue, description));
+                return Optional.of(Gauge.from(metricName, List.of(), (Number) attributeValue, description));
             }
 
             return Optional.empty();
@@ -272,7 +272,7 @@ public class MetricsResource
                     // Attempt to infer a numeric gauge
                     Object attributeValue = managedClass.invokeAttribute(attributeName);
                     if (attributeValue instanceof Number) {
-                        metrics.add(Gauge.from(metricAndAttribute, (Number) attributeValue, attributeDescription));
+                        metrics.add(Gauge.from(metricAndAttribute, List.of(), (Number) attributeValue, attributeDescription));
                     }
                 }
             }
@@ -295,11 +295,11 @@ public class MetricsResource
         }
 
         if (target instanceof CounterStat counterStat) {
-            return Optional.of(Counter.from(metricName, counterStat, description));
+            return Optional.of(Counter.from(metricName, List.of(), counterStat, description));
         }
 
         if (target instanceof TimeDistribution timeDistribution) {
-            return Optional.of(Summary.from(metricName, timeDistribution, description));
+            return Optional.of(Summary.from(metricName, List.of(), timeDistribution, description));
         }
 
         return Optional.empty();

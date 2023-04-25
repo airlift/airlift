@@ -15,26 +15,30 @@ package io.airlift.openmetrics.types;
 
 import io.airlift.stats.CounterStat;
 
+import java.util.List;
+import java.util.Map;
+
 import static java.util.Objects.requireNonNull;
 
-public record Counter(String metricName, long value, String help)
+public record Counter(String metricName, List<Map.Entry<String, String>> labels, long value, String help)
         implements Metric
 {
-    public Counter(String metricName, long value, String help)
+    public Counter(String metricName, List<Map.Entry<String, String>> labels, long value, String help)
     {
         this.metricName = requireNonNull(metricName, "metricName is null");
+        this.labels = requireNonNull(labels, "labels is null");
         this.value = value;
         this.help = help;
     }
 
-    public static Counter from(String metricName, CounterStat counterStat, String help)
+    public static Counter from(String metricName, List<Map.Entry<String, String>> labels, CounterStat counterStat, String help)
     {
-        return new Counter(metricName, counterStat.getTotalCount(), help);
+        return new Counter(metricName, labels, counterStat.getTotalCount(), help);
     }
 
     @Override
     public String getMetricExposition()
     {
-        return Metric.formatSingleValuedMetric(metricName, "counter", help, Long.toString(value));
+        return Metric.formatSingleValuedMetric(metricName, labels, "counter", help, Long.toString(value));
     }
 }

@@ -22,6 +22,7 @@ import io.airlift.openmetrics.types.Summary;
 import org.testng.annotations.Test;
 
 import java.math.BigInteger;
+import java.util.List;
 
 import static org.testng.Assert.assertEquals;
 
@@ -36,8 +37,8 @@ public class TestMetricExpositions
                 metric_name 0
                 """;
 
-        Counter counter = new Counter("metric_name", 0, "metric_help");
-        BigCounter bigCounter = new BigCounter("metric_name", BigInteger.ZERO, "metric_help");
+        Counter counter = new Counter("metric_name", List.of(), 0, "metric_help");
+        BigCounter bigCounter = new BigCounter("metric_name", List.of(), BigInteger.ZERO, "metric_help");
         assertEquals(counter.getMetricExposition(), bigCounter.getMetricExposition());
         assertEquals(counter.getMetricExposition(), expected);
     }
@@ -51,7 +52,7 @@ public class TestMetricExpositions
                 metric_name 0.0
                 """;
 
-        assertEquals(new Gauge("metric_name", 0.0, "metric_help").getMetricExposition(), expected);
+        assertEquals(new Gauge("metric_name", List.of(), 0.0, "metric_help").getMetricExposition(), expected);
     }
 
     @Test
@@ -63,7 +64,7 @@ public class TestMetricExpositions
                 metric_name banana
                 """;
 
-        assertEquals(new Info("metric_name", "banana", "metric_help").getMetricExposition(), expected);
+        assertEquals(new Info("metric_name", List.of(), "banana", "metric_help").getMetricExposition(), expected);
     }
 
     @Test
@@ -78,6 +79,6 @@ public class TestMetricExpositions
                 metric_name{quantile="0.5"} 0.25
                 """;
 
-        assertEquals(new Summary("metric_name", 10L, 2.0, 3.0, ImmutableMap.of(0.5, 0.25), "metric_help").getMetricExposition(), expected);
+        assertEquals(new Summary("metric_name", List.of(), 10L, 2.0, 3.0, ImmutableMap.of(0.5, 0.25), "metric_help").getMetricExposition(), expected);
     }
 }
