@@ -5,6 +5,7 @@ import com.google.inject.Provides;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
 import io.airlift.tracing.SpanSerialization.SpanDeserializer;
 import io.airlift.tracing.SpanSerialization.SpanSerializer;
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
@@ -31,7 +32,7 @@ public class TracingModule
             install(new OpenTelemetryModule(serviceName, serviceVersion));
         }
         else {
-            binder.bind(OpenTelemetry.class).toInstance(OpenTelemetry.noop());
+            binder.bind(OpenTelemetry.class).toInstance(GlobalOpenTelemetry.get());
         }
 
         jsonBinder(binder).addSerializerBinding(Span.class).to(SpanSerializer.class);
