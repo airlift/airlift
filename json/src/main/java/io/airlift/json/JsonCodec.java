@@ -37,7 +37,7 @@ import static java.util.Objects.requireNonNull;
 public class JsonCodec<T>
 {
     private static final Supplier<ObjectMapper> OBJECT_MAPPER_SUPPLIER = Suppliers.memoize(
-            () -> new ObjectMapperProvider().get().enable(INDENT_OUTPUT))::get;
+            () -> new ObjectMapperProvider().get().enable(INDENT_OUTPUT));
 
     public static <T> JsonCodec<T> jsonCodec(Class<T> type)
     {
