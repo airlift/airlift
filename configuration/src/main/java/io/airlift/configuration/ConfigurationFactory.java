@@ -51,6 +51,7 @@ import javax.validation.Validator;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -65,6 +66,7 @@ import java.util.function.Function;
 import static com.google.common.base.CaseFormat.LOWER_CAMEL;
 import static com.google.common.base.CaseFormat.UPPER_CAMEL;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.collect.Sets.newConcurrentHashSet;
 import static io.airlift.configuration.ConfigurationMetadata.getConfigurationMetadata;
 import static io.airlift.configuration.Problems.exceptionFor;
@@ -502,20 +504,20 @@ public class ConfigurationFactory
     {
         ConfigurationMetadata.InjectionPointMetaData operativeInjectionPoint = attribute.getInjectionPoint();
         String operativeName = null;
-        String operativeValue = null;
+        Object operativeValue = null;
         if (operativeInjectionPoint != null) {
             operativeName = prefix + operativeInjectionPoint.getProperty();
-            operativeValue = properties.get(operativeName);
+            operativeValue = getOperativePropertyValues(properties, operativeName, operativeInjectionPoint.getValueType());
         }
-        String printableOperativeValue = operativeValue;
+        String printableOperativeValue = objectToString(operativeValue);
         if (attribute.isSecuritySensitive()) {
             printableOperativeValue = "[REDACTED]";
         }
 
         for (ConfigurationMetadata.InjectionPointMetaData injectionPoint : attribute.getLegacyInjectionPoints()) {
             String fullName = prefix + injectionPoint.getProperty();
-            String value = properties.get(fullName);
-            String printableValue = value;
+            Object value = getOperativePropertyValues(properties, fullName, operativeInjectionPoint.getValueType());
+            String printableValue = objectToString(value);
             if (attribute.isSecuritySensitive()) {
                 printableValue = "[REDACTED]";
             }
@@ -547,15 +549,29 @@ public class ConfigurationFactory
         return operativeInjectionPoint;
     }
 
+    private static Object getOperativePropertyValues(Map<String, String> properties, String operativeName, ValueType valueType)
+    {
+        return switch (valueType) {
+            case PRIMITIVE -> properties.get(operativeName);
+            case MAP -> {
+                String valuePrefix = operativeName + ".";
+                yield properties.entrySet().stream()
+                        .filter(entry -> entry.getKey().startsWith(valuePrefix))
+                        .collect(toImmutableMap(entry -> entry.getKey().substring(valuePrefix.length()), Map.Entry::getValue));
+            }
+        };
+    }
+
     private Object getInjectedValue(AttributeMetadata attribute, ConfigurationMetadata.InjectionPointMetaData injectionPoint, String prefix)
             throws InvalidConfigurationException
     {
         String name = prefix + injectionPoint.getProperty();
-        usedProperties.add(name);
 
-        // Get the property value
-        String value = properties.get(name);
-        String printableValue = value;
+        // Get the property value(s)
+        Object value = getOperativePropertyValues(properties, name, injectionPoint.getValueType());
+        markPropertyAsUsed(name, value, injectionPoint.getValueType());
+
+        String printableValue = objectToString(value);
         if (attribute.isSecuritySensitive()) {
             printableValue = "[REDACTED]";
         }
@@ -565,9 +581,9 @@ public class ConfigurationFactory
         }
 
         // coerce the property value to the final type
-        Class<?> propertyType = injectionPoint.getSetter().getParameterTypes()[0];
+        Class<?> propertyType = getPropertyType(injectionPoint.getSetter(), injectionPoint.getValueType());
 
-        Object finalValue = coerce(propertyType, value);
+        Object finalValue = coerce(propertyType, value, injectionPoint.getValueType());
         if (finalValue == null) {
             throw new InvalidConfigurationException(format("Invalid value '%s' for type %s (property '%s') in order to call [%s]",
                     printableValue,
@@ -578,7 +594,51 @@ public class ConfigurationFactory
         return finalValue;
     }
 
-    private static Object coerce(Class<?> type, String value)
+    private Class<?> getPropertyType(Method setter, ValueType valueType)
+    {
+        return switch (valueType) {
+            case PRIMITIVE -> setter.getParameterTypes()[0];
+            case MAP -> (Class<?>) ((ParameterizedType) (setter.getGenericParameterTypes()[0])).getActualTypeArguments()[1];
+        };
+    }
+
+    private void markPropertyAsUsed(String name, Object value, ValueType valueType)
+    {
+        switch (valueType) {
+            case PRIMITIVE -> usedProperties.add(name);
+            case MAP -> {
+                Map<String, String> values = (Map<String, String>) value;
+                usedProperties.addAll(values.keySet().stream()
+                        .map(key -> name + "." + key)
+                        .collect(toImmutableList()));
+            }
+        }
+    }
+
+    private static Object coerce(Class<?> type, Object value, ValueType valueType)
+    {
+        return switch (valueType) {
+            case PRIMITIVE -> coerceSingle(type, (String) value);
+            case MAP -> coerceMap(type, (Map<String, String>) value);
+        };
+    }
+
+    private static Map<String, Object> coerceMap(Class<?> type, Map<String, String> values)
+    {
+        return values.entrySet().stream()
+                .collect(toImmutableMap(Map.Entry::getKey, entry -> coerceSingle(type, entry.getValue())));
+    }
+
+    private static String objectToString(Object object)
+    {
+        if (object == null) {
+            return "null";
+        }
+
+        return object.toString();
+    }
+
+    private static Object coerceSingle(Class<?> type, String value)
     {
         if (type.isPrimitive() && value == null) {
             return null;

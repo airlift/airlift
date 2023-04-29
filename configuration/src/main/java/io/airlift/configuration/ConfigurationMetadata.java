@@ -36,6 +36,7 @@ import java.util.Set;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
+import static io.airlift.configuration.ValueType.PRIMITIVE;
 import static java.util.Objects.requireNonNull;
 
 public class ConfigurationMetadata<T>
@@ -285,7 +286,10 @@ public class ConfigurationMetadata<T>
             return null;
         }
 
-        String propertyName = configMethod.getAnnotation(Config.class).value();
+        Config annotation = configMethod.getAnnotation(Config.class);
+        String propertyName = annotation.value();
+        ValueType valueType = annotation.type();
+
         final boolean securitySensitive = configMethod.isAnnotationPresent(ConfigSecuritySensitive.class);
         final boolean hidden = configMethod.isAnnotationPresent(ConfigHidden.class);
 
@@ -318,7 +322,7 @@ public class ConfigurationMetadata<T>
         }
 
         // Add the injection point for the current setter/property
-        builder.addInjectionPoint(InjectionPointMetaData.newCurrent(configClass, propertyName, configMethod));
+        builder.addInjectionPoint(InjectionPointMetaData.newCurrent(configClass, propertyName, configMethod, valueType));
 
         // Add injection points for legacy setters/properties
         for (InjectionPointMetaData injectionPoint : findLegacySetters(configClass, propertyName, attributeName)) {
@@ -370,28 +374,31 @@ public class ConfigurationMetadata<T>
         private final Class<?> configClass;
         private final String property;
         private final Method setter;
+        private final ValueType valueType;
         private final boolean current;
 
-        public static InjectionPointMetaData newCurrent(Class<?> configClass, String property, Method setter)
+        public static InjectionPointMetaData newCurrent(Class<?> configClass, String property, Method setter, ValueType valueType)
         {
-            return new InjectionPointMetaData(configClass, property, setter, true);
+            return new InjectionPointMetaData(configClass, property, setter, valueType, true);
         }
 
-        public static InjectionPointMetaData newLegacy(Class<?> configClass, String property, Method setter)
+        public static InjectionPointMetaData newLegacy(Class<?> configClass, String property, Method setter, ValueType valueType)
         {
-            return new InjectionPointMetaData(configClass, property, setter, false);
+            return new InjectionPointMetaData(configClass, property, setter, valueType, false);
         }
 
-        private InjectionPointMetaData(Class<?> configClass, String property, Method setter, boolean current)
+        private InjectionPointMetaData(Class<?> configClass, String property, Method setter, ValueType valueType, boolean current)
         {
             requireNonNull(configClass);
             requireNonNull(property);
             requireNonNull(setter);
+            requireNonNull(valueType);
             checkArgument(!property.isEmpty());
 
             this.configClass = configClass;
             this.property = property;
             this.setter = setter;
+            this.valueType = valueType;
             this.current = current;
         }
 
@@ -408,6 +415,11 @@ public class ConfigurationMetadata<T>
         public Method getSetter()
         {
             return this.setter;
+        }
+
+        public ValueType getValueType()
+        {
+            return this.valueType;
         }
 
         public boolean isLegacy()
@@ -516,6 +528,11 @@ public class ConfigurationMetadata<T>
         public Set<InjectionPointMetaData> getLegacyInjectionPoints()
         {
             return this.legacyInjectionPoints;
+        }
+
+        public boolean isMap()
+        {
+            return getter.getReturnType().isAssignableFrom(Map.class);
         }
 
         @Override
@@ -720,7 +737,7 @@ public class ConfigurationMetadata<T>
                                 }
 
                                 if (!property.equals(propertyName)) {
-                                    setters.add(InjectionPointMetaData.newLegacy(configClass, property, method));
+                                    setters.add(InjectionPointMetaData.newLegacy(configClass, property, method, PRIMITIVE));
                                 }
                                 else {
                                     problems.addError("@LegacyConfig property '%s' on method [%s] is replaced by @Config property of same name on method [%s]",
@@ -739,7 +756,7 @@ public class ConfigurationMetadata<T>
                                 }
 
                                 if (!property.equals(propertyName)) {
-                                    setters.add(InjectionPointMetaData.newLegacy(configClass, property, method));
+                                    setters.add(InjectionPointMetaData.newLegacy(configClass, property, method, PRIMITIVE));
                                 }
                                 else {
                                     problems.addError("@LegacyConfig property '%s' on method [%s] is replaced by @Config property of same name on method [%s]",

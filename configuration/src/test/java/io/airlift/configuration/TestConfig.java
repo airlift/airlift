@@ -41,12 +41,16 @@ import java.util.Optional;
 
 import static com.google.inject.name.Names.named;
 import static io.airlift.configuration.ConfigBinder.configBinder;
+import static io.airlift.configuration.ConfigMap.EnumOptions.OPTION1;
+import static io.airlift.configuration.ConfigMap.EnumOptions.OPTION2;
+import static io.airlift.configuration.ConfigMap.EnumOptions.OPTION3;
 import static io.airlift.configuration.SwitchModule.switchModule;
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
@@ -78,6 +82,8 @@ public class TestConfig
             .put("myEnumOption", "FOO")
             .put("myEnumSecondOption", "bar") // lowercase
             .put("valueClassOption", "a value class")
+            .put("mapOption.key1", "value1")
+            .put("mapOption.key2", "value2")
             .build();
 
     @Test
@@ -99,6 +105,37 @@ public class TestConfig
     {
         Injector injector = createInjector(properties, createModule(Key.get(Config1.class, named("boo")), Config1.class, null));
         verifyConfig(injector.getInstance(Key.get(Config1.class, named("boo"))));
+    }
+
+    @Test
+    public void testConfigWithMap()
+    {
+        Map<String, String> properties = ImmutableMap.<String, String>builder()
+                .put("mapOption.key1", "value1")
+                .put("mapOption.key2", "value2")
+                .put("mapOptionInteger.key1", "10")
+                .put("mapOptionInteger.key2", "15")
+                .put("mapOptionEnum.key1", "OPTION1")
+                .put("mapOptionEnum.key3", "OPTION3")
+                .build();
+
+        Injector injector = createInjector(properties, createModule(Key.get(ConfigMap.class, named("boo")), ConfigMap.class, null));
+        ConfigMap map = injector.getInstance(Key.get(ConfigMap.class, named("boo")));
+
+        assertThat(map.getMapOption()).isEqualTo(ImmutableMap.of("key1", "value1", "key2", "value2"));
+        assertThat(map.getMapSingleOption()).isEqualTo("value1");
+        assertThat(map.getMapOptionInteger()).isEqualTo(ImmutableMap.of("key1", 10, "key2", 15));
+        assertThat(map.getMapOptionEnum()).isEqualTo(ImmutableMap.of("key1", OPTION1, "key3", OPTION3));
+
+        // Verify that constructed maps are immutable
+        assertThatThrownBy(() -> map.getMapOption().put("otherkey", "othervalue"))
+                .isInstanceOf(UnsupportedOperationException.class);
+
+        assertThatThrownBy(() -> map.getMapOptionInteger().put("otherkey", 10))
+                .isInstanceOf(UnsupportedOperationException.class);
+
+        assertThatThrownBy(() -> map.getMapOptionEnum().put("otherkey", OPTION2))
+                .isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test
