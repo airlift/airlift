@@ -16,12 +16,14 @@
 package io.airlift.node;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.net.InetAddresses;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.airlift.node.NodeConfig.AddressSource;
 import org.weakref.jmx.Managed;
 
+import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
@@ -31,10 +33,13 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
+import static io.airlift.configuration.ConfigurationLoader.loadPropertiesFrom;
+import static io.airlift.configuration.ConfigurationUtils.replaceEnvironmentVariables;
 import static io.airlift.node.AddressToHostname.encodeAddressAsHostname;
 import static java.util.Objects.requireNonNull;
 
@@ -52,6 +57,7 @@ public class NodeInfo
     private final String externalAddress;
     private final InetAddress bindIp;
     private final long startTime = System.currentTimeMillis();
+    private final Map<String, String> annotations;
 
     public NodeInfo(String environment)
     {
@@ -70,7 +76,8 @@ public class NodeInfo
                 config.getLocation(),
                 config.getBinarySpec(),
                 config.getConfigSpec(),
-                config.getInternalAddressSource());
+                config.getInternalAddressSource(),
+                config.getAnnotationFile());
     }
 
     public NodeInfo(String environment,
@@ -82,7 +89,8 @@ public class NodeInfo
             String location,
             String binarySpec,
             String configSpec,
-            AddressSource internalAddressSource)
+            AddressSource internalAddressSource,
+            String annotationFile)
     {
         requireNonNull(environment, "environment is null");
         requireNonNull(pool, "pool is null");
@@ -130,6 +138,18 @@ public class NodeInfo
         }
         else {
             this.externalAddress = this.internalAddress;
+        }
+
+        if (annotationFile != null) {
+            try {
+                this.annotations = ImmutableMap.copyOf(replaceEnvironmentVariables(loadPropertiesFrom(annotationFile)));
+            }
+            catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+        else {
+            this.annotations = ImmutableMap.of();
         }
     }
 
@@ -248,6 +268,14 @@ public class NodeInfo
         return startTime;
     }
 
+    /**
+     * Annotations describing this server and/or the environment in which it is running.
+     */
+    public Map<String, String> getAnnotations()
+    {
+        return annotations;
+    }
+
     @Override
     public String toString()
     {
@@ -258,6 +286,7 @@ public class NodeInfo
                 .add("externalAddress", externalAddress)
                 .add("bindIp", bindIp)
                 .add("startTime", startTime)
+                .add("annotations", annotations)
                 .toString();
     }
 

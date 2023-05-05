@@ -52,13 +52,13 @@ to use in cloud native environments.
   Any newlines in the field values, such as exception stack traces, will be escaped as normal in the JSON object.  This allows for 
   capturing and indexing exceptions as singular fields in a logging search system.
 
-* `log.annotation-file` allows a file containing fields to be set at startup that can be
+* `node.annotation-file` allows a file containing fields to be set at startup that can be
   interpolated from environment variables and will be included in all log output.
 
   For example:
   ```
   #config.properties
-  log.annotation-file=annotations.properties
+  node.annotation-file=annotations.properties
   log.format=json
   ```
   ```
