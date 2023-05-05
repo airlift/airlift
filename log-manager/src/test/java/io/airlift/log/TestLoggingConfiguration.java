@@ -56,7 +56,7 @@ public class TestLoggingConfiguration
                 .put("log.compression", "NONE")
                 .put("log.levels-file", "/tmp/levels.txt")
                 .put("log.format", "json")
-                .put("log.annotation-file", annotationFile.getAbsolutePath())
+                .put("node.annotation-file", annotationFile.getAbsolutePath())
                 .build();
 
         LoggingConfiguration expected = new LoggingConfiguration()

@@ -27,11 +27,13 @@ import static com.google.common.base.StandardSystemProperty.OS_VERSION;
 import static com.google.common.base.Strings.nullToEmpty;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.tracing.Tracing.attribute;
+import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 public class OpenTelemetryModule
         implements Module
 {
+    private static final String NODE_ANNOTATION_PREFIX = "io.airlift.node";
     private final String serviceName;
     private final String serviceVersion;
 
@@ -63,6 +65,7 @@ public class OpenTelemetryModule
                 .putAll(attribute(ResourceAttributes.OS_NAME, OS_NAME.value()))
                 .putAll(attribute(ResourceAttributes.OS_VERSION, OS_VERSION.value()))
                 .putAll(attribute(ResourceAttributes.HOST_ARCH, hostArch()));
+        nodeInfo.getAnnotations().forEach((key, value) -> attributes.put(format("%s.%s", NODE_ANNOTATION_PREFIX, key), value));
 
         Resource resource = Resource.getDefault().merge(Resource.create(attributes.build()));
 

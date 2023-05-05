@@ -22,9 +22,12 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import org.testng.annotations.Test;
 
+import java.io.File;
+import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.google.common.io.Resources.getResource;
 import static io.airlift.node.NodeConfig.AddressSource.HOSTNAME;
 import static io.airlift.node.NodeConfig.AddressSource.IP;
 import static io.airlift.testing.ValidationAssertions.assertFailsValidation;
@@ -45,12 +48,15 @@ public class TestNodeConfig
                 .setLocation(null)
                 .setBinarySpec(null)
                 .setConfigSpec(null)
-                .setInternalAddressSource(IP));
+                .setInternalAddressSource(IP)
+                .setAnnotationFile(null));
     }
 
     @Test
     public void testExplicitPropertyMappings()
+            throws URISyntaxException
     {
+        File annotationFile = new File(getResource("annotations.properties").toURI());
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("node.environment", "environment")
                 .put("node.pool", "pool")
@@ -62,6 +68,7 @@ public class TestNodeConfig
                 .put("node.binary-spec", "binary")
                 .put("node.config-spec", "config")
                 .put("node.internal-address-source", "HOSTNAME")
+                .put("node.annotation-file", annotationFile.getAbsolutePath())
                 .build();
 
         NodeConfig expected = new NodeConfig()
@@ -74,7 +81,8 @@ public class TestNodeConfig
                 .setLocation("location")
                 .setBinarySpec("binary")
                 .setConfigSpec("config")
-                .setInternalAddressSource(HOSTNAME);
+                .setInternalAddressSource(HOSTNAME)
+                .setAnnotationFile(annotationFile.getAbsolutePath());
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }

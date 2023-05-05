@@ -139,7 +139,10 @@ public class LoggingConfiguration
         return logAnnotationFile;
     }
 
-    @Config("log.annotation-file")
+    // Reuse the same property as defined in io.airlift.node.NodeConfig because NodeInfo objects
+    // are not yet available when the Logging is being configured.
+    @Config("node.annotation-file")
+    @LegacyConfig("log.annotation-file")
     public LoggingConfiguration setLogAnnotationFile(String logAnnotationFile)
     {
         this.logAnnotationFile = logAnnotationFile;

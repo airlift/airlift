@@ -19,6 +19,7 @@ import com.google.common.net.InetAddresses;
 import io.airlift.configuration.Config;
 import io.airlift.configuration.DefunctConfig;
 import io.airlift.configuration.LegacyConfig;
+import io.airlift.configuration.validation.FileExists;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 
@@ -41,6 +42,7 @@ public class NodeConfig
     private String binarySpec;
     private String configSpec;
     private AddressSource internalAddressSource = AddressSource.IP;
+    private String annotationFile;
 
     @NotNull
     @Pattern(regexp = ENV_REGEXP, message = "is malformed")
@@ -182,5 +184,18 @@ public class NodeConfig
         FQDN,
         IP,
         IP_ENCODED_AS_HOSTNAME
+    }
+
+    @FileExists
+    public String getAnnotationFile()
+    {
+        return annotationFile;
+    }
+
+    @Config("node.annotation-file")
+    public NodeConfig setAnnotationFile(String annotationFile)
+    {
+        this.annotationFile = annotationFile;
+        return this;
     }
 }

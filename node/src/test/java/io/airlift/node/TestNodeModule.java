@@ -23,9 +23,13 @@ import io.airlift.configuration.ConfigurationFactory;
 import io.airlift.configuration.ConfigurationModule;
 import org.testng.annotations.Test;
 
+import java.io.File;
 import java.net.InetAddress;
+import java.net.URISyntaxException;
 import java.net.UnknownHostException;
+import java.util.Map;
 
+import static com.google.common.io.Resources.getResource;
 import static io.airlift.testing.Assertions.assertGreaterThanOrEqual;
 import static io.airlift.testing.Assertions.assertNotEquals;
 import static org.testng.Assert.assertEquals;
@@ -61,6 +65,7 @@ public class TestNodeModule
         assertNotNull(nodeInfo.getBindIp());
         assertTrue(nodeInfo.getBindIp().isAnyLocalAddress());
         assertGreaterThanOrEqual(nodeInfo.getStartTime(), testStartTime);
+        assertEquals(nodeInfo.getAnnotations().size(), 0);
 
         // make sure toString doesn't throw an exception
         assertNotNull(nodeInfo.toString());
@@ -68,6 +73,7 @@ public class TestNodeModule
 
     @Test
     public void testFullConfig()
+            throws URISyntaxException
     {
         long testStartTime = System.currentTimeMillis();
 
@@ -78,6 +84,8 @@ public class TestNodeModule
         String binarySpec = "binary";
         String configSpec = "config";
         String publicAddress = "public";
+        File annotationFile = new File(getResource("annotations.properties").toURI());
+
         ConfigurationFactory configFactory = new ConfigurationFactory(ImmutableMap.<String, String>builder()
                 .put("node.environment", environment)
                 .put("node.pool", pool)
@@ -86,6 +94,7 @@ public class TestNodeModule
                 .put("node.location", location)
                 .put("node.binary-spec", binarySpec)
                 .put("node.config-spec", configSpec)
+                .put("node.annotation-file", annotationFile.getAbsolutePath())
                 .build());
 
         Injector injector = Guice.createInjector(new NodeModule(), new ConfigurationModule(configFactory));
@@ -104,6 +113,7 @@ public class TestNodeModule
         assertEquals(nodeInfo.getInternalAddress(), publicAddress);
         assertEquals(nodeInfo.getBindIp(), InetAddresses.forString("0.0.0.0"));
         assertGreaterThanOrEqual(nodeInfo.getStartTime(), testStartTime);
+        assertEquals(nodeInfo.getAnnotations(), Map.of("team", "a", "region", "b"));
 
         // make sure toString doesn't throw an exception
         assertNotNull(nodeInfo.toString());
