@@ -18,6 +18,7 @@ import io.airlift.event.client.NullEventClient;
 import io.airlift.http.server.HttpServer.ClientCertificate;
 import io.airlift.node.NodeInfo;
 import io.airlift.tracetoken.TraceTokenManager;
+import jakarta.servlet.http.HttpServlet;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
 import org.eclipse.jetty.io.ClientConnector;
@@ -25,8 +26,6 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
-import javax.servlet.http.HttpServlet;
 
 import java.io.File;
 import java.io.IOException;

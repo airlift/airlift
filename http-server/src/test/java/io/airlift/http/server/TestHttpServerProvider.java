@@ -35,6 +35,9 @@ import io.airlift.node.NodeInfo;
 import io.airlift.testing.TempFile;
 import io.airlift.tracetoken.TraceTokenManager;
 import io.airlift.units.Duration;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
@@ -46,9 +49,6 @@ import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
 
 import javax.security.auth.x500.X500Principal;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import java.io.EOFException;
 import java.io.File;
@@ -477,7 +477,7 @@ public class TestHttpServerProvider
             protected void doGet(HttpServletRequest request, HttpServletResponse response)
                     throws IOException
             {
-                X509Certificate[] certs = (X509Certificate[]) request.getAttribute("javax.servlet.request.X509Certificate");
+                X509Certificate[] certs = (X509Certificate[]) request.getAttribute("jakarta.servlet.request.X509Certificate");
                 if ((certs == null) || (certs.length == 0)) {
                     throw new RuntimeException("No client certificate");
                 }

@@ -24,6 +24,10 @@ import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.log.Logger;
 import io.airlift.node.NodeInfo;
 import io.airlift.tracetoken.TraceTokenManager;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.servlet.Filter;
+import jakarta.servlet.Servlet;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.jmx.MBeanContainer;
@@ -54,11 +58,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import javax.management.MBeanServer;
-import javax.servlet.Filter;
-import javax.servlet.Servlet;
 
 import java.io.File;
 import java.io.IOException;

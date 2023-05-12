@@ -15,7 +15,7 @@
  */
 package io.airlift.bootstrap;
 
-import javax.annotation.PreDestroy;
+import jakarta.annotation.PreDestroy;
 
 @SuppressWarnings("MethodMayBeStatic")
 public class PreDestroyOnly

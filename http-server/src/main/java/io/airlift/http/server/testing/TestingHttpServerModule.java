@@ -27,8 +27,7 @@ import io.airlift.http.server.HttpServerInfo;
 import io.airlift.http.server.HttpsConfig;
 import io.airlift.http.server.LocalAnnouncementHttpServerInfo;
 import io.airlift.http.server.TheServlet;
-
-import javax.servlet.Filter;
+import jakarta.servlet.Filter;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;

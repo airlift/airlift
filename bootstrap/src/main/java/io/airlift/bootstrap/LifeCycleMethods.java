@@ -17,9 +17,8 @@ package io.airlift.bootstrap;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;

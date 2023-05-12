@@ -27,9 +27,8 @@ import io.airlift.http.server.RequestStats;
 import io.airlift.http.server.TheServlet;
 import io.airlift.node.NodeInfo;
 import io.airlift.tracetoken.TraceTokenManager;
-
-import javax.servlet.Filter;
-import javax.servlet.Servlet;
+import jakarta.servlet.Filter;
+import jakarta.servlet.Servlet;
 
 import java.io.IOException;
 import java.net.URI;

@@ -17,14 +17,13 @@ package io.airlift.jaxrs.testing;
 
 import com.google.common.collect.ImmutableList;
 import io.airlift.jaxrs.testing.MockRequest.ConditionalRequestBuilder;
+import jakarta.ws.rs.core.EntityTag;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.ResponseBuilder;
+import jakarta.ws.rs.core.Response.Status;
+import jakarta.ws.rs.core.Variant;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-
-import javax.ws.rs.core.EntityTag;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.ResponseBuilder;
-import javax.ws.rs.core.Response.Status;
-import javax.ws.rs.core.Variant;
 
 import java.util.Date;
 import java.util.Locale;
@@ -34,9 +33,9 @@ import static io.airlift.jaxrs.testing.MockRequest.get;
 import static io.airlift.jaxrs.testing.MockRequest.head;
 import static io.airlift.jaxrs.testing.MockRequest.post;
 import static io.airlift.jaxrs.testing.MockRequest.put;
+import static jakarta.ws.rs.core.MediaType.TEXT_PLAIN_TYPE;
+import static jakarta.ws.rs.core.MediaType.TEXT_XML_TYPE;
 import static java.util.Locale.US;
-import static javax.ws.rs.core.MediaType.TEXT_PLAIN_TYPE;
-import static javax.ws.rs.core.MediaType.TEXT_XML_TYPE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;

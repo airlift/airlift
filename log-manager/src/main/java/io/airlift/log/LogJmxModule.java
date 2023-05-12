@@ -21,9 +21,8 @@ import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
+import jakarta.annotation.PreDestroy;
 import org.weakref.jmx.MBeanExporter;
-
-import javax.annotation.PreDestroy;
 
 import static java.util.Objects.requireNonNull;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
