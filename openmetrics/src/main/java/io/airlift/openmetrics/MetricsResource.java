@@ -22,6 +22,10 @@ import io.airlift.openmetrics.types.Metric;
 import io.airlift.openmetrics.types.Summary;
 import io.airlift.stats.CounterStat;
 import io.airlift.stats.TimeDistribution;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import org.weakref.jmx.MBeanExporter;
 import org.weakref.jmx.ManagedClass;
 
@@ -34,10 +38,6 @@ import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
 
 import java.util.List;
 import java.util.Map;

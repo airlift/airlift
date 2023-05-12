@@ -22,19 +22,18 @@ import io.airlift.http.client.Response;
 import io.airlift.http.client.testing.TestingHttpClient;
 import io.airlift.http.client.testing.TestingResponse;
 import io.airlift.log.Logger;
+import jakarta.ws.rs.ProcessingException;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.client.Invocation;
+import jakarta.ws.rs.core.Application;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
 import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.client.JerseyClientBuilder;
 import org.glassfish.jersey.test.DeploymentContext;
 import org.glassfish.jersey.test.inmemory.InMemoryTestContainerFactory;
 import org.glassfish.jersey.test.spi.TestContainer;
-
-import javax.ws.rs.ProcessingException;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.MultivaluedHashMap;
-import javax.ws.rs.core.MultivaluedMap;
 
 import java.io.ByteArrayOutputStream;
 import java.net.URI;
@@ -59,6 +58,7 @@ public class JaxrsTestingHttpProcessor
         Application application = new Application()
         {
             @Override
+            @SuppressWarnings("deprecation")
             public Set<Object> getSingletons()
             {
                 return jaxRsSingletonsSet;
@@ -97,9 +97,9 @@ public class JaxrsTestingHttpProcessor
         }
 
         // issue request, and handle exceptions
-        javax.ws.rs.core.Response result;
+        jakarta.ws.rs.core.Response result;
         try {
-            result = invocation.invoke(javax.ws.rs.core.Response.class);
+            result = invocation.invoke(jakarta.ws.rs.core.Response.class);
         }
         catch (ProcessingException exception) {
             if (trace) {

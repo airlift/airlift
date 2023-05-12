@@ -14,6 +14,7 @@
 package io.airlift.http.client;
 
 import com.google.common.net.HostAndPort;
+import jakarta.servlet.Servlet;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -27,8 +28,6 @@ import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-
-import javax.servlet.Servlet;
 
 import java.util.Optional;
 import java.util.function.Consumer;

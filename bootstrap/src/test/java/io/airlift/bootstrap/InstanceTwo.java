@@ -16,9 +16,8 @@
 package io.airlift.bootstrap;
 
 import com.google.inject.Inject;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 
 @SuppressWarnings("MethodMayBeStatic")
 public class InstanceTwo

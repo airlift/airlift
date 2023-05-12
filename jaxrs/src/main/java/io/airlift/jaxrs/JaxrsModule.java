@@ -23,12 +23,11 @@ import com.google.inject.Scopes;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
 import io.airlift.http.server.TheServlet;
 import io.airlift.jaxrs.tracing.JaxrsTracingModule;
+import jakarta.servlet.Servlet;
+import jakarta.ws.rs.core.Application;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.model.Resource;
 import org.glassfish.jersey.servlet.ServletContainer;
-
-import javax.servlet.Servlet;
-import javax.ws.rs.core.Application;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -115,6 +114,7 @@ public class JaxrsModule
         }
 
         @Override
+        @SuppressWarnings("deprecation")
         public Set<Object> getSingletons()
         {
             return jaxRsSingletons;

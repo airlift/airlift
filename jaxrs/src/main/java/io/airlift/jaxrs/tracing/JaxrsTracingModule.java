@@ -4,8 +4,7 @@ import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 import io.airlift.http.server.TheServlet;
-
-import javax.servlet.Filter;
+import jakarta.servlet.Filter;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;

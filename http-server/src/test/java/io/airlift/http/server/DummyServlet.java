@@ -16,16 +16,15 @@
 package io.airlift.http.server;
 
 import com.google.common.util.concurrent.SettableFuture;
-
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.util.concurrent.Future;
 
 import static com.google.common.util.concurrent.Futures.nonCancellationPropagating;
-import static javax.servlet.http.HttpServletResponse.SC_OK;
+import static jakarta.servlet.http.HttpServletResponse.SC_OK;
 
 class DummyServlet
         extends HttpServlet

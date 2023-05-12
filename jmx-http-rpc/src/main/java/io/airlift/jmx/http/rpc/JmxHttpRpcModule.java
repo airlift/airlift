@@ -28,8 +28,7 @@ import io.airlift.discovery.client.ServiceAnnouncement.ServiceAnnouncementBuilde
 import io.airlift.http.server.HttpServerInfo;
 import io.airlift.http.server.TheAdminServlet;
 import io.airlift.node.NodeInfo;
-
-import javax.servlet.Servlet;
+import jakarta.servlet.Servlet;
 
 import java.lang.annotation.Annotation;
 import java.net.URI;

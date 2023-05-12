@@ -20,10 +20,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.net.HttpHeaders;
 import io.airlift.jaxrs.testing.GuavaMultivaluedMap;
 import io.airlift.json.JsonCodec;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.MultivaluedMap;
 import org.testng.annotations.Test;
-
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.MultivaluedMap;
 
 import java.io.ByteArrayOutputStream;
 import java.io.EOFException;

@@ -18,10 +18,9 @@ package io.airlift.sample;
 import com.google.common.collect.ImmutableList;
 import io.airlift.event.client.InMemoryEventClient;
 import io.airlift.jaxrs.testing.MockUriInfo;
+import jakarta.ws.rs.core.Response;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
-import javax.ws.rs.core.Response;
 
 import java.net.URI;
 
