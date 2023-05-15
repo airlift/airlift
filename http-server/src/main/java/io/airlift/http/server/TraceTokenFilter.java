@@ -15,9 +15,9 @@
  */
 package io.airlift.http.server;
 
+import com.google.inject.Inject;
 import io.airlift.tracetoken.TraceTokenManager;
 
-import javax.inject.Inject;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;

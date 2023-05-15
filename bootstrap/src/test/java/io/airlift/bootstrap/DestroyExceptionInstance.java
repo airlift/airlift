@@ -1,7 +1,8 @@
 package io.airlift.bootstrap;
 
+import com.google.inject.Inject;
+
 import javax.annotation.PreDestroy;
-import javax.inject.Inject;
 
 public class DestroyExceptionInstance
 {

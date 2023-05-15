@@ -20,6 +20,7 @@ import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import com.google.inject.Singleton;
 import io.airlift.discovery.client.Announcer;
 import io.airlift.discovery.client.DiscoveryAnnouncementClient;
 import io.airlift.discovery.client.DiscoveryLookupClient;
@@ -29,8 +30,6 @@ import io.airlift.discovery.client.ServiceSelector;
 import io.airlift.discovery.client.ServiceSelectorFactory;
 import io.airlift.discovery.client.ServiceSelectorManager;
 import io.airlift.node.NodeInfo;
-
-import javax.inject.Singleton;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 

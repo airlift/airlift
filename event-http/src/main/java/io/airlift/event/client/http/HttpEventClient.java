@@ -19,6 +19,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.io.CharStreams;
 import com.google.common.net.MediaType;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.inject.Inject;
 import io.airlift.discovery.client.HttpServiceSelector;
 import io.airlift.discovery.client.ServiceType;
 import io.airlift.event.client.EventClient;
@@ -35,8 +36,6 @@ import io.airlift.log.Logger;
 import io.airlift.node.NodeInfo;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
-
-import javax.inject.Inject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

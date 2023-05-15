@@ -15,9 +15,10 @@
  */
 package io.airlift.bootstrap;
 
+import com.google.inject.Inject;
+
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import javax.inject.Inject;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;

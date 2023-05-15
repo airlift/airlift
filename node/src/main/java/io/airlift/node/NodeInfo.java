@@ -17,11 +17,10 @@ package io.airlift.node;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.InetAddresses;
+import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.airlift.node.NodeConfig.AddressSource;
 import org.weakref.jmx.Managed;
-
-import javax.inject.Inject;
 
 import java.io.UncheckedIOException;
 import java.net.Inet4Address;

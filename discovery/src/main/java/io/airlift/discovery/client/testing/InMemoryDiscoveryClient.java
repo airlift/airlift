@@ -19,6 +19,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MapMaker;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.inject.Inject;
 import io.airlift.discovery.client.DiscoveryAnnouncementClient;
 import io.airlift.discovery.client.DiscoveryLookupClient;
 import io.airlift.discovery.client.ServiceAnnouncement;
@@ -26,8 +27,6 @@ import io.airlift.discovery.client.ServiceDescriptor;
 import io.airlift.discovery.client.ServiceDescriptors;
 import io.airlift.node.NodeInfo;
 import io.airlift.units.Duration;
-
-import javax.inject.Inject;
 
 import java.util.Set;
 import java.util.UUID;

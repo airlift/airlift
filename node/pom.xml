@@ -41,11 +41,6 @@
             <artifactId>validation-api</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>javax.inject</groupId>
-            <artifactId>javax.inject</artifactId>
-        </dependency>
-
         <!-- for testing -->
         <dependency>
             <groupId>io.airlift</groupId>

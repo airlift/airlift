@@ -46,13 +46,6 @@
             <artifactId>javax.annotation-api</artifactId>
         </dependency>
 
-        <!-- used by tests but also needed transitively -->
-        <dependency>
-            <groupId>javax.inject</groupId>
-            <artifactId>javax.inject</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-
         <!-- for testing -->
         <dependency>
             <groupId>io.airlift</groupId>

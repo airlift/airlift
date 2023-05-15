@@ -15,9 +15,8 @@
  */
 package io.airlift.configuration;
 
+import com.google.inject.Inject;
 import com.google.inject.Provider;
-
-import javax.inject.Inject;
 
 import java.util.Objects;
 import java.util.Optional;

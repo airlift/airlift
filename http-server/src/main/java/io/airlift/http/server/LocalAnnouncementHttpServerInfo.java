@@ -15,9 +15,8 @@
  */
 package io.airlift.http.server;
 
+import com.google.inject.Inject;
 import io.airlift.discovery.client.AnnouncementHttpServerInfo;
-
-import javax.inject.Inject;
 
 import java.net.URI;
 

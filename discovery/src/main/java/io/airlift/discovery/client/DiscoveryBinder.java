@@ -16,13 +16,12 @@
 package io.airlift.discovery.client;
 
 import com.google.inject.Binder;
+import com.google.inject.Inject;
 import com.google.inject.Key;
+import com.google.inject.Provider;
 import com.google.inject.Scopes;
 import com.google.inject.multibindings.Multibinder;
 import io.airlift.discovery.client.ServiceAnnouncement.ServiceAnnouncementBuilder;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static io.airlift.configuration.ConfigBinder.configBinder;

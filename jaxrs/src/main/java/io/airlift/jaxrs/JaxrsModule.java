@@ -16,6 +16,7 @@
 package io.airlift.jaxrs;
 
 import com.google.inject.Binder;
+import com.google.inject.Inject;
 import com.google.inject.Key;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
@@ -26,7 +27,6 @@ import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.model.Resource;
 import org.glassfish.jersey.servlet.ServletContainer;
 
-import javax.inject.Inject;
 import javax.servlet.Servlet;
 import javax.ws.rs.core.Application;
 

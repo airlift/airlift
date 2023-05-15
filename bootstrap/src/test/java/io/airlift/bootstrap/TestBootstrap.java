@@ -16,11 +16,10 @@
 package io.airlift.bootstrap;
 
 import com.google.inject.ConfigurationException;
+import com.google.inject.Inject;
 import com.google.inject.ProvisionException;
 import com.google.inject.spi.Message;
 import org.testng.annotations.Test;
-
-import javax.inject.Inject;
 
 import static io.airlift.testing.Assertions.assertContains;
 import static org.assertj.core.api.Assertions.assertThat;

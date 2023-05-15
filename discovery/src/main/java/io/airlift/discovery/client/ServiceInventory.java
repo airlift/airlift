@@ -16,6 +16,7 @@
 package io.airlift.discovery.client;
 
 import com.google.common.collect.ImmutableList;
+import com.google.inject.Inject;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.Request.Builder;
 import io.airlift.json.JsonCodec;
@@ -26,7 +27,6 @@ import org.weakref.jmx.Managed;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import javax.inject.Inject;
 
 import java.io.File;
 import java.net.URI;

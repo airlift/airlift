@@ -14,6 +14,7 @@
 package io.airlift.openmetrics;
 
 import com.google.common.collect.ImmutableList;
+import com.google.inject.Inject;
 import io.airlift.log.Logger;
 import io.airlift.openmetrics.types.Counter;
 import io.airlift.openmetrics.types.Gauge;
@@ -24,7 +25,6 @@ import io.airlift.stats.TimeDistribution;
 import org.weakref.jmx.MBeanExporter;
 import org.weakref.jmx.ManagedClass;
 
-import javax.inject.Inject;
 import javax.management.InstanceNotFoundException;
 import javax.management.IntrospectionException;
 import javax.management.JMException;

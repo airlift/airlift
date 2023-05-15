@@ -92,7 +92,7 @@ Modify the Service resource to use the config object. Edit `ServiceResource.java
 ```java
 package example;
 
-import javax.inject.Inject; // NEW
+import com.google.inject.Inject; // NEW
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;

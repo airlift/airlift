@@ -15,9 +15,8 @@
  */
 package io.airlift.http.client;
 
+import com.google.inject.Inject;
 import io.airlift.tracetoken.TraceTokenManager;
-
-import javax.inject.Inject;
 
 import static io.airlift.http.client.Request.Builder.fromRequest;
 import static java.util.Objects.requireNonNull;

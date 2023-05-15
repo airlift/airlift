@@ -15,10 +15,9 @@
  */
 package io.airlift.http.server;
 
+import com.google.inject.Inject;
+import com.google.inject.Provider;
 import org.eclipse.jetty.security.HashLoginService;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 

@@ -18,11 +18,10 @@ package io.airlift.sample;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
+import com.google.inject.Inject;
 import io.airlift.event.client.EventClient;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
-
-import javax.inject.Inject;
 
 import java.util.Collection;
 import java.util.concurrent.ConcurrentMap;
