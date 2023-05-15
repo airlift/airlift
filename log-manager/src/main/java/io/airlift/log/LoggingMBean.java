@@ -17,9 +17,8 @@ package io.airlift.log;
 
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Maps;
+import com.google.inject.Inject;
 import org.weakref.jmx.Managed;
-
-import javax.inject.Inject;
 
 import java.util.Locale;
 import java.util.Map;

@@ -15,12 +15,11 @@
  */
 package io.airlift.discovery.client.testing;
 
+import com.google.inject.Inject;
 import io.airlift.discovery.client.DiscoveryLookupClient;
 import io.airlift.discovery.client.ServiceSelector;
 import io.airlift.discovery.client.ServiceSelectorConfig;
 import io.airlift.discovery.client.ServiceSelectorFactory;
-
-import javax.inject.Inject;
 
 import static java.util.Objects.requireNonNull;
 

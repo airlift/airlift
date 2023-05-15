@@ -20,8 +20,7 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.google.common.collect.ImmutableMap;
-
-import javax.inject.Inject;
+import com.google.inject.Inject;
 
 import java.io.IOException;
 import java.io.OutputStream;

@@ -22,14 +22,13 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Module;
+import com.google.inject.Provider;
 import com.google.inject.TypeLiteral;
 import io.airlift.configuration.ConfigurationFactory;
 import io.airlift.configuration.ConfigurationModule;
 import io.airlift.discovery.client.testing.TestingDiscoveryModule;
 import io.airlift.node.testing.TestingNodeModule;
 import org.testng.annotations.Test;
-
-import javax.inject.Provider;
 
 import java.util.Map;
 import java.util.Set;

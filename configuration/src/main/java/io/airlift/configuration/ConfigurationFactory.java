@@ -32,6 +32,7 @@ import com.google.inject.Binding;
 import com.google.inject.ConfigurationException;
 import com.google.inject.Key;
 import com.google.inject.Module;
+import com.google.inject.Provider;
 import com.google.inject.spi.DefaultElementVisitor;
 import com.google.inject.spi.Element;
 import com.google.inject.spi.Elements;
@@ -43,7 +44,6 @@ import org.apache.bval.jsr.ApacheValidationProvider;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
-import javax.inject.Provider;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
@@ -165,6 +165,7 @@ public class ConfigurationFactory
      *
      * @return A collection of Guice errors encountered
      */
+    @SuppressWarnings("deprecation")
     public Collection<Message> registerConfigurationClasses(Collection<? extends Module> modules)
     {
         // some modules need access to configuration factory so they can lazy register additional config classes
@@ -199,7 +200,7 @@ public class ConfigurationFactory
                     // configuration provider
                     if (binding instanceof ProviderInstanceBinding) {
                         ProviderInstanceBinding<?> providerInstanceBinding = (ProviderInstanceBinding<?>) binding;
-                        Provider<?> provider = providerInstanceBinding.getUserSuppliedProvider();
+                        Provider<?> provider = providerInstanceBinding.getProviderInstance();
                         if (provider instanceof ConfigurationProvider) {
                             registerConfigurationProvider((ConfigurationProvider<?>) provider, Optional.of(binding.getSource()));
                         }

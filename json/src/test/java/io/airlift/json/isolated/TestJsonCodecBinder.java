@@ -16,14 +16,13 @@
 package io.airlift.json.isolated;
 
 import com.google.inject.Guice;
+import com.google.inject.Inject;
 import com.google.inject.Injector;
 import io.airlift.json.JsonCodec;
 import io.airlift.json.JsonCodecBinder;
 import io.airlift.json.JsonModule;
 import io.airlift.json.Person;
 import org.testng.annotations.Test;
-
-import javax.inject.Inject;
 
 import java.util.List;
 import java.util.Map;

@@ -15,6 +15,7 @@
  */
 package io.airlift.http.server;
 
+import com.google.inject.Inject;
 import io.airlift.stats.CounterStat;
 import io.airlift.stats.DistributionStat;
 import io.airlift.stats.TimeStat;
@@ -22,8 +23,6 @@ import io.airlift.units.Duration;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
-
-import javax.inject.Inject;
 
 public class RequestStats
 {

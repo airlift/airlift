@@ -17,13 +17,13 @@ package io.airlift.discovery.client;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
+import com.google.inject.Provider;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import com.google.inject.Singleton;
 import io.airlift.node.NodeInfo;
 
 import javax.annotation.PreDestroy;
-import javax.inject.Provider;
-import javax.inject.Singleton;
 
 import java.net.URI;
 import java.util.concurrent.ScheduledExecutorService;

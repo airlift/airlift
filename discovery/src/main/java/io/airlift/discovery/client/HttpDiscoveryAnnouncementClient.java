@@ -20,6 +20,7 @@ import com.google.common.io.CharStreams;
 import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.inject.Inject;
 import io.airlift.http.client.CacheControl;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.Request;
@@ -28,8 +29,6 @@ import io.airlift.http.client.ResponseHandler;
 import io.airlift.json.JsonCodec;
 import io.airlift.node.NodeInfo;
 import io.airlift.units.Duration;
-
-import javax.inject.Inject;
 
 import java.io.IOException;
 import java.io.InputStreamReader;

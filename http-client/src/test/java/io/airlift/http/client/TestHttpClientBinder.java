@@ -16,6 +16,7 @@
 package io.airlift.http.client;
 
 import com.google.common.collect.ImmutableList;
+import com.google.inject.BindingAnnotation;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import io.airlift.bootstrap.Bootstrap;
@@ -24,8 +25,6 @@ import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.tracetoken.TraceTokenModule;
 import io.airlift.units.Duration;
 import org.testng.annotations.Test;
-
-import javax.inject.Qualifier;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -222,35 +221,35 @@ public class TestHttpClientBinder
 
     @Retention(RUNTIME)
     @Target(ElementType.PARAMETER)
-    @Qualifier
+    @BindingAnnotation
     public @interface FooClient
     {
     }
 
     @Retention(RUNTIME)
     @Target(ElementType.PARAMETER)
-    @Qualifier
+    @BindingAnnotation
     public @interface FooAlias1
     {
     }
 
     @Retention(RUNTIME)
     @Target(ElementType.PARAMETER)
-    @Qualifier
+    @BindingAnnotation
     public @interface FooAlias2
     {
     }
 
     @Retention(RUNTIME)
     @Target(ElementType.PARAMETER)
-    @Qualifier
+    @BindingAnnotation
     public @interface FooAlias3
     {
     }
 
     @Retention(RUNTIME)
     @Target(ElementType.PARAMETER)
-    @Qualifier
+    @BindingAnnotation
     public @interface BarClient
     {
     }

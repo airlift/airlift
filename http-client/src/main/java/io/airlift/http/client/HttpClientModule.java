@@ -22,6 +22,7 @@ import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Module;
+import com.google.inject.Provider;
 import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
 import io.airlift.configuration.ConfigDefaults;
@@ -31,8 +32,6 @@ import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.TracerProvider;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-
-import javax.inject.Provider;
 
 import java.lang.annotation.Annotation;
 import java.util.Optional;

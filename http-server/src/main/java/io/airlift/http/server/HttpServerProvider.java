@@ -18,6 +18,7 @@ package io.airlift.http.server;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
+import com.google.inject.Provider;
 import io.airlift.event.client.EventClient;
 import io.airlift.http.server.HttpServer.ClientCertificate;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
@@ -27,7 +28,6 @@ import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import javax.annotation.Nullable;
-import javax.inject.Provider;
 import javax.management.MBeanServer;
 import javax.servlet.Filter;
 import javax.servlet.Servlet;

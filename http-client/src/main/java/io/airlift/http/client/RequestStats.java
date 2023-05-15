@@ -15,14 +15,13 @@
  */
 package io.airlift.http.client;
 
+import com.google.inject.Inject;
 import io.airlift.stats.CounterStat;
 import io.airlift.stats.DistributionStat;
 import io.airlift.stats.TimeStat;
 import io.airlift.units.Duration;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
-
-import javax.inject.Inject;
 
 import static io.airlift.http.client.HttpStatus.familyForStatusCode;
 

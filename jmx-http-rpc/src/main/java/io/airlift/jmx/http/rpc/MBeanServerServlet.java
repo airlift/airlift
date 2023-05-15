@@ -15,7 +15,8 @@
  */
 package io.airlift.jmx.http.rpc;
 
-import javax.inject.Inject;
+import com.google.inject.Inject;
+
 import javax.management.Attribute;
 import javax.management.AttributeList;
 import javax.management.MBeanServer;
