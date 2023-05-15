@@ -87,6 +87,7 @@ public class JmxHttpModule
         }
 
         @Override
+        @SuppressWarnings("deprecation")
         public JsonNode getSchema(SerializerProvider provider, Type typeHint)
                 throws JsonMappingException
         {
@@ -148,6 +149,7 @@ public class JmxHttpModule
         }
 
         @Override
+        @SuppressWarnings("deprecation")
         public JsonNode getSchema(SerializerProvider provider, Type typeHint)
         {
             return createSchemaNode("object", true);

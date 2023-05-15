@@ -57,7 +57,8 @@ public class JwkEcPublicKey
         throw new UnsupportedOperationException();
     }
 
-    protected Object writeReplace() throws ObjectStreamException
+    protected Object writeReplace()
+            throws ObjectStreamException
     {
         throw new UnsupportedOperationException("Java object serialization is not supported");
     }
