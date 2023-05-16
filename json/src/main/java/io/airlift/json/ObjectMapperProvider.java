@@ -17,6 +17,7 @@ package io.airlift.json;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.StreamReadConstraints;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonDeserializer;
@@ -68,6 +69,12 @@ public class ObjectMapperProvider
     public ObjectMapperProvider(JsonFactory jsonFactory)
     {
         this.jsonFactory = requireNonNull(jsonFactory, "jsonFactory is null");
+
+        // Disable the length limit, caller will be responsible for validating the input length
+        jsonFactory.setStreamReadConstraints(StreamReadConstraints
+                .builder()
+                .maxStringLength(Integer.MAX_VALUE)
+                .build());
 
         modules.add(new Jdk8Module());
         modules.add(new JavaTimeModule());
