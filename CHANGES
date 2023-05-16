@@ -1,3 +1,7 @@
+231
+
+- Restore pre 2.15 Jackson string deserialization length limit
+
 230
 
 - Remove broken uncaught exception handler from Bootstrap
