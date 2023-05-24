@@ -1,11 +1,13 @@
 package io.airlift.http.client.jetty;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import io.airlift.http.client.AbstractHttpClientTest;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.TestingRequestFilter;
+import io.airlift.http.client.TestingStatusListener;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -30,7 +32,7 @@ public class TestJettyHttpsClientPem
     @BeforeClass
     public void setUpHttpClient()
     {
-        httpClient = new JettyHttpClient("test-shared", createClientConfig(), ImmutableList.of(new TestingRequestFilter()));
+        httpClient = new JettyHttpClient("test-shared", createClientConfig(), ImmutableList.of(new TestingRequestFilter()), ImmutableSet.of(new TestingStatusListener(statusCounts)));
     }
 
     @AfterClass(alwaysRun = true)
@@ -63,7 +65,7 @@ public class TestJettyHttpsClientPem
         config.setKeyStorePath(getResource("client.pem").getPath())
                 .setTrustStorePath(getResource("ca.crt").getPath());
 
-        try (JettyHttpClient client = new JettyHttpClient("test-private", config, ImmutableList.of(new TestingRequestFilter()))) {
+        try (JettyHttpClient client = new JettyHttpClient("test-private", config, ImmutableList.of(new TestingRequestFilter()), ImmutableSet.of(new TestingStatusListener(statusCounts)))) {
             return client.execute(request, responseHandler);
         }
     }

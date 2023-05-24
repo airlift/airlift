@@ -25,16 +25,19 @@ import java.lang.annotation.Annotation;
 import java.util.Collection;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
+import static java.util.Objects.requireNonNull;
 
 public class HttpClientBinder
 {
     private final Binder binder;
     private final Multibinder<HttpRequestFilter> globalFilterBinder;
+    private final Multibinder<HttpStatusListener> globalStatusListenerBinder;
 
     private HttpClientBinder(Binder binder)
     {
         this.binder = binder.skipSources(getClass());
         this.globalFilterBinder = newSetBinder(binder, HttpRequestFilter.class, GlobalFilter.class);
+        this.globalStatusListenerBinder = newSetBinder(binder, HttpStatusListener.class, GlobalFilter.class);
     }
 
     public static HttpClientBinder httpClientBinder(Binder binder)
@@ -46,12 +49,17 @@ public class HttpClientBinder
     {
         HttpClientModule module = new HttpClientModule(name, annotation);
         binder.install(module);
-        return new HttpClientBindingBuilder(module, newSetBinder(binder, HttpRequestFilter.class, annotation));
+        return new HttpClientBindingBuilder(module, newSetBinder(binder, HttpRequestFilter.class, annotation), newSetBinder(binder, HttpStatusListener.class, annotation));
     }
 
     public LinkedBindingBuilder<HttpRequestFilter> addGlobalFilterBinding()
     {
         return globalFilterBinder.addBinding();
+    }
+
+    public LinkedBindingBuilder<HttpStatusListener> addGlobalStatusListenerBinding()
+    {
+        return globalStatusListenerBinder.addBinding();
     }
 
     public HttpClientBinder bindGlobalFilter(Class<? extends HttpRequestFilter> filterClass)
@@ -69,12 +77,14 @@ public class HttpClientBinder
     public static class HttpClientBindingBuilder
     {
         private final HttpClientModule module;
-        private final Multibinder<HttpRequestFilter> multibinder;
+        private final Multibinder<HttpRequestFilter> filterBinder;
+        private final Multibinder<HttpStatusListener> statusListenerBinder;
 
-        public HttpClientBindingBuilder(HttpClientModule module, Multibinder<HttpRequestFilter> multibinder)
+        public HttpClientBindingBuilder(HttpClientModule module, Multibinder<HttpRequestFilter> filterBinder, Multibinder<HttpStatusListener> statusListenerBinder)
         {
-            this.module = module;
-            this.multibinder = multibinder;
+            this.module = requireNonNull(module, "module is null");
+            this.filterBinder = requireNonNull(filterBinder, "multibinder is null");
+            this.statusListenerBinder = requireNonNull(statusListenerBinder, "statusListenerBinder is null");
         }
 
         public HttpClientBindingBuilder withAlias(Class<? extends Annotation> alias)
@@ -99,18 +109,29 @@ public class HttpClientBinder
 
         public LinkedBindingBuilder<HttpRequestFilter> addFilterBinding()
         {
-            return multibinder.addBinding();
+            return filterBinder.addBinding();
         }
 
         public HttpClientBindingBuilder withFilter(Class<? extends HttpRequestFilter> filterClass)
         {
-            multibinder.addBinding().to(filterClass);
+            filterBinder.addBinding().to(filterClass);
             return this;
         }
 
         public HttpClientBindingBuilder withTracing()
         {
             return withFilter(TraceTokenRequestFilter.class);
+        }
+
+        public LinkedBindingBuilder<HttpStatusListener> addStatusListenerBinding()
+        {
+            return statusListenerBinder.addBinding();
+        }
+
+        public HttpClientBindingBuilder withStatusListener(Class<? extends HttpStatusListener> listenerClass)
+        {
+            addStatusListenerBinding().to(listenerClass);
+            return this;
         }
     }
 }
