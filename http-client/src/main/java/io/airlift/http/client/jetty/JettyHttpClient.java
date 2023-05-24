@@ -8,6 +8,7 @@ import io.airlift.http.client.ByteBufferBodyGenerator;
 import io.airlift.http.client.FileBodyGenerator;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.HttpRequestFilter;
+import io.airlift.http.client.HttpStatusListener;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.RequestStats;
 import io.airlift.http.client.ResponseHandler;
@@ -151,6 +152,7 @@ public class JettyHttpClient
     private final CachedDistribution currentResponseProcessTime;
 
     private final List<HttpRequestFilter> requestFilters;
+    private final List<HttpStatusListener> httpStatusListeners;
     private final Exception creationLocation = new Exception();
     private final String name;
     private final TextMapPropagator propagator;
@@ -186,6 +188,15 @@ public class JettyHttpClient
             String name,
             HttpClientConfig config,
             Iterable<? extends HttpRequestFilter> requestFilters,
+            Iterable<? extends HttpStatusListener> httpStatusListeners)
+    {
+        this(name, config, requestFilters, NOOP_OPEN_TELEMETRY, NOOP_TRACER, Optional.empty(), Optional.empty(), httpStatusListeners);
+    }
+
+    public JettyHttpClient(
+            String name,
+            HttpClientConfig config,
+            Iterable<? extends HttpRequestFilter> requestFilters,
             Optional<String> environment,
             Optional<SslContextFactory.Client> maybeSslContextFactory)
     {
@@ -201,12 +212,26 @@ public class JettyHttpClient
             Optional<String> environment,
             Optional<SslContextFactory.Client> maybeSslContextFactory)
     {
+        this(name, config, requestFilters, openTelemetry, tracer, environment, maybeSslContextFactory, ImmutableList.of());
+    }
+
+    public JettyHttpClient(
+            String name,
+            HttpClientConfig config,
+            Iterable<? extends HttpRequestFilter> requestFilters,
+            OpenTelemetry openTelemetry,
+            Tracer tracer,
+            Optional<String> environment,
+            Optional<SslContextFactory.Client> maybeSslContextFactory,
+            Iterable<? extends HttpStatusListener> httpStatusListeners)
+    {
         this.name = requireNonNull(name, "name is null");
         this.propagator = openTelemetry.getPropagators().getTextMapPropagator();
         this.tracer = requireNonNull(tracer, "tracer is null");
 
         requireNonNull(config, "config is null");
         requireNonNull(requestFilters, "requestFilters is null");
+        requireNonNull(httpStatusListeners, "httpStatusListeners is null");
 
         maxContentLength = config.getMaxContentLength().toBytes();
         requestTimeoutMillis = config.getRequestTimeout().toMillis();
@@ -328,6 +353,7 @@ public class JettyHttpClient
         this.clientDiagnostics = new JettyClientDiagnostics();
 
         this.requestFilters = ImmutableList.copyOf(requestFilters);
+        this.httpStatusListeners = ImmutableList.copyOf(httpStatusListeners);
 
         this.queuedThreadPoolMBean = new QueuedThreadPoolMBean((QueuedThreadPool) httpClient.getExecutor());
 
@@ -611,6 +637,12 @@ public class JettyHttpClient
         InputStreamResponseListener listener = new InputStreamResponseListener()
         {
             @Override
+            public void onBegin(Response response)
+            {
+                callHttpStatusListeners(response);
+            }
+
+            @Override
             public void onContent(Response response, ByteBuffer content)
             {
                 // ignore empty blocks
@@ -712,7 +744,14 @@ public class JettyHttpClient
 
         JettyResponseFuture<T, E> future = new JettyResponseFuture<>(request, jettyRequest, requestSize::getBytes, responseHandler, span, stats, recordRequestComplete);
 
-        BufferingResponseListener listener = new BufferingResponseListener(future, Ints.saturatedCast(maxContentLength));
+        BufferingResponseListener listener = new BufferingResponseListener(future, Ints.saturatedCast(maxContentLength))
+        {
+            @Override
+            public void onBegin(Response response)
+            {
+                callHttpStatusListeners(response);
+            }
+        };
 
         long requestTimestamp = System.currentTimeMillis();
 
@@ -732,6 +771,11 @@ public class JettyHttpClient
             requestLogger.log(RequestInfo.from(jettyRequest, requestTimestamp), ResponseInfo.failed(Optional.empty(), Optional.of(e)));
         }
         return future;
+    }
+
+    private void callHttpStatusListeners(Response response)
+    {
+        httpStatusListeners.forEach(listener -> listener.statusReceived(response.getStatus()));
     }
 
     private void addLoggingListener(HttpRequest jettyRequest, long requestTimestamp)
@@ -847,6 +891,11 @@ public class JettyHttpClient
     public List<HttpRequestFilter> getRequestFilters()
     {
         return requestFilters;
+    }
+
+    public List<HttpStatusListener> getStatusListeners()
+    {
+        return httpStatusListeners;
     }
 
     public long getRequestTimeoutMillis()

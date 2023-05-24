@@ -1,6 +1,8 @@
 package io.airlift.http.client;
 
+import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Multiset;
 import io.airlift.http.client.HttpClient.HttpResponseFuture;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
@@ -85,6 +87,7 @@ public abstract class AbstractHttpClientTest
     private String scheme = "http";
     private String host = "127.0.0.1";
     protected String keystore;
+    protected final Multiset<Integer> statusCounts = HashMultiset.create();
 
     protected AbstractHttpClientTest()
     {
@@ -120,6 +123,8 @@ public abstract class AbstractHttpClientTest
         TestingHttpServer server = new TestingHttpServer(Optional.ofNullable(keystore), servlet);
 
         baseURI = new URI(scheme, null, server.getHostAndPort().getHost(), server.getHostAndPort().getPort(), null, null, null);
+
+        statusCounts.clear();
     }
 
     @AfterMethod(alwaysRun = true)
@@ -264,6 +269,7 @@ public abstract class AbstractHttpClientTest
         assertEquals(servlet.getRequestHeaders("foo"), ImmutableList.of("bar"));
         assertEquals(servlet.getRequestHeaders("dupe"), ImmutableList.of("first", "second"));
         assertEquals(servlet.getRequestHeaders("x-custom-filter"), ImmutableList.of("custom value"));
+        assertThat(statusCounts.count(200)).isEqualTo(1);
     }
 
     @Test
@@ -307,6 +313,7 @@ public abstract class AbstractHttpClientTest
         assertEquals(servlet.getRequestHeaders("foo"), ImmutableList.of("bar"));
         assertEquals(servlet.getRequestHeaders("dupe"), ImmutableList.of("first", "second"));
         assertEquals(servlet.getRequestHeaders("x-custom-filter"), ImmutableList.of("custom value"));
+        assertThat(statusCounts.count(200)).isEqualTo(1);
     }
 
     @Test
@@ -389,6 +396,7 @@ public abstract class AbstractHttpClientTest
         assertEquals(servlet.getRequestHeaders("foo"), ImmutableList.of("bar"));
         assertEquals(servlet.getRequestHeaders("dupe"), ImmutableList.of("first", "second"));
         assertEquals(servlet.getRequestHeaders("x-custom-filter"), ImmutableList.of("custom value"));
+        assertThat(statusCounts.count(200)).isEqualTo(1);
     }
 
     @Test
@@ -410,6 +418,7 @@ public abstract class AbstractHttpClientTest
         assertEquals(servlet.getRequestHeaders("foo"), ImmutableList.of("bar"));
         assertEquals(servlet.getRequestHeaders("dupe"), ImmutableList.of("first", "second"));
         assertEquals(servlet.getRequestHeaders("x-custom-filter"), ImmutableList.of("custom value"));
+        assertThat(statusCounts.count(200)).isEqualTo(1);
     }
 
     @Test
@@ -434,6 +443,7 @@ public abstract class AbstractHttpClientTest
         assertEquals(servlet.getRequestHeaders("dupe"), ImmutableList.of("first", "second"));
         assertEquals(servlet.getRequestHeaders("x-custom-filter"), ImmutableList.of("custom value"));
         assertEquals(servlet.getRequestBytes(), body);
+        assertThat(statusCounts.count(200)).isEqualTo(1);
     }
 
     @Test
@@ -460,6 +470,7 @@ public abstract class AbstractHttpClientTest
         assertEquals(servlet.getRequestHeaders("dupe"), ImmutableList.of("first", "second"));
         assertEquals(servlet.getRequestHeaders("x-custom-filter"), ImmutableList.of("custom value"));
         assertEquals(servlet.getRequestBytes(), new byte[] {1, 2, 5});
+        assertThat(statusCounts.count(200)).isEqualTo(1);
     }
 
     @Test
@@ -681,7 +692,6 @@ public abstract class AbstractHttpClientTest
 
     @BeforeClass
     public final void setUp()
-            throws Exception
     {
         executor = Executors.newCachedThreadPool(threadsNamed("test-%s"));
     }

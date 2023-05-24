@@ -15,10 +15,13 @@
  */
 package io.airlift.http.client;
 
+import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Multiset;
 import com.google.inject.BindingAnnotation;
 import com.google.inject.Injector;
 import com.google.inject.Key;
+import com.google.inject.TypeLiteral;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.bootstrap.LifeCycleManager;
 import io.airlift.http.client.jetty.JettyHttpClient;
@@ -34,6 +37,7 @@ import static io.airlift.http.client.HttpClientBinder.httpClientBinder;
 import static io.airlift.testing.Assertions.assertInstanceOf;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -56,6 +60,37 @@ public class TestHttpClientBinder
 
         JettyHttpClient httpClient = (JettyHttpClient) injector.getInstance(Key.get(HttpClient.class, FooClient.class));
         assertEquals(httpClient.getRequestTimeoutMillis(), MINUTES.toMillis(33));
+    }
+
+    @Test
+    public void testGlobalStatusListenerBinding()
+    {
+        HttpStatusListener globalListener1 = ignore -> {};
+        HttpStatusListener globalListener2 = ignore -> {};
+        HttpStatusListener listener1 = ignore -> {};
+        HttpStatusListener listener2 = ignore -> {};
+
+        Injector injector = new Bootstrap(
+                binder -> {
+                    httpClientBinder(binder)
+                            .addGlobalStatusListenerBinding().toInstance(globalListener1);
+                    httpClientBinder(binder)
+                            .addGlobalStatusListenerBinding().toInstance(globalListener2);
+                    httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
+                            .addStatusListenerBinding().toInstance(listener1);
+                    httpClientBinder(binder).bindHttpClient("bar", BarClient.class)
+                            .addStatusListenerBinding().toInstance(listener2);
+                })
+                .quiet()
+                .initialize();
+
+        JettyHttpClient fooClient = (JettyHttpClient) injector.getInstance(Key.get(HttpClient.class, FooClient.class));
+        assertStatusListenerCount(fooClient, 3);
+        assertThat(fooClient.getStatusListeners()).containsExactly(globalListener1, globalListener2, listener1);
+
+        JettyHttpClient barClient = (JettyHttpClient) injector.getInstance(Key.get(HttpClient.class, BarClient.class));
+        assertStatusListenerCount(barClient, 3);
+        assertThat(barClient.getStatusListeners()).containsExactly(globalListener1, globalListener2, listener2);
     }
 
     @Test
@@ -91,6 +126,21 @@ public class TestHttpClientBinder
         assertEquals(barClient.getRequestFilters().get(0), globalFilter1);
         assertEquals(barClient.getRequestFilters().get(1), globalFilter2);
         assertEquals(barClient.getRequestFilters().get(2), filter2);
+    }
+
+    @Test
+    public void testBindClientWithStatusListener()
+    {
+        Injector injector = new Bootstrap(
+                binder -> {
+                    httpClientBinder(binder).bindHttpClient("foo", FooClient.class).withStatusListener(TestingStatusListener.class);
+                    binder.bind(new TypeLiteral<Multiset<Integer>>() {}).toInstance(HashMultiset.create());
+                })
+                .quiet()
+                .initialize();
+
+        HttpClient httpClient = injector.getInstance(Key.get(HttpClient.class, FooClient.class));
+        assertStatusListenerCount(httpClient, 1);
     }
 
     @Test
@@ -217,6 +267,12 @@ public class TestHttpClientBinder
         assertNotNull(httpClient);
         assertInstanceOf(httpClient, JettyHttpClient.class);
         assertEquals(((JettyHttpClient) httpClient).getRequestFilters().size(), filterCount);
+    }
+
+    private static void assertStatusListenerCount(HttpClient httpClient, int statusListenerCount)
+    {
+        assertThat(httpClient).isInstanceOfSatisfying(JettyHttpClient.class, jettyClient ->
+                assertThat(jettyClient.getStatusListeners().size()).isEqualTo(statusListenerCount));
     }
 
     @Retention(RUNTIME)

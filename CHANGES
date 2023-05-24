@@ -1,3 +1,7 @@
+232
+
+- HTTP client status listener
+
 231
 
 - Restore pre 2.15 Jackson string deserialization length limit
