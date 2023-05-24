@@ -28,6 +28,8 @@ import io.airlift.configuration.ConfigurationFactory;
 import io.airlift.configuration.ConfigurationInspector;
 import io.airlift.configuration.ConfigurationInspector.ConfigAttribute;
 import io.airlift.configuration.ConfigurationInspector.ConfigRecord;
+import io.airlift.configuration.ConfigurationInterpolator;
+import io.airlift.configuration.ConfigurationInterpolator.ValueInterpolator;
 import io.airlift.configuration.ConfigurationModule;
 import io.airlift.configuration.WarningsMonitor;
 import io.airlift.log.Logger;
@@ -44,10 +46,12 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.base.Verify.verify;
 import static io.airlift.configuration.ConfigurationLoader.getSystemProperties;
 import static io.airlift.configuration.ConfigurationLoader.loadPropertiesFrom;
-import static io.airlift.configuration.ConfigurationUtils.replaceEnvironmentVariables;
 import static java.lang.String.format;
+import static java.lang.System.getenv;
+import static java.util.Locale.ENGLISH;
 
 /**
  * Entry point for an application built using the platform codebase.
@@ -64,6 +68,7 @@ public class Bootstrap
 {
     private final Logger log = Logger.get("Bootstrap");
     private final List<Module> modules;
+    private final Map<String, ValueInterpolator> propertiesInterpolators;
 
     private Map<String, String> requiredConfigurationProperties;
     private Map<String, String> optionalConfigurationProperties;
@@ -81,6 +86,8 @@ public class Bootstrap
     public Bootstrap(Iterable<? extends Module> modules)
     {
         this.modules = ImmutableList.copyOf(modules);
+        this.propertiesInterpolators = new HashMap<>();
+        this.propertiesInterpolators.put("ENV", new ConfigurationInterpolator.EnvValueInterpolator(getenv()));
     }
 
     public Bootstrap setRequiredConfigurationProperty(String key, String value)
@@ -116,6 +123,13 @@ public class Bootstrap
             this.optionalConfigurationProperties = new TreeMap<>();
         }
         this.optionalConfigurationProperties.putAll(optionalConfigurationProperties);
+        return this;
+    }
+
+    public Bootstrap addPropertyInterpolator(String name, ValueInterpolator valueInterpolator)
+    {
+        verify(name.toUpperCase(ENGLISH).contentEquals(name), "Interpolator name '%s' should be upper case", name);
+        propertiesInterpolators.put(name, valueInterpolator);
         return this;
     }
 
@@ -192,7 +206,9 @@ public class Bootstrap
 
         // replace environment variables in property values
         List<Message> errors = new ArrayList<>();
-        properties = replaceEnvironmentVariables(properties, System.getenv(), (key, error) -> {
+
+        ConfigurationInterpolator interpolator = new ConfigurationInterpolator(propertiesInterpolators);
+        properties = interpolator.interpolate(properties, (key, error) -> {
             unusedProperties.remove(key);
             errors.add(new Message(error));
         });

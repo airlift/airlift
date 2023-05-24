@@ -16,12 +16,17 @@
 package io.airlift.bootstrap;
 
 import com.google.inject.ConfigurationException;
+import com.google.inject.Injector;
 import com.google.inject.ProvisionException;
 import com.google.inject.spi.Message;
+import io.airlift.configuration.Config;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
 
+import java.util.Optional;
+
+import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.testing.Assertions.assertContains;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -70,6 +75,30 @@ public class TestBootstrap
                 .isInstanceOfSatisfying(ApplicationConfigurationException.class, e ->
                         assertThat(e.getErrors()).containsExactly(
                                 new Message("Configuration property 'test-required' was not used")));
+    }
+
+    @Test
+    public void testMissingValueInterpolator()
+    {
+        Bootstrap bootstrap = new Bootstrap()
+                .setRequiredConfigurationProperty("test-required", "${FOO:does-not-exist}");
+
+        assertThatThrownBy(bootstrap::initialize)
+                .isInstanceOfSatisfying(ApplicationConfigurationException.class, e ->
+                        assertThat(e.getErrors()).containsExactly(
+                                new Message("Configuration property 'test-required' references value interpolator 'FOO' that does not exist")));
+    }
+
+    @Test
+    public void testCustomValueInterpolator()
+    {
+        Bootstrap bootstrap = new Bootstrap(binder -> configBinder(binder).bindConfig(RequiredConfig.class))
+                .setRequiredConfigurationProperty("test-required", "${FOO:does-not-exist}")
+                .addPropertyInterpolator("FOO", key -> Optional.of("value is %s".formatted(key)));
+
+        Injector initialize = bootstrap.initialize();
+        assertThat(initialize.getInstance(RequiredConfig.class).getValue())
+                .isEqualTo("value is does-not-exist");
     }
 
     @SuppressWarnings("removal")
@@ -139,5 +168,22 @@ public class TestBootstrap
     {
         @Inject
         public InstanceB(InstanceA a) {}
+    }
+
+    public static class RequiredConfig
+    {
+        private String value;
+
+        public String getValue()
+        {
+            return value;
+        }
+
+        @Config("test-required")
+        public RequiredConfig setValue(String value)
+        {
+            this.value = value;
+            return this;
+        }
     }
 }
