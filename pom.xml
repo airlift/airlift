@@ -22,7 +22,6 @@
         <air.check.skip-spotbugs>true</air.check.skip-spotbugs>
         <air.check.skip-pmd>true</air.check.skip-pmd>
         <air.check.skip-jacoco>true</air.check.skip-jacoco>
-        <air.check.skip-modernizer>true</air.check.skip-modernizer> <!-- temporary to avoid 'prefer javax.inject' -->
         <air.check.skip-license>true</air.check.skip-license>
         <air.javadoc.lint>all,-missing</air.javadoc.lint>
         <air.compiler.fail-warnings>true</air.compiler.fail-warnings>
@@ -472,4 +471,20 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.gaul</groupId>
+                    <artifactId>modernizer-maven-plugin</artifactId>
+                    <configuration>
+                        <exclusions>
+                            <exclusion>com/google/inject/Provider</exclusion>
+                        </exclusions>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
 </project>
