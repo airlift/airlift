@@ -1,92 +1,72 @@
 package io.airlift.configuration.validation;
 
-import org.apache.bval.jsr.ApacheValidationProvider;
 import org.testng.annotations.Test;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.Validation;
-import javax.validation.ValidationException;
-import javax.validation.Validator;
+import javax.validation.ConstraintDeclarationException;
 import javax.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
-import java.util.Set;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static io.airlift.testing.ValidationAssertions.assertFailsValidation;
+import static io.airlift.testing.ValidationAssertions.assertValidates;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 public class TestFileExistsValidator
 {
-    private static final Validator VALIDATOR = Validation.byProvider(ApacheValidationProvider.class).configure().buildValidatorFactory().getValidator();
-
     @Test
     public void testFileExistsValidator()
     {
         Path existingPath = Paths.get("./pom.xml");
 
-        assertValidValue(existingPath);
-        assertValidValue(existingPath.toFile());
-        assertValidValue(existingPath.toString());
+        assertValidates(existingPath);
+        assertValidates(existingPath.toFile());
+        assertValidates(existingPath.toString());
     }
 
     @Test
     public void testFileExistsNullValue()
     {
-        assertInvalidValue(new TestedBean(null), "testedValue", "may not be null");
+        assertFailsValidation(new TestedBean(null), "testedValue", "may not be null", NotNull.class);
     }
 
     @Test
     public void testFileDoesNotExist()
     {
-        assertInvalidValue(new TestedBean(Paths.get("./file-not-exist.xml")), "testedValue", "file does not exist: ./file-not-exist.xml");
-        assertInvalidValue(new TestedBean(Paths.get("./some-name.xml").toFile()), "testedValue", "file does not exist: ./some-name.xml");
-        assertInvalidValue(new TestedBean("./some-other-name.xml"), "testedValue", "file does not exist: ./some-other-name.xml");
+        assertFailsValidation(new TestedBean(Paths.get("./file-not-exist.xml")), "testedValue", "file does not exist: ./file-not-exist.xml", FileExists.class);
+        assertFailsValidation(new TestedBean(Paths.get("./some-name.xml").toFile()), "testedValue", "file does not exist: ./some-name.xml", FileExists.class);
+        assertFailsValidation(new TestedBean("./some-other-name.xml"), "testedValue", "file does not exist: ./some-other-name.xml", FileExists.class);
     }
 
     @Test
     public void testInvalidType()
     {
-        assertThatThrownBy(() -> VALIDATOR.validate(new TestedBean(new BigDecimal(100))))
-                .isInstanceOf(ValidationException.class)
-                .hasMessage("java.lang.IllegalArgumentException: Unsupported type for @FileExists: java.math.BigDecimal");
+        assertThatThrownBy(() -> assertValidates(new TestedBean(new BigDecimal(100))))
+                .isInstanceOf(ConstraintDeclarationException.class)
+                .hasMessageContaining("Unsupported type for @FileExists: java.math.BigDecimal");
     }
 
     @Test
     public void testInvalidAnnotationUse()
     {
-        assertThatThrownBy(() -> VALIDATOR.validate(new InvalidBean()))
-                .isInstanceOf(ValidationException.class)
-                .hasMessage("com.google.common.base.VerifyException: FileExists.message cannot be specified");
+        assertThatThrownBy(() -> assertValidates(new InvalidBean()))
+                .isInstanceOf(ConstraintDeclarationException.class)
+                .hasMessageContaining("FileExists.message cannot be specified");
     }
 
     @Test
     public void testTypeTargetAnnotationUse()
     {
-        assertValidValue(new OptionalValueBean(Optional.of(Paths.get("./pom.xml"))));
-        assertValidValue(new OptionalValueBean(Optional.empty()));
+        assertValidates(new OptionalValueBean(Optional.of(Paths.get("./pom.xml"))));
+        assertValidates(new OptionalValueBean(Optional.empty()));
 
-        assertInvalidValue(
+        assertFailsValidation(
                 new OptionalValueBean(Optional.of(Paths.get("./not-existing.xml"))),
                 "value",
-                "file does not exist: ./not-existing.xml");
-    }
-
-    private static void assertValidValue(Object validatedObject)
-    {
-        assertThat(VALIDATOR.validate(validatedObject)).isEmpty();
-    }
-
-    private static void assertInvalidValue(Object validatedObject, String propertyPath, String message)
-    {
-        Set<ConstraintViolation<Object>> violations = VALIDATOR.validate(validatedObject);
-        assertThat(violations).hasSize(1);
-
-        ConstraintViolation<Object> violation = violations.iterator().next();
-        assertThat(violation.getMessage()).isEqualTo(message);
-        assertThat(violation.getPropertyPath().toString()).isEqualTo(propertyPath);
+                "file does not exist: ./not-existing.xml",
+                FileExists.class);
     }
 
     private static final class TestedBean

@@ -1,5 +1,6 @@
 package io.airlift.configuration.validation;
 
+import javax.validation.ConstraintDeclarationException;
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 
@@ -8,8 +9,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import static com.google.common.base.Verify.verify;
-
 public class FileExistsValidator
         implements ConstraintValidator<FileExists, Object>
 {
@@ -17,7 +16,9 @@ public class FileExistsValidator
     public void initialize(FileExists ignored)
     {
         // Annotation has no properties
-        verify(ignored.message().isEmpty(), "FileExists.message cannot be specified");
+        if (!ignored.message().isEmpty()) {
+            throw new ConstraintDeclarationException("FileExists.message cannot be specified");
+        }
     }
 
     @Override
@@ -53,6 +54,6 @@ public class FileExistsValidator
             return ((File) path).exists();
         }
 
-        throw new IllegalArgumentException("Unsupported type for @FileExists: " + path.getClass().getName());
+        throw new ConstraintDeclarationException("Unsupported type for @FileExists: " + path.getClass().getName());
     }
 }
