@@ -1,9 +1,8 @@
 package io.airlift.configuration.validation;
 
+import jakarta.validation.ConstraintDeclarationException;
+import jakarta.validation.constraints.NotNull;
 import org.testng.annotations.Test;
-
-import javax.validation.ConstraintDeclarationException;
-import javax.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 import java.nio.file.Path;
@@ -29,7 +28,7 @@ public class TestFileExistsValidator
     @Test
     public void testFileExistsNullValue()
     {
-        assertFailsValidation(new TestedBean(null), "testedValue", "may not be null", NotNull.class);
+        assertFailsValidation(new TestedBean(null), "testedValue", "must not be null", NotNull.class);
     }
 
     @Test

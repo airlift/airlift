@@ -15,12 +15,13 @@
  */
 package io.airlift.testing;
 
-import org.apache.bval.jsr.ApacheValidationProvider;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import org.hibernate.validator.HibernateValidator;
+import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
 
 import javax.annotation.concurrent.GuardedBy;
-import javax.validation.ConstraintViolation;
-import javax.validation.Validation;
-import javax.validation.Validator;
 
 import java.lang.annotation.Annotation;
 import java.util.Set;
@@ -30,7 +31,12 @@ import static java.lang.String.format;
 public final class ValidationAssertions
 {
     @GuardedBy("VALIDATOR")
-    private static final Validator VALIDATOR = Validation.byProvider(ApacheValidationProvider.class).configure().buildValidatorFactory().getValidator();
+    private static final Validator VALIDATOR = Validation.byProvider(HibernateValidator.class)
+            .configure()
+            .ignoreXmlConfiguration()
+            .messageInterpolator(new ParameterMessageInterpolator())
+            .buildValidatorFactory()
+            .getValidator();
 
     private ValidationAssertions() {}
 

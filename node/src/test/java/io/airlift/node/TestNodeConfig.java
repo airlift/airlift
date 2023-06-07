@@ -18,10 +18,9 @@ package io.airlift.node;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.net.InetAddresses;
 import io.airlift.configuration.testing.ConfigAssertions;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import org.testng.annotations.Test;
-
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Pattern;
 
 import java.util.Map;
 import java.util.UUID;
@@ -89,7 +88,7 @@ public class TestNodeConfig
 
         assertFailsValidation(new NodeConfig().setNodeId("abc/123"), "nodeId", "is malformed", Pattern.class);
 
-        assertFailsValidation(new NodeConfig(), "environment", "may not be null", NotNull.class);
+        assertFailsValidation(new NodeConfig(), "environment", "must not be null", NotNull.class);
         assertFailsValidation(new NodeConfig().setEnvironment("FOO"), "environment", "is malformed", Pattern.class);
 
         assertFailsValidation(new NodeConfig().setPool("FOO"), "pool", "is malformed", Pattern.class);

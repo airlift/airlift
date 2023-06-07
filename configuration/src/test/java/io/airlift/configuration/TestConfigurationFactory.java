@@ -24,11 +24,10 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.spi.Message;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import org.testng.annotations.Test;
-
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotNull;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -255,7 +254,7 @@ public class TestConfigurationFactory
                 ImmutableMap.of("int-value", "5000"), // out of range
                 binder -> configBinder(binder).bindConfig(BeanValidationClass.class),
                 ".*Invalid configuration property int-value: must be less than or equal to 100.*BeanValidationClass.*",
-                ".*Invalid configuration property string-value: may not be null.*BeanValidationClass.*");
+                ".*Invalid configuration property string-value: must not be null.*BeanValidationClass.*");
     }
 
     @Test
@@ -265,7 +264,7 @@ public class TestConfigurationFactory
                 ImmutableMap.of("example.int-value", "5000"), // out of range
                 binder -> configBinder(binder).bindConfig(BeanValidationClass.class, "example"),
                 ".*Invalid configuration property example.int-value: must be less than or equal to 100.*BeanValidationClass.*",
-                ".*Invalid configuration property example.string-value: may not be null.*BeanValidationClass.*");
+                ".*Invalid configuration property example.string-value: must not be null.*BeanValidationClass.*");
     }
 
     @Test
