@@ -18,9 +18,8 @@ package io.airlift.configuration;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.ConfigurationException;
 import io.airlift.configuration.ConfigurationMetadata.AttributeMetadata;
+import jakarta.validation.constraints.Min;
 import org.testng.annotations.Test;
-
-import javax.validation.constraints.Min;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -846,7 +845,7 @@ public class TestConfigurationMetadata
         ConfigurationMetadata.getConfigurationMetadata(MisplacedValidationAnnotationClass.class, monitor);
         monitor.assertNumberOfErrors(1);
         monitor.assertNumberOfWarnings(0);
-        monitor.assertMatchingErrorRecorded("@Config method", "MisplacedValidationAnnotationClass.setValue(int)", "annotation @javax.validation.constraints.Min", "should be placed on a getter");
+        monitor.assertMatchingErrorRecorded("@Config method", "MisplacedValidationAnnotationClass.setValue(int)", "annotation @jakarta.validation.constraints.Min", "should be placed on a getter");
     }
 
     private void verifyMetaData(ConfigurationMetadata<?> metadata, Class<?> configClass, String description, boolean securitySensitive, Map<String, Set<String>> attributeProperties)

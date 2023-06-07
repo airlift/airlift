@@ -7,10 +7,9 @@ import io.airlift.configuration.ConfigDescription;
 import io.airlift.configuration.ConfigSecuritySensitive;
 import io.airlift.units.Duration;
 import io.airlift.units.MinDuration;
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.Min;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-
-import javax.validation.constraints.AssertTrue;
-import javax.validation.constraints.Min;
 
 import java.util.List;
 

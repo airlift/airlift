@@ -19,8 +19,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.inject.ConfigurationException;
 import io.airlift.configuration.Problems.Monitor;
-
-import javax.validation.Constraint;
+import jakarta.validation.Constraint;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;

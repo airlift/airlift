@@ -18,8 +18,7 @@ package io.airlift.discovery.client;
 import io.airlift.configuration.Config;
 import io.airlift.configuration.ConfigDescription;
 import io.airlift.units.Duration;
-
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 import java.net.URI;
 import java.util.concurrent.TimeUnit;

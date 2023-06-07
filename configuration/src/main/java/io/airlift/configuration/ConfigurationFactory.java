@@ -40,13 +40,14 @@ import com.google.inject.spi.InstanceBinding;
 import com.google.inject.spi.Message;
 import com.google.inject.spi.ProviderInstanceBinding;
 import io.airlift.configuration.ConfigurationMetadata.AttributeMetadata;
-import org.apache.bval.jsr.ApacheValidationProvider;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import org.hibernate.validator.HibernateValidator;
+import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
 
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.GuardedBy;
-import javax.validation.ConstraintViolation;
-import javax.validation.Validation;
-import javax.validation.Validator;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -77,15 +78,20 @@ public class ConfigurationFactory
     private static final Validator VALIDATOR;
 
     private static final TypeToken<List<String>> LIST_OF_STRINGS_TYPE_TOKEN = new TypeToken<List<String>>() {};
-
     private static final Splitter VALUE_SPLITTER = Splitter.on(",").omitEmptyStrings().trimResults();
 
     static {
-        // this prevents bval from using the thread context classloader
         ClassLoader currentClassLoader = Thread.currentThread().getContextClassLoader();
         try {
+            // this prevents hibernate validator from using the thread context classloader
             Thread.currentThread().setContextClassLoader(null);
-            VALIDATOR = Validation.byProvider(ApacheValidationProvider.class).configure().buildValidatorFactory().getValidator();
+            VALIDATOR = Validation.byProvider(HibernateValidator.class)
+                    .configure()
+                    .externalClassLoader(HibernateValidator.class.getClassLoader())
+                    .ignoreXmlConfiguration()
+                    .messageInterpolator(new ParameterMessageInterpolator())
+                    .buildValidatorFactory()
+                    .getValidator();
         }
         finally {
             Thread.currentThread().setContextClassLoader(currentClassLoader);
