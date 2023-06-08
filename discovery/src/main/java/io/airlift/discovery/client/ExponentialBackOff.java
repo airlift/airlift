@@ -1,9 +1,8 @@
 package io.airlift.discovery.client;
 
+import com.google.errorprone.annotations.concurrent.GuardedBy;
 import io.airlift.log.Logger;
 import io.airlift.units.Duration;
-
-import javax.annotation.concurrent.GuardedBy;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;

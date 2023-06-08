@@ -18,6 +18,7 @@ package io.airlift.http.server;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteStreams;
 import com.google.common.net.HttpHeaders;
+import jakarta.annotation.Nullable;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpFilter;
@@ -25,8 +26,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
-
-import javax.annotation.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;

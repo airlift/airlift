@@ -18,6 +18,7 @@ import io.airlift.http.client.jetty.HttpClientLogger.RequestInfo;
 import io.airlift.http.client.jetty.HttpClientLogger.ResponseInfo;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
+import jakarta.annotation.Nullable;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
@@ -30,8 +31,6 @@ import org.eclipse.jetty.util.Fields;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
-import javax.annotation.Nullable;
 
 import java.io.File;
 import java.io.IOException;

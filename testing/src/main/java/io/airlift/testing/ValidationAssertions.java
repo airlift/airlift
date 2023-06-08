@@ -15,13 +15,12 @@
  */
 package io.airlift.testing;
 
+import com.google.errorprone.annotations.concurrent.GuardedBy;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import org.hibernate.validator.HibernateValidator;
 import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
-
-import javax.annotation.concurrent.GuardedBy;
 
 import java.lang.annotation.Annotation;
 import java.util.Set;

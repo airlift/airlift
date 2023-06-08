@@ -2,10 +2,9 @@ package io.airlift.stats;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.errorprone.annotations.ThreadSafe;
+import com.google.errorprone.annotations.concurrent.GuardedBy;
 import org.weakref.jmx.Managed;
-
-import javax.annotation.concurrent.GuardedBy;
-import javax.annotation.concurrent.ThreadSafe;
 
 import java.util.LinkedHashMap;
 import java.util.List;

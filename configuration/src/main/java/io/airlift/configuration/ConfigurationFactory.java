@@ -28,6 +28,7 @@ import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.reflect.TypeToken;
+import com.google.errorprone.annotations.concurrent.GuardedBy;
 import com.google.inject.Binding;
 import com.google.inject.ConfigurationException;
 import com.google.inject.Key;
@@ -40,14 +41,12 @@ import com.google.inject.spi.InstanceBinding;
 import com.google.inject.spi.Message;
 import com.google.inject.spi.ProviderInstanceBinding;
 import io.airlift.configuration.ConfigurationMetadata.AttributeMetadata;
+import jakarta.annotation.Nullable;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import org.hibernate.validator.HibernateValidator;
 import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
-
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.GuardedBy;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;

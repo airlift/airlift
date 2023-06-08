@@ -16,8 +16,6 @@ import io.airlift.slice.Slice;
 import io.airlift.slice.SliceInput;
 import io.airlift.slice.SliceOutput;
 
-import javax.annotation.concurrent.NotThreadSafe;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -52,8 +50,9 @@ import static java.lang.String.format;
  * <p>
  * This class also supports exponential decay. The implementation is based on the ideas laid out
  * in http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.159.3978
+ * <p>
+ * This class is NOT thread safe.
  */
-@NotThreadSafe
 public class QuantileDigest
 {
     private static final int MAX_BITS = 64;

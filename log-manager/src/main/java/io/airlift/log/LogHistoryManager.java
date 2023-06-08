@@ -13,10 +13,9 @@
  */
 package io.airlift.log;
 
+import com.google.errorprone.annotations.ThreadSafe;
+import com.google.errorprone.annotations.concurrent.GuardedBy;
 import io.airlift.units.DataSize;
-
-import javax.annotation.concurrent.GuardedBy;
-import javax.annotation.concurrent.ThreadSafe;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;

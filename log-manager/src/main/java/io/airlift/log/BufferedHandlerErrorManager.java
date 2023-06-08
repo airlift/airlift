@@ -1,8 +1,7 @@
 package io.airlift.log;
 
 import com.google.common.base.Throwables;
-
-import javax.annotation.concurrent.GuardedBy;
+import com.google.errorprone.annotations.concurrent.GuardedBy;
 
 import java.io.PrintStream;
 import java.util.logging.ErrorManager;

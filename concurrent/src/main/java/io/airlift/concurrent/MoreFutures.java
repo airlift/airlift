@@ -8,8 +8,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 import io.airlift.units.Duration;
-
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import java.lang.ref.WeakReference;
 import java.util.List;

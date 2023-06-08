@@ -24,12 +24,12 @@ import io.airlift.http.server.HttpServer.ClientCertificate;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.node.NodeInfo;
 import io.airlift.tracetoken.TraceTokenManager;
+import jakarta.annotation.Nullable;
 import jakarta.servlet.Filter;
 import jakarta.servlet.Servlet;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
-import javax.annotation.Nullable;
 import javax.management.MBeanServer;
 
 import java.util.Map;

@@ -21,8 +21,6 @@ import io.airlift.slice.DynamicSliceOutput;
 import io.airlift.slice.SizeOf;
 import io.airlift.slice.Slice;
 
-import javax.annotation.concurrent.NotThreadSafe;
-
 import java.util.Arrays;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -36,7 +34,9 @@ import static io.airlift.stats.cardinality.Utils.numberOfLeadingZeros;
 import static java.lang.Math.toIntExact;
 import static java.util.Comparator.comparingInt;
 
-@NotThreadSafe
+/**
+ * This class is NOT thread safe.
+ */
 final class SparseHll
         implements HllInstance
 {

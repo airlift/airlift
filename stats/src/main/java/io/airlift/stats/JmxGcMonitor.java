@@ -14,6 +14,7 @@
 package io.airlift.stats;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.errorprone.annotations.concurrent.GuardedBy;
 import io.airlift.log.Logger;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
@@ -22,7 +23,6 @@ import jakarta.annotation.PreDestroy;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
 
-import javax.annotation.concurrent.GuardedBy;
 import javax.management.JMException;
 import javax.management.Notification;
 import javax.management.NotificationListener;

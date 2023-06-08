@@ -15,7 +15,7 @@
  */
 package io.airlift.sample;
 
-import javax.annotation.concurrent.Immutable;
+import com.google.errorprone.annotations.Immutable;
 
 import static java.util.Objects.requireNonNull;
 

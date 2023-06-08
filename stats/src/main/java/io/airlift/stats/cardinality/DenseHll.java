@@ -21,8 +21,6 @@ import io.airlift.slice.DynamicSliceOutput;
 import io.airlift.slice.SizeOf;
 import io.airlift.slice.Slice;
 
-import javax.annotation.concurrent.NotThreadSafe;
-
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -36,7 +34,9 @@ import static io.airlift.stats.cardinality.Utils.computeValue;
 import static io.airlift.stats.cardinality.Utils.linearCounting;
 import static io.airlift.stats.cardinality.Utils.numberOfBuckets;
 
-@NotThreadSafe
+/**
+ * This class is NOT thread safe.
+ */
 final class DenseHll
         implements HllInstance
 {

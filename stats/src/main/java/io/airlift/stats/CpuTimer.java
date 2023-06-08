@@ -15,8 +15,7 @@ package io.airlift.stats;
 
 import com.google.common.base.Ticker;
 import io.airlift.units.Duration;
-
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;

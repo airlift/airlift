@@ -3,9 +3,8 @@ package io.airlift.stats;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Ticker;
+import com.google.errorprone.annotations.ThreadSafe;
 import org.weakref.jmx.Managed;
-
-import javax.annotation.concurrent.ThreadSafe;
 
 import java.util.concurrent.TimeUnit;
 

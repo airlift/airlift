@@ -1,8 +1,7 @@
 package io.airlift.concurrent;
 
+import com.google.errorprone.annotations.ThreadSafe;
 import io.airlift.log.Logger;
-
-import javax.annotation.concurrent.ThreadSafe;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;

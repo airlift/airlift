@@ -1,7 +1,7 @@
 package io.airlift.http.client;
 
-import javax.annotation.concurrent.GuardedBy;
-import javax.annotation.concurrent.ThreadSafe;
+import com.google.errorprone.annotations.ThreadSafe;
+import com.google.errorprone.annotations.concurrent.GuardedBy;
 
 import java.io.InputStream;
 import java.util.Iterator;

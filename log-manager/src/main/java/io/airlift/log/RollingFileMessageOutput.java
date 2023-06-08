@@ -18,9 +18,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.MoreFiles;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.google.errorprone.annotations.concurrent.GuardedBy;
 import io.airlift.units.DataSize;
-
-import javax.annotation.concurrent.GuardedBy;
 
 import java.io.BufferedOutputStream;
 import java.io.File;

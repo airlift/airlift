@@ -14,10 +14,9 @@
 package io.airlift.http.client.jetty;
 
 import com.google.common.util.concurrent.RateLimiter;
+import com.google.errorprone.annotations.ThreadSafe;
 import io.airlift.log.Logger;
 import org.eclipse.jetty.client.HttpClient;
-
-import javax.annotation.concurrent.ThreadSafe;
 
 @ThreadSafe
 class JettyClientDiagnostics
