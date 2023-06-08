@@ -19,8 +19,7 @@ import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.net.MediaType;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
-
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import java.nio.charset.Charset;
 import java.util.List;

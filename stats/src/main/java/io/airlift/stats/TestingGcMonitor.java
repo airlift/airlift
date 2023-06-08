@@ -13,9 +13,8 @@
  */
 package io.airlift.stats;
 
+import com.google.errorprone.annotations.concurrent.GuardedBy;
 import io.airlift.units.Duration;
-
-import javax.annotation.concurrent.GuardedBy;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 

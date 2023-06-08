@@ -18,8 +18,7 @@ package io.airlift.http.client;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
-
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import java.util.List;
 

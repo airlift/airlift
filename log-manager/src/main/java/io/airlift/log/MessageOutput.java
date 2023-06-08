@@ -1,6 +1,6 @@
 package io.airlift.log;
 
-import javax.annotation.concurrent.ThreadSafe;
+import com.google.errorprone.annotations.ThreadSafe;
 
 import java.io.IOException;
 

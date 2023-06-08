@@ -22,8 +22,6 @@ import io.airlift.slice.SliceInput;
 import io.airlift.slice.SliceOutput;
 import io.airlift.slice.Slices;
 
-import javax.annotation.concurrent.NotThreadSafe;
-
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
@@ -35,7 +33,9 @@ import static java.lang.Double.isInfinite;
 import static java.lang.Double.isNaN;
 import static java.util.Objects.requireNonNull;
 
-@NotThreadSafe
+/**
+ * This class is NOT thread safe.
+ */
 public class TDigest
 {
     public static final double DEFAULT_COMPRESSION = 100;

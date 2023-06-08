@@ -16,8 +16,7 @@
 package io.airlift.event.client;
 
 import com.google.common.collect.ImmutableList;
-
-import javax.annotation.concurrent.GuardedBy;
+import com.google.errorprone.annotations.concurrent.GuardedBy;
 
 import java.io.IOException;
 import java.util.ArrayList;

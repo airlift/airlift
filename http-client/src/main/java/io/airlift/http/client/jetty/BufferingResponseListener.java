@@ -1,14 +1,13 @@
 package io.airlift.http.client.jetty;
 
+import com.google.errorprone.annotations.ThreadSafe;
+import com.google.errorprone.annotations.concurrent.GuardedBy;
 import io.airlift.http.client.GatheringByteArrayInputStream;
 import io.airlift.http.client.ResponseTooLargeException;
 import io.airlift.units.DataSize;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpHeader;
-
-import javax.annotation.concurrent.GuardedBy;
-import javax.annotation.concurrent.ThreadSafe;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;

@@ -1,9 +1,8 @@
 package io.airlift.log;
 
 import com.google.common.net.HostAndPort;
+import com.google.errorprone.annotations.concurrent.GuardedBy;
 import org.weakref.jmx.Managed;
-
-import javax.annotation.concurrent.GuardedBy;
 
 import java.io.IOException;
 import java.io.OutputStream;

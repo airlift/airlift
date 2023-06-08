@@ -20,8 +20,7 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.net.MediaType;
 import io.airlift.http.client.FullJsonResponseHandler.JsonResponse;
 import io.airlift.json.JsonCodec;
-
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import java.nio.charset.Charset;
 import java.util.List;

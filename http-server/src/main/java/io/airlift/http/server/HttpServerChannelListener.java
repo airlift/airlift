@@ -13,10 +13,9 @@
  */
 package io.airlift.http.server;
 
+import jakarta.annotation.Nullable;
 import org.eclipse.jetty.server.HttpChannel.Listener;
 import org.eclipse.jetty.server.Request;
-
-import javax.annotation.Nullable;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;

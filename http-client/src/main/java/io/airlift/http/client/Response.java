@@ -16,8 +16,7 @@
 package io.airlift.http.client;
 
 import com.google.common.collect.ListMultimap;
-
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;

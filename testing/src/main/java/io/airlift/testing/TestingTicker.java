@@ -1,8 +1,7 @@
 package io.airlift.testing;
 
 import com.google.common.base.Ticker;
-
-import javax.annotation.concurrent.ThreadSafe;
+import com.google.errorprone.annotations.ThreadSafe;
 
 import java.util.concurrent.TimeUnit;
 

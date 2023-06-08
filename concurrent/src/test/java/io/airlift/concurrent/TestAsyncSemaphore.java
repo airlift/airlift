@@ -20,10 +20,9 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.common.util.concurrent.Uninterruptibles;
+import jakarta.annotation.Nullable;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-
-import javax.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;

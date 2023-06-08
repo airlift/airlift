@@ -21,12 +21,11 @@ import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.net.HostAndPort;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.SettableFuture;
+import com.google.errorprone.annotations.concurrent.GuardedBy;
 import io.airlift.log.RollingFileMessageOutput.CompressionType;
 import io.airlift.units.DataSize;
 import org.weakref.jmx.MBeanExport;
 import org.weakref.jmx.MBeanExporter;
-
-import javax.annotation.concurrent.GuardedBy;
 
 import java.io.IOException;
 import java.io.PrintStream;
