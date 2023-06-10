@@ -1,6 +1,7 @@
 234
 
 - Move to Jakarta validation API
+- Fail response if HttpStatusListener throws an exception
 
 233
 
