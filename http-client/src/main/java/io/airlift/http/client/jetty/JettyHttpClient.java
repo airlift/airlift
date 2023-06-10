@@ -775,7 +775,14 @@ public class JettyHttpClient
 
     private void callHttpStatusListeners(Response response)
     {
-        httpStatusListeners.forEach(listener -> listener.statusReceived(response.getStatus()));
+        httpStatusListeners.forEach(listener -> {
+            try {
+                listener.statusReceived(response.getStatus());
+            }
+            catch (Exception e) {
+                response.abort(e);
+            }
+        });
     }
 
     private void addLoggingListener(HttpRequest jettyRequest, long requestTimestamp)
