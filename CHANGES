@@ -1,3 +1,7 @@
+232.1
+
+- Fail response if HttpStatusListener throws an exception
+
 232
 
 - HTTP client status listener
