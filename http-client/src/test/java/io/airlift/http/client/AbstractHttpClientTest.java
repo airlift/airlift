@@ -794,6 +794,19 @@ public abstract class AbstractHttpClientTest
         executeRequest(request, new ThrowErrorResponseHandler());
     }
 
+    @Test(expectedExceptions = UncheckedIOException.class)
+    public void testHttpStatusListenerException()
+            throws Exception
+    {
+        servlet.setResponseStatusCode(TestingStatusListener.EXCEPTION_STATUS);
+
+        Request request = prepareGet()
+                .setUri(baseURI)
+                .build();
+
+        executeRequest(request, createStatusResponseHandler());
+    }
+
     private void executeExceptionRequest(HttpClientConfig config, Request request)
             throws Exception
     {
