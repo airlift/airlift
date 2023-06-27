@@ -7,10 +7,10 @@
         <artifactId>airlift</artifactId>
         <version>235-SNAPSHOT</version>
     </parent>
-
-    <name>bom</name>
     <artifactId>bom</artifactId>
     <packaging>pom</packaging>
+
+    <name>bom</name>
 
     <dependencyManagement>
         <dependencies>
@@ -178,10 +178,10 @@
                 </configuration>
                 <executions>
                     <execution>
-                        <phase>process-resources</phase>
                         <goals>
                             <goal>flatten</goal>
                         </goals>
+                        <phase>process-resources</phase>
                     </execution>
                 </executions>
             </plugin>
