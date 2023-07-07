@@ -1,3 +1,7 @@
+235
+
+- Allow overriding default span processors
+
 234
 
 - Move to Jakarta validation API

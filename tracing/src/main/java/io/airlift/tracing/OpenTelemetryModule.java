@@ -2,6 +2,7 @@ package io.airlift.tracing;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
+import com.google.inject.Provider;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import io.airlift.node.NodeInfo;
@@ -14,6 +15,7 @@ import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.opentelemetry.sdk.trace.SpanProcessor;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
@@ -25,6 +27,7 @@ import static com.google.common.base.StandardSystemProperty.OS_ARCH;
 import static com.google.common.base.StandardSystemProperty.OS_NAME;
 import static com.google.common.base.StandardSystemProperty.OS_VERSION;
 import static com.google.common.base.Strings.nullToEmpty;
+import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.tracing.Tracing.attribute;
 import static java.util.Objects.requireNonNull;
@@ -45,11 +48,14 @@ public class OpenTelemetryModule
     public void configure(Binder binder)
     {
         configBinder(binder).bindConfig(OpenTelemetryConfig.class);
+        newOptionalBinder(binder, SpanProcessor.class)
+                .setDefault()
+                .toProvider(BatchSpanExporterProvider.class);
     }
 
     @Provides
     @Singleton
-    public OpenTelemetry createOpenTelemetry(NodeInfo nodeInfo, OpenTelemetryConfig config)
+    public OpenTelemetry createOpenTelemetry(NodeInfo nodeInfo, SpanProcessor spanProcessor)
     {
         AttributesBuilder attributes = Attributes.builder()
                 .put(ResourceAttributes.SERVICE_NAME, serviceName)
@@ -65,13 +71,8 @@ public class OpenTelemetryModule
                 .putAll(attribute(ResourceAttributes.HOST_ARCH, hostArch()));
 
         Resource resource = Resource.getDefault().merge(Resource.create(attributes.build()));
-
-        SpanExporter spanExporter = OtlpGrpcSpanExporter.builder()
-                .setEndpoint(config.getEndpoint())
-                .build();
-
         SdkTracerProvider tracerProvider = SdkTracerProvider.builder()
-                .addSpanProcessor(BatchSpanProcessor.builder(spanExporter).build())
+                .addSpanProcessor(spanProcessor)
                 .setResource(resource)
                 .build();
 
@@ -109,5 +110,26 @@ public class OpenTelemetryModule
             case "ppc64le" -> "ppc64";
             default -> null;
         };
+    }
+
+    private static class BatchSpanExporterProvider
+            implements Provider<SpanProcessor>
+    {
+        private final String endpoint;
+
+        public BatchSpanExporterProvider(OpenTelemetryConfig config)
+        {
+            this.endpoint = requireNonNull(config, "config is null").getEndpoint();
+        }
+
+        @Override
+        public SpanProcessor get()
+        {
+            SpanExporter spanExporter = OtlpGrpcSpanExporter.builder()
+                    .setEndpoint(endpoint)
+                    .build();
+
+            return BatchSpanProcessor.builder(spanExporter).build();
+        }
     }
 }
