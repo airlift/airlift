@@ -1,6 +1,7 @@
 236
 
 - Do not localize Jakarta validation messages
+- Allow overriding default span processors
 
 235
 
