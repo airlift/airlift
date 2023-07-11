@@ -2,6 +2,7 @@
 
 - Do not localize Jakarta validation messages
 - Allow overriding default span processors
+- Allow configuring tracing exporter batch and queue sizes
 
 235
 

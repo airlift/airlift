@@ -26,11 +26,15 @@ public class DefaultExporterModule
             implements Provider<SpanProcessor>
     {
         private final String endpoint;
+        private final int maxBatchSize;
+        private final int maxQueueSize;
 
         @Inject
         public OltpGrpcSpanExporterProvider(OpenTelemetryConfig config)
         {
             this.endpoint = requireNonNull(config, "config is null").getEndpoint();
+            this.maxBatchSize = config.getMaxBatchSize();
+            this.maxQueueSize = config.getMaxQueueSize();
         }
 
         @Override
@@ -40,7 +44,11 @@ public class DefaultExporterModule
                     .setEndpoint(endpoint)
                     .build();
 
-            return BatchSpanProcessor.builder(spanExporter).build();
+            return BatchSpanProcessor
+                    .builder(spanExporter)
+                    .setMaxExportBatchSize(maxBatchSize)
+                    .setMaxQueueSize(maxQueueSize)
+                    .build();
         }
     }
 }

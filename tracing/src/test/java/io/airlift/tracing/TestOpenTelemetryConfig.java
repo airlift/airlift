@@ -15,7 +15,9 @@ public class TestOpenTelemetryConfig
     public void testDefaults()
     {
         assertRecordedDefaults(recordDefaults(OpenTelemetryConfig.class)
-                .setEndpoint("http://localhost:4317"));
+                .setEndpoint("http://localhost:4317")
+                .setMaxBatchSize(512)
+                .setMaxQueueSize(2048));
     }
 
     @Test
@@ -23,10 +25,14 @@ public class TestOpenTelemetryConfig
     {
         Map<String, String> properties = ImmutableMap.<String, String>builder()
                 .put("tracing.exporter.endpoint", "http://example.com:1234")
+                .put("tracing.exporter.max-batch-size", "256")
+                .put("tracing.exporter.max-queue-size", "512")
                 .buildOrThrow();
 
         OpenTelemetryConfig expected = new OpenTelemetryConfig()
-                .setEndpoint("http://example.com:1234");
+                .setEndpoint("http://example.com:1234")
+                .setMaxBatchSize(256)
+                .setMaxQueueSize(512);
 
         assertFullMapping(properties, expected);
     }
