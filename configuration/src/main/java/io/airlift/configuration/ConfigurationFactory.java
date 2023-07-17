@@ -69,6 +69,7 @@ import static com.google.common.collect.Sets.newConcurrentHashSet;
 import static io.airlift.configuration.ConfigurationMetadata.getConfigurationMetadata;
 import static io.airlift.configuration.Problems.exceptionFor;
 import static java.lang.String.format;
+import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
 
 public class ConfigurationFactory
@@ -88,7 +89,7 @@ public class ConfigurationFactory
                     .configure()
                     .externalClassLoader(HibernateValidator.class.getClassLoader())
                     .ignoreXmlConfiguration()
-                    .messageInterpolator(new ParameterMessageInterpolator())
+                    .messageInterpolator(new ParameterMessageInterpolator(Set.of(ENGLISH), ENGLISH, false))
                     .buildValidatorFactory()
                     .getValidator();
         }

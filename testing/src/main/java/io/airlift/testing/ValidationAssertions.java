@@ -26,6 +26,7 @@ import java.lang.annotation.Annotation;
 import java.util.Set;
 
 import static java.lang.String.format;
+import static java.util.Locale.ENGLISH;
 
 public final class ValidationAssertions
 {
@@ -33,7 +34,7 @@ public final class ValidationAssertions
     private static final Validator VALIDATOR = Validation.byProvider(HibernateValidator.class)
             .configure()
             .ignoreXmlConfiguration()
-            .messageInterpolator(new ParameterMessageInterpolator())
+            .messageInterpolator(new ParameterMessageInterpolator(Set.of(ENGLISH), ENGLISH, false))
             .buildValidatorFactory()
             .getValidator();
 
