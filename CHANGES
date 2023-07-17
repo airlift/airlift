@@ -1,3 +1,7 @@
+236
+
+- Do not localize Jakarta validation messages
+
 235
 
 - Use annotation file for both traces and logs
