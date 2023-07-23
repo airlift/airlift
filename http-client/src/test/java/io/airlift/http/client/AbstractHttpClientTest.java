@@ -8,6 +8,8 @@ import io.airlift.http.client.HttpClient.HttpResponseFuture;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
 import io.airlift.http.client.jetty.JettyHttpClient;
+import io.airlift.json.JsonCodec;
+import io.airlift.json.ObjectMapperProvider;
 import io.airlift.log.Logging;
 import io.airlift.units.Duration;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
@@ -49,10 +51,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
 
 import static com.google.common.base.Throwables.getStackTraceAsString;
 import static com.google.common.base.Throwables.propagateIfPossible;
 import static com.google.common.base.Throwables.throwIfUnchecked;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.HttpHeaders.ACCEPT_ENCODING;
 import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static com.google.common.net.HttpHeaders.CONTENT_LENGTH;
@@ -61,12 +65,14 @@ import static com.google.common.net.HttpHeaders.LOCATION;
 import static com.google.common.net.HttpHeaders.USER_AGENT;
 import static io.airlift.concurrent.Threads.threadsNamed;
 import static io.airlift.http.client.HttpStatus.BAD_GATEWAY;
+import static io.airlift.http.client.JsonStreamingResponse.startJsonStreamingResponse;
 import static io.airlift.http.client.Request.Builder.prepareDelete;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.Request.Builder.preparePost;
 import static io.airlift.http.client.Request.Builder.preparePut;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
+import static io.airlift.json.JsonCodec.jsonCodec;
 import static io.airlift.testing.Assertions.assertBetweenInclusive;
 import static io.airlift.testing.Assertions.assertGreaterThanOrEqual;
 import static io.airlift.testing.Assertions.assertLessThan;
@@ -921,6 +927,31 @@ public abstract class AbstractHttpClientTest
                 }
             });
         }
+    }
+
+    public record Thing(String s, int i) {}
+
+    @Test
+    public void testStreamingJson()
+            throws Exception
+    {
+        int qty = 25;
+        List<Thing> things = IntStream.range(0, qty).mapToObj(i -> new Thing(Integer.toString(i), i)).collect(toImmutableList());
+        String json = new ObjectMapperProvider().get().writeValueAsString(things);
+        JsonCodec<Thing> codec = jsonCodec(Thing.class);
+
+        servlet.setResponseBody(json);
+        servlet.addResponseHeader("Content-Type", "application/json");
+
+        Request request = prepareGet()
+                .setUri(baseURI)
+                .build();
+
+        Iterator<Thing> iterator = startJsonStreamingResponse(request, codec, this::executeStreaming);
+        for (int i = 0; i < qty; ++i) {
+            assertEquals(iterator.next(), new Thing(Integer.toString(i), i));
+        }
+        assertFalse(iterator.hasNext());
     }
 
     private void executeExceptionRequest(HttpClientConfig config, Request request)

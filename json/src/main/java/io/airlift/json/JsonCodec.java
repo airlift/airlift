@@ -215,6 +215,11 @@ public class JsonCodec<T>
         }
     }
 
+    public ObjectMapper mapper()
+    {
+        return mapper;
+    }
+
     @SuppressWarnings("unchecked")
     TypeToken<T> getTypeToken()
     {

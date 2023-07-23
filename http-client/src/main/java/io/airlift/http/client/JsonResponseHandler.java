@@ -65,6 +65,21 @@ public class JsonResponseHandler<T>
     @Override
     public T handle(Request request, Response response)
     {
+        validateResponse(request, response, successfulResponseCodes);
+
+        byte[] bytes = readResponseBytes(request, response);
+
+        try {
+            return jsonCodec.fromJson(bytes);
+        }
+        catch (IllegalArgumentException e) {
+            String json = new String(bytes, UTF_8);
+            throw new IllegalArgumentException(String.format("Unable to create %s from JSON response:\n[%s]", jsonCodec.getType(), json), e);
+        }
+    }
+
+    static void validateResponse(Request request, Response response, Set<Integer> successfulResponseCodes)
+    {
         if (!successfulResponseCodes.contains(response.getStatusCode())) {
             throw new UnexpectedResponseException(
                     String.format("Expected response code to be %s, but was %d", successfulResponseCodes, response.getStatusCode()),
@@ -78,16 +93,6 @@ public class JsonResponseHandler<T>
         }
         if (!MediaType.parse(contentType).is(MEDIA_TYPE_JSON)) {
             throw new UnexpectedResponseException("Expected application/json response from server but got " + contentType, request, response);
-        }
-
-        byte[] bytes = readResponseBytes(request, response);
-
-        try {
-            return jsonCodec.fromJson(bytes);
-        }
-        catch (IllegalArgumentException e) {
-            String json = new String(bytes, UTF_8);
-            throw new IllegalArgumentException(String.format("Unable to create %s from JSON response:\n[%s]", jsonCodec.getType(), json), e);
         }
     }
 }
