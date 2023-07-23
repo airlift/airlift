@@ -3,29 +3,23 @@ package io.airlift.http.client.jetty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.HostAndPort;
 import com.google.common.primitives.Ints;
-import io.airlift.http.client.BodyGenerator;
-import io.airlift.http.client.ByteBufferBodyGenerator;
-import io.airlift.http.client.FileBodyGenerator;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.HttpRequestFilter;
 import io.airlift.http.client.HttpStatusListener;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.RequestStats;
 import io.airlift.http.client.ResponseHandler;
-import io.airlift.http.client.StaticBodyGenerator;
 import io.airlift.http.client.jetty.HttpClientLogger.RequestInfo;
 import io.airlift.http.client.jetty.HttpClientLogger.ResponseInfo;
+import io.airlift.http.client.jetty.RequestController.PreparedRequest;
 import io.airlift.security.pem.PemReader;
 import io.airlift.units.Duration;
 import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.TracerProvider;
-import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import jakarta.annotation.PreDestroy;
@@ -42,10 +36,7 @@ import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
-import org.eclipse.jetty.client.util.ByteBufferRequestContent;
-import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
-import org.eclipse.jetty.client.util.PathRequestContent;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.io.ClientConnector;
@@ -67,17 +58,14 @@ import javax.net.ssl.SNIServerName;
 import javax.net.ssl.SSLEngine;
 import javax.security.auth.x500.X500Principal;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
@@ -102,27 +90,24 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.InetAddresses.isInetAddress;
-import static io.airlift.http.client.jetty.AuthorizationPreservingHttpClient.setPreserveAuthorization;
+import static io.airlift.http.client.jetty.RequestController.STATS_KEY;
 import static io.airlift.node.AddressToHostname.tryDecodeHostnameToAddress;
 import static io.airlift.security.cert.CertificateBuilder.certificateBuilder;
-import static io.opentelemetry.api.common.AttributeKey.stringKey;
 import static java.lang.Math.max;
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.temporal.ChronoUnit.YEARS;
-import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.eclipse.jetty.client.ConnectionPoolAccessor.getActiveConnections;
 import static org.eclipse.jetty.client.ConnectionPoolAccessor.getIdleConnections;
-import static org.eclipse.jetty.client.HttpClient.normalizePort;
 
+@SuppressWarnings("AssignmentToCatchBlockParameter")
 public class JettyHttpClient
         implements io.airlift.http.client.HttpClient
 {
-    private static final String STATS_KEY = "airlift_stats";
     private static final long SWEEP_PERIOD_MILLIS = 5000;
 
     private static final AtomicLong NAME_COUNTER = new AtomicLong();
@@ -130,14 +115,11 @@ public class JettyHttpClient
     private static final OpenTelemetry NOOP_OPEN_TELEMETRY = OpenTelemetry.noop();
     private static final Tracer NOOP_TRACER = TracerProvider.noop().get("noop");
 
-    private static final AttributeKey<String> CLIENT_NAME = stringKey("airlift.http.client_name");
-
+    private final RequestController requestController;
     private final HttpClient httpClient;
     private final long maxContentLength;
     private final long requestTimeoutMillis;
-    private final long idleTimeoutMillis;
     private final boolean recordRequestComplete;
-    private final boolean logEnabled;
     private final QueuedThreadPoolMBean queuedThreadPoolMBean;
     private final ConnectionStats connectionStats;
     private final RequestStats stats = new RequestStats();
@@ -155,11 +137,8 @@ public class JettyHttpClient
     private final List<HttpStatusListener> httpStatusListeners;
     private final Exception creationLocation = new Exception();
     private final String name;
-    private final TextMapPropagator propagator;
-    private final Tracer tracer;
 
     private final HttpClientLogger requestLogger;
-    private final JettyClientDiagnostics clientDiagnostics;
 
     public JettyHttpClient()
     {
@@ -226,8 +205,7 @@ public class JettyHttpClient
             Iterable<? extends HttpStatusListener> httpStatusListeners)
     {
         this.name = requireNonNull(name, "name is null");
-        this.propagator = openTelemetry.getPropagators().getTextMapPropagator();
-        this.tracer = requireNonNull(tracer, "tracer is null");
+        TextMapPropagator propagator = openTelemetry.getPropagators().getTextMapPropagator();
 
         requireNonNull(config, "config is null");
         requireNonNull(requestFilters, "requestFilters is null");
@@ -235,7 +213,7 @@ public class JettyHttpClient
 
         maxContentLength = config.getMaxContentLength().toBytes();
         requestTimeoutMillis = config.getRequestTimeout().toMillis();
-        idleTimeoutMillis = config.getIdleTimeout().toMillis();
+        long idleTimeoutMillis = config.getIdleTimeout().toMillis();
         recordRequestComplete = config.getRecordRequestComplete();
 
         creationLocation.fillInStackTrace();
@@ -319,7 +297,7 @@ public class JettyHttpClient
         this.connectionStats = new ConnectionStats(connectionStats);
 
         // configure logging
-        this.logEnabled = config.isLogEnabled();
+        boolean logEnabled = config.isLogEnabled();
         if (logEnabled) {
             String logFilePath = Paths.get(config.getLogPath(), format("%s-http-client.log", name)).toAbsolutePath().toString();
             requestLogger = new DefaultHttpClientLogger(
@@ -350,7 +328,7 @@ public class JettyHttpClient
             throw new RuntimeException(e);
         }
 
-        this.clientDiagnostics = new JettyClientDiagnostics();
+        JettyClientDiagnostics clientDiagnostics = new JettyClientDiagnostics();
 
         this.requestFilters = ImmutableList.copyOf(requestFilters);
         this.httpStatusListeners = ImmutableList.copyOf(httpStatusListeners);
@@ -421,6 +399,19 @@ public class JettyHttpClient
             }
             distribution.add(NANOSECONDS.toMillis(finished - responseStarted));
         });
+
+        requestController = new RequestController(
+                httpClient,
+                name,
+                tracer,
+                this.requestFilters,
+                this.httpStatusListeners,
+                propagator,
+                clientDiagnostics,
+                requestLogger,
+                requestTimeoutMillis,
+                idleTimeoutMillis,
+                logEnabled);
     }
 
     private static SslContextFactory.Client getSslContextFactory(HttpClientConfig config, Optional<String> environment)
@@ -608,10 +599,9 @@ public class JettyHttpClient
     public <T, E extends Exception> T execute(Request request, ResponseHandler<T, E> responseHandler)
             throws E
     {
-        request = applyRequestFilters(request);
-
-        Span span = startSpan(request);
-        request = injectTracing(request, span);
+        PreparedRequest preparedRequest = requestController.prepareRequest(request);
+        request = preparedRequest.request();
+        Span span = preparedRequest.span();
 
         try {
             return doExecute(request, responseHandler, span);
@@ -631,15 +621,14 @@ public class JettyHttpClient
     {
         long requestStart = System.nanoTime();
 
-        // create jetty request and response listener
-        JettyRequestListener requestListener = new JettyRequestListener(request.getUri());
-        HttpRequest jettyRequest = buildJettyRequest(request, requestListener);
+        HttpRequest jettyRequest = requestController.buildJettyRequest(request);
+
         InputStreamResponseListener listener = new InputStreamResponseListener()
         {
             @Override
             public void onBegin(Response response)
             {
-                callHttpStatusListeners(response);
+                requestController.callHttpStatusListeners(response);
             }
 
             @Override
@@ -655,9 +644,7 @@ public class JettyHttpClient
 
         long requestTimestamp = System.currentTimeMillis();
         RequestInfo requestInfo = RequestInfo.from(jettyRequest, requestTimestamp);
-        if (logEnabled) {
-            addLoggingListener(jettyRequest, requestTimestamp);
-        }
+        requestController.addLoggingListener(jettyRequest, requestTimestamp);
 
         RequestSizeListener requestSize = new RequestSizeListener();
         jettyRequest.onRequestContent(requestSize);
@@ -732,12 +719,11 @@ public class JettyHttpClient
         requireNonNull(request, "request is null");
         requireNonNull(responseHandler, "responseHandler is null");
 
-        request = applyRequestFilters(request);
+        PreparedRequest preparedRequest = requestController.prepareRequest(request);
+        request = preparedRequest.request();
+        Span span = preparedRequest.span();
 
-        Span span = startSpan(request);
-        request = injectTracing(request, span);
-
-        HttpRequest jettyRequest = buildJettyRequest(request, new JettyRequestListener(request.getUri()));
+        HttpRequest jettyRequest = requestController.buildJettyRequest(request);
 
         RequestSizeListener requestSize = new RequestSizeListener();
         jettyRequest.onRequestContent(requestSize);
@@ -749,15 +735,12 @@ public class JettyHttpClient
             @Override
             public void onBegin(Response response)
             {
-                callHttpStatusListeners(response);
+                requestController.callHttpStatusListeners(response);
             }
         };
 
         long requestTimestamp = System.currentTimeMillis();
-
-        if (logEnabled) {
-            addLoggingListener(jettyRequest, requestTimestamp);
-        }
+        requestController.addLoggingListener(jettyRequest, requestTimestamp);
 
         try {
             jettyRequest.send(listener);
@@ -771,128 +754,6 @@ public class JettyHttpClient
             requestLogger.log(RequestInfo.from(jettyRequest, requestTimestamp), ResponseInfo.failed(Optional.empty(), Optional.of(e)));
         }
         return future;
-    }
-
-    private void callHttpStatusListeners(Response response)
-    {
-        httpStatusListeners.forEach(listener -> {
-            try {
-                listener.statusReceived(response.getStatus());
-            }
-            catch (Exception e) {
-                response.abort(e);
-            }
-        });
-    }
-
-    private void addLoggingListener(HttpRequest jettyRequest, long requestTimestamp)
-    {
-        HttpClientLoggingListener loggingListener = new HttpClientLoggingListener(jettyRequest, requestTimestamp, requestLogger);
-        jettyRequest.listener(loggingListener);
-        jettyRequest.onResponseBegin(loggingListener);
-        jettyRequest.onComplete(loggingListener);
-    }
-
-    private Request applyRequestFilters(Request request)
-    {
-        for (HttpRequestFilter requestFilter : requestFilters) {
-            request = requestFilter.filterRequest(request);
-        }
-        return request;
-    }
-
-    private Span startSpan(Request request)
-    {
-        String method = request.getMethod().toUpperCase(ENGLISH);
-        int port = normalizePort(request.getUri().getScheme(), request.getUri().getPort());
-        return request.getSpanBuilder()
-                .orElseGet(() -> tracer.spanBuilder(name + " " + method))
-                .setSpanKind(SpanKind.CLIENT)
-                .setAttribute(CLIENT_NAME, name)
-                .setAttribute(SemanticAttributes.HTTP_URL, request.getUri().toString())
-                .setAttribute(SemanticAttributes.HTTP_METHOD, method)
-                .setAttribute(SemanticAttributes.NET_PEER_NAME, request.getUri().getHost())
-                .setAttribute(SemanticAttributes.NET_PEER_PORT, (long) port)
-                .startSpan();
-    }
-
-    @SuppressWarnings("DataFlowIssue")
-    private Request injectTracing(Request request, Span span)
-    {
-        Context context = Context.current().with(span);
-        Request.Builder builder = Request.Builder.fromRequest(request);
-        propagator.inject(context, builder, Request.Builder::addHeader);
-        return builder.build();
-    }
-
-    private HttpRequest buildJettyRequest(Request finalRequest, JettyRequestListener listener)
-    {
-        HttpRequest jettyRequest = (HttpRequest) httpClient.newRequest(finalRequest.getUri());
-        jettyRequest.onRequestBegin(request -> listener.onRequestBegin());
-        jettyRequest.onRequestSuccess(request -> listener.onRequestEnd());
-        jettyRequest.onResponseBegin(response -> listener.onResponseBegin());
-        jettyRequest.onComplete(result -> listener.onFinish());
-        jettyRequest.onComplete(result -> {
-            if (result.isFailed() && result.getFailure() instanceof TimeoutException) {
-                clientDiagnostics.logDiagnosticsInfo(httpClient);
-            }
-        });
-
-        jettyRequest.attribute(STATS_KEY, listener);
-
-        jettyRequest.method(finalRequest.getMethod());
-
-        jettyRequest.headers(headers -> finalRequest.getHeaders().forEach(headers::add));
-
-        BodyGenerator bodyGenerator = finalRequest.getBodyGenerator();
-        if (bodyGenerator != null) {
-            if (bodyGenerator instanceof StaticBodyGenerator generator) {
-                jettyRequest.body(new BytesRequestContent(generator.getBody()));
-            }
-            else if (bodyGenerator instanceof ByteBufferBodyGenerator generator) {
-                jettyRequest.body(new ByteBufferRequestContent(generator.getByteBuffers()));
-            }
-            else if (bodyGenerator instanceof FileBodyGenerator generator) {
-                jettyRequest.body(fileContent(generator.getPath()));
-            }
-            else {
-                jettyRequest.body(new BytesRequestContent(generateBody(bodyGenerator)));
-            }
-        }
-
-        jettyRequest.followRedirects(finalRequest.isFollowRedirects());
-
-        setPreserveAuthorization(jettyRequest, finalRequest.isPreserveAuthorizationOnRedirect());
-
-        // timeouts
-        jettyRequest.timeout(requestTimeoutMillis, MILLISECONDS);
-        jettyRequest.idleTimeout(idleTimeoutMillis, MILLISECONDS);
-
-        return jettyRequest;
-    }
-
-    private static PathRequestContent fileContent(Path path)
-    {
-        try {
-            return new PathRequestContent(path);
-        }
-        catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
-    @SuppressWarnings("deprecation")
-    private static byte[] generateBody(BodyGenerator generator)
-    {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        try {
-            generator.write(out);
-        }
-        catch (Exception e) {
-            throwIfUnchecked(e);
-            throw new RuntimeException(e);
-        }
-        return out.toByteArray();
     }
 
     public List<HttpRequestFilter> getRequestFilters()
@@ -1171,22 +1032,5 @@ public class JettyHttpClient
                 response.getBytesRead(),
                 requestProcessingTime,
                 responseProcessingTime);
-    }
-
-    private static class RequestSizeListener
-            implements org.eclipse.jetty.client.api.Request.ContentListener
-    {
-        private long bytes;
-
-        @Override
-        public void onContent(org.eclipse.jetty.client.api.Request request, ByteBuffer content)
-        {
-            bytes += content.remaining();
-        }
-
-        public long getBytes()
-        {
-            return bytes;
-        }
     }
 }
