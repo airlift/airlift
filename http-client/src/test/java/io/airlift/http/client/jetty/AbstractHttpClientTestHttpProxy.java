@@ -15,7 +15,9 @@ package io.airlift.http.client.jetty;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.io.CharStreams;
 import io.airlift.http.client.AbstractHttpClientTest;
+import io.airlift.http.client.CloseableResponse;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.Response;
@@ -28,12 +30,16 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.Optional;
 
 import static io.airlift.http.client.HttpStatus.BAD_GATEWAY;
 import static io.airlift.http.client.HttpStatus.BAD_REQUEST;
+import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.testing.Closeables.closeAll;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
+import static org.testng.Assert.assertEquals;
 
 public abstract class AbstractHttpClientTestHttpProxy
         extends AbstractHttpClientTest
@@ -107,6 +113,33 @@ public abstract class AbstractHttpClientTestHttpProxy
     {
         try (JettyHttpClient client = new JettyHttpClient("test-private", config, ImmutableList.of(new TestingRequestFilter()), ImmutableSet.of(new TestingStatusListener(statusCounts)))) {
             return client.execute(request, new ProxyResponseHandler<>(responseHandler));
+        }
+    }
+
+    @Override
+    public CloseableResponse executeStreaming(Request request)
+            throws Exception
+    {
+        return httpClient.executeStreaming(request);
+    }
+
+    @Override
+    @Test
+    public void testStreaming()
+            throws Exception
+    {
+        // the testStreaming() test pauses response writing until the test/client
+        // reads each line. This stalls the proxy and doesn't work.
+        // Instead, do a simple request/response for the proxy test
+
+        servlet.setResponseBody("proxy streaming test");
+
+        Request request = prepareGet()
+                .setUri(baseURI)
+                .build();
+        try (CloseableResponse response = executeStreaming(request)) {
+            String value = CharStreams.toString(new InputStreamReader(response.getInputStream(), UTF_8));
+            assertEquals(value, "proxy streaming test");
         }
     }
 

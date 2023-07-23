@@ -3,6 +3,7 @@ package io.airlift.http.client.jetty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import io.airlift.http.client.AbstractHttpClientTest;
+import io.airlift.http.client.CloseableResponse;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.ResponseHandler;
@@ -49,5 +50,12 @@ public class TestJettyHttpClient
         try (JettyHttpClient client = new JettyHttpClient("test-private", config, ImmutableList.of(new TestingRequestFilter()), ImmutableSet.of(new TestingStatusListener(statusCounts)))) {
             return client.execute(request, responseHandler);
         }
+    }
+
+    @Override
+    public CloseableResponse executeStreaming(Request request)
+            throws Exception
+    {
+        return httpClient.executeStreaming(request);
     }
 }

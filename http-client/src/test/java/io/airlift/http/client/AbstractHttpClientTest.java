@@ -3,6 +3,7 @@ package io.airlift.http.client;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multiset;
+import com.google.common.io.ByteStreams;
 import io.airlift.http.client.HttpClient.HttpResponseFuture;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
@@ -18,10 +19,12 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
 
+import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.net.ConnectException;
 import java.net.InetAddress;
@@ -37,11 +40,13 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.UnresolvedAddressException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -55,6 +60,7 @@ import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.common.net.HttpHeaders.LOCATION;
 import static com.google.common.net.HttpHeaders.USER_AGENT;
 import static io.airlift.concurrent.Threads.threadsNamed;
+import static io.airlift.http.client.HttpStatus.BAD_GATEWAY;
 import static io.airlift.http.client.Request.Builder.prepareDelete;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.Request.Builder.preparePost;
@@ -75,6 +81,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertThrows;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
@@ -106,6 +113,9 @@ public abstract class AbstractHttpClientTest
             throws Exception;
 
     public abstract <T, E extends Exception> T executeRequest(HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
+            throws Exception;
+
+    public abstract CloseableResponse executeStreaming(Request request)
             throws Exception;
 
     @BeforeSuite
@@ -807,6 +817,112 @@ public abstract class AbstractHttpClientTest
         executeRequest(request, createStatusResponseHandler());
     }
 
+    @Test
+    public void testStreamingClosesInputStream()
+            throws Exception
+    {
+        String body = "one two three four five six seven eight nine ten";
+        servlet.setResponseBody(body);
+
+        Request request = prepareGet()
+                .setUri(baseURI)
+                .build();
+
+        try (CloseableResponse response = executeStreaming(request)) {
+            StringBuilder value = new StringBuilder();
+            InputStream inputStream = response.getInputStream();
+            while (true) {
+                int b = inputStream.read();
+                if (b < 0) {
+                    break;
+                }
+                value.append((char) (b & 0xff));
+            }
+            assertEquals(value.toString(), body);
+        }
+    }
+
+    @Test(timeOut = 10000)
+    public void testStreaming()
+            throws Exception
+    {
+        Semaphore semaphore = new Semaphore(0);
+        int qty = 25;
+
+        Iterator<String> stream = new Iterator<>()
+        {
+            private int index;
+
+            @Override
+            public boolean hasNext()
+            {
+                return index < qty;
+            }
+
+            @Override
+            public String next()
+            {
+                try {
+                    semaphore.acquire();
+                }
+                catch (InterruptedException e) {
+                    fail("Interrupted", e);
+                }
+                return "%s\n".formatted(index++);
+            }
+        };
+
+        servlet.setStream(stream);
+
+        Request request = prepareGet()
+                .setUri(baseURI)
+                .build();
+
+        // Jetty won't respond until some content is received
+        semaphore.release();
+        try (CloseableResponse response = executeStreaming(request)) {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(response.getInputStream(), UTF_8));
+            for (int i = 0; i < qty; ++i) {
+                String line = reader.readLine();
+                assertEquals(line, "%s".formatted(i));
+                semaphore.release();
+            }
+        }
+    }
+
+    @Test
+    public void testStreamingEarlyClose()
+            throws Exception
+    {
+        String httpResponse = """
+                HTTP/1.1 200 OK
+                Server: me
+                Content-Length: 9999
+
+                x
+                """;
+
+        try (FakeServer fakeServer = new FakeServer(scheme, host, 0, httpResponse.getBytes(UTF_8), true)) {
+            executor.submit(fakeServer);
+
+            Request request = prepareGet()
+                    .setUri(fakeServer.getUri())
+                    .build();
+
+            assertThrows(IOException.class, () -> {
+                try (CloseableResponse response = executeStreaming(request)) {
+                    // BAD_GATEWAY comes from the proxy test
+                    if (response.getStatusCode() == BAD_GATEWAY.code()) {
+                        throw new IOException("Bad gateway");
+                    }
+                    InputStream inputStream = response.getInputStream();
+                    byte[] buffer = new byte[100];
+                    ByteStreams.readFully(inputStream, buffer);
+                }
+            });
+        }
+    }
+
     private void executeExceptionRequest(HttpClientConfig config, Request request)
             throws Exception
     {
@@ -871,6 +987,7 @@ public abstract class AbstractHttpClientTest
             }
         }
 
+        @SuppressWarnings("ResultOfMethodCallIgnored")
         @Override
         public void run()
         {
