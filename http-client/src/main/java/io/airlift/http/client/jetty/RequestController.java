@@ -7,7 +7,9 @@ import io.airlift.http.client.FileBodyGenerator;
 import io.airlift.http.client.HttpRequestFilter;
 import io.airlift.http.client.HttpStatusListener;
 import io.airlift.http.client.Request;
+import io.airlift.http.client.RequestStats;
 import io.airlift.http.client.StaticBodyGenerator;
+import io.airlift.units.Duration;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanKind;
@@ -20,13 +22,17 @@ import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.ByteBufferRequestContent;
 import org.eclipse.jetty.client.util.BytesRequestContent;
+import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.client.util.PathRequestContent;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import static com.google.common.base.Throwables.throwIfUnchecked;
@@ -35,6 +41,7 @@ import static io.opentelemetry.api.common.AttributeKey.stringKey;
 import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.eclipse.jetty.client.HttpClient.normalizePort;
 
 class RequestController
@@ -49,10 +56,12 @@ class RequestController
     private final List<HttpStatusListener> httpStatusListeners;
     private final TextMapPropagator propagator;
     private final JettyClientDiagnostics clientDiagnostics;
+    private final RequestStats stats;
     private final long requestTimeoutMillis;
     private final long idleTimeoutMillis;
     private final boolean logEnabled;
     private final HttpClientLogger requestLogger;
+    private final boolean recordRequestComplete;
 
     RequestController(
             HttpClient httpClient,
@@ -63,9 +72,11 @@ class RequestController
             TextMapPropagator propagator,
             JettyClientDiagnostics clientDiagnostics,
             HttpClientLogger requestLogger,
+            RequestStats stats,
             long requestTimeoutMillis,
             long idleTimeoutMillis,
-            boolean logEnabled)
+            boolean logEnabled,
+            boolean recordRequestComplete)
     {
         this.httpClient = requireNonNull(httpClient, "httpClient is null");
         this.name = requireNonNull(name, "name is null");
@@ -73,9 +84,11 @@ class RequestController
         this.propagator = requireNonNull(propagator, "propagator is null");
         this.clientDiagnostics = requireNonNull(clientDiagnostics, "clientDiagnostics is null");
         this.requestLogger = requireNonNull(requestLogger, "requestLogger is null");
+        this.stats = requireNonNull(stats, "stats is null");
         this.requestTimeoutMillis = requestTimeoutMillis;
         this.idleTimeoutMillis = idleTimeoutMillis;
         this.logEnabled = logEnabled;
+        this.recordRequestComplete = recordRequestComplete;
 
         this.requestFilters = ImmutableList.copyOf(requestFilters);
         this.httpStatusListeners = ImmutableList.copyOf(httpStatusListeners);
@@ -149,6 +162,51 @@ class RequestController
         return jettyRequest;
     }
 
+    RequestContext startRequest(Request request, long requestStart)
+    {
+        HttpRequest jettyRequest = buildJettyRequest(request);
+
+        InputStreamResponseListener listener = new InputStreamResponseListener()
+        {
+            @Override
+            public void onBegin(Response response)
+            {
+                callHttpStatusListeners(response);
+            }
+
+            @Override
+            public void onContent(Response response, ByteBuffer content)
+            {
+                // ignore empty blocks
+                if (content.remaining() == 0) {
+                    return;
+                }
+                super.onContent(response, content);
+            }
+        };
+
+        long requestTimestamp = System.currentTimeMillis();
+        HttpClientLogger.RequestInfo requestInfo = HttpClientLogger.RequestInfo.from(jettyRequest, requestTimestamp);
+        addLoggingListener(jettyRequest, requestTimestamp);
+
+        RequestSizeListener requestSize = new RequestSizeListener();
+        jettyRequest.onRequestContent(requestSize);
+
+        // fire the request
+        jettyRequest.send(listener);
+
+        return new RequestContext(request, jettyRequest, listener, requestInfo, requestSize, requestStart);
+    }
+
+    void updateSpanResponse(RequestContext requestContext, Response response, Span span)
+    {
+        span.setAttribute(SemanticAttributes.HTTP_STATUS_CODE, response.getStatus());
+
+        if (requestContext.request().getBodyGenerator() != null) {
+            span.setAttribute(SemanticAttributes.HTTP_REQUEST_CONTENT_LENGTH, requestContext.requestSize().getBytes());
+        }
+    }
+
     void callHttpStatusListeners(Response response)
     {
         httpStatusListeners.forEach(listener -> {
@@ -169,6 +227,63 @@ class RequestController
             jettyRequest.onResponseBegin(loggingListener);
             jettyRequest.onComplete(loggingListener);
         }
+    }
+
+    void closeResponse(JettyResponse jettyResponse, RequestContext requestContext, Span span, long responseStart)
+    {
+        if (jettyResponse != null) {
+            try {
+                jettyResponse.getInputStream().close();
+            }
+            catch (IOException ignored) {
+                // ignore errors closing the stream
+            }
+            span.setAttribute(SemanticAttributes.HTTP_RESPONSE_CONTENT_LENGTH, jettyResponse.getBytesRead());
+        }
+        if (recordRequestComplete) {
+            recordRequestComplete(stats, requestContext.request(), requestContext.requestSize().getBytes(), requestContext.requestStart(), jettyResponse, responseStart);
+        }
+    }
+
+    Exception filterException(RequestContext requestContext, Exception exception)
+    {
+        if (exception instanceof InterruptedException e) {
+            requestContext.jettyRequest().abort(e);
+            Thread.currentThread().interrupt();
+        }
+        else if (exception instanceof TimeoutException e) {
+            requestContext.jettyRequest().abort(e);
+        }
+        else if (exception instanceof ExecutionException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof Exception) {
+                exception = (Exception) cause;
+            }
+            else {
+                exception = new RuntimeException(cause);
+            }
+        }
+
+        stats.recordRequestFailed();
+        requestLogger.log(requestContext.requestInfo(), HttpClientLogger.ResponseInfo.failed(Optional.empty(), Optional.of(exception)));
+        return exception;
+    }
+
+    static void recordRequestComplete(RequestStats requestStats, Request request, long requestBytes, long requestStart, JettyResponse response, long responseStart)
+    {
+        if (response == null) {
+            return;
+        }
+
+        Duration responseProcessingTime = Duration.nanosSince(responseStart);
+        Duration requestProcessingTime = new Duration(responseStart - requestStart, NANOSECONDS);
+
+        requestStats.recordResponseReceived(request.getMethod(),
+                response.getStatusCode(),
+                requestBytes,
+                response.getBytesRead(),
+                requestProcessingTime,
+                responseProcessingTime);
     }
 
     private Span startSpan(Request request)

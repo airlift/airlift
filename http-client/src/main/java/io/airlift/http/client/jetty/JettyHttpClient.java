@@ -36,7 +36,6 @@ import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
-import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.io.ClientConnector;
@@ -65,7 +64,6 @@ import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.nio.ByteBuffer;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
@@ -409,9 +407,11 @@ public class JettyHttpClient
                 propagator,
                 clientDiagnostics,
                 requestLogger,
+                stats,
                 requestTimeoutMillis,
                 idleTimeoutMillis,
-                logEnabled);
+                logEnabled,
+                recordRequestComplete);
     }
 
     private static SslContextFactory.Client getSslContextFactory(HttpClientConfig config, Optional<String> environment)
@@ -621,71 +621,18 @@ public class JettyHttpClient
     {
         long requestStart = System.nanoTime();
 
-        HttpRequest jettyRequest = requestController.buildJettyRequest(request);
-
-        InputStreamResponseListener listener = new InputStreamResponseListener()
-        {
-            @Override
-            public void onBegin(Response response)
-            {
-                requestController.callHttpStatusListeners(response);
-            }
-
-            @Override
-            public void onContent(Response response, ByteBuffer content)
-            {
-                // ignore empty blocks
-                if (content.remaining() == 0) {
-                    return;
-                }
-                super.onContent(response, content);
-            }
-        };
-
-        long requestTimestamp = System.currentTimeMillis();
-        RequestInfo requestInfo = RequestInfo.from(jettyRequest, requestTimestamp);
-        requestController.addLoggingListener(jettyRequest, requestTimestamp);
-
-        RequestSizeListener requestSize = new RequestSizeListener();
-        jettyRequest.onRequestContent(requestSize);
-
-        // fire the request
-        jettyRequest.send(listener);
+        RequestContext requestContext = requestController.startRequest(request, requestStart);
 
         // wait for response to begin
         Response response;
         try {
-            response = listener.get(httpClient.getIdleTimeout(), MILLISECONDS);
+            response = requestContext.listener().get(httpClient.getIdleTimeout(), MILLISECONDS);
         }
-        catch (InterruptedException e) {
-            stats.recordRequestFailed();
-            requestLogger.log(requestInfo, ResponseInfo.failed(Optional.empty(), Optional.of(e)));
-            jettyRequest.abort(e);
-            Thread.currentThread().interrupt();
-            return responseHandler.handleException(request, e);
-        }
-        catch (TimeoutException e) {
-            stats.recordRequestFailed();
-            requestLogger.log(requestInfo, ResponseInfo.failed(Optional.empty(), Optional.of(e)));
-            jettyRequest.abort(e);
-            return responseHandler.handleException(request, e);
-        }
-        catch (ExecutionException e) {
-            stats.recordRequestFailed();
-            requestLogger.log(requestInfo, ResponseInfo.failed(Optional.empty(), Optional.of(e)));
-            Throwable cause = e.getCause();
-            if (cause instanceof Exception) {
-                return responseHandler.handleException(request, (Exception) cause);
-            }
-            return responseHandler.handleException(request, new RuntimeException(cause));
+        catch (InterruptedException | TimeoutException | ExecutionException e) {
+            return responseHandler.handleException(request, requestController.filterException(requestContext, e));
         }
 
-        // record attributes
-        span.setAttribute(SemanticAttributes.HTTP_STATUS_CODE, response.getStatus());
-
-        if (request.getBodyGenerator() != null) {
-            span.setAttribute(SemanticAttributes.HTTP_REQUEST_CONTENT_LENGTH, requestSize.getBytes());
-        }
+        requestController.updateSpanResponse(requestContext, response, span);
 
         // process response
         long responseStart = System.nanoTime();
@@ -693,22 +640,11 @@ public class JettyHttpClient
         JettyResponse jettyResponse = null;
         T value;
         try {
-            jettyResponse = new JettyResponse(response, listener.getInputStream());
+            jettyResponse = new JettyResponse(response, requestContext.listener().getInputStream());
             value = responseHandler.handle(request, jettyResponse);
         }
         finally {
-            if (jettyResponse != null) {
-                try {
-                    jettyResponse.getInputStream().close();
-                }
-                catch (IOException ignored) {
-                    // ignore errors closing the stream
-                }
-                span.setAttribute(SemanticAttributes.HTTP_RESPONSE_CONTENT_LENGTH, jettyResponse.getBytesRead());
-            }
-            if (recordRequestComplete) {
-                recordRequestComplete(stats, request, requestSize.getBytes(), requestStart, jettyResponse, responseStart);
-            }
+            requestController.closeResponse(jettyResponse, requestContext, span, responseStart);
         }
         return value;
     }
@@ -1015,22 +951,5 @@ public class JettyHttpClient
     private static String uniqueName()
     {
         return "anonymous" + NAME_COUNTER.incrementAndGet();
-    }
-
-    static void recordRequestComplete(RequestStats requestStats, Request request, long requestBytes, long requestStart, JettyResponse response, long responseStart)
-    {
-        if (response == null) {
-            return;
-        }
-
-        Duration responseProcessingTime = Duration.nanosSince(responseStart);
-        Duration requestProcessingTime = new Duration(responseStart - requestStart, NANOSECONDS);
-
-        requestStats.recordResponseReceived(request.getMethod(),
-                response.getStatusCode(),
-                requestBytes,
-                response.getBytesRead(),
-                requestProcessingTime,
-                responseProcessingTime);
     }
 }
