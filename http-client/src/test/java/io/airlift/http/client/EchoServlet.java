@@ -25,8 +25,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URI;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -43,6 +45,7 @@ public final class EchoServlet
     private int responseStatusCode = 200;
     private final ListMultimap<String, String> responseHeaders = ArrayListMultimap.create();
     private String responseBody;
+    private Iterator<String> stream;
 
     @Override
     protected void service(HttpServletRequest request, HttpServletResponse response)
@@ -88,6 +91,14 @@ public final class EchoServlet
         if (responseBody != null) {
             response.getOutputStream().write(responseBody.getBytes(UTF_8));
         }
+
+        if (stream != null) {
+            OutputStream outputStream = response.getOutputStream();
+            while (stream.hasNext()) {
+                outputStream.write(stream.next().getBytes(UTF_8));
+                outputStream.flush();
+            }
+        }
     }
 
     public String getRequestMethod()
@@ -128,5 +139,10 @@ public final class EchoServlet
     public void setResponseBody(String responseBody)
     {
         this.responseBody = responseBody;
+    }
+
+    public void setStream(Iterator<String> stream)
+    {
+        this.stream = stream;
     }
 }

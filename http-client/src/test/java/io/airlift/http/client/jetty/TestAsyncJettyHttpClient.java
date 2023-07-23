@@ -10,6 +10,7 @@ import io.airlift.http.client.TestingRequestFilter;
 import io.airlift.http.client.TestingStatusListener;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 public class TestAsyncJettyHttpClient
         extends AbstractHttpClientTest
@@ -51,5 +52,26 @@ public class TestAsyncJettyHttpClient
         try (JettyHttpClient client = new JettyHttpClient("test-private", config, ImmutableList.of(new TestingRequestFilter()), ImmutableSet.of(new TestingStatusListener(statusCounts)))) {
             return executeAsync(client, request, responseHandler);
         }
+    }
+
+    @Override
+    @Test(enabled = false)
+    public void testStreamingJson()
+    {
+        // Streaming is not intended for use with async
+    }
+
+    @Override
+    public void testStreamingInvalidJson()
+            throws Exception
+    {
+        // Streaming is not intended for use with async
+    }
+
+    @Override
+    @Test(enabled = false)
+    public void testStreamingBlockingJson()
+    {
+        // Streaming is not intended for use with async
     }
 }

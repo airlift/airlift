@@ -13,6 +13,7 @@ import io.airlift.http.client.Request;
 import io.airlift.http.client.RequestStats;
 import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.StaticBodyGenerator;
+import io.airlift.http.client.StreamingResponseHandler;
 import io.airlift.http.client.jetty.HttpClientLogger.RequestInfo;
 import io.airlift.http.client.jetty.HttpClientLogger.ResponseInfo;
 import io.airlift.security.pem.PemReader;
@@ -102,6 +103,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.InetAddresses.isInetAddress;
+import static io.airlift.http.client.ResponseHandlerUtils.propagate;
 import static io.airlift.http.client.jetty.AuthorizationPreservingHttpClient.setPreserveAuthorization;
 import static io.airlift.node.AddressToHostname.tryDecodeHostnameToAddress;
 import static io.airlift.security.cert.CertificateBuilder.certificateBuilder;
@@ -608,6 +610,8 @@ public class JettyHttpClient
     public <T, E extends Exception> T execute(Request request, ResponseHandler<T, E> responseHandler)
             throws E
     {
+        boolean isStreaming = (responseHandler instanceof StreamingResponseHandler);
+
         request = applyRequestFilters(request);
 
         Span span = startSpan(request);
@@ -617,18 +621,29 @@ public class JettyHttpClient
             return doExecute(request, responseHandler, span);
         }
         catch (Throwable t) {
-            span.setStatus(StatusCode.ERROR, t.getMessage());
-            span.recordException(t, Attributes.of(SemanticAttributes.EXCEPTION_ESCAPED, true));
-            throw t;
+            try {
+                span.setStatus(StatusCode.ERROR, t.getMessage());
+                span.recordException(t, Attributes.of(SemanticAttributes.EXCEPTION_ESCAPED, true));
+                throw t;
+            }
+            finally {
+                if (isStreaming) {
+                    span.end();
+                }
+            }
         }
         finally {
-            span.end();
+            if (!isStreaming) {
+                span.end();
+            }
         }
     }
 
     public <T, E extends Exception> T doExecute(Request request, ResponseHandler<T, E> responseHandler, Span span)
             throws E
     {
+        boolean isStreaming = (responseHandler instanceof StreamingResponseHandler);
+
         long requestStart = System.nanoTime();
 
         // create jetty request and response listener
@@ -703,26 +718,42 @@ public class JettyHttpClient
         // process response
         long responseStart = System.nanoTime();
 
-        JettyResponse jettyResponse = null;
         T value;
-        try {
-            jettyResponse = new JettyResponse(response, listener.getInputStream());
-            value = responseHandler.handle(request, jettyResponse);
-        }
-        finally {
-            if (jettyResponse != null) {
+
+        if (isStreaming) {
+            JettyResponse jettyResponse;
+            try {
+                jettyResponse = new JettyResponse(response, listener.getInputStream());
+            }
+            catch (Throwable e) {
+                throw propagate(request, e);
+            }
+
+            Runnable finalizer = () -> finalizeExecution(request, span, requestStart, requestSize, responseStart, jettyResponse);
+            try {
+                value = responseHandler.handle(request, new JettyStreamingResponse(jettyResponse, span, finalizer));
+            }
+            catch (Throwable e) {
                 try {
-                    jettyResponse.getInputStream().close();
+                    finalizer.run();
                 }
-                catch (IOException ignored) {
-                    // ignore errors closing the stream
+                catch (Throwable suppress) {
+                    e.addSuppressed(suppress);
                 }
-                span.setAttribute(SemanticAttributes.HTTP_RESPONSE_CONTENT_LENGTH, jettyResponse.getBytesRead());
-            }
-            if (recordRequestComplete) {
-                recordRequestComplete(stats, request, requestSize.getBytes(), requestStart, jettyResponse, responseStart);
+                throw propagate(request, e);
             }
         }
+        else {
+            JettyResponse jettyResponse = null;
+            try {
+                jettyResponse = new JettyResponse(response, listener.getInputStream());
+                value = responseHandler.handle(request, jettyResponse);
+            }
+            finally {
+                finalizeExecution(request, span, requestStart, requestSize, responseStart, jettyResponse);
+            }
+        }
+
         return value;
     }
 
@@ -731,6 +762,8 @@ public class JettyHttpClient
     {
         requireNonNull(request, "request is null");
         requireNonNull(responseHandler, "responseHandler is null");
+
+        checkArgument(!(responseHandler instanceof StreamingResponseHandler), "executeAsync does not support StreamingResponseHandler");
 
         request = applyRequestFilters(request);
 
@@ -771,6 +804,22 @@ public class JettyHttpClient
             requestLogger.log(RequestInfo.from(jettyRequest, requestTimestamp), ResponseInfo.failed(Optional.empty(), Optional.of(e)));
         }
         return future;
+    }
+
+    private void finalizeExecution(Request request, Span span, long requestStart, RequestSizeListener requestSize, long responseStart, JettyResponse jettyResponse)
+    {
+        if (jettyResponse != null) {
+            try {
+                jettyResponse.getInputStream().close();
+            }
+            catch (IOException ignored) {
+                // ignore errors closing the stream
+            }
+            span.setAttribute(SemanticAttributes.HTTP_RESPONSE_CONTENT_LENGTH, jettyResponse.getBytesRead());
+        }
+        if (recordRequestComplete) {
+            recordRequestComplete(stats, request, requestSize.getBytes(), requestStart, jettyResponse, responseStart);
+        }
     }
 
     private void callHttpStatusListeners(Response response)

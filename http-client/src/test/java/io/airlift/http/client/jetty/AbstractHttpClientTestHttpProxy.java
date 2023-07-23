@@ -95,6 +95,27 @@ public abstract class AbstractHttpClientTestHttpProxy
     }
 
     @Override
+    @Test(enabled = false)
+    public void testStreamingJson()
+    {
+        // Streaming is not intended for use with proxies
+    }
+
+    @Override
+    public void testStreamingInvalidJson()
+            throws Exception
+    {
+        // Streaming is not intended for use with proxies
+    }
+
+    @Override
+    @Test(enabled = false)
+    public void testStreamingBlockingJson()
+    {
+        // Streaming is not intended for use with proxies
+    }
+
+    @Override
     public <T, E extends Exception> T executeRequest(Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {

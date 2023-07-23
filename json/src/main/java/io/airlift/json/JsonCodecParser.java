@@ -91,6 +91,7 @@ public class JsonCodecParser<T>
     public Boolean nextBooleanValue()
             throws IOException
     {
-        return parser.nextBooleanValue();
+        Boolean b = parser.nextBooleanValue();
+        return (b != null) && b;
     }
 }

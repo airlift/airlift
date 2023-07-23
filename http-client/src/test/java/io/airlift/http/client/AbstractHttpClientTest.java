@@ -7,6 +7,8 @@ import io.airlift.http.client.HttpClient.HttpResponseFuture;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
 import io.airlift.http.client.jetty.JettyHttpClient;
+import io.airlift.json.JsonCodec;
+import io.airlift.json.ObjectMapperProvider;
 import io.airlift.log.Logging;
 import io.airlift.units.Duration;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
@@ -37,17 +39,21 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.UnresolvedAddressException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
 
 import static com.google.common.base.Throwables.getStackTraceAsString;
 import static com.google.common.base.Throwables.propagateIfPossible;
 import static com.google.common.base.Throwables.throwIfUnchecked;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.HttpHeaders.ACCEPT_ENCODING;
 import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static com.google.common.net.HttpHeaders.CONTENT_LENGTH;
@@ -55,12 +61,14 @@ import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.common.net.HttpHeaders.LOCATION;
 import static com.google.common.net.HttpHeaders.USER_AGENT;
 import static io.airlift.concurrent.Threads.threadsNamed;
+import static io.airlift.http.client.JsonStreamingResponseHandler.createJsonStreamingResponse;
 import static io.airlift.http.client.Request.Builder.prepareDelete;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.Request.Builder.preparePost;
 import static io.airlift.http.client.Request.Builder.preparePut;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
+import static io.airlift.json.JsonCodec.jsonCodec;
 import static io.airlift.testing.Assertions.assertBetweenInclusive;
 import static io.airlift.testing.Assertions.assertGreaterThanOrEqual;
 import static io.airlift.testing.Assertions.assertLessThan;
@@ -75,6 +83,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertThrows;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
@@ -805,6 +814,142 @@ public abstract class AbstractHttpClientTest
                 .build();
 
         executeRequest(request, createStatusResponseHandler());
+    }
+
+    public record Thing(String s, int i) {}
+
+    @Test
+    public void testStreamingJson()
+            throws Exception
+    {
+        int qty = 25;
+
+        List<Thing> things = IntStream.range(0, qty).mapToObj(i -> new Thing(Integer.toString(i), i)).collect(toImmutableList());
+        String json = new ObjectMapperProvider().get().writeValueAsString(things);
+        JsonCodec<Thing> codec = jsonCodec(Thing.class);
+
+        servlet.setResponseBody(json);
+        servlet.addResponseHeader("Content-Type", "application/json");
+
+        Request request = prepareGet()
+                .setUri(baseURI)
+                .build();
+
+        try (StreamingResponseIterator<Thing> iterator = executeRequest(request, createJsonStreamingResponse(codec))) {
+            for (int i = 0; i < qty; ++i) {
+                assertEquals(iterator.next(), new Thing(Integer.toString(i), i));
+            }
+            assertFalse(iterator.hasNext());
+        }
+    }
+
+    @Test
+    public void testStreamingInvalidJson()
+            throws Exception
+    {
+        servlet.setResponseBody("this is not json");
+        servlet.addResponseHeader("Content-Type", "application/json");
+
+        Request request = prepareGet()
+                .setUri(baseURI)
+                .build();
+
+        JsonCodec<Thing> codec = jsonCodec(Thing.class);
+        assertThrows(() -> {
+            try (StreamingResponseIterator<Thing> ignore = executeRequest(request, createJsonStreamingResponse(codec))) {
+                System.out.println("ignore");
+            }
+        });
+
+        servlet.setResponseBody("""
+                [
+                {
+                    "s": "good",
+                    "i": 0
+                },
+
+                {
+                    "s": "good",
+                    "i": 1
+                },
+
+                bad, bad, bad
+                """);
+        try (StreamingResponseIterator<Thing> iterator = executeRequest(request, createJsonStreamingResponse(codec))) {
+            assertEquals(iterator.next(), new Thing("good", 0));
+            // even though the second item is good, Jackson throws when it tries to advance to the third
+            assertThrows(iterator::next);
+        }
+    }
+
+    @Test(timeOut = 10000)
+    public void testStreamingBlockingJson()
+            throws Exception
+    {
+        int qty = 25;
+        Semaphore semaphore = new Semaphore(0);
+
+        JsonCodec<Thing> codec = jsonCodec(Thing.class);
+
+        Iterator<String> stream = new Iterator<>()
+        {
+            private int index;
+
+            @Override
+            public boolean hasNext()
+            {
+                return index < qty;
+            }
+
+            @Override
+            public String next()
+            {
+                try {
+                    semaphore.acquire();
+                }
+                catch (InterruptedException e) {
+                    fail("Interrupted", e);
+                }
+
+                int thisIndex = index++;
+                String json = jsonObject(thisIndex);
+
+                if (thisIndex == 0) {
+                    return "[" + json;
+                }
+                if (thisIndex == (qty - 1)) {
+                    return "," + json + "]";
+                }
+                return ", " + json;
+            }
+
+            private String jsonObject(int index)
+            {
+                return """
+                       {
+                         "s": "%s",
+                         "i": %s
+                       }
+                       """.formatted(index, index);
+            }
+        };
+
+        servlet.setStream(stream);
+        servlet.addResponseHeader("Content-Type", "application/json");
+
+        Request request = prepareGet()
+                .setUri(baseURI)
+                .build();
+
+        // Jetty won't respond until some content is received
+        semaphore.release();
+        try (StreamingResponseIterator<Thing> iterator = executeRequest(request, createJsonStreamingResponse(codec))) {
+            for (int i = 0; i < qty; ++i) {
+                semaphore.release();
+                assertEquals(iterator.next(), new Thing(Integer.toString(i), i));
+            }
+            assertFalse(iterator.hasNext());
+        }
     }
 
     private void executeExceptionRequest(HttpClientConfig config, Request request)
