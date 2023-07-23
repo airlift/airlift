@@ -3,6 +3,7 @@ package io.airlift.http.client.jetty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.HostAndPort;
 import com.google.common.primitives.Ints;
+import io.airlift.http.client.CloseableResponse;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.HttpRequestFilter;
 import io.airlift.http.client.HttpStatusListener;
@@ -613,6 +614,57 @@ public class JettyHttpClient
         }
         finally {
             span.end();
+        }
+    }
+
+    @Override
+    public CloseableResponse executeStreaming(Request request)
+            throws Exception
+    {
+        PreparedRequest preparedRequest = requestController.prepareRequest(request);
+        request = preparedRequest.request();
+        Span span = preparedRequest.span();
+
+        long requestStart = System.nanoTime();
+
+        RequestContext requestContext = requestController.startRequest(request, requestStart);
+
+        JettyResponse jettyResponse = null;
+        long responseStart = 0;
+        try {
+            Response response = requestContext.listener().get(httpClient.getIdleTimeout(), MILLISECONDS);
+            responseStart = System.nanoTime();
+            jettyResponse = new JettyResponse(response, requestContext.listener().getInputStream());
+
+            requestController.updateSpanResponse(requestContext, response, span);
+
+            return new JettyCloseableResponse(requestController, requestContext, span, jettyResponse, responseStart);
+        }
+        catch (InterruptedException | TimeoutException | ExecutionException e) {
+            try {
+                requestController.closeResponse(jettyResponse, requestContext, span, responseStart);
+            }
+            catch (Throwable t) {
+                e.addSuppressed(t);
+            }
+            throw requestController.filterException(requestContext, e);
+        }
+        catch (Throwable e) {
+            try {
+                requestController.closeResponse(jettyResponse, requestContext, span, responseStart);
+            }
+            catch (Throwable t) {
+                e.addSuppressed(t);
+            }
+
+            try {
+                span.setStatus(StatusCode.ERROR, e.getMessage());
+                span.recordException(e, Attributes.of(SemanticAttributes.EXCEPTION_ESCAPED, true));
+            }
+            finally {
+                span.end();
+            }
+            throw e;
         }
     }
 

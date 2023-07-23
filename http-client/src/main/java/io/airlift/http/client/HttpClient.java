@@ -27,6 +27,12 @@ public interface HttpClient
 
     <T, E extends Exception> HttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler);
 
+    default CloseableResponse executeStreaming(Request request)
+            throws Exception
+    {
+        throw new UnsupportedOperationException();
+    }
+
     RequestStats getStats();
 
     long getMaxContentLength();
