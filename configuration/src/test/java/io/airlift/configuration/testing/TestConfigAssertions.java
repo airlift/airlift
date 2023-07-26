@@ -503,7 +503,7 @@ public class TestConfigAssertions
                     .setName("Dain")
                     .setEmail("dain@proofpoint.com")
                     .setPhone(null)
-                    .setHomePageUrl(new URL("http://iq80.com")));
+                    .setHomePageUrl(URI.create("http://iq80.com").toURL()));
         }
         catch (AssertionError e) {
             // expected

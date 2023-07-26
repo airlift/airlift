@@ -134,6 +134,7 @@ public class HttpJmxConnector
     }
 
     @Override
+    @SuppressWarnings("removal")
     public MBeanServerConnection getMBeanServerConnection(Subject delegationSubject)
     {
         return getMBeanServerConnection();
