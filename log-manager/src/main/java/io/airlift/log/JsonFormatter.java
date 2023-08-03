@@ -20,6 +20,7 @@ import static java.util.Objects.requireNonNull;
 public class JsonFormatter
         extends Formatter
 {
+    private static final Object[] EMPTY_ARRAY = new Object[0];
     private static final JsonCodec<JsonRecord> CODEC = new JsonCodecFactory(new ObjectMapperProvider()).jsonCodec(JsonRecord.class);
     private static final JsonFactory jsonFactory = new JsonFactory();
     private final Map<String, String> logAnnotations;
@@ -38,6 +39,7 @@ public class JsonFormatter
                 Thread.currentThread().getName(),
                 record.getLoggerName(),
                 record.getMessage(),
+                record.getParameters(),
                 record.getThrown(),
                 Context.current(),
                 logAnnotations);
@@ -53,6 +55,7 @@ public class JsonFormatter
                         Thread.currentThread().getName(),
                         record.getLoggerName(),
                         outer.getMessage(),
+                        EMPTY_ARRAY,
                         outer,
                         Context.current(),
                         logAnnotations));

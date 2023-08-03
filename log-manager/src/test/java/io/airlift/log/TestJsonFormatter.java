@@ -12,6 +12,7 @@ import org.assertj.core.api.InstanceOfAssertFactories;
 import org.testng.annotations.Test;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.LogRecord;
 
@@ -33,6 +34,7 @@ public class TestJsonFormatter
                 "thread-0",
                 "TestLogger",
                 "Test Log Message",
+                List.of(),
                 new Exception("Test Exception 1"),
                 Context.root(),
                 ImmutableMap.of());
@@ -50,6 +52,7 @@ public class TestJsonFormatter
                         null,
                         null,
                         exception.getMessage(),
+                        (Object[]) null,
                         null,
                         Context.root(),
                         ImmutableMap.of()));
@@ -74,6 +77,7 @@ public class TestJsonFormatter
                 "thread-0",
                 "TestLogger",
                 "Test Log Message",
+                List.of(),
                 new Exception("Test Exception 1"),
                 Context.root(),
                 ImmutableMap.of());
@@ -86,6 +90,7 @@ public class TestJsonFormatter
                         original.getThread(),
                         original.getLoggerName(),
                         original.getMessage(),
+                        List.of(),
                         null,
                         Context.root(),
                         ImmutableMap.of()));
