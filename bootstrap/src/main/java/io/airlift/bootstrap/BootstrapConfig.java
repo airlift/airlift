@@ -7,7 +7,7 @@ public class BootstrapConfig
 {
     private Boolean quiet;
 
-    public Boolean getQuiet()
+    public Boolean isQuiet()
     {
         return quiet;
     }
