@@ -203,7 +203,7 @@ public class Bootstrap
         List<Message> warnings = new ArrayList<>();
         ConfigurationFactory configurationFactory = new ConfigurationFactory(properties, warning -> warnings.add(new Message(warning)));
 
-        Boolean quietConfig = configurationFactory.build(BootstrapConfig.class).getQuiet();
+        Boolean quietConfig = configurationFactory.build(BootstrapConfig.class).isQuiet();
 
         // initialize logging
         if (logging != null) {
