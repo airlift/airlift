@@ -5,8 +5,8 @@ import com.google.errorprone.annotations.concurrent.GuardedBy;
 import io.airlift.http.client.GatheringByteArrayInputStream;
 import io.airlift.http.client.ResponseTooLargeException;
 import io.airlift.units.DataSize;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpHeader;
 
 import java.nio.ByteBuffer;
@@ -23,7 +23,7 @@ import static java.util.Objects.requireNonNull;
 
 @ThreadSafe
 class BufferingResponseListener
-        extends Response.Listener.Adapter
+        implements Response.Listener
 {
     private static final long BUFFER_MAX_BYTES = DataSize.of(1, MEGABYTE).toBytes();
     private static final long BUFFER_MIN_BYTES = DataSize.of(1, KILOBYTE).toBytes();

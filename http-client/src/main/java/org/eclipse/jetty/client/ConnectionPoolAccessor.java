@@ -1,7 +1,5 @@
 package org.eclipse.jetty.client;
 
-import org.eclipse.jetty.client.api.Connection;
-
 import java.util.Collection;
 
 public final class ConnectionPoolAccessor

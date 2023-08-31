@@ -46,34 +46,37 @@ public class HttpRequestEvent
             DoubleSummaryStats responseContentInterarrivalStats)
     {
         String user = null;
-        Principal principal = request.getUserPrincipal();
-        if (principal != null) {
-            user = principal.getName();
+        Request.AuthenticationState authenticationState = Request.getAuthenticationState(request);
+        if (authenticationState != null) {
+            Principal principal = authenticationState.getUserPrincipal();
+            if (principal != null) {
+                user = principal.getName();
+            }
         }
 
         // This is required, because async responses are processed in a different thread.
-        String token = request.getHeader(TRACETOKEN_HEADER);
+        String token = request.getHeaders().get(TRACETOKEN_HEADER);
         if (token == null && traceTokenManager != null) {
             token = traceTokenManager.getCurrentRequestToken();
         }
 
-        long dispatchTime = request.getTimeStamp();
-        long timeToDispatch = max(dispatchTime - request.getTimeStamp(), 0);
+        long dispatchTime = Request.getTimeStamp(request);
+        long timeToDispatch = max(dispatchTime - Request.getTimeStamp(request), 0);
 
         Long timeToFirstByte = null;
         Object firstByteTime = request.getAttribute(TimingFilter.FIRST_BYTE_TIME);
         if (firstByteTime instanceof Long) {
             Long time = (Long) firstByteTime;
-            timeToFirstByte = max(time - request.getTimeStamp(), 0);
+            timeToFirstByte = max(time - Request.getTimeStamp(request), 0);
         }
 
-        long timeToLastByte = max(currentTimeInMillis - request.getTimeStamp(), 0);
+        long timeToLastByte = max(currentTimeInMillis - Request.getTimeStamp(request), 0);
 
         ImmutableList.Builder<String> builder = ImmutableList.builder();
-        if (request.getRemoteAddr() != null) {
-            builder.add(request.getRemoteAddr());
+        if (Request.getRemoteAddr(request) != null) {
+            builder.add(Request.getRemoteAddr(request));
         }
-        for (Enumeration<String> e = request.getHeaders("X-FORWARDED-FOR"); e != null && e.hasMoreElements(); ) {
+        for (Enumeration<String> e = request.getHeaders().getValues("X-FORWARDED-FOR"); e != null && e.hasMoreElements(); ) {
             String forwardedFor = e.nextElement();
             builder.addAll(Splitter.on(',').trimResults().omitEmptyStrings().split(forwardedFor));
         }
@@ -90,13 +93,13 @@ public class HttpRequestEvent
             }
         }
         if (clientAddress == null) {
-            clientAddress = request.getRemoteAddr();
+            clientAddress = Request.getRemoteAddr(request);
         }
 
         String requestUri = null;
-        if (request.getRequestURI() != null) {
-            requestUri = request.getRequestURI();
-            String parameters = request.getQueryString();
+        if (request.getHttpURI() != null) {
+            requestUri = request.getHttpURI().getPath();
+            String parameters = request.getHttpURI().getQuery();
             if (parameters != null) {
                 requestUri += "?" + parameters;
             }
@@ -107,29 +110,29 @@ public class HttpRequestEvent
             method = method.toUpperCase();
         }
 
-        String protocol = request.getHeader("X-FORWARDED-PROTO");
+        String protocol = request.getHeaders().get("X-FORWARDED-PROTO");
         if (protocol == null) {
-            protocol = request.getScheme();
+            protocol = request.getHttpURI().getScheme();
         }
         if (protocol != null) {
             protocol = protocol.toLowerCase();
         }
 
         return new HttpRequestEvent(
-                Instant.ofEpochMilli(request.getTimeStamp()),
+                Instant.ofEpochMilli(Request.getTimeStamp(request)),
                 token,
                 clientAddress,
                 protocol,
                 method,
                 requestUri,
                 user,
-                request.getHeader("User-Agent"),
-                request.getHeader("Referer"),
-                request.getContentRead(),
-                request.getHeader("Content-Type"),
-                response.getContentCount(),
+                request.getHeaders().get("User-Agent"),
+                request.getHeaders().get("Referer"),
+                Request.getContentBytesRead(request),
+                request.getHeaders().get("Content-Type"),
+                Response.getContentBytesWritten(response),
                 response.getStatus(),
-                response.getHeader("Content-Type"),
+                response.getHeaders().get("Content-Type"),
                 timeToDispatch,
                 timeToFirstByte,
                 timeToLastByte,
@@ -137,7 +140,7 @@ public class HttpRequestEvent
                 beginToEndMillis,
                 firstToLastContentTimeInMillis,
                 responseContentInterarrivalStats,
-                request.getHttpVersion().toString());
+                request.getConnectionMetaData().getHttpVersion().asString());
     }
 
     private final Instant timeStamp;

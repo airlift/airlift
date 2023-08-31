@@ -19,12 +19,11 @@ import io.airlift.http.client.jetty.HttpClientLogger.ResponseInfo;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 import jakarta.annotation.Nullable;
-import org.eclipse.jetty.client.api.ContentProvider;
-import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.Fields;
@@ -34,7 +33,6 @@ import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.HttpCookie;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -43,9 +41,12 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import static io.airlift.http.client.TraceTokenRequestFilter.TRACETOKEN_HEADER;
 import static io.airlift.http.client.jetty.HttpRequestEvent.NO_RESPONSE;
@@ -343,13 +344,13 @@ public class TestHttpClientLogger
         }
 
         @Override
-        public Request header(String name, String value)
+        public Supplier<HttpFields> getTrailersSupplier()
         {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Request header(HttpHeader header, String value)
+        public Request trailersSupplier(Supplier<HttpFields> supplier)
         {
             throw new UnsupportedOperationException();
         }
@@ -361,7 +362,7 @@ public class TestHttpClientLogger
         }
 
         @Override
-        public Request cookie(HttpCookie cookie)
+        public Request cookie(HttpCookie httpCookie)
         {
             throw new UnsupportedOperationException();
         }
@@ -388,24 +389,6 @@ public class TestHttpClientLogger
         public Map<String, Object> getAttributes()
         {
             return null;
-        }
-
-        @Override
-        public ContentProvider getContent()
-        {
-            return null;
-        }
-
-        @Override
-        public Request content(ContentProvider content)
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Request content(ContentProvider content, String contentType)
-        {
-            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -487,12 +470,6 @@ public class TestHttpClientLogger
         }
 
         @Override
-        public <T extends RequestListener> List<T> getRequestListeners(Class<T> listenerClass)
-        {
-            return null;
-        }
-
-        @Override
         public Request listener(Listener listener)
         {
             throw new UnsupportedOperationException();
@@ -571,9 +548,9 @@ public class TestHttpClientLogger
         }
 
         @Override
-        public Request onResponseContentDemanded(Response.DemandedContentListener listener)
+        public Request onResponseContentSource(Response.ContentSourceListener contentSourceListener)
         {
-            throw new UnsupportedOperationException();
+            return null;
         }
 
         @Override
@@ -586,6 +563,12 @@ public class TestHttpClientLogger
         public Request onResponseFailure(Response.FailureListener listener)
         {
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Request onPush(BiFunction<Request, Request, Response.CompleteListener> biFunction)
+        {
+            return null;
         }
 
         @Override
@@ -607,7 +590,7 @@ public class TestHttpClientLogger
         }
 
         @Override
-        public boolean abort(Throwable cause)
+        public CompletableFuture<Boolean> abort(Throwable cause)
         {
             throw new UnsupportedOperationException();
         }
@@ -631,12 +614,6 @@ public class TestHttpClientLogger
 
         @Override
         public Request getRequest()
-        {
-            return null;
-        }
-
-        @Override
-        public <T extends ResponseListener> List<T> getListeners(Class<T> listenerClass)
         {
             return null;
         }
@@ -666,7 +643,13 @@ public class TestHttpClientLogger
         }
 
         @Override
-        public boolean abort(Throwable cause)
+        public HttpFields getTrailers()
+        {
+            return null;
+        }
+
+        @Override
+        public CompletableFuture<Boolean> abort(Throwable cause)
         {
             throw new UnsupportedOperationException();
         }

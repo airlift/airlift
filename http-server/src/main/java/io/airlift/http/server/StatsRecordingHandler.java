@@ -37,7 +37,7 @@ public class StatsRecordingHandler
     @Override
     public void log(Request request, Response response)
     {
-        Duration requestTime = new Duration(max(0, System.currentTimeMillis() - request.getTimeStamp()), TimeUnit.MILLISECONDS);
-        stats.record(request.getContentRead(), response.getContentCount(), requestTime);
+        Duration requestTime = new Duration(max(0, System.currentTimeMillis() - Request.getTimeStamp(request)), TimeUnit.MILLISECONDS);
+        stats.record(Request.getContentBytesRead(request), Response.getContentBytesWritten(response), requestTime);
     }
 }

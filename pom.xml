@@ -95,6 +95,7 @@
         <dep.jjwt.version>0.12.3</dep.jjwt.version>
         <dep.logback.version>1.4.14</dep.logback.version>
         <dep.jackson.version>2.16.1</dep.jackson.version>
+        <dep.jetty.version>12.0.6</dep.jetty.version>
     </properties>
 
     <dependencyManagement>
@@ -104,7 +105,15 @@
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-bom</artifactId>
-                <version>11.0.19</version>
+                <version>${dep.jetty.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.eclipse.jetty.ee10</groupId>
+                <artifactId>jetty-ee10-bom</artifactId>
+                <version>${dep.jetty.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -284,6 +293,12 @@
                 <groupId>io.jsonwebtoken</groupId>
                 <artifactId>jjwt-jackson</artifactId>
                 <version>${dep.jjwt.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>jakarta.servlet</groupId>
+                <artifactId>jakarta.servlet-api</artifactId>
+                <version>6.0.0</version>
             </dependency>
 
             <dependency>
