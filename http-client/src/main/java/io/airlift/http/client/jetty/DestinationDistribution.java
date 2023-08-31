@@ -2,7 +2,7 @@ package io.airlift.http.client.jetty;
 
 import io.airlift.stats.Distribution;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpDestination;
+import org.eclipse.jetty.client.transport.HttpDestination;
 
 class DestinationDistribution
         extends CachedDistribution

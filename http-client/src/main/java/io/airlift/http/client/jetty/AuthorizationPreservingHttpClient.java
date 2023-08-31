@@ -2,8 +2,7 @@ package io.airlift.http.client.jetty;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
-import org.eclipse.jetty.client.HttpRequest;
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.http.HttpField;
 
 import java.net.URI;
@@ -22,7 +21,7 @@ class AuthorizationPreservingHttpClient
     }
 
     @Override
-    protected Request copyRequest(HttpRequest oldRequest, URI newUri)
+    protected Request copyRequest(Request oldRequest, URI newUri)
     {
         Request newRequest = super.copyRequest(oldRequest, newUri);
 

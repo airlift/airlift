@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import io.airlift.event.client.EventField;
 import io.airlift.event.client.EventType;
+import io.airlift.http.server.jetty.RequestTiming;
 import io.airlift.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -28,9 +29,12 @@ import java.security.Principal;
 import java.time.Instant;
 import java.util.Enumeration;
 
+import static com.google.common.base.MoreObjects.firstNonNull;
 import static io.airlift.event.client.EventField.EventFieldMapping.TIMESTAMP;
+import static io.airlift.http.server.DelimitedRequestLogHandler.REQUEST_BEGIN_TO_HANDLE_ATTRIBUTE;
 import static io.airlift.http.server.TraceTokenFilter.TRACETOKEN_HEADER;
 import static java.lang.Math.max;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 @EventType("HttpRequest")
 public class HttpRequestEvent
@@ -40,40 +44,39 @@ public class HttpRequestEvent
             Response response,
             TraceTokenManager traceTokenManager,
             long currentTimeInMillis,
-            long beginToDispatchMillis,
-            long beginToEndMillis,
-            long firstToLastContentTimeInMillis,
+            RequestTiming timing,
             DoubleSummaryStats responseContentInterarrivalStats)
     {
         String user = null;
-        Principal principal = request.getUserPrincipal();
-        if (principal != null) {
-            user = principal.getName();
+        Request.AuthenticationState authenticationState = Request.getAuthenticationState(request);
+        if (authenticationState != null) {
+            Principal principal = authenticationState.getUserPrincipal();
+            if (principal != null) {
+                user = principal.getName();
+            }
         }
 
         // This is required, because async responses are processed in a different thread.
-        String token = request.getHeader(TRACETOKEN_HEADER);
+        String token = request.getHeaders().get(TRACETOKEN_HEADER);
         if (token == null && traceTokenManager != null) {
             token = traceTokenManager.getCurrentRequestToken();
         }
 
-        long dispatchTime = request.getTimeStamp();
-        long timeToDispatch = max(dispatchTime - request.getTimeStamp(), 0);
-
+        long timeToDispatch = NANOSECONDS.toMillis((long) firstNonNull(request.getAttribute(REQUEST_BEGIN_TO_HANDLE_ATTRIBUTE), 0L));
         Long timeToFirstByte = null;
         Object firstByteTime = request.getAttribute(TimingFilter.FIRST_BYTE_TIME);
         if (firstByteTime instanceof Long) {
             Long time = (Long) firstByteTime;
-            timeToFirstByte = max(time - request.getTimeStamp(), 0);
+            timeToFirstByte = max(time - Request.getTimeStamp(request), 0);
         }
 
-        long timeToLastByte = max(currentTimeInMillis - request.getTimeStamp(), 0);
+        long timeToLastByte = max(currentTimeInMillis - Request.getTimeStamp(request), 0);
 
         ImmutableList.Builder<String> builder = ImmutableList.builder();
-        if (request.getRemoteAddr() != null) {
-            builder.add(request.getRemoteAddr());
+        if (Request.getRemoteAddr(request) != null) {
+            builder.add(Request.getRemoteAddr(request));
         }
-        for (Enumeration<String> e = request.getHeaders("X-FORWARDED-FOR"); e != null && e.hasMoreElements(); ) {
+        for (Enumeration<String> e = request.getHeaders().getValues("X-FORWARDED-FOR"); e != null && e.hasMoreElements(); ) {
             String forwardedFor = e.nextElement();
             builder.addAll(Splitter.on(',').trimResults().omitEmptyStrings().split(forwardedFor));
         }
@@ -90,13 +93,13 @@ public class HttpRequestEvent
             }
         }
         if (clientAddress == null) {
-            clientAddress = request.getRemoteAddr();
+            clientAddress = Request.getRemoteAddr(request);
         }
 
         String requestUri = null;
-        if (request.getRequestURI() != null) {
-            requestUri = request.getRequestURI();
-            String parameters = request.getQueryString();
+        if (request.getHttpURI() != null) {
+            requestUri = request.getHttpURI().getPath();
+            String parameters = request.getHttpURI().getQuery();
             if (parameters != null) {
                 requestUri += "?" + parameters;
             }
@@ -107,37 +110,37 @@ public class HttpRequestEvent
             method = method.toUpperCase();
         }
 
-        String protocol = request.getHeader("X-FORWARDED-PROTO");
+        String protocol = request.getHeaders().get("X-FORWARDED-PROTO");
         if (protocol == null) {
-            protocol = request.getScheme();
+            protocol = request.getHttpURI().getScheme();
         }
         if (protocol != null) {
             protocol = protocol.toLowerCase();
         }
 
         return new HttpRequestEvent(
-                Instant.ofEpochMilli(request.getTimeStamp()),
+                Instant.ofEpochMilli(Request.getTimeStamp(request)),
                 token,
                 clientAddress,
                 protocol,
                 method,
                 requestUri,
                 user,
-                request.getHeader("User-Agent"),
-                request.getHeader("Referer"),
-                request.getContentRead(),
-                request.getHeader("Content-Type"),
-                response.getContentCount(),
+                request.getHeaders().get("User-Agent"),
+                request.getHeaders().get("Referer"),
+                Request.getContentBytesRead(request),
+                request.getHeaders().get("Content-Type"),
+                Response.getContentBytesWritten(response),
                 response.getStatus(),
-                response.getHeader("Content-Type"),
+                response.getHeaders().get("Content-Type"),
                 timeToDispatch,
                 timeToFirstByte,
                 timeToLastByte,
-                beginToDispatchMillis,
-                beginToEndMillis,
-                firstToLastContentTimeInMillis,
+                timing.beginToHandleMillis(),
+                timing.beginToEndMillis(),
+                timing.firstToLastContentTimeInMillis(),
                 responseContentInterarrivalStats,
-                request.getHttpVersion().toString());
+                request.getConnectionMetaData().getHttpVersion().asString());
     }
 
     private final Instant timeStamp;

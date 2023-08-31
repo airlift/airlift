@@ -1,6 +1,4 @@
 /*
- * Copyright 2010 Proofpoint, Inc.
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,29 +13,28 @@
  */
 package io.airlift.http.server;
 
-import io.airlift.units.Duration;
+import com.google.common.collect.ImmutableList;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
 
-import java.util.concurrent.TimeUnit;
+import java.util.List;
 
-import static java.lang.Math.max;
-
-public class StatsRecordingHandler
+class RequestLogCollection
         implements RequestLog
 {
-    private final RequestStats stats;
+    private final List<RequestLog> logs;
 
-    public StatsRecordingHandler(RequestStats stats)
+    public RequestLogCollection(RequestLog... logs)
     {
-        this.stats = stats;
+        this.logs = ImmutableList.copyOf(logs);
     }
 
     @Override
     public void log(Request request, Response response)
     {
-        Duration requestTime = new Duration(max(0, System.currentTimeMillis() - Request.getTimeStamp(request)), TimeUnit.MILLISECONDS);
-        stats.record(Request.getContentBytesRead(request), Response.getContentBytesWritten(response), requestTime);
+        for (RequestLog log : logs) {
+            log.log(request, response);
+        }
     }
 }

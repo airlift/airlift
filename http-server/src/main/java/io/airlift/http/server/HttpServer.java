@@ -28,11 +28,14 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.servlet.Filter;
 import jakarta.servlet.Servlet;
+import org.eclipse.jetty.ee10.servlet.FilterHolder;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
+import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.jmx.MBeanContainer;
-import org.eclipse.jetty.security.ConstraintMapping;
-import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
@@ -44,15 +47,10 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.handler.HandlerList;
-import org.eclipse.jetty.server.handler.RequestLogHandler;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.weakref.jmx.Managed;
@@ -68,6 +66,7 @@ import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -77,6 +76,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
@@ -85,6 +85,7 @@ import static java.util.Collections.list;
 import static java.util.Comparator.naturalOrder;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
+import static org.eclipse.jetty.security.Constraint.ALLOWED;
 
 public class HttpServer
 {
@@ -96,7 +97,7 @@ public class HttpServer
     private static final Logger log = Logger.get(HttpServer.class);
 
     private final Server server;
-    private final boolean registerErrorHandler;
+    private final boolean showStackTrace;
     private final DelimitedRequestLog requestLog;
     private ConnectionStats httpConnectionStats;
     private ConnectionStats httpsConnectionStats;
@@ -140,7 +141,7 @@ public class HttpServer
         threadPool.setName("http-worker");
         threadPool.setDetailedDump(true);
         server = new Server(threadPool);
-        registerErrorHandler = config.isShowStackTrace();
+        showStackTrace = config.isShowStackTrace();
 
         this.sslContextFactory = maybeSslContextFactory;
 
@@ -167,13 +168,18 @@ public class HttpServer
         baseHttpConfiguration.setNotifyRemoteAsyncErrors(false);
 
         // register a channel listener if logging is enabled
-        HttpServerChannelListener channelListener = null;
+        DelimitedRequestLogHandler channelListener = null;
+
+        StatsRecordingHandler statsRecordingHandler = new StatsRecordingHandler(stats);
+
         if (config.isLogEnabled()) {
             this.requestLog = createDelimitedRequestLog(config, tokenManager, eventClient);
-            channelListener = new HttpServerChannelListener(this.requestLog);
+            channelListener = new DelimitedRequestLogHandler(requestLog);
+            server.setRequestLog(new RequestLogCollection(channelListener, statsRecordingHandler));
         }
         else {
             this.requestLog = null;
+            server.setRequestLog(statsRecordingHandler);
         }
 
         // set up HTTP connector
@@ -213,11 +219,6 @@ public class HttpServer
             ConnectionStatistics connectionStats = new ConnectionStatistics();
             httpConnector.addBean(connectionStats);
             this.httpConnectionStats = new ConnectionStats(connectionStats);
-
-            if (channelListener != null) {
-                httpConnector.addBean(channelListener);
-            }
-
             server.addConnector(httpConnector);
         }
 
@@ -310,7 +311,6 @@ public class HttpServer
         /*
          * structure is:
          *
-         * server
          *    |--- statistics handler
          *           |--- context handler
          *           |       |--- trace token filter
@@ -324,24 +324,34 @@ public class HttpServer
          *    |-- admin context handler
          *           \ --- the admin servlet
          */
-        HandlerCollection handlers = new HandlerCollection();
+        ContextHandlerCollection handlers = new ContextHandlerCollection();
 
-        handlers.addHandler(createServletContext(theServlet, resources, parameters, filters, tokenManager, loginService, "http", "https"));
-
-        RequestLogHandler statsRecorder = new RequestLogHandler();
-        statsRecorder.setRequestLog(new StatsRecordingHandler(stats));
-        handlers.addHandler(statsRecorder);
+        handlers.addHandler(createServletContext(theServlet, resources, parameters, filters, tokenManager, loginService, Set.of("http", "https"), showStackTrace));
 
         // add handlers to Jetty
         StatisticsHandler statsHandler = new StatisticsHandler();
         statsHandler.setHandler(handlers);
 
-        HandlerList rootHandlers = new HandlerList();
+        ContextHandlerCollection rootHandlers = new ContextHandlerCollection();
         if (theAdminServlet != null && config.isAdminEnabled()) {
-            rootHandlers.addHandler(createServletContext(theAdminServlet, resources, adminParameters, adminFilters, tokenManager, loginService, "admin"));
+            rootHandlers.addHandler(createServletContext(theAdminServlet, resources, adminParameters, adminFilters, tokenManager, loginService, Set.of("admin"), showStackTrace));
         }
         rootHandlers.addHandler(statsHandler);
-        server.setHandler(rootHandlers);
+
+        if (channelListener != null) {
+            channelListener.setHandler(rootHandlers);
+            server.setHandler(channelListener);
+        }
+        else {
+            server.setHandler(rootHandlers);
+        }
+
+        if (!showStackTrace) {
+            ErrorHandler errorHandler = new ErrorHandler();
+            errorHandler.setShowMessageInTitle(false);
+            errorHandler.setShowStacks(false);
+            server.setErrorHandler(errorHandler);
+        }
     }
 
     private static void setSecureRequestCustomizer(HttpConfiguration configuration)
@@ -358,20 +368,26 @@ public class HttpServer
             Set<Filter> filters,
             TraceTokenManager tokenManager,
             LoginService loginService,
-            String... connectorNames)
+            Set<String> connectorNames,
+            boolean showStackTrace)
     {
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
+        if (!showStackTrace) {
+            ErrorHandler handler = new ErrorHandler();
+            handler.setShowStacks(false);
+            context.setErrorHandler(handler);
+        }
 
         context.addFilter(new FilterHolder(new TimingFilter()), "/*", null);
         if (tokenManager != null) {
             context.addFilter(new FilterHolder(new TraceTokenFilter(tokenManager)), "/*", null);
         }
-
         // -- security handler
         if (loginService != null) {
             SecurityHandler securityHandler = createSecurityHandler(loginService);
             context.setSecurityHandler(securityHandler);
         }
+
         // -- user provided filters
         for (Filter filter : filters) {
             context.addFilter(new FilterHolder(filter), "/*", null);
@@ -394,22 +410,18 @@ public class HttpServer
 
         // Starting with Jetty 9 there is no way to specify connectors directly, but
         // there is this wonky @ConnectorName virtual hosts automatically added
-        String[] virtualHosts = new String[connectorNames.length];
-        for (int i = 0; i < connectorNames.length; i++) {
-            virtualHosts[i] = "@" + connectorNames[i];
-        }
-        context.setVirtualHosts(virtualHosts);
+        List<String> virtualHosts = connectorNames.stream()
+                .map(connectorName -> "@" + connectorName)
+                .collect(toImmutableList());
 
+        context.setVirtualHosts(virtualHosts);
         return context;
     }
 
     private static SecurityHandler createSecurityHandler(LoginService loginService)
     {
-        Constraint constraint = new Constraint();
-        constraint.setAuthenticate(false);
-
         ConstraintMapping constraintMapping = new ConstraintMapping();
-        constraintMapping.setConstraint(constraint);
+        constraintMapping.setConstraint(ALLOWED);
         constraintMapping.setPathSpec("/*");
 
         ConstraintSecurityHandler securityHandler = new ConstraintSecurityHandler();
@@ -505,10 +517,6 @@ public class HttpServer
             throws Exception
     {
         server.start();
-        // clear the error handler registered by start()
-        if (!registerErrorHandler) {
-            server.setErrorHandler(null);
-        }
         checkState(server.isStarted(), "server is not started");
     }
 

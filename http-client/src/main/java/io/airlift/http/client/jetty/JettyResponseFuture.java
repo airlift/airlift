@@ -9,7 +9,7 @@ import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.semconv.SemanticAttributes;
-import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.Response;
 
 import java.io.InputStream;
 import java.util.concurrent.CancellationException;
@@ -35,7 +35,7 @@ class JettyResponseFuture<T, E extends Exception>
     private final long requestStart = System.nanoTime();
     private final AtomicReference<JettyAsyncHttpState> state = new AtomicReference<>(JettyAsyncHttpState.WAITING_FOR_CONNECTION);
     private final Request request;
-    private final org.eclipse.jetty.client.api.Request jettyRequest;
+    private final org.eclipse.jetty.client.Request jettyRequest;
     private final LongSupplier requestSize;
     private final ResponseHandler<T, E> responseHandler;
     private final Span span;
@@ -44,7 +44,7 @@ class JettyResponseFuture<T, E extends Exception>
 
     JettyResponseFuture(
             Request request,
-            org.eclipse.jetty.client.api.Request jettyRequest,
+            org.eclipse.jetty.client.Request jettyRequest,
             LongSupplier requestSize,
             ResponseHandler<T, E> responseHandler,
             Span span,

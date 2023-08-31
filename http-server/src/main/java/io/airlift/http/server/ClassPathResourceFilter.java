@@ -47,8 +47,6 @@ public class ClassPathResourceFilter
 
     static {
         MIME_TYPES = new MimeTypes();
-        // Now here is an oversight... =:-O
-        MIME_TYPES.addMimeMapping("json", "application/json");
     }
 
     private final String baseUri; // "" or "/foo"
