@@ -18,6 +18,7 @@ package io.airlift.http.server;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import org.eclipse.jetty.security.HashLoginService;
+import org.eclipse.jetty.util.resource.PathResourceFactory;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 
@@ -37,7 +38,7 @@ public class HashLoginServiceProvider
     {
         String authConfig = config.getUserAuthFile();
         if (!isNullOrEmpty(authConfig)) {
-            return new HashLoginService(HttpServerModule.REALM_NAME, authConfig);
+            return new HashLoginService(HttpServerModule.REALM_NAME, new PathResourceFactory().newResource(authConfig));
         }
         return null;
     }

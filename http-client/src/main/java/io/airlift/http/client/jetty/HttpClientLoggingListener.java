@@ -15,10 +15,10 @@ package io.airlift.http.client.jetty;
 
 import io.airlift.http.client.jetty.HttpClientLogger.RequestInfo;
 import io.airlift.http.client.jetty.HttpClientLogger.ResponseInfo;
-import org.eclipse.jetty.client.HttpRequest;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.client.transport.HttpRequest;
 
 import java.nio.ByteBuffer;
 import java.util.Optional;
@@ -26,8 +26,7 @@ import java.util.Optional;
 import static java.util.Objects.requireNonNull;
 
 class HttpClientLoggingListener
-        extends Response.Listener.Adapter
-        implements Request.Listener
+        implements Response.Listener, Request.Listener
 {
     private final HttpClientLogger logger;
     private final long requestTimestampMillis;

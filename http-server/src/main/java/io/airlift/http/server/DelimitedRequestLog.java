@@ -24,6 +24,7 @@ import ch.qos.logback.core.status.ErrorStatus;
 import ch.qos.logback.core.util.FileSize;
 import com.google.common.math.LongMath;
 import io.airlift.event.client.EventClient;
+import io.airlift.http.server.jetty.RequestTiming;
 import io.airlift.log.Logger;
 import io.airlift.tracetoken.TraceTokenManager;
 import io.airlift.units.DataSize;
@@ -136,9 +137,7 @@ class DelimitedRequestLog
                 response,
                 traceTokenManager,
                 currentTimeMillisProvider.getCurrentTimeMillis(),
-                beginToDispatchMillis,
-                beginToEndMillis,
-                firstToLastContentTimeInMillis,
+                new RequestTiming(beginToDispatchMillis, beginToEndMillis, firstToLastContentTimeInMillis),
                 responseContentInterarrivalStats);
 
         asyncAppender.doAppend(event);
