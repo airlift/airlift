@@ -28,14 +28,22 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.servlet.Filter;
 import jakarta.servlet.Servlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee9.nested.ErrorHandler;
+import org.eclipse.jetty.ee9.nested.Request;
+import org.eclipse.jetty.ee9.nested.ServletConstraint;
+import org.eclipse.jetty.ee9.security.ConstraintMapping;
+import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee9.security.SecurityHandler;
+import org.eclipse.jetty.ee9.security.authentication.BasicAuthenticator;
+import org.eclipse.jetty.ee9.servlet.FilterHolder;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.jmx.MBeanContainer;
-import org.eclipse.jetty.security.ConstraintMapping;
-import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.LoginService;
-import org.eclipse.jetty.security.SecurityHandler;
-import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -44,15 +52,9 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.handler.HandlerList;
-import org.eclipse.jetty.server.handler.RequestLogHandler;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.weakref.jmx.Managed;
@@ -94,6 +96,14 @@ public class HttpServer
     }
 
     private static final Logger log = Logger.get(HttpServer.class);
+
+    private static final ErrorHandler DISABLED_ERROR_HANDLER = new ErrorHandler()
+    {
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+        {
+        }
+    };
 
     private final Server server;
     private final boolean registerErrorHandler;
@@ -213,11 +223,6 @@ public class HttpServer
             ConnectionStatistics connectionStats = new ConnectionStatistics();
             httpConnector.addBean(connectionStats);
             this.httpConnectionStats = new ConnectionStats(connectionStats);
-
-            if (channelListener != null) {
-                httpConnector.addBean(channelListener);
-            }
-
             server.addConnector(httpConnector);
         }
 
@@ -251,11 +256,6 @@ public class HttpServer
             ConnectionStatistics connectionStats = new ConnectionStatistics();
             httpsConnector.addBean(connectionStats);
             this.httpsConnectionStats = new ConnectionStats(connectionStats);
-
-            if (channelListener != null) {
-                httpsConnector.addBean(channelListener);
-            }
-
             server.addConnector(httpsConnector);
         }
 
@@ -311,37 +311,42 @@ public class HttpServer
          * structure is:
          *
          * server
-         *    |--- statistics handler
-         *           |--- context handler
-         *           |       |--- trace token filter
-         *           |       |--- gzip response filter
-         *           |       |--- gzip request filter
-         *           |       |--- security handler
-         *           |       |--- user provided filters
-         *           |       |--- the servlet (normally GuiceContainer)
-         *           |       |--- resource handlers
-         *           |--- log handler
-         *    |-- admin context handler
-         *           \ --- the admin servlet
+         *    |--- events logging (if enabled)
+         *           |--- statistics handler
+         *                  |--- context handler
+         *                  |       |--- trace token filter
+         *                  |       |--- security handler
+         *                  |       |--- user provided filters
+         *                  |       |--- the servlet (normally GuiceContainer)
+         *                  |       |--- resource handlers
+         *                  |--- log handler
+         *           |-- admin context handler
+         *                  \ --- the admin servlet
          */
-        HandlerCollection handlers = new HandlerCollection();
+        ContextHandlerCollection handlers = new ContextHandlerCollection();
 
         handlers.addHandler(createServletContext(theServlet, resources, parameters, filters, tokenManager, loginService, "http", "https"));
-
-        RequestLogHandler statsRecorder = new RequestLogHandler();
-        statsRecorder.setRequestLog(new StatsRecordingHandler(stats));
-        handlers.addHandler(statsRecorder);
+        server.setRequestLog(new StatsRecordingHandler(stats));
 
         // add handlers to Jetty
         StatisticsHandler statsHandler = new StatisticsHandler();
         statsHandler.setHandler(handlers);
 
-        HandlerList rootHandlers = new HandlerList();
+        ContextHandlerCollection rootHandlers = new ContextHandlerCollection();
+        rootHandlers.addHandler(new GzipHandler());
+
         if (theAdminServlet != null && config.isAdminEnabled()) {
             rootHandlers.addHandler(createServletContext(theAdminServlet, resources, adminParameters, adminFilters, tokenManager, loginService, "admin"));
         }
         rootHandlers.addHandler(statsHandler);
-        server.setHandler(rootHandlers);
+
+        if (channelListener != null) {
+            channelListener.setHandler(rootHandlers);
+            server.setHandler(channelListener);
+        }
+        else {
+            server.setHandler(rootHandlers);
+        }
     }
 
     private static void setSecureRequestCustomizer(HttpConfiguration configuration)
@@ -352,7 +357,7 @@ public class HttpServer
                 .build());
     }
 
-    private static ServletContextHandler createServletContext(Servlet theServlet,
+    private ServletContextHandler createServletContext(Servlet theServlet,
             Set<HttpResourceBinding> resources,
             Map<String, String> parameters,
             Set<Filter> filters,
@@ -361,6 +366,10 @@ public class HttpServer
             String... connectorNames)
     {
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
+
+        if (!registerErrorHandler) {
+            context.setErrorHandler(DISABLED_ERROR_HANDLER);
+        }
 
         context.addFilter(new FilterHolder(new TimingFilter()), "/*", null);
         if (tokenManager != null) {
@@ -384,8 +393,6 @@ public class HttpServer
                     resource.getWelcomeFiles());
             context.addFilter(new FilterHolder(servlet), servlet.getBaseUri() + "/*", null);
         }
-        // -- gzip handler
-        context.insertHandler(new GzipHandler());
 
         // -- the servlet
         ServletHolder servletHolder = new ServletHolder(theServlet);
@@ -405,7 +412,7 @@ public class HttpServer
 
     private static SecurityHandler createSecurityHandler(LoginService loginService)
     {
-        Constraint constraint = new Constraint();
+        ServletConstraint constraint = new ServletConstraint();
         constraint.setAuthenticate(false);
 
         ConstraintMapping constraintMapping = new ConstraintMapping();
@@ -505,10 +512,6 @@ public class HttpServer
             throws Exception
     {
         server.start();
-        // clear the error handler registered by start()
-        if (!registerErrorHandler) {
-            server.setErrorHandler(null);
-        }
         checkState(server.isStarted(), "server is not started");
     }
 

@@ -30,28 +30,28 @@ import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import jakarta.annotation.PreDestroy;
 import org.eclipse.jetty.client.AbstractConnectionPool;
+import org.eclipse.jetty.client.ByteBufferRequestContent;
+import org.eclipse.jetty.client.BytesRequestContent;
+import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
-import org.eclipse.jetty.client.HttpDestination;
-import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpProxy;
-import org.eclipse.jetty.client.HttpRequest;
+import org.eclipse.jetty.client.InputStreamResponseListener;
 import org.eclipse.jetty.client.Origin.Address;
+import org.eclipse.jetty.client.PathRequestContent;
+import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Socks4Proxy;
-import org.eclipse.jetty.client.api.Destination;
-import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
-import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
-import org.eclipse.jetty.client.util.ByteBufferRequestContent;
-import org.eclipse.jetty.client.util.BytesRequestContent;
-import org.eclipse.jetty.client.util.InputStreamResponseListener;
-import org.eclipse.jetty.client.util.PathRequestContent;
+import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.client.transport.HttpDestination;
+import org.eclipse.jetty.client.transport.HttpExchange;
+import org.eclipse.jetty.client.transport.HttpRequest;
+import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
+import org.eclipse.jetty.http.HttpCookieStore;
 import org.eclipse.jetty.http2.client.HTTP2Client;
-import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
+import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.ConnectionStatistics;
-import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -269,7 +269,7 @@ public class JettyHttpClient
         httpClient.setMaxRequestsQueuedPerDestination(config.getMaxRequestsQueuedPerDestination());
 
         // disable cookies
-        httpClient.setCookieStore(new HttpCookieStore.Empty());
+        httpClient.setHttpCookieStore(new HttpCookieStore.Empty());
 
         // remove default user agent
         httpClient.setUserAgentField(null);
@@ -290,7 +290,7 @@ public class JettyHttpClient
             httpClient.getProxyConfiguration().addProxy(new HttpProxy(new Address(httpProxy.getHost(), httpProxy.getPortOrDefault(8080)), config.isSecureProxy()));
         }
 
-        httpClient.setByteBufferPool(new MappedByteBufferPool());
+        httpClient.setByteBufferPool(new ArrayByteBufferPool());
         httpClient.setExecutor(createExecutor(name, config.getMinThreads(), config.getMaxThreads()));
         httpClient.setScheduler(createScheduler(name, config.getTimeoutConcurrency(), config.getTimeoutThreads()));
 
@@ -1026,9 +1026,9 @@ public class JettyHttpClient
     public String dumpDestination(URI uri)
     {
         return httpClient.getDestinations().stream()
-                .filter(destination -> Objects.equals(destination.getScheme(), uri.getScheme()))
-                .filter(destination -> Objects.equals(destination.getHost(), uri.getHost()))
-                .filter(destination -> destination.getPort() == uri.getPort())
+                .filter(destination -> Objects.equals(destination.getOrigin().getScheme(), uri.getScheme()))
+                .filter(destination -> Objects.equals(destination.getOrigin().getAddress().getHost(), uri.getHost()))
+                .filter(destination -> destination.getOrigin().getAddress().getPort() == uri.getPort())
                 .findFirst()
                 .map(JettyHttpClient::dumpDestination)
                 .orElse(null);
@@ -1052,12 +1052,12 @@ public class JettyHttpClient
                 .collect(Collectors.toList());
     }
 
-    private static List<org.eclipse.jetty.client.api.Request> getRequestForDestination(Destination destination)
+    private static List<org.eclipse.jetty.client.Request> getRequestForDestination(Destination destination)
     {
         HttpDestination httpDestination = (HttpDestination) destination;
         Queue<HttpExchange> httpExchanges = httpDestination.getHttpExchanges();
 
-        List<org.eclipse.jetty.client.api.Request> requests = httpExchanges.stream()
+        List<org.eclipse.jetty.client.Request> requests = httpExchanges.stream()
                 .map(HttpExchange::getRequest)
                 .collect(Collectors.toList());
 
@@ -1174,12 +1174,12 @@ public class JettyHttpClient
     }
 
     private static class RequestSizeListener
-            implements org.eclipse.jetty.client.api.Request.ContentListener
+            implements org.eclipse.jetty.client.Request.ContentListener
     {
         private long bytes;
 
         @Override
-        public void onContent(org.eclipse.jetty.client.api.Request request, ByteBuffer content)
+        public void onContent(org.eclipse.jetty.client.Request request, ByteBuffer content)
         {
             bytes += content.remaining();
         }

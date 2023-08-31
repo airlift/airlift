@@ -24,13 +24,13 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -110,7 +110,7 @@ public class TestServiceInventory
             ServletHolder servletHolder = new ServletHolder(new ServiceInventoryServlet(serviceInventoryJson));
             ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
             context.addServlet(servletHolder, "/*");
-            HandlerCollection handlers = new HandlerCollection();
+            ContextHandlerCollection handlers = new ContextHandlerCollection();
             handlers.addHandler(context);
             server.setHandler(handlers);
 

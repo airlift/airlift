@@ -14,8 +14,12 @@
 package io.airlift.http.server;
 
 import jakarta.annotation.Nullable;
-import org.eclipse.jetty.server.HttpChannel.Listener;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.handler.EventsHandler;
+import org.eclipse.jetty.util.Callback;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -26,7 +30,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 public class HttpServerChannelListener
-        implements Listener
+        extends EventsHandler
 {
     private static final String REQUEST_BEGIN_ATTRIBUTE = HttpServerChannelListener.class.getName() + ".begin";
     private static final String REQUEST_BEGIN_TO_DISPATCH_ATTRIBUTE = HttpServerChannelListener.class.getName() + ".begin_to_dispatch";
@@ -41,48 +45,55 @@ public class HttpServerChannelListener
     }
 
     @Override
-    public void onRequestBegin(Request request)
+    protected void onBeforeHandling(Request request)
     {
         request.setAttribute(REQUEST_BEGIN_ATTRIBUTE, System.nanoTime());
     }
 
-    @SuppressWarnings("unchecked")
     @Override
-    public void onBeforeDispatch(Request request)
+    protected void onRequestRead(Request request, Content.Chunk chunk)
     {
         long requestBeginTime = (Long) request.getAttribute(REQUEST_BEGIN_ATTRIBUTE);
         request.setAttribute(REQUEST_BEGIN_TO_DISPATCH_ATTRIBUTE, System.nanoTime() - requestBeginTime);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
-    public void onRequestEnd(Request request)
+    protected void onAfterHandling(Request request, boolean handled, Throwable failure)
     {
         long requestBeginTime = (Long) request.getAttribute(REQUEST_BEGIN_ATTRIBUTE);
         request.setAttribute(REQUEST_BEGIN_TO_END_ATTRIBUTE, System.nanoTime() - requestBeginTime);
     }
 
     @Override
-    public void onResponseBegin(Request request)
+    protected void onResponseBegin(Request request, int status, HttpFields headers)
     {
         if (request.getAttribute(REQUEST_BEGIN_TO_END_ATTRIBUTE) == null) {
-            onRequestEnd(request);
+            onAfterHandling(request, true, null);
         }
         request.setAttribute(RESPONSE_CONTENT_TIMESTAMPS_ATTRIBUTE, new ArrayList<Long>());
     }
 
-    @SuppressWarnings("unchecked")
     @Override
-    public void onResponseContent(Request request, ByteBuffer content)
+    protected void onResponseWrite(Request request, boolean last, ByteBuffer content)
     {
         List<Long> contentTimestamps = (List<Long>) request.getAttribute(RESPONSE_CONTENT_TIMESTAMPS_ATTRIBUTE);
         contentTimestamps.add(System.nanoTime());
     }
 
-    @SuppressWarnings("unchecked")
     @Override
-    public void onComplete(Request request)
+    public boolean handle(Request request, Response response, Callback callback)
+            throws Exception
     {
+        Exception exception = null;
+        boolean handled = false;
+
+        try {
+            handled = super.handle(request, response, callback);
+        }
+        catch (Exception e) {
+            exception = e;
+        }
+
         List<Long> contentTimestamps = (List<Long>) request.getAttribute(RESPONSE_CONTENT_TIMESTAMPS_ATTRIBUTE);
         long firstToLastContentTimeInMillis = -1;
         if (contentTimestamps.size() > 0) {
@@ -91,11 +102,16 @@ public class HttpServerChannelListener
         long beginToDispatchMillis = NANOSECONDS.toMillis((Long) request.getAttribute(REQUEST_BEGIN_TO_DISPATCH_ATTRIBUTE));
         long beginToEndMillis = NANOSECONDS.toMillis((Long) request.getAttribute(REQUEST_BEGIN_TO_END_ATTRIBUTE));
         logger.log(request,
-                request.getResponse(),
+                response,
                 beginToDispatchMillis,
                 beginToEndMillis,
                 firstToLastContentTimeInMillis,
                 processContentTimestamps(contentTimestamps));
+        if (exception != null) {
+            throw exception;
+        }
+
+        return handled;
     }
 
     /**
