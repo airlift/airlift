@@ -14,9 +14,12 @@ import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.opentelemetry.sdk.trace.SpanProcessor;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
+
+import java.util.Optional;
 
 import static com.google.common.base.StandardSystemProperty.JAVA_VM_NAME;
 import static com.google.common.base.StandardSystemProperty.JAVA_VM_VENDOR;
@@ -36,11 +39,13 @@ public class OpenTelemetryModule
     private static final String NODE_ANNOTATION_PREFIX = "io.airlift.node";
     private final String serviceName;
     private final String serviceVersion;
+    private final Optional<SpanProcessor> spanProcessor;
 
-    public OpenTelemetryModule(String serviceName, String serviceVersion)
+    public OpenTelemetryModule(String serviceName, String serviceVersion, Optional<SpanProcessor> spanProcessor)
     {
         this.serviceName = requireNonNull(serviceName, "serviceName is null");
         this.serviceVersion = requireNonNull(serviceVersion, "serviceVersion is null");
+        this.spanProcessor = requireNonNull(spanProcessor, "spanProcessor is null");
     }
 
     @Override
@@ -69,12 +74,13 @@ public class OpenTelemetryModule
 
         Resource resource = Resource.getDefault().merge(Resource.create(attributes.build()));
 
-        SpanExporter spanExporter = OtlpGrpcSpanExporter.builder()
-                .setEndpoint(config.getEndpoint())
-                .build();
-
         SdkTracerProvider tracerProvider = SdkTracerProvider.builder()
-                .addSpanProcessor(BatchSpanProcessor.builder(spanExporter).build())
+                .addSpanProcessor(spanProcessor.orElseGet(() -> {
+                    SpanExporter spanExporter = OtlpGrpcSpanExporter.builder()
+                            .setEndpoint(config.getEndpoint())
+                            .build();
+                    return BatchSpanProcessor.builder(spanExporter).build();
+                }))
                 .setResource(resource)
                 .build();
 
