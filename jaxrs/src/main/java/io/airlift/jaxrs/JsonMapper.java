@@ -18,8 +18,6 @@ package io.airlift.jaxrs;
 import com.fasterxml.jackson.core.JsonEncoding;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.SerializableString;
-import com.fasterxml.jackson.core.io.CharacterEscapes;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -82,8 +80,6 @@ public class JsonMapper
         httpHeaders.add(HttpHeaders.X_CONTENT_TYPE_OPTIONS, "nosniff");
 
         JsonFactory jsonFactory = objectMapper.getFactory();
-        jsonFactory.setCharacterEscapes(HTMLCharacterEscapes.INSTANCE);
-
         JsonGenerator jsonGenerator = jsonFactory.createGenerator(outputStream, JsonEncoding.UTF8);
 
         // Do not close underlying stream after mapping
@@ -141,40 +137,5 @@ public class JsonMapper
             return null;
         }
         return queryParameters.getFirst("jsonp");
-    }
-
-    private static class HTMLCharacterEscapes
-            extends CharacterEscapes
-    {
-        private static final HTMLCharacterEscapes INSTANCE = new HTMLCharacterEscapes();
-
-        private final int[] asciiEscapes;
-
-        private HTMLCharacterEscapes()
-        {
-            // start with set of characters known to require escaping (double-quote, backslash etc)
-            int[] esc = CharacterEscapes.standardAsciiEscapesForJSON();
-
-            // and force escaping of a few others:
-            esc['<'] = CharacterEscapes.ESCAPE_STANDARD;
-            esc['>'] = CharacterEscapes.ESCAPE_STANDARD;
-            esc['&'] = CharacterEscapes.ESCAPE_STANDARD;
-            esc['\''] = CharacterEscapes.ESCAPE_STANDARD;
-
-            asciiEscapes = esc;
-        }
-
-        @Override
-        public int[] getEscapeCodesForAscii()
-        {
-            return asciiEscapes;
-        }
-
-        @Override
-        public SerializableString getEscapeSequence(int ch)
-        {
-            // no further escaping (beyond ASCII chars) needed:
-            return null;
-        }
     }
 }

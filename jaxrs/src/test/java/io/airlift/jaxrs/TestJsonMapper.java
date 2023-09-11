@@ -48,7 +48,7 @@ public class TestJsonMapper
         assertRoundTrip("<>'&");
     }
 
-    private void assertRoundTrip(String value)
+    private static void assertRoundTrip(String value)
             throws IOException
     {
         JsonCodec<String> jsonCodec = JsonCodec.jsonCodec(String.class);
@@ -58,12 +58,7 @@ public class TestJsonMapper
         MultivaluedMap<String, Object> headers = new GuavaMultivaluedMap<>();
         jsonMapper.writeTo(value, String.class, null, null, null, headers, outputStream);
 
-        String json = new String(outputStream.toByteArray(), UTF_8);
-        assertTrue(!json.contains("<"));
-        assertTrue(!json.contains(">"));
-        assertTrue(!json.contains("'"));
-        assertTrue(!json.contains("&"));
-        assertEquals(jsonCodec.fromJson(json), value);
+        assertEquals(jsonCodec.fromJson(outputStream.toString(UTF_8)), value);
 
         assertEquals(headers.getFirst(HttpHeaders.X_CONTENT_TYPE_OPTIONS), "nosniff");
     }
