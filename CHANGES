@@ -1,6 +1,7 @@
 236
 
 - Do not localize Jakarta validation messages
+- Remove escaping of HTML characters in JSON responses
 
 235
 
