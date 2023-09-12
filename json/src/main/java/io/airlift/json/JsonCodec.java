@@ -15,16 +15,22 @@
  */
 package io.airlift.json;
 
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import com.google.common.base.Suppliers;
 import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
 import io.airlift.json.LengthLimitedWriter.LengthLimitExceededException;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.io.StringWriter;
 import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -213,6 +219,37 @@ public class JsonCodec<T>
         catch (IOException e) {
             throw new IllegalArgumentException(format("%s could not be converted to JSON", instance.getClass().getName()), e);
         }
+    }
+
+    /**
+     * Create a new managed Parser to parse a JSON stream. Caller is responsible
+     * for closing the parser when no longer needed.
+     *
+     * @param inputStream stream to parse
+     * @return new parser
+     * @throws IOException any I/O errors
+     */
+    public JsonCodecParser<T> newParser(InputStream inputStream)
+            throws IOException
+    {
+        return newParser(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+    }
+
+    /**
+     * Create a new managed Parser to parse a JSON stream. Caller is responsible
+     * for closing the parser when no longer needed.
+     *
+     * @param reader stream to parse
+     * @return new parser
+     * @throws IOException any I/O errors
+     */
+    public JsonCodecParser<T> newParser(Reader reader)
+            throws IOException
+    {
+        JavaType javaType = mapper.getTypeFactory().constructType(type);
+        ObjectReader objectReader = mapper.readerFor(javaType);
+        JsonParser parser = mapper.createParser(reader);
+        return new JsonCodecParser<>(objectReader, parser);
     }
 
     @SuppressWarnings("unchecked")
