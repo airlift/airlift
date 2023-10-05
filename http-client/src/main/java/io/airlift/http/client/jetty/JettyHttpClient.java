@@ -29,6 +29,7 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import jakarta.annotation.PreDestroy;
+import jdk.net.ExtendedSocketOptions;
 import org.eclipse.jetty.client.AbstractConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
@@ -75,8 +76,11 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.StandardSocketOptions;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.channels.NetworkChannel;
+import java.nio.channels.SelectableChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
@@ -115,6 +119,7 @@ import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.eclipse.jetty.client.ConnectionPoolAccessor.getActiveConnections;
 import static org.eclipse.jetty.client.ConnectionPoolAccessor.getIdleConnections;
 import static org.eclipse.jetty.client.HttpClient.normalizePort;
@@ -242,10 +247,23 @@ public class JettyHttpClient
 
         SslContextFactory.Client sslContextFactory = maybeSslContextFactory.orElseGet(() -> getSslContextFactory(config, environment));
 
+        ClientConnector connector = new ClientConnector()
+        {
+            @Override
+            protected void configure(SelectableChannel selectable)
+                    throws IOException
+            {
+                super.configure(selectable);
+                if (config.getTcpKeepAliveIdleTime().isPresent()) {
+                    setKeepAlive(selectable, config.getTcpKeepAliveIdleTime().get());
+                }
+            }
+        };
+
         HttpClientTransport transport;
         if (config.isHttp2Enabled()) {
             checkArgument(maybeSslContextFactory.isEmpty(), "SslContextFactory must not be provided when HTTP/2 is enabled");
-            HTTP2Client client = new HTTP2Client();
+            HTTP2Client client = new HTTP2Client(connector);
             client.setInitialSessionRecvWindow(toIntExact(config.getHttp2InitialSessionReceiveWindowSize().toBytes()));
             client.setInitialStreamRecvWindow(toIntExact(config.getHttp2InitialStreamReceiveWindowSize().toBytes()));
             client.setInputBufferSize(toIntExact(config.getHttp2InputBufferSize().toBytes()));
@@ -253,7 +271,6 @@ public class JettyHttpClient
             transport = new HttpClientTransportOverHTTP2(client);
         }
         else {
-            ClientConnector connector = new ClientConnector();
             connector.setSelectors(config.getSelectorCount());
             connector.setSslContextFactory(sslContextFactory);
             transport = new HttpClientTransportOverHTTP(connector);
@@ -421,6 +438,18 @@ public class JettyHttpClient
             }
             distribution.add(NANOSECONDS.toMillis(finished - responseStarted));
         });
+    }
+
+    private static void setKeepAlive(SelectableChannel selectable, Duration tcpKeepAliveIdleTime)
+            throws IOException
+    {
+        if (selectable instanceof NetworkChannel channel) {
+            channel.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
+            channel.setOption(ExtendedSocketOptions.TCP_KEEPIDLE, toIntExact(tcpKeepAliveIdleTime.roundTo(SECONDS)));
+        }
+        else {
+            throw new IOException("Not a NetworkChannel. Cannot enable keep alive for %s".formatted(selectable.getClass()));
+        }
     }
 
     private static SslContextFactory.Client getSslContextFactory(HttpClientConfig config, Optional<String> environment)

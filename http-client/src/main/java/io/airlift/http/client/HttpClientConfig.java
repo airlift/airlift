@@ -35,6 +35,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
 import java.util.List;
+import java.util.Optional;
 
 import static io.airlift.units.DataSize.Unit.GIGABYTE;
 import static io.airlift.units.DataSize.Unit.KILOBYTE;
@@ -81,6 +82,7 @@ public class HttpClientConfig
     private String secureRandomAlgorithm;
     private List<String> includedCipherSuites = ImmutableList.of();
     private String automaticHttpsSharedSecret;
+    private Optional<Duration> tcpKeepAliveIdleTime = Optional.empty();
 
     /**
      * This property is initialized with Jetty's default excluded ciphers list.
@@ -658,6 +660,19 @@ public class HttpClientConfig
     public HttpClientConfig setLogCompressionEnabled(boolean logCompressionEnabled)
     {
         this.logCompressionEnabled = logCompressionEnabled;
+        return this;
+    }
+
+    @NotNull
+    public Optional<Duration> getTcpKeepAliveIdleTime()
+    {
+        return tcpKeepAliveIdleTime;
+    }
+
+    @Config("http-client.tcp-keep-alive-idle-time")
+    public HttpClientConfig setTcpKeepAliveIdleTime(Duration tcpKeepAliveIdleTime)
+    {
+        this.tcpKeepAliveIdleTime = Optional.ofNullable(tcpKeepAliveIdleTime);
         return this;
     }
 
