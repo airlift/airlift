@@ -2,6 +2,7 @@
 
 - Do not localize Jakarta validation messages
 - Remove escaping of HTML characters in JSON responses
+- Add config for SO_KEEPALIVE for HTTP client
 
 235
 
