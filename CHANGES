@@ -1,3 +1,7 @@
+237
+
+- Config option to enable setting SO_KEEPALIVE on the http client socket
+
 236
 
 - Do not localize Jakarta validation messages
