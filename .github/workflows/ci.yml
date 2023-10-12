@@ -25,7 +25,7 @@ jobs:
       - uses: actions/checkout@v1
       - uses: actions/setup-java@v3
         with:
-          distribution: 'zulu'
+          distribution: 'temurin'
           java-version: ${{ matrix.java-version }}
       - name: Maven Install
         run: mvn install -B -V -DskipTests -Dair.check.skip-all -Dproject.build.targetJdk=${{ matrix.java-target }}
