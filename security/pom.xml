@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>security</artifactId>
-    <packaging>jar</packaging>
-    <name>security</name>
 
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airlift</artifactId>
         <version>237-SNAPSHOT</version>
     </parent>
+    <artifactId>security</artifactId>
+    <packaging>jar</packaging>
+    <name>security</name>
 
     <properties>
         <air.main.basedir>${project.parent.basedir}</air.main.basedir>
@@ -22,16 +22,16 @@
             <artifactId>guava</artifactId>
         </dependency>
 
-        <!-- for testing -->
         <dependency>
-            <groupId>org.testng</groupId>
-            <artifactId>testng</artifactId>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
 
         <dependency>
-            <groupId>org.assertj</groupId>
-            <artifactId>assertj-core</artifactId>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk15on</artifactId>
+            <version>${dep.bouncycastle.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -43,10 +43,10 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- for testing -->
         <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcpkix-jdk15on</artifactId>
-            <version>${dep.bouncycastle.version}</version>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
