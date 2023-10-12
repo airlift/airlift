@@ -27,7 +27,7 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapPropagator;
-import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
+import io.opentelemetry.semconv.SemanticAttributes;
 import jakarta.annotation.PreDestroy;
 import jdk.net.ExtendedSocketOptions;
 import org.eclipse.jetty.client.AbstractConnectionPool;
@@ -723,10 +723,10 @@ public class JettyHttpClient
         }
 
         // record attributes
-        span.setAttribute(SemanticAttributes.HTTP_STATUS_CODE, response.getStatus());
+        span.setAttribute(SemanticAttributes.HTTP_RESPONSE_STATUS_CODE, response.getStatus());
 
         if (request.getBodyGenerator() != null) {
-            span.setAttribute(SemanticAttributes.HTTP_REQUEST_CONTENT_LENGTH, requestSize.getBytes());
+            span.setAttribute(SemanticAttributes.HTTP_REQUEST_BODY_SIZE, requestSize.getBytes());
         }
 
         // process response
@@ -746,7 +746,7 @@ public class JettyHttpClient
                 catch (IOException ignored) {
                     // ignore errors closing the stream
                 }
-                span.setAttribute(SemanticAttributes.HTTP_RESPONSE_CONTENT_LENGTH, jettyResponse.getBytesRead());
+                span.setAttribute(SemanticAttributes.HTTP_RESPONSE_BODY_SIZE, jettyResponse.getBytesRead());
             }
             if (recordRequestComplete) {
                 recordRequestComplete(stats, request, requestSize.getBytes(), requestStart, jettyResponse, responseStart);
@@ -838,10 +838,10 @@ public class JettyHttpClient
                 .orElseGet(() -> tracer.spanBuilder(name + " " + method))
                 .setSpanKind(SpanKind.CLIENT)
                 .setAttribute(CLIENT_NAME, name)
-                .setAttribute(SemanticAttributes.HTTP_URL, request.getUri().toString())
-                .setAttribute(SemanticAttributes.HTTP_METHOD, method)
-                .setAttribute(SemanticAttributes.NET_PEER_NAME, request.getUri().getHost())
-                .setAttribute(SemanticAttributes.NET_PEER_PORT, (long) port)
+                .setAttribute(SemanticAttributes.URL_FULL, request.getUri().toString())
+                .setAttribute(SemanticAttributes.HTTP_REQUEST_METHOD, method)
+                .setAttribute(SemanticAttributes.SERVER_ADDRESS, request.getUri().getHost())
+                .setAttribute(SemanticAttributes.SERVER_PORT, (long) port)
                 .startSpan();
     }
 

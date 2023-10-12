@@ -16,7 +16,7 @@ import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
-import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
+import io.opentelemetry.semconv.ResourceAttributes;
 
 import static com.google.common.base.StandardSystemProperty.JAVA_VM_NAME;
 import static com.google.common.base.StandardSystemProperty.JAVA_VM_VENDOR;
