@@ -8,7 +8,7 @@ import io.airlift.http.client.ResponseHandler;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.StatusCode;
-import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
+import io.opentelemetry.semconv.SemanticAttributes;
 import org.eclipse.jetty.client.api.Response;
 
 import java.io.InputStream;
@@ -91,10 +91,10 @@ class JettyResponseFuture<T, E extends Exception>
             return;
         }
 
-        span.setAttribute(SemanticAttributes.HTTP_STATUS_CODE, response.getStatus());
+        span.setAttribute(SemanticAttributes.HTTP_RESPONSE_STATUS_CODE, response.getStatus());
 
         if (request.getBodyGenerator() != null) {
-            span.setAttribute(SemanticAttributes.HTTP_REQUEST_CONTENT_LENGTH, requestSize.getAsLong());
+            span.setAttribute(SemanticAttributes.HTTP_REQUEST_BODY_SIZE, requestSize.getAsLong());
         }
 
         T value;
@@ -129,7 +129,7 @@ class JettyResponseFuture<T, E extends Exception>
         }
         finally {
             if (jettyResponse != null) {
-                span.setAttribute(SemanticAttributes.HTTP_RESPONSE_CONTENT_LENGTH, jettyResponse.getBytesRead());
+                span.setAttribute(SemanticAttributes.HTTP_RESPONSE_BODY_SIZE, jettyResponse.getBytesRead());
             }
             if (recordRequestComplete) {
                 JettyHttpClient.recordRequestComplete(stats, request, requestSize.getAsLong(), requestStart, jettyResponse, responseStart);

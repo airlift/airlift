@@ -9,7 +9,7 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.context.propagation.TextMapPropagator;
-import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
+import io.opentelemetry.semconv.SemanticAttributes;
 import jakarta.annotation.Priority;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
@@ -64,26 +64,26 @@ public final class TracingFilter
         SpanBuilder spanBuilder = tracer.spanBuilder(method + " " + route)
                 .setParent(parent)
                 .setSpanKind(SpanKind.SERVER)
-                .setAttribute(SemanticAttributes.HTTP_METHOD, method)
+                .setAttribute(SemanticAttributes.HTTP_REQUEST_METHOD, method)
                 .setAttribute(SemanticAttributes.HTTP_ROUTE, route)
-                .setAttribute(SemanticAttributes.HTTP_SCHEME, uri.getScheme())
-                .setAttribute(SemanticAttributes.NET_HOST_NAME, uri.getHost())
+                .setAttribute(SemanticAttributes.URL_SCHEME, uri.getScheme())
+                .setAttribute(SemanticAttributes.SERVER_ADDRESS, uri.getHost())
                 .setAttribute(SemanticAttributes.CODE_NAMESPACE, className)
                 .setAttribute(SemanticAttributes.CODE_FUNCTION, methodName);
 
         String target = getTarget(uri);
         if (!isNullOrEmpty(target)) {
-            spanBuilder.setAttribute(SemanticAttributes.HTTP_TARGET, target);
+            spanBuilder.setAttribute(SemanticAttributes.URL_PATH, target);
         }
 
         int port = getPort(uri);
         if (port > 0) {
-            spanBuilder.setAttribute(SemanticAttributes.NET_HOST_PORT, (long) port);
+            spanBuilder.setAttribute(SemanticAttributes.SERVER_PORT, (long) port);
         }
 
         String remoteAddress = (String) request.getProperty(REMOTE_ADDRESS);
         if (!isNullOrEmpty(remoteAddress)) {
-            spanBuilder.setAttribute(SemanticAttributes.HTTP_CLIENT_IP, remoteAddress);
+            spanBuilder.setAttribute(SemanticAttributes.CLIENT_ADDRESS, remoteAddress);
         }
 
         String userAgent = request.getHeaderString(HttpHeaders.USER_AGENT);
@@ -93,7 +93,7 @@ public final class TracingFilter
 
         // ignore requests such as GET that might have a content length
         if (request.hasEntity() && request.getLength() >= 0) {
-            spanBuilder.setAttribute(SemanticAttributes.HTTP_REQUEST_CONTENT_LENGTH, (long) request.getLength());
+            spanBuilder.setAttribute(SemanticAttributes.HTTP_REQUEST_BODY_SIZE, (long) request.getLength());
         }
 
         Span span = spanBuilder.startSpan();
@@ -109,10 +109,10 @@ public final class TracingFilter
 
         try (scope) {
             if (response.getStatus() != -1) {
-                span.setAttribute(SemanticAttributes.HTTP_STATUS_CODE, response.getStatus());
+                span.setAttribute(SemanticAttributes.HTTP_RESPONSE_STATUS_CODE, response.getStatus());
             }
             if (response.hasEntity() && (response.getLength() != -1)) {
-                span.setAttribute(SemanticAttributes.HTTP_RESPONSE_CONTENT_LENGTH, response.getLength());
+                span.setAttribute(SemanticAttributes.HTTP_RESPONSE_BODY_SIZE, response.getLength());
             }
         }
         span.end();

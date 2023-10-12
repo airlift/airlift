@@ -5,7 +5,7 @@ import org.testng.annotations.Test;
 
 import static io.airlift.units.Duration.succinctDuration;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
