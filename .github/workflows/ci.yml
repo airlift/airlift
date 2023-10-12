@@ -15,10 +15,10 @@ jobs:
           - java-version: 17
             java-target: 17
             experimental: false
-          - java-version: 21-ea
+          - java-version: 21
             java-target: 17
             experimental: false
-          - java-version: 21-ea
+          - java-version: 21
             java-target: 21
             experimental: true
     steps:
