@@ -54,19 +54,16 @@ public final class JwksDecoder
     public static Optional<? extends JwkPublicKey> tryDecodeJwkKey(JsonKey key)
     {
         // key id is required to index the key
-        if (!key.getKid().isPresent() || key.getKid().get().isEmpty()) {
+        if (key.getKid().isEmpty() || key.getKid().get().isEmpty()) {
             return Optional.empty();
         }
         String keyId = key.getKid().get();
-        switch (key.getKty()) {
-            case "RSA":
-                return tryDecodeRsaKey(keyId, key);
-            case "EC":
-                return tryDecodeEcKey(keyId, key);
-            default:
-                // ignore non unknown keys
-                return Optional.empty();
-        }
+        return switch (key.getKty()) {
+            case "RSA" -> tryDecodeRsaKey(keyId, key);
+            case "EC" -> tryDecodeEcKey(keyId, key);
+            // ignore non unknown keys
+            default -> Optional.empty();
+        };
     }
 
     public static Optional<JwkRsaPublicKey> tryDecodeRsaKey(String keyId, JsonKey key)
@@ -74,14 +71,13 @@ public final class JwksDecoder
         // alg field is optional so not verified
         // use field is optional so not verified
         Optional<BigInteger> modulus = key.getStringProperty("n").flatMap(encodedModulus -> decodeBigint(keyId, "modulus", encodedModulus));
-        if (!modulus.isPresent()) {
+        if (modulus.isEmpty()) {
             return Optional.empty();
         }
         Optional<BigInteger> exponent = key.getStringProperty("e").flatMap(encodedExponent -> decodeBigint(keyId, "exponent", encodedExponent));
-        if (!exponent.isPresent()) {
-            return Optional.empty();
-        }
-        return Optional.of(new JwkRsaPublicKey(keyId, exponent.get(), modulus.get()));
+
+        return exponent.map(bigInteger ->
+                new JwkRsaPublicKey(keyId, bigInteger, modulus.get()));
     }
 
     public static Optional<JwkEcPublicKey> tryDecodeEcKey(String keyId, JsonKey key)
@@ -90,16 +86,16 @@ public final class JwksDecoder
         // use field is optional so not verified
         Optional<String> curveName = key.getStringProperty("crv");
         Optional<ECParameterSpec> curve = curveName.flatMap(EcCurve::tryGet);
-        if (!curve.isPresent()) {
+        if (curve.isEmpty()) {
             log.error("JWK EC %s curve '%s' is not supported", keyId, curveName);
             return Optional.empty();
         }
         Optional<BigInteger> x = key.getStringProperty("x").flatMap(encodedX -> decodeBigint(keyId, "x", encodedX));
-        if (!x.isPresent()) {
+        if (x.isEmpty()) {
             return Optional.empty();
         }
         Optional<BigInteger> y = key.getStringProperty("y").flatMap(encodedY -> decodeBigint(keyId, "y", encodedY));
-        if (!y.isPresent()) {
+        if (y.isEmpty()) {
             return Optional.empty();
         }
 
