@@ -17,14 +17,12 @@ import com.google.common.io.Resources;
 import io.airlift.security.pem.PemReader;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
-import io.jsonwebtoken.JwsHeader;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.SigningKeyResolver;
+import io.jsonwebtoken.impl.DefaultJwsHeader;
+import io.jsonwebtoken.security.SignatureAlgorithm;
 import org.testng.annotations.Test;
 
 import java.io.File;
-import java.security.Key;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.interfaces.ECPublicKey;
@@ -190,38 +188,23 @@ public class TestJwksDecoder
 
         PrivateKey privateKey = PemReader.loadPrivateKey(new File(Resources.getResource("jwks/jwk-rsa-private.pem").getPath()), Optional.empty());
         String jwt = Jwts.builder()
-                .signWith(privateKey, SignatureAlgorithm.RS256)
-                .setHeaderParam(JwsHeader.KEY_ID, "test-rsa")
-                .setSubject("test-user")
-                .setExpiration(Date.from(ZonedDateTime.now().plusMinutes(5).toInstant()))
+                .signWith(privateKey, Jwts.SIG.RS256)
+                .header().keyId("test-rsa")
+                .and()
+                .subject("test-user")
+                .expiration(Date.from(ZonedDateTime.now().plusMinutes(5).toInstant()))
                 .compact();
 
-        Jws<Claims> claimsJws = Jwts.parserBuilder()
-                .setSigningKeyResolver(new SigningKeyResolver()
-                {
-                    @Override
-                    public Key resolveSigningKey(JwsHeader header, Claims claims)
-                    {
-                        return getKey(header);
-                    }
-
-                    @Override
-                    public Key resolveSigningKey(JwsHeader header, String plaintext)
-                    {
-                        return getKey(header);
-                    }
-
-                    private Key getKey(JwsHeader<?> header)
-                    {
-                        String keyId = header.getKeyId();
-                        assertEquals(keyId, "test-rsa");
-                        return publicKey;
-                    }
+        Jws<Claims> claimsJws = Jwts.parser()
+                .keyLocator(header -> {
+                    String keyId = ((DefaultJwsHeader) header).getKeyId();
+                    assertEquals(keyId, "test-rsa");
+                    return publicKey;
                 })
                 .build()
-                .parseClaimsJws(jwt);
+                .parseSignedClaims(jwt);
 
-        assertEquals(claimsJws.getBody().getSubject(), "test-user");
+        assertEquals(claimsJws.getPayload().getSubject(), "test-user");
     }
 
     @Test
@@ -301,9 +284,9 @@ public class TestJwksDecoder
     public void testJwtEc()
             throws Exception
     {
-        assertJwtEc("jwk-ec-p256", SignatureAlgorithm.ES256, EcCurve.P_256);
-        assertJwtEc("jwk-ec-p384", SignatureAlgorithm.ES384, EcCurve.P_384);
-        assertJwtEc("jwk-ec-p512", SignatureAlgorithm.ES512, EcCurve.P_521);
+        assertJwtEc("jwk-ec-p256", Jwts.SIG.ES256, EcCurve.P_256);
+        assertJwtEc("jwk-ec-p384", Jwts.SIG.ES384, EcCurve.P_384);
+        assertJwtEc("jwk-ec-p512", Jwts.SIG.ES512, EcCurve.P_521);
     }
 
     private static void assertJwtEc(String keyName, SignatureAlgorithm signatureAlgorithm, ECParameterSpec expectedSpec)
@@ -327,36 +310,23 @@ public class TestJwksDecoder
         PrivateKey privateKey = PemReader.loadPrivateKey(new File(Resources.getResource("jwks/" + keyName + "-private.pem").getPath()), Optional.empty());
         String jwt = Jwts.builder()
                 .signWith(privateKey, signatureAlgorithm)
-                .setHeaderParam(JwsHeader.KEY_ID, keyName)
-                .setSubject("test-user")
-                .setExpiration(Date.from(ZonedDateTime.now().plusMinutes(5).toInstant()))
+                .header().keyId(keyName)
+                .and()
+                .subject("test-user")
+                .expiration(Date.from(ZonedDateTime.now().plusMinutes(5).toInstant()))
                 .compact();
 
-        Jws<Claims> claimsJws = Jwts.parserBuilder()
-                .setSigningKeyResolver(new SigningKeyResolver()
-                {
-                    @Override
-                    public Key resolveSigningKey(JwsHeader header, Claims claims)
-                    {
-                        return getKey(header);
-                    }
-
-                    @Override
-                    public Key resolveSigningKey(JwsHeader header, String plaintext)
-                    {
-                        return getKey(header);
-                    }
-
-                    private Key getKey(JwsHeader<?> header)
-                    {
-                        String keyId = header.getKeyId();
-                        assertEquals(keyId, keyName);
-                        return publicKey;
-                    }
+        Jws<Claims> claimsJws = Jwts.parser()
+                .keyLocator(header -> {
+                    String keyId = ((DefaultJwsHeader) header).getKeyId();
+                    assertEquals(keyId, keyName);
+                    String algorithmName = header.getAlgorithm();
+                    assertEquals(algorithmName, signatureAlgorithm.getId());
+                    return publicKey;
                 })
                 .build()
-                .parseClaimsJws(jwt);
+                .parseSignedClaims(jwt);
 
-        assertEquals(claimsJws.getBody().getSubject(), "test-user");
+        assertEquals(claimsJws.getPayload().getSubject(), "test-user");
     }
 }
