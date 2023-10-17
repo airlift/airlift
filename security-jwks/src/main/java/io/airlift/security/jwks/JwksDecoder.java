@@ -74,10 +74,10 @@ public final class JwksDecoder
         if (modulus.isEmpty()) {
             return Optional.empty();
         }
-        Optional<BigInteger> exponent = key.getStringProperty("e").flatMap(encodedExponent -> decodeBigint(keyId, "exponent", encodedExponent));
 
-        return exponent.map(bigInteger ->
-                new JwkRsaPublicKey(keyId, bigInteger, modulus.get()));
+        return key.getStringProperty("e")
+                .flatMap(exponent -> decodeBigint(keyId, "exponent", exponent))
+                .map(exponent -> new JwkRsaPublicKey(keyId, exponent, modulus.get()));
     }
 
     public static Optional<JwkEcPublicKey> tryDecodeEcKey(String keyId, JsonKey key)
