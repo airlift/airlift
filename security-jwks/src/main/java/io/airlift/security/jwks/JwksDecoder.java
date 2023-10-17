@@ -61,7 +61,7 @@ public final class JwksDecoder
         return switch (key.getKty()) {
             case "RSA" -> tryDecodeRsaKey(keyId, key);
             case "EC" -> tryDecodeEcKey(keyId, key);
-            // ignore non unknown keys
+            // ignore unknown keys
             default -> Optional.empty();
         };
     }
