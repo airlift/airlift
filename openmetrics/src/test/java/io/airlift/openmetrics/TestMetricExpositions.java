@@ -36,8 +36,23 @@ public class TestMetricExpositions
                 metric_name 0
                 """;
 
-        Counter counter = new Counter("metric_name", 0, "metric_help");
-        BigCounter bigCounter = new BigCounter("metric_name", BigInteger.ZERO, "metric_help");
+        Counter counter = new Counter("metric_name", 0, ImmutableMap.of(), "metric_help");
+        BigCounter bigCounter = new BigCounter("metric_name", BigInteger.ZERO, ImmutableMap.of(), "metric_help");
+        assertEquals(counter.getMetricExposition(), bigCounter.getMetricExposition());
+        assertEquals(counter.getMetricExposition(), expected);
+    }
+
+    @Test
+    public void testCounterExpositionLabels()
+    {
+        String expected = """
+                # TYPE metric_name counter
+                # HELP metric_name metric_help
+                metric_name{type="cavendish"} 0
+                """;
+
+        Counter counter = new Counter("metric_name", 0, ImmutableMap.of("type", "cavendish"), "metric_help");
+        BigCounter bigCounter = new BigCounter("metric_name", BigInteger.ZERO, ImmutableMap.of("type", "cavendish"), "metric_help");
         assertEquals(counter.getMetricExposition(), bigCounter.getMetricExposition());
         assertEquals(counter.getMetricExposition(), expected);
     }
@@ -51,7 +66,19 @@ public class TestMetricExpositions
                 metric_name 0.0
                 """;
 
-        assertEquals(new Gauge("metric_name", 0.0, "metric_help").getMetricExposition(), expected);
+        assertEquals(new Gauge("metric_name", 0.0, ImmutableMap.of(), "metric_help").getMetricExposition(), expected);
+    }
+
+    @Test
+    public void testGaugeExpositionLabels()
+    {
+        String expected = """
+                # TYPE metric_name gauge
+                # HELP metric_name metric_help
+                metric_name{type="cavendish"} 0.0
+                """;
+
+        assertEquals(new Gauge("metric_name", 0.0, ImmutableMap.of("type", "cavendish"), "metric_help").getMetricExposition(), expected);
     }
 
     @Test
@@ -63,7 +90,19 @@ public class TestMetricExpositions
                 metric_name banana
                 """;
 
-        assertEquals(new Info("metric_name", "banana", "metric_help").getMetricExposition(), expected);
+        assertEquals(new Info("metric_name", "banana", ImmutableMap.of(), "metric_help").getMetricExposition(), expected);
+    }
+
+    @Test
+    public void testInfoExpositionLabels()
+    {
+        String expected = """
+                # TYPE metric_name info
+                # HELP metric_name metric_help
+                metric_name{type="cavendish"} banana
+                """;
+
+        assertEquals(new Info("metric_name", "banana", ImmutableMap.of("type", "cavendish"), "metric_help").getMetricExposition(), expected);
     }
 
     @Test
@@ -78,6 +117,21 @@ public class TestMetricExpositions
                 metric_name{quantile="0.5"} 0.25
                 """;
 
-        assertEquals(new Summary("metric_name", 10L, 2.0, 3.0, ImmutableMap.of(0.5, 0.25), "metric_help").getMetricExposition(), expected);
+        assertEquals(new Summary("metric_name", 10L, 2.0, 3.0, ImmutableMap.of(0.5, 0.25), ImmutableMap.of(), "metric_help").getMetricExposition(), expected);
+    }
+
+    @Test
+    public void testSummaryExpositionLabels()
+    {
+        String expected = """
+                # TYPE metric_name summary
+                # HELP metric_name metric_help
+                metric_name_count{fruit="apple"} 10
+                metric_name_sum{fruit="apple"} 2.0
+                metric_name_created{fruit="apple"} 3.0
+                metric_name{fruit="apple",quantile="0.5"} 0.25
+                """;
+
+        assertEquals(new Summary("metric_name", 10L, 2.0, 3.0, ImmutableMap.of(0.5, 0.25), ImmutableMap.of("fruit", "apple"), "metric_help").getMetricExposition(), expected);
     }
 }

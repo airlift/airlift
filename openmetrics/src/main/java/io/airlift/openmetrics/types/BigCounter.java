@@ -14,22 +14,24 @@
 package io.airlift.openmetrics.types;
 
 import java.math.BigInteger;
+import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
 
-public record BigCounter(String metricName, BigInteger value, String help)
+public record BigCounter(String metricName, BigInteger value, Map<String, String> labels, String help)
         implements Metric
 {
-    public BigCounter(String metricName, BigInteger value, String help)
+    public BigCounter(String metricName, BigInteger value, Map<String, String> labels, String help)
     {
         this.metricName = requireNonNull(metricName, "metricName is null");
         this.value = requireNonNull(value, "value is null");
+        this.labels = labels;
         this.help = help;
     }
 
     @Override
     public String getMetricExposition()
     {
-        return Metric.formatSingleValuedMetric(metricName, "counter", help, value.toString());
+        return Metric.formatSingleValuedMetric(metricName, "counter", help, labels, value.toString());
     }
 }

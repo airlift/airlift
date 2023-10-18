@@ -16,6 +16,7 @@ package io.airlift.openmetrics;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.airlift.log.Logger;
+import io.airlift.node.NodeInfo;
 import io.airlift.openmetrics.types.Counter;
 import io.airlift.openmetrics.types.Gauge;
 import io.airlift.openmetrics.types.Metric;
@@ -62,13 +63,15 @@ public class MetricsResource
     private final MBeanExporter mbeanExporter;
 
     private final List<ObjectName> allMetricsObjectNames;
+    private final Map<String, String> labels;
 
     @Inject
-    public MetricsResource(MBeanServer mbeanServer, MBeanExporter mbeanExporter, MetricsConfig metricsConfig)
+    public MetricsResource(MBeanServer mbeanServer, MBeanExporter mbeanExporter, MetricsConfig metricsConfig, NodeInfo nodeInfo)
     {
         this.mbeanServer = requireNonNull(mbeanServer, "mbeanServer is null");
         this.mbeanExporter = requireNonNull(mbeanExporter, "mbeanExporter is null");
         this.allMetricsObjectNames = metricsConfig.getJmxObjectNames();
+        this.labels = nodeInfo.getAnnotations();
     }
 
     @GET
@@ -202,7 +205,7 @@ public class MetricsResource
             }
 
             if (attributeValue instanceof Number) {
-                return Optional.of(Gauge.from(metricName, (Number) attributeValue, description));
+                return Optional.of(Gauge.from(metricName, (Number) attributeValue, labels, description));
             }
 
             return Optional.empty();
@@ -272,7 +275,7 @@ public class MetricsResource
                     // Attempt to infer a numeric gauge
                     Object attributeValue = managedClass.invokeAttribute(attributeName);
                     if (attributeValue instanceof Number) {
-                        metrics.add(Gauge.from(metricAndAttribute, (Number) attributeValue, attributeDescription));
+                        metrics.add(Gauge.from(metricAndAttribute, (Number) attributeValue, labels, attributeDescription));
                     }
                 }
             }
@@ -295,11 +298,11 @@ public class MetricsResource
         }
 
         if (target instanceof CounterStat counterStat) {
-            return Optional.of(Counter.from(metricName, counterStat, description));
+            return Optional.of(Counter.from(metricName, counterStat, labels, description));
         }
 
         if (target instanceof TimeDistribution timeDistribution) {
-            return Optional.of(Summary.from(metricName, timeDistribution, description));
+            return Optional.of(Summary.from(metricName, timeDistribution, labels, description));
         }
 
         return Optional.empty();
