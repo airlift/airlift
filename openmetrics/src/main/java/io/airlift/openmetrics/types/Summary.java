@@ -20,10 +20,10 @@ import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
 
-public record Summary(String metricName, Long count, Double sum, Double created, Map<Double, Double> quantiles, String help)
+public record Summary(String metricName, Long count, Double sum, Double created, Map<Double, Double> quantiles, Map<String, String> labels, String help)
         implements Metric
 {
-    public static Summary from(String metricName, TimeDistribution timeDistribution, String help)
+    public static Summary from(String metricName, TimeDistribution timeDistribution, Map<String, String> labels, String help)
     {
         return new Summary(metricName, (long) timeDistribution.getCount(), timeDistribution.getAvg() * timeDistribution.getCount(), null,
                 ImmutableMap.<Double, Double>builder()
@@ -32,16 +32,17 @@ public record Summary(String metricName, Long count, Double sum, Double created,
                         .put(0.9, timeDistribution.getP90())
                         .put(0.95, timeDistribution.getP95())
                         .put(0.99, timeDistribution.getP99())
-                        .build(), help);
+                        .build(), labels, help);
     }
 
-    public Summary(String metricName, Long count, Double sum, Double created, Map<Double, Double> quantiles, String help)
+    public Summary(String metricName, Long count, Double sum, Double created, Map<Double, Double> quantiles, Map<String, String> labels, String help)
     {
         this.metricName = requireNonNull(metricName, "metricName is null");
         this.count = count;
         this.sum = sum;
         this.created = created;
         this.quantiles = quantiles;
+        this.labels = labels;
         this.help = help;
     }
 
@@ -55,20 +56,22 @@ public record Summary(String metricName, Long count, Double sum, Double created,
         }
 
         if (count != null) {
-            stringBuilder.append(VALUE_LINE_FORMAT.formatted(metricName + "_count", count));
+            stringBuilder.append(VALUE_LINE_FORMAT.formatted(Metric.formatNameWithLabels(metricName + "_count", labels), count));
         }
 
         if (sum != null) {
-            stringBuilder.append(VALUE_LINE_FORMAT.formatted(metricName + "_sum", sum));
+            stringBuilder.append(VALUE_LINE_FORMAT.formatted(Metric.formatNameWithLabels(metricName + "_sum", labels), sum));
         }
 
         if (created != null) {
-            stringBuilder.append(VALUE_LINE_FORMAT.formatted(metricName + "_created", created));
+            stringBuilder.append(VALUE_LINE_FORMAT.formatted(Metric.formatNameWithLabels(metricName + "_created", labels), created));
         }
 
         if (quantiles != null) {
             for (Map.Entry<Double, Double> quantile : quantiles.entrySet()) {
-                stringBuilder.append(VALUE_LINE_FORMAT.formatted(metricName + "{quantile=\"%s\"}".formatted(quantile.getKey()), quantile.getValue()));
+                Map<String, String> quantileLabels = new ImmutableMap.Builder<String, String>().putAll(labels)
+                        .put("quantile", String.valueOf(quantile.getKey())).buildOrThrow();
+                stringBuilder.append(VALUE_LINE_FORMAT.formatted(Metric.formatNameWithLabels(metricName, quantileLabels), quantile.getValue()));
             }
         }
 

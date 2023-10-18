@@ -13,20 +13,23 @@
  */
 package io.airlift.openmetrics.types;
 
+import java.util.Map;
+
 import static java.util.Objects.requireNonNull;
 
-public record Info(String metricName, String value, String help) implements Metric
+public record Info(String metricName, String value, Map<String, String> labels, String help) implements Metric
 {
-    public Info(String metricName, String value, String help)
+    public Info(String metricName, String value, Map<String, String> labels, String help)
     {
         this.metricName = requireNonNull(metricName, "metricName is null");
         this.value = requireNonNull(value, "value is null");
+        this.labels = labels;
         this.help = help;
     }
 
     @Override
     public String getMetricExposition()
     {
-        return Metric.formatSingleValuedMetric(metricName, "info", help, value);
+        return Metric.formatSingleValuedMetric(metricName, "info", help, labels, value);
     }
 }
