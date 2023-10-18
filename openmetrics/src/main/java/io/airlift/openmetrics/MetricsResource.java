@@ -52,7 +52,7 @@ import static java.util.Objects.requireNonNull;
 public class MetricsResource
 {
     private static final Logger log = Logger.get(MetricsResource.class);
-    private static final String OPENMETRICS_CONTENT_TYPE = "application/openmetrics-text; version=1.0.0; charset=utf-8";
+    private static final String OPENMETRICS_CONTENT_TYPE = "text/plain; version=0.0.4; charset=utf-8";
     private static final String ATTRIBUTE_SEPARATOR = "_ATTRIBUTE_";
     private static final String TYPE_SEPARATOR = "_TYPE_";
     private static final String NAME_SEPARATOR = "_NAME_";
