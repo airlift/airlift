@@ -229,8 +229,10 @@ public class HttpServer
 
             HttpsConfig httpsConfig = maybeHttpsConfig.orElseThrow();
             this.sslContextFactory = Optional.of(this.sslContextFactory.orElseGet(() -> createReloadingSslContextFactory(httpsConfig, clientCertificate, nodeInfo.getEnvironment())));
-            SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory.get(), "http/1.1");
+            this.sslContextFactory.get().setProtocol(httpsConfig.getHttpsProtocol());
+            this.sslContextFactory.get().setProvider(httpsConfig.getHttpsProvider());
 
+            SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory.get(), "http/1.1");
             Integer acceptors = config.getHttpsAcceptorThreads();
             Integer selectors = config.getHttpsSelectorThreads();
             httpsConnector = createServerConnector(
@@ -274,7 +276,11 @@ public class HttpServer
 
                 HttpsConfig httpsConfig = maybeHttpsConfig.orElseThrow();
                 this.sslContextFactory = Optional.of(this.sslContextFactory.orElseGet(() -> createReloadingSslContextFactory(httpsConfig, clientCertificate, nodeInfo.getEnvironment())));
+                this.sslContextFactory.get().setProtocol(httpsConfig.getHttpsProtocol());
+                this.sslContextFactory.get().setProvider(httpsConfig.getHttpsProvider());
+
                 SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory.get(), "http/1.1");
+
                 adminConnector = createServerConnector(
                         httpServerInfo.getAdminChannel(),
                         server,
