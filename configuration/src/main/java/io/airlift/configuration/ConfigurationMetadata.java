@@ -15,6 +15,7 @@
  */
 package io.airlift.configuration;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.inject.ConfigurationException;
@@ -32,35 +33,55 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.util.Objects.requireNonNull;
 
 public class ConfigurationMetadata<T>
 {
+    private final List<Pattern> securitySensitivePatterns;
+
     public static <T> ConfigurationMetadata<T> getValidConfigurationMetadata(Class<T> configClass)
             throws ConfigurationException
     {
-        return getValidConfigurationMetadata(configClass, Problems.NULL_MONITOR);
+        return getValidConfigurationMetadata(configClass, List.of(), Problems.NULL_MONITOR);
     }
 
-    static <T> ConfigurationMetadata<T> getValidConfigurationMetadata(Class<T> configClass, Problems.Monitor monitor)
+    public static <T> ConfigurationMetadata<T> getValidConfigurationMetadata(Class<T> configClass, Problems.Monitor monitor)
             throws ConfigurationException
     {
-        ConfigurationMetadata<T> metadata = getConfigurationMetadata(configClass, monitor);
+        return getValidConfigurationMetadata(configClass, List.of(), monitor);
+    }
+
+    static <T> ConfigurationMetadata<T> getValidConfigurationMetadata(Class<T> configClass, List<String> securitySensitivePatterns, Problems.Monitor monitor)
+            throws ConfigurationException
+    {
+        ConfigurationMetadata<T> metadata = getConfigurationMetadata(configClass, securitySensitivePatterns, monitor);
         metadata.getProblems().throwIfHasErrors();
         return metadata;
     }
 
+    public static <T> ConfigurationMetadata<T> getConfigurationMetadata(Class<T> configClass, List<String> securitySensitivePatterns)
+    {
+        return getConfigurationMetadata(configClass, securitySensitivePatterns, Problems.NULL_MONITOR);
+    }
+
     public static <T> ConfigurationMetadata<T> getConfigurationMetadata(Class<T> configClass)
     {
-        return getConfigurationMetadata(configClass, Problems.NULL_MONITOR);
+        return getConfigurationMetadata(configClass, List.of(), Problems.NULL_MONITOR);
+    }
+
+    static <T> ConfigurationMetadata<T> getConfigurationMetadata(Class<T> configClass, List<String> securitySensitivePatterns, Problems.Monitor monitor)
+    {
+        return new ConfigurationMetadata<>(configClass, securitySensitivePatterns, monitor);
     }
 
     static <T> ConfigurationMetadata<T> getConfigurationMetadata(Class<T> configClass, Problems.Monitor monitor)
     {
-        return new ConfigurationMetadata<>(configClass, monitor);
+        return new ConfigurationMetadata<>(configClass, List.of(), monitor);
     }
 
     private final Class<T> configClass;
@@ -69,13 +90,17 @@ public class ConfigurationMetadata<T>
     private final Map<String, AttributeMetadata> attributes;
     private final Set<String> defunctConfig;
 
-    private ConfigurationMetadata(Class<T> configClass, Monitor monitor)
+    private ConfigurationMetadata(Class<T> configClass, List<String> securitySensitivePatterns, Monitor monitor)
     {
         if (configClass == null) {
             throw new NullPointerException("configClass is null");
         }
 
         this.problems = new Problems(monitor);
+        this.securitySensitivePatterns = ImmutableList.copyOf(securitySensitivePatterns)
+                .stream()
+                .map(Pattern::compile)
+                .collect(toImmutableList());
 
         this.configClass = configClass;
         if (Modifier.isAbstract(configClass.getModifiers())) {
@@ -120,6 +145,10 @@ public class ConfigurationMetadata<T>
         for (Class<?> clazz = configClass; (clazz != null) && !clazz.equals(Object.class); clazz = clazz.getSuperclass()) {
             for (Method method : clazz.getDeclaredMethods()) {
                 if (method.isAnnotationPresent(Config.class)) {
+                    if (!isConfigSecurityValid(method)) {
+                        problems.addError("@Config method [%s] is security sensitive but not explicitly marked as @ConfigSecuritySensitive or @SuppressConfigSecuritySensitive", method.toGenericString());
+                    }
+
                     if (!Modifier.isPublic(method.getModifiers())) {
                         problems.addError("@Config method [%s] is not public", method.toGenericString());
                     }
@@ -329,6 +358,21 @@ public class ConfigurationMetadata<T>
         }
 
         return builder.build();
+    }
+
+    private boolean isConfigSecurityValid(Method method)
+    {
+        if (method.isAnnotationPresent(ConfigSecuritySensitive.class) || method.isAnnotationPresent(SuppressConfigSecuritySensitive.class)) {
+            return true;
+        }
+
+        String key = method.getAnnotation(Config.class).value();
+        for (Pattern pattern : securitySensitivePatterns) {
+            if (pattern.matcher(key).matches()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override

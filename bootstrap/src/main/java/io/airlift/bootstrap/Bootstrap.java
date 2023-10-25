@@ -67,6 +67,8 @@ public class Bootstrap
 
     private Map<String, String> requiredConfigurationProperties;
     private Map<String, String> optionalConfigurationProperties;
+    private List<String> securitySensitivePatterns;
+
     private boolean initializeLogging = true;
     private boolean quiet;
     private boolean strictConfig = true;
@@ -116,6 +118,15 @@ public class Bootstrap
             this.optionalConfigurationProperties = new TreeMap<>();
         }
         this.optionalConfigurationProperties.putAll(optionalConfigurationProperties);
+        return this;
+    }
+
+    public Bootstrap setSensitiveConfigPatterns(List<String> patterns)
+    {
+        if (this.securitySensitivePatterns == null) {
+            this.securitySensitivePatterns = new ArrayList<>();
+        }
+        this.securitySensitivePatterns.addAll(patterns);
         return this;
     }
 

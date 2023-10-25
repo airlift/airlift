@@ -45,6 +45,7 @@ import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
@@ -205,6 +206,33 @@ public class TestConfig
     }
 
     @Test
+    public void testDetectsSecuritySensitiveConfig()
+    {
+        try {
+            Injector injector = createInjector(Collections.<String, String>emptyMap(), ImmutableList.of("access-key"), createModule(Key.get(SecuritySensitiveConfig.class), SecuritySensitiveConfig.class, null));
+            injector.getInstance(SecuritySensitiveConfig.class);
+            fail("Expected exception due to invalid security sensitive config");
+        }
+        catch (CreationException e) {
+            assertThat(e).hasMessageContaining("@Config method [public void TestConfig$SecuritySensitiveConfig.setValue(String)] is security sensitive but not explicitly marked as @ConfigSecuritySensitive or @SuppressConfigSecuritySensitive");
+        }
+    }
+
+    @Test
+    public void testDetectsSecuritySensitiveConfigWithSuppression()
+    {
+        Injector injector = createInjector(Collections.<String, String>emptyMap(), ImmutableList.of("access-key"), createModule(Key.get(SecuritySensitiveConfigWithSuppression.class), SecuritySensitiveConfigWithSuppression.class, null));
+        injector.getInstance(SecuritySensitiveConfigWithSuppression.class);
+    }
+
+    @Test
+    public void testDetectsSecuritySensitiveConfigWithExplicitMark()
+    {
+        Injector injector = createInjector(Collections.<String, String>emptyMap(), ImmutableList.of("access-key"), createModule(Key.get(SecuritySensitiveConfigWithExplicitMark.class), SecuritySensitiveConfigWithExplicitMark.class, null));
+        injector.getInstance(SecuritySensitiveConfigWithExplicitMark.class);
+    }
+
+    @Test
     public void testConfigGlobalDefaults()
             throws Exception
     {
@@ -303,7 +331,12 @@ public class TestConfig
 
     private static Injector createInjector(Map<String, String> properties, Module module)
     {
-        ConfigurationFactory configurationFactory = new ConfigurationFactory(properties);
+        return createInjector(properties, List.of(), module);
+    }
+
+    private static Injector createInjector(Map<String, String> properties, List<String> securitySensitivePatterns, Module module)
+    {
+        ConfigurationFactory configurationFactory = new ConfigurationFactory(properties, securitySensitivePatterns, null, Problems.NULL_MONITOR);
         configurationFactory.registerConfigurationClasses(ImmutableList.of(module));
         List<Message> messages = configurationFactory.validateRegisteredConfigurationProvider();
         return Guice.createInjector(
@@ -383,6 +416,56 @@ public class TestConfig
 
         @Config("value")
         public void setValue(SwitchValue value)
+        {
+            this.value = value;
+        }
+    }
+
+    public static class SecuritySensitiveConfig
+    {
+        String value;
+
+        public String getValue()
+        {
+            return value;
+        }
+
+        @Config("access-key")
+        public void setValue(String value)
+        {
+            this.value = value;
+        }
+    }
+
+    public static class SecuritySensitiveConfigWithSuppression
+    {
+        String value;
+
+        public String getValue()
+        {
+            return value;
+        }
+
+        @Config("access-key")
+        @SuppressConfigSecuritySensitive
+        public void setValue(String value)
+        {
+            this.value = value;
+        }
+    }
+
+    public static class SecuritySensitiveConfigWithExplicitMark
+    {
+        String value;
+
+        public String getValue()
+        {
+            return value;
+        }
+
+        @Config("access-key")
+        @ConfigSecuritySensitive
+        public void setValue(String value)
         {
             this.value = value;
         }

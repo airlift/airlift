@@ -99,6 +99,7 @@ public class ConfigurationFactory
     }
 
     private final Map<String, String> properties;
+    private final List<String> securitySensitivePatterns;
     private final WarningsMonitor warningsMonitor;
     private final Problems.Monitor monitor;
     private final ConcurrentMap<ConfigurationProvider<?>, Object> instanceCache = new ConcurrentHashMap<>();
@@ -113,24 +114,31 @@ public class ConfigurationFactory
                 @Override
                 public ConfigurationMetadata<?> load(Class<?> configClass)
                 {
-                    return getConfigurationMetadata(configClass, monitor);
+                    return getConfigurationMetadata(configClass, securitySensitivePatterns, monitor);
                 }
             });
 
     public ConfigurationFactory(Map<String, String> properties)
     {
-        this(properties, null, Problems.NULL_MONITOR);
+        this(properties, ImmutableList.of(), null, Problems.NULL_MONITOR);
     }
 
     public ConfigurationFactory(Map<String, String> properties, WarningsMonitor warningsMonitor)
     {
-        this(properties, warningsMonitor, Problems.NULL_MONITOR);
+        this(properties, ImmutableList.of(), warningsMonitor, Problems.NULL_MONITOR);
     }
 
     @VisibleForTesting
     ConfigurationFactory(Map<String, String> properties, WarningsMonitor warningsMonitor, Problems.Monitor monitor)
     {
+        this(properties, List.of(), warningsMonitor, monitor);
+    }
+
+    @VisibleForTesting
+    ConfigurationFactory(Map<String, String> properties, List<String> securitySensitivePatterns, WarningsMonitor warningsMonitor, Problems.Monitor monitor)
+    {
         this.properties = ImmutableMap.copyOf(properties);
+        this.securitySensitivePatterns = ImmutableList.copyOf(securitySensitivePatterns);
         this.warningsMonitor = warningsMonitor;
         this.monitor = monitor;
     }
