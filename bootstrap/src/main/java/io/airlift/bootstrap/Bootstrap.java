@@ -41,6 +41,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 import static com.google.common.base.Preconditions.checkState;
@@ -62,6 +63,8 @@ import static java.lang.String.format;
  */
 public class Bootstrap
 {
+    private enum State { UNINITIALIZED, CONFIGURED, INITIALIZED }
+
     private final Logger log = Logger.get("Bootstrap");
     private final List<Module> modules;
 
@@ -70,7 +73,8 @@ public class Bootstrap
     private boolean initializeLogging = true;
     private boolean quiet;
 
-    private boolean initialized;
+    private State state = State.UNINITIALIZED;
+    private ConfigurationFactory configurationFactory;
 
     public Bootstrap(Module... modules)
     {
@@ -130,10 +134,13 @@ public class Bootstrap
         return this;
     }
 
-    public Injector initialize()
+    /**
+     * Validate configuration and return used properties.
+     */
+    public Set<String> configure()
     {
-        checkState(!initialized, "Already initialized");
-        initialized = true;
+        checkState(state == State.UNINITIALIZED, "Already configured");
+        state = State.CONFIGURED;
 
         Logging logging = null;
         if (initializeLogging) {
@@ -180,7 +187,7 @@ public class Bootstrap
         properties = ImmutableSortedMap.copyOf(properties);
 
         List<Message> warnings = new ArrayList<>();
-        ConfigurationFactory configurationFactory = new ConfigurationFactory(properties, warning -> warnings.add(new Message(warning)));
+        configurationFactory = new ConfigurationFactory(properties, warning -> warnings.add(new Message(warning)));
 
         Boolean quietConfig = configurationFactory.build(BootstrapConfig.class).getQuiet();
 
@@ -228,6 +235,17 @@ public class Bootstrap
             message.append("==========");
             log.warn(message.toString());
         }
+
+        return configurationFactory.getUsedProperties();
+    }
+
+    public Injector initialize()
+    {
+        checkState(state != State.INITIALIZED, "Already initialized");
+        if (state == State.UNINITIALIZED) {
+            configure();
+        }
+        state = State.INITIALIZED;
 
         // system modules
         Builder<Module> moduleList = ImmutableList.builder();

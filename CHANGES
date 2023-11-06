@@ -3,6 +3,7 @@
 - Update Jetty to 11.0.17
 - Add node annotations to openmetrics labels
 - Remove non-strict config from Bootstrap
+- Allow Bootstrap configuration before creating injector
 
 237
 

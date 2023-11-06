@@ -18,9 +18,12 @@ package io.airlift.bootstrap;
 import com.google.inject.ConfigurationException;
 import com.google.inject.Inject;
 import com.google.inject.ProvisionException;
+import com.google.inject.Scopes;
 import com.google.inject.spi.Message;
+import io.airlift.configuration.Config;
 import org.testng.annotations.Test;
 
+import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.testing.Assertions.assertContains;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -29,6 +32,8 @@ import static org.testng.Assert.fail;
 
 public class TestBootstrap
 {
+    private static boolean fooInstanceCreated;
+
     @Test
     public void testRequiresExplicitBindings()
     {
@@ -116,6 +121,24 @@ public class TestBootstrap
         assertEquals(root.getHandlers().length, configuredHandlerCount);
     }
 
+    @SuppressWarnings("AssignmentToStaticFieldFromInstanceMethod")
+    @Test
+    public void testSeparateConfigureAndInitialize()
+    {
+        Bootstrap bootstrap = new Bootstrap(binder -> {
+            configBinder(binder).bindConfig(FooConfig.class);
+            binder.bind(FooInstance.class).in(Scopes.SINGLETON);
+        });
+        bootstrap.setOptionalConfigurationProperty("foo.enabled", "true");
+        bootstrap.setOptionalConfigurationProperty("bar.enabled", "true");
+
+        fooInstanceCreated = false;
+        assertThat(bootstrap.configure()).containsExactly("foo.enabled");
+        assertThat(fooInstanceCreated).isFalse();
+        bootstrap.initialize();
+        assertThat(fooInstanceCreated).isTrue();
+    }
+
     public static class Instance {}
 
     public static class InstanceA
@@ -128,5 +151,32 @@ public class TestBootstrap
     {
         @Inject
         public InstanceB(InstanceA a) {}
+    }
+
+    public static class FooInstance
+    {
+        @SuppressWarnings("AssignmentToStaticFieldFromInstanceMethod")
+        @Inject
+        public FooInstance(FooConfig config)
+        {
+            fooInstanceCreated = true;
+        }
+    }
+
+    public static class FooConfig
+    {
+        private boolean foo;
+
+        public boolean isFoo()
+        {
+            return foo;
+        }
+
+        @Config("foo.enabled")
+        public FooConfig setFoo(boolean foo)
+        {
+            this.foo = foo;
+            return this;
+        }
     }
 }
