@@ -60,7 +60,7 @@ public class TestBootstrap
     }
 
     @Test
-    public void testStrictConfig()
+    public void testUnusedProperty()
     {
         Bootstrap bootstrap = new Bootstrap()
                 .setRequiredConfigurationProperty("test-required", "foo");
@@ -69,16 +69,6 @@ public class TestBootstrap
                 .isInstanceOfSatisfying(ApplicationConfigurationException.class, e ->
                         assertThat(e.getErrors()).containsExactly(
                                 new Message("Configuration property 'test-required' was not used")));
-    }
-
-    @SuppressWarnings("removal")
-    @Test
-    public void testNonStrictConfig()
-    {
-        new Bootstrap()
-                .setRequiredConfigurationProperty("test-required", "foo")
-                .nonStrictConfig()
-                .initialize();
     }
 
     @Test
