@@ -1,7 +1,5 @@
 package io.airlift.configuration;
 
-import com.google.common.annotations.VisibleForTesting;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -11,7 +9,7 @@ import java.util.regex.Pattern;
 import static java.lang.String.format;
 import static java.util.regex.Matcher.quoteReplacement;
 
-public class ConfigurationUtils
+public final class ConfigurationUtils
 {
     private static final Pattern ENV_PATTERN = Pattern.compile("\\$\\{ENV:([a-zA-Z][a-zA-Z0-9_-]*)}");
 
@@ -22,7 +20,6 @@ public class ConfigurationUtils
         return replaceEnvironmentVariables(properties, System.getenv(), (k, v) -> {});
     }
 
-    @VisibleForTesting
     public static Map<String, String> replaceEnvironmentVariables(
             Map<String, String> properties,
             Map<String, String> environment,
