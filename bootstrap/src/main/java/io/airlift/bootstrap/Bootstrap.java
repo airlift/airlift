@@ -69,7 +69,6 @@ public class Bootstrap
     private Map<String, String> optionalConfigurationProperties;
     private boolean initializeLogging = true;
     private boolean quiet;
-    private boolean strictConfig = true;
 
     private boolean initialized;
 
@@ -128,26 +127,6 @@ public class Bootstrap
     public Bootstrap quiet()
     {
         this.quiet = true;
-        return this;
-    }
-
-    /**
-     * @deprecated non-strict config is deprecated
-     */
-    @Deprecated(forRemoval = true)
-    public Bootstrap strictConfig()
-    {
-        this.strictConfig = true;
-        return this;
-    }
-
-    /**
-     * @deprecated non-strict config is deprecated
-     */
-    @Deprecated(forRemoval = true)
-    public Bootstrap nonStrictConfig()
-    {
-        this.strictConfig = false;
         return this;
     }
 
@@ -223,8 +202,7 @@ public class Bootstrap
         unusedProperties.keySet().removeAll(configurationFactory.getUsedProperties());
 
         for (String key : unusedProperties.keySet()) {
-            Message message = new Message(format("Configuration property '%s' was not used", key));
-            (strictConfig ? errors : warnings).add(message);
+            errors.add(new Message(format("Configuration property '%s' was not used", key)));
         }
 
         // If there are configuration errors, fail-fast to keep output clean
