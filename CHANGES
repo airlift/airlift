@@ -1,6 +1,7 @@
 238
 
 - Update Jetty to 11.0.17
+- Add node annotations to openmetrics labels
 
 237
 
