@@ -4,6 +4,7 @@
 - Add node annotations to openmetrics labels
 - Remove non-strict config from Bootstrap
 - Allow Bootstrap configuration before creating injector
+- Add property methods to AbstractConfigurationAwareModule
 
 237
 

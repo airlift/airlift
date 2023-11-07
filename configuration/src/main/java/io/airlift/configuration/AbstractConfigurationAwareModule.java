@@ -19,6 +19,7 @@ import com.google.inject.Module;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.Map;
 import java.util.Optional;
 
 import static com.google.common.base.Preconditions.checkState;
@@ -49,6 +50,16 @@ public abstract class AbstractConfigurationAwareModule
         finally {
             this.binder = null;
         }
+    }
+
+    protected void consumeProperty(String name)
+    {
+        configurationFactory.consumeProperty(name);
+    }
+
+    protected Map<String, String> getProperties()
+    {
+        return configurationFactory.getProperties();
     }
 
     protected Optional<String> getProperty(String name)
