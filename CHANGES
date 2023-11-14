@@ -1,3 +1,7 @@
+239
+
+- Deprecate attribute utility methods in Tracing
+
 238
 
 - Update Jetty to 11.0.17
