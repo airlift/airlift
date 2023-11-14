@@ -27,11 +27,10 @@ public class TracingModule
     @Override
     protected void setup(Binder binder)
     {
+        install(new OpenTelemetryModule(serviceName, serviceVersion));
+
         if (buildConfigObject(TracingEnabledConfig.class).isEnabled()) {
-            install(new OpenTelemetryModule(serviceName, serviceVersion));
-        }
-        else {
-            binder.bind(OpenTelemetry.class).toInstance(OpenTelemetry.noop());
+            binder.install(new OpenTelemetryExporterModule());
         }
 
         jsonBinder(binder).addSerializerBinding(Span.class).to(SpanSerializer.class);
