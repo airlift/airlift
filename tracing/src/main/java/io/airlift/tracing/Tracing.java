@@ -17,11 +17,13 @@ public final class Tracing
         return TracerProvider.noop().get("noop");
     }
 
+    @Deprecated(forRemoval = true)
     public static <T> Attributes attribute(AttributeKey<T> key, Optional<T> value)
     {
         return value.map(x -> Attributes.of(key, x)).orElseGet(Attributes::empty);
     }
 
+    @Deprecated(forRemoval = true)
     public static <T> Attributes attribute(AttributeKey<T> key, @Nullable T value)
     {
         return (value != null) ? Attributes.of(key, value) : Attributes.empty();

@@ -26,7 +26,6 @@ import static com.google.common.base.StandardSystemProperty.OS_NAME;
 import static com.google.common.base.StandardSystemProperty.OS_VERSION;
 import static com.google.common.base.Strings.nullToEmpty;
 import static io.airlift.configuration.ConfigBinder.configBinder;
-import static io.airlift.tracing.Tracing.attribute;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
@@ -58,13 +57,13 @@ public class OpenTelemetryModule
                 .put(ResourceAttributes.SERVICE_VERSION, serviceVersion)
                 .put(ResourceAttributes.SERVICE_INSTANCE_ID, nodeInfo.getNodeId())
                 .put(ResourceAttributes.DEPLOYMENT_ENVIRONMENT, nodeInfo.getEnvironment())
-                .putAll(attribute(ResourceAttributes.PROCESS_RUNTIME_NAME, System.getProperty("java.runtime.name")))
-                .putAll(attribute(ResourceAttributes.PROCESS_RUNTIME_VERSION, System.getProperty("java.runtime.version")))
-                .putAll(attribute(ResourceAttributes.PROCESS_RUNTIME_DESCRIPTION, processRuntime()))
-                .putAll(attribute(ResourceAttributes.OS_TYPE, osType()))
-                .putAll(attribute(ResourceAttributes.OS_NAME, OS_NAME.value()))
-                .putAll(attribute(ResourceAttributes.OS_VERSION, OS_VERSION.value()))
-                .putAll(attribute(ResourceAttributes.HOST_ARCH, hostArch()));
+                .put(ResourceAttributes.PROCESS_RUNTIME_NAME, System.getProperty("java.runtime.name"))
+                .put(ResourceAttributes.PROCESS_RUNTIME_VERSION, System.getProperty("java.runtime.version"))
+                .put(ResourceAttributes.PROCESS_RUNTIME_DESCRIPTION, processRuntime())
+                .put(ResourceAttributes.OS_TYPE, osType())
+                .put(ResourceAttributes.OS_NAME, OS_NAME.value())
+                .put(ResourceAttributes.OS_VERSION, OS_VERSION.value())
+                .put(ResourceAttributes.HOST_ARCH, hostArch());
         nodeInfo.getAnnotations().forEach((key, value) -> attributes.put(format("%s.%s", NODE_ANNOTATION_PREFIX, key), value));
 
         Resource resource = Resource.getDefault().merge(Resource.create(attributes.build()));
