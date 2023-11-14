@@ -1,6 +1,7 @@
 239
 
 - Deprecate attribute utility methods in Tracing
+- Allow binding additional span processors
 
 238
 
