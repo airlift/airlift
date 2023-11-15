@@ -263,11 +263,7 @@ public class Bootstrap
         // create the injector
         Injector injector = Guice.createInjector(Stage.PRODUCTION, moduleList.build());
 
-        // Create the life-cycle manager
-        LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
-
-        // Start services
-        lifeCycleManager.start();
+        injector.getInstance(LifeCycleManager.class).start();
 
         return injector;
     }
