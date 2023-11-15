@@ -95,7 +95,6 @@ public final class LifeCycleManager
         if (!state.compareAndSet(State.LATENT, State.STARTING)) {
             throw new LifeCycleStartException("System already starting");
         }
-        log.info("Life cycle starting...");
 
         for (Object obj : managedInstances) {
             LifeCycleMethods methods = methodsMap.get(obj.getClass());
@@ -117,7 +116,7 @@ public final class LifeCycleManager
         Runtime.getRuntime().addShutdownHook(thread);
 
         state.set(State.STARTED);
-        log.info("Life cycle started");
+        log.debug("Life cycle started");
     }
 
     /**
@@ -183,7 +182,7 @@ public final class LifeCycleManager
             }
         }
 
-        log.info("Life cycle stopping...");
+        log.debug("Life cycle stopping...");
 
         List<Object> reversedInstances = new ArrayList<>(managedInstances);
         Collections.reverse(reversedInstances);
@@ -193,7 +192,7 @@ public final class LifeCycleManager
         }
 
         state.set(State.STOPPED);
-        log.info("Life cycle stopped");
+        log.debug("Life cycle stopped");
     }
 
     /**
