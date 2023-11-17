@@ -3,6 +3,7 @@
 - Deprecate attribute utility methods in Tracing
 - Allow binding additional span processors
 - Update jjwt to 0.12.2
+- Update Jetty to 11.0.18
 
 238
 
