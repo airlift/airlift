@@ -4,6 +4,7 @@
 - Allow binding additional span processors
 - Update jjwt to 0.12.2
 - Update Jetty to 11.0.18
+- Update byte-buddy to 1.14.9
 
 238
 
