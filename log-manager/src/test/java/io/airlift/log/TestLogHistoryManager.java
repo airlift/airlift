@@ -46,7 +46,7 @@ public class TestLogHistoryManager
             for (int i = 0; i < 100; i++) {
                 logFileNames.add(createTestFile(masterLogName));
             }
-            LogHistoryManager logHistoryManager = new LogHistoryManager(masterLogName, new DataSize(1, GIGABYTE));
+            LogHistoryManager logHistoryManager = new LogHistoryManager(masterLogName, DataSize.of(1, GIGABYTE));
             assertLogFiles(logHistoryManager, logFileNames);
         }
         finally {
@@ -65,7 +65,7 @@ public class TestLogHistoryManager
             for (int i = 0; i < FILE_SIZE; i++) {
                 logFileNames.add(createTestFile(masterLogName));
             }
-            LogHistoryManager logHistoryManager = new LogHistoryManager(masterLogName, new DataSize(10 * FILE_SIZE, BYTE));
+            LogHistoryManager logHistoryManager = new LogHistoryManager(masterLogName, DataSize.of(10 * FILE_SIZE, BYTE));
             assertLogFiles(logHistoryManager, logFileNames.subList(90, logFileNames.size()));
         }
         finally {
@@ -93,7 +93,7 @@ public class TestLogHistoryManager
             for (int i = 0; i < 100; i++) {
                 logFileNames.add(createTestFile(masterLogName));
             }
-            LogHistoryManager logHistoryManager = new LogHistoryManager(masterLogName, new DataSize(100 * FILE_SIZE, BYTE));
+            LogHistoryManager logHistoryManager = new LogHistoryManager(masterLogName, DataSize.of(100 * FILE_SIZE, BYTE));
             assertLogFiles(logHistoryManager, logFileNames);
 
             // add 2 more files

@@ -68,7 +68,7 @@ public class TestRollingFileMessageOutput
         try {
             Path masterFile = tempDir.resolve("launcher.log");
 
-            BufferedHandler handler = createRollingFileHandler(masterFile.toString(), new DataSize(1, MEGABYTE), new DataSize(10, MEGABYTE), NONE, TEXT.createFormatter(TESTING_ANNOTATIONS), new ErrorManager());
+            BufferedHandler handler = createRollingFileHandler(masterFile.toString(), DataSize.of(1, MEGABYTE), DataSize.of(10, MEGABYTE), NONE, TEXT.createFormatter(TESTING_ANNOTATIONS), new ErrorManager());
             assertLogDirectory(masterFile);
 
             assertTrue(Files.exists(masterFile));
@@ -117,7 +117,7 @@ public class TestRollingFileMessageOutput
             // start with a broken symlink
             Files.createSymbolicLink(masterFile, tempDir.resolve("launcher.log.broken"));
 
-            BufferedHandler handler = createRollingFileHandler(masterFile.toString(), new DataSize(1, MEGABYTE), new DataSize(10, MEGABYTE), NONE, TEXT.createFormatter(TESTING_ANNOTATIONS), new ErrorManager());
+            BufferedHandler handler = createRollingFileHandler(masterFile.toString(), DataSize.of(1, MEGABYTE), DataSize.of(10, MEGABYTE), NONE, TEXT.createFormatter(TESTING_ANNOTATIONS), new ErrorManager());
             assertLogDirectory(masterFile);
 
             assertTrue(Files.exists(masterFile));
@@ -149,8 +149,8 @@ public class TestRollingFileMessageOutput
             Files.createDirectories(masterFile);
             assertThatThrownBy(() -> createRollingFileHandler(
                     masterFile.toString(),
-                    new DataSize(1, MEGABYTE),
-                    new DataSize(10, MEGABYTE),
+                    DataSize.of(1, MEGABYTE),
+                    DataSize.of(10, MEGABYTE),
                     NONE,
                     TEXT.createFormatter(TESTING_ANNOTATIONS),
                     new ErrorManager()))
@@ -164,8 +164,8 @@ public class TestRollingFileMessageOutput
             Files.createSymbolicLink(masterFile, someDirectory);
             assertThatThrownBy(() -> createRollingFileHandler(
                     masterFile.toString(),
-                    new DataSize(1, MEGABYTE),
-                    new DataSize(10, MEGABYTE),
+                    DataSize.of(1, MEGABYTE),
+                    DataSize.of(10, MEGABYTE),
                     NONE,
                     TEXT.createFormatter(TESTING_ANNOTATIONS),
                     new ErrorManager()))
@@ -188,8 +188,8 @@ public class TestRollingFileMessageOutput
             Path masterFile = tempDir.resolve("launcher.log");
             BufferedHandler handler = createRollingFileHandler(
                     masterFile.toString(),
-                    new DataSize(message.length() * 5, BYTE),
-                    new DataSize(message.length() * 2 + message.length() * 5 + message.length() * 5, BYTE), // 2 messages + 2 closed files
+                    DataSize.of(message.length() * 5, BYTE),
+                    DataSize.of(message.length() * 2 + message.length() * 5 + message.length() * 5, BYTE), // 2 messages + 2 closed files
                     NONE,
                     TEXT.createFormatter(ImmutableMap.of()),
                     new ErrorManager());
@@ -280,8 +280,8 @@ public class TestRollingFileMessageOutput
             Path masterFile = tempDir.resolve("launcher.log");
             BufferedHandler handler = createRollingFileHandler(
                     masterFile.toString(),
-                    new DataSize(message.length() * 5, BYTE),
-                    new DataSize(message.length() + message.length() * 5 + expectedCompressedSize, BYTE), // one message, one uncompressed file, one compressed file
+                    DataSize.of(message.length() * 5, BYTE),
+                    DataSize.of(message.length() + message.length() * 5 + expectedCompressedSize, BYTE), // one message, one uncompressed file, one compressed file
                     GZIP,
                     TEXT.createFormatter(ImmutableMap.of()),
                     new ErrorManager());
@@ -349,7 +349,7 @@ public class TestRollingFileMessageOutput
         Path tempDir = Files.createTempDirectory("logging-test");
         try {
             Path masterFile = tempDir.resolve("launcher.log");
-            BufferedHandler handler = createRollingFileHandler(masterFile.toString(), new DataSize(1, MEGABYTE), new DataSize(10, MEGABYTE), NONE, TEXT.createFormatter(TESTING_ANNOTATIONS), new ErrorManager());
+            BufferedHandler handler = createRollingFileHandler(masterFile.toString(), DataSize.of(1, MEGABYTE), DataSize.of(10, MEGABYTE), NONE, TEXT.createFormatter(TESTING_ANNOTATIONS), new ErrorManager());
 
             handler.publish(new LogRecord(Level.SEVERE, "apple"));
             handler.publish(new LogRecord(Level.SEVERE, "banana"));
@@ -382,7 +382,7 @@ public class TestRollingFileMessageOutput
         Path tempDir = Files.createTempDirectory("logging-test");
         try {
             Path masterFile = tempDir.resolve("launcher.log");
-            BufferedHandler handler = createRollingFileHandler(masterFile.toString(), new DataSize(1, MEGABYTE), new DataSize(10, MEGABYTE), NONE, TEXT.createFormatter(TESTING_ANNOTATIONS), new ErrorManager());
+            BufferedHandler handler = createRollingFileHandler(masterFile.toString(), DataSize.of(1, MEGABYTE), DataSize.of(10, MEGABYTE), NONE, TEXT.createFormatter(TESTING_ANNOTATIONS), new ErrorManager());
             assertLogDirectory(masterFile);
             Path firstLogFile = Files.readSymbolicLink(masterFile);
 
@@ -402,7 +402,7 @@ public class TestRollingFileMessageOutput
             assertLogDirectory(masterFile);
 
             // open new handler
-            handler = createRollingFileHandler(masterFile.toString(), new DataSize(1, MEGABYTE), new DataSize(10, MEGABYTE), NONE, TEXT.createFormatter(TESTING_ANNOTATIONS), new ErrorManager());
+            handler = createRollingFileHandler(masterFile.toString(), DataSize.of(1, MEGABYTE), DataSize.of(10, MEGABYTE), NONE, TEXT.createFormatter(TESTING_ANNOTATIONS), new ErrorManager());
 
             assertLogDirectory(masterFile);
             assertNotEquals(Files.readSymbolicLink(masterFile), firstLogFile);
@@ -451,7 +451,7 @@ public class TestRollingFileMessageOutput
                     2);
 
             // open new handler
-            BufferedHandler newHandler = createRollingFileHandler(masterFile.toString(), new DataSize(1, MEGABYTE), new DataSize(10, MEGABYTE), NONE, TEXT.createFormatter(TESTING_ANNOTATIONS), new ErrorManager());
+            BufferedHandler newHandler = createRollingFileHandler(masterFile.toString(), DataSize.of(1, MEGABYTE), DataSize.of(10, MEGABYTE), NONE, TEXT.createFormatter(TESTING_ANNOTATIONS), new ErrorManager());
             assertLogDirectory(masterFile);
 
             assertTrue(Files.isSymbolicLink(masterFile));

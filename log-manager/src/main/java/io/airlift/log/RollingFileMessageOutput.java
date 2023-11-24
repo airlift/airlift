@@ -78,7 +78,7 @@ final class RollingFileMessageOutput
     }
 
     private static final int MAX_OPEN_NEW_LOG_ATTEMPTS = 100;
-    private static final int MAX_BATCH_BYTES = toIntExact(new DataSize(1, MEGABYTE).toBytes());
+    private static final int MAX_BATCH_BYTES = toIntExact(DataSize.of(1, MEGABYTE).toBytes());
     private static final String TEMP_PREFIX = ".tmp.";
     private static final String DELETED_PREFIX = ".deleted.";
 

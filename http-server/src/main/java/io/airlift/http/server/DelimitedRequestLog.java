@@ -43,7 +43,7 @@ class DelimitedRequestLog
     private static final Logger log = Logger.get(DelimitedRequestLog.class);
     private static final String TEMP_FILE_EXTENSION = ".tmp";
     private static final String LOG_FILE_EXTENSION = ".log";
-    private static final FileSize BUFFER_SIZE_IN_BYTES = new FileSize(new DataSize(1, MEGABYTE).toBytes());
+    private static final FileSize BUFFER_SIZE_IN_BYTES = new FileSize(DataSize.of(1, MEGABYTE).toBytes());
     private static final long FLUSH_INTERVAL_NANOS = SECONDS.toNanos(10);
 
     // Tab-separated

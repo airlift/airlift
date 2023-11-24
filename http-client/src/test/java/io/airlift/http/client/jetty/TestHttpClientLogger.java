@@ -107,7 +107,7 @@ public class TestHttpClientLogger
                 file.getAbsolutePath(),
                 1,
                 256,
-                new DataSize(1, MEGABYTE),
+                DataSize.of(1, MEGABYTE),
                 new Duration(10, SECONDS),
                 Long.MAX_VALUE,
                 false);
@@ -157,7 +157,7 @@ public class TestHttpClientLogger
                 file.getAbsolutePath(),
                 1,
                 256,
-                new DataSize(1, MEGABYTE),
+                DataSize.of(1, MEGABYTE),
                 new Duration(10, SECONDS),
                 Long.MAX_VALUE,
                 false);
@@ -195,7 +195,7 @@ public class TestHttpClientLogger
                 file.getAbsolutePath(),
                 1,
                 256,
-                new DataSize(1, MEGABYTE),
+                DataSize.of(1, MEGABYTE),
                 new Duration(1, MILLISECONDS),
                 Long.MAX_VALUE,
                 false);
