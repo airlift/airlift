@@ -26,6 +26,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
@@ -52,9 +53,8 @@ final class LogHistoryManager
         this.maxTotalSize = maxTotalSize.toBytes();
 
         // list existing logs
-        try {
-            Files.list(masterLogFile.getParent())
-                    .map(this::createLogFile)
+        try (Stream<Path> paths = Files.list(masterLogFile.getParent())) {
+            paths.map(this::createLogFile)
                     .filter(Optional::isPresent)
                     .map(Optional::get)
                     .forEach(files::add);
