@@ -25,8 +25,8 @@ import static java.util.Objects.requireNonNull;
 class BufferingResponseListener
         extends Response.Listener.Adapter
 {
-    private static final long BUFFER_MAX_BYTES = new DataSize(1, MEGABYTE).toBytes();
-    private static final long BUFFER_MIN_BYTES = new DataSize(1, KILOBYTE).toBytes();
+    private static final long BUFFER_MAX_BYTES = DataSize.of(1, MEGABYTE).toBytes();
+    private static final long BUFFER_MIN_BYTES = DataSize.of(1, KILOBYTE).toBytes();
     private final JettyResponseFuture<?, ?> future;
     private final int maxLength;
 

@@ -69,9 +69,9 @@ public class HttpClientConfig
     private int maxConnections = 200;
     private int maxConnectionsPerServer = 20;
     private int maxRequestsQueuedPerDestination = 1024;
-    private DataSize maxContentLength = new DataSize(16, MEGABYTE);
-    private DataSize requestBufferSize = new DataSize(4, KILOBYTE);
-    private DataSize responseBufferSize = new DataSize(16, KILOBYTE);
+    private DataSize maxContentLength = DataSize.of(16, MEGABYTE);
+    private DataSize requestBufferSize = DataSize.of(4, KILOBYTE);
+    private DataSize responseBufferSize = DataSize.of(16, KILOBYTE);
     private HostAndPort socksProxy;
     private HostAndPort httpProxy;
     private boolean secureProxy;
@@ -101,16 +101,16 @@ public class HttpClientConfig
     private int timeoutConcurrency = 1;
 
     private boolean http2Enabled;
-    private DataSize http2InitialSessionReceiveWindowSize = new DataSize(16, MEGABYTE);
-    private DataSize http2InitialStreamReceiveWindowSize = new DataSize(16, MEGABYTE);
-    private DataSize http2InputBufferSize = new DataSize(8, KILOBYTE);
+    private DataSize http2InitialSessionReceiveWindowSize = DataSize.of(16, MEGABYTE);
+    private DataSize http2InitialStreamReceiveWindowSize = DataSize.of(16, MEGABYTE);
+    private DataSize http2InputBufferSize = DataSize.of(8, KILOBYTE);
 
     private String logPath = "var/log/";
     private boolean logEnabled;
     private int logHistory = 15;
     private int logQueueSize = 10_000;
-    private DataSize logMaxFileSize = new DataSize(1, GIGABYTE);
-    private DataSize logBufferSize = new DataSize(1, MEGABYTE);
+    private DataSize logMaxFileSize = DataSize.of(1, GIGABYTE);
+    private DataSize logBufferSize = DataSize.of(1, MEGABYTE);
     private Duration logFlushInterval = new Duration(10, SECONDS);
     private boolean logCompressionEnabled = true;
     private boolean verifyHostname = true;

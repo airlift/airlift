@@ -59,7 +59,7 @@ public class HttpServerConfig
     private boolean logEnabled = true;
     private int logHistory = 15;
     private int logQueueSize = 10_000;
-    private DataSize logMaxFileSize = new DataSize(100, MEGABYTE);
+    private DataSize logMaxFileSize = DataSize.of(100, MEGABYTE);
     private boolean logCompressionEnabled = true;
 
     private boolean processForwarded;
@@ -76,9 +76,9 @@ public class HttpServerConfig
     private DataSize maxRequestHeaderSize;
     private DataSize maxResponseHeaderSize;
     private int http2MaxConcurrentStreams = 16384;
-    private DataSize http2InitialSessionReceiveWindowSize = new DataSize(16, MEGABYTE);
-    private DataSize http2InitialStreamReceiveWindowSize = new DataSize(16, MEGABYTE);
-    private DataSize http2InputBufferSize = new DataSize(8, KILOBYTE);
+    private DataSize http2InitialSessionReceiveWindowSize = DataSize.of(16, MEGABYTE);
+    private DataSize http2InitialStreamReceiveWindowSize = DataSize.of(16, MEGABYTE);
+    private DataSize http2InputBufferSize = DataSize.of(8, KILOBYTE);
     private Duration http2StreamIdleTimeout = new Duration(15, SECONDS);
 
     private String userAuthFile;

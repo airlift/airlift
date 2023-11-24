@@ -44,7 +44,7 @@ public class TestHttpServerConfig
                 .setProcessForwarded(false)
                 .setLogPath("var/log/http-request.log")
                 .setLogEnabled(true)
-                .setLogMaxFileSize(new DataSize(100, MEGABYTE))
+                .setLogMaxFileSize(DataSize.of(100, MEGABYTE))
                 .setLogHistory(15)
                 .setLogQueueSize(10_000)
                 .setLogCompressionEnabled(true)
@@ -65,9 +65,9 @@ public class TestHttpServerConfig
                 .setMaxResponseHeaderSize(null)
                 .setHttp2MaxConcurrentStreams(16384)
                 .setShowStackTrace(true)
-                .setHttp2InitialSessionReceiveWindowSize(new DataSize(16, MEGABYTE))
-                .setHttp2InputBufferSize(new DataSize(8, KILOBYTE))
-                .setHttp2InitialStreamReceiveWindowSize(new DataSize(16, MEGABYTE))
+                .setHttp2InitialSessionReceiveWindowSize(DataSize.of(16, MEGABYTE))
+                .setHttp2InputBufferSize(DataSize.of(8, KILOBYTE))
+                .setHttp2InitialStreamReceiveWindowSize(DataSize.of(16, MEGABYTE))
                 .setHttp2StreamIdleTimeout(new Duration(15, SECONDS)));
     }
 
@@ -117,7 +117,7 @@ public class TestHttpServerConfig
                 .setProcessForwarded(true)
                 .setLogPath("/log")
                 .setLogEnabled(false)
-                .setLogMaxFileSize(new DataSize(1, GIGABYTE))
+                .setLogMaxFileSize(DataSize.of(1, GIGABYTE))
                 .setLogHistory(1)
                 .setLogQueueSize(1)
                 .setLogCompressionEnabled(false)
@@ -129,8 +129,8 @@ public class TestHttpServerConfig
                 .setMaxThreads(500)
                 .setThreadMaxIdleTime(new Duration(10, MINUTES))
                 .setNetworkMaxIdleTime(new Duration(20, MINUTES))
-                .setMaxRequestHeaderSize(new DataSize(32, KILOBYTE))
-                .setMaxResponseHeaderSize(new DataSize(57, KILOBYTE))
+                .setMaxRequestHeaderSize(DataSize.of(32, KILOBYTE))
+                .setMaxResponseHeaderSize(DataSize.of(57, KILOBYTE))
                 .setUserAuthFile("/auth")
                 .setAdminEnabled(true)
                 .setAdminPort(3)
@@ -138,9 +138,9 @@ public class TestHttpServerConfig
                 .setAdminMaxThreads(4)
                 .setHttp2MaxConcurrentStreams(1234)
                 .setShowStackTrace(false)
-                .setHttp2InitialSessionReceiveWindowSize(new DataSize(4, MEGABYTE))
-                .setHttp2InitialStreamReceiveWindowSize(new DataSize(4, MEGABYTE))
-                .setHttp2InputBufferSize(new DataSize(4, MEGABYTE))
+                .setHttp2InitialSessionReceiveWindowSize(DataSize.of(4, MEGABYTE))
+                .setHttp2InitialStreamReceiveWindowSize(DataSize.of(4, MEGABYTE))
+                .setHttp2InputBufferSize(DataSize.of(4, MEGABYTE))
                 .setHttp2StreamIdleTimeout(new Duration(23, SECONDS));
 
         assertFullMapping(properties, expected);

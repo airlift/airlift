@@ -36,8 +36,8 @@ public class LoggingConfiguration
 {
     private boolean consoleEnabled = true;
     private String logPath;
-    private DataSize maxSize = new DataSize(100, MEGABYTE);
-    private DataSize maxTotalSize = new DataSize(1, GIGABYTE);
+    private DataSize maxSize = DataSize.of(100, MEGABYTE);
+    private DataSize maxTotalSize = DataSize.of(1, GIGABYTE);
     private CompressionType compression = CompressionType.GZIP;
     private int maxHistory = 30;
     private String levelsFile;
