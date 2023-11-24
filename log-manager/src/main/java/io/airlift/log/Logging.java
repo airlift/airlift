@@ -156,7 +156,7 @@ public class Logging
     private void logToFile(String logPath, DataSize maxFileSize, DataSize maxTotalSize, CompressionType compressionType, Formatter formatter, List<LogMBeanExport> mBeanExportCollector)
     {
         log.info("Logging to %s", logPath);
-        RollingFileMessageOutput output = new RollingFileMessageOutput(logPath, maxFileSize, maxTotalSize, compressionType, formatter);
+        RollingFileMessageOutput output = new RollingFileMessageOutput(logPath, maxFileSize, maxTotalSize, compressionType);
         BufferedHandler handler = new BufferedHandler(output, formatter, new BufferedHandlerErrorManager(stdErr));
         handler.initialize();
         mBeanExportCollector.add(new LogMBeanExport(handler, BufferedHandler.class, "RollingFileMessageOutput"));

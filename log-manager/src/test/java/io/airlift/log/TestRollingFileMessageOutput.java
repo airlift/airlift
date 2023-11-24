@@ -504,7 +504,7 @@ public class TestRollingFileMessageOutput
             Formatter formatter,
             ErrorManager errorManager)
     {
-        RollingFileMessageOutput output = new RollingFileMessageOutput(filename, maxFileSize, maxTotalSize, compressionType, formatter);
+        RollingFileMessageOutput output = new RollingFileMessageOutput(filename, maxFileSize, maxTotalSize, compressionType);
         BufferedHandler handler = new BufferedHandler(output, formatter, errorManager);
         handler.initialize();
         return handler;
