@@ -18,6 +18,7 @@ package io.airlift.json;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.StreamReadConstraints;
+import com.fasterxml.jackson.core.StreamWriteConstraints;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonDeserializer;
@@ -73,6 +74,14 @@ public class ObjectMapperProvider
         jsonFactory.setStreamReadConstraints(StreamReadConstraints
                 .builder()
                 .maxStringLength(Integer.MAX_VALUE)
+                .maxNestingDepth(Integer.MAX_VALUE)
+                .maxNameLength(Integer.MAX_VALUE)
+                .maxDocumentLength(Long.MAX_VALUE)
+                .build());
+
+        jsonFactory.setStreamWriteConstraints(StreamWriteConstraints
+                .builder()
+                .maxNestingDepth(Integer.MAX_VALUE)
                 .build());
 
         modules.add(new Jdk8Module());

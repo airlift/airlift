@@ -8,6 +8,7 @@
 - Update jaxb to 4.0.4
 - Update airlift units to 1.10
 - Upgrade logback to 1.4.14
+- Update jackson to 2.16.1
 
 239
 
