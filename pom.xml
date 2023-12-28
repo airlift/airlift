@@ -93,6 +93,7 @@
         <dep.packaging.version>${dep.airlift.version}</dep.packaging.version>
         <dep.jersey.version>3.1.3</dep.jersey.version>
         <dep.jjwt.version>0.12.3</dep.jjwt.version>
+        <dep.logback.version>1.4.14</dep.logback.version>
     </properties>
 
     <dependencyManagement>
