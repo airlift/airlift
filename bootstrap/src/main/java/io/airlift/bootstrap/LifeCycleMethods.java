@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static java.lang.String.format;
+import static java.util.Arrays.stream;
 
 class LifeCycleMethods
 {
@@ -73,7 +74,7 @@ class LifeCycleMethods
 
     private void processMethod(Method method, Class<? extends Annotation> annotationClass, Set<String> usedSet)
     {
-        if (method.isAnnotationPresent(annotationClass)) {
+        if (hasAnnotation(method, annotationClass)) {
             if (!usedSet.contains(method.getName())) {
                 if (method.getParameterTypes().length != 0) {
                     throw new UnsupportedOperationException(format("@PostConstruct/@PreDestroy methods cannot have arguments: %s",
@@ -85,5 +86,10 @@ class LifeCycleMethods
                 methodMap.put(annotationClass, method);
             }
         }
+    }
+
+    private static boolean hasAnnotation(Method method, Class<? extends Annotation> annotationClass)
+    {
+        return stream(method.getAnnotations()).anyMatch(annotation -> annotation.toString().contains(annotationClass.getName()));
     }
 }
