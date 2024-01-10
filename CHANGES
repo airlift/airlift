@@ -9,6 +9,7 @@
 - Update airlift units to 1.10
 - Upgrade logback to 1.4.14
 - Update jackson to 2.16.1
+- Update jersey to 3.1.5
 
 239
 
