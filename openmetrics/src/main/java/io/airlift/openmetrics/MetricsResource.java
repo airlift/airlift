@@ -245,7 +245,8 @@ public class MetricsResource
                 .replace("$", "_")
                 .replace(":", "_")
                 .replace("=", "_")
-                .replace(",", "_");
+                .replace(",", "_")
+                .replace("-", "_");
     }
 
     private List<Metric> getMetricsRecursively(String prefix, ManagedClass managedClass)
