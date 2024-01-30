@@ -50,6 +50,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
         "http-client.authentication.krb5.principal",
         "http-client.authentication.krb5.remote-service-name",
         "http-client.authentication.krb5.service-principal-pattern",
+        "http-client.max-connections",
         "http.authentication.krb5.config",
         "http.authentication.krb5.credential-cache",
         "http.authentication.krb5.keytab",
@@ -66,7 +67,6 @@ public class HttpClientConfig
     private Duration requestTimeout = new Duration(5, MINUTES);
     private Duration idleTimeout = new Duration(1, MINUTES);
     private Duration keepAliveInterval;
-    private int maxConnections = 200;
     private int maxConnectionsPerServer = 20;
     private int maxRequestsQueuedPerDestination = 1024;
     private DataSize maxContentLength = DataSize.of(16, MEGABYTE);
@@ -195,19 +195,6 @@ public class HttpClientConfig
     public HttpClientConfig setKeepAliveInterval(Duration keepAliveInterval)
     {
         this.keepAliveInterval = keepAliveInterval;
-        return this;
-    }
-
-    @Min(1)
-    public int getMaxConnections()
-    {
-        return maxConnections;
-    }
-
-    @Config("http-client.max-connections")
-    public HttpClientConfig setMaxConnections(int maxConnections)
-    {
-        this.maxConnections = maxConnections;
         return this;
     }
 
