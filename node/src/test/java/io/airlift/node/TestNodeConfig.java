@@ -94,11 +94,11 @@ public class TestNodeConfig
                 .setEnvironment("test")
                 .setNodeId(UUID.randomUUID().toString()));
 
-        assertFailsValidation(new NodeConfig().setNodeId("abc/123"), "nodeId", "is malformed", Pattern.class);
+        assertFailsValidation(new NodeConfig().setNodeId("abc/123"), "nodeId", "should match [A-Za-z0-9][_A-Za-z0-9-]*", Pattern.class);
 
         assertFailsValidation(new NodeConfig(), "environment", "must not be null", NotNull.class);
-        assertFailsValidation(new NodeConfig().setEnvironment("FOO"), "environment", "is malformed", Pattern.class);
+        assertFailsValidation(new NodeConfig().setEnvironment("FOO"), "environment", "should match [a-z0-9][_a-z0-9]*", Pattern.class);
 
-        assertFailsValidation(new NodeConfig().setPool("FOO"), "pool", "is malformed", Pattern.class);
+        assertFailsValidation(new NodeConfig().setPool("FOO"), "pool", "should match [a-z0-9][_a-z0-9]*", Pattern.class);
     }
 }
