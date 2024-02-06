@@ -29,8 +29,11 @@ import java.net.InetAddress;
 public class NodeConfig
 {
     public static final String ID_REGEXP = "[A-Za-z0-9][_A-Za-z0-9-]*";
+    public static final String ID_REGEXP_ERROR = "should match " + ID_REGEXP;
     public static final String ENV_REGEXP = "[a-z0-9][_a-z0-9]*";
+    public static final String ENV_REGEXP_ERROR = "should match " + ENV_REGEXP;
     public static final String POOL_REGEXP = "[a-z0-9][_a-z0-9]*";
+    public static final String POOL_REGEXP_ERROR = "should match " + POOL_REGEXP;
 
     private String environment;
     private String pool = "general";
@@ -45,7 +48,7 @@ public class NodeConfig
     private String annotationFile;
 
     @NotNull
-    @Pattern(regexp = ENV_REGEXP, message = "is malformed")
+    @Pattern(regexp = ENV_REGEXP, message = ENV_REGEXP_ERROR)
     public String getEnvironment()
     {
         return environment;
@@ -59,7 +62,7 @@ public class NodeConfig
     }
 
     @NotNull
-    @Pattern(regexp = POOL_REGEXP, message = "is malformed")
+    @Pattern(regexp = POOL_REGEXP, message = POOL_REGEXP_ERROR)
     public String getPool()
     {
         return pool;
@@ -72,7 +75,7 @@ public class NodeConfig
         return this;
     }
 
-    @Pattern(regexp = ID_REGEXP, message = "is malformed")
+    @Pattern(regexp = ID_REGEXP, message = ID_REGEXP_ERROR)
     public String getNodeId()
     {
         return nodeId;

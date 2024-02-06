@@ -95,14 +95,14 @@ public class NodeInfo
         requireNonNull(environment, "environment is null");
         requireNonNull(pool, "pool is null");
         requireNonNull(internalAddressSource, "internalAddressSource is null");
-        checkArgument(environment.matches(NodeConfig.ENV_REGEXP), "environment '%s' is invalid", environment);
-        checkArgument(pool.matches(NodeConfig.POOL_REGEXP), "pool '%s' is invalid", pool);
+        checkArgument(environment.matches(NodeConfig.ENV_REGEXP), "environment '%s' %s", environment, NodeConfig.ENV_REGEXP_ERROR);
+        checkArgument(pool.matches(NodeConfig.POOL_REGEXP), "pool '%s' %s", pool, NodeConfig.POOL_REGEXP_ERROR);
 
         this.environment = environment;
         this.pool = pool;
 
         if (nodeId != null) {
-            checkArgument(nodeId.matches(NodeConfig.ID_REGEXP), "nodeId '%s' is invalid", nodeId);
+            checkArgument(nodeId.matches(NodeConfig.ID_REGEXP), "nodeId '%s' %s", nodeId, NodeConfig.ID_REGEXP_ERROR);
             this.nodeId = nodeId;
         }
         else {
