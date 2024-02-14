@@ -402,6 +402,16 @@ public class TestConfigurationFactory
     }
 
     @Test
+    public void testListOfStringsWithEscapeCharacters()
+    {
+        TestMonitor monitor = new TestMonitor();
+        Injector injector = createInjector(ImmutableMap.of("values", "ala, m\\$a ,ko\\,ta, "), monitor, binder -> configBinder(binder).bindConfig(ListOfStringsClass.class));
+        assertEquals(injector.getInstance(ListOfStringsClass.class).getValues(), ImmutableList.of("ala", "m\\$a", "ko,ta"));
+        monitor.assertNumberOfErrors(0);
+        monitor.assertNumberOfWarnings(0);
+    }
+
+    @Test
     public void testValueOf()
     {
         TestMonitor monitor = new TestMonitor();

@@ -125,7 +125,7 @@ public class TestNodeInfo
         new NodeInfo(ENVIRONMENT, "POOL", null, null, null, null, null, null, null, IP, null);
     }
 
-    @Test(expectedExceptions = UncheckedIOException.class, expectedExceptionsMessageRegExp = "java.io.FileNotFoundException: invalid.file \\(No such file or directory\\)")
+    @Test(expectedExceptions = UncheckedIOException.class, expectedExceptionsMessageRegExp = "java.nio.file.NoSuchFileException: invalid.file")
     public void testInvalidAnnotationFile()
     {
         new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, IP, "invalid.file");

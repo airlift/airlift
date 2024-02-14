@@ -61,6 +61,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 
 import static com.google.common.base.CaseFormat.LOWER_CAMEL;
 import static com.google.common.base.CaseFormat.UPPER_CAMEL;
@@ -78,7 +79,7 @@ public class ConfigurationFactory
     private static final Validator VALIDATOR;
 
     private static final TypeToken<List<String>> LIST_OF_STRINGS_TYPE_TOKEN = new TypeToken<List<String>>() {};
-    private static final Splitter VALUE_SPLITTER = Splitter.on(",").omitEmptyStrings().trimResults();
+    private static final Splitter VALUE_SPLITTER = Splitter.on(Pattern.compile("(?<!\\\\),")).omitEmptyStrings().trimResults();
 
     static {
         ClassLoader currentClassLoader = Thread.currentThread().getContextClassLoader();
@@ -667,6 +668,7 @@ public class ConfigurationFactory
 
         if (LIST_OF_STRINGS_TYPE_TOKEN.isSubtypeOf(TypeToken.of(type))) {
             return VALUE_SPLITTER.splitToStream(value)
+                    .map((v) -> v.replaceAll("\\\\,", ","))
                     .collect(toImmutableList());
         }
 

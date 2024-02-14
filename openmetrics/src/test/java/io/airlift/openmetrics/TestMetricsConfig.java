@@ -33,11 +33,11 @@ public class TestMetricsConfig
     public void testExplicitPropertyMappings()
     {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
-                .put("openmetrics.jmx-object-names", "foo.bar:*,baz.bar:*")
+                .put("openmetrics.jmx-object-names", "foo.bar:name=baz\\,type=qux,baz.bar:*")
                 .build();
 
         MetricsConfig expected = new MetricsConfig()
-                .setJmxObjectNames(ImmutableList.of("foo.bar:*", "baz.bar:*"));
+                .setJmxObjectNames(ImmutableList.of("foo.bar:name=baz,type=qux", "baz.bar:*"));
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }

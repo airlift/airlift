@@ -32,7 +32,7 @@ public class MetricsConfig
     }
 
     @Config("openmetrics.jmx-object-names")
-    @ConfigDescription("JMX object names to include when retrieving all metrics.")
+    @ConfigDescription("Comma delimited JMX object names to include when retrieving all metrics. Commas in object names are escaped with a backslash.")
     public MetricsConfig setJmxObjectNames(List<String> jmxObjectNames)
     {
         ImmutableList.Builder<ObjectName> objectNames = ImmutableList.builder();

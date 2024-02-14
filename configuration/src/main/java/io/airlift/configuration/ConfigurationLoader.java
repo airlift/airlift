@@ -17,9 +17,9 @@ package io.airlift.configuration;
 
 import com.google.common.collect.ImmutableSortedMap;
 
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.StringReader;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
@@ -27,6 +27,9 @@ import java.util.TreeMap;
 
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.collect.Maps.fromProperties;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.nio.file.Files.readAllLines;
+import static java.util.stream.Collectors.joining;
 
 public final class ConfigurationLoader
 {
@@ -57,9 +60,10 @@ public final class ConfigurationLoader
             throws IOException
     {
         Properties properties = new Properties();
-        try (InputStream inputStream = new FileInputStream(path)) {
-            properties.load(inputStream);
-        }
+        String escapedProperties = readAllLines(Path.of(path), UTF_8).stream()
+                .map(line -> line.replaceAll("\\\\,", "\\\\\\\\,"))
+                .collect(joining("\n"));
+        properties.load(new StringReader(escapedProperties));
 
         return fromProperties(properties).entrySet().stream()
                 .collect(toImmutableMap(Entry::getKey, entry -> entry.getValue().trim()));
