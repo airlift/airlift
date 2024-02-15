@@ -158,12 +158,6 @@ public class BenchmarkTDigest
         return data.digest1.valuesAt(data.quantilesArray);
     }
 
-    @Benchmark
-    public List<Double> benchmarkValuesAtList(Digest data)
-    {
-        return data.digest1.valuesAt(data.quantilesList);
-    }
-
     public static void main(String[] args)
             throws RunnerException
     {
