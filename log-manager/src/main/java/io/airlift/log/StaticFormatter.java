@@ -2,6 +2,7 @@ package io.airlift.log;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
+import io.airlift.log.mdc.MDC;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -84,6 +85,12 @@ class StaticFormatter
         if (!logAnnotations.isEmpty()) {
             stringWriter.append('\t')
                     .append(Joiner.on(",").withKeyValueSeparator("=").join(logAnnotations));
+        }
+
+        Map<String, String> mdcContextMap = MDC.getCopyOfContextMap();
+        if (!mdcContextMap.isEmpty()) {
+            stringWriter.append('\t')
+                    .append(Joiner.on(",").withKeyValueSeparator("=").join(mdcContextMap));
         }
 
         stringWriter.append('\t')

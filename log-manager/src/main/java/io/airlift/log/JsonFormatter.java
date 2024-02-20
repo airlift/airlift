@@ -7,6 +7,7 @@ import com.google.common.collect.ImmutableMap;
 import io.airlift.json.JsonCodec;
 import io.airlift.json.JsonCodecFactory;
 import io.airlift.json.ObjectMapperProvider;
+import io.airlift.log.mdc.MDC;
 import io.opentelemetry.context.Context;
 
 import java.io.IOException;
@@ -42,7 +43,8 @@ public class JsonFormatter
                 record.getParameters(),
                 record.getThrown(),
                 Context.current(),
-                logAnnotations);
+                logAnnotations,
+                MDC.getCopyOfContextMap());
 
         try {
             return toString(jsonRecord);
@@ -58,7 +60,8 @@ public class JsonFormatter
                         EMPTY_ARRAY,
                         outer,
                         Context.current(),
-                        logAnnotations));
+                        logAnnotations,
+                        MDC.getCopyOfContextMap()));
             }
             catch (IllegalArgumentException inner) {
                 inner.addSuppressed(outer);
