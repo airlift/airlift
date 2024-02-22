@@ -15,7 +15,6 @@ package io.airlift.http.client.jetty;
 
 import io.airlift.http.client.HttpClientConfig;
 import org.eclipse.jetty.client.HttpResponseException;
-import org.testng.SkipException;
 import org.testng.annotations.Test;
 
 import static com.google.common.io.Resources.getResource;
@@ -44,12 +43,5 @@ public class TestJettyHttpClientHttpsProxy
                 .setKeyStorePassword("changeit")
                 .setTrustStorePath(getResource("localhost.truststore").getPath())
                 .setTrustStorePassword("changeit");
-    }
-
-    @Override
-    public void testConnectNoReadClose()
-    {
-        // TODO: enable after https://github.com/eclipse/jetty.project/issues/9183 is fixed
-        throw new SkipException("broken in Jetty");
     }
 }
