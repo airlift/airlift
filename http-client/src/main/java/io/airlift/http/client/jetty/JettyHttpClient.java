@@ -95,6 +95,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
@@ -601,6 +602,7 @@ public class JettyHttpClient
             pool.start();
             pool.setStopTimeout(2000);
             pool.setDetailedDump(true);
+            pool.setVirtualThreadsExecutor(Executors.newVirtualThreadPerTaskExecutor());
             return pool;
         }
         catch (Exception e) {

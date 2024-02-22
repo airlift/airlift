@@ -71,6 +71,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import static com.google.common.base.MoreObjects.firstNonNull;
@@ -140,6 +141,7 @@ public class HttpServer
         threadPool.setIdleTimeout(toIntExact(config.getThreadMaxIdleTime().toMillis()));
         threadPool.setName("http-worker");
         threadPool.setDetailedDump(true);
+        threadPool.setVirtualThreadsExecutor(Executors.newVirtualThreadPerTaskExecutor());
         server = new Server(threadPool);
         showStackTrace = config.isShowStackTrace();
 
@@ -259,11 +261,11 @@ public class HttpServer
         ServerConnector adminConnector;
         if (theAdminServlet != null && config.isAdminEnabled()) {
             HttpConfiguration adminConfiguration = new HttpConfiguration(baseHttpConfiguration);
-
             QueuedThreadPool adminThreadPool = new QueuedThreadPool(config.getAdminMaxThreads());
             adminThreadPool.setName("http-admin-worker");
             adminThreadPool.setMinThreads(config.getAdminMinThreads());
             adminThreadPool.setIdleTimeout(toIntExact(config.getThreadMaxIdleTime().toMillis()));
+            adminThreadPool.setVirtualThreadsExecutor(Executors.newVirtualThreadPerTaskExecutor());
 
             if (config.isHttpsEnabled()) {
                 setSecureRequestCustomizer(adminConfiguration);
