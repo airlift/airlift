@@ -55,7 +55,7 @@ import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.MonitoredQueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.Sweeper;
@@ -143,7 +143,7 @@ public class JettyHttpClient
     private final long idleTimeoutMillis;
     private final boolean recordRequestComplete;
     private final boolean logEnabled;
-    private final QueuedThreadPoolMBean queuedThreadPoolMBean;
+    private final MonitoredQueuedThreadPoolMBean monitoredQueuedThreadPoolMBean;
     private final ConnectionStats connectionStats;
     private final RequestStats stats = new RequestStats();
     private final CachedDistribution queuedRequestsPerDestination;
@@ -372,7 +372,7 @@ public class JettyHttpClient
         this.requestFilters = ImmutableList.copyOf(requestFilters);
         this.httpStatusListeners = ImmutableList.copyOf(httpStatusListeners);
 
-        this.queuedThreadPoolMBean = new QueuedThreadPoolMBean((QueuedThreadPool) httpClient.getExecutor());
+        this.monitoredQueuedThreadPoolMBean = new MonitoredQueuedThreadPoolMBean((MonitoredQueuedThreadPool) httpClient.getExecutor());
 
         this.activeConnectionsPerDestination = new ConnectionPoolDistribution(httpClient,
                 (distribution, connectionPool) -> distribution.add(getActiveConnections(connectionPool).size()));
@@ -592,10 +592,10 @@ public class JettyHttpClient
         }
     }
 
-    private static QueuedThreadPool createExecutor(String name, int minThreads, int maxThreads)
+    private static MonitoredQueuedThreadPool createExecutor(String name, int minThreads, int maxThreads)
     {
         try {
-            QueuedThreadPool pool = new QueuedThreadPool(maxThreads, minThreads, 60000, null);
+            MonitoredQueuedThreadPool pool = new MonitoredQueuedThreadPool(maxThreads, minThreads, 60000, null);
             pool.setName("http-client-" + name);
             pool.setDaemon(true);
             pool.start();
@@ -955,9 +955,9 @@ public class JettyHttpClient
 
     @Managed
     @Nested
-    public QueuedThreadPoolMBean getThreadPool()
+    public MonitoredQueuedThreadPoolMBean getThreadPool()
     {
-        return queuedThreadPoolMBean;
+        return monitoredQueuedThreadPoolMBean;
     }
 
     @Managed
