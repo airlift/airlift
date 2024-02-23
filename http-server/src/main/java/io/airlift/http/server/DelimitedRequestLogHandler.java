@@ -55,7 +55,7 @@ public class DelimitedRequestLogHandler
         List<Long> contentTimestamps = Optional.ofNullable(request.getAttribute(RESPONSE_CONTENT_TIMESTAMPS_ATTRIBUTE))
                 .map(object -> (List<Long>) object)
                 .orElseThrow(() -> new IllegalStateException("Request attribute " + RESPONSE_CONTENT_TIMESTAMPS_ATTRIBUTE + " is not present"));
-        contentTimestamps.add(System.nanoTime());
+        contentTimestamps.add(NanoTime.now());
     }
 
     @Override
@@ -77,7 +77,8 @@ public class DelimitedRequestLogHandler
         }
 
         long beginToHandleMillis = NANOSECONDS.toMillis((Long) request.getAttribute(REQUEST_BEGIN_TO_HANDLE_ATTRIBUTE));
-        long beginToEndMillis = NANOSECONDS.toMillis(NanoTime.since(request.getHeadersNanoTime()));
+        long beginToEndMillis = NANOSECONDS.toMillis(NanoTime.since(request.getBeginNanoTime()));
+
         logger.log(request,
                 response,
                 beginToHandleMillis,

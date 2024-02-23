@@ -39,13 +39,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 @EventType("HttpRequest")
 public class HttpRequestEvent
 {
-    public static HttpRequestEvent createHttpRequestEvent(
-            Request request,
-            Response response,
-            TraceTokenManager traceTokenManager,
-            long currentTimeInMillis,
-            RequestTiming timing,
-            DoubleSummaryStats responseContentInterarrivalStats)
+    public static HttpRequestEvent createHttpRequestEvent(Request request, Response response, TraceTokenManager traceTokenManager, RequestTiming timing)
     {
         String user = null;
         Request.AuthenticationState authenticationState = Request.getAuthenticationState(request);
@@ -70,7 +64,7 @@ public class HttpRequestEvent
             timeToFirstByte = max(time - Request.getTimeStamp(request), 0);
         }
 
-        long timeToLastByte = max(currentTimeInMillis - Request.getTimeStamp(request), 0);
+        long timeToLastByte = max(timing.currentTimeInMillis() - Request.getTimeStamp(request), 0);
 
         ImmutableList.Builder<String> builder = ImmutableList.builder();
         if (Request.getRemoteAddr(request) != null) {
@@ -139,7 +133,7 @@ public class HttpRequestEvent
                 timing.beginToHandleMillis(),
                 timing.beginToEndMillis(),
                 timing.firstToLastContentTimeInMillis(),
-                responseContentInterarrivalStats,
+                timing.responseContentInterarrivalStats(),
                 request.getConnectionMetaData().getHttpVersion().asString());
     }
 
