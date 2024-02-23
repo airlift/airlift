@@ -168,21 +168,6 @@ public class HttpServer
             baseHttpConfiguration.setResponseHeaderSize(toIntExact(config.getMaxResponseHeaderSize().toBytes()));
         }
 
-        // register a channel listener if logging is enabled
-        DelimitedRequestLogHandler channelListener = null;
-
-        StatsRecordingHandler statsRecordingHandler = new StatsRecordingHandler(stats);
-
-        if (config.isLogEnabled()) {
-            this.requestLog = createDelimitedRequestLog(config, tokenManager, eventClient);
-            channelListener = new DelimitedRequestLogHandler(requestLog);
-            server.setRequestLog(new RequestLogCollection(channelListener, statsRecordingHandler));
-        }
-        else {
-            this.requestLog = null;
-            server.setRequestLog(statsRecordingHandler);
-        }
-
         // set up HTTP connector
         ServerConnector httpConnector;
         if (config.isHttpEnabled()) {
@@ -253,11 +238,6 @@ public class HttpServer
             ConnectionStatistics connectionStats = new ConnectionStatistics();
             httpsConnector.addBean(connectionStats);
             this.httpsConnectionStats = new ConnectionStats(connectionStats);
-
-            if (channelListener != null) {
-                httpsConnector.addBean(channelListener);
-            }
-
             server.addConnector(httpsConnector);
         }
 
@@ -342,12 +322,18 @@ public class HttpServer
             rootHandlers.addHandler(createServletContext(theAdminServlet, resources, adminParameters, adminFilters, tokenManager, loginService, Set.of("admin"), showStackTrace));
         }
         rootHandlers.addHandler(statsHandler);
+        StatsRecordingHandler statsRecordingHandler = new StatsRecordingHandler(stats);
 
-        if (channelListener != null) {
-            channelListener.setHandler(rootHandlers);
-            server.setHandler(channelListener);
+        if (config.isLogEnabled()) {
+            this.requestLog = createDelimitedRequestLog(config, tokenManager, eventClient);
+            DelimitedRequestLogHandler logHandler = new DelimitedRequestLogHandler(requestLog);
+            server.setRequestLog(new RequestLogCollection(logHandler, statsRecordingHandler));
+            logHandler.setHandler(rootHandlers);
+            server.setHandler(logHandler);
         }
         else {
+            this.requestLog = null;
+            server.setRequestLog(statsRecordingHandler);
             server.setHandler(rootHandlers);
         }
 
