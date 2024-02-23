@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import io.airlift.event.client.EventClient;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
+import io.airlift.http.server.jetty.MonitoredQueuedThreadPoolMBean;
 import io.airlift.log.Logger;
 import io.airlift.node.NodeInfo;
 import io.airlift.tracetoken.TraceTokenManager;
@@ -52,7 +53,7 @@ import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.MonitoredQueuedThreadPool;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
 
@@ -97,6 +98,8 @@ public class HttpServer
     private static final Logger log = Logger.get(HttpServer.class);
 
     private final Server server;
+    private final MonitoredQueuedThreadPoolMBean monitoredQueuedThreadPoolMBean;
+    private final MonitoredQueuedThreadPoolMBean monitoredAdminQueuedThreadPoolMBean;
     private final boolean showStackTrace;
     private final DelimitedRequestLog requestLog;
     private ConnectionStats httpConnectionStats;
@@ -135,12 +138,13 @@ public class HttpServer
 
         checkArgument(!config.isHttpsEnabled() || maybeHttpsConfig.isPresent(), "httpsConfig must be present when HTTPS is enabled");
 
-        QueuedThreadPool threadPool = new QueuedThreadPool(config.getMaxThreads());
+        MonitoredQueuedThreadPool threadPool = new MonitoredQueuedThreadPool(config.getMaxThreads());
         threadPool.setMinThreads(config.getMinThreads());
         threadPool.setIdleTimeout(toIntExact(config.getThreadMaxIdleTime().toMillis()));
         threadPool.setName("http-worker");
         threadPool.setDetailedDump(true);
         server = new Server(threadPool);
+        this.monitoredQueuedThreadPoolMBean = new MonitoredQueuedThreadPoolMBean(threadPool);
         showStackTrace = config.isShowStackTrace();
 
         this.sslContextFactory = maybeSslContextFactory;
@@ -265,10 +269,12 @@ public class HttpServer
         if (theAdminServlet != null && config.isAdminEnabled()) {
             HttpConfiguration adminConfiguration = new HttpConfiguration(baseHttpConfiguration);
 
-            QueuedThreadPool adminThreadPool = new QueuedThreadPool(config.getAdminMaxThreads());
+            MonitoredQueuedThreadPool adminThreadPool = new MonitoredQueuedThreadPool(config.getAdminMaxThreads());
             adminThreadPool.setName("http-admin-worker");
             adminThreadPool.setMinThreads(config.getAdminMinThreads());
             adminThreadPool.setIdleTimeout(toIntExact(config.getThreadMaxIdleTime().toMillis()));
+
+            this.monitoredAdminQueuedThreadPoolMBean = new MonitoredQueuedThreadPoolMBean(adminThreadPool);
 
             if (config.isHttpsEnabled()) {
                 setSecureRequestCustomizer(adminConfiguration);
@@ -306,6 +312,9 @@ public class HttpServer
             adminConnector.setAcceptQueueSize(config.getHttpAcceptQueueSize());
 
             server.addConnector(adminConnector);
+        }
+        else {
+            this.monitoredAdminQueuedThreadPoolMBean = null;
         }
 
         /*
@@ -501,6 +510,20 @@ public class HttpServer
     public ConnectionStats getHttpsConnectionStats()
     {
         return httpsConnectionStats;
+    }
+
+    @Managed
+    @Nested
+    public MonitoredQueuedThreadPoolMBean getServerThreadPool()
+    {
+        return monitoredQueuedThreadPoolMBean;
+    }
+
+    @Managed
+    @Nested
+    public MonitoredQueuedThreadPoolMBean getAdminServerThreadPool()
+    {
+        return monitoredAdminQueuedThreadPoolMBean;
     }
 
     @Managed

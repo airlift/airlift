@@ -1,15 +1,15 @@
-package io.airlift.http.client.jetty;
+package io.airlift.http.server.jetty;
 
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.MonitoredQueuedThreadPool;
 import org.weakref.jmx.Managed;
 
 import static java.util.Objects.requireNonNull;
 
-public class QueuedThreadPoolMBean
+public class MonitoredQueuedThreadPoolMBean
 {
-    private final QueuedThreadPool threadPool;
+    private final MonitoredQueuedThreadPool threadPool;
 
-    public QueuedThreadPoolMBean(QueuedThreadPool threadPool)
+    public MonitoredQueuedThreadPoolMBean(MonitoredQueuedThreadPool threadPool)
     {
         this.threadPool = requireNonNull(threadPool, "threadPool is null");
     }
@@ -78,5 +78,47 @@ public class QueuedThreadPoolMBean
     public boolean isLowOnThreads()
     {
         return threadPool.isLowOnThreads();
+    }
+
+    @Managed(description = "the number of tasks executed")
+    public long getTasks()
+    {
+        return threadPool.getTasks();
+    }
+
+    @Managed(description = "the maximum number of busy threads")
+    public int getMaxBusyThreads()
+    {
+        return threadPool.getMaxBusyThreads();
+    }
+
+    @Managed(description = "the maximum task queue size")
+    public int getMaxQueueSize()
+    {
+        return threadPool.getMaxQueueSize();
+    }
+
+    @Managed(description = "the average time a task remains in the queue, in nanoseconds")
+    public long getAverageQueueLatency()
+    {
+        return threadPool.getAverageQueueLatency();
+    }
+
+    @Managed(description = "the maximum time a task remains in the queue, in nanoseconds")
+    public long getMaxQueueLatency()
+    {
+        return threadPool.getMaxQueueLatency();
+    }
+
+    @Managed(description = "the average task execution time, in nanoseconds")
+    public long getAverageTaskLatency()
+    {
+        return threadPool.getAverageTaskLatency();
+    }
+
+    @Managed(description = "the maximum task execution time, in nanoseconds")
+    public long getMaxTaskLatency()
+    {
+        return threadPool.getMaxTaskLatency();
     }
 }
