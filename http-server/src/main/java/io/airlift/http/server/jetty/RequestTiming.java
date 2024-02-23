@@ -13,13 +13,20 @@
  */
 package io.airlift.http.server.jetty;
 
+import io.airlift.http.server.DoubleSummaryStats;
+
 import static com.google.common.base.Verify.verify;
 
-public record RequestTiming(long beginToHandleMillis, long beginToEndMillis, long firstToLastContentTimeInMillis)
+public record RequestTiming(
+        long currentTimeInMillis,
+        long beginToHandleMillis,
+        long beginToEndMillis,
+        long firstToLastContentTimeInMillis,
+        DoubleSummaryStats responseContentInterarrivalStats)
 {
     public RequestTiming
     {
-        verify(beginToHandleMillis <= beginToEndMillis, "beginToHandleMillis must be <= beginToEndMillis");
-        verify(firstToLastContentTimeInMillis <= beginToEndMillis, "firstToLastContentTimeInMillis must be <= beginToEndMillis");
+        verify(beginToHandleMillis <= beginToEndMillis, "beginToHandleMillis %s must be <= beginToEndMillis %s", beginToHandleMillis, beginToEndMillis);
+        verify(firstToLastContentTimeInMillis <= beginToEndMillis, "firstToLastContentTimeInMillis %s must be <= beginToEndMillis %s", firstToLastContentTimeInMillis, beginToEndMillis);
     }
 }

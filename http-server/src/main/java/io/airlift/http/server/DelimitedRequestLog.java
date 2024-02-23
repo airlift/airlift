@@ -127,21 +127,20 @@ class DelimitedRequestLog
     public void log(
             Request request,
             Response response,
-            long beginToDispatchMillis,
+            long beginToHandleMillis,
             long beginToEndMillis,
             long firstToLastContentTimeInMillis,
             DoubleSummaryStats responseContentInterarrivalStats)
     {
-        HttpRequestEvent event = createHttpRequestEvent(
-                request,
-                response,
-                traceTokenManager,
+        RequestTiming timing = new RequestTiming(
                 currentTimeMillisProvider.getCurrentTimeMillis(),
-                new RequestTiming(beginToDispatchMillis, beginToEndMillis, firstToLastContentTimeInMillis),
+                beginToHandleMillis,
+                beginToEndMillis,
+                firstToLastContentTimeInMillis,
                 responseContentInterarrivalStats);
 
+        HttpRequestEvent event = createHttpRequestEvent(request, response, traceTokenManager, timing);
         asyncAppender.doAppend(event);
-
         eventClient.post(event);
     }
 
