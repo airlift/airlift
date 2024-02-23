@@ -320,6 +320,8 @@ public class HttpServer
         /*
          * structure is:
          *
+         *
+         *  channel listener
          *    |--- statistics handler
          *           |--- context handler
          *           |       |--- trace token filter
@@ -333,13 +335,10 @@ public class HttpServer
          *    |-- admin context handler
          *           \ --- the admin servlet
          */
-        ContextHandlerCollection handlers = new ContextHandlerCollection();
-
-        handlers.addHandler(createServletContext(theServlet, resources, parameters, filters, tokenManager, loginService, Set.of("http", "https"), showStackTrace));
 
         // add handlers to Jetty
         StatisticsHandler statsHandler = new StatisticsHandler();
-        statsHandler.setHandler(handlers);
+        statsHandler.setHandler(createServletContext(theServlet, resources, parameters, filters, tokenManager, loginService, Set.of("http", "https"), showStackTrace));
 
         ContextHandlerCollection rootHandlers = new ContextHandlerCollection();
         if (theAdminServlet != null && config.isAdminEnabled()) {
