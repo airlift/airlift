@@ -14,18 +14,16 @@
 package io.airlift.http.server;
 
 import jakarta.annotation.Nullable;
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.EventsHandler;
 import org.eclipse.jetty.util.NanoTime;
 
-import java.util.ArrayList;
 import java.util.DoubleSummaryStatistics;
 import java.util.List;
-import java.util.Optional;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
@@ -35,6 +33,7 @@ public class DelimitedRequestLogHandler
 {
     public static final String REQUEST_BEGIN_TO_HANDLE_ATTRIBUTE = DelimitedRequestLogHandler.class.getName() + ".begin_to_handle";
     private static final String RESPONSE_CONTENT_TIMESTAMPS_ATTRIBUTE = DelimitedRequestLogHandler.class.getName() + ".response_content_timestamps";
+    private static final Object MARKER = new Object();
 
     private final DelimitedRequestLog logger;
 
@@ -44,18 +43,10 @@ public class DelimitedRequestLogHandler
     }
 
     @Override
-    protected void onResponseBegin(Request request, int status, HttpFields headers)
-    {
-        request.setAttribute(RESPONSE_CONTENT_TIMESTAMPS_ATTRIBUTE, new ArrayList<Long>());
-    }
-
-    @Override
     protected void onResponseWriteComplete(Request request, Throwable failure)
     {
-        List<Long> contentTimestamps = Optional.ofNullable(request.getAttribute(RESPONSE_CONTENT_TIMESTAMPS_ATTRIBUTE))
-                .map(object -> (List<Long>) object)
-                .orElseThrow(() -> new IllegalStateException("Request attribute " + RESPONSE_CONTENT_TIMESTAMPS_ATTRIBUTE + " is not present"));
-        contentTimestamps.add(NanoTime.now());
+        // Instead of using mutable field, let's set individual attributes instead
+        request.setAttribute(RESPONSE_CONTENT_TIMESTAMPS_ATTRIBUTE + "." + NanoTime.now(), MARKER);
     }
 
     @Override
@@ -67,10 +58,7 @@ public class DelimitedRequestLogHandler
     @Override
     public void log(Request request, Response response)
     {
-        List<Long> contentTimestamps = Optional.ofNullable(request.getAttribute(RESPONSE_CONTENT_TIMESTAMPS_ATTRIBUTE))
-                .map(object -> (List<Long>) object)
-                .orElseGet(() -> (List<Long>) request.setAttribute(RESPONSE_CONTENT_TIMESTAMPS_ATTRIBUTE, new ArrayList<Long>()));
-
+        List<Long> contentTimestamps = getContentTimestamps(request);
         long firstToLastContentTimeInMillis = -1;
         if (!contentTimestamps.isEmpty()) {
             firstToLastContentTimeInMillis = NANOSECONDS.toMillis(contentTimestamps.get(contentTimestamps.size() - 1) - contentTimestamps.get(0));
@@ -85,6 +73,15 @@ public class DelimitedRequestLogHandler
                 beginToEndMillis,
                 firstToLastContentTimeInMillis,
                 processContentTimestamps(contentTimestamps));
+    }
+
+    private List<Long> getContentTimestamps(Request request)
+    {
+        return request.getAttributeNameSet().stream()
+                .filter(name -> name.startsWith(RESPONSE_CONTENT_TIMESTAMPS_ATTRIBUTE))
+                .map(name -> name.substring(RESPONSE_CONTENT_TIMESTAMPS_ATTRIBUTE.length() + 1))
+                .map(Long::valueOf)
+                .collect(toImmutableList());
     }
 
     /**
