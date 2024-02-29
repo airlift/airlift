@@ -18,6 +18,7 @@ package io.airlift.http.server.testing;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import io.airlift.event.client.NullEventClient;
+import io.airlift.http.server.EnableVirtualThreads;
 import io.airlift.http.server.HttpServer;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.http.server.HttpServerConfig;
@@ -49,6 +50,18 @@ public class TestingHttpServer
             @TheServlet Map<String, String> initParameters)
             throws IOException
     {
+        this(httpServerInfo, nodeInfo, config, servlet, initParameters, false);
+    }
+
+    public TestingHttpServer(
+            HttpServerInfo httpServerInfo,
+            NodeInfo nodeInfo,
+            HttpServerConfig config,
+            @TheServlet Servlet servlet,
+            @TheServlet Map<String, String> initParameters,
+            boolean enableVirtualThreads)
+            throws IOException
+    {
         this(httpServerInfo,
                 nodeInfo,
                 config,
@@ -57,6 +70,7 @@ public class TestingHttpServer
                 initParameters,
                 ImmutableSet.of(),
                 ImmutableSet.of(),
+                enableVirtualThreads,
                 ClientCertificate.NONE);
     }
 
@@ -70,6 +84,7 @@ public class TestingHttpServer
             @TheServlet Map<String, String> initParameters,
             @TheServlet Set<Filter> filters,
             @TheServlet Set<HttpResourceBinding> resources,
+            @EnableVirtualThreads boolean enableVirtualThreads,
             ClientCertificate clientCertificate)
             throws IOException
     {
@@ -84,6 +99,7 @@ public class TestingHttpServer
                 null,
                 null,
                 ImmutableSet.of(),
+                enableVirtualThreads,
                 clientCertificate,
                 null,
                 null,

@@ -77,6 +77,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.base.Verify.verify;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
 import static java.lang.Math.toIntExact;
@@ -87,6 +88,7 @@ import static java.util.Comparator.naturalOrder;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static org.eclipse.jetty.security.Constraint.ALLOWED;
+import static org.eclipse.jetty.util.VirtualThreads.getNamedVirtualThreadsExecutor;
 
 public class HttpServer
 {
@@ -119,6 +121,7 @@ public class HttpServer
             Servlet theAdminServlet,
             Map<String, String> adminParameters,
             Set<Filter> adminFilters,
+            boolean enableVirtualThreads,
             ClientCertificate clientCertificate,
             MBeanServer mbeanServer,
             LoginService loginService,
@@ -143,6 +146,12 @@ public class HttpServer
         threadPool.setIdleTimeout(toIntExact(config.getThreadMaxIdleTime().toMillis()));
         threadPool.setName("http-worker");
         threadPool.setDetailedDump(true);
+        if (enableVirtualThreads) {
+            Executor executor = getNamedVirtualThreadsExecutor("http-worker#v");
+            verify(executor != null, "Could not create virtual threads executor");
+            log.info("Virtual threads support is enabled");
+            threadPool.setVirtualThreadsExecutor(executor);
+        }
         server = new Server(threadPool);
         this.monitoredQueuedThreadPoolMBean = new MonitoredQueuedThreadPoolMBean(threadPool);
         showStackTrace = config.isShowStackTrace();
@@ -250,6 +259,12 @@ public class HttpServer
             adminThreadPool.setName("http-admin-worker");
             adminThreadPool.setMinThreads(config.getAdminMinThreads());
             adminThreadPool.setIdleTimeout(toIntExact(config.getThreadMaxIdleTime().toMillis()));
+            if (enableVirtualThreads) {
+                Executor executor = getNamedVirtualThreadsExecutor("http-admin-worker#v");
+                if (executor != null) {
+                    adminThreadPool.setVirtualThreadsExecutor(executor);
+                }
+            }
 
             this.monitoredAdminQueuedThreadPoolMBean = new MonitoredQueuedThreadPoolMBean(adminThreadPool);
 

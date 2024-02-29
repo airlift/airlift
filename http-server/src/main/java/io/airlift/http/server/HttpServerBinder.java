@@ -2,12 +2,15 @@ package io.airlift.http.server;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Binder;
+import com.google.inject.Key;
+import org.eclipse.jetty.util.VirtualThreads;
 
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.List;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
+import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
 import static java.util.Objects.requireNonNull;
 
 public class HttpServerBinder
@@ -27,6 +30,15 @@ public class HttpServerBinder
     public HttpResourceBinding bindResource(String baseUri, String classPathResourceBase)
     {
         return bindResource(baseUri, classPathResourceBase, TheServlet.class);
+    }
+
+    public HttpServerBinder enableVirtualThreads()
+    {
+        if (!VirtualThreads.areSupported()) {
+            binder.addError("Virtual threads are not supported");
+        }
+        newOptionalBinder(binder, Key.get(Boolean.class, EnableVirtualThreads.class)).setBinding().toInstance(true);
+        return this;
     }
 
     private HttpResourceBinding bindResource(String baseUri,
