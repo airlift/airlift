@@ -86,6 +86,7 @@ public class TestJettyMultipleCerts
                 ImmutableSet.of(new DummyFilter()),
                 ImmutableSet.of(),
                 ImmutableSet.of(),
+                false,
                 ClientCertificate.NONE,
                 new RequestStats(),
                 new NullEventClient(),

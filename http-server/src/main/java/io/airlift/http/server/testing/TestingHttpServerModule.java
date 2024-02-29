@@ -1,6 +1,4 @@
 /*
- * Copyright 2010 Proofpoint, Inc.
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,6 +18,7 @@ import com.google.inject.Key;
 import com.google.inject.Scopes;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
 import io.airlift.discovery.client.AnnouncementHttpServerInfo;
+import io.airlift.http.server.EnableVirtualThreads;
 import io.airlift.http.server.HttpServer;
 import io.airlift.http.server.HttpServer.ClientCertificate;
 import io.airlift.http.server.HttpServerConfig;
@@ -62,6 +61,8 @@ public class TestingHttpServerModule
         binder.bind(TestingHttpServer.class).in(Scopes.SINGLETON);
         newOptionalBinder(binder, ClientCertificate.class).setDefault().toInstance(ClientCertificate.NONE);
         binder.bind(HttpServer.class).to(Key.get(TestingHttpServer.class));
+        // override with HttpServerBinder.enableVirtualThreads()
+        newOptionalBinder(binder, Key.get(Boolean.class, EnableVirtualThreads.class)).setDefault().toInstance(false);
         newSetBinder(binder, Filter.class, TheServlet.class);
         newSetBinder(binder, HttpResourceBinding.class, TheServlet.class);
         binder.bind(AnnouncementHttpServerInfo.class).to(LocalAnnouncementHttpServerInfo.class);

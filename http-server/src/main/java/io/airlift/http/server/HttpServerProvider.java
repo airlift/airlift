@@ -56,6 +56,7 @@ public class HttpServerProvider
     private Map<String, String> servletInitParameters = ImmutableMap.of();
     private Servlet theAdminServlet;
     private Map<String, String> adminServletInitParameters = ImmutableMap.of();
+    private final boolean enableVirtualThreads;
     private MBeanServer mbeanServer;
     private LoginService loginService;
     private final RequestStats stats;
@@ -74,6 +75,7 @@ public class HttpServerProvider
             @TheServlet Set<Filter> filters,
             @TheServlet Set<HttpResourceBinding> resources,
             @TheAdminServlet Set<Filter> adminFilters,
+            @EnableVirtualThreads boolean enableVirtualThreads,
             ClientCertificate clientCertificate,
             RequestStats stats,
             EventClient eventClient,
@@ -100,6 +102,7 @@ public class HttpServerProvider
         this.filters = ImmutableSet.copyOf(filters);
         this.resources = ImmutableSet.copyOf(resources);
         this.adminFilters = ImmutableSet.copyOf(adminFilters);
+        this.enableVirtualThreads = enableVirtualThreads;
         this.clientCertificate = clientCertificate;
         this.stats = stats;
         this.eventClient = eventClient;
@@ -158,6 +161,7 @@ public class HttpServerProvider
                     theAdminServlet,
                     adminServletInitParameters,
                     adminFilters,
+                    enableVirtualThreads,
                     clientCertificate,
                     mbeanServer,
                     loginService,

@@ -16,6 +16,7 @@
 package io.airlift.http.server;
 
 import com.google.inject.Binder;
+import com.google.inject.Key;
 import com.google.inject.Scopes;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
 import io.airlift.discovery.client.AnnouncementHttpServerInfo;
@@ -69,6 +70,8 @@ public class HttpServerModule
         newExporter(binder).export(HttpServer.class).withGeneratedName();
         binder.bind(HttpServerInfo.class).in(Scopes.SINGLETON);
         binder.bind(RequestStats.class).in(Scopes.SINGLETON);
+        // override with HttpServerBinder.enableVirtualThreads()
+        newOptionalBinder(binder, Key.get(Boolean.class, EnableVirtualThreads.class)).setDefault().toInstance(false);
         newSetBinder(binder, Filter.class, TheServlet.class);
         newSetBinder(binder, Filter.class, TheAdminServlet.class);
         newSetBinder(binder, HttpResourceBinding.class, TheServlet.class);
