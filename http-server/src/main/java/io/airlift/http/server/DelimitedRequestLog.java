@@ -116,6 +116,7 @@ class DelimitedRequestLog
         asyncAppender.setContext(context);
         asyncAppender.setQueueSize(queueSize);
         asyncAppender.addAppender(fileAppender);
+        asyncAppender.setNeverBlock(true);
 
         rollingPolicy.start();
         triggeringPolicy.start();
