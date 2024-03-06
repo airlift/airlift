@@ -4,6 +4,7 @@
 - Add support for using virtual threads in the server
 - Update byte-buddy to 1.14.12
 - Update jjwt to 0.12.5
+- Update logback to 1.5.1
 
 240
 
