@@ -39,7 +39,6 @@ public class LoggingConfiguration
     private DataSize maxSize = DataSize.of(100, MEGABYTE);
     private DataSize maxTotalSize = DataSize.of(1, GIGABYTE);
     private CompressionType compression = CompressionType.GZIP;
-    private int maxHistory = 30;
     private String levelsFile;
     private String logAnnotationFile;
     private Format format = Format.TEXT;
