@@ -8,6 +8,7 @@ import io.airlift.node.NodeInfo;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
+import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
@@ -81,6 +82,13 @@ public class OpenTelemetryModule
                 .setTracerProvider(tracerProvider)
                 .setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
                 .build();
+    }
+
+    @Provides
+    @Singleton
+    public Tracer createTracer(OpenTelemetry openTelemetry)
+    {
+        return openTelemetry.getTracer(serviceName);
     }
 
     private static String processRuntime()
