@@ -102,7 +102,6 @@ public class HttpServer
     private final Server server;
     private final MonitoredQueuedThreadPoolMBean monitoredQueuedThreadPoolMBean;
     private final MonitoredQueuedThreadPoolMBean monitoredAdminQueuedThreadPoolMBean;
-    private final boolean showStackTrace;
     private final DelimitedRequestLog requestLog;
     private ConnectionStats httpConnectionStats;
     private ConnectionStats httpsConnectionStats;
@@ -154,7 +153,8 @@ public class HttpServer
         }
         server = new Server(threadPool);
         this.monitoredQueuedThreadPoolMBean = new MonitoredQueuedThreadPoolMBean(threadPool);
-        showStackTrace = config.isShowStackTrace();
+
+        boolean showStackTrace = config.isShowStackTrace();
 
         this.sslContextFactory = maybeSslContextFactory;
 
