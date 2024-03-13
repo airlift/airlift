@@ -679,6 +679,7 @@ public class TestHttpServerProvider
                 ImmutableSet.of(),
                 ImmutableSet.of(),
                 false,
+                false,
                 clientCertificate,
                 new RequestStats(),
                 new NullEventClient(),

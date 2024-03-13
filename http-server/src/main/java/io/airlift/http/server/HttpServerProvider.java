@@ -57,6 +57,7 @@ public class HttpServerProvider
     private Servlet theAdminServlet;
     private Map<String, String> adminServletInitParameters = ImmutableMap.of();
     private final boolean enableVirtualThreads;
+    private final boolean enableLegacyUriCompliance;
     private MBeanServer mbeanServer;
     private LoginService loginService;
     private final RequestStats stats;
@@ -76,6 +77,7 @@ public class HttpServerProvider
             @TheServlet Set<HttpResourceBinding> resources,
             @TheAdminServlet Set<Filter> adminFilters,
             @EnableVirtualThreads boolean enableVirtualThreads,
+            @EnableLegacyUriCompliance boolean enableLegacyUriCompliance,
             ClientCertificate clientCertificate,
             RequestStats stats,
             EventClient eventClient,
@@ -103,6 +105,7 @@ public class HttpServerProvider
         this.resources = ImmutableSet.copyOf(resources);
         this.adminFilters = ImmutableSet.copyOf(adminFilters);
         this.enableVirtualThreads = enableVirtualThreads;
+        this.enableLegacyUriCompliance = enableLegacyUriCompliance;
         this.clientCertificate = clientCertificate;
         this.stats = stats;
         this.eventClient = eventClient;
@@ -162,6 +165,7 @@ public class HttpServerProvider
                     adminServletInitParameters,
                     adminFilters,
                     enableVirtualThreads,
+                    enableLegacyUriCompliance,
                     clientCertificate,
                     mbeanServer,
                     loginService,

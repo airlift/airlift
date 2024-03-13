@@ -72,6 +72,8 @@ public class HttpServerModule
         binder.bind(RequestStats.class).in(Scopes.SINGLETON);
         // override with HttpServerBinder.enableVirtualThreads()
         newOptionalBinder(binder, Key.get(Boolean.class, EnableVirtualThreads.class)).setDefault().toInstance(false);
+        // override with HttpServerBinder.enableLegacyUriCompliance()
+        newOptionalBinder(binder, Key.get(Boolean.class, EnableLegacyUriCompliance.class)).setDefault().toInstance(false);
         newSetBinder(binder, Filter.class, TheServlet.class);
         newSetBinder(binder, Filter.class, TheAdminServlet.class);
         newSetBinder(binder, HttpResourceBinding.class, TheServlet.class);
