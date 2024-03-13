@@ -18,6 +18,7 @@ package io.airlift.http.server.testing;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import io.airlift.event.client.NullEventClient;
+import io.airlift.http.server.EnableLegacyUriCompliance;
 import io.airlift.http.server.EnableVirtualThreads;
 import io.airlift.http.server.HttpServer;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
@@ -50,7 +51,7 @@ public class TestingHttpServer
             @TheServlet Map<String, String> initParameters)
             throws IOException
     {
-        this(httpServerInfo, nodeInfo, config, servlet, initParameters, false);
+        this(httpServerInfo, nodeInfo, config, servlet, initParameters, false, false);
     }
 
     public TestingHttpServer(
@@ -59,7 +60,8 @@ public class TestingHttpServer
             HttpServerConfig config,
             @TheServlet Servlet servlet,
             @TheServlet Map<String, String> initParameters,
-            boolean enableVirtualThreads)
+            boolean enableVirtualThreads,
+            boolean enableLegacyUriCompliance)
             throws IOException
     {
         this(httpServerInfo,
@@ -71,6 +73,7 @@ public class TestingHttpServer
                 ImmutableSet.of(),
                 ImmutableSet.of(),
                 enableVirtualThreads,
+                enableLegacyUriCompliance,
                 ClientCertificate.NONE);
     }
 
@@ -85,6 +88,7 @@ public class TestingHttpServer
             @TheServlet Set<Filter> filters,
             @TheServlet Set<HttpResourceBinding> resources,
             @EnableVirtualThreads boolean enableVirtualThreads,
+            @EnableLegacyUriCompliance boolean enableLegacyUriCompliance,
             ClientCertificate clientCertificate)
             throws IOException
     {
@@ -100,6 +104,7 @@ public class TestingHttpServer
                 null,
                 ImmutableSet.of(),
                 enableVirtualThreads,
+                enableLegacyUriCompliance,
                 clientCertificate,
                 null,
                 null,

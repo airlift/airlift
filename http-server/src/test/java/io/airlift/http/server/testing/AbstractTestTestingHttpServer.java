@@ -75,10 +75,12 @@ import static org.testng.Assert.assertTrue;
 public abstract class AbstractTestTestingHttpServer
 {
     private final boolean enableVirtualThreads;
+    private final boolean enableLegacyUriCompliance;
 
-    AbstractTestTestingHttpServer(boolean enableVirtualThreads)
+    AbstractTestTestingHttpServer(boolean enableVirtualThreads, boolean enableLegacyUriCompliance)
     {
         this.enableVirtualThreads = enableVirtualThreads;
+        this.enableLegacyUriCompliance = enableLegacyUriCompliance;
     }
 
     @BeforeSuite
@@ -94,7 +96,7 @@ public abstract class AbstractTestTestingHttpServer
         skipUnlessJdkHasVirtualThreads();
         DummyServlet servlet = new DummyServlet();
         Map<String, String> params = ImmutableMap.of("sampleInitParameter", "the value");
-        TestingHttpServer server = createTestingHttpServer(enableVirtualThreads, servlet, params);
+        TestingHttpServer server = createTestingHttpServer(enableVirtualThreads, enableLegacyUriCompliance, servlet, params);
 
         try {
             server.start();
@@ -112,7 +114,7 @@ public abstract class AbstractTestTestingHttpServer
     {
         skipUnlessJdkHasVirtualThreads();
         DummyServlet servlet = new DummyServlet();
-        TestingHttpServer server = createTestingHttpServer(enableVirtualThreads, servlet, ImmutableMap.of());
+        TestingHttpServer server = createTestingHttpServer(enableVirtualThreads, enableLegacyUriCompliance, servlet, ImmutableMap.of());
 
         try {
             server.start();
@@ -136,7 +138,7 @@ public abstract class AbstractTestTestingHttpServer
         skipUnlessJdkHasVirtualThreads();
         DummyServlet servlet = new DummyServlet();
         DummyFilter filter = new DummyFilter();
-        TestingHttpServer server = createTestingHttpServerWithFilter(enableVirtualThreads, servlet, ImmutableMap.of(), filter);
+        TestingHttpServer server = createTestingHttpServerWithFilter(enableVirtualThreads, enableLegacyUriCompliance, servlet, ImmutableMap.of(), filter);
 
         try {
             server.start();
@@ -288,22 +290,22 @@ public abstract class AbstractTestTestingHttpServer
         assertEquals(data.getBody().trim(), contents);
     }
 
-    private static TestingHttpServer createTestingHttpServer(boolean enableVirtualThreads, DummyServlet servlet, Map<String, String> params)
+    private static TestingHttpServer createTestingHttpServer(boolean enableVirtualThreads, boolean enableLegacyUriCompliance, DummyServlet servlet, Map<String, String> params)
             throws IOException
     {
         NodeInfo nodeInfo = new NodeInfo("test");
         HttpServerConfig config = new HttpServerConfig().setHttpPort(0);
         HttpServerInfo httpServerInfo = new HttpServerInfo(config, nodeInfo);
-        return new TestingHttpServer(httpServerInfo, nodeInfo, config, servlet, params, enableVirtualThreads);
+        return new TestingHttpServer(httpServerInfo, nodeInfo, config, servlet, params, enableVirtualThreads, enableLegacyUriCompliance);
     }
 
-    private static TestingHttpServer createTestingHttpServerWithFilter(boolean enableVirtualThreads, DummyServlet servlet, Map<String, String> params, DummyFilter filter)
+    private static TestingHttpServer createTestingHttpServerWithFilter(boolean enableVirtualThreads, boolean enableLegacyUriCompliance, DummyServlet servlet, Map<String, String> params, DummyFilter filter)
             throws IOException
     {
         NodeInfo nodeInfo = new NodeInfo("test");
         HttpServerConfig config = new HttpServerConfig().setHttpPort(0);
         HttpServerInfo httpServerInfo = new HttpServerInfo(config, nodeInfo);
-        return new TestingHttpServer(httpServerInfo, nodeInfo, config, Optional.empty(), servlet, params, ImmutableSet.of(filter), ImmutableSet.of(), enableVirtualThreads, ClientCertificate.NONE);
+        return new TestingHttpServer(httpServerInfo, nodeInfo, config, Optional.empty(), servlet, params, ImmutableSet.of(filter), ImmutableSet.of(), enableVirtualThreads, enableLegacyUriCompliance, ClientCertificate.NONE);
     }
 
     static class DummyServlet

@@ -34,6 +34,7 @@ import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.jmx.MBeanContainer;
@@ -67,6 +68,7 @@ import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -87,6 +89,8 @@ import static java.util.Collections.list;
 import static java.util.Comparator.naturalOrder;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
+import static org.eclipse.jetty.http.UriCompliance.Violation.AMBIGUOUS_PATH_ENCODING;
+import static org.eclipse.jetty.http.UriCompliance.Violation.AMBIGUOUS_PATH_SEPARATOR;
 import static org.eclipse.jetty.security.Constraint.ALLOWED;
 import static org.eclipse.jetty.util.VirtualThreads.getNamedVirtualThreadsExecutor;
 
@@ -121,6 +125,7 @@ public class HttpServer
             Map<String, String> adminParameters,
             Set<Filter> adminFilters,
             boolean enableVirtualThreads,
+            boolean enableLegacyUriCompliance,
             ClientCertificate clientCertificate,
             MBeanServer mbeanServer,
             LoginService loginService,
@@ -175,6 +180,12 @@ public class HttpServer
         }
         if (config.getMaxResponseHeaderSize() != null) {
             baseHttpConfiguration.setResponseHeaderSize(toIntExact(config.getMaxResponseHeaderSize().toBytes()));
+        }
+
+        if (enableLegacyUriCompliance) {
+            // allow encoded slashes to occur in URI paths
+            UriCompliance uriCompliance = UriCompliance.from(EnumSet.of(AMBIGUOUS_PATH_SEPARATOR, AMBIGUOUS_PATH_ENCODING));
+            baseHttpConfiguration.setUriCompliance(uriCompliance);
         }
 
         // set up HTTP connector
@@ -330,11 +341,11 @@ public class HttpServer
 
         // add handlers to Jetty
         StatisticsHandler statsHandler = new StatisticsHandler();
-        statsHandler.setHandler(createServletContext(theServlet, resources, parameters, filters, tokenManager, loginService, Set.of("http", "https"), showStackTrace));
+        statsHandler.setHandler(createServletContext(theServlet, resources, parameters, filters, tokenManager, loginService, Set.of("http", "https"), showStackTrace, enableLegacyUriCompliance));
 
         ContextHandlerCollection rootHandlers = new ContextHandlerCollection();
         if (theAdminServlet != null && config.isAdminEnabled()) {
-            rootHandlers.addHandler(createServletContext(theAdminServlet, resources, adminParameters, adminFilters, tokenManager, loginService, Set.of("admin"), showStackTrace));
+            rootHandlers.addHandler(createServletContext(theAdminServlet, resources, adminParameters, adminFilters, tokenManager, loginService, Set.of("admin"), showStackTrace, enableLegacyUriCompliance));
         }
         rootHandlers.addHandler(statsHandler);
         StatsRecordingHandler statsRecordingHandler = new StatsRecordingHandler(stats);
@@ -375,13 +386,19 @@ public class HttpServer
             TraceTokenManager tokenManager,
             LoginService loginService,
             Set<String> connectorNames,
-            boolean showStackTrace)
+            boolean showStackTrace,
+            boolean enableLegacyUriCompliance)
     {
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
         if (!showStackTrace) {
             ErrorHandler handler = new ErrorHandler();
             handler.setShowStacks(false);
             context.setErrorHandler(handler);
+        }
+
+        if (enableLegacyUriCompliance) {
+            // allow encoded slashes to occur in URI paths
+            context.getServletHandler().setDecodeAmbiguousURIs(true);
         }
 
         context.addFilter(new FilterHolder(new TimingFilter()), "/*", null);

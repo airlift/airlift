@@ -17,6 +17,7 @@ package io.airlift.http.server;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.ByteStreams;
@@ -50,11 +51,13 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
@@ -169,8 +172,15 @@ public class TestHttpServerModule
         }
     }
 
-    @Test
-    public void testServer()
+    @DataProvider
+    public static Iterator<Boolean> enabledDisabled()
+    {
+        return ImmutableList.of(true, false).iterator();
+    }
+
+    @SuppressWarnings("removal")
+    @Test(dataProvider = "enabledDisabled")
+    public void testServer(boolean enableLegacyUriCompliance)
             throws Exception
     {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
@@ -189,6 +199,9 @@ public class TestHttpServerModule
                     httpServerBinder(binder).bindResource("/", "webapp/user2");
                     httpServerBinder(binder).bindResource("path", "webapp/user").withWelcomeFile("user-welcome.txt");
                     httpServerBinder(binder).bindResource("path", "webapp/user2");
+                    if (enableLegacyUriCompliance) {
+                        httpServerBinder(binder).enableLegacyUriCompliance();
+                    }
                 });
 
         Injector injector = app
@@ -210,8 +223,13 @@ public class TestHttpServerModule
 
             // test filter bound correctly
             response = client.execute(prepareGet().setUri(httpUri.resolve("/filter")).build(), createStatusResponseHandler());
-
             assertEquals(response.getStatusCode(), HttpServletResponse.SC_PAYMENT_REQUIRED);
+
+            if (enableLegacyUriCompliance) {
+                // test legacy URI code for encoded slashes
+                response = client.execute(prepareGet().setUri(httpUri.resolve("/slashtest/one/two%2fthree/four/%2f/five")).build(), createStatusResponseHandler());
+                assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
+            }
 
             // test http resources
             assertResource(httpUri, client, "", "welcome user!");

@@ -18,6 +18,7 @@ import com.google.inject.Key;
 import com.google.inject.Scopes;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
 import io.airlift.discovery.client.AnnouncementHttpServerInfo;
+import io.airlift.http.server.EnableLegacyUriCompliance;
 import io.airlift.http.server.EnableVirtualThreads;
 import io.airlift.http.server.HttpServer;
 import io.airlift.http.server.HttpServer.ClientCertificate;
@@ -63,6 +64,8 @@ public class TestingHttpServerModule
         binder.bind(HttpServer.class).to(Key.get(TestingHttpServer.class));
         // override with HttpServerBinder.enableVirtualThreads()
         newOptionalBinder(binder, Key.get(Boolean.class, EnableVirtualThreads.class)).setDefault().toInstance(false);
+        // override with HttpServerBinder.enableLegacyUriCompliance()
+        newOptionalBinder(binder, Key.get(Boolean.class, EnableLegacyUriCompliance.class)).setDefault().toInstance(false);
         newSetBinder(binder, Filter.class, TheServlet.class);
         newSetBinder(binder, HttpResourceBinding.class, TheServlet.class);
         binder.bind(AnnouncementHttpServerInfo.class).to(LocalAnnouncementHttpServerInfo.class);

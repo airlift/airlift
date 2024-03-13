@@ -227,6 +227,7 @@ public class TestHttpServerCipher
                 ImmutableSet.of(),
                 ImmutableSet.of(),
                 false,
+                false,
                 ClientCertificate.NONE,
                 new RequestStats(),
                 new NullEventClient(),

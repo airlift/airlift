@@ -20,6 +20,6 @@ public class TestTestingHttpServerWithVirtualThreads
 {
     TestTestingHttpServerWithVirtualThreads()
     {
-        super(true);
+        super(true, false);
     }
 }
