@@ -13,6 +13,7 @@
  */
 package io.airlift.openmetrics;
 
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import io.airlift.configuration.Config;
 import io.airlift.configuration.ConfigDescription;
@@ -22,8 +23,12 @@ import javax.management.ObjectName;
 
 import java.util.List;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
 public class MetricsConfig
 {
+    private static final Splitter NAME_SPLITTER = Splitter.on('|').trimResults().omitEmptyStrings();
+
     private List<ObjectName> jmxObjectNames = ImmutableList.of();
 
     public List<ObjectName> getJmxObjectNames()
@@ -32,21 +37,28 @@ public class MetricsConfig
     }
 
     @Config("openmetrics.jmx-object-names")
-    @ConfigDescription("JMX object names to include when retrieving all metrics.")
-    public MetricsConfig setJmxObjectNames(List<String> jmxObjectNames)
+    @ConfigDescription("JMX object names to include when retrieving all metrics, separated by '|'")
+    public MetricsConfig setJmxObjectNames(String names)
     {
-        ImmutableList.Builder<ObjectName> objectNames = ImmutableList.builder();
-
-        for (String jmxObjectName : jmxObjectNames) {
-            try {
-                objectNames.add(new ObjectName(jmxObjectName));
-            }
-            catch (MalformedObjectNameException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        this.jmxObjectNames = objectNames.build();
+        jmxObjectNames = NAME_SPLITTER.splitToStream(names)
+                .map(MetricsConfig::toObjectName)
+                .collect(toImmutableList());
         return this;
+    }
+
+    public MetricsConfig setJmxObjectNames(List<ObjectName> names)
+    {
+        jmxObjectNames = ImmutableList.copyOf(names);
+        return this;
+    }
+
+    private static ObjectName toObjectName(String name)
+    {
+        try {
+            return new ObjectName(name);
+        }
+        catch (MalformedObjectNameException e) {
+            throw new IllegalArgumentException(e);
+        }
     }
 }
