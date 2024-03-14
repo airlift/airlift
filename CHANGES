@@ -1,3 +1,7 @@
+243
+
+- Use pipe as separator for openmetrics object names config
+
 242
 - Update airbase to 151
 - Update Jetty to 12.0.7 and EE10

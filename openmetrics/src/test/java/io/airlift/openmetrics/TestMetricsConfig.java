@@ -15,30 +15,38 @@ package io.airlift.openmetrics;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import io.airlift.configuration.testing.ConfigAssertions;
 import org.testng.annotations.Test;
 
+import javax.management.ObjectName;
+
 import java.util.Map;
+
+import static io.airlift.configuration.testing.ConfigAssertions.assertFullMapping;
+import static io.airlift.configuration.testing.ConfigAssertions.assertRecordedDefaults;
+import static io.airlift.configuration.testing.ConfigAssertions.recordDefaults;
 
 public class TestMetricsConfig
 {
     @Test
     public void testDefaults()
     {
-        ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(MetricsConfig.class)
-                .setJmxObjectNames(ImmutableList.of()));
+        assertRecordedDefaults(recordDefaults(MetricsConfig.class)
+                .setJmxObjectNames(""));
     }
 
     @Test
     public void testExplicitPropertyMappings()
+            throws Exception
     {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
-                .put("openmetrics.jmx-object-names", "foo.bar:*,baz.bar:*")
+                .put("openmetrics.jmx-object-names", "foo.bar:name=baz,type=qux|baz.bar:*")
                 .build();
 
         MetricsConfig expected = new MetricsConfig()
-                .setJmxObjectNames(ImmutableList.of("foo.bar:*", "baz.bar:*"));
+                .setJmxObjectNames(ImmutableList.of(
+                        new ObjectName("foo.bar:name=baz,type=qux"),
+                        new ObjectName("baz.bar:*")));
 
-        ConfigAssertions.assertFullMapping(properties, expected);
+        assertFullMapping(properties, expected);
     }
 }
