@@ -1,6 +1,7 @@
 243
 
 - Use pipe as separator for openmetrics object names config
+- Update jackson to 2.17.0
 
 242
 - Update airbase to 151
