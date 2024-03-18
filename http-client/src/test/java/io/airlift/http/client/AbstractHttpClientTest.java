@@ -46,7 +46,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.base.Throwables.getStackTraceAsString;
-import static com.google.common.base.Throwables.propagateIfPossible;
+import static com.google.common.base.Throwables.throwIfInstanceOf;
 import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.net.HttpHeaders.ACCEPT_ENCODING;
 import static com.google.common.net.HttpHeaders.AUTHORIZATION;
@@ -815,7 +815,8 @@ public abstract class AbstractHttpClientTest
             fail("expected exception");
         }
         catch (CapturedException e) {
-            propagateIfPossible(e.getCause(), Exception.class);
+            throwIfInstanceOf(e.getCause(), Exception.class);
+            throwIfUnchecked(e.getCause());
             throw new RuntimeException(e.getCause());
         }
     }
