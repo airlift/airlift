@@ -17,6 +17,7 @@ package io.airlift.json;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonFactoryBuilder;
 import com.fasterxml.jackson.core.StreamReadConstraints;
 import com.fasterxml.jackson.core.StreamWriteConstraints;
 import com.fasterxml.jackson.core.Version;
@@ -63,15 +64,18 @@ public class ObjectMapperProvider
     @Inject
     public ObjectMapperProvider()
     {
-        this(new JsonFactory());
+        this(new JsonFactoryBuilder());
     }
 
     public ObjectMapperProvider(JsonFactory jsonFactory)
     {
-        this.jsonFactory = requireNonNull(jsonFactory, "jsonFactory is null");
+        this(new JsonFactoryBuilder(requireNonNull(jsonFactory, "jsonFactory is null")));
+    }
 
+    private ObjectMapperProvider(JsonFactoryBuilder jsonFactoryBuilder)
+    {
         // Disable the length limit, caller will be responsible for validating the input length
-        jsonFactory.setStreamReadConstraints(StreamReadConstraints
+        jsonFactoryBuilder.streamReadConstraints(StreamReadConstraints
                 .builder()
                 .maxStringLength(Integer.MAX_VALUE)
                 .maxNestingDepth(Integer.MAX_VALUE)
@@ -79,10 +83,12 @@ public class ObjectMapperProvider
                 .maxDocumentLength(Long.MAX_VALUE)
                 .build());
 
-        jsonFactory.setStreamWriteConstraints(StreamWriteConstraints
+        jsonFactoryBuilder.streamWriteConstraints(StreamWriteConstraints
                 .builder()
                 .maxNestingDepth(Integer.MAX_VALUE)
                 .build());
+
+        jsonFactory = jsonFactoryBuilder.build();
 
         modules.add(new Jdk8Module());
         modules.add(new JavaTimeModule());
