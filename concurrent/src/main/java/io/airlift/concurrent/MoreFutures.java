@@ -31,8 +31,8 @@ import java.util.stream.Collectors;
 
 import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Throwables.propagateIfPossible;
 import static com.google.common.base.Throwables.throwIfInstanceOf;
+import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.collect.Streams.stream;
 import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
@@ -198,7 +198,8 @@ public final class MoreFutures
         }
         catch (ExecutionException e) {
             Throwable cause = e.getCause() == null ? e : e.getCause();
-            propagateIfPossible(cause, exceptionType);
+            throwIfInstanceOf(cause, exceptionType);
+            throwIfUnchecked(cause);
             throw new RuntimeException(cause);
         }
     }
@@ -257,7 +258,8 @@ public final class MoreFutures
         }
         catch (ExecutionException e) {
             Throwable cause = e.getCause() == null ? e : e.getCause();
-            propagateIfPossible(cause, exceptionType);
+            throwIfInstanceOf(cause, exceptionType);
+            throwIfUnchecked(cause);
             throw new RuntimeException(cause);
         }
         catch (TimeoutException expected) {

@@ -3,7 +3,8 @@ package io.airlift.testing;
 import java.io.Closeable;
 import java.io.IOException;
 
-import static com.google.common.base.Throwables.propagateIfPossible;
+import static com.google.common.base.Throwables.throwIfInstanceOf;
+import static com.google.common.base.Throwables.throwIfUnchecked;
 import static java.util.Objects.requireNonNull;
 
 public final class Closeables
@@ -41,7 +42,8 @@ public final class Closeables
             closeAll((AutoCloseable[]) closeables);
         }
         catch (Exception e) {
-            propagateIfPossible(e, IOException.class);
+            throwIfInstanceOf(e, IOException.class);
+            throwIfUnchecked(e);
             // Unreachable
             throw new RuntimeException(e);
         }
@@ -71,7 +73,8 @@ public final class Closeables
             }
         }
         if (rootCause != null) {
-            propagateIfPossible(rootCause, Exception.class);
+            throwIfUnchecked(rootCause);
+            throwIfInstanceOf(rootCause, Exception.class);
             throw new RuntimeException(rootCause);
         }
     }
