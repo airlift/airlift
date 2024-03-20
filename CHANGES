@@ -1,3 +1,6 @@
+244
+- Update jaxb-runtime to 4.0.5
+
 243
 - Use pipe as separator for openmetrics object names config
 - Add support for Jetty legacy URI compliance
