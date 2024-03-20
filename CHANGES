@@ -1,5 +1,4 @@
 243
-
 - Use pipe as separator for openmetrics object names config
 - Add support for Jetty legacy URI compliance
 - Fix deserializing JSON with large keys
