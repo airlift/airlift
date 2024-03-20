@@ -1,6 +1,7 @@
 244
 - Update jaxb-runtime to 4.0.5
 - Update HdrHistogram to 2.1.12
+- Update BouncyCastle to 1.77
 
 243
 - Use pipe as separator for openmetrics object names config
