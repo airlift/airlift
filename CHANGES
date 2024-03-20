@@ -1,5 +1,6 @@
 244
 - Update jaxb-runtime to 4.0.5
+- Update HdrHistogram to 2.1.12
 
 243
 - Use pipe as separator for openmetrics object names config
