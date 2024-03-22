@@ -165,7 +165,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>flatten-maven-plugin</artifactId>
-                <version>1.2.2</version>
+                <version>1.6.0</version>
                 <configuration>
                     <outputDirectory>${project.build.directory}</outputDirectory>
                     <flattenedPomFilename>pom.xml</flattenedPomFilename>
