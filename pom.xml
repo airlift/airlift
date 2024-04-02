@@ -90,6 +90,7 @@
         <air.modernizer.java-version>8</air.modernizer.java-version>
 
         <dep.airlift.version>244-SNAPSHOT</dep.airlift.version>
+        <dep.bytebuddy.version>1.14.13</dep.bytebuddy.version>
         <dep.modernizer.version>2.7.0</dep.modernizer.version>
         <dep.packaging.version>${dep.airlift.version}</dep.packaging.version>
         <dep.jersey.version>3.1.5</dep.jersey.version>
@@ -305,7 +306,13 @@
             <dependency>
                 <groupId>net.bytebuddy</groupId>
                 <artifactId>byte-buddy</artifactId>
-                <version>1.14.12</version>
+                <version>${dep.bytebuddy.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>net.bytebuddy</groupId>
+                <artifactId>byte-buddy-agent</artifactId>
+                <version>${dep.bytebuddy.version}</version>
             </dependency>
 
             <dependency>
