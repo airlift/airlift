@@ -13,6 +13,8 @@
 
     <properties>
         <air.main.basedir>${project.parent.basedir}</air.main.basedir>
+        <!-- allow mocking on JDK 23 -->
+        <air.test.jvm.additional-arguments>-Dnet.bytebuddy.experimental=true</air.test.jvm.additional-arguments>
     </properties>
 
     <dependencies>
