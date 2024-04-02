@@ -363,12 +363,10 @@ public class HttpServer
             server.setHandler(rootHandlers);
         }
 
-        if (!showStackTrace) {
-            ErrorHandler errorHandler = new ErrorHandler();
-            errorHandler.setShowMessageInTitle(false);
-            errorHandler.setShowStacks(false);
-            server.setErrorHandler(errorHandler);
-        }
+        ErrorHandler errorHandler = new ErrorHandler();
+        errorHandler.setShowMessageInTitle(showStackTrace);
+        errorHandler.setShowStacks(showStackTrace);
+        server.setErrorHandler(errorHandler);
     }
 
     private static void setSecureRequestCustomizer(HttpConfiguration configuration)
@@ -390,11 +388,10 @@ public class HttpServer
             boolean enableLegacyUriCompliance)
     {
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
-        if (!showStackTrace) {
-            ErrorHandler handler = new ErrorHandler();
-            handler.setShowStacks(false);
-            context.setErrorHandler(handler);
-        }
+        ErrorHandler handler = new ErrorHandler();
+        handler.setShowStacks(showStackTrace);
+        handler.setShowMessageInTitle(showStackTrace);
+        context.setErrorHandler(handler);
 
         if (enableLegacyUriCompliance) {
             // allow encoded slashes to occur in URI paths
