@@ -90,6 +90,7 @@
         <air.modernizer.java-version>8</air.modernizer.java-version>
 
         <dep.airlift.version>244-SNAPSHOT</dep.airlift.version>
+        <dep.bouncycastle.version>1.77</dep.bouncycastle.version>
         <dep.bytebuddy.version>1.14.13</dep.bytebuddy.version>
         <dep.modernizer.version>2.7.0</dep.modernizer.version>
         <dep.packaging.version>${dep.airlift.version}</dep.packaging.version>
@@ -313,6 +314,18 @@
                 <groupId>net.bytebuddy</groupId>
                 <artifactId>byte-buddy-agent</artifactId>
                 <version>${dep.bytebuddy.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcpkix-jdk18on</artifactId>
+                <version>${dep.bouncycastle.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcprov-jdk18on</artifactId>
+                <version>${dep.bouncycastle.version}</version>
             </dependency>
 
             <dependency>
