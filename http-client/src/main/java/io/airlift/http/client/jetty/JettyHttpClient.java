@@ -878,11 +878,11 @@ public class JettyHttpClient
             if (bodyGenerator instanceof StaticBodyGenerator generator) {
                 jettyRequest.body(new BytesRequestContent(generator.getBody()));
             }
-            else if (bodyGenerator instanceof ByteBufferBodyGenerator generator) {
-                jettyRequest.body(new ByteBufferRequestContent(generator.byteBuffers()));
+            else if (bodyGenerator instanceof ByteBufferBodyGenerator(ByteBuffer[] buffers)) {
+                jettyRequest.body(new ByteBufferRequestContent(buffers));
             }
-            else if (bodyGenerator instanceof FileBodyGenerator generator) {
-                jettyRequest.body(fileContent(generator.path()));
+            else if (bodyGenerator instanceof FileBodyGenerator(Path path)) {
+                jettyRequest.body(fileContent(path));
             }
             else {
                 jettyRequest.body(new BytesRequestContent(generateBody(bodyGenerator)));
