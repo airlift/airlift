@@ -4,6 +4,7 @@
 - Update byte-buddy to 1.14.13
 - Update jackson to 2.17.0
 - Restore previous recycler pool implementation in Jackson
+- Update jaxb-runtime to 4.0.5
 
 243
 
