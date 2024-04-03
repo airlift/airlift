@@ -435,4 +435,119 @@
             </plugins>
         </pluginManagement>
     </build>
+
+    <profiles>
+        <profile>
+            <id>errorprone-compiler</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <!--suppress MavenModelInspection -->
+                        <configuration combine.children="merge">
+                            <!-- forking not required due to JVM flags in .mvn/jvm.config -->
+                            <!-- see https://errorprone.info/docs/installation#maven -->
+                            <!-- Do not fail on error-prone's warnings even for modules using air.compiler.fail-warnings -->
+                            <!-- TODO silence warnings we choose to ignore and raise important warnings to error and then remove <failOnWarning> -->
+                            <failOnWarning>false</failOnWarning>
+                            <compilerArgs>
+                                <arg>-XDcompilePolicy=simple</arg>
+                                <arg>
+                                    -Xplugin:ErrorProne \
+                                -Xep:AnnotateFormatMethod:ERROR \
+                                -Xep:ArgumentSelectionDefectChecker:ERROR \
+                                -Xep:BadComparable:ERROR \
+                                -Xep:BadInstanceof:ERROR \
+                                -Xep:BoxedPrimitiveConstructor:ERROR \
+                                -Xep:ClassCanBeStatic:ERROR \
+                                -Xep:CompareToZero:ERROR \
+                                -Xep:DefaultCharset:ERROR \
+                                -Xep:DistinctVarargsChecker:ERROR \
+                                -Xep:DoNotCallSuggester:OFF \
+                                -Xep:EmptyBlockTag:ERROR \
+                                    <!-- we would rather want the opposite check -->
+                                    -Xep:EqualsGetClass:OFF \
+                                -Xep:EqualsIncompatibleType:ERROR \
+                                -Xep:FallThrough:ERROR \
+                                -Xep:GetClassOnEnum:ERROR \
+                                    <!-- needs some careful inspection -->
+                                    -Xep:GuardedBy:OFF \
+                                -Xep:HidingField:ERROR \
+                                -Xep:JavaTimeDefaultTimeZone:OFF \
+                                    <!-- covered by Modernizer -->
+                                    -Xep:JdkObsolete:OFF \
+                                    <!-- This check requires list fields to be declared as ImmutableList, which is not in line with project's code style -->
+                                    -Xep:Immutable:OFF \
+                                    <!-- flags enums with List fields even if initialized with ImmutableList, and other false positives -->
+                                    -Xep:ImmutableEnumChecker:OFF \
+                                -Xep:ImmutableSetForContains:ERROR \
+                                    <!-- fields/variables should not differ only in case -->
+                                    -Xep:InconsistentCapitalization:ERROR \
+                                -Xep:InconsistentHashCode:ERROR \
+                                -Xep:InjectOnConstructorOfAbstractClass:ERROR \
+                                -Xep:InvalidInlineTag:ERROR \
+                                -Xep:MissingCasesInEnumSwitch:ERROR \
+                                -Xep:MissingOverride:ERROR \
+                                    <!-- Sometimes our javadoc contains just a @see directive -->
+                                    -Xep:MissingSummary:OFF \
+                                -Xep:MutablePublicArray:ERROR \
+                                -Xep:NarrowCalculation:ERROR \
+                                -Xep:NarrowingCompoundAssignment:ERROR \
+                                -Xep:NullOptional:ERROR \
+                                -Xep:NullableOptional:ERROR \
+                                -Xep:NullablePrimitive:ERROR \
+                                -Xep:ObjectToString:ERROR \
+                                -Xep:OptionalNotPresent:ERROR \
+                                -Xep:OrphanedFormatString:ERROR \
+                                -Xep:Overrides:ERROR \
+                                    <!-- flags List fields even if initialized with ImmutableList -->
+                                    -Xep:PreferredInterfaceType:OFF \
+                                -Xep:PrimitiveArrayPassedToVarargsMethod:ERROR \
+                                -Xep:RethrowReflectiveOperationExceptionAsLinkageError:OFF \
+                                -Xep:StaticAssignmentOfThrowable:ERROR \
+                                -Xep:StreamResourceLeak:ERROR \
+                                -Xep:UnicodeEscape:ERROR \
+                                -Xep:UnnecessaryLongToIntConversion:ERROR \
+                                -Xep:UnnecessaryMethodReference:ERROR \
+                                -Xep:UnnecessaryOptionalGet:ERROR \
+                                -Xep:UnnecessaryParentheses:ERROR \
+                                -Xep:UnnecessaryStringBuilder:ERROR \
+                                -Xep:UnusedMethod:OFF \
+                                -Xep:UnusedVariable:ERROR \
+                                -Xep:UseEnumSwitch:ERROR \
+                                -XepExcludedPaths:.*/target/generated-(|test-)sources/.*
+                                </arg>
+                            </compilerArgs>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>com.google.errorprone</groupId>
+                                    <artifactId>error_prone_core</artifactId>
+                                    <version>${dep.errorprone.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <!-- Allow to run goals with an empty local Maven repository -->
+            <id>disable-check-spi-dependencies</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>io.trino</groupId>
+                        <artifactId>trino-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>default-check-spi-dependencies</id>
+                                <phase>none</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

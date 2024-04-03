@@ -5,6 +5,17 @@ on:
   - pull_request
 
 jobs:
+  error-prone:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: 21
+      - name: Compile with error-prone
+        run: mvn clean verify -B -V -DskipTests -Dair.check.skip-all -P errorprone-compiler
+
   build:
     runs-on: ubuntu-latest
     strategy:
