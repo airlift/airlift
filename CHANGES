@@ -6,6 +6,7 @@
 - Restore previous recycler pool implementation in Jackson
 - Update jaxb-runtime to 4.0.5
 - Update HdrHistogram to 2.1.12
+- Update log4j-to-slf4j to 2.23.1
 
 243
 
