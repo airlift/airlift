@@ -32,25 +32,25 @@ public class LocalAnnouncementHttpServerInfo
     }
 
     @Override
-    public URI getHttpUri()
+    public URI httpUri()
     {
         return httpServerInfo.getHttpUri();
     }
 
     @Override
-    public URI getHttpExternalUri()
+    public URI httpExternalUri()
     {
         return httpServerInfo.getHttpExternalUri();
     }
 
     @Override
-    public URI getHttpsUri()
+    public URI httpsUri()
     {
         return httpServerInfo.getHttpsUri();
     }
 
     @Override
-    public URI getHttpsExternalUri()
+    public URI httpsExternalUri()
     {
         return httpServerInfo.getHttpsExternalUri();
     }

@@ -124,13 +124,13 @@ public class DiscoveryBinder
         @Override
         public ServiceAnnouncement get()
         {
-            if (httpServerInfo.getHttpUri() != null) {
-                builder.addProperty("http", httpServerInfo.getHttpUri().toString());
-                builder.addProperty("http-external", httpServerInfo.getHttpExternalUri().toString());
+            if (httpServerInfo.httpUri() != null) {
+                builder.addProperty("http", httpServerInfo.httpUri().toString());
+                builder.addProperty("http-external", httpServerInfo.httpExternalUri().toString());
             }
-            if (httpServerInfo.getHttpsUri() != null) {
-                builder.addProperty("https", httpServerInfo.getHttpsUri().toString());
-                builder.addProperty("https-external", httpServerInfo.getHttpsExternalUri().toString());
+            if (httpServerInfo.httpsUri() != null) {
+                builder.addProperty("https", httpServerInfo.httpsUri().toString());
+                builder.addProperty("https-external", httpServerInfo.httpsExternalUri().toString());
             }
             return builder.build();
         }

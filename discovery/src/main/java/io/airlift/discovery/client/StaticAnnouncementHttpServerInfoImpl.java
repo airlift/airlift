@@ -17,19 +17,16 @@ package io.airlift.discovery.client;
 
 import java.net.URI;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 
-public class StaticAnnouncementHttpServerInfoImpl
+public record StaticAnnouncementHttpServerInfoImpl(
+        URI httpUri,
+        URI httpExternalUri,
+        URI httpsUri,
+        URI httpsExternalUri)
         implements AnnouncementHttpServerInfo
 {
-    private final URI httpUri;
-    private final URI httpExternalUri;
-
-    private final URI httpsUri;
-    private final URI httpsExternalUri;
-
-    public StaticAnnouncementHttpServerInfoImpl(URI httpUri, URI httpExternalUri, URI httpsUri, URI httpsExternalUri)
+    public StaticAnnouncementHttpServerInfoImpl
     {
         checkArgument(
                 (httpUri == null && httpExternalUri == null) ||
@@ -39,45 +36,5 @@ public class StaticAnnouncementHttpServerInfoImpl
                 (httpsUri == null && httpsExternalUri == null) ||
                         (httpsUri != null && httpsExternalUri != null),
                 "httpsUri and httpsExternalUri must both be null or both non-null");
-
-        this.httpUri = httpUri;
-        this.httpExternalUri = httpExternalUri;
-        this.httpsUri = httpsUri;
-        this.httpsExternalUri = httpsExternalUri;
-    }
-
-    @Override
-    public URI getHttpUri()
-    {
-        return httpUri;
-    }
-
-    @Override
-    public URI getHttpExternalUri()
-    {
-        return httpExternalUri;
-    }
-
-    @Override
-    public URI getHttpsUri()
-    {
-        return httpsUri;
-    }
-
-    @Override
-    public URI getHttpsExternalUri()
-    {
-        return httpsExternalUri;
-    }
-
-    @Override
-    public String toString()
-    {
-        return toStringHelper(this)
-                .add("httpUri", httpUri)
-                .add("httpExternalUri", httpExternalUri)
-                .add("httpsUri", httpsUri)
-                .add("httpsExternalUri", httpsExternalUri)
-                .toString();
     }
 }

@@ -188,7 +188,7 @@ public class TestConfig
         assertEquals(Double.MAX_VALUE, config.getBoxedDoubleOption());
         assertEquals(MyEnum.FOO, config.getMyEnumOption());
         assertEquals(MyEnum.BAR, config.getMyEnumSecondOption());
-        assertEquals(config.getValueClassOption().getValue(), "a value class");
+        assertEquals(config.getValueClassOption().value(), "a value class");
     }
 
     @Test

@@ -1016,16 +1016,9 @@ public abstract class AbstractHttpClientTest
         }
     }
 
-    private static class DefaultOnExceptionResponseHandler
+    private record DefaultOnExceptionResponseHandler(Object defaultObject)
             implements ResponseHandler<Object, RuntimeException>
     {
-        private final Object defaultObject;
-
-        public DefaultOnExceptionResponseHandler(Object defaultObject)
-        {
-            this.defaultObject = defaultObject;
-        }
-
         @Override
         public Object handleException(Request request, Exception exception)
                 throws RuntimeException

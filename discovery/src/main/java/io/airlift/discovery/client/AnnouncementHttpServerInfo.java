@@ -19,11 +19,11 @@ import java.net.URI;
 
 public interface AnnouncementHttpServerInfo
 {
-    URI getHttpUri();
+    URI httpUri();
 
-    URI getHttpExternalUri();
+    URI httpExternalUri();
 
-    URI getHttpsUri();
+    URI httpsUri();
 
-    URI getHttpsExternalUri();
+    URI httpsExternalUri();
 }

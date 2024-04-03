@@ -15,17 +15,6 @@
  */
 package io.airlift.configuration;
 
-public class ValueClass
+public record ValueClass(String value)
 {
-    public final String value;
-
-    public ValueClass(String value)
-    {
-        this.value = value;
-    }
-
-    public String getValue()
-    {
-        return value;
-    }
 }
