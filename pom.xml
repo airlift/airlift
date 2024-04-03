@@ -87,7 +87,7 @@
         <air.compiler.fail-warnings>true</air.compiler.fail-warnings>
 
         <project.build.targetJdk>21</project.build.targetJdk>
-        <air.modernizer.java-version>8</air.modernizer.java-version>
+        <air.modernizer.java-version>21</air.modernizer.java-version>
 
         <dep.airlift.version>244-SNAPSHOT</dep.airlift.version>
         <dep.bouncycastle.version>1.77</dep.bouncycastle.version>
