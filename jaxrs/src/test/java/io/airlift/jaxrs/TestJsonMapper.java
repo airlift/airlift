@@ -95,7 +95,7 @@ public class TestJsonMapper
             fail("Should have thrown a JsonMapperParsingException");
         }
         catch (JsonMapperParsingException e) {
-            assertTrue((e.getMessage()).startsWith("Invalid json for Java type"));
+            assertTrue(e.getMessage().startsWith("Invalid json for Java type"));
         }
     }
 
@@ -131,7 +131,7 @@ public class TestJsonMapper
             fail("Should have thrown a JsonMapperParsingException");
         }
         catch (JsonMapperParsingException e) {
-            assertTrue((e.getMessage()).startsWith("Invalid json for Java type"));
+            assertTrue(e.getMessage().startsWith("Invalid json for Java type"));
         }
     }
 

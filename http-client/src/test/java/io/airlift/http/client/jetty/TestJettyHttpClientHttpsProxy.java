@@ -28,6 +28,7 @@ public class TestJettyHttpClientHttpsProxy
     }
 
     @Test(expectedExceptions = HttpResponseException.class)
+    @Override
     public void testConnectionRefused()
             throws Exception
     {

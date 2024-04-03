@@ -13,6 +13,9 @@
  */
 package io.airlift.concurrent;
 
+import com.google.errorprone.annotations.FormatMethod;
+import com.google.errorprone.annotations.FormatString;
+
 import java.io.Closeable;
 
 import static java.util.Objects.requireNonNull;
@@ -22,11 +25,12 @@ public class SetThreadName
 {
     private final String originalThreadName;
 
-    public SetThreadName(String format, Object... args)
+    @FormatMethod
+    public SetThreadName(@FormatString String format, Object... args)
     {
         requireNonNull(format, "format is null");
         originalThreadName = Thread.currentThread().getName();
-        Thread.currentThread().setName(String.format(format, args) + "-" + getThreadId(Thread.currentThread()));
+        Thread.currentThread().setName(format.formatted(args) + "-" + getThreadId(Thread.currentThread()));
     }
 
     public static long getThreadId(Thread thread)

@@ -531,7 +531,7 @@ public class ConfigurationFactory
                 if (attribute.injectionPoint() != null) {
                     replacement = format("replaced. Use '%s' instead.", prefix + attribute.injectionPoint().getProperty());
                 }
-                problems.addWarning("Configuration property '%s' has been " + replacement, fullName);
+                problems.addWarning("Configuration property '%s' has been %s", fullName, replacement);
 
                 if (operativeValue == null) {
                     operativeInjectionPoint = injectionPoint;

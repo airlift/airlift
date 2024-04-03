@@ -75,7 +75,7 @@ public class TestLogHistoryManager
 
     private static void assertLogFiles(LogHistoryManager logHistoryManager, List<LogFileName> expected)
     {
-        assertEquals(logHistoryManager.getTotalSize(), expected.size() * FILE_SIZE);
+        assertEquals(logHistoryManager.getTotalSize(), (long) expected.size() * FILE_SIZE);
         List<LogFileName> files = logHistoryManager.getFiles().stream()
                 .sorted()
                 .collect(toImmutableList());

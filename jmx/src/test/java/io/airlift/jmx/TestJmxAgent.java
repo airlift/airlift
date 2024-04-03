@@ -20,7 +20,8 @@ public class TestJmxAgent
 
         assertThat(url.toString()).matches("service:jmx:rmi:///jndi/rmi://.*:\\d+/jmxrmi");
 
-        JMXConnector connector = JMXConnectorFactory.connect(url);
+        @SuppressWarnings("BanJNDI")
+        JMXConnector connector = JMXConnectorFactory.connect(url, null);
         connector.connect();
     }
 }

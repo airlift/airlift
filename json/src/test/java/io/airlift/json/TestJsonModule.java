@@ -389,6 +389,7 @@ public class TestJsonModule
             this(superDuperNameList, null);
         }
 
+        @SuppressWarnings("UnusedVariable")
         private SuperDuperNameList(String superDuperNameList, Object stopJacksonFromUsingStringConstructor)
         {
             this.name = ImmutableList.copyOf(Splitter.on('*').split(superDuperNameList));

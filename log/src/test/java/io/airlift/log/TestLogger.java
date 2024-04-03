@@ -32,6 +32,7 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 @Test(singleThreaded = true)
+@SuppressWarnings("FormatStringAnnotation")
 public class TestLogger
 {
     private MockHandler handler;

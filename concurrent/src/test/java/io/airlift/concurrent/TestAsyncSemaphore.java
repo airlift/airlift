@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
+import static com.google.common.base.Verify.verify;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.util.concurrent.Futures.addCallback;
 import static com.google.common.util.concurrent.Futures.immediateCancelledFuture;
@@ -140,7 +141,7 @@ public class TestAsyncSemaphore
         CountDownLatch completionLatch = new CountDownLatch(100);
         for (int i = 0; i < 100; i++) {
             executor.execute(() -> {
-                Uninterruptibles.awaitUninterruptibly(startLatch, 1, TimeUnit.MINUTES);
+                verify(Uninterruptibles.awaitUninterruptibly(startLatch, 1, TimeUnit.MINUTES));
                 asyncSemaphore.submit((Runnable) () -> {
                     count.incrementAndGet();
                     int currentConcurrency = concurrency.incrementAndGet();
@@ -155,7 +156,7 @@ public class TestAsyncSemaphore
         startLatch.countDown();
 
         // Wait for completion
-        Uninterruptibles.awaitUninterruptibly(completionLatch, 1, TimeUnit.MINUTES);
+        verify(Uninterruptibles.awaitUninterruptibly(completionLatch, 1, TimeUnit.MINUTES));
 
         assertEquals(count.get(), 100);
     }
@@ -179,7 +180,7 @@ public class TestAsyncSemaphore
         }
 
         // Wait for all tasks and callbacks to complete
-        completionLatch.await(1, TimeUnit.MINUTES);
+        verify(completionLatch.await(1, TimeUnit.MINUTES));
 
         for (ListenableFuture<Void> future : futures) {
             try {
@@ -215,7 +216,7 @@ public class TestAsyncSemaphore
         }
 
         // Wait for all tasks and callbacks to complete
-        completionLatch.await(1, TimeUnit.MINUTES);
+        verify(completionLatch.await(1, TimeUnit.MINUTES));
 
         for (ListenableFuture<Void> future : futures) {
             try {
@@ -247,7 +248,7 @@ public class TestAsyncSemaphore
         Queue<ListenableFuture<Void>> futures = new ConcurrentLinkedQueue<>();
         for (int i = 0; i < 100; i++) {
             executor.execute(() -> {
-                Uninterruptibles.awaitUninterruptibly(startLatch, 1, TimeUnit.MINUTES);
+                verify(Uninterruptibles.awaitUninterruptibly(startLatch, 1, TimeUnit.MINUTES));
                 // Should never execute this future
                 ListenableFuture<Void> future = asyncSemaphore.submit(() -> fail(null));
                 futures.add(future);
@@ -258,7 +259,7 @@ public class TestAsyncSemaphore
         startLatch.countDown();
 
         // Wait for completion
-        Uninterruptibles.awaitUninterruptibly(completionLatch, 1, TimeUnit.MINUTES);
+        verify(Uninterruptibles.awaitUninterruptibly(completionLatch, 1, TimeUnit.MINUTES));
 
         // Make sure they all report failure
         for (ListenableFuture<Void> future : futures) {

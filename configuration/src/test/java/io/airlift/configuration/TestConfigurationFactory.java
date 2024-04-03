@@ -41,6 +41,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -490,7 +491,8 @@ public class TestConfigurationFactory
         }
         catch (CreationException e) {
             for (String expectedErrorMessagePattern : expectedErrorMessagePatterns) {
-                e.getMessage().matches(expectedErrorMessagePattern);
+                assertThat(e.getMessage().split("\n"))
+                        .anyMatch(line -> line.matches(expectedErrorMessagePattern));
             }
             assertMessagesMatch(
                     e.getErrorMessages(),

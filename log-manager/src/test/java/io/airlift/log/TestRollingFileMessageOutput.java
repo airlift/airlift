@@ -30,6 +30,7 @@ import java.util.logging.ErrorManager;
 import java.util.logging.Formatter;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
+import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -188,8 +189,8 @@ public class TestRollingFileMessageOutput
             Path masterFile = tempDir.resolve("launcher.log");
             BufferedHandler handler = createRollingFileHandler(
                     masterFile.toString(),
-                    DataSize.of(message.length() * 5, BYTE),
-                    DataSize.of(message.length() * 2 + message.length() * 5 + message.length() * 5, BYTE), // 2 messages + 2 closed files
+                    DataSize.of(message.length() * 5L, BYTE),
+                    DataSize.of(message.length() * 2L + message.length() * 5L + message.length() * 5L, BYTE), // 2 messages + 2 closed files
                     NONE,
                     TEXT.createFormatter(ImmutableMap.of()),
                     new ErrorManager());
@@ -280,8 +281,8 @@ public class TestRollingFileMessageOutput
             Path masterFile = tempDir.resolve("launcher.log");
             BufferedHandler handler = createRollingFileHandler(
                     masterFile.toString(),
-                    DataSize.of(message.length() * 5, BYTE),
-                    DataSize.of(message.length() + message.length() * 5 + expectedCompressedSize, BYTE), // one message, one uncompressed file, one compressed file
+                    DataSize.of(message.length() * 5L, BYTE),
+                    DataSize.of(message.length() + message.length() * 5L + expectedCompressedSize, BYTE), // one message, one uncompressed file, one compressed file
                     GZIP,
                     TEXT.createFormatter(ImmutableMap.of()),
                     new ErrorManager());
@@ -521,13 +522,15 @@ public class TestRollingFileMessageOutput
         assertEquals(symbolicLinkTarget.getNameCount(), 1);
         assertNull(symbolicLinkTarget.getParent());
 
-        List<Path> logFiles = Files.list(masterFile.getParent())
-                .filter(not(masterFile::equals))
-                .collect(toImmutableList());
-        for (Path logFile : logFiles) {
-            assertFalse(Files.isSymbolicLink(logFile));
-            assertTrue(Files.isRegularFile(logFile));
-            assertTrue(parseHistoryLogFileName(masterFile.getFileName().toString(), logFile.getFileName().toString()).isPresent());
+        try (Stream<Path> files = Files.list(masterFile.getParent())) {
+            List<Path> logFiles = files
+                    .filter(not(masterFile::equals))
+                    .collect(toImmutableList());
+            for (Path logFile : logFiles) {
+                assertFalse(Files.isSymbolicLink(logFile));
+                assertTrue(Files.isRegularFile(logFile));
+                assertTrue(parseHistoryLogFileName(masterFile.getFileName().toString(), logFile.getFileName().toString()).isPresent());
+            }
         }
     }
 
@@ -558,7 +561,7 @@ public class TestRollingFileMessageOutput
 
         List<String> lines = waitForExactLines(masterFile, expectedLines);
         assertEquals(lines.size(), expectedLines);
-        assertEquals(Files.size(masterFile), (expectedLines) * lineSize);
+        assertEquals(Files.size(masterFile), (long) expectedLines * lineSize);
     }
 
     private static List<String> waitForExactLines(Path masterFile, int exactCount)

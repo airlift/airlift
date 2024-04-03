@@ -98,7 +98,9 @@ public final class TracingFilter
 
         Span span = spanBuilder.startSpan();
         requestContext.setProperty(REQUEST_SPAN, span);
-        requestContext.setProperty(REQUEST_SCOPE, span.makeCurrent());
+        try (var scope = span.makeCurrent()) {
+            requestContext.setProperty(REQUEST_SCOPE, scope);
+        }
     }
 
     @Override

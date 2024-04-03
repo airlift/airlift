@@ -49,6 +49,7 @@ import java.util.List;
 import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static io.airlift.http.client.Request.Builder.preparePost;
 import static io.airlift.http.client.StaticBodyGenerator.createStaticBodyGenerator;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
 public class HttpEventClient
@@ -164,7 +165,7 @@ public class HttpEventClient
 
             try {
                 InputStream inputStream = response.getInputStream();
-                String responseBody = CharStreams.toString(new InputStreamReader(inputStream));
+                String responseBody = CharStreams.toString(new InputStreamReader(inputStream, UTF_8));
                 log.debug("Posting event to %s failed: status_code=%d body=%s", request.getUri(), statusCode, responseBody);
             }
             catch (IOException bodyError) {

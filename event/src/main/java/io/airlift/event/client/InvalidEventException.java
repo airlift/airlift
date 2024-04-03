@@ -15,17 +15,22 @@
  */
 package io.airlift.event.client;
 
+import com.google.errorprone.annotations.FormatMethod;
+import com.google.errorprone.annotations.FormatString;
+
 import java.io.IOException;
 
 public class InvalidEventException
         extends IOException
 {
-    public InvalidEventException(String message, Object... args)
+    @FormatMethod
+    public InvalidEventException(@FormatString String message, Object... args)
     {
         super(String.format(message, args));
     }
 
-    public InvalidEventException(Throwable cause, String message, Object... args)
+    @FormatMethod
+    public InvalidEventException(Throwable cause, @FormatString String message, Object... args)
     {
         super(String.format(message, args), cause);
     }

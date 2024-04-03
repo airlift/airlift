@@ -29,6 +29,7 @@
 package io.airlift.stats;
 
 // Note: this code was forked from fastutil (http://fastutil.di.unimi.it/)
+@SuppressWarnings("UnnecessaryParentheses")
 final class DoubleArrays
 {
     private DoubleArrays() {}

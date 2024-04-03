@@ -140,7 +140,7 @@ public class TestServiceInventory
         }
     }
 
-    private class ServiceInventoryServlet
+    private static class ServiceInventoryServlet
             extends HttpServlet
     {
         private final byte[] serviceInventory;

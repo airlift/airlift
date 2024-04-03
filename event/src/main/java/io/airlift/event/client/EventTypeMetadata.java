@@ -21,6 +21,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Multimap;
+import com.google.errorprone.annotations.FormatMethod;
+import com.google.errorprone.annotations.FormatString;
 import io.airlift.event.client.EventField.EventFieldMapping;
 
 import java.lang.reflect.Method;
@@ -106,7 +108,7 @@ public final class EventTypeMetadata<T>
         for (Method method : findAnnotatedMethods(eventClass, EventField.class)) {
             // validate method
             if (method.getParameterTypes().length != 0) {
-                addMethodError("does not have zero parameters", method);
+                addMethodError(method, "does not have zero parameters");
                 continue;
             }
 
@@ -144,7 +146,7 @@ public final class EventTypeMetadata<T>
                 eventDataType = Optional.ofNullable(getEventDataType(dataType));
                 if (eventDataType.isEmpty()) {
                     Object typeSource = containerType.map(Object.class::cast).orElse("return");
-                    addMethodError("%s type [%s] is not supported", method, typeSource, dataType);
+                    addMethodError(method, "%s type [%s] is not supported", typeSource, dataType);
                     continue;
                 }
             }
@@ -155,15 +157,15 @@ public final class EventTypeMetadata<T>
             if (eventField.fieldMapping() != EventFieldMapping.DATA) {
                 // validate special fields
                 if (containerType.isPresent()) {
-                    addMethodError("non-DATA fieldMapping (%s) not allowed for %s", method, eventField.fieldMapping(), containerType.orElseThrow());
+                    addMethodError(method, "non-DATA fieldMapping (%s) not allowed for %s", eventField.fieldMapping(), containerType.orElseThrow());
                     continue;
                 }
                 if (nestedEvent) {
-                    addMethodError("non-DATA fieldMapping (%s) not allowed for nested event", method, eventField.fieldMapping());
+                    addMethodError(method, "non-DATA fieldMapping (%s) not allowed for nested event", eventField.fieldMapping());
                     continue;
                 }
                 if (!fieldName.isEmpty()) {
-                    addMethodError("has a value and non-DATA fieldMapping (%s)", method, eventField.fieldMapping());
+                    addMethodError(method, "has a value and non-DATA fieldMapping (%s)", eventField.fieldMapping());
                     continue;
                 }
                 fieldName = eventField.fieldMapping().getFieldName();
@@ -173,7 +175,7 @@ public final class EventTypeMetadata<T>
                     fieldName = extractNameFromGetter(method);
                 }
                 if (!isValidFieldName(fieldName)) {
-                    addMethodError("Field name is invalid [%s]", method, fieldName);
+                    addMethodError(method, "Field name is invalid [%s]", fieldName);
                     continue;
                 }
                 if (fields.containsKey(fieldName)) {
@@ -233,16 +235,16 @@ public final class EventTypeMetadata<T>
     {
         Type[] types = getTypeParameters(Iterable.class, method.getGenericReturnType());
         if ((types == null) || (types.length != 1)) {
-            addMethodError("Unable to get type parameter for iterable [%s]", method, method.getGenericReturnType());
+            addMethodError(method, "Unable to get type parameter for iterable [%s]", method.getGenericReturnType());
             return null;
         }
         Type type = types[0];
         if (!(type instanceof Class)) {
-            addMethodError("Iterable type parameter [%s] must be an exact type", method, type);
+            addMethodError(method, "Iterable type parameter [%s] must be an exact type", type);
             return null;
         }
         if (isIterable((Class<?>) type)) {
-            addMethodError("Iterable of iterable is not supported", method);
+            addMethodError(method, "Iterable of iterable is not supported");
             return null;
         }
         return (Class<?>) type;
@@ -253,24 +255,24 @@ public final class EventTypeMetadata<T>
         String className = mapClass.getSimpleName();
         Type[] types = getTypeParameters(mapClass, method.getGenericReturnType());
         if ((types == null) || (types.length != 2)) {
-            addMethodError("Unable to get type parameter for %s [%s]", method, className, method.getGenericReturnType());
+            addMethodError(method, "Unable to get type parameter for %s [%s]", className, method.getGenericReturnType());
             return null;
         }
         Type keyType = types[0];
         Type valueType = types[1];
         if (!(keyType instanceof Class)) {
-            addMethodError("%s key type parameter [%s] must be an exact type", method, className, keyType);
+            addMethodError(method, "%s key type parameter [%s] must be an exact type", className, keyType);
             return null;
         }
         if (!(valueType instanceof Class)) {
-            addMethodError("%s value type parameter [%s] must be an exact type", method, className, valueType);
+            addMethodError(method, "%s value type parameter [%s] must be an exact type", className, valueType);
             return null;
         }
         if (!isString((Class<?>) keyType)) {
-            addMethodError("%s key type parameter [%s] must be a String", method, className, keyType);
+            addMethodError(method, "%s key type parameter [%s] must be a String", className, keyType);
         }
         if (isIterable((Class<?>) valueType)) {
-            addMethodError("%s value type parameter [%s] cannot be iterable", method, className, valueType);
+            addMethodError(method, "%s value type parameter [%s] cannot be iterable", className, valueType);
             return null;
         }
         return (Class<?>) valueType;
@@ -295,10 +297,10 @@ public final class EventTypeMetadata<T>
             for (Method method : clazz.getDeclaredMethods()) {
                 if (method.isAnnotationPresent(EventField.class)) {
                     if (!Modifier.isPublic(method.getModifiers())) {
-                        addMethodError("is not public", method);
+                        addMethodError(method, "is not public");
                     }
                     if (Modifier.isStatic(method.getModifiers())) {
-                        addMethodError("is static", method);
+                        addMethodError(method, "is static");
                     }
                 }
             }
@@ -397,13 +399,20 @@ public final class EventTypeMetadata<T>
         return fields.get(fieldName);
     }
 
-    public void addMethodError(String format, Method method, Object... args)
+    @FormatMethod
+    public void addMethodError(Method method, @FormatString String format, Object... args)
     {
         String prefix = String.format("@X method [%s] ", method.toGenericString());
-        addClassError(prefix + format, args);
+        addClassError(prefix + String.format(format, args));
     }
 
-    public void addClassError(String format, Object... args)
+    public void addClassError(String message)
+    {
+        errors.add(message);
+    }
+
+    @FormatMethod
+    public void addClassError(@FormatString String format, Object... args)
     {
         String message = String.format(format, args);
         message = String.format("Event class [%s] %s", eventClass, message);

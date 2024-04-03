@@ -26,6 +26,7 @@ import static io.airlift.testing.Assertions.assertContainsAllOf;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
+@SuppressWarnings("FormatStringAnnotation")
 public class ProblemsTest
 {
     @Test
@@ -191,11 +192,13 @@ public class ProblemsTest
     {
         private String result = "";
 
+        @Override
         public void onError(Message error)
         {
             result = result + "E-" + error.getMessage() + ", ";
         }
 
+        @Override
         public void onWarning(Message warning)
         {
             result = result + "W-" + warning.getMessage() + ", ";

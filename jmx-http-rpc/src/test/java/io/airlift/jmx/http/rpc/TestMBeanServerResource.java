@@ -85,6 +85,7 @@ public class TestMBeanServerResource
         MBeanExporter exporter = new MBeanExporter(platformMBeanServer);
         exporter.export(testMBeanName.toString(), testMBean);
 
+        @SuppressWarnings("BanJNDI")
         JMXConnector connect = JMXConnectorFactory.connect(
                 new JMXServiceURL("service:jmx:" + server.getBaseUrl()),
                 ImmutableMap.of(JMXConnector.CREDENTIALS, new String[] {"foo", "bar"}));

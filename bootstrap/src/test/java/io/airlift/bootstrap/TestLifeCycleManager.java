@@ -275,7 +275,7 @@ public class TestLifeCycleManager
     public void testPostConstructExceptionCallsPreDestroy()
     {
         try {
-            Injector injector = Guice.createInjector(
+            Guice.createInjector(
                     Stage.PRODUCTION,
                     new LifeCycleModule(),
                     binder -> binder.bind(PostConstructExceptionInstance.class).in(Scopes.SINGLETON));

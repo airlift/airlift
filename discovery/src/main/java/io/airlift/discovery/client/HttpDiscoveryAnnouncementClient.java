@@ -160,7 +160,7 @@ public class HttpDiscoveryAnnouncementClient
         return DEFAULT_DELAY;
     }
 
-    private class DiscoveryResponseHandler<T>
+    private static class DiscoveryResponseHandler<T>
             implements ResponseHandler<T, DiscoveryException>
     {
         private final String name;

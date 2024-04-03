@@ -164,9 +164,9 @@ public class TestQuantileDigest
 
         assertEquals(digest.getQuantileLowerBound(0.0), 1);
         for (int i = 1; i <= 10; i++) {
-            assertTrue(digest.getQuantileLowerBound(i / 10.0) <= i * 10);
+            assertTrue(digest.getQuantileLowerBound(i / 10.0) <= i * 10L);
             if (i > 5) {
-                assertTrue(digest.getQuantileLowerBound(i / 10.0) >= (i - 5) * 10);
+                assertTrue(digest.getQuantileLowerBound(i / 10.0) >= (i - 5) * 10L);
             }
         }
 
@@ -184,9 +184,9 @@ public class TestQuantileDigest
 
         assertEquals(digest.getQuantileUpperBound(1.0), 99);
         for (int i = 0; i < 10; i++) {
-            assertTrue(digest.getQuantileUpperBound(i / 10.0) >= i * 10);
+            assertTrue(digest.getQuantileUpperBound(i / 10.0) >= i * 10L);
             if (i < 5) {
-                assertTrue(digest.getQuantileUpperBound(i / 10.0) <= (i + 5) * 10);
+                assertTrue(digest.getQuantileUpperBound(i / 10.0) <= (i + 5) * 10L);
             }
         }
 
@@ -474,7 +474,7 @@ public class TestQuantileDigest
             throws Exception
     {
         TestingTicker ticker = new TestingTicker();
-        int targetAgeInSeconds = (int) (QuantileDigest.RESCALE_THRESHOLD_SECONDS);
+        int targetAgeInSeconds = (int) QuantileDigest.RESCALE_THRESHOLD_SECONDS;
 
         QuantileDigest digest = new QuantileDigest(0.01,
                 ExponentialDecay.computeAlpha(QuantileDigest.ZERO_WEIGHT_THRESHOLD / 2, targetAgeInSeconds),

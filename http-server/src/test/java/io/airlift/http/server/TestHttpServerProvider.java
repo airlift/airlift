@@ -402,7 +402,7 @@ public class TestHttpServerProvider
             StringResponse response = client.execute(
                     prepareGet()
                             .setUri(httpServerInfo.getHttpUri())
-                            .addHeader("Authorization", "Basic " + Base64.getEncoder().encodeToString("user:password".getBytes()).trim())
+                            .addHeader("Authorization", "Basic " + Base64.getEncoder().encodeToString("user:password".getBytes(UTF_8)).trim())
                             .build(),
                     createStringResponseHandler());
 

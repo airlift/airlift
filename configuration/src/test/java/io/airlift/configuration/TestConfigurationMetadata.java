@@ -21,6 +21,7 @@ import io.airlift.configuration.ConfigurationMetadata.AttributeMetadata;
 import jakarta.validation.constraints.Min;
 import org.testng.annotations.Test;
 
+import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -130,7 +131,7 @@ public class TestConfigurationMetadata
     {
         TestMonitor monitor = new TestMonitor();
         try {
-            ConfigurationMetadata<?> metadata = ConfigurationMetadata.getValidConfigurationMetadata(SetterNoGetterConfigClass.class, monitor);
+            ConfigurationMetadata.getValidConfigurationMetadata(SetterNoGetterConfigClass.class, monitor);
             fail("Expected ConfigurationException");
         }
         catch (ConfigurationException e) {
@@ -466,7 +467,7 @@ public class TestConfigurationMetadata
             throws Exception
     {
         TestMonitor monitor = new TestMonitor();
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(MultipleAnnotatedSettersClass.class, monitor);
+        ConfigurationMetadata.getConfigurationMetadata(MultipleAnnotatedSettersClass.class, monitor);
 
         // Not validating metadata, since the actual setter it picks is not deterministic
 
@@ -480,7 +481,7 @@ public class TestConfigurationMetadata
             throws Exception
     {
         TestMonitor monitor = new TestMonitor();
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(CurrentAndLegacyConfigOnGetterClass.class, monitor);
+        ConfigurationMetadata.getConfigurationMetadata(CurrentAndLegacyConfigOnGetterClass.class, monitor);
         monitor.assertNumberOfErrors(1);
         monitor.assertNumberOfWarnings(0);
         monitor.assertMatchingErrorRecorded("not a valid setter", "getValue");
@@ -505,7 +506,7 @@ public class TestConfigurationMetadata
             throws Exception
     {
         TestMonitor monitor = new TestMonitor();
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(CurrentConfigWithReplacedByClass.class, monitor);
+        ConfigurationMetadata.getConfigurationMetadata(CurrentConfigWithReplacedByClass.class, monitor);
         monitor.assertNumberOfErrors(1);
         monitor.assertNumberOfWarnings(0);
         monitor.assertMatchingErrorRecorded("@Config method", "setValue", "claiming to be replaced by", "'other-name'");
@@ -516,7 +517,7 @@ public class TestConfigurationMetadata
             throws Exception
     {
         TestMonitor monitor = new TestMonitor();
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(LegacyConfigOnGetterClass.class, monitor);
+        ConfigurationMetadata.getConfigurationMetadata(LegacyConfigOnGetterClass.class, monitor);
         monitor.assertNumberOfErrors(2);
         monitor.assertNumberOfWarnings(0);
         monitor.assertMatchingErrorRecorded("not a valid setter", "getValue");
@@ -528,7 +529,7 @@ public class TestConfigurationMetadata
             throws Exception
     {
         TestMonitor monitor = new TestMonitor();
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(LegacyConfigOnSetterClass.class, monitor);
+        ConfigurationMetadata.getConfigurationMetadata(LegacyConfigOnSetterClass.class, monitor);
         monitor.assertNumberOfErrors(1);
         monitor.assertNumberOfWarnings(0);
         monitor.assertMatchingErrorRecorded("LegacyConfig", "setValue", "not associated with any valid @Config");
@@ -539,7 +540,7 @@ public class TestConfigurationMetadata
             throws Exception
     {
         TestMonitor monitor = new TestMonitor();
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(LegacyConfigOnDeprecatedSetterClass.class, monitor);
+        ConfigurationMetadata.getConfigurationMetadata(LegacyConfigOnDeprecatedSetterClass.class, monitor);
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(0);
     }
@@ -549,7 +550,7 @@ public class TestConfigurationMetadata
             throws Exception
     {
         TestMonitor monitor = new TestMonitor();
-        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(LegacyConfigOnNonDeprecatedSetterClass.class, monitor);
+        ConfigurationMetadata.getConfigurationMetadata(LegacyConfigOnNonDeprecatedSetterClass.class, monitor);
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(1);
         monitor.assertMatchingWarningRecorded("Replaced @LegacyConfig method", "setValue(int)", "should be @Deprecated");
@@ -864,7 +865,7 @@ public class TestConfigurationMetadata
         }
         else {
             try {
-                configClass.getDeclaredConstructor();
+                Constructor<?> ignored = configClass.getDeclaredConstructor();
                 fail(String.format("Expected configClass [%s] not to have a constructor", configClass.getName()));
             }
             catch (NoSuchMethodException expected) {
@@ -978,6 +979,7 @@ public class TestConfigurationMetadata
             return value;
         }
 
+        @Override
         public void setValue(String value)
         {
             this.value = value;

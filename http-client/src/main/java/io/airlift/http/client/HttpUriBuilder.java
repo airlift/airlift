@@ -190,6 +190,7 @@ public class HttpUriBuilder
     }
 
     // return an RFC-3986-compatible URI
+    @Override
     public String toString()
     {
         StringBuilder builder = new StringBuilder();
@@ -301,9 +302,9 @@ public class HttpUriBuilder
                 int high = Character.digit(encoded.charAt(i + 1), 16);
                 int low = Character.digit(encoded.charAt(i + 2), 16);
 
-                checkArgument(high != -1 && low != -1, "percent encoded value is not a valid hex string: ", encoded.substring(i, i + 2));
+                checkArgument(high != -1 && low != -1, "percent encoded value is not a valid hex string: %s", encoded.substring(i, i + 2));
 
-                int value = (high << 4) | (low);
+                int value = (high << 4) | low;
                 out.write(value);
                 i += 2;
             }

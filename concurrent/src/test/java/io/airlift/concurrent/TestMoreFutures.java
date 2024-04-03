@@ -735,6 +735,7 @@ public class TestMoreFutures
         assertThat(future2).isCancelled();
     }
 
+    @SuppressWarnings("ReturnValueIgnored")
     private static void assertGetUncheckedListenable(Function<ListenableFuture<Object>, Object> getter)
             throws Exception
     {

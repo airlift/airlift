@@ -20,6 +20,7 @@ final class BiasCorrection
     private BiasCorrection() {}
 
     // bias correction tables starting at p = 4
+    @SuppressWarnings("MutablePublicArray")
     public static final double[][] RAW_ESTIMATES = {
             {
                     11.238823092354272, 11.725363299909107, 12.222487291610099, 12.735431957728302, 13.270736917504793, 13.822501301508458, 14.391255094466214, 14.969524108237062,
@@ -354,6 +355,7 @@ final class BiasCorrection
             },
     };
 
+    @SuppressWarnings("MutablePublicArray")
     public static final double[][] BIAS = {
             {
                     10.238823092354272, 9.725363299909107, 9.222487291610099, 8.735431957728302, 8.270736917504793, 7.822501301508534, 7.391255094466184, 6.969524108237091,

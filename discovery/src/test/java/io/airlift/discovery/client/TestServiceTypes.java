@@ -29,6 +29,7 @@ public class TestServiceTypes
     private final ServiceType bananaServiceType;
 
     @ServiceType("quot\"ation-and-\\backslash")
+    @SuppressWarnings("UnusedVariable")
     private final ServiceType serviceTypeWithCharacters;
 
     public TestServiceTypes()

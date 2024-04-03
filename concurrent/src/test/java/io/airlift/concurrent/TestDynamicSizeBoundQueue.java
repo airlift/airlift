@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static com.google.common.base.Verify.verify;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
@@ -287,7 +288,7 @@ public class TestDynamicSizeBoundQueue
         ListenableFuture<Boolean> offerFuture = executorService.submit(() -> queue.offer("b", 10, TimeUnit.SECONDS));
 
         // Wait for the offering thread to block for space
-        Uninterruptibles.awaitUninterruptibly(awaitDequeueLatch, 10, TimeUnit.SECONDS);
+        verify(Uninterruptibles.awaitUninterruptibly(awaitDequeueLatch, 10, TimeUnit.SECONDS));
         assertThat(offerFuture.isDone()).isFalse();
 
         assertThat(queue.poll())
@@ -350,7 +351,7 @@ public class TestDynamicSizeBoundQueue
         });
 
         // Wait for the offering thread to block for space
-        Uninterruptibles.awaitUninterruptibly(awaitDequeueLatch, 10, TimeUnit.SECONDS);
+        verify(Uninterruptibles.awaitUninterruptibly(awaitDequeueLatch, 10, TimeUnit.SECONDS));
         assertThat(putFuture.isDone()).isFalse();
 
         assertThat(queue.poll())
@@ -419,7 +420,7 @@ public class TestDynamicSizeBoundQueue
         ListenableFuture<String> pollFuture = executorService.submit(() -> queue.poll(10, TimeUnit.SECONDS));
 
         // Wait for the polling thread to block for data
-        Uninterruptibles.awaitUninterruptibly(awaitEnqueueLatch, 10, TimeUnit.SECONDS);
+        verify(Uninterruptibles.awaitUninterruptibly(awaitEnqueueLatch, 10, TimeUnit.SECONDS));
         assertThat(pollFuture.isDone()).isFalse();
 
         queue.offer("a");
@@ -465,7 +466,7 @@ public class TestDynamicSizeBoundQueue
         });
 
         // Wait for the polling thread to block for a new element
-        Uninterruptibles.awaitUninterruptibly(awaitEnqueueLatch, 10, TimeUnit.SECONDS);
+        verify(Uninterruptibles.awaitUninterruptibly(awaitEnqueueLatch, 10, TimeUnit.SECONDS));
         assertThat(takeFuture.isDone()).isFalse();
 
         assertThat(queue.offer("a"))

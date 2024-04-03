@@ -81,6 +81,7 @@ public abstract class AbstractHttpClientTestHttpProxy
     }
 
     @Test(expectedExceptions = IOException.class)
+    @Override
     public void testConnectionRefused()
             throws Exception
     {
@@ -88,6 +89,7 @@ public abstract class AbstractHttpClientTestHttpProxy
     }
 
     @Test(expectedExceptions = IOException.class)
+    @Override
     public void testUnresolvableHost()
             throws Exception
     {

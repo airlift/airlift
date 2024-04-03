@@ -15,6 +15,8 @@
  */
 package io.airlift.jmx.http.rpc;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 public class HttpMBeanServerCredentials
 {
     private final String username;
@@ -42,7 +44,7 @@ public class HttpMBeanServerCredentials
             return new HttpMBeanServerCredentials(null, null);
         }
 
-        String credentials = new String(HttpMBeanServerRpc.base64Decode(authHeader.substring("Basic ".length())));
+        String credentials = new String(HttpMBeanServerRpc.base64Decode(authHeader.substring("Basic ".length())), UTF_8);
         int index = credentials.indexOf(':');
         if (index >= 0) {
             return new HttpMBeanServerCredentials(credentials.substring(0, index), credentials.substring(index + 1));

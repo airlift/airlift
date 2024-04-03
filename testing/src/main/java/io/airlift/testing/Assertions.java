@@ -17,6 +17,8 @@ package io.airlift.testing;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMultiset;
+import com.google.errorprone.annotations.FormatMethod;
+import com.google.errorprone.annotations.FormatString;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
@@ -318,12 +320,14 @@ public final class Assertions
         return message == null ? "" : message + " ";
     }
 
-    private static void fail(String format, Object... args)
+    @FormatMethod
+    private static void fail(@FormatString String format, Object... args)
     {
         throw new AssertionError(format(format, args));
     }
 
-    private static void fail(Throwable e, String format, Object... args)
+    @FormatMethod
+    private static void fail(Throwable e, @FormatString String format, Object... args)
     {
         throw new AssertionError(format(format, args), e);
     }

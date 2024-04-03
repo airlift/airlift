@@ -51,6 +51,7 @@ import static java.util.Objects.requireNonNull;
 import static org.testng.Assert.assertEquals;
 import static org.testng.FileAssert.fail;
 
+@SuppressWarnings("EqualsHashCode")
 public class TestEquivalenceTester
 {
     @Test
@@ -98,7 +99,7 @@ public class TestEquivalenceTester
         }
     }
 
-    @SuppressWarnings({"EqualsAndHashcode", "checkstyle:EqualsHashCode"})
+    @SuppressWarnings({"EqualsAndHashcode", "checkstyle:EqualsHashCode", "MissingOverride"})
     static class NotReflexive
     {
         @SuppressWarnings("override")

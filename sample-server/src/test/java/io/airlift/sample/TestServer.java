@@ -140,7 +140,7 @@ public class TestServer
                 prepareGet().setUri(uriFor("/v1/person")).build(),
                 createJsonResponseHandler(listCodec));
 
-        assertEqualsIgnoreOrder(expected, actual);
+        assertEqualsIgnoreOrder(actual, expected);
     }
 
     @Test
