@@ -59,7 +59,7 @@ final class LogHistoryManager
                     .map(Optional::get)
                     .forEach(files::add);
             totalSize = files.stream()
-                    .mapToLong(LogFile::getSize)
+                    .mapToLong(LogFile::size)
                     .sum();
         }
         catch (IOException e) {
@@ -76,7 +76,7 @@ final class LogHistoryManager
     public synchronized Set<LogFileName> getFiles()
     {
         return files.stream()
-                .map(LogFile::getLogFileName)
+                .map(LogFile::logFileName)
                 .collect(toImmutableSet());
     }
 
@@ -89,12 +89,12 @@ final class LogHistoryManager
             }
 
             // always reduce the cached total file size as we will either delete the file or stop tracking it
-            totalSize -= logFile.getSize();
+            totalSize -= logFile.size();
 
             // attempt to delete the file which may fail, because the file was already deleted or is not deletable
             // failure is ok as this is a best effort system
             try {
-                Files.deleteIfExists(logFile.getPath());
+                Files.deleteIfExists(logFile.path());
             }
             catch (IOException ignored) {
             }
@@ -128,7 +128,7 @@ final class LogHistoryManager
     public synchronized boolean removeFile(Path path)
     {
         return files.stream()
-                .filter(file -> file.getPath().equals(path))
+                .filter(file -> file.path().equals(path))
                 .findFirst()
                 .map(this::removeFile)
                 .orElse(false);
@@ -139,38 +139,18 @@ final class LogHistoryManager
         if (!files.remove(file)) {
             return false;
         }
-        totalSize -= file.getSize();
+        totalSize -= file.size();
         return true;
     }
 
-    private static class LogFile
+    private record LogFile(Path path, LogFileName logFileName, long size)
             implements Comparable<LogFile>
     {
-        private final Path path;
-        private final LogFileName logFileName;
-        private final long size;
-
-        public LogFile(Path path, LogFileName logFileName, long size)
+        private LogFile
         {
-            this.path = requireNonNull(path, "path is null");
-            this.logFileName = requireNonNull(logFileName, "logFileName is null");
+            requireNonNull(path, "path is null");
+            requireNonNull(logFileName, "logFileName is null");
             checkArgument(size >= 0, "size is negative");
-            this.size = size;
-        }
-
-        public Path getPath()
-        {
-            return path;
-        }
-
-        public LogFileName getLogFileName()
-        {
-            return logFileName;
-        }
-
-        public long getSize()
-        {
-            return size;
         }
 
         @Override

@@ -15,7 +15,6 @@
  */
 package io.airlift.discovery.client;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.node.NodeInfo;
@@ -23,80 +22,21 @@ import io.airlift.node.NodeInfo;
 import java.util.Map;
 import java.util.UUID;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
 import static java.util.Objects.requireNonNull;
 
-public class ServiceDescriptor
+public record ServiceDescriptor(
+        @JsonProperty("id") UUID id,
+        @JsonProperty("nodeId") String nodeId,
+        @JsonProperty("type") String type,
+        @JsonProperty("pool") String pool,
+        @JsonProperty("location") String location,
+        @JsonProperty("state") ServiceState state,
+        @JsonProperty("properties") Map<String, String> properties)
 {
-    private final UUID id;
-    private final String nodeId;
-    private final String type;
-    private final String pool;
-    private final String location;
-    private final ServiceState state;
-    private final Map<String, String> properties;
-
-    @JsonCreator
-    public ServiceDescriptor(
-            @JsonProperty("id") UUID id,
-            @JsonProperty("nodeId") String nodeId,
-            @JsonProperty("type") String type,
-            @JsonProperty("pool") String pool,
-            @JsonProperty("location") String location,
-            @JsonProperty("state") ServiceState state,
-            @JsonProperty("properties") Map<String, String> properties)
+    public ServiceDescriptor
     {
         requireNonNull(properties, "properties is null");
-
-        this.id = id;
-        this.nodeId = nodeId;
-        this.type = type;
-        this.pool = pool;
-        this.location = location;
-        this.state = state;
-        this.properties = ImmutableMap.copyOf(properties);
-    }
-
-    @JsonProperty
-    public UUID getId()
-    {
-        return id;
-    }
-
-    @JsonProperty
-    public String getNodeId()
-    {
-        return nodeId;
-    }
-
-    @JsonProperty
-    public String getType()
-    {
-        return type;
-    }
-
-    @JsonProperty
-    public String getPool()
-    {
-        return pool;
-    }
-
-    @JsonProperty
-    public String getLocation()
-    {
-        return location;
-    }
-
-    @JsonProperty
-    public ServiceState getState()
-    {
-        return state;
-    }
-
-    @JsonProperty
-    public Map<String, String> getProperties()
-    {
-        return properties;
+        properties = ImmutableMap.copyOf(properties);
     }
 
     @Override
@@ -122,20 +62,6 @@ public class ServiceDescriptor
     public int hashCode()
     {
         return id.hashCode();
-    }
-
-    @Override
-    public String toString()
-    {
-        return toStringHelper(this)
-                .add("id", id)
-                .add("nodeId", nodeId)
-                .add("type", type)
-                .add("pool", pool)
-                .add("location", location)
-                .add("state", state)
-                .add("properties", properties)
-                .toString();
     }
 
     public static ServiceDescriptorBuilder serviceDescriptor(String type)

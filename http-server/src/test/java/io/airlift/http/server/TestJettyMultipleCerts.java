@@ -153,7 +153,7 @@ public class TestJettyMultipleCerts
                             .setUri(URI.create("https://" + address))
                             .build(),
                     createStatusResponseHandler());
-            assertEquals(statusResponse.getStatusCode(), 200);
+            assertEquals(statusResponse.statusCode(), 200);
         }
         catch (Exception e) {
             throw new RuntimeException(address.getHost() + " " + e.getMessage(), e);

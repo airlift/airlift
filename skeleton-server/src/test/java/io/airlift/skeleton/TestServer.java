@@ -70,7 +70,7 @@ public class TestServer
                 prepareGet().setUri(uriFor("/v1/jmx/mbean")).build(),
                 createStatusResponseHandler());
 
-        assertEquals(response.getStatusCode(), OK.getStatusCode());
+        assertEquals(response.statusCode(), OK.getStatusCode());
     }
 
     private URI uriFor(String path)

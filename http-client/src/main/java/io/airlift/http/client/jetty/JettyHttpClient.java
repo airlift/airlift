@@ -879,10 +879,10 @@ public class JettyHttpClient
                 jettyRequest.body(new BytesRequestContent(generator.getBody()));
             }
             else if (bodyGenerator instanceof ByteBufferBodyGenerator generator) {
-                jettyRequest.body(new ByteBufferRequestContent(generator.getByteBuffers()));
+                jettyRequest.body(new ByteBufferRequestContent(generator.byteBuffers()));
             }
             else if (bodyGenerator instanceof FileBodyGenerator generator) {
-                jettyRequest.body(fileContent(generator.getPath()));
+                jettyRequest.body(fileContent(generator.path()));
             }
             else {
                 jettyRequest.body(new BytesRequestContent(generateBody(bodyGenerator)));

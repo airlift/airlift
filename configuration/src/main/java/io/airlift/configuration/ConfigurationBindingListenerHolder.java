@@ -2,17 +2,10 @@ package io.airlift.configuration;
 
 import static java.util.Objects.requireNonNull;
 
-class ConfigurationBindingListenerHolder
+record ConfigurationBindingListenerHolder(ConfigurationBindingListener configurationBindingListener)
 {
-    private final ConfigurationBindingListener configurationBindingListener;
-
-    ConfigurationBindingListenerHolder(ConfigurationBindingListener configurationBindingListener)
+    ConfigurationBindingListenerHolder
     {
-        this.configurationBindingListener = requireNonNull(configurationBindingListener, "configurationBindingListener is null");
-    }
-
-    public ConfigurationBindingListener getConfigurationBindingListener()
-    {
-        return configurationBindingListener;
+        requireNonNull(configurationBindingListener, "configurationBindingListener is null");
     }
 }

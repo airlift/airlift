@@ -59,7 +59,7 @@ public class HttpServiceSelectorImpl
         // favor https over http
         List<URI> httpsUri = new ArrayList<>();
         for (ServiceDescriptor serviceDescriptor : serviceDescriptors) {
-            String https = serviceDescriptor.getProperties().get("https");
+            String https = serviceDescriptor.properties().get("https");
             if (https != null) {
                 try {
                     httpsUri.add(new URI(https));
@@ -70,7 +70,7 @@ public class HttpServiceSelectorImpl
         }
         List<URI> httpUri = new ArrayList<>();
         for (ServiceDescriptor serviceDescriptor : serviceDescriptors) {
-            String http = serviceDescriptor.getProperties().get("http");
+            String http = serviceDescriptor.properties().get("http");
             if (http != null) {
                 try {
                     httpUri.add(new URI(http));

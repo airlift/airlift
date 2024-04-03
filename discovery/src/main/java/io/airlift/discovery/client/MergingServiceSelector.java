@@ -56,7 +56,7 @@ public class MergingServiceSelector
         Set<ServiceDescriptor> set = new HashSet<>();
         for (ServiceAnnouncement announcement : serviceAnnouncements) {
             ServiceDescriptor descriptor = announcement.toServiceDescriptor(nodeInfo);
-            if (descriptor.getType().equals(getType()) && descriptor.getPool().equals(getPool())) {
+            if (descriptor.type().equals(getType()) && descriptor.pool().equals(getPool())) {
                 set.add(descriptor);
             }
         }

@@ -91,17 +91,17 @@ public class DiscoveryModule
 
         return () -> {
             for (ServiceDescriptor descriptor : serviceInventory.getServiceDescriptors("discovery")) {
-                if (descriptor.getState() != ServiceState.RUNNING) {
+                if (descriptor.state() != ServiceState.RUNNING) {
                     continue;
                 }
 
                 try {
-                    return new URI(descriptor.getProperties().get("https"));
+                    return new URI(descriptor.properties().get("https"));
                 }
                 catch (Exception ignored) {
                 }
                 try {
-                    return new URI(descriptor.getProperties().get("http"));
+                    return new URI(descriptor.properties().get("http"));
                 }
                 catch (Exception ignored) {
                 }

@@ -63,44 +63,23 @@ public class StringResponseHandler
         return new StringResponse(response.getStatusCode(), response.getHeaders(), new String(bytes, charset));
     }
 
-    public static class StringResponse
+    public record StringResponse(int statusCode, ListMultimap<HeaderName, String> headers, String body)
     {
-        private final int statusCode;
-        private final ListMultimap<HeaderName, String> headers;
-        private final String body;
-
-        public StringResponse(int statusCode, ListMultimap<HeaderName, String> headers, String body)
+        public StringResponse
         {
-            this.statusCode = statusCode;
-            this.headers = ImmutableListMultimap.copyOf(headers);
-            this.body = body;
-        }
-
-        public int getStatusCode()
-        {
-            return statusCode;
-        }
-
-        public String getBody()
-        {
-            return body;
+            headers = ImmutableListMultimap.copyOf(headers);
         }
 
         @Nullable
         public String getHeader(String name)
         {
-            List<String> values = getHeaders().get(HeaderName.of(name));
+            List<String> values = headers().get(HeaderName.of(name));
             return values.isEmpty() ? null : values.getFirst();
         }
 
         public List<String> getHeaders(String name)
         {
             return headers.get(HeaderName.of(name));
-        }
-
-        public ListMultimap<HeaderName, String> getHeaders()
-        {
-            return headers;
         }
     }
 }

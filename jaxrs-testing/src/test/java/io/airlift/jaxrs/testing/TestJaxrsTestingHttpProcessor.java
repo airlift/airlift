@@ -39,8 +39,8 @@ public class TestJaxrsTestingHttpProcessor
 
         StringResponse response = HTTP_CLIENT.execute(request, createStringResponseHandler());
 
-        assertEquals(response.getStatusCode(), HttpStatus.OK.code());
-        assertEquals(response.getBody(), "Got xyz");
+        assertEquals(response.statusCode(), HttpStatus.OK.code());
+        assertEquals(response.body(), "Got xyz");
         assertEquals(response.getHeader("X-Test-Out"), "Got abc");
     }
 
@@ -68,7 +68,7 @@ public class TestJaxrsTestingHttpProcessor
                 .build();
 
         StringResponse response = HTTP_CLIENT.execute(request, createStringResponseHandler());
-        assertEquals(response.getStatusCode(), 404);
+        assertEquals(response.statusCode(), 404);
     }
 
     @Test
@@ -81,9 +81,9 @@ public class TestJaxrsTestingHttpProcessor
 
         StringResponse response = HTTP_CLIENT.execute(request, createStringResponseHandler());
 
-        assertThat(response.getStatusCode()).isEqualTo(HTTP_OK);
+        assertThat(response.statusCode()).isEqualTo(HTTP_OK);
         assertThat(response.getHeader(CONTENT_TYPE)).isEqualTo("application/vnd.sun.wadl+xml");
-        assertThat(response.getBody()).startsWith("<?xml ").contains("<application ");
+        assertThat(response.body()).startsWith("<?xml ").contains("<application ");
     }
 
     @Path("get-it")

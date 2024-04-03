@@ -128,11 +128,11 @@ public final class JwksService
         catch (RuntimeException e) {
             throw new RuntimeException("Error reading JWKS keys from " + address, e);
         }
-        if (response.getStatusCode() != 200) {
-            throw new RuntimeException("Unexpected response code " + response.getStatusCode() + " from JWKS service at " + address);
+        if (response.statusCode() != 200) {
+            throw new RuntimeException("Unexpected response code " + response.statusCode() + " from JWKS service at " + address);
         }
         try {
-            return decodeKeys(response.getBody());
+            return decodeKeys(response.body());
         }
         catch (RuntimeException e) {
             throw new RuntimeException("Unable to decode JWKS response from " + address, e);

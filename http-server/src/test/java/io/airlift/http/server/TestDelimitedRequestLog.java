@@ -107,10 +107,10 @@ public class TestDelimitedRequestLog
             assertEquals(events.size(), 3);
             // first two events should have the token set from the header
             for (int i = 0; i < 2; i++) {
-                assertEquals(((HttpRequestEvent) events.get(i)).getTraceToken(), token);
+                assertEquals(((HttpRequestEvent) events.get(i)).traceToken(), token);
             }
             // last event should have the token set by the tokenManager
-            assertEquals(((HttpRequestEvent) events.get(2)).getTraceToken(), tokenManager.getCurrentRequestToken());
+            assertEquals(((HttpRequestEvent) events.get(2)).traceToken(), tokenManager.getCurrentRequestToken());
         }
     }
 
@@ -179,25 +179,25 @@ public class TestDelimitedRequestLog
             assertEquals(events.size(), 1);
             HttpRequestEvent event = (HttpRequestEvent) events.getFirst();
 
-            assertEquals(event.getTimeStamp().toEpochMilli(), timestamp);
-            assertEquals(event.getClientAddress(), ip);
-            assertEquals(event.getProtocol(), protocol);
-            assertEquals(event.getMethod(), method);
-            assertEquals(event.getRequestUri(), uri.toString());
-            assertEquals(event.getUser(), user);
-            assertEquals(event.getAgent(), agent);
-            assertEquals(event.getReferrer(), referrer);
-            assertEquals(event.getRequestSize(), requestSize);
-            assertEquals(event.getRequestContentType(), requestContentType);
-            assertEquals(event.getResponseSize(), responseSize);
-            assertEquals(event.getResponseCode(), responseCode);
-            assertEquals(event.getResponseContentType(), responseContentType);
-            assertEquals(event.getTimeToFirstByte(), (Long) timeToFirstByte);
-            assertEquals(event.getTimeToLastByte(), timeToLastByte);
-            assertEquals(event.getTraceToken(), tokenManager.getCurrentRequestToken());
-            assertEquals(event.getBeginToDispatchMillis(), beginToDispatchMillis);
-            assertEquals(event.getFirstToLastContentTimeInMillis(), firstToLastContentTimeInMillis);
-            assertEquals(event.getResponseContentInterarrivalStats(), responseContentInterarrivalStats);
+            assertEquals(event.timeStamp().toEpochMilli(), timestamp);
+            assertEquals(event.clientAddress(), ip);
+            assertEquals(event.protocol(), protocol);
+            assertEquals(event.method(), method);
+            assertEquals(event.requestUri(), uri.toString());
+            assertEquals(event.user(), user);
+            assertEquals(event.agent(), agent);
+            assertEquals(event.referrer(), referrer);
+            assertEquals(event.requestSize(), requestSize);
+            assertEquals(event.requestContentType(), requestContentType);
+            assertEquals(event.responseSize(), responseSize);
+            assertEquals(event.responseCode(), responseCode);
+            assertEquals(event.responseContentType(), responseContentType);
+            assertEquals(event.timeToFirstByte(), (Long) timeToFirstByte);
+            assertEquals(event.timeToLastByte(), timeToLastByte);
+            assertEquals(event.traceToken(), tokenManager.getCurrentRequestToken());
+            assertEquals(event.beginToDispatchMillis(), beginToDispatchMillis);
+            assertEquals(event.firstToLastContentTimeInMillis(), firstToLastContentTimeInMillis);
+            assertEquals(event.responseContentInterarrivalStats(), responseContentInterarrivalStats);
 
             String actual = asCharSource(file, UTF_8).read();
             String expected = String.format("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
@@ -210,7 +210,7 @@ public class TestDelimitedRequestLog
                     responseCode,
                     requestSize,
                     responseSize,
-                    event.getTimeToLastByte(),
+                    event.timeToLastByte(),
                     tokenManager.getCurrentRequestToken(),
                     HTTP_2,
                     beginToDispatchMillis,
@@ -242,7 +242,7 @@ public class TestDelimitedRequestLog
             assertEquals(events.size(), 1);
             HttpRequestEvent event = (HttpRequestEvent) events.getFirst();
 
-            assertEquals(event.getProtocol(), protocol);
+            assertEquals(event.protocol(), protocol);
         }
     }
 
@@ -265,7 +265,7 @@ public class TestDelimitedRequestLog
             assertEquals(events.size(), 1);
             HttpRequestEvent event = (HttpRequestEvent) events.getFirst();
 
-            assertNull(event.getTimeToFirstByte());
+            assertNull(event.timeToFirstByte());
         }
     }
 
@@ -290,7 +290,7 @@ public class TestDelimitedRequestLog
             assertEquals(events.size(), 1);
             HttpRequestEvent event = (HttpRequestEvent) events.getFirst();
 
-            assertEquals(event.getClientAddress(), clientIp);
+            assertEquals(event.clientAddress(), clientIp);
         }
     }
 
@@ -316,7 +316,7 @@ public class TestDelimitedRequestLog
             assertEquals(events.size(), 1);
             HttpRequestEvent event = (HttpRequestEvent) events.getFirst();
 
-            assertEquals(event.getClientAddress(), clientIp);
+            assertEquals(event.clientAddress(), clientIp);
         }
     }
 }

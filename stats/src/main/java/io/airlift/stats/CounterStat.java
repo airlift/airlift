@@ -15,7 +15,6 @@
  */
 package io.airlift.stats;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.errorprone.annotations.ThreadSafe;
 import io.airlift.stats.DecayCounter.DecayCounterSnapshot;
@@ -118,47 +117,11 @@ public final class CounterStat
         return new CounterStatSnapshot(getTotalCount(), getOneMinute().snapshot(), getFiveMinute().snapshot(), getFifteenMinute().snapshot());
     }
 
-    public static class CounterStatSnapshot
+    public record CounterStatSnapshot(
+            @JsonProperty("totalCount") long totalCount,
+            @JsonProperty("oneMinute") DecayCounterSnapshot oneMinute,
+            @JsonProperty("fiveMinute") DecayCounterSnapshot fiveMinute,
+            @JsonProperty("fifteenMinute") DecayCounterSnapshot fifteenMinute)
     {
-        private final long totalCount;
-        private final DecayCounterSnapshot oneMinute;
-        private final DecayCounterSnapshot fiveMinute;
-        private final DecayCounterSnapshot fifteenMinute;
-
-        @JsonCreator
-        public CounterStatSnapshot(@JsonProperty("totalCount") long totalCount,
-                @JsonProperty("oneMinute") DecayCounterSnapshot oneMinute,
-                @JsonProperty("fiveMinute") DecayCounterSnapshot fiveMinute,
-                @JsonProperty("fifteenMinute") DecayCounterSnapshot fifteenMinute)
-        {
-            this.totalCount = totalCount;
-            this.oneMinute = oneMinute;
-            this.fiveMinute = fiveMinute;
-            this.fifteenMinute = fifteenMinute;
-        }
-
-        @JsonProperty
-        public long getTotalCount()
-        {
-            return totalCount;
-        }
-
-        @JsonProperty
-        public DecayCounterSnapshot getOneMinute()
-        {
-            return oneMinute;
-        }
-
-        @JsonProperty
-        public DecayCounterSnapshot getFiveMinute()
-        {
-            return fiveMinute;
-        }
-
-        @JsonProperty
-        public DecayCounterSnapshot getFifteenMinute()
-        {
-            return fifteenMinute;
-        }
     }
 }

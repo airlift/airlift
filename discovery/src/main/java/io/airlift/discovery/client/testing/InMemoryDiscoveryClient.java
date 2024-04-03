@@ -65,7 +65,7 @@ public class InMemoryDiscoveryClient
     {
         requireNonNull(serviceDescriptor, "serviceDescriptor is null");
 
-        return discovered.put(serviceDescriptor.getId(), serviceDescriptor);
+        return discovered.put(serviceDescriptor.id(), serviceDescriptor);
     }
 
     public ServiceDescriptor remove(UUID uuid)
@@ -102,12 +102,12 @@ public class InMemoryDiscoveryClient
 
         ImmutableList.Builder<ServiceDescriptor> builder = ImmutableList.builder();
         for (ServiceDescriptor serviceDescriptor : this.announcements.get()) {
-            if (serviceDescriptor.getType().equals(type)) {
+            if (serviceDescriptor.type().equals(type)) {
                 builder.add(serviceDescriptor);
             }
         }
         for (ServiceDescriptor serviceDescriptor : this.discovered.values()) {
-            if (serviceDescriptor.getType().equals(type)) {
+            if (serviceDescriptor.type().equals(type)) {
                 builder.add(serviceDescriptor);
             }
         }
@@ -122,12 +122,12 @@ public class InMemoryDiscoveryClient
 
         ImmutableList.Builder<ServiceDescriptor> builder = ImmutableList.builder();
         for (ServiceDescriptor serviceDescriptor : this.announcements.get()) {
-            if (serviceDescriptor.getType().equals(type) && serviceDescriptor.getPool().equals(pool)) {
+            if (serviceDescriptor.type().equals(type) && serviceDescriptor.pool().equals(pool)) {
                 builder.add(serviceDescriptor);
             }
         }
         for (ServiceDescriptor serviceDescriptor : this.discovered.values()) {
-            if (serviceDescriptor.getType().equals(type) && serviceDescriptor.getPool().equals(pool)) {
+            if (serviceDescriptor.type().equals(type) && serviceDescriptor.pool().equals(pool)) {
                 builder.add(serviceDescriptor);
             }
         }

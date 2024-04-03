@@ -138,16 +138,13 @@ public class HttpEventClient
         return out.toByteArray();
     }
 
-    private static class EventResponseHandler
+    private record EventResponseHandler(String type, String pool)
             implements ResponseHandler<Void, RuntimeException>
     {
-        private final String type;
-        private final String pool;
-
-        public EventResponseHandler(String type, String pool)
+        private EventResponseHandler
         {
-            this.type = requireNonNull(type, "type is null");
-            this.pool = requireNonNull(pool, "pool is null");
+            requireNonNull(type, "type is null");
+            requireNonNull(pool, "pool is null");
         }
 
         @Override

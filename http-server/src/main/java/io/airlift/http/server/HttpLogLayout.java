@@ -20,40 +20,40 @@ public class HttpLogLayout
 
         // format content interarrival time [ms] stats
         String contentInterarrivalStats = null;
-        DoubleSummaryStats stats = event.getResponseContentInterarrivalStats();
+        DoubleSummaryStats stats = event.responseContentInterarrivalStats();
         if (stats != null) {
             contentInterarrivalStats = format("%.2f, %.2f, %.2f, %d", stats.getMin(), stats.getAverage(), stats.getMax(), stats.getCount());
         }
 
-        builder.append(ISO_FORMATTER.format(event.getTimeStamp()))
+        builder.append(ISO_FORMATTER.format(event.timeStamp()))
                 .append('\t')
-                .append(event.getClientAddress())
+                .append(event.clientAddress())
                 .append('\t')
-                .append(event.getMethod())
+                .append(event.method())
                 .append('\t')
-                .append(event.getRequestUri()) // TODO: escape
+                .append(event.requestUri()) // TODO: escape
                 .append('\t')
-                .append(event.getUser())
+                .append(event.user())
                 .append('\t')
-                .append(event.getAgent()) // TODO: escape
+                .append(event.agent()) // TODO: escape
                 .append('\t')
-                .append(event.getResponseCode())
+                .append(event.responseCode())
                 .append('\t')
-                .append(event.getRequestSize())
+                .append(event.requestSize())
                 .append('\t')
-                .append(event.getResponseSize())
+                .append(event.responseSize())
                 .append('\t')
-                .append(event.getTimeToLastByte())
+                .append(event.timeToLastByte())
                 .append('\t')
-                .append(event.getTraceToken())
+                .append(event.traceToken())
                 .append('\t')
-                .append(event.getProtocolVersion())
+                .append(event.protocolVersion())
                 .append('\t')
-                .append(event.getBeginToDispatchMillis())
+                .append(event.beginToDispatchMillis())
                 .append('\t')
-                .append(event.getBeginToEndMillis())
+                .append(event.beginToEndMillis())
                 .append('\t')
-                .append(event.getFirstToLastContentTimeInMillis())
+                .append(event.firstToLastContentTimeInMillis())
                 .append('\t')
                 .append(contentInterarrivalStats)
                 .append('\n');

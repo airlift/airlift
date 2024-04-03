@@ -46,8 +46,8 @@ public class StaticServiceSelector
 
         ServiceDescriptor serviceDescriptor = stream(serviceDescriptors).findFirst().orElse(null);
         if (serviceDescriptor != null) {
-            this.type = serviceDescriptor.getType();
-            this.pool = serviceDescriptor.getPool();
+            this.type = serviceDescriptor.type();
+            this.pool = serviceDescriptor.pool();
         }
         else {
             this.type = "unknown";
@@ -55,8 +55,8 @@ public class StaticServiceSelector
         }
 
         for (ServiceDescriptor descriptor : serviceDescriptors) {
-            checkArgument(descriptor.getType().equals(type));
-            checkArgument(descriptor.getPool().equals(pool));
+            checkArgument(descriptor.type().equals(type));
+            checkArgument(descriptor.pool().equals(pool));
         }
         this.serviceDescriptors = ImmutableList.copyOf(serviceDescriptors);
     }

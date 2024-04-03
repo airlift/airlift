@@ -18,63 +18,32 @@ package io.airlift.discovery.client;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
 
+import java.util.Objects;
 import java.util.Set;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
 
-public class Announcement
+public record Announcement(
+        @JsonProperty
+        String environment,
+        @JsonProperty
+        String nodeId,
+        @JsonProperty
+        String pool,
+        @JsonProperty
+        String location,
+        @JsonProperty
+        Set<ServiceAnnouncement> services)
 {
-    private final String environment;
-    private final String nodeId;
-    private final String location;
-    private final String pool;
-    private final Set<ServiceAnnouncement> services;
-
-    public Announcement(String environment, String nodeId, String pool, String location, Set<ServiceAnnouncement> services)
+    public Announcement
     {
         requireNonNull(environment, "environment is null");
         requireNonNull(nodeId, "nodeId is null");
         requireNonNull(services, "services is null");
         requireNonNull(pool, "pool is null");
         checkArgument(!services.isEmpty(), "services is empty");
-
-        this.environment = environment;
-        this.nodeId = nodeId;
-        this.location = location;
-        this.pool = pool;
-        this.services = ImmutableSet.copyOf(services);
-    }
-
-    @JsonProperty
-    public String getEnvironment()
-    {
-        return environment;
-    }
-
-    @JsonProperty
-    public String getNodeId()
-    {
-        return nodeId;
-    }
-
-    @JsonProperty
-    public String getLocation()
-    {
-        return location;
-    }
-
-    @JsonProperty
-    public String getPool()
-    {
-        return pool;
-    }
-
-    @JsonProperty
-    public Set<ServiceAnnouncement> getServices()
-    {
-        return services;
+        services = ImmutableSet.copyOf(services);
     }
 
     @Override
@@ -83,34 +52,16 @@ public class Announcement
         if (this == o) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+        if (!(o instanceof Announcement that)) {
             return false;
         }
 
-        Announcement that = (Announcement) o;
-
-        if (!nodeId.equals(that.nodeId)) {
-            return false;
-        }
-
-        return true;
+        return Objects.equals(nodeId, that.nodeId);
     }
 
     @Override
     public int hashCode()
     {
-        return nodeId.hashCode();
-    }
-
-    @Override
-    public String toString()
-    {
-        return toStringHelper(this)
-                .add("environment", environment)
-                .add("nodeId", nodeId)
-                .add("location", location)
-                .add("pool", pool)
-                .add("services", services)
-                .toString();
+        return Objects.hashCode(nodeId);
     }
 }

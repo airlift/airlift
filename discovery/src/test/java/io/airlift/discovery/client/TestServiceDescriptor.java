@@ -102,14 +102,14 @@ public class TestServiceDescriptor
                 ServiceState.RUNNING,
                 ImmutableMap.of("a", "apple", "b", "banana"));
 
-        ServiceDescriptorBuilder builder = serviceDescriptor(expected.getType())
-                .setId(expected.getId())
-                .setLocation(expected.getLocation())
-                .setNodeId(expected.getNodeId())
-                .setPool(expected.getPool())
-                .setState(expected.getState());
+        ServiceDescriptorBuilder builder = serviceDescriptor(expected.type())
+                .setId(expected.id())
+                .setLocation(expected.location())
+                .setNodeId(expected.nodeId())
+                .setPool(expected.pool())
+                .setState(expected.state());
 
-        for (Map.Entry<String, String> entry : expected.getProperties().entrySet()) {
+        for (Map.Entry<String, String> entry : expected.properties().entrySet()) {
             builder.addProperty(entry.getKey(), entry.getValue());
         }
 
@@ -130,12 +130,12 @@ public class TestServiceDescriptor
                 ServiceState.STOPPED,
                 ImmutableMap.of("a", "apple", "b", "banana"));
 
-        ServiceDescriptor actual = serviceDescriptor(expected.getType())
-                .setId(expected.getId())
-                .setLocation(expected.getLocation())
+        ServiceDescriptor actual = serviceDescriptor(expected.type())
+                .setId(expected.id())
+                .setLocation(expected.location())
                 .setNodeInfo(nodeInfo)
-                .setState(expected.getState())
-                .addProperties(expected.getProperties())
+                .setState(expected.state())
+                .addProperties(expected.properties())
                 .build();
 
         assertDescriptorEquals(expected, actual);
@@ -144,11 +144,11 @@ public class TestServiceDescriptor
     private static void assertDescriptorEquals(ServiceDescriptor expected, ServiceDescriptor actual)
     {
         assertEquals(actual, expected);
-        assertEquals(actual.getId(), expected.getId());
-        assertEquals(actual.getNodeId(), expected.getNodeId());
-        assertEquals(actual.getType(), expected.getType());
-        assertEquals(actual.getPool(), expected.getPool());
-        assertEquals(actual.getLocation(), expected.getLocation());
-        assertEquals(actual.getProperties(), expected.getProperties());
+        assertEquals(actual.id(), expected.id());
+        assertEquals(actual.nodeId(), expected.nodeId());
+        assertEquals(actual.type(), expected.type());
+        assertEquals(actual.pool(), expected.pool());
+        assertEquals(actual.location(), expected.location());
+        assertEquals(actual.properties(), expected.properties());
     }
 }

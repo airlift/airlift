@@ -233,17 +233,17 @@ public class ConfigurationMetadata<T>
             AttributeMetadata attribute = buildAttributeMetadata(configClass, configMethod);
 
             if (attribute != null) {
-                if (attributes.containsKey(attribute.getName())) {
-                    problems.addError("Configuration class [%s] Multiple methods are annotated for @Config attribute [%s]", configClass.getName(), attribute.getName());
+                if (attributes.containsKey(attribute.name())) {
+                    problems.addError("Configuration class [%s] Multiple methods are annotated for @Config attribute [%s]", configClass.getName(), attribute.name());
                 }
-                attributes.put(attribute.getName(), attribute);
+                attributes.put(attribute.name(), attribute);
             }
         }
 
         // Find orphan @LegacyConfig methods, in order to report errors
         Collection<Method> legacyMethods = findLegacyConfigMethods(configClass);
         for (AttributeMetadata attribute : attributes.values()) {
-            for (InjectionPointMetaData injectionPoint : attribute.getLegacyInjectionPoints()) {
+            for (InjectionPointMetaData injectionPoint : attribute.legacyInjectionPoints()) {
                 if (legacyMethods.contains(injectionPoint.getSetter())) {
                     // Don't care about legacy methods which are related to current attributes
                     legacyMethods.remove(injectionPoint.getSetter());
@@ -445,76 +445,23 @@ public class ConfigurationMetadata<T>
         }
     }
 
-    public static class AttributeMetadata
+    public record AttributeMetadata(
+            Class<?> configClass,
+            String name,
+            String description,
+            boolean securitySensitive,
+            boolean hidden,
+            Method getter,
+            InjectionPointMetaData injectionPoint, Set<InjectionPointMetaData> legacyInjectionPoints)
     {
-        private final Class<?> configClass;
-        private final String name;
-        private final String description;
-        private final boolean securitySensitive;
-        private final boolean hidden;
-        private final Method getter;
-
-        private final InjectionPointMetaData injectionPoint;
-        private final Set<InjectionPointMetaData> legacyInjectionPoints;
-
-        public AttributeMetadata(Class<?> configClass, String name, String description, boolean securitySensitive, boolean hidden, Method getter,
-                InjectionPointMetaData injectionPoint, Set<InjectionPointMetaData> legacyInjectionPoints)
+        public AttributeMetadata
         {
             requireNonNull(configClass);
             requireNonNull(name);
             requireNonNull(getter);
             requireNonNull(injectionPoint);
             requireNonNull(legacyInjectionPoints);
-
-            this.configClass = configClass;
-            this.name = name;
-            this.description = description;
-            this.securitySensitive = securitySensitive;
-            this.hidden = hidden;
-            this.getter = getter;
-
-            this.injectionPoint = injectionPoint;
-            this.legacyInjectionPoints = ImmutableSet.copyOf(legacyInjectionPoints);
-        }
-
-        public Class<?> getConfigClass()
-        {
-            return configClass;
-        }
-
-        public String getName()
-        {
-            return name;
-        }
-
-        public String getDescription()
-        {
-            return description;
-        }
-
-        public boolean isSecuritySensitive()
-        {
-            return securitySensitive;
-        }
-
-        public boolean isHidden()
-        {
-            return hidden;
-        }
-
-        public Method getGetter()
-        {
-            return getter;
-        }
-
-        public InjectionPointMetaData getInjectionPoint()
-        {
-            return this.injectionPoint;
-        }
-
-        public Set<InjectionPointMetaData> getLegacyInjectionPoints()
-        {
-            return this.legacyInjectionPoints;
+            legacyInjectionPoints = ImmutableSet.copyOf(legacyInjectionPoints);
         }
 
         @Override

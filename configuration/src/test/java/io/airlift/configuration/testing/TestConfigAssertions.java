@@ -437,10 +437,10 @@ public class TestConfigAssertions
 
         $$RecordedConfigData<PersonConfig> data = ConfigAssertions.getRecordedConfig(config);
 
-        PersonConfig instance = data.getInstance();
+        PersonConfig instance = data.instance();
         assertNotSame(instance, config);
 
-        assertEquals(data.getInvokedMethods(), ImmutableSet.of(
+        assertEquals(data.invokedMethods(), ImmutableSet.of(
                 PersonConfig.class.getMethod("setName", String.class),
                 PersonConfig.class.getMethod("setEmail", String.class),
                 PersonConfig.class.getMethod("setPhone", String.class),

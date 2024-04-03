@@ -875,16 +875,16 @@ public class TestConfigurationMetadata
 
         for (String name : attributeProperties.keySet()) {
             AttributeMetadata attribute = metadata.getAttributes().get(name);
-            assertEquals(attribute.getConfigClass(), configClass);
+            assertEquals(attribute.configClass(), configClass);
             Set<String> namesToTest = new HashSet<>();
-            namesToTest.add(attribute.getInjectionPoint().getProperty());
-            for (ConfigurationMetadata.InjectionPointMetaData legacyInjectionPoint : attribute.getLegacyInjectionPoints()) {
+            namesToTest.add(attribute.injectionPoint().getProperty());
+            for (ConfigurationMetadata.InjectionPointMetaData legacyInjectionPoint : attribute.legacyInjectionPoints()) {
                 namesToTest.add(legacyInjectionPoint.getProperty());
             }
             assertEquals(namesToTest, attributeProperties.get(name));
-            assertEquals(attribute.getDescription(), description);
-            assertEquals(attribute.isSecuritySensitive(), securitySensitive);
-            assertEquals(attribute.isHidden(), hidden);
+            assertEquals(attribute.description(), description);
+            assertEquals(attribute.securitySensitive(), securitySensitive);
+            assertEquals(attribute.hidden(), hidden);
         }
     }
 

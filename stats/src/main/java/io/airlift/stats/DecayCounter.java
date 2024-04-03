@@ -1,6 +1,5 @@
 package io.airlift.stats;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Ticker;
 import com.google.errorprone.annotations.ThreadSafe;
@@ -153,37 +152,7 @@ public final class DecayCounter
         return alpha;
     }
 
-    public static class DecayCounterSnapshot
+    public record DecayCounterSnapshot(@JsonProperty("count") double count, @JsonProperty("rate")double rate)
     {
-        private final double count;
-        private final double rate;
-
-        @JsonCreator
-        public DecayCounterSnapshot(@JsonProperty("count") double count, @JsonProperty("rate") double rate)
-        {
-            this.count = count;
-            this.rate = rate;
-        }
-
-        @JsonProperty
-        public double getCount()
-        {
-            return count;
-        }
-
-        @JsonProperty
-        public double getRate()
-        {
-            return rate;
-        }
-
-        @Override
-        public String toString()
-        {
-            return toStringHelper(this)
-                    .add("count", count)
-                    .add("rate", rate)
-                    .toString();
-        }
     }
 }

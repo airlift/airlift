@@ -279,14 +279,14 @@ public class TestHttpServerProvider
         try (JettyHttpClient httpClient = new JettyHttpClient(new HttpClientConfig().setHttp2Enabled(false))) {
             StatusResponse response = httpClient.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStatusResponseHandler());
 
-            assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
+            assertEquals(response.statusCode(), HttpServletResponse.SC_OK);
             assertEquals(response.getHeader("X-Protocol"), "HTTP/1.1");
         }
 
         try (JettyHttpClient httpClient = new JettyHttpClient(new HttpClientConfig().setHttp2Enabled(true))) {
             StatusResponse response = httpClient.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStatusResponseHandler());
 
-            assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
+            assertEquals(response.statusCode(), HttpServletResponse.SC_OK);
             assertEquals(response.getHeader("X-Protocol"), "HTTP/2.0");
         }
     }
@@ -323,7 +323,7 @@ public class TestHttpServerProvider
         URI uri = URI.create(format("https://%s:%s", name, httpServerInfo.getHttpsUri().getPort()));
         StatusResponse response = httpClient.execute(prepareGet().setUri(uri).build(), createStatusResponseHandler());
 
-        assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
+        assertEquals(response.statusCode(), HttpServletResponse.SC_OK);
         assertEquals(response.getHeader("X-Protocol"), "HTTP/1.1");
     }
 
@@ -337,7 +337,7 @@ public class TestHttpServerProvider
         try (JettyHttpClient client = new JettyHttpClient()) {
             StatusResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri().resolve("/filter")).build(), createStatusResponseHandler());
 
-            assertEquals(response.getStatusCode(), HttpServletResponse.SC_PAYMENT_REQUIRED);
+            assertEquals(response.statusCode(), HttpServletResponse.SC_PAYMENT_REQUIRED);
         }
     }
 
@@ -373,7 +373,7 @@ public class TestHttpServerProvider
             host.ifPresent(value -> builder.addHeader(X_FORWARDED_HOST, value));
             remoteHost.ifPresent(value -> builder.addHeader(X_FORWARDED_FOR, value));
             StringResponse response = client.execute(builder.build(), createStringResponseHandler());
-            assertEquals(response.getStatusCode(), 200);
+            assertEquals(response.statusCode(), 200);
         }
 
         proto.ifPresent(uriBuilder::scheme);
@@ -406,8 +406,8 @@ public class TestHttpServerProvider
                             .build(),
                     createStringResponseHandler());
 
-            assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
-            assertEquals(response.getBody(), "user");
+            assertEquals(response.statusCode(), HttpServletResponse.SC_OK);
+            assertEquals(response.body(), "user");
         }
     }
 
@@ -464,8 +464,8 @@ public class TestHttpServerProvider
             URI uri = URI.create(format("https://%s:%s", name, httpServerInfo.getHttpsUri().getPort()));
             StringResponse response = httpClient.execute(prepareGet().setUri(uri).build(), createStringResponseHandler());
 
-            assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
-            assertEquals(response.getBody(), "CN=testing,OU=Client,O=Airlift,L=Palo Alto,ST=CA,C=US");
+            assertEquals(response.statusCode(), HttpServletResponse.SC_OK);
+            assertEquals(response.body(), "CN=testing,OU=Client,O=Airlift,L=Palo Alto,ST=CA,C=US");
         }
     }
 
@@ -500,8 +500,8 @@ public class TestHttpServerProvider
 
         try (HttpClient client = new JettyHttpClient()) {
             StringResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStringResponseHandler());
-            assertEquals(response.getStatusCode(), 500);
-            assertContains(response.getBody(), "ErrorServlet.java");
+            assertEquals(response.statusCode(), 500);
+            assertContains(response.body(), "ErrorServlet.java");
         }
     }
 
@@ -515,8 +515,8 @@ public class TestHttpServerProvider
 
         try (HttpClient client = new JettyHttpClient()) {
             StringResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStringResponseHandler());
-            assertEquals(response.getStatusCode(), 500);
-            assertThat(response.getBody()).doesNotContain("ErrorServlet.java");
+            assertEquals(response.statusCode(), 500);
+            assertThat(response.body()).doesNotContain("ErrorServlet.java");
         }
     }
 

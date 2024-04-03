@@ -15,48 +15,20 @@
  */
 package io.airlift.discovery.client;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 
 import java.util.List;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
 import static java.util.Objects.requireNonNull;
 
-public class ServiceDescriptorsRepresentation
+public record ServiceDescriptorsRepresentation(
+        @JsonProperty("environment") String environment,
+        @JsonProperty("services") List<ServiceDescriptor> serviceDescriptors)
 {
-    private final String environment;
-    private final List<ServiceDescriptor> serviceDescriptors;
-
-    @JsonCreator
-    public ServiceDescriptorsRepresentation(
-            @JsonProperty("environment") String environment,
-            @JsonProperty("services") List<ServiceDescriptor> serviceDescriptors)
+    public ServiceDescriptorsRepresentation
     {
         requireNonNull(serviceDescriptors);
-        this.environment = environment;
-        this.serviceDescriptors = ImmutableList.copyOf(serviceDescriptors);
-    }
-
-    @JsonProperty
-    public String getEnvironment()
-    {
-        return environment;
-    }
-
-    @JsonProperty("services")
-    public List<ServiceDescriptor> getServiceDescriptors()
-    {
-        return serviceDescriptors;
-    }
-
-    @Override
-    public String toString()
-    {
-        return toStringHelper(this)
-                .add("environment", environment)
-                .add("serviceDescriptors", serviceDescriptors)
-                .toString();
+        serviceDescriptors = ImmutableList.copyOf(serviceDescriptors);
     }
 }

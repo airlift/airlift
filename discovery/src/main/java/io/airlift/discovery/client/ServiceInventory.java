@@ -126,15 +126,15 @@ public class ServiceInventory
     public Iterable<ServiceDescriptor> getServiceDescriptors(String type)
     {
         return serviceDescriptors.get().stream()
-                .filter(descriptor -> descriptor.getType().equals(type))
+                .filter(descriptor -> descriptor.type().equals(type))
                 .collect(toList());
     }
 
     public Iterable<ServiceDescriptor> getServiceDescriptors(String type, String pool)
     {
         return serviceDescriptors.get().stream()
-                .filter(descriptor -> descriptor.getType().equals(type))
-                .filter(descriptor -> descriptor.getPool().equals(pool))
+                .filter(descriptor -> descriptor.type().equals(type))
+                .filter(descriptor -> descriptor.pool().equals(pool))
                 .collect(toList());
     }
 
@@ -158,11 +158,11 @@ public class ServiceInventory
                 serviceDescriptorsRepresentation = serviceDescriptorsCodec.fromJson(readAllBytes(file.toPath()));
             }
 
-            if (!environment.equals(serviceDescriptorsRepresentation.getEnvironment())) {
-                logServerError("Expected environment to be %s, but was %s", environment, serviceDescriptorsRepresentation.getEnvironment());
+            if (!environment.equals(serviceDescriptorsRepresentation.environment())) {
+                logServerError("Expected environment to be %s, but was %s", environment, serviceDescriptorsRepresentation.environment());
             }
 
-            List<ServiceDescriptor> descriptors = new ArrayList<>(serviceDescriptorsRepresentation.getServiceDescriptors());
+            List<ServiceDescriptor> descriptors = new ArrayList<>(serviceDescriptorsRepresentation.serviceDescriptors());
             Collections.shuffle(descriptors);
             serviceDescriptors.set(ImmutableList.copyOf(descriptors));
 

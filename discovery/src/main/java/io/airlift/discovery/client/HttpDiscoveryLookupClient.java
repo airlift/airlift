@@ -147,14 +147,14 @@ public class HttpDiscoveryLookupClient
                 }
 
                 ServiceDescriptorsRepresentation serviceDescriptorsRepresentation = serviceDescriptorsCodec.fromJson(json);
-                if (!environment.equals(serviceDescriptorsRepresentation.getEnvironment())) {
-                    throw new DiscoveryException(format("Expected environment to be %s, but was %s", environment, serviceDescriptorsRepresentation.getEnvironment()));
+                if (!environment.equals(serviceDescriptorsRepresentation.environment())) {
+                    throw new DiscoveryException(format("Expected environment to be %s, but was %s", environment, serviceDescriptorsRepresentation.environment()));
                 }
 
                 return new ServiceDescriptors(
                         type,
                         pool,
-                        serviceDescriptorsRepresentation.getServiceDescriptors(),
+                        serviceDescriptorsRepresentation.serviceDescriptors(),
                         maxAge,
                         eTag);
             }

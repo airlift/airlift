@@ -62,12 +62,12 @@ public class ServiceDescriptors
 
         // verify service descriptors match expected type
         for (ServiceDescriptor serviceDescriptor : this.serviceDescriptors) {
-            if (!type.equals(serviceDescriptor.getType()) || (pool != null && !pool.equals(serviceDescriptor.getPool()))) {
+            if (!type.equals(serviceDescriptor.type()) || (pool != null && !pool.equals(serviceDescriptor.pool()))) {
                 throw new DiscoveryException(format("Expected %s service descriptor from pool %s, but was %s service descriptor from pool %s",
                         type,
                         pool,
-                        serviceDescriptor.getType(),
-                        serviceDescriptor.getPool()));
+                        serviceDescriptor.type(),
+                        serviceDescriptor.pool()));
             }
         }
     }

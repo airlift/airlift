@@ -150,7 +150,7 @@ public abstract class AbstractHttpClientTest
 
         for (int i = 0; i < 100_000; i++) {
             try {
-                int statusCode = executeRequest(request, createStatusResponseHandler()).getStatusCode();
+                int statusCode = executeRequest(request, createStatusResponseHandler()).statusCode();
                 assertEquals(statusCode, 200);
             }
             catch (Exception e) {
@@ -262,7 +262,7 @@ public abstract class AbstractHttpClientTest
                 .addHeader("dupe", "second")
                 .build();
 
-        int statusCode = executeRequest(request, createStatusResponseHandler()).getStatusCode();
+        int statusCode = executeRequest(request, createStatusResponseHandler()).statusCode();
         assertEquals(statusCode, 200);
         assertEquals(servlet.getRequestMethod(), "DELETE");
         assertEquals(servlet.getRequestUri(), uri);
@@ -284,8 +284,8 @@ public abstract class AbstractHttpClientTest
                 .build();
 
         StringResponse response = executeRequest(request, createStringResponseHandler());
-        assertEquals(response.getStatusCode(), 500);
-        assertEquals(response.getBody(), "body text");
+        assertEquals(response.statusCode(), 500);
+        assertEquals(response.body(), "body text");
     }
 
     @Test
@@ -300,7 +300,7 @@ public abstract class AbstractHttpClientTest
                 .addHeader("dupe", "second")
                 .build();
 
-        int statusCode = executeRequest(request, createStatusResponseHandler()).getStatusCode();
+        int statusCode = executeRequest(request, createStatusResponseHandler()).statusCode();
         assertEquals(statusCode, 200);
         assertEquals(servlet.getRequestMethod(), "GET");
         if (servlet.getRequestUri().toString().endsWith("=")) {
@@ -343,7 +343,7 @@ public abstract class AbstractHttpClientTest
                 .setUri(uri)
                 .build();
 
-        int statusCode = executeRequest(request, createStatusResponseHandler()).getStatusCode();
+        int statusCode = executeRequest(request, createStatusResponseHandler()).statusCode();
         assertEquals(statusCode, 200);
         assertEquals(servlet.getRequestMethod(), "GET");
         assertEquals(servlet.getRequestUri(), uri);
@@ -389,7 +389,7 @@ public abstract class AbstractHttpClientTest
                 .addHeader("dupe", "second")
                 .build();
 
-        int statusCode = executeRequest(request, createStatusResponseHandler()).getStatusCode();
+        int statusCode = executeRequest(request, createStatusResponseHandler()).statusCode();
         assertEquals(statusCode, 200);
         assertEquals(servlet.getRequestMethod(), "POST");
         assertEquals(servlet.getRequestUri(), uri);
@@ -411,7 +411,7 @@ public abstract class AbstractHttpClientTest
                 .addHeader("dupe", "second")
                 .build();
 
-        int statusCode = executeRequest(request, createStatusResponseHandler()).getStatusCode();
+        int statusCode = executeRequest(request, createStatusResponseHandler()).statusCode();
         assertEquals(statusCode, 200);
         assertEquals(servlet.getRequestMethod(), "PUT");
         assertEquals(servlet.getRequestUri(), uri);
@@ -435,7 +435,7 @@ public abstract class AbstractHttpClientTest
                 .setBodyGenerator(StaticBodyGenerator.createStaticBodyGenerator(body))
                 .build();
 
-        int statusCode = executeRequest(request, createStatusResponseHandler()).getStatusCode();
+        int statusCode = executeRequest(request, createStatusResponseHandler()).statusCode();
         assertEquals(statusCode, 200);
         assertEquals(servlet.getRequestMethod(), "PUT");
         assertEquals(servlet.getRequestUri(), uri);
@@ -462,7 +462,7 @@ public abstract class AbstractHttpClientTest
                 })
                 .build();
 
-        int statusCode = executeRequest(request, createStatusResponseHandler()).getStatusCode();
+        int statusCode = executeRequest(request, createStatusResponseHandler()).statusCode();
         assertEquals(statusCode, 200);
         assertEquals(servlet.getRequestMethod(), "PUT");
         assertEquals(servlet.getRequestUri(), uri);
@@ -488,7 +488,7 @@ public abstract class AbstractHttpClientTest
                 .setBodyGenerator(new FileBodyGenerator(testFile.toPath()))
                 .build();
 
-        int statusCode = executeRequest(request, createStatusResponseHandler()).getStatusCode();
+        int statusCode = executeRequest(request, createStatusResponseHandler()).statusCode();
         assertEquals(statusCode, 200);
         assertEquals(servlet.getRequestMethod(), "PUT");
         assertEquals(servlet.getRequestUri(), uri);
@@ -525,8 +525,8 @@ public abstract class AbstractHttpClientTest
                 .build();
 
         StringResponse response = executeRequest(request, createStringResponseHandler());
-        assertEquals(response.getStatusCode(), 200);
-        assertEquals(response.getBody(), "body text");
+        assertEquals(response.statusCode(), 200);
+        assertEquals(response.body(), "body text");
     }
 
     @Test
@@ -537,7 +537,7 @@ public abstract class AbstractHttpClientTest
                 .setUri(baseURI)
                 .build();
 
-        String body = executeRequest(request, createStringResponseHandler()).getBody();
+        String body = executeRequest(request, createStringResponseHandler()).body();
         assertEquals(body, "");
     }
 
@@ -568,7 +568,7 @@ public abstract class AbstractHttpClientTest
                 .setUri(baseURI)
                 .build();
 
-        int statusCode = executeRequest(request, createStatusResponseHandler()).getStatusCode();
+        int statusCode = executeRequest(request, createStatusResponseHandler()).statusCode();
         assertEquals(statusCode, 543);
     }
 
@@ -589,7 +589,7 @@ public abstract class AbstractHttpClientTest
                 .build();
 
         StatusResponse response = executeRequest(request, createStatusResponseHandler());
-        assertEquals(response.getStatusCode(), 200);
+        assertEquals(response.statusCode(), 200);
         assertThat(servlet.getRequestHeaders("X-Test")).containsExactly("xtest1", "xtest2");
         assertThat(servlet.getRequestHeaders(USER_AGENT)).containsExactly("testagent");
         assertThat(servlet.getRequestHeaders(AUTHORIZATION)).containsExactly(basic, bearer);
@@ -612,7 +612,7 @@ public abstract class AbstractHttpClientTest
                 .build();
 
         StatusResponse response = executeRequest(request, createStatusResponseHandler());
-        assertEquals(response.getStatusCode(), 200);
+        assertEquals(response.statusCode(), 200);
         assertEquals(servlet.getRequestUri(), URI.create(baseURI.toASCIIString() + "/redirect"));
         assertThat(servlet.getRequestHeaders("X-Test")).containsExactly("xtest1", "xtest2");
         assertThat(servlet.getRequestHeaders(USER_AGENT)).containsExactly("testagent");
@@ -623,7 +623,7 @@ public abstract class AbstractHttpClientTest
                 .build();
 
         response = executeRequest(request, createStatusResponseHandler());
-        assertEquals(response.getStatusCode(), 200);
+        assertEquals(response.statusCode(), 200);
         assertEquals(servlet.getRequestUri(), URI.create(baseURI.toASCIIString() + "/redirect"));
         assertThat(servlet.getRequestHeaders("X-Test")).containsExactly("xtest1", "xtest2");
         assertThat(servlet.getRequestHeaders(USER_AGENT)).containsExactly("testagent");
@@ -639,7 +639,7 @@ public abstract class AbstractHttpClientTest
                 .build();
 
         StatusResponse response = executeRequest(request, createStatusResponseHandler());
-        assertEquals(response.getStatusCode(), 200);
+        assertEquals(response.statusCode(), 200);
         assertNull(response.getHeader(LOCATION));
         assertEquals(servlet.getRequestUri(), URI.create(baseURI.toASCIIString() + "/redirect"));
 
@@ -648,7 +648,7 @@ public abstract class AbstractHttpClientTest
                 .build();
 
         response = executeRequest(request, createStatusResponseHandler());
-        assertEquals(response.getStatusCode(), 302);
+        assertEquals(response.statusCode(), 302);
         assertEquals(response.getHeader(LOCATION), "/redirect");
         assertEquals(servlet.getRequestUri(), request.getUri());
     }
@@ -673,7 +673,7 @@ public abstract class AbstractHttpClientTest
                 .setUri(baseURI)
                 .build();
 
-        String body = executeRequest(request, createStringResponseHandler()).getBody();
+        String body = executeRequest(request, createStringResponseHandler()).body();
         assertEquals(body, "");
         assertFalse(servlet.getRequestHeaders().containsKey(HeaderName.of(ACCEPT_ENCODING)));
 
@@ -685,7 +685,7 @@ public abstract class AbstractHttpClientTest
 
         StringResponse response = executeRequest(request, createStringResponseHandler());
         assertEquals(response.getHeader(CONTENT_TYPE), "application/json");
-        assertEquals(response.getBody(), json);
+        assertEquals(response.body(), json);
     }
 
     private ExecutorService executor;
@@ -949,16 +949,9 @@ public abstract class AbstractHttpClientTest
         }
     }
 
-    private static class UnexpectedResponseStatusCodeHandler
+    private record UnexpectedResponseStatusCodeHandler(int expectedStatusCode)
             implements ResponseHandler<Integer, RuntimeException>
     {
-        private final int expectedStatusCode;
-
-        UnexpectedResponseStatusCodeHandler(int expectedStatusCode)
-        {
-            this.expectedStatusCode = expectedStatusCode;
-        }
-
         @Override
         public Integer handleException(Request request, Exception exception)
         {

@@ -18,19 +18,12 @@ import java.nio.ByteBuffer;
 
 import static java.util.Objects.requireNonNull;
 
-public class ByteBufferBodyGenerator
+public record ByteBufferBodyGenerator(ByteBuffer... byteBuffers)
         implements BodyGenerator
 {
-    private final ByteBuffer[] byteBuffers;
-
-    public ByteBufferBodyGenerator(ByteBuffer... byteBuffers)
+    public ByteBufferBodyGenerator
     {
-        this.byteBuffers = requireNonNull(byteBuffers, "byteBuffers is null");
-    }
-
-    public ByteBuffer[] getByteBuffers()
-    {
-        return byteBuffers;
+        requireNonNull(byteBuffers, "byteBuffers is null");
     }
 
     @SuppressWarnings("deprecation")

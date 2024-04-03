@@ -49,7 +49,7 @@ public class ConfigBinder
         @Override
         public <T> void bind(ConfigurationBinding<T> configurationBinding)
         {
-            Key<T> key = configurationBinding.getKey();
+            Key<T> key = configurationBinding.key();
             binder.bind(key).toProvider(new ConfigurationProvider<>(configurationBinding));
             createConfigDefaultsBinder(key);
         }
@@ -90,16 +90,13 @@ public class ConfigBinder
         }
     }
 
-    private static final class CallbackConfigBinder
+    private record CallbackConfigBinder(ConfigurationFactory configurationFactory, Optional<Object> bindingSource)
             implements InternalConfigBinder
     {
-        private final ConfigurationFactory configurationFactory;
-        private final Optional<Object> bindingSource;
-
-        public CallbackConfigBinder(ConfigurationFactory configurationFactory, Optional<Object> bindingSource)
+        private CallbackConfigBinder
         {
-            this.configurationFactory = requireNonNull(configurationFactory, "configurationFactory is null");
-            this.bindingSource = requireNonNull(bindingSource, "bindingSource is null");
+            requireNonNull(configurationFactory, "configurationFactory is null");
+            requireNonNull(bindingSource, "bindingSource is null");
         }
 
         @Override

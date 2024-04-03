@@ -12,20 +12,13 @@ import java.util.concurrent.ExecutionException;
 
 import static java.util.Objects.requireNonNull;
 
-public class ServiceSelectorManager
+public record ServiceSelectorManager(Set<ServiceSelector> serviceSelectors)
 {
-    private final Set<ServiceSelector> serviceSelectors;
-
     @Inject
     public ServiceSelectorManager(Set<ServiceSelector> serviceSelectors)
     {
         requireNonNull(serviceSelectors, "serviceSelectors is null");
         this.serviceSelectors = ImmutableSet.copyOf(serviceSelectors);
-    }
-
-    public Set<ServiceSelector> getServiceSelectors()
-    {
-        return serviceSelectors;
     }
 
     public void forceRefresh()

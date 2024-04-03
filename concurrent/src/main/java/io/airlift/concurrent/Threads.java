@@ -44,18 +44,9 @@ public final class Threads
                 .build();
     }
 
-    private static class ContextClassLoaderThreadFactory
+    private record ContextClassLoaderThreadFactory(ClassLoader classLoader, ThreadFactory delegate)
             implements ThreadFactory
     {
-        private final ClassLoader classLoader;
-        private final ThreadFactory delegate;
-
-        public ContextClassLoaderThreadFactory(ClassLoader classLoader, ThreadFactory delegate)
-        {
-            this.classLoader = classLoader;
-            this.delegate = delegate;
-        }
-
         @Override
         public Thread newThread(Runnable runnable)
         {

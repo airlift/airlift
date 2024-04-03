@@ -194,7 +194,7 @@ public class ConfigurationFactory
 
                         // configuration listener
                         if (instanceBinding.getInstance() instanceof ConfigurationBindingListenerHolder) {
-                            addConfigurationBindingListener(((ConfigurationBindingListenerHolder) instanceBinding.getInstance()).getConfigurationBindingListener());
+                            addConfigurationBindingListener(((ConfigurationBindingListenerHolder) instanceBinding.getInstance()).configurationBindingListener());
                         }
 
                         // config defaults
@@ -327,7 +327,7 @@ public class ConfigurationFactory
 
     public <T> T build(Class<T> configClass, @Nullable String prefix)
     {
-        return build(configClass, Optional.ofNullable(prefix), ConfigDefaults.noDefaults()).getInstance();
+        return build(configClass, Optional.ofNullable(prefix), ConfigDefaults.noDefaults()).instance();
     }
 
     /**
@@ -345,12 +345,12 @@ public class ConfigurationFactory
         }
 
         ConfigurationBinding<T> configurationBinding = configurationProvider.getConfigurationBinding();
-        ConfigurationHolder<T> holder = build(configurationBinding.getConfigClass(), configurationBinding.getPrefix(), getConfigDefaults(configurationBinding.getKey()));
-        instance = holder.getInstance();
+        ConfigurationHolder<T> holder = build(configurationBinding.configClass(), configurationBinding.prefix(), getConfigDefaults(configurationBinding.key()));
+        instance = holder.instance();
 
         // inform caller about warnings
         if (warningsMonitor != null) {
-            for (Message message : holder.getProblems().getWarnings()) {
+            for (Message message : holder.problems().getWarnings()) {
                 warningsMonitor.onWarning(message.toString());
             }
         }
@@ -425,8 +425,8 @@ public class ConfigurationFactory
             // upper case first character to match config attribute name
             String attributeName = LOWER_CAMEL.to(UPPER_CAMEL, propertyFieldName);
             AttributeMetadata attribute = configurationMetadata.getAttributes().get(attributeName);
-            if (attribute != null && attribute.getInjectionPoint() != null) {
-                String propertyName = attribute.getInjectionPoint().getProperty();
+            if (attribute != null && attribute.injectionPoint() != null) {
+                String propertyName = attribute.injectionPoint().getProperty();
                 if (!prefix.isEmpty()) {
                     propertyName = prefix + propertyName;
                 }
@@ -507,7 +507,7 @@ public class ConfigurationFactory
     private ConfigurationMetadata.InjectionPointMetaData findOperativeInjectionPoint(AttributeMetadata attribute, String prefix, Problems problems)
             throws ConfigurationException
     {
-        ConfigurationMetadata.InjectionPointMetaData operativeInjectionPoint = attribute.getInjectionPoint();
+        ConfigurationMetadata.InjectionPointMetaData operativeInjectionPoint = attribute.injectionPoint();
         String operativeName = null;
         String operativeValue = null;
         if (operativeInjectionPoint != null) {
@@ -515,21 +515,21 @@ public class ConfigurationFactory
             operativeValue = properties.get(operativeName);
         }
         String printableOperativeValue = operativeValue;
-        if (attribute.isSecuritySensitive()) {
+        if (attribute.securitySensitive()) {
             printableOperativeValue = "[REDACTED]";
         }
 
-        for (ConfigurationMetadata.InjectionPointMetaData injectionPoint : attribute.getLegacyInjectionPoints()) {
+        for (ConfigurationMetadata.InjectionPointMetaData injectionPoint : attribute.legacyInjectionPoints()) {
             String fullName = prefix + injectionPoint.getProperty();
             String value = properties.get(fullName);
             String printableValue = value;
-            if (attribute.isSecuritySensitive()) {
+            if (attribute.securitySensitive()) {
                 printableValue = "[REDACTED]";
             }
             if (value != null) {
                 String replacement = "deprecated.";
-                if (attribute.getInjectionPoint() != null) {
-                    replacement = format("replaced. Use '%s' instead.", prefix + attribute.getInjectionPoint().getProperty());
+                if (attribute.injectionPoint() != null) {
+                    replacement = format("replaced. Use '%s' instead.", prefix + attribute.injectionPoint().getProperty());
                 }
                 problems.addWarning("Configuration property '%s' has been " + replacement, fullName);
 
@@ -563,7 +563,7 @@ public class ConfigurationFactory
         // Get the property value
         String value = properties.get(name);
         String printableValue = value;
-        if (attribute.isSecuritySensitive()) {
+        if (attribute.securitySensitive()) {
             printableValue = "[REDACTED]";
         }
 
@@ -701,26 +701,8 @@ public class ConfigurationFactory
         return null;
     }
 
-    private static class ConfigurationHolder<T>
+    private record ConfigurationHolder<T>(T instance, Problems problems)
     {
-        private final T instance;
-        private final Problems problems;
-
-        private ConfigurationHolder(T instance, Problems problems)
-        {
-            this.instance = instance;
-            this.problems = problems;
-        }
-
-        public T getInstance()
-        {
-            return instance;
-        }
-
-        public Problems getProblems()
-        {
-            return problems;
-        }
     }
 
     private class ConfigurationProviderConsumer

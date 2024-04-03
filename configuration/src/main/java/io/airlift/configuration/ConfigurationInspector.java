@@ -76,13 +76,13 @@ public class ConfigurationInspector
             requireNonNull(configurationProvider, "configurationProvider");
 
             ConfigurationBinding<T> configurationBinding = configurationProvider.getConfigurationBinding();
-            key = configurationBinding.getKey();
-            configClass = configurationBinding.getConfigClass();
-            prefix = configurationBinding.getPrefix().orElse(null);
+            key = configurationBinding.key();
+            configClass = configurationBinding.configClass();
+            prefix = configurationBinding.prefix().orElse(null);
 
-            ConfigurationMetadata<T> metadata = getConfigurationMetadata(configurationBinding.getConfigClass());
+            ConfigurationMetadata<T> metadata = getConfigurationMetadata(configurationBinding.configClass());
 
-            T defaults = configurationFactory.getDefaultConfig(configurationBinding.getKey());
+            T defaults = configurationFactory.getDefaultConfig(configurationBinding.key());
 
             T instance = null;
             try {
@@ -93,27 +93,27 @@ public class ConfigurationInspector
                 // this is catch throwable because we may get an AssertionError
             }
 
-            String prefix = configurationBinding.getPrefix()
+            String prefix = configurationBinding.prefix()
                     .map(value -> value + ".")
                     .orElse("");
 
             ImmutableSortedSet.Builder<ConfigAttribute> builder = ImmutableSortedSet.naturalOrder();
             for (AttributeMetadata attribute : metadata.getAttributes().values()) {
-                String propertyName = prefix + attribute.getInjectionPoint().getProperty();
-                Method getter = attribute.getGetter();
+                String propertyName = prefix + attribute.injectionPoint().getProperty();
+                Method getter = attribute.getter();
 
                 String defaultValue = getValue(getter, defaults, "-- none --");
                 String currentValue = getValue(getter, instance, "-- n/a --");
-                String description = attribute.getDescription();
+                String description = attribute.description();
                 if (description == null) {
                     description = "";
                 }
 
-                if (attribute.isHidden() && !Boolean.getBoolean("config.includeHidden")) {
+                if (attribute.hidden() && !Boolean.getBoolean("config.includeHidden")) {
                     continue;
                 }
 
-                builder.add(new ConfigAttribute(attribute.getName(), propertyName, defaultValue, currentValue, description, attribute.isSecuritySensitive()));
+                builder.add(new ConfigAttribute(attribute.name(), propertyName, defaultValue, currentValue, description, attribute.securitySensitive()));
             }
             attributes = builder.build();
         }

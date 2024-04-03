@@ -99,9 +99,9 @@ public class TestMBeanResource
                 prepareGet().setUri(uriFor("/v1/jmx")).build(),
                 createStringResponseHandler());
 
-        assertEquals(response.getStatusCode(), 200);
+        assertEquals(response.statusCode(), 200);
         assertContentType(response, HTML_UTF_8);
-        assertContains(response.getBody(), "<html>");
+        assertContains(response.body(), "<html>");
     }
 
     @Test
@@ -166,10 +166,10 @@ public class TestMBeanResource
         Request request = prepareGet().setUri(uri).build();
         StringResponse response = client.execute(request, createStringResponseHandler());
 
-        assertEquals(response.getStatusCode(), 200, response.getBody());
+        assertEquals(response.statusCode(), 200, response.body());
         assertContentType(response, JSON_UTF_8);
 
-        return new ObjectMapperProvider().get().readTree(response.getBody());
+        return new ObjectMapperProvider().get().readTree(response.body());
     }
 
     private JsonNode jsonpRequest(URI uri)
@@ -181,10 +181,10 @@ public class TestMBeanResource
         Request request = prepareGet().setUri(uri).build();
         StringResponse response = client.execute(request, createStringResponseHandler());
 
-        assertEquals(response.getStatusCode(), 200, response.getBody());
+        assertEquals(response.statusCode(), 200, response.body());
         assertContentType(response, JSON_UTF_8);
 
-        String jsonp = response.getBody().trim();
+        String jsonp = response.body().trim();
         assertTrue(jsonp.startsWith("test("), jsonp);
         assertTrue(jsonp.endsWith(")"), jsonp);
         jsonp = jsonp.substring(5, jsonp.length() - 1);

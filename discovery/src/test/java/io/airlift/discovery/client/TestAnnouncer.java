@@ -161,18 +161,18 @@ public class TestAnnouncer
 
         ImmutableMap.Builder<UUID, ServiceDescriptor> builder = ImmutableMap.builder();
         for (ServiceDescriptor descriptor : descriptors) {
-            builder.put(descriptor.getId(), descriptor);
+            builder.put(descriptor.id(), descriptor);
         }
         Map<UUID, ServiceDescriptor> descriptorMap = builder.build();
 
         for (ServiceAnnouncement serviceAnnouncement : serviceAnnouncements) {
             ServiceDescriptor serviceDescriptor = descriptorMap.get(serviceAnnouncement.getId());
             assertNotNull(serviceDescriptor, "No descriptor for announcement " + serviceAnnouncement.getId());
-            assertEquals(serviceDescriptor.getType(), serviceType.value());
-            assertEquals(serviceDescriptor.getPool(), "pool");
-            assertEquals(serviceDescriptor.getId(), serviceAnnouncement.getId());
-            assertEquals(serviceDescriptor.getProperties(), serviceAnnouncement.getProperties());
-            assertEquals(serviceDescriptor.getNodeId(), nodeInfo.getNodeId());
+            assertEquals(serviceDescriptor.type(), serviceType.value());
+            assertEquals(serviceDescriptor.pool(), "pool");
+            assertEquals(serviceDescriptor.id(), serviceAnnouncement.getId());
+            assertEquals(serviceDescriptor.properties(), serviceAnnouncement.getProperties());
+            assertEquals(serviceDescriptor.nodeId(), nodeInfo.getNodeId());
         }
     }
 }

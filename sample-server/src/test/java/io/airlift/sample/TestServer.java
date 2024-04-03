@@ -175,7 +175,7 @@ public class TestServer
                         .build(),
                 createStatusResponseHandler());
 
-        assertEquals(response.getStatusCode(), HTTP_CREATED);
+        assertEquals(response.statusCode(), HTTP_CREATED);
 
         assertEquals(store.get("foo"), new Person("foo@example.com", "Mr Foo"));
 
@@ -195,7 +195,7 @@ public class TestServer
                         .build(),
                 createStatusResponseHandler());
 
-        assertEquals(response.getStatusCode(), HTTP_NO_CONTENT);
+        assertEquals(response.statusCode(), HTTP_NO_CONTENT);
 
         assertNull(store.get("foo"));
 
@@ -214,7 +214,7 @@ public class TestServer
                         .build(),
                 createStatusResponseHandler());
 
-        assertEquals(response.getStatusCode(), HTTP_NOT_FOUND);
+        assertEquals(response.statusCode(), HTTP_NOT_FOUND);
     }
 
     @Test
@@ -231,7 +231,7 @@ public class TestServer
                         .build(),
                 createStatusResponseHandler());
 
-        assertEquals(response.getStatusCode(), HTTP_BAD_METHOD);
+        assertEquals(response.statusCode(), HTTP_BAD_METHOD);
 
         assertNull(store.get("foo"));
     }
@@ -246,9 +246,9 @@ public class TestServer
                         .build(),
                 createStringResponseHandler());
 
-        assertThat(response.getStatusCode()).isEqualTo(HTTP_OK);
+        assertThat(response.statusCode()).isEqualTo(HTTP_OK);
         assertThat(response.getHeader(CONTENT_TYPE)).isEqualTo("application/vnd.sun.wadl+xml");
-        assertThat(response.getBody()).startsWith("<?xml ").contains("<application ");
+        assertThat(response.body()).startsWith("<?xml ").contains("<application ");
     }
 
     private URI uriFor(String path)

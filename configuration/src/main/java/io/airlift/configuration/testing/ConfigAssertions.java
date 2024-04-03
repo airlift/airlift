@@ -65,8 +65,8 @@ public final class ConfigAssertions
         // verify all supplied attributes are supported not deprecated
         Set<String> nonDeprecatedAttributes = new TreeSet<>();
         for (AttributeMetadata attribute : metadata.getAttributes().values()) {
-            if (attribute.getInjectionPoint().getProperty() != null) {
-                nonDeprecatedAttributes.add(attribute.getName());
+            if (attribute.injectionPoint().getProperty() != null) {
+                nonDeprecatedAttributes.add(attribute.name());
             }
         }
         if (!nonDeprecatedAttributes.containsAll(expectedAttributeValues.keySet())) {
@@ -87,15 +87,15 @@ public final class ConfigAssertions
 
         // verify each attribute is either the supplied default value
         for (AttributeMetadata attribute : metadata.getAttributes().values()) {
-            Method getter = attribute.getGetter();
+            Method getter = attribute.getter();
             if (getter == null) {
                 continue;
             }
             Object actualAttributeValue = invoke(actual, getter);
-            Object expectedAttributeValue = expectedAttributeValues.get(attribute.getName());
+            Object expectedAttributeValue = expectedAttributeValues.get(attribute.name());
 
             if (!Objects.deepEquals(actualAttributeValue, expectedAttributeValue)) {
-                throw new AssertionError(notEquals(attribute.getName(), actualAttributeValue, expectedAttributeValue));
+                throw new AssertionError(notEquals(attribute.name(), actualAttributeValue, expectedAttributeValue));
             }
         }
     }
@@ -114,8 +114,8 @@ public final class ConfigAssertions
         // verify that every (non-deprecated) property is tested
         Set<String> nonDeprecatedProperties = new TreeSet<>();
         for (AttributeMetadata attribute : metadata.getAttributes().values()) {
-            if (attribute.getInjectionPoint().getProperty() != null) {
-                nonDeprecatedProperties.add(attribute.getInjectionPoint().getProperty());
+            if (attribute.injectionPoint().getProperty() != null) {
+                nonDeprecatedProperties.add(attribute.injectionPoint().getProperty());
             }
         }
         if (!properties.keySet().equals(nonDeprecatedProperties)) {
@@ -153,7 +153,7 @@ public final class ConfigAssertions
         // verify that all deprecated properties are tested
         Set<String> knownDeprecatedProperties = new TreeSet<>();
         for (AttributeMetadata attribute : metadata.getAttributes().values()) {
-            for (ConfigurationMetadata.InjectionPointMetaData deprecated : attribute.getLegacyInjectionPoints()) {
+            for (ConfigurationMetadata.InjectionPointMetaData deprecated : attribute.legacyInjectionPoints()) {
                 knownDeprecatedProperties.add(deprecated.getProperty());
             }
         }
@@ -180,11 +180,11 @@ public final class ConfigAssertions
         Set<String> supportedProperties = new TreeSet<>();
         Set<String> nonDeprecatedProperties = new TreeSet<>();
         for (AttributeMetadata attribute : metadata.getAttributes().values()) {
-            if (attribute.getInjectionPoint().getProperty() != null) {
-                nonDeprecatedProperties.add(attribute.getInjectionPoint().getProperty());
-                supportedProperties.add(attribute.getInjectionPoint().getProperty());
+            if (attribute.injectionPoint().getProperty() != null) {
+                nonDeprecatedProperties.add(attribute.injectionPoint().getProperty());
+                supportedProperties.add(attribute.injectionPoint().getProperty());
             }
-            for (ConfigurationMetadata.InjectionPointMetaData deprecated : attribute.getLegacyInjectionPoints()) {
+            for (ConfigurationMetadata.InjectionPointMetaData deprecated : attribute.legacyInjectionPoints()) {
                 supportedProperties.add(deprecated.getProperty());
             }
         }
@@ -205,14 +205,14 @@ public final class ConfigAssertions
     private static <T> void assertAttributesEqual(ConfigurationMetadata<T> metadata, T actual, T expected)
     {
         for (AttributeMetadata attribute : metadata.getAttributes().values()) {
-            Method getter = attribute.getGetter();
+            Method getter = attribute.getter();
             if (getter == null) {
                 continue;
             }
             Object actualAttributeValue = invoke(actual, getter);
             Object expectedAttributeValue = invoke(expected, getter);
             if (!Objects.deepEquals(actualAttributeValue, expectedAttributeValue)) {
-                throw new AssertionError(notEquals(attribute.getName(), actualAttributeValue, expectedAttributeValue));
+                throw new AssertionError(notEquals(attribute.name(), actualAttributeValue, expectedAttributeValue));
             }
         }
     }
@@ -220,7 +220,7 @@ public final class ConfigAssertions
     private static <T> void assertAttributesNotEqual(ConfigurationMetadata<T> metadata, T actual, T expected)
     {
         for (AttributeMetadata attribute : metadata.getAttributes().values()) {
-            Method getter = attribute.getGetter();
+            Method getter = attribute.getter();
             if (getter == null) {
                 continue;
             }
@@ -228,7 +228,7 @@ public final class ConfigAssertions
             Object expectedAttributeValue = invoke(expected, getter);
 
             if (Objects.deepEquals(actualAttributeValue, expectedAttributeValue)) {
-                throw new AssertionError("Attribute value matches the default: " + attribute.getName());
+                throw new AssertionError("Attribute value matches the default: " + attribute.name());
             }
         }
     }
@@ -236,9 +236,9 @@ public final class ConfigAssertions
     public static <T> void assertRecordedDefaults(T recordedConfig)
     {
         $$RecordedConfigData<T> recordedConfigData = getRecordedConfig(recordedConfig);
-        Set<Method> invokedMethods = recordedConfigData.getInvokedMethods();
+        Set<Method> invokedMethods = recordedConfigData.invokedMethods();
 
-        T config = recordedConfigData.getInstance();
+        T config = recordedConfigData.instance();
 
         Class<T> configClass = getClass(config);
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getValidConfigurationMetadata(configClass);
@@ -248,17 +248,17 @@ public final class ConfigAssertions
         Set<String> setDeprecatedAttributes = new TreeSet<>();
         Set<Method> validSetterMethods = new HashSet<>();
         for (AttributeMetadata attribute : metadata.getAttributes().values()) {
-            if (attribute.getInjectionPoint().getProperty() != null) {
-                validSetterMethods.add(attribute.getInjectionPoint().getSetter());
+            if (attribute.injectionPoint().getProperty() != null) {
+                validSetterMethods.add(attribute.injectionPoint().getSetter());
             }
 
-            if (invokedMethods.contains(attribute.getInjectionPoint().getSetter())) {
-                if (attribute.getInjectionPoint().getProperty() != null) {
-                    Object value = invoke(config, attribute.getGetter());
-                    attributeValues.put(attribute.getName(), value);
+            if (invokedMethods.contains(attribute.injectionPoint().getSetter())) {
+                if (attribute.injectionPoint().getProperty() != null) {
+                    Object value = invoke(config, attribute.getter());
+                    attributeValues.put(attribute.name(), value);
                 }
                 else {
-                    setDeprecatedAttributes.add(attribute.getName());
+                    setDeprecatedAttributes.add(attribute.name());
                 }
             }
         }
@@ -327,26 +327,8 @@ public final class ConfigAssertions
     }
 
     @SuppressWarnings("checkstyle:TypeName")
-    public static class $$RecordedConfigData<T>
+    public record $$RecordedConfigData<T>(T instance, Set<Method> invokedMethods)
     {
-        private final T instance;
-        private final Set<Method> invokedMethods;
-
-        public $$RecordedConfigData(T instance, Set<Method> invokedMethods)
-        {
-            this.instance = instance;
-            this.invokedMethods = ImmutableSet.copyOf(invokedMethods);
-        }
-
-        public T getInstance()
-        {
-            return instance;
-        }
-
-        public Set<Method> getInvokedMethods()
-        {
-            return invokedMethods;
-        }
     }
 
     @SuppressWarnings({"checkstyle:TypeName", "checkstyle:MethodName"})

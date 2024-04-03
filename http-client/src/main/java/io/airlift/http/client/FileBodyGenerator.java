@@ -6,19 +6,12 @@ import java.nio.file.Path;
 
 import static java.util.Objects.requireNonNull;
 
-public class FileBodyGenerator
+public record FileBodyGenerator(Path path)
         implements BodyGenerator
 {
-    private final Path path;
-
-    public FileBodyGenerator(Path path)
+    public FileBodyGenerator
     {
-        this.path = requireNonNull(path, "path is null");
-    }
-
-    public Path getPath()
-    {
-        return path;
+        requireNonNull(path, "path is null");
     }
 
     @SuppressWarnings("deprecation")
