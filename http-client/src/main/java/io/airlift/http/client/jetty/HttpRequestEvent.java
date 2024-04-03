@@ -170,7 +170,7 @@ class HttpRequestEvent
         int responseCode = NO_RESPONSE;
         if (response.isPresent()) {
             responseSize = responseInfo.getResponseSize();
-            responseCode = response.get().getStatus();
+            responseCode = response.orElseThrow().getStatus();
         }
 
         long requestTotalTimeNanos = responseInfo.getResponseCompleteTimestamp() - requestInfo.getRequestCreatedTimestamp();
@@ -207,11 +207,11 @@ class HttpRequestEvent
     {
         Optional<Throwable> failure = responseInfo.getFailureCause();
 
-        if (!failure.isPresent()) {
+        if (failure.isEmpty()) {
             return Optional.empty();
         }
 
-        String className = failure.get().getClass().getSimpleName().toUpperCase(Locale.US);
+        String className = failure.orElseThrow().getClass().getSimpleName().toUpperCase(Locale.US);
 
         if (className.endsWith("EXCEPTION")) {
             return Optional.of(className.substring(0, className.lastIndexOf("EXCEPTION")));

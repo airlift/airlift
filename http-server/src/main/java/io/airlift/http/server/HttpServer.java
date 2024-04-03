@@ -76,7 +76,6 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Verify.verify;
@@ -88,6 +87,7 @@ import static java.time.temporal.ChronoUnit.DAYS;
 import static java.util.Collections.list;
 import static java.util.Comparator.naturalOrder;
 import static java.util.Objects.requireNonNull;
+import static java.util.Objects.requireNonNullElse;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static org.eclipse.jetty.http.UriCompliance.Violation.AMBIGUOUS_PATH_ENCODING;
 import static org.eclipse.jetty.http.UriCompliance.Violation.AMBIGUOUS_PATH_SEPARATOR;
@@ -211,8 +211,8 @@ public class HttpServer
                     httpServerInfo.getHttpChannel(),
                     server,
                     null,
-                    firstNonNull(acceptors, -1),
-                    firstNonNull(selectors, -1),
+                    requireNonNullElse(acceptors, -1),
+                    requireNonNullElse(selectors, -1),
                     http1,
                     http2c);
             httpConnector.setName("http");
@@ -236,7 +236,7 @@ public class HttpServer
 
             HttpsConfig httpsConfig = maybeHttpsConfig.orElseThrow();
             this.sslContextFactory = Optional.of(this.sslContextFactory.orElseGet(() -> createReloadingSslContextFactory(httpsConfig, clientCertificate, nodeInfo.getEnvironment())));
-            SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory.get(), "http/1.1");
+            SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory.orElseThrow(), "http/1.1");
 
             Integer acceptors = config.getHttpsAcceptorThreads();
             Integer selectors = config.getHttpsSelectorThreads();
@@ -244,8 +244,8 @@ public class HttpServer
                     httpServerInfo.getHttpsChannel(),
                     server,
                     null,
-                    firstNonNull(acceptors, -1),
-                    firstNonNull(selectors, -1),
+                    requireNonNullElse(acceptors, -1),
+                    requireNonNullElse(selectors, -1),
                     sslConnectionFactory,
                     new HttpConnectionFactory(httpsConfiguration));
             httpsConnector.setName("https");
@@ -284,7 +284,7 @@ public class HttpServer
 
                 HttpsConfig httpsConfig = maybeHttpsConfig.orElseThrow();
                 this.sslContextFactory = Optional.of(this.sslContextFactory.orElseGet(() -> createReloadingSslContextFactory(httpsConfig, clientCertificate, nodeInfo.getEnvironment())));
-                SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory.get(), "http/1.1");
+                SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory.orElseThrow(), "http/1.1");
                 adminConnector = createServerConnector(
                         httpServerInfo.getAdminChannel(),
                         server,

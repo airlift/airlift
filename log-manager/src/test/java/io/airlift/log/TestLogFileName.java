@@ -152,11 +152,11 @@ public class TestLogFileName
         Path path = Paths.get(BASE_NAME + "-" + suffix);
         Optional<LogFileName> logFile = LogFileName.parseHistoryLogFileName(BASE_NAME, path.getFileName().toString());
         assertTrue(logFile.isPresent());
-        assertEquals(logFile.get().getDateTime(), dateTime);
-        assertEquals(logFile.get().getIndex(), index);
-        assertEquals(logFile.get().getLegacyIndex(), legacyIndex);
-        assertEquals(logFile.get().getSlug(), Optional.empty());
-        assertEquals(logFile.get().isCompressed(), compressed);
+        assertEquals(logFile.orElseThrow().getDateTime(), dateTime);
+        assertEquals(logFile.orElseThrow().getIndex(), index);
+        assertEquals(logFile.orElseThrow().getLegacyIndex(), legacyIndex);
+        assertEquals(logFile.orElseThrow().getSlug(), Optional.empty());
+        assertEquals(logFile.orElseThrow().isCompressed(), compressed);
     }
 
     private static void assertOrdering(LogFileName... logFileNames)

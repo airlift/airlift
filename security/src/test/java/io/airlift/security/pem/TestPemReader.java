@@ -177,7 +177,7 @@ public class TestPemReader
     {
         ArrayList<String> aliases = Collections.list(keyStore.aliases());
         assertEquals(aliases.size(), 1);
-        Certificate certificate = keyStore.getCertificate(aliases.get(0));
+        Certificate certificate = keyStore.getCertificate(aliases.getFirst());
         assertNotNull(certificate);
 
         assertTrue(certificate instanceof X509Certificate);

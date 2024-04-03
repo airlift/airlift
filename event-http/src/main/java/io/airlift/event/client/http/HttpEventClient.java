@@ -118,7 +118,7 @@ public class HttpEventClient
 
         // todo this doesn't really work due to returning the future which can fail without being retried
         Request request = preparePost()
-                .setUri(uris.get(0).resolve("/v2/event"))
+                .setUri(uris.getFirst().resolve("/v2/event"))
                 .setHeader("User-Agent", nodeInfo.getNodeId())
                 .setHeader("Content-Type", MEDIA_TYPE_JSON.toString())
                 .setBodyGenerator(createStaticBodyGenerator(events))

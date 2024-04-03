@@ -116,7 +116,7 @@ final class LogHistoryManager
             return Optional.empty();
         }
 
-        return Optional.of(new LogFile(path, logFileName.get(), fileAttributes.size()));
+        return Optional.of(new LogFile(path, logFileName.orElseThrow(), fileAttributes.size()));
     }
 
     public synchronized void addFile(Path file, LogFileName fileName, long size)

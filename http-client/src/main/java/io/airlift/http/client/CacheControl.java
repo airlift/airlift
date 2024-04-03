@@ -210,10 +210,10 @@ public class CacheControl
             else {
                 List<String> pair = ImmutableList.copyOf(Splitter.on("=").limit(2).split(token));
                 if (pair.size() == 2) {
-                    cacheControl.getCacheExtension().put(pair.get(0), pair.get(1));
+                    cacheControl.getCacheExtension().put(pair.getFirst(), pair.getLast());
                 }
                 else {
-                    cacheControl.getCacheExtension().put(pair.get(0), "");
+                    cacheControl.getCacheExtension().put(pair.getFirst(), "");
                 }
             }
         }
@@ -314,10 +314,10 @@ public class CacheControl
     {
         int i = token.indexOf('=');
         if (i != -1) {
-            String f = i == token.length() + 1 ? "" : token.substring(i + 1);
+            String f = token.substring(i + 1);
             if (f.length() >= 2 && f.startsWith("\"") && f.endsWith("\"")) {
                 f = f.length() == 2 ? "" : f.substring(1, f.length() - 1);
-                if (f.length() > 0) {
+                if (!f.isEmpty()) {
                     List<String> values = ImmutableList.copyOf(Splitter.on(",").split(f));
                     for (String v : values) {
                         fields.add(v.trim());

@@ -22,7 +22,6 @@ import jakarta.annotation.PreDestroy;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -41,13 +40,12 @@ class LifeCycleMethods
     boolean hasFor(Class<? extends Annotation> annotation)
     {
         Collection<Method> methods = methodMap.get(annotation);
-        return (methods != null) && (!methods.isEmpty());
+        return !methods.isEmpty();
     }
 
     Collection<Method> methodsFor(Class<? extends Annotation> annotation)
     {
-        Collection<Method> methods = methodMap.get(annotation);
-        return (methods != null) ? methods : new ArrayList<>();
+        return methodMap.get(annotation);
     }
 
     private void addLifeCycleMethods(Class<?> clazz, Set<String> usedConstructNames, Set<String> usedDestroyNames)

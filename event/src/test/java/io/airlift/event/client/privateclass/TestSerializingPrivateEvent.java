@@ -24,7 +24,7 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 
-import static com.google.common.io.ByteStreams.nullOutputStream;
+import static java.io.OutputStream.nullOutputStream;
 
 public class TestSerializingPrivateEvent
 {

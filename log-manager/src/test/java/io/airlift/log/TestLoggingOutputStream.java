@@ -90,7 +90,7 @@ public class TestLoggingOutputStream
         public LogRecord takeRecord()
         {
             assertFalse(records.isEmpty(), "No messages logged");
-            return records.remove(0);
+            return records.removeFirst();
         }
 
         public boolean isEmpty()

@@ -29,11 +29,9 @@ public class SetThreadName
         Thread.currentThread().setName(String.format(format, args) + "-" + getThreadId(Thread.currentThread()));
     }
 
-    @SuppressWarnings("deprecation")
     public static long getThreadId(Thread thread)
     {
-        // TODO: thread.threadId() when moved to JDK 21
-        return thread.getId();
+        return thread.threadId();
     }
 
     @Override

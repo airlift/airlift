@@ -177,7 +177,7 @@ public class TestDelimitedRequestLog
 
             List<Object> events = eventClient.getEvents();
             assertEquals(events.size(), 1);
-            HttpRequestEvent event = (HttpRequestEvent) events.get(0);
+            HttpRequestEvent event = (HttpRequestEvent) events.getFirst();
 
             assertEquals(event.getTimeStamp().toEpochMilli(), timestamp);
             assertEquals(event.getClientAddress(), ip);
@@ -240,7 +240,7 @@ public class TestDelimitedRequestLog
 
             List<Object> events = eventClient.getEvents();
             assertEquals(events.size(), 1);
-            HttpRequestEvent event = (HttpRequestEvent) events.get(0);
+            HttpRequestEvent event = (HttpRequestEvent) events.getFirst();
 
             assertEquals(event.getProtocol(), protocol);
         }
@@ -263,7 +263,7 @@ public class TestDelimitedRequestLog
 
             List<Object> events = eventClient.getEvents();
             assertEquals(events.size(), 1);
-            HttpRequestEvent event = (HttpRequestEvent) events.get(0);
+            HttpRequestEvent event = (HttpRequestEvent) events.getFirst();
 
             assertNull(event.getTimeToFirstByte());
         }
@@ -288,7 +288,7 @@ public class TestDelimitedRequestLog
 
             List<Object> events = eventClient.getEvents();
             assertEquals(events.size(), 1);
-            HttpRequestEvent event = (HttpRequestEvent) events.get(0);
+            HttpRequestEvent event = (HttpRequestEvent) events.getFirst();
 
             assertEquals(event.getClientAddress(), clientIp);
         }
@@ -314,7 +314,7 @@ public class TestDelimitedRequestLog
 
             List<Object> events = eventClient.getEvents();
             assertEquals(events.size(), 1);
-            HttpRequestEvent event = (HttpRequestEvent) events.get(0);
+            HttpRequestEvent event = (HttpRequestEvent) events.getFirst();
 
             assertEquals(event.getClientAddress(), clientIp);
         }

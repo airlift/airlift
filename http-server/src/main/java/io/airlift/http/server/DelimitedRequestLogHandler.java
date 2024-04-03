@@ -61,7 +61,7 @@ public class DelimitedRequestLogHandler
         List<Long> contentTimestamps = getContentTimestamps(request);
         long firstToLastContentTimeInMillis = -1;
         if (!contentTimestamps.isEmpty()) {
-            firstToLastContentTimeInMillis = NANOSECONDS.toMillis(contentTimestamps.get(contentTimestamps.size() - 1) - contentTimestamps.get(0));
+            firstToLastContentTimeInMillis = NANOSECONDS.toMillis(contentTimestamps.getLast() - contentTimestamps.getFirst());
         }
 
         long beginToHandleMillis = NANOSECONDS.toMillis((Long) request.getAttribute(REQUEST_BEGIN_TO_HANDLE_ATTRIBUTE));
@@ -98,7 +98,7 @@ public class DelimitedRequestLogHandler
         }
 
         DoubleSummaryStatistics statistics = new DoubleSummaryStatistics();
-        long previousTimestamp = contentTimestamps.get(0);
+        long previousTimestamp = contentTimestamps.getFirst();
         for (int i = 1; i < contentTimestamps.size(); i++) {
             long timestamp = contentTimestamps.get(i);
             statistics.accept(NANOSECONDS.toMillis(timestamp - previousTimestamp));

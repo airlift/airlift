@@ -58,7 +58,7 @@ public class TestProgrammaticResource
                 .flatMap(r -> r.getAllMethods().stream())
                 .collect(toImmutableList());
         assertEquals(foundMethods.size(), 1);
-        ResourceMethod foundMethod = foundMethods.get(0);
+        ResourceMethod foundMethod = foundMethods.getFirst();
         assertEquals(foundMethod.getInvocable().getHandlingMethod(), getResultMethod);
         assertEquals(foundMethod.getInvocable().getHandler().getHandlerClass(), getClass());
     }

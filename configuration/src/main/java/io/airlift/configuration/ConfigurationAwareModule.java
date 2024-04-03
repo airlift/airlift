@@ -38,7 +38,7 @@ public interface ConfigurationAwareModule
         List<Module> modules = ImmutableList.copyOf(modulesIterable);
         checkArgument(!modules.isEmpty(), "no modules provided");
         if (modules.size() == 1) {
-            return modules.get(0);
+            return modules.getFirst();
         }
         return new AbstractConfigurationAwareModule()
         {

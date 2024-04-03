@@ -142,8 +142,8 @@ public final class EventTypeMetadata<T>
             }
             else {
                 eventDataType = Optional.ofNullable(getEventDataType(dataType));
-                if (!eventDataType.isPresent()) {
-                    Object typeSource = (containerType.isPresent()) ? containerType.get() : "return";
+                if (eventDataType.isEmpty()) {
+                    Object typeSource = containerType.map(Object.class::cast).orElse("return");
                     addMethodError("%s type [%s] is not supported", method, typeSource, dataType);
                     continue;
                 }
@@ -155,7 +155,7 @@ public final class EventTypeMetadata<T>
             if (eventField.fieldMapping() != EventFieldMapping.DATA) {
                 // validate special fields
                 if (containerType.isPresent()) {
-                    addMethodError("non-DATA fieldMapping (%s) not allowed for %s", method, eventField.fieldMapping(), containerType.get());
+                    addMethodError("non-DATA fieldMapping (%s) not allowed for %s", method, eventField.fieldMapping(), containerType.orElseThrow());
                     continue;
                 }
                 if (nestedEvent) {

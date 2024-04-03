@@ -330,7 +330,7 @@ public class TestLogger
         public LogRecord takeRecord()
         {
             assertTrue(!records.isEmpty(), "No messages logged");
-            return records.remove(0);
+            return records.removeFirst();
         }
 
         public boolean isEmpty()

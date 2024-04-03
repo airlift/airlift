@@ -96,7 +96,7 @@ class BufferingResponseListener
     {
         checkState(currentBufferPosition >= currentBuffer.length, "there is still remaining space in currentBuffer");
 
-        currentBuffer = new byte[(int) min(BUFFER_MAX_BYTES, max(2 * currentBuffer.length, BUFFER_MIN_BYTES))];
+        currentBuffer = new byte[(int) min(BUFFER_MAX_BYTES, max(2L * currentBuffer.length, BUFFER_MIN_BYTES))];
         buffers.add(currentBuffer);
         currentBufferPosition = 0;
     }

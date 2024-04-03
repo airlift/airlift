@@ -64,7 +64,7 @@ public class TestingHttpServer
             httpConfiguration.addCustomizer(new SecureRequestCustomizer(false));
 
             SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-            sslContextFactory.setKeyStorePath(keystore.get());
+            sslContextFactory.setKeyStorePath(keystore.orElseThrow());
             sslContextFactory.setKeyStorePassword("changeit");
             SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory, "http/1.1");
             connector = new ServerConnector(server, sslConnectionFactory, new HttpConnectionFactory(httpConfiguration));
@@ -93,7 +93,7 @@ public class TestingHttpServer
         server.setHandler(gzipHandler);
 
         if (additionalHandle.isPresent()) {
-            Handler.Wrapper handler = additionalHandle.get();
+            Handler.Wrapper handler = additionalHandle.orElseThrow();
             handler.setHandler(gzipHandler);
             server.setHandler(handler);
         }

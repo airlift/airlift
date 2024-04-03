@@ -61,8 +61,8 @@ public class TestTimeStat
 
         TimeDistribution allTime = stat.getAllTime();
         assertEquals(allTime.getCount(), (double) values.size());
-        assertTrue(fuzzyEquals(allTime.getMax(), values.get(values.size() - 1) * 0.001, 0.000_000_000_1));
-        assertEquals(allTime.getMin(), values.get(0) * 0.001);
+        assertTrue(fuzzyEquals(allTime.getMax(), values.getLast() * 0.001, 0.000_000_000_1));
+        assertEquals(allTime.getMin(), values.getFirst() * 0.001);
         assertEquals(allTime.getAvg(), values.stream().mapToDouble(x -> x).average().getAsDouble() * 0.001, 0.001);
         assertEquals(allTime.getUnit(), TimeUnit.SECONDS);
 

@@ -29,11 +29,11 @@ import java.security.Principal;
 import java.time.Instant;
 import java.util.Enumeration;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
 import static io.airlift.event.client.EventField.EventFieldMapping.TIMESTAMP;
 import static io.airlift.http.server.DelimitedRequestLogHandler.REQUEST_BEGIN_TO_HANDLE_ATTRIBUTE;
 import static io.airlift.http.server.TraceTokenFilter.TRACETOKEN_HEADER;
 import static java.lang.Math.max;
+import static java.util.Objects.requireNonNullElse;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 @EventType("HttpRequest")
@@ -56,11 +56,10 @@ public class HttpRequestEvent
             token = traceTokenManager.getCurrentRequestToken();
         }
 
-        long timeToDispatch = NANOSECONDS.toMillis((long) firstNonNull(request.getAttribute(REQUEST_BEGIN_TO_HANDLE_ATTRIBUTE), 0L));
+        long timeToDispatch = NANOSECONDS.toMillis((long) requireNonNullElse(request.getAttribute(REQUEST_BEGIN_TO_HANDLE_ATTRIBUTE), 0L));
         Long timeToFirstByte = null;
         Object firstByteTime = request.getAttribute(TimingFilter.FIRST_BYTE_TIME);
-        if (firstByteTime instanceof Long) {
-            Long time = (Long) firstByteTime;
+        if (firstByteTime instanceof Long time) {
             timeToFirstByte = max(time - Request.getTimeStamp(request), 0);
         }
 

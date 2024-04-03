@@ -173,7 +173,7 @@ public class TestHttpClientLogger
         assertEquals(columns[1], HTTP_1_1.toString());
         assertEquals(columns[2], method);
         assertEquals(columns[3], uri.toString());
-        assertEquals(columns[4], getFailureReason(responseInfo).get());
+        assertEquals(columns[4], getFailureReason(responseInfo).orElseThrow());
         assertEquals(columns[5], Integer.toString(NO_RESPONSE));
         assertNotEquals(columns[6], Long.toString(0));
         assertEquals(columns[7], Long.toString(0));

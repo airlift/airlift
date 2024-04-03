@@ -34,11 +34,11 @@ import io.airlift.tracetoken.TraceTokenModule;
 import io.airlift.tracing.TracingModule;
 import org.weakref.jmx.guice.MBeanModule;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
+import static java.util.Objects.requireNonNullElse;
 
 public final class Main
 {
-    private static final String VERSION = firstNonNull(Main.class.getPackage().getImplementationVersion(), "unknown");
+    private static final String VERSION = requireNonNullElse(Main.class.getPackage().getImplementationVersion(), "unknown");
     private static final Logger log = Logger.get(Main.class);
 
     private Main() {}

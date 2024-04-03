@@ -78,9 +78,7 @@ public class TestingNodeModule
                 .setNodeInternalAddress(InetAddresses.toAddrString(getV4Localhost()))
                 .setNodeBindIp(getV4Localhost());
 
-        if (pool.isPresent()) {
-            nodeConfig.setPool(pool.get());
-        }
+        pool.ifPresent(nodeConfig::setPool);
 
         binder.bind(NodeConfig.class).toInstance(nodeConfig);
 

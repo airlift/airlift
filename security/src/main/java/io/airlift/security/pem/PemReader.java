@@ -232,12 +232,12 @@ public final class PemReader
             encodedKeySpec = new PKCS8EncodedKeySpec(encodedKey);
         }
         else if ("ENCRYPTED".equals(keyType)) {
-            if (!keyPassword.isPresent()) {
+            if (keyPassword.isEmpty()) {
                 throw new KeyStoreException("Private key is encrypted, but no password was provided");
             }
             EncryptedPrivateKeyInfo encryptedPrivateKeyInfo = new EncryptedPrivateKeyInfo(encodedKey);
             SecretKeyFactory keyFactory = SecretKeyFactory.getInstance(encryptedPrivateKeyInfo.getAlgName());
-            SecretKey secretKey = keyFactory.generateSecret(new PBEKeySpec(keyPassword.get().toCharArray()));
+            SecretKey secretKey = keyFactory.generateSecret(new PBEKeySpec(keyPassword.orElseThrow().toCharArray()));
 
             Cipher cipher = Cipher.getInstance(encryptedPrivateKeyInfo.getAlgName());
             cipher.init(DECRYPT_MODE, secretKey, encryptedPrivateKeyInfo.getAlgParameters());

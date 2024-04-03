@@ -100,7 +100,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Throwables.throwIfUnchecked;
@@ -117,6 +116,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.temporal.ChronoUnit.YEARS;
 import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
+import static java.util.Objects.requireNonNullElse;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -255,7 +255,7 @@ public class JettyHttpClient
             {
                 super.configure(selectable);
                 if (config.getTcpKeepAliveIdleTime().isPresent()) {
-                    setKeepAlive(selectable, config.getTcpKeepAliveIdleTime().get());
+                    setKeepAlive(selectable, config.getTcpKeepAliveIdleTime().orElseThrow());
                 }
             }
         };
@@ -318,7 +318,7 @@ public class JettyHttpClient
         httpClient.setSocketAddressResolver((host, port, promise) -> {
             Optional<InetAddress> inetAddress = tryDecodeHostnameToAddress(host);
             if (inetAddress.isPresent()) {
-                promise.succeeded(ImmutableList.of(new InetSocketAddress(inetAddress.get(), port)));
+                promise.succeeded(ImmutableList.of(new InetSocketAddress(inetAddress.orElseThrow(), port)));
                 return;
             }
             resolver.resolve(host, port, promise);
@@ -458,7 +458,7 @@ public class JettyHttpClient
         sslContextFactory.setSNIProvider(JettyHttpClient::getSniServerNames);
         sslContextFactory.setEndpointIdentificationAlgorithm(config.isVerifyHostname() ? "HTTPS" : null);
 
-        String keyStorePassword = firstNonNull(config.getKeyStorePassword(), "");
+        String keyStorePassword = requireNonNullElse(config.getKeyStorePassword(), "");
         KeyStore keyStore = null;
         if (config.getKeyStorePath() != null) {
             keyStore = loadKeyStore(config.getKeyStorePath(), config.getKeyStorePassword());

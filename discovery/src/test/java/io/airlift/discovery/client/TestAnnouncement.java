@@ -53,7 +53,7 @@ public class TestAnnouncement
 
         // set id in expected
         List<Map<String, Object>> services = toServices(expected.get("services"));
-        services.get(0).put("id", announcement.getServices().stream().collect(onlyElement()).getId().toString());
+        services.getFirst().put("id", announcement.getServices().stream().collect(onlyElement()).getId().toString());
 
         assertEquals(actual, expected);
     }

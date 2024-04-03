@@ -410,17 +410,17 @@ public class QuantileDigest
      */
     public long getQuantile(double quantile)
     {
-        return getQuantiles(ImmutableList.of(quantile)).get(0);
+        return getQuantiles(ImmutableList.of(quantile)).getFirst();
     }
 
     public long getQuantileLowerBound(double quantile)
     {
-        return getQuantilesLowerBound(ImmutableList.of(quantile)).get(0);
+        return getQuantilesLowerBound(ImmutableList.of(quantile)).getFirst();
     }
 
     public long getQuantileUpperBound(double quantile)
     {
-        return getQuantilesUpperBound(ImmutableList.of(quantile)).get(0);
+        return getQuantilesUpperBound(ImmutableList.of(quantile)).getFirst();
     }
 
     /**
@@ -1110,7 +1110,7 @@ public class QuantileDigest
         Multimap<Byte, Integer> nodesByLevel = Multimaps.index(nodes, input -> levels[input]);
 
         for (Map.Entry<Byte, Collection<Integer>> entry : nodesByLevel.asMap().entrySet()) {
-            builder.append("\tsubgraph level_" + entry.getKey() + " {\n")
+            builder.append("\tsubgraph level_").append(entry.getKey()).append(" {\n")
                     .append("\t\trank = same;\n");
 
             for (int node : entry.getValue()) {

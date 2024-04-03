@@ -8,10 +8,10 @@ import java.util.Iterator;
 import java.util.List;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkPositionIndexes;
 import static com.google.common.base.Preconditions.checkState;
 import static java.lang.Math.min;
 import static java.lang.System.arraycopy;
+import static java.util.Objects.checkFromToIndex;
 import static java.util.Objects.requireNonNull;
 
 @ThreadSafe
@@ -79,7 +79,7 @@ public class GatheringByteArrayInputStream
     public synchronized int read(byte[] buffer, int offset, int length)
     {
         requireNonNull(buffer, "buffer is null");
-        checkPositionIndexes(offset, offset + length, buffer.length);
+        checkFromToIndex(offset, offset + length, buffer.length);
 
         if (remainingBytes == 0) {
             return -1;

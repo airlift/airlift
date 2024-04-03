@@ -305,7 +305,7 @@ public class TestQuantileDigest
                 .boxed()
                 .map(i -> new QuantileDigest.Bucket(1, i - 1))
                 .collect(Collectors.toList());
-        expected.add(0, new QuantileDigest.Bucket(0, Double.NaN));
+        expected.addFirst(new QuantileDigest.Bucket(0, Double.NaN));
         assertEquals(digest.getHistogram(bucketUpperBounds, middleFunction),
                 expected);
 

@@ -122,7 +122,7 @@ final class ReloadableSslContextFactoryProvider
         sslContextFactory.setKeyStorePassword(password);
 
         if (trustStoreFile.isPresent()) {
-            sslContextFactory.setTrustStore(loadTrustStore(trustStoreFile.get().getFile(), trustStorePassword));
+            sslContextFactory.setTrustStore(loadTrustStore(trustStoreFile.orElseThrow().getFile(), trustStorePassword));
             sslContextFactory.setTrustStorePassword("");
         }
         else {
@@ -196,7 +196,7 @@ final class ReloadableSslContextFactoryProvider
             }
         }
 
-        File file = keystoreFile.get();
+        File file = keystoreFile.orElseThrow();
         try {
             if (PemReader.isPem(file)) {
                 checkArgument(keyManagerPassword == null, "key manager password is not allowed with a PEM keystore");

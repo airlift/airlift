@@ -25,13 +25,13 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Comparator.comparing;
 import static java.util.Objects.requireNonNull;
+import static java.util.Objects.requireNonNullElse;
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static java.util.logging.ErrorManager.CLOSE_FAILURE;
 import static java.util.logging.ErrorManager.FLUSH_FAILURE;
@@ -324,7 +324,7 @@ class BufferedHandler
 
     private static String determineSourceName(LogRecord record)
     {
-        return firstNonNull(record.getLoggerName(), "UNKNOWN");
+        return requireNonNullElse(record.getLoggerName(), "UNKNOWN");
     }
 
     private void queueInsert(MessageAndSource message)

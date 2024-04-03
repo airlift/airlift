@@ -54,10 +54,10 @@ public final class JwksDecoder
     public static Optional<? extends JwkPublicKey> tryDecodeJwkKey(JsonKey key)
     {
         // key id is required to index the key
-        if (key.getKid().isEmpty() || key.getKid().get().isEmpty()) {
+        if (key.getKid().isEmpty() || key.getKid().orElseThrow().isEmpty()) {
             return Optional.empty();
         }
-        String keyId = key.getKid().get();
+        String keyId = key.getKid().orElseThrow();
         return switch (key.getKty()) {
             case "RSA" -> tryDecodeRsaKey(keyId, key);
             case "EC" -> tryDecodeEcKey(keyId, key);
@@ -77,7 +77,7 @@ public final class JwksDecoder
 
         return key.getStringProperty("e")
                 .flatMap(exponent -> decodeBigint(keyId, "exponent", exponent))
-                .map(exponent -> new JwkRsaPublicKey(keyId, exponent, modulus.get()));
+                .map(exponent -> new JwkRsaPublicKey(keyId, exponent, modulus.orElseThrow()));
     }
 
     public static Optional<JwkEcPublicKey> tryDecodeEcKey(String keyId, JsonKey key)
@@ -99,8 +99,8 @@ public final class JwksDecoder
             return Optional.empty();
         }
 
-        ECPoint w = new ECPoint(x.get(), y.get());
-        return Optional.of(new JwkEcPublicKey(keyId, curve.get(), w));
+        ECPoint w = new ECPoint(x.orElseThrow(), y.orElseThrow());
+        return Optional.of(new JwkEcPublicKey(keyId, curve.orElseThrow(), w));
     }
 
     private static Optional<BigInteger> decodeBigint(String keyId, String fieldName, String encodedNumber)

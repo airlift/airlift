@@ -36,7 +36,7 @@ public class ProblemsTest
 
         List<Message> errors = problems.getErrors();
         assertEquals(errors.size(), 1);
-        assertEquals(errors.get(0).getMessage(), "message 1");
+        assertEquals(errors.getFirst().getMessage(), "message 1");
 
         assertEquals(problems.getWarnings().size(), 0, "Found unexpected warnings in problem object");
 
@@ -58,7 +58,7 @@ public class ProblemsTest
 
         List<Message> errors = problems.getErrors();
         assertEquals(errors.size(), 2);
-        assertEquals(errors.get(0).getMessage(), "message 1");
+        assertEquals(errors.getFirst().getMessage(), "message 1");
         assertEquals(errors.get(1).getMessage(), "message 2");
 
         assertEquals(problems.getWarnings().size(), 0, "Found unexpected warnings in problem object");
@@ -80,7 +80,7 @@ public class ProblemsTest
 
         List<Message> errors = problems.getErrors();
         assertEquals(errors.size(), 1);
-        assertContainsAllOf(errors.get(0).getMessage(), "message %d", "NaN", "IllegalFormatConversionException");
+        assertContainsAllOf(errors.getFirst().getMessage(), "message %d", "NaN", "IllegalFormatConversionException");
 
         assertEquals(problems.getWarnings().size(), 0, "Found unexpected warnings in problem object");
 
@@ -103,7 +103,7 @@ public class ProblemsTest
 
         List<Message> warnings = problems.getWarnings();
         assertEquals(warnings.size(), 1);
-        assertEquals(warnings.get(0).getMessage(), "message 1");
+        assertEquals(warnings.getFirst().getMessage(), "message 1");
 
         try {
             problems.throwIfHasErrors();
@@ -145,7 +145,7 @@ public class ProblemsTest
 
         List<Message> warnings = problems.getWarnings();
         assertEquals(warnings.size(), 1);
-        assertContainsAllOf(warnings.get(0).getMessage(), "message %d", "NaN", "IllegalFormatConversionException");
+        assertContainsAllOf(warnings.getFirst().getMessage(), "message %d", "NaN", "IllegalFormatConversionException");
 
         try {
             problems.throwIfHasErrors();

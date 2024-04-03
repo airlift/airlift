@@ -99,6 +99,6 @@ public class TestEventValidation
         EventTypeMetadata<?> metadata = getEventTypeMetadata(eventClass);
         List<String> errors = metadata.getErrors();
         assertEquals(errors.size(), 1, "expected exactly one error:\n" + Joiner.on('\n').join(errors));
-        assertContains(errors.get(0), errorPart);
+        assertContains(errors.getFirst(), errorPart);
     }
 }

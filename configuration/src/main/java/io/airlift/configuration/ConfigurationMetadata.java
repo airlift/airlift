@@ -796,7 +796,7 @@ public class ConfigurationMetadata<T>
         }
 
         // just right
-        return getters.get(0);
+        return getters.getFirst();
     }
 
     private static boolean isUsableMethod(Method method)

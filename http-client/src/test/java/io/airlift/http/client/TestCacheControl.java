@@ -38,8 +38,8 @@ public class TestCacheControl
         assertTrue(c.isNoTransform());
         assertTrue(c.getNoCacheFields().size() == 1);
         assertTrue(c.getPrivateFields().size() == 1);
-        assertEquals(c.getPrivateFields().get(0), "foo");
-        assertEquals(c.getNoCacheFields().get(0), "bar");
+        assertEquals(c.getPrivateFields().getFirst(), "foo");
+        assertEquals(c.getNoCacheFields().getFirst(), "bar");
     }
 
     @Test

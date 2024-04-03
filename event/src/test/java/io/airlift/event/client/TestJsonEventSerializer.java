@@ -36,10 +36,10 @@ public class TestJsonEventSerializer
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         JsonGenerator jsonGenerator = new JsonFactory().createGenerator(out, JsonEncoding.UTF8);
 
-        FixedDummyEventClass event = TestingUtils.getEvents().get(0);
+        FixedDummyEventClass event = TestingUtils.getEvents().getFirst();
         eventSerializer.serialize(event, jsonGenerator);
 
-        String json = out.toString(UTF_8.name());
+        String json = out.toString(UTF_8);
         assertEquals(json, TestingUtils.getNormalizedJson("event.json"));
     }
 }

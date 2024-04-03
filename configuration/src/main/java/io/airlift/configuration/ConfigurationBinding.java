@@ -19,7 +19,8 @@ public final class ConfigurationBinding<T>
         requireNonNull(key, "key");
         requireNonNull(configClass, "configClass");
         requireNonNull(prefix, "prefix is null");
-        checkArgument(!prefix.isPresent() || !prefix.get().isEmpty(), "prefix is empty");
+
+        checkArgument(prefix.isEmpty() || !prefix.orElseThrow().isEmpty(), "prefix is empty");
 
         this.key = key;
         this.configClass = configClass;
@@ -53,11 +54,7 @@ public final class ConfigurationBinding<T>
 
         ConfigurationBinding<?> that = (ConfigurationBinding<?>) o;
 
-        if (!key.equals(that.key)) {
-            return false;
-        }
-
-        return true;
+        return key.equals(that.key);
     }
 
     @Override
