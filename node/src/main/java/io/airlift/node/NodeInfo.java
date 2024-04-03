@@ -292,18 +292,12 @@ public class NodeInfo
 
     private static String findInternalAddress(AddressSource addressSource)
     {
-        switch (addressSource) {
-            case IP:
-                return InetAddresses.toAddrString(findInternalIp());
-            case IP_ENCODED_AS_HOSTNAME:
-                return encodeAddressAsHostname(findInternalIp());
-            case HOSTNAME:
-                return getLocalHost().getHostName();
-            case FQDN:
-                return getLocalHost().getCanonicalHostName();
-            default:
-                throw new IllegalArgumentException();
-        }
+        return switch (addressSource) {
+            case IP -> InetAddresses.toAddrString(findInternalIp());
+            case IP_ENCODED_AS_HOSTNAME -> encodeAddressAsHostname(findInternalIp());
+            case HOSTNAME -> getLocalHost().getHostName();
+            case FQDN -> getLocalHost().getCanonicalHostName();
+        };
     }
 
     private static InetAddress findInternalIp()

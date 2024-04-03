@@ -265,20 +265,12 @@ public final class PemReader
     private static PrivateKey loadPkcs1PrivateKey(String pkcs1KeyType, byte[] pkcs1Key)
             throws GeneralSecurityException
     {
-        byte[] pkcs8Key;
-        switch (pkcs1KeyType) {
-            case "RSA":
-                pkcs8Key = rsaPkcs1ToPkcs8(pkcs1Key);
-                break;
-            case "DSA":
-                pkcs8Key = dsaPkcs1ToPkcs8(pkcs1Key);
-                break;
-            case "EC":
-                pkcs8Key = ecPkcs1ToPkcs8(pkcs1Key);
-                break;
-            default:
-                throw new InvalidKeySpecException(pkcs1KeyType + " private key in PKCS 1 format is not supported");
-        }
+        byte[] pkcs8Key = switch (pkcs1KeyType) {
+            case "RSA" -> rsaPkcs1ToPkcs8(pkcs1Key);
+            case "DSA" -> dsaPkcs1ToPkcs8(pkcs1Key);
+            case "EC" -> ecPkcs1ToPkcs8(pkcs1Key);
+            default -> throw new InvalidKeySpecException(pkcs1KeyType + " private key in PKCS 1 format is not supported");
+        };
         try {
             KeyFactory keyFactory = KeyFactory.getInstance(pkcs1KeyType);
             return keyFactory.generatePrivate(new PKCS8EncodedKeySpec(pkcs8Key));
