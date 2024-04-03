@@ -73,54 +73,31 @@ public class MBeanServerResource
         }
 
         try {
-            Object result = null;
-            if ("getMBeanInfo".equals(method)) {
-                result = mbeanServer.getMBeanInfo((ObjectName) args[0]);
-            }
-            else if ("queryMBeans".equals(method)) {
-                result = mbeanServer.queryMBeans((ObjectName) args[0], (QueryExp) args[1]);
-            }
-            else if ("queryNames".equals(method)) {
-                result = mbeanServer.queryNames((ObjectName) args[0], (QueryExp) args[1]);
-            }
-            else if ("getAttribute".equals(method)) {
-                result = mbeanServer.getAttribute((ObjectName) args[0], (String) args[1]);
-            }
-            else if ("getAttributes".equals(method)) {
-                result = mbeanServer.getAttributes((ObjectName) args[0], (String[]) args[1]);
-            }
-            else if ("setAttribute".equals(method)) {
-                mbeanServer.setAttribute((ObjectName) args[0], (Attribute) args[1]);
-            }
-            else if ("setAttributes".equals(method)) {
-                result = mbeanServer.setAttributes((ObjectName) args[0], (AttributeList) args[1]);
-            }
-            else if ("invoke".equals(method)) {
-                result = mbeanServer.invoke((ObjectName) args[0], (String) args[1], (Object[]) args[2], (String[]) args[3]);
-            }
-            else if ("getMBeanCount".equals(method)) {
-                result = mbeanServer.getMBeanCount();
-            }
-            else if ("isRegistered".equals(method)) {
-                result = mbeanServer.isRegistered((ObjectName) args[0]);
-            }
-            else if ("getObjectInstance".equals(method)) {
-                result = mbeanServer.getObjectInstance((ObjectName) args[0]);
-            }
-            else if ("getDefaultDomain".equals(method)) {
-                result = mbeanServer.getDefaultDomain();
-            }
-            else if ("getDomains".equals(method)) {
-                result = mbeanServer.getDomains();
-            }
-            else if ("isInstanceOf".equals(method)) {
-                result = mbeanServer.isInstanceOf((ObjectName) args[0], (String) args[1]);
-            }
-            else {
-                return Response.status(Status.BAD_REQUEST).entity(createExceptionResponse(new IllegalArgumentException("Unknown method " + method))).build();
-            }
+            Object result = switch (method) {
+                case "getMBeanInfo" -> mbeanServer.getMBeanInfo((ObjectName) args[0]);
+                case "queryMBeans" -> mbeanServer.queryMBeans((ObjectName) args[0], (QueryExp) args[1]);
+                case "queryNames" -> mbeanServer.queryNames((ObjectName) args[0], (QueryExp) args[1]);
+                case "getAttribute" -> mbeanServer.getAttribute((ObjectName) args[0], (String) args[1]);
+                case "getAttributes" -> mbeanServer.getAttributes((ObjectName) args[0], (String[]) args[1]);
+                case "setAttribute" -> {
+                    mbeanServer.setAttribute((ObjectName) args[0], (Attribute) args[1]);
+                    yield null;
+                }
+                case "setAttributes" -> mbeanServer.setAttributes((ObjectName) args[0], (AttributeList) args[1]);
+                case "invoke" -> mbeanServer.invoke((ObjectName) args[0], (String) args[1], (Object[]) args[2], (String[]) args[3]);
+                case "getMBeanCount" -> mbeanServer.getMBeanCount();
+                case "isRegistered" -> mbeanServer.isRegistered((ObjectName) args[0]);
+                case "getObjectInstance" -> mbeanServer.getObjectInstance((ObjectName) args[0]);
+                case "getDefaultDomain" -> mbeanServer.getDefaultDomain();
+                case "getDomains" -> mbeanServer.getDomains();
+                case "isInstanceOf" -> mbeanServer.isInstanceOf((ObjectName) args[0], (String) args[1]);
+                default -> throw new IllegalArgumentException("Unknown method " + method);
+            };
 
             return Response.ok(createSuccessResponse(result)).build();
+        }
+        catch (IllegalArgumentException e) {
+            return Response.status(Status.BAD_REQUEST).entity(createExceptionResponse(e)).build();
         }
         catch (Exception e) {
             return Response.status(Status.INTERNAL_SERVER_ERROR).entity(createExceptionResponse(e)).build();
