@@ -2,6 +2,7 @@
 
 - Update jetty to 12.0.8
 - Update byte-buddy to 1.14.13
+- Update jackson to 2.17.0
 
 243
 
