@@ -15,7 +15,7 @@ jobs:
           - 22
           - 23-ea
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
