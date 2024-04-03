@@ -140,10 +140,9 @@ public final class Request
     @Override
     public boolean equals(Object o)
     {
-        if (!(o instanceof Request)) {
+        if (!(o instanceof Request r)) {
             return false;
         }
-        Request r = (Request) o;
         return Objects.equals(uri, r.uri) &&
                 Objects.equals(method, r.method) &&
                 Objects.equals(headers, r.headers) &&

@@ -48,11 +48,9 @@ class ServiceTypeImpl
         if (this == o) {
             return true;
         }
-        if (!(o instanceof ServiceType)) {
+        if (!(o instanceof ServiceType that)) {
             return false;
         }
-
-        ServiceType that = (ServiceType) o;
 
         if (!value.equals(that.value())) {
             return false;

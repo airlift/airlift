@@ -278,11 +278,9 @@ public class TestJsonModule
             if (this == o) {
                 return true;
             }
-            if (!(o instanceof Car)) {
+            if (!(o instanceof Car car)) {
                 return false;
             }
-
-            Car car = (Car) o;
 
             if (year != car.year) {
                 return false;
@@ -412,11 +410,9 @@ public class TestJsonModule
             if (this == o) {
                 return true;
             }
-            if (!(o instanceof SuperDuperNameList)) {
+            if (!(o instanceof SuperDuperNameList that)) {
                 return false;
             }
-
-            SuperDuperNameList that = (SuperDuperNameList) o;
 
             if (!name.equals(that.name)) {
                 return false;

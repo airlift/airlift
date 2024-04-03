@@ -28,9 +28,7 @@ public final class TypeParameterUtils
 
     public static Type[] getTypeParameters(Class<?> desiredType, Type type)
     {
-        if (type instanceof Class) {
-            Class<?> rawClass = (Class<?>) type;
-
+        if (type instanceof Class<?> rawClass) {
             // if this is the collection class we're done
             if (desiredType.equals(type)) {
                 return null;
@@ -45,9 +43,7 @@ public final class TypeParameterUtils
 
             return getTypeParameters(desiredType, rawClass.getGenericSuperclass());
         }
-        if (type instanceof ParameterizedType) {
-            ParameterizedType parameterizedType = (ParameterizedType) type;
-
+        if (type instanceof ParameterizedType parameterizedType) {
             Type rawType = parameterizedType.getRawType();
             if (desiredType.equals(rawType)) {
                 return parameterizedType.getActualTypeArguments();
@@ -56,8 +52,7 @@ public final class TypeParameterUtils
             Type[] collectionTypes = getTypeParameters(desiredType, rawType);
             if (collectionTypes != null) {
                 for (int i = 0; i < collectionTypes.length; i++) {
-                    if (collectionTypes[i] instanceof TypeVariable) {
-                        TypeVariable<?> typeVariable = (TypeVariable<?>) collectionTypes[i];
+                    if (collectionTypes[i] instanceof TypeVariable<?> typeVariable) {
                         TypeVariable<?>[] rawTypeParams = ((GenericDeclaration) rawType).getTypeParameters();
                         for (int j = 0; j < rawTypeParams.length; j++) {
                             if (typeVariable.getName().equals(rawTypeParams[j].getName())) {
