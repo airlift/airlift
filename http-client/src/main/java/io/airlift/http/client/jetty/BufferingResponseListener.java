@@ -17,8 +17,9 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static io.airlift.units.DataSize.Unit.KILOBYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
-import static java.lang.Math.max;
+import static java.lang.Math.clamp;
 import static java.lang.Math.min;
+import static java.lang.Math.toIntExact;
 import static java.util.Objects.requireNonNull;
 
 @ThreadSafe
@@ -96,7 +97,7 @@ class BufferingResponseListener
     {
         checkState(currentBufferPosition >= currentBuffer.length, "there is still remaining space in currentBuffer");
 
-        currentBuffer = new byte[(int) min(BUFFER_MAX_BYTES, max(2L * currentBuffer.length, BUFFER_MIN_BYTES))];
+        currentBuffer = new byte[toIntExact(clamp(2L * currentBuffer.length, BUFFER_MIN_BYTES, BUFFER_MAX_BYTES))];
         buffers.add(currentBuffer);
         currentBufferPosition = 0;
     }

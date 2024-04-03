@@ -31,6 +31,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static io.airlift.slice.SizeOf.instanceSize;
 import static java.lang.Double.isInfinite;
 import static java.lang.Double.isNaN;
+import static java.lang.Math.clamp;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -191,7 +192,7 @@ public class TDigest
 
         if (centroidCount == means.length) {
             if (means.length < maxSize) {
-                ensureCapacity(Math.min(Math.max(means.length * 2, INITIAL_CAPACITY), maxSize));
+                ensureCapacity(clamp(means.length * 2L, INITIAL_CAPACITY, maxSize));
             }
             else {
                 merge(internalCompressionFactor(compression));
