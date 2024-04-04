@@ -9,6 +9,7 @@ import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.google.inject.Scopes.SINGLETON;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
 import static java.util.Objects.requireNonNull;
@@ -48,6 +49,18 @@ public class HttpServerBinder
     public HttpServerBinder enableLegacyUriCompliance()
     {
         newOptionalBinder(binder, Key.get(Boolean.class, EnableLegacyUriCompliance.class)).setBinding().toInstance(true);
+        return this;
+    }
+
+    public HttpServerBinder bindErrorWriter(ErrorWriter errorHandler)
+    {
+        newOptionalBinder(binder, ErrorWriter.class).setBinding().toInstance(errorHandler);
+        return this;
+    }
+
+    public HttpServerBinder bindErrorHandler(Class<? extends ErrorWriter> errorWriterClazz)
+    {
+        newOptionalBinder(binder, ErrorWriter.class).setBinding().to(errorWriterClazz).in(SINGLETON);
         return this;
     }
 

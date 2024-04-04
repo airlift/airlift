@@ -28,6 +28,7 @@ import io.airlift.tracetoken.TraceTokenManager;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -81,6 +82,7 @@ public class TestJettyMultipleCerts
                 httpServerInfo,
                 nodeInfo,
                 config,
+                new ErrorHandler(),
                 Optional.of(httpsConfig),
                 servlet,
                 ImmutableSet.of(new DummyFilter()),

@@ -28,6 +28,7 @@ import jakarta.annotation.Nullable;
 import jakarta.servlet.Filter;
 import jakarta.servlet.Servlet;
 import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import javax.management.MBeanServer;
@@ -49,6 +50,7 @@ public class HttpServerProvider
     private final HttpServerInfo httpServerInfo;
     private final NodeInfo nodeInfo;
     private final HttpServerConfig config;
+    private final ErrorHandler errorHandler;
     private final Optional<HttpsConfig> httpsConfig;
     private final Servlet theServlet;
     private final Set<HttpResourceBinding> resources;
@@ -71,6 +73,7 @@ public class HttpServerProvider
     public HttpServerProvider(HttpServerInfo httpServerInfo,
             NodeInfo nodeInfo,
             HttpServerConfig config,
+            ErrorHandler errorHandler,
             Optional<HttpsConfig> httpsConfig,
             @TheServlet Servlet theServlet,
             @TheServlet Set<Filter> filters,
@@ -86,6 +89,7 @@ public class HttpServerProvider
         requireNonNull(httpServerInfo, "httpServerInfo is null");
         requireNonNull(nodeInfo, "nodeInfo is null");
         requireNonNull(config, "config is null");
+        requireNonNull(errorHandler, "errorHandler is null");
         requireNonNull(httpsConfig, "httpsConfig is null");
         requireNonNull(theServlet, "theServlet is null");
         requireNonNull(filters, "filters is null");
@@ -99,6 +103,7 @@ public class HttpServerProvider
         this.httpServerInfo = httpServerInfo;
         this.nodeInfo = nodeInfo;
         this.config = config;
+        this.errorHandler = errorHandler;
         this.httpsConfig = httpsConfig;
         this.theServlet = theServlet;
         this.filters = ImmutableSet.copyOf(filters);
@@ -156,6 +161,7 @@ public class HttpServerProvider
                     httpServerInfo,
                     nodeInfo,
                     config,
+                    errorHandler,
                     httpsConfig,
                     theServlet,
                     servletInitParameters,

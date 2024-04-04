@@ -102,7 +102,7 @@ public class TestHttpServerConfig
                 .put("http-server.max-request-header-size", "32kB")
                 .put("http-server.max-response-header-size", "57kB")
                 .put("http-server.http2.max-concurrent-streams", "1234")
-                .put("http-server.show-stack-trace", "false")
+                .put("http-server.show-error-stack-trace", "false")
                 .put("http-server.http2.session-receive-window-size", "4MB")
                 .put("http-server.http2.stream-receive-window-size", "4MB")
                 .put("http-server.http2.input-buffer-size", "4MB")

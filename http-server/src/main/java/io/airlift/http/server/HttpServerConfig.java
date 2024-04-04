@@ -18,6 +18,7 @@ package io.airlift.http.server;
 import io.airlift.configuration.Config;
 import io.airlift.configuration.ConfigDescription;
 import io.airlift.configuration.DefunctConfig;
+import io.airlift.configuration.LegacyConfig;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 import io.airlift.units.MaxDataSize;
@@ -89,6 +90,8 @@ public class HttpServerConfig
     private int adminMaxThreads = 200;
 
     private boolean showStackTrace = true;
+    private boolean showErrorInTitle = true;
+    private boolean showCauses = true;
 
     public boolean isHttpEnabled()
     {
@@ -428,8 +431,9 @@ public class HttpServerConfig
         return showStackTrace;
     }
 
-    @Config("http-server.show-stack-trace")
-    @ConfigDescription("Show the stack trace when generating an error response")
+    @LegacyConfig("http-server.show-stack-trace")
+    @Config("http-server.show-error-stack-trace")
+    @ConfigDescription("Show the stack trace when generating an error page")
     public HttpServerConfig setShowStackTrace(boolean showStackTrace)
     {
         this.showStackTrace = showStackTrace;

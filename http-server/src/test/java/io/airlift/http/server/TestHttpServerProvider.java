@@ -43,6 +43,8 @@ import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
@@ -84,6 +86,8 @@ import static com.google.common.net.HttpHeaders.X_FORWARDED_PROTO;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
+import static io.airlift.http.server.HttpServerModule.defaultErrorHandler;
+import static io.airlift.http.server.HttpServerModule.errorHandlerForWriter;
 import static io.airlift.http.server.TestHttpServerInfo.closeChannels;
 import static io.airlift.testing.Assertions.assertContains;
 import static io.airlift.testing.Assertions.assertNotEquals;
@@ -506,6 +510,41 @@ public class TestHttpServerProvider
     }
 
     @Test
+    public void testCustomErrorHandler()
+            throws Exception
+    {
+        ErrorHandler errorHandler = new ErrorHandler();
+        errorHandler.setShowCauses(true);
+        errorHandler.setDefaultResponseMimeType(MimeTypes.Type.TEXT_JSON.asString());
+
+        createServer(new ErrorServlet(), errorHandler);
+        server.start();
+
+        try (HttpClient client = new JettyHttpClient()) {
+            StringResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStringResponseHandler());
+            assertEquals(response.getStatusCode(), 500);
+            assertContains(response.getBody(), "\"message\":\"java.lang.RuntimeException: test error\"");
+            assertContains(response.getBody(), "\"cause0\":\"java.lang.RuntimeException: test error\"");
+            assertContains(response.getBody(), "\"status\":\"500\"");
+        }
+    }
+
+    @Test
+    public void testCustomErrorWriter()
+            throws Exception
+    {
+        ErrorWriter errorWriter = (writer, contentType, charset, error) -> writer.append(error.toString());
+        createServer(new ErrorServlet(), errorWriter);
+        server.start();
+
+        try (HttpClient client = new JettyHttpClient()) {
+            StringResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStringResponseHandler());
+            assertEquals(response.getStatusCode(), 500);
+            assertEquals(response.getBody(), "ErrorDetails[responseCode=500, message=java.lang.RuntimeException: test error, cause=Optional[java.lang.RuntimeException: test error]]");
+        }
+    }
+
+    @Test
     public void testShowStackTraceDisabled()
             throws Exception
     {
@@ -668,11 +707,22 @@ public class TestHttpServerProvider
 
     private void createServer(HttpServlet servlet)
     {
+        createServer(servlet, defaultErrorHandler(config));
+    }
+
+    private void createServer(HttpServlet servlet, ErrorWriter errorWriter)
+    {
+        createServer(servlet, errorHandlerForWriter(errorWriter));
+    }
+
+    private void createServer(HttpServlet servlet, ErrorHandler errorHandler)
+    {
         HashLoginServiceProvider loginServiceProvider = new HashLoginServiceProvider(config);
         HttpServerProvider serverProvider = new HttpServerProvider(
                 httpServerInfo,
                 nodeInfo,
                 config,
+                errorHandler,
                 optionalHttpsConfig(),
                 servlet,
                 ImmutableSet.of(new DummyFilter()),

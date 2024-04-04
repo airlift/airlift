@@ -116,6 +116,7 @@ public class HttpServer
             HttpServerInfo httpServerInfo,
             NodeInfo nodeInfo,
             HttpServerConfig config,
+            ErrorHandler errorHandler,
             Optional<HttpsConfig> maybeHttpsConfig,
             Servlet theServlet,
             Map<String, String> parameters,
@@ -158,9 +159,6 @@ public class HttpServer
         }
         server = new Server(threadPool);
         this.monitoredQueuedThreadPoolMBean = new MonitoredQueuedThreadPoolMBean(threadPool);
-
-        boolean showStackTrace = config.isShowStackTrace();
-
         this.sslContextFactory = maybeSslContextFactory;
 
         if (mbeanServer != null) {
@@ -341,11 +339,11 @@ public class HttpServer
 
         // add handlers to Jetty
         StatisticsHandler statsHandler = new StatisticsHandler();
-        statsHandler.setHandler(createServletContext(theServlet, resources, parameters, filters, tokenManager, loginService, Set.of("http", "https"), showStackTrace, enableLegacyUriCompliance));
+        statsHandler.setHandler(createServletContext(theServlet, resources, parameters, filters, tokenManager, loginService, Set.of("http", "https"), errorHandler, enableLegacyUriCompliance));
 
         ContextHandlerCollection rootHandlers = new ContextHandlerCollection();
         if (theAdminServlet != null && config.isAdminEnabled()) {
-            rootHandlers.addHandler(createServletContext(theAdminServlet, resources, adminParameters, adminFilters, tokenManager, loginService, Set.of("admin"), showStackTrace, enableLegacyUriCompliance));
+            rootHandlers.addHandler(createServletContext(theAdminServlet, resources, adminParameters, adminFilters, tokenManager, loginService, Set.of("admin"), errorHandler, enableLegacyUriCompliance));
         }
         rootHandlers.addHandler(statsHandler);
         StatsRecordingHandler statsRecordingHandler = new StatsRecordingHandler(stats);
@@ -363,9 +361,6 @@ public class HttpServer
             server.setHandler(rootHandlers);
         }
 
-        ErrorHandler errorHandler = new ErrorHandler();
-        errorHandler.setShowMessageInTitle(showStackTrace);
-        errorHandler.setShowStacks(showStackTrace);
         server.setErrorHandler(errorHandler);
     }
 
@@ -384,14 +379,11 @@ public class HttpServer
             TraceTokenManager tokenManager,
             LoginService loginService,
             Set<String> connectorNames,
-            boolean showStackTrace,
+            ErrorHandler errorHandler,
             boolean enableLegacyUriCompliance)
     {
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
-        ErrorHandler handler = new ErrorHandler();
-        handler.setShowStacks(showStackTrace);
-        handler.setShowMessageInTitle(showStackTrace);
-        context.setErrorHandler(handler);
+        context.setErrorHandler(errorHandler);
 
         if (enableLegacyUriCompliance) {
             // allow encoded slashes to occur in URI paths

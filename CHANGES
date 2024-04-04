@@ -8,6 +8,7 @@
 - Update HdrHistogram to 2.1.12
 - Update log4j-to-slf4j to 2.23.1
 - Update bouncycastle to 1.77
+- Allow custom Jetty error handler
 
 243
 

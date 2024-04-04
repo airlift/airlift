@@ -22,6 +22,7 @@ import jakarta.servlet.http.HttpServlet;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -221,6 +222,7 @@ public class TestHttpServerCipher
                 httpServerInfo,
                 nodeInfo,
                 config,
+                new ErrorHandler(),
                 Optional.of(httpsConfig),
                 servlet,
                 ImmutableSet.of(new DummyFilter()),

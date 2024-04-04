@@ -38,6 +38,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static io.airlift.http.server.HttpServerModule.defaultErrorHandler;
+
 public class TestingHttpServer
         extends HttpServer
 {
@@ -95,6 +97,7 @@ public class TestingHttpServer
         super(httpServerInfo,
                 nodeInfo,
                 config.setLogEnabled(false),
+                defaultErrorHandler(config),
                 httpsConfig,
                 servlet,
                 initParameters,

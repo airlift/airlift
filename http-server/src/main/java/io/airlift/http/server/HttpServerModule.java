@@ -16,14 +16,19 @@
 package io.airlift.http.server;
 
 import com.google.inject.Binder;
+import com.google.inject.Inject;
 import com.google.inject.Key;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
 import io.airlift.discovery.client.AnnouncementHttpServerInfo;
 import io.airlift.http.server.HttpServer.ClientCertificate;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import jakarta.servlet.Filter;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+
+import java.util.Optional;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
@@ -85,10 +90,35 @@ public class HttpServerModule
         newOptionalBinder(binder, HttpsConfig.class);
 
         eventBinder(binder).bindEventClient(HttpRequestEvent.class);
+        newOptionalBinder(binder, ErrorWriter.class);
 
         binder.bind(AnnouncementHttpServerInfo.class).to(LocalAnnouncementHttpServerInfo.class).in(Scopes.SINGLETON);
 
         install(conditionalModule(HttpServerConfig.class, HttpServerConfig::isHttpsEnabled, moduleBinder ->
                 configBinder(moduleBinder).bindConfig(HttpsConfig.class)));
+    }
+
+    @Inject
+    @Provides
+    protected ErrorHandler errorHandler(HttpServerConfig config, Optional<ErrorWriter> errorWriter)
+    {
+        return errorWriter
+                .map(HttpServerModule::errorHandlerForWriter)
+                .orElseGet(() -> defaultErrorHandler(config));
+    }
+
+    public static ErrorHandler defaultErrorHandler(HttpServerConfig config)
+    {
+        ErrorHandler errorHandler = new ErrorHandler();
+        if (config.isShowStackTrace()) {
+            errorHandler.setShowStacks(true);
+            errorHandler.setShowCauses(true);
+        }
+        return errorHandler;
+    }
+
+    public static ErrorHandler errorHandlerForWriter(ErrorWriter errorWriter)
+    {
+        return new ErrorWriterHandler(errorWriter);
     }
 }
