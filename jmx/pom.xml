@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airlift</artifactId>
-        <version>244-SNAPSHOT</version>
+        <version>244</version>
     </parent>
     <artifactId>jmx</artifactId>
     <packaging>jar</packaging>
