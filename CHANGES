@@ -1,3 +1,7 @@
+246
+
+- Exclude getter-like record methods from JSON serialization
+
 245
 
 - Update bouncycastle to 1.78

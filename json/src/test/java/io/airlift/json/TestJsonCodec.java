@@ -15,6 +15,8 @@
  */
 package io.airlift.json;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.google.common.base.Strings;
 import com.google.common.reflect.TypeToken;
 import org.testng.annotations.Test;
@@ -256,5 +258,102 @@ public class TestJsonCodec
         assertFalse(jsonCodec.toJsonWithLengthLimit(people, 5000).isPresent());
         assertFalse(jsonCodec.toJsonWithLengthLimit(people, 10381).isPresent());
         assertTrue(jsonCodec.toJsonWithLengthLimit(people, 10382).isPresent());
+    }
+
+    @Test
+    public void testRecordSerialization()
+    {
+        assertSerializationRoundTrip(
+                jsonCodec(MyRecord.class),
+                new MyRecord("my value"),
+                """
+                {
+                  "foo" : "my value"
+                }\
+                """);
+
+        assertSerializationRoundTrip(
+                JsonCodec.jsonCodec(MyRecordWithBeanLikeGetter.class),
+                new MyRecordWithBeanLikeGetter("my value"),
+                """
+                {
+                  "foo" : "my value"
+                }\
+                """);
+
+        assertSerializationRoundTrip(
+                JsonCodec.jsonCodec(MyRecordAdditionalGetter.class),
+                new MyRecordAdditionalGetter("my value", true, true),
+                """
+                {
+                  "additionalProperty" : "additional property value",
+                  "condition" : true,
+                  "foo" : "my value",
+                  "isCool" : true
+                }\
+                """);
+    }
+
+    private static <T> void assertSerializationRoundTrip(JsonCodec<T> codec, T object, String expected)
+    {
+        assertEquals(codec.toJson(object), expected);
+        assertEquals(codec.fromJson(expected), object);
+    }
+
+    public record MyRecord(String foo) {}
+
+    public record MyRecordWithBeanLikeGetter(String foo)
+    {
+        public String getFoo()
+        {
+            return foo();
+        }
+    }
+
+    @JsonPropertyOrder(alphabetic = true)
+    public record MyRecordAdditionalGetter(
+            // a basic property
+            String foo,
+            // a boolean property that has additional getter and is-getter
+            boolean condition,
+            // a boolean property named as an is-getter
+            boolean isCool)
+    {
+        // Might shadow actual getter for foo -- the foo() method
+        public String getFoo()
+        {
+            throw new UnsupportedOperationException("this method should not be called during serialization");
+        }
+
+        // Looks like a getter for "bar" property, there is no such record component
+        public String getBar()
+        {
+            return "there is no bar field in the record";
+        }
+
+        // Not a record component, but explicitly requested to be included in serialization
+        @JsonProperty
+        public String getAdditionalProperty()
+        {
+            return "additional property value";
+        }
+
+        // Looks like record-style getter for "baz" property, there is no such record component
+        public String baz()
+        {
+            throw new UnsupportedOperationException("this method should not be called during serialization");
+        }
+
+        // Might shadow actual getter for condition -- the condition() method
+        public boolean isCondition()
+        {
+            throw new UnsupportedOperationException("this method should not be called during serialization");
+        }
+
+        // Might shadow actual getter for condition -- the condition() method
+        public boolean getCondition()
+        {
+            throw new UnsupportedOperationException("this method should not be called during serialization");
+        }
     }
 }
