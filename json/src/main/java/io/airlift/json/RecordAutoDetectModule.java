@@ -11,6 +11,8 @@ import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
 import com.fasterxml.jackson.databind.introspect.VisibilityChecker;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
@@ -20,10 +22,17 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 public class RecordAutoDetectModule
         extends SimpleModule
 {
+    @Deprecated(forRemoval = true)
+    @Retention(RUNTIME)
+    @Target(TYPE)
+    public @interface LegacyRecordIntrospection {}
+
     @Override
     public void setupModule(SetupContext context)
     {
@@ -34,6 +43,12 @@ public class RecordAutoDetectModule
     private static class Introspector
             extends AnnotationIntrospector
     {
+        private static final VisibilityChecker.Std RECORD_VISIBILITY_CHECKER = VisibilityChecker.Std.defaultInstance()
+                .withGetterVisibility(JsonAutoDetect.Visibility.PUBLIC_ONLY)
+                .withCreatorVisibility(JsonAutoDetect.Visibility.DEFAULT)
+                .withFieldVisibility(JsonAutoDetect.Visibility.DEFAULT)
+                .withIsGetterVisibility(JsonAutoDetect.Visibility.DEFAULT);
+
         @Override
         public VisibilityChecker<?> findAutoDetectVisibility(AnnotatedClass ac, VisibilityChecker<?> checker)
         {
@@ -41,6 +56,9 @@ public class RecordAutoDetectModule
                 JsonAutoDetect overrideAnnotation = ac.getRawType().getAnnotation(JsonAutoDetect.class);
                 if (overrideAnnotation != null) {
                     return VisibilityChecker.Std.construct(JsonAutoDetect.Value.from(overrideAnnotation));
+                }
+                if (ac.getRawType().isAnnotationPresent(LegacyRecordIntrospection.class)) {
+                    return RECORD_VISIBILITY_CHECKER;
                 }
                 return new RecordVisibilityChecker(ac.getRawType().asSubclass(Record.class));
             }
