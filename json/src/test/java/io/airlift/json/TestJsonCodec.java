@@ -292,6 +292,16 @@ public class TestJsonCodec
                   "isCool" : true
                 }\
                 """);
+
+        assertEquals(
+                JsonCodec.jsonCodec(LegacyRecordAdditionalGetter.class).toJson(new LegacyRecordAdditionalGetter("my value")),
+                """
+                {
+                  "bar" : "there is no bar field in the record",
+                  "foo" : "not really a foo value",
+                  "safe" : false
+                }\
+                """);
     }
 
     private static <T> void assertSerializationRoundTrip(JsonCodec<T> codec, T object, String expected)
@@ -354,6 +364,30 @@ public class TestJsonCodec
         public boolean getCondition()
         {
             throw new UnsupportedOperationException("this method should not be called during serialization");
+        }
+    }
+
+    @SuppressWarnings("removal")
+    @JsonPropertyOrder(alphabetic = true)
+    @RecordAutoDetectModule.LegacyRecordIntrospection
+    public record LegacyRecordAdditionalGetter(String foo)
+    {
+        // Not the canonical accessor for the foo record component, but takes precedence when serializing to JSON
+        public String getFoo()
+        {
+            return "not really a foo value";
+        }
+
+        // Not a record component, but gets serialized to JSON
+        public String getBar()
+        {
+            return "there is no bar field in the record";
+        }
+
+        // Not a record component, but gets serialized to JSON
+        public boolean isSafe()
+        {
+            return false;
         }
     }
 }
