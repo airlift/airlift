@@ -38,7 +38,6 @@ public class TestJsonCodec
 {
     @Test
     public void testJsonCodec()
-            throws Exception
     {
         JsonCodec<Person> jsonCodec = jsonCodec(Person.class);
 
@@ -51,7 +50,6 @@ public class TestJsonCodec
 
     @Test
     public void testListJsonCodec()
-            throws Exception
     {
         JsonCodec<List<Person>> jsonCodec = listJsonCodec(Person.class);
 
@@ -64,7 +62,6 @@ public class TestJsonCodec
 
     @Test
     public void testListJsonCodecFromJsonCodec()
-            throws Exception
     {
         JsonCodec<List<Person>> jsonCodec = listJsonCodec(jsonCodec(Person.class));
 
@@ -77,7 +74,6 @@ public class TestJsonCodec
 
     @Test
     public void testTypeTokenList()
-            throws Exception
     {
         JsonCodec<List<Person>> jsonCodec = jsonCodec(new TypeToken<List<Person>>() {});
 
@@ -102,7 +98,6 @@ public class TestJsonCodec
 
     @Test
     public void testMapJsonCodec()
-            throws Exception
     {
         JsonCodec<Map<String, Person>> jsonCodec = mapJsonCodec(String.class, Person.class);
 
@@ -115,7 +110,6 @@ public class TestJsonCodec
 
     @Test
     public void testMapJsonCodecFromJsonCodec()
-            throws Exception
     {
         JsonCodec<Map<String, Person>> jsonCodec = mapJsonCodec(String.class, jsonCodec(Person.class));
 
@@ -128,7 +122,6 @@ public class TestJsonCodec
 
     @Test
     public void testTypeLiteralMap()
-            throws Exception
     {
         JsonCodec<Map<String, Person>> jsonCodec = jsonCodec(new TypeToken<Map<String, Person>>() {});
 
@@ -153,7 +146,6 @@ public class TestJsonCodec
 
     @Test
     public void testImmutableJsonCodec()
-            throws Exception
     {
         JsonCodec<ImmutablePerson> jsonCodec = jsonCodec(ImmutablePerson.class);
 
@@ -162,7 +154,6 @@ public class TestJsonCodec
 
     @Test
     public void testAsymmetricJsonCodec()
-            throws Exception
     {
         JsonCodec<ImmutablePerson> jsonCodec = jsonCodec(ImmutablePerson.class);
         ImmutablePerson immutablePerson = jsonCodec.fromJson("{ \"notWritable\": \"foo\" }");
@@ -171,7 +162,6 @@ public class TestJsonCodec
 
     @Test
     public void testImmutableListJsonCodec()
-            throws Exception
     {
         JsonCodec<List<ImmutablePerson>> jsonCodec = listJsonCodec(ImmutablePerson.class);
 
@@ -180,7 +170,6 @@ public class TestJsonCodec
 
     @Test
     public void testImmutableListJsonCodecFromJsonCodec()
-            throws Exception
     {
         JsonCodec<List<ImmutablePerson>> jsonCodec = listJsonCodec(jsonCodec(ImmutablePerson.class));
 
@@ -189,7 +178,6 @@ public class TestJsonCodec
 
     @Test
     public void testImmutableTypeTokenList()
-            throws Exception
     {
         JsonCodec<List<ImmutablePerson>> jsonCodec = jsonCodec(new TypeToken<List<ImmutablePerson>>() {});
 
@@ -198,7 +186,6 @@ public class TestJsonCodec
 
     @Test
     public void testImmutableMapJsonCodec()
-            throws Exception
     {
         JsonCodec<Map<String, ImmutablePerson>> jsonCodec = mapJsonCodec(String.class, ImmutablePerson.class);
 
@@ -207,7 +194,6 @@ public class TestJsonCodec
 
     @Test
     public void testImmutableMapJsonCodecFromJsonCodec()
-            throws Exception
     {
         JsonCodec<Map<String, ImmutablePerson>> jsonCodec = mapJsonCodec(String.class, jsonCodec(ImmutablePerson.class));
 
@@ -216,7 +202,6 @@ public class TestJsonCodec
 
     @Test
     public void testImmutableTypeTokenMap()
-            throws Exception
     {
         JsonCodec<Map<String, ImmutablePerson>> jsonCodec = jsonCodec(new TypeToken<Map<String, ImmutablePerson>>() {});
 
