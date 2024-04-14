@@ -63,7 +63,8 @@ public class TestLegacyUriMode
     {
         doTest(false,
                 new Tester("/legacy/test1/one%2ftwo/%2f/three", response -> assertEquals(response.getStatusCode(), HttpStatus.BAD_REQUEST.code())),
-                new Tester("/legacy/test2/one%2ftwo/%2f/three", response -> assertEquals(response.getStatusCode(), HttpStatus.BAD_REQUEST.code())));
+                new Tester("/legacy/test2/one%2ftwo/%2f/three", response -> assertEquals(response.getStatusCode(), HttpStatus.BAD_REQUEST.code())),
+                new Tester("/legacy/test2/one%2ftwo/%5C/three", response -> assertEquals(response.getStatusCode(), HttpStatus.BAD_REQUEST.code())));
     }
 
     @Test
@@ -71,7 +72,8 @@ public class TestLegacyUriMode
     {
         doTest(true,
                 new Tester("/legacy/test1/one%2ftwo/%2f/three", response -> assertEquals(response.getValue(), ImmutableList.of("test1", "one/two", "/", "three"))),
-                new Tester("/legacy/test2/one%2ftwo/%2f/three", response -> assertEquals(response.getValue(), ImmutableList.of("test2", "one/two", "/", "three"))));
+                new Tester("/legacy/test2/one%2ftwo/%2f/three", response -> assertEquals(response.getValue(), ImmutableList.of("test2", "one/two", "/", "three"))),
+                new Tester("/legacy/test2/one%5Cback%2ftwo/%2f/three", response -> assertEquals(response.getValue(), ImmutableList.of("test2", "one\\back/two", "/", "three"))));
     }
 
     private record Tester(String path, Consumer<JsonResponse<List<String>>> responseConsumer) {}
