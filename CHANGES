@@ -1,6 +1,7 @@
 245
 
 - Update bouncycastle to 1.78
+- Add SUSPICIOUS_PATH_CHARACTERS to LegacyUriCompliance list
 
 244
 
