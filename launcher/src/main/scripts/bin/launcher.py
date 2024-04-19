@@ -3,6 +3,7 @@
 import errno
 import os
 import platform
+import re
 import subprocess
 import sys
 import traceback
@@ -195,11 +196,7 @@ def build_java_execution(options, daemon):
     if options.log_levels_set and not exists(options.log_levels):
         raise Exception('Log levels file is missing: %s' % options.log_levels)
 
-    with open(os.devnull, 'w') as devnull:
-        try:
-            subprocess.check_call(['java', '-version'], stdout=devnull, stderr=devnull)
-        except (OSError, subprocess.CalledProcessError):
-            raise Exception('Java is not installed')
+    java_version = parse_java_version()
 
     properties = options.properties.copy()
 
@@ -225,6 +222,8 @@ def build_java_execution(options, daemon):
 
     command = ['java', '-cp', classpath]
     command += jvm_properties + options.jvm_options + system_properties
+    if java_version == '22':
+        command += ['--add-modules=jdk.incubator.vector']
     command += [main_class]
 
     if options.verbose:
@@ -244,6 +243,19 @@ def build_java_execution(options, daemon):
 
     return command, env
 
+def parse_java_version():
+    try:
+        output = subprocess.check_output(['java', '-version'], stderr=subprocess.STDOUT).decode()
+    except (OSError, subprocess.CalledProcessError):
+        raise Exception('Java is not installed')
+
+    version_pattern = re.compile(r'version "(.*)"')
+    match = version_pattern.search(output)
+    if match:
+        java_version = match.group(1)
+        return java_version.split('.')[0]
+    else:
+        return None
 
 def run(process, options):
     if process.alive():
