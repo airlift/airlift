@@ -41,7 +41,6 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@SuppressWarnings("deprecation")
 public class TestHttpClientConfig
 {
     @Test
@@ -53,7 +52,6 @@ public class TestHttpClientConfig
                 .setConnectTimeout(new Duration(5, SECONDS))
                 .setRequestTimeout(new Duration(5, MINUTES))
                 .setIdleTimeout(new Duration(1, MINUTES))
-                .setKeepAliveInterval(null)
                 .setMaxConnectionsPerServer(20)
                 .setMaxRequestsQueuedPerDestination(1024)
                 .setMaxContentLength(DataSize.of(16, MEGABYTE))
@@ -100,7 +98,6 @@ public class TestHttpClientConfig
                 .put("http-client.connect-timeout", "4s")
                 .put("http-client.request-timeout", "15s")
                 .put("http-client.idle-timeout", "5s")
-                .put("http-client.keep-alive-interval", "6s")
                 .put("http-client.max-connections-per-server", "3")
                 .put("http-client.max-requests-queued-per-destination", "10")
                 .put("http-client.max-content-length", "1MB")
@@ -144,7 +141,6 @@ public class TestHttpClientConfig
                 .setConnectTimeout(new Duration(4, SECONDS))
                 .setRequestTimeout(new Duration(15, SECONDS))
                 .setIdleTimeout(new Duration(5, SECONDS))
-                .setKeepAliveInterval(new Duration(6, SECONDS))
                 .setMaxConnectionsPerServer(3)
                 .setMaxRequestsQueuedPerDestination(10)
                 .setMaxContentLength(DataSize.of(1, MEGABYTE))
