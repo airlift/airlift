@@ -212,7 +212,7 @@ public class TestHttpClientConfig
         HttpClientConfig clientConfig = new HttpClientConfig()
                 .setSocksProxy(HostAndPort.fromParts("localhost", 1080))
                 .setHttpProxy(HostAndPort.fromParts("localhost", 8080));
-        assertThatThrownBy(() -> clientConfig.validate())
+        assertThatThrownBy(clientConfig::validate)
                 .isInstanceOf(ConfigurationException.class)
                 .hasMessageContaining("Only one proxy can be configured for HttpClient");
     }
@@ -221,7 +221,7 @@ public class TestHttpClientConfig
     public void testInvalidHttpProxyConfiguration()
     {
         HttpClientConfig clientConfig = new HttpClientConfig().setSecureProxy(true);
-        assertThatThrownBy(() -> clientConfig.validate())
+        assertThatThrownBy(clientConfig::validate)
                 .isInstanceOf(ConfigurationException.class)
                 .hasMessageContaining("http-client.http-proxy.secure can be enabled only when http-client.http-proxy is set");
     }
