@@ -54,6 +54,7 @@ public class HttpServerConfig
     private int httpAcceptQueueSize = 8000;
 
     private boolean httpsEnabled;
+    private boolean http2Enabled;
 
     private String logPath = "var/log/http-request.log";
     private boolean logEnabled = true;
@@ -135,6 +136,18 @@ public class HttpServerConfig
     public HttpServerConfig setHttpsEnabled(boolean httpsEnabled)
     {
         this.httpsEnabled = httpsEnabled;
+        return this;
+    }
+
+    public boolean isHttp2Enabled()
+    {
+        return http2Enabled;
+    }
+
+    @Config("http-server.http2.enabled")
+    public HttpServerConfig setHttp2Enabled(boolean http2Enabled)
+    {
+        this.http2Enabled = http2Enabled;
         return this;
     }
 

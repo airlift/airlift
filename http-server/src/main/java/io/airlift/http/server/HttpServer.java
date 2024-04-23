@@ -29,6 +29,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.servlet.Filter;
 import jakarta.servlet.Servlet;
+import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.ee10.servlet.FilterHolder;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
@@ -36,6 +37,7 @@ import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
+import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.LoginService;
@@ -237,18 +239,10 @@ public class HttpServer
 
             HttpsConfig httpsConfig = maybeHttpsConfig.orElseThrow();
             this.sslContextFactory = Optional.of(this.sslContextFactory.orElseGet(() -> createReloadingSslContextFactory(httpsConfig, clientCertificate, nodeInfo.getEnvironment())));
-            SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory.get(), "http/1.1");
 
             Integer acceptors = config.getHttpsAcceptorThreads();
             Integer selectors = config.getHttpsSelectorThreads();
-            httpsConnector = createServerConnector(
-                    httpServerInfo.getHttpsChannel(),
-                    server,
-                    null,
-                    firstNonNull(acceptors, -1),
-                    firstNonNull(selectors, -1),
-                    sslConnectionFactory,
-                    new HttpConnectionFactory(httpsConfiguration));
+            httpsConnector = createSecureServerConnector(httpsConfiguration, httpServerInfo, acceptors, selectors, config.isHttp2Enabled());
             httpsConnector.setName("https");
             httpsConnector.setPort(httpServerInfo.getHttpsUri().getPort());
             httpsConnector.setIdleTimeout(config.getNetworkMaxIdleTime().toMillis());
@@ -597,5 +591,45 @@ public class HttpServer
         ServerConnector connector = new ServerConnector(server, executor, null, null, acceptors, selectors, factories);
         connector.open(channel);
         return connector;
+    }
+
+    private ServerConnector createSecureServerConnector(
+            HttpConfiguration httpsConfiguration,
+            HttpServerInfo httpServerInfo,
+            Integer acceptors,
+            Integer selectors,
+            boolean isHttp2Enabled)
+            throws IOException
+    {
+        // The ConnectionFactory for HTTP/1.1.
+        HttpConnectionFactory http11 = new HttpConnectionFactory(httpsConfiguration);
+
+        // set up NIO-based HTTPS connector for HTTP2 traffic
+        if (isHttp2Enabled) {
+            // The ConnectionFactory for HTTP/2.
+            HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpsConfiguration);
+            // The ALPN ConnectionFactory.
+            ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
+            // The default protocol to use in case there is no negotiation.
+            alpn.setDefaultProtocol(http11.getProtocol());
+            SslConnectionFactory tls = new SslConnectionFactory(sslContextFactory.get(), alpn.getProtocol());
+
+            return createServerConnector(
+                    httpServerInfo.getHttpsChannel(),
+                    server,
+                    null,
+                    firstNonNull(acceptors, -1),
+                    firstNonNull(selectors, -1),
+                    tls, alpn, h2, http11);
+        }
+        // set up NIO-based HTTPS connector for HTTP1.1 traffic
+        SslConnectionFactory tls = new SslConnectionFactory(sslContextFactory.get(), "http/1.1");
+        return createServerConnector(
+                httpServerInfo.getHttpsChannel(),
+                server,
+                null,
+                firstNonNull(acceptors, -1),
+                firstNonNull(selectors, -1),
+                tls, http11);
     }
 }
