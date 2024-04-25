@@ -3,6 +3,7 @@
 - Fail decoding with JsonCodec when content is not single JSON value.
   Previously the codec decoded first JSON value only, ignoring the rest
   of the payload.
+- Allow only `@DefunctConfig` class without `@Config` annotation
 
 246
 
