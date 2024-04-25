@@ -15,6 +15,7 @@
  */
 package io.airlift.configuration;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.ConfigurationException;
 import io.airlift.configuration.ConfigurationMetadata.AttributeMetadata;
@@ -806,6 +807,18 @@ public class TestConfigurationMetadata
         monitor.assertNumberOfErrors(1);
         monitor.assertNumberOfWarnings(0);
         monitor.assertMatchingErrorRecorded("Defunct property", "'defunct'", "listed more than once");
+    }
+
+    @Test
+    public void testOnlyDefunctConfigClass()
+            throws Exception
+    {
+        TestMonitor monitor = new TestMonitor();
+        ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(OnlyDefunctConfigClass.class, monitor);
+
+        verifyMetaData(metadata, OnlyDefunctConfigClass.class, null, false, ImmutableMap.of());
+        monitor.assertNumberOfErrors(0);
+        monitor.assertNumberOfWarnings(0);
     }
 
     @Test
@@ -1828,6 +1841,9 @@ public class TestConfigurationMetadata
             this.value = value;
         }
     }
+
+    @DefunctConfig("defunct")
+    public static class OnlyDefunctConfigClass {}
 
     public static class LegacyConfigSensitiveClass
     {
