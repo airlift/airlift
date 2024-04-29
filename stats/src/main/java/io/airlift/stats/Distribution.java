@@ -17,7 +17,7 @@ import static java.util.Objects.requireNonNull;
 @ThreadSafe
 public class Distribution
 {
-    private static final double[] SNAPSHOT_QUANTILES = new double[]{0.01, 0.05, 0.10, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99};
+    private static final double[] SNAPSHOT_QUANTILES = new double[] {0.01, 0.05, 0.10, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99};
     private static final double[] PERCENTILES;
 
     static {
