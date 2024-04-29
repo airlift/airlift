@@ -42,8 +42,8 @@ public class TestTDigest
         assertTrue(Double.isNaN(digest.valueAt(0.5)));
         assertTrue(Double.isNaN(digest.getMin()));
         assertTrue(Double.isNaN(digest.getMax()));
-        double[] quantiles = new double[]{0.1, 0.2, 0.5, 0.9};
-        double[] expected = new double[]{Double.NaN, Double.NaN, Double.NaN, Double.NaN};
+        double[] quantiles = new double[] {0.1, 0.2, 0.5, 0.9};
+        double[] expected = new double[] {Double.NaN, Double.NaN, Double.NaN, Double.NaN};
         assertEquals(digest.valuesAt(quantiles), expected);
         assertEquals(digest.valuesAt(Doubles.asList(quantiles)), Doubles.asList(expected));
     }
@@ -77,7 +77,7 @@ public class TestTDigest
         assertEquals(digest.valueAt(0.9), 19.0);
         assertEquals(digest.valueAt(0.949999999), 19.0);
         assertEquals(digest.valueAt(0.95), 1_000_000.0);
-        assertEquals(digest.valuesAt(0.89999999, 0.9, 0.949999999, 0.95), new double[]{18.0, 19.0, 19.0, 1_000_000.0});
+        assertEquals(digest.valuesAt(0.89999999, 0.9, 0.949999999, 0.95), new double[] {18.0, 19.0, 19.0, 1_000_000.0});
     }
 
     @Test
@@ -91,7 +91,7 @@ public class TestTDigest
 
         assertEquals(digest.valueAt(0.998), 999.0);
         assertEquals(digest.valueAt(0.999), 1_000_000.0);
-        assertEquals(digest.valuesAt(0.998, 0.999), new double[]{999.0, 1_000_000.0});
+        assertEquals(digest.valuesAt(0.998, 0.999), new double[] {999.0, 1_000_000.0});
     }
 
     @Test
@@ -106,7 +106,7 @@ public class TestTDigest
         assertEquals(digest.valueAt(0.5 - 1e-10), 20, 1e-10);
         assertEquals(digest.valueAt(0.5), 32, 1e-10);
 
-        double[] quantiles = new double[]{0.25 - 1e-10, 0.25, 0.4, 0.5 - 1e-10, 0.5};
+        double[] quantiles = new double[] {0.25 - 1e-10, 0.25, 0.4, 0.5 - 1e-10, 0.5};
         double[] values = digest.valuesAt(quantiles);
         for (int i = 0; i < quantiles.length; i++) {
             assertEquals(values[i], digest.valueAt(quantiles[i]));
@@ -148,7 +148,7 @@ public class TestTDigest
         assertEquals(digest.valueAt(0), value, 0.001f);
         assertEquals(digest.valueAt(0.5), value, 0.001f);
         assertEquals(digest.valueAt(1), value, 0.001f);
-        assertEquals(digest.valuesAt(0d, 0.5d, 1d), new double[]{digest.valueAt(0), digest.valueAt(0.5), digest.valueAt(1)});
+        assertEquals(digest.valuesAt(0d, 0.5d, 1d), new double[] {digest.valueAt(0), digest.valueAt(0.5), digest.valueAt(1)});
     }
 
     @Test
@@ -162,7 +162,7 @@ public class TestTDigest
         assertEquals(digest.valueAt(0.3), 1.0);
         assertEquals(digest.valueAt(0.9), 2.0);
         assertEquals(digest.valueAt(1), 2.0);
-        assertEquals(digest.valuesAt(0d, 0.3d, 0.9d, 1d), new double[]{1.0, 1.0, 2.0, 2.0});
+        assertEquals(digest.valuesAt(0d, 0.3d, 0.9d, 1d), new double[] {1.0, 1.0, 2.0, 2.0});
     }
 
     @Test
@@ -174,7 +174,7 @@ public class TestTDigest
         digest.add(3);
         digest.add(4);
 
-        assertEquals(digest.valuesAt(0d, 0.6d, 1d), new double[]{1.0, 3.0, 4.0});
+        assertEquals(digest.valuesAt(0d, 0.6d, 1d), new double[] {1.0, 3.0, 4.0});
     }
 
     @Test
