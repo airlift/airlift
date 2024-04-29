@@ -5,6 +5,7 @@
   of the payload.
 - Allow only `@DefunctConfig` class without `@Config` annotation
 - Update airbase to 156
+- Update bouncycastle to 1.78.1
 
 246
 
