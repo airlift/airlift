@@ -10,7 +10,8 @@ import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.opentelemetry.sdk.trace.SpanProcessor;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
-import io.opentelemetry.semconv.ResourceAttributes;
+import io.opentelemetry.semconv.ServiceAttributes;
+import io.opentelemetry.semconv.incubating.DeploymentIncubatingAttributes;
 import org.junit.jupiter.api.Test;
 
 import static com.google.common.collect.MoreCollectors.onlyElement;
@@ -87,8 +88,8 @@ public class TestTracingModule
                 .build().asMap());
 
         assertThat(span.getResource().getAttributes().asMap()).contains(
-                entry(ResourceAttributes.SERVICE_NAME, "testService"),
-                entry(ResourceAttributes.SERVICE_VERSION, "testVersion"),
-                entry(ResourceAttributes.DEPLOYMENT_ENVIRONMENT, environment));
+                entry(ServiceAttributes.SERVICE_NAME, "testService"),
+                entry(ServiceAttributes.SERVICE_VERSION, "testVersion"),
+                entry(DeploymentIncubatingAttributes.DEPLOYMENT_ENVIRONMENT, environment));
     }
 }

@@ -4,7 +4,7 @@ import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.context.Scope;
-import io.opentelemetry.semconv.SemanticAttributes;
+import io.opentelemetry.semconv.ExceptionAttributes;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -28,7 +28,7 @@ public final class TracingServletFilter
         catch (Throwable t) {
             if (request.getAttribute(TracingFilter.REQUEST_SPAN) instanceof Span span) {
                 span.setStatus(StatusCode.ERROR, t.getMessage());
-                span.recordException(t, Attributes.of(SemanticAttributes.EXCEPTION_ESCAPED, true));
+                span.recordException(t, Attributes.of(ExceptionAttributes.EXCEPTION_ESCAPED, true));
             }
             throw t;
         }

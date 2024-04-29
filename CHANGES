@@ -4,6 +4,7 @@
   Previously the codec decoded first JSON value only, ignoring the rest
   of the payload.
 - Allow only `@DefunctConfig` class without `@Config` annotation
+- Update airbase to 156
 
 246
 

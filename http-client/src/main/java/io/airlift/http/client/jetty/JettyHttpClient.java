@@ -27,7 +27,11 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapPropagator;
-import io.opentelemetry.semconv.SemanticAttributes;
+import io.opentelemetry.semconv.ExceptionAttributes;
+import io.opentelemetry.semconv.HttpAttributes;
+import io.opentelemetry.semconv.ServerAttributes;
+import io.opentelemetry.semconv.UrlAttributes;
+import io.opentelemetry.semconv.incubating.HttpIncubatingAttributes;
 import jakarta.annotation.PreDestroy;
 import jdk.net.ExtendedSocketOptions;
 import org.eclipse.jetty.client.AbstractConnectionPool;
@@ -647,7 +651,7 @@ public class JettyHttpClient
         }
         catch (Throwable t) {
             span.setStatus(StatusCode.ERROR, t.getMessage());
-            span.recordException(t, Attributes.of(SemanticAttributes.EXCEPTION_ESCAPED, true));
+            span.recordException(t, Attributes.of(ExceptionAttributes.EXCEPTION_ESCAPED, true));
             throw t;
         }
         finally {
@@ -723,10 +727,10 @@ public class JettyHttpClient
         }
 
         // record attributes
-        span.setAttribute(SemanticAttributes.HTTP_RESPONSE_STATUS_CODE, response.getStatus());
+        span.setAttribute(HttpAttributes.HTTP_RESPONSE_STATUS_CODE, response.getStatus());
 
         if (request.getBodyGenerator() != null) {
-            span.setAttribute(SemanticAttributes.HTTP_REQUEST_BODY_SIZE, requestSize.getBytes());
+            span.setAttribute(HttpIncubatingAttributes.HTTP_REQUEST_BODY_SIZE, requestSize.getBytes());
         }
 
         // process response
@@ -746,7 +750,7 @@ public class JettyHttpClient
                 catch (IOException ignored) {
                     // ignore errors closing the stream
                 }
-                span.setAttribute(SemanticAttributes.HTTP_RESPONSE_BODY_SIZE, jettyResponse.getBytesRead());
+                span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, jettyResponse.getBytesRead());
             }
             if (recordRequestComplete) {
                 recordRequestComplete(stats, request, requestSize.getBytes(), requestStart, jettyResponse, responseStart);
@@ -838,10 +842,10 @@ public class JettyHttpClient
                 .orElseGet(() -> tracer.spanBuilder(name + " " + method))
                 .setSpanKind(SpanKind.CLIENT)
                 .setAttribute(CLIENT_NAME, name)
-                .setAttribute(SemanticAttributes.URL_FULL, request.getUri().toString())
-                .setAttribute(SemanticAttributes.HTTP_REQUEST_METHOD, method)
-                .setAttribute(SemanticAttributes.SERVER_ADDRESS, request.getUri().getHost())
-                .setAttribute(SemanticAttributes.SERVER_PORT, (long) port)
+                .setAttribute(UrlAttributes.URL_FULL, request.getUri().toString())
+                .setAttribute(HttpAttributes.HTTP_REQUEST_METHOD, method)
+                .setAttribute(ServerAttributes.SERVER_ADDRESS, request.getUri().getHost())
+                .setAttribute(ServerAttributes.SERVER_PORT, (long) port)
                 .startSpan();
     }
 
