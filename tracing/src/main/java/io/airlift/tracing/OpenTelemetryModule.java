@@ -15,7 +15,12 @@ import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.SpanProcessor;
-import io.opentelemetry.semconv.ResourceAttributes;
+import io.opentelemetry.semconv.ServiceAttributes;
+import io.opentelemetry.semconv.incubating.DeploymentIncubatingAttributes;
+import io.opentelemetry.semconv.incubating.HostIncubatingAttributes;
+import io.opentelemetry.semconv.incubating.OsIncubatingAttributes;
+import io.opentelemetry.semconv.incubating.ProcessIncubatingAttributes;
+import io.opentelemetry.semconv.incubating.ServiceIncubatingAttributes;
 
 import java.util.Set;
 
@@ -58,17 +63,17 @@ public class OpenTelemetryModule
         }
 
         AttributesBuilder attributes = Attributes.builder()
-                .put(ResourceAttributes.SERVICE_NAME, serviceName)
-                .put(ResourceAttributes.SERVICE_VERSION, serviceVersion)
-                .put(ResourceAttributes.SERVICE_INSTANCE_ID, nodeInfo.getNodeId())
-                .put(ResourceAttributes.DEPLOYMENT_ENVIRONMENT, nodeInfo.getEnvironment())
-                .put(ResourceAttributes.PROCESS_RUNTIME_NAME, System.getProperty("java.runtime.name"))
-                .put(ResourceAttributes.PROCESS_RUNTIME_VERSION, System.getProperty("java.runtime.version"))
-                .put(ResourceAttributes.PROCESS_RUNTIME_DESCRIPTION, processRuntime())
-                .put(ResourceAttributes.OS_TYPE, osType())
-                .put(ResourceAttributes.OS_NAME, OS_NAME.value())
-                .put(ResourceAttributes.OS_VERSION, OS_VERSION.value())
-                .put(ResourceAttributes.HOST_ARCH, hostArch());
+                .put(ServiceAttributes.SERVICE_NAME, serviceName)
+                .put(ServiceAttributes.SERVICE_VERSION, serviceVersion)
+                .put(ServiceIncubatingAttributes.SERVICE_INSTANCE_ID, nodeInfo.getNodeId())
+                .put(DeploymentIncubatingAttributes.DEPLOYMENT_ENVIRONMENT, nodeInfo.getEnvironment())
+                .put(ProcessIncubatingAttributes.PROCESS_RUNTIME_NAME, System.getProperty("java.runtime.name"))
+                .put(ProcessIncubatingAttributes.PROCESS_RUNTIME_VERSION, System.getProperty("java.runtime.version"))
+                .put(ProcessIncubatingAttributes.PROCESS_RUNTIME_DESCRIPTION, processRuntime())
+                .put(OsIncubatingAttributes.OS_TYPE, osType())
+                .put(OsIncubatingAttributes.OS_NAME, OS_NAME.value())
+                .put(OsIncubatingAttributes.OS_VERSION, OS_VERSION.value())
+                .put(HostIncubatingAttributes.HOST_ARCH, hostArch());
         nodeInfo.getAnnotations().forEach((key, value) -> attributes.put(format("%s.%s", NODE_ANNOTATION_PREFIX, key), value));
 
         Resource resource = Resource.getDefault().merge(Resource.create(attributes.build()));

@@ -9,7 +9,13 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.context.propagation.TextMapPropagator;
-import io.opentelemetry.semconv.SemanticAttributes;
+import io.opentelemetry.semconv.ClientAttributes;
+import io.opentelemetry.semconv.HttpAttributes;
+import io.opentelemetry.semconv.ServerAttributes;
+import io.opentelemetry.semconv.UrlAttributes;
+import io.opentelemetry.semconv.UserAgentAttributes;
+import io.opentelemetry.semconv.incubating.CodeIncubatingAttributes;
+import io.opentelemetry.semconv.incubating.HttpIncubatingAttributes;
 import jakarta.annotation.Priority;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
@@ -64,36 +70,36 @@ public final class TracingFilter
         SpanBuilder spanBuilder = tracer.spanBuilder(method + " " + route)
                 .setParent(parent)
                 .setSpanKind(SpanKind.SERVER)
-                .setAttribute(SemanticAttributes.HTTP_REQUEST_METHOD, method)
-                .setAttribute(SemanticAttributes.HTTP_ROUTE, route)
-                .setAttribute(SemanticAttributes.URL_SCHEME, uri.getScheme())
-                .setAttribute(SemanticAttributes.SERVER_ADDRESS, uri.getHost())
-                .setAttribute(SemanticAttributes.CODE_NAMESPACE, className)
-                .setAttribute(SemanticAttributes.CODE_FUNCTION, methodName);
+                .setAttribute(HttpAttributes.HTTP_REQUEST_METHOD, method)
+                .setAttribute(HttpAttributes.HTTP_ROUTE, route)
+                .setAttribute(UrlAttributes.URL_SCHEME, uri.getScheme())
+                .setAttribute(ServerAttributes.SERVER_ADDRESS, uri.getHost())
+                .setAttribute(CodeIncubatingAttributes.CODE_NAMESPACE, className)
+                .setAttribute(CodeIncubatingAttributes.CODE_FUNCTION, methodName);
 
         String target = getTarget(uri);
         if (!isNullOrEmpty(target)) {
-            spanBuilder.setAttribute(SemanticAttributes.URL_PATH, target);
+            spanBuilder.setAttribute(UrlAttributes.URL_PATH, target);
         }
 
         int port = getPort(uri);
         if (port > 0) {
-            spanBuilder.setAttribute(SemanticAttributes.SERVER_PORT, (long) port);
+            spanBuilder.setAttribute(ServerAttributes.SERVER_PORT, (long) port);
         }
 
         String remoteAddress = (String) request.getProperty(REMOTE_ADDRESS);
         if (!isNullOrEmpty(remoteAddress)) {
-            spanBuilder.setAttribute(SemanticAttributes.CLIENT_ADDRESS, remoteAddress);
+            spanBuilder.setAttribute(ClientAttributes.CLIENT_ADDRESS, remoteAddress);
         }
 
         String userAgent = request.getHeaderString(HttpHeaders.USER_AGENT);
         if (!isNullOrEmpty(userAgent)) {
-            spanBuilder.setAttribute(SemanticAttributes.USER_AGENT_ORIGINAL, userAgent);
+            spanBuilder.setAttribute(UserAgentAttributes.USER_AGENT_ORIGINAL, userAgent);
         }
 
         // ignore requests such as GET that might have a content length
         if (request.hasEntity() && request.getLength() >= 0) {
-            spanBuilder.setAttribute(SemanticAttributes.HTTP_REQUEST_BODY_SIZE, (long) request.getLength());
+            spanBuilder.setAttribute(HttpIncubatingAttributes.HTTP_REQUEST_BODY_SIZE, (long) request.getLength());
         }
 
         Span span = spanBuilder.startSpan();
@@ -109,10 +115,10 @@ public final class TracingFilter
 
         try (scope) {
             if (response.getStatus() != -1) {
-                span.setAttribute(SemanticAttributes.HTTP_RESPONSE_STATUS_CODE, response.getStatus());
+                span.setAttribute(HttpAttributes.HTTP_RESPONSE_STATUS_CODE, response.getStatus());
             }
             if (response.hasEntity() && (response.getLength() != -1)) {
-                span.setAttribute(SemanticAttributes.HTTP_RESPONSE_BODY_SIZE, response.getLength());
+                span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, response.getLength());
             }
         }
         span.end();
