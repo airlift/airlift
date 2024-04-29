@@ -90,7 +90,7 @@
         <air.modernizer.java-version>8</air.modernizer.java-version>
 
         <dep.airlift.version>247-SNAPSHOT</dep.airlift.version>
-        <dep.bouncycastle.version>1.78</dep.bouncycastle.version>
+        <dep.bouncycastle.version>1.78.1</dep.bouncycastle.version>
         <dep.modernizer.version>2.7.0</dep.modernizer.version>
         <dep.packaging.version>${dep.airlift.version}</dep.packaging.version>
         <dep.jersey.version>3.1.6</dep.jersey.version>
