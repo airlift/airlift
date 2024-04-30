@@ -103,6 +103,7 @@ public class ConfigurationFactory
     private final WarningsMonitor warningsMonitor;
     private final Problems.Monitor monitor;
     private final LoadingCache<ConfigurationProvider<?>, Object> instanceCache = CacheBuilder.newBuilder()
+            .maximumSize(1024)
             .build(new CacheLoader<>()
             {
                 @Override
@@ -117,6 +118,7 @@ public class ConfigurationFactory
     private final List<Consumer<ConfigurationProvider<?>>> configurationBindingListeners = new ArrayList<>();
     private final ListMultimap<Key<?>, ConfigDefaultsHolder<?>> registeredDefaultConfigs = Multimaps.synchronizedListMultimap(ArrayListMultimap.create());
     private final LoadingCache<Class<?>, ConfigurationMetadata<?>> metadataCache = CacheBuilder.newBuilder()
+            .maximumSize(1024)
             .build(new CacheLoader<>()
             {
                 @Override
