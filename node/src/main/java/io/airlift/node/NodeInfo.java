@@ -173,7 +173,7 @@ public class NodeInfo
 
     /**
      * The unique id of the deployment slot in which this binary is running.  This id should
-     * represents the physical deployment location and should not change.
+     * represent the physical deployment location and should not change.
      */
     @Managed
     public String getNodeId()
@@ -209,7 +209,7 @@ public class NodeInfo
     }
 
     /**
-     * The unique id of this JavaVM instance.  This id will change every time the vm is restarted.
+     * The unique id of this Java VM instance.  This id will change every time the VM is restarted.
      */
     @Managed
     public String getInstanceId()
