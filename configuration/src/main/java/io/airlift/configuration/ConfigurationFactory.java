@@ -28,6 +28,7 @@ import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.reflect.TypeToken;
+import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import com.google.inject.Binding;
 import com.google.inject.ConfigurationException;
@@ -57,13 +58,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static com.google.common.base.CaseFormat.LOWER_CAMEL;
 import static com.google.common.base.CaseFormat.UPPER_CAMEL;
+import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.Sets.newConcurrentHashSet;
 import static io.airlift.configuration.ConfigurationMetadata.getConfigurationMetadata;
@@ -101,14 +102,22 @@ public class ConfigurationFactory
     private final Map<String, String> properties;
     private final WarningsMonitor warningsMonitor;
     private final Problems.Monitor monitor;
-    private final ConcurrentMap<ConfigurationProvider<?>, Object> instanceCache = new ConcurrentHashMap<>();
+    private final LoadingCache<ConfigurationProvider<?>, Object> instanceCache = CacheBuilder.newBuilder()
+            .build(new CacheLoader<>()
+            {
+                @Override
+                public Object load(ConfigurationProvider<?> key)
+                {
+                    return buildDirect(key);
+                }
+            });
     private final Set<String> usedProperties = newConcurrentHashSet();
     private final Set<ConfigurationProvider<?>> registeredProviders = newConcurrentHashSet();
     @GuardedBy("this")
     private final List<Consumer<ConfigurationProvider<?>>> configurationBindingListeners = new ArrayList<>();
     private final ListMultimap<Key<?>, ConfigDefaultsHolder<?>> registeredDefaultConfigs = Multimaps.synchronizedListMultimap(ArrayListMultimap.create());
     private final LoadingCache<Class<?>, ConfigurationMetadata<?>> metadataCache = CacheBuilder.newBuilder()
-            .build(new CacheLoader<Class<?>, ConfigurationMetadata<?>>()
+            .build(new CacheLoader<>()
             {
                 @Override
                 public ConfigurationMetadata<?> load(Class<?> configClass)
@@ -333,20 +342,25 @@ public class ConfigurationFactory
     /**
      * This is used by the configuration provider
      */
+    @SuppressWarnings("unchecked")
     <T> T build(ConfigurationProvider<T> configurationProvider)
     {
         requireNonNull(configurationProvider, "configurationProvider");
         registerConfigurationProvider(configurationProvider, Optional.empty());
-
-        // check for a prebuilt instance
-        T instance = getCachedInstance(configurationProvider);
-        if (instance != null) {
-            return instance;
+        try {
+            return (T) instanceCache.get(configurationProvider);
         }
+        catch (ExecutionException | UncheckedExecutionException e) {
+            throwIfUnchecked(e.getCause());
+            throw new RuntimeException(e);
+        }
+    }
 
+    private <T> T buildDirect(ConfigurationProvider<T> configurationProvider)
+    {
         ConfigurationBinding<T> configurationBinding = configurationProvider.getConfigurationBinding();
         ConfigurationHolder<T> holder = build(configurationBinding.getConfigClass(), configurationBinding.getPrefix(), getConfigDefaults(configurationBinding.getKey()));
-        instance = holder.getInstance();
+        T instance = holder.getInstance();
 
         // inform caller about warnings
         if (warningsMonitor != null) {
@@ -355,26 +369,7 @@ public class ConfigurationFactory
             }
         }
 
-        // add to instance cache
-        T existingValue = putCachedInstance(configurationProvider, instance);
-        // if key was already associated with a value, there was a
-        // creation race and we lost. Just use the winners' instance;
-        if (existingValue != null) {
-            return existingValue;
-        }
         return instance;
-    }
-
-    @SuppressWarnings("unchecked")
-    private <T> T getCachedInstance(ConfigurationProvider<T> configurationProvider)
-    {
-        return (T) instanceCache.get(configurationProvider);
-    }
-
-    @SuppressWarnings("unchecked")
-    private <T> T putCachedInstance(ConfigurationProvider<T> configurationProvider, T instance)
-    {
-        return (T) instanceCache.putIfAbsent(configurationProvider, instance);
     }
 
     private <T> ConfigurationHolder<T> build(Class<T> configClass, Optional<String> configPrefix, ConfigDefaults<T> configDefaults)
