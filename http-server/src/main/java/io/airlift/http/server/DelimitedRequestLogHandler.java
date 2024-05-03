@@ -23,6 +23,7 @@ import org.eclipse.jetty.util.NanoTime;
 import java.util.DoubleSummaryStatistics;
 import java.util.List;
 
+import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -64,7 +65,7 @@ public class DelimitedRequestLogHandler
             firstToLastContentTimeInMillis = NANOSECONDS.toMillis(contentTimestamps.get(contentTimestamps.size() - 1) - contentTimestamps.get(0));
         }
 
-        long beginToHandleMillis = NANOSECONDS.toMillis((Long) request.getAttribute(REQUEST_BEGIN_TO_HANDLE_ATTRIBUTE));
+        long beginToHandleMillis = NANOSECONDS.toMillis((long) firstNonNull(request.getAttribute(REQUEST_BEGIN_TO_HANDLE_ATTRIBUTE), 0L));
         long beginToEndMillis = NANOSECONDS.toMillis(NanoTime.since(request.getBeginNanoTime()));
 
         logger.log(request,
