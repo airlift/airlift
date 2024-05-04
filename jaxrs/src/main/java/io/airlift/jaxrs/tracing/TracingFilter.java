@@ -121,7 +121,6 @@ public final class TracingFilter
                 span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, response.getLength());
             }
         }
-        span.end();
     }
 
     private static String normalizePath(String path)
