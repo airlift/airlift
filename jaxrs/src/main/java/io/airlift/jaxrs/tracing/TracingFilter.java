@@ -115,7 +115,6 @@ public final class TracingFilter
                 span.setAttribute(SemanticAttributes.HTTP_RESPONSE_BODY_SIZE, response.getLength());
             }
         }
-        span.end();
     }
 
     private static String normalizePath(String path)

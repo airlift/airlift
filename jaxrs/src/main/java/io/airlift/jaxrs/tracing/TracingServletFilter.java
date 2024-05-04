@@ -36,6 +36,9 @@ public final class TracingServletFilter
             if (request.getAttribute(TracingFilter.REQUEST_SCOPE) instanceof Scope scope) {
                 scope.close();
             }
+            if (request.getAttribute(TracingFilter.REQUEST_SPAN) instanceof Span span) {
+                span.end();
+            }
         }
     }
 }
