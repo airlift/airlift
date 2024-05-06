@@ -83,6 +83,11 @@ public abstract class AbstractTestTestingHttpServer
         this.enableLegacyUriCompliance = enableLegacyUriCompliance;
     }
 
+    protected HttpClientConfig getHttpClientConfig()
+    {
+        return new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS));
+    }
+
     @BeforeSuite
     public void setupSuite()
     {
@@ -119,7 +124,7 @@ public abstract class AbstractTestTestingHttpServer
         try {
             server.start();
 
-            try (HttpClient client = new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
+            try (HttpClient client = new JettyHttpClient(getHttpClientConfig())) {
                 StatusResponse response = client.execute(prepareGet().setUri(server.getBaseUrl()).build(), createStatusResponseHandler());
 
                 assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
@@ -143,7 +148,7 @@ public abstract class AbstractTestTestingHttpServer
         try {
             server.start();
 
-            try (HttpClient client = new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
+            try (HttpClient client = new JettyHttpClient(getHttpClientConfig())) {
                 StatusResponse response = client.execute(prepareGet().setUri(server.getBaseUrl()).build(), createStatusResponseHandler());
 
                 assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
@@ -177,7 +182,7 @@ public abstract class AbstractTestTestingHttpServer
         LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
         TestingHttpServer server = injector.getInstance(TestingHttpServer.class);
 
-        try (HttpClient client = new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
+        try (HttpClient client = new JettyHttpClient(getHttpClientConfig())) {
             StatusResponse response = client.execute(prepareGet().setUri(server.getBaseUrl()).build(), createStatusResponseHandler());
 
             assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
@@ -211,7 +216,7 @@ public abstract class AbstractTestTestingHttpServer
         LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
         TestingHttpServer server = injector.getInstance(TestingHttpServer.class);
 
-        try (HttpClient client = new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
+        try (HttpClient client = new JettyHttpClient(getHttpClientConfig())) {
             StatusResponse response = client.execute(prepareGet().setUri(server.getBaseUrl()).build(), createStatusResponseHandler());
 
             assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
@@ -252,7 +257,7 @@ public abstract class AbstractTestTestingHttpServer
         LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
         TestingHttpServer server = injector.getInstance(TestingHttpServer.class);
 
-        try (HttpClient client = new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
+        try (HttpClient client = new JettyHttpClient(getHttpClientConfig())) {
             // test http resources
             URI uri = server.getBaseUrl();
             assertResource(uri, client, "", "welcome user!");
@@ -290,7 +295,7 @@ public abstract class AbstractTestTestingHttpServer
         assertEquals(data.getBody().trim(), contents);
     }
 
-    private static TestingHttpServer createTestingHttpServer(boolean enableVirtualThreads, boolean enableLegacyUriCompliance, DummyServlet servlet, Map<String, String> params)
+    protected TestingHttpServer createTestingHttpServer(boolean enableVirtualThreads, boolean enableLegacyUriCompliance, DummyServlet servlet, Map<String, String> params)
             throws IOException
     {
         NodeInfo nodeInfo = new NodeInfo("test");
@@ -299,7 +304,7 @@ public abstract class AbstractTestTestingHttpServer
         return new TestingHttpServer(httpServerInfo, nodeInfo, config, servlet, params, enableVirtualThreads, enableLegacyUriCompliance);
     }
 
-    private static TestingHttpServer createTestingHttpServerWithFilter(boolean enableVirtualThreads, boolean enableLegacyUriCompliance, DummyServlet servlet, Map<String, String> params, DummyFilter filter)
+    protected TestingHttpServer createTestingHttpServerWithFilter(boolean enableVirtualThreads, boolean enableLegacyUriCompliance, DummyServlet servlet, Map<String, String> params, DummyFilter filter)
             throws IOException
     {
         NodeInfo nodeInfo = new NodeInfo("test");
