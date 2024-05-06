@@ -7,6 +7,7 @@ import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
 import io.airlift.http.client.HeaderName;
 import io.airlift.http.client.HttpStatus;
+import io.airlift.http.client.HttpVersion;
 import io.airlift.http.client.Response;
 
 import java.io.ByteArrayInputStream;
@@ -35,6 +36,12 @@ public class TestingResponse
         this.status = requireNonNull(status, "status is null");
         this.headers = ImmutableListMultimap.copyOf(toHeaderMap(requireNonNull(headers, "headers is null")));
         this.countingInputStream = new CountingInputStream(requireNonNull(input, "input is null"));
+    }
+
+    @Override
+    public HttpVersion getHttpVersion()
+    {
+        return HttpVersion.HTTP_1;
     }
 
     @Override

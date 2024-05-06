@@ -32,6 +32,7 @@ import static java.util.Objects.requireNonNull;
 
 public final class Request
 {
+    private final Optional<HttpVersion> httpVersion;
     private final URI uri;
     private final String method;
     private final ListMultimap<String, String> headers;
@@ -50,6 +51,7 @@ public final class Request
     }
 
     private Request(
+            Optional<HttpVersion> httpVersion,
             URI uri,
             String method,
             ListMultimap<String, String> headers,
@@ -65,6 +67,7 @@ public final class Request
         checkArgument("http".equals(scheme) || "https".equals(scheme), "uri scheme must be http or https: %s", uri);
         requireNonNull(method, "method is null");
 
+        this.httpVersion = requireNonNull(httpVersion, "httpVersion is null");
         this.uri = validateUri(uri);
         this.method = method;
         this.headers = ImmutableListMultimap.copyOf(headers);
@@ -77,6 +80,11 @@ public final class Request
     public static Request.Builder builder()
     {
         return new Builder();
+    }
+
+    public Optional<HttpVersion> getHttpVersion()
+    {
+        return httpVersion;
     }
 
     public URI getUri()
@@ -127,6 +135,7 @@ public final class Request
     public String toString()
     {
         return toStringHelper(this)
+                .add("version", httpVersion.map(HttpVersion::name).orElse("unspecified"))
                 .add("uri", uri)
                 .add("method", method)
                 .add("headers", headers)
@@ -144,7 +153,8 @@ public final class Request
             return false;
         }
         Request r = (Request) o;
-        return Objects.equals(uri, r.uri) &&
+        return Objects.equals(httpVersion, r.httpVersion) &&
+                Objects.equals(uri, r.uri) &&
                 Objects.equals(method, r.method) &&
                 Objects.equals(headers, r.headers) &&
                 Objects.equals(bodyGenerator, r.bodyGenerator) &&
@@ -157,6 +167,7 @@ public final class Request
     public int hashCode()
     {
         return Objects.hash(
+                httpVersion,
                 uri,
                 method,
                 headers,
@@ -207,6 +218,7 @@ public final class Request
                     .setBodyGenerator(request.getBodyGenerator())
                     .setSpanBuilder(request.getSpanBuilder().orElse(null))
                     .setFollowRedirects(request.isFollowRedirects())
+                    .setVersion(request.getHttpVersion().orElse(null))
                     .setPreserveAuthorizationOnRedirect(request.isPreserveAuthorizationOnRedirect());
         }
 
@@ -215,6 +227,7 @@ public final class Request
         private final ListMultimap<String, String> headers = ArrayListMultimap.create();
         private BodyGenerator bodyGenerator;
         private SpanBuilder spanBuilder;
+        private Optional<HttpVersion> version = Optional.empty();
         private boolean followRedirects = true;
         private boolean preserveAuthorizationOnRedirect;
 
@@ -267,6 +280,12 @@ public final class Request
             return this;
         }
 
+        public Builder setVersion(HttpVersion version)
+        {
+            this.version = Optional.ofNullable(version);
+            return this;
+        }
+
         public Builder setPreserveAuthorizationOnRedirect(boolean preserveAuthorizationOnRedirect)
         {
             this.preserveAuthorizationOnRedirect = preserveAuthorizationOnRedirect;
@@ -276,6 +295,7 @@ public final class Request
         public Request build()
         {
             return new Request(
+                    version,
                     uri,
                     method,
                     headers,
