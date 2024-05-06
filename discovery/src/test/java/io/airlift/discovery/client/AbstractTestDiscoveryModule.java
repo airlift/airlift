@@ -48,7 +48,6 @@ public abstract class AbstractTestDiscoveryModule
 
     @Test
     public void testBinding()
-            throws Exception
     {
         Injector injector = Guice.createInjector(
                 new ConfigurationModule(new ConfigurationFactory(ImmutableMap.of("discovery.uri", "fake://server"))),
@@ -67,9 +66,8 @@ public abstract class AbstractTestDiscoveryModule
 
     @Test
     public void testMerging()
-            throws Exception
     {
-        final StaticAnnouncementHttpServerInfoImpl httpServerInfo = new StaticAnnouncementHttpServerInfoImpl(
+        StaticAnnouncementHttpServerInfoImpl httpServerInfo = new StaticAnnouncementHttpServerInfoImpl(
                 URI.create("http://127.0.0.1:4444"),
                 URI.create("http://example.com:4444"),
                 null,

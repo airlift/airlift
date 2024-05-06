@@ -36,7 +36,7 @@ public class TestHttpAnnouncementBinder
     @Test
     public void testHttpAnnouncement()
     {
-        final StaticAnnouncementHttpServerInfoImpl httpServerInfo = new StaticAnnouncementHttpServerInfoImpl(
+        StaticAnnouncementHttpServerInfoImpl httpServerInfo = new StaticAnnouncementHttpServerInfoImpl(
                 URI.create("http://127.0.0.1:4444"),
                 URI.create("http://example.com:4444"),
                 null,
@@ -54,9 +54,7 @@ public class TestHttpAnnouncementBinder
                 .addProperty("http-external", httpServerInfo.getHttpExternalUri().toASCIIString())
                 .build();
 
-        Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>()
-        {
-        }));
+        Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() {}));
 
         assertAnnouncement(announcements, announcement);
     }
@@ -64,7 +62,7 @@ public class TestHttpAnnouncementBinder
     @Test
     public void testHttpsAnnouncement()
     {
-        final StaticAnnouncementHttpServerInfoImpl httpServerInfo = new StaticAnnouncementHttpServerInfoImpl(
+        StaticAnnouncementHttpServerInfoImpl httpServerInfo = new StaticAnnouncementHttpServerInfoImpl(
                 null,
                 null,
                 URI.create("https://127.0.0.1:4444"),
@@ -82,9 +80,7 @@ public class TestHttpAnnouncementBinder
                 .addProperty("https-external", httpServerInfo.getHttpsExternalUri().toASCIIString())
                 .build();
 
-        Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>()
-        {
-        }));
+        Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() {}));
 
         assertAnnouncement(announcements, announcement);
     }
@@ -92,7 +88,7 @@ public class TestHttpAnnouncementBinder
     @Test
     public void testHttpAnnouncementWithPool()
     {
-        final StaticAnnouncementHttpServerInfoImpl httpServerInfo = new StaticAnnouncementHttpServerInfoImpl(
+        StaticAnnouncementHttpServerInfoImpl httpServerInfo = new StaticAnnouncementHttpServerInfoImpl(
                 URI.create("http://127.0.0.1:4444"),
                 URI.create("http://example.com:4444"),
                 URI.create("https://127.0.0.1:4444"),
@@ -112,9 +108,7 @@ public class TestHttpAnnouncementBinder
                 .addProperty("https-external", httpServerInfo.getHttpsExternalUri().toASCIIString())
                 .build();
 
-        Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>()
-        {
-        }));
+        Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() {}));
 
         assertAnnouncement(announcements, announcement);
     }
@@ -122,7 +116,7 @@ public class TestHttpAnnouncementBinder
     @Test
     public void testHttpAnnouncementWithCustomProperties()
     {
-        final StaticAnnouncementHttpServerInfoImpl httpServerInfo = new StaticAnnouncementHttpServerInfoImpl(
+        StaticAnnouncementHttpServerInfoImpl httpServerInfo = new StaticAnnouncementHttpServerInfoImpl(
                 URI.create("http://127.0.0.1:4444"),
                 URI.create("http://example.com:4444"),
                 URI.create("https://127.0.0.1:4444"),
@@ -143,9 +137,7 @@ public class TestHttpAnnouncementBinder
                 .addProperty("https-external", httpServerInfo.getHttpsExternalUri().toASCIIString())
                 .build();
 
-        Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>()
-        {
-        }));
+        Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() {}));
 
         assertAnnouncement(announcements, announcement);
     }
