@@ -888,6 +888,13 @@ public class JettyHttpClient
     private HttpRequest buildJettyRequest(Request finalRequest, JettyRequestListener listener)
     {
         HttpRequest jettyRequest = (HttpRequest) httpClient.newRequest(finalRequest.getUri());
+        finalRequest.getHttpVersion().ifPresent(version -> {
+            switch (version) {
+                case HTTP_1 -> jettyRequest.version(HttpVersion.HTTP_1_1);
+                case HTTP_2 -> jettyRequest.version(HttpVersion.HTTP_2);
+                case HTTP_3 -> jettyRequest.version(HttpVersion.HTTP_3);
+            }
+        });
         jettyRequest.onRequestBegin(request -> listener.onRequestBegin());
         jettyRequest.onRequestSuccess(request -> listener.onRequestEnd());
         jettyRequest.onResponseBegin(response -> listener.onResponseBegin());

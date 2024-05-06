@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.CountingInputStream;
 import io.airlift.http.client.HeaderName;
+import io.airlift.http.client.HttpVersion;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpFields;
 
@@ -29,6 +30,16 @@ class JettyResponse
     public int getStatusCode()
     {
         return response.getStatus();
+    }
+
+    @Override
+    public HttpVersion getHttpVersion()
+    {
+        return switch (response.getVersion()) {
+            case HTTP_0_9, HTTP_1_0, HTTP_1_1 -> HttpVersion.HTTP_1;
+            case HTTP_2 -> HttpVersion.HTTP_2;
+            case HTTP_3 -> HttpVersion.HTTP_3;
+        };
     }
 
     @Override

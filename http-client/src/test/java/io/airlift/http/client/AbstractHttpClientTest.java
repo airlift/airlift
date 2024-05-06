@@ -55,6 +55,7 @@ import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.common.net.HttpHeaders.LOCATION;
 import static com.google.common.net.HttpHeaders.USER_AGENT;
 import static io.airlift.concurrent.Threads.threadsNamed;
+import static io.airlift.http.client.Request.Builder.fromRequest;
 import static io.airlift.http.client.Request.Builder.prepareDelete;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.Request.Builder.preparePost;
@@ -107,6 +108,13 @@ public abstract class AbstractHttpClientTest
 
     public abstract <T, E extends Exception> T executeRequest(HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception;
+
+    protected static Request upgradeRequest(Request request, HttpVersion version)
+    {
+        return fromRequest(request)
+                .setVersion(version)
+                .build();
+    }
 
     @BeforeSuite
     public void setupSuite()

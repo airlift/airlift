@@ -24,6 +24,8 @@ import java.util.List;
 
 public interface Response
 {
+    HttpVersion getHttpVersion();
+
     int getStatusCode();
 
     @Nullable
