@@ -7,6 +7,7 @@ import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
 import io.airlift.http.client.HeaderName;
 import io.airlift.http.client.HttpStatus;
+import io.airlift.http.client.HttpVersion;
 import io.airlift.http.client.Response;
 
 import java.io.ByteArrayInputStream;
@@ -41,6 +42,12 @@ public class TestingResponse
     public int getStatusCode()
     {
         return status.code();
+    }
+
+    @Override
+    public HttpVersion getHttpVersion()
+    {
+        return HttpVersion.HTTP_1_1;
     }
 
     @Override
