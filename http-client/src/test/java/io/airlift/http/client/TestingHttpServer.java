@@ -15,9 +15,11 @@ package io.airlift.http.client;
 
 import com.google.common.net.HostAndPort;
 import jakarta.servlet.Servlet;
+import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
+import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -66,9 +68,16 @@ public class TestingHttpServer
             SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
             sslContextFactory.setKeyStorePath(keystore.get());
             sslContextFactory.setKeyStorePassword("changeit");
+
             HttpConnectionFactory http11 = new HttpConnectionFactory(httpConfiguration);
-            SslConnectionFactory tls = new SslConnectionFactory(sslContextFactory, http11.getProtocol());
-            connector = new ServerConnector(server, tls, http11);
+            HTTP2ServerConnectionFactory http2 = new HTTP2ServerConnectionFactory(httpConfiguration);
+
+            ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
+            alpn.setDefaultProtocol(http11.getProtocol());
+
+            SslConnectionFactory tls = new SslConnectionFactory(sslContextFactory, alpn.getProtocol());
+
+            connector = new ServerConnector(server, tls, alpn, http2, http11);
         }
         else {
             HttpConnectionFactory http1 = new HttpConnectionFactory(httpConfiguration);
