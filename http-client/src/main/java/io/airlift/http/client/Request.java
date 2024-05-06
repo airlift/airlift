@@ -41,15 +41,6 @@ public final class Request
     private final boolean followRedirects;
     private final boolean preserveAuthorizationOnRedirect;
 
-    /**
-     * @deprecated Use {@link #builder()} to construct this.
-     */
-    @Deprecated
-    public Request(URI uri, String method, ListMultimap<String, String> headers, BodyGenerator bodyGenerator)
-    {
-        this(uri, method, headers, bodyGenerator, Optional.empty(), true, false);
-    }
-
     private Request(
             Optional<HttpVersion> httpVersion,
             URI uri,
