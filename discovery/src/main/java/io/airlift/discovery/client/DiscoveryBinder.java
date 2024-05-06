@@ -15,19 +15,28 @@
  */
 package io.airlift.discovery.client;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.inject.Binder;
 import com.google.inject.Inject;
+import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Provider;
 import com.google.inject.Scopes;
+import com.google.inject.TypeLiteral;
+import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
 import io.airlift.discovery.client.ServiceAnnouncement.ServiceAnnouncementBuilder;
 
+import java.lang.annotation.Annotation;
+import java.util.Map;
+
+import static com.google.inject.multibindings.MapBinder.newMapBinder;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
 import static io.airlift.discovery.client.ServiceTypes.serviceType;
 import static java.util.Objects.requireNonNull;
+import static java.util.UUID.randomUUID;
 
 public class DiscoveryBinder
 {
@@ -84,11 +93,12 @@ public class DiscoveryBinder
         serviceAnnouncementBinder.addBinding().toProvider(announcementProviderClass);
     }
 
-    public ServiceAnnouncementBuilder bindHttpAnnouncement(String type)
+    public HttpAnnouncementBindingBuilder bindHttpAnnouncement(String type)
     {
-        ServiceAnnouncementBuilder serviceAnnouncementBuilder = serviceAnnouncement(type);
-        bindServiceAnnouncement(new HttpAnnouncementProvider(serviceAnnouncementBuilder));
-        return serviceAnnouncementBuilder;
+        HttpAnnouncement annotation = new HttpAnnouncementImpl(type + "." + randomUUID());
+        MapBinder<String, String> propertiesBinder = newMapBinder(binder, String.class, String.class, annotation);
+        bindServiceAnnouncement(new HttpAnnouncementProvider(type, annotation));
+        return new HttpAnnouncementBindingBuilder(propertiesBinder);
     }
 
     public void bindHttpSelector(String type)
@@ -104,15 +114,74 @@ public class DiscoveryBinder
         binder.bind(HttpServiceSelector.class).annotatedWith(serviceType).toProvider(new HttpServiceSelectorProvider(serviceType.value())).in(Scopes.SINGLETON);
     }
 
+    public static class HttpAnnouncementBindingBuilder
+    {
+        private final MapBinder<String, String> propertiesBinder;
+
+        public HttpAnnouncementBindingBuilder(MapBinder<String, String> propertiesBinder)
+        {
+            this.propertiesBinder = requireNonNull(propertiesBinder, "propertiesBinder is null");
+        }
+
+        @CanIgnoreReturnValue
+        public HttpAnnouncementBindingBuilder addProperty(String key, String value)
+        {
+            requireNonNull(key, "key is null");
+            requireNonNull(value, "value is null");
+            propertiesBinder.addBinding(key).toInstance(value);
+            return this;
+        }
+
+        @CanIgnoreReturnValue
+        public HttpAnnouncementBindingBuilder addProperties(Map<String, String> properties)
+        {
+            properties.forEach(this::addProperty);
+            return this;
+        }
+
+        @CanIgnoreReturnValue
+        public HttpAnnouncementBindingBuilder bindPropertyProvider(String key, Provider<String> provider)
+        {
+            requireNonNull(key, "key is null");
+            requireNonNull(provider, "provider is null");
+            propertiesBinder.addBinding(key).toProvider(provider);
+            return this;
+        }
+
+        @CanIgnoreReturnValue
+        public HttpAnnouncementBindingBuilder bindPropertyProvider(String key, Class<? extends Provider<String>> providerType)
+        {
+            return bindPropertyProvider(key, Key.get(providerType));
+        }
+
+        @CanIgnoreReturnValue
+        public HttpAnnouncementBindingBuilder bindPropertyProvider(String key, Key<? extends Provider<String>> providerKey)
+        {
+            requireNonNull(key, "key is null");
+            requireNonNull(providerKey, "providerKey is null");
+            propertiesBinder.addBinding(key).toProvider(providerKey);
+            return this;
+        }
+    }
+
     static class HttpAnnouncementProvider
             implements Provider<ServiceAnnouncement>
     {
-        private final ServiceAnnouncementBuilder builder;
+        private final String type;
+        private final Annotation annotation;
+        private Injector injector;
         private AnnouncementHttpServerInfo httpServerInfo;
 
-        public HttpAnnouncementProvider(ServiceAnnouncementBuilder serviceAnnouncementBuilder)
+        public HttpAnnouncementProvider(String type, Annotation annotation)
         {
-            builder = serviceAnnouncementBuilder;
+            this.type = type;
+            this.annotation = annotation;
+        }
+
+        @Inject
+        public void setInjector(Injector injector)
+        {
+            this.injector = injector;
         }
 
         @Inject
@@ -124,6 +193,9 @@ public class DiscoveryBinder
         @Override
         public ServiceAnnouncement get()
         {
+            ServiceAnnouncementBuilder builder = serviceAnnouncement(type);
+            builder.addProperties(injector.getInstance(Key.get(new TypeLiteral<Map<String, String>>() {}, annotation)));
+
             if (httpServerInfo.getHttpUri() != null) {
                 builder.addProperty("http", httpServerInfo.getHttpUri().toString());
                 builder.addProperty("http-external", httpServerInfo.getHttpExternalUri().toString());

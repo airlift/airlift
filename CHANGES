@@ -5,6 +5,7 @@
 - Fail decoding with JsonCodec when content is not single JSON value.
   Previously the codec decoded first JSON value only, ignoring the rest
   of the payload.
+- Support Guice providers in HTTP announcement custom properties.
 - Allow only `@DefunctConfig` class without `@Config` annotation
 - Update airbase to 156
 - Update bouncycastle to 1.78.1
