@@ -66,8 +66,9 @@ public class TestingHttpServer
             SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
             sslContextFactory.setKeyStorePath(keystore.get());
             sslContextFactory.setKeyStorePassword("changeit");
-            SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory, "http/1.1");
-            connector = new ServerConnector(server, sslConnectionFactory, new HttpConnectionFactory(httpConfiguration));
+            HttpConnectionFactory http11 = new HttpConnectionFactory(httpConfiguration);
+            SslConnectionFactory tls = new SslConnectionFactory(sslContextFactory, http11.getProtocol());
+            connector = new ServerConnector(server, tls, http11);
         }
         else {
             HttpConnectionFactory http1 = new HttpConnectionFactory(httpConfiguration);
