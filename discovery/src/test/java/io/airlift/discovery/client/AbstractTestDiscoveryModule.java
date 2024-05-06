@@ -84,7 +84,7 @@ public abstract class AbstractTestDiscoveryModule
                 new ConfigurationModule(new ConfigurationFactory(config)),
                 new JsonModule(),
                 new TestingNodeModule(),
-                new DiscoveryModule(),
+                discoveryModule,
                 binder -> {
                     binder.bind(AnnouncementHttpServerInfo.class).toInstance(httpServerInfo);
                     discoveryBinder(binder).bindHttpAnnouncement("apple");
