@@ -52,6 +52,7 @@ import org.eclipse.jetty.client.transport.HttpExchange;
 import org.eclipse.jetty.client.transport.HttpRequest;
 import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
 import org.eclipse.jetty.http.HttpCookieStore;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
@@ -870,6 +871,12 @@ public class JettyHttpClient
     private HttpRequest buildJettyRequest(Request finalRequest, JettyRequestListener listener)
     {
         HttpRequest jettyRequest = (HttpRequest) httpClient.newRequest(finalRequest.getUri());
+        finalRequest.getHttpVersion().ifPresent(version -> {
+            switch (version) {
+                case HTTP_1_1 -> jettyRequest.version(HttpVersion.HTTP_1_1);
+                case HTTP_2 -> jettyRequest.version(HttpVersion.HTTP_2);
+            }
+        });
         jettyRequest.onRequestBegin(request -> listener.onRequestBegin());
         jettyRequest.onRequestSuccess(request -> listener.onRequestEnd());
         jettyRequest.onResponseBegin(response -> listener.onResponseBegin());
