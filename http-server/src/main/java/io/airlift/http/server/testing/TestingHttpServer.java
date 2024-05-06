@@ -38,6 +38,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static java.util.Objects.requireNonNullElse;
+
 public class TestingHttpServer
         extends HttpServer
 {
@@ -117,12 +119,12 @@ public class TestingHttpServer
 
     public URI getBaseUrl()
     {
-        return httpServerInfo.getHttpUri();
+        return requireNonNullElse(httpServerInfo.getHttpUri(), httpServerInfo.getHttpsUri());
     }
 
     public int getPort()
     {
-        return httpServerInfo.getHttpUri().getPort();
+        return getBaseUrl().getPort();
     }
 
     public HttpServerInfo getHttpServerInfo()

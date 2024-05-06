@@ -783,7 +783,7 @@ public abstract class AbstractHttpClientTest
     {
         try (FakeServer fakeServer = new FakeServer(scheme, host, Long.MAX_VALUE, null, true)) {
             HttpClientConfig config = createClientConfig();
-            config.setConnectTimeout(new Duration(5, SECONDS));
+            config.setConnectTimeout(new Duration(1, SECONDS));
             config.setIdleTimeout(new Duration(5, SECONDS));
 
             executeRequest(fakeServer, config);
