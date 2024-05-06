@@ -46,15 +46,17 @@ import org.eclipse.jetty.client.Origin.Address;
 import org.eclipse.jetty.client.PathRequestContent;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Socks4Proxy;
-import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
+import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.client.transport.HttpExchange;
 import org.eclipse.jetty.client.transport.HttpRequest;
 import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
 import org.eclipse.jetty.http.HttpCookieStore;
 import org.eclipse.jetty.http2.client.HTTP2Client;
-import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
+import org.eclipse.jetty.http2.client.transport.ClientConnectionFactoryOverHTTP2;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -264,23 +266,10 @@ public class JettyHttpClient
             }
         };
 
-        HttpClientTransport transport;
-        if (config.isHttp2Enabled()) {
-            checkArgument(maybeSslContextFactory.isEmpty(), "SslContextFactory must not be provided when HTTP/2 is enabled");
-            HTTP2Client client = new HTTP2Client(connector);
-            client.setInitialSessionRecvWindow(toIntExact(config.getHttp2InitialSessionReceiveWindowSize().toBytes()));
-            client.setInitialStreamRecvWindow(toIntExact(config.getHttp2InitialStreamReceiveWindowSize().toBytes()));
-            client.setInputBufferSize(toIntExact(config.getHttp2InputBufferSize().toBytes()));
-            client.setSelectors(config.getSelectorCount());
-            transport = new HttpClientTransportOverHTTP2(client);
-        }
-        else {
-            connector.setSelectors(config.getSelectorCount());
-            connector.setSslContextFactory(sslContextFactory);
-            transport = new HttpClientTransportOverHTTP(connector);
-        }
+        connector.setSelectors(config.getSelectorCount());
+        connector.setSslContextFactory(sslContextFactory);
 
-        httpClient = new AuthorizationPreservingHttpClient(transport);
+        httpClient = new AuthorizationPreservingHttpClient(getClientTransport(connector, config));
 
         // request and response buffer size
         httpClient.setRequestBufferSize(toIntExact(config.getRequestBufferSize().toBytes()));
@@ -454,6 +443,26 @@ public class JettyHttpClient
         else {
             throw new IOException("Not a NetworkChannel. Cannot enable keep alive for %s".formatted(selectable.getClass()));
         }
+    }
+
+    private static HttpClientTransport getClientTransport(ClientConnector connector, HttpClientConfig config)
+    {
+        ImmutableList.Builder<ClientConnectionFactory.Info> protocols = ImmutableList.builder();
+        if (config.isHttp2Enabled()) {
+            HTTP2Client http2Client = new HTTP2Client(connector);
+            http2Client.setInitialSessionRecvWindow(toIntExact(config.getHttp2InitialSessionReceiveWindowSize().toBytes()));
+            http2Client.setInitialStreamRecvWindow(toIntExact(config.getHttp2InitialStreamReceiveWindowSize().toBytes()));
+            http2Client.setInputBufferSize(toIntExact(config.getHttp2InputBufferSize().toBytes()));
+
+            protocols.add(new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client));
+        }
+
+        protocols.add(HttpClientConnectionFactory.HTTP11);
+
+        // The order of the protocols indicates the client's preference.
+        // The first is the most preferred, the last is the least preferred, but
+        // the protocol version to use can be explicitly specified in the request.
+        return new HttpClientTransportDynamic(connector, protocols.build().toArray(new ClientConnectionFactory.Info[0]));
     }
 
     private static SslContextFactory.Client getSslContextFactory(HttpClientConfig config, Optional<String> environment)
