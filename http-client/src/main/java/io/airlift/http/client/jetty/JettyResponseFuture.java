@@ -10,6 +10,7 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.semconv.ExceptionAttributes;
 import io.opentelemetry.semconv.HttpAttributes;
+import io.opentelemetry.semconv.NetworkAttributes;
 import io.opentelemetry.semconv.incubating.HttpIncubatingAttributes;
 import org.eclipse.jetty.client.Response;
 
@@ -20,6 +21,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongSupplier;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static io.airlift.http.client.jetty.JettyHttpClient.getHttpVersion;
 import static java.util.Objects.requireNonNull;
 
 class JettyResponseFuture<T, E extends Exception>
@@ -111,6 +113,9 @@ class JettyResponseFuture<T, E extends Exception>
         }
 
         span.setAttribute(HttpAttributes.HTTP_RESPONSE_STATUS_CODE, response.getStatus());
+        // negotiated http version
+        span.setAttribute(NetworkAttributes.NETWORK_PROTOCOL_NAME, "http");
+        span.setAttribute(NetworkAttributes.NETWORK_PROTOCOL_VERSION, getHttpVersion(response.getVersion()));
 
         if (request.getBodyGenerator() != null) {
             span.setAttribute(HttpIncubatingAttributes.HTTP_REQUEST_SIZE, requestSize.getAsLong());

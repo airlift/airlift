@@ -29,6 +29,7 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.semconv.ExceptionAttributes;
 import io.opentelemetry.semconv.HttpAttributes;
+import io.opentelemetry.semconv.NetworkAttributes;
 import io.opentelemetry.semconv.ServerAttributes;
 import io.opentelemetry.semconv.UrlAttributes;
 import io.opentelemetry.semconv.incubating.HttpIncubatingAttributes;
@@ -744,6 +745,10 @@ public class JettyHttpClient
         // record attributes
         span.setAttribute(HttpAttributes.HTTP_RESPONSE_STATUS_CODE, response.getStatus());
 
+        // negotiated http version
+        span.setAttribute(NetworkAttributes.NETWORK_PROTOCOL_NAME, "http");
+        span.setAttribute(NetworkAttributes.NETWORK_PROTOCOL_VERSION, getHttpVersion(response.getVersion()));
+
         if (request.getBodyGenerator() != null) {
             span.setAttribute(HttpIncubatingAttributes.HTTP_REQUEST_BODY_SIZE, requestSize.getBytes());
         }
@@ -772,6 +777,17 @@ public class JettyHttpClient
             }
         }
         return value;
+    }
+
+    static String getHttpVersion(HttpVersion version)
+    {
+        return switch (version) {
+            case HTTP_0_9 -> "0.9";
+            case HTTP_1_0 -> "1.0";
+            case HTTP_1_1 -> "1.1";
+            case HTTP_2 -> "2.0";
+            case HTTP_3 -> "3.0";
+        };
     }
 
     @Override
