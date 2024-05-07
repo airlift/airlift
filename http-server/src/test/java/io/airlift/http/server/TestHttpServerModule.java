@@ -82,10 +82,7 @@ import static io.airlift.http.server.HttpServerBinder.httpServerBinder;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.Files.createTempDirectory;
 import static java.util.Collections.nCopies;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Test(singleThreaded = true)
 public class TestHttpServerModule
@@ -132,7 +129,7 @@ public class TestHttpServerModule
                 .initialize();
 
         HttpServer server = injector.getInstance(HttpServer.class);
-        assertNotNull(server);
+        assertThat(server).isNotNull();
     }
 
     @Test
@@ -157,15 +154,15 @@ public class TestHttpServerModule
 
         NodeInfo nodeInfo = injector.getInstance(NodeInfo.class);
         HttpServer server = injector.getInstance(HttpServer.class);
-        assertNotNull(server);
+        assertThat(server).isNotNull();
         server.start();
         try {
             HttpServerInfo httpServerInfo = injector.getInstance(HttpServerInfo.class);
-            assertNotNull(httpServerInfo);
-            assertNotNull(httpServerInfo.getHttpUri());
-            assertEquals(httpServerInfo.getHttpUri().getScheme(), "http");
-            assertEquals(httpServerInfo.getHttpUri().getHost(), nodeInfo.getInternalAddress());
-            assertNull(httpServerInfo.getHttpsUri());
+            assertThat(httpServerInfo).isNotNull();
+            assertThat(httpServerInfo.getHttpUri()).isNotNull();
+            assertThat(httpServerInfo.getHttpUri().getScheme()).isEqualTo("http");
+            assertThat(httpServerInfo.getHttpUri().getHost()).isEqualTo(nodeInfo.getInternalAddress());
+            assertThat(httpServerInfo.getHttpsUri()).isNull();
         }
         catch (Exception e) {
             server.stop();
@@ -219,16 +216,16 @@ public class TestHttpServerModule
             URI httpUri = httpServerInfo.getHttpUri();
             StatusResponse response = client.execute(prepareGet().setUri(httpUri).build(), createStatusResponseHandler());
 
-            assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
+            assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_OK);
 
             // test filter bound correctly
             response = client.execute(prepareGet().setUri(httpUri.resolve("/filter")).build(), createStatusResponseHandler());
-            assertEquals(response.getStatusCode(), HttpServletResponse.SC_PAYMENT_REQUIRED);
+            assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_PAYMENT_REQUIRED);
 
             if (enableLegacyUriCompliance) {
                 // test legacy URI code for encoded slashes
                 response = client.execute(prepareGet().setUri(httpUri.resolve("/slashtest/one/two%2fthree/four/%2f/five")).build(), createStatusResponseHandler());
-                assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
+                assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_OK);
             }
 
             // test http resources
@@ -251,12 +248,12 @@ public class TestHttpServerModule
     {
         HttpUriBuilder uriBuilder = uriBuilderFrom(baseUri);
         StringResponse response = client.execute(prepareGet().setUri(uriBuilder.appendPath(path).build()).build(), createStringResponseHandler());
-        assertEquals(response.getStatusCode(), HttpStatus.OK.code());
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK.code());
         String contentType = response.getHeader(CONTENT_TYPE);
-        assertNotNull(contentType, CONTENT_TYPE + " header is absent");
+        assertThat(contentType).describedAs(CONTENT_TYPE + " header is absent").isNotNull();
         MediaType mediaType = MediaType.parse(contentType);
-        assertTrue(PLAIN_TEXT_UTF_8.is(mediaType), "Expected text/plain but got " + mediaType);
-        assertEquals(response.getBody().trim(), contents);
+        assertThat(PLAIN_TEXT_UTF_8.is(mediaType)).describedAs("Expected text/plain but got " + mediaType).isTrue();
+        assertThat(response.getBody().trim()).isEqualTo(contents);
     }
 
     private void assertRedirect(URI baseUri, HttpClient client, String path, String redirect)
@@ -268,10 +265,10 @@ public class TestHttpServerModule
                         .setUri(uriBuilder.appendPath(path).build())
                         .build(),
                 createStringResponseHandler());
-        assertEquals(response.getStatusCode(), HttpStatus.TEMPORARY_REDIRECT.code());
-        assertEquals(response.getHeader(LOCATION), redirect);
-        assertNull(response.getHeader(CONTENT_TYPE), CONTENT_TYPE + " header should be absent");
-        assertEquals(response.getBody(), "", "Response body");
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.TEMPORARY_REDIRECT.code());
+        assertThat(response.getHeader(LOCATION)).isEqualTo(redirect);
+        assertThat(response.getHeader(CONTENT_TYPE)).describedAs(CONTENT_TYPE + " header should be absent").isNull();
+        assertThat(response.getBody()).describedAs("Response body").isEqualTo("");
     }
 
     @Test
@@ -336,9 +333,9 @@ public class TestHttpServerModule
 
             afterRequest = System.currentTimeMillis();
 
-            assertEquals(response.getStatusCode(), responseCode);
-            assertEquals(response.getBody(), responseBody);
-            assertEquals(response.getHeader("Content-Type"), responseContentType);
+            assertThat(response.getStatusCode()).isEqualTo(responseCode);
+            assertThat(response.getBody()).isEqualTo(responseBody);
+            assertThat(response.getHeader("Content-Type")).isEqualTo(responseContentType);
 
             event = (HttpRequestEvent) eventClient.getEvent().get(10, TimeUnit.SECONDS);
         }
@@ -346,27 +343,27 @@ public class TestHttpServerModule
             server.stop();
         }
 
-        assertEquals(event.getClientAddress(), echoServlet.remoteAddress);
-        assertEquals(event.getProtocol(), "http");
-        assertEquals(event.getMethod(), "POST");
-        assertEquals(event.getRequestUri(), requestUri.getPath());
-        assertNull(event.getUser());
-        assertEquals(event.getAgent(), userAgent);
-        assertEquals(event.getReferrer(), referrer);
-        assertEquals(event.getTraceToken(), token);
+        assertThat(event.getClientAddress()).isEqualTo(echoServlet.remoteAddress);
+        assertThat(event.getProtocol()).isEqualTo("http");
+        assertThat(event.getMethod()).isEqualTo("POST");
+        assertThat(event.getRequestUri()).isEqualTo(requestUri.getPath());
+        assertThat(event.getUser()).isNull();
+        assertThat(event.getAgent()).isEqualTo(userAgent);
+        assertThat(event.getReferrer()).isEqualTo(referrer);
+        assertThat(event.getTraceToken()).isEqualTo(token);
 
-        assertEquals(event.getRequestSize(), requestBody.length());
-        assertEquals(event.getRequestContentType(), requestContentType);
+        assertThat(event.getRequestSize()).isEqualTo(requestBody.length());
+        assertThat(event.getRequestContentType()).isEqualTo(requestContentType);
 
-        assertEquals(event.getResponseSize(), responseBody.length());
-        assertEquals(event.getResponseCode(), responseCode);
-        assertEquals(event.getResponseContentType(), responseContentType);
+        assertThat(event.getResponseSize()).isEqualTo(responseBody.length());
+        assertThat(event.getResponseCode()).isEqualTo(responseCode);
+        assertThat(event.getResponseContentType()).isEqualTo(responseContentType);
 
-        assertTrue(event.getTimeStamp().toEpochMilli() >= beforeRequest);
-        assertTrue(event.getTimeToLastByte() <= afterRequest - beforeRequest);
-        assertNotNull(event.getTimeToFirstByte());
-        assertTrue(event.getTimeToDispatch() <= event.getTimeToFirstByte());
-        assertTrue(event.getTimeToFirstByte() <= event.getTimeToLastByte());
+        assertThat(event.getTimeStamp().toEpochMilli()).isGreaterThanOrEqualTo(beforeRequest);
+        assertThat(event.getTimeToLastByte()).isLessThanOrEqualTo(afterRequest - beforeRequest);
+        assertThat(event.getTimeToFirstByte()).isNotNull();
+        assertThat(event.getTimeToDispatch()).isLessThanOrEqualTo(event.getTimeToFirstByte());
+        assertThat(event.getTimeToFirstByte()).isLessThanOrEqualTo(event.getTimeToLastByte());
     }
 
     private static final class EchoServlet

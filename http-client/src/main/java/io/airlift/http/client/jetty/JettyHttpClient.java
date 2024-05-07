@@ -29,6 +29,7 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.semconv.ExceptionAttributes;
 import io.opentelemetry.semconv.HttpAttributes;
+import io.opentelemetry.semconv.NetworkAttributes;
 import io.opentelemetry.semconv.ServerAttributes;
 import io.opentelemetry.semconv.UrlAttributes;
 import io.opentelemetry.semconv.incubating.HttpIncubatingAttributes;
@@ -46,7 +47,8 @@ import org.eclipse.jetty.client.Origin.Address;
 import org.eclipse.jetty.client.PathRequestContent;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Socks4Proxy;
-import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
+import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.client.transport.HttpExchange;
 import org.eclipse.jetty.client.transport.HttpRequest;
@@ -54,8 +56,9 @@ import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
 import org.eclipse.jetty.http.HttpCookieStore;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http2.client.HTTP2Client;
-import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
+import org.eclipse.jetty.http2.client.transport.ClientConnectionFactoryOverHTTP2;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -116,9 +119,11 @@ import static io.airlift.node.AddressToHostname.tryDecodeHostnameToAddress;
 import static io.airlift.security.cert.CertificateBuilder.certificateBuilder;
 import static io.opentelemetry.api.common.AttributeKey.stringKey;
 import static java.lang.Math.max;
+import static java.lang.Math.min;
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.time.temporal.ChronoUnit.MILLIS;
 import static java.time.temporal.ChronoUnit.YEARS;
 import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
@@ -262,26 +267,14 @@ public class JettyHttpClient
                 if (config.getTcpKeepAliveIdleTime().isPresent()) {
                     setKeepAlive(selectable, config.getTcpKeepAliveIdleTime().get());
                 }
+                setConnectTimeout(java.time.Duration.of(config.getConnectTimeout().toMillis(), MILLIS));
             }
         };
 
-        HttpClientTransport transport;
-        if (config.isHttp2Enabled()) {
-            checkArgument(maybeSslContextFactory.isEmpty(), "SslContextFactory must not be provided when HTTP/2 is enabled");
-            HTTP2Client client = new HTTP2Client(connector);
-            client.setInitialSessionRecvWindow(toIntExact(config.getHttp2InitialSessionReceiveWindowSize().toBytes()));
-            client.setInitialStreamRecvWindow(toIntExact(config.getHttp2InitialStreamReceiveWindowSize().toBytes()));
-            client.setInputBufferSize(toIntExact(config.getHttp2InputBufferSize().toBytes()));
-            client.setSelectors(config.getSelectorCount());
-            transport = new HttpClientTransportOverHTTP2(client);
-        }
-        else {
-            connector.setSelectors(config.getSelectorCount());
-            connector.setSslContextFactory(sslContextFactory);
-            transport = new HttpClientTransportOverHTTP(connector);
-        }
+        connector.setSelectors(config.getSelectorCount());
+        connector.setSslContextFactory(sslContextFactory);
 
-        httpClient = new AuthorizationPreservingHttpClient(transport);
+        httpClient = new AuthorizationPreservingHttpClient(getClientTransport(connector, config));
 
         // request and response buffer size
         httpClient.setRequestBufferSize(toIntExact(config.getRequestBufferSize().toBytes()));
@@ -455,6 +448,28 @@ public class JettyHttpClient
         else {
             throw new IOException("Not a NetworkChannel. Cannot enable keep alive for %s".formatted(selectable.getClass()));
         }
+    }
+
+    private static HttpClientTransport getClientTransport(ClientConnector connector, HttpClientConfig config)
+    {
+        ImmutableList.Builder<ClientConnectionFactory.Info> protocols = ImmutableList.builder();
+        if (config.isHttp2Enabled()) {
+            HTTP2Client http2Client = new HTTP2Client(connector);
+            http2Client.setInitialSessionRecvWindow(toIntExact(config.getHttp2InitialSessionReceiveWindowSize().toBytes()));
+            http2Client.setInitialStreamRecvWindow(toIntExact(config.getHttp2InitialStreamReceiveWindowSize().toBytes()));
+            http2Client.setInputBufferSize(toIntExact(config.getHttp2InputBufferSize().toBytes()));
+            http2Client.setConnectTimeout(config.getConnectTimeout().toMillis());
+            http2Client.setIdleTimeout(config.getIdleTimeout().toMillis());
+
+            protocols.add(new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client));
+        }
+
+        protocols.add(HttpClientConnectionFactory.HTTP11);
+
+        // The order of the protocols indicates the client's preference.
+        // The first is the most preferred, the last is the least preferred, but
+        // the protocol version to use can be explicitly specified in the request.
+        return new HttpClientTransportDynamic(connector, protocols.build().toArray(new ClientConnectionFactory.Info[0]));
     }
 
     private static SslContextFactory.Client getSslContextFactory(HttpClientConfig config, Optional<String> environment)
@@ -730,6 +745,10 @@ public class JettyHttpClient
         // record attributes
         span.setAttribute(HttpAttributes.HTTP_RESPONSE_STATUS_CODE, response.getStatus());
 
+        // negotiated http version
+        span.setAttribute(NetworkAttributes.NETWORK_PROTOCOL_NAME, "http");
+        span.setAttribute(NetworkAttributes.NETWORK_PROTOCOL_VERSION, getHttpVersion(response.getVersion()));
+
         if (request.getBodyGenerator() != null) {
             span.setAttribute(HttpIncubatingAttributes.HTTP_REQUEST_BODY_SIZE, requestSize.getBytes());
         }
@@ -760,6 +779,17 @@ public class JettyHttpClient
         return value;
     }
 
+    static String getHttpVersion(HttpVersion version)
+    {
+        return switch (version) {
+            case HTTP_0_9 -> "0.9";
+            case HTTP_1_0 -> "1.0";
+            case HTTP_1_1 -> "1.1";
+            case HTTP_2 -> "2.0";
+            case HTTP_3 -> "3.0";
+        };
+    }
+
     @Override
     public <T, E extends Exception> HttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
     {
@@ -784,9 +814,8 @@ public class JettyHttpClient
 
         RequestSizeListener requestSize = new RequestSizeListener();
         jettyRequest.onRequestContent(requestSize);
-
         JettyResponseFuture<T, E> future = new JettyResponseFuture<>(request, jettyRequest, requestSize::getBytes, responseHandler, span, stats, recordRequestComplete);
-
+        httpClient.getScheduler().schedule(future::idleTimeout, min(httpClient.getConnectTimeout(), httpClient.getIdleTimeout()), MILLISECONDS);
         BufferingResponseListener listener = new BufferingResponseListener(future, Ints.saturatedCast(maxContentLength))
         {
             @Override
@@ -893,20 +922,12 @@ public class JettyHttpClient
 
         jettyRequest.headers(headers -> finalRequest.getHeaders().forEach(headers::add));
 
-        BodyGenerator bodyGenerator = finalRequest.getBodyGenerator();
-        if (bodyGenerator != null) {
-            if (bodyGenerator instanceof StaticBodyGenerator generator) {
-                jettyRequest.body(new BytesRequestContent(generator.getBody()));
-            }
-            else if (bodyGenerator instanceof ByteBufferBodyGenerator generator) {
-                jettyRequest.body(new ByteBufferRequestContent(generator.getByteBuffers()));
-            }
-            else if (bodyGenerator instanceof FileBodyGenerator generator) {
-                jettyRequest.body(fileContent(generator.getPath()));
-            }
-            else {
-                jettyRequest.body(new BytesRequestContent(generateBody(bodyGenerator)));
-            }
+        switch (finalRequest.getBodyGenerator()) {
+            case null -> {}
+            case StaticBodyGenerator generator -> jettyRequest.body(new BytesRequestContent(generator.getBody()));
+            case ByteBufferBodyGenerator generator -> jettyRequest.body(new ByteBufferRequestContent(generator.getByteBuffers()));
+            case FileBodyGenerator generator -> jettyRequest.body(fileContent(generator.getPath()));
+            case BodyGenerator bodyGenerator -> jettyRequest.body(new BytesRequestContent(generateBody(bodyGenerator)));
         }
 
         jettyRequest.followRedirects(finalRequest.isFollowRedirects());

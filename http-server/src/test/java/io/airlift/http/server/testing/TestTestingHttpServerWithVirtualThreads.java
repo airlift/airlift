@@ -15,11 +15,15 @@
  */
 package io.airlift.http.server.testing;
 
+import io.airlift.http.server.HttpServerFeatures;
+
 public class TestTestingHttpServerWithVirtualThreads
         extends AbstractTestTestingHttpServer
 {
     TestTestingHttpServerWithVirtualThreads()
     {
-        super(true, false, false);
+        super(HttpServerFeatures.builder()
+                .withVirtualThreads(true)
+                .build());
     }
 }

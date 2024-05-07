@@ -11,7 +11,7 @@ import io.airlift.http.client.TestingStatusListener;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 
-public class TestJettyHttpClient
+public class TestJettyHttp1ClientHttp1Server
         extends AbstractHttpClientTest
 {
     private JettyHttpClient httpClient;
@@ -26,13 +26,6 @@ public class TestJettyHttpClient
     public void tearDownHttpClient()
     {
         closeQuietly(httpClient);
-    }
-
-    @Override
-    protected HttpClientConfig createClientConfig()
-    {
-        return new HttpClientConfig()
-                .setHttp2Enabled(false);
     }
 
     @Override

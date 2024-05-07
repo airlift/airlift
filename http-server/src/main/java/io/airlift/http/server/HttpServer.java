@@ -29,6 +29,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.servlet.Filter;
 import jakarta.servlet.Servlet;
+import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.ee10.servlet.FilterHolder;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
@@ -36,6 +37,7 @@ import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
+import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.LoginService;
@@ -76,7 +78,6 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Verify.verify;
@@ -88,6 +89,7 @@ import static java.time.temporal.ChronoUnit.DAYS;
 import static java.util.Collections.list;
 import static java.util.Comparator.naturalOrder;
 import static java.util.Objects.requireNonNull;
+import static java.util.Objects.requireNonNullElse;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static org.eclipse.jetty.http.UriCompliance.Violation.AMBIGUOUS_PATH_ENCODING;
 import static org.eclipse.jetty.http.UriCompliance.Violation.AMBIGUOUS_PATH_SEPARATOR;
@@ -125,9 +127,7 @@ public class HttpServer
             Servlet theAdminServlet,
             Map<String, String> adminParameters,
             Set<Filter> adminFilters,
-            boolean enableVirtualThreads,
-            boolean enableLegacyUriCompliance,
-            boolean enableCaseSensitiveHeaderCache,
+            HttpServerFeatures serverFeatures,
             ClientCertificate clientCertificate,
             MBeanServer mbeanServer,
             LoginService loginService,
@@ -147,12 +147,14 @@ public class HttpServer
 
         checkArgument(!config.isHttpsEnabled() || maybeHttpsConfig.isPresent(), "httpsConfig must be present when HTTPS is enabled");
 
+        this.sslContextFactory = maybeSslContextFactory.or(() -> maybeHttpsConfig.map(httpsConfig -> createReloadingSslContextFactory(httpsConfig, clientCertificate, nodeInfo.getEnvironment())));
+
         MonitoredQueuedThreadPool threadPool = new MonitoredQueuedThreadPool(config.getMaxThreads());
         threadPool.setMinThreads(config.getMinThreads());
         threadPool.setIdleTimeout(toIntExact(config.getThreadMaxIdleTime().toMillis()));
         threadPool.setName("http-worker");
         threadPool.setDetailedDump(true);
-        if (enableVirtualThreads) {
+        if (serverFeatures.virtualThreads()) {
             Executor executor = getNamedVirtualThreadsExecutor("http-worker#v");
             verify(executor != null, "Could not create virtual threads executor");
             log.info("Virtual threads support is enabled");
@@ -162,9 +164,6 @@ public class HttpServer
         this.monitoredQueuedThreadPoolMBean = new MonitoredQueuedThreadPoolMBean(threadPool);
 
         boolean showStackTrace = config.isShowStackTrace();
-
-        this.sslContextFactory = maybeSslContextFactory;
-
         if (mbeanServer != null) {
             // export jmx mbeans if a server was provided
             MBeanContainer mbeanContainer = new MBeanContainer(mbeanServer);
@@ -185,9 +184,9 @@ public class HttpServer
         }
 
         // see https://bugs.eclipse.org/bugs/show_bug.cgi?id=414449#c4
-        baseHttpConfiguration.setHeaderCacheCaseSensitive(enableCaseSensitiveHeaderCache);
+        baseHttpConfiguration.setHeaderCacheCaseSensitive(serverFeatures.caseSensitiveHeaderCache());
 
-        if (enableLegacyUriCompliance) {
+        if (serverFeatures.legacyUriCompliance()) {
             // allow encoded slashes to occur in URI paths
             UriCompliance uriCompliance = UriCompliance.from(EnumSet.of(AMBIGUOUS_PATH_SEPARATOR, AMBIGUOUS_PATH_ENCODING, SUSPICIOUS_PATH_CHARACTERS));
             baseHttpConfiguration.setUriCompliance(uriCompliance);
@@ -203,23 +202,16 @@ public class HttpServer
                 httpConfiguration.setSecurePort(httpServerInfo.getHttpsUri().getPort());
             }
 
-            Integer acceptors = config.getHttpAcceptorThreads();
-            Integer selectors = config.getHttpSelectorThreads();
-            HttpConnectionFactory http1 = new HttpConnectionFactory(httpConfiguration);
-            HTTP2CServerConnectionFactory http2c = new HTTP2CServerConnectionFactory(httpConfiguration);
-            http2c.setInitialSessionRecvWindow(toIntExact(config.getHttp2InitialSessionReceiveWindowSize().toBytes()));
-            http2c.setInitialStreamRecvWindow(toIntExact(config.getHttp2InitialStreamReceiveWindowSize().toBytes()));
-            http2c.setMaxConcurrentStreams(config.getHttp2MaxConcurrentStreams());
-            http2c.setInputBufferSize(toIntExact(config.getHttp2InputBufferSize().toBytes()));
-            http2c.setStreamIdleTimeout(config.getHttp2StreamIdleTimeout().toMillis());
+            Integer acceptors = requireNonNullElse(config.getHttpAcceptorThreads(), -1);
+            Integer selectors = requireNonNullElse(config.getHttpSelectorThreads(), -1);
             httpConnector = createServerConnector(
                     httpServerInfo.getHttpChannel(),
                     server,
                     null,
-                    firstNonNull(acceptors, -1),
-                    firstNonNull(selectors, -1),
-                    http1,
-                    http2c);
+                    acceptors,
+                    selectors,
+                    getInsecureProtocols(httpConfiguration, config));
+
             httpConnector.setName("http");
             httpConnector.setPort(httpServerInfo.getHttpUri().getPort());
             httpConnector.setIdleTimeout(config.getNetworkMaxIdleTime().toMillis());
@@ -236,23 +228,19 @@ public class HttpServer
         // set up NIO-based HTTPS connector
         ServerConnector httpsConnector;
         if (config.isHttpsEnabled()) {
-            HttpConfiguration httpsConfiguration = new HttpConfiguration(baseHttpConfiguration);
-            setSecureRequestCustomizer(httpsConfiguration);
+            verify(sslContextFactory.isPresent(), "sslContextFactory is empty");
+            HttpConfiguration httpConfiguration = new HttpConfiguration(baseHttpConfiguration);
+            int acceptors = requireNonNullElse(config.getHttpsAcceptorThreads(), -1);
+            int selectors = requireNonNullElse(config.getHttpsSelectorThreads(), -1);
 
-            HttpsConfig httpsConfig = maybeHttpsConfig.orElseThrow();
-            this.sslContextFactory = Optional.of(this.sslContextFactory.orElseGet(() -> createReloadingSslContextFactory(httpsConfig, clientCertificate, nodeInfo.getEnvironment())));
-            SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory.get(), "http/1.1");
-
-            Integer acceptors = config.getHttpsAcceptorThreads();
-            Integer selectors = config.getHttpsSelectorThreads();
             httpsConnector = createServerConnector(
                     httpServerInfo.getHttpsChannel(),
                     server,
                     null,
-                    firstNonNull(acceptors, -1),
-                    firstNonNull(selectors, -1),
-                    sslConnectionFactory,
-                    new HttpConnectionFactory(httpsConfiguration));
+                    acceptors,
+                    selectors,
+                    getSecureProtocols(sslContextFactory.get(), httpConfiguration));
+
             httpsConnector.setName("https");
             httpsConnector.setPort(httpServerInfo.getHttpsUri().getPort());
             httpsConnector.setIdleTimeout(config.getNetworkMaxIdleTime().toMillis());
@@ -269,13 +257,12 @@ public class HttpServer
         // set up NIO-based Admin connector
         ServerConnector adminConnector;
         if (theAdminServlet != null && config.isAdminEnabled()) {
-            HttpConfiguration adminConfiguration = new HttpConfiguration(baseHttpConfiguration);
-
+            HttpConfiguration httpConfiguration = new HttpConfiguration(baseHttpConfiguration);
             MonitoredQueuedThreadPool adminThreadPool = new MonitoredQueuedThreadPool(config.getAdminMaxThreads());
             adminThreadPool.setName("http-admin-worker");
             adminThreadPool.setMinThreads(config.getAdminMinThreads());
             adminThreadPool.setIdleTimeout(toIntExact(config.getThreadMaxIdleTime().toMillis()));
-            if (enableVirtualThreads) {
+            if (serverFeatures.virtualThreads()) {
                 Executor executor = getNamedVirtualThreadsExecutor("http-admin-worker#v");
                 if (executor != null) {
                     adminThreadPool.setVirtualThreadsExecutor(executor);
@@ -285,32 +272,23 @@ public class HttpServer
             this.monitoredAdminQueuedThreadPoolMBean = new MonitoredQueuedThreadPoolMBean(adminThreadPool);
 
             if (config.isHttpsEnabled()) {
-                setSecureRequestCustomizer(adminConfiguration);
-
-                HttpsConfig httpsConfig = maybeHttpsConfig.orElseThrow();
-                this.sslContextFactory = Optional.of(this.sslContextFactory.orElseGet(() -> createReloadingSslContextFactory(httpsConfig, clientCertificate, nodeInfo.getEnvironment())));
-                SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory.get(), "http/1.1");
+                verify(sslContextFactory.isPresent(), "sslContextFactory is empty");
                 adminConnector = createServerConnector(
                         httpServerInfo.getAdminChannel(),
                         server,
                         adminThreadPool,
                         0,
                         -1,
-                        sslConnectionFactory,
-                        new HttpConnectionFactory(adminConfiguration));
+                        getSecureProtocols(sslContextFactory.get(), httpConfiguration));
             }
             else {
-                HttpConnectionFactory http1 = new HttpConnectionFactory(adminConfiguration);
-                HTTP2CServerConnectionFactory http2c = new HTTP2CServerConnectionFactory(adminConfiguration);
-                http2c.setMaxConcurrentStreams(config.getHttp2MaxConcurrentStreams());
                 adminConnector = createServerConnector(
                         httpServerInfo.getAdminChannel(),
                         server,
                         adminThreadPool,
                         -1,
                         -1,
-                        http1,
-                        http2c);
+                        getInsecureProtocols(httpConfiguration, config));
             }
 
             adminConnector.setName("admin");
@@ -346,11 +324,11 @@ public class HttpServer
 
         // add handlers to Jetty
         StatisticsHandler statsHandler = new StatisticsHandler();
-        statsHandler.setHandler(createServletContext(theServlet, resources, parameters, filters, tokenManager, loginService, Set.of("http", "https"), showStackTrace, enableLegacyUriCompliance));
+        statsHandler.setHandler(createServletContext(theServlet, resources, parameters, filters, tokenManager, loginService, Set.of("http", "https"), showStackTrace, serverFeatures.legacyUriCompliance()));
 
         ContextHandlerCollection rootHandlers = new ContextHandlerCollection();
         if (theAdminServlet != null && config.isAdminEnabled()) {
-            rootHandlers.addHandler(createServletContext(theAdminServlet, resources, adminParameters, adminFilters, tokenManager, loginService, Set.of("admin"), showStackTrace, enableLegacyUriCompliance));
+            rootHandlers.addHandler(createServletContext(theAdminServlet, resources, adminParameters, adminFilters, tokenManager, loginService, Set.of("admin"), showStackTrace, serverFeatures.legacyUriCompliance()));
         }
         rootHandlers.addHandler(statsHandler);
         StatsRecordingHandler statsRecordingHandler = new StatsRecordingHandler(stats);
@@ -372,6 +350,26 @@ public class HttpServer
         errorHandler.setShowMessageInTitle(showStackTrace);
         errorHandler.setShowStacks(showStackTrace);
         server.setErrorHandler(errorHandler);
+    }
+
+    private static ConnectionFactory[] getSecureProtocols(SslContextFactory.Server sslContext, HttpConfiguration configuration)
+    {
+        HttpConfiguration httpsConfiguration = new HttpConfiguration(configuration);
+        setSecureRequestCustomizer(httpsConfiguration);
+        HttpConnectionFactory http11 = new HttpConnectionFactory(httpsConfiguration);
+
+        ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
+        alpn.setDefaultProtocol(http11.getProtocol());
+        HTTP2ServerConnectionFactory http2 = new HTTP2ServerConnectionFactory(httpsConfiguration);
+        return new ConnectionFactory[] {new SslConnectionFactory(sslContext, alpn.getProtocol()), alpn, http2, http11};
+    }
+
+    private static ConnectionFactory[] getInsecureProtocols(HttpConfiguration configuration, HttpServerConfig serverConfig)
+    {
+        HttpConnectionFactory http1 = new HttpConnectionFactory(configuration);
+        HTTP2CServerConnectionFactory http2c = new HTTP2CServerConnectionFactory(configuration);
+        http2c.setMaxConcurrentStreams(serverConfig.getHttp2MaxConcurrentStreams());
+        return new ConnectionFactory[] {http1, http2c};
     }
 
     private static void setSecureRequestCustomizer(HttpConfiguration configuration)

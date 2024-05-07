@@ -1,10 +1,14 @@
 package io.airlift.http.server.testing;
 
+import io.airlift.http.server.HttpServerFeatures;
+
 public class TestTestingHttpServerWithLegacyUriCompliance
         extends AbstractTestTestingHttpServer
 {
     TestTestingHttpServerWithLegacyUriCompliance()
     {
-        super(false, true, false);
+        super(HttpServerFeatures.builder()
+                .withLegacyUriCompliance(true)
+                .build());
     }
 }

@@ -56,9 +56,7 @@ public class HttpServerProvider
     private Map<String, String> servletInitParameters = ImmutableMap.of();
     private Servlet theAdminServlet;
     private Map<String, String> adminServletInitParameters = ImmutableMap.of();
-    private final boolean enableVirtualThreads;
-    private final boolean enableLegacyUriCompliance;
-    private final boolean enableCaseSensitiveHeaderCache;
+    private HttpServerFeatures serverFeatures;
     private MBeanServer mbeanServer;
     private LoginService loginService;
     private final RequestStats stats;
@@ -77,9 +75,7 @@ public class HttpServerProvider
             @TheServlet Set<Filter> filters,
             @TheServlet Set<HttpResourceBinding> resources,
             @TheAdminServlet Set<Filter> adminFilters,
-            @EnableVirtualThreads boolean enableVirtualThreads,
-            @EnableLegacyUriCompliance boolean enableLegacyUriCompliance,
-            @EnableCaseSensitiveHeaderCache boolean enableCaseSensitiveHeaderCache,
+            HttpServerFeatures serverFeatures,
             ClientCertificate clientCertificate,
             RequestStats stats,
             EventClient eventClient,
@@ -93,6 +89,7 @@ public class HttpServerProvider
         requireNonNull(filters, "filters is null");
         requireNonNull(resources, "resources is null");
         requireNonNull(adminFilters, "adminFilters is null");
+        requireNonNull(serverFeatures, "serverFeatures is null");
         requireNonNull(clientCertificate, "clientCertificate is null");
         requireNonNull(stats, "stats is null");
         requireNonNull(eventClient, "eventClient is null");
@@ -106,9 +103,7 @@ public class HttpServerProvider
         this.filters = ImmutableSet.copyOf(filters);
         this.resources = ImmutableSet.copyOf(resources);
         this.adminFilters = ImmutableSet.copyOf(adminFilters);
-        this.enableVirtualThreads = enableVirtualThreads;
-        this.enableLegacyUriCompliance = enableLegacyUriCompliance;
-        this.enableCaseSensitiveHeaderCache = enableCaseSensitiveHeaderCache;
+        this.serverFeatures = serverFeatures;
         this.clientCertificate = clientCertificate;
         this.stats = stats;
         this.eventClient = eventClient;
@@ -167,9 +162,7 @@ public class HttpServerProvider
                     theAdminServlet,
                     adminServletInitParameters,
                     adminFilters,
-                    enableVirtualThreads,
-                    enableLegacyUriCompliance,
-                    enableCaseSensitiveHeaderCache,
+                    serverFeatures,
                     clientCertificate,
                     mbeanServer,
                     loginService,

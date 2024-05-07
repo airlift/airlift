@@ -9,6 +9,7 @@ import io.airlift.http.client.StringResponseHandler.StringResponse;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.log.Logging;
 import io.airlift.units.Duration;
+import org.eclipse.jetty.client.HttpResponseException;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.testng.SkipException;
 import org.testng.annotations.AfterClass;
@@ -55,7 +56,6 @@ import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.common.net.HttpHeaders.LOCATION;
 import static com.google.common.net.HttpHeaders.USER_AGENT;
 import static io.airlift.concurrent.Threads.threadsNamed;
-import static io.airlift.http.client.Request.Builder.fromRequest;
 import static io.airlift.http.client.Request.Builder.prepareDelete;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.Request.Builder.preparePost;
@@ -101,20 +101,17 @@ public abstract class AbstractHttpClientTest
         this.keystore = keystore;
     }
 
-    protected abstract HttpClientConfig createClientConfig();
+    protected HttpClientConfig createClientConfig()
+    {
+        // Disable HTTP/2 support on the client
+        return new HttpClientConfig().setHttp2Enabled(false);
+    }
 
     public abstract <T, E extends Exception> T executeRequest(Request request, ResponseHandler<T, E> responseHandler)
             throws Exception;
 
     public abstract <T, E extends Exception> T executeRequest(HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception;
-
-    protected static Request upgradeRequest(Request request, HttpVersion version)
-    {
-        return fromRequest(request)
-                .setVersion(version)
-                .build();
-    }
 
     @BeforeSuite
     public void setupSuite()
@@ -142,6 +139,20 @@ public abstract class AbstractHttpClientTest
         if (server != null) {
             server.close();
         }
+    }
+
+    @Test
+    public void testHttpProtocolUsed()
+            throws Exception
+    {
+        servlet.setResponseBody("Hello world ;)");
+
+        Request request = prepareGet()
+                .setUri(baseURI)
+                .build();
+
+        HttpVersion version = executeRequest(request, new HttpVersionResponseHandler());
+        assertEquals(version, createClientConfig().isHttp2Enabled() ? HttpVersion.HTTP_2 : HttpVersion.HTTP_1_1);
     }
 
     @Test(enabled = false, description = "This takes over a minute to run")
@@ -738,7 +749,7 @@ public abstract class AbstractHttpClientTest
         }
     }
 
-    @Test(expectedExceptions = IOException.class)
+    @Test(expectedExceptions = {IOException.class, IllegalStateException.class, TimeoutException.class})
     public void testConnectNoReadClose()
             throws Exception
     {
@@ -764,7 +775,7 @@ public abstract class AbstractHttpClientTest
         }
     }
 
-    @Test(expectedExceptions = {IOException.class, TimeoutException.class})
+    @Test(expectedExceptions = {IOException.class, TimeoutException.class, IllegalStateException.class})
     public void testConnectReadIncompleteClose()
             throws Exception
     {
@@ -777,20 +788,20 @@ public abstract class AbstractHttpClientTest
         }
     }
 
-    @Test(expectedExceptions = IOException.class)
+    @Test(expectedExceptions = {IOException.class, TimeoutException.class, IllegalStateException.class})
     public void testConnectReadRequestClose()
             throws Exception
     {
         try (FakeServer fakeServer = new FakeServer(scheme, host, Long.MAX_VALUE, null, true)) {
             HttpClientConfig config = createClientConfig();
-            config.setConnectTimeout(new Duration(5, SECONDS));
-            config.setIdleTimeout(new Duration(5, SECONDS));
+            config.setConnectTimeout(new Duration(900, MILLISECONDS)); // needs to be less than 1 second
+            config.setIdleTimeout(new Duration(900, MILLISECONDS)); // needs to be less than 1 second
 
             executeRequest(fakeServer, config);
         }
     }
 
-    @Test(expectedExceptions = Exception.class)
+    @Test(expectedExceptions = {IOException.class, TimeoutException.class, HttpResponseException.class})
     public void testConnectReadRequestWriteJunkHangup()
             throws Exception
     {
@@ -1171,15 +1182,17 @@ public abstract class AbstractHttpClientTest
             throw new RuntimeException(e);
         }
         catch (ExecutionException e) {
-            throwIfUnchecked(e.getCause());
+            if (e.getCause() != null) {
+                throwIfUnchecked(e.getCause());
+                if (e.getCause() instanceof Exception) {
+                    // the HTTP client and ResponseHandler interface enforces this
+                    throw AbstractHttpClientTest.<E>castThrowable(e.getCause());
+                }
 
-            if (e.getCause() instanceof Exception) {
-                // the HTTP client and ResponseHandler interface enforces this
-                throw AbstractHttpClientTest.<E>castThrowable(e.getCause());
+                // e.getCause() is some direct subclass of throwable
+                throw new RuntimeException(e.getCause());
             }
-
-            // e.getCause() is some direct subclass of throwable
-            throw new RuntimeException(e.getCause());
+            throw AbstractHttpClientTest.<E>castThrowable(e);
         }
     }
 
@@ -1197,6 +1210,24 @@ public abstract class AbstractHttpClientTest
             }
         }
         catch (IOException | RuntimeException ignored) {
+        }
+    }
+
+    protected static class HttpVersionResponseHandler
+            implements ResponseHandler<HttpVersion, RuntimeException>
+    {
+        @Override
+        public HttpVersion handleException(Request request, Exception exception)
+                throws RuntimeException
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public HttpVersion handle(Request request, Response response)
+                throws RuntimeException
+        {
+            return response.getHttpVersion();
         }
     }
 }

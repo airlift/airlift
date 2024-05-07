@@ -16,7 +16,9 @@
 package io.airlift.http.server;
 
 import com.google.inject.Binder;
+import com.google.inject.Inject;
 import com.google.inject.Key;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
 import io.airlift.discovery.client.AnnouncementHttpServerInfo;
@@ -74,11 +76,12 @@ public class HttpServerModule
         newOptionalBinder(binder, Key.get(Boolean.class, EnableVirtualThreads.class)).setDefault().toInstance(false);
         // override with HttpServerBinder.enableLegacyUriCompliance()
         newOptionalBinder(binder, Key.get(Boolean.class, EnableLegacyUriCompliance.class)).setDefault().toInstance(false);
+        // override with HttpServerBinder.enableCaseSensitiveHeaderCache()
+        newOptionalBinder(binder, Key.get(Boolean.class, EnableCaseSensitiveHeaderCache.class)).setDefault().toInstance(false);
         newSetBinder(binder, Filter.class, TheServlet.class);
         newSetBinder(binder, Filter.class, TheAdminServlet.class);
         newSetBinder(binder, HttpResourceBinding.class, TheServlet.class);
         newOptionalBinder(binder, SslContextFactory.Server.class);
-        newOptionalBinder(binder, Key.get(Boolean.class, EnableCaseSensitiveHeaderCache.class)).setDefault().toInstance(false);
 
         newExporter(binder).export(RequestStats.class).withGeneratedName();
 
@@ -91,5 +94,19 @@ public class HttpServerModule
 
         install(conditionalModule(HttpServerConfig.class, HttpServerConfig::isHttpsEnabled, moduleBinder ->
                 configBinder(moduleBinder).bindConfig(HttpsConfig.class)));
+    }
+
+    @Provides
+    @Inject
+    public HttpServerFeatures serverFeatures(
+            @EnableVirtualThreads boolean virtualThreads,
+            @EnableLegacyUriCompliance boolean uriCompliance,
+            @EnableCaseSensitiveHeaderCache boolean caseSensitiveHeaderCache)
+    {
+        return HttpServerFeatures.builder()
+                .withVirtualThreads(virtualThreads)
+                .withLegacyUriCompliance(uriCompliance)
+                .withCaseSensitiveHeaderCache(caseSensitiveHeaderCache)
+                .build();
     }
 }
