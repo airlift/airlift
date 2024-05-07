@@ -1,10 +1,16 @@
 package io.airlift.http.server.testing;
 
+import io.airlift.http.server.HttpServerFeatures;
+
 public class TestTestingHttpServerWithAllEnabled
         extends AbstractTestTestingHttpServer
 {
     TestTestingHttpServerWithAllEnabled()
     {
-        super(true, true, true);
+        super(HttpServerFeatures.builder()
+                .withVirtualThreads(true)
+                .withLegacyUriCompliance(true)
+                .withCaseSensitiveHeaderCache(true)
+                .build());
     }
 }

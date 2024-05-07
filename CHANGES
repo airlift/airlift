@@ -11,6 +11,7 @@
 - Add HTTP protocol version to client traces
 - Improve request/response metrics accuracy and correctness
 - Update Airbase to 157
+- Add support for HTTP/2 protocol to the client and server
 
 248
 

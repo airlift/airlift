@@ -18,12 +18,10 @@ package io.airlift.http.server.testing;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import io.airlift.event.client.NullEventClient;
-import io.airlift.http.server.EnableCaseSensitiveHeaderCache;
-import io.airlift.http.server.EnableLegacyUriCompliance;
-import io.airlift.http.server.EnableVirtualThreads;
 import io.airlift.http.server.HttpServer;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.http.server.HttpServerConfig;
+import io.airlift.http.server.HttpServerFeatures;
 import io.airlift.http.server.HttpServerInfo;
 import io.airlift.http.server.HttpsConfig;
 import io.airlift.http.server.RequestStats;
@@ -39,6 +37,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static java.util.Objects.requireNonNullElse;
+
 public class TestingHttpServer
         extends HttpServer
 {
@@ -52,7 +52,7 @@ public class TestingHttpServer
             @TheServlet Map<String, String> initParameters)
             throws IOException
     {
-        this(httpServerInfo, nodeInfo, config, servlet, initParameters, false, false, false);
+        this(httpServerInfo, nodeInfo, config, servlet, initParameters, HttpServerFeatures.builder().build());
     }
 
     public TestingHttpServer(
@@ -61,9 +61,7 @@ public class TestingHttpServer
             HttpServerConfig config,
             @TheServlet Servlet servlet,
             @TheServlet Map<String, String> initParameters,
-            boolean enableVirtualThreads,
-            boolean enableLegacyUriCompliance,
-            boolean enableCaseSensitiveHeaderCache)
+            HttpServerFeatures serverFeatures)
             throws IOException
     {
         this(httpServerInfo,
@@ -74,9 +72,7 @@ public class TestingHttpServer
                 initParameters,
                 ImmutableSet.of(),
                 ImmutableSet.of(),
-                enableVirtualThreads,
-                enableLegacyUriCompliance,
-                enableCaseSensitiveHeaderCache,
+                serverFeatures,
                 ClientCertificate.NONE);
     }
 
@@ -90,9 +86,7 @@ public class TestingHttpServer
             @TheServlet Map<String, String> initParameters,
             @TheServlet Set<Filter> filters,
             @TheServlet Set<HttpResourceBinding> resources,
-            @EnableVirtualThreads boolean enableVirtualThreads,
-            @EnableLegacyUriCompliance boolean enableLegacyUriCompliance,
-            @EnableCaseSensitiveHeaderCache boolean enableCaseSensitiveHeaderCache,
+            HttpServerFeatures serverFeatures,
             ClientCertificate clientCertificate)
             throws IOException
     {
@@ -107,9 +101,7 @@ public class TestingHttpServer
                 null,
                 null,
                 ImmutableSet.of(),
-                enableVirtualThreads,
-                enableLegacyUriCompliance,
-                enableCaseSensitiveHeaderCache,
+                serverFeatures,
                 clientCertificate,
                 null,
                 null,
@@ -122,12 +114,12 @@ public class TestingHttpServer
 
     public URI getBaseUrl()
     {
-        return httpServerInfo.getHttpUri();
+        return requireNonNullElse(httpServerInfo.getHttpUri(), httpServerInfo.getHttpsUri());
     }
 
     public int getPort()
     {
-        return httpServerInfo.getHttpUri().getPort();
+        return getBaseUrl().getPort();
     }
 
     public HttpServerInfo getHttpServerInfo()

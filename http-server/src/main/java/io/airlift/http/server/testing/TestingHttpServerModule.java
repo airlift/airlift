@@ -14,7 +14,9 @@
 package io.airlift.http.server.testing;
 
 import com.google.inject.Binder;
+import com.google.inject.Inject;
 import com.google.inject.Key;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
 import io.airlift.discovery.client.AnnouncementHttpServerInfo;
@@ -24,6 +26,7 @@ import io.airlift.http.server.EnableVirtualThreads;
 import io.airlift.http.server.HttpServer;
 import io.airlift.http.server.HttpServer.ClientCertificate;
 import io.airlift.http.server.HttpServerConfig;
+import io.airlift.http.server.HttpServerFeatures;
 import io.airlift.http.server.HttpServerInfo;
 import io.airlift.http.server.HttpsConfig;
 import io.airlift.http.server.LocalAnnouncementHttpServerInfo;
@@ -67,10 +70,11 @@ public class TestingHttpServerModule
         newOptionalBinder(binder, Key.get(Boolean.class, EnableVirtualThreads.class)).setDefault().toInstance(false);
         // override with HttpServerBinder.enableLegacyUriCompliance()
         newOptionalBinder(binder, Key.get(Boolean.class, EnableLegacyUriCompliance.class)).setDefault().toInstance(false);
+        // override with HttpServerBinder.enableCaseSensitiveHeaderCache
+        newOptionalBinder(binder, Key.get(Boolean.class, EnableCaseSensitiveHeaderCache.class)).setDefault().toInstance(false);
         newSetBinder(binder, Filter.class, TheServlet.class);
         newSetBinder(binder, HttpResourceBinding.class, TheServlet.class);
         binder.bind(AnnouncementHttpServerInfo.class).to(LocalAnnouncementHttpServerInfo.class);
-        newOptionalBinder(binder, Key.get(Boolean.class, EnableCaseSensitiveHeaderCache.class)).setDefault().toInstance(false);
 
         newOptionalBinder(binder, HttpsConfig.class);
         install(conditionalModule(HttpServerConfig.class, HttpServerConfig::isHttpsEnabled, moduleBinder -> {
@@ -81,5 +85,19 @@ public class TestingHttpServerModule
                 }
             });
         }));
+    }
+
+    @Provides
+    @Inject
+    public HttpServerFeatures serverFeatures(
+            @EnableVirtualThreads boolean virtualThreads,
+            @EnableLegacyUriCompliance boolean uriCompliance,
+            @EnableCaseSensitiveHeaderCache boolean caseSensitiveHeaderCache)
+    {
+        return HttpServerFeatures.builder()
+                .withVirtualThreads(virtualThreads)
+                .withLegacyUriCompliance(uriCompliance)
+                .withCaseSensitiveHeaderCache(caseSensitiveHeaderCache)
+                .build();
     }
 }

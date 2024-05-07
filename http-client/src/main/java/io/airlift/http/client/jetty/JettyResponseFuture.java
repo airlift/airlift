@@ -16,6 +16,7 @@ import org.eclipse.jetty.client.Response;
 
 import java.io.InputStream;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongSupplier;
 
@@ -25,11 +26,12 @@ import static java.util.Objects.requireNonNull;
 
 class JettyResponseFuture<T, E extends Exception>
         extends AbstractFuture<T>
-        implements HttpClient.HttpResponseFuture<T>
+        implements HttpClient.HttpResponseFuture<T>, org.eclipse.jetty.client.Request.CommitListener
 {
     private enum JettyAsyncHttpState
     {
         WAITING_FOR_CONNECTION,
+        REQUEST_COMMITED,
         PROCESSING_RESPONSE,
         DONE,
         FAILED,
@@ -62,12 +64,27 @@ class JettyResponseFuture<T, E extends Exception>
         this.span = requireNonNull(span, "span is null");
         this.stats = requireNonNull(stats, "stats is null");
         this.recordRequestComplete = recordRequestComplete;
+
+        jettyRequest.onRequestCommit(this);
     }
 
     @Override
     public String getState()
     {
         return state.get().toString();
+    }
+
+    @Override
+    public void onCommit(org.eclipse.jetty.client.Request request)
+    {
+        state.set(JettyAsyncHttpState.REQUEST_COMMITED);
+    }
+
+    public void idleTimeout()
+    {
+        if (state.get() == JettyAsyncHttpState.WAITING_FOR_CONNECTION) {
+            failed(new TimeoutException("Request timed out"));
+        }
     }
 
     @Override

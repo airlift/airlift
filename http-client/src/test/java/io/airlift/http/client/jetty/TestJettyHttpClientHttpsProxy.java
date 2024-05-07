@@ -27,13 +27,6 @@ public class TestJettyHttpClientHttpsProxy
         super("localhost", getResource("localhost.keystore").toString());
     }
 
-    @Test(expectedExceptions = HttpResponseException.class)
-    public void testConnectionRefused()
-            throws Exception
-    {
-        super.testConnectionRefused();
-    }
-
     @Override
     public HttpClientConfig createClientConfig()
     {
@@ -43,5 +36,13 @@ public class TestJettyHttpClientHttpsProxy
                 .setKeyStorePassword("changeit")
                 .setTrustStorePath(getResource("localhost.truststore").getPath())
                 .setTrustStorePassword("changeit");
+    }
+
+    @Override
+    @Test(expectedExceptions = HttpResponseException.class)
+    public void testConnectionRefused()
+            throws Exception
+    {
+        super.testConnectionRefused();
     }
 }

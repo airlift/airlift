@@ -2,8 +2,9 @@ package io.airlift.http.client.jetty;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import io.airlift.http.client.AbstractHttpClientTest;
+import io.airlift.http.client.AbstractHttpsClientTest;
 import io.airlift.http.client.HttpClientConfig;
+import io.airlift.http.client.HttpVersion;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.TestingRequestFilter;
@@ -14,19 +15,18 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.concurrent.TimeoutException;
 
 import static com.google.common.io.Resources.getResource;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 
-public class TestJettyHttpsClient
-        extends AbstractHttpClientTest
+public class TestJettyHttps2ClientHttps2ServerWithPemAuthentication
+        extends AbstractHttpsClientTest
 {
     private JettyHttpClient httpClient;
 
-    TestJettyHttpsClient()
+    public TestJettyHttps2ClientHttps2ServerWithPemAuthentication()
     {
-        super("localhost", getResource("localhost.keystore").toString());
+        super("localhost", getResource("server.keystore").toString());
     }
 
     @BeforeClass
@@ -35,21 +35,26 @@ public class TestJettyHttpsClient
         httpClient = new JettyHttpClient("test-shared", createClientConfig(), ImmutableList.of(new TestingRequestFilter()), ImmutableSet.of(new TestingStatusListener(statusCounts)));
     }
 
-    @AfterClass(alwaysRun = true)
-    public void tearDownHttpClient()
-    {
-        closeQuietly(httpClient);
-    }
-
     @Override
     protected HttpClientConfig createClientConfig()
     {
         return new HttpClientConfig()
-                .setHttp2Enabled(false)
-                .setKeyStorePath(getResource("localhost.keystore").getPath())
+                .setHttp2Enabled(true)
+                .setKeyStorePath(getResource("client.pem").getPath())
                 .setKeyStorePassword("changeit")
-                .setTrustStorePath(getResource("localhost.truststore").getPath())
-                .setTrustStorePassword("changeit");
+                .setTrustStorePath(getResource("ca.crt").getPath());
+    }
+
+    @Override
+    protected HttpVersion expectedProtocolVersion()
+    {
+        return HttpVersion.HTTP_2;
+    }
+
+    @AfterClass(alwaysRun = true)
+    public void tearDownHttpClient()
+    {
+        closeQuietly(httpClient);
     }
 
     @Override
@@ -63,10 +68,8 @@ public class TestJettyHttpsClient
     public <T, E extends Exception> T executeRequest(HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
-        config.setKeyStorePath(getResource("localhost.keystore").getPath())
-                .setKeyStorePassword("changeit")
-                .setTrustStorePath(getResource("localhost.truststore").getPath())
-                .setTrustStorePassword("changeit");
+        config.setKeyStorePath(getResource("client.pem").getPath())
+                .setTrustStorePath(getResource("ca.crt").getPath());
 
         try (JettyHttpClient client = new JettyHttpClient("test-private", config, ImmutableList.of(new TestingRequestFilter()), ImmutableSet.of(new TestingStatusListener(statusCounts)))) {
             return client.execute(request, responseHandler);
@@ -92,29 +95,5 @@ public class TestJettyHttpsClient
                 .build();
 
         executeRequest(request, new ExceptionResponseHandler());
-    }
-
-    @Override
-    @Test(expectedExceptions = {IOException.class, IllegalStateException.class})
-    public void testConnectReadRequestClose()
-            throws Exception
-    {
-        super.testConnectReadRequestClose();
-    }
-
-    @Override
-    @Test(expectedExceptions = {IOException.class, IllegalStateException.class})
-    public void testConnectNoReadClose()
-            throws Exception
-    {
-        super.testConnectNoReadClose();
-    }
-
-    @Override
-    @Test(expectedExceptions = {IOException.class, TimeoutException.class, IllegalStateException.class})
-    public void testConnectReadIncompleteClose()
-            throws Exception
-    {
-        super.testConnectReadIncompleteClose();
     }
 }

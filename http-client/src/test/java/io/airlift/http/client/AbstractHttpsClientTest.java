@@ -1,32 +1,32 @@
-package io.airlift.http.client.jetty;
+package io.airlift.http.client;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import io.airlift.http.client.AbstractHttpClientTest;
-import io.airlift.http.client.HttpClientConfig;
-import io.airlift.http.client.Request;
-import io.airlift.http.client.ResponseHandler;
-import io.airlift.http.client.TestingRequestFilter;
-import io.airlift.http.client.TestingStatusListener;
+import io.airlift.http.client.jetty.JettyHttpClient;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.concurrent.TimeoutException;
 
 import static com.google.common.io.Resources.getResource;
 import static io.airlift.http.client.Request.Builder.prepareGet;
+import static org.testng.Assert.assertEquals;
 
-public class TestJettyHttpsClientPem
+public abstract class AbstractHttpsClientTest
         extends AbstractHttpClientTest
 {
-    private JettyHttpClient httpClient;
+    protected JettyHttpClient httpClient;
 
-    public TestJettyHttpsClientPem()
+    public AbstractHttpsClientTest()
     {
-        super("localhost", getResource("server.keystore").toString());
+        this("localhost", getResource("localhost.keystore").toString());
+    }
+
+    public AbstractHttpsClientTest(String host, String keystore)
+    {
+        super(host, keystore);
     }
 
     @BeforeClass
@@ -46,9 +46,15 @@ public class TestJettyHttpsClientPem
     {
         return new HttpClientConfig()
                 .setHttp2Enabled(false)
-                .setKeyStorePath(getResource("client.pem").getPath())
+                .setKeyStorePath(getResource("localhost.keystore").getPath())
                 .setKeyStorePassword("changeit")
-                .setTrustStorePath(getResource("ca.crt").getPath());
+                .setTrustStorePath(getResource("localhost.truststore").getPath())
+                .setTrustStorePassword("changeit");
+    }
+
+    protected HttpVersion expectedProtocolVersion()
+    {
+        return HttpVersion.HTTP_1; // HTTP/2 disabled in the base class
     }
 
     @Override
@@ -62,21 +68,29 @@ public class TestJettyHttpsClientPem
     public <T, E extends Exception> T executeRequest(HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
-        config.setKeyStorePath(getResource("client.pem").getPath())
-                .setTrustStorePath(getResource("ca.crt").getPath());
+        config.setKeyStorePath(getResource("localhost.keystore").getPath())
+                .setKeyStorePassword("changeit")
+                .setTrustStorePath(getResource("localhost.truststore").getPath())
+                .setTrustStorePassword("changeit");
 
         try (JettyHttpClient client = new JettyHttpClient("test-private", config, ImmutableList.of(new TestingRequestFilter()), ImmutableSet.of(new TestingStatusListener(statusCounts)))) {
             return client.execute(request, responseHandler);
         }
     }
 
-    // TLS connections seem to have some conditions that do not respect timeouts
-    @Test(invocationCount = 10, successPercentage = 50, timeOut = 20_000)
+    @Test
     @Override
-    public void testConnectTimeout()
+    public void testHttpProtocolUsed()
             throws Exception
     {
-        super.testConnectTimeout();
+        servlet.setResponseBody("Hello world ;)");
+
+        Request request = prepareGet()
+                .setUri(baseURI)
+                .build();
+
+        HttpVersion version = executeRequest(request, new HttpVersionResponseHandler());
+        assertEquals(version, expectedProtocolVersion());
     }
 
     @Test(expectedExceptions = IOException.class)
@@ -89,29 +103,5 @@ public class TestJettyHttpsClientPem
                 .build();
 
         executeRequest(request, new ExceptionResponseHandler());
-    }
-
-    @Override
-    @Test(expectedExceptions = {IOException.class, IllegalStateException.class})
-    public void testConnectReadRequestClose()
-            throws Exception
-    {
-        super.testConnectReadRequestClose();
-    }
-
-    @Override
-    @Test(expectedExceptions = {IOException.class, IllegalStateException.class})
-    public void testConnectNoReadClose()
-            throws Exception
-    {
-        super.testConnectNoReadClose();
-    }
-
-    @Override
-    @Test(expectedExceptions = {IOException.class, TimeoutException.class, IllegalStateException.class})
-    public void testConnectReadIncompleteClose()
-            throws Exception
-    {
-        super.testConnectReadIncompleteClose();
     }
 }

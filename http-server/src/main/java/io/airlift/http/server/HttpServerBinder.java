@@ -57,6 +57,21 @@ public class HttpServerBinder
         return this;
     }
 
+    public void withFeatures(HttpServerFeatures serverFeatures)
+    {
+        if (serverFeatures.virtualThreads()) {
+            enableVirtualThreads();
+        }
+
+        if (serverFeatures.legacyUriCompliance()) {
+            enableLegacyUriCompliance();
+        }
+
+        if (serverFeatures.caseSensitiveHeaderCache()) {
+            enableCaseSensitiveHeaderCache();
+        }
+    }
+
     private HttpResourceBinding bindResource(String baseUri,
             String classPathResourceBase,
             Class<? extends Annotation> annotationType)

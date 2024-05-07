@@ -65,6 +65,7 @@ class JettyResponse
     {
         return toStringHelper(this)
                 .add("statusCode", getStatusCode())
+                .add("httpVersion", getHttpVersion())
                 .add("headers", getHeaders())
                 .toString();
     }

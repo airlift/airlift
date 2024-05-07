@@ -7,25 +7,18 @@ import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.TestingRequestFilter;
-import io.airlift.http.client.TestingSocksProxy;
 import io.airlift.http.client.TestingStatusListener;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
 
-import java.io.IOException;
-
-public class TestJettyHttpClientSocksProxy
+public class TestAsyncJettyHttp1ClientHttp1Server
         extends AbstractHttpClientTest
 {
     private JettyHttpClient httpClient;
-    private TestingSocksProxy testingSocksProxy;
 
     @BeforeClass
     public void setUpHttpClient()
-            throws IOException
     {
-        testingSocksProxy = new TestingSocksProxy().start();
         httpClient = new JettyHttpClient("test-shared", createClientConfig(), ImmutableList.of(new TestingRequestFilter()), ImmutableSet.of(new TestingStatusListener(statusCounts)));
     }
 
@@ -33,55 +26,29 @@ public class TestJettyHttpClientSocksProxy
     public void tearDownHttpClient()
     {
         closeQuietly(httpClient);
-        closeQuietly(testingSocksProxy);
     }
 
     @Override
     protected HttpClientConfig createClientConfig()
     {
-        return new HttpClientConfig()
-                .setHttp2Enabled(false)
-                .setSocksProxy(testingSocksProxy.getHostAndPort());
+        return new HttpClientConfig();
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public <T, E extends Exception> T executeRequest(Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
-        return httpClient.execute(request, responseHandler);
+        return executeAsync(httpClient, request, responseHandler);
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public <T, E extends Exception> T executeRequest(HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
-        config.setSocksProxy(testingSocksProxy.getHostAndPort());
         try (JettyHttpClient client = new JettyHttpClient("test-private", config, ImmutableList.of(new TestingRequestFilter()), ImmutableSet.of(new TestingStatusListener(statusCounts)))) {
-            return client.execute(request, responseHandler);
+            return executeAsync(client, request, responseHandler);
         }
-    }
-
-    @Override
-    @Test(timeOut = 5000)
-    public void testConnectTimeout()
-            throws Exception
-    {
-        doTestConnectTimeout(true);
-    }
-
-    @Override
-    @Test(expectedExceptions = IOException.class, expectedExceptionsMessageRegExp = ".*SOCKS4 .*")
-    public void testConnectionRefused()
-            throws Exception
-    {
-        super.testConnectionRefused();
-    }
-
-    @Override
-    @Test(expectedExceptions = IOException.class, expectedExceptionsMessageRegExp = ".*SOCKS4 .*")
-    public void testUnresolvableHost()
-            throws Exception
-    {
-        super.testUnresolvableHost();
     }
 }
