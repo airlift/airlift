@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airlift</artifactId>
-        <version>247-SNAPSHOT</version>
+        <version>247</version>
     </parent>
     <artifactId>trace-token</artifactId>
     <packaging>jar</packaging>
