@@ -8,6 +8,7 @@
 - Update HdrHistogram to 2.2.2
 - Allow configuring Jetty's header cache case-sensitiveness
 - Reject X-Forwarded-* headers if http-server.process-forwarded is false
+- Add HTTP protocol version to client traces
 
 248
 

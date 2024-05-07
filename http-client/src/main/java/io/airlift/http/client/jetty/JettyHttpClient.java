@@ -29,6 +29,7 @@ import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.semconv.ExceptionAttributes;
 import io.opentelemetry.semconv.HttpAttributes;
+import io.opentelemetry.semconv.NetworkAttributes;
 import io.opentelemetry.semconv.ServerAttributes;
 import io.opentelemetry.semconv.UrlAttributes;
 import io.opentelemetry.semconv.incubating.HttpIncubatingAttributes;
@@ -52,6 +53,7 @@ import org.eclipse.jetty.client.transport.HttpExchange;
 import org.eclipse.jetty.client.transport.HttpRequest;
 import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
 import org.eclipse.jetty.http.HttpCookieStore;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
@@ -729,6 +731,10 @@ public class JettyHttpClient
         // record attributes
         span.setAttribute(HttpAttributes.HTTP_RESPONSE_STATUS_CODE, response.getStatus());
 
+        // negotiated http version
+        span.setAttribute(NetworkAttributes.NETWORK_PROTOCOL_NAME, "HTTP"); // https://osi-model.com/application-layer/
+        span.setAttribute(NetworkAttributes.NETWORK_PROTOCOL_VERSION, getHttpVersion(response.getVersion()));
+
         if (request.getBodyGenerator() != null) {
             span.setAttribute(HttpIncubatingAttributes.HTTP_REQUEST_BODY_SIZE, requestSize.getBytes());
         }
@@ -757,6 +763,18 @@ public class JettyHttpClient
             }
         }
         return value;
+    }
+
+    static String getHttpVersion(HttpVersion version)
+    {
+        // According to the RFCs:
+        return switch (version) {
+            case HTTP_0_9 -> "0.9"; // https://datatracker.ietf.org/doc/html/rfc1945
+            case HTTP_1_0 -> "1.0"; // https://datatracker.ietf.org/doc/html/rfc1945
+            case HTTP_1_1 -> "1.1"; // https://datatracker.ietf.org/doc/html/rfc2616
+            case HTTP_2 -> "2"; // https://datatracker.ietf.org/doc/html/rfc9113
+            case HTTP_3 -> "3"; // https://datatracker.ietf.org/doc/html/rfc9114
+        };
     }
 
     @Override
