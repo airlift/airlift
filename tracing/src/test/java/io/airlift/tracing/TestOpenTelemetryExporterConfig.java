@@ -9,12 +9,12 @@ import static io.airlift.configuration.testing.ConfigAssertions.assertFullMappin
 import static io.airlift.configuration.testing.ConfigAssertions.assertRecordedDefaults;
 import static io.airlift.configuration.testing.ConfigAssertions.recordDefaults;
 
-public class TestOpenTelemetryConfig
+public class TestOpenTelemetryExporterConfig
 {
     @Test
     public void testDefaults()
     {
-        assertRecordedDefaults(recordDefaults(OpenTelemetryConfig.class)
+        assertRecordedDefaults(recordDefaults(OpenTelemetryExporterConfig.class)
                 .setEndpoint("http://localhost:4317"));
     }
 
@@ -25,7 +25,7 @@ public class TestOpenTelemetryConfig
                 .put("tracing.exporter.endpoint", "http://example.com:1234")
                 .buildOrThrow();
 
-        OpenTelemetryConfig expected = new OpenTelemetryConfig()
+        OpenTelemetryExporterConfig expected = new OpenTelemetryExporterConfig()
                 .setEndpoint("http://example.com:1234");
 
         assertFullMapping(properties, expected);
