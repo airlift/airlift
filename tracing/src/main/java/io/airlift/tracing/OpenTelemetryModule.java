@@ -32,6 +32,9 @@ import static com.google.common.base.StandardSystemProperty.OS_NAME;
 import static com.google.common.base.StandardSystemProperty.OS_VERSION;
 import static com.google.common.base.Strings.nullToEmpty;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
+import static io.airlift.configuration.ConfigBinder.configBinder;
+import static io.opentelemetry.sdk.trace.samplers.Sampler.parentBased;
+import static io.opentelemetry.sdk.trace.samplers.Sampler.traceIdRatioBased;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
@@ -52,11 +55,12 @@ public class OpenTelemetryModule
     public void configure(Binder binder)
     {
         newSetBinder(binder, SpanProcessor.class);
+        configBinder(binder).bindConfig(OpenTelemetryConfig.class);
     }
 
     @Provides
     @Singleton
-    public OpenTelemetry createOpenTelemetry(NodeInfo nodeInfo, Set<SpanProcessor> spanProcessors)
+    public OpenTelemetry createOpenTelemetry(NodeInfo nodeInfo, Set<SpanProcessor> spanProcessors, OpenTelemetryConfig config)
     {
         if (spanProcessors.isEmpty()) {
             return OpenTelemetry.noop();
@@ -79,6 +83,7 @@ public class OpenTelemetryModule
         Resource resource = Resource.getDefault().merge(Resource.create(attributes.build()));
 
         SdkTracerProvider tracerProvider = SdkTracerProvider.builder()
+                .setSampler(parentBased(traceIdRatioBased(config.getSamplingRatio())))
                 .addSpanProcessor(SpanProcessor.composite(spanProcessors))
                 .setResource(resource)
                 .build();
