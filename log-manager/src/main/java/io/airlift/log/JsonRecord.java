@@ -33,6 +33,7 @@ public class JsonRecord
     private final Throwable throwable;
     private final Optional<SpanContext> spanContext;
     private final Map<String, String> logAnnotations;
+    private final Map<String, String> mdcContext;
 
     public JsonRecord(
             Instant timestamp,
@@ -69,7 +70,8 @@ public class JsonRecord
             @JsonProperty("parameters") List<String> parameters,
             Throwable throwable,
             Context context,
-            Map<String, String> logAnnotations)
+            Map<String, String> logAnnotations,
+            Map<String, String> mdcContext)
     {
         this.timestamp = requireNonNull(timestamp);
         this.level = requireNonNull(level);
@@ -87,6 +89,7 @@ public class JsonRecord
                 .map(Span::getSpanContext)
                 .filter(SpanContext::isValid);
         this.logAnnotations = (logAnnotations == null || logAnnotations.isEmpty()) ? null : logAnnotations;
+        this.mdcContext = (mdcContext == null || mdcContext.isEmpty()) ? null : mdcContext;
     }
 
     @JsonProperty
@@ -175,6 +178,12 @@ public class JsonRecord
     public Map<String, String> getLogAnnotations()
     {
         return logAnnotations;
+    }
+
+    @JsonProperty("mdc")
+    public Map<String, String> getMdcContext()
+    {
+        return mdcContext;
     }
 
     @Override

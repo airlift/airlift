@@ -1,6 +1,7 @@
 package io.airlift.log;
 
 import com.google.common.collect.ImmutableMap;
+import io.airlift.log.mdc.MDC;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanId;
 import io.opentelemetry.api.trace.TraceId;
@@ -37,6 +38,7 @@ public class TestJsonFormatter
                 List.of(),
                 new Exception("Test Exception 1"),
                 Context.root(),
+                ImmutableMap.of(),
                 ImmutableMap.of());
 
         RuntimeException exception = new RuntimeException("Test Exception 2");
@@ -55,6 +57,7 @@ public class TestJsonFormatter
                         (Object[]) null,
                         null,
                         Context.root(),
+                        ImmutableMap.of(),
                         ImmutableMap.of()));
     }
 
@@ -80,6 +83,7 @@ public class TestJsonFormatter
                 List.of(),
                 new Exception("Test Exception 1"),
                 Context.root(),
+                ImmutableMap.of(),
                 ImmutableMap.of());
 
         assertEquals(
@@ -93,6 +97,7 @@ public class TestJsonFormatter
                         List.of(),
                         null,
                         Context.root(),
+                        ImmutableMap.of(),
                         ImmutableMap.of()));
     }
 
@@ -176,5 +181,26 @@ public class TestJsonFormatter
 
         assertEquals(jsonRecord.getMessage(), record.getMessage());
         assertThat(jsonMap.get("annotations")).asInstanceOf(InstanceOfAssertFactories.map(String.class, String.class)).containsExactlyEntriesOf(logAnnotations);
+    }
+
+    @Test
+    public void testMDC()
+    {
+        try {
+            LogRecord record = new LogRecord(Level.DEBUG.toJulLevel(), "Test Log Message");
+            MDC.put("foo", "apple");
+            MDC.put("bar", "banana");
+
+            String logMessage = (new JsonFormatter(ImmutableMap.of())).format(record);
+
+            Map<String, Object> jsonMap = mapJsonCodec(String.class, Object.class).fromJson(logMessage);
+            JsonRecord jsonRecord = jsonCodec(JsonRecord.class).fromJson(logMessage);
+
+            assertEquals(jsonRecord.getMessage(), record.getMessage());
+            assertThat(jsonMap.get("mdc")).asInstanceOf(InstanceOfAssertFactories.map(String.class, String.class)).containsExactlyInAnyOrderEntriesOf(ImmutableMap.of("foo", "apple", "bar", "banana"));
+        }
+        finally {
+            MDC.clear();
+        }
     }
 }
