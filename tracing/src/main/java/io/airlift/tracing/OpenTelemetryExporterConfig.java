@@ -4,7 +4,7 @@ import io.airlift.configuration.Config;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 
-public class OpenTelemetryConfig
+public class OpenTelemetryExporterConfig
 {
     private String endpoint = "http://localhost:4317";
 
@@ -16,7 +16,7 @@ public class OpenTelemetryConfig
     }
 
     @Config("tracing.exporter.endpoint")
-    public OpenTelemetryConfig setEndpoint(String endpoint)
+    public OpenTelemetryExporterConfig setEndpoint(String endpoint)
     {
         this.endpoint = endpoint;
         return this;

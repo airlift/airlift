@@ -16,11 +16,11 @@ public class OpenTelemetryExporterModule
     @Override
     public void configure(Binder binder)
     {
-        configBinder(binder).bindConfig(OpenTelemetryConfig.class);
+        configBinder(binder).bindConfig(OpenTelemetryExporterConfig.class);
     }
 
     @ProvidesIntoSet
-    public static SpanProcessor createExporter(OpenTelemetryConfig config)
+    public static SpanProcessor createExporter(OpenTelemetryExporterConfig config)
     {
         SpanExporter exporter = OtlpGrpcSpanExporter.builder()
                 .setEndpoint(config.getEndpoint())
