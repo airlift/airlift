@@ -15,6 +15,7 @@
  */
 package io.airlift.http.server;
 
+import com.google.common.annotations.VisibleForTesting;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.FilterConfig;
@@ -22,20 +23,24 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
-import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
+import org.eclipse.jetty.ee10.servlet.util.ServletOutputStreamWrapper;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.NanoTime;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicLong;
 
-import static com.google.common.base.Preconditions.checkState;
+import static java.util.Objects.requireNonNull;
 
 class TimingFilter
         implements Filter
 {
-    public static final String FIRST_BYTE_TIME = TimingFilter.class.getName() + ".FIRST_BYTE_TIME";
+    @VisibleForTesting
+    static final String FIRST_BYTE_TIME = TimingFilter.class.getName() + ".FIRST_BYTE_TIME";
 
     @Override
     public void init(FilterConfig filterConfig)
@@ -47,15 +52,16 @@ class TimingFilter
             throws IOException, ServletException
     {
         TimedResponse response = new TimedResponse((HttpServletResponse) servletResponse);
-        try {
-            chain.doFilter(servletRequest, response);
+        servletRequest.setAttribute(FIRST_BYTE_TIME, response.getFirstByteTime());
+        chain.doFilter(servletRequest, response);
+    }
+
+    public static Long getFirstByteTime(Request request)
+    {
+        if (request.getAttribute(FIRST_BYTE_TIME) instanceof AtomicLong atomicLong) {
+            return atomicLong.get();
         }
-        finally {
-            Long firstByteTime = response.getFirstByteTime();
-            if (firstByteTime != null) {
-                servletRequest.setAttribute(FIRST_BYTE_TIME, firstByteTime);
-            }
-        }
+        return null;
     }
 
     @Override
@@ -66,8 +72,7 @@ class TimingFilter
     private static class TimedResponse
             extends HttpServletResponseWrapper
     {
-        private TimedServletOutputStream outputStream;
-        private TimedPrintWriter printWriter;
+        private final AtomicLong firstByteTime = new AtomicLong();
 
         private TimedResponse(HttpServletResponse response)
         {
@@ -78,57 +83,36 @@ class TimingFilter
         public ServletOutputStream getOutputStream()
                 throws IOException
         {
-            checkState(printWriter == null, "getWriter() has already been called");
-            if (outputStream == null) {
-                outputStream = new TimedServletOutputStream(super.getOutputStream());
-            }
-            return outputStream;
+            return new TimedServletOutputStream(super.getOutputStream(), firstByteTime);
         }
 
         @Override
         public PrintWriter getWriter()
                 throws IOException
         {
-            checkState(outputStream == null, "getOutputStream() has already been called");
-            if (printWriter == null) {
-                printWriter = new TimedPrintWriter(super.getWriter());
-            }
-            return printWriter;
+            return new TimedPrintWriter(super.getWriter(), firstByteTime);
         }
 
-        public Long getFirstByteTime()
+        public AtomicLong getFirstByteTime()
         {
-            if (outputStream != null) {
-                return outputStream.getFirstByteTime();
-            }
-            if (printWriter != null) {
-                return printWriter.getFirstByteTime();
-            }
-            return null;
+            return firstByteTime;
         }
     }
 
     private static class TimedServletOutputStream
-            extends ServletOutputStream
+            extends ServletOutputStreamWrapper
     {
-        private final ServletOutputStream delegate;
-        private Long firstByteTime;
+        private final AtomicLong firstByteTime;
 
-        private TimedServletOutputStream(ServletOutputStream delegate)
+        private TimedServletOutputStream(ServletOutputStream delegate, AtomicLong firstByteTime)
         {
-            this.delegate = delegate;
-        }
-
-        public Long getFirstByteTime()
-        {
-            return firstByteTime;
+            super(delegate);
+            this.firstByteTime = requireNonNull(firstByteTime, "firstByteTime is null");
         }
 
         private void recordFirstByteTime()
         {
-            if (firstByteTime == null) {
-                firstByteTime = System.currentTimeMillis();
-            }
+            firstByteTime.compareAndSet(0, NanoTime.now());
         }
 
         @Override
@@ -136,7 +120,7 @@ class TimingFilter
                 throws IOException
         {
             recordFirstByteTime();
-            delegate.write(b);
+            super.write(b);
         }
 
         @Override
@@ -144,7 +128,7 @@ class TimingFilter
                 throws IOException
         {
             recordFirstByteTime();
-            delegate.write(b);
+            super.write(b);
         }
 
         @Override
@@ -152,7 +136,7 @@ class TimingFilter
                 throws IOException
         {
             recordFirstByteTime();
-            delegate.print(s);
+            super.print(s);
         }
 
         @Override
@@ -160,7 +144,7 @@ class TimingFilter
                 throws IOException
         {
             recordFirstByteTime();
-            delegate.write(b, off, len);
+            super.write(b, off, len);
         }
 
         @Override
@@ -168,7 +152,7 @@ class TimingFilter
                 throws IOException
         {
             recordFirstByteTime();
-            delegate.print(b);
+            super.print(b);
         }
 
         @Override
@@ -176,7 +160,7 @@ class TimingFilter
                 throws IOException
         {
             recordFirstByteTime();
-            delegate.print(c);
+            super.print(c);
         }
 
         @Override
@@ -184,7 +168,7 @@ class TimingFilter
                 throws IOException
         {
             recordFirstByteTime();
-            delegate.print(i);
+            super.print(i);
         }
 
         @Override
@@ -192,7 +176,7 @@ class TimingFilter
                 throws IOException
         {
             recordFirstByteTime();
-            delegate.print(l);
+            super.print(l);
         }
 
         @Override
@@ -200,7 +184,7 @@ class TimingFilter
                 throws IOException
         {
             recordFirstByteTime();
-            delegate.print(f);
+            super.print(f);
         }
 
         @Override
@@ -208,7 +192,7 @@ class TimingFilter
                 throws IOException
         {
             recordFirstByteTime();
-            delegate.print(d);
+            super.print(d);
         }
 
         @Override
@@ -216,7 +200,7 @@ class TimingFilter
                 throws IOException
         {
             recordFirstByteTime();
-            delegate.println();
+            super.println();
         }
 
         @Override
@@ -224,7 +208,7 @@ class TimingFilter
                 throws IOException
         {
             recordFirstByteTime();
-            delegate.println(s);
+            super.println(s);
         }
 
         @Override
@@ -232,7 +216,7 @@ class TimingFilter
                 throws IOException
         {
             recordFirstByteTime();
-            delegate.println(b);
+            super.println(b);
         }
 
         @Override
@@ -240,7 +224,7 @@ class TimingFilter
                 throws IOException
         {
             recordFirstByteTime();
-            delegate.println(c);
+            super.println(c);
         }
 
         @Override
@@ -248,7 +232,7 @@ class TimingFilter
                 throws IOException
         {
             recordFirstByteTime();
-            delegate.println(i);
+            super.println(i);
         }
 
         @Override
@@ -256,7 +240,7 @@ class TimingFilter
                 throws IOException
         {
             recordFirstByteTime();
-            delegate.println(l);
+            super.println(l);
         }
 
         @Override
@@ -264,7 +248,7 @@ class TimingFilter
                 throws IOException
         {
             recordFirstByteTime();
-            delegate.println(f);
+            super.println(f);
         }
 
         @Override
@@ -272,56 +256,24 @@ class TimingFilter
                 throws IOException
         {
             recordFirstByteTime();
-            delegate.println(d);
-        }
-
-        @Override
-        public void flush()
-                throws IOException
-        {
-            delegate.flush();
-        }
-
-        @Override
-        public void close()
-                throws IOException
-        {
-            delegate.close();
-        }
-
-        @Override
-        public boolean isReady()
-        {
-            return delegate.isReady();
-        }
-
-        @Override
-        public void setWriteListener(WriteListener writeListener)
-        {
-            delegate.setWriteListener(writeListener);
+            super.println(d);
         }
     }
 
     private static class TimedPrintWriter
             extends PrintWriter
     {
-        private Long firstByteTime;
+        private final AtomicLong firstByteTime;
 
-        private TimedPrintWriter(PrintWriter delegate)
+        private TimedPrintWriter(PrintWriter delegate, AtomicLong firstByteTime)
         {
             super(delegate);
-        }
-
-        public Long getFirstByteTime()
-        {
-            return firstByteTime;
+            this.firstByteTime = requireNonNull(firstByteTime, "firstByteTime is null");
         }
 
         private void recordFirstByteTime()
         {
-            if (firstByteTime == null) {
-                firstByteTime = System.currentTimeMillis();
-            }
+            firstByteTime.compareAndSet(0, NanoTime.now());
         }
 
         @Override

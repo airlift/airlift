@@ -41,6 +41,7 @@ import static io.airlift.http.server.TraceTokenFilter.TRACETOKEN_HEADER;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.eclipse.jetty.http.HttpVersion.HTTP_2;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
@@ -118,7 +119,9 @@ public class TestDelimitedRequestLog
     public void testWriteLog()
             throws Exception
     {
-        try (MockedStatic<Request> ignored = mockStatic(Request.class, RETURNS_DEEP_STUBS); MockedStatic<Response> ignored2 = mockStatic(Response.class, RETURNS_DEEP_STUBS)) {
+        try (MockedStatic<Request> ignored = mockStatic(Request.class, RETURNS_DEEP_STUBS);
+                MockedStatic<Response> ignored2 = mockStatic(Response.class, RETURNS_DEEP_STUBS);
+                MockedStatic<TimingFilter> ignored3 = mockStatic(TimingFilter.class, RETURNS_DEEP_STUBS)) {
             Request request = mock(Request.class, RETURNS_DEEP_STUBS);
             Response response = mock(Response.class, RETURNS_DEEP_STUBS);
             Principal principal = mock(Principal.class, RETURNS_DEEP_STUBS);
@@ -153,6 +156,7 @@ public class TestDelimitedRequestLog
             DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, 256, Long.MAX_VALUE, tokenManager, eventClient, currentTimeMillisProvider, false);
 
             when(principal.getName()).thenReturn(user);
+            when(request.getHeadersNanoTime()).thenReturn(MILLISECONDS.toNanos(timestamp));
             when(Request.getTimeStamp(request)).thenReturn(timestamp);
             when(request.getHeaders().get("User-Agent")).thenReturn(agent);
             when(request.getHeaders().get("Referer")).thenReturn(referrer);
@@ -160,7 +164,7 @@ public class TestDelimitedRequestLog
             when(request.getHeaders().getValues("X-FORWARDED-FOR")).thenReturn(Collections.enumeration(ImmutableList.of("1.1.1.1, 2.2.2.2", "3.3.3.3, " + ip)));
             when(request.getConnectionMetaData().getProtocol()).thenReturn("unknown");
             when(request.getHeaders().get("X-FORWARDED-PROTO")).thenReturn(protocol);
-            when(request.getAttribute(TimingFilter.FIRST_BYTE_TIME)).thenReturn(timestamp + timeToFirstByte);
+            when(TimingFilter.getFirstByteTime(request)).thenReturn(MILLISECONDS.toNanos(timestamp + timeToFirstByte));
             when(request.getHttpURI().getPath()).thenReturn(uri.toString());
             when(Request.getAuthenticationState(request).getUserPrincipal()).thenReturn(principal);
             when(request.getMethod()).thenReturn(method);

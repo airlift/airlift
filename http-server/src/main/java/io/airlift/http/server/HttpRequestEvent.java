@@ -24,6 +24,7 @@ import io.airlift.http.server.jetty.RequestTiming;
 import io.airlift.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.NanoTime;
 
 import java.security.Principal;
 import java.time.Instant;
@@ -58,10 +59,9 @@ public class HttpRequestEvent
 
         long timeToDispatch = NANOSECONDS.toMillis((long) firstNonNull(request.getAttribute(REQUEST_BEGIN_TO_HANDLE_ATTRIBUTE), 0L));
         Long timeToFirstByte = null;
-        Object firstByteTime = request.getAttribute(TimingFilter.FIRST_BYTE_TIME);
-        if (firstByteTime instanceof Long) {
-            Long time = (Long) firstByteTime;
-            timeToFirstByte = max(time - Request.getTimeStamp(request), 0);
+        Long firstByteTime = TimingFilter.getFirstByteTime(request);
+        if (firstByteTime != null) {
+            timeToFirstByte = NANOSECONDS.toMillis(max(NanoTime.elapsed(request.getHeadersNanoTime(), firstByteTime), 0));
         }
 
         long timeToLastByte = max(timing.currentTimeInMillis() - Request.getTimeStamp(request), 0);
