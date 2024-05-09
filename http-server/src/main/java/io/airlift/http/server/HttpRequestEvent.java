@@ -29,15 +29,33 @@ import java.security.Principal;
 import java.time.Instant;
 import java.util.Enumeration;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
 import static io.airlift.event.client.EventField.EventFieldMapping.TIMESTAMP;
-import static io.airlift.http.server.DelimitedRequestLogHandler.REQUEST_BEGIN_TO_HANDLE_ATTRIBUTE;
 import static io.airlift.http.server.TraceTokenFilter.TRACETOKEN_HEADER;
-import static java.lang.Math.max;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 @EventType("HttpRequest")
-public class HttpRequestEvent
+public record HttpRequestEvent(
+        @EventField(fieldMapping = TIMESTAMP) Instant timeStamp,
+        @EventField String traceToken,
+        @EventField String clientAddress,
+        @EventField String protocol,
+        @EventField String method,
+        @EventField String requestUri,
+        @EventField String user,
+        @EventField String agent,
+        @EventField String referrer,
+        @EventField long requestSize,
+        @EventField String requestContentType,
+        @EventField long responseSize,
+        @EventField int responseCode,
+        @EventField String responseContentType,
+        @EventField long timeToDispatch,
+        @EventField long timeToHandle,
+        @EventField long timeToFirstByte,
+        @EventField long timeToLastByte,
+        @EventField long timeToCompletion,
+        @EventField long timeFromFirstToLastContent,
+        @EventField DoubleSummaryStats responseContentInterarrivalStats,
+        @EventField String protocolVersion)
 {
     public static HttpRequestEvent createHttpRequestEvent(Request request, Response response, TraceTokenManager traceTokenManager, RequestTiming timing)
     {
@@ -55,16 +73,6 @@ public class HttpRequestEvent
         if (token == null && traceTokenManager != null) {
             token = traceTokenManager.getCurrentRequestToken();
         }
-
-        long timeToDispatch = NANOSECONDS.toMillis((long) firstNonNull(request.getAttribute(REQUEST_BEGIN_TO_HANDLE_ATTRIBUTE), 0L));
-        Long timeToFirstByte = null;
-        Object firstByteTime = request.getAttribute(TimingFilter.FIRST_BYTE_TIME);
-        if (firstByteTime instanceof Long) {
-            Long time = (Long) firstByteTime;
-            timeToFirstByte = max(time - Request.getTimeStamp(request), 0);
-        }
-
-        long timeToLastByte = max(timing.currentTimeInMillis() - Request.getTimeStamp(request), 0);
 
         ImmutableList.Builder<String> builder = ImmutableList.builder();
         if (Request.getRemoteAddr(request) != null) {
@@ -113,7 +121,7 @@ public class HttpRequestEvent
         }
 
         return new HttpRequestEvent(
-                Instant.ofEpochMilli(Request.getTimeStamp(request)),
+                timing.requestStarted(),
                 token,
                 clientAddress,
                 protocol,
@@ -127,216 +135,13 @@ public class HttpRequestEvent
                 Response.getContentBytesWritten(response),
                 response.getStatus(),
                 response.getHeaders().get("Content-Type"),
-                timeToDispatch,
-                timeToFirstByte,
-                timeToLastByte,
-                timing.beginToHandleMillis(),
-                timing.beginToEndMillis(),
-                timing.firstToLastContentTimeInMillis(),
+                timing.timeToDispatch().toMillis(),
+                timing.timeToHandling().toMillis(),
+                timing.timeToFirstByte().toMillis(),
+                timing.timeToLastByte().toMillis(),
+                timing.timeToCompletion().toMillis(),
+                timing.timeToLastByte().toMillis() - timing.timeToFirstByte().toMillis(),
                 timing.responseContentInterarrivalStats(),
                 request.getConnectionMetaData().getHttpVersion().asString());
-    }
-
-    private final Instant timeStamp;
-    private final String traceToken;
-    private final String clientAddress;
-    private final String protocol;
-    private final String method;
-    private final String requestUri;
-    private final String user;
-    private final String agent;
-    private final String referrer;
-    private final long requestSize;
-    private final String requestContentType;
-    private final long responseSize;
-    private final int responseCode;
-    private final String responseContentType;
-    private final long timeToDispatch;
-    private final Long timeToFirstByte;
-    private final long timeToLastByte;
-    private final long beginToDispatchMillis;
-    private final long beginToEndMillis;
-    private final long firstToLastContentTimeInMillis;
-    private final DoubleSummaryStats responseContentInterarrivalStats;
-    private final String protocolVersion;
-
-    public HttpRequestEvent(
-            Instant timeStamp,
-            String traceToken,
-            String clientAddress,
-            String protocol,
-            String method,
-            String requestUri,
-            String user,
-            String agent,
-            String referrer,
-            long requestSize,
-            String requestContentType,
-            long responseSize,
-            int responseCode,
-            String responseContentType,
-            long timeToDispatch,
-            Long timeToFirstByte,
-            long timeToLastByte,
-            long beginToDispatchMillis,
-            long beginToEndMillis,
-            long firstToLastContentTimeInMillis,
-            DoubleSummaryStats responseContentInterarrivalStats,
-            String protocolVersion)
-    {
-        this.timeStamp = timeStamp;
-        this.traceToken = traceToken;
-        this.clientAddress = clientAddress;
-        this.protocol = protocol;
-        this.method = method;
-        this.requestUri = requestUri;
-        this.user = user;
-        this.agent = agent;
-        this.referrer = referrer;
-        this.requestSize = requestSize;
-        this.requestContentType = requestContentType;
-        this.responseSize = responseSize;
-        this.responseCode = responseCode;
-        this.responseContentType = responseContentType;
-        this.timeToDispatch = timeToDispatch;
-        this.timeToFirstByte = timeToFirstByte;
-        this.timeToLastByte = timeToLastByte;
-        this.beginToDispatchMillis = beginToDispatchMillis;
-        this.beginToEndMillis = beginToEndMillis;
-        this.firstToLastContentTimeInMillis = firstToLastContentTimeInMillis;
-        this.responseContentInterarrivalStats = responseContentInterarrivalStats;
-        this.protocolVersion = protocolVersion;
-    }
-
-    @EventField(fieldMapping = TIMESTAMP)
-    public Instant getTimeStamp()
-    {
-        return timeStamp;
-    }
-
-    @EventField
-    public String getTraceToken()
-    {
-        return traceToken;
-    }
-
-    @EventField
-    public String getClientAddress()
-    {
-        return clientAddress;
-    }
-
-    @EventField
-    public String getProtocol()
-    {
-        return protocol;
-    }
-
-    @EventField
-    public String getMethod()
-    {
-        return method;
-    }
-
-    @EventField
-    public String getRequestUri()
-    {
-        return requestUri;
-    }
-
-    @EventField
-    public String getUser()
-    {
-        return user;
-    }
-
-    @EventField
-    public String getAgent()
-    {
-        return agent;
-    }
-
-    @EventField
-    public String getReferrer()
-    {
-        return referrer;
-    }
-
-    @EventField
-    public long getRequestSize()
-    {
-        return requestSize;
-    }
-
-    @EventField
-    public String getRequestContentType()
-    {
-        return requestContentType;
-    }
-
-    @EventField
-    public long getResponseSize()
-    {
-        return responseSize;
-    }
-
-    @EventField
-    public int getResponseCode()
-    {
-        return responseCode;
-    }
-
-    @EventField
-    public String getResponseContentType()
-    {
-        return responseContentType;
-    }
-
-    @EventField
-    public long getTimeToDispatch()
-    {
-        return timeToDispatch;
-    }
-
-    @EventField
-    public Long getTimeToFirstByte()
-    {
-        return timeToFirstByte;
-    }
-
-    @EventField
-    public long getTimeToLastByte()
-    {
-        return timeToLastByte;
-    }
-
-    @EventField
-    public long getBeginToDispatchMillis()
-    {
-        return beginToDispatchMillis;
-    }
-
-    @EventField
-    public long getBeginToEndMillis()
-    {
-        return beginToEndMillis;
-    }
-
-    @EventField
-    public long getFirstToLastContentTimeInMillis()
-    {
-        return firstToLastContentTimeInMillis;
-    }
-
-    @EventField
-    public DoubleSummaryStats getResponseContentInterarrivalStats()
-    {
-        return responseContentInterarrivalStats;
-    }
-
-    @EventField
-    public String getProtocolVersion()
-    {
-        return protocolVersion;
     }
 }

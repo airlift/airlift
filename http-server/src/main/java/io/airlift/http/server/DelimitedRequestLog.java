@@ -51,7 +51,6 @@ class DelimitedRequestLog
     // Time, ip, method, url, user, agent, response code, request length, response length, response time
     private final TraceTokenManager traceTokenManager;
     private final EventClient eventClient;
-    private final CurrentTimeMillisProvider currentTimeMillisProvider;
     private final AsyncAppenderBase<HttpRequestEvent> asyncAppender;
 
     public DelimitedRequestLog(
@@ -63,22 +62,8 @@ class DelimitedRequestLog
             EventClient eventClient,
             boolean compressionEnabled)
     {
-        this(filename, maxHistory, queueSize, maxFileSizeInBytes, traceTokenManager, eventClient, new SystemCurrentTimeMillisProvider(), compressionEnabled);
-    }
-
-    public DelimitedRequestLog(
-            String filename,
-            int maxHistory,
-            int queueSize,
-            long maxFileSizeInBytes,
-            TraceTokenManager traceTokenManager,
-            EventClient eventClient,
-            CurrentTimeMillisProvider currentTimeMillisProvider,
-            boolean compressionEnabled)
-    {
         this.traceTokenManager = traceTokenManager;
         this.eventClient = eventClient;
-        this.currentTimeMillisProvider = currentTimeMillisProvider;
 
         ContextBase context = new ContextBase();
         HttpLogLayout httpLogLayout = new HttpLogLayout();
@@ -124,21 +109,8 @@ class DelimitedRequestLog
         asyncAppender.start();
     }
 
-    public void log(
-            Request request,
-            Response response,
-            long beginToHandleMillis,
-            long beginToEndMillis,
-            long firstToLastContentTimeInMillis,
-            DoubleSummaryStats responseContentInterarrivalStats)
+    public void log(Request request, Response response, RequestTiming timing)
     {
-        RequestTiming timing = new RequestTiming(
-                currentTimeMillisProvider.getCurrentTimeMillis(),
-                beginToHandleMillis,
-                beginToEndMillis,
-                firstToLastContentTimeInMillis,
-                responseContentInterarrivalStats);
-
         HttpRequestEvent event = createHttpRequestEvent(request, response, traceTokenManager, timing);
         asyncAppender.doAppend(event);
         eventClient.post(event);
