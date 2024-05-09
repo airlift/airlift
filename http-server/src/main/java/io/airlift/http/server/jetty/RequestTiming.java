@@ -14,19 +14,33 @@
 package io.airlift.http.server.jetty;
 
 import io.airlift.http.server.DoubleSummaryStats;
+import io.airlift.units.Duration;
+
+import java.time.Instant;
 
 import static com.google.common.base.Verify.verify;
+import static java.util.Objects.requireNonNull;
 
 public record RequestTiming(
-        long currentTimeInMillis,
-        long beginToHandleMillis,
-        long beginToEndMillis,
-        long firstToLastContentTimeInMillis,
+        Instant requestStarted,
+        Duration timeToDispatch,
+        Duration timeToHandling,
+        Duration timeToFirstByte,
+        Duration timeToLastByte,
+        Duration timeToCompletion,
         DoubleSummaryStats responseContentInterarrivalStats)
 {
     public RequestTiming
     {
-        verify(beginToHandleMillis <= beginToEndMillis, "beginToHandleMillis %s must be <= beginToEndMillis %s", beginToHandleMillis, beginToEndMillis);
-        verify(firstToLastContentTimeInMillis <= beginToEndMillis, "firstToLastContentTimeInMillis %s must be <= beginToEndMillis %s", firstToLastContentTimeInMillis, beginToEndMillis);
+        requireNonNull(requestStarted, "requestStarted is null");
+        verifyTimeIncreasing("dispatch to handling", timeToDispatch, timeToHandling);
+        verifyTimeIncreasing("handling to first byte", timeToHandling, timeToFirstByte);
+        verifyTimeIncreasing("first byte to last byte", timeToFirstByte, timeToLastByte);
+        verifyTimeIncreasing("dispatch to completion", timeToDispatch, timeToCompletion);
+    }
+
+    private void verifyTimeIncreasing(String description, Duration from, Duration to)
+    {
+        verify(from.compareTo(to) <= 0, "Expected time from %s to increase but got: %s to %s", description, from, to);
     }
 }

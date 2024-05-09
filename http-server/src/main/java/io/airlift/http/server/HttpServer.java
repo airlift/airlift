@@ -51,6 +51,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.server.handler.EventsHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -356,20 +357,19 @@ public class HttpServer
             rootHandlers.addHandler(createServletContext(theAdminServlet, resources, adminParameters, adminFilters, tokenManager, loginService, Set.of("admin"), showStackTrace, enableLegacyUriCompliance));
         }
         rootHandlers.addHandler(statsHandler);
-        StatsRecordingHandler statsRecordingHandler = new StatsRecordingHandler(stats);
 
         if (config.isLogEnabled()) {
             this.requestLog = createDelimitedRequestLog(config, tokenManager, eventClient);
-            DelimitedRequestLogHandler logHandler = new DelimitedRequestLogHandler(requestLog);
-            server.setRequestLog(new RequestLogCollection(logHandler, statsRecordingHandler));
-            logHandler.setHandler(rootHandlers);
-            server.setHandler(logHandler);
         }
         else {
             this.requestLog = null;
-            server.setRequestLog(statsRecordingHandler);
-            server.setHandler(rootHandlers);
         }
+
+        DispatchingRequestLogHandler dispatchingHandler = new DispatchingRequestLogHandler(requestLog, stats);
+        EventsHandler eventsHandler = new RequestTimingEventHandler(rootHandlers);
+
+        server.setRequestLog(dispatchingHandler);
+        server.setHandler(eventsHandler);
 
         ErrorHandler errorHandler = new ErrorHandler();
         errorHandler.setShowMessageInTitle(showStackTrace);
@@ -406,7 +406,6 @@ public class HttpServer
             context.getServletHandler().setDecodeAmbiguousURIs(true);
         }
 
-        context.addFilter(new FilterHolder(new TimingFilter()), "/*", null);
         if (tokenManager != null) {
             context.addFilter(new FilterHolder(new TraceTokenFilter(tokenManager)), "/*", null);
         }

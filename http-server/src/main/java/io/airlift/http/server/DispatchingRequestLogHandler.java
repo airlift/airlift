@@ -1,6 +1,4 @@
 /*
- * Copyright 2010 Proofpoint, Inc.
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,29 +13,33 @@
  */
 package io.airlift.http.server;
 
-import io.airlift.units.Duration;
+import io.airlift.http.server.jetty.RequestTiming;
+import jakarta.annotation.Nullable;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
 
-import java.util.concurrent.TimeUnit;
+import static java.util.Objects.requireNonNull;
 
-import static java.lang.Math.max;
-
-public class StatsRecordingHandler
+public class DispatchingRequestLogHandler
         implements RequestLog
 {
+    private final DelimitedRequestLog logger;
     private final RequestStats stats;
 
-    public StatsRecordingHandler(RequestStats stats)
+    public DispatchingRequestLogHandler(@Nullable DelimitedRequestLog logger, RequestStats stats)
     {
-        this.stats = stats;
+        this.logger = logger;
+        this.stats = requireNonNull(stats, "stats is null");
     }
 
     @Override
     public void log(Request request, Response response)
     {
-        Duration requestTime = new Duration(max(0, System.currentTimeMillis() - Request.getTimeStamp(request)), TimeUnit.MILLISECONDS);
-        stats.record(Request.getContentBytesRead(request), Response.getContentBytesWritten(response), requestTime);
+        RequestTiming timings = RequestTimingEventHandler.timings(request);
+        if (logger != null) {
+            logger.log(request, response, timings);
+        }
+        stats.record(Request.getContentBytesRead(request), Response.getContentBytesWritten(response), timings.timeToCompletion());
     }
 }

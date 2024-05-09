@@ -346,27 +346,25 @@ public class TestHttpServerModule
             server.stop();
         }
 
-        assertEquals(event.getClientAddress(), echoServlet.remoteAddress);
-        assertEquals(event.getProtocol(), "http");
-        assertEquals(event.getMethod(), "POST");
-        assertEquals(event.getRequestUri(), requestUri.getPath());
-        assertNull(event.getUser());
-        assertEquals(event.getAgent(), userAgent);
-        assertEquals(event.getReferrer(), referrer);
-        assertEquals(event.getTraceToken(), token);
+        assertEquals(event.clientAddress(), echoServlet.remoteAddress);
+        assertEquals(event.protocol(), "http");
+        assertEquals(event.method(), "POST");
+        assertEquals(event.requestUri(), requestUri.getPath());
+        assertNull(event.user());
+        assertEquals(event.agent(), userAgent);
+        assertEquals(event.referrer(), referrer);
+        assertEquals(event.traceToken(), token);
 
-        assertEquals(event.getRequestSize(), requestBody.length());
-        assertEquals(event.getRequestContentType(), requestContentType);
-
-        assertEquals(event.getResponseSize(), responseBody.length());
-        assertEquals(event.getResponseCode(), responseCode);
-        assertEquals(event.getResponseContentType(), responseContentType);
-
-        assertTrue(event.getTimeStamp().toEpochMilli() >= beforeRequest);
-        assertTrue(event.getTimeToLastByte() <= afterRequest - beforeRequest);
-        assertNotNull(event.getTimeToFirstByte());
-        assertTrue(event.getTimeToDispatch() <= event.getTimeToFirstByte());
-        assertTrue(event.getTimeToFirstByte() <= event.getTimeToLastByte());
+        assertEquals(event.requestSize(), requestBody.length());
+        assertEquals(event.requestContentType(), requestContentType);
+        assertEquals(event.responseSize(), responseBody.length());
+        assertEquals(event.responseCode(), responseCode);
+        assertEquals(event.responseContentType(), responseContentType);
+        assertTrue(event.timeStamp().toEpochMilli() >= beforeRequest);
+        assertTrue(event.timeToLastByte() <= afterRequest - beforeRequest);
+        assertTrue(event.timeToFirstByte() <= event.timeToLastByte());
+        assertTrue(event.timeToDispatch() <= event.timeToFirstByte());
+        assertTrue(event.timeToFirstByte() <= event.timeToLastByte());
     }
 
     private static final class EchoServlet
