@@ -111,7 +111,7 @@ public final class LifeCycleManager
             catch (Exception e) {
                 log.error(e, "Trying to shut down");
             }
-        });
+        }, "LifeCycleManager Shutdown Hook");
         shutdownHook.set(thread);
         Runtime.getRuntime().addShutdownHook(thread);
 
