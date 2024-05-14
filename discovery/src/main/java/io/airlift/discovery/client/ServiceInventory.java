@@ -116,6 +116,7 @@ public class ServiceInventory
             scheduledFuture.cancel(true);
             scheduledFuture = null;
         }
+        executorService.shutdownNow();
     }
 
     public Iterable<ServiceDescriptor> getServiceDescriptors()
