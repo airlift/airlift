@@ -12,7 +12,8 @@ public final class Threads
 
     /**
      * Creates a {@link ThreadFactory} that creates named threads
-     * using the specified naming format.
+     * using the specified naming format and passing current thread's
+     * context class loader.
      *
      * @param nameFormat a {@link String#format(String, Object...)}-compatible
      * format string, to which a string will be supplied as the single
@@ -30,7 +31,8 @@ public final class Threads
 
     /**
      * Creates a {@link ThreadFactory} that creates named daemon threads.
-     * using the specified naming format.
+     * using the specified naming format and passing current thread's context
+     * class loader.
      *
      * @param nameFormat see {@link #threadsNamed(String)}
      * @return the created ThreadFactory
