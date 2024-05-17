@@ -15,26 +15,28 @@
  */
 package io.airlift.http.client;
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
 import io.opentelemetry.api.trace.SpanBuilder;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.TreeMap;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
+import static java.lang.String.CASE_INSENSITIVE_ORDER;
 import static java.util.Objects.requireNonNull;
 
 public final class Request
 {
     private final URI uri;
     private final String method;
-    private final ListMultimap<String, String> headers;
+    private final ListMultimap<String, String> headers = createHeadersMultimap();
     private final BodyGenerator bodyGenerator;
     private final Optional<SpanBuilder> spanBuilder;
     private final boolean followRedirects;
@@ -67,7 +69,7 @@ public final class Request
 
         this.uri = validateUri(uri);
         this.method = method;
-        this.headers = ImmutableListMultimap.copyOf(headers);
+        this.headers.putAll(headers);
         this.bodyGenerator = bodyGenerator;
         this.spanBuilder = requireNonNull(spanBuilder, "spanBuilder is null");
         this.followRedirects = followRedirects;
@@ -212,7 +214,7 @@ public final class Request
 
         private URI uri;
         private String method;
-        private final ListMultimap<String, String> headers = ArrayListMultimap.create();
+        private final ListMultimap<String, String> headers = createHeadersMultimap();
         private BodyGenerator bodyGenerator;
         private SpanBuilder spanBuilder;
         private boolean followRedirects = true;
@@ -290,5 +292,10 @@ public final class Request
     {
         checkArgument(uri.getPort() != 0, "Cannot make requests to HTTP port 0");
         return uri;
+    }
+
+    private static ListMultimap<String, String> createHeadersMultimap()
+    {
+        return Multimaps.newListMultimap(new TreeMap<>(CASE_INSENSITIVE_ORDER), ArrayList::new);
     }
 }

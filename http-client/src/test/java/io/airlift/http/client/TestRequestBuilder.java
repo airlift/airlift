@@ -23,6 +23,8 @@ import java.net.URI;
 import static io.airlift.http.client.Request.Builder.fromRequest;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StaticBodyGenerator.createStaticBodyGenerator;
+import static java.util.Map.entry;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 
@@ -54,6 +56,47 @@ public class TestRequestBuilder
     {
         Request request = createRequest();
         assertEquals(fromRequest(request).build(), request);
+    }
+
+    @Test
+    public void testAddCaseInsensitive()
+    {
+        Request request = prepareGet()
+                .setUri(URI.create("http://example.com"))
+                .addHeader("my-header", "lower case")
+                .addHeader("My-HeADer", "MixED CAse")
+                .build();
+        assertThat(request.getHeaders().keySet()).hasSize(1);
+        assertThat(request.getHeaders().entries())
+                .containsExactlyInAnyOrder(
+                        entry("my-header", "lower case"),
+                        entry("my-header", "MixED CAse"));
+    }
+
+    @Test
+    public void testSetCaseInsensitive()
+    {
+        Request request = prepareGet()
+                .setUri(URI.create("http://example.com"))
+                .addHeader("my-header", "lower case")
+                .addHeader("My-HeADer", "MixED CAse")
+                // setHeader() should replace the existing headers
+                .setHeader("My-Header", "replaced")
+                .build();
+        assertThat(request.getHeaders().keySet()).hasSize(1);
+        assertThat(request.getHeaders().entries())
+                .containsExactly(entry("My-Header", "replaced"));
+
+        request = prepareGet()
+                .setUri(URI.create("http://example.com"))
+                .addHeader("my-header", "lower case")
+                .addHeader("My-HeADer", "MixED CAse")
+                // setHeader() should replace the existing headers
+                .setHeader("My-HeADEr", "replaced-mixed")
+                .build();
+        assertThat(request.getHeaders().keySet()).hasSize(1);
+        assertThat(request.getHeaders().entries())
+                .containsExactly(entry("My-HeADEr", "replaced-mixed"));
     }
 
     private static Request createRequest()
