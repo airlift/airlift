@@ -15,7 +15,6 @@
  */
 package io.airlift.http.client;
 
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.MultimapBuilder;
@@ -39,10 +38,7 @@ public final class Request
     private final Optional<HttpVersion> httpVersion;
     private final URI uri;
     private final String method;
-    private final ListMultimap<String, String> headers = MultimapBuilder
-            .treeKeys(CASE_INSENSITIVE_ORDER)
-            .arrayListValues()
-            .build();
+    private final ListMultimap<String, String> headers = newHeaders();
     private final Optional<Duration> requestTimeout;
     private final Optional<Duration> idleTimeout;
     private final BodyGenerator bodyGenerator;
@@ -196,6 +192,14 @@ public final class Request
                 followRedirects);
     }
 
+    private static ListMultimap<String, String> newHeaders()
+    {
+        return MultimapBuilder
+                .treeKeys(CASE_INSENSITIVE_ORDER)
+                .arrayListValues()
+                .build();
+    }
+
     public static final class Builder
     {
         public static Builder prepareHead()
@@ -248,7 +252,7 @@ public final class Request
 
         private URI uri;
         private String method;
-        private final ListMultimap<String, String> headers = ArrayListMultimap.create();
+        private final ListMultimap<String, String> headers = newHeaders();
         private BodyGenerator bodyGenerator;
         private SpanBuilder spanBuilder;
         private Optional<HttpVersion> version = Optional.empty();
