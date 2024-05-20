@@ -67,6 +67,9 @@ public final class ConfigurationLoader
 
     public static Map<String, String> getSystemProperties()
     {
-        return fromProperties(System.getProperties());
+        Properties systemProperties = System.getProperties();
+        synchronized (systemProperties) {
+            return fromProperties(systemProperties);
+        }
     }
 }
