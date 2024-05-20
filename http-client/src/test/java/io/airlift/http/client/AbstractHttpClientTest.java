@@ -1129,7 +1129,7 @@ public abstract class AbstractHttpClientTest
     private static boolean isConnectTimeout(Throwable t)
     {
         // Linux refuses connections immediately rather than queuing them
-        return (t instanceof SocketTimeoutException) || (t instanceof SocketException);
+        return (t instanceof SocketTimeoutException) || (t instanceof SocketException) || (t instanceof TimeoutException);
     }
 
     public static <T, E extends Exception> T executeAsync(JettyHttpClient client, Request request, ResponseHandler<T, E> responseHandler)

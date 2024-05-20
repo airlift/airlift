@@ -62,15 +62,6 @@ public class TestJettyHttpClientSocksProxy
     }
 
     @Override
-    @Test(enabled = false)
-    public void testConnectTimeout()
-            throws Exception
-    {
-        // todo jetty client does not timeout the socks proxy connect properly
-        super.testConnectTimeout();
-    }
-
-    @Override
     @Test(expectedExceptions = IOException.class, expectedExceptionsMessageRegExp = ".*SOCKS4 .*")
     public void testConnectionRefused()
             throws Exception

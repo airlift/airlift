@@ -71,15 +71,6 @@ public abstract class AbstractHttpClientTestHttpProxy
                 .setHttpProxy(testingHttpProxy.getHostAndPort());
     }
 
-    @Override
-    @Test(enabled = false)
-    public void testConnectTimeout()
-            throws Exception
-    {
-        // todo jetty client does not timeout the http proxy connect properly
-        super.testConnectTimeout();
-    }
-
     @Test(expectedExceptions = IOException.class)
     public void testConnectionRefused()
             throws Exception
