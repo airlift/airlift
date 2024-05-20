@@ -16,12 +16,14 @@
 package io.airlift.jaxrs;
 
 import com.google.inject.Binder;
+import com.google.inject.Inject;
 import com.google.inject.Key;
 import com.google.inject.Provides;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
 import io.airlift.http.server.TheServlet;
 import io.airlift.jaxrs.tracing.JaxrsTracingModule;
 import jakarta.servlet.Servlet;
+import org.glassfish.jersey.internal.inject.AbstractBinder;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
 
@@ -32,6 +34,7 @@ import java.util.Set;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
+import static java.util.Objects.requireNonNull;
 
 public class JaxrsModule
         extends AbstractConfigurationAwareModule
@@ -53,6 +56,7 @@ public class JaxrsModule
         jaxrsBinder(binder).bind(JsonMapper.class);
         jaxrsBinder(binder).bind(SmileMapper.class);
         jaxrsBinder(binder).bind(ParsingExceptionMapper.class);
+        jaxrsBinder(binder).bind(FactoryBinder.class);
 
         newSetBinder(binder, Object.class, JaxrsResource.class).permitDuplicates();
 
@@ -78,5 +82,28 @@ public class JaxrsModule
     public static Map<String, String> createTheServletParams()
     {
         return new HashMap<>();
+    }
+
+    public static class FactoryBinder
+            extends AbstractBinder
+    {
+        private final Set<JerseyFactoryBinding> factories;
+
+        @Inject
+        private FactoryBinder(Set<JerseyFactoryBinding> factories)
+        {
+            this.factories = requireNonNull(factories, "factories is null");
+        }
+
+        @Override
+        protected void configure()
+        {
+            factories.forEach(factoryBinding -> factoryBinding.bind(this));
+        }
+    }
+
+    interface JerseyFactoryBinding
+    {
+        void bind(AbstractBinder binder);
     }
 }

@@ -11,6 +11,7 @@
 - Add HTTP protocol version to client traces
 - Improve request/response metrics accuracy and correctness
 - Update Airbase to 157
+- Add request scope bindings to jax-rs
 
 248
 
