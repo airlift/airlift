@@ -28,6 +28,7 @@ import java.util.Optional;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
+import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
 
 public final class Request
@@ -91,13 +92,17 @@ public final class Request
 
     public String getHeader(String name)
     {
-        List<String> values = headers.get(name);
-        if (values != null && !values.isEmpty()) {
+        List<String> values = headers.get(normalizeHeaderName(name));
+        if (!values.isEmpty()) {
             return values.get(0);
         }
         return null;
     }
 
+    /**
+     * Returns headers to be sent with the request.
+     * The returned collection has keys normalized to lowercase.
+     */
     public ListMultimap<String, String> getHeaders()
     {
         return headers;
@@ -232,6 +237,7 @@ public final class Request
 
         public Builder setHeader(String name, String value)
         {
+            name = normalizeHeaderName(name);
             this.headers.removeAll(name);
             this.headers.put(name, value);
             return this;
@@ -239,13 +245,13 @@ public final class Request
 
         public Builder addHeader(String name, String value)
         {
-            this.headers.put(name, value);
+            this.headers.put(normalizeHeaderName(name), value);
             return this;
         }
 
         public Builder addHeaders(Multimap<String, String> headers)
         {
-            this.headers.putAll(headers);
+            headers.entries().forEach(entry -> addHeader(entry.getKey(), entry.getValue()));
             return this;
         }
 
@@ -290,5 +296,10 @@ public final class Request
     {
         checkArgument(uri.getPort() != 0, "Cannot make requests to HTTP port 0");
         return uri;
+    }
+
+    private static String normalizeHeaderName(String name)
+    {
+        return name.toLowerCase(ENGLISH);
     }
 }
