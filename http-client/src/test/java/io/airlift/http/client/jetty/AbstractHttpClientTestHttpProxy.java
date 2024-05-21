@@ -72,12 +72,11 @@ public abstract class AbstractHttpClientTestHttpProxy
     }
 
     @Override
-    @Test(enabled = false)
+    @Test(timeOut = 5000)
     public void testConnectTimeout()
             throws Exception
     {
-        // todo jetty client does not timeout the http proxy connect properly
-        super.testConnectTimeout();
+        doTestConnectTimeout(true);
     }
 
     @Test(expectedExceptions = IOException.class)
