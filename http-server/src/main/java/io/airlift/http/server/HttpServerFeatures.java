@@ -11,7 +11,7 @@ public record HttpServerFeatures(boolean virtualThreads, boolean legacyUriCompli
     {
         private boolean virtualThreads;
         private boolean legacyUriCompliance;
-        private boolean http2;
+        private boolean http2 = true;
 
         private Builder() {}
 

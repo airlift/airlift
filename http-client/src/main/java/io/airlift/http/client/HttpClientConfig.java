@@ -100,7 +100,7 @@ public class HttpClientConfig
     private int timeoutThreads = 1;
     private int timeoutConcurrency = 1;
 
-    private boolean http2Enabled;
+    private boolean http2Enabled = true;
     private DataSize http2InitialSessionReceiveWindowSize = DataSize.of(16, MEGABYTE);
     private DataSize http2InitialStreamReceiveWindowSize = DataSize.of(16, MEGABYTE);
     private DataSize http2InputBufferSize = DataSize.of(8, KILOBYTE);

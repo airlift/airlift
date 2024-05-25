@@ -137,7 +137,8 @@ public class TestHttpEventClient
     public void setup()
             throws Exception
     {
-        httpClient = new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(10, SECONDS)));
+        // HTTP/2 disabled since there is no H2C in the test server
+        httpClient = new JettyHttpClient(new HttpClientConfig().setHttp2Enabled(false).setConnectTimeout(new Duration(10, SECONDS)));
 
         servlet = new DummyServlet();
         server = createServer(servlet);

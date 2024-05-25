@@ -68,7 +68,8 @@ public abstract class AbstractHttpClientTestHttpProxy
     public HttpClientConfig createClientConfig()
     {
         return new HttpClientConfig()
-                .setHttpProxy(testingHttpProxy.getHostAndPort());
+                .setHttpProxy(testingHttpProxy.getHostAndPort())
+                .setHttp2Enabled(false);
     }
 
     @Override

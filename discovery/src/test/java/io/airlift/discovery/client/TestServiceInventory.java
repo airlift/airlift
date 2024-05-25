@@ -17,6 +17,7 @@ package io.airlift.discovery.client;
 
 import com.google.common.collect.Iterables;
 import com.google.common.io.Resources;
+import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.json.JsonCodec;
 import io.airlift.node.NodeInfo;
@@ -88,14 +89,14 @@ public class TestServiceInventory
         String serviceInventoryJson = Resources.toString(Resources.getResource("service-inventory.json"), UTF_8);
 
         Server server = null;
-        try (JettyHttpClient httpClient = new JettyHttpClient()) {
+        // HTTP/2 disabled since there is no H2C in the test server
+        try (JettyHttpClient httpClient = new JettyHttpClient(new HttpClientConfig().setHttp2Enabled(false))) {
             int port;
             try (ServerSocket socket = new ServerSocket()) {
                 socket.bind(new InetSocketAddress(0));
                 port = socket.getLocalPort();
             }
             URI baseURI = new URI("http", null, "127.0.0.1", port, null, null, null);
-
             HttpConfiguration httpConfiguration = new HttpConfiguration();
             httpConfiguration.setSendServerVersion(false);
             httpConfiguration.setSendXPoweredBy(false);

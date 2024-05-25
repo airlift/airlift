@@ -12,7 +12,6 @@ public class TestJettyHttps2Client
     protected HttpClientConfig createClientConfig()
     {
         return new HttpClientConfig()
-                .setHttp2Enabled(true) // Enable HTTP/2 protocol
                 .setKeyStorePath(getResource("localhost.keystore").getPath())
                 .setKeyStorePassword("changeit")
                 .setTrustStorePath(getResource("localhost.truststore").getPath())
