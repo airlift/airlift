@@ -127,7 +127,6 @@ public class TestHttpEventClient
 
         for (Future<Void> future : futures) {
             future.get();
-            System.out.println("future " + future);
         }
         assertEquals(servlet.lastPath, "/v2/event");
         assertEquals(servlet.lastBody, getNormalizedJson("events.json"));
