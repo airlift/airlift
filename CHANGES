@@ -1,6 +1,7 @@
 249
 
 -  Fix failure when system properties modified when loading configuration
+- Update Jackson to 2.17.1
 
 248
 
