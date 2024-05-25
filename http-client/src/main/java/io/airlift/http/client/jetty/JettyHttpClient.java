@@ -264,6 +264,7 @@ public class JettyHttpClient
                 if (config.getTcpKeepAliveIdleTime().isPresent()) {
                     setKeepAlive(selectable, config.getTcpKeepAliveIdleTime().get());
                 }
+                setConnectTimeout(config.getConnectTimeout().toJavaTime());
             }
         };
 
