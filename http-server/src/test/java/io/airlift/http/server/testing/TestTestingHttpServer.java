@@ -15,11 +15,15 @@
  */
 package io.airlift.http.server.testing;
 
+import io.airlift.http.server.HttpServerFeatures;
+
 public class TestTestingHttpServer
         extends AbstractTestTestingHttpServer
 {
     TestTestingHttpServer()
     {
-        super(false, false);
+        super(HttpServerFeatures.builder()
+                .withHttp2(false)
+                .build());
     }
 }

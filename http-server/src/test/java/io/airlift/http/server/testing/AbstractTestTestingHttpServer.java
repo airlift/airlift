@@ -32,6 +32,7 @@ import io.airlift.http.client.StringResponseHandler;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.http.server.HttpServer.ClientCertificate;
 import io.airlift.http.server.HttpServerConfig;
+import io.airlift.http.server.HttpServerFeatures;
 import io.airlift.http.server.HttpServerInfo;
 import io.airlift.http.server.TheServlet;
 import io.airlift.log.Logging;
@@ -68,19 +69,18 @@ import static io.airlift.http.client.StatusResponseHandler.createStatusResponseH
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
 import static io.airlift.http.server.HttpServerBinder.httpServerBinder;
 import static io.airlift.testing.Assertions.assertGreaterThan;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
 public abstract class AbstractTestTestingHttpServer
 {
-    private final boolean enableVirtualThreads;
-    private final boolean enableLegacyUriCompliance;
+    private final HttpServerFeatures serverFeatures;
 
-    AbstractTestTestingHttpServer(boolean enableVirtualThreads, boolean enableLegacyUriCompliance)
+    AbstractTestTestingHttpServer(HttpServerFeatures serverFeatures)
     {
-        this.enableVirtualThreads = enableVirtualThreads;
-        this.enableLegacyUriCompliance = enableLegacyUriCompliance;
+        this.serverFeatures = requireNonNull(serverFeatures, "serverFeatures is null");
     }
 
     protected HttpClientConfig getHttpClientConfig()
@@ -101,7 +101,7 @@ public abstract class AbstractTestTestingHttpServer
         skipUnlessJdkHasVirtualThreads();
         DummyServlet servlet = new DummyServlet();
         Map<String, String> params = ImmutableMap.of("sampleInitParameter", "the value");
-        TestingHttpServer server = createTestingHttpServer(enableVirtualThreads, enableLegacyUriCompliance, servlet, params);
+        TestingHttpServer server = createTestingHttpServer(serverFeatures, servlet, params);
 
         try {
             server.start();
@@ -119,7 +119,7 @@ public abstract class AbstractTestTestingHttpServer
     {
         skipUnlessJdkHasVirtualThreads();
         DummyServlet servlet = new DummyServlet();
-        TestingHttpServer server = createTestingHttpServer(enableVirtualThreads, enableLegacyUriCompliance, servlet, ImmutableMap.of());
+        TestingHttpServer server = createTestingHttpServer(serverFeatures, servlet, ImmutableMap.of());
 
         try {
             server.start();
@@ -143,7 +143,7 @@ public abstract class AbstractTestTestingHttpServer
         skipUnlessJdkHasVirtualThreads();
         DummyServlet servlet = new DummyServlet();
         DummyFilter filter = new DummyFilter();
-        TestingHttpServer server = createTestingHttpServerWithFilter(enableVirtualThreads, enableLegacyUriCompliance, servlet, ImmutableMap.of(), filter);
+        TestingHttpServer server = createTestingHttpServerWithFilter(serverFeatures, servlet, ImmutableMap.of(), filter);
 
         try {
             server.start();
@@ -173,6 +173,7 @@ public abstract class AbstractTestTestingHttpServer
                 binder -> {
                     binder.bind(Servlet.class).annotatedWith(TheServlet.class).toInstance(servlet);
                     binder.bind(new TypeLiteral<Map<String, String>>() {}).annotatedWith(TheServlet.class).toInstance(ImmutableMap.of());
+                    httpServerBinder(binder).withFeatures(serverFeatures);
                 });
 
         Injector injector = app
@@ -207,6 +208,7 @@ public abstract class AbstractTestTestingHttpServer
                     binder.bind(Servlet.class).annotatedWith(TheServlet.class).toInstance(servlet);
                     binder.bind(new TypeLiteral<Map<String, String>>() {}).annotatedWith(TheServlet.class).toInstance(ImmutableMap.of());
                     newSetBinder(binder, Filter.class, TheServlet.class).addBinding().toInstance(filter);
+                    httpServerBinder(binder).withFeatures(serverFeatures);
                 });
 
         Injector injector = app
@@ -245,9 +247,7 @@ public abstract class AbstractTestTestingHttpServer
                     httpServerBinder(binder).bindResource("/", "webapp/user2");
                     httpServerBinder(binder).bindResource("path", "webapp/user").withWelcomeFile("user-welcome.txt");
                     httpServerBinder(binder).bindResource("path", "webapp/user2");
-                    if (enableVirtualThreads) {
-                        httpServerBinder(binder).enableVirtualThreads();
-                    }
+                    httpServerBinder(binder).withFeatures(serverFeatures);
                 });
 
         Injector injector = app
@@ -280,7 +280,7 @@ public abstract class AbstractTestTestingHttpServer
 
     private void skipUnlessJdkHasVirtualThreads()
     {
-        if (enableVirtualThreads && !VirtualThreads.areSupported()) {
+        if (serverFeatures.virtualThreads() && !VirtualThreads.areSupported()) {
             throw new SkipException("Virtual threads are not supported");
         }
     }
@@ -295,22 +295,22 @@ public abstract class AbstractTestTestingHttpServer
         assertEquals(data.getBody().trim(), contents);
     }
 
-    protected TestingHttpServer createTestingHttpServer(boolean enableVirtualThreads, boolean enableLegacyUriCompliance, DummyServlet servlet, Map<String, String> params)
+    protected TestingHttpServer createTestingHttpServer(HttpServerFeatures serverFeatures, DummyServlet servlet, Map<String, String> params)
             throws IOException
     {
         NodeInfo nodeInfo = new NodeInfo("test");
         HttpServerConfig config = new HttpServerConfig().setHttpPort(0);
         HttpServerInfo httpServerInfo = new HttpServerInfo(config, nodeInfo);
-        return new TestingHttpServer(httpServerInfo, nodeInfo, config, servlet, params, enableVirtualThreads, enableLegacyUriCompliance);
+        return new TestingHttpServer(httpServerInfo, nodeInfo, config, servlet, params, serverFeatures);
     }
 
-    protected TestingHttpServer createTestingHttpServerWithFilter(boolean enableVirtualThreads, boolean enableLegacyUriCompliance, DummyServlet servlet, Map<String, String> params, DummyFilter filter)
+    protected TestingHttpServer createTestingHttpServerWithFilter(HttpServerFeatures serverFeatures, DummyServlet servlet, Map<String, String> params, DummyFilter filter)
             throws IOException
     {
         NodeInfo nodeInfo = new NodeInfo("test");
         HttpServerConfig config = new HttpServerConfig().setHttpPort(0);
         HttpServerInfo httpServerInfo = new HttpServerInfo(config, nodeInfo);
-        return new TestingHttpServer(httpServerInfo, nodeInfo, config, Optional.empty(), servlet, params, ImmutableSet.of(filter), ImmutableSet.of(), enableVirtualThreads, enableLegacyUriCompliance, ClientCertificate.NONE);
+        return new TestingHttpServer(httpServerInfo, nodeInfo, config, Optional.empty(), servlet, params, ImmutableSet.of(filter), ImmutableSet.of(), serverFeatures, ClientCertificate.NONE);
     }
 
     static class DummyServlet

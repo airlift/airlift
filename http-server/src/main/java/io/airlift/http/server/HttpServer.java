@@ -90,6 +90,7 @@ import static java.time.temporal.ChronoUnit.DAYS;
 import static java.util.Collections.list;
 import static java.util.Comparator.naturalOrder;
 import static java.util.Objects.requireNonNull;
+import static java.util.Objects.requireNonNullElse;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static org.eclipse.jetty.http.UriCompliance.Violation.AMBIGUOUS_PATH_ENCODING;
 import static org.eclipse.jetty.http.UriCompliance.Violation.AMBIGUOUS_PATH_SEPARATOR;
@@ -127,8 +128,7 @@ public class HttpServer
             Servlet theAdminServlet,
             Map<String, String> adminParameters,
             Set<Filter> adminFilters,
-            boolean enableVirtualThreads,
-            boolean enableLegacyUriCompliance,
+            HttpServerFeatures serverFeatures,
             ClientCertificate clientCertificate,
             MBeanServer mbeanServer,
             LoginService loginService,
@@ -153,7 +153,7 @@ public class HttpServer
         threadPool.setIdleTimeout(toIntExact(config.getThreadMaxIdleTime().toMillis()));
         threadPool.setName("http-worker");
         threadPool.setDetailedDump(true);
-        if (enableVirtualThreads) {
+        if (serverFeatures.virtualThreads()) {
             Executor executor = getNamedVirtualThreadsExecutor("http-worker#v");
             verify(executor != null, "Could not create virtual threads executor");
             log.info("Virtual threads support is enabled");
@@ -185,7 +185,7 @@ public class HttpServer
             baseHttpConfiguration.setResponseHeaderSize(toIntExact(config.getMaxResponseHeaderSize().toBytes()));
         }
 
-        if (enableLegacyUriCompliance) {
+        if (serverFeatures.legacyUriCompliance()) {
             // allow encoded slashes to occur in URI paths
             UriCompliance uriCompliance = UriCompliance.from(EnumSet.of(AMBIGUOUS_PATH_SEPARATOR, AMBIGUOUS_PATH_ENCODING, SUSPICIOUS_PATH_CHARACTERS));
             baseHttpConfiguration.setUriCompliance(uriCompliance);
@@ -241,24 +241,36 @@ public class HttpServer
             this.sslContextFactory = Optional.of(this.sslContextFactory.orElseGet(() -> createReloadingSslContextFactory(httpsConfig, clientCertificate, nodeInfo.getEnvironment())));
 
             HttpConnectionFactory http11 = new HttpConnectionFactory(httpsConfiguration);
-            HTTP2ServerConnectionFactory http2 = new HTTP2ServerConnectionFactory(httpsConfiguration);
 
-            ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
-            alpn.setDefaultProtocol(http11.getProtocol());
-            SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory.get(), alpn.getProtocol());
+            int acceptors = requireNonNullElse(config.getHttpsAcceptorThreads(), -1);
+            int selectors = requireNonNullElse(config.getHttpsSelectorThreads(), -1);
 
-            Integer acceptors = config.getHttpsAcceptorThreads();
-            Integer selectors = config.getHttpsSelectorThreads();
-            httpsConnector = createServerConnector(
-                    httpServerInfo.getHttpsChannel(),
-                    server,
-                    null,
-                    firstNonNull(acceptors, -1),
-                    firstNonNull(selectors, -1),
-                    sslConnectionFactory,
-                    alpn,
-                    http2,
-                    http11);
+            if (serverFeatures.http2()) {
+                HTTP2ServerConnectionFactory http2 = new HTTP2ServerConnectionFactory(httpsConfiguration);
+                ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
+                alpn.setDefaultProtocol(http11.getProtocol());
+                httpsConnector = createServerConnector(
+                        httpServerInfo.getHttpsChannel(),
+                        server,
+                        null,
+                        acceptors,
+                        selectors,
+                        new SslConnectionFactory(sslContextFactory.get(), alpn.getProtocol()),
+                        alpn,
+                        http2,
+                        http11);
+            }
+            else {
+                httpsConnector = createServerConnector(
+                        httpServerInfo.getHttpsChannel(),
+                        server,
+                        null,
+                        acceptors,
+                        selectors,
+                        new SslConnectionFactory(sslContextFactory.get(), http11.getProtocol()),
+                        http11);
+            }
+
             httpsConnector.setName("https");
             httpsConnector.setPort(httpServerInfo.getHttpsUri().getPort());
             httpsConnector.setIdleTimeout(config.getNetworkMaxIdleTime().toMillis());
@@ -281,7 +293,7 @@ public class HttpServer
             adminThreadPool.setName("http-admin-worker");
             adminThreadPool.setMinThreads(config.getAdminMinThreads());
             adminThreadPool.setIdleTimeout(toIntExact(config.getThreadMaxIdleTime().toMillis()));
-            if (enableVirtualThreads) {
+            if (serverFeatures.virtualThreads()) {
                 Executor executor = getNamedVirtualThreadsExecutor("http-admin-worker#v");
                 if (executor != null) {
                     adminThreadPool.setVirtualThreadsExecutor(executor);
@@ -352,11 +364,11 @@ public class HttpServer
 
         // add handlers to Jetty
         StatisticsHandler statsHandler = new StatisticsHandler();
-        statsHandler.setHandler(createServletContext(theServlet, resources, parameters, filters, tokenManager, loginService, Set.of("http", "https"), showStackTrace, enableLegacyUriCompliance));
+        statsHandler.setHandler(createServletContext(theServlet, resources, parameters, filters, tokenManager, loginService, Set.of("http", "https"), showStackTrace, serverFeatures.legacyUriCompliance()));
 
         ContextHandlerCollection rootHandlers = new ContextHandlerCollection();
         if (theAdminServlet != null && config.isAdminEnabled()) {
-            rootHandlers.addHandler(createServletContext(theAdminServlet, resources, adminParameters, adminFilters, tokenManager, loginService, Set.of("admin"), showStackTrace, enableLegacyUriCompliance));
+            rootHandlers.addHandler(createServletContext(theAdminServlet, resources, adminParameters, adminFilters, tokenManager, loginService, Set.of("admin"), showStackTrace, serverFeatures.legacyUriCompliance()));
         }
         rootHandlers.addHandler(statsHandler);
         StatsRecordingHandler statsRecordingHandler = new StatsRecordingHandler(stats);
