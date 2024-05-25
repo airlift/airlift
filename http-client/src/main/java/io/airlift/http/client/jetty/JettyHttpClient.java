@@ -893,20 +893,12 @@ public class JettyHttpClient
 
         jettyRequest.headers(headers -> finalRequest.getHeaders().forEach(headers::add));
 
-        BodyGenerator bodyGenerator = finalRequest.getBodyGenerator();
-        if (bodyGenerator != null) {
-            if (bodyGenerator instanceof StaticBodyGenerator generator) {
-                jettyRequest.body(new BytesRequestContent(generator.getBody()));
-            }
-            else if (bodyGenerator instanceof ByteBufferBodyGenerator generator) {
-                jettyRequest.body(new ByteBufferRequestContent(generator.getByteBuffers()));
-            }
-            else if (bodyGenerator instanceof FileBodyGenerator generator) {
-                jettyRequest.body(fileContent(generator.getPath()));
-            }
-            else {
-                jettyRequest.body(new BytesRequestContent(generateBody(bodyGenerator)));
-            }
+        switch (finalRequest.getBodyGenerator()) {
+            case null -> {}
+            case StaticBodyGenerator generator -> jettyRequest.body(new BytesRequestContent(generator.getBody()));
+            case ByteBufferBodyGenerator generator -> jettyRequest.body(new ByteBufferRequestContent(generator.getByteBuffers()));
+            case FileBodyGenerator generator -> jettyRequest.body(fileContent(generator.getPath()));
+            case BodyGenerator bodyGenerator -> jettyRequest.body(new BytesRequestContent(generateBody(bodyGenerator)));
         }
 
         jettyRequest.followRedirects(finalRequest.isFollowRedirects());
