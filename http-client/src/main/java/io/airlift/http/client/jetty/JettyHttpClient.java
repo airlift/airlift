@@ -121,6 +121,7 @@ import static java.lang.Math.max;
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.time.temporal.ChronoUnit.MILLIS;
 import static java.time.temporal.ChronoUnit.YEARS;
 import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
@@ -264,6 +265,7 @@ public class JettyHttpClient
                 if (config.getTcpKeepAliveIdleTime().isPresent()) {
                     setKeepAlive(selectable, config.getTcpKeepAliveIdleTime().get());
                 }
+                setConnectTimeout(java.time.Duration.of(config.getConnectTimeout().toMillis(), MILLIS));
             }
         };
 
