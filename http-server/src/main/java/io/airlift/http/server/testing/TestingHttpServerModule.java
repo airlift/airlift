@@ -14,15 +14,19 @@
 package io.airlift.http.server.testing;
 
 import com.google.inject.Binder;
+import com.google.inject.Inject;
 import com.google.inject.Key;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
 import io.airlift.discovery.client.AnnouncementHttpServerInfo;
+import io.airlift.http.server.EnableHttp2;
 import io.airlift.http.server.EnableLegacyUriCompliance;
 import io.airlift.http.server.EnableVirtualThreads;
 import io.airlift.http.server.HttpServer;
 import io.airlift.http.server.HttpServer.ClientCertificate;
 import io.airlift.http.server.HttpServerConfig;
+import io.airlift.http.server.HttpServerFeatures;
 import io.airlift.http.server.HttpServerInfo;
 import io.airlift.http.server.HttpsConfig;
 import io.airlift.http.server.LocalAnnouncementHttpServerInfo;
@@ -66,6 +70,8 @@ public class TestingHttpServerModule
         newOptionalBinder(binder, Key.get(Boolean.class, EnableVirtualThreads.class)).setDefault().toInstance(false);
         // override with HttpServerBinder.enableLegacyUriCompliance()
         newOptionalBinder(binder, Key.get(Boolean.class, EnableLegacyUriCompliance.class)).setDefault().toInstance(false);
+        // override with HttpServerBinder.disableHttp2()
+        newOptionalBinder(binder, Key.get(Boolean.class, EnableHttp2.class)).setDefault().toInstance(true);
         newSetBinder(binder, Filter.class, TheServlet.class);
         newSetBinder(binder, HttpResourceBinding.class, TheServlet.class);
         binder.bind(AnnouncementHttpServerInfo.class).to(LocalAnnouncementHttpServerInfo.class);
@@ -79,5 +85,19 @@ public class TestingHttpServerModule
                 }
             });
         }));
+    }
+
+    @Provides
+    @Inject
+    public HttpServerFeatures serverFeatures(
+            @EnableVirtualThreads boolean virtualThreads,
+            @EnableLegacyUriCompliance boolean uriCompliance,
+            @EnableHttp2 boolean http2)
+    {
+        return HttpServerFeatures.builder()
+                .withVirtualThreads(virtualThreads)
+                .withLegacyUriCompliance(uriCompliance)
+                .withHttp2(http2)
+                .build();
     }
 }

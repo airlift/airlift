@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableSet;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.server.HttpServer;
 import io.airlift.http.server.HttpServerConfig;
+import io.airlift.http.server.HttpServerFeatures;
 import io.airlift.http.server.HttpServerInfo;
 import io.airlift.http.server.HttpsConfig;
 import io.airlift.node.NodeInfo;
@@ -20,7 +21,9 @@ public class TestTestingHttps2Server
 {
     TestTestingHttps2Server()
     {
-        super(false, false);
+        super(HttpServerFeatures.builder()
+                .withHttp2(true)
+                .build());
     }
 
     @Override
@@ -36,7 +39,7 @@ public class TestTestingHttps2Server
     }
 
     @Override
-    protected TestingHttpServer createTestingHttpServer(boolean enableVirtualThreads, boolean enableLegacyUriCompliance, DummyServlet servlet, Map<String, String> params)
+    protected TestingHttpServer createTestingHttpServer(HttpServerFeatures serverFeatures, DummyServlet servlet, Map<String, String> params)
             throws IOException
     {
         NodeInfo nodeInfo = new NodeInfo("test");
@@ -51,11 +54,11 @@ public class TestTestingHttps2Server
                 .setKeystorePassword("airlift");
 
         HttpServerInfo httpServerInfo = new HttpServerInfo(config, Optional.of(httpsConfig), nodeInfo);
-        return new TestingHttpServer(httpServerInfo, nodeInfo, config, Optional.of(httpsConfig), servlet, params, Set.of(), Set.of(), enableVirtualThreads, enableLegacyUriCompliance, HttpServer.ClientCertificate.NONE);
+        return new TestingHttpServer(httpServerInfo, nodeInfo, config, Optional.of(httpsConfig), servlet, params, Set.of(), Set.of(), serverFeatures, HttpServer.ClientCertificate.NONE);
     }
 
     @Override
-    protected TestingHttpServer createTestingHttpServerWithFilter(boolean enableVirtualThreads, boolean enableLegacyUriCompliance, DummyServlet servlet, Map<String, String> params, DummyFilter filter)
+    protected TestingHttpServer createTestingHttpServerWithFilter(HttpServerFeatures serverFeatures, DummyServlet servlet, Map<String, String> params, DummyFilter filter)
             throws IOException
     {
         NodeInfo nodeInfo = new NodeInfo("test");
@@ -70,6 +73,6 @@ public class TestTestingHttps2Server
                 .setKeystorePassword("airlift");
 
         HttpServerInfo httpServerInfo = new HttpServerInfo(config, Optional.of(httpsConfig), nodeInfo);
-        return new TestingHttpServer(httpServerInfo, nodeInfo, config, Optional.of(httpsConfig), servlet, params, ImmutableSet.of(filter), ImmutableSet.of(), enableVirtualThreads, enableLegacyUriCompliance, HttpServer.ClientCertificate.NONE);
+        return new TestingHttpServer(httpServerInfo, nodeInfo, config, Optional.of(httpsConfig), servlet, params, ImmutableSet.of(filter), ImmutableSet.of(), serverFeatures, HttpServer.ClientCertificate.NONE);
     }
 }

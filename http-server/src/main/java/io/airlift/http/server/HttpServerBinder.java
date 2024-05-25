@@ -51,6 +51,31 @@ public class HttpServerBinder
         return this;
     }
 
+    /**
+     * @deprecated this will be removed in the near future and is only intended as a stopgap
+     */
+    @Deprecated(forRemoval = true)
+    public HttpServerBinder disableHttp2()
+    {
+        newOptionalBinder(binder, Key.get(Boolean.class, EnableHttp2.class)).setBinding().toInstance(false);
+        return this;
+    }
+
+    public void withFeatures(HttpServerFeatures serverFeatures)
+    {
+        if (serverFeatures.virtualThreads()) {
+            enableVirtualThreads();
+        }
+
+        if (serverFeatures.legacyUriCompliance()) {
+            enableLegacyUriCompliance();
+        }
+
+        if (!serverFeatures.http2()) {
+            disableHttp2();
+        }
+    }
+
     private HttpResourceBinding bindResource(String baseUri,
             String classPathResourceBase,
             Class<? extends Annotation> annotationType)

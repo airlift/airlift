@@ -58,6 +58,7 @@ public class HttpServerProvider
     private Map<String, String> adminServletInitParameters = ImmutableMap.of();
     private final boolean enableVirtualThreads;
     private final boolean enableLegacyUriCompliance;
+    private final boolean enableHttp2;
     private MBeanServer mbeanServer;
     private LoginService loginService;
     private final RequestStats stats;
@@ -76,8 +77,7 @@ public class HttpServerProvider
             @TheServlet Set<Filter> filters,
             @TheServlet Set<HttpResourceBinding> resources,
             @TheAdminServlet Set<Filter> adminFilters,
-            @EnableVirtualThreads boolean enableVirtualThreads,
-            @EnableLegacyUriCompliance boolean enableLegacyUriCompliance,
+            HttpServerFeatures serverFeatures,
             ClientCertificate clientCertificate,
             RequestStats stats,
             EventClient eventClient,
@@ -104,8 +104,9 @@ public class HttpServerProvider
         this.filters = ImmutableSet.copyOf(filters);
         this.resources = ImmutableSet.copyOf(resources);
         this.adminFilters = ImmutableSet.copyOf(adminFilters);
-        this.enableVirtualThreads = enableVirtualThreads;
-        this.enableLegacyUriCompliance = enableLegacyUriCompliance;
+        this.enableVirtualThreads = serverFeatures.virtualThreads();
+        this.enableLegacyUriCompliance = serverFeatures.legacyUriCompliance();
+        this.enableHttp2 = serverFeatures.http2();
         this.clientCertificate = clientCertificate;
         this.stats = stats;
         this.eventClient = eventClient;
@@ -164,8 +165,11 @@ public class HttpServerProvider
                     theAdminServlet,
                     adminServletInitParameters,
                     adminFilters,
-                    enableVirtualThreads,
-                    enableLegacyUriCompliance,
+                    HttpServerFeatures.builder()
+                            .withVirtualThreads(enableVirtualThreads)
+                            .withLegacyUriCompliance(enableLegacyUriCompliance)
+                            .withHttp2(enableHttp2)
+                            .build(),
                     clientCertificate,
                     mbeanServer,
                     loginService,
