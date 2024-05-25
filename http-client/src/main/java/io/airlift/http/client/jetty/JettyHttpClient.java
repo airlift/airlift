@@ -118,6 +118,7 @@ import static io.airlift.node.AddressToHostname.tryDecodeHostnameToAddress;
 import static io.airlift.security.cert.CertificateBuilder.certificateBuilder;
 import static io.opentelemetry.api.common.AttributeKey.stringKey;
 import static java.lang.Math.max;
+import static java.lang.Math.min;
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -797,9 +798,8 @@ public class JettyHttpClient
 
         RequestSizeListener requestSize = new RequestSizeListener();
         jettyRequest.onRequestContent(requestSize);
-
         JettyResponseFuture<T, E> future = new JettyResponseFuture<>(request, jettyRequest, requestSize::getBytes, responseHandler, span, stats, recordRequestComplete);
-
+        httpClient.getScheduler().schedule(future::idleTimeout, min(httpClient.getConnectTimeout(), httpClient.getIdleTimeout()), MILLISECONDS);
         BufferingResponseListener listener = new BufferingResponseListener(future, Ints.saturatedCast(maxContentLength))
         {
             @Override

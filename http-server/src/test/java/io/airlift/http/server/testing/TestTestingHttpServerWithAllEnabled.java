@@ -9,7 +9,6 @@ public class TestTestingHttpServerWithAllEnabled
     {
         super(HttpServerFeatures.builder()
                 .withVirtualThreads(true)
-                .withHttp2(true)
                 .withLegacyUriCompliance(true)
                 .build());
     }

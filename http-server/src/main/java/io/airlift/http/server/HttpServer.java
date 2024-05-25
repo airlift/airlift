@@ -78,7 +78,6 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Verify.verify;
@@ -148,6 +147,8 @@ public class HttpServer
 
         checkArgument(!config.isHttpsEnabled() || maybeHttpsConfig.isPresent(), "httpsConfig must be present when HTTPS is enabled");
 
+        this.sslContextFactory = maybeSslContextFactory.or(() -> maybeHttpsConfig.map(httpsConfig -> createReloadingSslContextFactory(httpsConfig, clientCertificate, nodeInfo.getEnvironment())));
+
         MonitoredQueuedThreadPool threadPool = new MonitoredQueuedThreadPool(config.getMaxThreads());
         threadPool.setMinThreads(config.getMinThreads());
         threadPool.setIdleTimeout(toIntExact(config.getThreadMaxIdleTime().toMillis()));
@@ -163,9 +164,6 @@ public class HttpServer
         this.monitoredQueuedThreadPoolMBean = new MonitoredQueuedThreadPoolMBean(threadPool);
 
         boolean showStackTrace = config.isShowStackTrace();
-
-        this.sslContextFactory = maybeSslContextFactory;
-
         if (mbeanServer != null) {
             // export jmx mbeans if a server was provided
             MBeanContainer mbeanContainer = new MBeanContainer(mbeanServer);
@@ -201,23 +199,16 @@ public class HttpServer
                 httpConfiguration.setSecurePort(httpServerInfo.getHttpsUri().getPort());
             }
 
-            Integer acceptors = config.getHttpAcceptorThreads();
-            Integer selectors = config.getHttpSelectorThreads();
-            HttpConnectionFactory http1 = new HttpConnectionFactory(httpConfiguration);
-            HTTP2CServerConnectionFactory http2c = new HTTP2CServerConnectionFactory(httpConfiguration);
-            http2c.setInitialSessionRecvWindow(toIntExact(config.getHttp2InitialSessionReceiveWindowSize().toBytes()));
-            http2c.setInitialStreamRecvWindow(toIntExact(config.getHttp2InitialStreamReceiveWindowSize().toBytes()));
-            http2c.setMaxConcurrentStreams(config.getHttp2MaxConcurrentStreams());
-            http2c.setInputBufferSize(toIntExact(config.getHttp2InputBufferSize().toBytes()));
-            http2c.setStreamIdleTimeout(config.getHttp2StreamIdleTimeout().toMillis());
+            Integer acceptors = requireNonNullElse(config.getHttpAcceptorThreads(), -1);
+            Integer selectors = requireNonNullElse(config.getHttpSelectorThreads(), -1);
             httpConnector = createServerConnector(
                     httpServerInfo.getHttpChannel(),
                     server,
                     null,
-                    firstNonNull(acceptors, -1),
-                    firstNonNull(selectors, -1),
-                    http1,
-                    http2c);
+                    acceptors,
+                    selectors,
+                    getInsecureProtocols(httpConfiguration, config));
+
             httpConnector.setName("http");
             httpConnector.setPort(httpServerInfo.getHttpUri().getPort());
             httpConnector.setIdleTimeout(config.getNetworkMaxIdleTime().toMillis());
@@ -234,42 +225,18 @@ public class HttpServer
         // set up NIO-based HTTPS connector
         ServerConnector httpsConnector;
         if (config.isHttpsEnabled()) {
-            HttpConfiguration httpsConfiguration = new HttpConfiguration(baseHttpConfiguration);
-            setSecureRequestCustomizer(httpsConfiguration);
-
-            HttpsConfig httpsConfig = maybeHttpsConfig.orElseThrow();
-            this.sslContextFactory = Optional.of(this.sslContextFactory.orElseGet(() -> createReloadingSslContextFactory(httpsConfig, clientCertificate, nodeInfo.getEnvironment())));
-
-            HttpConnectionFactory http11 = new HttpConnectionFactory(httpsConfiguration);
-
+            verify(sslContextFactory.isPresent(), "sslContextFactory is empty");
+            HttpConfiguration httpConfiguration = new HttpConfiguration(baseHttpConfiguration);
             int acceptors = requireNonNullElse(config.getHttpsAcceptorThreads(), -1);
             int selectors = requireNonNullElse(config.getHttpsSelectorThreads(), -1);
 
-            if (serverFeatures.http2()) {
-                HTTP2ServerConnectionFactory http2 = new HTTP2ServerConnectionFactory(httpsConfiguration);
-                ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
-                alpn.setDefaultProtocol(http11.getProtocol());
-                httpsConnector = createServerConnector(
-                        httpServerInfo.getHttpsChannel(),
-                        server,
-                        null,
-                        acceptors,
-                        selectors,
-                        new SslConnectionFactory(sslContextFactory.get(), alpn.getProtocol()),
-                        alpn,
-                        http2,
-                        http11);
-            }
-            else {
-                httpsConnector = createServerConnector(
-                        httpServerInfo.getHttpsChannel(),
-                        server,
-                        null,
-                        acceptors,
-                        selectors,
-                        new SslConnectionFactory(sslContextFactory.get(), http11.getProtocol()),
-                        http11);
-            }
+            httpsConnector = createServerConnector(
+                    httpServerInfo.getHttpsChannel(),
+                    server,
+                    null,
+                    acceptors,
+                    selectors,
+                    getSecureProtocols(sslContextFactory.get(), httpConfiguration));
 
             httpsConnector.setName("https");
             httpsConnector.setPort(httpServerInfo.getHttpsUri().getPort());
@@ -287,8 +254,7 @@ public class HttpServer
         // set up NIO-based Admin connector
         ServerConnector adminConnector;
         if (theAdminServlet != null && config.isAdminEnabled()) {
-            HttpConfiguration adminConfiguration = new HttpConfiguration(baseHttpConfiguration);
-
+            HttpConfiguration httpConfiguration = new HttpConfiguration(baseHttpConfiguration);
             MonitoredQueuedThreadPool adminThreadPool = new MonitoredQueuedThreadPool(config.getAdminMaxThreads());
             adminThreadPool.setName("http-admin-worker");
             adminThreadPool.setMinThreads(config.getAdminMinThreads());
@@ -303,32 +269,23 @@ public class HttpServer
             this.monitoredAdminQueuedThreadPoolMBean = new MonitoredQueuedThreadPoolMBean(adminThreadPool);
 
             if (config.isHttpsEnabled()) {
-                setSecureRequestCustomizer(adminConfiguration);
-
-                HttpsConfig httpsConfig = maybeHttpsConfig.orElseThrow();
-                this.sslContextFactory = Optional.of(this.sslContextFactory.orElseGet(() -> createReloadingSslContextFactory(httpsConfig, clientCertificate, nodeInfo.getEnvironment())));
-                SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory.get(), "http/1.1");
+                verify(sslContextFactory.isPresent(), "sslContextFactory is empty");
                 adminConnector = createServerConnector(
                         httpServerInfo.getAdminChannel(),
                         server,
                         adminThreadPool,
                         0,
                         -1,
-                        sslConnectionFactory,
-                        new HttpConnectionFactory(adminConfiguration));
+                        getSecureProtocols(sslContextFactory.get(), httpConfiguration));
             }
             else {
-                HttpConnectionFactory http1 = new HttpConnectionFactory(adminConfiguration);
-                HTTP2CServerConnectionFactory http2c = new HTTP2CServerConnectionFactory(adminConfiguration);
-                http2c.setMaxConcurrentStreams(config.getHttp2MaxConcurrentStreams());
                 adminConnector = createServerConnector(
                         httpServerInfo.getAdminChannel(),
                         server,
                         adminThreadPool,
                         -1,
                         -1,
-                        http1,
-                        http2c);
+                        getInsecureProtocols(httpConfiguration, config));
             }
 
             adminConnector.setName("admin");
@@ -390,6 +347,26 @@ public class HttpServer
         errorHandler.setShowMessageInTitle(showStackTrace);
         errorHandler.setShowStacks(showStackTrace);
         server.setErrorHandler(errorHandler);
+    }
+
+    private static ConnectionFactory[] getSecureProtocols(SslContextFactory.Server sslContext, HttpConfiguration configuration)
+    {
+        HttpConfiguration httpsConfiguration = new HttpConfiguration(configuration);
+        setSecureRequestCustomizer(httpsConfiguration);
+        HttpConnectionFactory http11 = new HttpConnectionFactory(httpsConfiguration);
+
+        ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
+        alpn.setDefaultProtocol(http11.getProtocol());
+        HTTP2ServerConnectionFactory http2 = new HTTP2ServerConnectionFactory(httpsConfiguration);
+        return new ConnectionFactory[] {new SslConnectionFactory(sslContext, alpn.getProtocol()), alpn, http2, http11};
+    }
+
+    private static ConnectionFactory[] getInsecureProtocols(HttpConfiguration configuration, HttpServerConfig serverConfig)
+    {
+        HttpConnectionFactory http1 = new HttpConnectionFactory(configuration);
+        HTTP2CServerConnectionFactory http2c = new HTTP2CServerConnectionFactory(configuration);
+        http2c.setMaxConcurrentStreams(serverConfig.getHttp2MaxConcurrentStreams());
+        return new ConnectionFactory[] {http1, http2c};
     }
 
     private static void setSecureRequestCustomizer(HttpConfiguration configuration)

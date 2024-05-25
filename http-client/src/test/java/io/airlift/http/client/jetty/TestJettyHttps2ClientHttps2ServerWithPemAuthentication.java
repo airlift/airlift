@@ -2,8 +2,9 @@ package io.airlift.http.client.jetty;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import io.airlift.http.client.AbstractHttpClientTest;
+import io.airlift.http.client.AbstractHttpsClientTest;
 import io.airlift.http.client.HttpClientConfig;
+import io.airlift.http.client.HttpVersion;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.TestingRequestFilter;
@@ -14,17 +15,16 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.concurrent.TimeoutException;
 
 import static com.google.common.io.Resources.getResource;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 
-public class TestJettyHttpsClientPem
-        extends AbstractHttpClientTest
+public class TestJettyHttps2ClientHttps2ServerWithPemAuthentication
+        extends AbstractHttpsClientTest
 {
     private JettyHttpClient httpClient;
 
-    public TestJettyHttpsClientPem()
+    public TestJettyHttps2ClientHttps2ServerWithPemAuthentication()
     {
         super("localhost", getResource("server.keystore").toString());
     }
@@ -35,20 +35,26 @@ public class TestJettyHttpsClientPem
         httpClient = new JettyHttpClient("test-shared", createClientConfig(), ImmutableList.of(new TestingRequestFilter()), ImmutableSet.of(new TestingStatusListener(statusCounts)));
     }
 
-    @AfterClass(alwaysRun = true)
-    public void tearDownHttpClient()
-    {
-        closeQuietly(httpClient);
-    }
-
     @Override
     protected HttpClientConfig createClientConfig()
     {
         return new HttpClientConfig()
-                .setHttp2Enabled(false)
+                .setHttp2Enabled(true)
                 .setKeyStorePath(getResource("client.pem").getPath())
                 .setKeyStorePassword("changeit")
                 .setTrustStorePath(getResource("ca.crt").getPath());
+    }
+
+    @Override
+    protected HttpVersion expectedProtocolVersion()
+    {
+        return HttpVersion.HTTP_2;
+    }
+
+    @AfterClass(alwaysRun = true)
+    public void tearDownHttpClient()
+    {
+        closeQuietly(httpClient);
     }
 
     @Override
@@ -89,29 +95,5 @@ public class TestJettyHttpsClientPem
                 .build();
 
         executeRequest(request, new ExceptionResponseHandler());
-    }
-
-    @Override
-    @Test(expectedExceptions = {IOException.class, IllegalStateException.class})
-    public void testConnectReadRequestClose()
-            throws Exception
-    {
-        super.testConnectReadRequestClose();
-    }
-
-    @Override
-    @Test(expectedExceptions = {IOException.class, IllegalStateException.class})
-    public void testConnectNoReadClose()
-            throws Exception
-    {
-        super.testConnectNoReadClose();
-    }
-
-    @Override
-    @Test(expectedExceptions = {IOException.class, TimeoutException.class, IllegalStateException.class})
-    public void testConnectReadIncompleteClose()
-            throws Exception
-    {
-        super.testConnectReadIncompleteClose();
     }
 }

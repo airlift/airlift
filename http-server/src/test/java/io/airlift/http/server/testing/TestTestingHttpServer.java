@@ -23,7 +23,7 @@ public class TestTestingHttpServer
     TestTestingHttpServer()
     {
         super(HttpServerFeatures.builder()
-                .withHttp2(false)
+                .withHttp2(true) // Enable H2C
                 .build());
     }
 }

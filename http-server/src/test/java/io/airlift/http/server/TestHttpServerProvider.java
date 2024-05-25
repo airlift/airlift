@@ -284,7 +284,7 @@ public class TestHttpServerProvider
             assertEquals(response.getHeader("X-Protocol"), "HTTP/1.1");
         }
 
-        try (JettyHttpClient httpClient = new JettyHttpClient(new HttpClientConfig())) {
+        try (JettyHttpClient httpClient = new JettyHttpClient(new HttpClientConfig().setHttp2Enabled(true))) {
             StatusResponse response = httpClient.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStatusResponseHandler());
 
             assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
@@ -296,6 +296,13 @@ public class TestHttpServerProvider
 
             assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
             assertEquals(response.getHeader("X-Protocol"), "HTTP/1.1");
+        }
+
+        try (JettyHttpClient httpClient = new JettyHttpClient(new HttpClientConfig())) {
+            StatusResponse response = httpClient.execute(prepareGet().setVersion(HttpVersion.HTTP_2).setUri(httpServerInfo.getHttpUri()).build(), createStatusResponseHandler());
+
+            assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
+            assertEquals(response.getHeader("X-Protocol"), "HTTP/2.0");
         }
     }
 

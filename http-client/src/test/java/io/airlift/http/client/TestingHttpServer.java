@@ -13,6 +13,7 @@
  */
 package io.airlift.http.client;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.net.HostAndPort;
 import jakarta.servlet.Servlet;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
@@ -20,6 +21,7 @@ import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
+import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -68,22 +70,10 @@ public class TestingHttpServer
             SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
             sslContextFactory.setKeyStorePath(keystore.get());
             sslContextFactory.setKeyStorePassword("changeit");
-
-            HttpConnectionFactory http11 = new HttpConnectionFactory(httpConfiguration);
-            HTTP2ServerConnectionFactory http2 = new HTTP2ServerConnectionFactory(httpConfiguration);
-
-            ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
-            alpn.setDefaultProtocol(http11.getProtocol());
-
-            SslConnectionFactory tls = new SslConnectionFactory(sslContextFactory, alpn.getProtocol());
-
-            connector = new ServerConnector(server, tls, alpn, http2, http11);
+            connector = new ServerConnector(server, getSecureProtocols(sslContextFactory, httpConfiguration));
         }
         else {
-            HttpConnectionFactory http1 = new HttpConnectionFactory(httpConfiguration);
-            HTTP2CServerConnectionFactory http2c = new HTTP2CServerConnectionFactory(httpConfiguration);
-
-            connector = new ServerConnector(server, http1, http2c);
+            connector = new ServerConnector(server, getInsecureProtocols(httpConfiguration));
         }
 
         connector.setIdleTimeout(30000);
@@ -114,6 +104,32 @@ public class TestingHttpServer
         this.server = server;
         this.server.start();
         this.hostAndPort = HostAndPort.fromParts("localhost", connector.getLocalPort());
+    }
+
+    // Keep in sync with HttpServer
+    private static ConnectionFactory[] getSecureProtocols(SslContextFactory.Server sslContext, HttpConfiguration configuration)
+    {
+        HttpConfiguration httpsConfiguration = new HttpConfiguration(configuration);
+        setSecureRequestCustomizer(httpsConfiguration);
+        HttpConnectionFactory http11 = new HttpConnectionFactory(httpsConfiguration);
+
+        ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
+        alpn.setDefaultProtocol(http11.getProtocol());
+        HTTP2ServerConnectionFactory http2 = new HTTP2ServerConnectionFactory(httpsConfiguration);
+        return new ConnectionFactory[] {new SslConnectionFactory(sslContext, alpn.getProtocol()), alpn, http2, http11};
+    }
+
+    private static ConnectionFactory[] getInsecureProtocols(HttpConfiguration configuration)
+    {
+        return new ConnectionFactory[] {new HttpConnectionFactory(configuration), new HTTP2CServerConnectionFactory(configuration)};
+    }
+
+    private static void setSecureRequestCustomizer(HttpConfiguration configuration)
+    {
+        configuration.setCustomizers(ImmutableList.<HttpConfiguration.Customizer>builder()
+                .add(new SecureRequestCustomizer(false))
+                .addAll(configuration.getCustomizers())
+                .build());
     }
 
     public HostAndPort getHostAndPort()
