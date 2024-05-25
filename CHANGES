@@ -5,6 +5,7 @@
 - Update Jersey to 3.1.7
 - Support generic list and set injection into configuration classes
 - Add support for HTTP/2 protocol to the client and server
+- Enable HTTP/2 support in the client by default
 
 248
 

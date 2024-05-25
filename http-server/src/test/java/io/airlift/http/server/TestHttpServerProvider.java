@@ -23,6 +23,7 @@ import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.HttpClient.HttpResponseFuture;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.HttpUriBuilder;
+import io.airlift.http.client.HttpVersion;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.Request.Builder;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
@@ -283,11 +284,18 @@ public class TestHttpServerProvider
             assertEquals(response.getHeader("X-Protocol"), "HTTP/1.1");
         }
 
-        try (JettyHttpClient httpClient = new JettyHttpClient(new HttpClientConfig().setHttp2Enabled(true))) {
+        try (JettyHttpClient httpClient = new JettyHttpClient(new HttpClientConfig())) {
             StatusResponse response = httpClient.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStatusResponseHandler());
 
             assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
             assertEquals(response.getHeader("X-Protocol"), "HTTP/2.0");
+        }
+
+        try (JettyHttpClient httpClient = new JettyHttpClient(new HttpClientConfig())) {
+            StatusResponse response = httpClient.execute(prepareGet().setVersion(HttpVersion.HTTP_1_1).setUri(httpServerInfo.getHttpUri()).build(), createStatusResponseHandler());
+
+            assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
+            assertEquals(response.getHeader("X-Protocol"), "HTTP/1.1");
         }
     }
 

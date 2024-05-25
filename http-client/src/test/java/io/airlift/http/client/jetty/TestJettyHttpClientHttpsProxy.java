@@ -39,6 +39,7 @@ public class TestJettyHttpClientHttpsProxy
     {
         return super.createClientConfig()
                 .setSecureProxy(true)
+                .setHttp2Enabled(false)
                 .setKeyStorePath(getResource("localhost.keystore").getPath())
                 .setKeyStorePassword("changeit")
                 .setTrustStorePath(getResource("localhost.truststore").getPath())

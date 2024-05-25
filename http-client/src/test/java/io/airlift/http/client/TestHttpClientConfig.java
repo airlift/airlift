@@ -48,7 +48,7 @@ public class TestHttpClientConfig
     {
         ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(HttpClientConfig.class)
                 .setVerifyHostname(true)
-                .setHttp2Enabled(false)
+                .setHttp2Enabled(true)
                 .setConnectTimeout(new Duration(5, SECONDS))
                 .setRequestTimeout(new Duration(5, MINUTES))
                 .setIdleTimeout(new Duration(1, MINUTES))
@@ -94,7 +94,7 @@ public class TestHttpClientConfig
     {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("http-client.https.hostname-verification", "false")
-                .put("http-client.http2.enabled", "true")
+                .put("http-client.http2.enabled", "false")
                 .put("http-client.connect-timeout", "4s")
                 .put("http-client.request-timeout", "15s")
                 .put("http-client.idle-timeout", "5s")
@@ -137,7 +137,7 @@ public class TestHttpClientConfig
 
         HttpClientConfig expected = new HttpClientConfig()
                 .setVerifyHostname(false)
-                .setHttp2Enabled(true)
+                .setHttp2Enabled(false)
                 .setConnectTimeout(new Duration(4, SECONDS))
                 .setRequestTimeout(new Duration(15, SECONDS))
                 .setIdleTimeout(new Duration(5, SECONDS))

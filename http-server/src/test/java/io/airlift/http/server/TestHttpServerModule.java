@@ -33,6 +33,7 @@ import io.airlift.event.client.EventClient;
 import io.airlift.event.client.EventModule;
 import io.airlift.event.client.InMemoryEventModule;
 import io.airlift.http.client.HttpClient;
+import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.HttpStatus;
 import io.airlift.http.client.HttpUriBuilder;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
@@ -214,7 +215,7 @@ public class TestHttpServerModule
         HttpServer server = injector.getInstance(HttpServer.class);
         server.start();
 
-        try (HttpClient client = new JettyHttpClient()) {
+        try (HttpClient client = new JettyHttpClient(new HttpClientConfig().setHttp2Enabled(false))) {
             // test servlet bound correctly
             URI httpUri = httpServerInfo.getHttpUri();
             StatusResponse response = client.execute(prepareGet().setUri(httpUri).build(), createStatusResponseHandler());
@@ -322,7 +323,7 @@ public class TestHttpServerModule
         long beforeRequest = System.currentTimeMillis();
         long afterRequest;
         HttpRequestEvent event;
-        try (JettyHttpClient client = new JettyHttpClient()) {
+        try (JettyHttpClient client = new JettyHttpClient(new HttpClientConfig().setHttp2Enabled(false))) {
             // test servlet bound correctly
             StringResponse response = client.execute(
                     preparePost().setUri(requestUri)
