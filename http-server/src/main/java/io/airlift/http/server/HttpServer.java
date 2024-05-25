@@ -78,7 +78,6 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Verify.verify;
@@ -201,23 +200,31 @@ public class HttpServer
                 httpConfiguration.setSecurePort(httpServerInfo.getHttpsUri().getPort());
             }
 
-            Integer acceptors = config.getHttpAcceptorThreads();
-            Integer selectors = config.getHttpSelectorThreads();
-            HttpConnectionFactory http1 = new HttpConnectionFactory(httpConfiguration);
-            HTTP2CServerConnectionFactory http2c = new HTTP2CServerConnectionFactory(httpConfiguration);
-            http2c.setInitialSessionRecvWindow(toIntExact(config.getHttp2InitialSessionReceiveWindowSize().toBytes()));
-            http2c.setInitialStreamRecvWindow(toIntExact(config.getHttp2InitialStreamReceiveWindowSize().toBytes()));
-            http2c.setMaxConcurrentStreams(config.getHttp2MaxConcurrentStreams());
-            http2c.setInputBufferSize(toIntExact(config.getHttp2InputBufferSize().toBytes()));
-            http2c.setStreamIdleTimeout(config.getHttp2StreamIdleTimeout().toMillis());
+            Integer acceptors = requireNonNullElse(config.getHttpAcceptorThreads(), -1);
+            Integer selectors = requireNonNullElse(config.getHttpSelectorThreads(), -1);
+
+            ImmutableList.Builder<ConnectionFactory> builder = ImmutableList.builder();
+            builder.add(new HttpConnectionFactory(httpConfiguration));
+
+            if (serverFeatures.http2()) {
+                HTTP2CServerConnectionFactory http2c = new HTTP2CServerConnectionFactory(httpConfiguration);
+                http2c.setInitialSessionRecvWindow(toIntExact(config.getHttp2InitialSessionReceiveWindowSize().toBytes()));
+                http2c.setInitialStreamRecvWindow(toIntExact(config.getHttp2InitialStreamReceiveWindowSize().toBytes()));
+                http2c.setMaxConcurrentStreams(config.getHttp2MaxConcurrentStreams());
+                http2c.setInputBufferSize(toIntExact(config.getHttp2InputBufferSize().toBytes()));
+                http2c.setStreamIdleTimeout(config.getHttp2StreamIdleTimeout().toMillis());
+
+                builder.add(http2c);
+            }
+
             httpConnector = createServerConnector(
                     httpServerInfo.getHttpChannel(),
                     server,
                     null,
-                    firstNonNull(acceptors, -1),
-                    firstNonNull(selectors, -1),
-                    http1,
-                    http2c);
+                    acceptors,
+                    selectors,
+                    builder.build());
+
             httpConnector.setName("http");
             httpConnector.setPort(httpServerInfo.getHttpUri().getPort());
             httpConnector.setIdleTimeout(config.getNetworkMaxIdleTime().toMillis());
@@ -255,10 +262,7 @@ public class HttpServer
                         null,
                         acceptors,
                         selectors,
-                        new SslConnectionFactory(sslContextFactory.get(), alpn.getProtocol()),
-                        alpn,
-                        http2,
-                        http11);
+                        ImmutableList.of(new SslConnectionFactory(sslContextFactory.get(), alpn.getProtocol()), alpn, http2, http11));
             }
             else {
                 httpsConnector = createServerConnector(
@@ -267,8 +271,7 @@ public class HttpServer
                         null,
                         acceptors,
                         selectors,
-                        new SslConnectionFactory(sslContextFactory.get(), http11.getProtocol()),
-                        http11);
+                        ImmutableList.of(new SslConnectionFactory(sslContextFactory.get(), http11.getProtocol()), http11));
             }
 
             httpsConnector.setName("https");
@@ -307,15 +310,15 @@ public class HttpServer
 
                 HttpsConfig httpsConfig = maybeHttpsConfig.orElseThrow();
                 this.sslContextFactory = Optional.of(this.sslContextFactory.orElseGet(() -> createReloadingSslContextFactory(httpsConfig, clientCertificate, nodeInfo.getEnvironment())));
-                SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory.get(), "http/1.1");
+                HttpConnectionFactory http1 = new HttpConnectionFactory(adminConfiguration);
+                SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory.get(), http1.getProtocol());
                 adminConnector = createServerConnector(
                         httpServerInfo.getAdminChannel(),
                         server,
                         adminThreadPool,
                         0,
                         -1,
-                        sslConnectionFactory,
-                        new HttpConnectionFactory(adminConfiguration));
+                        ImmutableList.of(sslConnectionFactory, http1));
             }
             else {
                 HttpConnectionFactory http1 = new HttpConnectionFactory(adminConfiguration);
@@ -327,8 +330,7 @@ public class HttpServer
                         adminThreadPool,
                         -1,
                         -1,
-                        http1,
-                        http2c);
+                        ImmutableList.of(http1, http2c));
             }
 
             adminConnector.setName("admin");
@@ -613,10 +615,10 @@ public class HttpServer
             Executor executor,
             int acceptors,
             int selectors,
-            ConnectionFactory... factories)
+            List<ConnectionFactory> factories)
             throws IOException
     {
-        ServerConnector connector = new ServerConnector(server, executor, null, null, acceptors, selectors, factories);
+        ServerConnector connector = new ServerConnector(server, executor, null, null, acceptors, selectors, factories.toArray(new ConnectionFactory[0]));
         connector.open(channel);
         return connector;
     }

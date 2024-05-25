@@ -8,7 +8,6 @@ public class TestJettyHttpClientSocksProxyHttp2
     @Override
     protected HttpClientConfig createClientConfig()
     {
-        return super.createClientConfig()
-                .setHttp2Enabled(true);
+        return super.createClientConfig();
     }
 }

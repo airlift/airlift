@@ -212,7 +212,7 @@ public class TestHttpServerModule
         HttpServer server = injector.getInstance(HttpServer.class);
         server.start();
 
-        try (HttpClient client = new JettyHttpClient(new HttpClientConfig().setHttp2Enabled(false))) {
+        try (HttpClient client = new JettyHttpClient(new HttpClientConfig())) {
             // test servlet bound correctly
             URI httpUri = httpServerInfo.getHttpUri();
             StatusResponse response = client.execute(prepareGet().setUri(httpUri).build(), createStatusResponseHandler());
@@ -320,7 +320,7 @@ public class TestHttpServerModule
         long beforeRequest = System.currentTimeMillis();
         long afterRequest;
         HttpRequestEvent event;
-        try (JettyHttpClient client = new JettyHttpClient(new HttpClientConfig().setHttp2Enabled(false))) {
+        try (JettyHttpClient client = new JettyHttpClient(new HttpClientConfig())) {
             // test servlet bound correctly
             StringResponse response = client.execute(
                     preparePost().setUri(requestUri)
