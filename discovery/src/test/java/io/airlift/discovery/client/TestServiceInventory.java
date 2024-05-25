@@ -34,9 +34,6 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.URI;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.testng.Assert.assertEquals;
@@ -88,14 +85,8 @@ public class TestServiceInventory
         String serviceInventoryJson = Resources.toString(Resources.getResource("service-inventory.json"), UTF_8);
 
         Server server = null;
+        // HTTP/2 disabled since there is no H2C in the test server
         try (JettyHttpClient httpClient = new JettyHttpClient()) {
-            int port;
-            try (ServerSocket socket = new ServerSocket()) {
-                socket.bind(new InetSocketAddress(0));
-                port = socket.getLocalPort();
-            }
-            URI baseURI = new URI("http", null, "127.0.0.1", port, null, null, null);
-
             HttpConfiguration httpConfiguration = new HttpConfiguration();
             httpConfiguration.setSendServerVersion(false);
             httpConfiguration.setSendXPoweredBy(false);
@@ -103,7 +94,7 @@ public class TestServiceInventory
             server = new Server();
 
             ServerConnector httpConnector = new ServerConnector(server, new HttpConnectionFactory(httpConfiguration));
-            httpConnector.setPort(port);
+            httpConnector.setPort(0);
             httpConnector.setName("http");
             server.addConnector(httpConnector);
 
@@ -118,7 +109,7 @@ public class TestServiceInventory
 
             // test
             ServiceInventoryConfig serviceInventoryConfig = new ServiceInventoryConfig()
-                    .setServiceInventoryUri(baseURI);
+                    .setServiceInventoryUri(server.getURI());
 
             ServiceInventory serviceInventory = new ServiceInventory(serviceInventoryConfig,
                     new NodeInfo("test"),
