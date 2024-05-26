@@ -135,12 +135,16 @@ class JettyResponseFuture<T, E extends Exception>
             value = responseHandler.handle(request, jettyResponse);
         }
         finally {
-            if (jettyResponse != null) {
-                span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, jettyResponse.getBytesRead());
-            }
-            if (recordRequestComplete) {
-                JettyHttpClient.recordRequestComplete(stats, request, requestSize.getAsLong(), requestStart, jettyResponse, responseStart);
-            }
+            JettyResponse completerJettyResponse = jettyResponse;
+            Runnable completer = () -> {
+                if (completerJettyResponse != null) {
+                    span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, completerJettyResponse.getBytesRead());
+                }
+                if (recordRequestComplete) {
+                    JettyHttpClient.recordRequestComplete(stats, request, requestSize.getAsLong(), requestStart, completerJettyResponse, responseStart);
+                }
+            };
+            responseHandler.completeRequest(completer);
         }
         return value;
     }

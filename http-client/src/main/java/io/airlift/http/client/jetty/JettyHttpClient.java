@@ -668,7 +668,7 @@ public class JettyHttpClient
             throw t;
         }
         finally {
-            span.end();
+            responseHandler.endSpan(span);
         }
     }
 
@@ -760,18 +760,22 @@ public class JettyHttpClient
             value = responseHandler.handle(request, jettyResponse);
         }
         finally {
-            if (jettyResponse != null) {
-                try {
-                    jettyResponse.getInputStream().close();
+            JettyResponse completerJettyResponse = jettyResponse;
+            Runnable completer = () -> {
+                if (completerJettyResponse != null) {
+                    try {
+                        completerJettyResponse.getInputStream().close();
+                    }
+                    catch (IOException ignored) {
+                        // ignore errors closing the stream
+                    }
+                    span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, completerJettyResponse.getBytesRead());
                 }
-                catch (IOException ignored) {
-                    // ignore errors closing the stream
+                if (recordRequestComplete) {
+                    recordRequestComplete(stats, request, requestSize.getBytes(), requestStart, completerJettyResponse, responseStart);
                 }
-                span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, jettyResponse.getBytesRead());
-            }
-            if (recordRequestComplete) {
-                recordRequestComplete(stats, request, requestSize.getBytes(), requestStart, jettyResponse, responseStart);
-            }
+            };
+            responseHandler.completeRequest(completer);
         }
         return value;
     }

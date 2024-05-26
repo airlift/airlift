@@ -15,6 +15,8 @@
  */
 package io.airlift.http.client;
 
+import io.opentelemetry.api.trace.Span;
+
 public interface ResponseHandler<T, E extends Exception>
 {
     T handleException(Request request, Exception exception)
@@ -22,4 +24,14 @@ public interface ResponseHandler<T, E extends Exception>
 
     T handle(Request request, Response response)
             throws E;
+
+    default void completeRequest(Runnable completer)
+    {
+        completer.run();
+    }
+
+    default void endSpan(Span span)
+    {
+        span.end();
+    }
 }
