@@ -15,6 +15,7 @@
 - Add support for request body streaming to http client
 - Add support for ALPN and encrypted HTTP/2 to the server and the client
 - Sanitize JMX metric name
+- Introduce StreamingResponseHandler for streaming responses
 
 248
 

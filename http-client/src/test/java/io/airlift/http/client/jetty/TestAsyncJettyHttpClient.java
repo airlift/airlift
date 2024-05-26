@@ -4,6 +4,9 @@ import io.airlift.http.client.AbstractHttpClientTest;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.ResponseHandler;
+import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class TestAsyncJettyHttpClient
         extends AbstractHttpClientTest
@@ -23,7 +26,6 @@ public class TestAsyncJettyHttpClient
         doTestConnectTimeout(true);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public <T, E extends Exception> T executeRequest(CloseableTestHttpServer server, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
@@ -31,13 +33,18 @@ public class TestAsyncJettyHttpClient
         return executeRequest(server, createClientConfig(), request, responseHandler);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public <T, E extends Exception> T executeRequest(CloseableTestHttpServer server, HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
         JettyHttpClient client = server.createClient(config);
         return executeAsync(client, request, responseHandler);
+    }
+
+    @Test
+    public void testStreamingResponseHandler()
+    {
+        assertThatThrownBy(super::testStreamingResponseHandler).hasRootCauseInstanceOf(IllegalArgumentException.class);
     }
 
     protected void testPutMethodWithStreamingBodyGenerator(boolean largeContent)

@@ -14,6 +14,7 @@ import io.airlift.http.client.RequestStats;
 import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.StaticBodyGenerator;
 import io.airlift.http.client.StreamingBodyGenerator;
+import io.airlift.http.client.StreamingResponseHandler;
 import io.airlift.http.client.jetty.HttpClientLogger.RequestInfo;
 import io.airlift.http.client.jetty.HttpClientLogger.ResponseInfo;
 import io.airlift.security.pem.PemReader;
@@ -797,6 +798,8 @@ public class JettyHttpClient
     {
         requireNonNull(request, "request is null");
         requireNonNull(responseHandler, "responseHandler is null");
+
+        checkArgument(!(responseHandler instanceof StreamingResponseHandler), "StreamingResponseHandler cannot be used with executeAsync()");
 
         try {
             request = applyRequestFilters(request);

@@ -102,5 +102,11 @@ public abstract class AbstractHttpClientTestHttpProxy
 
             return delegate.handle(request, response);
         }
+
+        @Override
+        public void completeRequest(Runnable completer)
+        {
+            delegate.completeRequest(completer);
+        }
     }
 }
