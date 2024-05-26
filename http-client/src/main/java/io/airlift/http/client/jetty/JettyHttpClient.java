@@ -13,6 +13,7 @@ import io.airlift.http.client.Request;
 import io.airlift.http.client.RequestStats;
 import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.StaticBodyGenerator;
+import io.airlift.http.client.StreamingBodyGenerator;
 import io.airlift.http.client.jetty.HttpClientLogger.RequestInfo;
 import io.airlift.http.client.jetty.HttpClientLogger.ResponseInfo;
 import io.airlift.security.pem.PemReader;
@@ -42,6 +43,7 @@ import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpProxy;
+import org.eclipse.jetty.client.InputStreamRequestContent;
 import org.eclipse.jetty.client.InputStreamResponseListener;
 import org.eclipse.jetty.client.Origin.Address;
 import org.eclipse.jetty.client.PathRequestContent;
@@ -930,6 +932,9 @@ public class JettyHttpClient
             }
             else if (bodyGenerator instanceof FileBodyGenerator generator) {
                 jettyRequest.body(fileContent(generator.getPath()));
+            }
+            else if (bodyGenerator instanceof StreamingBodyGenerator generator) {
+                jettyRequest.body(new InputStreamRequestContent(generator.source()));
             }
             else {
                 jettyRequest.body(new BytesRequestContent(generateBody(bodyGenerator)));

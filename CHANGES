@@ -12,6 +12,7 @@
 - Improve request/response metrics accuracy and correctness
 - Update Airbase to 157
 - Remove deprecation notices/annotations from `enableLegacyUriCompliance()`
+- Add support for request body streaming to http client
 
 248
 

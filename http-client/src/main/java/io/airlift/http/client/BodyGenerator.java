@@ -20,7 +20,7 @@ import java.io.OutputStream;
 public interface BodyGenerator
 {
     /**
-     * @deprecated use {@link StaticBodyGenerator}, {@link JsonBodyGenerator}, or {@link FileBodyGenerator}
+     * @deprecated use {@link StaticBodyGenerator}, {@link JsonBodyGenerator}, {@link FileBodyGenerator}, or {@link StreamingBodyGenerator}
      */
     @Deprecated
     void write(OutputStream out)
