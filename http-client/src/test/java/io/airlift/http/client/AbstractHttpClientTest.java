@@ -47,6 +47,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static com.google.common.base.Throwables.getStackTraceAsString;
 import static com.google.common.base.Throwables.throwIfInstanceOf;
@@ -63,7 +65,9 @@ import static io.airlift.http.client.Request.Builder.prepareDelete;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.Request.Builder.preparePost;
 import static io.airlift.http.client.Request.Builder.preparePut;
+import static io.airlift.http.client.ResponseHandlerUtils.propagate;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
+import static io.airlift.http.client.StreamingBodyGenerator.streamingBodyGenerator;
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
 import static io.airlift.testing.Assertions.assertBetweenInclusive;
 import static io.airlift.testing.Assertions.assertGreaterThanOrEqual;
@@ -72,6 +76,7 @@ import static io.airlift.units.Duration.nanosSince;
 import static java.lang.String.format;
 import static java.lang.Thread.currentThread;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -85,6 +90,8 @@ import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
 @Execution(SAME_THREAD)
 public abstract class AbstractHttpClientTest
 {
+    public static final String LARGE_CONTENT = IntStream.range(0, 10_000_000).mapToObj(ignore -> "hello").collect(Collectors.joining());
+
     protected EchoServlet servlet;
     protected TestingHttpServer server;
     protected URI baseURI;
@@ -868,6 +875,107 @@ public abstract class AbstractHttpClientTest
                 .build();
         HttpVersion version = executeRequest(upgradeRequest(request, HttpVersion.HTTP_1), new HttpVersionResponseHandler());
         assertThat(version).isEqualTo(HttpVersion.HTTP_1);
+    }
+
+    @Test
+    public void testPutMethodWithLargeStreamingBodyGenerator()
+            throws Exception
+    {
+        testPutMethodWithStreamingBodyGenerator(true);
+    }
+
+    @Test
+    public void testPutMethodWithStreamingBodyGenerator()
+            throws Exception
+    {
+        testPutMethodWithStreamingBodyGenerator(false);
+    }
+
+    protected void testPutMethodWithStreamingBodyGenerator(boolean largeContent)
+            throws Exception
+    {
+        String content = largeContent ? LARGE_CONTENT : "hello".repeat(1000);
+
+        URI uri = baseURI.resolve("/road/to/nowhere");
+        servlet.setResponseBody(content);
+
+        ResponseHandler<Void, RuntimeException> responseHandler = new ResponseHandler<>()
+        {
+            @Override
+            public Void handleException(Request request, Exception exception)
+                    throws RuntimeException
+            {
+                throw propagate(request, exception);
+            }
+
+            @Override
+            public Void handle(Request request, Response response)
+                    throws RuntimeException
+            {
+                try {
+                    InputStream inputStream = response.getInputStream();
+                    Request streamingRequest = preparePut()
+                            .setUri(uri)
+                            .addHeader(CONTENT_LENGTH, Integer.toString(content.length()))
+                            .addHeader(CONTENT_TYPE, "x-test")
+                            .setBodyGenerator(streamingBodyGenerator(inputStream))
+                            .build();
+
+                    ResponseHandler<Integer, RuntimeException> testResponseHandler = new ResponseHandler<>()
+                    {
+                        @Override
+                        public Integer handleException(Request request, Exception exception)
+                                throws RuntimeException
+                        {
+                            throw propagate(request, exception);
+                        }
+
+                        @SuppressWarnings("StatementWithEmptyBody")
+                        @Override
+                        public Integer handle(Request request, Response response)
+                                throws RuntimeException
+                        {
+                            try {
+                                InputStream in = response.getInputStream();
+                                while (in.read() >= 0) {
+                                    // do nothing
+                                }
+                            }
+                            catch (IOException e) {
+                                throw new UncheckedIOException(e);
+                            }
+                            return response.getStatusCode();
+                        }
+                    };
+
+                    int statusCode = executeRequest(streamingRequest, testResponseHandler);
+                    assertThat(statusCode).isEqualTo(200);
+                    assertThat(servlet.getRequestMethod()).isEqualTo("PUT");
+                    assertThat(servlet.getRequestUri()).isEqualTo(uri);
+                    assertThat(servlet.getRequestHeaders(CONTENT_TYPE)).isEqualTo(ImmutableList.of("x-test"));
+                    assertThat(servlet.getRequestBytes()).isEqualTo(content.getBytes());
+                }
+                catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+
+                return null;
+            }
+        };
+
+        try (JettyHttpClient httpClient = new JettyHttpClient("streaming-test", createClientConfig())) {
+            Request request = preparePut()
+                    .setUri(uri)
+                    .addHeader(CONTENT_TYPE, "x-test")
+                    .addHeader(CONTENT_LENGTH, Integer.toString(content.length()))
+                    .setBodyGenerator(new StaticBodyGenerator(content.getBytes(UTF_8)))
+                    .build();
+
+            try (ExecutorService executorService = newVirtualThreadPerTaskExecutor()) {
+                // processing the large content takes time
+                executorService.submit(() -> httpClient.execute(request, responseHandler)).get(30, SECONDS);
+            }
+        }
     }
 
     private void executeExceptionRequest(HttpClientConfig config, Request request)
