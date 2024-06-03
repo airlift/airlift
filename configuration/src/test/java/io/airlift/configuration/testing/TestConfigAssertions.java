@@ -15,6 +15,7 @@
  */
 package io.airlift.configuration.testing;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import io.airlift.configuration.Config;
@@ -488,6 +489,9 @@ public class TestConfigAssertions
                 .setLongOption(0)
                 .setMyEnumOption(null)
                 .setMyEnumSecondOption(null)
+                .setMyEnumList(ImmutableList.of())
+                .setMyEnumSet(ImmutableSet.of())
+                .setMyIntegerList(ImmutableList.of())
                 .setShortOption((short) 0)
                 .setStringOption(null)
                 .setValueClassOption(null));

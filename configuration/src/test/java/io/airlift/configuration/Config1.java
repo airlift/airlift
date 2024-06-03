@@ -15,6 +15,12 @@
  */
 package io.airlift.configuration;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+
+import java.util.List;
+import java.util.Set;
+
 public class Config1
 {
     String stringOption;
@@ -50,6 +56,12 @@ public class Config1
     MyEnum myEnumOption;
 
     MyEnum myEnumSecondOption;
+
+    Set<MyEnum> myEnumSet = ImmutableSet.of();
+
+    List<MyEnum> myEnumList = ImmutableList.of();
+
+    List<Integer> myIntegerList = ImmutableList.of();
 
     ValueClass valueClassOption;
 
@@ -254,6 +266,42 @@ public class Config1
     public Config1 setMyEnumSecondOption(MyEnum myEnumSecondOption)
     {
         this.myEnumSecondOption = myEnumSecondOption;
+        return this;
+    }
+
+    public Set<MyEnum> getMyEnumSet()
+    {
+        return myEnumSet;
+    }
+
+    @Config("myEnumSet")
+    public Config1 setMyEnumSet(Set<MyEnum> myEnumSet)
+    {
+        this.myEnumSet = myEnumSet;
+        return this;
+    }
+
+    public List<MyEnum> getMyEnumList()
+    {
+        return myEnumList;
+    }
+
+    @Config("myEnumList")
+    public Config1 setMyEnumList(List<MyEnum> myEnumList)
+    {
+        this.myEnumList = myEnumList;
+        return this;
+    }
+
+    public List<Integer> getMyIntegerList()
+    {
+        return myIntegerList;
+    }
+
+    @Config("myIntegerList")
+    public Config1 setMyIntegerList(List<Integer> myIntegerList)
+    {
+        this.myIntegerList = myIntegerList;
         return this;
     }
 
