@@ -40,6 +40,8 @@ import java.util.Optional;
 
 import static com.google.inject.name.Names.named;
 import static io.airlift.configuration.ConfigBinder.configBinder;
+import static io.airlift.configuration.MyEnum.BAR;
+import static io.airlift.configuration.MyEnum.FOO;
 import static io.airlift.configuration.SwitchModule.switchModule;
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;
@@ -75,6 +77,9 @@ public class TestConfig
             .put("doubleOption", Double.toString(Double.MAX_VALUE))
             .put("boxedDoubleOption", Double.toString(Double.MAX_VALUE))
             .put("myEnumOption", "FOO")
+            .put("myEnumSet", "FOO,bar")
+            .put("myEnumList", "BAR,foo")
+            .put("myIntegerList", "10,12,14,16")
             .put("myEnumSecondOption", "bar") // lowercase
             .put("valueClassOption", "a value class")
             .build();
@@ -186,9 +191,12 @@ public class TestConfig
         assertEquals(Float.MAX_VALUE, config.getBoxedFloatOption());
         assertEquals(Double.MAX_VALUE, config.getDoubleOption(), 0);
         assertEquals(Double.MAX_VALUE, config.getBoxedDoubleOption());
-        assertEquals(MyEnum.FOO, config.getMyEnumOption());
-        assertEquals(MyEnum.BAR, config.getMyEnumSecondOption());
+        assertEquals(FOO, config.getMyEnumOption());
+        assertEquals(BAR, config.getMyEnumSecondOption());
         assertEquals(config.getValueClassOption().getValue(), "a value class");
+        assertEquals(config.getMyEnumList(), ImmutableList.of(BAR, FOO));
+        assertEquals(config.getMyEnumSet(), ImmutableSet.of(BAR, FOO));
+        assertEquals(config.getMyIntegerList(), ImmutableList.of(10, 12, 14, 16));
     }
 
     @Test

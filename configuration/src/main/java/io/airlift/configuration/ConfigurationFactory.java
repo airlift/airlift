@@ -51,6 +51,7 @@ import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -64,7 +65,9 @@ import java.util.function.Function;
 
 import static com.google.common.base.CaseFormat.LOWER_CAMEL;
 import static com.google.common.base.CaseFormat.UPPER_CAMEL;
+import static com.google.common.base.Verify.verify;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.common.collect.Sets.newConcurrentHashSet;
 import static io.airlift.configuration.ConfigurationMetadata.getConfigurationMetadata;
 import static io.airlift.configuration.Problems.exceptionFor;
@@ -77,7 +80,6 @@ public class ConfigurationFactory
     @GuardedBy("VALIDATOR")
     private static final Validator VALIDATOR;
 
-    private static final TypeToken<List<String>> LIST_OF_STRINGS_TYPE_TOKEN = new TypeToken<List<String>>() {};
     private static final Splitter VALUE_SPLITTER = Splitter.on(",").omitEmptyStrings().trimResults();
 
     static {
@@ -572,30 +574,29 @@ public class ConfigurationFactory
         }
 
         // coerce the property value to the final type
-        Class<?> propertyType = injectionPoint.getSetter().getParameterTypes()[0];
-
+        TypeToken<?> propertyType = TypeToken.of(injectionPoint.getSetter().getGenericParameterTypes()[0]);
         Object finalValue = coerce(propertyType, value);
         if (finalValue == null) {
             throw new InvalidConfigurationException(format("Invalid value '%s' for type %s (property '%s') in order to call [%s]",
                     printableValue,
-                    propertyType.getName(),
+                    propertyType.getType().getTypeName(),
                     name,
                     injectionPoint.getSetter().toGenericString()));
         }
         return finalValue;
     }
 
-    private static Object coerce(Class<?> type, String value)
+    private static Object coerce(TypeToken<?> type, String value)
     {
         if (type.isPrimitive() && value == null) {
             return null;
         }
 
         try {
-            if (String.class == type) {
+            if (String.class == type.getRawType()) {
                 return value;
             }
-            if (Boolean.class == type || boolean.class == type) {
+            if (Boolean.class == type.getRawType() || boolean.class == type.getRawType()) {
                 // Boolean.valueOf returns `false` when called with `"true "` argument
                 if ("true".equalsIgnoreCase(value)) {
                     return Boolean.TRUE;
@@ -605,22 +606,22 @@ public class ConfigurationFactory
                 }
                 return null;
             }
-            if (Byte.class == type || byte.class == type) {
+            if (Byte.class == type.getRawType() || byte.class == type.getRawType()) {
                 return Byte.valueOf(value);
             }
-            if (Short.class == type || short.class == type) {
+            if (Short.class == type.getRawType() || short.class == type.getRawType()) {
                 return Short.valueOf(value);
             }
-            if (Integer.class == type || int.class == type) {
+            if (Integer.class == type.getRawType() || int.class == type.getRawType()) {
                 return Integer.valueOf(value);
             }
-            if (Long.class == type || long.class == type) {
+            if (Long.class == type.getRawType() || long.class == type.getRawType()) {
                 return Long.valueOf(value);
             }
-            if (Float.class == type || float.class == type) {
+            if (Float.class == type.getRawType() || float.class == type.getRawType()) {
                 return Float.valueOf(value);
             }
-            if (Double.class == type || double.class == type) {
+            if (Double.class == type.getRawType() || double.class == type.getRawType()) {
                 return Double.valueOf(value);
             }
         }
@@ -632,8 +633,8 @@ public class ConfigurationFactory
         // Look for a static fromString(String) method. This is used in preference
         // to the built-in valueOf() method for enums.
         try {
-            Method fromString = type.getMethod("fromString", String.class);
-            if (fromString.getReturnType().isAssignableFrom(type)) {
+            Method fromString = type.getRawType().getMethod("fromString", String.class);
+            if (type.isSubtypeOf(fromString.getGenericReturnType())) {
                 try {
                     return fromString.invoke(null, value);
                 }
@@ -645,14 +646,15 @@ public class ConfigurationFactory
         catch (NoSuchMethodException ignored) {
         }
 
-        if (type.isEnum()) {
+        if (type.isSubtypeOf(TypeToken.of(Enum.class))) {
             try {
-                return Enum.valueOf(type.asSubclass(Enum.class), value);
+                return Enum.valueOf(type.getRawType().asSubclass(Enum.class), value);
             }
             catch (IllegalArgumentException ignored) {
             }
+
             Object match = null;
-            for (Enum<?> option : type.asSubclass(Enum.class).getEnumConstants()) {
+            for (Enum<?> option : type.getRawType().asSubclass(Enum.class).getEnumConstants()) {
                 String enumValue = value.replace("-", "_");
                 if (option.name().equalsIgnoreCase(enumValue)) {
                     if (match != null) {
@@ -665,15 +667,30 @@ public class ConfigurationFactory
             return match;
         }
 
-        if (LIST_OF_STRINGS_TYPE_TOKEN.isSubtypeOf(TypeToken.of(type))) {
+        if (type.isSubtypeOf(TypeToken.of(Set.class))) {
+            ParameterizedType argumentType = (ParameterizedType) type.getType();
+            verify(argumentType.getActualTypeArguments().length == 1, "Expected type %s to be parametrized", type);
+            TypeToken<?> argumentToken = TypeToken.of(argumentType.getActualTypeArguments()[0]);
+
             return VALUE_SPLITTER.splitToStream(value)
+                    .map(item -> coerce(argumentToken, item))
+                    .collect(toImmutableSet());
+        }
+
+        if (type.isSubtypeOf(TypeToken.of(List.class))) {
+            ParameterizedType argumentType = (ParameterizedType) type.getType();
+            verify(argumentType.getActualTypeArguments().length == 1, "Expected type %s to be parametrized", type);
+            TypeToken<?> argumentToken = TypeToken.of(argumentType.getActualTypeArguments()[0]);
+
+            return VALUE_SPLITTER.splitToStream(value)
+                    .map(item -> coerce(argumentToken, item))
                     .collect(toImmutableList());
         }
 
         // Look for a static valueOf(String) method
         try {
-            Method valueOf = type.getMethod("valueOf", String.class);
-            if (valueOf.getReturnType().isAssignableFrom(type)) {
+            Method valueOf = type.getRawType().getMethod("valueOf", String.class);
+            if (type.isSubtypeOf(valueOf.getGenericReturnType())) {
                 try {
                     return valueOf.invoke(null, value);
                 }
@@ -687,7 +704,7 @@ public class ConfigurationFactory
 
         // Look for a constructor taking a string
         try {
-            Constructor<?> constructor = type.getConstructor(String.class);
+            Constructor<?> constructor = type.getRawType().getConstructor(String.class);
             try {
                 return constructor.newInstance(value);
             }
