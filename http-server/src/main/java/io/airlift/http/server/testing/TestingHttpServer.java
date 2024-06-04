@@ -18,6 +18,7 @@ package io.airlift.http.server.testing;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import io.airlift.event.client.NullEventClient;
+import io.airlift.http.server.EnableCaseSensitiveHeaderCache;
 import io.airlift.http.server.EnableLegacyUriCompliance;
 import io.airlift.http.server.EnableVirtualThreads;
 import io.airlift.http.server.HttpServer;
@@ -51,7 +52,7 @@ public class TestingHttpServer
             @TheServlet Map<String, String> initParameters)
             throws IOException
     {
-        this(httpServerInfo, nodeInfo, config, servlet, initParameters, false, false);
+        this(httpServerInfo, nodeInfo, config, servlet, initParameters, false, false, false);
     }
 
     public TestingHttpServer(
@@ -61,7 +62,8 @@ public class TestingHttpServer
             @TheServlet Servlet servlet,
             @TheServlet Map<String, String> initParameters,
             boolean enableVirtualThreads,
-            boolean enableLegacyUriCompliance)
+            boolean enableLegacyUriCompliance,
+            boolean enableCaseSensitiveHeaderCache)
             throws IOException
     {
         this(httpServerInfo,
@@ -74,6 +76,7 @@ public class TestingHttpServer
                 ImmutableSet.of(),
                 enableVirtualThreads,
                 enableLegacyUriCompliance,
+                enableCaseSensitiveHeaderCache,
                 ClientCertificate.NONE);
     }
 
@@ -89,6 +92,7 @@ public class TestingHttpServer
             @TheServlet Set<HttpResourceBinding> resources,
             @EnableVirtualThreads boolean enableVirtualThreads,
             @EnableLegacyUriCompliance boolean enableLegacyUriCompliance,
+            @EnableCaseSensitiveHeaderCache boolean enableCaseSensitiveHeaderCache,
             ClientCertificate clientCertificate)
             throws IOException
     {
@@ -105,6 +109,7 @@ public class TestingHttpServer
                 ImmutableSet.of(),
                 enableVirtualThreads,
                 enableLegacyUriCompliance,
+                enableCaseSensitiveHeaderCache,
                 clientCertificate,
                 null,
                 null,

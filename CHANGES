@@ -6,6 +6,7 @@
 - Support generic list and set injection into configuration classes
 - Update Jetty to 12.0.10
 - Update HdrHistogram to 2.2.2
+- Allow configuring Jetty's header cache case-sensitiveness
 
 248
 

@@ -127,6 +127,7 @@ public class HttpServer
             Set<Filter> adminFilters,
             boolean enableVirtualThreads,
             boolean enableLegacyUriCompliance,
+            boolean enableCaseSensitiveHeaderCache,
             ClientCertificate clientCertificate,
             MBeanServer mbeanServer,
             LoginService loginService,
@@ -182,6 +183,9 @@ public class HttpServer
         if (config.getMaxResponseHeaderSize() != null) {
             baseHttpConfiguration.setResponseHeaderSize(toIntExact(config.getMaxResponseHeaderSize().toBytes()));
         }
+
+        // see https://bugs.eclipse.org/bugs/show_bug.cgi?id=414449#c4
+        baseHttpConfiguration.setHeaderCacheCaseSensitive(enableCaseSensitiveHeaderCache);
 
         if (enableLegacyUriCompliance) {
             // allow encoded slashes to occur in URI paths

@@ -27,6 +27,7 @@ import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.HttpStatus;
 import io.airlift.http.client.HttpUriBuilder;
+import io.airlift.http.client.Request;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.StringResponseHandler;
 import io.airlift.http.client.jetty.JettyHttpClient;
@@ -76,11 +77,13 @@ public abstract class AbstractTestTestingHttpServer
 {
     private final boolean enableVirtualThreads;
     private final boolean enableLegacyUriCompliance;
+    private final boolean enableCaseSensitiveHeaderCache;
 
-    AbstractTestTestingHttpServer(boolean enableVirtualThreads, boolean enableLegacyUriCompliance)
+    AbstractTestTestingHttpServer(boolean enableVirtualThreads, boolean enableLegacyUriCompliance, boolean enableCaseSensitiveHeaderCache)
     {
         this.enableVirtualThreads = enableVirtualThreads;
         this.enableLegacyUriCompliance = enableLegacyUriCompliance;
+        this.enableCaseSensitiveHeaderCache = enableCaseSensitiveHeaderCache;
     }
 
     @BeforeSuite
@@ -96,7 +99,7 @@ public abstract class AbstractTestTestingHttpServer
         skipUnlessJdkHasVirtualThreads();
         DummyServlet servlet = new DummyServlet();
         Map<String, String> params = ImmutableMap.of("sampleInitParameter", "the value");
-        TestingHttpServer server = createTestingHttpServer(enableVirtualThreads, enableLegacyUriCompliance, servlet, params);
+        TestingHttpServer server = createTestingHttpServer(enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache, servlet, params);
 
         try {
             server.start();
@@ -114,7 +117,7 @@ public abstract class AbstractTestTestingHttpServer
     {
         skipUnlessJdkHasVirtualThreads();
         DummyServlet servlet = new DummyServlet();
-        TestingHttpServer server = createTestingHttpServer(enableVirtualThreads, enableLegacyUriCompliance, servlet, ImmutableMap.of());
+        TestingHttpServer server = createTestingHttpServer(enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache, servlet, ImmutableMap.of());
 
         try {
             server.start();
@@ -138,7 +141,7 @@ public abstract class AbstractTestTestingHttpServer
         skipUnlessJdkHasVirtualThreads();
         DummyServlet servlet = new DummyServlet();
         DummyFilter filter = new DummyFilter();
-        TestingHttpServer server = createTestingHttpServerWithFilter(enableVirtualThreads, enableLegacyUriCompliance, servlet, ImmutableMap.of(), filter);
+        TestingHttpServer server = createTestingHttpServerWithFilter(enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache, servlet, ImmutableMap.of(), filter);
 
         try {
             server.start();
@@ -273,6 +276,47 @@ public abstract class AbstractTestTestingHttpServer
         }
     }
 
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+    @Test
+    public void testHeaderCaseSensitivity()
+            throws Exception
+    {
+        DummyServlet servlet = new DummyServlet();
+        TestingHttpServer server = createTestingHttpServer(enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache, servlet, ImmutableMap.of());
+
+        try {
+            server.start();
+
+            String contentType = "text/plain; charset=UTF-8";
+            String finalContentType = "text/plain; charset=utf-8";
+
+            try (HttpClient client = new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
+                // run a few times to prime the Jetty cache
+                for (int i = 0; i < 3; ++i) {
+                    Request request = prepareGet()
+                            .setUri(server.getBaseUrl())
+                            .setHeader(HttpHeaders.CONTENT_TYPE, (i > 1) ? finalContentType : contentType)
+                            .build();
+                    client.execute(request, createStatusResponseHandler());
+                }
+            }
+
+            String contentTypeHeader;
+            synchronized (servlet) {
+                contentTypeHeader = servlet.contentTypeHeader;
+            }
+            if (enableCaseSensitiveHeaderCache) {
+                assertEquals(contentTypeHeader, finalContentType);
+            }
+            else {
+                assertEquals(contentTypeHeader, contentType);
+            }
+        }
+        finally {
+            server.stop();
+        }
+    }
+
     private void skipUnlessJdkHasVirtualThreads()
     {
         if (enableVirtualThreads && !VirtualThreads.areSupported()) {
@@ -290,22 +334,22 @@ public abstract class AbstractTestTestingHttpServer
         assertEquals(data.getBody().trim(), contents);
     }
 
-    private static TestingHttpServer createTestingHttpServer(boolean enableVirtualThreads, boolean enableLegacyUriCompliance, DummyServlet servlet, Map<String, String> params)
+    private static TestingHttpServer createTestingHttpServer(boolean enableVirtualThreads, boolean enableLegacyUriCompliance, boolean enableCaseSensitiveHeaderCache, DummyServlet servlet, Map<String, String> params)
             throws IOException
     {
         NodeInfo nodeInfo = new NodeInfo("test");
         HttpServerConfig config = new HttpServerConfig().setHttpPort(0);
         HttpServerInfo httpServerInfo = new HttpServerInfo(config, nodeInfo);
-        return new TestingHttpServer(httpServerInfo, nodeInfo, config, servlet, params, enableVirtualThreads, enableLegacyUriCompliance);
+        return new TestingHttpServer(httpServerInfo, nodeInfo, config, servlet, params, enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache);
     }
 
-    private static TestingHttpServer createTestingHttpServerWithFilter(boolean enableVirtualThreads, boolean enableLegacyUriCompliance, DummyServlet servlet, Map<String, String> params, DummyFilter filter)
+    private static TestingHttpServer createTestingHttpServerWithFilter(boolean enableVirtualThreads, boolean enableLegacyUriCompliance, boolean enableCaseSensitiveHeaderCache, DummyServlet servlet, Map<String, String> params, DummyFilter filter)
             throws IOException
     {
         NodeInfo nodeInfo = new NodeInfo("test");
         HttpServerConfig config = new HttpServerConfig().setHttpPort(0);
         HttpServerInfo httpServerInfo = new HttpServerInfo(config, nodeInfo);
-        return new TestingHttpServer(httpServerInfo, nodeInfo, config, Optional.empty(), servlet, params, ImmutableSet.of(filter), ImmutableSet.of(), enableVirtualThreads, enableLegacyUriCompliance, ClientCertificate.NONE);
+        return new TestingHttpServer(httpServerInfo, nodeInfo, config, Optional.empty(), servlet, params, ImmutableSet.of(filter), ImmutableSet.of(), enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache, ClientCertificate.NONE);
     }
 
     static class DummyServlet
@@ -313,6 +357,7 @@ public abstract class AbstractTestTestingHttpServer
     {
         private String sampleInitParam;
         private int callCount;
+        private String contentTypeHeader;
 
         @Override
         public synchronized void init(ServletConfig config)
@@ -335,6 +380,7 @@ public abstract class AbstractTestTestingHttpServer
         {
             ++callCount;
             resp.setStatus(HttpServletResponse.SC_OK);
+            contentTypeHeader = req.getHeader(HttpHeaders.CONTENT_TYPE);
         }
     }
 

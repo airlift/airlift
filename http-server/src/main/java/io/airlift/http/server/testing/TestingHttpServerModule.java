@@ -18,6 +18,7 @@ import com.google.inject.Key;
 import com.google.inject.Scopes;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
 import io.airlift.discovery.client.AnnouncementHttpServerInfo;
+import io.airlift.http.server.EnableCaseSensitiveHeaderCache;
 import io.airlift.http.server.EnableLegacyUriCompliance;
 import io.airlift.http.server.EnableVirtualThreads;
 import io.airlift.http.server.HttpServer;
@@ -69,6 +70,7 @@ public class TestingHttpServerModule
         newSetBinder(binder, Filter.class, TheServlet.class);
         newSetBinder(binder, HttpResourceBinding.class, TheServlet.class);
         binder.bind(AnnouncementHttpServerInfo.class).to(LocalAnnouncementHttpServerInfo.class);
+        newOptionalBinder(binder, Key.get(Boolean.class, EnableCaseSensitiveHeaderCache.class)).setDefault().toInstance(false);
 
         newOptionalBinder(binder, HttpsConfig.class);
         install(conditionalModule(HttpServerConfig.class, HttpServerConfig::isHttpsEnabled, moduleBinder -> {
