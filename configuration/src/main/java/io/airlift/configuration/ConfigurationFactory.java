@@ -648,7 +648,7 @@ public class ConfigurationFactory
 
         if (type.isSubtypeOf(TypeToken.of(Enum.class))) {
             try {
-                return Enum.valueOf(type.getRawType().asSubclass(Enum.class), value);
+                return Enum.valueOf(type.getRawType().asSubclass(Enum.class), value.toUpperCase(ENGLISH));
             }
             catch (IllegalArgumentException ignored) {
             }
