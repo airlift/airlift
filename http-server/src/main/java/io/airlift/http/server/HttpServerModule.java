@@ -78,6 +78,7 @@ public class HttpServerModule
         newSetBinder(binder, Filter.class, TheAdminServlet.class);
         newSetBinder(binder, HttpResourceBinding.class, TheServlet.class);
         newOptionalBinder(binder, SslContextFactory.Server.class);
+        newOptionalBinder(binder, Key.get(Boolean.class, EnableCaseSensitiveHeaderCache.class)).setDefault().toInstance(false);
 
         newExporter(binder).export(RequestStats.class).withGeneratedName();
 

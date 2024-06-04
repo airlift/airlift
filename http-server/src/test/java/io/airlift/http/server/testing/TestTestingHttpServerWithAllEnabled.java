@@ -5,6 +5,6 @@ public class TestTestingHttpServerWithAllEnabled
 {
     TestTestingHttpServerWithAllEnabled()
     {
-        super(true, true);
+        super(true, true, true);
     }
 }

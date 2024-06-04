@@ -20,6 +20,6 @@ public class TestTestingHttpServer
 {
     TestTestingHttpServer()
     {
-        super(false, false);
+        super(false, false, false);
     }
 }

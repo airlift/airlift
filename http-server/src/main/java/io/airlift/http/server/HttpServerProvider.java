@@ -58,6 +58,7 @@ public class HttpServerProvider
     private Map<String, String> adminServletInitParameters = ImmutableMap.of();
     private final boolean enableVirtualThreads;
     private final boolean enableLegacyUriCompliance;
+    private final boolean enableCaseSensitiveHeaderCache;
     private MBeanServer mbeanServer;
     private LoginService loginService;
     private final RequestStats stats;
@@ -78,6 +79,7 @@ public class HttpServerProvider
             @TheAdminServlet Set<Filter> adminFilters,
             @EnableVirtualThreads boolean enableVirtualThreads,
             @EnableLegacyUriCompliance boolean enableLegacyUriCompliance,
+            @EnableCaseSensitiveHeaderCache boolean enableCaseSensitiveHeaderCache,
             ClientCertificate clientCertificate,
             RequestStats stats,
             EventClient eventClient,
@@ -106,6 +108,7 @@ public class HttpServerProvider
         this.adminFilters = ImmutableSet.copyOf(adminFilters);
         this.enableVirtualThreads = enableVirtualThreads;
         this.enableLegacyUriCompliance = enableLegacyUriCompliance;
+        this.enableCaseSensitiveHeaderCache = enableCaseSensitiveHeaderCache;
         this.clientCertificate = clientCertificate;
         this.stats = stats;
         this.eventClient = eventClient;
@@ -166,6 +169,7 @@ public class HttpServerProvider
                     adminFilters,
                     enableVirtualThreads,
                     enableLegacyUriCompliance,
+                    enableCaseSensitiveHeaderCache,
                     clientCertificate,
                     mbeanServer,
                     loginService,

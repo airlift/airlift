@@ -41,6 +41,12 @@ public class HttpServerBinder
         return this;
     }
 
+    public HttpServerBinder enableCaseSensitiveHeaderCache()
+    {
+        newOptionalBinder(binder, Key.get(Boolean.class, EnableCaseSensitiveHeaderCache.class)).setBinding().toInstance(true);
+        return this;
+    }
+
     /**
      * @deprecated this will be removed in the near future and is only intended as a stopgap
      */

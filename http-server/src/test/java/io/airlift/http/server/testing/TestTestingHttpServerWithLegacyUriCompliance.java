@@ -5,6 +5,6 @@ public class TestTestingHttpServerWithLegacyUriCompliance
 {
     TestTestingHttpServerWithLegacyUriCompliance()
     {
-        super(false, true);
+        super(false, true, false);
     }
 }
