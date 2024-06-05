@@ -177,6 +177,9 @@ public class HttpServer
         if (config.isProcessForwarded()) {
             baseHttpConfiguration.addCustomizer(new ForwardedRequestCustomizer());
         }
+        else {
+            baseHttpConfiguration.addCustomizer(new RejectForwardedRequestCustomizer());
+        }
         if (config.getMaxRequestHeaderSize() != null) {
             baseHttpConfiguration.setRequestHeaderSize(toIntExact(config.getMaxRequestHeaderSize().toBytes()));
         }

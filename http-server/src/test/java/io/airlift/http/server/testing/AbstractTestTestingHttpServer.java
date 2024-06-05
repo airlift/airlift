@@ -70,6 +70,7 @@ import static io.airlift.http.client.StringResponseHandler.createStringResponseH
 import static io.airlift.http.server.HttpServerBinder.httpServerBinder;
 import static io.airlift.testing.Assertions.assertGreaterThan;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
@@ -310,6 +311,32 @@ public abstract class AbstractTestTestingHttpServer
             }
             else {
                 assertEquals(contentTypeHeader, contentType);
+            }
+        }
+        finally {
+            server.stop();
+        }
+    }
+
+    @Test
+    public void testForwardedHeaderIsRejected()
+            throws Exception
+    {
+        DummyServlet servlet = new DummyServlet();
+        TestingHttpServer server = createTestingHttpServer(enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache, servlet, ImmutableMap.of());
+
+        try {
+            server.start();
+            try (HttpClient client = new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
+                Request request = prepareGet()
+                        .setUri(server.getBaseUrl())
+                        .setHeader(HttpHeaders.X_FORWARDED_FOR, "129.0.0.1")
+                        .setHeader(HttpHeaders.X_FORWARDED_HOST, "localhost.localdomain")
+                        .build();
+                StringResponseHandler.StringResponse execute = client.execute(request, createStringResponseHandler());
+                assertThat(execute.getStatusCode()).isEqualTo(406);
+                assertThat(execute.getBody())
+                        .containsAnyOf("Server configuration does not allow processing of the X-Forwarded-For", "Server configuration does not allow processing of the X-Forwarded-Host");
             }
         }
         finally {
