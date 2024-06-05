@@ -99,7 +99,7 @@ class RequestTimingEventHandler
 
     static long getRequestBeginToHandle(Map<String, Object> attributes)
     {
-        return (long) firstNonNull(attributes.get(REQUEST_HANDLE_STARTED_ATTRIBUTE), 0L);
+        return (long) firstNonNull(attributes.get(REQUEST_HANDLE_STARTED_ATTRIBUTE), NanoTime.now());
     }
 
     static long getRequestBeginToEnd(Map<String, Object> attributes)
