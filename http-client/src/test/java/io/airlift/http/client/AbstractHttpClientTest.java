@@ -468,35 +468,6 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
-    public void testPutMethodWithDynamicBodyGenerator()
-            throws Exception
-    {
-        try (CloseableTestHttpServer server = newServer()) {
-            URI uri = server.baseURI().resolve("/road/to/nowhere");
-            Request request = preparePut()
-                    .setUri(uri)
-                    .addHeader("foo", "bar")
-                    .addHeader("dupe", "first")
-                    .addHeader("dupe", "second")
-                    .setBodyGenerator(out -> {
-                        out.write(1);
-                        out.write(new byte[] {2, 5});
-                    })
-                    .build();
-
-            int statusCode = executeRequest(server, request, createStatusResponseHandler()).getStatusCode();
-            assertThat(statusCode).isEqualTo(200);
-            assertThat(server.servlet().getRequestMethod()).isEqualTo("PUT");
-            assertThat(server.servlet().getRequestUri()).isEqualTo(uri);
-            assertThat(server.servlet().getRequestHeaders("foo")).isEqualTo(ImmutableList.of("bar"));
-            assertThat(server.servlet().getRequestHeaders("dupe")).isEqualTo(ImmutableList.of("first", "second"));
-            assertThat(server.servlet().getRequestHeaders("x-custom-filter")).isEqualTo(ImmutableList.of("custom value"));
-            assertThat(server.servlet().getRequestBytes()).isEqualTo(new byte[] {1, 2, 5});
-            assertThat(server.statusCounts().count(200)).isEqualTo(1);
-        }
-    }
-
-    @Test
     public void testPutMethodWithFileBodyGenerator()
             throws Exception
     {

@@ -82,7 +82,6 @@ import javax.net.ssl.SNIServerName;
 import javax.net.ssl.SSLEngine;
 import javax.security.auth.x500.X500Principal;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -1050,20 +1049,11 @@ public class JettyHttpClient
         jettyRequest.headers(headers -> finalRequest.getHeaders().forEach(headers::add));
         BodyGenerator bodyGenerator = finalRequest.getBodyGenerator();
         if (bodyGenerator != null) {
-            if (bodyGenerator instanceof StaticBodyGenerator generator) {
-                jettyRequest.body(new BytesRequestContent(generator.getBody()));
-            }
-            else if (bodyGenerator instanceof ByteBufferBodyGenerator generator) {
-                jettyRequest.body(new ByteBufferRequestContent(generator.getByteBuffers()));
-            }
-            else if (bodyGenerator instanceof FileBodyGenerator generator) {
-                jettyRequest.body(fileContent(generator.getPath()));
-            }
-            else if (bodyGenerator instanceof StreamingBodyGenerator generator) {
-                jettyRequest.body(new InputStreamRequestContent(generator.source()));
-            }
-            else {
-                jettyRequest.body(new BytesRequestContent(generateBody(bodyGenerator)));
+            switch (bodyGenerator) {
+                case StaticBodyGenerator generator -> jettyRequest.body(new BytesRequestContent(generator.getBody()));
+                case ByteBufferBodyGenerator generator -> jettyRequest.body(new ByteBufferRequestContent(generator.getByteBuffers()));
+                case FileBodyGenerator generator -> jettyRequest.body(fileContent(generator.getPath()));
+                case StreamingBodyGenerator generator -> jettyRequest.body(new InputStreamRequestContent(generator.source()));
             }
         }
 
@@ -1091,20 +1081,6 @@ public class JettyHttpClient
         catch (IOException e) {
             throw new UncheckedIOException(e);
         }
-    }
-
-    @SuppressWarnings("deprecation")
-    private static byte[] generateBody(BodyGenerator generator)
-    {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        try {
-            generator.write(out);
-        }
-        catch (Exception e) {
-            throwIfUnchecked(e);
-            throw new RuntimeException(e);
-        }
-        return out.toByteArray();
     }
 
     public List<HttpRequestFilter> getRequestFilters()

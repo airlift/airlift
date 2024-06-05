@@ -13,12 +13,11 @@
  */
 package io.airlift.http.client;
 
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
 import static java.util.Objects.requireNonNull;
 
-public class ByteBufferBodyGenerator
+public final class ByteBufferBodyGenerator
         implements BodyGenerator
 {
     private final ByteBuffer[] byteBuffers;
@@ -31,12 +30,5 @@ public class ByteBufferBodyGenerator
     public ByteBuffer[] getByteBuffers()
     {
         return byteBuffers;
-    }
-
-    @SuppressWarnings("deprecation")
-    @Override
-    public void write(OutputStream out)
-    {
-        throw new UnsupportedOperationException();
     }
 }
