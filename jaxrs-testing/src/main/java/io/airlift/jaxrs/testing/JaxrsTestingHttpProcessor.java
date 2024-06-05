@@ -16,9 +16,13 @@ package io.airlift.jaxrs.testing;
 
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableSet;
+import io.airlift.http.client.ByteBufferBodyGenerator;
+import io.airlift.http.client.FileBodyGenerator;
 import io.airlift.http.client.HttpStatus;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.Response;
+import io.airlift.http.client.StaticBodyGenerator;
+import io.airlift.http.client.StreamingBodyGenerator;
 import io.airlift.http.client.testing.TestingHttpClient;
 import io.airlift.http.client.testing.TestingResponse;
 import io.airlift.log.Logger;
@@ -37,11 +41,14 @@ import org.glassfish.jersey.test.spi.TestContainer;
 
 import java.io.ByteArrayOutputStream;
 import java.net.URI;
+import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import static com.google.common.collect.MoreCollectors.onlyElement;
+import static com.google.common.io.ByteStreams.toByteArray;
 
 public class JaxrsTestingHttpProcessor
         implements TestingHttpClient.Processor
@@ -91,7 +98,12 @@ public class JaxrsTestingHttpProcessor
             invocation = invocationBuilder.build(request.getMethod());
         }
         else {
-            byte[] bytes = getRequestBody(request);
+            byte[] bytes = switch (request.getBodyGenerator()) {
+                case StaticBodyGenerator generator -> generator.getBody();
+                case ByteBufferBodyGenerator generator -> getBytes(generator.getByteBuffers());
+                case FileBodyGenerator generator -> Files.readAllBytes(generator.getPath());
+                case StreamingBodyGenerator generator -> toByteArray(generator.source());
+            };
             Entity<byte[]> entity = Entity.entity(bytes, (String) requestHeaders.get("Content-Type").stream().collect(onlyElement()));
             invocation = invocationBuilder.build(request.getMethod(), entity);
         }
@@ -133,12 +145,17 @@ public class JaxrsTestingHttpProcessor
         return new TestingResponse(HttpStatus.fromStatusCode(result.getStatus()), responseHeaders.build(), result.readEntity(byte[].class));
     }
 
-    @SuppressWarnings("deprecation")
-    private static byte[] getRequestBody(Request request)
+    private static byte[] getBytes(ByteBuffer[] byteBuffers)
             throws Exception
     {
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            request.getBodyGenerator().write(out);
+            for (ByteBuffer byteBuffer : byteBuffers) {
+                int savedPosition = byteBuffer.position();
+                while (byteBuffer.hasRemaining()) {
+                    out.write(byteBuffer.get());
+                }
+                byteBuffer.position(savedPosition);
+            }
             return out.toByteArray();
         }
     }

@@ -1,12 +1,10 @@
 package io.airlift.http.client;
 
-import java.io.OutputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static java.util.Objects.requireNonNull;
 
-public class FileBodyGenerator
+public final class FileBodyGenerator
         implements BodyGenerator
 {
     private final Path path;
@@ -19,13 +17,5 @@ public class FileBodyGenerator
     public Path getPath()
     {
         return path;
-    }
-
-    @SuppressWarnings("deprecation")
-    @Override
-    public void write(OutputStream out)
-            throws Exception
-    {
-        Files.copy(path, out);
     }
 }
