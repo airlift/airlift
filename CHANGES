@@ -10,6 +10,7 @@
 - Reject X-Forwarded-* headers if http-server.process-forwarded is false
 - Add HTTP protocol version to client traces
 - Improve request/response metrics accuracy and correctness
+- Update Airbase to 157
 
 248
 
