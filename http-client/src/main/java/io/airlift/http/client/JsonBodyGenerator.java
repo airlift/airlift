@@ -17,7 +17,7 @@ package io.airlift.http.client;
 
 import io.airlift.json.JsonCodec;
 
-public class JsonBodyGenerator<T>
+public final class JsonBodyGenerator<T>
         extends StaticBodyGenerator
 {
     public static <T> JsonBodyGenerator<T> jsonBodyGenerator(JsonCodec<T> jsonCodec, T instance)

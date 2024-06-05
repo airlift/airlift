@@ -15,14 +15,7 @@
  */
 package io.airlift.http.client;
 
-import java.io.OutputStream;
-
-public interface BodyGenerator
+public sealed interface BodyGenerator
+        permits ByteBufferBodyGenerator, FileBodyGenerator, StaticBodyGenerator, StreamingBodyGenerator
 {
-    /**
-     * @deprecated use {@link StaticBodyGenerator}, {@link JsonBodyGenerator}, {@link FileBodyGenerator}, or {@link StreamingBodyGenerator}
-     */
-    @Deprecated
-    void write(OutputStream out)
-            throws Exception;
 }
