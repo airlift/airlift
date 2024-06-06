@@ -23,6 +23,7 @@ import jakarta.ws.rs.core.Response;
 import java.lang.ref.WeakReference;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -30,27 +31,29 @@ import static jakarta.ws.rs.core.Response.status;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-public class AsyncResponseHandler
+public class AsyncResponseHandler<T>
+        implements FutureCallback<T>
 {
+    private final AtomicBoolean clientDisconnected = new AtomicBoolean();
     private final AsyncResponse asyncResponse;
-    private final WeakReference<Future<?>> futureResponseReference;
+    private final WeakReference<Future<T>> futureResponseReference;
 
-    private AsyncResponseHandler(AsyncResponse asyncResponse, ListenableFuture<?> futureResponse)
+    private AsyncResponseHandler(AsyncResponse asyncResponse, ListenableFuture<T> futureResponse, Executor httpResponseExecutor)
     {
         this.asyncResponse = requireNonNull(asyncResponse, "asyncResponse is null");
         // the jaxrs implementation can hold on to the async timeout for a long time, and
         // the future can reference large expensive objects.  Since we are only interested
         // in canceling this future on a timeout, only hold a weak reference to the future
         this.futureResponseReference = new WeakReference<>(requireNonNull(futureResponse, "futureResponse is null"));
+        Futures.addCallback(futureResponse, this, httpResponseExecutor);
     }
 
-    public static AsyncResponseHandler bindAsyncResponse(AsyncResponse asyncResponse, ListenableFuture<?> futureResponse, Executor httpResponseExecutor)
+    public static <T> AsyncResponseHandler<T> bindAsyncResponse(AsyncResponse asyncResponse, ListenableFuture<T> futureResponse, Executor httpResponseExecutor)
     {
-        Futures.addCallback(futureResponse, toFutureCallback(asyncResponse), httpResponseExecutor);
-        return new AsyncResponseHandler(asyncResponse, futureResponse);
+        return new AsyncResponseHandler<>(asyncResponse, futureResponse, httpResponseExecutor);
     }
 
-    public AsyncResponseHandler withTimeout(Duration timeout)
+    public AsyncResponseHandler<T> withTimeout(Duration timeout)
     {
         return withTimeout(timeout,
                 status(Response.Status.SERVICE_UNAVAILABLE)
@@ -58,12 +61,12 @@ public class AsyncResponseHandler
                         .build());
     }
 
-    public AsyncResponseHandler withTimeout(Duration timeout, Response timeoutResponse)
+    public AsyncResponseHandler<T> withTimeout(Duration timeout, Response timeoutResponse)
     {
         return withTimeout(timeout, () -> timeoutResponse);
     }
 
-    public AsyncResponseHandler withTimeout(Duration timeout, Supplier<Response> timeoutResponse)
+    public AsyncResponseHandler<T> withTimeout(Duration timeout, Supplier<Response> timeoutResponse)
     {
         asyncResponse.setTimeoutHandler(asyncResponse -> {
             asyncResponse.resume(timeoutResponse.get());
@@ -88,22 +91,26 @@ public class AsyncResponseHandler
         }
     }
 
-    private static <T> FutureCallback<T> toFutureCallback(AsyncResponse asyncResponse)
+    @Override
+    public void onSuccess(T value)
     {
-        return new FutureCallback<T>()
-        {
-            @Override
-            public void onSuccess(T value)
-            {
-                checkArgument(!(value instanceof Response.ResponseBuilder), "Value is a ResponseBuilder. Did you forget to call build?");
-                asyncResponse.resume(value);
-            }
+        checkArgument(!(value instanceof Response.ResponseBuilder), "Value is a ResponseBuilder. Did you forget to call build?");
+        if (!clientDisconnected.get()) {
+            asyncResponse.resume(value);
+        }
+    }
 
-            @Override
-            public void onFailure(Throwable t)
-            {
-                asyncResponse.resume(t);
-            }
-        };
+    @Override
+    public void onFailure(Throwable throwable)
+    {
+        if (!clientDisconnected.get()) {
+            asyncResponse.resume(throwable);
+        }
+    }
+
+    public void clientDisconnected()
+    {
+        clientDisconnected.set(true);
+        cancelFuture();
     }
 }

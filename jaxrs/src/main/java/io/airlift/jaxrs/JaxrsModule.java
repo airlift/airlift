@@ -57,6 +57,7 @@ public class JaxrsModule
         jaxrsBinder(binder).bind(SmileMapper.class);
         jaxrsBinder(binder).bind(ParsingExceptionMapper.class);
         jaxrsBinder(binder).bind(FactoryBinder.class);
+        jaxrsBinder(binder).bindRequestScoped(AsyncResponseBinder.class, AsyncResponseBinder.Factory.class);
 
         newSetBinder(binder, Object.class, JaxrsResource.class).permitDuplicates();
 
