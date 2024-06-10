@@ -175,6 +175,7 @@ public class HttpServer
         HttpConfiguration baseHttpConfiguration = new HttpConfiguration();
         baseHttpConfiguration.setSendServerVersion(false);
         baseHttpConfiguration.setSendXPoweredBy(false);
+        baseHttpConfiguration.setNotifyRemoteAsyncErrors(true); // Pass remote exceptions to AsyncContext
         if (config.isProcessForwarded()) {
             baseHttpConfiguration.addCustomizer(new ForwardedRequestCustomizer());
         }
