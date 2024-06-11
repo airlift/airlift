@@ -29,6 +29,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.servlet.Filter;
 import jakarta.servlet.Servlet;
+import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.ee10.servlet.FilterHolder;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
@@ -36,6 +37,7 @@ import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
+import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.LoginService;
@@ -383,8 +385,19 @@ public class HttpServer
     private ConnectionFactory[] secureFactories(HttpServerConfig config, HttpConfiguration httpsConfiguration, SslContextFactory.Server server)
     {
         ConnectionFactory http1 = new HttpConnectionFactory(httpsConfiguration);
-        SslConnectionFactory tls = new SslConnectionFactory(server, http1.getProtocol());
-        return new ConnectionFactory[] {tls, http1};
+        ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
+        alpn.setDefaultProtocol(http1.getProtocol());
+
+        SslConnectionFactory tls = new SslConnectionFactory(server, alpn.getProtocol());
+
+        HTTP2ServerConnectionFactory http2 = new HTTP2ServerConnectionFactory(httpsConfiguration);
+        http2.setInitialSessionRecvWindow(toIntExact(config.getHttp2InitialSessionReceiveWindowSize().toBytes()));
+        http2.setInitialStreamRecvWindow(toIntExact(config.getHttp2InitialStreamReceiveWindowSize().toBytes()));
+        http2.setMaxConcurrentStreams(config.getHttp2MaxConcurrentStreams());
+        http2.setInputBufferSize(toIntExact(config.getHttp2InputBufferSize().toBytes()));
+        http2.setStreamIdleTimeout(config.getHttp2StreamIdleTimeout().toMillis());
+
+        return new ConnectionFactory[] {tls, alpn, http2, http1};
     }
 
     private static void setSecureRequestCustomizer(HttpConfiguration configuration)
