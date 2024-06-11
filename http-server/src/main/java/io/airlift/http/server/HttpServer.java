@@ -209,21 +209,13 @@ public class HttpServer
 
             Integer acceptors = config.getHttpAcceptorThreads();
             Integer selectors = config.getHttpSelectorThreads();
-            HttpConnectionFactory http1 = new HttpConnectionFactory(httpConfiguration);
-            HTTP2CServerConnectionFactory http2c = new HTTP2CServerConnectionFactory(httpConfiguration);
-            http2c.setInitialSessionRecvWindow(toIntExact(config.getHttp2InitialSessionReceiveWindowSize().toBytes()));
-            http2c.setInitialStreamRecvWindow(toIntExact(config.getHttp2InitialStreamReceiveWindowSize().toBytes()));
-            http2c.setMaxConcurrentStreams(config.getHttp2MaxConcurrentStreams());
-            http2c.setInputBufferSize(toIntExact(config.getHttp2InputBufferSize().toBytes()));
-            http2c.setStreamIdleTimeout(config.getHttp2StreamIdleTimeout().toMillis());
             httpConnector = createServerConnector(
                     httpServerInfo.getHttpChannel(),
                     server,
                     null,
                     firstNonNull(acceptors, -1),
                     firstNonNull(selectors, -1),
-                    http1,
-                    http2c);
+                    insecureFactories(config, httpConfiguration));
             httpConnector.setName("http");
             httpConnector.setPort(httpServerInfo.getHttpUri().getPort());
             httpConnector.setIdleTimeout(config.getNetworkMaxIdleTime().toMillis());
@@ -245,8 +237,6 @@ public class HttpServer
 
             HttpsConfig httpsConfig = maybeHttpsConfig.orElseThrow();
             this.sslContextFactory = Optional.of(this.sslContextFactory.orElseGet(() -> createReloadingSslContextFactory(httpsConfig, clientCertificate, nodeInfo.getEnvironment())));
-            SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory.get(), "http/1.1");
-
             Integer acceptors = config.getHttpsAcceptorThreads();
             Integer selectors = config.getHttpsSelectorThreads();
             httpsConnector = createServerConnector(
@@ -255,8 +245,7 @@ public class HttpServer
                     null,
                     firstNonNull(acceptors, -1),
                     firstNonNull(selectors, -1),
-                    sslConnectionFactory,
-                    new HttpConnectionFactory(httpsConfiguration));
+                    secureFactories(config, httpsConfiguration, sslContextFactory.get()));
             httpsConnector.setName("https");
             httpsConnector.setPort(httpServerInfo.getHttpsUri().getPort());
             httpsConnector.setIdleTimeout(config.getNetworkMaxIdleTime().toMillis());
@@ -375,6 +364,26 @@ public class HttpServer
         errorHandler.setShowMessageInTitle(showStackTrace);
         errorHandler.setShowStacks(showStackTrace);
         server.setErrorHandler(errorHandler);
+    }
+
+    private ConnectionFactory[] insecureFactories(HttpServerConfig config, HttpConfiguration httpConfiguration)
+    {
+        HttpConnectionFactory http1 = new HttpConnectionFactory(httpConfiguration);
+        HTTP2CServerConnectionFactory http2c = new HTTP2CServerConnectionFactory(httpConfiguration);
+        http2c.setInitialSessionRecvWindow(toIntExact(config.getHttp2InitialSessionReceiveWindowSize().toBytes()));
+        http2c.setInitialStreamRecvWindow(toIntExact(config.getHttp2InitialStreamReceiveWindowSize().toBytes()));
+        http2c.setMaxConcurrentStreams(config.getHttp2MaxConcurrentStreams());
+        http2c.setInputBufferSize(toIntExact(config.getHttp2InputBufferSize().toBytes()));
+        http2c.setStreamIdleTimeout(config.getHttp2StreamIdleTimeout().toMillis());
+
+        return new ConnectionFactory[] {http1, http2c};
+    }
+
+    private ConnectionFactory[] secureFactories(HttpServerConfig config, HttpConfiguration httpsConfiguration, SslContextFactory.Server server)
+    {
+        ConnectionFactory http1 = new HttpConnectionFactory(httpsConfiguration);
+        SslConnectionFactory tls = new SslConnectionFactory(server, http1.getProtocol());
+        return new ConnectionFactory[] {tls, http1};
     }
 
     private static void setSecureRequestCustomizer(HttpConfiguration configuration)
