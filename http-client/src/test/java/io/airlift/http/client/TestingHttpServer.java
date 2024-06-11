@@ -18,6 +18,7 @@ import jakarta.servlet.Servlet;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
+import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -66,14 +67,10 @@ public class TestingHttpServer
             SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
             sslContextFactory.setKeyStorePath(keystore.get());
             sslContextFactory.setKeyStorePassword("changeit");
-            SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory, "http/1.1");
-            connector = new ServerConnector(server, sslConnectionFactory, new HttpConnectionFactory(httpConfiguration));
+            connector = new ServerConnector(server, secureFactories(httpConfiguration, sslContextFactory));
         }
         else {
-            HttpConnectionFactory http1 = new HttpConnectionFactory(httpConfiguration);
-            HTTP2CServerConnectionFactory http2c = new HTTP2CServerConnectionFactory(httpConfiguration);
-
-            connector = new ServerConnector(server, http1, http2c);
+            connector = new ServerConnector(server, insecureFactories(httpConfiguration));
         }
 
         connector.setIdleTimeout(30000);
@@ -104,6 +101,20 @@ public class TestingHttpServer
         this.server = server;
         this.server.start();
         this.hostAndPort = HostAndPort.fromParts("localhost", connector.getLocalPort());
+    }
+
+    private ConnectionFactory[] insecureFactories(HttpConfiguration httpConfiguration)
+    {
+        HttpConnectionFactory http1 = new HttpConnectionFactory(httpConfiguration);
+        HTTP2CServerConnectionFactory http2c = new HTTP2CServerConnectionFactory(httpConfiguration);
+        return new ConnectionFactory[] {http1, http2c};
+    }
+
+    private ConnectionFactory[] secureFactories(HttpConfiguration httpsConfiguration, SslContextFactory.Server server)
+    {
+        ConnectionFactory http1 = new HttpConnectionFactory(httpsConfiguration);
+        SslConnectionFactory tls = new SslConnectionFactory(server, http1.getProtocol());
+        return new ConnectionFactory[] {tls, http1};
     }
 
     public HostAndPort getHostAndPort()
