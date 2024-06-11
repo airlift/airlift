@@ -15,9 +15,11 @@ package io.airlift.http.client;
 
 import com.google.common.net.HostAndPort;
 import jakarta.servlet.Servlet;
+import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
+import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -113,8 +115,13 @@ public class TestingHttpServer
     private ConnectionFactory[] secureFactories(HttpConfiguration httpsConfiguration, SslContextFactory.Server server)
     {
         ConnectionFactory http1 = new HttpConnectionFactory(httpsConfiguration);
-        SslConnectionFactory tls = new SslConnectionFactory(server, http1.getProtocol());
-        return new ConnectionFactory[] {tls, http1};
+        ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
+        alpn.setDefaultProtocol(http1.getProtocol());
+
+        SslConnectionFactory tls = new SslConnectionFactory(server, alpn.getProtocol());
+        HTTP2ServerConnectionFactory http2 = new HTTP2ServerConnectionFactory(httpsConfiguration);
+
+        return new ConnectionFactory[] {tls, alpn, http2, http1};
     }
 
     public HostAndPort getHostAndPort()
