@@ -822,6 +822,18 @@ public abstract class AbstractHttpClientTest
         executeRequest(request, createStatusResponseHandler());
     }
 
+    @Test
+    public void testHttpProtocolUsed()
+            throws Exception
+    {
+        servlet.setResponseBody("Hello world ;)");
+        Request request = prepareGet()
+                .setUri(baseURI)
+                .build();
+        HttpVersion version = executeRequest(request, new HttpVersionResponseHandler());
+        assertEquals(version, createClientConfig().isHttp2Enabled() ? HttpVersion.HTTP_2 : HttpVersion.HTTP_1);
+    }
+
     private void executeExceptionRequest(HttpClientConfig config, Request request)
             throws Exception
     {
@@ -1060,6 +1072,24 @@ public abstract class AbstractHttpClientTest
                 throws RuntimeException
         {
             throw new UnsupportedOperationException();
+        }
+    }
+
+    protected static class HttpVersionResponseHandler
+            implements ResponseHandler<HttpVersion, RuntimeException>
+    {
+        @Override
+        public HttpVersion handleException(Request request, Exception exception)
+                throws RuntimeException
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public HttpVersion handle(Request request, Response response)
+                throws RuntimeException
+        {
+            return response.getHttpVersion();
         }
     }
 
