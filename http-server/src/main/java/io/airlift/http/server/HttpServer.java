@@ -285,28 +285,22 @@ public class HttpServer
 
                 HttpsConfig httpsConfig = maybeHttpsConfig.orElseThrow();
                 this.sslContextFactory = Optional.of(this.sslContextFactory.orElseGet(() -> createReloadingSslContextFactory(httpsConfig, clientCertificate, nodeInfo.getEnvironment())));
-                SslConnectionFactory sslConnectionFactory = new SslConnectionFactory(sslContextFactory.get(), "http/1.1");
                 adminConnector = createServerConnector(
                         httpServerInfo.getAdminChannel(),
                         server,
                         adminThreadPool,
                         0,
                         -1,
-                        sslConnectionFactory,
-                        new HttpConnectionFactory(adminConfiguration));
+                        secureFactories(config, adminConfiguration, sslContextFactory.get()));
             }
             else {
-                HttpConnectionFactory http1 = new HttpConnectionFactory(adminConfiguration);
-                HTTP2CServerConnectionFactory http2c = new HTTP2CServerConnectionFactory(adminConfiguration);
-                http2c.setMaxConcurrentStreams(config.getHttp2MaxConcurrentStreams());
                 adminConnector = createServerConnector(
                         httpServerInfo.getAdminChannel(),
                         server,
                         adminThreadPool,
                         -1,
                         -1,
-                        http1,
-                        http2c);
+                        insecureFactories(config, adminConfiguration));
             }
 
             adminConnector.setName("admin");
