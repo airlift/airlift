@@ -834,6 +834,18 @@ public abstract class AbstractHttpClientTest
         assertEquals(version, createClientConfig().isHttp2Enabled() ? HttpVersion.HTTP_2 : HttpVersion.HTTP_1);
     }
 
+    @Test
+    public void testDowngradedHttpProtocolUsed()
+            throws Exception
+    {
+        servlet.setResponseBody("Hello world ;)");
+        Request request = prepareGet()
+                .setUri(baseURI)
+                .build();
+        HttpVersion version = executeRequest(upgradeRequest(request, HttpVersion.HTTP_1), new HttpVersionResponseHandler());
+        assertEquals(version, HttpVersion.HTTP_1);
+    }
+
     private void executeExceptionRequest(HttpClientConfig config, Request request)
             throws Exception
     {
