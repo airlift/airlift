@@ -836,7 +836,16 @@ public abstract class AbstractHttpClientTest
                 .setUri(baseURI)
                 .build();
         HttpVersion version = executeRequest(request, new HttpVersionResponseHandler());
-        assertEquals(version, createClientConfig().isHttp2Enabled() ? HttpVersion.HTTP_2 : HttpVersion.HTTP_1);
+
+        if (createClientConfig().isHttp3Enabled()) {
+            assertEquals(version, HttpVersion.HTTP_3);
+        }
+        else if (createClientConfig().isHttp2Enabled()) {
+            assertEquals(version, HttpVersion.HTTP_2);
+        }
+        else {
+            assertEquals(version, HttpVersion.HTTP_1);
+        }
     }
 
     @Test

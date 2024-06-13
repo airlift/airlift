@@ -142,6 +142,21 @@
         </dependency>
 
         <dependency>
+            <groupId>org.eclipse.jetty.http3</groupId>
+            <artifactId>jetty-http3-client</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.jetty.http3</groupId>
+            <artifactId>jetty-http3-client-transport</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.jetty.quic</groupId>
+            <artifactId>jetty-quic-client</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>org.weakref</groupId>
             <artifactId>jmxutils</artifactId>
         </dependency>
@@ -216,6 +231,18 @@
         <dependency>
             <groupId>org.eclipse.jetty.http2</groupId>
             <artifactId>jetty-http2-server</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.jetty.http3</groupId>
+            <artifactId>jetty-http3-server</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.jetty.quic</groupId>
+            <artifactId>jetty-quic-server</artifactId>
             <scope>test</scope>
         </dependency>
 

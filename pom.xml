@@ -86,7 +86,7 @@
         <air.javadoc.lint>all,-missing</air.javadoc.lint>
         <air.compiler.fail-warnings>true</air.compiler.fail-warnings>
 
-        <project.build.targetJdk>21</project.build.targetJdk>
+        <project.build.targetJdk>22</project.build.targetJdk>
         <air.modernizer.java-version>8</air.modernizer.java-version>
 
         <dep.airlift.version>249-SNAPSHOT</dep.airlift.version>

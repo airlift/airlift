@@ -151,6 +151,16 @@
         </dependency>
 
         <dependency>
+            <groupId>org.eclipse.jetty.http3</groupId>
+            <artifactId>jetty-http3-server</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.jetty.quic</groupId>
+            <artifactId>jetty-quic-server</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>org.weakref</groupId>
             <artifactId>jmxutils</artifactId>
         </dependency>

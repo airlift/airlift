@@ -20,6 +20,9 @@ import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
 
 import static io.airlift.configuration.testing.ConfigAssertions.assertFullMapping;
@@ -68,12 +71,17 @@ public class TestHttpServerConfig
                 .setHttp2InitialSessionReceiveWindowSize(DataSize.of(16, MEGABYTE))
                 .setHttp2InputBufferSize(DataSize.of(8, KILOBYTE))
                 .setHttp2InitialStreamReceiveWindowSize(DataSize.of(16, MEGABYTE))
-                .setHttp2StreamIdleTimeout(new Duration(15, SECONDS)));
+                .setHttp2StreamIdleTimeout(new Duration(15, SECONDS))
+                .setHttp3Enabled(false)
+                .setHttp3PemPath(null));
     }
 
     @Test
     public void testExplicitPropertyMappings()
+            throws IOException
     {
+        Path tempDirectory = Files.createTempDirectory("pems");
+
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("http-server.http.enabled", "false")
                 .put("http-server.http.port", "1")
@@ -107,6 +115,8 @@ public class TestHttpServerConfig
                 .put("http-server.http2.stream-receive-window-size", "4MB")
                 .put("http-server.http2.input-buffer-size", "4MB")
                 .put("http-server.http2.stream-idle-timeout", "23s")
+                .put("http-server.http3.enabled", "true")
+                .put("http-server.http3.pem-path", tempDirectory.toString())
                 .build();
 
         HttpServerConfig expected = new HttpServerConfig()
@@ -141,7 +151,9 @@ public class TestHttpServerConfig
                 .setHttp2InitialSessionReceiveWindowSize(DataSize.of(4, MEGABYTE))
                 .setHttp2InitialStreamReceiveWindowSize(DataSize.of(4, MEGABYTE))
                 .setHttp2InputBufferSize(DataSize.of(4, MEGABYTE))
-                .setHttp2StreamIdleTimeout(new Duration(23, SECONDS));
+                .setHttp2StreamIdleTimeout(new Duration(23, SECONDS))
+                .setHttp3Enabled(true)
+                .setHttp3PemPath(tempDirectory.toString());
 
         assertFullMapping(properties, expected);
     }

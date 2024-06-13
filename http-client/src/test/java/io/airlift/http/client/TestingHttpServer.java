@@ -18,12 +18,19 @@ import jakarta.servlet.Servlet;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
+import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
+import org.eclipse.jetty.quic.server.QuicServerConnector;
+import org.eclipse.jetty.quic.server.ServerQuicConfiguration;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -32,9 +39,13 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
+import java.net.ServerSocket;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Optional;
 import java.util.function.Consumer;
 
+import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 public class TestingHttpServer
@@ -42,6 +53,8 @@ public class TestingHttpServer
 {
     private final Server server;
     private final HostAndPort hostAndPort;
+    private final Path pemPath;
+    private final int port;
 
     public TestingHttpServer(Optional<String> keystore, Servlet servlet)
             throws Exception
@@ -52,6 +65,12 @@ public class TestingHttpServer
     public TestingHttpServer(Optional<String> keystore, Servlet servlet, Consumer<HttpConfiguration> configurationDecorator, Optional<Handler.Wrapper> additionalHandle)
             throws Exception
     {
+        this.pemPath = Files.createTempDirectory("pems");
+
+        ServerSocket serverSocket = new ServerSocket(0);
+        this.port = serverSocket.getLocalPort();
+        serverSocket.close();
+
         requireNonNull(keystore, "keyStore is null");
         requireNonNull(servlet, "servlet is null");
 
@@ -70,6 +89,13 @@ public class TestingHttpServer
             sslContextFactory.setKeyStorePath(keystore.get());
             sslContextFactory.setKeyStorePassword("changeit");
             connector = new ServerConnector(server, secureFactories(httpConfiguration, sslContextFactory));
+            server.addConnector(connector);
+
+            httpConfiguration.addCustomizer(new SvcResponseCustomizer(port));
+            ServerQuicConfiguration quicConfig = new ServerQuicConfiguration(sslContextFactory, pemPath);
+            QuicServerConnector quicServerConnector = new QuicServerConnector(server, quicConfig, new HTTP3ServerConnectionFactory(quicConfig));
+            quicServerConnector.setPort(port);
+            server.addConnector(quicServerConnector);
         }
         else {
             connector = new ServerConnector(server, insecureFactories(httpConfiguration));
@@ -77,6 +103,8 @@ public class TestingHttpServer
 
         connector.setIdleTimeout(30000);
         connector.setName(keystore.map(path -> "https").orElse("http"));
+        connector.setReusePort(true);
+        connector.setPort(port);
 
         server.addConnector(connector);
 
@@ -135,5 +163,23 @@ public class TestingHttpServer
     {
         server.setStopTimeout(3000);
         server.stop();
+    }
+
+    public static class SvcResponseCustomizer
+            implements HttpConfiguration.Customizer
+    {
+        private final PreEncodedHttpField altSvcHttpField;
+
+        public SvcResponseCustomizer(int quicPort)
+        {
+            altSvcHttpField = new PreEncodedHttpField(HttpHeader.ALT_SVC, format("h3=\":%d\"", quicPort));
+        }
+
+        @Override
+        public org.eclipse.jetty.server.Request customize(Request request, HttpFields.Mutable responseHeaders)
+        {
+            responseHeaders.add(altSvcHttpField);
+            return request;
+        }
     }
 }
