@@ -16,7 +16,6 @@ package io.airlift.stats;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
-import com.google.common.primitives.Doubles;
 import io.airlift.slice.Slices;
 import org.testng.annotations.Test;
 
@@ -27,7 +26,6 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
 
-import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.util.Arrays.asList;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertThrows;
@@ -45,7 +43,6 @@ public class TestTDigest
         double[] quantiles = new double[] {0.1, 0.2, 0.5, 0.9};
         double[] expected = new double[] {Double.NaN, Double.NaN, Double.NaN, Double.NaN};
         assertEquals(digest.valuesAt(quantiles), expected);
-        assertEquals(digest.valuesAt(Doubles.asList(quantiles)), Doubles.asList(expected));
     }
 
     @Test
@@ -123,17 +120,16 @@ public class TestTDigest
             values[i] = i;
         }
 
-        List<Double> quantiles = IntStream.range(0, 1000)
+        double[] quantiles = IntStream.range(0, 1000)
                 .mapToDouble(i -> i * 1e-3)
-                .boxed()
-                .collect(toImmutableList());
-        List<Double> expectedValues = quantiles.stream()
+                .toArray();
+        double[] expectedValues = Arrays.stream(quantiles)
                 .map(quantile -> values[(int) Math.floor(quantile * values.length)])
-                .collect(toImmutableList());
-        List<Double> valuesAtQuantilesSingle = quantiles.stream()
+                .toArray();
+        double[] valuesAtQuantilesSingle = Arrays.stream(quantiles)
                 .map(digest::valueAt)
-                .collect(toImmutableList());
-        List<Double> valuesAtQuantilesMultiple = digest.valuesAt(quantiles);
+                .toArray();
+        double[] valuesAtQuantilesMultiple = digest.valuesAt(quantiles);
         assertEquals(expectedValues, valuesAtQuantilesSingle);
         assertEquals(expectedValues, valuesAtQuantilesMultiple);
     }
@@ -338,22 +334,21 @@ public class TestTDigest
         TDigest digest = new TDigest();
 
         // empty quantiles list
-        assertEquals(ImmutableList.of(), digest.valuesAt(ImmutableList.of()));
         assertEquals(new double[0], digest.valuesAt());
         assertEquals(new double[0], digest.valuesAt(new double[0]));
 
         // quantiles not sorted
-        assertThrows(IllegalArgumentException.class, () -> digest.valuesAt(ImmutableList.of(0.9, 0.1)));
+        assertThrows(IllegalArgumentException.class, () -> digest.valuesAt(0.9, 0.1));
 
         // quantile out of range [0, 1]
-        assertThrows(IllegalArgumentException.class, () -> digest.valuesAt(ImmutableList.of(-0.9, 0.9)));
+        assertThrows(IllegalArgumentException.class, () -> digest.valuesAt(-0.9, 0.9));
 
         // empty digest
-        assertEquals(ImmutableList.of(Double.NaN, Double.NaN), digest.valuesAt(ImmutableList.of(0.5, 0.75)));
+        assertEquals(new double[] {Double.NaN, Double.NaN}, digest.valuesAt(0.5, 0.75));
 
         // single centroid
         digest.add(10);
-        assertEquals(ImmutableList.of(10.0, 10.0, 10.0, 10.0), digest.valuesAt(ImmutableList.of(0.0, 0.5, 0.75, 1.0)));
+        assertEquals(new double[] {10.0, 10.0, 10.0, 10.0}, digest.valuesAt(0.0, 0.5, 0.75, 1.0));
     }
 
     @Test
@@ -362,28 +357,28 @@ public class TestTDigest
         TDigest digest = new TDigest();
         addAll(digest, ImmutableList.of(10, 20, 30, 40));
         // quantiles at centroid borders
-        assertEquals(ImmutableList.of(10.0, 20.0, 30.0, 40.0, 40.0), digest.valuesAt(ImmutableList.of(0.0, 0.25, 0.5, 0.75, 1.0)));
+        assertEquals(new double[] {10.0, 20.0, 30.0, 40.0, 40.0}, digest.valuesAt(0.0, 0.25, 0.5, 0.75, 1.0));
         // quantiles inside centroids
-        assertEquals(ImmutableList.of(10.0, 10.0, 20.0, 20.0, 30.0, 30.0, 40.0, 40.0), digest.valuesAt(ImmutableList.of(0.001, 0.249, 0.251, 0.499, 0.501, 0.749, 0.751, 0.999)));
+        assertEquals(new double[] {10.0, 10.0, 20.0, 20.0, 30.0, 30.0, 40.0, 40.0}, digest.valuesAt(0.001, 0.249, 0.251, 0.499, 0.501, 0.749, 0.751, 0.999));
 
         digest = new TDigest();
         digest.add(10, 2);
         digest.add(20, 2);
         // min value and value at offset 1
-        assertEquals(ImmutableList.of(10.0, 10.0), digest.valuesAt(ImmutableList.of(0.1, 0.25)));
+        assertEquals(new double[] {10.0, 10.0}, digest.valuesAt(0.1, 0.25));
         // short-circuit to last centroid
-        assertEquals(ImmutableList.of(20.0, 20.0), digest.valuesAt(ImmutableList.of(0.9, 1.0)));
-        assertEquals(ImmutableList.of(20.0, 20.0), digest.valuesAt(ImmutableList.of(0.75, 1.0)));
+        assertEquals(new double[] {20.0, 20.0}, digest.valuesAt(0.9, 1.0));
+        assertEquals(new double[] {20.0, 20.0}, digest.valuesAt(0.75, 1.0));
         // pass through the structure until last centroid
-        assertEquals(ImmutableList.of(15.0, 20.0), digest.valuesAt(ImmutableList.of(0.5, 1.0)));
+        assertEquals(new double[] {15.0, 20.0}, digest.valuesAt(0.5, 1.0));
 
         digest = new TDigest();
         digest.add(10, 4);
         digest.add(20, 4);
         // min value and value at offset 1
-        assertEquals(ImmutableList.of(10.0, 10.0), digest.valuesAt(ImmutableList.of(0.1, 0.125)));
+        assertEquals(new double[] {10.0, 10.0}, digest.valuesAt(0.1, 0.125));
         // short-circuit to last centroid
-        assertEquals(ImmutableList.of(20.0, 20.0, 20.0), digest.valuesAt(ImmutableList.of(0.75, 0.875, 1.0)));
+        assertEquals(new double[] {20.0, 20.0, 20.0}, digest.valuesAt(0.75, 0.875, 1.0));
 
         digest = new TDigest();
         digest.add(10, 4);
@@ -392,7 +387,7 @@ public class TestTDigest
         digest.add(40, 2);
         digest.add(50, 2);
         // single-element vs multi-element clusters
-        assertEquals(ImmutableList.of(19.5, 20.0, 20.0, 30.0, 30.0, 30.999999999999996, 44.5, 45.50000000000001), digest.valuesAt(ImmutableList.of(0.39, 0.41, 0.49, 0.51, 0.59, 0.61, 0.79, 0.81)));
+        assertEquals(new double[] {19.5, 20.0, 20.0, 30.0, 30.0, 30.999999999999996, 44.5, 45.50000000000001}, digest.valuesAt(0.39, 0.41, 0.49, 0.51, 0.59, 0.61, 0.79, 0.81));
     }
 
     private void addAll(TDigest digest, List<Integer> values)

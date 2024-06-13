@@ -24,7 +24,6 @@ import io.airlift.slice.Slices;
 
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.List;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
@@ -238,11 +237,6 @@ public class TDigest
     public double valueAt(double quantile)
     {
         return valuesAt(quantile)[0];
-    }
-
-    public List<Double> valuesAt(List<Double> quantiles)
-    {
-        return Doubles.asList(valuesAt(Doubles.toArray(quantiles)));
     }
 
     public double[] valuesAt(double... quantiles)

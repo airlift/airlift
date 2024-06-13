@@ -7,7 +7,6 @@ import com.google.errorprone.annotations.concurrent.GuardedBy;
 import org.weakref.jmx.Managed;
 
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
@@ -174,11 +173,6 @@ public class Distribution
         }
 
         return result;
-    }
-
-    public synchronized List<Double> getPercentiles(List<Double> percentiles)
-    {
-        return digest.valuesAt(percentiles);
     }
 
     public synchronized double[] getPercentiles(double... percentiles)
