@@ -59,10 +59,13 @@ import org.eclipse.jetty.http.HttpCookieStore;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.transport.ClientConnectionFactoryOverHTTP2;
+import org.eclipse.jetty.http3.client.HTTP3Client;
+import org.eclipse.jetty.http3.client.transport.ClientConnectionFactoryOverHTTP3;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.ConnectionStatistics;
+import org.eclipse.jetty.quic.client.ClientQuicConfiguration;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.MonitoredQueuedThreadPool;
@@ -273,7 +276,7 @@ public class JettyHttpClient
         connector.setSelectors(config.getSelectorCount());
         connector.setSslContextFactory(sslContextFactory);
 
-        httpClient = new AuthorizationPreservingHttpClient(getClientTransport(connector, config));
+        httpClient = new AuthorizationPreservingHttpClient(getClientTransport(connector, sslContextFactory, config));
 
         // request and response buffer size
         httpClient.setRequestBufferSize(toIntExact(config.getRequestBufferSize().toBytes()));
@@ -437,9 +440,18 @@ public class JettyHttpClient
         });
     }
 
-    private HttpClientTransport getClientTransport(ClientConnector connector, HttpClientConfig config)
+    private HttpClientTransport getClientTransport(ClientConnector connector, SslContextFactory.Client sslContextFactory, HttpClientConfig config)
     {
         ImmutableList.Builder<ClientConnectionFactory.Info> protocols = ImmutableList.builder();
+
+        if (config.isHttp3Enabled()) {
+            ClientQuicConfiguration clientQuicConfig = new ClientQuicConfiguration(sslContextFactory, config.getHttp3PemPath()
+                    .orElseThrow(() -> new RuntimeException("http-client.http3.pem-path needs to be set when http-client.http3.enabled")));
+            HTTP3Client http3Client = new HTTP3Client(clientQuicConfig);
+            http3Client.getQuicConfiguration().setSessionRecvWindow(64 * 1024 * 1024);
+            protocols.add(new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client));
+        }
+
         if (config.isHttp2Enabled()) {
             HTTP2Client client = new HTTP2Client(connector);
             client.setInitialSessionRecvWindow(toIntExact(config.getHttp2InitialSessionReceiveWindowSize().toBytes()));

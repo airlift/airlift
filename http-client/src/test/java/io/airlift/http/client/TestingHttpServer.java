@@ -18,12 +18,21 @@ import jakarta.servlet.Servlet;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
+import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
+import org.eclipse.jetty.quic.server.QuicServerConnector;
+import org.eclipse.jetty.quic.server.ServerQuicConfiguration;
+import org.eclipse.jetty.server.AbstractNetworkConnector;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.NetworkConnector;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -34,9 +43,12 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Optional;
 import java.util.function.Consumer;
 
+import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 public class TestingHttpServer
@@ -45,16 +57,18 @@ public class TestingHttpServer
     private final String scheme;
     private final Server server;
     private final HostAndPort hostAndPort;
+    private final Path pemPath;
 
     public TestingHttpServer(Optional<String> keystore, Servlet servlet)
             throws Exception
     {
-        this(keystore, servlet, httpConfiguration -> {}, Optional.empty());
+        this(keystore, servlet, ignored -> {}, Optional.empty());
     }
 
     public TestingHttpServer(Optional<String> keystore, Servlet servlet, Consumer<HttpConfiguration> configurationDecorator, Optional<Handler.Wrapper> additionalHandle)
             throws Exception
     {
+        this.pemPath = Files.createTempDirectory("pems");
         requireNonNull(keystore, "keyStore is null");
         requireNonNull(servlet, "servlet is null");
         this.scheme = keystore.isPresent() ? "https" : "http";
@@ -74,15 +88,37 @@ public class TestingHttpServer
             sslContextFactory.setKeyStorePath(keystore.get());
             sslContextFactory.setKeyStorePassword("changeit");
             connector = new ServerConnector(server, secureFactories(httpConfiguration, sslContextFactory));
+            configureConnector(scheme, connector);
+            connector.setReusePort(true);
+            server.addConnector(connector);
+
+            ServerQuicConfiguration quicConfig = new ServerQuicConfiguration(sslContextFactory, pemPath);
+            QuicServerConnector quicServerConnector = new QuicServerConnector(server, quicConfig, new HTTP3ServerConnectionFactory(quicConfig));
+            configureConnector("quic", quicServerConnector);
+            server.addConnector(quicServerConnector);
+
+            // Needed to support both dynamically assigned ports
+            connector.addEventListener(new NetworkConnector.Listener()
+            {
+                @Override
+                public void onOpen(NetworkConnector connector)
+                {
+                    int port = connector.getLocalPort();
+
+                    // Configure the plain connector for secure redirects from http to https.
+                    httpConfiguration.setSecurePort(port);
+                    httpConfiguration.addCustomizer(new SvcResponseCustomizer(port));
+                    // Configure the HTTP3 connector port to be the same as HTTPS/HTTP2.
+                    quicServerConnector.setPort(port);
+                }
+            });
         }
         else {
             connector = new ServerConnector(server, insecureFactories(httpConfiguration));
+            configureConnector(scheme, connector);
+            connector.setReusePort(true);
+            server.addConnector(connector);
         }
-
-        connector.setIdleTimeout(30000);
-        connector.setName(keystore.map(path -> "https").orElse("http"));
-
-        server.addConnector(connector);
 
         ServletHolder servletHolder = new ServletHolder(servlet);
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
@@ -107,6 +143,12 @@ public class TestingHttpServer
         this.server = server;
         this.server.start();
         this.hostAndPort = HostAndPort.fromParts("localhost", connector.getLocalPort());
+    }
+
+    private static void configureConnector(String name, AbstractNetworkConnector connector)
+    {
+        connector.setIdleTimeout(30000);
+        connector.setName(name);
     }
 
     private ConnectionFactory[] insecureFactories(HttpConfiguration httpConfiguration)
@@ -148,5 +190,23 @@ public class TestingHttpServer
             throws Exception
     {
         server.stop();
+    }
+
+    public static class SvcResponseCustomizer
+            implements HttpConfiguration.Customizer
+    {
+        private final PreEncodedHttpField altSvcHttpField;
+
+        public SvcResponseCustomizer(int quicPort)
+        {
+            altSvcHttpField = new PreEncodedHttpField(HttpHeader.ALT_SVC, format("h3=\":%d\"", quicPort));
+        }
+
+        @Override
+        public org.eclipse.jetty.server.Request customize(Request request, HttpFields.Mutable responseHeaders)
+        {
+            responseHeaders.add(altSvcHttpField);
+            return request;
+        }
     }
 }
