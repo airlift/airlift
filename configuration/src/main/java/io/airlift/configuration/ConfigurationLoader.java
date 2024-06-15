@@ -16,10 +16,13 @@
 package io.airlift.configuration;
 
 import com.google.common.collect.ImmutableSortedMap;
+import org.tomlj.Toml;
+import org.tomlj.TomlArray;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
@@ -27,6 +30,7 @@ import java.util.TreeMap;
 
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.collect.Maps.fromProperties;
+import static java.util.stream.Collectors.joining;
 
 public final class ConfigurationLoader
 {
@@ -56,13 +60,28 @@ public final class ConfigurationLoader
     public static Map<String, String> loadPropertiesFrom(String path)
             throws IOException
     {
+        if (path.endsWith(".toml")) {
+            return Toml.parse(Path.of(path)).dottedEntrySet().stream()
+                    .collect(toImmutableMap(Entry::getKey, entry -> tomlValueToString(entry.getValue())));
+        }
+
         Properties properties = new Properties();
         try (InputStream inputStream = new FileInputStream(path)) {
             properties.load(inputStream);
         }
-
         return fromProperties(properties).entrySet().stream()
                 .collect(toImmutableMap(Entry::getKey, entry -> entry.getValue().trim()));
+    }
+
+    private static String tomlValueToString(Object object)
+    {
+        if (object instanceof TomlArray tomlArray) {
+            return tomlArray.toList().stream()
+                    .map(ConfigurationLoader::tomlValueToString)
+                    .collect(joining(","));
+        }
+
+        return object.toString();
     }
 
     public static Map<String, String> getSystemProperties()
