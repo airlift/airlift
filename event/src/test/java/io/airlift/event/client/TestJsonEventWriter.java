@@ -80,7 +80,6 @@ public class TestJsonEventWriter
 
     @Test
     public void testCircularEvent()
-            throws Exception
     {
         assertThatThrownBy(() -> eventWriter.writeEvents(createEventGenerator(ImmutableList.of(new CircularEventClass())), nullOutputStream()))
                 .isInstanceOf(InvalidEventException.class)
@@ -89,7 +88,6 @@ public class TestJsonEventWriter
 
     @Test
     public void testChainedCircularEvent()
-            throws Exception
     {
         ChainedPart a = new ChainedPart("a");
         ChainedPart b = new ChainedPart("b");

@@ -24,7 +24,6 @@ public class TestExtendedSettableFuture
 
     @Test
     public void testSetException()
-            throws Exception
     {
         ExtendedSettableFuture<String> future = ExtendedSettableFuture.create();
         future.setException(new Exception(""));
@@ -37,7 +36,6 @@ public class TestExtendedSettableFuture
 
     @Test
     public void testCancelWithoutInterrupt()
-            throws Exception
     {
         ExtendedSettableFuture<String> future = ExtendedSettableFuture.create();
         future.cancel(false);
@@ -50,7 +48,6 @@ public class TestExtendedSettableFuture
 
     @Test
     public void testCancelWithInterrupt()
-            throws Exception
     {
         ExtendedSettableFuture<String> future = ExtendedSettableFuture.create();
         future.cancel(true);

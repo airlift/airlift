@@ -31,7 +31,6 @@ public class TestHyperLogLog
 {
     @Test
     public void testEstimates()
-            throws Exception
     {
         int trials = 1000;
         for (int indexBits = 4; indexBits <= 13; indexBits++) {
@@ -75,14 +74,12 @@ public class TestHyperLogLog
 
     @Test
     public void testRetainedSize()
-            throws Exception
     {
         assertThat(HyperLogLog.newInstance(8).estimatedInMemorySize()).isEqualTo(toIntExact(instanceSize(HyperLogLog.class) + (new SparseHll(10)).estimatedInMemorySize()));
     }
 
     @Test
     public void testMerge()
-            throws Exception
     {
         // small vs small
         verifyMerge(sequence(0, 100), sequence(50, 150));
@@ -126,7 +123,6 @@ public class TestHyperLogLog
 
     @Test
     public void testRoundtrip()
-            throws Exception
     {
         // small
         verifyRoundtrip(sequence(0, 100));

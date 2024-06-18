@@ -137,7 +137,6 @@ public class TestJsonMapper
 
     @Test
     public void testOtherIOExceptionThrowsIOException()
-            throws IOException
     {
         try {
             JsonMapper jsonMapper = new JsonMapper(new ObjectMapper());

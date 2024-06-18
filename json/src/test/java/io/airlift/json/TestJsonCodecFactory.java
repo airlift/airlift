@@ -33,7 +33,6 @@ public class TestJsonCodecFactory
 
     @Test
     public void testJsonCodec()
-            throws Exception
     {
         JsonCodec<Person> jsonCodec = jsonCodecFactory.jsonCodec(Person.class);
 
@@ -45,7 +44,6 @@ public class TestJsonCodecFactory
 
     @Test
     public void testListJsonCodec()
-            throws Exception
     {
         JsonCodec<List<Person>> jsonCodec = jsonCodecFactory.listJsonCodec(Person.class);
 
@@ -54,7 +52,6 @@ public class TestJsonCodecFactory
 
     @Test
     public void testListJsonCodecFromJsonCodec()
-            throws Exception
     {
         JsonCodec<List<Person>> jsonCodec = jsonCodecFactory.listJsonCodec(jsonCodecFactory.jsonCodec(Person.class));
 
@@ -63,7 +60,6 @@ public class TestJsonCodecFactory
 
     @Test
     public void testTypeLiteralList()
-            throws Exception
     {
         JsonCodec<List<Person>> jsonCodec = jsonCodecFactory.jsonCodec(new TypeToken<List<Person>>() {});
 
@@ -84,7 +80,6 @@ public class TestJsonCodecFactory
 
     @Test
     public void testMapJsonCodec()
-            throws Exception
     {
         JsonCodec<Map<String, Person>> jsonCodec = jsonCodecFactory.mapJsonCodec(String.class, Person.class);
 
@@ -93,7 +88,6 @@ public class TestJsonCodecFactory
 
     @Test
     public void testMapJsonCodecFromJsonCodec()
-            throws Exception
     {
         JsonCodec<Map<String, Person>> jsonCodec = jsonCodecFactory.mapJsonCodec(String.class, jsonCodecFactory.jsonCodec(Person.class));
 
@@ -102,7 +96,6 @@ public class TestJsonCodecFactory
 
     @Test
     public void testTypeLiteralMap()
-            throws Exception
     {
         JsonCodec<Map<String, Person>> jsonCodec = jsonCodecFactory.jsonCodec(new TypeToken<Map<String, Person>>() {});
 

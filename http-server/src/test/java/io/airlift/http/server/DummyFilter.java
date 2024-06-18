@@ -31,7 +31,6 @@ class DummyFilter
 {
     @Override
     public void init(FilterConfig filterConfig)
-            throws ServletException
     {
     }
 

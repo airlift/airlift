@@ -38,7 +38,6 @@ public class TestServer
 
     @BeforeEach
     public void setup()
-            throws Exception
     {
         Bootstrap app = new Bootstrap(
                 new TestingNodeModule(),

@@ -65,7 +65,6 @@ public class TestJsonModule
 
     @BeforeAll
     public void setUp()
-            throws Exception
     {
         Injector injector = Guice.createInjector(new JsonModule(),
                 binder -> {
@@ -77,7 +76,6 @@ public class TestJsonModule
 
     @Test
     public void testJsonCodecFactoryBinding()
-            throws Exception
     {
         Injector injector = Guice.createInjector(new JsonModule());
         JsonCodecFactory codecFactory = injector.getInstance(JsonCodecFactory.class);

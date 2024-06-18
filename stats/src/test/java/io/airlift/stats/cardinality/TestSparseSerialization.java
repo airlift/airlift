@@ -25,7 +25,6 @@ public class TestSparseSerialization
 {
     @Test
     public void testEmpty()
-            throws Exception
     {
         Slice expected = new DynamicSliceOutput(1)
                 .appendByte(2)  // format tag
@@ -42,7 +41,6 @@ public class TestSparseSerialization
 
     @Test
     public void testSingle()
-            throws Exception
     {
         Slice expected = new DynamicSliceOutput(1)
                 .appendByte(2)  // format tag
@@ -66,7 +64,6 @@ public class TestSparseSerialization
 
     @Test
     public void testRoundtrip()
-            throws Exception
     {
         SparseHll hll = new SparseHll(4);
 

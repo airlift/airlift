@@ -53,7 +53,6 @@ public class TestAnnouncer
 
     @BeforeEach
     protected void setUp()
-            throws Exception
     {
         nodeInfo = new NodeInfo(new NodeConfig().setEnvironment("test").setPool("pool"));
         discoveryClient = new InMemoryDiscoveryClient(nodeInfo, MAX_AGE);
@@ -63,7 +62,6 @@ public class TestAnnouncer
 
     @AfterEach
     public void tearDown()
-            throws Exception
     {
         announcer.destroy();
         assertAnnounced();
@@ -71,7 +69,6 @@ public class TestAnnouncer
 
     @Test
     public void testBasic()
-            throws Exception
     {
         assertAnnounced();
 
@@ -82,7 +79,6 @@ public class TestAnnouncer
 
     @Test
     public void startAfterDestroy()
-            throws Exception
     {
         announcer.start();
         announcer.destroy();
@@ -97,7 +93,6 @@ public class TestAnnouncer
 
     @Test
     public void idempotentStart()
-            throws Exception
     {
         announcer.start();
         announcer.start();
@@ -106,7 +101,6 @@ public class TestAnnouncer
 
     @Test
     public void idempotentDestroy()
-            throws Exception
     {
         announcer.start();
         announcer.destroy();
@@ -116,7 +110,6 @@ public class TestAnnouncer
 
     @Test
     public void destroyNoStart()
-            throws Exception
     {
         announcer.destroy();
     }

@@ -42,7 +42,6 @@ public class TestLogger
 
     @BeforeEach
     public void setUp()
-            throws Exception
     {
         handler = new MockHandler();
 

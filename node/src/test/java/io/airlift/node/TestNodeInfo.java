@@ -79,7 +79,6 @@ public class TestNodeInfo
 
     @Test
     public void testIpDiscovery()
-            throws UnknownHostException
     {
         NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, IP, null);
         assertThat(nodeInfo.getInternalAddress()).isNotNull();

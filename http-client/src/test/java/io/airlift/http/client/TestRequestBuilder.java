@@ -44,7 +44,6 @@ public class TestRequestBuilder
 
     @Test
     public void testCannotBuildRequestToIllegalPort()
-            throws Exception
     {
         assertThatThrownBy(() -> prepareGet().setUri(URI.create("http://example.com:0/")))
                 .isInstanceOf(IllegalArgumentException.class)

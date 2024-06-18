@@ -41,7 +41,6 @@ public class TestDiscoveryBinder
 {
     @Test
     public void testBindSelector()
-            throws Exception
     {
         Injector injector = Guice.createInjector(
                 new TestModule(),
@@ -53,7 +52,6 @@ public class TestDiscoveryBinder
 
     @Test
     public void testBindSelectorProviderClass()
-            throws Exception
     {
         Injector injector = Guice.createInjector(
                 new TestModule(),
@@ -65,7 +63,6 @@ public class TestDiscoveryBinder
 
     @Test
     public void testBindSelectorProviderInstance()
-            throws Exception
     {
         Injector injector = Guice.createInjector(
                 new TestModule(),
@@ -77,7 +74,6 @@ public class TestDiscoveryBinder
 
     @Test
     public void testBindSelectorString()
-            throws Exception
     {
         Injector injector = Guice.createInjector(
                 new TestModule(),
@@ -88,7 +84,6 @@ public class TestDiscoveryBinder
 
     @Test
     public void testBindSelectorAnnotation()
-            throws Exception
     {
         Injector injector = Guice.createInjector(
                 new TestModule(),
@@ -99,7 +94,6 @@ public class TestDiscoveryBinder
 
     @Test
     public void testBindSelectorStringWithPool()
-            throws Exception
     {
         Injector injector = Guice.createInjector(
                 new TestModule(ImmutableMap.of("discovery.apple.pool", "apple-pool")),
@@ -110,7 +104,6 @@ public class TestDiscoveryBinder
 
     @Test
     public void testBindSelectorAnnotationWithPool()
-            throws Exception
     {
         Injector injector = Guice.createInjector(
                 new TestModule(ImmutableMap.of("discovery.apple.pool", "apple-pool")),

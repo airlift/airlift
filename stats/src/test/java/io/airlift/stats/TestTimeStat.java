@@ -172,7 +172,6 @@ public class TestTimeStat
 
     @Test
     public void timeTry()
-            throws Exception
     {
         TimeStat stat = new TimeStat(ticker);
         try (BlockTimer ignored = stat.time()) {

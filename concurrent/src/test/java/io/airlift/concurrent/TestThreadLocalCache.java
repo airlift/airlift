@@ -24,7 +24,6 @@ public class TestThreadLocalCache
 {
     @Test
     public void testSanity()
-            throws Exception
     {
         AtomicInteger count = new AtomicInteger(0);
         ThreadLocalCache<String, String> cache = new ThreadLocalCache<>(2, key -> {

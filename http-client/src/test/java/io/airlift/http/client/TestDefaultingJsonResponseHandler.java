@@ -21,7 +21,6 @@ public class TestDefaultingJsonResponseHandler
 
     @Test
     public void testValidJson()
-            throws Exception
     {
         User user = new User("Joe", 25);
         String json = codec.toJson(user);
