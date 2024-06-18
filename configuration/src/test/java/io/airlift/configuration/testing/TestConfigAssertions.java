@@ -459,7 +459,6 @@ public class TestConfigAssertions
 
     @Test
     public void testRecordedDefaults()
-            throws Exception
     {
         ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(PersonConfig.class)
                 .setName("Dain")
@@ -470,7 +469,6 @@ public class TestConfigAssertions
 
     @Test
     public void testRecordedDefaultsOneOfEverything()
-            throws Exception
     {
         ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(Config1.class)
                 .setBooleanOption(false)

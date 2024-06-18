@@ -215,7 +215,6 @@ public class TestConfig
 
     @Test
     public void testConfigGlobalDefaults()
-            throws Exception
     {
         byte globalDefaultValue = 1;
         int defaultValue = 2;

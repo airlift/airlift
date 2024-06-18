@@ -22,7 +22,6 @@ public class TestNullEventClient
 {
     @BeforeEach
     public void setUp()
-            throws Exception
     {
         eventClient = new NullEventClient();
     }

@@ -9,7 +9,6 @@ public class TestLogJmxModule
 {
     @Test
     public void testModule()
-            throws Exception
     {
         Guice.createInjector(Stage.PRODUCTION,
                 new TestingMBeanModule(),

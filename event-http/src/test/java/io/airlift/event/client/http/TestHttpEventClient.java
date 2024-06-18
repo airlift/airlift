@@ -28,7 +28,6 @@ import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.node.NodeInfo;
 import io.airlift.units.Duration;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -208,7 +207,7 @@ public class TestHttpEventClient
 
         @Override
         protected void doPost(HttpServletRequest request, HttpServletResponse response)
-                throws ServletException, IOException
+                throws IOException
         {
             lastPath = request.getPathInfo();
             lastBody = CharStreams.toString(new InputStreamReader(request.getInputStream(), UTF_8));

@@ -27,7 +27,6 @@ public class TestDenseSerialization
 {
     @Test
     public void testEmpty()
-            throws Exception
     {
         SliceOutput expected = new DynamicSliceOutput(1)
                 .appendByte(3)  // format tag
@@ -47,7 +46,6 @@ public class TestDenseSerialization
 
     @Test
     public void testSingleNoOverflow()
-            throws Exception
     {
         byte[] buckets = new byte[1 << (12 - 1)];
         buckets[326] = 0b0000_0001;
@@ -67,7 +65,6 @@ public class TestDenseSerialization
 
     @Test
     public void testSingleWithOverflow()
-            throws Exception
     {
         byte[] buckets = new byte[1 << (12 - 1)];
         buckets[1353] = (byte) 0b1111_0000;
@@ -92,7 +89,6 @@ public class TestDenseSerialization
 
     @Test
     public void testMultipleOverflow()
-            throws Exception
     {
         byte[] buckets = new byte[1 << (12 - 1)];
         buckets[1353] = (byte) 0b1111_0000;
@@ -124,7 +120,6 @@ public class TestDenseSerialization
 
     @Test
     public void testMergeWithOverflows()
-            throws Exception
     {
         DenseHll expected = makeHll(4, 37227, 93351);
 
@@ -140,7 +135,6 @@ public class TestDenseSerialization
 
     @Test
     public void testBaselineAdjusment()
-            throws Exception
     {
         byte[] buckets = new byte[] {0x45, 0x23, 0x01, 0x31, 0x22, 0x05, 0x04, 0x01};
 
@@ -165,7 +159,6 @@ public class TestDenseSerialization
 
     @Test
     public void testOverflowAfterBaselineIncrement()
-            throws Exception
     {
         byte[] buckets = new byte[] {0x45, 0x23, 0x01, 0x31, 0x22, 0x05, 0x04, (byte) 0xF1};
 
@@ -196,7 +189,6 @@ public class TestDenseSerialization
 
     @Test
     public void testBaselineAdjustmentAfterOverflow()
-            throws Exception
     {
         byte[] buckets = new byte[] {0x45, 0x23, 0x01, 0x31, 0x22, 0x05, 0x04, (byte) 0xF1};
 
@@ -227,7 +219,6 @@ public class TestDenseSerialization
 
     @Test
     public void testRoundtrip()
-            throws Exception
     {
         DenseHll hll = new DenseHll(4);
 
@@ -243,7 +234,6 @@ public class TestDenseSerialization
 
     @Test
     public void testDeserializeDenseV1NoOverflows()
-            throws Exception
     {
         int indexBitLength = 4;
         int numberOfBuckets = numberOfBuckets(indexBitLength);
@@ -268,7 +258,6 @@ public class TestDenseSerialization
 
     @Test
     public void testDeserializeDenseV1EmptyOverflow()
-            throws Exception
     {
         // bucket 1 has a value of 17 (i.e., baseline = 2, delta == 15 and overflow is present with a value of 0)
 
@@ -300,7 +289,6 @@ public class TestDenseSerialization
 
     @Test
     public void testDeserializeDenseV1Overflow()
-            throws Exception
     {
         // bucket 1 has a value of 20 (i.e., baseline = 2, delta == 15, overflow == 3)
 

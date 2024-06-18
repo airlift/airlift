@@ -13,7 +13,6 @@ public class TestTestingJmxModule
 {
     @Test
     public void testTestingJmxModule()
-            throws Exception
     {
         Injector injector = Guice.createInjector(new TestingJmxModule());
         MBeanServer server = injector.getInstance(MBeanServer.class);

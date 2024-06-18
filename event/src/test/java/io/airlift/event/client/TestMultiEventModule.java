@@ -13,7 +13,6 @@ public class TestMultiEventModule
 {
     @BeforeEach
     public void setUp()
-            throws Exception
     {
         Injector injector = Guice.createInjector(
                 new InMemoryEventModule(),

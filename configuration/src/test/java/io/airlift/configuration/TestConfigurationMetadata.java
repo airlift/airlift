@@ -128,7 +128,6 @@ public class TestConfigurationMetadata
 
     @Test
     public void testSetterNoGetterConfigClassThrows()
-            throws Exception
     {
         TestMonitor monitor = new TestMonitor();
         try {
@@ -166,7 +165,6 @@ public class TestConfigurationMetadata
 
     @Test
     public void testGetValidAbstractClass()
-            throws Exception
     {
         TestMonitor monitor = new TestMonitor();
         try {
@@ -466,7 +464,6 @@ public class TestConfigurationMetadata
 
     @Test
     public void testMultipleAnnotatedSettersClass()
-            throws Exception
     {
         TestMonitor monitor = new TestMonitor();
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(MultipleAnnotatedSettersClass.class, monitor);
@@ -480,7 +477,6 @@ public class TestConfigurationMetadata
 
     @Test
     public void testCurrentAndLegacyConfigOnGetterClass()
-            throws Exception
     {
         TestMonitor monitor = new TestMonitor();
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(CurrentAndLegacyConfigOnGetterClass.class, monitor);
@@ -505,7 +501,6 @@ public class TestConfigurationMetadata
 
     @Test
     public void testCurrentConfigWithReplacedByClass()
-            throws Exception
     {
         TestMonitor monitor = new TestMonitor();
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(CurrentConfigWithReplacedByClass.class, monitor);
@@ -516,7 +511,6 @@ public class TestConfigurationMetadata
 
     @Test
     public void testLegacyConfigOnGetterClass()
-            throws Exception
     {
         TestMonitor monitor = new TestMonitor();
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(LegacyConfigOnGetterClass.class, monitor);
@@ -528,7 +522,6 @@ public class TestConfigurationMetadata
 
     @Test
     public void testLegacyConfigOnSetterClass()
-            throws Exception
     {
         TestMonitor monitor = new TestMonitor();
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(LegacyConfigOnSetterClass.class, monitor);
@@ -539,7 +532,6 @@ public class TestConfigurationMetadata
 
     @Test
     public void testLegacyConfigOnDeprecatedSetterClass()
-            throws Exception
     {
         TestMonitor monitor = new TestMonitor();
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(LegacyConfigOnDeprecatedSetterClass.class, monitor);
@@ -549,7 +541,6 @@ public class TestConfigurationMetadata
 
     @Test
     public void testLegacyConfigOnNonDeprecatedSetterClass()
-            throws Exception
     {
         TestMonitor monitor = new TestMonitor();
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getConfigurationMetadata(LegacyConfigOnNonDeprecatedSetterClass.class, monitor);

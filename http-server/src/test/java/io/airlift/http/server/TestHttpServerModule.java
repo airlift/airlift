@@ -43,7 +43,6 @@ import io.airlift.node.testing.TestingNodeModule;
 import io.airlift.tracetoken.TraceTokenModule;
 import jakarta.servlet.Filter;
 import jakarta.servlet.Servlet;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -376,7 +375,7 @@ public class TestHttpServerModule
 
         @Override
         protected void service(HttpServletRequest request, HttpServletResponse response)
-                throws ServletException, IOException
+                throws IOException
         {
             ByteStreams.copy(request.getInputStream(), ByteStreams.nullOutputStream());
 

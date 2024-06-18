@@ -7,7 +7,6 @@ public class TestMultiEventClient
 {
     @BeforeEach
     public void setUp()
-            throws Exception
     {
         memoryEventClient1 = new InMemoryEventClient();
         memoryEventClient2 = new InMemoryEventClient();

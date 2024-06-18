@@ -249,7 +249,6 @@ public abstract class AbstractHttpClientTest
     @Test
     @Timeout(10)
     public void testUnresolvableHost()
-            throws Exception
     {
         String invalidHost = "nonexistent.invalid";
         assertUnknownHost(invalidHost);
@@ -531,7 +530,6 @@ public abstract class AbstractHttpClientTest
 
     @Test
     public void testReadTimeout()
-            throws Exception
     {
         HttpClientConfig config = createClientConfig()
                 .setIdleTimeout(new Duration(500, MILLISECONDS));
@@ -686,7 +684,6 @@ public abstract class AbstractHttpClientTest
 
     @Test
     public void testThrowsUnexpectedResponseException()
-            throws Exception
     {
         servlet.setResponseStatusCode(543);
         Request request = prepareGet()
@@ -730,7 +727,6 @@ public abstract class AbstractHttpClientTest
 
     @AfterAll
     public final void tearDown()
-            throws Exception
     {
         if (executor != null) {
             executor.shutdownNow();
@@ -823,7 +819,6 @@ public abstract class AbstractHttpClientTest
 
     @Test
     public void testHandlesUndeclaredThrowable()
-            throws Exception
     {
         Request request = prepareGet()
                 .setUri(baseURI)
@@ -835,7 +830,6 @@ public abstract class AbstractHttpClientTest
 
     @Test
     public void testHttpStatusListenerException()
-            throws Exception
     {
         servlet.setResponseStatusCode(TestingStatusListener.EXCEPTION_STATUS);
 
@@ -996,7 +990,6 @@ public abstract class AbstractHttpClientTest
 
         @Override
         public Void handle(Request request, Response response)
-                throws Exception
         {
             throw new UnsupportedOperationException();
         }

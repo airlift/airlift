@@ -128,7 +128,6 @@ public class TestAsyncSemaphore
 
     @Test
     public void testMultiSubmitters()
-            throws Exception
     {
         AsyncSemaphore<Runnable, Void> asyncSemaphore = new AsyncSemaphore<>(2, executor, this::submitTask);
 
@@ -231,7 +230,6 @@ public class TestAsyncSemaphore
 
     @Test
     public void testFailedTaskWithMultipleSubmitters()
-            throws Exception
     {
         AtomicInteger successCount = new AtomicInteger();
         AtomicInteger failureCount = new AtomicInteger();

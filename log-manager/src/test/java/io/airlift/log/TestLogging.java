@@ -82,7 +82,6 @@ public class TestLogging
 
     @Test
     public void testPropagatesLevels()
-            throws Exception
     {
         Logging logging = Logging.initialize();
         Logger logger = Logger.get("testPropagatesLevels");
@@ -106,7 +105,6 @@ public class TestLogging
 
     @Test
     public void testPropagatesLevelsHierarchical()
-            throws Exception
     {
         Logging logging = Logging.initialize();
         Logger logger = Logger.get("testPropagatesLevelsHierarchical.child");
@@ -130,7 +128,6 @@ public class TestLogging
 
     @Test
     public void testChildLevelOverridesParent()
-            throws Exception
     {
         Logging logging = Logging.initialize();
         Logger logger = Logger.get("testChildLevelOverridesParent.child");
@@ -143,7 +140,6 @@ public class TestLogging
 
     @Test
     public void testClearLevel()
-            throws Exception
     {
         Logging logging = Logging.initialize();
         Logger logger = Logger.get("testClearLevel");

@@ -27,7 +27,6 @@ public class TestDenseHll
 {
     @Test
     public void testMultipleMerges()
-            throws Exception
     {
         for (int prefixBitLength : prefixLengths()) {
             DenseHll single = new DenseHll(prefixBitLength);
@@ -58,7 +57,6 @@ public class TestDenseHll
 
     @Test
     public void testHighCardinality()
-            throws Exception
     {
         for (int prefixBitLength : prefixLengths()) {
             TestingHll testingHll = new TestingHll(prefixBitLength);
@@ -76,7 +74,6 @@ public class TestDenseHll
 
     @Test
     public void testInsert()
-            throws Exception
     {
         for (int prefixBitLength : prefixLengths()) {
             TestingHll testingHll = new TestingHll(prefixBitLength);
@@ -95,7 +92,6 @@ public class TestDenseHll
 
     @Test
     public void testMergeWithOverflows()
-            throws Exception
     {
         TestingHll testingHll = new TestingHll(12);
         DenseHll hll1 = new DenseHll(12);
@@ -119,7 +115,6 @@ public class TestDenseHll
 
     @Test
     public void testMerge()
-            throws Exception
     {
         for (int prefixBitLength : prefixLengths()) {
             // small, non-overlapping

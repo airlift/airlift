@@ -49,7 +49,6 @@ public class TestSparseHll
 
     @Test
     public void testMerge()
-            throws Exception
     {
         for (int prefixBitLength : prefixLengths()) {
             // with overlap
@@ -71,7 +70,6 @@ public class TestSparseHll
 
     @Test
     public void testToDense()
-            throws Exception
     {
         for (int prefixBitLength : prefixLengths()) {
             verifyToDense(prefixBitLength, sequence(0, 10000));
