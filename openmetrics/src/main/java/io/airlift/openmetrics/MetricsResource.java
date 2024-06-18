@@ -13,6 +13,8 @@
  */
 package io.airlift.openmetrics;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.CharMatcher;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.airlift.log.Logger;
@@ -58,6 +60,13 @@ public class MetricsResource
     private static final String TYPE_SEPARATOR = "_TYPE_";
     private static final String NAME_SEPARATOR = "_NAME_";
     private static final Pattern METRIC_NAME_PATTERN = Pattern.compile("[[a-zA-Z]][\\w_]*");
+    private static final CharMatcher NON_ALLOWED_LABEL_CHARACTERS = CharMatcher
+            .inRange('a', 'z')
+            .or(CharMatcher.inRange('A', 'Z'))
+            .or(CharMatcher.inRange('0', '9'))
+            .or(CharMatcher.anyOf("_"))
+            .negate()
+            .precomputed();
 
     private final MBeanServer mbeanServer;
     private final MBeanExporter mbeanExporter;
@@ -146,7 +155,7 @@ public class MetricsResource
         }
 
         StringBuilder metricNameBuilder = new StringBuilder("JMX_")
-                .append(objectName.getDomain().replace(".", "_"));
+                .append(objectName.getDomain());
 
         if (objectName.getKeyProperty("name") != null) {
             metricNameBuilder.append(NAME_SEPARATOR)
@@ -155,13 +164,13 @@ public class MetricsResource
 
         if (objectName.getKeyProperty("type") != null) {
             metricNameBuilder.append(TYPE_SEPARATOR)
-                    .append(objectName.getKeyProperty("type").replace("$", "_"));
+                    .append(objectName.getKeyProperty("type"));
         }
 
         metricNameBuilder.append(ATTRIBUTE_SEPARATOR)
-                .append(attributeName.replace(".", "_"));
+                .append(attributeName);
 
-        String metricName = metricNameBuilder.toString();
+        String metricName = sanitizeMetricName(metricNameBuilder.toString());
 
         if (!METRIC_NAME_PATTERN.matcher(metricName).matches()) {
             log.warn("Calculated metric name has invalid characters %s skipping", metricName);
@@ -239,14 +248,10 @@ public class MetricsResource
         return expositions.toString();
     }
 
-    private String sanitizeMetricName(String name)
+    @VisibleForTesting
+    static String sanitizeMetricName(String name)
     {
-        return name.replace(".", "_")
-                .replace("$", "_")
-                .replace(":", "_")
-                .replace("=", "_")
-                .replace(",", "_")
-                .replace("-", "_");
+        return NON_ALLOWED_LABEL_CHARACTERS.replaceFrom(name, "_");
     }
 
     private List<Metric> getMetricsRecursively(String prefix, ManagedClass managedClass)
