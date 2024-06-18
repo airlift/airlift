@@ -47,10 +47,6 @@ public class HttpServerBinder
         return this;
     }
 
-    /**
-     * @deprecated this will be removed in the near future and is only intended as a stopgap
-     */
-    @Deprecated(forRemoval = true)
     public HttpServerBinder enableLegacyUriCompliance()
     {
         newOptionalBinder(binder, Key.get(Boolean.class, EnableLegacyUriCompliance.class)).setBinding().toInstance(true);

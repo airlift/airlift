@@ -95,7 +95,6 @@ public class TestLegacyUriMode
         }
     }
 
-    @SuppressWarnings("removal")
     private Injector startServer(boolean legacyUriComplianceEnabled)
     {
         return new Bootstrap(
