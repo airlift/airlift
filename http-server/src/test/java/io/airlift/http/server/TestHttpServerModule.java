@@ -178,7 +178,6 @@ public class TestHttpServerModule
         return ImmutableList.of(true, false).iterator();
     }
 
-    @SuppressWarnings("removal")
     @Test(dataProvider = "enabledDisabled")
     public void testServer(boolean enableLegacyUriCompliance)
             throws Exception
