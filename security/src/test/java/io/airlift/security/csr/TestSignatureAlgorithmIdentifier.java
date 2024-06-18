@@ -21,7 +21,6 @@ import java.util.Map.Entry;
 
 import static com.google.common.io.BaseEncoding.base16;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.testng.Assert.assertEquals;
 
 public class TestSignatureAlgorithmIdentifier
 {
@@ -32,7 +31,7 @@ public class TestSignatureAlgorithmIdentifier
         int verifiedCount = 0;
         for (Entry<String, SignatureAlgorithmIdentifier> entry : SignatureAlgorithmIdentifier.getAllSignatureAlgorithmIdentifiers().entrySet()) {
             SignatureAlgorithmIdentifier signatureAlgorithmIdentifier = entry.getValue();
-            assertEquals(signatureAlgorithmIdentifier.getName(), entry.getKey());
+            assertThat(signatureAlgorithmIdentifier.getName()).isEqualTo(entry.getKey());
 
             AlgorithmIdentifier algorithmIdentifier;
             try {
@@ -42,14 +41,10 @@ public class TestSignatureAlgorithmIdentifier
                 // Bouncy is missing some algorithms the JVM supports
                 continue;
             }
-            assertEquals(
-                    signatureAlgorithmIdentifier.getOid(),
-                    algorithmIdentifier.getAlgorithm().getId());
-            assertEquals(
-                    base16().encode(signatureAlgorithmIdentifier.getEncoded()),
-                    base16().encode(algorithmIdentifier.getAlgorithm().getEncoded("DER")));
-            assertEquals(algorithmIdentifier, algorithmIdentifier);
-            assertEquals(algorithmIdentifier.hashCode(), algorithmIdentifier.hashCode());
+            assertThat(signatureAlgorithmIdentifier.getOid()).isEqualTo(algorithmIdentifier.getAlgorithm().getId());
+            assertThat(base16().encode(signatureAlgorithmIdentifier.getEncoded())).isEqualTo(base16().encode(algorithmIdentifier.getAlgorithm().getEncoded("DER")));
+            assertThat(algorithmIdentifier).isEqualTo(algorithmIdentifier);
+            assertThat(algorithmIdentifier.hashCode()).isEqualTo(algorithmIdentifier.hashCode());
             verifiedCount++;
         }
         assertThat(verifiedCount).as("Algorithm identifiers verified").isGreaterThanOrEqualTo(10);

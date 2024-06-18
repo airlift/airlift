@@ -14,8 +14,7 @@ import static io.airlift.http.client.TestFullJsonResponseHandler.User;
 import static io.airlift.http.client.testing.TestingResponse.mockResponse;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestJsonResponseHandler
 {
@@ -28,8 +27,8 @@ public class TestJsonResponseHandler
         User user = new User("Joe", 25);
         User response = handler.handle(null, mockResponse(OK, JSON_UTF_8, codec.toJson(user)));
 
-        assertEquals(response.getName(), user.getName());
-        assertEquals(response.getAge(), user.getAge());
+        assertThat(response.getName()).isEqualTo(user.getName());
+        assertThat(response.getAge()).isEqualTo(user.getAge());
     }
 
     @Test
@@ -40,9 +39,9 @@ public class TestJsonResponseHandler
             handler.handle(null, mockResponse(OK, JSON_UTF_8, json));
         }
         catch (IllegalArgumentException e) {
-            assertEquals(e.getMessage(), format("Unable to create %s from JSON response:\n[%s]", User.class, json));
-            assertTrue(e.getCause() instanceof IllegalArgumentException);
-            assertEquals(e.getCause().getMessage(), "Invalid JSON bytes for [simple type, class io.airlift.http.client.TestFullJsonResponseHandler$User]");
+            assertThat(e.getMessage()).isEqualTo(format("Unable to create %s from JSON response:\n[%s]", User.class, json));
+            assertThat(e).hasCauseInstanceOf(IllegalArgumentException.class);
+            assertThat(e).hasStackTraceContaining("Invalid JSON bytes for [simple type, class io.airlift.http.client.TestFullJsonResponseHandler$User]");
         }
     }
 

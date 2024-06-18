@@ -2,7 +2,7 @@ package io.airlift.stats;
 
 import org.testng.annotations.Test;
 
-import static org.testng.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestDistribution
 {
@@ -12,13 +12,13 @@ public class TestDistribution
         Distribution distribution = new Distribution(0.1);
 
         distribution.add(10);
-        assertEquals(distribution.getCount(), 1D);
-        assertEquals(distribution.getAvg(), 10D);
+        assertThat(distribution.getCount()).isEqualTo(1D);
+        assertThat(distribution.getAvg()).isEqualTo(10D);
 
         distribution.reset();
 
-        assertEquals(distribution.getCount(), 0D);
-        assertEquals(distribution.getAvg(), Double.NaN);
+        assertThat(distribution.getCount()).isEqualTo(0D);
+        assertThat(distribution.getAvg()).isNaN();
     }
 
     @Test
@@ -30,7 +30,7 @@ public class TestDistribution
 
         Distribution copy = distribution.duplicate();
 
-        assertEquals(copy.getCount(), distribution.getCount());
-        assertEquals(copy.getTotal(), distribution.getTotal());
+        assertThat(copy.getCount()).isEqualTo(distribution.getCount());
+        assertThat(copy.getTotal()).isEqualTo(distribution.getTotal());
     }
 }

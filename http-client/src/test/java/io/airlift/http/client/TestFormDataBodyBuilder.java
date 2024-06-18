@@ -3,7 +3,7 @@ package io.airlift.http.client;
 import org.testng.annotations.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.testng.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestFormDataBodyBuilder
 {
@@ -17,6 +17,6 @@ public class TestFormDataBodyBuilder
                 .addField(":", "colon")
                 .build()
                 .getBody();
-        assertEquals(new String(body, UTF_8), "a=apple&b=banana+split&c=com%2Cma&%3A=colon");
+        assertThat(new String(body, UTF_8)).isEqualTo("a=apple&b=banana+split&c=com%2Cma&%3A=colon");
     }
 }

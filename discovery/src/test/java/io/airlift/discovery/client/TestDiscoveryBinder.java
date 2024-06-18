@@ -35,8 +35,7 @@ import java.util.Set;
 
 import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 import static io.airlift.discovery.client.ServiceTypes.serviceType;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestDiscoveryBinder
 {
@@ -49,7 +48,7 @@ public class TestDiscoveryBinder
                 binder -> discoveryBinder(binder).bindServiceAnnouncement(new ServiceAnnouncementProvider().get()));
 
         Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() {}));
-        assertEquals(announcements, ImmutableSet.of(ANNOUNCEMENT));
+        assertThat(announcements).isEqualTo(ImmutableSet.of(ANNOUNCEMENT));
     }
 
     @Test
@@ -61,7 +60,7 @@ public class TestDiscoveryBinder
                 binder -> discoveryBinder(binder).bindServiceAnnouncement(ServiceAnnouncementProvider.class));
 
         Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() {}));
-        assertEquals(announcements, ImmutableSet.of(ANNOUNCEMENT));
+        assertThat(announcements).isEqualTo(ImmutableSet.of(ANNOUNCEMENT));
     }
 
     @Test
@@ -73,7 +72,7 @@ public class TestDiscoveryBinder
                 binder -> discoveryBinder(binder).bindServiceAnnouncement(new ServiceAnnouncementProvider()));
 
         Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() {}));
-        assertEquals(announcements, ImmutableSet.of(ANNOUNCEMENT));
+        assertThat(announcements).isEqualTo(ImmutableSet.of(ANNOUNCEMENT));
     }
 
     @Test
@@ -123,9 +122,9 @@ public class TestDiscoveryBinder
     private void assertCanCreateServiceSelector(Injector injector, String expectedType, String expectedPool)
     {
         ServiceSelector actualServiceSelector = injector.getInstance(Key.get(ServiceSelector.class, serviceType(expectedType)));
-        assertNotNull(actualServiceSelector);
-        assertEquals(actualServiceSelector.getType(), expectedType);
-        assertEquals(actualServiceSelector.getPool(), expectedPool);
+        assertThat(actualServiceSelector).isNotNull();
+        assertThat(actualServiceSelector.getType()).isEqualTo(expectedType);
+        assertThat(actualServiceSelector.getPool()).isEqualTo(expectedPool);
     }
 
     private static class TestModule

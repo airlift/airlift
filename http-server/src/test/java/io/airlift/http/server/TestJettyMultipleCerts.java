@@ -41,8 +41,8 @@ import static com.google.common.io.Resources.getResource;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.testng.Assert.assertEquals;
 
 public class TestJettyMultipleCerts
 {
@@ -154,7 +154,7 @@ public class TestJettyMultipleCerts
                             .setUri(URI.create("https://" + address))
                             .build(),
                     createStatusResponseHandler());
-            assertEquals(statusResponse.getStatusCode(), 200);
+            assertThat(statusResponse.getStatusCode()).isEqualTo(200);
         }
         catch (Exception e) {
             throw new RuntimeException(address.getHost() + " " + e.getMessage(), e);

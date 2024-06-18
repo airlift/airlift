@@ -23,10 +23,7 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestLoggingOutputStream
 {
@@ -44,7 +41,7 @@ public class TestLoggingOutputStream
         stream.println(printed);
 
         assertLog(handler.takeRecord(), Level.INFO, logged);
-        assertTrue(handler.isEmpty());
+        assertThat(handler.isEmpty()).isTrue();
     }
 
     @DataProvider
@@ -60,9 +57,9 @@ public class TestLoggingOutputStream
 
     private void assertLog(LogRecord record, Level level, String message)
     {
-        assertEquals(record.getLevel(), level);
-        assertEquals(record.getMessage(), message);
-        assertNull(record.getThrown());
+        assertThat(record.getLevel()).isEqualTo(level);
+        assertThat(record.getMessage()).isEqualTo(message);
+        assertThat(record.getThrown()).isNull();
     }
 
     private static class MockHandler
@@ -89,7 +86,9 @@ public class TestLoggingOutputStream
 
         public LogRecord takeRecord()
         {
-            assertFalse(records.isEmpty(), "No messages logged");
+            assertThat(records)
+                    .as("No messages logged")
+                    .isNotEmpty();
             return records.remove(0);
         }
 

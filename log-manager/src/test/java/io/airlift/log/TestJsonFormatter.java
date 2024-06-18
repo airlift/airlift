@@ -21,7 +21,6 @@ import static io.airlift.json.JsonCodec.jsonCodec;
 import static io.airlift.json.JsonCodec.mapJsonCodec;
 import static java.time.temporal.ChronoUnit.NANOS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.testng.Assert.assertEquals;
 
 public class TestJsonFormatter
 {
@@ -44,18 +43,16 @@ public class TestJsonFormatter
 
         assertThat(minimalJsonErrorLogLine).as("Log lines should end with newline").endsWith("\n");
 
-        assertEquals(
-                jsonCodec(JsonRecord.class).fromJson(minimalJsonErrorLogLine),
-                new JsonRecord(
-                        original.getTimestamp(),
-                        Level.ERROR,
-                        null,
-                        null,
-                        exception.getMessage(),
-                        (Object[]) null,
-                        null,
-                        Context.root(),
-                        ImmutableMap.of()));
+        assertThat(jsonCodec(JsonRecord.class).fromJson(minimalJsonErrorLogLine)).isEqualTo(new JsonRecord(
+                original.getTimestamp(),
+                Level.ERROR,
+                null,
+                null,
+                exception.getMessage(),
+                (Object[]) null,
+                null,
+                Context.root(),
+                ImmutableMap.of()));
     }
 
     @Test
@@ -82,18 +79,16 @@ public class TestJsonFormatter
                 Context.root(),
                 ImmutableMap.of());
 
-        assertEquals(
-                jsonCodec(JsonRecord.class).fromJson(jsonCodec(JsonRecord.class).toJson(original)),
-                new JsonRecord(
-                        original.getTimestamp(),
-                        original.getLevel(),
-                        original.getThread(),
-                        original.getLoggerName(),
-                        original.getMessage(),
-                        List.of(),
-                        null,
-                        Context.root(),
-                        ImmutableMap.of()));
+        assertThat(jsonCodec(JsonRecord.class).fromJson(jsonCodec(JsonRecord.class).toJson(original))).isEqualTo(new JsonRecord(
+                original.getTimestamp(),
+                original.getLevel(),
+                original.getThread(),
+                original.getLoggerName(),
+                original.getMessage(),
+                List.of(),
+                null,
+                Context.root(),
+                ImmutableMap.of()));
     }
 
     @Test
@@ -111,16 +106,16 @@ public class TestJsonFormatter
 
         assertThat(logMessage).as("Log lines should end with newline").endsWith("\n");
 
-        assertEquals(jsonRecord.getTimestamp().truncatedTo(NANOS), record.getInstant().truncatedTo(NANOS), "Ensure timestamps between the original LogRecord and Json are equal to the nano");
+        assertThat(jsonRecord.getTimestamp().truncatedTo(NANOS)).as("Ensure timestamps between the original LogRecord and Json are equal to the nano").isEqualTo(record.getInstant().truncatedTo(NANOS));
 
-        assertEquals(jsonRecord.getThread(), Thread.currentThread().getName());
-        assertEquals(jsonRecord.getLevel(), Level.fromJulLevel(record.getLevel()));
-        assertEquals(jsonRecord.getLoggerName(), record.getLoggerName());
-        assertEquals(jsonRecord.getMessage(), record.getMessage());
+        assertThat(jsonRecord.getThread()).isEqualTo(Thread.currentThread().getName());
+        assertThat(jsonRecord.getLevel()).isEqualTo(Level.fromJulLevel(record.getLevel()));
+        assertThat(jsonRecord.getLoggerName()).isEqualTo(record.getLoggerName());
+        assertThat(jsonRecord.getMessage()).isEqualTo(record.getMessage());
 
-        assertEquals(jsonMap.get("throwableClass"), testException.getClass().getName());
-        assertEquals(jsonMap.get("throwableMessage"), testException.getMessage());
-        assertEquals(jsonMap.get("stackTrace"), getStackTraceAsString(testException));
+        assertThat(jsonMap.get("throwableClass")).isEqualTo(testException.getClass().getName());
+        assertThat(jsonMap.get("throwableMessage")).isEqualTo(testException.getMessage());
+        assertThat(jsonMap.get("stackTrace")).isEqualTo(getStackTraceAsString(testException));
     }
 
     @Test
@@ -174,7 +169,7 @@ public class TestJsonFormatter
         Map<String, Object> jsonMap = mapJsonCodec(String.class, Object.class).fromJson(logMessage);
         JsonRecord jsonRecord = jsonCodec(JsonRecord.class).fromJson(logMessage);
 
-        assertEquals(jsonRecord.getMessage(), record.getMessage());
+        assertThat(jsonRecord.getMessage()).isEqualTo(record.getMessage());
         assertThat(jsonMap.get("annotations")).asInstanceOf(InstanceOfAssertFactories.map(String.class, String.class)).containsExactlyEntriesOf(logAnnotations);
     }
 }

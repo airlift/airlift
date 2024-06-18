@@ -24,7 +24,7 @@ import static io.airlift.slice.SizeOf.instanceSize;
 import static io.airlift.slice.SizeOf.sizeOf;
 import static io.airlift.slice.testing.SliceAssertions.assertSlicesEqual;
 import static io.airlift.stats.cardinality.TestUtils.sequence;
-import static org.testng.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestSparseHll
 {
@@ -40,8 +40,8 @@ public class TestSparseHll
             SparseHll sparseHll = new SparseHll(indexBitLength);
             sparseHll.insertHash(hash);
             sparseHll.eachBucket((bucket, value) -> {
-                assertEquals(bucket, 0);
-                assertEquals(value, expectedValue);
+                assertThat(bucket).isEqualTo(0);
+                assertThat(value).isEqualTo(expectedValue);
             });
         }
     }
@@ -91,7 +91,7 @@ public class TestSparseHll
                 entries = new int[value + 10];
                 retainedSize = sizeOf(entries) + SPARSE_HLL_INSTANCE_SIZE;
             }
-            assertEquals(sparseHll.estimatedInMemorySize(), retainedSize);
+            assertThat(sparseHll.estimatedInMemorySize()).isEqualTo(retainedSize);
         }
     }
 
@@ -120,7 +120,7 @@ public class TestSparseHll
         hll1.mergeWith(hll2);
         hll1.verify();
 
-        assertEquals(hll1.cardinality(), expected.cardinality());
+        assertThat(hll1.cardinality()).isEqualTo(expected.cardinality());
         assertSlicesEqual(hll1.serialize(), expected.serialize());
     }
 

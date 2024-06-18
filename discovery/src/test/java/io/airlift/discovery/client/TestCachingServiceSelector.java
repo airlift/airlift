@@ -29,7 +29,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
 import static io.airlift.testing.Assertions.assertEqualsIgnoreOrder;
-import static org.testng.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestCachingServiceSelector
 {
@@ -64,8 +64,8 @@ public class TestCachingServiceSelector
                 new InMemoryDiscoveryClient(nodeInfo),
                 executor);
 
-        assertEquals(serviceSelector.getType(), "type");
-        assertEquals(serviceSelector.getPool(), "pool");
+        assertThat(serviceSelector.getType()).isEqualTo("type");
+        assertThat(serviceSelector.getPool()).isEqualTo("pool");
     }
 
     @Test
@@ -76,7 +76,7 @@ public class TestCachingServiceSelector
                 new InMemoryDiscoveryClient(nodeInfo),
                 executor);
 
-        assertEquals(serviceSelector.selectAllServices(), ImmutableList.of());
+        assertThat(serviceSelector.selectAllServices()).isEqualTo(ImmutableList.of());
     }
 
     @Test
@@ -90,7 +90,7 @@ public class TestCachingServiceSelector
 
         serviceSelector.start();
 
-        assertEquals(serviceSelector.selectAllServices(), ImmutableList.of());
+        assertThat(serviceSelector.selectAllServices()).isEqualTo(ImmutableList.of());
     }
 
     @Test
@@ -107,7 +107,7 @@ public class TestCachingServiceSelector
                 discoveryClient,
                 executor);
 
-        assertEquals(serviceSelector.selectAllServices(), ImmutableList.of());
+        assertThat(serviceSelector.selectAllServices()).isEqualTo(ImmutableList.of());
     }
 
     @Test

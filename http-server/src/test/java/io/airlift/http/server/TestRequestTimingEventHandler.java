@@ -16,11 +16,11 @@ import static io.airlift.http.server.RequestTimingEventHandler.RESPONSE_CONTENT_
 import static io.airlift.http.server.RequestTimingEventHandler.timings;
 import static java.time.temporal.ChronoUnit.MILLIS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
-import static org.testng.Assert.assertEquals;
 
 public class TestRequestTimingEventHandler
 {
@@ -48,12 +48,12 @@ public class TestRequestTimingEventHandler
 
             RequestTiming timings = timings(request);
 
-            assertEquals(timings.requestStarted(), now.truncatedTo(MILLIS));
-            assertEquals(timings.timeToDispatch(), Duration.valueOf("100.00ns"));
-            assertEquals(timings.timeToHandling(), Duration.valueOf("110.00ns"));
-            assertEquals(timings.timeToFirstByte(), Duration.valueOf("200.00ns"));
-            assertEquals(timings.timeToLastByte(), Duration.valueOf("250.00ns"));
-            assertEquals(timings.timeToCompletion(), Duration.valueOf("500.00ns"));
+            assertThat(timings.requestStarted()).isEqualTo(now.truncatedTo(MILLIS));
+            assertThat(timings.timeToDispatch()).isEqualTo(Duration.valueOf("100.00ns"));
+            assertThat(timings.timeToHandling()).isEqualTo(Duration.valueOf("110.00ns"));
+            assertThat(timings.timeToFirstByte()).isEqualTo(Duration.valueOf("200.00ns"));
+            assertThat(timings.timeToLastByte()).isEqualTo(Duration.valueOf("250.00ns"));
+            assertThat(timings.timeToCompletion()).isEqualTo(Duration.valueOf("500.00ns"));
         }
     }
 }

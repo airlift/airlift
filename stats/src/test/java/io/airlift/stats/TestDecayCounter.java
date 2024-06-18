@@ -5,8 +5,7 @@ import org.testng.annotations.Test;
 
 import java.util.concurrent.TimeUnit;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestDecayCounter
 {
@@ -19,7 +18,7 @@ public class TestDecayCounter
         counter.add(1);
         ticker.increment(1, TimeUnit.MINUTES);
 
-        assertTrue(Math.abs(counter.getCount() - 1 / Math.E) < 1e-9);
+        assertThat(Math.abs(counter.getCount() - 1 / Math.E)).isLessThan(1e-9);
     }
 
     @Test
@@ -33,7 +32,7 @@ public class TestDecayCounter
         counter.add(2);
 
         double expected = 2 + 1 / Math.E;
-        assertTrue(Math.abs(counter.getCount() - expected) < 1e-9);
+        assertThat(Math.abs(counter.getCount() - expected)).isLessThan(1e-9);
     }
 
     @Test
@@ -46,7 +45,7 @@ public class TestDecayCounter
         ticker.increment(1, TimeUnit.MINUTES);
 
         DecayCounter copy = counter.duplicate();
-        assertEquals(copy.getCount(), counter.getCount());
-        assertEquals(copy.getAlpha(), counter.getAlpha());
+        assertThat(copy.getCount()).isEqualTo(counter.getCount());
+        assertThat(copy.getAlpha()).isEqualTo(counter.getAlpha());
     }
 }

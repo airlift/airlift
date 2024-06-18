@@ -45,9 +45,8 @@ import javax.management.remote.JMXServiceURL;
 import java.lang.management.ManagementFactory;
 import java.util.UUID;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.weakref.jmx.ObjectNames.generatedNameOf;
 
 @Test(singleThreaded = true)
@@ -105,95 +104,93 @@ public class TestMBeanServerResource
     public void testGetMBeanCount()
             throws Exception
     {
-        assertEquals(mbeanServerConnection.getMBeanCount(), platformMBeanServer.getMBeanCount());
+        assertThat(mbeanServerConnection.getMBeanCount()).isEqualTo(platformMBeanServer.getMBeanCount());
     }
 
     @Test
     public void testIsRegistered()
             throws Exception
     {
-        assertEquals(mbeanServerConnection.isRegistered(testMBeanName), true);
-        assertEquals(mbeanServerConnection.isRegistered(new ObjectName("fake", "fake", "fake")), false);
+        assertThat(mbeanServerConnection.isRegistered(testMBeanName)).isEqualTo(true);
+        assertThat(mbeanServerConnection.isRegistered(new ObjectName("fake", "fake", "fake"))).isEqualTo(false);
     }
 
     @Test
     public void testIsInstanceOf()
             throws Exception
     {
-        assertEquals(mbeanServerConnection.isInstanceOf(testMBeanName, TestMBean.class.getName()), true);
-        assertEquals(mbeanServerConnection.isInstanceOf(testMBeanName, Object.class.getName()), true);
-        assertEquals(mbeanServerConnection.isInstanceOf(testMBeanName, UUID.class.getName()), false);
+        assertThat(mbeanServerConnection.isInstanceOf(testMBeanName, TestMBean.class.getName())).isEqualTo(true);
+        assertThat(mbeanServerConnection.isInstanceOf(testMBeanName, Object.class.getName())).isEqualTo(true);
+        assertThat(mbeanServerConnection.isInstanceOf(testMBeanName, UUID.class.getName())).isEqualTo(false);
     }
 
     @Test
     public void testGetDefaultDomain()
             throws Exception
     {
-        assertEquals(mbeanServerConnection.getDefaultDomain(), platformMBeanServer.getDefaultDomain());
+        assertThat(mbeanServerConnection.getDefaultDomain()).isEqualTo(platformMBeanServer.getDefaultDomain());
     }
 
     @Test
     public void testGetDomains()
             throws Exception
     {
-        assertEquals(mbeanServerConnection.getDomains(), platformMBeanServer.getDomains());
+        assertThat(mbeanServerConnection.getDomains()).isEqualTo(platformMBeanServer.getDomains());
     }
 
     @Test
     public void testGetObjectInstance()
             throws Exception
     {
-        assertEquals(mbeanServerConnection.getObjectInstance(testMBeanName), platformMBeanServer.getObjectInstance(testMBeanName));
+        assertThat(mbeanServerConnection.getObjectInstance(testMBeanName)).isEqualTo(platformMBeanServer.getObjectInstance(testMBeanName));
     }
 
     @Test
     public void testGetMBeanInfo()
             throws Exception
     {
-        assertEquals(mbeanServerConnection.getMBeanInfo(testMBeanName), platformMBeanServer.getMBeanInfo(testMBeanName));
+        assertThat(mbeanServerConnection.getMBeanInfo(testMBeanName)).isEqualTo(platformMBeanServer.getMBeanInfo(testMBeanName));
     }
 
     @Test
     public void testGetQueryMBeanNames()
             throws Exception
     {
-        assertEquals(mbeanServerConnection.queryNames(testMBeanName, null), platformMBeanServer.queryNames(testMBeanName, null));
-        assertEquals(mbeanServerConnection.queryNames(new ObjectName("*:*"), null), platformMBeanServer.queryNames(new ObjectName("*:*"), null));
+        assertThat(mbeanServerConnection.queryNames(testMBeanName, null)).isEqualTo(platformMBeanServer.queryNames(testMBeanName, null));
+        assertThat(mbeanServerConnection.queryNames(new ObjectName("*:*"), null)).isEqualTo(platformMBeanServer.queryNames(new ObjectName("*:*"), null));
     }
 
     @Test
     public void testGetQueryMBeans()
             throws Exception
     {
-        assertEquals(mbeanServerConnection.queryMBeans(testMBeanName, null), platformMBeanServer.queryMBeans(testMBeanName, null));
-        assertEquals(mbeanServerConnection.queryMBeans(new ObjectName("*:*"), null), platformMBeanServer.queryMBeans(new ObjectName("*:*"), null));
+        assertThat(mbeanServerConnection.queryMBeans(testMBeanName, null)).isEqualTo(platformMBeanServer.queryMBeans(testMBeanName, null));
+        assertThat(mbeanServerConnection.queryMBeans(new ObjectName("*:*"), null)).isEqualTo(platformMBeanServer.queryMBeans(new ObjectName("*:*"), null));
     }
 
     @Test
     public void testGetAttribute()
             throws Exception
     {
-        assertEquals(mbeanServerConnection.getAttribute(testMBeanName, "Value"), null);
+        assertThat(mbeanServerConnection.getAttribute(testMBeanName, "Value")).isEqualTo(null);
         testMBean.setValue("FOO");
-        assertEquals(mbeanServerConnection.getAttribute(testMBeanName, "Value"), "FOO");
+        assertThat(mbeanServerConnection.getAttribute(testMBeanName, "Value")).isEqualTo("FOO");
 
-        assertEquals(mbeanServerConnection.getAttribute(testMBeanName, "ObjectValue"), null);
+        assertThat(mbeanServerConnection.getAttribute(testMBeanName, "ObjectValue")).isEqualTo(null);
         testMBean.setObjectValue(UUID.randomUUID());
-        assertEquals(mbeanServerConnection.getAttribute(testMBeanName, "ObjectValue"), testMBean.getObjectValue());
+        assertThat(mbeanServerConnection.getAttribute(testMBeanName, "ObjectValue")).isEqualTo(testMBean.getObjectValue());
     }
 
     @Test
     public void testGetAttributes()
             throws Exception
     {
-        assertEquals(mbeanServerConnection.getAttributes(testMBeanName, new String[] {"Value", "ObjectValue"}),
-                new AttributeList(ImmutableList.of(new Attribute("Value", null), new Attribute("ObjectValue", null))));
+        assertThat(mbeanServerConnection.getAttributes(testMBeanName, new String[] {"Value", "ObjectValue"})).isEqualTo(new AttributeList(ImmutableList.of(new Attribute("Value", null), new Attribute("ObjectValue", null))));
 
         testMBean.setValue("FOO");
         testMBean.setObjectValue(UUID.randomUUID());
 
-        assertEquals(mbeanServerConnection.getAttributes(testMBeanName, new String[] {"Value", "ObjectValue"}),
-                new AttributeList(ImmutableList.of(new Attribute("Value", "FOO"), new Attribute("ObjectValue", testMBean.getObjectValue()))));
+        assertThat(mbeanServerConnection.getAttributes(testMBeanName, new String[] {"Value", "ObjectValue"})).isEqualTo(new AttributeList(ImmutableList.of(new Attribute("Value", "FOO"), new Attribute("ObjectValue", testMBean.getObjectValue()))));
     }
 
     @Test
@@ -201,15 +198,15 @@ public class TestMBeanServerResource
             throws Exception
     {
         mbeanServerConnection.setAttribute(testMBeanName, new Attribute("Value", "Foo"));
-        assertEquals(testMBean.getValue(), "Foo");
+        assertThat(testMBean.getValue()).isEqualTo("Foo");
         mbeanServerConnection.setAttribute(testMBeanName, new Attribute("Value", null));
-        assertEquals(testMBean.getValue(), null);
+        assertThat(testMBean.getValue()).isEqualTo(null);
 
         UUID uuid = UUID.randomUUID();
         mbeanServerConnection.setAttribute(testMBeanName, new Attribute("ObjectValue", uuid));
-        assertEquals(testMBean.getObjectValue(), uuid);
+        assertThat(testMBean.getObjectValue()).isEqualTo(uuid);
         mbeanServerConnection.setAttribute(testMBeanName, new Attribute("ObjectValue", null));
-        assertEquals(testMBean.getObjectValue(), null);
+        assertThat(testMBean.getObjectValue()).isEqualTo(null);
     }
 
     @Test
@@ -218,24 +215,24 @@ public class TestMBeanServerResource
     {
         UUID uuid = UUID.randomUUID();
         mbeanServerConnection.setAttributes(testMBeanName, new AttributeList(ImmutableList.of(new Attribute("Value", "Foo"), new Attribute("ObjectValue", uuid))));
-        assertEquals(testMBean.getValue(), "Foo");
-        assertEquals(testMBean.getObjectValue(), uuid);
+        assertThat(testMBean.getValue()).isEqualTo("Foo");
+        assertThat(testMBean.getObjectValue()).isEqualTo(uuid);
 
         mbeanServerConnection.setAttributes(testMBeanName, new AttributeList(ImmutableList.of(new Attribute("Value", null), new Attribute("ObjectValue", null))));
-        assertEquals(testMBean.getValue(), null);
-        assertEquals(testMBean.getObjectValue(), null);
+        assertThat(testMBean.getValue()).isEqualTo(null);
+        assertThat(testMBean.getObjectValue()).isEqualTo(null);
     }
 
     @Test
     public void testInvoke()
             throws Exception
     {
-        assertEquals(testMBean.noArgsMethodInvoked, false);
+        assertThat(testMBean.noArgsMethodInvoked).isEqualTo(false);
         mbeanServerConnection.invoke(testMBeanName, "noArgsMethod", null, null);
-        assertEquals(testMBean.noArgsMethodInvoked, true);
+        assertThat(testMBean.noArgsMethodInvoked).isEqualTo(true);
 
         UUID uuid = UUID.randomUUID();
-        assertEquals(mbeanServerConnection.invoke(testMBeanName, "echo", new Object[] {uuid}, new String[] {Object.class.getName()}), uuid);
+        assertThat(mbeanServerConnection.invoke(testMBeanName, "echo", new Object[] {uuid}, new String[] {Object.class.getName()})).isEqualTo(uuid);
     }
 
     @Test
@@ -247,8 +244,8 @@ public class TestMBeanServerResource
             fail("Expected exception");
         }
         catch (MBeanException e) {
-            assertTrue(e.getCause() instanceof Exception);
-            assertEquals(e.getCause().getMessage(), "exception-message");
+            assertThat(e).hasCauseInstanceOf(Exception.class);
+            assertThat(e).hasStackTraceContaining("exception-message");
         }
     }
 

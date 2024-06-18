@@ -27,11 +27,10 @@ import java.util.concurrent.TimeUnit;
 
 import static com.google.common.math.DoubleMath.fuzzyEquals;
 import static java.lang.Math.min;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotEquals;
-import static org.testng.Assert.assertThrows;
-import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.within;
 
 @Test(singleThreaded = true)
 public class TestTimeStat
@@ -60,11 +59,11 @@ public class TestTimeStat
         Collections.sort(values);
 
         TimeDistribution allTime = stat.getAllTime();
-        assertEquals(allTime.getCount(), (double) values.size());
-        assertTrue(fuzzyEquals(allTime.getMax(), values.get(values.size() - 1) * 0.001, 0.000_000_000_1));
-        assertEquals(allTime.getMin(), values.get(0) * 0.001);
-        assertEquals(allTime.getAvg(), values.stream().mapToDouble(x -> x).average().getAsDouble() * 0.001, 0.001);
-        assertEquals(allTime.getUnit(), TimeUnit.SECONDS);
+        assertThat(allTime.getCount()).isEqualTo(values.size());
+        assertThat(fuzzyEquals(allTime.getMax(), values.get(values.size() - 1) * 0.001, 0.000_000_000_1)).isTrue();
+        assertThat(allTime.getMin()).isEqualTo(values.get(0) * 0.001);
+        assertThat(allTime.getAvg()).isCloseTo(values.stream().mapToDouble(x -> x).average().getAsDouble() * 0.001, within(0.001));
+        assertThat(allTime.getUnit()).isEqualTo(TimeUnit.SECONDS);
 
         assertPercentile("tp50", allTime.getP50(), values, 0.50);
         assertPercentile("tp75", allTime.getP75(), values, 0.75);
@@ -77,16 +76,21 @@ public class TestTimeStat
     {
         TimeStat stat = new TimeStat();
 
-        assertThrows(IllegalArgumentException.class, () -> stat.add(-1.0, TimeUnit.MILLISECONDS));
-        assertThrows(IllegalArgumentException.class, () -> stat.add(Double.NaN, TimeUnit.MILLISECONDS));
-        assertThrows(IllegalArgumentException.class, () -> stat.add(Double.POSITIVE_INFINITY, TimeUnit.MILLISECONDS));
-        assertThrows(IllegalArgumentException.class, () -> stat.add(Double.NEGATIVE_INFINITY, TimeUnit.MILLISECONDS));
-        assertThrows(IllegalArgumentException.class, () -> stat.add(1.0d / 0.0d, TimeUnit.MILLISECONDS));
+        assertThatThrownBy(() -> stat.add(-1.0, TimeUnit.MILLISECONDS))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> stat.add(Double.NaN, TimeUnit.MILLISECONDS))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> stat.add(Double.POSITIVE_INFINITY, TimeUnit.MILLISECONDS))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> stat.add(Double.NEGATIVE_INFINITY, TimeUnit.MILLISECONDS))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> stat.add(1.0d / 0.0d, TimeUnit.MILLISECONDS))
+                .isInstanceOf(IllegalArgumentException.class);
 
         stat.add(0.0, TimeUnit.MILLISECONDS); // 0.0 is valid
-        assertEquals(stat.getAllTime().getCount(), 1.0);
-        assertEquals(stat.getAllTime().getMin(), 0.0);
-        assertEquals(stat.getAllTime().getMax(), 0.0);
+        assertThat(stat.getAllTime().getCount()).isEqualTo(1.0);
+        assertThat(stat.getAllTime().getMin()).isEqualTo(0.0);
+        assertThat(stat.getAllTime().getMax()).isEqualTo(0.0);
     }
 
     @Test
@@ -97,27 +101,27 @@ public class TestTimeStat
             stat.add(value, TimeUnit.MILLISECONDS);
         }
 
-        assertEquals(stat.getAllTime().getCount(), (double) VALUES);
-        assertEquals(stat.getOneMinute().getCount(), (double) VALUES);
-        assertEquals(stat.getFiveMinutes().getCount(), (double) VALUES);
-        assertEquals(stat.getFifteenMinutes().getCount(), (double) VALUES);
+        assertThat(stat.getAllTime().getCount()).isEqualTo(VALUES);
+        assertThat(stat.getOneMinute().getCount()).isEqualTo(VALUES);
+        assertThat(stat.getFiveMinutes().getCount()).isEqualTo(VALUES);
+        assertThat(stat.getFifteenMinutes().getCount()).isEqualTo(VALUES);
 
-        assertNotEquals(stat.getAllTime().getAvg(), Double.NaN);
-        assertNotEquals(stat.getOneMinute().getAvg(), Double.NaN);
-        assertNotEquals(stat.getFiveMinutes().getAvg(), Double.NaN);
-        assertNotEquals(stat.getFifteenMinutes().getAvg(), Double.NaN);
+        assertThat(stat.getAllTime().getAvg()).isNotNaN();
+        assertThat(stat.getOneMinute().getAvg()).isNotNaN();
+        assertThat(stat.getFiveMinutes().getAvg()).isNotNaN();
+        assertThat(stat.getFifteenMinutes().getAvg()).isNotNaN();
 
         stat.reset();
 
-        assertEquals(stat.getAllTime().getCount(), 0D);
-        assertEquals(stat.getOneMinute().getCount(), 0D);
-        assertEquals(stat.getFiveMinutes().getCount(), 0D);
-        assertEquals(stat.getFifteenMinutes().getCount(), 0D);
+        assertThat(stat.getAllTime().getCount()).isEqualTo(0D);
+        assertThat(stat.getOneMinute().getCount()).isEqualTo(0D);
+        assertThat(stat.getFiveMinutes().getCount()).isEqualTo(0D);
+        assertThat(stat.getFifteenMinutes().getCount()).isEqualTo(0D);
 
-        assertEquals(stat.getAllTime().getAvg(), Double.NaN);
-        assertEquals(stat.getOneMinute().getAvg(), Double.NaN);
-        assertEquals(stat.getFiveMinutes().getAvg(), Double.NaN);
-        assertEquals(stat.getFifteenMinutes().getAvg(), Double.NaN);
+        assertThat(stat.getAllTime().getAvg()).isNaN();
+        assertThat(stat.getOneMinute().getAvg()).isNaN();
+        assertThat(stat.getFiveMinutes().getAvg()).isNaN();
+        assertThat(stat.getFifteenMinutes().getAvg()).isNaN();
     }
 
     @Test
@@ -125,13 +129,13 @@ public class TestTimeStat
     {
         TimeStat stat = new TimeStat();
         TimeDistribution allTime = stat.getAllTime();
-        assertEquals(allTime.getMin(), Double.NaN);
-        assertEquals(allTime.getMax(), Double.NaN);
-        assertEquals(allTime.getP50(), Double.NaN);
-        assertEquals(allTime.getP75(), Double.NaN);
-        assertEquals(allTime.getP90(), Double.NaN);
-        assertEquals(allTime.getP99(), Double.NaN);
-        assertEquals(allTime.getAvg(), Double.NaN);
+        assertThat(allTime.getMin()).isNaN();
+        assertThat(allTime.getMax()).isNaN();
+        assertThat(allTime.getP50()).isNaN();
+        assertThat(allTime.getP75()).isNaN();
+        assertThat(allTime.getP90()).isNaN();
+        assertThat(allTime.getP99()).isNaN();
+        assertThat(allTime.getAvg()).isNaN();
     }
 
     @Test
@@ -152,13 +156,13 @@ public class TestTimeStat
             fail("Exception should have been thrown");
         }
         catch (Exception e) {
-            assertEquals(e.getMessage(), "thrown by time");
+            assertThat(e.getMessage()).isEqualTo("thrown by time");
         }
 
         TimeDistribution allTime = stat.getAllTime();
-        assertEquals(allTime.getCount(), 2.0);
-        assertEquals(allTime.getMin(), 0.010);
-        assertEquals(allTime.getMax(), 0.020);
+        assertThat(allTime.getCount()).isEqualTo(2.0);
+        assertThat(allTime.getMin()).isEqualTo(0.010);
+        assertThat(allTime.getMax()).isEqualTo(0.020);
     }
 
     @Test
@@ -171,9 +175,9 @@ public class TestTimeStat
         }
 
         TimeDistribution allTime = stat.getAllTime();
-        assertEquals(allTime.getCount(), 1.0);
-        assertEquals(allTime.getMin(), 0.010);
-        assertEquals(allTime.getMax(), 0.010);
+        assertThat(allTime.getCount()).isEqualTo(1.0);
+        assertThat(allTime.getMin()).isEqualTo(0.010);
+        assertThat(allTime.getMax()).isEqualTo(0.010);
     }
 
     @Test
@@ -183,8 +187,8 @@ public class TestTimeStat
         stat.add(1, TimeUnit.SECONDS);
 
         TimeDistribution allTime = stat.getAllTime();
-        assertEquals(allTime.getMin(), 1000.0);
-        assertEquals(allTime.getMax(), 1000.0);
+        assertThat(allTime.getMin()).isEqualTo(1000.0);
+        assertThat(allTime.getMax()).isEqualTo(1000.0);
     }
 
     @Test
@@ -195,11 +199,12 @@ public class TestTimeStat
         stat.addNanos(1L);
 
         TimeDistribution allTime = stat.getAllTime();
-        assertEquals(allTime.getMin(), 1.0);
-        assertEquals(allTime.getMax(), 1000000.0);
-        assertEquals(allTime.getCount(), 2.0);
+        assertThat(allTime.getMin()).isEqualTo(1.0);
+        assertThat(allTime.getMax()).isEqualTo(1000000.0);
+        assertThat(allTime.getCount()).isEqualTo(2.0);
 
-        assertThrows(IllegalArgumentException.class, () -> stat.addNanos(-1));
+        assertThatThrownBy(() -> stat.addNanos(-1))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     private static void assertPercentile(String name, double value, List<Long> values, double percentile)

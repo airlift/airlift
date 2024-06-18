@@ -17,9 +17,7 @@ package io.airlift.tracetoken;
 
 import org.testng.annotations.Test;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotEquals;
-import static org.testng.Assert.assertNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestTraceTokenManager
 {
@@ -27,7 +25,7 @@ public class TestTraceTokenManager
     public void testNoToken()
     {
         TraceTokenManager manager = new TraceTokenManager();
-        assertNull(manager.getCurrentRequestToken());
+        assertThat(manager.getCurrentRequestToken()).isNull();
     }
 
     @Test
@@ -36,12 +34,12 @@ public class TestTraceTokenManager
         TraceTokenManager manager = new TraceTokenManager();
 
         String token = manager.createAndRegisterNewRequestToken();
-        assertEquals(manager.getCurrentRequestToken(), token);
-        assertEquals(manager.getCurrentRequestToken(), token);
+        assertThat(manager.getCurrentRequestToken()).isEqualTo(token);
+        assertThat(manager.getCurrentRequestToken()).isEqualTo(token);
 
         String token2 = manager.createAndRegisterNewRequestToken();
-        assertEquals(manager.getCurrentRequestToken(), token2);
-        assertNotEquals(token2, token);
+        assertThat(manager.getCurrentRequestToken()).isEqualTo(token2);
+        assertThat(token2).isNotEqualTo(token);
     }
 
     @Test
@@ -50,7 +48,7 @@ public class TestTraceTokenManager
         TraceTokenManager manager = new TraceTokenManager();
         manager.registerRequestToken("abc");
 
-        assertEquals(manager.getCurrentRequestToken(), "abc");
+        assertThat(manager.getCurrentRequestToken()).isEqualTo("abc");
     }
 
     @Test
@@ -59,9 +57,9 @@ public class TestTraceTokenManager
         TraceTokenManager manager = new TraceTokenManager();
         String oldToken = manager.createAndRegisterNewRequestToken();
 
-        assertEquals(manager.getCurrentRequestToken(), oldToken);
+        assertThat(manager.getCurrentRequestToken()).isEqualTo(oldToken);
 
         manager.registerRequestToken("abc");
-        assertEquals(manager.getCurrentRequestToken(), "abc");
+        assertThat(manager.getCurrentRequestToken()).isEqualTo("abc");
     }
 }

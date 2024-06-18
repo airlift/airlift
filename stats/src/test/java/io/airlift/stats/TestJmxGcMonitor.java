@@ -5,7 +5,7 @@ import org.testng.annotations.Test;
 
 import static io.airlift.testing.Assertions.assertGreaterThanOrEqual;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static org.testng.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestJmxGcMonitor
 {
@@ -14,8 +14,8 @@ public class TestJmxGcMonitor
             throws Exception
     {
         JmxGcMonitor gcMonitor = new JmxGcMonitor();
-        assertEquals(gcMonitor.getMajorGcCount(), 0);
-        assertEquals(gcMonitor.getMajorGcTime(), new Duration(0, NANOSECONDS));
+        assertThat(gcMonitor.getMajorGcCount()).isEqualTo(0);
+        assertThat(gcMonitor.getMajorGcTime()).isEqualTo(new Duration(0, NANOSECONDS));
         try {
             gcMonitor.start();
             assertGreaterThanOrEqual(gcMonitor.getMajorGcCount(), (long) 0);

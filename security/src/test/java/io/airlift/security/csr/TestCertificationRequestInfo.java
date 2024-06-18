@@ -27,8 +27,7 @@ import java.security.spec.ECGenParameterSpec;
 
 import static com.google.common.io.BaseEncoding.base16;
 import static io.airlift.security.csr.SignatureAlgorithmIdentifier.findSignatureAlgorithmIdentifier;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestCertificationRequestInfo
 {
@@ -44,22 +43,20 @@ public class TestCertificationRequestInfo
         KeyPair keyPair = generator.generateKeyPair();
 
         CertificationRequestInfo actualInfo = new CertificationRequestInfo(new X500Principal(name), keyPair.getPublic());
-        assertEquals(actualInfo.getPublicKey(), keyPair.getPublic());
-        assertEquals(actualInfo.getSubject().getName(), name);
-        assertEquals(actualInfo, actualInfo);
-        assertEquals(actualInfo.hashCode(), actualInfo.hashCode());
+        assertThat(actualInfo.getPublicKey()).isEqualTo(keyPair.getPublic());
+        assertThat(actualInfo.getSubject().getName()).isEqualTo(name);
+        assertThat(actualInfo).isEqualTo(actualInfo);
+        assertThat(actualInfo.hashCode()).isEqualTo(actualInfo.hashCode());
 
         org.bouncycastle.asn1.pkcs.CertificationRequestInfo expectedInfo = new org.bouncycastle.asn1.pkcs.CertificationRequestInfo(new X500Name(name), SubjectPublicKeyInfo.getInstance(keyPair.getPublic().getEncoded()), new DERSet());
 
-        assertEquals(
-                base16().encode(actualInfo.getEncoded()),
-                base16().encode(expectedInfo.getEncoded("DER")));
+        assertThat(base16().encode(actualInfo.getEncoded())).isEqualTo(base16().encode(expectedInfo.getEncoded("DER")));
 
         SignatureAlgorithmIdentifier signatureAlgorithmIdentifier = findSignatureAlgorithmIdentifier("SHA256withECDSA");
         byte[] actualSignature = actualInfo.sign(signatureAlgorithmIdentifier, keyPair.getPrivate());
         Signature signature = Signature.getInstance(signatureAlgorithmIdentifier.getName());
         signature.initVerify(keyPair.getPublic());
         signature.update(actualInfo.getEncoded());
-        assertTrue(signature.verify(actualSignature));
+        assertThat(signature.verify(actualSignature)).isTrue();
     }
 }

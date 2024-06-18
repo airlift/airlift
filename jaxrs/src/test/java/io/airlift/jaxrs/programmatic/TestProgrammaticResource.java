@@ -30,7 +30,7 @@ import java.util.List;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
-import static org.testng.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestProgrammaticResource
 {
@@ -57,9 +57,9 @@ public class TestProgrammaticResource
                 .filter(r -> r.getPath().equals("/foo/bar"))
                 .flatMap(r -> r.getAllMethods().stream())
                 .collect(toImmutableList());
-        assertEquals(foundMethods.size(), 1);
+        assertThat(foundMethods.size()).isEqualTo(1);
         ResourceMethod foundMethod = foundMethods.get(0);
-        assertEquals(foundMethod.getInvocable().getHandlingMethod(), getResultMethod);
-        assertEquals(foundMethod.getInvocable().getHandler().getHandlerClass(), getClass());
+        assertThat(foundMethod.getInvocable().getHandlingMethod()).isEqualTo(getResultMethod);
+        assertThat(foundMethod.getInvocable().getHandler().getHandlerClass()).isEqualTo(getClass());
     }
 }

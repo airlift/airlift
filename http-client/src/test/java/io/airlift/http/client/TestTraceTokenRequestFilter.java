@@ -23,9 +23,7 @@ import java.net.URI;
 
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.TraceTokenRequestFilter.TRACETOKEN_HEADER;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotSame;
-import static org.testng.Assert.assertSame;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestTraceTokenRequestFilter
 {
@@ -39,11 +37,11 @@ public class TestTraceTokenRequestFilter
 
         Request filtered = filter.filterRequest(original);
 
-        assertNotSame(filter, original);
-        assertEquals(filtered.getUri(), original.getUri());
-        assertEquals(original.getHeaders().size(), 0);
-        assertEquals(filtered.getHeaders().size(), 1);
-        assertEquals(filtered.getHeaders().get(TRACETOKEN_HEADER), ImmutableList.of("testBasic"));
+        assertThat(filtered).isNotSameAs(original);
+        assertThat(filtered.getUri()).isEqualTo(original.getUri());
+        assertThat(original.getHeaders().size()).isEqualTo(0);
+        assertThat(filtered.getHeaders().size()).isEqualTo(1);
+        assertThat(filtered.getHeaders().get(TRACETOKEN_HEADER)).isEqualTo(ImmutableList.of("testBasic"));
     }
 
     @Test
@@ -55,6 +53,6 @@ public class TestTraceTokenRequestFilter
 
         Request request = filter.filterRequest(original);
 
-        assertSame(request, original);
+        assertThat(request).isSameAs(original);
     }
 }

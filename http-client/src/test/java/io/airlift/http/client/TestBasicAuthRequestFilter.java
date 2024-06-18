@@ -20,8 +20,7 @@ import java.util.function.Predicate;
 
 import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static io.airlift.http.client.Request.Builder.prepareGet;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestBasicAuthRequestFilter
 {
@@ -33,10 +32,10 @@ public class TestBasicAuthRequestFilter
         HttpRequestFilter filter = new BasicAuthRequestFilter(predicate, "Aladdin", "open sesame");
 
         Request publicResourceRequest = createTestRequest("/public");
-        assertNull(filter.filterRequest(publicResourceRequest).getHeader(AUTHORIZATION));
+        assertThat(filter.filterRequest(publicResourceRequest).getHeader(AUTHORIZATION)).isNull();
 
         Request privateResourceRequest = createTestRequest("/private");
-        assertEquals(filter.filterRequest(privateResourceRequest).getHeader(AUTHORIZATION), "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==");
+        assertThat(filter.filterRequest(privateResourceRequest).getHeader(AUTHORIZATION)).isEqualTo("Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==");
     }
 
     private static Request createTestRequest(String path)

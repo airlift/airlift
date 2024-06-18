@@ -25,9 +25,7 @@ import java.util.OptionalInt;
 import static com.google.common.collect.Comparators.isInOrder;
 import static com.google.common.collect.Comparators.isInStrictOrder;
 import static java.util.Comparator.naturalOrder;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestLogFileName
 {
@@ -135,8 +133,8 @@ public class TestLogFileName
     {
         // note: no actual files are created here
         LogFileName logFileName = LogFileName.generateNextLogFileName(Paths.get(BASE_NAME), Optional.empty());
-        assertEquals(logFileName.getIndex(), OptionalInt.of(0));
-        assertEquals(logFileName.getLegacyIndex(), OptionalInt.empty());
+        assertThat(logFileName.getIndex()).isEqualTo(OptionalInt.of(0));
+        assertThat(logFileName.getLegacyIndex()).isEqualTo(OptionalInt.empty());
 
         // verify the name round trips
         assertEqualOrdering(LogFileName.parseHistoryLogFileName(BASE_NAME, logFileName.getFileName()).orElseThrow(AssertionError::new), logFileName);
@@ -151,22 +149,22 @@ public class TestLogFileName
     {
         Path path = Paths.get(BASE_NAME + "-" + suffix);
         Optional<LogFileName> logFile = LogFileName.parseHistoryLogFileName(BASE_NAME, path.getFileName().toString());
-        assertTrue(logFile.isPresent());
-        assertEquals(logFile.get().getDateTime(), dateTime);
-        assertEquals(logFile.get().getIndex(), index);
-        assertEquals(logFile.get().getLegacyIndex(), legacyIndex);
-        assertEquals(logFile.get().getSlug(), Optional.empty());
-        assertEquals(logFile.get().isCompressed(), compressed);
+        assertThat(logFile).isPresent();
+        assertThat(logFile.get().getDateTime()).isEqualTo(dateTime);
+        assertThat(logFile.get().getIndex()).isEqualTo(index);
+        assertThat(logFile.get().getLegacyIndex()).isEqualTo(legacyIndex);
+        assertThat(logFile.get().getSlug()).isEqualTo(Optional.empty());
+        assertThat(logFile.get().isCompressed()).isEqualTo(compressed);
     }
 
     private static void assertOrdering(LogFileName... logFileNames)
     {
-        assertTrue(isInStrictOrder(ImmutableList.copyOf(logFileNames), naturalOrder()));
+        assertThat(isInStrictOrder(ImmutableList.copyOf(logFileNames), naturalOrder())).isTrue();
     }
 
     private static void assertEqualOrdering(LogFileName... logFileNames)
     {
-        assertTrue(isInOrder(ImmutableList.copyOf(logFileNames), naturalOrder()));
-        assertFalse(isInStrictOrder(ImmutableList.copyOf(logFileNames), naturalOrder()));
+        assertThat(isInOrder(ImmutableList.copyOf(logFileNames), naturalOrder())).isTrue();
+        assertThat(isInStrictOrder(ImmutableList.copyOf(logFileNames), naturalOrder())).isFalse();
     }
 }

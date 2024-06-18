@@ -25,9 +25,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class Person
 {
@@ -41,31 +39,31 @@ public class Person
         Person expected = new Person().setName("dain").setRocks(true);
 
         String json = jsonCodec.toJson(expected);
-        assertFalse(json.contains("lastName"));
-        assertEquals(jsonCodec.fromJson(json), expected);
+        assertThat(json).doesNotContain("lastName");
+        assertThat(jsonCodec.fromJson(json)).isEqualTo(expected);
 
         byte[] bytes = jsonCodec.toJsonBytes(expected);
-        assertEquals(jsonCodec.fromJson(bytes), expected);
+        assertThat(jsonCodec.fromJson(bytes)).isEqualTo(expected);
 
         // create object with missing lastName
         expected.setLastName(Optional.empty());
 
         json = jsonCodec.toJson(expected);
-        assertFalse(json.contains("lastName"));
-        assertEquals(jsonCodec.fromJson(json), expected);
+        assertThat(json).doesNotContain("lastName");
+        assertThat(jsonCodec.fromJson(json)).isEqualTo(expected);
 
         bytes = jsonCodec.toJsonBytes(expected);
-        assertEquals(jsonCodec.fromJson(bytes), expected);
+        assertThat(jsonCodec.fromJson(bytes)).isEqualTo(expected);
 
         // create object with present lastName
         expected.setLastName(Optional.of("Awesome"));
 
         json = jsonCodec.toJson(expected);
-        assertTrue(json.contains("lastName"));
-        assertEquals(jsonCodec.fromJson(json), expected);
+        assertThat(json).contains("lastName");
+        assertThat(jsonCodec.fromJson(json)).isEqualTo(expected);
 
         bytes = jsonCodec.toJsonBytes(expected);
-        assertEquals(jsonCodec.fromJson(bytes), expected);
+        assertThat(jsonCodec.fromJson(bytes)).isEqualTo(expected);
     }
 
     public static void validatePersonListJsonCodec(JsonCodec<List<Person>> jsonCodec)
@@ -76,10 +74,10 @@ public class Person
                 new Person().setName("mark").setRocks(true));
 
         String json = jsonCodec.toJson(expected);
-        assertEquals(jsonCodec.fromJson(json), expected);
+        assertThat(jsonCodec.fromJson(json)).isEqualTo(expected);
 
         byte[] bytes = jsonCodec.toJsonBytes(expected);
-        assertEquals(jsonCodec.fromJson(bytes), expected);
+        assertThat(jsonCodec.fromJson(bytes)).isEqualTo(expected);
     }
 
     public static void validatePersonMapJsonCodec(JsonCodec<Map<String, Person>> jsonCodec)
@@ -91,10 +89,10 @@ public class Person
                 .build();
 
         String json = jsonCodec.toJson(expected);
-        assertEquals(jsonCodec.fromJson(json), expected);
+        assertThat(jsonCodec.fromJson(json)).isEqualTo(expected);
 
         byte[] bytes = jsonCodec.toJsonBytes(expected);
-        assertEquals(jsonCodec.fromJson(bytes), expected);
+        assertThat(jsonCodec.fromJson(bytes)).isEqualTo(expected);
     }
 
     @JsonProperty

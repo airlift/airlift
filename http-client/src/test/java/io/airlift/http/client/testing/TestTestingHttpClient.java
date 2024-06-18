@@ -11,8 +11,8 @@ import java.util.concurrent.ExecutionException;
 
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.testing.Assertions.assertInstanceOf;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 public class TestTestingHttpClient
 {
@@ -37,7 +37,7 @@ public class TestTestingHttpClient
         catch (ExecutionException e) {
             Throwable cause = e.getCause();
             assertInstanceOf(cause, CapturedException.class);
-            assertEquals(cause.getCause(), expectedException);
+            assertThat(cause.getCause()).isEqualTo(expectedException);
         }
     }
 }

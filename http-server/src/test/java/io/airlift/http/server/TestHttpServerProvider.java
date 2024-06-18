@@ -94,11 +94,6 @@ import static java.nio.file.Files.createTempDirectory;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertTrue;
 
 @Test(singleThreaded = true)
 public class TestHttpServerProvider
@@ -146,22 +141,22 @@ public class TestHttpServerProvider
     @Test
     public void testConnectorDefaults()
     {
-        assertTrue(config.isHttpEnabled());
-        assertNotNull(httpServerInfo.getHttpUri());
-        assertNotNull(httpServerInfo.getHttpExternalUri());
-        assertNotNull(httpServerInfo.getHttpChannel());
-        assertEquals(httpServerInfo.getHttpUri().getScheme(), httpServerInfo.getHttpExternalUri().getScheme());
-        assertEquals(httpServerInfo.getHttpUri().getPort(), httpServerInfo.getHttpExternalUri().getPort());
-        assertEquals(httpServerInfo.getHttpUri().getScheme(), "http");
+        assertThat(config.isHttpEnabled()).isTrue();
+        assertThat(httpServerInfo.getHttpUri()).isNotNull();
+        assertThat(httpServerInfo.getHttpExternalUri()).isNotNull();
+        assertThat(httpServerInfo.getHttpChannel()).isNotNull();
+        assertThat(httpServerInfo.getHttpUri().getScheme()).isEqualTo(httpServerInfo.getHttpExternalUri().getScheme());
+        assertThat(httpServerInfo.getHttpUri().getPort()).isEqualTo(httpServerInfo.getHttpExternalUri().getPort());
+        assertThat(httpServerInfo.getHttpUri().getScheme()).isEqualTo("http");
 
-        assertFalse(config.isHttpsEnabled());
-        assertNull(httpServerInfo.getHttpsUri());
-        assertNull(httpServerInfo.getHttpsExternalUri());
-        assertNull(httpServerInfo.getHttpsChannel());
+        assertThat(config.isHttpsEnabled()).isFalse();
+        assertThat(httpServerInfo.getHttpsUri()).isNull();
+        assertThat(httpServerInfo.getHttpsExternalUri()).isNull();
+        assertThat(httpServerInfo.getHttpsChannel()).isNull();
 
-        assertNull(httpServerInfo.getAdminUri());
-        assertNull(httpServerInfo.getAdminExternalUri());
-        assertNull(httpServerInfo.getAdminChannel());
+        assertThat(httpServerInfo.getAdminUri()).isNull();
+        assertThat(httpServerInfo.getAdminExternalUri()).isNull();
+        assertThat(httpServerInfo.getAdminChannel()).isNull();
     }
 
     @Test
@@ -170,17 +165,17 @@ public class TestHttpServerProvider
         config.setHttpEnabled(false);
         httpServerInfo = createHttpServerInfo();
 
-        assertNull(httpServerInfo.getHttpUri());
-        assertNull(httpServerInfo.getHttpExternalUri());
-        assertNull(httpServerInfo.getHttpChannel());
+        assertThat(httpServerInfo.getHttpUri()).isNull();
+        assertThat(httpServerInfo.getHttpExternalUri()).isNull();
+        assertThat(httpServerInfo.getHttpChannel()).isNull();
 
-        assertNull(httpServerInfo.getHttpsUri());
-        assertNull(httpServerInfo.getHttpsExternalUri());
-        assertNull(httpServerInfo.getHttpsChannel());
+        assertThat(httpServerInfo.getHttpsUri()).isNull();
+        assertThat(httpServerInfo.getHttpsExternalUri()).isNull();
+        assertThat(httpServerInfo.getHttpsChannel()).isNull();
 
-        assertNull(httpServerInfo.getAdminUri());
-        assertNull(httpServerInfo.getAdminExternalUri());
-        assertNull(httpServerInfo.getAdminChannel());
+        assertThat(httpServerInfo.getAdminUri()).isNull();
+        assertThat(httpServerInfo.getAdminExternalUri()).isNull();
+        assertThat(httpServerInfo.getAdminChannel()).isNull();
     }
 
     @Test
@@ -189,23 +184,23 @@ public class TestHttpServerProvider
         config.setHttpsEnabled(true);
         httpServerInfo = createHttpServerInfo();
 
-        assertNotNull(httpServerInfo.getHttpUri());
-        assertNotNull(httpServerInfo.getHttpExternalUri());
-        assertNotNull(httpServerInfo.getHttpChannel());
-        assertEquals(httpServerInfo.getHttpUri().getScheme(), httpServerInfo.getHttpExternalUri().getScheme());
-        assertEquals(httpServerInfo.getHttpUri().getPort(), httpServerInfo.getHttpExternalUri().getPort());
-        assertEquals(httpServerInfo.getHttpUri().getScheme(), "http");
+        assertThat(httpServerInfo.getHttpUri()).isNotNull();
+        assertThat(httpServerInfo.getHttpExternalUri()).isNotNull();
+        assertThat(httpServerInfo.getHttpChannel()).isNotNull();
+        assertThat(httpServerInfo.getHttpUri().getScheme()).isEqualTo(httpServerInfo.getHttpExternalUri().getScheme());
+        assertThat(httpServerInfo.getHttpUri().getPort()).isEqualTo(httpServerInfo.getHttpExternalUri().getPort());
+        assertThat(httpServerInfo.getHttpUri().getScheme()).isEqualTo("http");
 
-        assertNotNull(httpServerInfo.getHttpsUri());
-        assertNotNull(httpServerInfo.getHttpsExternalUri());
-        assertNotNull(httpServerInfo.getHttpsChannel());
-        assertEquals(httpServerInfo.getHttpsUri().getScheme(), httpServerInfo.getHttpsExternalUri().getScheme());
-        assertEquals(httpServerInfo.getHttpsUri().getPort(), httpServerInfo.getHttpsExternalUri().getPort());
-        assertEquals(httpServerInfo.getHttpsUri().getScheme(), "https");
+        assertThat(httpServerInfo.getHttpsUri()).isNotNull();
+        assertThat(httpServerInfo.getHttpsExternalUri()).isNotNull();
+        assertThat(httpServerInfo.getHttpsChannel()).isNotNull();
+        assertThat(httpServerInfo.getHttpsUri().getScheme()).isEqualTo(httpServerInfo.getHttpsExternalUri().getScheme());
+        assertThat(httpServerInfo.getHttpsUri().getPort()).isEqualTo(httpServerInfo.getHttpsExternalUri().getPort());
+        assertThat(httpServerInfo.getHttpsUri().getScheme()).isEqualTo("https");
 
-        assertNull(httpServerInfo.getAdminUri());
-        assertNull(httpServerInfo.getAdminExternalUri());
-        assertNull(httpServerInfo.getAdminChannel());
+        assertThat(httpServerInfo.getAdminUri()).isNull();
+        assertThat(httpServerInfo.getAdminExternalUri()).isNull();
+        assertThat(httpServerInfo.getAdminChannel()).isNull();
 
         assertNotEquals(httpServerInfo.getHttpUri().getPort(), httpServerInfo.getHttpsUri().getPort());
     }
@@ -216,23 +211,23 @@ public class TestHttpServerProvider
         config.setAdminEnabled(true);
         httpServerInfo = createHttpServerInfo();
 
-        assertNotNull(httpServerInfo.getHttpUri());
-        assertNotNull(httpServerInfo.getHttpExternalUri());
-        assertNotNull(httpServerInfo.getHttpChannel());
-        assertEquals(httpServerInfo.getHttpUri().getScheme(), httpServerInfo.getHttpExternalUri().getScheme());
-        assertEquals(httpServerInfo.getHttpUri().getPort(), httpServerInfo.getHttpExternalUri().getPort());
-        assertEquals(httpServerInfo.getHttpUri().getScheme(), "http");
+        assertThat(httpServerInfo.getHttpUri()).isNotNull();
+        assertThat(httpServerInfo.getHttpExternalUri()).isNotNull();
+        assertThat(httpServerInfo.getHttpChannel()).isNotNull();
+        assertThat(httpServerInfo.getHttpUri().getScheme()).isEqualTo(httpServerInfo.getHttpExternalUri().getScheme());
+        assertThat(httpServerInfo.getHttpUri().getPort()).isEqualTo(httpServerInfo.getHttpExternalUri().getPort());
+        assertThat(httpServerInfo.getHttpUri().getScheme()).isEqualTo("http");
 
-        assertNull(httpServerInfo.getHttpsUri());
-        assertNull(httpServerInfo.getHttpsExternalUri());
-        assertNull(httpServerInfo.getHttpsChannel());
+        assertThat(httpServerInfo.getHttpsUri()).isNull();
+        assertThat(httpServerInfo.getHttpsExternalUri()).isNull();
+        assertThat(httpServerInfo.getHttpsChannel()).isNull();
 
-        assertNotNull(httpServerInfo.getAdminUri());
-        assertNotNull(httpServerInfo.getAdminExternalUri());
-        assertNotNull(httpServerInfo.getAdminChannel());
-        assertEquals(httpServerInfo.getAdminUri().getScheme(), httpServerInfo.getAdminExternalUri().getScheme());
-        assertEquals(httpServerInfo.getAdminUri().getPort(), httpServerInfo.getAdminExternalUri().getPort());
-        assertEquals(httpServerInfo.getAdminUri().getScheme(), "http");
+        assertThat(httpServerInfo.getAdminUri()).isNotNull();
+        assertThat(httpServerInfo.getAdminExternalUri()).isNotNull();
+        assertThat(httpServerInfo.getAdminChannel()).isNotNull();
+        assertThat(httpServerInfo.getAdminUri().getScheme()).isEqualTo(httpServerInfo.getAdminExternalUri().getScheme());
+        assertThat(httpServerInfo.getAdminUri().getPort()).isEqualTo(httpServerInfo.getAdminExternalUri().getPort());
+        assertThat(httpServerInfo.getAdminUri().getScheme()).isEqualTo("http");
 
         assertNotEquals(httpServerInfo.getHttpUri().getPort(), httpServerInfo.getAdminUri().getPort());
     }
@@ -244,26 +239,26 @@ public class TestHttpServerProvider
                 .setAdminEnabled(true);
         httpServerInfo = createHttpServerInfo();
 
-        assertNotNull(httpServerInfo.getHttpUri());
-        assertNotNull(httpServerInfo.getHttpExternalUri());
-        assertNotNull(httpServerInfo.getHttpChannel());
-        assertEquals(httpServerInfo.getHttpUri().getScheme(), httpServerInfo.getHttpExternalUri().getScheme());
-        assertEquals(httpServerInfo.getHttpUri().getPort(), httpServerInfo.getHttpExternalUri().getPort());
-        assertEquals(httpServerInfo.getHttpUri().getScheme(), "http");
+        assertThat(httpServerInfo.getHttpUri()).isNotNull();
+        assertThat(httpServerInfo.getHttpExternalUri()).isNotNull();
+        assertThat(httpServerInfo.getHttpChannel()).isNotNull();
+        assertThat(httpServerInfo.getHttpUri().getScheme()).isEqualTo(httpServerInfo.getHttpExternalUri().getScheme());
+        assertThat(httpServerInfo.getHttpUri().getPort()).isEqualTo(httpServerInfo.getHttpExternalUri().getPort());
+        assertThat(httpServerInfo.getHttpUri().getScheme()).isEqualTo("http");
 
-        assertNotNull(httpServerInfo.getHttpsUri());
-        assertNotNull(httpServerInfo.getHttpsExternalUri());
-        assertNotNull(httpServerInfo.getHttpsChannel());
-        assertEquals(httpServerInfo.getHttpsUri().getScheme(), httpServerInfo.getHttpsExternalUri().getScheme());
-        assertEquals(httpServerInfo.getHttpsUri().getPort(), httpServerInfo.getHttpsExternalUri().getPort());
-        assertEquals(httpServerInfo.getHttpsUri().getScheme(), "https");
+        assertThat(httpServerInfo.getHttpsUri()).isNotNull();
+        assertThat(httpServerInfo.getHttpsExternalUri()).isNotNull();
+        assertThat(httpServerInfo.getHttpsChannel()).isNotNull();
+        assertThat(httpServerInfo.getHttpsUri().getScheme()).isEqualTo(httpServerInfo.getHttpsExternalUri().getScheme());
+        assertThat(httpServerInfo.getHttpsUri().getPort()).isEqualTo(httpServerInfo.getHttpsExternalUri().getPort());
+        assertThat(httpServerInfo.getHttpsUri().getScheme()).isEqualTo("https");
 
-        assertNotNull(httpServerInfo.getAdminUri());
-        assertNotNull(httpServerInfo.getAdminExternalUri());
-        assertNotNull(httpServerInfo.getAdminChannel());
-        assertEquals(httpServerInfo.getAdminUri().getScheme(), httpServerInfo.getAdminExternalUri().getScheme());
-        assertEquals(httpServerInfo.getAdminUri().getPort(), httpServerInfo.getAdminExternalUri().getPort());
-        assertEquals(httpServerInfo.getAdminUri().getScheme(), "https");
+        assertThat(httpServerInfo.getAdminUri()).isNotNull();
+        assertThat(httpServerInfo.getAdminExternalUri()).isNotNull();
+        assertThat(httpServerInfo.getAdminChannel()).isNotNull();
+        assertThat(httpServerInfo.getAdminUri().getScheme()).isEqualTo(httpServerInfo.getAdminExternalUri().getScheme());
+        assertThat(httpServerInfo.getAdminUri().getPort()).isEqualTo(httpServerInfo.getAdminExternalUri().getPort());
+        assertThat(httpServerInfo.getAdminUri().getScheme()).isEqualTo("https");
 
         assertNotEquals(httpServerInfo.getHttpUri().getPort(), httpServerInfo.getHttpsUri().getPort());
         assertNotEquals(httpServerInfo.getHttpUri().getPort(), httpServerInfo.getAdminUri().getPort());
@@ -279,15 +274,15 @@ public class TestHttpServerProvider
         try (JettyHttpClient httpClient = new JettyHttpClient(new HttpClientConfig().setHttp2Enabled(false))) {
             StatusResponse response = httpClient.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStatusResponseHandler());
 
-            assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
-            assertEquals(response.getHeader("X-Protocol"), "HTTP/1.1");
+            assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_OK);
+            assertThat(response.getHeader("X-Protocol")).isEqualTo("HTTP/1.1");
         }
 
         try (JettyHttpClient httpClient = new JettyHttpClient(new HttpClientConfig().setHttp2Enabled(true))) {
             StatusResponse response = httpClient.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStatusResponseHandler());
 
-            assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
-            assertEquals(response.getHeader("X-Protocol"), "HTTP/2.0");
+            assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_OK);
+            assertThat(response.getHeader("X-Protocol")).isEqualTo("HTTP/2.0");
         }
     }
 
@@ -323,8 +318,8 @@ public class TestHttpServerProvider
         URI uri = URI.create(format("https://%s:%s", name, httpServerInfo.getHttpsUri().getPort()));
         StatusResponse response = httpClient.execute(prepareGet().setUri(uri).build(), createStatusResponseHandler());
 
-        assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
-        assertEquals(response.getHeader("X-Protocol"), "HTTP/1.1");
+        assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_OK);
+        assertThat(response.getHeader("X-Protocol")).isEqualTo("HTTP/1.1");
     }
 
     @Test
@@ -337,7 +332,7 @@ public class TestHttpServerProvider
         try (JettyHttpClient client = new JettyHttpClient()) {
             StatusResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri().resolve("/filter")).build(), createStatusResponseHandler());
 
-            assertEquals(response.getStatusCode(), HttpServletResponse.SC_PAYMENT_REQUIRED);
+            assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_PAYMENT_REQUIRED);
         }
     }
 
@@ -373,17 +368,17 @@ public class TestHttpServerProvider
             host.ifPresent(value -> builder.addHeader(X_FORWARDED_HOST, value));
             remoteHost.ifPresent(value -> builder.addHeader(X_FORWARDED_FOR, value));
             StringResponse response = client.execute(builder.build(), createStringResponseHandler());
-            assertEquals(response.getStatusCode(), 200);
+            assertThat(response.getStatusCode()).isEqualTo(200);
         }
 
         proto.ifPresent(uriBuilder::scheme);
         host.map(HostAndPort::fromString).ifPresent(uriBuilder::hostAndPort);
         URI forwardedUri = uriBuilder.build();
-        assertEquals(servlet.getRequestUrl(), forwardedUri.toString());
-        assertEquals(servlet.getScheme(), forwardedUri.getScheme());
-        assertEquals(servlet.getIsSecure(), (Boolean) forwardedUri.getScheme().equals("https"));
+        assertThat(servlet.getRequestUrl()).isEqualTo(forwardedUri.toString());
+        assertThat(servlet.getScheme()).isEqualTo(forwardedUri.getScheme());
+        assertThat(servlet.getIsSecure()).isEqualTo((Boolean) forwardedUri.getScheme().equals("https"));
 
-        remoteHost.ifPresent(value -> assertEquals(servlet.getRemoteAddress(), value));
+        remoteHost.ifPresent(value -> assertThat(servlet.getRemoteAddress()).isEqualTo(value));
     }
 
     @Test
@@ -406,8 +401,8 @@ public class TestHttpServerProvider
                             .build(),
                     createStringResponseHandler());
 
-            assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
-            assertEquals(response.getBody(), "user");
+            assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_OK);
+            assertThat(response.getBody()).isEqualTo("user");
         }
     }
 
@@ -464,8 +459,8 @@ public class TestHttpServerProvider
             URI uri = URI.create(format("https://%s:%s", name, httpServerInfo.getHttpsUri().getPort()));
             StringResponse response = httpClient.execute(prepareGet().setUri(uri).build(), createStringResponseHandler());
 
-            assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
-            assertEquals(response.getBody(), "CN=testing,OU=Client,O=Airlift,L=Palo Alto,ST=CA,C=US");
+            assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_OK);
+            assertThat(response.getBody()).isEqualTo("CN=testing,OU=Client,O=Airlift,L=Palo Alto,ST=CA,C=US");
         }
     }
 
@@ -500,7 +495,7 @@ public class TestHttpServerProvider
 
         try (HttpClient client = new JettyHttpClient()) {
             StringResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStringResponseHandler());
-            assertEquals(response.getStatusCode(), 500);
+            assertThat(response.getStatusCode()).isEqualTo(500);
             assertContains(response.getBody(), "ErrorServlet.java");
         }
     }
@@ -515,7 +510,7 @@ public class TestHttpServerProvider
 
         try (HttpClient client = new JettyHttpClient()) {
             StringResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStringResponseHandler());
-            assertEquals(response.getStatusCode(), 500);
+            assertThat(response.getStatusCode()).isEqualTo(500);
             assertThat(response.getBody()).doesNotContain("ErrorServlet.java");
         }
     }
@@ -610,7 +605,7 @@ public class TestHttpServerProvider
 
         createAndStartServer();
 
-        assertNull(server.getDaysUntilCertificateExpiration());
+        assertThat(server.getDaysUntilCertificateExpiration()).isNull();
     }
 
     @Test
@@ -636,9 +631,9 @@ public class TestHttpServerProvider
                     .setKeystorePath(tempFile.file().getAbsolutePath())
                     .setKeystorePassword("airlift");
             createAndStartServer();
-            assertEventually(() -> assertEquals(server.getCertificates().size(), 1));
+            assertEventually(() -> assertThat(server.getCertificates()).hasSize(1));
             appendCertificate(tempFile.file(), "certificate-2");
-            assertEventually(() -> assertEquals(server.getCertificates().size(), 2));
+            assertEventually(() -> assertThat(server.getCertificates()).hasSize(2));
         }
     }
 

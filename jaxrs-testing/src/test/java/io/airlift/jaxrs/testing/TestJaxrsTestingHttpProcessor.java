@@ -20,8 +20,7 @@ import static io.airlift.http.client.StringResponseHandler.createStringResponseH
 import static jakarta.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.fail;
+import static org.assertj.core.api.Assertions.fail;
 
 @Test
 public class TestJaxrsTestingHttpProcessor
@@ -39,9 +38,9 @@ public class TestJaxrsTestingHttpProcessor
 
         StringResponse response = HTTP_CLIENT.execute(request, createStringResponseHandler());
 
-        assertEquals(response.getStatusCode(), HttpStatus.OK.code());
-        assertEquals(response.getBody(), "Got xyz");
-        assertEquals(response.getHeader("X-Test-Out"), "Got abc");
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK.code());
+        assertThat(response.getBody()).isEqualTo("Got xyz");
+        assertThat(response.getHeader("X-Test-Out")).isEqualTo("Got abc");
     }
 
     @Test
@@ -56,7 +55,7 @@ public class TestJaxrsTestingHttpProcessor
             fail("expected exception");
         }
         catch (TestingException e) {
-            assertEquals(e.getMessage(), "testException");
+            assertThat(e.getMessage()).isEqualTo("testException");
         }
     }
 
@@ -68,7 +67,7 @@ public class TestJaxrsTestingHttpProcessor
                 .build();
 
         StringResponse response = HTTP_CLIENT.execute(request, createStringResponseHandler());
-        assertEquals(response.getStatusCode(), 404);
+        assertThat(response.getStatusCode()).isEqualTo(404);
     }
 
     @Test

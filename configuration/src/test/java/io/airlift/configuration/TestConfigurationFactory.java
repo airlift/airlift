@@ -41,13 +41,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertSame;
-import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 public class TestConfigurationFactory
 {
@@ -75,9 +70,9 @@ public class TestConfigurationFactory
         AnnotatedSetter annotatedSetter = injector.getInstance(AnnotatedSetter.class);
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(0);
-        assertNotNull(annotatedSetter);
-        assertEquals(annotatedSetter.getStringValue(), "some value");
-        assertTrue(annotatedSetter.isBooleanValue());
+        assertThat(annotatedSetter).isNotNull();
+        assertThat(annotatedSetter.getStringValue()).isEqualTo("some value");
+        assertThat(annotatedSetter.isBooleanValue()).isTrue();
     }
 
     @Test
@@ -91,9 +86,9 @@ public class TestConfigurationFactory
         LegacyConfigPresent legacyConfigPresent = injector.getInstance(LegacyConfigPresent.class);
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(0);
-        assertNotNull(legacyConfigPresent);
-        assertEquals(legacyConfigPresent.getStringA(), "this is a");
-        assertEquals(legacyConfigPresent.getStringB(), "this is b");
+        assertThat(legacyConfigPresent).isNotNull();
+        assertThat(legacyConfigPresent.getStringA()).isEqualTo("this is a");
+        assertThat(legacyConfigPresent.getStringB()).isEqualTo("this is b");
     }
 
     @Test
@@ -108,9 +103,9 @@ public class TestConfigurationFactory
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(1);
         monitor.assertMatchingWarningRecorded("Configuration property 'string-value' has been replaced. Use 'string-a' instead.");
-        assertNotNull(legacyConfigPresent);
-        assertEquals(legacyConfigPresent.getStringA(), "this is a");
-        assertEquals(legacyConfigPresent.getStringB(), "this is b");
+        assertThat(legacyConfigPresent).isNotNull();
+        assertThat(legacyConfigPresent.getStringA()).isEqualTo("this is a");
+        assertThat(legacyConfigPresent.getStringB()).isEqualTo("this is b");
     }
 
     @Test
@@ -125,9 +120,9 @@ public class TestConfigurationFactory
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(1);
         monitor.assertMatchingWarningRecorded("Configuration property 'example.string-value' has been replaced. Use 'example.string-a' instead.");
-        assertNotNull(legacyConfigPresent);
-        assertEquals(legacyConfigPresent.getStringA(), "this is a");
-        assertEquals(legacyConfigPresent.getStringB(), "this is b");
+        assertThat(legacyConfigPresent).isNotNull();
+        assertThat(legacyConfigPresent.getStringA()).isEqualTo("this is a");
+        assertThat(legacyConfigPresent.getStringB()).isEqualTo("this is b");
     }
 
     @Test
@@ -168,9 +163,9 @@ public class TestConfigurationFactory
         DeprecatedConfigPresent deprecatedConfigPresent = injector.getInstance(DeprecatedConfigPresent.class);
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(0);
-        assertNotNull(deprecatedConfigPresent);
-        assertEquals(deprecatedConfigPresent.getStringA(), "defaultA");
-        assertEquals(deprecatedConfigPresent.getStringB(), "this is b");
+        assertThat(deprecatedConfigPresent).isNotNull();
+        assertThat(deprecatedConfigPresent.getStringA()).isEqualTo("defaultA");
+        assertThat(deprecatedConfigPresent.getStringB()).isEqualTo("this is b");
     }
 
     @Test
@@ -185,9 +180,9 @@ public class TestConfigurationFactory
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(1);
         monitor.assertMatchingWarningRecorded("Configuration property 'string-a' is deprecated and should not be used");
-        assertNotNull(deprecatedConfigPresent);
-        assertEquals(deprecatedConfigPresent.getStringA(), "this is a");
-        assertEquals(deprecatedConfigPresent.getStringB(), "this is b");
+        assertThat(deprecatedConfigPresent).isNotNull();
+        assertThat(deprecatedConfigPresent.getStringA()).isEqualTo("this is a");
+        assertThat(deprecatedConfigPresent.getStringB()).isEqualTo("this is b");
     }
 
     @Test
@@ -202,9 +197,9 @@ public class TestConfigurationFactory
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(1);
         monitor.assertMatchingWarningRecorded("Configuration property 'example.string-a' is deprecated and should not be used");
-        assertNotNull(deprecatedConfigPresent);
-        assertEquals(deprecatedConfigPresent.getStringA(), "this is a");
-        assertEquals(deprecatedConfigPresent.getStringB(), "this is b");
+        assertThat(deprecatedConfigPresent).isNotNull();
+        assertThat(deprecatedConfigPresent.getStringA()).isEqualTo("this is a");
+        assertThat(deprecatedConfigPresent.getStringB()).isEqualTo("this is b");
     }
 
     @Test
@@ -242,9 +237,9 @@ public class TestConfigurationFactory
         BeanValidationClass beanValidationClass = injector.getInstance(BeanValidationClass.class);
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(0);
-        assertNotNull(beanValidationClass);
-        assertEquals(beanValidationClass.getStringValue(), "has a value");
-        assertEquals(beanValidationClass.getIntValue(), 50);
+        assertThat(beanValidationClass).isNotNull();
+        assertThat(beanValidationClass.getStringValue()).isEqualTo("has a value");
+        assertThat(beanValidationClass.getIntValue()).isEqualTo(50);
     }
 
     @Test
@@ -287,7 +282,7 @@ public class TestConfigurationFactory
             Config1 config = requireNonNull(injector.getInstance(Config1.class), "injector.getInstance(Config1.class) is null");
             monitor.assertNumberOfErrors(0);
             monitor.assertNumberOfWarnings(0);
-            assertTrue(config.getBooleanOption());
+            assertThat(config.getBooleanOption()).isTrue();
         }
 
         for (String value : ImmutableList.of("false", "FALSE", "fAlsE")) {
@@ -298,7 +293,7 @@ public class TestConfigurationFactory
             Config1 config = requireNonNull(injector.getInstance(Config1.class), "injector.getInstance(Config1.class) is null");
             monitor.assertNumberOfErrors(0);
             monitor.assertNumberOfWarnings(0);
-            assertFalse(config.getBooleanOption());
+            assertThat(config.getBooleanOption()).isFalse();
         }
     }
 
@@ -327,7 +322,8 @@ public class TestConfigurationFactory
     {
         TestMonitor monitor = new TestMonitor();
         Injector injector = createInjector(ImmutableMap.of("value", "value-good-for-fromString"), monitor, binder -> configBinder(binder).bindConfig(FromStringClass.class));
-        assertSame(injector.getInstance(FromStringClass.class).value, FromStringClass.Value.FROM_STRING_VALUE);
+        assertThat(injector.getInstance(FromStringClass.class).value)
+                .isSameAs(FromStringClass.Value.FROM_STRING_VALUE);
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(0);
 
@@ -342,7 +338,8 @@ public class TestConfigurationFactory
     {
         TestMonitor monitor = new TestMonitor();
         Injector injector = createInjector(ImmutableMap.of("value", "yes"), monitor, binder -> configBinder(binder).bindConfig(EnumWithFromStringClass.class));
-        assertSame(injector.getInstance(EnumWithFromStringClass.class).value, EnumWithFromStringClass.Value.TRUE);
+        assertThat(injector.getInstance(EnumWithFromStringClass.class).value)
+                .isSameAs(EnumWithFromStringClass.Value.TRUE);
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(0);
 
@@ -357,7 +354,7 @@ public class TestConfigurationFactory
     {
         TestMonitor monitor = new TestMonitor();
         Injector injector = createInjector(ImmutableMap.of("value", "value"), monitor, binder -> configBinder(binder).bindConfig(EnumClass.class));
-        assertSame(injector.getInstance(EnumClass.class).value, EnumClass.Value.VALUE);
+        assertThat(injector.getInstance(EnumClass.class).value).isSameAs(EnumClass.Value.VALUE);
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(0);
     }
@@ -367,7 +364,8 @@ public class TestConfigurationFactory
     {
         TestMonitor monitor = new TestMonitor();
         Injector injector = createInjector(ImmutableMap.of("value", "value_with_underscores"), monitor, binder -> configBinder(binder).bindConfig(EnumClass.class));
-        assertSame(injector.getInstance(EnumClass.class).value, EnumClass.Value.VALUE_WITH_UNDERSCORES);
+        assertThat(injector.getInstance(EnumClass.class).value)
+                .isSameAs(EnumClass.Value.VALUE_WITH_UNDERSCORES);
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(0);
     }
@@ -377,7 +375,8 @@ public class TestConfigurationFactory
     {
         TestMonitor monitor = new TestMonitor();
         Injector injector = createInjector(ImmutableMap.of("value", "value-with-underscores"), monitor, binder -> configBinder(binder).bindConfig(EnumClass.class));
-        assertSame(injector.getInstance(EnumClass.class).value, EnumClass.Value.VALUE_WITH_UNDERSCORES);
+        assertThat(injector.getInstance(EnumClass.class).value)
+                .isSameAs(EnumClass.Value.VALUE_WITH_UNDERSCORES);
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(0);
     }
@@ -396,7 +395,7 @@ public class TestConfigurationFactory
     {
         TestMonitor monitor = new TestMonitor();
         Injector injector = createInjector(ImmutableMap.of("values", "ala, ma ,kota, "), monitor, binder -> configBinder(binder).bindConfig(ListOfStringsClass.class));
-        assertEquals(injector.getInstance(ListOfStringsClass.class).getValues(), ImmutableList.of("ala", "ma", "kota"));
+        assertThat(injector.getInstance(ListOfStringsClass.class).getValues()).isEqualTo(ImmutableList.of("ala", "ma", "kota"));
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(0);
     }
@@ -406,7 +405,7 @@ public class TestConfigurationFactory
     {
         TestMonitor monitor = new TestMonitor();
         Injector injector = createInjector(ImmutableMap.of("value", "value-good-for-valueOf"), monitor, binder -> configBinder(binder).bindConfig(ValueOfClass.class));
-        assertSame(injector.getInstance(ValueOfClass.class).value, ValueOfClass.Value.VALUE_OF_VALUE);
+        assertThat(injector.getInstance(ValueOfClass.class).value).isSameAs(ValueOfClass.Value.VALUE_OF_VALUE);
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(0);
 
@@ -421,7 +420,7 @@ public class TestConfigurationFactory
     {
         TestMonitor monitor = new TestMonitor();
         Injector injector = createInjector(ImmutableMap.of("value", "constructor-value"), monitor, binder -> configBinder(binder).bindConfig(StringConstructorClass.class));
-        assertEquals(injector.getInstance(StringConstructorClass.class).value.string, "constructor-argument: constructor-value");
+        assertThat(injector.getInstance(StringConstructorClass.class).value.string).isEqualTo("constructor-argument: constructor-value");
         monitor.assertNumberOfErrors(0);
         monitor.assertNumberOfWarnings(0);
 
@@ -442,7 +441,7 @@ public class TestConfigurationFactory
         ConfigurationFactory configurationFactory = new ConfigurationFactory(properties, null, new TestMonitor());
         configurationFactory.registerConfigurationClasses(ImmutableList.of(binder -> configBinder(binder).bindConfig(AnnotatedSetter.class)));
         configurationFactory.validateRegisteredConfigurationProvider();
-        assertEquals(configurationFactory.getUsedProperties(), ImmutableSet.of("string-value", "boolean-value"));
+        assertThat(configurationFactory.getUsedProperties()).hasSameElementsAs(ImmutableSet.of("string-value", "boolean-value"));
     }
 
     @Test
@@ -456,7 +455,7 @@ public class TestConfigurationFactory
         configurationFactory.registerConfigurationClasses(ImmutableList.of(binder -> configBinder(binder).bindConfig(AnnotatedSetter.class)));
         List<Message> messages = configurationFactory.validateRegisteredConfigurationProvider();
         assertMessagesMatch(messages, ImmutableList.of(".*Invalid value 'invalid' for type boolean \\(property 'boolean-value'\\).*AnnotatedSetter.*"));
-        assertEquals(configurationFactory.getUsedProperties(), properties.keySet());
+        assertThat(configurationFactory.getUsedProperties()).isEqualTo(properties.keySet());
     }
 
     private static Injector createInjector(Map<String, String> properties, TestMonitor monitor, Module module)
@@ -464,7 +463,7 @@ public class TestConfigurationFactory
         ConfigurationFactory configurationFactory = new ConfigurationFactory(properties, null, monitor);
         configurationFactory.registerConfigurationClasses(ImmutableList.of(module));
         List<Message> messages = configurationFactory.validateRegisteredConfigurationProvider();
-        assertEquals(configurationFactory.getUsedProperties(), properties.keySet());
+        assertThat(configurationFactory.getUsedProperties()).hasSameElementsAs(properties.keySet());
         return Guice.createInjector(new ConfigurationModule(configurationFactory), module, new ValidationErrorModule(messages));
     }
 
@@ -503,7 +502,7 @@ public class TestConfigurationFactory
 
     private static void assertMessagesMatch(Collection<? extends Object> messages, List<String> expectedErrorMessagePatterns)
     {
-        assertEquals(messages.size(), expectedErrorMessagePatterns.size(), "expected error count");
+        assertThat(messages.size()).as("expected error count").isEqualTo(expectedErrorMessagePatterns.size());
 
         List<Pattern> patterns = expectedErrorMessagePatterns.stream()
                 .map(Pattern::compile)
@@ -515,13 +514,13 @@ public class TestConfigurationFactory
             Pattern matchedPattern = null;
             for (Pattern pattern : patterns) {
                 if (pattern.matcher(messageString).matches()) {
-                    assertNull(matchedPattern, format("Error message matches two patterns patterns:\nmessage:\n  %s\npatterns:\n  %s\n  %s", messageString, matchedPattern, pattern));
+                    assertThat(matchedPattern).as(format("Error message matches two patterns patterns:\nmessage:\n  %s\npatterns:\n  %s\n  %s", messageString, matchedPattern, pattern)).isNull();
                     String usedMatch = usedPatterns.put(pattern, messageString);
-                    assertNull(usedMatch, format("Pattern '%s' matches message '%s' and '%s", pattern, messageString, usedMatch));
+                    assertThat(usedMatch).as(format("Pattern '%s' matches message '%s' and '%s", pattern, messageString, usedMatch)).isNull();
                     matchedPattern = pattern;
                 }
             }
-            assertNotNull(matchedPattern, format("Error message did not match any expected patterns:\nmessage:\n  %s\npatterns:\n  %s", messageString, Joiner.on("\n  ").join(patterns)));
+            assertThat(matchedPattern).as(format("Error message did not match any expected patterns:\nmessage:\n  %s\npatterns:\n  %s", messageString, Joiner.on("\n  ").join(patterns))).isNotNull();
         }
     }
 

@@ -31,9 +31,8 @@ import java.io.InputStream;
 import java.util.zip.ZipException;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 public class TestJsonMapper
 {
@@ -58,9 +57,9 @@ public class TestJsonMapper
         MultivaluedMap<String, Object> headers = new GuavaMultivaluedMap<>();
         jsonMapper.writeTo(value, String.class, null, null, null, headers, outputStream);
 
-        assertEquals(jsonCodec.fromJson(outputStream.toString(UTF_8)), value);
+        assertThat(jsonCodec.fromJson(outputStream.toString(UTF_8))).isEqualTo(value);
 
-        assertEquals(headers.getFirst(HttpHeaders.X_CONTENT_TYPE_OPTIONS), "nosniff");
+        assertThat(headers.getFirst(HttpHeaders.X_CONTENT_TYPE_OPTIONS)).isEqualTo("nosniff");
     }
 
     @Test
@@ -95,7 +94,7 @@ public class TestJsonMapper
             fail("Should have thrown a JsonMapperParsingException");
         }
         catch (JsonMapperParsingException e) {
-            assertTrue((e.getMessage()).startsWith("Invalid json for Java type"));
+            assertThat(e.getMessage()).startsWith("Invalid json for Java type");
         }
     }
 
@@ -131,7 +130,7 @@ public class TestJsonMapper
             fail("Should have thrown a JsonMapperParsingException");
         }
         catch (JsonMapperParsingException e) {
-            assertTrue((e.getMessage()).startsWith("Invalid json for Java type"));
+            assertThat(e.getMessage()).startsWith("Invalid json for Java type");
         }
     }
 
@@ -167,7 +166,7 @@ public class TestJsonMapper
             fail("Should have thrown an IOException");
         }
         catch (WebApplicationException e) {
-            fail("Should not have received a WebApplicationException", e);
+            org.assertj.core.api.Assertions.fail("Should not have received a WebApplicationException", e);
         }
     }
 

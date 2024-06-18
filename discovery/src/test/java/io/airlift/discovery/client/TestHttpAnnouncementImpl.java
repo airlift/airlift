@@ -18,7 +18,7 @@ package io.airlift.discovery.client;
 import org.testng.annotations.Test;
 
 import static io.airlift.testing.EquivalenceTester.equivalenceTester;
-import static org.testng.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestHttpAnnouncementImpl
 {
@@ -46,14 +46,14 @@ public class TestHttpAnnouncementImpl
     @Test
     public void testAnnouncementId()
     {
-        assertEquals(new HttpAnnouncementImpl("type A").announcementId(), "type A");
+        assertThat(new HttpAnnouncementImpl("type A").announcementId()).isEqualTo("type A");
     }
 
     @Test
     public void testAnnotationType()
     {
-        assertEquals(new HttpAnnouncementImpl("apple").annotationType(), HttpAnnouncement.class);
-        assertEquals(new HttpAnnouncementImpl("apple").annotationType(), appleHttpAnnouncement.annotationType());
+        assertThat(new HttpAnnouncementImpl("apple").annotationType()).isEqualTo(HttpAnnouncement.class);
+        assertThat(new HttpAnnouncementImpl("apple").annotationType()).isEqualTo(appleHttpAnnouncement.annotationType());
     }
 
     @Test

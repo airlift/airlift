@@ -33,9 +33,8 @@ import java.util.Map;
 import java.util.Objects;
 
 import static io.airlift.testing.Assertions.assertContains;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotSame;
-import static org.testng.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 public class TestConfigAssertions
 {
@@ -439,23 +438,23 @@ public class TestConfigAssertions
         $$RecordedConfigData<PersonConfig> data = ConfigAssertions.getRecordedConfig(config);
 
         PersonConfig instance = data.getInstance();
-        assertNotSame(instance, config);
+        assertThat(instance).isNotSameAs(config);
 
-        assertEquals(data.getInvokedMethods(), ImmutableSet.of(
+        assertThat(data.getInvokedMethods()).isEqualTo(ImmutableSet.of(
                 PersonConfig.class.getMethod("setName", String.class),
                 PersonConfig.class.getMethod("setEmail", String.class),
                 PersonConfig.class.getMethod("setPhone", String.class),
                 PersonConfig.class.getMethod("setHomePage", URI.class)));
 
-        assertEquals(instance.getName(), "Alice Apple");
-        assertEquals(instance.getEmail(), "alice@example.com");
-        assertEquals(instance.getPhone(), "1-976-alice");
-        assertEquals(instance.getHomePage(), URI.create("http://alice.example.com"));
+        assertThat(instance.getName()).isEqualTo("Alice Apple");
+        assertThat(instance.getEmail()).isEqualTo("alice@example.com");
+        assertThat(instance.getPhone()).isEqualTo("1-976-alice");
+        assertThat(instance.getHomePage()).isEqualTo(URI.create("http://alice.example.com"));
 
-        assertEquals(config.getName(), "Alice Apple");
-        assertEquals(config.getEmail(), "alice@example.com");
-        assertEquals(config.getPhone(), "1-976-alice");
-        assertEquals(config.getHomePage(), URI.create("http://alice.example.com"));
+        assertThat(config.getName()).isEqualTo("Alice Apple");
+        assertThat(config.getEmail()).isEqualTo("alice@example.com");
+        assertThat(config.getPhone()).isEqualTo("1-976-alice");
+        assertThat(config.getHomePage()).isEqualTo(URI.create("http://alice.example.com"));
     }
 
     @Test

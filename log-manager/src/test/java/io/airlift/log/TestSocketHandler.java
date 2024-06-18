@@ -20,8 +20,7 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
 import static io.airlift.log.Format.TEXT;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Test(timeOut = 5 * 60 * 1000)
 public class TestSocketHandler
@@ -49,8 +48,8 @@ public class TestSocketHandler
                 String[] lines = received.split("\n");
                 for (int i = 0; i < lines.length; i++) {
                     String[] parts = lines[i].split("\t");
-                    assertEquals(parts[1], io.airlift.log.Level.fromJulLevel(levels[i]).toString());
-                    assertEquals(parts[4], data[i]);
+                    assertThat(parts[1]).isEqualTo(io.airlift.log.Level.fromJulLevel(levels[i]).toString());
+                    assertThat(parts[4]).isEqualTo(data[i]);
                 }
             }
         }
@@ -69,7 +68,7 @@ public class TestSocketHandler
         handler.flush();
         handler.close();
 
-        assertTrue(((SocketMessageOutput) handler.getMessageOutput()).getFailedConnections() > 0);
+        assertThat(((SocketMessageOutput) handler.getMessageOutput()).getFailedConnections()).isGreaterThan(0);
     }
 
     private static BufferedHandler createSocketHandler(HostAndPort hostAndPort, Formatter formatter, ErrorManager errorManager)

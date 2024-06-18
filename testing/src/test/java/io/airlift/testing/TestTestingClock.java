@@ -18,7 +18,7 @@ import org.testng.annotations.Test;
 import java.time.Instant;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.testng.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestTestingClock
 {
@@ -36,7 +36,7 @@ public class TestTestingClock
         clock.increment(42, SECONDS);
         Instant instant3 = clock.instant();
 
-        assertEquals(instant2, instant1);
-        assertEquals(instant3, instant1.plusSeconds(42));
+        assertThat(instant2).isEqualTo(instant1);
+        assertThat(instant3).isEqualTo(instant1.plusSeconds(42));
     }
 }

@@ -35,10 +35,8 @@ import static io.airlift.testing.Assertions.assertLessThan;
 import static io.airlift.testing.Assertions.assertLessThanOrEqual;
 import static io.airlift.testing.TestAssertions.SubComparable.createSubComparable;
 import static io.airlift.testing.TestAssertions.SuperComparable.createSuperComparable;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 public class TestAssertions
 {
@@ -471,36 +469,36 @@ public class TestAssertions
 
     private void verifyExceptionMessage(AssertionError e, String message, Object... values)
     {
-        assertNotNull(e);
+        assertThat(e).isNotNull();
         String actualMessage = e.getMessage();
-        assertNotNull(actualMessage);
+        assertThat(actualMessage).isNotNull();
         if (message != null) {
-            assertTrue(actualMessage.startsWith(message + " "));
+            assertThat(actualMessage).startsWith(message + " ");
         }
         else {
-            assertFalse(actualMessage.startsWith(" "));
+            assertThat(actualMessage).doesNotStartWith(" ");
         }
 
         for (Object value : values) {
-            assertTrue(actualMessage.contains("<" + value + ">"));
+            assertThat(actualMessage).contains("<" + value + ">");
         }
     }
 
     private void verifyExceptionMessageList(AssertionError e, String message, Iterable<?>... lists)
     {
-        assertNotNull(e);
+        assertThat(e).isNotNull();
         String actualMessage = e.getMessage();
-        assertNotNull(actualMessage);
+        assertThat(actualMessage).isNotNull();
         if (message != null) {
-            assertTrue(actualMessage.startsWith(message + " "));
+            assertThat(actualMessage).startsWith(message + " ");
         }
         else {
-            assertFalse(actualMessage.startsWith(" "));
+            assertThat(actualMessage).doesNotStartWith(" ");
         }
 
         for (Iterable<?> values : lists) {
             for (Object value : values) {
-                assertTrue(actualMessage.contains(value.toString()));
+                assertThat(actualMessage).contains(value.toString());
             }
         }
     }

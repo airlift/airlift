@@ -51,9 +51,7 @@ import static io.airlift.security.pem.PemWriter.writeCertificate;
 import static io.airlift.security.pem.PemWriter.writePrivateKey;
 import static io.airlift.security.pem.PemWriter.writePublicKey;
 import static java.nio.charset.StandardCharsets.US_ASCII;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestPemReader
 {
@@ -93,14 +91,14 @@ public class TestPemReader
     {
         KeyStore keyStore = loadKeyStore(getResourceFile(certFile), getResourceFile(keyFile), keyPassword);
         assertCertificateChain(keyStore, expectedName);
-        assertNotNull(keyStore.getCertificate("key"));
+        assertThat(keyStore.getCertificate("key")).isNotNull();
 
         Key key = keyStore.getKey("key", new char[0]);
-        assertNotNull(key);
-        assertTrue(key instanceof PrivateKey);
+        assertThat(key).isNotNull();
+        assertThat(key).isInstanceOf(PrivateKey.class);
         PrivateKey privateKey = (PrivateKey) key;
         String encodedPrivateKey = writePrivateKey(privateKey);
-        assertEquals(key, loadPrivateKey(encodedPrivateKey, Optional.empty()));
+        assertThat(key).isEqualTo(loadPrivateKey(encodedPrivateKey, Optional.empty()));
     }
 
     @Test
@@ -126,14 +124,14 @@ public class TestPemReader
             throws Exception
     {
         File file = getResourceFile(keyFile);
-        assertTrue(isPem(file));
+        assertThat(isPem(file)).isTrue();
         PublicKey publicKey = loadPublicKey(file);
-        assertNotNull(publicKey);
+        assertThat(publicKey).isNotNull();
         X509Certificate certificate = readCertificateChain(getResourceFile(certFile)).stream().collect(onlyElement());
-        assertEquals(publicKey, certificate.getPublicKey());
+        assertThat(publicKey).isEqualTo(certificate.getPublicKey());
 
         String encodedPrivateKey = writePublicKey(publicKey);
-        assertEquals(publicKey, loadPublicKey(encodedPrivateKey));
+        assertThat(publicKey).isEqualTo(loadPublicKey(encodedPrivateKey));
     }
 
     @Test
@@ -142,7 +140,7 @@ public class TestPemReader
     {
         byte[] pkcs8 = loadPublicKeyData("rsa.client.pkcs8.pub");
         byte[] pkcs1 = loadPublicKeyData("rsa.client.pkcs1.pub");
-        assertEquals(rsaPublicKeyPkcs1ToPkcs8(pkcs1), pkcs8);
+        assertThat(rsaPublicKeyPkcs1ToPkcs8(pkcs1)).isEqualTo(pkcs8);
     }
 
     @Test
@@ -151,7 +149,7 @@ public class TestPemReader
     {
         byte[] pkcs8 = loadPrivateKeyData("rsa.client.pkcs8.key");
         byte[] pkcs1 = loadPrivateKeyData("rsa.client.pkcs1.key");
-        assertEquals(rsaPkcs1ToPkcs8(pkcs1), pkcs8);
+        assertThat(rsaPkcs1ToPkcs8(pkcs1)).isEqualTo(pkcs8);
     }
 
     @Test
@@ -160,7 +158,7 @@ public class TestPemReader
     {
         byte[] pkcs8 = loadPrivateKeyData("dsa.client.pkcs8.key");
         byte[] pkcs1 = loadPrivateKeyData("dsa.client.pkcs1.key");
-        assertEquals(dsaPkcs1ToPkcs8(pkcs1), pkcs8);
+        assertThat(dsaPkcs1ToPkcs8(pkcs1)).isEqualTo(pkcs8);
     }
 
     @Test
@@ -169,18 +167,18 @@ public class TestPemReader
     {
         byte[] pkcs8 = loadPrivateKeyData("ec.client.pkcs8.key");
         byte[] pkcs1 = loadPrivateKeyData("ec.client.pkcs1.key");
-        assertEquals(ecPkcs1ToPkcs8(pkcs1), pkcs8);
+        assertThat(ecPkcs1ToPkcs8(pkcs1)).isEqualTo(pkcs8);
     }
 
     private static void assertCertificateChain(KeyStore keyStore, String expectedName)
             throws Exception
     {
         ArrayList<String> aliases = Collections.list(keyStore.aliases());
-        assertEquals(aliases.size(), 1);
+        assertThat(aliases.size()).isEqualTo(1);
         Certificate certificate = keyStore.getCertificate(aliases.get(0));
-        assertNotNull(certificate);
+        assertThat(certificate).isNotNull();
 
-        assertTrue(certificate instanceof X509Certificate);
+        assertThat(certificate).isInstanceOf(X509Certificate.class);
         X509Certificate x509Certificate = (X509Certificate) certificate;
 
         assertX509Certificate(x509Certificate, expectedName);
@@ -193,14 +191,14 @@ public class TestPemReader
             throws InvalidNameException
     {
         LdapName ldapName = new LdapName(x509Certificate.getSubjectX500Principal().getName());
-        assertEquals(ldapName.toString(), expectedName);
+        assertThat(ldapName.toString()).isEqualTo(expectedName);
     }
 
     private static byte[] loadPrivateKeyData(String keyFile)
             throws IOException, KeyStoreException
     {
         File file = getResourceFile(keyFile);
-        assertTrue(isPem(file));
+        assertThat(isPem(file)).isTrue();
         String privateKey = asCharSource(file, US_ASCII).read();
         Matcher matcher = PRIVATE_KEY_PATTERN.matcher(privateKey);
         if (!matcher.find()) {
@@ -214,7 +212,7 @@ public class TestPemReader
             throws IOException, KeyStoreException
     {
         File file = getResourceFile(keyFile);
-        assertTrue(isPem(file));
+        assertThat(isPem(file)).isTrue();
         String privateKey = asCharSource(file, US_ASCII).read();
         Matcher matcher = PUBLIC_KEY_PATTERN.matcher(privateKey);
         if (!matcher.find()) {

@@ -9,7 +9,6 @@ import java.util.concurrent.TimeUnit;
 import static io.airlift.stats.DecayTDigest.RESCALE_THRESHOLD_SECONDS;
 import static io.airlift.stats.DecayTDigest.ZERO_WEIGHT_THRESHOLD;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.testng.Assert.assertEquals;
 
 public class TestDecayTDigest
 {
@@ -22,13 +21,13 @@ public class TestDecayTDigest
         digest.add(5);
         digest.add(1);
 
-        assertEquals(digest.getMin(), 1.0);
-        assertEquals(digest.getMax(), 5.0);
+        assertThat(digest.getMin()).isEqualTo(1.0);
+        assertThat(digest.getMax()).isEqualTo(5.0);
 
         ticker.increment(51, TimeUnit.SECONDS);
 
-        assertEquals(digest.getMin(), 1.0);
-        assertEquals(digest.getMax(), 5.0);
+        assertThat(digest.getMin()).isEqualTo(1.0);
+        assertThat(digest.getMax()).isEqualTo(5.0);
     }
 
     @Test
@@ -44,7 +43,7 @@ public class TestDecayTDigest
         // incrementing time by this amount should cause the weight of the existing value to become "zero"
         ticker.increment((long) Math.ceil(Math.log(1 / ZERO_WEIGHT_THRESHOLD) / decayFactor), TimeUnit.SECONDS);
 
-        assertEquals(digest.getCount(), 0.0);
+        assertThat(digest.getCount()).isEqualTo(0.0);
     }
 
     @Test

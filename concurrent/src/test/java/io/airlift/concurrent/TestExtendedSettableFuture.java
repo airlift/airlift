@@ -5,10 +5,8 @@ import org.testng.annotations.Test;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertThrows;
-import static org.testng.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class TestExtendedSettableFuture
 {
@@ -18,10 +16,10 @@ public class TestExtendedSettableFuture
     {
         ExtendedSettableFuture<String> future = ExtendedSettableFuture.create();
         future.set("abc");
-        assertTrue(future.isDone());
-        assertFalse(future.isCancelled());
-        assertFalse(future.checkWasInterrupted());
-        assertEquals(future.get(), "abc");
+        assertThat(future).isDone();
+        assertThat(future).isNotCancelled();
+        assertThat(future.checkWasInterrupted()).isFalse();
+        assertThat(future.get()).isEqualTo("abc");
     }
 
     @Test
@@ -30,10 +28,11 @@ public class TestExtendedSettableFuture
     {
         ExtendedSettableFuture<String> future = ExtendedSettableFuture.create();
         future.setException(new Exception(""));
-        assertTrue(future.isDone());
-        assertFalse(future.isCancelled());
-        assertFalse(future.checkWasInterrupted());
-        assertThrows(ExecutionException.class, future::get);
+        assertThat(future).isDone();
+        assertThat(future).isNotCancelled();
+        assertThat(future.checkWasInterrupted()).isFalse();
+        assertThatThrownBy(future::get)
+                .isInstanceOf(ExecutionException.class);
     }
 
     @Test
@@ -42,10 +41,11 @@ public class TestExtendedSettableFuture
     {
         ExtendedSettableFuture<String> future = ExtendedSettableFuture.create();
         future.cancel(false);
-        assertTrue(future.isDone());
-        assertTrue(future.isCancelled());
-        assertFalse(future.checkWasInterrupted());
-        assertThrows(CancellationException.class, future::get);
+        assertThat(future).isDone();
+        assertThat(future).isCancelled();
+        assertThat(future.checkWasInterrupted()).isFalse();
+        assertThatThrownBy(future::get)
+                .isInstanceOf(CancellationException.class);
     }
 
     @Test
@@ -54,10 +54,11 @@ public class TestExtendedSettableFuture
     {
         ExtendedSettableFuture<String> future = ExtendedSettableFuture.create();
         future.cancel(true);
-        assertTrue(future.isDone());
-        assertTrue(future.isCancelled());
-        assertTrue(future.checkWasInterrupted());
-        assertThrows(CancellationException.class, future::get);
+        assertThat(future).isDone();
+        assertThat(future).isCancelled();
+        assertThat(future.checkWasInterrupted()).isTrue();
+        assertThatThrownBy(future::get)
+                .isInstanceOf(CancellationException.class);
     }
 
     @Test
@@ -69,14 +70,15 @@ public class TestExtendedSettableFuture
         ExtendedSettableFuture<String> toFuture = ExtendedSettableFuture.create();
         toFuture.setAsync(fromFuture);
         fromFuture.set("abc");
-        assertEquals(toFuture.get(), "abc");
+        assertThat(toFuture.get()).isEqualTo("abc");
 
         // Test exception
         fromFuture = ExtendedSettableFuture.create();
         toFuture = ExtendedSettableFuture.create();
         toFuture.setAsync(fromFuture);
         fromFuture.setException(new RuntimeException());
-        assertThrows(ExecutionException.class, toFuture::get);
+        assertThatThrownBy(toFuture::get)
+                .isInstanceOf(ExecutionException.class);
 
         // Test cancellation without interrupt
         fromFuture = ExtendedSettableFuture.create();
@@ -84,8 +86,8 @@ public class TestExtendedSettableFuture
         toFuture.setAsync(fromFuture);
         toFuture.cancel(false);
         // Parent Future should receive the cancellation
-        assertTrue(fromFuture.isCancelled());
-        assertFalse(fromFuture.checkWasInterrupted());
+        assertThat(fromFuture).isCancelled();
+        assertThat(fromFuture.checkWasInterrupted()).isFalse();
 
         // Test cancellation with interrupt
         fromFuture = ExtendedSettableFuture.create();
@@ -93,7 +95,7 @@ public class TestExtendedSettableFuture
         toFuture.setAsync(fromFuture);
         toFuture.cancel(true);
         // Parent Future should receive the cancellation
-        assertTrue(fromFuture.isCancelled());
-        assertTrue(fromFuture.checkWasInterrupted());
+        assertThat(fromFuture).isCancelled();
+        assertThat(fromFuture.checkWasInterrupted()).isTrue();
     }
 }

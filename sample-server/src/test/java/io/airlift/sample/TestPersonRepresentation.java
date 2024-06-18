@@ -21,7 +21,7 @@ import org.testng.annotations.Test;
 
 import static io.airlift.json.JsonCodec.jsonCodec;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.testng.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestPersonRepresentation
 {
@@ -35,7 +35,7 @@ public class TestPersonRepresentation
         PersonRepresentation expected = new PersonRepresentation("alice@example.com", "Alice", null);
         String json = codec.toJson(expected);
         PersonRepresentation actual = codec.fromJson(json);
-        assertEquals(actual, expected);
+        assertThat(actual).isEqualTo(expected);
     }
 
     @Test
@@ -47,6 +47,6 @@ public class TestPersonRepresentation
         String json = Resources.toString(Resources.getResource("single.json"), UTF_8);
         PersonRepresentation actual = codec.fromJson(json);
 
-        assertEquals(actual, expected);
+        assertThat(actual).isEqualTo(expected);
     }
 }

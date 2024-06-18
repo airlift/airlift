@@ -71,8 +71,6 @@ import static io.airlift.http.server.HttpServerBinder.httpServerBinder;
 import static io.airlift.testing.Assertions.assertGreaterThan;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
 
 public abstract class AbstractTestTestingHttpServer
 {
@@ -104,7 +102,7 @@ public abstract class AbstractTestTestingHttpServer
 
         try {
             server.start();
-            assertEquals(servlet.getSampleInitParam(), "the value");
+            assertThat(servlet.getSampleInitParam()).isEqualTo("the value");
             assertGreaterThan(server.getPort(), 0);
         }
         finally {
@@ -126,8 +124,8 @@ public abstract class AbstractTestTestingHttpServer
             try (HttpClient client = new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
                 StatusResponse response = client.execute(prepareGet().setUri(server.getBaseUrl()).build(), createStatusResponseHandler());
 
-                assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
-                assertEquals(servlet.getCallCount(), 1);
+                assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_OK);
+                assertThat(servlet.getCallCount()).isEqualTo(1);
             }
         }
         finally {
@@ -150,9 +148,9 @@ public abstract class AbstractTestTestingHttpServer
             try (HttpClient client = new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
                 StatusResponse response = client.execute(prepareGet().setUri(server.getBaseUrl()).build(), createStatusResponseHandler());
 
-                assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
-                assertEquals(servlet.getCallCount(), 1);
-                assertEquals(filter.getCallCount(), 1);
+                assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_OK);
+                assertThat(servlet.getCallCount()).isEqualTo(1);
+                assertThat(filter.getCallCount()).isEqualTo(1);
             }
         }
         finally {
@@ -184,8 +182,8 @@ public abstract class AbstractTestTestingHttpServer
         try (HttpClient client = new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
             StatusResponse response = client.execute(prepareGet().setUri(server.getBaseUrl()).build(), createStatusResponseHandler());
 
-            assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
-            assertEquals(servlet.getCallCount(), 1);
+            assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_OK);
+            assertThat(servlet.getCallCount()).isEqualTo(1);
         }
         finally {
             lifeCycleManager.stop();
@@ -218,9 +216,9 @@ public abstract class AbstractTestTestingHttpServer
         try (HttpClient client = new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
             StatusResponse response = client.execute(prepareGet().setUri(server.getBaseUrl()).build(), createStatusResponseHandler());
 
-            assertEquals(response.getStatusCode(), HttpServletResponse.SC_OK);
-            assertEquals(servlet.getCallCount(), 1);
-            assertEquals(filter.getCallCount(), 1);
+            assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_OK);
+            assertThat(servlet.getCallCount()).isEqualTo(1);
+            assertThat(filter.getCallCount()).isEqualTo(1);
         }
 
         finally {
@@ -270,7 +268,7 @@ public abstract class AbstractTestTestingHttpServer
             assertResource(uri, client, "path/user2.txt", "user2");
 
             // verify that servlet did not receive resource requests
-            assertEquals(servlet.getCallCount(), 0);
+            assertThat(servlet.getCallCount()).isEqualTo(0);
         }
         finally {
             lifeCycleManager.stop();
@@ -307,10 +305,10 @@ public abstract class AbstractTestTestingHttpServer
                 contentTypeHeader = servlet.contentTypeHeader;
             }
             if (enableCaseSensitiveHeaderCache) {
-                assertEquals(contentTypeHeader, finalContentType);
+                assertThat(contentTypeHeader).isEqualTo(finalContentType);
             }
             else {
-                assertEquals(contentTypeHeader, contentType);
+                assertThat(contentTypeHeader).isEqualTo(contentType);
             }
         }
         finally {
@@ -355,10 +353,10 @@ public abstract class AbstractTestTestingHttpServer
     {
         HttpUriBuilder uriBuilder = uriBuilderFrom(baseUri);
         StringResponseHandler.StringResponse data = client.execute(prepareGet().setUri(uriBuilder.appendPath(path).build()).build(), createStringResponseHandler());
-        assertEquals(data.getStatusCode(), HttpStatus.OK.code());
+        assertThat(data.getStatusCode()).isEqualTo(HttpStatus.OK.code());
         MediaType contentType = MediaType.parse(data.getHeader(HttpHeaders.CONTENT_TYPE));
-        assertTrue(PLAIN_TEXT_UTF_8.is(contentType), "Expected text/plain but got " + contentType);
-        assertEquals(data.getBody().trim(), contents);
+        assertThat(PLAIN_TEXT_UTF_8.is(contentType)).as("Expected text/plain but got " + contentType).isTrue();
+        assertThat(data.getBody().trim()).isEqualTo(contents);
     }
 
     private static TestingHttpServer createTestingHttpServer(boolean enableVirtualThreads, boolean enableLegacyUriCompliance, boolean enableCaseSensitiveHeaderCache, DummyServlet servlet, Map<String, String> params)

@@ -27,8 +27,7 @@ import java.net.URI;
 import static io.airlift.sample.PersonEvent.personAdded;
 import static io.airlift.sample.PersonEvent.personRemoved;
 import static io.airlift.sample.PersonEvent.personUpdated;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Test(singleThreaded = true)
 public class TestPersonResource
@@ -49,7 +48,7 @@ public class TestPersonResource
     public void testNotFound()
     {
         Response response = resource.get("foo", MockUriInfo.from(URI.create("http://localhost/v1/person/1")));
-        assertEquals(response.getStatus(), Response.Status.NOT_FOUND.getStatusCode());
+        assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
     }
 
     @Test
@@ -58,9 +57,9 @@ public class TestPersonResource
         store.put("foo", new Person("foo@example.com", "Mr Foo"));
 
         Response response = resource.get("foo", MockUriInfo.from(URI.create("http://localhost/v1/person/1")));
-        assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
-        assertEquals(response.getEntity(), new PersonRepresentation("foo@example.com", "Mr Foo", URI.create("http://localhost/v1/person/1")));
-        assertNull(response.getMetadata().get("Content-Type")); // content type is set by JAX-RS based on @Produces
+        assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+        assertThat(response.getEntity()).isEqualTo(new PersonRepresentation("foo@example.com", "Mr Foo", URI.create("http://localhost/v1/person/1")));
+        assertThat(response.getMetadata().get("Content-Type")).isNull(); // content type is set by JAX-RS based on @Produces
     }
 
     @Test(expectedExceptions = NullPointerException.class)
@@ -74,13 +73,13 @@ public class TestPersonResource
     {
         Response response = resource.put("foo", new PersonRepresentation("foo@example.com", "Mr Foo", null));
 
-        assertEquals(response.getStatus(), Response.Status.CREATED.getStatusCode());
-        assertNull(response.getEntity());
-        assertNull(response.getMetadata().get("Content-Type")); // content type is set by JAX-RS based on @Produces
+        assertThat(response.getStatus()).isEqualTo(Response.Status.CREATED.getStatusCode());
+        assertThat(response.getEntity()).isNull();
+        assertThat(response.getMetadata().get("Content-Type")).isNull(); // content type is set by JAX-RS based on @Produces
 
-        assertEquals(store.get("foo"), new Person("foo@example.com", "Mr Foo"));
+        assertThat(store.get("foo")).isEqualTo(new Person("foo@example.com", "Mr Foo"));
 
-        assertEquals(eventClient.getEvents(), ImmutableList.of(
+        assertThat(eventClient.getEvents()).isEqualTo(ImmutableList.of(
                 personAdded("foo", new Person("foo@example.com", "Mr Foo"))));
     }
 
@@ -103,13 +102,13 @@ public class TestPersonResource
 
         Response response = resource.put("foo", new PersonRepresentation("bar@example.com", "Mr Bar", null));
 
-        assertEquals(response.getStatus(), Response.Status.NO_CONTENT.getStatusCode());
-        assertNull(response.getEntity());
-        assertNull(response.getMetadata().get("Content-Type")); // content type is set by JAX-RS based on @Produces
+        assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+        assertThat(response.getEntity()).isNull();
+        assertThat(response.getMetadata().get("Content-Type")).isNull(); // content type is set by JAX-RS based on @Produces
 
-        assertEquals(store.get("foo"), new Person("bar@example.com", "Mr Bar"));
+        assertThat(store.get("foo")).isEqualTo(new Person("bar@example.com", "Mr Bar"));
 
-        assertEquals(eventClient.getEvents(), ImmutableList.of(
+        assertThat(eventClient.getEvents()).isEqualTo(ImmutableList.of(
                 personAdded("foo", new Person("foo@example.com", "Mr Foo")),
                 personUpdated("foo", new Person("bar@example.com", "Mr Bar"))));
     }
@@ -120,12 +119,12 @@ public class TestPersonResource
         store.put("foo", new Person("foo@example.com", "Mr Foo"));
 
         Response response = resource.delete("foo");
-        assertEquals(response.getStatus(), Response.Status.NO_CONTENT.getStatusCode());
-        assertNull(response.getEntity());
+        assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+        assertThat(response.getEntity()).isNull();
 
-        assertNull(store.get("foo"));
+        assertThat(store.get("foo")).isNull();
 
-        assertEquals(eventClient.getEvents(), ImmutableList.of(
+        assertThat(eventClient.getEvents()).isEqualTo(ImmutableList.of(
                 personAdded("foo", new Person("foo@example.com", "Mr Foo")),
                 personRemoved("foo", new Person("foo@example.com", "Mr Foo"))));
     }
@@ -134,8 +133,8 @@ public class TestPersonResource
     public void testDeleteMissing()
     {
         Response response = resource.delete("foo");
-        assertEquals(response.getStatus(), Response.Status.NOT_FOUND.getStatusCode());
-        assertNull(response.getEntity());
+        assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
+        assertThat(response.getEntity()).isNull();
     }
 
     @Test(expectedExceptions = NullPointerException.class)

@@ -18,7 +18,7 @@ package io.airlift.event.client;
 import com.google.common.collect.ImmutableList;
 import org.testng.annotations.Test;
 
-import static org.testng.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Test(singleThreaded = true)
 public abstract class AbstractTestInMemoryEventClient
@@ -35,7 +35,7 @@ public abstract class AbstractTestInMemoryEventClient
     {
         eventClient.post(event1);
 
-        assertEquals(inMemoryEventClient.getEvents(), ImmutableList.of(event1));
+        assertThat(inMemoryEventClient.getEvents()).isEqualTo(ImmutableList.of(event1));
     }
 
     @Test
@@ -45,8 +45,7 @@ public abstract class AbstractTestInMemoryEventClient
         eventClient.post(event2);
         eventClient.post(event3);
 
-        assertEquals(inMemoryEventClient.getEvents(),
-                ImmutableList.of(event1, event2, event3));
+        assertThat(inMemoryEventClient.getEvents()).isEqualTo(ImmutableList.of(event1, event2, event3));
     }
 
     @Test
@@ -54,8 +53,7 @@ public abstract class AbstractTestInMemoryEventClient
     {
         eventClient.post(event1, event2, event3);
 
-        assertEquals(inMemoryEventClient.getEvents(),
-                ImmutableList.of(event1, event2, event3));
+        assertThat(inMemoryEventClient.getEvents()).isEqualTo(ImmutableList.of(event1, event2, event3));
     }
 
     @Test
@@ -63,8 +61,7 @@ public abstract class AbstractTestInMemoryEventClient
     {
         eventClient.post(ImmutableList.of(event1, event2, event3));
 
-        assertEquals(inMemoryEventClient.getEvents(),
-                ImmutableList.of(event1, event2, event3));
+        assertThat(inMemoryEventClient.getEvents()).isEqualTo(ImmutableList.of(event1, event2, event3));
     }
 
     @Test
@@ -76,7 +73,6 @@ public abstract class AbstractTestInMemoryEventClient
             objectEventPoster.post(event3);
         });
 
-        assertEquals(inMemoryEventClient.getEvents(),
-                ImmutableList.of(event1, event2, event3));
+        assertThat(inMemoryEventClient.getEvents()).isEqualTo(ImmutableList.of(event1, event2, event3));
     }
 }

@@ -22,7 +22,7 @@ import java.util.List;
 import static io.airlift.slice.testing.SliceAssertions.assertSlicesEqual;
 import static io.airlift.stats.cardinality.TestUtils.sequence;
 import static io.airlift.stats.cardinality.Utils.numberOfBuckets;
-import static org.testng.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestDenseHll
 {
@@ -49,10 +49,10 @@ public class TestDenseHll
         merged.mergeWith(current);
 
         for (int i = 0; i < numberOfBuckets(prefixBitLength); i++) {
-            assertEquals(single.getValue(i), merged.getValue(i));
+            assertThat(single.getValue(i)).isEqualTo(merged.getValue(i));
         }
 
-        assertEquals(single.cardinality(), merged.cardinality());
+        assertThat(single.cardinality()).isEqualTo(merged.cardinality());
     }
 
     @Test(dataProvider = "bits")
@@ -164,14 +164,14 @@ public class TestDenseHll
         hll1.mergeWith(hll2);
         hll1.verify();
 
-        assertEquals(hll1.cardinality(), expected.cardinality());
+        assertThat(hll1.cardinality()).isEqualTo(expected.cardinality());
         assertSlicesEqual(hll1.serialize(), expected.serialize());
     }
 
     private static void assertSameBuckets(TestingHll testingHll, DenseHll hll)
     {
         for (int i = 0; i < testingHll.getBuckets().length; i++) {
-            assertEquals(hll.getValue(i), testingHll.getBuckets()[i]);
+            assertThat(hll.getValue(i)).isEqualTo(testingHll.getBuckets()[i]);
         }
     }
 

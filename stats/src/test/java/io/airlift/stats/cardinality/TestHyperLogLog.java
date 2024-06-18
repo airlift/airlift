@@ -25,8 +25,7 @@ import static io.airlift.slice.SizeOf.instanceSize;
 import static io.airlift.slice.testing.SliceAssertions.assertSlicesEqual;
 import static io.airlift.stats.cardinality.TestUtils.sequence;
 import static java.lang.Math.toIntExact;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestHyperLogLog
 {
@@ -65,12 +64,11 @@ public class TestHyperLogLog
 
             for (Map.Entry<Integer, Stats> entry : errors.entrySet()) {
                 // Give an extra error margin. This is mostly a sanity check to catch egregious errors
-                assertTrue(entry.getValue().stdev() <= expectedStandardError * 1.1,
-                        String.format("Failed at p = %s, cardinality = %s. Expected std error = %s, actual = %s",
-                                indexBits,
-                                entry.getKey(),
-                                expectedStandardError,
-                                entry.getValue().stdev()));
+                assertThat(entry.getValue().stdev() <= expectedStandardError * 1.1).as(String.format("Failed at p = %s, cardinality = %s. Expected std error = %s, actual = %s",
+                        indexBits,
+                        entry.getKey(),
+                        expectedStandardError,
+                        entry.getValue().stdev())).isTrue();
             }
         }
     }
@@ -79,9 +77,7 @@ public class TestHyperLogLog
     public void testRetainedSize()
             throws Exception
     {
-        assertEquals(
-                HyperLogLog.newInstance(8).estimatedInMemorySize(),
-                toIntExact(instanceSize(HyperLogLog.class) + (new SparseHll(10)).estimatedInMemorySize()));
+        assertThat(HyperLogLog.newInstance(8).estimatedInMemorySize()).isEqualTo(toIntExact(instanceSize(HyperLogLog.class) + (new SparseHll(10)).estimatedInMemorySize()));
     }
 
     @Test
@@ -124,8 +120,8 @@ public class TestHyperLogLog
         hll1.mergeWith(hll2);
         hll1.verify();
 
-        assertEquals(hll1.cardinality(), expected.cardinality());
-        assertEquals(hll1.serialize(), expected.serialize());
+        assertThat(hll1.cardinality()).isEqualTo(expected.cardinality());
+        assertThat(hll1.serialize()).isEqualTo(expected.serialize());
     }
 
     @Test
@@ -153,7 +149,7 @@ public class TestHyperLogLog
         HyperLogLog deserialized = HyperLogLog.newInstance(serialized);
         deserialized.verify();
 
-        assertEquals(hll.cardinality(), deserialized.cardinality());
+        assertThat(hll.cardinality()).isEqualTo(deserialized.cardinality());
 
         Slice reserialized = deserialized.serialize();
         assertSlicesEqual(serialized, reserialized);

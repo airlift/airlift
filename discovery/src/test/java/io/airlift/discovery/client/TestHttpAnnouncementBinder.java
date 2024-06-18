@@ -31,8 +31,7 @@ import java.util.UUID;
 import static com.google.common.collect.MoreCollectors.onlyElement;
 import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestHttpAnnouncementBinder
 {
@@ -179,11 +178,11 @@ public class TestHttpAnnouncementBinder
 
     private void assertAnnouncement(Set<ServiceAnnouncement> actualAnnouncements, ServiceAnnouncement expected)
     {
-        assertNotNull(actualAnnouncements);
-        assertEquals(actualAnnouncements.size(), 1);
+        assertThat(actualAnnouncements).isNotNull();
+        assertThat(actualAnnouncements.size()).isEqualTo(1);
         ServiceAnnouncement announcement = actualAnnouncements.stream().collect(onlyElement());
-        assertEquals(announcement.getType(), expected.getType());
-        assertEquals(announcement.getProperties(), expected.getProperties());
+        assertThat(announcement.getType()).isEqualTo(expected.getType());
+        assertThat(announcement.getProperties()).isEqualTo(expected.getProperties());
     }
 
     public static class StringPropertyProvider

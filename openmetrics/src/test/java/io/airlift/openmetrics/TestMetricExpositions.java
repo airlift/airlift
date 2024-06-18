@@ -23,7 +23,7 @@ import org.testng.annotations.Test;
 
 import java.math.BigInteger;
 
-import static org.testng.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestMetricExpositions
 {
@@ -38,8 +38,8 @@ public class TestMetricExpositions
 
         Counter counter = new Counter("metric_name", 0, ImmutableMap.of(), "metric_help");
         BigCounter bigCounter = new BigCounter("metric_name", BigInteger.ZERO, ImmutableMap.of(), "metric_help");
-        assertEquals(counter.getMetricExposition(), bigCounter.getMetricExposition());
-        assertEquals(counter.getMetricExposition(), expected);
+        assertThat(counter.getMetricExposition()).isEqualTo(bigCounter.getMetricExposition());
+        assertThat(counter.getMetricExposition()).isEqualTo(expected);
     }
 
     @Test
@@ -53,8 +53,8 @@ public class TestMetricExpositions
 
         Counter counter = new Counter("metric_name", 0, ImmutableMap.of("type", "cavendish"), "metric_help");
         BigCounter bigCounter = new BigCounter("metric_name", BigInteger.ZERO, ImmutableMap.of("type", "cavendish"), "metric_help");
-        assertEquals(counter.getMetricExposition(), bigCounter.getMetricExposition());
-        assertEquals(counter.getMetricExposition(), expected);
+        assertThat(counter.getMetricExposition()).isEqualTo(bigCounter.getMetricExposition());
+        assertThat(counter.getMetricExposition()).isEqualTo(expected);
     }
 
     @Test
@@ -66,7 +66,7 @@ public class TestMetricExpositions
                 metric_name 0.0
                 """;
 
-        assertEquals(new Gauge("metric_name", 0.0, ImmutableMap.of(), "metric_help").getMetricExposition(), expected);
+        assertThat(new Gauge("metric_name", 0.0, ImmutableMap.of(), "metric_help").getMetricExposition()).isEqualTo(expected);
     }
 
     @Test
@@ -78,7 +78,7 @@ public class TestMetricExpositions
                 metric_name{type="cavendish"} 0.0
                 """;
 
-        assertEquals(new Gauge("metric_name", 0.0, ImmutableMap.of("type", "cavendish"), "metric_help").getMetricExposition(), expected);
+        assertThat(new Gauge("metric_name", 0.0, ImmutableMap.of("type", "cavendish"), "metric_help").getMetricExposition()).isEqualTo(expected);
     }
 
     @Test
@@ -90,7 +90,7 @@ public class TestMetricExpositions
                 metric_name banana
                 """;
 
-        assertEquals(new Info("metric_name", "banana", ImmutableMap.of(), "metric_help").getMetricExposition(), expected);
+        assertThat(new Info("metric_name", "banana", ImmutableMap.of(), "metric_help").getMetricExposition()).isEqualTo(expected);
     }
 
     @Test
@@ -102,7 +102,7 @@ public class TestMetricExpositions
                 metric_name{type="cavendish"} banana
                 """;
 
-        assertEquals(new Info("metric_name", "banana", ImmutableMap.of("type", "cavendish"), "metric_help").getMetricExposition(), expected);
+        assertThat(new Info("metric_name", "banana", ImmutableMap.of("type", "cavendish"), "metric_help").getMetricExposition()).isEqualTo(expected);
     }
 
     @Test
@@ -117,7 +117,7 @@ public class TestMetricExpositions
                 metric_name{quantile="0.5"} 0.25
                 """;
 
-        assertEquals(new Summary("metric_name", 10L, 2.0, 3.0, ImmutableMap.of(0.5, 0.25), ImmutableMap.of(), "metric_help").getMetricExposition(), expected);
+        assertThat(new Summary("metric_name", 10L, 2.0, 3.0, ImmutableMap.of(0.5, 0.25), ImmutableMap.of(), "metric_help").getMetricExposition()).isEqualTo(expected);
     }
 
     @Test
@@ -132,6 +132,6 @@ public class TestMetricExpositions
                 metric_name{fruit="apple",quantile="0.5"} 0.25
                 """;
 
-        assertEquals(new Summary("metric_name", 10L, 2.0, 3.0, ImmutableMap.of(0.5, 0.25), ImmutableMap.of("fruit", "apple"), "metric_help").getMetricExposition(), expected);
+        assertThat(new Summary("metric_name", 10L, 2.0, 3.0, ImmutableMap.of(0.5, 0.25), ImmutableMap.of("fruit", "apple"), "metric_help").getMetricExposition()).isEqualTo(expected);
     }
 }

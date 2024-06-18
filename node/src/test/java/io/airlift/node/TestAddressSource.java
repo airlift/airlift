@@ -20,7 +20,7 @@ import java.util.Optional;
 
 import static io.airlift.node.AddressToHostname.encodeAddressAsHostname;
 import static io.airlift.node.AddressToHostname.tryDecodeHostnameToAddress;
-import static org.testng.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestAddressSource
 {
@@ -36,7 +36,7 @@ public class TestAddressSource
 
     private static void verifyEncoding(String addressString, String encodedHostname)
     {
-        assertEquals(encodeAddressAsHostname(InetAddresses.forString(addressString)), encodedHostname);
-        assertEquals(tryDecodeHostnameToAddress(encodedHostname), Optional.of(InetAddresses.forString(addressString)));
+        assertThat(encodeAddressAsHostname(InetAddresses.forString(addressString))).isEqualTo(encodedHostname);
+        assertThat(tryDecodeHostnameToAddress(encodedHostname)).isEqualTo(Optional.of(InetAddresses.forString(addressString)));
     }
 }

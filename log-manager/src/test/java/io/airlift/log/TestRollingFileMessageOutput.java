@@ -48,12 +48,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardOpenOption.APPEND;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.util.function.Predicate.not;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNotEquals;
-import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertTrue;
 
 @Test(timeOut = 5 * 60 * 1000)
 public class TestRollingFileMessageOutput
@@ -71,32 +67,26 @@ public class TestRollingFileMessageOutput
             BufferedHandler handler = createRollingFileHandler(masterFile.toString(), DataSize.of(1, MEGABYTE), DataSize.of(10, MEGABYTE), NONE, TEXT.createFormatter(TESTING_ANNOTATIONS), new ErrorManager());
             assertLogDirectory(masterFile);
 
-            assertTrue(Files.exists(masterFile));
-            assertTrue(Files.isSymbolicLink(masterFile));
+            assertThat(masterFile).exists();
+            assertThat(masterFile).isSymbolicLink();
 
             handler.publish(new LogRecord(Level.SEVERE, "apple"));
 
             List<String> lines = waitForExactLines(masterFile, 1);
-            assertEquals(lines.size(), 1);
-            assertEquals(
-                    lines.stream()
-                            .filter(line -> line.contains("environment=testing"))
-                            .count(),
-                    1);
-            assertEquals(
-                    lines.stream()
-                            .filter(line -> line.contains("apple"))
-                            .count(),
-                    1);
+            assertThat(lines).hasSize(1);
+            assertThat(lines)
+                    .filteredOn(line -> line.contains("environment=testing"))
+                    .hasSize(1);
+            assertThat(lines)
+                    .filteredOn(line -> line.contains("apple"))
+                    .hasSize(1);
 
             handler.publish(new LogRecord(Level.SEVERE, "banana"));
             lines = waitForExactLines(masterFile, 2);
-            assertEquals(lines.size(), 2);
-            assertEquals(
-                    Files.readAllLines(masterFile, UTF_8).stream()
-                            .filter(line -> line.contains("banana"))
-                            .count(),
-                    1);
+            assertThat(lines).hasSize(2);
+            assertThat(Files.readAllLines(masterFile, UTF_8))
+                    .filteredOn(line -> line.contains("banana"))
+                    .hasSize(1);
 
             assertLogDirectory(masterFile);
             handler.close();
@@ -120,13 +110,13 @@ public class TestRollingFileMessageOutput
             BufferedHandler handler = createRollingFileHandler(masterFile.toString(), DataSize.of(1, MEGABYTE), DataSize.of(10, MEGABYTE), NONE, TEXT.createFormatter(TESTING_ANNOTATIONS), new ErrorManager());
             assertLogDirectory(masterFile);
 
-            assertTrue(Files.exists(masterFile));
-            assertTrue(Files.isSymbolicLink(masterFile));
+            assertThat(masterFile).exists();
+            assertThat(masterFile).isSymbolicLink();
 
             handler.publish(new LogRecord(Level.SEVERE, "apple"));
 
             List<String> lines = waitForExactLines(masterFile, 1);
-            assertEquals(lines.size(), 1);
+            assertThat(lines).hasSize(1);
 
             assertLogDirectory(masterFile);
             handler.close();
@@ -188,8 +178,8 @@ public class TestRollingFileMessageOutput
             Path masterFile = tempDir.resolve("launcher.log");
             BufferedHandler handler = createRollingFileHandler(
                     masterFile.toString(),
-                    DataSize.of(message.length() * 5, BYTE),
-                    DataSize.of(message.length() * 2 + message.length() * 5 + message.length() * 5, BYTE), // 2 messages + 2 closed files
+                    DataSize.of(message.length() * 5L, BYTE),
+                    DataSize.of(message.length() * 2L + message.length() * 5L + message.length() * 5L, BYTE), // 2 messages + 2 closed files
                     NONE,
                     TEXT.createFormatter(ImmutableMap.of()),
                     new ErrorManager());
@@ -272,16 +262,15 @@ public class TestRollingFileMessageOutput
         }
         int expectedCompressedSize = out.toByteArray().length;
         // to make testing easier, we assume that compressed file is greater than one message and less than 5 messages
-        assertTrue(expectedCompressedSize < message.length() * 5);
-        assertTrue(expectedCompressedSize > message.length());
+        assertThat(expectedCompressedSize).isBetween(message.length(), message.length() * 5);
 
         Path tempDir = Files.createTempDirectory("logging-test");
         try {
             Path masterFile = tempDir.resolve("launcher.log");
             BufferedHandler handler = createRollingFileHandler(
                     masterFile.toString(),
-                    DataSize.of(message.length() * 5, BYTE),
-                    DataSize.of(message.length() + message.length() * 5 + expectedCompressedSize, BYTE), // one message, one uncompressed file, one compressed file
+                    DataSize.of(message.length() * 5L, BYTE),
+                    DataSize.of(message.length() + message.length() * 5L + expectedCompressedSize, BYTE), // one message, one uncompressed file, one compressed file
                     GZIP,
                     TEXT.createFormatter(ImmutableMap.of()),
                     new ErrorManager());
@@ -359,12 +348,10 @@ public class TestRollingFileMessageOutput
             handler.publish(new LogRecord(Level.SEVERE, "cherry"));
 
             List<String> lines = waitForExactLines(masterFile, 2);
-            assertEquals(lines.size(), 2);
-            assertEquals(
-                    Files.readAllLines(masterFile, UTF_8).stream()
-                            .filter(line -> line.contains("apple") || line.contains("banana"))
-                            .count(),
-                    2);
+            assertThat(lines.size()).isEqualTo(2);
+            assertThat(Files.readAllLines(masterFile, UTF_8))
+                    .filteredOn(line -> line.contains("apple") || line.contains("banana"))
+                    .hasSize(2);
 
             // these should not throw
             handler.flush();
@@ -390,12 +377,10 @@ public class TestRollingFileMessageOutput
             handler.publish(new LogRecord(Level.SEVERE, "banana"));
 
             List<String> lines = waitForExactLines(masterFile, 2);
-            assertEquals(lines.size(), 2);
-            assertEquals(
-                    Files.readAllLines(masterFile, UTF_8).stream()
-                            .filter(line -> line.contains("apple") || line.contains("banana"))
-                            .count(),
-                    2);
+            assertThat(lines).hasSize(2);
+            assertThat(Files.readAllLines(masterFile, UTF_8))
+                    .filteredOn(line -> line.contains("apple") || line.contains("banana"))
+                    .hasSize(2);
 
             assertLogDirectory(masterFile);
             handler.close();
@@ -405,17 +390,15 @@ public class TestRollingFileMessageOutput
             handler = createRollingFileHandler(masterFile.toString(), DataSize.of(1, MEGABYTE), DataSize.of(10, MEGABYTE), NONE, TEXT.createFormatter(TESTING_ANNOTATIONS), new ErrorManager());
 
             assertLogDirectory(masterFile);
-            assertNotEquals(Files.readSymbolicLink(masterFile), firstLogFile);
+            assertThat(Files.readSymbolicLink(masterFile)).isNotEqualTo(firstLogFile);
 
             handler.publish(new LogRecord(Level.SEVERE, "cherry"));
 
             lines = waitForExactLines(masterFile, 1);
-            assertEquals(lines.size(), 1);
-            assertEquals(
-                    lines.stream()
-                            .filter(line -> line.contains("cherry"))
-                            .count(),
-                    1);
+            assertThat(lines).hasSize(1);
+            assertThat(lines)
+                    .filteredOn(line -> line.contains("cherry"))
+                    .hasSize(1);
 
             assertLogDirectory(masterFile);
             handler.close();
@@ -440,34 +423,30 @@ public class TestRollingFileMessageOutput
             Files.writeString(masterFile, new StaticFormatter().formatMessage(new LogRecord(Level.SEVERE, "apple")), CREATE, APPEND);
             Files.writeString(masterFile, new StaticFormatter().formatMessage(new LogRecord(Level.SEVERE, "banana")), CREATE, APPEND);
 
-            assertTrue(Files.isRegularFile(masterFile));
+            assertThat(masterFile).isRegularFile();
 
             List<String> lines = waitForExactLines(masterFile, 2);
-            assertEquals(lines.size(), 2);
-            assertEquals(
-                    Files.readAllLines(masterFile, UTF_8).stream()
-                            .filter(line -> line.contains("apple") || line.contains("banana"))
-                            .count(),
-                    2);
+            assertThat(lines).hasSize(2);
+            assertThat(Files.readAllLines(masterFile, UTF_8))
+                    .filteredOn(line -> line.contains("apple") || line.contains("banana"))
+                    .hasSize(2);
 
             // open new handler
             BufferedHandler newHandler = createRollingFileHandler(masterFile.toString(), DataSize.of(1, MEGABYTE), DataSize.of(10, MEGABYTE), NONE, TEXT.createFormatter(TESTING_ANNOTATIONS), new ErrorManager());
             assertLogDirectory(masterFile);
 
-            assertTrue(Files.isSymbolicLink(masterFile));
+            assertThat(masterFile).isSymbolicLink();
             // should be tracking legacy file and new file
-            assertEquals(((RollingFileMessageOutput) newHandler.getMessageOutput()).getFiles().size(), 2);
+            assertThat(((RollingFileMessageOutput) newHandler.getMessageOutput()).getFiles().size()).isEqualTo(2);
 
             newHandler.publish(new LogRecord(Level.SEVERE, "cherry"));
             newHandler.publish(new LogRecord(Level.SEVERE, "date"));
 
             lines = waitForExactLines(masterFile, 2);
-            assertEquals(lines.size(), 2);
-            assertEquals(
-                    lines.stream()
-                            .filter(line -> line.contains("cherry") || line.contains("date"))
-                            .count(),
-                    2);
+            assertThat(lines).hasSize(2);
+            assertThat(lines)
+                    .filteredOn(line -> line.contains("cherry") || line.contains("date"))
+                    .hasSize(2);
 
             assertLogDirectory(masterFile);
             newHandler.close();
@@ -513,21 +492,20 @@ public class TestRollingFileMessageOutput
     private static void assertLogDirectory(Path masterFile)
             throws Exception
     {
-        assertTrue(Files.isDirectory(masterFile.getParent()));
-        assertTrue(Files.isSymbolicLink(masterFile));
+        assertThat(masterFile.getParent()).isDirectory();
+        assertThat(masterFile).isSymbolicLink();
 
         Path symbolicLinkTarget = Files.readSymbolicLink(masterFile);
-        assertFalse(symbolicLinkTarget.isAbsolute());
-        assertEquals(symbolicLinkTarget.getNameCount(), 1);
-        assertNull(symbolicLinkTarget.getParent());
+        assertThat(symbolicLinkTarget).isRelative();
+        assertThat(symbolicLinkTarget.getNameCount()).isEqualTo(1);
+        assertThat(symbolicLinkTarget).hasNoParentRaw();
 
         List<Path> logFiles = Files.list(masterFile.getParent())
                 .filter(not(masterFile::equals))
                 .collect(toImmutableList());
         for (Path logFile : logFiles) {
-            assertFalse(Files.isSymbolicLink(logFile));
-            assertTrue(Files.isRegularFile(logFile));
-            assertTrue(parseHistoryLogFileName(masterFile.getFileName().toString(), logFile.getFileName().toString()).isPresent());
+            assertThat(logFile).isRegularFile();
+            assertThat(parseHistoryLogFileName(masterFile.getFileName().toString(), logFile.getFileName().toString()).isPresent()).isTrue();
         }
     }
 
@@ -535,18 +513,18 @@ public class TestRollingFileMessageOutput
             throws Exception
     {
         Set<LogFileName> compressedFileNames = waitForCompression((RollingFileMessageOutput) handler.getMessageOutput(), expectedFileCount);
-        assertEquals(compressedFileNames.size(), expectedFileCount - 1);
+        assertThat(compressedFileNames).hasSize(expectedFileCount - 1);
 
         for (LogFileName compressedFileName : compressedFileNames) {
             Path compressedFile = masterFile.resolveSibling(compressedFileName.getFileName());
 
-            assertEquals(Files.size(compressedFile), expectedCompressedSize);
+            assertThat(compressedFile).hasSize(expectedCompressedSize);
 
             List<String> lines = new GzippedByteSource(asByteSource(compressedFile))
                     .asCharSource(UTF_8)
                     .readLines();
-            assertEquals(lines.size(), expectedLineCount);
-            assertTrue(lines.stream().allMatch(message.trim()::equals));
+            assertThat(lines).hasSize(expectedLineCount);
+            assertThat(lines).allMatch(message.trim()::equals);
         }
     }
 
@@ -554,11 +532,13 @@ public class TestRollingFileMessageOutput
             throws Exception
     {
         Set<LogFileName> files = waitForExactFiles((RollingFileMessageOutput) handler.getMessageOutput(), expectedFileCount);
-        assertEquals(files.size(), expectedFileCount);
+        assertThat(files).hasSize(expectedFileCount);
 
         List<String> lines = waitForExactLines(masterFile, expectedLines);
-        assertEquals(lines.size(), expectedLines);
-        assertEquals(Files.size(masterFile), (expectedLines) * lineSize);
+        assertThat(lines)
+                .hasSize(expectedLines);
+        assertThat(masterFile)
+                .hasSize((long) expectedLines * lineSize);
     }
 
     private static List<String> waitForExactLines(Path masterFile, int exactCount)

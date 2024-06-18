@@ -22,7 +22,7 @@ import java.net.URI;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static jakarta.ws.rs.core.Response.Status.OK;
-import static org.testng.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Test(singleThreaded = true)
 public class TestServer
@@ -70,7 +70,7 @@ public class TestServer
                 prepareGet().setUri(uriFor("/v1/jmx/mbean")).build(),
                 createStatusResponseHandler());
 
-        assertEquals(response.getStatusCode(), OK.getStatusCode());
+        assertThat(response.getStatusCode()).isEqualTo(OK.getStatusCode());
     }
 
     private URI uriFor(String path)

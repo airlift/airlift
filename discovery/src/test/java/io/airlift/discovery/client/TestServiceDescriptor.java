@@ -30,8 +30,7 @@ import static io.airlift.discovery.client.ServiceDescriptor.serviceDescriptor;
 import static io.airlift.json.JsonCodec.jsonCodec;
 import static io.airlift.testing.EquivalenceTester.equivalenceTester;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestServiceDescriptor
 {
@@ -57,12 +56,12 @@ public class TestServiceDescriptor
     @Test
     public void testToString()
     {
-        assertNotNull(new ServiceDescriptor(UUID.fromString("12345678-1234-1234-1234-123456789012"),
+        assertThat(new ServiceDescriptor(UUID.fromString("12345678-1234-1234-1234-123456789012"),
                 "node",
                 "type",
                 "pool",
                 "location",
-                ServiceState.RUNNING, ImmutableMap.of("a", "apple", "b", "banana")));
+                ServiceState.RUNNING, ImmutableMap.of("a", "apple", "b", "banana"))).isNotNull();
     }
 
     @Test
@@ -143,12 +142,12 @@ public class TestServiceDescriptor
 
     private static void assertDescriptorEquals(ServiceDescriptor expected, ServiceDescriptor actual)
     {
-        assertEquals(actual, expected);
-        assertEquals(actual.getId(), expected.getId());
-        assertEquals(actual.getNodeId(), expected.getNodeId());
-        assertEquals(actual.getType(), expected.getType());
-        assertEquals(actual.getPool(), expected.getPool());
-        assertEquals(actual.getLocation(), expected.getLocation());
-        assertEquals(actual.getProperties(), expected.getProperties());
+        assertThat(actual).isEqualTo(expected);
+        assertThat(actual.getId()).isEqualTo(expected.getId());
+        assertThat(actual.getNodeId()).isEqualTo(expected.getNodeId());
+        assertThat(actual.getType()).isEqualTo(expected.getType());
+        assertThat(actual.getPool()).isEqualTo(expected.getPool());
+        assertThat(actual.getLocation()).isEqualTo(expected.getLocation());
+        assertThat(actual.getProperties()).isEqualTo(expected.getProperties());
     }
 }

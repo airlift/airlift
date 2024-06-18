@@ -29,7 +29,7 @@ import java.security.spec.ECGenParameterSpec;
 
 import static com.google.common.io.BaseEncoding.base16;
 import static io.airlift.security.csr.SignatureAlgorithmIdentifier.findSignatureAlgorithmIdentifier;
-import static org.testng.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestCertificationRequest
 {
@@ -49,19 +49,17 @@ public class TestCertificationRequest
         byte[] signature = certificationRequestInfo.sign(signatureAlgorithmIdentifier, keyPair.getPrivate());
 
         CertificationRequest certificationRequest = new CertificationRequest(certificationRequestInfo, signatureAlgorithmIdentifier, signature);
-        assertEquals(certificationRequest.getCertificationRequestInfo(), certificationRequestInfo);
-        assertEquals(certificationRequest.getSignatureAlgorithmIdentifier(), signatureAlgorithmIdentifier);
-        assertEquals(base16().encode(certificationRequest.getSignature()), base16().encode(signature));
-        assertEquals(certificationRequest, certificationRequest);
-        assertEquals(certificationRequest.hashCode(), certificationRequest.hashCode());
+        assertThat(certificationRequest.getCertificationRequestInfo()).isEqualTo(certificationRequestInfo);
+        assertThat(certificationRequest.getSignatureAlgorithmIdentifier()).isEqualTo(signatureAlgorithmIdentifier);
+        assertThat(base16().encode(certificationRequest.getSignature())).isEqualTo(base16().encode(signature));
+        assertThat(certificationRequest).isEqualTo(certificationRequest);
+        assertThat(certificationRequest.hashCode()).isEqualTo(certificationRequest.hashCode());
 
         PKCS10CertificationRequest expectedCertificationRequest = new PKCS10CertificationRequest(new org.bouncycastle.asn1.pkcs.CertificationRequest(
                 new org.bouncycastle.asn1.pkcs.CertificationRequestInfo(new X500Name(name), SubjectPublicKeyInfo.getInstance(keyPair.getPublic().getEncoded()), new DERSet()),
                 new DefaultSignatureAlgorithmIdentifierFinder().find("SHA256withECDSA"),
                 new DERBitString(signature)));
 
-        assertEquals(
-                base16().encode(certificationRequest.getEncoded()),
-                base16().encode(expectedCertificationRequest.getEncoded()));
+        assertThat(base16().encode(certificationRequest.getEncoded())).isEqualTo(base16().encode(expectedCertificationRequest.getEncoded()));
     }
 }

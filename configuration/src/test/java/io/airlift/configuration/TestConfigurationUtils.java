@@ -9,7 +9,6 @@ import java.util.Map;
 
 import static io.airlift.configuration.ConfigurationUtils.replaceEnvironmentVariables;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.testng.Assert.assertEquals;
 
 public class TestConfigurationUtils
 {
@@ -59,7 +58,7 @@ public class TestConfigurationUtils
                 .put("no-recursive-replacement", "env-first:${ENV:SECOND}:, env-second:${ENV:FIRST}")
                 .build();
 
-        assertEquals(actual, expected);
+        assertThat(actual).isEqualTo(expected);
 
         assertThat(errors).containsExactly(
                 "Configuration property 'peach' references unset environment variable 'PEACH'",

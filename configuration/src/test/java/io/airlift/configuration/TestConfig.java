@@ -47,9 +47,10 @@ import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.fail;
+import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.within;
 
 public class TestConfig
 {
@@ -121,7 +122,7 @@ public class TestConfig
                 new StringOptionDefaults("default string")));
 
         Config1 config = injector.getInstance(Config1.class);
-        assertEquals("default string", config.getStringOption());
+        assertThat("default string").isEqualTo(config.getStringOption());
     }
 
     @Test
@@ -133,7 +134,7 @@ public class TestConfig
                 new StringOptionDefaults("default string")));
 
         Config1 config = injector.getInstance(Key.get(Config1.class, MyAnnotation.class));
-        assertEquals("default string", config.getStringOption());
+        assertThat("default string").isEqualTo(config.getStringOption());
     }
 
     @Test
@@ -145,7 +146,7 @@ public class TestConfig
                 new StringOptionDefaults("default string")));
 
         Config1 config = injector.getInstance(Key.get(Config1.class, named("boo")));
-        assertEquals("default string", config.getStringOption());
+        assertThat("default string").isEqualTo(config.getStringOption());
     }
 
     @Test
@@ -159,7 +160,7 @@ public class TestConfig
                 new StringOptionDefaults("final default string")));
 
         Config1 config = injector.getInstance(Config1.class);
-        assertEquals("final default string", config.getStringOption());
+        assertThat("final default string").isEqualTo(config.getStringOption());
     }
 
     @Test
@@ -176,27 +177,27 @@ public class TestConfig
 
     private static void verifyConfig(Config1 config)
     {
-        assertEquals("a string", config.getStringOption());
-        assertEquals(true, config.getBooleanOption());
-        assertEquals(Boolean.TRUE, config.getBoxedBooleanOption());
-        assertEquals(Byte.MAX_VALUE, config.getByteOption());
-        assertEquals(Byte.valueOf(Byte.MAX_VALUE), config.getBoxedByteOption());
-        assertEquals(Short.MAX_VALUE, config.getShortOption());
-        assertEquals(Short.valueOf(Short.MAX_VALUE), config.getBoxedShortOption());
-        assertEquals(Integer.MAX_VALUE, config.getIntegerOption());
-        assertEquals(Integer.valueOf(Integer.MAX_VALUE), config.getBoxedIntegerOption());
-        assertEquals(Long.MAX_VALUE, config.getLongOption());
-        assertEquals(Long.valueOf(Long.MAX_VALUE), config.getBoxedLongOption());
-        assertEquals(Float.MAX_VALUE, config.getFloatOption(), 0);
-        assertEquals(Float.MAX_VALUE, config.getBoxedFloatOption());
-        assertEquals(Double.MAX_VALUE, config.getDoubleOption(), 0);
-        assertEquals(Double.MAX_VALUE, config.getBoxedDoubleOption());
-        assertEquals(FOO, config.getMyEnumOption());
-        assertEquals(BAR, config.getMyEnumSecondOption());
-        assertEquals(config.getValueClassOption().getValue(), "a value class");
-        assertEquals(config.getMyEnumList(), ImmutableList.of(BAR, FOO));
-        assertEquals(config.getMyEnumSet(), ImmutableSet.of(BAR, FOO));
-        assertEquals(config.getMyIntegerList(), ImmutableList.of(10, 12, 14, 16));
+        assertThat("a string").isEqualTo(config.getStringOption());
+        assertThat(true).isEqualTo(config.getBooleanOption());
+        assertThat(Boolean.TRUE).isEqualTo(config.getBoxedBooleanOption());
+        assertThat(Byte.MAX_VALUE).isEqualTo(config.getByteOption());
+        assertThat(Byte.valueOf(Byte.MAX_VALUE)).isEqualTo(config.getBoxedByteOption());
+        assertThat(Short.MAX_VALUE).isEqualTo(config.getShortOption());
+        assertThat(Short.valueOf(Short.MAX_VALUE)).isEqualTo(config.getBoxedShortOption());
+        assertThat(Integer.MAX_VALUE).isEqualTo(config.getIntegerOption());
+        assertThat(Integer.valueOf(Integer.MAX_VALUE)).isEqualTo(config.getBoxedIntegerOption());
+        assertThat(Long.MAX_VALUE).isEqualTo(config.getLongOption());
+        assertThat(Long.valueOf(Long.MAX_VALUE)).isEqualTo(config.getBoxedLongOption());
+        assertThat(Float.MAX_VALUE).isCloseTo(config.getFloatOption(), within(0f));
+        assertThat(Float.MAX_VALUE).isEqualTo(config.getBoxedFloatOption());
+        assertThat(Double.MAX_VALUE).isCloseTo(config.getDoubleOption(), within(0.));
+        assertThat(Double.MAX_VALUE).isEqualTo(config.getBoxedDoubleOption());
+        assertThat(FOO).isEqualTo(config.getMyEnumOption());
+        assertThat(BAR).isEqualTo(config.getMyEnumSecondOption());
+        assertThat(config.getValueClassOption().getValue()).isEqualTo("a value class");
+        assertThat(config.getMyEnumList()).isEqualTo(ImmutableList.of(BAR, FOO));
+        assertThat(config.getMyEnumSet()).isEqualTo(ImmutableSet.of(BAR, FOO));
+        assertThat(config.getMyIntegerList()).isEqualTo(ImmutableList.of(10, 12, 14, 16));
     }
 
     @Test
@@ -216,13 +217,13 @@ public class TestConfig
     public void testConfigGlobalDefaults()
             throws Exception
     {
-        int globalDefaultValue = 1;
+        byte globalDefaultValue = 1;
         int defaultValue = 2;
         int customValue = 3;
 
         Module module = binder -> {
             configBinder(binder).bindConfigGlobalDefaults(Config1.class, (config -> {
-                config.setByteOption((byte) globalDefaultValue);
+                config.setByteOption(globalDefaultValue);
                 config.setIntegerOption(globalDefaultValue);
                 config.setLongOption(globalDefaultValue);
             }));
@@ -236,9 +237,9 @@ public class TestConfig
         Injector injector = createInjector(ImmutableMap.of("longOption", "" + customValue), module);
 
         Config1 config = injector.getInstance(Key.get(Config1.class, MyAnnotation.class));
-        assertEquals(config.getByteOption(), globalDefaultValue);
-        assertEquals(config.getIntegerOption(), defaultValue);
-        assertEquals(config.getLongOption(), customValue);
+        assertThat(config.getByteOption()).isEqualTo(globalDefaultValue);
+        assertThat(config.getIntegerOption()).isEqualTo(defaultValue);
+        assertThat(config.getLongOption()).isEqualTo(customValue);
     }
 
     @Test
@@ -260,13 +261,11 @@ public class TestConfig
         verifyConfig(injector.getInstance(Config1.class));
         verifyConfig(injector.getInstance(Key.get(Config1.class, MyAnnotation.class)));
 
-        assertEquals(seenBindings.size(), 3);
-        assertEquals(
-                ImmutableSet.copyOf(seenBindings),
-                ImmutableSet.of(
-                        new ConfigurationBinding<>(Key.get(Config1.class), Config1.class, Optional.empty()),
-                        new ConfigurationBinding<>(Key.get(Config1.class, MyAnnotation.class), Config1.class, Optional.empty()),
-                        new ConfigurationBinding<>(Key.get(AnotherConfig.class), AnotherConfig.class, Optional.empty())));
+        assertThat(seenBindings).hasSize(3);
+        assertThat(ImmutableSet.copyOf(seenBindings)).isEqualTo(ImmutableSet.of(
+                new ConfigurationBinding<>(Key.get(Config1.class), Config1.class, Optional.empty()),
+                new ConfigurationBinding<>(Key.get(Config1.class, MyAnnotation.class), Config1.class, Optional.empty()),
+                new ConfigurationBinding<>(Key.get(AnotherConfig.class), AnotherConfig.class, Optional.empty())));
     }
 
     @Test
@@ -299,12 +298,8 @@ public class TestConfig
             }
         };
 
-        assertEquals(
-                createInjector(ImmutableMap.of("value", "a"), module).getInstance(String.class),
-                "used value a");
-        assertEquals(
-                createInjector(ImmutableMap.of("value", "b"), module).getInstance(String.class),
-                "used value b");
+        assertThat(createInjector(ImmutableMap.of("value", "a"), module).getInstance(String.class)).isEqualTo("used value a");
+        assertThat(createInjector(ImmutableMap.of("value", "b"), module).getInstance(String.class)).isEqualTo("used value b");
         assertThatThrownBy(() -> createInjector(ImmutableMap.of("value", "c"), module))
                 .hasStackTraceContaining("Not supported value: C");
     }
