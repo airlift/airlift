@@ -20,12 +20,11 @@ import com.google.inject.Module;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
 import io.airlift.configuration.Config;
 import io.airlift.configuration.ConfigurationAwareModule;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import static com.google.inject.name.Names.named;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
 
 public class TestConfigurationAwareModule
 {
@@ -38,9 +37,9 @@ public class TestConfigurationAwareModule
                 .setRequiredConfigurationProperty("bar.enabled", "true")
                 .initialize();
 
-        assertEquals(injector.getInstance(Key.get(String.class, named("foo"))), "fooInstance");
-        assertEquals(injector.getInstance(Key.get(String.class, named("bar"))), "barInstance");
-        assertEquals(injector.getInstance(Key.get(String.class, named("abc"))), "abcInstance");
+        assertThat(injector.getInstance(Key.get(String.class, named("foo")))).isEqualTo("fooInstance");
+        assertThat(injector.getInstance(Key.get(String.class, named("bar")))).isEqualTo("barInstance");
+        assertThat(injector.getInstance(Key.get(String.class, named("abc")))).isEqualTo("abcInstance");
     }
 
     @Test
@@ -63,7 +62,7 @@ public class TestConfigurationAwareModule
                     @Override
                     protected void setup(Binder binder)
                     {
-                        assertTrue(buildConfigObject(FooConfig.class).isFoo());
+                        assertThat(buildConfigObject(FooConfig.class).isFoo()).isTrue();
                         binder.bind(String.class).annotatedWith(named("foo")).toInstance("fooInstance");
                     }
                 },
@@ -72,7 +71,7 @@ public class TestConfigurationAwareModule
                     @Override
                     protected void setup(Binder binder)
                     {
-                        assertTrue(buildConfigObject(BarConfig.class).isBar());
+                        assertThat(buildConfigObject(BarConfig.class).isBar()).isTrue();
                         binder.bind(String.class).annotatedWith(named("bar")).toInstance("barInstance");
                     }
                 });
@@ -83,8 +82,8 @@ public class TestConfigurationAwareModule
                 .setRequiredConfigurationProperty("bar.enabled", "true")
                 .initialize();
 
-        assertEquals(injector.getInstance(Key.get(String.class, named("foo"))), "fooInstance");
-        assertEquals(injector.getInstance(Key.get(String.class, named("bar"))), "barInstance");
+        assertThat(injector.getInstance(Key.get(String.class, named("foo")))).isEqualTo("fooInstance");
+        assertThat(injector.getInstance(Key.get(String.class, named("bar")))).isEqualTo("barInstance");
     }
 
     public static class FooModule
@@ -93,7 +92,7 @@ public class TestConfigurationAwareModule
         @Override
         protected void setup(Binder binder)
         {
-            assertTrue(buildConfigObject(FooConfig.class).isFoo());
+            assertThat(buildConfigObject(FooConfig.class).isFoo()).isTrue();
             install(new BarModule());
             binder.bind(String.class).annotatedWith(named("foo")).toInstance("fooInstance");
             binder.install(new AbcModule());
@@ -106,7 +105,7 @@ public class TestConfigurationAwareModule
         @Override
         protected void setup(Binder binder)
         {
-            assertTrue(buildConfigObject(BarConfig.class).isBar());
+            assertThat(buildConfigObject(BarConfig.class).isBar()).isTrue();
             binder.bind(String.class).annotatedWith(named("bar")).toInstance("barInstance");
         }
     }

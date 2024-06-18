@@ -28,8 +28,9 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.Stage;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -38,16 +39,16 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNull;
-import static org.testng.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
-@Test(singleThreaded = true)
+@TestInstance(TestInstance.Lifecycle.PER_METHOD)
 public class TestLifeCycleManager
 {
     private static final List<String> stateLog = new CopyOnWriteArrayList<>();
 
-    @BeforeMethod
+    @BeforeEach
     public void setup()
     {
         stateLog.clear();
@@ -412,13 +413,13 @@ public class TestLifeCycleManager
                     }
                 });
 
-        assertNull(injector.getInstance(BarInstance.class));
+        assertThat(injector.getInstance(BarInstance.class)).isNull();
 
         LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
 
         lifeCycleManager.start();
         lifeCycleManager.stop();
 
-        assertNull(injector.getInstance(BarInstance.class));
+        assertThat(injector.getInstance(BarInstance.class)).isNull();
     }
 }
