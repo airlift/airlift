@@ -13,11 +13,12 @@
  */
 package io.airlift.concurrent;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.testng.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class TestThreadLocalCache
 {
@@ -32,27 +33,29 @@ public class TestThreadLocalCache
         });
 
         // Load first key
-        assertEquals(cache.get("abc"), "abc0");
-        assertEquals(cache.get("abc"), "abc0");
+        assertThat(cache.get("abc")).isEqualTo("abc0");
+        assertThat(cache.get("abc")).isEqualTo("abc0");
 
         // Load second key
-        assertEquals(cache.get("def"), "def1");
+        assertThat(cache.get("def")).isEqualTo("def1");
 
         // First key should still be there
-        assertEquals(cache.get("abc"), "abc0");
+        assertThat(cache.get("abc")).isEqualTo("abc0");
 
         // Expire first key by exceeding max size
-        assertEquals(cache.get("ghi"), "ghi2");
+        assertThat(cache.get("ghi")).isEqualTo("ghi2");
 
         // First key should now be regenerated
-        assertEquals(cache.get("abc"), "abc3");
+        assertThat(cache.get("abc")).isEqualTo("abc3");
 
         // TODO: add tests for multiple threads
     }
 
-    @Test(expectedExceptions = NullPointerException.class, expectedExceptionsMessageRegExp = "loader returned null value")
+    @Test
     public void testDisallowsNulls()
     {
-        new ThreadLocalCache<>(10, key -> null).get("foo");
+        assertThatThrownBy(() -> new ThreadLocalCache<>(10, key -> null).get("foo"))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("loader returned null value");
     }
 }

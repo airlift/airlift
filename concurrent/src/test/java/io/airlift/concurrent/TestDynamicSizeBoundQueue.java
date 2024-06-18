@@ -19,9 +19,10 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.Uninterruptibles;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,17 +38,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 
+@TestInstance(TestInstance.Lifecycle.PER_METHOD)
 public class TestDynamicSizeBoundQueue
 {
     private ListeningExecutorService executorService;
 
-    @BeforeMethod
+    @BeforeEach
     public void setUp()
     {
         executorService = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool());
     }
 
-    @AfterMethod
+    @AfterEach
     public void tearDown()
     {
         executorService.shutdownNow();

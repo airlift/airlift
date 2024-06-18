@@ -1,8 +1,9 @@
 package io.airlift.concurrent;
 
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -14,23 +15,22 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.google.common.util.concurrent.Uninterruptibles.awaitUninterruptibly;
 import static java.util.concurrent.Executors.newCachedThreadPool;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestBoundedExecutor
 {
     private ExecutorService executorService;
 
-    @BeforeClass
+    @BeforeAll
     public void setUp()
     {
         executorService = newCachedThreadPool();
     }
 
-    @AfterClass(alwaysRun = true)
+    @AfterAll
     public void tearDown()
     {
         executorService.shutdownNow();
@@ -66,7 +66,7 @@ public class TestBoundedExecutor
             });
         }
 
-        assertTrue(awaitUninterruptibly(initializeLatch, 1, TimeUnit.MINUTES)); // Wait for pre-load tasks to initialize
+        assertThat(awaitUninterruptibly(initializeLatch, 1, TimeUnit.MINUTES)).isTrue(); // Wait for pre-load tasks to initialize
         startLatch.countDown(); // Signal go for stage1 threads
 
         // Concurrently submitted tasks
@@ -83,8 +83,8 @@ public class TestBoundedExecutor
             });
         }
 
-        assertTrue(awaitUninterruptibly(completeLatch, 1, TimeUnit.MINUTES)); // Wait for tasks to complete
-        assertEquals(counter.get(), totalTasks);
+        assertThat(awaitUninterruptibly(completeLatch, 1, TimeUnit.MINUTES)).isTrue(); // Wait for tasks to complete
+        assertThat(counter.get()).isEqualTo(totalTasks);
     }
 
     @Test
@@ -160,7 +160,7 @@ public class TestBoundedExecutor
             });
         }
 
-        assertTrue(awaitUninterruptibly(initializeLatch, 1, TimeUnit.MINUTES)); // Wait for pre-load tasks to initialize
+        assertThat(awaitUninterruptibly(initializeLatch, 1, TimeUnit.MINUTES)).isTrue(); // Wait for pre-load tasks to initialize
         startLatch.countDown(); // Signal go for stage1 threads
 
         // Concurrently submitted tasks
@@ -179,8 +179,8 @@ public class TestBoundedExecutor
             });
         }
 
-        assertTrue(awaitUninterruptibly(completeLatch, 1, TimeUnit.MINUTES)); // Wait for tasks to complete
+        assertThat(awaitUninterruptibly(completeLatch, 1, TimeUnit.MINUTES)).isTrue(); // Wait for tasks to complete
 
-        assertFalse(failed.get());
+        assertThat(failed.get()).isFalse();
     }
 }
