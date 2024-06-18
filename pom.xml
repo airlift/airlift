@@ -350,5 +350,21 @@
                 </plugin>
             </plugins>
         </pluginManagement>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <configuration>
+                    <rules>
+                        <bannedDependencies>
+                            <excludes combine.children="append">
+                                <exclude>org.testng:testng</exclude>
+                                <exclude>junit:junit</exclude>
+                            </excludes>
+                        </bannedDependencies>
+                    </rules>
+                </configuration>
+            </plugin>
+        </plugins>
     </build>
 </project>
