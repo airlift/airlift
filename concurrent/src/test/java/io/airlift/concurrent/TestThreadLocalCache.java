@@ -13,11 +13,12 @@
  */
 package io.airlift.concurrent;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class TestThreadLocalCache
 {
@@ -50,9 +51,11 @@ public class TestThreadLocalCache
         // TODO: add tests for multiple threads
     }
 
-    @Test(expectedExceptions = NullPointerException.class, expectedExceptionsMessageRegExp = "loader returned null value")
+    @Test
     public void testDisallowsNulls()
     {
-        new ThreadLocalCache<>(10, key -> null).get("foo");
+        assertThatThrownBy(() -> new ThreadLocalCache<>(10, key -> null).get("foo"))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageMatching("loader returned null value");
     }
 }

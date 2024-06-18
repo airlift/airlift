@@ -18,7 +18,7 @@ package io.airlift.sample;
 import com.google.common.collect.ImmutableList;
 import io.airlift.event.client.InMemoryEventClient;
 import io.airlift.units.Duration;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
 

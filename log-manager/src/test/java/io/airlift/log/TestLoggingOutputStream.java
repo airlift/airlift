@@ -13,12 +13,13 @@
  */
 package io.airlift.log;
 
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import com.google.common.collect.ImmutableMap;
+import org.junit.jupiter.api.Test;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
@@ -27,32 +28,34 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestLoggingOutputStream
 {
-    @Test(dataProvider = "testStripTrailingNewlineDataProvider")
-    public void testStripTrailingNewline(String printed, String logged)
+    @Test
+    public void testStripTrailingNewline()
     {
-        MockHandler handler = new MockHandler();
+        for (Map.Entry<String, String> testCase : testStripTrailingNewlineDataProvider().entrySet()) {
+            String printed = testCase.getKey();
+            String logged = testCase.getValue();
+            MockHandler handler = new MockHandler();
 
-        java.util.logging.Logger mockLogger = java.util.logging.Logger.getAnonymousLogger();
-        mockLogger.setUseParentHandlers(false);
-        mockLogger.setLevel(Level.ALL);
-        mockLogger.addHandler(handler);
+            java.util.logging.Logger mockLogger = java.util.logging.Logger.getAnonymousLogger();
+            mockLogger.setUseParentHandlers(false);
+            mockLogger.setLevel(Level.ALL);
+            mockLogger.addHandler(handler);
 
-        PrintStream stream = new PrintStream(new LoggingOutputStream(new Logger(mockLogger)), true);
-        stream.println(printed);
+            PrintStream stream = new PrintStream(new LoggingOutputStream(new Logger(mockLogger)), true);
+            stream.println(printed);
 
-        assertLog(handler.takeRecord(), Level.INFO, logged);
-        assertThat(handler.isEmpty()).isTrue();
+            assertLog(handler.takeRecord(), Level.INFO, logged);
+            assertThat(handler.isEmpty()).isTrue();
+        }
     }
 
-    @DataProvider
-    public static Object[][] testStripTrailingNewlineDataProvider()
+    public static Map<String, String> testStripTrailingNewlineDataProvider()
     {
-        return new Object[][] {
-                {"Greeting from Warsaw!", "Greeting from Warsaw!"},
-                {"many new lines:\n\n", "many new lines:"},
-                {"trailing spaces and tabs \t", "trailing spaces and tabs"},
-                {"intra \t  n \n rn \r\n whitespace", "intra \t  n \n rn \r\n whitespace"},
-        };
+        return ImmutableMap.of(
+                "Greeting from Warsaw!", "Greeting from Warsaw!",
+                "many new lines:\n\n", "many new lines:",
+                "trailing spaces and tabs \t", "trailing spaces and tabs",
+                "intra \t  n \n rn \r\n whitespace", "intra \t  n \n rn \r\n whitespace");
     }
 
     private void assertLog(LogRecord record, Level level, String message)

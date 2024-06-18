@@ -14,7 +14,7 @@
 package io.airlift.stats.cardinality;
 
 import io.airlift.slice.Slice;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.List;

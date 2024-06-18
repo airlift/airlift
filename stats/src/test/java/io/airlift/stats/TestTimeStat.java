@@ -17,8 +17,10 @@ package io.airlift.stats;
 
 import io.airlift.stats.TimeStat.BlockTimer;
 import io.airlift.testing.TestingTicker;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.parallel.Execution;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -31,14 +33,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.within;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
+import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
 
-@Test(singleThreaded = true)
+@TestInstance(PER_CLASS)
+@Execution(SAME_THREAD)
 public class TestTimeStat
 {
     private static final int VALUES = 1000;
     private TestingTicker ticker;
 
-    @BeforeMethod
+    @BeforeEach
     public void setup()
     {
         ticker = new TestingTicker();

@@ -1,7 +1,7 @@
 package io.airlift.stats;
 
 import io.airlift.units.Duration;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.airlift.testing.Assertions.assertGreaterThanOrEqual;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;

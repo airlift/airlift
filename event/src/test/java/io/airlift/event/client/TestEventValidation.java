@@ -16,7 +16,7 @@
 package io.airlift.event.client;
 
 import com.google.common.base.Joiner;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 

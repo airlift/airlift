@@ -33,9 +33,11 @@ import io.airlift.jaxrs.JaxrsModule;
 import io.airlift.json.JsonCodec;
 import io.airlift.json.JsonModule;
 import io.airlift.node.testing.TestingNodeModule;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.parallel.Execution;
 
 import java.io.IOException;
 import java.net.URI;
@@ -64,8 +66,11 @@ import static java.net.HttpURLConnection.HTTP_NO_CONTENT;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
+import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
 
-@Test(singleThreaded = true)
+@TestInstance(PER_CLASS)
+@Execution(SAME_THREAD)
 public class TestServer
 {
     private HttpClient client;
@@ -78,7 +83,7 @@ public class TestServer
     private InMemoryEventClient eventClient;
     private LifeCycleManager lifeCycleManager;
 
-    @BeforeMethod
+    @BeforeEach
     public void setup()
     {
         Bootstrap app = new Bootstrap(
@@ -102,7 +107,7 @@ public class TestServer
         client = new JettyHttpClient();
     }
 
-    @AfterMethod(alwaysRun = true)
+    @AfterEach
     public void teardown()
     {
         try {

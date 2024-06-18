@@ -17,7 +17,7 @@ package io.airlift.http.client;
 
 import com.google.common.collect.ImmutableList;
 import io.airlift.tracetoken.TraceTokenManager;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 

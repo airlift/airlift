@@ -20,7 +20,7 @@ import com.google.inject.Module;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
 import io.airlift.configuration.Config;
 import io.airlift.configuration.ConfigurationAwareModule;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import static com.google.inject.name.Names.named;
 import static org.assertj.core.api.Assertions.assertThat;

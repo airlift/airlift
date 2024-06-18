@@ -5,7 +5,8 @@ import com.google.common.collect.Multiset;
 import com.google.common.io.ByteStreams;
 import com.google.common.net.HostAndPort;
 import com.google.common.util.concurrent.RateLimiter;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,6 +15,7 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.ErrorManager;
 import java.util.logging.Formatter;
 import java.util.logging.Level;
@@ -22,7 +24,7 @@ import java.util.logging.LogRecord;
 import static io.airlift.log.Format.TEXT;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Test(timeOut = 5 * 60 * 1000)
+@Timeout(value = 5, unit = TimeUnit.MINUTES)
 public class TestSocketHandler
 {
     @Test

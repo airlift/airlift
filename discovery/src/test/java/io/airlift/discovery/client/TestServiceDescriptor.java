@@ -20,7 +20,7 @@ import com.google.common.io.Resources;
 import io.airlift.json.JsonCodec;
 import io.airlift.node.NodeConfig;
 import io.airlift.node.NodeInfo;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 import java.util.UUID;

@@ -4,14 +4,14 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Scopes;
-import org.testng.annotations.BeforeMethod;
+import org.junit.jupiter.api.BeforeEach;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 
 public class TestMultiEventModule
         extends AbstractTestMultiEventClient
 {
-    @BeforeMethod
+    @BeforeEach
     public void setUp()
             throws Exception
     {

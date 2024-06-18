@@ -15,7 +15,7 @@
  */
 package io.airlift.discovery.client;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.airlift.testing.EquivalenceTester.equivalenceTester;
 

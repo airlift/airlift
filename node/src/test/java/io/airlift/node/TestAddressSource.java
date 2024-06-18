@@ -14,7 +14,7 @@
 package io.airlift.node;
 
 import com.google.common.net.InetAddresses;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
 

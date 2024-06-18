@@ -16,7 +16,7 @@
 package io.airlift.testing;
 
 import com.google.common.collect.Sets;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.Serializable;
 import java.util.Arrays;

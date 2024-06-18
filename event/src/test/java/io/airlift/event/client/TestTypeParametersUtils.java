@@ -16,7 +16,7 @@
  */
 package io.airlift.event.client;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;

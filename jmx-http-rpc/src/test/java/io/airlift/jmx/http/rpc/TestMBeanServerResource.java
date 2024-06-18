@@ -26,9 +26,11 @@ import io.airlift.http.server.testing.TestingHttpServer;
 import io.airlift.http.server.testing.TestingHttpServerModule;
 import io.airlift.json.JsonModule;
 import io.airlift.node.testing.TestingNodeModule;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.parallel.Execution;
 import org.weakref.jmx.MBeanExporter;
 import org.weakref.jmx.Managed;
 
@@ -47,9 +49,12 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
+import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
 import static org.weakref.jmx.ObjectNames.generatedNameOf;
 
-@Test(singleThreaded = true)
+@TestInstance(PER_CLASS)
+@Execution(SAME_THREAD)
 public class TestMBeanServerResource
 {
     private final MBeanServer platformMBeanServer = ManagementFactory.getPlatformMBeanServer();
@@ -58,7 +63,7 @@ public class TestMBeanServerResource
     private TestMBean testMBean;
     private ObjectName testMBeanName;
 
-    @BeforeMethod
+    @BeforeEach
     public void setup()
             throws Exception
     {
@@ -90,7 +95,7 @@ public class TestMBeanServerResource
         mbeanServerConnection = connect.getMBeanServerConnection();
     }
 
-    @AfterMethod(alwaysRun = true)
+    @AfterEach
     public void teardown()
             throws Exception
     {

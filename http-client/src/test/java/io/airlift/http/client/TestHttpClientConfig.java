@@ -23,7 +23,7 @@ import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 import jakarta.validation.constraints.NotNull;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;

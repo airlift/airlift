@@ -19,9 +19,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.discovery.client.testing.InMemoryDiscoveryClient;
 import io.airlift.node.NodeInfo;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 
 import java.util.UUID;
 import java.util.concurrent.ScheduledExecutorService;
@@ -30,7 +31,9 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
 import static io.airlift.testing.Assertions.assertEqualsIgnoreOrder;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 
+@TestInstance(PER_CLASS)
 public class TestCachingServiceSelector
 {
     private static final ServiceDescriptor APPLE_1_SERVICE = new ServiceDescriptor(UUID.randomUUID(), "node-A", "apple", "pool", "location", ServiceState.RUNNING, ImmutableMap.of("a", "apple"));
@@ -41,7 +44,7 @@ public class TestCachingServiceSelector
     private ScheduledExecutorService executor;
     private NodeInfo nodeInfo;
 
-    @BeforeClass
+    @BeforeAll
     protected void setUp()
             throws Exception
     {
@@ -49,7 +52,7 @@ public class TestCachingServiceSelector
         nodeInfo = new NodeInfo("environment");
     }
 
-    @AfterClass(alwaysRun = true)
+    @AfterAll
     public void tearDown()
             throws Exception
     {

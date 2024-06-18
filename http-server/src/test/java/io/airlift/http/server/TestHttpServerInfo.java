@@ -17,7 +17,7 @@ package io.airlift.http.server;
 
 import io.airlift.node.NodeConfig;
 import io.airlift.node.NodeInfo;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.URI;

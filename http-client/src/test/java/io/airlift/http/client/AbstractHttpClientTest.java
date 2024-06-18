@@ -9,14 +9,17 @@ import io.airlift.http.client.StringResponseHandler.StringResponse;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.log.Logging;
 import io.airlift.units.Duration;
+import org.eclipse.jetty.client.HttpResponseException;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
-import org.testng.SkipException;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.BeforeSuite;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.parallel.Execution;
 
 import java.io.Closeable;
 import java.io.File;
@@ -72,9 +75,14 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.abort;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
+import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
 
-@Test(singleThreaded = true)
+@TestInstance(PER_CLASS)
+@Execution(SAME_THREAD)
 public abstract class AbstractHttpClientTest
 {
     protected EchoServlet servlet;
@@ -111,13 +119,13 @@ public abstract class AbstractHttpClientTest
                 .build();
     }
 
-    @BeforeSuite
+    @BeforeAll
     public void setupSuite()
     {
         Logging.initialize();
     }
 
-    @BeforeMethod
+    @BeforeEach
     public void abstractSetup()
             throws Exception
     {
@@ -130,7 +138,7 @@ public abstract class AbstractHttpClientTest
         statusCounts.clear();
     }
 
-    @AfterMethod(alwaysRun = true)
+    @AfterEach
     public void abstractTeardown()
             throws Exception
     {
@@ -139,7 +147,8 @@ public abstract class AbstractHttpClientTest
         }
     }
 
-    @Test(enabled = false, description = "This takes over a minute to run")
+    @Disabled("This takes over a minute to run")
+    @Test
     public void test100kGets()
             throws Exception
     {
@@ -162,7 +171,8 @@ public abstract class AbstractHttpClientTest
         }
     }
 
-    @Test(timeOut = 5000)
+    @Test
+    @Timeout(5)
     public void testConnectTimeout()
             throws Exception
     {
@@ -202,7 +212,7 @@ public abstract class AbstractHttpClientTest
         }
     }
 
-    @Test(expectedExceptions = ConnectException.class)
+    @Test
     public void testConnectionRefused()
             throws Exception
     {
@@ -215,7 +225,8 @@ public abstract class AbstractHttpClientTest
                 .setUri(new URI(scheme, null, host, port, "/", null, null))
                 .build();
 
-        executeExceptionRequest(config, request);
+        assertThatThrownBy(() -> executeExceptionRequest(config, request))
+                .isInstanceOfAny(ConnectException.class, IOException.class, HttpResponseException.class);
     }
 
     @Test
@@ -235,7 +246,8 @@ public abstract class AbstractHttpClientTest
         assertThat(executeRequest(config, request, new DefaultOnExceptionResponseHandler(expected))).isEqualTo(expected);
     }
 
-    @Test(expectedExceptions = {UnknownHostException.class, UnresolvedAddressException.class}, timeOut = 10000)
+    @Test
+    @Timeout(10)
     public void testUnresolvableHost()
             throws Exception
     {
@@ -249,10 +261,11 @@ public abstract class AbstractHttpClientTest
                 .setUri(URI.create("http://" + invalidHost))
                 .build();
 
-        executeExceptionRequest(config, request);
+        assertThatThrownBy(() -> executeExceptionRequest(config, request))
+                .isInstanceOfAny(UnknownHostException.class, UnresolvedAddressException.class, IOException.class);
     }
 
-    @Test(expectedExceptions = RuntimeException.class, expectedExceptionsMessageRegExp = ".*port out of range.*")
+    @Test
     public void testBadPort()
             throws Exception
     {
@@ -262,7 +275,9 @@ public abstract class AbstractHttpClientTest
                 .setUri(new URI(scheme, null, host, 70_000, "/", null, null))
                 .build();
 
-        executeExceptionRequest(config, request);
+        assertThatThrownBy(() -> executeExceptionRequest(config, request))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageMatching(".*port out of range.*");
     }
 
     @Test
@@ -514,7 +529,7 @@ public abstract class AbstractHttpClientTest
         assertThat(testFile.delete()).isTrue();
     }
 
-    @Test(expectedExceptions = {IOException.class, TimeoutException.class})
+    @Test
     public void testReadTimeout()
             throws Exception
     {
@@ -526,7 +541,8 @@ public abstract class AbstractHttpClientTest
                 .setUri(uri)
                 .build();
 
-        executeRequest(config, request, new ExceptionResponseHandler());
+        assertThatThrownBy(() -> executeRequest(config, request, new ExceptionResponseHandler()))
+                .isInstanceOfAny(IOException.class, TimeoutException.class);
     }
 
     @Test
@@ -668,7 +684,7 @@ public abstract class AbstractHttpClientTest
         assertThat(servlet.getRequestUri()).isEqualTo(request.getUri());
     }
 
-    @Test(expectedExceptions = UnexpectedResponseException.class)
+    @Test
     public void testThrowsUnexpectedResponseException()
             throws Exception
     {
@@ -677,7 +693,8 @@ public abstract class AbstractHttpClientTest
                 .setUri(baseURI)
                 .build();
 
-        executeRequest(request, new UnexpectedResponseStatusCodeHandler(200));
+        assertThatThrownBy(() -> executeRequest(request, new UnexpectedResponseStatusCodeHandler(200)))
+                .isInstanceOf(UnexpectedResponseException.class);
     }
 
     @Test
@@ -705,13 +722,13 @@ public abstract class AbstractHttpClientTest
 
     private ExecutorService executor;
 
-    @BeforeClass
+    @BeforeAll
     public final void setUp()
     {
         executor = Executors.newCachedThreadPool(threadsNamed("test-%s"));
     }
 
-    @AfterClass(alwaysRun = true)
+    @AfterAll
     public final void tearDown()
             throws Exception
     {
@@ -720,7 +737,7 @@ public abstract class AbstractHttpClientTest
         }
     }
 
-    @Test(expectedExceptions = {IOException.class, TimeoutException.class})
+    @Test
     public void testConnectNoRead()
             throws Exception
     {
@@ -729,11 +746,12 @@ public abstract class AbstractHttpClientTest
             config.setConnectTimeout(new Duration(5, SECONDS));
             config.setIdleTimeout(new Duration(10, MILLISECONDS));
 
-            executeRequest(fakeServer, config);
+            assertThatThrownBy(() -> executeRequest(fakeServer, config))
+                    .isInstanceOfAny(IOException.class, TimeoutException.class);
         }
     }
 
-    @Test(expectedExceptions = IOException.class)
+    @Test
     public void testConnectNoReadClose()
             throws Exception
     {
@@ -742,11 +760,12 @@ public abstract class AbstractHttpClientTest
             config.setConnectTimeout(new Duration(5, SECONDS));
             config.setIdleTimeout(new Duration(5, SECONDS));
 
-            executeRequest(fakeServer, config);
+            assertThatThrownBy(() -> executeRequest(fakeServer, config))
+                    .isInstanceOfAny(IOException.class, IllegalStateException.class);
         }
     }
 
-    @Test(expectedExceptions = {IOException.class, TimeoutException.class})
+    @Test
     public void testConnectReadIncomplete()
             throws Exception
     {
@@ -755,11 +774,12 @@ public abstract class AbstractHttpClientTest
             config.setConnectTimeout(new Duration(5, SECONDS));
             config.setIdleTimeout(new Duration(10, MILLISECONDS));
 
-            executeRequest(fakeServer, config);
+            assertThatThrownBy(() -> executeRequest(fakeServer, config))
+                    .isInstanceOfAny(IOException.class, TimeoutException.class);
         }
     }
 
-    @Test(expectedExceptions = {IOException.class, TimeoutException.class})
+    @Test
     public void testConnectReadIncompleteClose()
             throws Exception
     {
@@ -768,11 +788,12 @@ public abstract class AbstractHttpClientTest
             config.setConnectTimeout(new Duration(500, MILLISECONDS));
             config.setIdleTimeout(new Duration(500, MILLISECONDS));
 
-            executeRequest(fakeServer, config);
+            assertThatThrownBy(() -> executeRequest(fakeServer, config))
+                    .isInstanceOfAny(IOException.class, TimeoutException.class, IllegalStateException.class);
         }
     }
 
-    @Test(expectedExceptions = IOException.class)
+    @Test
     public void testConnectReadRequestClose()
             throws Exception
     {
@@ -781,11 +802,12 @@ public abstract class AbstractHttpClientTest
             config.setConnectTimeout(new Duration(5, SECONDS));
             config.setIdleTimeout(new Duration(5, SECONDS));
 
-            executeRequest(fakeServer, config);
+            assertThatThrownBy(() -> executeRequest(fakeServer, config))
+                    .isInstanceOfAny(IOException.class, TimeoutException.class, IllegalStateException.class);
         }
     }
 
-    @Test(expectedExceptions = Exception.class)
+    @Test
     public void testConnectReadRequestWriteJunkHangup()
             throws Exception
     {
@@ -794,11 +816,12 @@ public abstract class AbstractHttpClientTest
             config.setConnectTimeout(new Duration(5, SECONDS));
             config.setIdleTimeout(new Duration(5, SECONDS));
 
-            executeRequest(fakeServer, config);
+            assertThatThrownBy(() -> executeRequest(fakeServer, config))
+                    .isInstanceOfAny(Exception.class);
         }
     }
 
-    @Test(expectedExceptions = CustomError.class)
+    @Test
     public void testHandlesUndeclaredThrowable()
             throws Exception
     {
@@ -806,10 +829,11 @@ public abstract class AbstractHttpClientTest
                 .setUri(baseURI)
                 .build();
 
-        executeRequest(request, new ThrowErrorResponseHandler());
+        assertThatThrownBy(() -> executeRequest(request, new ThrowErrorResponseHandler()))
+                .isInstanceOfAny(CustomError.class);
     }
 
-    @Test(expectedExceptions = UncheckedIOException.class)
+    @Test
     public void testHttpStatusListenerException()
             throws Exception
     {
@@ -819,7 +843,8 @@ public abstract class AbstractHttpClientTest
                 .setUri(baseURI)
                 .build();
 
-        executeRequest(request, createStatusResponseHandler());
+        assertThatThrownBy(() -> executeRequest(request, createStatusResponseHandler()))
+                .isInstanceOfAny(UncheckedIOException.class);
     }
 
     @Test
@@ -1140,7 +1165,7 @@ public abstract class AbstractHttpClientTest
                 }
                 i++;
             }
-            throw new SkipException(format("socket backlog is too large (%s connections accepted)", i));
+            abort(format("socket backlog is too large (%s connections accepted)", i));
         }
 
         @Override

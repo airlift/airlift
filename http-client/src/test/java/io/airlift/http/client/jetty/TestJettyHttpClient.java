@@ -8,21 +8,21 @@ import io.airlift.http.client.Request;
 import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.TestingRequestFilter;
 import io.airlift.http.client.TestingStatusListener;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 
 public class TestJettyHttpClient
         extends AbstractHttpClientTest
 {
     private JettyHttpClient httpClient;
 
-    @BeforeClass
+    @BeforeAll
     public void setUpHttpClient()
     {
         httpClient = new JettyHttpClient("test-shared", createClientConfig(), ImmutableList.of(new TestingRequestFilter()), ImmutableSet.of(new TestingStatusListener(statusCounts)));
     }
 
-    @AfterClass(alwaysRun = true)
+    @AfterAll
     public void tearDownHttpClient()
     {
         closeQuietly(httpClient);

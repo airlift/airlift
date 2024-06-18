@@ -16,14 +16,14 @@
 package io.airlift.http.server;
 
 import com.google.common.net.InetAddresses;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.net.Inet4Address;
 
 import static io.airlift.testing.EquivalenceTester.comparisonTester;
 import static io.airlift.testing.EquivalenceTester.equivalenceTester;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class TestInet4Network
 {
@@ -43,33 +43,34 @@ public class TestInet4Network
         assertThat(Inet4Network.fromCidr(cidr).toString()).isEqualTo(cidr);
     }
 
-    @DataProvider(name = "invalidCidr")
-    public Object[][] invalidCidrProvider()
+    public String[] invalidCidrProvider()
     {
-        return new Object[][] {
-                {" 0.0.0.0/0"},
-                {"0.0.0.0/0 "},
-                {"x.0.0.0/0"},
-                {"0.x.0.0/0"},
-                {"0.0.x.0/0"},
-                {"0.0.0.x/0"},
-                {"0.0.0.0/x"},
-                {"256.0.0.0/0"},
-                {"0.0.0.256/0"},
-                {"0.0.0.0/33"},
-                {"8.8.8.1/24"},
-                {"1.0.0.0/0"},
-                {"8.0.0"},
-                {"8.0.0.0.0"},
-                {"-8.1.0.0"},
-                {"8.-1.0.0"},
-        };
+        return new String[] {
+                " 0.0.0.0/0",
+                "0.0.0.0/0 ",
+                "x.0.0.0/0",
+                "0.x.0.0/0",
+                "0.0.x.0/0",
+                "0.0.0.x/0",
+                "0.0.0.0/x",
+                "256.0.0.0/0",
+                "0.0.0.256/0",
+                "0.0.0.0/33",
+                "8.8.8.1/24",
+                "1.0.0.0/0",
+                "8.0.0",
+                "8.0.0.0.0",
+                "-8.1.0.0",
+                "8.-1.0.0"};
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class, dataProvider = "invalidCidr")
-    public void testFromCidrInvalid(String cidr)
+    @Test
+    public void testFromCidrInvalid()
     {
-        Inet4Network.fromCidr(cidr);
+        for (String cidr : invalidCidrProvider()) {
+            assertThatThrownBy(() -> Inet4Network.fromCidr(cidr))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
     }
 
     @Test

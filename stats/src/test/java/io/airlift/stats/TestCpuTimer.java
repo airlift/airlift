@@ -1,7 +1,7 @@
 package io.airlift.stats;
 
 import io.airlift.testing.TestingTicker;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.airlift.units.Duration.succinctDuration;
 import static java.util.concurrent.TimeUnit.SECONDS;

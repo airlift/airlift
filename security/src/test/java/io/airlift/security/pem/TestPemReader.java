@@ -13,7 +13,7 @@
  */
 package io.airlift.security.pem;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;

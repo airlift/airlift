@@ -17,8 +17,10 @@ package io.airlift.sample;
 
 import io.airlift.event.client.NullEventClient;
 import jakarta.ws.rs.core.Response;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.parallel.Execution;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -26,14 +28,17 @@ import java.util.Collection;
 import static com.google.common.collect.Lists.newArrayList;
 import static io.airlift.testing.Assertions.assertInstanceOf;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
+import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
 
-@Test(singleThreaded = true)
+@TestInstance(PER_CLASS)
+@Execution(SAME_THREAD)
 public class TestPersonsResource
 {
     private PersonsResource resource;
     private PersonStore store;
 
-    @BeforeMethod
+    @BeforeEach
     public void setup()
     {
         store = new PersonStore(new StoreConfig(), new NullEventClient());

@@ -1,6 +1,6 @@
 package io.airlift.jmx;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;

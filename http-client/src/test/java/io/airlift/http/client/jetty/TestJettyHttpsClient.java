@@ -8,16 +8,18 @@ import io.airlift.http.client.Request;
 import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.TestingRequestFilter;
 import io.airlift.http.client.TestingStatusListener;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.concurrent.TimeoutException;
 
 import static com.google.common.io.Resources.getResource;
 import static io.airlift.http.client.Request.Builder.prepareGet;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class TestJettyHttpsClient
         extends AbstractHttpClientTest
@@ -29,13 +31,13 @@ public class TestJettyHttpsClient
         super("localhost", getResource("localhost.keystore").toString());
     }
 
-    @BeforeClass
+    @BeforeAll
     public void setUpHttpClient()
     {
         httpClient = new JettyHttpClient("test-shared", createClientConfig(), ImmutableList.of(new TestingRequestFilter()), ImmutableSet.of(new TestingStatusListener(statusCounts)));
     }
 
-    @AfterClass(alwaysRun = true)
+    @AfterAll
     public void tearDownHttpClient()
     {
         closeQuietly(httpClient);
@@ -74,7 +76,8 @@ public class TestJettyHttpsClient
     }
 
     // TLS connections seem to have some conditions that do not respect timeouts
-    @Test(invocationCount = 10, successPercentage = 50, timeOut = 20_000)
+    @RepeatedTest(value = 10, failureThreshold = 5)
+    @Timeout(20)
     @Override
     public void testConnectTimeout()
             throws Exception
@@ -82,7 +85,7 @@ public class TestJettyHttpsClient
         super.testConnectTimeout();
     }
 
-    @Test(expectedExceptions = IOException.class)
+    @Test
     public void testCertHostnameMismatch()
             throws Exception
     {
@@ -91,30 +94,7 @@ public class TestJettyHttpsClient
                 .setUri(uri)
                 .build();
 
-        executeRequest(request, new ExceptionResponseHandler());
-    }
-
-    @Override
-    @Test(expectedExceptions = {IOException.class, IllegalStateException.class})
-    public void testConnectReadRequestClose()
-            throws Exception
-    {
-        super.testConnectReadRequestClose();
-    }
-
-    @Override
-    @Test(expectedExceptions = {IOException.class, IllegalStateException.class})
-    public void testConnectNoReadClose()
-            throws Exception
-    {
-        super.testConnectNoReadClose();
-    }
-
-    @Override
-    @Test(expectedExceptions = {IOException.class, TimeoutException.class, IllegalStateException.class})
-    public void testConnectReadIncompleteClose()
-            throws Exception
-    {
-        super.testConnectReadIncompleteClose();
+        assertThatThrownBy(() -> executeRequest(request, new ExceptionResponseHandler()))
+                .isInstanceOf(IOException.class);
     }
 }

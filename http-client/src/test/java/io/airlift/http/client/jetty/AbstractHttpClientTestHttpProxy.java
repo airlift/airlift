@@ -23,9 +23,10 @@ import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.TestingHttpProxy;
 import io.airlift.http.client.TestingRequestFilter;
 import io.airlift.http.client.TestingStatusListener;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -48,7 +49,7 @@ public abstract class AbstractHttpClientTestHttpProxy
         super(host, keystore);
     }
 
-    @BeforeClass
+    @BeforeAll
     public void setUpHttpClient()
             throws Exception
     {
@@ -56,7 +57,7 @@ public abstract class AbstractHttpClientTestHttpProxy
         httpClient = new JettyHttpClient("test-shared", createClientConfig(), ImmutableList.of(new TestingRequestFilter()), ImmutableSet.of(new TestingStatusListener(statusCounts)));
     }
 
-    @AfterClass(alwaysRun = true)
+    @AfterAll
     public void tearDownHttpClient()
             throws Exception
     {
@@ -72,25 +73,12 @@ public abstract class AbstractHttpClientTestHttpProxy
     }
 
     @Override
-    @Test(timeOut = 5000)
+    @Test
+    @Timeout(5)
     public void testConnectTimeout()
             throws Exception
     {
         doTestConnectTimeout(true);
-    }
-
-    @Test(expectedExceptions = IOException.class)
-    public void testConnectionRefused()
-            throws Exception
-    {
-        super.testConnectionRefused();
-    }
-
-    @Test(expectedExceptions = IOException.class)
-    public void testUnresolvableHost()
-            throws Exception
-    {
-        super.testUnresolvableHost();
     }
 
     @Override

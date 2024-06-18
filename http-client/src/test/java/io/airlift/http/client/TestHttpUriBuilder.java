@@ -1,7 +1,7 @@
 package io.airlift.http.client;
 
 import com.google.common.net.HostAndPort;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 
@@ -276,17 +276,19 @@ public class TestHttpUriBuilder
         assertThat(uri.toASCIIString()).isEqualTo("http://[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]:8081/a/b");
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "host starts with a bracket")
+    @Test
     public void testHostWithBracketedIpv6()
     {
-        URI uri = uriBuilder()
+        assertThatThrownBy(() -> uriBuilder()
                 .scheme("http")
                 .host("[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]")
                 .port(8081)
                 .replacePath("/a/b")
-                .build();
+                .build())
+                .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessageContaining("host starts with a bracket");
 
-        assertThat(uri.toASCIIString()).isEqualTo("http://[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]:8081/a/b");
+        // TODO: assertThat(uri.toASCIIString()).isEqualTo("http://[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]:8081/a/b");
     }
 
     @Test

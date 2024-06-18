@@ -15,8 +15,7 @@ package io.airlift.stats.cardinality;
 
 import com.google.common.collect.ImmutableList;
 import io.airlift.slice.Murmur3Hash128;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
@@ -30,51 +29,57 @@ public class TestSparseHll
 {
     private static final int SPARSE_HLL_INSTANCE_SIZE = instanceSize(SparseHll.class);
 
-    @Test(dataProvider = "bits")
-    public void testNumberOfZeros(int indexBitLength)
+    @Test
+    public void testNumberOfZeros()
     {
-        for (int i = 0; i < 64 - indexBitLength; i++) {
-            long hash = 1L << i;
-            int expectedValue = Long.numberOfLeadingZeros(hash << indexBitLength) + 1;
+        for (int indexBitLength : prefixLengths()) {
+            for (int i = 0; i < 64 - indexBitLength; i++) {
+                long hash = 1L << i;
+                int expectedValue = Long.numberOfLeadingZeros(hash << indexBitLength) + 1;
 
-            SparseHll sparseHll = new SparseHll(indexBitLength);
-            sparseHll.insertHash(hash);
-            sparseHll.eachBucket((bucket, value) -> {
-                assertThat(bucket).isEqualTo(0);
-                assertThat(value).isEqualTo(expectedValue);
-            });
+                SparseHll sparseHll = new SparseHll(indexBitLength);
+                sparseHll.insertHash(hash);
+                sparseHll.eachBucket((bucket, value) -> {
+                    assertThat(bucket).isEqualTo(0);
+                    assertThat(value).isEqualTo(expectedValue);
+                });
+            }
         }
     }
 
-    @Test(dataProvider = "bits")
-    public void testMerge(int prefixBitLength)
+    @Test
+    public void testMerge()
             throws Exception
     {
-        // with overlap
-        verifyMerge(prefixBitLength, sequence(0, 100), sequence(50, 150));
-        verifyMerge(prefixBitLength, sequence(50, 150), sequence(0, 100));
+        for (int prefixBitLength : prefixLengths()) {
+            // with overlap
+            verifyMerge(prefixBitLength, sequence(0, 100), sequence(50, 150));
+            verifyMerge(prefixBitLength, sequence(50, 150), sequence(0, 100));
 
-        // no overlap
-        verifyMerge(prefixBitLength, sequence(0, 100), sequence(200, 300));
-        verifyMerge(prefixBitLength, sequence(200, 300), sequence(0, 100));
+            // no overlap
+            verifyMerge(prefixBitLength, sequence(0, 100), sequence(200, 300));
+            verifyMerge(prefixBitLength, sequence(200, 300), sequence(0, 100));
 
-        // idempotent
-        verifyMerge(prefixBitLength, sequence(0, 100), sequence(0, 100));
+            // idempotent
+            verifyMerge(prefixBitLength, sequence(0, 100), sequence(0, 100));
 
-        // multiple overflows (some with same index)
-        verifyMerge(prefixBitLength, ImmutableList.of(29678L, 54004L), ImmutableList.of(64034L, 20591L, 56987L));
-        verifyMerge(prefixBitLength, ImmutableList.of(64034L, 20591L, 56987L), ImmutableList.of(29678L, 54004L));
+            // multiple overflows (some with same index)
+            verifyMerge(prefixBitLength, ImmutableList.of(29678L, 54004L), ImmutableList.of(64034L, 20591L, 56987L));
+            verifyMerge(prefixBitLength, ImmutableList.of(64034L, 20591L, 56987L), ImmutableList.of(29678L, 54004L));
+        }
     }
 
-    @Test(dataProvider = "bits")
-    public void testToDense(int prefixBitLength)
+    @Test
+    public void testToDense()
             throws Exception
     {
-        verifyToDense(prefixBitLength, sequence(0, 10000));
+        for (int prefixBitLength : prefixLengths()) {
+            verifyToDense(prefixBitLength, sequence(0, 10000));
 
-        // special cases with overflows
-        verifyToDense(prefixBitLength, ImmutableList.of(201L, 280L));
-        verifyToDense(prefixBitLength, ImmutableList.of(224L, 271L));
+            // special cases with overflows
+            verifyToDense(prefixBitLength, ImmutableList.of(201L, 280L));
+            verifyToDense(prefixBitLength, ImmutableList.of(224L, 271L));
+        }
     }
 
     @Test
@@ -141,22 +146,8 @@ public class TestSparseHll
         assertSlicesEqual(sparse.toDense().serialize(), expected.serialize());
     }
 
-    @DataProvider(name = "bits")
-    private Object[][] prefixLengths()
+    private int[] prefixLengths()
     {
-        return new Object[][] {
-                new Object[] {4},
-                new Object[] {5},
-                new Object[] {6},
-                new Object[] {7},
-                new Object[] {8},
-                new Object[] {9},
-                new Object[] {10},
-                new Object[] {11},
-                new Object[] {12},
-                new Object[] {13},
-                new Object[] {14},
-                new Object[] {15},
-        };
+        return new int[] {4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
     }
 }

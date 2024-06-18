@@ -51,9 +51,9 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.util.VirtualThreads;
-import org.testng.SkipException;
-import org.testng.annotations.BeforeSuite;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 
 import java.io.IOException;
 import java.net.URI;
@@ -71,7 +71,10 @@ import static io.airlift.http.server.HttpServerBinder.httpServerBinder;
 import static io.airlift.testing.Assertions.assertGreaterThan;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.abort;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 
+@TestInstance(PER_CLASS)
 public abstract class AbstractTestTestingHttpServer
 {
     private final boolean enableVirtualThreads;
@@ -85,7 +88,7 @@ public abstract class AbstractTestTestingHttpServer
         this.enableCaseSensitiveHeaderCache = enableCaseSensitiveHeaderCache;
     }
 
-    @BeforeSuite
+    @BeforeAll
     public void setupSuite()
     {
         Logging.initialize();
@@ -345,7 +348,7 @@ public abstract class AbstractTestTestingHttpServer
     private void skipUnlessJdkHasVirtualThreads()
     {
         if (enableVirtualThreads && !VirtualThreads.areSupported()) {
-            throw new SkipException("Virtual threads are not supported");
+            abort("Virtual threads are not supported");
         }
     }
 

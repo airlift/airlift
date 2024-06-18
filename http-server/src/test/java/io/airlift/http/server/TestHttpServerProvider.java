@@ -43,10 +43,13 @@ import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.BeforeSuite;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.parallel.Execution;
 
 import javax.security.auth.x500.X500Principal;
 
@@ -94,8 +97,11 @@ import static java.nio.file.Files.createTempDirectory;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
+import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
 
-@Test(singleThreaded = true)
+@TestInstance(PER_CLASS)
+@Execution(SAME_THREAD)
 public class TestHttpServerProvider
 {
     private HttpServer server;
@@ -106,13 +112,13 @@ public class TestHttpServerProvider
     private ClientCertificate clientCertificate;
     private HttpServerInfo httpServerInfo;
 
-    @BeforeSuite
+    @BeforeAll
     public void setupSuite()
     {
         Logging.initialize();
     }
 
-    @BeforeMethod
+    @BeforeEach
     public void setup()
             throws IOException
     {
@@ -129,7 +135,7 @@ public class TestHttpServerProvider
         httpServerInfo = createHttpServerInfo();
     }
 
-    @AfterMethod(alwaysRun = true)
+    @AfterEach
     public void teardown()
             throws Exception
     {
@@ -515,7 +521,8 @@ public class TestHttpServerProvider
         }
     }
 
-    @Test(timeOut = 30000)
+    @Test
+    @Timeout(30)
     public void testStop()
             throws Exception
     {

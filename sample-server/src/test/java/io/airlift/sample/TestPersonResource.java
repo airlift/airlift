@@ -19,8 +19,10 @@ import com.google.common.collect.ImmutableList;
 import io.airlift.event.client.InMemoryEventClient;
 import io.airlift.jaxrs.testing.MockUriInfo;
 import jakarta.ws.rs.core.Response;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.parallel.Execution;
 
 import java.net.URI;
 
@@ -28,15 +30,19 @@ import static io.airlift.sample.PersonEvent.personAdded;
 import static io.airlift.sample.PersonEvent.personRemoved;
 import static io.airlift.sample.PersonEvent.personUpdated;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
+import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
 
-@Test(singleThreaded = true)
+@TestInstance(PER_CLASS)
+@Execution(SAME_THREAD)
 public class TestPersonResource
 {
     private PersonResource resource;
     private PersonStore store;
     private InMemoryEventClient eventClient;
 
-    @BeforeMethod
+    @BeforeEach
     public void setup()
     {
         eventClient = new InMemoryEventClient();
@@ -62,10 +68,11 @@ public class TestPersonResource
         assertThat(response.getMetadata().get("Content-Type")).isNull(); // content type is set by JAX-RS based on @Produces
     }
 
-    @Test(expectedExceptions = NullPointerException.class)
+    @Test
     public void testGetNull()
     {
-        resource.get(null, MockUriInfo.from(URI.create("http://localhost/v1/person/1")));
+        assertThatThrownBy(() -> resource.get(null, MockUriInfo.from(URI.create("http://localhost/v1/person/1"))))
+                .isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -83,16 +90,18 @@ public class TestPersonResource
                 personAdded("foo", new Person("foo@example.com", "Mr Foo"))));
     }
 
-    @Test(expectedExceptions = NullPointerException.class)
+    @Test
     public void testPutNullId()
     {
-        resource.put(null, new PersonRepresentation("foo@example.com", "Mr Foo", null));
+        assertThatThrownBy(() -> resource.put(null, new PersonRepresentation("foo@example.com", "Mr Foo", null)))
+                .isInstanceOf(NullPointerException.class);
     }
 
-    @Test(expectedExceptions = NullPointerException.class)
+    @Test
     public void testPutNullValue()
     {
-        resource.put("foo", null);
+        assertThatThrownBy(() -> resource.put("foo", null))
+                .isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -137,9 +146,10 @@ public class TestPersonResource
         assertThat(response.getEntity()).isNull();
     }
 
-    @Test(expectedExceptions = NullPointerException.class)
+    @Test
     public void testDeleteNullId()
     {
-        resource.delete(null);
+        assertThatThrownBy(() -> resource.delete(null))
+                .isInstanceOf(NullPointerException.class);
     }
 }

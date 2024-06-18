@@ -16,7 +16,7 @@
 package io.airlift.http.client;
 
 import com.google.common.collect.ImmutableListMultimap;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 
@@ -24,6 +24,7 @@ import static io.airlift.http.client.Request.Builder.fromRequest;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StaticBodyGenerator.createStaticBodyGenerator;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class TestRequestBuilder
 {
@@ -41,11 +42,13 @@ public class TestRequestBuilder
         assertThat(request.isFollowRedirects()).isFalse();
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "Cannot make requests to HTTP port 0")
+    @Test
     public void testCannotBuildRequestToIllegalPort()
             throws Exception
     {
-        prepareGet().setUri(URI.create("http://example.com:0/"));
+        assertThatThrownBy(() -> prepareGet().setUri(URI.create("http://example.com:0/")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Cannot make requests to HTTP port 0");
     }
 
     @Test

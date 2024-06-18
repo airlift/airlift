@@ -20,7 +20,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import io.airlift.event.client.EventField;
 import io.airlift.event.client.EventType;
 import io.airlift.event.client.JsonEventSerializer;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 

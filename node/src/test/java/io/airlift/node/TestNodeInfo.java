@@ -16,7 +16,7 @@
 package io.airlift.node;
 
 import com.google.common.net.InetAddresses;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.UncheckedIOException;
 import java.net.InetAddress;
@@ -28,6 +28,7 @@ import static io.airlift.node.NodeConfig.AddressSource.IP;
 import static io.airlift.testing.Assertions.assertGreaterThanOrEqual;
 import static io.airlift.testing.Assertions.assertNotEquals;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class TestNodeInfo
 {
@@ -106,27 +107,35 @@ public class TestNodeInfo
         assertThat(nodeInfo.getExternalAddress()).isEqualTo(InetAddress.getLocalHost().getCanonicalHostName());
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "nodeId .*")
+    @Test
     public void testInvalidNodeId()
     {
-        new NodeInfo(ENVIRONMENT, POOL, "abc/123", null, null, null, null, null, null, IP, null);
+        assertThatThrownBy(() -> new NodeInfo(ENVIRONMENT, POOL, "abc/123", null, null, null, null, null, null, IP, null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageMatching("nodeId .*");
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "environment .*")
+    @Test
     public void testInvalidEnvironment()
     {
-        new NodeInfo("ENV", POOL, null, null, null, null, null, null, null, IP, null);
+        assertThatThrownBy(() -> new NodeInfo("ENV", POOL, null, null, null, null, null, null, null, IP, null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageMatching("environment .*");
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "pool .*")
+    @Test
     public void testInvalidPool()
     {
-        new NodeInfo(ENVIRONMENT, "POOL", null, null, null, null, null, null, null, IP, null);
+        assertThatThrownBy(() -> new NodeInfo(ENVIRONMENT, "POOL", null, null, null, null, null, null, null, IP, null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageMatching("pool .*");
     }
 
-    @Test(expectedExceptions = UncheckedIOException.class, expectedExceptionsMessageRegExp = "java.io.FileNotFoundException: invalid.file \\(No such file or directory\\)")
+    @Test
     public void testInvalidAnnotationFile()
     {
-        new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, IP, "invalid.file");
+        assertThatThrownBy(() -> new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, IP, "invalid.file"))
+                .isInstanceOf(UncheckedIOException.class)
+                .hasMessageMatching("java.io.FileNotFoundException: invalid.file \\(No such file or directory\\)");
     }
 }

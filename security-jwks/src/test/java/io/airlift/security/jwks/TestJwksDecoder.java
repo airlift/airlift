@@ -20,7 +20,7 @@ import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.impl.DefaultJwsHeader;
 import io.jsonwebtoken.security.SignatureAlgorithm;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.security.PrivateKey;

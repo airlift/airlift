@@ -4,7 +4,7 @@ import io.airlift.http.client.AbstractHttpClientTest.CaptureExceptionResponseHan
 import io.airlift.http.client.AbstractHttpClientTest.CapturedException;
 import io.airlift.http.client.HttpClient.HttpResponseFuture;
 import io.airlift.http.client.Request;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 import java.util.concurrent.ExecutionException;

@@ -17,7 +17,7 @@ import io.airlift.node.testing.TestingNodeModule;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.lang.annotation.Retention;
 import java.net.URI;

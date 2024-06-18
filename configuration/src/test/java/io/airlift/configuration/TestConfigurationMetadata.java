@@ -20,7 +20,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.inject.ConfigurationException;
 import io.airlift.configuration.ConfigurationMetadata.AttributeMetadata;
 import jakarta.validation.constraints.Min;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,6 +29,7 @@ import java.util.Set;
 
 import static io.airlift.testing.EquivalenceTester.equivalenceTester;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 
 public class TestConfigurationMetadata
@@ -141,10 +142,11 @@ public class TestConfigurationMetadata
         }
     }
 
-    @Test(expectedExceptions = NullPointerException.class)
+    @Test
     public void testNull()
     {
-        ConfigurationMetadata.getConfigurationMetadata(null);
+        assertThatThrownBy(() -> ConfigurationMetadata.getConfigurationMetadata(null))
+                .isInstanceOf(NullPointerException.class);
     }
 
     @Test
