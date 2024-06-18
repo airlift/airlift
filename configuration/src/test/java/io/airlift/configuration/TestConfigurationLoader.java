@@ -15,9 +15,10 @@
  */
 package io.airlift.configuration;
 
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -30,20 +31,21 @@ import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
 import static io.airlift.configuration.ConfigurationLoader.loadProperties;
 import static java.nio.file.Files.createTempDirectory;
-import static org.testng.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestConfigurationLoader
 {
     private File tempDir;
 
-    @BeforeClass
+    @BeforeAll
     public void setup()
             throws IOException
     {
         tempDir = createTempDirectory(null).toFile();
     }
 
-    @AfterClass(alwaysRun = true)
+    @AfterAll
     public void teardown()
             throws IOException
     {
@@ -58,7 +60,7 @@ public class TestConfigurationLoader
 
         Map<String, String> properties = loadProperties();
 
-        assertEquals(properties.get("test"), "foo");
+        assertThat(properties.get("test")).isEqualTo("foo");
 
         System.clearProperty("test");
     }
@@ -72,8 +74,8 @@ public class TestConfigurationLoader
 
         Map<String, String> properties = loadProperties();
 
-        assertEquals(properties.get("test"), "foo");
-        assertEquals(properties.get("config"), file.getAbsolutePath());
+        assertThat(properties.get("test")).isEqualTo("foo");
+        assertThat(properties.get("config")).isEqualTo(file.getAbsolutePath());
 
         System.clearProperty("config");
     }
@@ -92,10 +94,10 @@ public class TestConfigurationLoader
         Map<String, String> properties = loadProperties();
 
         // config files are often human-managed and we need to be permissive, stripping trailing whitespace if any
-        assertEquals(properties.get("trim-whitespace-key1"), "key1-value");
+        assertThat(properties.get("trim-whitespace-key1")).isEqualTo("key1-value");
 
         // trailing whitespace in JVM property value is not so likely to be unintentional, so preserve it
-        assertEquals(properties.get("trim-whitespace-key2"), " \t key2-value \t ");
+        assertThat(properties.get("trim-whitespace-key2")).isEqualTo(" \t key2-value \t ");
 
         System.clearProperty("trim-whitespace-key2");
         System.clearProperty("config");
@@ -114,9 +116,9 @@ public class TestConfigurationLoader
 
         Map<String, String> properties = loadProperties();
 
-        assertEquals(properties.get("config"), file.getAbsolutePath());
-        assertEquals(properties.get("key1"), "overridden");
-        assertEquals(properties.get("key2"), "original");
+        assertThat(properties.get("config")).isEqualTo(file.getAbsolutePath());
+        assertThat(properties.get("key1")).isEqualTo("overridden");
+        assertThat(properties.get("key2")).isEqualTo("original");
 
         System.clearProperty("key1");
         System.clearProperty("config");

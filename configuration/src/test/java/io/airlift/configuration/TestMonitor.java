@@ -21,8 +21,8 @@ import com.google.inject.spi.Message;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 class TestMonitor
         implements Problems.Monitor
@@ -54,12 +54,16 @@ class TestMonitor
 
     public void assertNumberOfErrors(int expected)
     {
-        assertEquals(errors.size(), expected, String.format("Number of errors is incorrect, actual errors: %s", errorsString()));
+        assertThat(errors.size())
+                .isEqualTo(expected)
+                .describedAs(String.format("Number of errors is incorrect, actual errors: %s", errorsString()));
     }
 
     public void assertNumberOfWarnings(int expected)
     {
-        assertEquals(warnings.size(), expected, String.format("Number of warnings is incorrect, actual warnings: %s", warningsString()));
+        assertThat(warnings.size())
+                .isEqualTo(expected)
+                .describedAs(String.format("Number of warnings is incorrect, actual warnings: %s", warningsString()));
     }
 
     public void assertMatchingWarningRecorded(String... parts)

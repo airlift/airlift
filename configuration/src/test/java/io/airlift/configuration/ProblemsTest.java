@@ -17,14 +17,14 @@ package io.airlift.configuration;
 
 import com.google.inject.ConfigurationException;
 import com.google.inject.spi.Message;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 import static io.airlift.testing.Assertions.assertContains;
 import static io.airlift.testing.Assertions.assertContainsAllOf;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class ProblemsTest
 {
@@ -35,11 +35,12 @@ public class ProblemsTest
         problems.addError("message %d", 1);
 
         List<Message> errors = problems.getErrors();
-        assertEquals(errors.size(), 1);
-        assertEquals(errors.get(0).getMessage(), "message 1");
+        assertThat(errors).hasSize(1);
+        assertThat(errors.get(0).getMessage()).isEqualTo("message 1");
 
-        assertEquals(problems.getWarnings().size(), 0, "Found unexpected warnings in problem object");
-
+        assertThat(problems.getWarnings())
+                .describedAs("Found unexpected warnings in problem object")
+                .isEmpty();
         try {
             problems.throwIfHasErrors();
             fail("Expected exception from problems object");
@@ -57,11 +58,13 @@ public class ProblemsTest
         problems.addError("message %d", 2);
 
         List<Message> errors = problems.getErrors();
-        assertEquals(errors.size(), 2);
-        assertEquals(errors.get(0).getMessage(), "message 1");
-        assertEquals(errors.get(1).getMessage(), "message 2");
+        assertThat(errors).hasSize(2);
+        assertThat(errors.get(0).getMessage()).isEqualTo("message 1");
+        assertThat(errors.get(1).getMessage()).isEqualTo("message 2");
 
-        assertEquals(problems.getWarnings().size(), 0, "Found unexpected warnings in problem object");
+        assertThat(problems.getWarnings())
+                .describedAs("Found unexpected warnings in problem object")
+                .isEmpty();
 
         try {
             problems.throwIfHasErrors();
@@ -79,10 +82,12 @@ public class ProblemsTest
         problems.addError("message %d", "NaN");
 
         List<Message> errors = problems.getErrors();
-        assertEquals(errors.size(), 1);
+        assertThat(errors).hasSize(1);
         assertContainsAllOf(errors.get(0).getMessage(), "message %d", "NaN", "IllegalFormatConversionException");
 
-        assertEquals(problems.getWarnings().size(), 0, "Found unexpected warnings in problem object");
+        assertThat(problems.getWarnings())
+                .describedAs("Found unexpected warnings in problem object")
+                .isEmpty();
 
         try {
             problems.throwIfHasErrors();
@@ -99,11 +104,14 @@ public class ProblemsTest
         Problems problems = new Problems();
         problems.addWarning("message %d", 1);
 
-        assertEquals(problems.getErrors().size(), 0, "Found unexpected errors in problem object");
+        assertThat(problems.getErrors())
+                .describedAs("Found unexpected errors in problem object")
+                .isEmpty();
 
         List<Message> warnings = problems.getWarnings();
-        assertEquals(warnings.size(), 1);
-        assertEquals(warnings.get(0).getMessage(), "message 1");
+        assertThat(warnings).hasSize(1);
+        assertThat(warnings.get(0).getMessage())
+                .isEqualTo("message 1");
 
         try {
             problems.throwIfHasErrors();
@@ -120,12 +128,14 @@ public class ProblemsTest
         problems.addWarning("message %d", 1);
         problems.addWarning("message %d", 2);
 
-        assertEquals(problems.getErrors().size(), 0, "Found unexpected errors in problem object");
+        assertThat(problems.getErrors())
+                .describedAs("Found unexpected errors in problem object")
+                .isEmpty();
 
         List<Message> warnings = problems.getWarnings();
-        assertEquals(warnings.size(), 2);
-        assertEquals(warnings.get(0).getMessage(), "message 1");
-        assertEquals(warnings.get(1).getMessage(), "message 2");
+        assertThat(warnings).hasSize(2);
+        assertThat(warnings.get(0).getMessage()).isEqualTo("message 1");
+        assertThat(warnings.get(1).getMessage()).isEqualTo("message 2");
 
         try {
             problems.throwIfHasErrors();
@@ -141,10 +151,13 @@ public class ProblemsTest
         Problems problems = new Problems();
         problems.addWarning("message %d", "NaN");
 
-        assertEquals(problems.getErrors().size(), 0, "Found unexpected errors in problem object");
+        assertThat(problems.getErrors())
+                .describedAs("Found unexpected errors in problem object")
+                .isEmpty();
 
         List<Message> warnings = problems.getWarnings();
-        assertEquals(warnings.size(), 1);
+        assertThat(warnings).hasSize(1);
+
         assertContainsAllOf(warnings.get(0).getMessage(), "message %d", "NaN", "IllegalFormatConversionException");
 
         try {
@@ -167,15 +180,15 @@ public class ProblemsTest
         problems.addWarning("message w%d", 3);
 
         List<Message> errors = problems.getErrors();
-        assertEquals(errors.size(), 2);
-        assertEquals(errors.get(0).getMessage(), "message e1");
-        assertEquals(errors.get(1).getMessage(), "message e2");
+        assertThat(errors).hasSize(2);
+        assertThat(errors.get(0).getMessage()).isEqualTo("message e1");
+        assertThat(errors.get(1).getMessage()).isEqualTo("message e2");
 
         List<Message> warnings = problems.getWarnings();
-        assertEquals(warnings.size(), 3);
-        assertEquals(warnings.get(0).getMessage(), "message w1");
-        assertEquals(warnings.get(1).getMessage(), "message w2");
-        assertEquals(warnings.get(2).getMessage(), "message w3");
+        assertThat(warnings).hasSize(3);
+        assertThat(warnings.get(0).getMessage()).isEqualTo("message w1");
+        assertThat(warnings.get(1).getMessage()).isEqualTo("message w2");
+        assertThat(warnings.get(2).getMessage()).isEqualTo("message w3");
 
         try {
             problems.throwIfHasErrors();
