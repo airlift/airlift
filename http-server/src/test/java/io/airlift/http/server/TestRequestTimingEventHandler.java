@@ -3,8 +3,8 @@ package io.airlift.http.server;
 import io.airlift.http.server.jetty.RequestTiming;
 import io.airlift.units.Duration;
 import org.eclipse.jetty.server.Request;
+import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
-import org.testng.annotations.Test;
 
 import java.time.Instant;
 import java.util.Map;

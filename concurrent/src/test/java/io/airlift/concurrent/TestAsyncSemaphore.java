@@ -22,8 +22,7 @@ import com.google.common.util.concurrent.SettableFuture;
 import com.google.common.util.concurrent.Uninterruptibles;
 import jakarta.annotation.Nullable;
 import org.assertj.core.api.Fail;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -289,122 +288,135 @@ public class TestAsyncSemaphore
         Futures.allAsList(futures).get(1, TimeUnit.MINUTES);
     }
 
-    @DataProvider
-    public static Object[][] concurrency()
+    public static int[] testedConcurrency()
     {
-        return new Object[][] {{1}, {2}, {3}, {5}};
+        return new int[] {1, 2, 3, 5};
     }
 
-    @Test(dataProvider = "concurrency")
-    public void testProcessAllEmptyList(int concurrency)
+    @Test
+    public void testProcessAllEmptyList()
             throws Exception
     {
-        ListenableFuture<List<Object>> result = AsyncSemaphore.processAll(ImmutableList.of(), (i) -> immediateCancelledFuture(), concurrency, directExecutor());
-        assertThat(result).isDone();
-        assertThat(result.get()).isEqualTo(ImmutableList.of());
-    }
-
-    @Test(dataProvider = "concurrency")
-    public void testProcessAllSingleCallable(int concurrency)
-            throws Exception
-    {
-        SettableFuture<String> future = SettableFuture.create();
-        ListenableFuture<List<String>> result = AsyncSemaphore.processAll(ImmutableList.of(1), (i) -> future, concurrency, directExecutor());
-        assertThat(result).isNotDone();
-        future.set("value");
-        assertThat(result).isDone();
-        assertThat(result.get()).isEqualTo(ImmutableList.of("value"));
-    }
-
-    @Test(dataProvider = "concurrency")
-    public void testProcessAllConcurrencyLimit(int concurrency)
-            throws Exception
-    {
-        TestingTasks tasks = new TestingTasks(concurrency + 2);
-
-        ListenableFuture<List<String>> result = AsyncSemaphore.processAll(tasks.getTasks(), tasks::submit, concurrency, directExecutor());
-
-        assertThat(result).isNotDone();
-        assertThat(tasks.getFutures()).hasSize(concurrency);
-
-        tasks.getFutures().get(0).set("value0");
-        assertThat(result).isNotDone();
-        assertThat(tasks.getFutures()).hasSize(concurrency + 1);
-
-        tasks.getFutures().get(1).set("value1");
-        assertThat(result).isNotDone();
-        assertThat(tasks.getFutures()).hasSize(concurrency + 2);
-
-        tasks.getFutures().get(2).set("value2");
-        assertThat(tasks.getFutures()).hasSize(concurrency + 2);
-
-        for (int i = 3; i < tasks.getFutures().size(); i++) {
-            tasks.getFutures().get(i).set("value" + i);
+        for (int concurrency : testedConcurrency()) {
+            ListenableFuture<List<Object>> result = AsyncSemaphore.processAll(ImmutableList.of(), (i) -> immediateCancelledFuture(), concurrency, directExecutor());
+            assertThat(result).isDone();
+            assertThat(result.get()).isEqualTo(ImmutableList.of());
         }
-        assertThat(result).isDone();
-
-        assertThat(result.get()).isEqualTo(IntStream.range(0, tasks.getFutures().size()).mapToObj(i -> "value" + i).collect(toImmutableList()));
     }
 
-    @Test(dataProvider = "concurrency")
-    public void testProcessAllCallableFailure(int concurrency)
+    @Test
+    public void testProcessAllSingleCallable()
+            throws Exception
     {
-        testProcessAllFailure(
-                concurrency,
-                () -> {
-                    throw new RuntimeException("callable failed");
-                },
-                "callable failed");
-    }
-
-    @Test(dataProvider = "concurrency")
-    public void testProcessAllFutureFailure(int concurrency)
-    {
-        testProcessAllFailure(
-                concurrency,
-                () -> immediateFailedFuture(new RuntimeException("future failed")),
-                "future failed");
-    }
-
-    @Test(dataProvider = "concurrency")
-    public void testProcessAllFutureCancellation(int concurrency)
-    {
-        testProcessAllFailure(
-                concurrency,
-                Futures::immediateCancelledFuture,
-                "Task was cancelled");
-    }
-
-    @Test(dataProvider = "concurrency")
-    public void testProcessAllCancellation(int concurrency)
-    {
-        TestingTasks tasks = new TestingTasks(concurrency + 1);
-
-        ListenableFuture<List<String>> result = AsyncSemaphore.processAll(
-                tasks.getTasks(),
-                tasks::submit,
-                concurrency,
-                directExecutor());
-        assertThat(result).isNotDone();
-        result.cancel(true);
-        assertThat(tasks.getFutures()).hasSize(concurrency);
-        for (ListenableFuture<String> future : tasks.getFutures()) {
-            assertThat(future).isCancelled();
+        for (int concurrency : testedConcurrency()) {
+            SettableFuture<String> future = SettableFuture.create();
+            ListenableFuture<List<String>> result = AsyncSemaphore.processAll(ImmutableList.of(1), (i) -> future, concurrency, directExecutor());
+            assertThat(result).isNotDone();
+            future.set("value");
+            assertThat(result).isDone();
+            assertThat(result.get()).isEqualTo(ImmutableList.of("value"));
         }
+    }
 
-        tasks = new TestingTasks(concurrency + 2);
-        result = AsyncSemaphore.processAll(
-                tasks.getTasks(),
-                tasks::submit,
-                concurrency,
-                directExecutor());
-        assertThat(result).isNotDone();
-        tasks.getFutures().get(0).set("value");
-        assertThat(result).isNotDone();
-        result.cancel(true);
-        assertThat(tasks.getFutures()).hasSize(concurrency + 1);
-        for (int i = 1; i < concurrency + 1; i++) {
-            assertThat(tasks.getFutures().get(i)).isCancelled();
+    @Test
+    public void testProcessAllConcurrencyLimit()
+            throws Exception
+    {
+        for (int concurrency : testedConcurrency()) {
+            TestingTasks tasks = new TestingTasks(concurrency + 2);
+
+            ListenableFuture<List<String>> result = AsyncSemaphore.processAll(tasks.getTasks(), tasks::submit, concurrency, directExecutor());
+
+            assertThat(result).isNotDone();
+            assertThat(tasks.getFutures()).hasSize(concurrency);
+
+            tasks.getFutures().get(0).set("value0");
+            assertThat(result).isNotDone();
+            assertThat(tasks.getFutures()).hasSize(concurrency + 1);
+
+            tasks.getFutures().get(1).set("value1");
+            assertThat(result).isNotDone();
+            assertThat(tasks.getFutures()).hasSize(concurrency + 2);
+
+            tasks.getFutures().get(2).set("value2");
+            assertThat(tasks.getFutures()).hasSize(concurrency + 2);
+
+            for (int i = 3; i < tasks.getFutures().size(); i++) {
+                tasks.getFutures().get(i).set("value" + i);
+            }
+            assertThat(result).isDone();
+
+            assertThat(result.get()).isEqualTo(IntStream.range(0, tasks.getFutures().size()).mapToObj(i -> "value" + i).collect(toImmutableList()));
+        }
+    }
+
+    @Test
+    public void testProcessAllCallableFailure()
+    {
+        for (int concurrency : testedConcurrency()) {
+            testProcessAllFailure(
+                    concurrency,
+                    () -> {
+                        throw new RuntimeException("callable failed");
+                    },
+                    "callable failed");
+        }
+    }
+
+    @Test
+    public void testProcessAllFutureFailure()
+    {
+        for (int concurrency : testedConcurrency()) {
+            testProcessAllFailure(
+                    concurrency,
+                    () -> immediateFailedFuture(new RuntimeException("future failed")),
+                    "future failed");
+        }
+    }
+
+    @Test
+    public void testProcessAllFutureCancellation()
+    {
+        for (int concurrency : testedConcurrency()) {
+            testProcessAllFailure(
+                    concurrency,
+                    Futures::immediateCancelledFuture,
+                    "Task was cancelled");
+        }
+    }
+
+    @Test
+    public void testProcessAllCancellation()
+    {
+        for (int concurrency : testedConcurrency()) {
+            TestingTasks tasks = new TestingTasks(concurrency + 1);
+
+            ListenableFuture<List<String>> result = AsyncSemaphore.processAll(
+                    tasks.getTasks(),
+                    tasks::submit,
+                    concurrency,
+                    directExecutor());
+            assertThat(result).isNotDone();
+            result.cancel(true);
+            assertThat(tasks.getFutures()).hasSize(concurrency);
+            for (ListenableFuture<String> future : tasks.getFutures()) {
+                assertThat(future).isCancelled();
+            }
+
+            tasks = new TestingTasks(concurrency + 2);
+            result = AsyncSemaphore.processAll(
+                    tasks.getTasks(),
+                    tasks::submit,
+                    concurrency,
+                    directExecutor());
+            assertThat(result).isNotDone();
+            tasks.getFutures().get(0).set("value");
+            assertThat(result).isNotDone();
+            result.cancel(true);
+            assertThat(tasks.getFutures()).hasSize(concurrency + 1);
+            for (int i = 1; i < concurrency + 1; i++) {
+                assertThat(tasks.getFutures().get(i)).isCancelled();
+            }
         }
     }
 

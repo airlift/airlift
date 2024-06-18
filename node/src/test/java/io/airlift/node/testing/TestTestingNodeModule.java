@@ -3,7 +3,7 @@ package io.airlift.node.testing;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import io.airlift.node.NodeInfo;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;

@@ -18,20 +18,25 @@ package io.airlift.event.client;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Ordering;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 import java.util.Collections;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class TestEventSubmissionFailedException
 {
-    @Test(expectedExceptions = NullPointerException.class, expectedExceptionsMessageRegExp = "causes is null")
+    @Test
     public void testRejectsNull()
     {
-        throw new EventSubmissionFailedException("service", "type", null);
+        assertThatThrownBy(() -> {
+            throw new EventSubmissionFailedException("service", "type", null);
+        })
+                .isInstanceOf(NullPointerException.class)
+                .hasMessageContaining("causes is null");
     }
 
     @Test

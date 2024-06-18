@@ -20,7 +20,7 @@ import com.google.common.net.InetAddresses;
 import io.airlift.configuration.testing.ConfigAssertions;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.net.URISyntaxException;

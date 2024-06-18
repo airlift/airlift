@@ -17,12 +17,12 @@ package io.airlift.event.client;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import org.testng.annotations.BeforeMethod;
+import org.junit.jupiter.api.BeforeEach;
 
 public class TestInMemoryEventModule
         extends AbstractTestInMemoryEventClient
 {
-    @BeforeMethod
+    @BeforeEach
     public void setup()
             throws Exception
     {

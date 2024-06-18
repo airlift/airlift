@@ -22,7 +22,7 @@ import io.airlift.configuration.Config;
 import io.airlift.configuration.Config1;
 import io.airlift.configuration.LegacyConfig;
 import io.airlift.configuration.testing.ConfigAssertions.$$RecordedConfigData;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.net.MalformedURLException;
 import java.net.URI;

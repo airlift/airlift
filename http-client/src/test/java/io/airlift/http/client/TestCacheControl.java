@@ -1,6 +1,6 @@
 package io.airlift.http.client;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;

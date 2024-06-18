@@ -9,9 +9,10 @@ import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.TestingRequestFilter;
 import io.airlift.http.client.TestingSocksProxy;
 import io.airlift.http.client.TestingStatusListener;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.io.IOException;
 
@@ -21,7 +22,7 @@ public class TestJettyHttpClientSocksProxy
     private JettyHttpClient httpClient;
     private TestingSocksProxy testingSocksProxy;
 
-    @BeforeClass
+    @BeforeAll
     public void setUpHttpClient()
             throws IOException
     {
@@ -29,7 +30,7 @@ public class TestJettyHttpClientSocksProxy
         httpClient = new JettyHttpClient("test-shared", createClientConfig(), ImmutableList.of(new TestingRequestFilter()), ImmutableSet.of(new TestingStatusListener(statusCounts)));
     }
 
-    @AfterClass(alwaysRun = true)
+    @AfterAll
     public void tearDownHttpClient()
     {
         closeQuietly(httpClient);
@@ -62,26 +63,11 @@ public class TestJettyHttpClientSocksProxy
     }
 
     @Override
-    @Test(timeOut = 5000)
+    @Test
+    @Timeout(5)
     public void testConnectTimeout()
             throws Exception
     {
         doTestConnectTimeout(true);
-    }
-
-    @Override
-    @Test(expectedExceptions = IOException.class, expectedExceptionsMessageRegExp = ".*SOCKS4 .*")
-    public void testConnectionRefused()
-            throws Exception
-    {
-        super.testConnectionRefused();
-    }
-
-    @Override
-    @Test(expectedExceptions = IOException.class, expectedExceptionsMessageRegExp = ".*SOCKS4 .*")
-    public void testUnresolvableHost()
-            throws Exception
-    {
-        super.testUnresolvableHost();
     }
 }

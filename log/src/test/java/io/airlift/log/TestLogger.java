@@ -16,9 +16,11 @@
 package io.airlift.log;
 
 import com.google.common.collect.ImmutableList;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.parallel.Execution;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,15 +29,18 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
+import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
 
-@Test(singleThreaded = true)
+@TestInstance(PER_CLASS)
+@Execution(SAME_THREAD)
 public class TestLogger
 {
     private MockHandler handler;
     private Logger logger;
     private java.util.logging.Logger inner;
 
-    @BeforeMethod
+    @BeforeEach
     public void setUp()
             throws Exception
     {
@@ -49,7 +54,7 @@ public class TestLogger
         logger = new Logger(inner);
     }
 
-    @AfterMethod(alwaysRun = true)
+    @AfterEach
     public void teardown()
     {
         assertThat(handler.isEmpty())

@@ -24,7 +24,7 @@ package io.airlift.testing;
 import com.google.common.collect.ComparisonChain;
 import io.airlift.testing.EquivalenceTester.ElementCheckFailure;
 import io.airlift.testing.EquivalenceTester.PairCheckFailure;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 

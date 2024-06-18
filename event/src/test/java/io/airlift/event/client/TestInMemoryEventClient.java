@@ -15,12 +15,12 @@
  */
 package io.airlift.event.client;
 
-import org.testng.annotations.BeforeMethod;
+import org.junit.jupiter.api.BeforeEach;
 
 public class TestInMemoryEventClient
         extends AbstractTestInMemoryEventClient
 {
-    @BeforeMethod
+    @BeforeEach
     public void setup()
             throws Exception
     {

@@ -17,7 +17,7 @@ package io.airlift.http.client;
 
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 
@@ -25,6 +25,7 @@ import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.Request.Builder.preparePut;
 import static io.airlift.http.client.StaticBodyGenerator.createStaticBodyGenerator;
 import static io.airlift.testing.EquivalenceTester.equivalenceTester;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class TestRequest
 {
@@ -67,28 +68,36 @@ public class TestRequest
                 .check();
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "Cannot make requests to HTTP port 0")
+    @Test
     public void testCannotMakeRequestToIllegalPort()
     {
-        prepareGet().setUri(URI.create("http://example.com:0/")).build();
+        assertThatThrownBy(() -> prepareGet().setUri(URI.create("http://example.com:0/")).build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Cannot make requests to HTTP port 0");
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "uri does not have a host: http:///foo")
+    @Test
     public void testInvalidUriMissingHost()
     {
-        prepareGet().setUri(URI.create("http:///foo")).build();
+        assertThatThrownBy(() -> prepareGet().setUri(URI.create("http:///foo")).build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("uri does not have a host: http:///foo");
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "uri does not have a scheme: //foo")
+    @Test
     public void testInvalidUriMissingScheme()
     {
-        prepareGet().setUri(URI.create("//foo")).build();
+        assertThatThrownBy(() -> prepareGet().setUri(URI.create("//foo")).build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("uri does not have a scheme: //foo");
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "uri scheme must be http or https: gopher://example.com")
+    @Test
     public void testInvalidUriScheme()
     {
-        prepareGet().setUri(URI.create("gopher://example.com")).build();
+        assertThatThrownBy(() -> prepareGet().setUri(URI.create("gopher://example.com")).build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("uri scheme must be http or https: gopher://example.com");
     }
 
     private static URI createUriA()

@@ -3,7 +3,7 @@ package io.airlift.http.client;
 import com.google.common.collect.ImmutableListMultimap;
 import io.airlift.http.client.testing.TestingResponse;
 import io.airlift.json.JsonCodec;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import static com.google.common.net.MediaType.JSON_UTF_8;
 import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
@@ -15,6 +15,7 @@ import static io.airlift.http.client.testing.TestingResponse.mockResponse;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class TestJsonResponseHandler
 {
@@ -45,22 +46,27 @@ public class TestJsonResponseHandler
         }
     }
 
-    @Test(expectedExceptions = UnexpectedResponseException.class, expectedExceptionsMessageRegExp = "Expected application/json response from server but got text/plain; charset=utf-8")
+    @Test
     public void testNonJsonResponse()
     {
-        handler.handle(null, mockResponse(OK, PLAIN_TEXT_UTF_8, "hello"));
+        assertThatThrownBy(() -> handler.handle(null, mockResponse(OK, PLAIN_TEXT_UTF_8, "hello")))
+                .isInstanceOf(UnexpectedResponseException.class)
+                .hasMessageContaining("Expected application/json response from server but got text/plain; charset=utf-8");
     }
 
-    @Test(expectedExceptions = UnexpectedResponseException.class, expectedExceptionsMessageRegExp = "Content-Type is not set for response")
+    @Test
     public void testMissingContentType()
     {
-        handler.handle(null, new TestingResponse(OK, ImmutableListMultimap.<String, String>of(), "hello".getBytes(UTF_8)));
+        assertThatThrownBy(() -> handler.handle(null, new TestingResponse(OK, ImmutableListMultimap.<String, String>of(), "hello".getBytes(UTF_8))))
+                .isInstanceOf(UnexpectedResponseException.class)
+                .hasMessageContaining("Content-Type is not set for response");
     }
 
-    @Test(expectedExceptions = UnexpectedResponseException.class)
+    @Test
     public void testJsonErrorResponse()
     {
         String json = "{\"error\": true}";
-        handler.handle(null, mockResponse(INTERNAL_SERVER_ERROR, JSON_UTF_8, json));
+        assertThatThrownBy(() -> handler.handle(null, mockResponse(INTERNAL_SERVER_ERROR, JSON_UTF_8, json)))
+                .isInstanceOf(UnexpectedResponseException.class);
     }
 }

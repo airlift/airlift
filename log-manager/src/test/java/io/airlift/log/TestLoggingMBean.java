@@ -15,27 +15,32 @@
  */
 package io.airlift.log;
 
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.parallel.Execution;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
+import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
 
-@Test(singleThreaded = true)
+@TestInstance(PER_CLASS)
+@Execution(SAME_THREAD)
 public class TestLoggingMBean
 {
     private final LoggingMBean logging = new LoggingMBean(Logging.initialize());
     private String rootLevel;
 
-    @BeforeMethod
+    @BeforeEach
     public void setRootLevel()
     {
         rootLevel = logging.getRootLevel();
         logging.setRootLevel("INFO");
     }
 
-    @AfterMethod(alwaysRun = true)
+    @AfterEach
     public void restoreRootLevel()
     {
         logging.setRootLevel(rootLevel);

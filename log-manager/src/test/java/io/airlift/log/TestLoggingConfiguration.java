@@ -19,7 +19,7 @@ import io.airlift.log.RollingFileMessageOutput.CompressionType;
 import io.airlift.units.DataSize;
 import io.airlift.units.DataSize.Unit;
 import org.assertj.core.util.Files;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.Map;

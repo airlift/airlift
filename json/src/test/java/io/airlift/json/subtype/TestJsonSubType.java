@@ -29,7 +29,7 @@ import io.airlift.json.subtype.Employee.Manager;
 import io.airlift.json.subtype.Employee.Programmer;
 import io.airlift.json.subtype.Part.Container;
 import io.airlift.json.subtype.Part.Item;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.airlift.json.JsonSubTypeBinder.jsonSubTypeBinder;
 import static org.assertj.core.api.Assertions.assertThat;

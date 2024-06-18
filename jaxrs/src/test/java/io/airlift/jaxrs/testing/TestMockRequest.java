@@ -22,10 +22,10 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.ResponseBuilder;
 import jakarta.ws.rs.core.Response.Status;
 import jakarta.ws.rs.core.Variant;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 import static io.airlift.jaxrs.testing.MockRequest.delete;
@@ -40,21 +40,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestMockRequest
 {
-    @DataProvider(name = "requestBuilders")
-    private Object[][] getRequestBuilders()
+    private record UriBuilder(ConditionalRequestBuilder requestBuilder, String method, Variant variant) {}
+
+    private List<UriBuilder> requestBuildersTestCases()
     {
-        return new Object[][] {
-                {head(), "HEAD", null},
-                {get(), "GET", null},
-                {post(), "POST", null},
-                {put(), "PUT", null},
-                {delete(), "DELETE", null},
-                {head(VARIANT), "HEAD", VARIANT},
-                {get(VARIANT), "GET", VARIANT},
-                {post(VARIANT), "POST", VARIANT},
-                {put(VARIANT), "PUT", VARIANT},
-                {delete(VARIANT), "DELETE", VARIANT},
-        };
+        return ImmutableList.of(
+                new UriBuilder(head(), "HEAD", null),
+                new UriBuilder(get(), "GET", null),
+                new UriBuilder(post(), "POST", null),
+                new UriBuilder(put(), "PUT", null),
+                new UriBuilder(delete(), "DELETE", null),
+                new UriBuilder(head(VARIANT), "HEAD", VARIANT),
+                new UriBuilder(get(VARIANT), "GET", VARIANT),
+                new UriBuilder(post(VARIANT), "POST", VARIANT),
+                new UriBuilder(put(VARIANT), "PUT", VARIANT),
+                new UriBuilder(delete(VARIANT), "DELETE", VARIANT));
     }
 
     public static final EntityTag UNKNOWN_TAG = new EntityTag("unknown");
@@ -64,84 +64,83 @@ public class TestMockRequest
     public static final Variant VARIANT = new Variant(TEXT_PLAIN_TYPE, Locale.UK, "UTF-8");
     public static final ImmutableList<Variant> VARIANTS = ImmutableList.of(new Variant(TEXT_XML_TYPE, US, "UTF-8"));
 
-    @Test(dataProvider = "requestBuilders")
-    public void testMethod(ConditionalRequestBuilder request, String method, Variant variant)
+    @Test
+    public void testMethod()
     {
-        assertThat(request.unconditionally().getMethod()).isEqualTo(method);
+        for (UriBuilder testCase : requestBuildersTestCases()) {
+            assertThat(testCase.requestBuilder.unconditionally().getMethod()).isEqualTo(testCase.method);
+        }
     }
 
-    @Test(dataProvider = "requestBuilders")
-    public void testSelectVariant(ConditionalRequestBuilder request, String method, Variant variant)
+    @Test
+    public void testSelectVariant()
     {
-        assertThat(request.unconditionally().selectVariant(VARIANTS)).isEqualTo(variant);
+        for (UriBuilder testCase : requestBuildersTestCases()) {
+            assertThat(testCase.requestBuilder.unconditionally().selectVariant(VARIANTS)).isEqualTo(testCase.variant);
+        }
     }
 
-    @Test(dataProvider = "requestBuilders")
-    public void testDefaultPreconditions(ConditionalRequestBuilder request, String method, Variant variant)
+    @Test
+    public void testDefaultPreconditions()
     {
-        assertPreconditionsMet(request.unconditionally().evaluatePreconditions());
-
-        assertPreconditionsMet(request.unconditionally().evaluatePreconditions(BEFORE));
-
-        assertPreconditionsMet(request.unconditionally().evaluatePreconditions(UNKNOWN_TAG));
-
-        assertPreconditionsMet(request.unconditionally().evaluatePreconditions(BEFORE, UNKNOWN_TAG));
+        for (UriBuilder testCase : requestBuildersTestCases()) {
+            assertPreconditionsMet(testCase.requestBuilder.unconditionally().evaluatePreconditions());
+            assertPreconditionsMet(testCase.requestBuilder.unconditionally().evaluatePreconditions(BEFORE));
+            assertPreconditionsMet(testCase.requestBuilder.unconditionally().evaluatePreconditions(UNKNOWN_TAG));
+            assertPreconditionsMet(testCase.requestBuilder.unconditionally().evaluatePreconditions(BEFORE, UNKNOWN_TAG));
+        }
     }
 
-    @Test(dataProvider = "requestBuilders")
-    public void testIfMatch(ConditionalRequestBuilder requestBuilder, String method, Variant variant)
+    @Test
+    public void testIfMatch()
     {
-        assertPreconditionsFailed(requestBuilder.ifMatch(EXPECTED_TAG).evaluatePreconditions());
-
-        assertPreconditionsMet(requestBuilder.ifMatch(EXPECTED_TAG).evaluatePreconditions(BEFORE));
-
-        assertPreconditionsMet(requestBuilder.ifMatch(EXPECTED_TAG).evaluatePreconditions(EXPECTED_TAG));
-        assertPreconditionsFailed(requestBuilder.ifMatch(EXPECTED_TAG).evaluatePreconditions(UNKNOWN_TAG));
-
-        assertPreconditionsMet(requestBuilder.ifMatch(EXPECTED_TAG).evaluatePreconditions(BEFORE, EXPECTED_TAG));
-        assertPreconditionsFailed(requestBuilder.ifMatch(EXPECTED_TAG).evaluatePreconditions(BEFORE, UNKNOWN_TAG));
+        for (UriBuilder testCase : requestBuildersTestCases()) {
+            assertPreconditionsFailed(testCase.requestBuilder.ifMatch(EXPECTED_TAG).evaluatePreconditions());
+            assertPreconditionsMet(testCase.requestBuilder.ifMatch(EXPECTED_TAG).evaluatePreconditions(BEFORE));
+            assertPreconditionsMet(testCase.requestBuilder.ifMatch(EXPECTED_TAG).evaluatePreconditions(EXPECTED_TAG));
+            assertPreconditionsFailed(testCase.requestBuilder.ifMatch(EXPECTED_TAG).evaluatePreconditions(UNKNOWN_TAG));
+            assertPreconditionsMet(testCase.requestBuilder.ifMatch(EXPECTED_TAG).evaluatePreconditions(BEFORE, EXPECTED_TAG));
+            assertPreconditionsFailed(testCase.requestBuilder.ifMatch(EXPECTED_TAG).evaluatePreconditions(BEFORE, UNKNOWN_TAG));
+        }
     }
 
-    @Test(dataProvider = "requestBuilders")
-    public void testIfNoneMatch(ConditionalRequestBuilder requestBuilder, String method, Variant variant)
+    @Test
+    public void testIfNoneMatch()
     {
-        assertPreconditionsMet(requestBuilder.ifNoneMatch(EXPECTED_TAG).evaluatePreconditions());
-
-        assertPreconditionsMet(requestBuilder.ifNoneMatch(EXPECTED_TAG).evaluatePreconditions(BEFORE));
-
-        assertIfNoneMatchFailed(method, requestBuilder.ifNoneMatch(EXPECTED_TAG).evaluatePreconditions(EXPECTED_TAG));
-        assertPreconditionsMet(requestBuilder.ifNoneMatch(EXPECTED_TAG).evaluatePreconditions(UNKNOWN_TAG));
-
-        assertIfNoneMatchFailed(method, requestBuilder.ifNoneMatch(EXPECTED_TAG).evaluatePreconditions(BEFORE, EXPECTED_TAG));
-        assertPreconditionsMet(requestBuilder.ifNoneMatch(EXPECTED_TAG).evaluatePreconditions(BEFORE, UNKNOWN_TAG));
+        for (UriBuilder testCase : requestBuildersTestCases()) {
+            assertPreconditionsMet(testCase.requestBuilder.ifNoneMatch(EXPECTED_TAG).evaluatePreconditions());
+            assertPreconditionsMet(testCase.requestBuilder.ifNoneMatch(EXPECTED_TAG).evaluatePreconditions(BEFORE));
+            assertIfNoneMatchFailed(testCase.method, testCase.requestBuilder.ifNoneMatch(EXPECTED_TAG).evaluatePreconditions(EXPECTED_TAG));
+            assertPreconditionsMet(testCase.requestBuilder.ifNoneMatch(EXPECTED_TAG).evaluatePreconditions(UNKNOWN_TAG));
+            assertIfNoneMatchFailed(testCase.method, testCase.requestBuilder.ifNoneMatch(EXPECTED_TAG).evaluatePreconditions(BEFORE, EXPECTED_TAG));
+            assertPreconditionsMet(testCase.requestBuilder.ifNoneMatch(EXPECTED_TAG).evaluatePreconditions(BEFORE, UNKNOWN_TAG));
+        }
     }
 
-    @Test(dataProvider = "requestBuilders")
-    public void testIfModifiedSince(ConditionalRequestBuilder requestBuilder, String method, Variant variant)
+    @Test
+    public void testIfModifiedSince()
     {
-        assertPreconditionsMet(requestBuilder.ifModifiedSince(BEFORE).evaluatePreconditions());
-
-        assertIfModifiedSinceFailed(method, requestBuilder.ifModifiedSince(AFTER).evaluatePreconditions(BEFORE));
-        assertPreconditionsMet(requestBuilder.ifModifiedSince(BEFORE).evaluatePreconditions(AFTER));
-
-        assertPreconditionsMet(requestBuilder.ifModifiedSince(BEFORE).evaluatePreconditions(EXPECTED_TAG));
-
-        assertIfModifiedSinceFailed(method, requestBuilder.ifModifiedSince(AFTER).evaluatePreconditions(BEFORE, EXPECTED_TAG));
-        assertPreconditionsMet(requestBuilder.ifModifiedSince(BEFORE).evaluatePreconditions(AFTER, EXPECTED_TAG));
+        for (UriBuilder testCase : requestBuildersTestCases()) {
+            assertPreconditionsMet(testCase.requestBuilder.ifModifiedSince(BEFORE).evaluatePreconditions());
+            assertIfModifiedSinceFailed(testCase.method, testCase.requestBuilder.ifModifiedSince(AFTER).evaluatePreconditions(BEFORE));
+            assertPreconditionsMet(testCase.requestBuilder.ifModifiedSince(BEFORE).evaluatePreconditions(AFTER));
+            assertPreconditionsMet(testCase.requestBuilder.ifModifiedSince(BEFORE).evaluatePreconditions(EXPECTED_TAG));
+            assertIfModifiedSinceFailed(testCase.method, testCase.requestBuilder.ifModifiedSince(AFTER).evaluatePreconditions(BEFORE, EXPECTED_TAG));
+            assertPreconditionsMet(testCase.requestBuilder.ifModifiedSince(BEFORE).evaluatePreconditions(AFTER, EXPECTED_TAG));
+        }
     }
 
-    @Test(dataProvider = "requestBuilders")
-    public void testIfUnmodifiedSince(ConditionalRequestBuilder requestBuilder, String method, Variant variant)
+    @Test
+    public void testIfUnmodifiedSince()
     {
-        assertPreconditionsMet(requestBuilder.ifUnmodifiedSince(BEFORE).evaluatePreconditions());
-
-        assertPreconditionsFailed(requestBuilder.ifUnmodifiedSince(BEFORE).evaluatePreconditions(AFTER));
-        assertPreconditionsMet(requestBuilder.ifUnmodifiedSince(AFTER).evaluatePreconditions(BEFORE));
-
-        assertPreconditionsMet(requestBuilder.ifUnmodifiedSince(AFTER).evaluatePreconditions(EXPECTED_TAG));
-
-        assertPreconditionsFailed(requestBuilder.ifUnmodifiedSince(BEFORE).evaluatePreconditions(AFTER, EXPECTED_TAG));
-        assertPreconditionsMet(requestBuilder.ifUnmodifiedSince(AFTER).evaluatePreconditions(BEFORE, EXPECTED_TAG));
+        for (UriBuilder testCase : requestBuildersTestCases()) {
+            assertPreconditionsMet(testCase.requestBuilder.ifUnmodifiedSince(BEFORE).evaluatePreconditions());
+            assertPreconditionsFailed(testCase.requestBuilder.ifUnmodifiedSince(BEFORE).evaluatePreconditions(AFTER));
+            assertPreconditionsMet(testCase.requestBuilder.ifUnmodifiedSince(AFTER).evaluatePreconditions(BEFORE));
+            assertPreconditionsMet(testCase.requestBuilder.ifUnmodifiedSince(AFTER).evaluatePreconditions(EXPECTED_TAG));
+            assertPreconditionsFailed(testCase.requestBuilder.ifUnmodifiedSince(BEFORE).evaluatePreconditions(AFTER, EXPECTED_TAG));
+            assertPreconditionsMet(testCase.requestBuilder.ifUnmodifiedSince(AFTER).evaluatePreconditions(BEFORE, EXPECTED_TAG));
+        }
     }
 
     private void assertPreconditionsMet(ResponseBuilder responseBuilder)

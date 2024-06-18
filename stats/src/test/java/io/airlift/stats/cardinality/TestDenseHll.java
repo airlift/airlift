@@ -14,8 +14,7 @@
 package io.airlift.stats.cardinality;
 
 import io.airlift.slice.XxHash64;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
@@ -26,66 +25,72 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestDenseHll
 {
-    @Test(dataProvider = "bits")
-    public void testMultipleMerges(int prefixBitLength)
+    @Test
+    public void testMultipleMerges()
             throws Exception
     {
-        DenseHll single = new DenseHll(prefixBitLength);
-        DenseHll merged = new DenseHll(prefixBitLength);
+        for (int prefixBitLength : prefixLengths()) {
+            DenseHll single = new DenseHll(prefixBitLength);
+            DenseHll merged = new DenseHll(prefixBitLength);
 
-        DenseHll current = new DenseHll(prefixBitLength);
+            DenseHll current = new DenseHll(prefixBitLength);
 
-        for (int i = 0; i < 10_000_000; i++) {
-            if (i % 10_000 == 0) {
-                merged.mergeWith(current);
-                current = new DenseHll(prefixBitLength);
+            for (int i = 0; i < 10_000_000; i++) {
+                if (i % 10_000 == 0) {
+                    merged.mergeWith(current);
+                    current = new DenseHll(prefixBitLength);
+                }
+
+                long hash = XxHash64.hash(i);
+                current.insertHash(hash);
+                single.insertHash(hash);
             }
 
-            long hash = XxHash64.hash(i);
-            current.insertHash(hash);
-            single.insertHash(hash);
+            merged.mergeWith(current);
+
+            for (int i = 0; i < numberOfBuckets(prefixBitLength); i++) {
+                assertThat(single.getValue(i)).isEqualTo(merged.getValue(i));
+            }
+
+            assertThat(single.cardinality()).isEqualTo(merged.cardinality());
         }
-
-        merged.mergeWith(current);
-
-        for (int i = 0; i < numberOfBuckets(prefixBitLength); i++) {
-            assertThat(single.getValue(i)).isEqualTo(merged.getValue(i));
-        }
-
-        assertThat(single.cardinality()).isEqualTo(merged.cardinality());
     }
 
-    @Test(dataProvider = "bits")
-    public void testHighCardinality(int prefixBitLength)
+    @Test
+    public void testHighCardinality()
             throws Exception
     {
-        TestingHll testingHll = new TestingHll(prefixBitLength);
-        DenseHll hll = new DenseHll(prefixBitLength);
-        for (int i = 0; i < 10_000_000; i++) {
-            long hash = XxHash64.hash(i);
+        for (int prefixBitLength : prefixLengths()) {
+            TestingHll testingHll = new TestingHll(prefixBitLength);
+            DenseHll hll = new DenseHll(prefixBitLength);
+            for (int i = 0; i < 10_000_000; i++) {
+                long hash = XxHash64.hash(i);
 
-            testingHll.insertHash(hash);
-            hll.insertHash(hash);
+                testingHll.insertHash(hash);
+                hll.insertHash(hash);
+            }
+
+            assertSameBuckets(testingHll, hll);
         }
-
-        assertSameBuckets(testingHll, hll);
     }
 
-    @Test(dataProvider = "bits")
-    public void testInsert(int prefixBitLength)
+    @Test
+    public void testInsert()
             throws Exception
     {
-        TestingHll testingHll = new TestingHll(prefixBitLength);
-        DenseHll hll = new DenseHll(prefixBitLength);
-        for (int i = 0; i < 20_000; i++) {
-            long hash = XxHash64.hash(i);
+        for (int prefixBitLength : prefixLengths()) {
+            TestingHll testingHll = new TestingHll(prefixBitLength);
+            DenseHll hll = new DenseHll(prefixBitLength);
+            for (int i = 0; i < 20_000; i++) {
+                long hash = XxHash64.hash(i);
 
-            testingHll.insertHash(hash);
-            hll.insertHash(hash);
-            hll.verify();
+                testingHll.insertHash(hash);
+                hll.insertHash(hash);
+                hll.verify();
+            }
+
+            assertSameBuckets(testingHll, hll);
         }
-
-        assertSameBuckets(testingHll, hll);
     }
 
     @Test
@@ -112,31 +117,33 @@ public class TestDenseHll
         assertSameBuckets(testingHll, hll1);
     }
 
-    @Test(dataProvider = "bits")
-    public void testMerge(int prefixBitLength)
+    @Test
+    public void testMerge()
             throws Exception
     {
-        // small, non-overlapping
-        verifyMerge(prefixBitLength, sequence(0, 100), sequence(100, 200));
-        verifyMerge(prefixBitLength, sequence(100, 200), sequence(0, 100));
+        for (int prefixBitLength : prefixLengths()) {
+            // small, non-overlapping
+            verifyMerge(prefixBitLength, sequence(0, 100), sequence(100, 200));
+            verifyMerge(prefixBitLength, sequence(100, 200), sequence(0, 100));
 
-        // small, overlapping
-        verifyMerge(prefixBitLength, sequence(0, 100), sequence(50, 150));
-        verifyMerge(prefixBitLength, sequence(50, 150), sequence(0, 100));
+            // small, overlapping
+            verifyMerge(prefixBitLength, sequence(0, 100), sequence(50, 150));
+            verifyMerge(prefixBitLength, sequence(50, 150), sequence(0, 100));
 
-        // small, same
-        verifyMerge(prefixBitLength, sequence(0, 100), sequence(0, 100));
+            // small, same
+            verifyMerge(prefixBitLength, sequence(0, 100), sequence(0, 100));
 
-        // large, non-overlapping
-        verifyMerge(prefixBitLength, sequence(0, 20000), sequence(20000, 40000));
-        verifyMerge(prefixBitLength, sequence(20000, 40000), sequence(0, 20000));
+            // large, non-overlapping
+            verifyMerge(prefixBitLength, sequence(0, 20000), sequence(20000, 40000));
+            verifyMerge(prefixBitLength, sequence(20000, 40000), sequence(0, 20000));
 
-        // large, overlapping
-        verifyMerge(prefixBitLength, sequence(0, 2_000_000), sequence(1_000_000, 3_000_000));
-        verifyMerge(prefixBitLength, sequence(1_000_000, 3_000_000), sequence(0, 2_000_000));
+            // large, overlapping
+            verifyMerge(prefixBitLength, sequence(0, 2_000_000), sequence(1_000_000, 3_000_000));
+            verifyMerge(prefixBitLength, sequence(1_000_000, 3_000_000), sequence(0, 2_000_000));
 
-        // large, same
-        verifyMerge(prefixBitLength, sequence(0, 2_000_000), sequence(0, 2_000_000));
+            // large, same
+            verifyMerge(prefixBitLength, sequence(0, 2_000_000), sequence(0, 2_000_000));
+        }
     }
 
     private static void verifyMerge(int prefixBitLength, List<Long> one, List<Long> two)
@@ -175,23 +182,8 @@ public class TestDenseHll
         }
     }
 
-    @DataProvider(name = "bits")
-    private Object[][] prefixLengths()
+    private int[] prefixLengths()
     {
-        return new Object[][] {
-                new Object[] {4},
-                new Object[] {5},
-                new Object[] {6},
-                new Object[] {7},
-                new Object[] {8},
-                new Object[] {9},
-                new Object[] {10},
-                new Object[] {11},
-                new Object[] {12},
-                new Object[] {13},
-                new Object[] {14},
-                new Object[] {15},
-                new Object[] {16},
-        };
+        return new int[] {4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
     }
 }

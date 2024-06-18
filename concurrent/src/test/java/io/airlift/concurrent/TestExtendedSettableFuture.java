@@ -1,6 +1,6 @@
 package io.airlift.concurrent;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;

@@ -15,12 +15,12 @@
  */
 package io.airlift.event.client;
 
-import org.testng.annotations.BeforeMethod;
+import org.junit.jupiter.api.BeforeEach;
 
 public class TestNullEventClient
         extends AbstractTestNullEventClient
 {
-    @BeforeMethod
+    @BeforeEach
     public void setUp()
             throws Exception
     {

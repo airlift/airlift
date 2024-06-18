@@ -19,7 +19,7 @@ import io.airlift.openmetrics.types.Counter;
 import io.airlift.openmetrics.types.Gauge;
 import io.airlift.openmetrics.types.Info;
 import io.airlift.openmetrics.types.Summary;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.math.BigInteger;
 

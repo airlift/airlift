@@ -17,7 +17,6 @@ package io.airlift.http.server;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.ByteStreams;
@@ -48,16 +47,16 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.BeforeSuite;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.parallel.Execution;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
@@ -83,26 +82,29 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.Files.createTempDirectory;
 import static java.util.Collections.nCopies;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
+import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
 
-@Test(singleThreaded = true)
+@TestInstance(PER_CLASS)
+@Execution(SAME_THREAD)
 public class TestHttpServerModule
 {
     private File tempDir;
 
-    @BeforeSuite
+    @BeforeAll
     public void setupSuite()
     {
         Logging.initialize();
     }
 
-    @BeforeMethod
+    @BeforeEach
     public void setup()
             throws IOException
     {
         tempDir = createTempDirectory(null).toFile();
     }
 
-    @AfterMethod(alwaysRun = true)
+    @AfterEach
     public void tearDown()
             throws IOException
     {
@@ -169,14 +171,15 @@ public class TestHttpServerModule
         }
     }
 
-    @DataProvider
-    public static Iterator<Boolean> enabledDisabled()
+    @Test
+    public void testServer()
+            throws Exception
     {
-        return ImmutableList.of(true, false).iterator();
+        doTestServerCompliance(true);
+        doTestServerCompliance(false);
     }
 
-    @Test(dataProvider = "enabledDisabled")
-    public void testServer(boolean enableLegacyUriCompliance)
+    public void doTestServerCompliance(boolean enableLegacyUriCompliance)
             throws Exception
     {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()

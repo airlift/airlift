@@ -21,7 +21,7 @@ import com.google.inject.ProvisionException;
 import com.google.inject.Scopes;
 import com.google.inject.spi.Message;
 import io.airlift.configuration.Config;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.testing.Assertions.assertContains;

@@ -19,9 +19,9 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.Uninterruptibles;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,13 +41,13 @@ public class TestDynamicSizeBoundQueue
 {
     private ListeningExecutorService executorService;
 
-    @BeforeMethod
+    @BeforeEach
     public void setUp()
     {
         executorService = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool());
     }
 
-    @AfterMethod
+    @AfterEach
     public void tearDown()
     {
         executorService.shutdownNow();

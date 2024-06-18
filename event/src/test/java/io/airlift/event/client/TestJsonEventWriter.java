@@ -17,8 +17,9 @@ package io.airlift.event.client;
 
 import com.google.common.collect.ImmutableList;
 import io.airlift.event.client.NestedDummyEventClass.NestedPart;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 
 import java.io.ByteArrayOutputStream;
 import java.time.Instant;
@@ -30,12 +31,15 @@ import static io.airlift.event.client.ChainedCircularEventClass.ChainedPart;
 import static io.airlift.event.client.EventTypeMetadata.getValidEventTypeMetaDataSet;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 
+@TestInstance(PER_CLASS)
 public class TestJsonEventWriter
 {
     private JsonEventWriter eventWriter;
 
-    @BeforeClass
+    @BeforeAll
     public void setup()
             throws Exception
     {
@@ -74,14 +78,16 @@ public class TestJsonEventWriter
         assertEventJson(createEventGenerator(ImmutableList.of(nestedEvent)), "nested.json");
     }
 
-    @Test(expectedExceptions = InvalidEventException.class, expectedExceptionsMessageRegExp = "Cycle detected in event data:.*")
+    @Test
     public void testCircularEvent()
             throws Exception
     {
-        eventWriter.writeEvents(createEventGenerator(ImmutableList.of(new CircularEventClass())), nullOutputStream());
+        assertThatThrownBy(() -> eventWriter.writeEvents(createEventGenerator(ImmutableList.of(new CircularEventClass())), nullOutputStream()))
+                .isInstanceOf(InvalidEventException.class)
+                .hasMessageMatching("Cycle detected in event data:.*");
     }
 
-    @Test(expectedExceptions = InvalidEventException.class, expectedExceptionsMessageRegExp = "Cycle detected in event data:.*")
+    @Test
     public void testChainedCircularEvent()
             throws Exception
     {
@@ -94,7 +100,9 @@ public class TestJsonEventWriter
 
         ChainedCircularEventClass event = new ChainedCircularEventClass(a);
 
-        eventWriter.writeEvents(createEventGenerator(ImmutableList.of(event)), nullOutputStream());
+        assertThatThrownBy(() -> eventWriter.writeEvents(createEventGenerator(ImmutableList.of(event)), nullOutputStream()))
+                .isInstanceOf(InvalidEventException.class)
+                .hasMessageMatching("Cycle detected in event data:.*");
     }
 
     private void assertEventJson(EventClient.EventGenerator<?> events, String resource)

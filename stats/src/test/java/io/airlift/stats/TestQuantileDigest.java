@@ -5,7 +5,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import io.airlift.slice.Slice;
 import io.airlift.testing.TestingTicker;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -796,7 +797,7 @@ public class TestQuantileDigest
         assertThat(digest.equivalent(deserialize(digest.serialize()))).isTrue();
     }
 
-    @Test(invocationCount = 1000)
+    @RepeatedTest(1000)
     public void testSerializationRandom()
             throws Exception
     {

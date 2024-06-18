@@ -14,8 +14,6 @@
 package io.airlift.http.client.jetty;
 
 import io.airlift.http.client.HttpClientConfig;
-import org.eclipse.jetty.client.HttpResponseException;
-import org.testng.annotations.Test;
 
 import static com.google.common.io.Resources.getResource;
 
@@ -25,13 +23,6 @@ public class TestJettyHttpClientHttpsProxy
     TestJettyHttpClientHttpsProxy()
     {
         super("localhost", getResource("localhost.keystore").toString());
-    }
-
-    @Test(expectedExceptions = HttpResponseException.class)
-    public void testConnectionRefused()
-            throws Exception
-    {
-        super.testConnectionRefused();
     }
 
     @Override

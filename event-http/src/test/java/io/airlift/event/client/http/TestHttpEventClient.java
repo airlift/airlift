@@ -39,9 +39,11 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.parallel.Execution;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -57,15 +59,18 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import static com.google.common.base.Throwables.throwIfUnchecked;
 import static io.airlift.event.client.EventTypeMetadata.getValidEventTypeMetaDataSet;
 import static io.airlift.event.client.TestingUtils.getNormalizedJson;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
+import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
 
-@Test(singleThreaded = true)
+@TestInstance(PER_CLASS)
+@Execution(SAME_THREAD)
 public class TestHttpEventClient
 {
     private DummyServlet servlet;
@@ -74,24 +79,18 @@ public class TestHttpEventClient
     private URI baseUri;
     private HttpClient httpClient;
 
-    @Test(expectedExceptions = ServiceUnavailableException.class, expectedExceptionsMessageRegExp = ".*is not available.*")
+    @Test
     public void testFutureFailsWhenServiceUnavailable()
-            throws ExecutionException, InterruptedException
     {
         client = newEventClient(Collections.<URI>emptyList());
 
-        try {
-            client.post(new FixedDummyEventClass("host", Instant.now(), UUID.randomUUID(), 1, "foo")).get();
-        }
-        catch (ExecutionException e) {
-            throwIfUnchecked(e.getCause());
-            throw new RuntimeException(e.getCause());
-        }
+        assertThatThrownBy(() -> client.post(new FixedDummyEventClass("host", Instant.now(), UUID.randomUUID(), 1, "foo")).get())
+                .hasCauseInstanceOf(ServiceUnavailableException.class)
+                .hasMessageContaining("Service type=[collector], pool=[general] is not available");
     }
 
     @Test
     public void testCallSucceedsWhenServiceUnavailable()
-            throws ExecutionException, InterruptedException
     {
         client = newEventClient(Collections.<URI>emptyList());
 
@@ -131,7 +130,7 @@ public class TestHttpEventClient
         assertThat(servlet.lastBody).isEqualTo(getNormalizedJson("events.json"));
     }
 
-    @BeforeMethod
+    @BeforeEach
     public void setup()
             throws Exception
     {
@@ -142,7 +141,7 @@ public class TestHttpEventClient
         server.start();
     }
 
-    @AfterMethod(alwaysRun = true)
+    @AfterEach
     public void tearDown()
             throws Exception
     {

@@ -17,7 +17,7 @@ package io.airlift.configuration;
 
 import com.google.inject.ConfigurationException;
 import com.google.inject.spi.Message;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 

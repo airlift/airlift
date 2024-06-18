@@ -21,9 +21,11 @@ import io.airlift.discovery.client.testing.InMemoryDiscoveryClient;
 import io.airlift.node.NodeConfig;
 import io.airlift.node.NodeInfo;
 import io.airlift.units.Duration;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.parallel.Execution;
 
 import java.util.List;
 import java.util.Map;
@@ -35,8 +37,11 @@ import static io.airlift.concurrent.MoreFutures.getFutureValue;
 import static io.airlift.discovery.client.ServiceTypes.serviceType;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
+import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
 
-@Test(singleThreaded = true)
+@TestInstance(PER_CLASS)
+@Execution(SAME_THREAD)
 public class TestAnnouncer
 {
     public static final Duration MAX_AGE = new Duration(1, TimeUnit.MILLISECONDS);
@@ -46,7 +51,7 @@ public class TestAnnouncer
     private ServiceAnnouncement serviceAnnouncement;
     private NodeInfo nodeInfo;
 
-    @BeforeMethod
+    @BeforeEach
     protected void setUp()
             throws Exception
     {
@@ -56,7 +61,7 @@ public class TestAnnouncer
         announcer = new Announcer(discoveryClient, ImmutableSet.of(serviceAnnouncement));
     }
 
-    @AfterMethod(alwaysRun = true)
+    @AfterEach
     public void tearDown()
             throws Exception
     {

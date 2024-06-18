@@ -13,7 +13,7 @@
  */
 package io.airlift.http.client;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 import java.util.function.Predicate;

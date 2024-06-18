@@ -15,10 +15,10 @@ import io.airlift.jaxrs.JaxrsModule;
 import io.airlift.json.JsonModule;
 import io.airlift.json.ObjectMapperProvider;
 import io.airlift.node.testing.TestingNodeModule;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
@@ -42,7 +41,9 @@ import static io.airlift.testing.Assertions.assertEqualsIgnoreOrder;
 import static java.lang.management.ManagementFactory.MEMORY_MXBEAN_NAME;
 import static java.lang.management.ManagementFactory.RUNTIME_MXBEAN_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 
+@TestInstance(PER_CLASS)
 public class TestMBeanResource
 {
     private final MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
@@ -50,7 +51,7 @@ public class TestMBeanResource
     private TestingHttpServer server;
     private HttpClient client;
 
-    @BeforeClass
+    @BeforeAll
     public void setup()
     {
         Bootstrap app = new Bootstrap(
@@ -70,7 +71,7 @@ public class TestMBeanResource
         client = new JettyHttpClient();
     }
 
-    @AfterClass(alwaysRun = true)
+    @AfterAll
     public void teardown()
     {
         try (HttpClient ignored = client) {
@@ -78,17 +79,6 @@ public class TestMBeanResource
                 lifeCycleManager.stop();
             }
         }
-    }
-
-    @DataProvider(name = "mbeanNames")
-    public Iterator<Object[]> createMBeanNames()
-    {
-        List<String> names = getMBeanNames();
-        ImmutableList.Builder<Object[]> data = ImmutableList.builder();
-        for (String name : names) {
-            data.add(new Object[] {name});
-        }
-        return data.build().iterator();
     }
 
     @Test
@@ -131,32 +121,36 @@ public class TestMBeanResource
         assertEqualsIgnoreOrder(names, getMBeanNames());
     }
 
-    @Test(dataProvider = "mbeanNames")
-    public void testGetMBean(String mbeanName)
+    @Test
+    public void testGetMBean()
             throws Exception
     {
-        URI uri = uriBuilderFrom(uriFor("/v1/jmx/mbean"))
-                .appendPath(mbeanName)
-                .build();
-        JsonNode mbean = jsonRequest(uri);
+        for (String mbeanName : getMBeanNames()) {
+            URI uri = uriBuilderFrom(uriFor("/v1/jmx/mbean"))
+                    .appendPath(mbeanName)
+                    .build();
+            JsonNode mbean = jsonRequest(uri);
 
-        JsonNode name = mbean.get("objectName");
-        assertThat(name.isTextual()).isTrue();
-        assertThat(name.asText()).isEqualTo(mbeanName);
+            JsonNode name = mbean.get("objectName");
+            assertThat(name.isTextual()).isTrue();
+            assertThat(name.asText()).isEqualTo(mbeanName);
+        }
     }
 
-    @Test(dataProvider = "mbeanNames")
-    public void testGetMBeanJsonp(String mbeanName)
+    @Test
+    public void testGetMBeanJsonp()
             throws Exception
     {
-        URI uri = uriBuilderFrom(uriFor("/v1/jmx/mbean"))
-                .appendPath(mbeanName)
-                .build();
-        JsonNode mbean = jsonpRequest(uri);
+        for (String mbeanName : getMBeanNames()) {
+            URI uri = uriBuilderFrom(uriFor("/v1/jmx/mbean"))
+                    .appendPath(mbeanName)
+                    .build();
+            JsonNode mbean = jsonpRequest(uri);
 
-        JsonNode name = mbean.get("objectName");
-        assertThat(name.isTextual()).isTrue();
-        assertThat(name.asText()).isEqualTo(mbeanName);
+            JsonNode name = mbean.get("objectName");
+            assertThat(name.isTextual()).isTrue();
+            assertThat(name.asText()).isEqualTo(mbeanName);
+        }
     }
 
     private JsonNode jsonRequest(URI uri)

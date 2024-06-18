@@ -19,7 +19,8 @@ import com.google.common.io.Resources;
 import com.google.common.primitives.Doubles;
 import io.airlift.slice.Slices;
 import org.assertj.core.data.Offset;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -221,7 +222,7 @@ public class TestTDigest
         }
     }
 
-    @Test(invocationCount = 1000)
+    @RepeatedTest(1000)
     public void testSerializationRandom()
     {
         TDigest digest = new TDigest();

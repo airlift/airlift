@@ -13,7 +13,7 @@
  */
 package io.airlift.security.cert;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;

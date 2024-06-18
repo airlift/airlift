@@ -22,7 +22,7 @@ import io.airlift.jaxrs.testing.GuavaMultivaluedMap;
 import io.airlift.json.JsonCodec;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MultivaluedMap;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
@@ -32,6 +32,7 @@ import java.util.zip.ZipException;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 
 public class TestJsonMapper
@@ -134,13 +135,14 @@ public class TestJsonMapper
         }
     }
 
-    @Test(expectedExceptions = IOException.class)
+    @Test
     public void testOtherIOExceptionThrowsIOException()
             throws IOException
     {
         try {
             JsonMapper jsonMapper = new JsonMapper(new ObjectMapper());
-            jsonMapper.readFrom(Object.class, Object.class, null, null, null, new InputStream()
+
+            assertThatThrownBy(() -> jsonMapper.readFrom(Object.class, Object.class, null, null, null, new InputStream()
             {
                 @Override
                 public int read()
@@ -162,8 +164,7 @@ public class TestJsonMapper
                 {
                     throw new ZipException("forced ZipException");
                 }
-            });
-            fail("Should have thrown an IOException");
+            })).isInstanceOf(ZipException.class);
         }
         catch (WebApplicationException e) {
             org.assertj.core.api.Assertions.fail("Should not have received a WebApplicationException", e);
