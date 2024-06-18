@@ -13,7 +13,7 @@ import java.util.Optional;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.MoreCollectors.onlyElement;
 import static io.airlift.configuration.ConfigBinder.configBinder;
-import static org.testng.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestConfigurationInspector
 {
@@ -24,7 +24,7 @@ public class TestConfigurationInspector
                 .stream()
                 .map(ConfigAttribute::getDefaultValue)
                 .collect(toImmutableList());
-        assertEquals(defaultString, ImmutableList.of("----"));
+        assertThat(defaultString).isEqualTo(ImmutableList.of("----"));
     }
 
     @Test
@@ -34,7 +34,7 @@ public class TestConfigurationInspector
                 .stream()
                 .map(ConfigAttribute::getCurrentValue)
                 .collect(toImmutableList());
-        assertEquals(currentString, ImmutableList.of("string"));
+        assertThat(currentString).isEqualTo(ImmutableList.of("string"));
     }
 
     private ConfigRecord<?> getConfigRecord()

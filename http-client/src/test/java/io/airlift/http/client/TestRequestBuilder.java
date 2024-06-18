@@ -23,8 +23,7 @@ import java.net.URI;
 import static io.airlift.http.client.Request.Builder.fromRequest;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StaticBodyGenerator.createStaticBodyGenerator;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestRequestBuilder
 {
@@ -34,12 +33,12 @@ public class TestRequestBuilder
     public void testRequestBuilder()
     {
         Request request = createRequest();
-        assertEquals(request.getMethod(), "GET");
-        assertEquals(request.getBodyGenerator(), NULL_BODY_GENERATOR);
-        assertEquals(request.getUri(), URI.create("http://example.com"));
-        assertEquals(request.getHeaders(), ImmutableListMultimap.of(
+        assertThat(request.getMethod()).isEqualTo("GET");
+        assertThat(request.getBodyGenerator()).isEqualTo(NULL_BODY_GENERATOR);
+        assertThat(request.getUri()).isEqualTo(URI.create("http://example.com"));
+        assertThat(request.getHeaders()).isEqualTo(ImmutableListMultimap.of(
                 "newheader", "withvalue", "anotherheader", "anothervalue"));
-        assertFalse(request.isFollowRedirects());
+        assertThat(request.isFollowRedirects()).isFalse();
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "Cannot make requests to HTTP port 0")
@@ -53,7 +52,7 @@ public class TestRequestBuilder
     public void testBuilderFromRequest()
     {
         Request request = createRequest();
-        assertEquals(fromRequest(request).build(), request);
+        assertThat(fromRequest(request).build()).isEqualTo(request);
     }
 
     private static Request createRequest()

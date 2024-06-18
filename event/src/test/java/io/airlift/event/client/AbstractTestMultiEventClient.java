@@ -18,7 +18,7 @@ package io.airlift.event.client;
 import com.google.common.collect.ImmutableList;
 import org.testng.annotations.Test;
 
-import static org.testng.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Test(singleThreaded = true)
 public abstract class AbstractTestMultiEventClient
@@ -36,8 +36,8 @@ public abstract class AbstractTestMultiEventClient
     {
         eventClient.post(event1);
 
-        assertEquals(memoryEventClient1.getEvents(), ImmutableList.of(event1));
-        assertEquals(memoryEventClient2.getEvents(), ImmutableList.of(event1));
+        assertThat(memoryEventClient1.getEvents()).isEqualTo(ImmutableList.of(event1));
+        assertThat(memoryEventClient2.getEvents()).isEqualTo(ImmutableList.of(event1));
     }
 
     @Test
@@ -47,10 +47,8 @@ public abstract class AbstractTestMultiEventClient
         eventClient.post(event2);
         eventClient.post(event3);
 
-        assertEquals(memoryEventClient1.getEvents(),
-                ImmutableList.of(event1, event2, event3));
-        assertEquals(memoryEventClient2.getEvents(),
-                ImmutableList.of(event1, event2, event3));
+        assertThat(memoryEventClient1.getEvents()).isEqualTo(ImmutableList.of(event1, event2, event3));
+        assertThat(memoryEventClient2.getEvents()).isEqualTo(ImmutableList.of(event1, event2, event3));
     }
 
     @Test
@@ -58,10 +56,8 @@ public abstract class AbstractTestMultiEventClient
     {
         eventClient.post(event1, event2, event3);
 
-        assertEquals(memoryEventClient1.getEvents(),
-                ImmutableList.of(event1, event2, event3));
-        assertEquals(memoryEventClient2.getEvents(),
-                ImmutableList.of(event1, event2, event3));
+        assertThat(memoryEventClient1.getEvents()).isEqualTo(ImmutableList.of(event1, event2, event3));
+        assertThat(memoryEventClient2.getEvents()).isEqualTo(ImmutableList.of(event1, event2, event3));
     }
 
     @Test
@@ -69,10 +65,8 @@ public abstract class AbstractTestMultiEventClient
     {
         eventClient.post(ImmutableList.of(event1, event2, event3));
 
-        assertEquals(memoryEventClient1.getEvents(),
-                ImmutableList.of(event1, event2, event3));
-        assertEquals(memoryEventClient2.getEvents(),
-                ImmutableList.of(event1, event2, event3));
+        assertThat(memoryEventClient1.getEvents()).isEqualTo(ImmutableList.of(event1, event2, event3));
+        assertThat(memoryEventClient2.getEvents()).isEqualTo(ImmutableList.of(event1, event2, event3));
     }
 
     @Test
@@ -84,9 +78,7 @@ public abstract class AbstractTestMultiEventClient
             objectEventPoster.post(event3);
         });
 
-        assertEquals(memoryEventClient1.getEvents(),
-                ImmutableList.of(event1, event2, event3));
-        assertEquals(memoryEventClient2.getEvents(),
-                ImmutableList.of(event1, event2, event3));
+        assertThat(memoryEventClient1.getEvents()).isEqualTo(ImmutableList.of(event1, event2, event3));
+        assertThat(memoryEventClient2.getEvents()).isEqualTo(ImmutableList.of(event1, event2, event3));
     }
 }

@@ -24,7 +24,7 @@ import static io.airlift.event.client.EventTypeMetadata.getEventTypeMetadata;
 import static io.airlift.event.client.EventTypeMetadata.getEventTypeMetadataNested;
 import static io.airlift.event.client.EventTypeMetadata.getValidEventTypeMetadata;
 import static io.airlift.testing.Assertions.assertContains;
-import static org.testng.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestEventValidation
 {
@@ -90,15 +90,15 @@ public class TestEventValidation
             }
         }
 
-        assertEquals(getEventTypeMetadataNested(TestEvent.Nested.class).getTypeName(), "NestedCustom");
-        assertEquals(getEventTypeMetadataNested(TestEvent.Nested2.class).getTypeName(), TestEvent.Nested2.class.getSimpleName());
+        assertThat(getEventTypeMetadataNested(TestEvent.Nested.class).getTypeName()).isEqualTo("NestedCustom");
+        assertThat(getEventTypeMetadataNested(TestEvent.Nested2.class).getTypeName()).isEqualTo(TestEvent.Nested2.class.getSimpleName());
     }
 
     private static void assertInvalidEvent(Class<?> eventClass, String errorPart)
     {
         EventTypeMetadata<?> metadata = getEventTypeMetadata(eventClass);
         List<String> errors = metadata.getErrors();
-        assertEquals(errors.size(), 1, "expected exactly one error:\n" + Joiner.on('\n').join(errors));
+        assertThat(errors.size()).as("expected exactly one error:\n" + Joiner.on('\n').join(errors)).isEqualTo(1);
         assertContains(errors.get(0), errorPart);
     }
 }

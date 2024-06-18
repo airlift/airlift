@@ -4,9 +4,7 @@ import org.testng.annotations.Test;
 
 import java.io.File;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestTempFile
 {
@@ -18,25 +16,25 @@ public class TestTempFile
         TempFile tempFile = new TempFile();
         File file = tempFile.file();
 
-        assertEquals(file, tempFile.path().toFile());
-        assertTrue(file.exists());
-        assertTrue(file.isFile());
-        assertTrue(file.canRead());
-        assertTrue(file.canWrite());
+        assertThat(file).isEqualTo(tempFile.path().toFile());
+        assertThat(file).exists();
+        assertThat(file).isFile();
+        assertThat(file).canRead();
+        assertThat(file).canWrite();
 
         tempFile.close();
 
-        assertFalse(file.exists());
+        assertThat(file).doesNotExist();
 
         // verify close does not delete file again
 
-        assertTrue(file.createNewFile());
-        assertTrue(file.exists());
+        assertThat(file.createNewFile()).isTrue();
+        assertThat(file).exists();
 
         tempFile.close();
 
-        assertTrue(file.exists());
+        assertThat(file).exists();
 
-        assertTrue(file.delete());
+        assertThat(file.delete()).isTrue();
     }
 }

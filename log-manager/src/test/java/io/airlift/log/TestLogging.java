@@ -26,8 +26,7 @@ import java.io.IOException;
 import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
 import static java.nio.file.Files.createTempDirectory;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Test(singleThreaded = true)
 public class TestLogging
@@ -67,13 +66,13 @@ public class TestLogging
         Logging logging = Logging.initialize();
         logging.configure(configuration);
 
-        assertTrue(logFile1.exists());
-        assertTrue(logFile2.exists());
-        assertFalse(tempLogFile1.exists());
-        assertFalse(tempLogFile2.exists());
+        assertThat(logFile1).exists();
+        assertThat(logFile2).exists();
+        assertThat(tempLogFile1).doesNotExist();
+        assertThat(tempLogFile2).doesNotExist();
 
-        assertTrue(new File(tempDir, "temp1.log").exists());
-        assertTrue(new File(tempDir, "temp2.log").exists());
+        assertThat(new File(tempDir, "temp1.log")).exists();
+        assertThat(new File(tempDir, "temp2.log")).exists();
     }
 
     @Test
@@ -84,20 +83,20 @@ public class TestLogging
         Logger logger = Logger.get("testPropagatesLevels");
 
         logging.setLevel("testPropagatesLevels", Level.ERROR);
-        assertFalse(logger.isDebugEnabled());
-        assertFalse(logger.isInfoEnabled());
+        assertThat(logger.isDebugEnabled()).isFalse();
+        assertThat(logger.isInfoEnabled()).isFalse();
 
         logging.setLevel("testPropagatesLevels", Level.WARN);
-        assertFalse(logger.isDebugEnabled());
-        assertFalse(logger.isInfoEnabled());
+        assertThat(logger.isDebugEnabled()).isFalse();
+        assertThat(logger.isInfoEnabled()).isFalse();
 
         logging.setLevel("testPropagatesLevels", Level.INFO);
-        assertFalse(logger.isDebugEnabled());
-        assertTrue(logger.isInfoEnabled());
+        assertThat(logger.isDebugEnabled()).isFalse();
+        assertThat(logger.isInfoEnabled()).isTrue();
 
         logging.setLevel("testPropagatesLevels", Level.DEBUG);
-        assertTrue(logger.isDebugEnabled());
-        assertTrue(logger.isInfoEnabled());
+        assertThat(logger.isDebugEnabled()).isTrue();
+        assertThat(logger.isInfoEnabled()).isTrue();
     }
 
     @Test
@@ -108,20 +107,20 @@ public class TestLogging
         Logger logger = Logger.get("testPropagatesLevelsHierarchical.child");
 
         logging.setLevel("testPropagatesLevelsHierarchical", Level.ERROR);
-        assertFalse(logger.isDebugEnabled());
-        assertFalse(logger.isInfoEnabled());
+        assertThat(logger.isDebugEnabled()).isFalse();
+        assertThat(logger.isInfoEnabled()).isFalse();
 
         logging.setLevel("testPropagatesLevelsHierarchical", Level.WARN);
-        assertFalse(logger.isDebugEnabled());
-        assertFalse(logger.isInfoEnabled());
+        assertThat(logger.isDebugEnabled()).isFalse();
+        assertThat(logger.isInfoEnabled()).isFalse();
 
         logging.setLevel("testPropagatesLevelsHierarchical", Level.INFO);
-        assertFalse(logger.isDebugEnabled());
-        assertTrue(logger.isInfoEnabled());
+        assertThat(logger.isDebugEnabled()).isFalse();
+        assertThat(logger.isInfoEnabled()).isTrue();
 
         logging.setLevel("testPropagatesLevelsHierarchical", Level.DEBUG);
-        assertTrue(logger.isDebugEnabled());
-        assertTrue(logger.isInfoEnabled());
+        assertThat(logger.isDebugEnabled()).isTrue();
+        assertThat(logger.isInfoEnabled()).isTrue();
     }
 
     @Test
@@ -133,8 +132,8 @@ public class TestLogging
 
         logging.setLevel("testChildLevelOverridesParent", Level.DEBUG);
         logging.setLevel("testChildLevelOverridesParent.child", Level.ERROR);
-        assertFalse(logger.isDebugEnabled());
-        assertFalse(logger.isInfoEnabled());
+        assertThat(logger.isDebugEnabled()).isFalse();
+        assertThat(logger.isInfoEnabled()).isFalse();
     }
 
     @Test
@@ -145,8 +144,8 @@ public class TestLogging
         Logger logger = Logger.get("testClearLevel");
 
         logging.setLevel("testClearLevel", Level.DEBUG);
-        assertTrue(logger.isDebugEnabled());
+        assertThat(logger.isDebugEnabled()).isTrue();
         logging.clearLevel("testClearLevel");
-        assertFalse(logger.isDebugEnabled());
+        assertThat(logger.isDebugEnabled()).isFalse();
     }
 }

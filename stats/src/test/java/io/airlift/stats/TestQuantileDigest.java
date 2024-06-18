@@ -18,9 +18,7 @@ import java.util.stream.LongStream;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestQuantileDigest
 {
@@ -33,10 +31,10 @@ public class TestQuantileDigest
         digest.validate();
 
         // should have no compressions with so few values and the allowed error
-        assertEquals(digest.getConfidenceFactor(), 0.0);
+        assertThat(digest.getConfidenceFactor()).isEqualTo(0.0);
 
-        assertEquals(digest.getCount(), (double) 1);
-        assertEquals(digest.getNodeCount(), 1);
+        assertThat(digest.getCount()).isEqualTo(1);
+        assertThat(digest.getNodeCount()).isEqualTo(1);
     }
 
     @Test
@@ -45,7 +43,7 @@ public class TestQuantileDigest
         QuantileDigest digest = new QuantileDigest(1);
         addAll(digest, asList(-1, -2, -3, -4, -5, 0, 1, 2, 3, 4, 5));
 
-        assertEquals(digest.getCount(), (double) 11);
+        assertThat(digest.getCount()).isEqualTo(11);
     }
 
     @Test
@@ -58,10 +56,10 @@ public class TestQuantileDigest
         digest.validate();
 
         // should have no compressions with so few values and the allowed error
-        assertEquals(digest.getConfidenceFactor(), 0.0);
+        assertThat(digest.getConfidenceFactor()).isEqualTo(0.0);
 
-        assertEquals(digest.getCount(), (double) 2);
-        assertEquals(digest.getNodeCount(), 1);
+        assertThat(digest.getCount()).isEqualTo(2);
+        assertThat(digest.getNodeCount()).isEqualTo(1);
     }
 
     @Test
@@ -74,9 +72,9 @@ public class TestQuantileDigest
         digest.validate();
 
         // should have no compressions with so few values and the allowed error
-        assertEquals(digest.getConfidenceFactor(), 0.0);
-        assertEquals(digest.getCount(), (double) 2);
-        assertEquals(digest.getNodeCount(), 3);
+        assertThat(digest.getConfidenceFactor()).isEqualTo(0.0);
+        assertThat(digest.getCount()).isEqualTo(2);
+        assertThat(digest.getNodeCount()).isEqualTo(3);
     }
 
     @Test
@@ -87,7 +85,7 @@ public class TestQuantileDigest
         List<Integer> values = asList(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5, 6, 7);
         addAll(digest, values);
 
-        assertEquals(digest.getCount(), (double) values.size());
+        assertThat(digest.getCount()).isEqualTo(values.size());
     }
 
     @Test
@@ -98,7 +96,7 @@ public class TestQuantileDigest
         List<Integer> values = asList(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5, 6, 7);
         addAll(digest, Lists.reverse(values));
 
-        assertEquals(digest.getCount(), (double) values.size());
+        assertThat(digest.getCount()).isEqualTo(values.size());
     }
 
     @Test
@@ -113,9 +111,9 @@ public class TestQuantileDigest
         digest.compress();
         digest.validate();
 
-        assertEquals(digest.getCount(), (double) values.size());
-        assertEquals(digest.getNodeCount(), 7);
-        assertEquals(digest.getConfidenceFactor(), 0.2);
+        assertThat(digest.getCount()).isEqualTo(values.size());
+        assertThat(digest.getNodeCount()).isEqualTo(7);
+        assertThat(digest.getConfidenceFactor()).isEqualTo(0.2);
     }
 
     @Test
@@ -140,19 +138,19 @@ public class TestQuantileDigest
         addAll(digest, asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
 
         // should have no compressions with so few values and the allowed error
-        assertEquals(digest.getConfidenceFactor(), 0.0);
+        assertThat(digest.getConfidenceFactor()).isEqualTo(0.0);
 
-        assertEquals(digest.getQuantile(0.0), 0);
-        assertEquals(digest.getQuantile(0.1), 1);
-        assertEquals(digest.getQuantile(0.2), 2);
-        assertEquals(digest.getQuantile(0.3), 3);
-        assertEquals(digest.getQuantile(0.4), 4);
-        assertEquals(digest.getQuantile(0.5), 5);
-        assertEquals(digest.getQuantile(0.6), 6);
-        assertEquals(digest.getQuantile(0.7), 7);
-        assertEquals(digest.getQuantile(0.8), 8);
-        assertEquals(digest.getQuantile(0.9), 9);
-        assertEquals(digest.getQuantile(1), 9);
+        assertThat(digest.getQuantile(0.0)).isEqualTo(0);
+        assertThat(digest.getQuantile(0.1)).isEqualTo(1);
+        assertThat(digest.getQuantile(0.2)).isEqualTo(2);
+        assertThat(digest.getQuantile(0.3)).isEqualTo(3);
+        assertThat(digest.getQuantile(0.4)).isEqualTo(4);
+        assertThat(digest.getQuantile(0.5)).isEqualTo(5);
+        assertThat(digest.getQuantile(0.6)).isEqualTo(6);
+        assertThat(digest.getQuantile(0.7)).isEqualTo(7);
+        assertThat(digest.getQuantile(0.8)).isEqualTo(8);
+        assertThat(digest.getQuantile(0.9)).isEqualTo(9);
+        assertThat(digest.getQuantile(1)).isEqualTo(9);
     }
 
     @Test
@@ -162,17 +160,15 @@ public class TestQuantileDigest
 
         addRange(digest, 1, 100);
 
-        assertEquals(digest.getQuantileLowerBound(0.0), 1);
+        assertThat(digest.getQuantileLowerBound(0.0)).isEqualTo(1);
         for (int i = 1; i <= 10; i++) {
-            assertTrue(digest.getQuantileLowerBound(i / 10.0) <= i * 10);
+            assertThat(digest.getQuantileLowerBound(i / 10.0) <= i * 10).isTrue();
             if (i > 5) {
-                assertTrue(digest.getQuantileLowerBound(i / 10.0) >= (i - 5) * 10);
+                assertThat(digest.getQuantileLowerBound(i / 10.0) >= (i - 5) * 10).isTrue();
             }
         }
 
-        assertEquals(
-                digest.getQuantilesLowerBound(ImmutableList.of(0.0, 0.1, 0.2)),
-                ImmutableList.of(digest.getQuantileLowerBound(0.0), digest.getQuantileLowerBound(0.1), digest.getQuantileLowerBound(0.2)));
+        assertThat(digest.getQuantilesLowerBound(ImmutableList.of(0.0, 0.1, 0.2))).isEqualTo(ImmutableList.of(digest.getQuantileLowerBound(0.0), digest.getQuantileLowerBound(0.1), digest.getQuantileLowerBound(0.2)));
     }
 
     @Test
@@ -182,17 +178,15 @@ public class TestQuantileDigest
 
         addRange(digest, 1, 100);
 
-        assertEquals(digest.getQuantileUpperBound(1.0), 99);
+        assertThat(digest.getQuantileUpperBound(1.0)).isEqualTo(99);
         for (int i = 0; i < 10; i++) {
-            assertTrue(digest.getQuantileUpperBound(i / 10.0) >= i * 10);
+            assertThat(digest.getQuantileUpperBound(i / 10.0) >= i * 10).isTrue();
             if (i < 5) {
-                assertTrue(digest.getQuantileUpperBound(i / 10.0) <= (i + 5) * 10);
+                assertThat(digest.getQuantileUpperBound(i / 10.0) <= (i + 5) * 10).isTrue();
             }
         }
 
-        assertEquals(
-                digest.getQuantilesUpperBound(ImmutableList.of(0.8, 0.9, 1.0)),
-                ImmutableList.of(digest.getQuantileUpperBound(0.8), digest.getQuantileUpperBound(0.9), digest.getQuantileUpperBound(1.0)));
+        assertThat(digest.getQuantilesUpperBound(ImmutableList.of(0.8, 0.9, 1.0))).isEqualTo(ImmutableList.of(digest.getQuantileUpperBound(0.8), digest.getQuantileUpperBound(0.9), digest.getQuantileUpperBound(1.0)));
     }
 
     @Test
@@ -207,19 +201,19 @@ public class TestQuantileDigest
         digest.validate();
 
         // should have no compressions with so few values and the allowed error
-        assertEquals(digest.getConfidenceFactor(), 0.0);
+        assertThat(digest.getConfidenceFactor()).isEqualTo(0.0);
 
-        assertEquals(digest.getQuantile(0.0), 0);
-        assertEquals(digest.getQuantile(0.1), 0);
-        assertEquals(digest.getQuantile(0.2), 0);
-        assertEquals(digest.getQuantile(0.3), 2);
-        assertEquals(digest.getQuantile(0.4), 4);
-        assertEquals(digest.getQuantile(0.5), 4);
-        assertEquals(digest.getQuantile(0.6), 4);
-        assertEquals(digest.getQuantile(0.7), 4);
-        assertEquals(digest.getQuantile(0.8), 4);
-        assertEquals(digest.getQuantile(0.9), 5);
-        assertEquals(digest.getQuantile(1), 5);
+        assertThat(digest.getQuantile(0.0)).isEqualTo(0);
+        assertThat(digest.getQuantile(0.1)).isEqualTo(0);
+        assertThat(digest.getQuantile(0.2)).isEqualTo(0);
+        assertThat(digest.getQuantile(0.3)).isEqualTo(2);
+        assertThat(digest.getQuantile(0.4)).isEqualTo(4);
+        assertThat(digest.getQuantile(0.5)).isEqualTo(4);
+        assertThat(digest.getQuantile(0.6)).isEqualTo(4);
+        assertThat(digest.getQuantile(0.7)).isEqualTo(4);
+        assertThat(digest.getQuantile(0.8)).isEqualTo(4);
+        assertThat(digest.getQuantile(0.9)).isEqualTo(5);
+        assertThat(digest.getQuantile(1)).isEqualTo(5);
     }
 
     @Test
@@ -231,10 +225,9 @@ public class TestQuantileDigest
         addAll(digest, asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
 
         // should have no compressions with so few values and the allowed error
-        assertEquals(digest.getConfidenceFactor(), 0.0);
+        assertThat(digest.getConfidenceFactor()).isEqualTo(0.0);
 
-        assertEquals(digest.getQuantiles(asList(0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0)),
-                asList(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 9L));
+        assertThat(digest.getQuantiles(asList(0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0))).isEqualTo(asList(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 9L));
     }
 
     @Test
@@ -246,31 +239,28 @@ public class TestQuantileDigest
         addAll(digest, asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
 
         // should have no compressions with so few values and the allowed error
-        assertEquals(digest.getConfidenceFactor(), 0.0);
+        assertThat(digest.getConfidenceFactor()).isEqualTo(0.0);
 
-        assertEquals(digest.getHistogram(asList(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L)),
-                asList(new QuantileDigest.Bucket(0, Double.NaN),
-                        new QuantileDigest.Bucket(1, 0),
-                        new QuantileDigest.Bucket(1, 1),
-                        new QuantileDigest.Bucket(1, 2),
-                        new QuantileDigest.Bucket(1, 3),
-                        new QuantileDigest.Bucket(1, 4),
-                        new QuantileDigest.Bucket(1, 5),
-                        new QuantileDigest.Bucket(1, 6),
-                        new QuantileDigest.Bucket(1, 7),
-                        new QuantileDigest.Bucket(1, 8),
-                        new QuantileDigest.Bucket(1, 9)));
+        assertThat(digest.getHistogram(asList(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L))).isEqualTo(asList(new QuantileDigest.Bucket(0, Double.NaN),
+                new QuantileDigest.Bucket(1, 0),
+                new QuantileDigest.Bucket(1, 1),
+                new QuantileDigest.Bucket(1, 2),
+                new QuantileDigest.Bucket(1, 3),
+                new QuantileDigest.Bucket(1, 4),
+                new QuantileDigest.Bucket(1, 5),
+                new QuantileDigest.Bucket(1, 6),
+                new QuantileDigest.Bucket(1, 7),
+                new QuantileDigest.Bucket(1, 8),
+                new QuantileDigest.Bucket(1, 9)));
 
-        assertEquals(digest.getHistogram(asList(7L, 10L)),
-                asList(new QuantileDigest.Bucket(7, 3),
-                        new QuantileDigest.Bucket(3, 8)));
+        assertThat(digest.getHistogram(asList(7L, 10L))).isEqualTo(asList(new QuantileDigest.Bucket(7, 3),
+                new QuantileDigest.Bucket(3, 8)));
 
         // test some edge conditions
-        assertEquals(digest.getHistogram(asList(0L)), asList(new QuantileDigest.Bucket(0, Double.NaN)));
-        assertEquals(digest.getHistogram(asList(9L)), asList(new QuantileDigest.Bucket(9, 4)));
-        assertEquals(digest.getHistogram(asList(10L)), asList(new QuantileDigest.Bucket(10, 4.5)));
-        assertEquals(digest.getHistogram(asList(Long.MAX_VALUE)),
-                asList(new QuantileDigest.Bucket(10, 4.5)));
+        assertThat(digest.getHistogram(asList(0L))).isEqualTo(asList(new QuantileDigest.Bucket(0, Double.NaN)));
+        assertThat(digest.getHistogram(asList(9L))).isEqualTo(asList(new QuantileDigest.Bucket(9, 4)));
+        assertThat(digest.getHistogram(asList(10L))).isEqualTo(asList(new QuantileDigest.Bucket(10, 4.5)));
+        assertThat(digest.getHistogram(asList(Long.MAX_VALUE))).isEqualTo(asList(new QuantileDigest.Bucket(10, 4.5)));
     }
 
     @Test
@@ -283,7 +273,7 @@ public class TestQuantileDigest
                 .boxed()
                 .forEach(digest::add);
 
-        assertEquals(digest.getConfidenceFactor(), 0.0);
+        assertThat(digest.getConfidenceFactor()).isEqualTo(0.0);
 
         List<Long> bucketUpperBounds = LongStream.range(-10, 10)
                 .map(TestQuantileDigest::doubleToSortableLong)
@@ -306,26 +296,18 @@ public class TestQuantileDigest
                 .map(i -> new QuantileDigest.Bucket(1, i - 1))
                 .collect(Collectors.toList());
         expected.add(0, new QuantileDigest.Bucket(0, Double.NaN));
-        assertEquals(digest.getHistogram(bucketUpperBounds, middleFunction),
-                expected);
+        assertThat(digest.getHistogram(bucketUpperBounds, middleFunction)).isEqualTo(expected);
 
-        assertEquals(digest.getHistogram(asList(doubleToSortableLong(7), doubleToSortableLong(10)), middleFunction),
-                asList(new QuantileDigest.Bucket(17, -2.0),
-                        new QuantileDigest.Bucket(3, 8)));
+        assertThat(digest.getHistogram(asList(doubleToSortableLong(7), doubleToSortableLong(10)), middleFunction)).isEqualTo(asList(new QuantileDigest.Bucket(17, -2.0),
+                new QuantileDigest.Bucket(3, 8)));
 
         // edge cases
-        assertEquals(digest.getHistogram(asList(doubleToSortableLong(-1 * Double.MAX_VALUE)), middleFunction),
-                asList(new QuantileDigest.Bucket(0, Double.NaN)));
-        assertEquals(digest.getHistogram(asList(doubleToSortableLong(-1 * Double.MAX_VALUE), doubleToSortableLong(-1 * Double.MAX_VALUE + 1)), middleFunction),
-                asList(new QuantileDigest.Bucket(0, Double.NaN), new QuantileDigest.Bucket(0, Double.NaN)));
-        assertEquals(digest.getHistogram(asList(doubleToSortableLong(0)), middleFunction),
-                asList(new QuantileDigest.Bucket(10.0, -5.5)));
-        assertEquals(digest.getHistogram(asList(doubleToSortableLong(9)), middleFunction),
-                asList(new QuantileDigest.Bucket(19, -1.0)));
-        assertEquals(digest.getHistogram(asList(doubleToSortableLong(10)), middleFunction),
-                asList(new QuantileDigest.Bucket(20, -0.5)));
-        assertEquals(digest.getHistogram(asList(doubleToSortableLong(Double.MAX_VALUE)), middleFunction),
-                asList(new QuantileDigest.Bucket(20, -0.5)));
+        assertThat(digest.getHistogram(asList(doubleToSortableLong(-1 * Double.MAX_VALUE)), middleFunction)).isEqualTo(asList(new QuantileDigest.Bucket(0, Double.NaN)));
+        assertThat(digest.getHistogram(asList(doubleToSortableLong(-1 * Double.MAX_VALUE), doubleToSortableLong(-1 * Double.MAX_VALUE + 1)), middleFunction)).isEqualTo(asList(new QuantileDigest.Bucket(0, Double.NaN), new QuantileDigest.Bucket(0, Double.NaN)));
+        assertThat(digest.getHistogram(asList(doubleToSortableLong(0)), middleFunction)).isEqualTo(asList(new QuantileDigest.Bucket(10.0, -5.5)));
+        assertThat(digest.getHistogram(asList(doubleToSortableLong(9)), middleFunction)).isEqualTo(asList(new QuantileDigest.Bucket(19, -1.0)));
+        assertThat(digest.getHistogram(asList(doubleToSortableLong(10)), middleFunction)).isEqualTo(asList(new QuantileDigest.Bucket(20, -0.5)));
+        assertThat(digest.getHistogram(asList(doubleToSortableLong(Double.MAX_VALUE)), middleFunction)).isEqualTo(asList(new QuantileDigest.Bucket(20, -0.5)));
     }
 
     @Test
@@ -338,7 +320,7 @@ public class TestQuantileDigest
         addRange(digest, 0, total);
 
         // compression should've run at this error rate and count
-        assertTrue(digest.getConfidenceFactor() > 0.0);
+        assertThat(digest.getConfidenceFactor() > 0.0).isTrue();
 
         double actualMaxError = digest.getConfidenceFactor();
 
@@ -346,7 +328,7 @@ public class TestQuantileDigest
             QuantileDigest.Bucket bucket = digest.getHistogram(asList(value)).get(0);
 
             // estimated count should have an absolute error smaller than 2 * maxError * N
-            assertTrue(Math.abs(bucket.getCount() - value) < 2 * actualMaxError * total);
+            assertThat(Math.abs(bucket.getCount() - value)).isLessThan(2 * actualMaxError * total);
         }
     }
 
@@ -361,8 +343,8 @@ public class TestQuantileDigest
         addRange(digest, 0, count);
 
         // compression should've run at this error rate and count
-        assertTrue(digest.getConfidenceFactor() > 0);
-        assertTrue(digest.getConfidenceFactor() < maxError);
+        assertThat(digest.getConfidenceFactor()).isGreaterThan(0);
+        assertThat(digest.getConfidenceFactor()).isLessThan(maxError);
 
         for (int value = 0; value < count; ++value) {
             double quantile = value * 1.0 / count;
@@ -370,9 +352,9 @@ public class TestQuantileDigest
 
             // true rank of estimatedValue is == estimatedValue because
             // we've inserted a list of ordered numbers starting at 0
-            double error = Math.abs(estimatedValue - quantile * count) * 1.0 / count;
+            double error = Math.abs(estimatedValue - quantile * count) / count;
 
-            assertTrue(error < maxError);
+            assertThat(error < maxError).isTrue();
         }
     }
 
@@ -386,7 +368,7 @@ public class TestQuantileDigest
         addAll(digest, asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
 
         // should have no compressions with so few values and the allowed error
-        assertEquals(digest.getConfidenceFactor(), 0.0);
+        assertThat(digest.getConfidenceFactor()).isEqualTo(0.0);
 
         ticker.increment(60, TimeUnit.SECONDS);
         addAll(digest, asList(10, 11, 12, 13, 14, 15, 16, 17, 18, 19));
@@ -394,7 +376,7 @@ public class TestQuantileDigest
         // Considering that the first 10 values now have a weight of 0.5 per the alpha factor, they only contributed a count
         // of 5 to rank computations. Therefore, the 50th percentile is equivalent to a weighted rank of (5 + 10) / 2 = 7.5,
         // which corresponds to value 12
-        assertEquals(digest.getQuantile(0.5), 12);
+        assertThat(digest.getQuantile(0.5)).isEqualTo(12);
     }
 
     @Test
@@ -407,12 +389,12 @@ public class TestQuantileDigest
         addAll(digest, asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
 
         // should have no compressions with so few values and the allowed error
-        assertEquals(digest.getConfidenceFactor(), 0.0);
+        assertThat(digest.getConfidenceFactor()).isEqualTo(0.0);
 
         ticker.increment(60, TimeUnit.SECONDS);
         addAll(digest, asList(10, 11, 12, 13, 14, 15, 16, 17, 18, 19));
 
-        assertEquals(digest.getCount(), 15.0);
+        assertThat(digest.getCount()).isEqualTo(15.0);
     }
 
     @Test
@@ -429,7 +411,7 @@ public class TestQuantileDigest
         ticker.increment(targetAgeInSeconds, TimeUnit.SECONDS);
         addAll(digest, asList(10, 11, 12, 13, 14, 15, 16, 17, 18, 19));
 
-        assertEquals(digest.getCount(), 15.0);
+        assertThat(digest.getCount()).isEqualTo(15.0);
     }
 
     @Test
@@ -442,8 +424,8 @@ public class TestQuantileDigest
         int to = 700;
         addRange(digest, from, to + 1);
 
-        assertEquals(digest.getMin(), from);
-        assertEquals(digest.getMax(), to);
+        assertThat(digest.getMin()).isEqualTo(from);
+        assertThat(digest.getMax()).isEqualTo(to);
     }
 
     @Test
@@ -465,8 +447,8 @@ public class TestQuantileDigest
 
         digest.validate();
 
-        assertEquals(digest.getMin(), from);
-        assertEquals(digest.getMax(), to);
+        assertThat(digest.getMin()).isEqualTo(from);
+        assertThat(digest.getMax()).isEqualTo(to);
     }
 
     @Test
@@ -488,7 +470,7 @@ public class TestQuantileDigest
             ticker.increment(targetAgeInSeconds, TimeUnit.SECONDS);
         }
 
-        assertEquals(digest.getNodeCount(), 1);
+        assertThat(digest.getNodeCount()).isEqualTo(1);
     }
 
     @Test
@@ -498,7 +480,7 @@ public class TestQuantileDigest
         QuantileDigest a = new QuantileDigest(0.01);
         QuantileDigest b = new QuantileDigest(0.01);
 
-        assertTrue(a.equivalent(b));
+        assertThat(a.equivalent(b)).isTrue();
     }
 
     @Test
@@ -511,7 +493,7 @@ public class TestQuantileDigest
         a.add(1);
         b.add(1);
 
-        assertTrue(a.equivalent(b));
+        assertThat(a.equivalent(b)).isTrue();
     }
 
     @Test
@@ -524,7 +506,7 @@ public class TestQuantileDigest
         a.add(1);
         b.add(2);
 
-        assertFalse(a.equivalent(b));
+        assertThat(a.equivalent(b)).isFalse();
     }
 
     @Test
@@ -537,7 +519,7 @@ public class TestQuantileDigest
         addAll(a, asList(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5, 6, 7));
         addAll(b, asList(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5, 6, 7));
 
-        assertTrue(a.equivalent(b));
+        assertThat(a.equivalent(b)).isTrue();
     }
 
     @Test
@@ -550,7 +532,7 @@ public class TestQuantileDigest
         addAll(a, asList(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5, 6, 7));
         addAll(b, asList(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5, 6, 7, 8));
 
-        assertFalse(a.equivalent(b));
+        assertThat(a.equivalent(b)).isFalse();
     }
 
     @Test
@@ -566,13 +548,13 @@ public class TestQuantileDigest
         a.validate();
         b.validate();
 
-        assertTrue(b.equivalent(pristineB));
+        assertThat(b.equivalent(pristineB)).isTrue();
 
-        assertEquals(a.getCount(), 0.0);
-        assertEquals(a.getNodeCount(), 0);
+        assertThat(a.getCount()).isEqualTo(0.0);
+        assertThat(a.getNodeCount()).isEqualTo(0);
 
-        assertEquals(b.getCount(), 0.0);
-        assertEquals(b.getNodeCount(), 0);
+        assertThat(b.getCount()).isEqualTo(0.0);
+        assertThat(b.getNodeCount()).isEqualTo(0);
     }
 
     @Test
@@ -591,13 +573,13 @@ public class TestQuantileDigest
         a.validate();
         b.validate();
 
-        assertTrue(b.equivalent(pristineB));
+        assertThat(b.equivalent(pristineB)).isTrue();
 
-        assertEquals(a.getCount(), 1.0);
-        assertEquals(a.getNodeCount(), 1);
+        assertThat(a.getCount()).isEqualTo(1.0);
+        assertThat(a.getNodeCount()).isEqualTo(1);
 
-        assertEquals(b.getCount(), 1.0);
-        assertEquals(b.getNodeCount(), 1);
+        assertThat(b.getCount()).isEqualTo(1.0);
+        assertThat(b.getNodeCount()).isEqualTo(1);
     }
 
     @Test
@@ -614,13 +596,13 @@ public class TestQuantileDigest
         a.validate();
         b.validate();
 
-        assertTrue(b.equivalent(pristineB));
+        assertThat(b.equivalent(pristineB)).isTrue();
 
-        assertEquals(a.getCount(), 1.0);
-        assertEquals(a.getNodeCount(), 1);
+        assertThat(a.getCount()).isEqualTo(1.0);
+        assertThat(a.getNodeCount()).isEqualTo(1);
 
-        assertEquals(b.getCount(), 0.0);
-        assertEquals(b.getNodeCount(), 0);
+        assertThat(b.getCount()).isEqualTo(0.0);
+        assertThat(b.getNodeCount()).isEqualTo(0);
     }
 
     @Test
@@ -637,8 +619,8 @@ public class TestQuantileDigest
 
         a.validate();
 
-        assertEquals(a.getCount(), 3.0);
-        assertEquals(a.getNodeCount(), 5);
+        assertThat(a.getCount()).isEqualTo(3.0);
+        assertThat(a.getNodeCount()).isEqualTo(5);
     }
 
     @Test
@@ -656,13 +638,13 @@ public class TestQuantileDigest
 
         a.merge(b);
 
-        assertTrue(b.equivalent(pristineB));
+        assertThat(b.equivalent(pristineB)).isTrue();
 
-        assertEquals(a.getCount(), 2.0);
-        assertEquals(a.getNodeCount(), 3);
+        assertThat(a.getCount()).isEqualTo(2.0);
+        assertThat(a.getNodeCount()).isEqualTo(3);
 
-        assertEquals(b.getCount(), 1.0);
-        assertEquals(b.getNodeCount(), 1);
+        assertThat(b.getCount()).isEqualTo(1.0);
+        assertThat(b.getNodeCount()).isEqualTo(1);
     }
 
     @Test
@@ -686,10 +668,10 @@ public class TestQuantileDigest
 
         a.merge(b);
 
-        assertTrue(b.equivalent(pristineB));
+        assertThat(b.equivalent(pristineB)).isTrue();
 
-        assertEquals(a.getCount(), 14.0);
-        assertEquals(b.getCount(), 13.0);
+        assertThat(a.getCount()).isEqualTo(14.0);
+        assertThat(b.getCount()).isEqualTo(13.0);
     }
 
     @Test
@@ -709,13 +691,13 @@ public class TestQuantileDigest
 
         a.merge(b);
 
-        assertTrue(b.equivalent(pristineB));
+        assertThat(b.equivalent(pristineB)).isTrue();
 
-        assertEquals(a.getCount(), 15.0);
-        assertEquals(a.getNodeCount(), 7);
+        assertThat(a.getCount()).isEqualTo(15.0);
+        assertThat(a.getNodeCount()).isEqualTo(7);
 
-        assertEquals(b.getCount(), 2.0);
-        assertEquals(b.getNodeCount(), 3);
+        assertThat(b.getCount()).isEqualTo(2.0);
+        assertThat(b.getNodeCount()).isEqualTo(3);
     }
 
     // test merging two digests that have a node at the highest level to make sure
@@ -736,10 +718,10 @@ public class TestQuantileDigest
         a.validate();
         b.validate();
 
-        assertTrue(b.equivalent(pristineB));
+        assertThat(b.equivalent(pristineB)).isTrue();
 
-        assertEquals(a.getCount(), 4.0);
-        assertEquals(a.getNodeCount(), 7);
+        assertThat(a.getCount()).isEqualTo(4.0);
+        assertThat(a.getNodeCount()).isEqualTo(7);
     }
 
     @Test
@@ -756,13 +738,13 @@ public class TestQuantileDigest
 
         a.merge(b);
 
-        assertTrue(b.equivalent(pristineB));
+        assertThat(b.equivalent(pristineB)).isTrue();
 
-        assertEquals(a.getCount(), 2.0);
-        assertEquals(a.getNodeCount(), 1);
+        assertThat(a.getCount()).isEqualTo(2.0);
+        assertThat(a.getNodeCount()).isEqualTo(1);
 
-        assertEquals(b.getCount(), 1.0);
-        assertEquals(b.getNodeCount(), 1);
+        assertThat(b.getCount()).isEqualTo(1.0);
+        assertThat(b.getNodeCount()).isEqualTo(1);
     }
 
     @Test
@@ -772,7 +754,7 @@ public class TestQuantileDigest
         QuantileDigest digest = new QuantileDigest(0.01);
         QuantileDigest deserialized = deserialize(digest.serialize());
 
-        assertTrue(digest.equivalent(deserialized));
+        assertThat(digest.equivalent(deserialized)).isTrue();
     }
 
     @Test
@@ -782,7 +764,7 @@ public class TestQuantileDigest
         QuantileDigest digest = new QuantileDigest(0.01);
         digest.add(1);
 
-        assertTrue(digest.equivalent(deserialize(digest.serialize())));
+        assertThat(digest.equivalent(deserialize(digest.serialize()))).isTrue();
     }
 
     @Test
@@ -792,11 +774,11 @@ public class TestQuantileDigest
         QuantileDigest digest = new QuantileDigest(1);
         addAll(digest, asList(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5, 6, 7));
 
-        assertTrue(digest.equivalent(deserialize(digest.serialize())));
+        assertThat(digest.equivalent(deserialize(digest.serialize()))).isTrue();
 
         digest.compress();
 
-        assertTrue(digest.equivalent(deserialize(digest.serialize())));
+        assertThat(digest.equivalent(deserialize(digest.serialize()))).isTrue();
     }
 
     @Test
@@ -807,11 +789,11 @@ public class TestQuantileDigest
         digest.add(Long.MIN_VALUE);
         digest.add(Long.MAX_VALUE);
 
-        assertTrue(digest.equivalent(deserialize(digest.serialize())));
+        assertThat(digest.equivalent(deserialize(digest.serialize()))).isTrue();
 
         digest.compress();
 
-        assertTrue(digest.equivalent(deserialize(digest.serialize())));
+        assertThat(digest.equivalent(deserialize(digest.serialize()))).isTrue();
     }
 
     @Test(invocationCount = 1000)
@@ -827,7 +809,7 @@ public class TestQuantileDigest
 
         addAll(digest, values);
 
-        assertTrue(digest.equivalent(deserialize(digest.serialize())), format("Serialization roundtrip failed for input: %s", values));
+        assertThat(digest.equivalent(deserialize(digest.serialize()))).as(format("Serialization roundtrip failed for input: %s", values)).isTrue();
     }
 
     private QuantileDigest deserialize(Slice serialized)

@@ -26,10 +26,7 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Test(singleThreaded = true)
 public class TestLogger
@@ -55,23 +52,25 @@ public class TestLogger
     @AfterMethod(alwaysRun = true)
     public void teardown()
     {
-        assertTrue(handler.isEmpty(), "Some log messages were not verified by test");
+        assertThat(handler.isEmpty())
+                .as("Some log messages were not verified by test")
+                .isTrue();
     }
 
     @Test
     public void testIsDebugEnabled()
     {
         inner.setLevel(Level.FINE);
-        assertTrue(logger.isDebugEnabled());
+        assertThat(logger.isDebugEnabled()).isTrue();
 
         inner.setLevel(Level.INFO);
-        assertFalse(logger.isDebugEnabled());
+        assertThat(logger.isDebugEnabled()).isFalse();
 
         inner.setLevel(Level.WARNING);
-        assertFalse(logger.isDebugEnabled());
+        assertThat(logger.isDebugEnabled()).isFalse();
 
         inner.setLevel(Level.SEVERE);
-        assertFalse(logger.isDebugEnabled());
+        assertThat(logger.isDebugEnabled()).isFalse();
     }
 
     @Test
@@ -134,7 +133,7 @@ public class TestLogger
     {
         inner.setLevel(Level.OFF);
         logger.debug("hello");
-        assertTrue(handler.isEmpty());
+        assertThat(handler.isEmpty()).isTrue();
     }
 
     @Test
@@ -142,7 +141,7 @@ public class TestLogger
     {
         inner.setLevel(Level.OFF);
         logger.info("hello");
-        assertTrue(handler.isEmpty());
+        assertThat(handler.isEmpty()).isTrue();
     }
 
     @Test
@@ -150,7 +149,7 @@ public class TestLogger
     {
         inner.setLevel(Level.OFF);
         logger.warn("hello");
-        assertTrue(handler.isEmpty());
+        assertThat(handler.isEmpty()).isTrue();
     }
 
     @Test
@@ -162,7 +161,7 @@ public class TestLogger
         Throwable e = new Throwable();
         logger.warn(e, "hello");
 
-        assertTrue(handler.isEmpty());
+        assertThat(handler.isEmpty()).isTrue();
     }
 
     @Test
@@ -170,7 +169,7 @@ public class TestLogger
     {
         inner.setLevel(Level.OFF);
         logger.error("hello");
-        assertTrue(handler.isEmpty());
+        assertThat(handler.isEmpty()).isTrue();
     }
 
     @Test
@@ -182,7 +181,7 @@ public class TestLogger
         Throwable e = new Throwable();
         logger.error(e, "hello");
 
-        assertTrue(handler.isEmpty());
+        assertThat(handler.isEmpty()).isTrue();
     }
 
     @Test
@@ -194,7 +193,7 @@ public class TestLogger
         Throwable e = new Throwable();
         logger.error(e);
 
-        assertTrue(handler.isEmpty());
+        assertThat(handler.isEmpty()).isTrue();
     }
 
     @Test
@@ -268,25 +267,25 @@ public class TestLogger
     private void assertLog(Level level, String message, Throwable exception)
     {
         LogRecord record = handler.takeRecord();
-        assertEquals(record.getLevel(), level);
-        assertEquals(record.getMessage(), message);
-        assertEquals(record.getThrown(), exception);
+        assertThat(record.getLevel()).isEqualTo(level);
+        assertThat(record.getMessage()).isEqualTo(message);
+        assertThat(record.getThrown()).isEqualTo(exception);
     }
 
     private void assertLog(Level level, String message)
     {
         LogRecord record = handler.takeRecord();
-        assertEquals(record.getLevel(), level);
-        assertEquals(record.getMessage(), message);
-        assertNull(record.getThrown());
+        assertThat(record.getLevel()).isEqualTo(level);
+        assertThat(record.getMessage()).isEqualTo(message);
+        assertThat(record.getThrown()).isNull();
     }
 
     private void assertLogLike(Level level, List<String> substrings, Class<? extends Throwable> exceptionClass)
     {
         LogRecord record = handler.takeRecord();
-        assertEquals(record.getLevel(), level);
-        assertTrue(stringContains(record.getMessage(), substrings));
-        assertTrue(exceptionClass.isAssignableFrom(record.getThrown().getClass()));
+        assertThat(record.getLevel()).isEqualTo(level);
+        assertThat(stringContains(record.getMessage(), substrings)).isTrue();
+        assertThat(exceptionClass.isAssignableFrom(record.getThrown().getClass())).isTrue();
     }
 
     private boolean stringContains(String value, List<String> substrings)
@@ -329,7 +328,7 @@ public class TestLogger
 
         public LogRecord takeRecord()
         {
-            assertTrue(!records.isEmpty(), "No messages logged");
+            assertThat(!records.isEmpty()).as("No messages logged").isTrue();
             return records.remove(0);
         }
 

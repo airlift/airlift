@@ -11,8 +11,7 @@ import static io.airlift.http.client.DefaultingJsonResponseHandler.createDefault
 import static io.airlift.http.client.HttpStatus.INTERNAL_SERVER_ERROR;
 import static io.airlift.http.client.HttpStatus.OK;
 import static io.airlift.http.client.testing.TestingResponse.mockResponse;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertSame;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestDefaultingJsonResponseHandler
 {
@@ -28,8 +27,8 @@ public class TestDefaultingJsonResponseHandler
         String json = codec.toJson(user);
         User response = handler.handle(null, mockResponse(OK, JSON_UTF_8, json));
 
-        assertEquals(response.getName(), user.getName());
-        assertEquals(response.getAge(), user.getAge());
+        assertThat(response.getName()).isEqualTo(user.getName());
+        assertThat(response.getAge()).isEqualTo(user.getAge());
     }
 
     @Test
@@ -38,7 +37,7 @@ public class TestDefaultingJsonResponseHandler
         String json = "{\"age\": \"foo\"}";
         User response = handler.handle(null, mockResponse(OK, JSON_UTF_8, json));
 
-        assertSame(response, DEFAULT_VALUE);
+        assertThat(response).isSameAs(DEFAULT_VALUE);
     }
 
     @Test
@@ -46,7 +45,7 @@ public class TestDefaultingJsonResponseHandler
     {
         User response = handler.handleException(null, null);
 
-        assertSame(response, DEFAULT_VALUE);
+        assertThat(response).isSameAs(DEFAULT_VALUE);
     }
 
     @Test
@@ -54,7 +53,7 @@ public class TestDefaultingJsonResponseHandler
     {
         User response = handler.handle(null, mockResponse(OK, PLAIN_TEXT_UTF_8, "hello"));
 
-        assertSame(response, DEFAULT_VALUE);
+        assertThat(response).isSameAs(DEFAULT_VALUE);
     }
 
     @Test
@@ -63,7 +62,7 @@ public class TestDefaultingJsonResponseHandler
         String json = "{\"error\": true}";
         User response = handler.handle(null, mockResponse(INTERNAL_SERVER_ERROR, JSON_UTF_8, json));
 
-        assertSame(response, DEFAULT_VALUE);
+        assertThat(response).isSameAs(DEFAULT_VALUE);
     }
 
     public static class User

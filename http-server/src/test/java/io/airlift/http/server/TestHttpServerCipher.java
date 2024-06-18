@@ -38,7 +38,7 @@ import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
 import static com.google.common.io.Resources.getResource;
 import static java.nio.file.Files.createTempDirectory;
-import static org.testng.Assert.fail;
+import static org.assertj.core.api.Assertions.fail;
 
 @Test(singleThreaded = true)
 public class TestHttpServerCipher

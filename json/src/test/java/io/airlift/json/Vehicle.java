@@ -8,8 +8,7 @@ import com.google.common.collect.ImmutableMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,
@@ -25,20 +24,20 @@ public interface Vehicle
         Vehicle expected = new Car("bmw");
 
         String json = jsonCodec.toJson(expected);
-        assertEquals(jsonCodec.fromJson(json), expected);
-        assertTrue(json.contains("\"@type\" : \"car\""));
+        assertThat(jsonCodec.fromJson(json)).isEqualTo(expected);
+        assertThat(json.contains("\"@type\" : \"car\"")).isTrue();
 
         byte[] bytes = jsonCodec.toJsonBytes(expected);
-        assertEquals(jsonCodec.fromJson(bytes), expected);
+        assertThat(jsonCodec.fromJson(bytes)).isEqualTo(expected);
 
         expected = new Truck("volvo");
 
         json = jsonCodec.toJson(expected);
-        assertEquals(jsonCodec.fromJson(json), expected);
-        assertTrue(json.contains("\"@type\" : \"truck\""));
+        assertThat(jsonCodec.fromJson(json)).isEqualTo(expected);
+        assertThat(json.contains("\"@type\" : \"truck\"")).isTrue();
 
         bytes = jsonCodec.toJsonBytes(expected);
-        assertEquals(jsonCodec.fromJson(bytes), expected);
+        assertThat(jsonCodec.fromJson(bytes)).isEqualTo(expected);
     }
 
     static void validateVehicleListJsonCodec(JsonCodec<List<Vehicle>> jsonCodec)
@@ -48,10 +47,10 @@ public interface Vehicle
                 new Truck("volvo"));
 
         String json = jsonCodec.toJson(expected);
-        assertEquals(jsonCodec.fromJson(json), expected);
+        assertThat(jsonCodec.fromJson(json)).isEqualTo(expected);
 
         byte[] bytes = jsonCodec.toJsonBytes(expected);
-        assertEquals(jsonCodec.fromJson(bytes), expected);
+        assertThat(jsonCodec.fromJson(bytes)).isEqualTo(expected);
     }
 
     static void validateVehicleMapJsonCodec(JsonCodec<Map<String, Vehicle>> jsonCodec)
@@ -62,9 +61,9 @@ public interface Vehicle
                 .build();
 
         String json = jsonCodec.toJson(expected);
-        assertEquals(jsonCodec.fromJson(json), expected);
+        assertThat(jsonCodec.fromJson(json)).isEqualTo(expected);
 
         byte[] bytes = jsonCodec.toJsonBytes(expected);
-        assertEquals(jsonCodec.fromJson(bytes), expected);
+        assertThat(jsonCodec.fromJson(bytes)).isEqualTo(expected);
     }
 }

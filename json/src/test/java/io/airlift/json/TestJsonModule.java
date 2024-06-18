@@ -45,8 +45,8 @@ import java.util.Map;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static io.airlift.json.JsonBinder.jsonBinder;
 import static java.util.Objects.requireNonNull;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.joda.time.DateTimeZone.UTC;
-import static org.testng.Assert.assertEquals;
 
 public class TestJsonModule
 {
@@ -88,10 +88,10 @@ public class TestJsonModule
     public void testSetup()
             throws Exception
     {
-        assertEquals(CAR, CAR);
+        assertThat(CAR).isEqualTo(CAR);
         String json = objectMapper.writeValueAsString(CAR);
         Car actual = objectMapper.readValue(json, Car.class);
-        assertEquals(actual, CAR);
+        assertThat(actual).isEqualTo(CAR);
     }
 
     @Test
@@ -102,7 +102,7 @@ public class TestJsonModule
 
         // notes is not annotated so should not be included
         // color is null so should not be included
-        assertEquals(actual.keySet(), ImmutableSet.of("make", "model", "year", "purchased", "nameList"));
+        assertThat(actual.keySet()).isEqualTo(ImmutableSet.of("make", "model", "year", "purchased", "nameList"));
     }
 
     @Test
@@ -111,7 +111,7 @@ public class TestJsonModule
     {
         Map<String, Object> actual = createCarMap();
 
-        assertEquals(actual.get("purchased"), ISODateTimeFormat.dateTime().print(CAR.getPurchased()));
+        assertThat(actual.get("purchased")).isEqualTo(ISODateTimeFormat.dateTime().print(CAR.getPurchased()));
     }
 
     @Test
@@ -123,7 +123,7 @@ public class TestJsonModule
         String json = objectMapper.writeValueAsString(list);
         ImmutableList<Integer> actual = objectMapper.readValue(json, new TypeReference<ImmutableList<Integer>>() {});
 
-        assertEquals(actual, list);
+        assertThat(actual).isEqualTo(list);
     }
 
     @Test
@@ -136,7 +136,7 @@ public class TestJsonModule
         data.put("unknown", "bogus");
 
         // Jackson should deserialize the object correctly with the extra unknown data
-        assertEquals(objectMapper.readValue(objectMapper.writeValueAsString(data), Car.class), CAR);
+        assertThat(objectMapper.readValue(objectMapper.writeValueAsString(data), Car.class)).isEqualTo(CAR);
     }
 
     @Test
@@ -145,8 +145,8 @@ public class TestJsonModule
     {
         NoJsonPropertiesInJsonCreator value = new NoJsonPropertiesInJsonCreator("first value", "second value");
         NoJsonPropertiesInJsonCreator mapped = objectMapper.readValue(objectMapper.writeValueAsString(value), NoJsonPropertiesInJsonCreator.class);
-        assertEquals(mapped.getFirst(), "first value");
-        assertEquals(mapped.getSecond(), "second value");
+        assertThat(mapped.getFirst()).isEqualTo("first value");
+        assertThat(mapped.getSecond()).isEqualTo("second value");
     }
 
     @Test
@@ -155,7 +155,7 @@ public class TestJsonModule
     {
         JsonValueAndStaticFactoryMethod value = JsonValueAndStaticFactoryMethod.valueOf("some value");
         JsonValueAndStaticFactoryMethod mapped = objectMapper.readValue(objectMapper.writeValueAsString(value), JsonValueAndStaticFactoryMethod.class);
-        assertEquals(mapped.getValue(), "some value");
+        assertThat(mapped.getValue()).isEqualTo("some value");
     }
 
     private Map<String, Object> createCarMap()

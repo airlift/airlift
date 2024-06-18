@@ -11,10 +11,7 @@ import java.util.Optional;
 
 import static io.airlift.testing.Assertions.assertGreaterThanOrEqual;
 import static io.airlift.testing.Assertions.assertNotEquals;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestTestingNodeModule
 {
@@ -27,25 +24,25 @@ public class TestTestingNodeModule
         Injector injector = Guice.createInjector(new TestingNodeModule());
         NodeInfo nodeInfo = injector.getInstance(NodeInfo.class);
 
-        assertNotNull(nodeInfo);
-        assertTrue(nodeInfo.getEnvironment().matches("test\\d+"));
-        assertEquals(nodeInfo.getPool(), "general");
-        assertNotNull(nodeInfo.getNodeId());
-        assertNotNull(nodeInfo.getLocation());
-        assertNull(nodeInfo.getBinarySpec());
-        assertNull(nodeInfo.getConfigSpec());
-        assertNotNull(nodeInfo.getInstanceId());
+        assertThat(nodeInfo).isNotNull();
+        assertThat(nodeInfo.getEnvironment()).matches("test\\d+");
+        assertThat(nodeInfo.getPool()).isEqualTo("general");
+        assertThat(nodeInfo.getNodeId()).isNotNull();
+        assertThat(nodeInfo.getLocation()).isNotNull();
+        assertThat(nodeInfo.getBinarySpec()).isNull();
+        assertThat(nodeInfo.getConfigSpec()).isNull();
+        assertThat(nodeInfo.getInstanceId()).isNotNull();
 
         assertNotEquals(nodeInfo.getNodeId(), nodeInfo.getInstanceId());
 
-        assertEquals(nodeInfo.getInternalAddress(), "127.0.0.1");
-        assertEquals(nodeInfo.getBindIp(), InetAddress.getByName(nodeInfo.getInternalAddress()));
-        assertEquals(nodeInfo.getExternalAddress(), "127.0.0.1");
+        assertThat(nodeInfo.getInternalAddress()).isEqualTo("127.0.0.1");
+        assertThat(nodeInfo.getBindIp()).isEqualTo(InetAddress.getByName(nodeInfo.getInternalAddress()));
+        assertThat(nodeInfo.getExternalAddress()).isEqualTo("127.0.0.1");
 
         assertGreaterThanOrEqual(nodeInfo.getStartTime(), testStartTime);
 
         // make sure toString doesn't throw an exception
-        assertNotNull(nodeInfo.toString());
+        assertThat(nodeInfo.toString()).isNotNull();
     }
 
     @Test
@@ -54,8 +51,8 @@ public class TestTestingNodeModule
         Injector injector = Guice.createInjector(new TestingNodeModule("foo"));
         NodeInfo nodeInfo = injector.getInstance(NodeInfo.class);
 
-        assertNotNull(nodeInfo);
-        assertEquals(nodeInfo.getEnvironment(), "foo");
+        assertThat(nodeInfo).isNotNull();
+        assertThat(nodeInfo.getEnvironment()).isEqualTo("foo");
     }
 
     @Test
@@ -64,8 +61,8 @@ public class TestTestingNodeModule
         Injector injector = Guice.createInjector(new TestingNodeModule(Optional.of("foo")));
         NodeInfo nodeInfo = injector.getInstance(NodeInfo.class);
 
-        assertNotNull(nodeInfo);
-        assertEquals(nodeInfo.getEnvironment(), "foo");
+        assertThat(nodeInfo).isNotNull();
+        assertThat(nodeInfo.getEnvironment()).isEqualTo("foo");
     }
 
     @Test
@@ -74,7 +71,7 @@ public class TestTestingNodeModule
         Injector injector = Guice.createInjector(new TestingNodeModule(Optional.empty()));
         NodeInfo nodeInfo = injector.getInstance(NodeInfo.class);
 
-        assertNotNull(nodeInfo);
-        assertTrue(nodeInfo.getEnvironment().matches("test\\d+"));
+        assertThat(nodeInfo).isNotNull();
+        assertThat(nodeInfo.getEnvironment()).matches("test\\d+");
     }
 }

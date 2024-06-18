@@ -5,9 +5,7 @@ import org.testng.annotations.Test;
 import java.util.List;
 import java.util.Map;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 // This code was forked from Apache CXF CacheControlHeaderProviderTest
 public class TestCacheControl
@@ -16,30 +14,30 @@ public class TestCacheControl
     public void testFromSimpleString()
     {
         CacheControl c = CacheControl.valueOf("public,must-revalidate");
-        assertFalse(c.isPrivate());
-        assertFalse(c.isNoStore());
-        assertTrue(c.isMustRevalidate());
-        assertFalse(c.isProxyRevalidate());
-        assertFalse(c.isNoCache());
-        assertFalse(c.isNoTransform());
-        assertTrue(c.getNoCacheFields().size() == 0);
-        assertTrue(c.getPrivateFields().size() == 0);
+        assertThat(c.isPrivate()).isFalse();
+        assertThat(c.isNoStore()).isFalse();
+        assertThat(c.isMustRevalidate()).isTrue();
+        assertThat(c.isProxyRevalidate()).isFalse();
+        assertThat(c.isNoCache()).isFalse();
+        assertThat(c.isNoTransform()).isFalse();
+        assertThat(c.getNoCacheFields()).isEmpty();
+        assertThat(c.getPrivateFields()).isEmpty();
     }
 
     @Test
     public void testFromComplexString()
     {
         CacheControl c = CacheControl.valueOf("private=\"foo\",no-cache=\"bar\",no-store,no-transform,must-revalidate,proxy-revalidate,max-age=2,s-maxage=3");
-        assertTrue(c.isPrivate());
-        assertTrue(c.isNoStore());
-        assertTrue(c.isMustRevalidate());
-        assertTrue(c.isProxyRevalidate());
-        assertTrue(c.isNoCache());
-        assertTrue(c.isNoTransform());
-        assertTrue(c.getNoCacheFields().size() == 1);
-        assertTrue(c.getPrivateFields().size() == 1);
-        assertEquals(c.getPrivateFields().get(0), "foo");
-        assertEquals(c.getNoCacheFields().get(0), "bar");
+        assertThat(c.isPrivate()).isTrue();
+        assertThat(c.isNoStore()).isTrue();
+        assertThat(c.isMustRevalidate()).isTrue();
+        assertThat(c.isProxyRevalidate()).isTrue();
+        assertThat(c.isNoCache()).isTrue();
+        assertThat(c.isNoTransform()).isTrue();
+        assertThat(c.getNoCacheFields()).hasSize(1);
+        assertThat(c.getPrivateFields()).hasSize(1);
+        assertThat(c.getPrivateFields().get(0)).isEqualTo("foo");
+        assertThat(c.getNoCacheFields().get(0)).isEqualTo("bar");
     }
 
     @Test
@@ -47,7 +45,7 @@ public class TestCacheControl
     {
         String expected = "private=\"foo\",no-cache=\"bar\",no-store,no-transform,must-revalidate,proxy-revalidate,max-age=2,s-maxage=3";
         String parsed = CacheControl.valueOf(expected).toString();
-        assertEquals(parsed, expected);
+        assertThat(parsed).isEqualTo(expected);
     }
 
     @Test
@@ -55,7 +53,7 @@ public class TestCacheControl
     {
         CacheControl cc = new CacheControl();
         cc.setNoCache(true);
-        assertEquals(cc.toString(), "no-cache,no-transform");
+        assertThat(cc.toString()).isEqualTo("no-cache,no-transform");
     }
 
     @Test
@@ -63,7 +61,7 @@ public class TestCacheControl
     {
         CacheControl cc = new CacheControl();
         cc.setNoCache(false);
-        assertEquals(cc.toString(), "no-transform");
+        assertThat(cc.toString()).isEqualTo("no-transform");
     }
 
     @Test
@@ -73,7 +71,7 @@ public class TestCacheControl
         cc.setPrivate(true);
         cc.getPrivateFields().add("a");
         cc.getPrivateFields().add("b");
-        assertTrue(cc.toString().contains("private=\"a,b\""));
+        assertThat(cc.toString()).contains("private=\"a,b\"");
     }
 
     @Test
@@ -83,7 +81,7 @@ public class TestCacheControl
         cc.setNoCache(true);
         cc.getNoCacheFields().add("c");
         cc.getNoCacheFields().add("d");
-        assertTrue(cc.toString().contains("no-cache=\"c,d\""));
+        assertThat(cc.toString()).contains("no-cache=\"c,d\"");
     }
 
     @Test
@@ -92,27 +90,27 @@ public class TestCacheControl
         String s = "private=\"foo1,foo2\",no-store,no-transform,must-revalidate,proxy-revalidate,max-age=2,s-maxage=3,no-cache=\"bar1,bar2\",ext=1";
         CacheControl cacheControl = CacheControl.valueOf(s);
 
-        assertTrue(cacheControl.isPrivate());
+        assertThat(cacheControl.isPrivate()).isTrue();
         List<String> privateFields = cacheControl.getPrivateFields();
-        assertEquals(privateFields.size(), 2);
-        assertEquals(privateFields.get(0), "foo1");
-        assertEquals(privateFields.get(1), "foo2");
-        assertTrue(cacheControl.isNoCache());
+        assertThat(privateFields.size()).isEqualTo(2);
+        assertThat(privateFields.get(0)).isEqualTo("foo1");
+        assertThat(privateFields.get(1)).isEqualTo("foo2");
+        assertThat(cacheControl.isNoCache()).isTrue();
         List<String> noCacheFields = cacheControl.getNoCacheFields();
-        assertEquals(2, noCacheFields.size());
-        assertEquals(noCacheFields.get(0), "bar1");
-        assertEquals(noCacheFields.get(1), "bar2");
+        assertThat(noCacheFields).hasSize(2);
+        assertThat(noCacheFields.get(0)).isEqualTo("bar1");
+        assertThat(noCacheFields.get(1)).isEqualTo("bar2");
 
-        assertTrue(cacheControl.isNoStore());
-        assertTrue(cacheControl.isNoTransform());
-        assertTrue(cacheControl.isMustRevalidate());
-        assertTrue(cacheControl.isProxyRevalidate());
-        assertEquals(cacheControl.getMaxAge(), 2);
-        assertEquals(cacheControl.getSMaxAge(), 3);
+        assertThat(cacheControl.isNoStore()).isTrue();
+        assertThat(cacheControl.isNoTransform()).isTrue();
+        assertThat(cacheControl.isMustRevalidate()).isTrue();
+        assertThat(cacheControl.isProxyRevalidate()).isTrue();
+        assertThat(cacheControl.getMaxAge()).isEqualTo(2);
+        assertThat(cacheControl.getSMaxAge()).isEqualTo(3);
 
         Map<String, String> cacheExtension = cacheControl.getCacheExtension();
-        assertEquals(cacheExtension.size(), 1);
-        assertEquals(cacheExtension.get("ext"), "1");
+        assertThat(cacheExtension.size()).isEqualTo(1);
+        assertThat(cacheExtension.get("ext")).isEqualTo("1");
     }
 
     @Test
@@ -123,8 +121,10 @@ public class TestCacheControl
         cc.getCacheExtension().put("ext2", "value2");
         cc.getCacheExtension().put("ext3", "value 3");
         String value = cc.toString();
-        assertTrue(value.contains("ext1") && !value.contains("ext1="));
-        assertTrue(value.contains("ext2=value2"));
-        assertTrue(value.contains("ext3=\"value 3\""));
+        assertThat(value)
+                .contains("ext1")
+                .doesNotContain("ext1=");
+        assertThat(value).contains("ext2=value2");
+        assertThat(value).contains("ext3=\"value 3\"");
     }
 }

@@ -63,8 +63,7 @@ import static io.airlift.event.client.TestingUtils.getNormalizedJson;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Test(singleThreaded = true)
 public class TestHttpEventClient
@@ -98,8 +97,8 @@ public class TestHttpEventClient
 
         client.post(new FixedDummyEventClass("host", Instant.now(), UUID.randomUUID(), 1, "foo"));
 
-        assertNull(servlet.lastPath);
-        assertNull(servlet.lastBody);
+        assertThat(servlet.lastPath).isNull();
+        assertThat(servlet.lastBody).isNull();
     }
 
     @Test
@@ -110,8 +109,8 @@ public class TestHttpEventClient
 
         client.post(TestingUtils.getEvents()).get();
 
-        assertEquals(servlet.lastPath, "/v2/event");
-        assertEquals(servlet.lastBody, getNormalizedJson("events.json"));
+        assertThat(servlet.lastPath).isEqualTo("/v2/event");
+        assertThat(servlet.lastBody).isEqualTo(getNormalizedJson("events.json"));
     }
 
     @Test
@@ -128,8 +127,8 @@ public class TestHttpEventClient
         for (Future<Void> future : futures) {
             future.get();
         }
-        assertEquals(servlet.lastPath, "/v2/event");
-        assertEquals(servlet.lastBody, getNormalizedJson("events.json"));
+        assertThat(servlet.lastPath).isEqualTo("/v2/event");
+        assertThat(servlet.lastBody).isEqualTo(getNormalizedJson("events.json"));
     }
 
     @BeforeMethod

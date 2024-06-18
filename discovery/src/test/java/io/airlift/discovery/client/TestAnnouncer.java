@@ -33,9 +33,8 @@ import java.util.concurrent.TimeUnit;
 
 import static io.airlift.concurrent.MoreFutures.getFutureValue;
 import static io.airlift.discovery.client.ServiceTypes.serviceType;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 @Test(singleThreaded = true)
 public class TestAnnouncer
@@ -151,13 +150,13 @@ public class TestAnnouncer
         Future<ServiceDescriptors> future = discoveryClient.getServices(serviceType.value(), "pool");
         ServiceDescriptors serviceDescriptors = getFutureValue(future, DiscoveryException.class);
 
-        assertEquals(serviceDescriptors.getType(), serviceType.value());
-        assertEquals(serviceDescriptors.getPool(), "pool");
-        assertNotNull(serviceDescriptors.getETag());
-        assertEquals(serviceDescriptors.getMaxAge(), MAX_AGE);
+        assertThat(serviceDescriptors.getType()).isEqualTo(serviceType.value());
+        assertThat(serviceDescriptors.getPool()).isEqualTo("pool");
+        assertThat(serviceDescriptors.getETag()).isNotNull();
+        assertThat(serviceDescriptors.getMaxAge()).isEqualTo(MAX_AGE);
 
         List<ServiceDescriptor> descriptors = serviceDescriptors.getServiceDescriptors();
-        assertEquals(descriptors.size(), serviceAnnouncements.length);
+        assertThat(descriptors).hasSameSizeAs(serviceAnnouncements);
 
         ImmutableMap.Builder<UUID, ServiceDescriptor> builder = ImmutableMap.builder();
         for (ServiceDescriptor descriptor : descriptors) {
@@ -167,12 +166,12 @@ public class TestAnnouncer
 
         for (ServiceAnnouncement serviceAnnouncement : serviceAnnouncements) {
             ServiceDescriptor serviceDescriptor = descriptorMap.get(serviceAnnouncement.getId());
-            assertNotNull(serviceDescriptor, "No descriptor for announcement " + serviceAnnouncement.getId());
-            assertEquals(serviceDescriptor.getType(), serviceType.value());
-            assertEquals(serviceDescriptor.getPool(), "pool");
-            assertEquals(serviceDescriptor.getId(), serviceAnnouncement.getId());
-            assertEquals(serviceDescriptor.getProperties(), serviceAnnouncement.getProperties());
-            assertEquals(serviceDescriptor.getNodeId(), nodeInfo.getNodeId());
+            assertThat(serviceDescriptor).as("No descriptor for announcement " + serviceAnnouncement.getId()).isNotNull();
+            assertThat(serviceDescriptor.getType()).isEqualTo(serviceType.value());
+            assertThat(serviceDescriptor.getPool()).isEqualTo("pool");
+            assertThat(serviceDescriptor.getId()).isEqualTo(serviceAnnouncement.getId());
+            assertThat(serviceDescriptor.getProperties()).isEqualTo(serviceAnnouncement.getProperties());
+            assertThat(serviceDescriptor.getNodeId()).isEqualTo(nodeInfo.getNodeId());
         }
     }
 }

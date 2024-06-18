@@ -25,7 +25,7 @@ import java.util.Collection;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static io.airlift.testing.Assertions.assertInstanceOf;
-import static org.testng.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Test(singleThreaded = true)
 public class TestPersonsResource
@@ -44,9 +44,9 @@ public class TestPersonsResource
     public void testEmpty()
     {
         Response response = resource.listAll();
-        assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
+        assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
         assertInstanceOf(response.getEntity(), Collection.class);
-        assertEquals((Collection<?>) response.getEntity(), new ArrayList<>());
+        assertThat((Collection<?>) response.getEntity()).isEqualTo(new ArrayList<>());
     }
 
     @Test
@@ -56,9 +56,9 @@ public class TestPersonsResource
         store.put("bar", new Person("bar@example.com", "Mr Bar"));
 
         Response response = resource.listAll();
-        assertEquals(response.getStatus(), Response.Status.OK.getStatusCode());
+        assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
         assertInstanceOf(response.getEntity(), Collection.class);
-        assertEquals((Collection<?>) response.getEntity(), newArrayList(
+        assertThat((Collection<?>) response.getEntity()).isEqualTo(newArrayList(
                 new PersonRepresentation("foo@example.com", "Mr Foo", null),
                 new PersonRepresentation("bar@example.com", "Mr Bar", null)));
     }

@@ -34,7 +34,7 @@ import static com.google.common.collect.MoreCollectors.onlyElement;
 import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
 import static io.airlift.discovery.client.ServiceTypes.serviceType;
-import static org.testng.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestHttpServiceSelectorBinder
 {
@@ -51,7 +51,7 @@ public class TestHttpServiceSelectorBinder
         discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple").addProperty("http", "fake://server-http").build()));
 
         HttpServiceSelector selector = injector.getInstance(Key.get(HttpServiceSelector.class, serviceType("apple")));
-        assertEquals(selector.selectHttpService().stream().collect(onlyElement()), URI.create("fake://server-http"));
+        assertThat(selector.selectHttpService().stream().collect(onlyElement())).isEqualTo(URI.create("fake://server-http"));
     }
 
     @Test
@@ -67,10 +67,10 @@ public class TestHttpServiceSelectorBinder
         discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple").addProperty("http", "fake://server-http").build()));
 
         HttpServiceSelector selector = injector.getInstance(Key.get(HttpServiceSelector.class, serviceType("apple")));
-        assertEquals(selector.selectHttpService().stream().collect(onlyElement()), URI.create("fake://server-http"));
+        assertThat(selector.selectHttpService().stream().collect(onlyElement())).isEqualTo(URI.create("fake://server-http"));
 
         ServiceSelectorManager manager = injector.getInstance(ServiceSelectorManager.class);
-        assertEquals(manager.getServiceSelectors().size(), 1);
+        assertThat(manager.getServiceSelectors().size()).isEqualTo(1);
         manager.attemptRefresh();
         manager.forceRefresh();
     }
@@ -88,7 +88,7 @@ public class TestHttpServiceSelectorBinder
         discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple").addProperty("https", "fake://server-https").build()));
 
         HttpServiceSelector selector = injector.getInstance(Key.get(HttpServiceSelector.class, serviceType("apple")));
-        assertEquals(selector.selectHttpService().stream().collect(onlyElement()), URI.create("fake://server-https"));
+        assertThat(selector.selectHttpService().stream().collect(onlyElement())).isEqualTo(URI.create("fake://server-https"));
     }
 
     @Test
@@ -105,7 +105,7 @@ public class TestHttpServiceSelectorBinder
                 serviceAnnouncement("apple").addProperty("https", "fake://server-https").build()));
 
         HttpServiceSelector selector = injector.getInstance(Key.get(HttpServiceSelector.class, serviceType("apple")));
-        assertEquals(selector.selectHttpService(), ImmutableList.of(URI.create("fake://server-https"), URI.create("fake://server-http")));
+        assertThat(selector.selectHttpService()).isEqualTo(ImmutableList.of(URI.create("fake://server-https"), URI.create("fake://server-http")));
     }
 
     @Test
@@ -121,7 +121,7 @@ public class TestHttpServiceSelectorBinder
         discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple").addProperty("foo", "fake://server-https").build()));
 
         HttpServiceSelector selector = injector.getInstance(Key.get(HttpServiceSelector.class, serviceType("apple")));
-        assertEquals(selector.selectHttpService(), ImmutableList.of());
+        assertThat(selector.selectHttpService()).isEqualTo(ImmutableList.of());
     }
 
     @Test
@@ -138,6 +138,6 @@ public class TestHttpServiceSelectorBinder
         discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple").addProperty("https", ":::INVALID:::").build()));
 
         HttpServiceSelector selector = injector.getInstance(Key.get(HttpServiceSelector.class, serviceType("apple")));
-        assertEquals(selector.selectHttpService(), ImmutableList.of());
+        assertThat(selector.selectHttpService()).isEqualTo(ImmutableList.of());
     }
 }

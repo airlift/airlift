@@ -19,10 +19,8 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 @Test(singleThreaded = true)
 public class TestLoggingMBean
@@ -46,40 +44,40 @@ public class TestLoggingMBean
     @Test
     public void testGetAndSetRoot()
     {
-        assertEquals(logging.getRootLevel(), "INFO");
+        assertThat(logging.getRootLevel()).isEqualTo("INFO");
 
         logging.setRootLevel("WARN");
-        assertEquals(logging.getRootLevel(), "WARN");
+        assertThat(logging.getRootLevel()).isEqualTo("WARN");
 
         logging.setRootLevel("INFO");
-        assertEquals(logging.getRootLevel(), "INFO");
+        assertThat(logging.getRootLevel()).isEqualTo("INFO");
     }
 
     @Test
     public void testGetAndSetNonExisting()
     {
-        assertEquals(logging.getRootLevel(), "INFO");
+        assertThat(logging.getRootLevel()).isEqualTo("INFO");
 
         String name = "this.logger.does.not.exist.yet.Bogus";
-        assertFalse(logging.getAllLevels().containsKey(name));
-        assertEquals(logging.getLevel(name), "INFO");
+        assertThat(logging.getAllLevels()).doesNotContainKey(name);
+        assertThat(logging.getLevel(name)).isEqualTo("INFO");
         logging.setLevel(name, "WARN");
-        assertEquals(logging.getLevel(name), "WARN");
-        assertTrue(logging.getAllLevels().containsKey(name));
+        assertThat(logging.getLevel(name)).isEqualTo("WARN");
+        assertThat(logging.getAllLevels()).containsKey(name);
 
-        assertEquals(logging.getRootLevel(), "INFO");
+        assertThat(logging.getRootLevel()).isEqualTo("INFO");
     }
 
     @Test
     public void testSetInvalidLevel()
     {
-        assertEquals(logging.getRootLevel(), "INFO");
+        assertThat(logging.getRootLevel()).isEqualTo("INFO");
         try {
             logging.setRootLevel("FOO");
             fail("Expected IllegalArgumentException");
         }
         catch (IllegalArgumentException expected) {
         }
-        assertEquals(logging.getRootLevel(), "INFO");
+        assertThat(logging.getRootLevel()).isEqualTo("INFO");
     }
 }

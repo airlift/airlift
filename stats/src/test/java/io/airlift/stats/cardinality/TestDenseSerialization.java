@@ -21,7 +21,7 @@ import org.testng.annotations.Test;
 
 import static io.airlift.slice.testing.SliceAssertions.assertSlicesEqual;
 import static io.airlift.stats.cardinality.Utils.numberOfBuckets;
-import static org.testng.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestDenseSerialization
 {
@@ -261,7 +261,7 @@ public class TestDenseSerialization
 
         DenseHll deserialized = new DenseHll(serialized);
         for (int i = 0; i < numberOfBuckets; i++) {
-            assertEquals(deserialized.getValue(i), 10);
+            assertThat(deserialized.getValue(i)).isEqualTo(10);
         }
         deserialized.verify();
     }
@@ -289,10 +289,10 @@ public class TestDenseSerialization
         DenseHll deserialized = new DenseHll(serialized);
         for (int i = 0; i < numberOfBuckets; i++) {
             if (i == 1) {
-                assertEquals(deserialized.getValue(i), 17);
+                assertThat(deserialized.getValue(i)).isEqualTo(17);
             }
             else {
-                assertEquals(deserialized.getValue(i), 2);
+                assertThat(deserialized.getValue(i)).isEqualTo(2);
             }
         }
         deserialized.verify();
@@ -321,10 +321,10 @@ public class TestDenseSerialization
         DenseHll deserialized = new DenseHll(serialized);
         for (int i = 0; i < numberOfBuckets; i++) {
             if (i == 1) {
-                assertEquals(deserialized.getValue(i), 20);
+                assertThat(deserialized.getValue(i)).isEqualTo(20);
             }
             else {
-                assertEquals(deserialized.getValue(i), 2);
+                assertThat(deserialized.getValue(i)).isEqualTo(2);
             }
         }
         deserialized.verify();

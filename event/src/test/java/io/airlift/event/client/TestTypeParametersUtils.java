@@ -27,9 +27,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static io.airlift.event.client.TypeParameterUtils.getTypeParameters;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @SuppressWarnings({"PublicField", "unused"})
 public class TestTypeParametersUtils
@@ -54,8 +52,8 @@ public class TestTypeParametersUtils
     public void testMap()
             throws Exception
     {
-        assertNull(getParameters("mapNotGeneric"));
-        assertEquals(getParameters("mapSimple"), new Type[] {Key.class, Value.class});
+        assertThat(getParameters("mapNotGeneric")).isNull();
+        assertThat(getParameters("mapSimple")).isEqualTo(new Type[] {Key.class, Value.class});
         assertTwoWildcardTypes(getParameters("mapWildcard"));
         assertTwoWildcardTypes(getParameters("mapExtendsWildcard"));
         assertTwoWildcardTypes(getParameters("mapSuperWildcard"));
@@ -66,7 +64,7 @@ public class TestTypeParametersUtils
             throws Exception
     {
         assertTwoTypeVariables(getParameters("myMapNotGeneric"));
-        assertEquals(getParameters("myMapSimple"), new Type[] {Key.class, Value.class});
+        assertThat(getParameters("myMapSimple")).isEqualTo(new Type[] {Key.class, Value.class});
         assertTwoWildcardTypes(getParameters("myMapWildcard"));
         assertTwoWildcardTypes(getParameters("myMapExtendsWildcard"));
         assertTwoWildcardTypes(getParameters("myMapSuperWildcard"));
@@ -76,12 +74,12 @@ public class TestTypeParametersUtils
     public void testFixedMap()
             throws Exception
     {
-        assertEquals(getParameters("fixedMap"), new Type[] {Key.class, Value.class});
+        assertThat(getParameters("fixedMap")).isEqualTo(new Type[] {Key.class, Value.class});
     }
 
     private static void assertTwoWildcardTypes(Type[] types)
     {
-        assertEquals(types.length, 2);
+        assertThat(types).hasSize(2);
         for (Type type : types) {
             assertInstanceOf(type, WildcardType.class);
         }
@@ -89,7 +87,7 @@ public class TestTypeParametersUtils
 
     private static void assertTwoTypeVariables(Type[] types)
     {
-        assertEquals(types.length, 2);
+        assertThat(types).hasSize(2);
         for (Type type : types) {
             assertInstanceOf(type, TypeVariable.class);
         }
@@ -97,7 +95,9 @@ public class TestTypeParametersUtils
 
     private static void assertInstanceOf(Type type, Class<?> clazz)
     {
-        assertTrue(clazz.isInstance(type), String.format("[%s] is not instance of %s", type, clazz.getSimpleName()));
+        assertThat(type)
+                .as(String.format("[%s] is not instance of %s", type, clazz.getSimpleName()))
+                .isInstanceOf(clazz);
     }
 
     private Type[] getParameters(String fieldName)

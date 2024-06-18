@@ -5,10 +5,8 @@ import org.testng.annotations.Test;
 
 import static io.airlift.units.Duration.succinctDuration;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
 
 public class TestCpuTimer
 {
@@ -16,32 +14,32 @@ public class TestCpuTimer
     public void testCpuTimerWithUserTimeEnabled()
     {
         CpuTimer timer = new CpuTimer();
-        assertTrue(timer.elapsedTime().hasUser());
-        assertTrue(timer.startNewInterval().hasUser());
-        assertTrue(timer.elapsedIntervalTime().hasUser());
-        assertTrue(timer.elapsedTime().add(new CpuTimer.CpuDuration()).hasUser());
-        assertTrue(timer.elapsedTime().subtract(new CpuTimer.CpuDuration()).hasUser());
+        assertThat(timer.elapsedTime().hasUser()).isTrue();
+        assertThat(timer.startNewInterval().hasUser()).isTrue();
+        assertThat(timer.elapsedIntervalTime().hasUser()).isTrue();
+        assertThat(timer.elapsedTime().add(new CpuTimer.CpuDuration()).hasUser()).isTrue();
+        assertThat(timer.elapsedTime().subtract(new CpuTimer.CpuDuration()).hasUser()).isTrue();
     }
 
     @Test
     public void testCpuTimerWithoutUserTimeEnabled()
     {
         CpuTimer timer = new CpuTimer(false);
-        assertFalse(timer.elapsedTime().hasUser());
-        assertFalse(timer.startNewInterval().hasUser());
-        assertFalse(timer.elapsedIntervalTime().hasUser());
+        assertThat(timer.elapsedTime().hasUser()).isFalse();
+        assertThat(timer.startNewInterval().hasUser()).isFalse();
+        assertThat(timer.elapsedIntervalTime().hasUser()).isFalse();
 
         CpuTimer.CpuDuration withUser = new CpuTimer.CpuDuration();
         CpuTimer.CpuDuration withoutUser = timer.elapsedTime();
 
-        assertTrue(withUser.hasUser());
-        assertFalse(withoutUser.hasUser());
+        assertThat(withUser.hasUser()).isTrue();
+        assertThat(withoutUser.hasUser()).isFalse();
 
-        assertFalse(withUser.add(withoutUser).hasUser());
-        assertFalse(withoutUser.add(withUser).hasUser());
+        assertThat(withUser.add(withoutUser).hasUser()).isFalse();
+        assertThat(withoutUser.add(withUser).hasUser()).isFalse();
 
-        assertFalse(withUser.subtract(withoutUser).hasUser());
-        assertFalse(withoutUser.subtract(withUser).hasUser());
+        assertThat(withUser.subtract(withoutUser).hasUser()).isFalse();
+        assertThat(withoutUser.subtract(withUser).hasUser()).isFalse();
     }
 
     @Test
@@ -58,6 +56,6 @@ public class TestCpuTimer
         TestingTicker ticker = new TestingTicker();
         CpuTimer timer = new CpuTimer(ticker, true);
         ticker.increment(1, SECONDS);
-        assertEquals(timer.elapsedTime().getWall(), succinctDuration(1, SECONDS));
+        assertThat(timer.elapsedTime().getWall()).isEqualTo(succinctDuration(1, SECONDS));
     }
 }

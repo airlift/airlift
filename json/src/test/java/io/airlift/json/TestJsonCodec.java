@@ -32,11 +32,8 @@ import static io.airlift.json.JsonCodec.jsonCodec;
 import static io.airlift.json.JsonCodec.listJsonCodec;
 import static io.airlift.json.JsonCodec.mapJsonCodec;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertTrue;
 
 public class TestJsonCodec
 {
@@ -97,7 +94,7 @@ public class TestJsonCodec
         list.add(null);
         list.add("abc");
 
-        assertEquals(jsonCodec.fromJson(jsonCodec.toJson(list)), list);
+        assertThat(jsonCodec.fromJson(jsonCodec.toJson(list))).isEqualTo(list);
     }
 
     @Test
@@ -145,7 +142,7 @@ public class TestJsonCodec
         map.put("x", null);
         map.put("y", "abc");
 
-        assertEquals(jsonCodec.fromJson(jsonCodec.toJson(map)), map);
+        assertThat(jsonCodec.fromJson(jsonCodec.toJson(map))).isEqualTo(map);
     }
 
     @Test
@@ -161,7 +158,7 @@ public class TestJsonCodec
     {
         JsonCodec<ImmutablePerson> jsonCodec = jsonCodec(ImmutablePerson.class);
         ImmutablePerson immutablePerson = jsonCodec.fromJson("{ \"notWritable\": \"foo\" }");
-        assertNull(immutablePerson.getNotWritable());
+        assertThat(immutablePerson.getNotWritable()).isNull();
     }
 
     @Test
@@ -218,10 +215,10 @@ public class TestJsonCodec
         JsonCodec<ImmutablePerson> jsonCodec = jsonCodec(ImmutablePerson.class);
         ImmutablePerson person = new ImmutablePerson(Strings.repeat("a", 1000), false);
 
-        assertFalse(jsonCodec.toJsonWithLengthLimit(person, 0).isPresent());
-        assertFalse(jsonCodec.toJsonWithLengthLimit(person, 1000).isPresent());
-        assertFalse(jsonCodec.toJsonWithLengthLimit(person, 1035).isPresent());
-        assertTrue(jsonCodec.toJsonWithLengthLimit(person, 1036).isPresent());
+        assertThat(jsonCodec.toJsonWithLengthLimit(person, 0)).isNotPresent();
+        assertThat(jsonCodec.toJsonWithLengthLimit(person, 1000)).isNotPresent();
+        assertThat(jsonCodec.toJsonWithLengthLimit(person, 1035)).isNotPresent();
+        assertThat(jsonCodec.toJsonWithLengthLimit(person, 1036)).isPresent();
     }
 
     @Test
@@ -231,10 +228,10 @@ public class TestJsonCodec
         ImmutablePerson person = new ImmutablePerson(Strings.repeat("a", DEFAULT_MAX_STRING_LEN + 1), false);
 
         String json = jsonCodec.toJson(person);
-        assertEquals(jsonCodec.fromJson(json), person);
+        assertThat(jsonCodec.fromJson(json)).isEqualTo(person);
 
         byte[] bytes = jsonCodec.toJsonBytes(person);
-        assertEquals(jsonCodec.fromJson(bytes), person);
+        assertThat(jsonCodec.fromJson(bytes)).isEqualTo(person);
     }
 
     @Test
@@ -243,10 +240,10 @@ public class TestJsonCodec
         JsonCodec<ImmutablePerson> jsonCodec = jsonCodec(ImmutablePerson.class);
         ImmutablePerson person = new ImmutablePerson(Strings.repeat("\u0158", 1000), false);
 
-        assertFalse(jsonCodec.toJsonWithLengthLimit(person, 0).isPresent());
-        assertFalse(jsonCodec.toJsonWithLengthLimit(person, 1000).isPresent());
-        assertFalse(jsonCodec.toJsonWithLengthLimit(person, 1035).isPresent());
-        assertTrue(jsonCodec.toJsonWithLengthLimit(person, 1036).isPresent());
+        assertThat(jsonCodec.toJsonWithLengthLimit(person, 0)).isNotPresent();
+        assertThat(jsonCodec.toJsonWithLengthLimit(person, 1000)).isNotPresent();
+        assertThat(jsonCodec.toJsonWithLengthLimit(person, 1035)).isNotPresent();
+        assertThat(jsonCodec.toJsonWithLengthLimit(person, 1036)).isPresent();
     }
 
     @Test
@@ -256,10 +253,10 @@ public class TestJsonCodec
         ImmutablePerson person = new ImmutablePerson(Strings.repeat("a", 1000), false);
         List<ImmutablePerson> people = Collections.nCopies(10, person);
 
-        assertFalse(jsonCodec.toJsonWithLengthLimit(people, 0).isPresent());
-        assertFalse(jsonCodec.toJsonWithLengthLimit(people, 5000).isPresent());
-        assertFalse(jsonCodec.toJsonWithLengthLimit(people, 10381).isPresent());
-        assertTrue(jsonCodec.toJsonWithLengthLimit(people, 10382).isPresent());
+        assertThat(jsonCodec.toJsonWithLengthLimit(people, 0)).isNotPresent();
+        assertThat(jsonCodec.toJsonWithLengthLimit(people, 5000)).isNotPresent();
+        assertThat(jsonCodec.toJsonWithLengthLimit(people, 10381)).isNotPresent();
+        assertThat(jsonCodec.toJsonWithLengthLimit(people, 10382)).isPresent();
     }
 
     @Test
@@ -268,7 +265,7 @@ public class TestJsonCodec
         JsonCodec<ImmutablePerson> codec = jsonCodec(ImmutablePerson.class);
 
         String json = "{\"name\":\"Me\",\"rocks\":true}";
-        assertEquals(codec.fromJson(json).getName(), "Me");
+        assertThat(codec.fromJson(json).getName()).isEqualTo("Me");
 
         String jsonWithTrailingContent = json + " trailer";
         assertThatThrownBy(() -> codec.fromJson(jsonWithTrailingContent))
@@ -324,9 +321,7 @@ public class TestJsonCodec
                 }\
                 """);
 
-        assertEquals(
-                JsonCodec.jsonCodec(LegacyRecordAdditionalGetter.class).toJson(new LegacyRecordAdditionalGetter("my value")),
-                """
+        assertThat(JsonCodec.jsonCodec(LegacyRecordAdditionalGetter.class).toJson(new LegacyRecordAdditionalGetter("my value"))).isEqualTo("""
                 {
                   "bar" : "there is no bar field in the record",
                   "foo" : "not really a foo value",
@@ -337,8 +332,8 @@ public class TestJsonCodec
 
     private static <T> void assertSerializationRoundTrip(JsonCodec<T> codec, T object, String expected)
     {
-        assertEquals(codec.toJson(object), expected);
-        assertEquals(codec.fromJson(expected), object);
+        assertThat(codec.toJson(object)).isEqualTo(expected);
+        assertThat(codec.fromJson(expected)).isEqualTo(object);
     }
 
     public record MyRecord(String foo) {}

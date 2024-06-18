@@ -38,12 +38,6 @@ import static io.airlift.testing.Assertions.assertInstanceOf;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertNotSame;
-import static org.testng.Assert.assertSame;
-import static org.testng.Assert.assertTrue;
 
 public class TestHttpClientBinder
 {
@@ -59,7 +53,7 @@ public class TestHttpClientBinder
                 .initialize();
 
         JettyHttpClient httpClient = (JettyHttpClient) injector.getInstance(Key.get(HttpClient.class, FooClient.class));
-        assertEquals(httpClient.getRequestTimeoutMillis(), MINUTES.toMillis(33));
+        assertThat(httpClient.getRequestTimeoutMillis()).isEqualTo(MINUTES.toMillis(33));
     }
 
     @Test
@@ -117,15 +111,15 @@ public class TestHttpClientBinder
 
         JettyHttpClient fooClient = (JettyHttpClient) injector.getInstance(Key.get(HttpClient.class, FooClient.class));
         assertFilterCount(fooClient, 3);
-        assertEquals(fooClient.getRequestFilters().get(0), globalFilter1);
-        assertEquals(fooClient.getRequestFilters().get(1), globalFilter2);
-        assertEquals(fooClient.getRequestFilters().get(2), filter1);
+        assertThat(fooClient.getRequestFilters().get(0)).isEqualTo(globalFilter1);
+        assertThat(fooClient.getRequestFilters().get(1)).isEqualTo(globalFilter2);
+        assertThat(fooClient.getRequestFilters().get(2)).isEqualTo(filter1);
 
         JettyHttpClient barClient = (JettyHttpClient) injector.getInstance(Key.get(HttpClient.class, BarClient.class));
         assertFilterCount(barClient, 3);
-        assertEquals(barClient.getRequestFilters().get(0), globalFilter1);
-        assertEquals(barClient.getRequestFilters().get(1), globalFilter2);
-        assertEquals(barClient.getRequestFilters().get(2), filter2);
+        assertThat(barClient.getRequestFilters().get(0)).isEqualTo(globalFilter1);
+        assertThat(barClient.getRequestFilters().get(1)).isEqualTo(globalFilter2);
+        assertThat(barClient.getRequestFilters().get(2)).isEqualTo(filter2);
     }
 
     @Test
@@ -189,7 +183,7 @@ public class TestHttpClientBinder
                 .quiet()
                 .initialize();
 
-        assertNotNull(injector.getInstance(Key.get(HttpClient.class, FooClient.class)));
+        assertThat(injector.getInstance(Key.get(HttpClient.class, FooClient.class))).isNotNull();
     }
 
     @Test
@@ -203,9 +197,9 @@ public class TestHttpClientBinder
                 .initialize();
 
         HttpClient client = injector.getInstance(Key.get(HttpClient.class, FooClient.class));
-        assertSame(injector.getInstance(Key.get(HttpClient.class, FooAlias1.class)), client);
-        assertSame(injector.getInstance(Key.get(HttpClient.class, FooAlias2.class)), client);
-        assertSame(injector.getInstance(Key.get(HttpClient.class, FooAlias3.class)), client);
+        assertThat(injector.getInstance(Key.get(HttpClient.class, FooAlias1.class))).isSameAs(client);
+        assertThat(injector.getInstance(Key.get(HttpClient.class, FooAlias2.class))).isSameAs(client);
+        assertThat(injector.getInstance(Key.get(HttpClient.class, FooAlias3.class))).isSameAs(client);
     }
 
     @Test
@@ -219,8 +213,8 @@ public class TestHttpClientBinder
                 .initialize();
 
         HttpClient client = injector.getInstance(Key.get(HttpClient.class, FooClient.class));
-        assertSame(injector.getInstance(Key.get(HttpClient.class, FooAlias1.class)), client);
-        assertSame(injector.getInstance(Key.get(HttpClient.class, FooAlias2.class)), client);
+        assertThat(injector.getInstance(Key.get(HttpClient.class, FooAlias1.class))).isSameAs(client);
+        assertThat(injector.getInstance(Key.get(HttpClient.class, FooAlias2.class))).isSameAs(client);
     }
 
     @Test
@@ -236,7 +230,7 @@ public class TestHttpClientBinder
 
         HttpClient fooClient = injector.getInstance(Key.get(HttpClient.class, FooClient.class));
         HttpClient barClient = injector.getInstance(Key.get(HttpClient.class, BarClient.class));
-        assertNotSame(fooClient, barClient);
+        assertThat(fooClient).isNotSameAs(barClient);
     }
 
     @Test
@@ -253,20 +247,20 @@ public class TestHttpClientBinder
         HttpClient fooClient = injector.getInstance(Key.get(HttpClient.class, FooClient.class));
         HttpClient barClient = injector.getInstance(Key.get(HttpClient.class, BarClient.class));
 
-        assertFalse(fooClient.isClosed());
-        assertFalse(barClient.isClosed());
+        assertThat(fooClient.isClosed()).isFalse();
+        assertThat(barClient.isClosed()).isFalse();
 
         injector.getInstance(LifeCycleManager.class).stop();
 
-        assertTrue(fooClient.isClosed());
-        assertTrue(barClient.isClosed());
+        assertThat(fooClient.isClosed()).isTrue();
+        assertThat(barClient.isClosed()).isTrue();
     }
 
     private static void assertFilterCount(HttpClient httpClient, int filterCount)
     {
-        assertNotNull(httpClient);
+        assertThat(httpClient).isNotNull();
         assertInstanceOf(httpClient, JettyHttpClient.class);
-        assertEquals(((JettyHttpClient) httpClient).getRequestFilters().size(), filterCount);
+        assertThat(((JettyHttpClient) httpClient).getRequestFilters().size()).isEqualTo(filterCount);
     }
 
     private static void assertStatusListenerCount(HttpClient httpClient, int statusListenerCount)

@@ -23,7 +23,7 @@ import org.testng.annotations.Test;
 import java.io.ByteArrayOutputStream;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.testng.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestJsonEventSerializer
 {
@@ -40,6 +40,6 @@ public class TestJsonEventSerializer
         eventSerializer.serialize(event, jsonGenerator);
 
         String json = out.toString(UTF_8.name());
-        assertEquals(json, TestingUtils.getNormalizedJson("event.json"));
+        assertThat(json).isEqualTo(TestingUtils.getNormalizedJson("event.json"));
     }
 }

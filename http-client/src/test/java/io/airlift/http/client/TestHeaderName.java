@@ -3,7 +3,7 @@ package io.airlift.http.client;
 import org.testng.annotations.Test;
 
 import static io.airlift.testing.EquivalenceTester.equivalenceTester;
-import static org.testng.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestHeaderName
 {
@@ -19,7 +19,7 @@ public class TestHeaderName
     @Test
     public void testToString()
     {
-        assertEquals(HeaderName.of("FOO").toString(), "FOO");
-        assertEquals(HeaderName.of("foo").toString(), "foo");
+        assertThat(HeaderName.of("FOO").toString()).isEqualTo("FOO");
+        assertThat(HeaderName.of("foo").toString()).isEqualTo("foo");
     }
 }

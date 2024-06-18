@@ -7,8 +7,8 @@ import java.net.URI;
 
 import static io.airlift.http.client.HttpUriBuilder.uriBuilder;
 import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.testng.Assert.assertEquals;
 
 public class TestHttpUriBuilder
 {
@@ -16,7 +16,7 @@ public class TestHttpUriBuilder
     public void testCreateFromUri()
     {
         URI original = URI.create("http://www.example.com:8081/a%20/%C3%A5?k=1&k=2&%C3%A5=3");
-        assertEquals(uriBuilderFrom(original).build(), original);
+        assertThat(uriBuilderFrom(original).build()).isEqualTo(original);
     }
 
     @Test
@@ -27,7 +27,7 @@ public class TestHttpUriBuilder
                 .host("www.example.com")
                 .build();
 
-        assertEquals(uri.toASCIIString(), "http://www.example.com");
+        assertThat(uri.toASCIIString()).isEqualTo("http://www.example.com");
     }
 
     @Test
@@ -39,7 +39,7 @@ public class TestHttpUriBuilder
                 .replacePath("/a/b/c")
                 .build();
 
-        assertEquals(uri.toASCIIString(), "http://www.example.com/a/b/c");
+        assertThat(uri.toASCIIString()).isEqualTo("http://www.example.com/a/b/c");
     }
 
     @Test
@@ -51,7 +51,7 @@ public class TestHttpUriBuilder
                 .replacePath("a/b/c")
                 .build();
 
-        assertEquals(uri.toASCIIString(), "http://www.example.com/a/b/c");
+        assertThat(uri.toASCIIString()).isEqualTo("http://www.example.com/a/b/c");
     }
 
     @Test
@@ -63,7 +63,7 @@ public class TestHttpUriBuilder
                 .appendPath("/a/b/c")
                 .build();
 
-        assertEquals(uri.toASCIIString(), "http://www.example.com/a/b/c");
+        assertThat(uri.toASCIIString()).isEqualTo("http://www.example.com/a/b/c");
     }
 
     @Test
@@ -75,7 +75,7 @@ public class TestHttpUriBuilder
                 .appendPath("a/b/c")
                 .build();
 
-        assertEquals(uri.toASCIIString(), "http://www.example.com/a/b/c");
+        assertThat(uri.toASCIIString()).isEqualTo("http://www.example.com/a/b/c");
     }
 
     @Test
@@ -88,7 +88,7 @@ public class TestHttpUriBuilder
                 .appendPath("/x/y/z")
                 .build();
 
-        assertEquals(uri.toASCIIString(), "http://www.example.com/a/b/c/x/y/z");
+        assertThat(uri.toASCIIString()).isEqualTo("http://www.example.com/a/b/c/x/y/z");
     }
 
     @Test
@@ -101,7 +101,7 @@ public class TestHttpUriBuilder
                 .appendPath("x/y/z")
                 .build();
 
-        assertEquals(uri.toASCIIString(), "http://www.example.com/a/b/c/x/y/z");
+        assertThat(uri.toASCIIString()).isEqualTo("http://www.example.com/a/b/c/x/y/z");
     }
 
     @Test
@@ -114,7 +114,7 @@ public class TestHttpUriBuilder
                 .appendPath("/x/y/z")
                 .build();
 
-        assertEquals(uri.toASCIIString(), "http://www.example.com/a/b/c/x/y/z");
+        assertThat(uri.toASCIIString()).isEqualTo("http://www.example.com/a/b/c/x/y/z");
     }
 
     @Test
@@ -126,7 +126,7 @@ public class TestHttpUriBuilder
                 .appendPath("/a/b/c/")
                 .build();
 
-        assertEquals(uri.toASCIIString(), "http://www.example.com/a/b/c/");
+        assertThat(uri.toASCIIString()).isEqualTo("http://www.example.com/a/b/c/");
     }
 
     @Test
@@ -140,7 +140,7 @@ public class TestHttpUriBuilder
                 .replaceParameter("k", "1")
                 .build();
 
-        assertEquals(uri.toASCIIString(), "http://www.example.com:8081/a/b/c?k=1");
+        assertThat(uri.toASCIIString()).isEqualTo("http://www.example.com:8081/a/b/c?k=1");
     }
 
     @Test
@@ -156,7 +156,7 @@ public class TestHttpUriBuilder
                 .addParameter("k2", "3")
                 .build();
 
-        assertEquals(uri.toASCIIString(), "http://www.example.com/?k1=1&k1=2&k1=0&k2=3");
+        assertThat(uri.toASCIIString()).isEqualTo("http://www.example.com/?k1=1&k1=2&k1=0&k2=3");
     }
 
     @Test
@@ -169,7 +169,7 @@ public class TestHttpUriBuilder
                 .addParameter("k1", "1", "2", "0")
                 .build();
 
-        assertEquals(uri.toASCIIString(), "http://www.example.com/?k1=1&k1=2&k1=0");
+        assertThat(uri.toASCIIString()).isEqualTo("http://www.example.com/?k1=1&k1=2&k1=0");
     }
 
     @Test
@@ -181,7 +181,7 @@ public class TestHttpUriBuilder
                 .addParameter("pretty")
                 .build();
 
-        assertEquals(uri.toASCIIString(), "http://www.example.com/?pretty");
+        assertThat(uri.toASCIIString()).isEqualTo("http://www.example.com/?pretty");
     }
 
     @Test
@@ -194,7 +194,7 @@ public class TestHttpUriBuilder
                 .addParameter("pretty")
                 .build();
 
-        assertEquals(uri.toASCIIString(), "http://www.example.com/?pretty&pretty");
+        assertThat(uri.toASCIIString()).isEqualTo("http://www.example.com/?pretty&pretty");
     }
 
     @Test
@@ -208,7 +208,7 @@ public class TestHttpUriBuilder
                 .addParameter("pretty")
                 .build();
 
-        assertEquals(uri.toASCIIString(), "http://www.example.com/?pretty&pretty=true&pretty");
+        assertThat(uri.toASCIIString()).isEqualTo("http://www.example.com/?pretty&pretty=true&pretty");
     }
 
     @Test
@@ -218,7 +218,7 @@ public class TestHttpUriBuilder
                 .replaceParameter("k1", "4")
                 .build();
 
-        assertEquals(uri.toASCIIString(), "http://www.example.com:8081/?k2=3&k1=4");
+        assertThat(uri.toASCIIString()).isEqualTo("http://www.example.com:8081/?k2=3&k1=4");
     }
 
     @Test
@@ -228,7 +228,7 @@ public class TestHttpUriBuilder
                 .replaceParameter("k1", "a", "b", "c")
                 .build();
 
-        assertEquals(uri.toASCIIString(), "http://www.example.com/?k2=3&k1=a&k1=b&k1=c");
+        assertThat(uri.toASCIIString()).isEqualTo("http://www.example.com/?k2=3&k1=a&k1=b&k1=c");
     }
 
     @Test
@@ -238,7 +238,7 @@ public class TestHttpUriBuilder
                 .port(801)
                 .build();
 
-        assertEquals(uri.toASCIIString(), "http://www.example.com:801/");
+        assertThat(uri.toASCIIString()).isEqualTo("http://www.example.com:801/");
     }
 
     @Test
@@ -248,19 +248,19 @@ public class TestHttpUriBuilder
                 .defaultPort()
                 .build();
 
-        assertEquals(uri.toASCIIString(), "http://www.example.com");
+        assertThat(uri.toASCIIString()).isEqualTo("http://www.example.com");
 
         uri = uriBuilderFrom(URI.create("http://www.example.com:8081"))
                 .port(80)
                 .build();
 
-        assertEquals(uri.toASCIIString(), "http://www.example.com");
+        assertThat(uri.toASCIIString()).isEqualTo("http://www.example.com");
 
         uri = uriBuilderFrom(URI.create("https://www.example.com:8081"))
                 .port(443)
                 .build();
 
-        assertEquals(uri.toASCIIString(), "https://www.example.com");
+        assertThat(uri.toASCIIString()).isEqualTo("https://www.example.com");
     }
 
     @Test
@@ -273,7 +273,7 @@ public class TestHttpUriBuilder
                 .replacePath("/a/b")
                 .build();
 
-        assertEquals(uri.toASCIIString(), "http://[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]:8081/a/b");
+        assertThat(uri.toASCIIString()).isEqualTo("http://[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]:8081/a/b");
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "host starts with a bracket")
@@ -286,7 +286,7 @@ public class TestHttpUriBuilder
                 .replacePath("/a/b")
                 .build();
 
-        assertEquals(uri.toASCIIString(), "http://[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]:8081/a/b");
+        assertThat(uri.toASCIIString()).isEqualTo("http://[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]:8081/a/b");
     }
 
     @Test
@@ -298,7 +298,7 @@ public class TestHttpUriBuilder
                 .hostAndPort(HostAndPort.fromParts("example.com", 8081))
                 .build();
 
-        assertEquals(uri.toASCIIString(), "http://example.com:8081");
+        assertThat(uri.toASCIIString()).isEqualTo("http://example.com:8081");
     }
 
     @Test
@@ -310,7 +310,7 @@ public class TestHttpUriBuilder
                 .hostAndPort(HostAndPort.fromString("example.com"))
                 .build();
 
-        assertEquals(uri.toASCIIString(), "http://example.com");
+        assertThat(uri.toASCIIString()).isEqualTo("http://example.com");
     }
 
     @Test
@@ -322,7 +322,7 @@ public class TestHttpUriBuilder
                 .hostAndPort(HostAndPort.fromParts("[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]", 8081))
                 .build();
 
-        assertEquals(uri.toASCIIString(), "http://[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]:8081");
+        assertThat(uri.toASCIIString()).isEqualTo("http://[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]:8081");
     }
 
     @Test
@@ -334,7 +334,7 @@ public class TestHttpUriBuilder
                 .hostAndPort(HostAndPort.fromParts("FEDC:BA98:7654:3210:FEDC:BA98:7654:3210", 8081))
                 .build();
 
-        assertEquals(uri.toASCIIString(), "http://[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]:8081");
+        assertThat(uri.toASCIIString()).isEqualTo("http://[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]:8081");
     }
 
     @Test
@@ -346,7 +346,7 @@ public class TestHttpUriBuilder
                 .hostAndPort(HostAndPort.fromString("FEDC:BA98:7654:3210:FEDC:BA98:7654:3210"))
                 .build();
 
-        assertEquals(uri.toASCIIString(), "http://[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]");
+        assertThat(uri.toASCIIString()).isEqualTo("http://[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]");
     }
 
     @Test
@@ -358,7 +358,7 @@ public class TestHttpUriBuilder
                 .replacePath("/`#%^{}|[]<>?áéíóú")
                 .build();
 
-        assertEquals(uri.toASCIIString(), "http://www.example.com/%60%23%25%5E%7B%7D%7C%5B%5D%3C%3E%3F%C3%A1%C3%A9%C3%AD%C3%B3%C3%BA");
+        assertThat(uri.toASCIIString()).isEqualTo("http://www.example.com/%60%23%25%5E%7B%7D%7C%5B%5D%3C%3E%3F%C3%A1%C3%A9%C3%AD%C3%B3%C3%BA");
     }
 
     @Test
@@ -395,7 +395,7 @@ public class TestHttpUriBuilder
                 .addParameter("a", "1")
                 .build();
 
-        assertEquals(uri.toASCIIString(), "http://www.example.com/?a=1");
+        assertThat(uri.toASCIIString()).isEqualTo("http://www.example.com/?a=1");
     }
 
     @Test
@@ -407,7 +407,7 @@ public class TestHttpUriBuilder
                 .replaceParameter("a", "&")
                 .build();
 
-        assertEquals(uri.toASCIIString(), "http://www.example.com/?a=%26");
+        assertThat(uri.toASCIIString()).isEqualTo("http://www.example.com/?a=%26");
     }
 
     @Test

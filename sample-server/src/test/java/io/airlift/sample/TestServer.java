@@ -64,8 +64,6 @@ import static java.net.HttpURLConnection.HTTP_NO_CONTENT;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNull;
 
 @Test(singleThreaded = true)
 public class TestServer
@@ -124,7 +122,7 @@ public class TestServer
                 prepareGet().setUri(uriFor("/v1/person")).build(),
                 createJsonResponseHandler(listCodec));
 
-        assertEquals(response, ImmutableList.of());
+        assertThat(response).isEqualTo(ImmutableList.of());
     }
 
     @Test
@@ -158,7 +156,7 @@ public class TestServer
                 prepareGet().setUri(requestUri).build(),
                 createJsonResponseHandler(mapCodec));
 
-        assertEquals(actual, expected);
+        assertThat(actual).isEqualTo(expected);
     }
 
     @Test
@@ -175,11 +173,11 @@ public class TestServer
                         .build(),
                 createStatusResponseHandler());
 
-        assertEquals(response.getStatusCode(), HTTP_CREATED);
+        assertThat(response.getStatusCode()).isEqualTo(HTTP_CREATED);
 
-        assertEquals(store.get("foo"), new Person("foo@example.com", "Mr Foo"));
+        assertThat(store.get("foo")).isEqualTo(new Person("foo@example.com", "Mr Foo"));
 
-        assertEquals(eventClient.getEvents(), ImmutableList.of(
+        assertThat(eventClient.getEvents()).isEqualTo(ImmutableList.of(
                 personAdded("foo", new Person("foo@example.com", "Mr Foo"))));
     }
 
@@ -195,11 +193,11 @@ public class TestServer
                         .build(),
                 createStatusResponseHandler());
 
-        assertEquals(response.getStatusCode(), HTTP_NO_CONTENT);
+        assertThat(response.getStatusCode()).isEqualTo(HTTP_NO_CONTENT);
 
-        assertNull(store.get("foo"));
+        assertThat(store.get("foo")).isNull();
 
-        assertEquals(eventClient.getEvents(), ImmutableList.of(
+        assertThat(eventClient.getEvents()).isEqualTo(ImmutableList.of(
                 personAdded("foo", new Person("foo@example.com", "Mr Foo")),
                 personRemoved("foo", new Person("foo@example.com", "Mr Foo"))));
     }
@@ -214,7 +212,7 @@ public class TestServer
                         .build(),
                 createStatusResponseHandler());
 
-        assertEquals(response.getStatusCode(), HTTP_NOT_FOUND);
+        assertThat(response.getStatusCode()).isEqualTo(HTTP_NOT_FOUND);
     }
 
     @Test
@@ -231,9 +229,9 @@ public class TestServer
                         .build(),
                 createStatusResponseHandler());
 
-        assertEquals(response.getStatusCode(), HTTP_BAD_METHOD);
+        assertThat(response.getStatusCode()).isEqualTo(HTTP_BAD_METHOD);
 
-        assertNull(store.get("foo"));
+        assertThat(store.get("foo")).isNull();
     }
 
     @Test

@@ -36,9 +36,7 @@ import java.util.Optional;
 import static io.airlift.security.jwks.JwksDecoder.decodeKeys;
 import static io.airlift.testing.Assertions.assertInstanceOf;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertSame;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestJwksDecoder
 {
@@ -67,7 +65,7 @@ public class TestJwksDecoder
                 "    }\n" +
                 "  ]\n" +
                 "}");
-        assertEquals(keys.size(), 2);
+        assertThat(keys.size()).isEqualTo(2);
         assertInstanceOf(keys.get("example-rsa"), JwkRsaPublicKey.class);
         assertInstanceOf(keys.get("example-ec"), JwkEcPublicKey.class);
     }
@@ -95,7 +93,7 @@ public class TestJwksDecoder
                 "    }\n" +
                 "  ]\n" +
                 "}");
-        assertEquals(keys.size(), 0);
+        assertThat(keys.size()).isEqualTo(0);
     }
 
     @Test
@@ -113,7 +111,7 @@ public class TestJwksDecoder
                 "    }\n" +
                 "  ]\n" +
                 "}");
-        assertEquals(keys.size(), 0);
+        assertThat(keys.size()).isEqualTo(0);
     }
 
     @Test
@@ -131,7 +129,7 @@ public class TestJwksDecoder
                 "    }\n" +
                 "  ]\n" +
                 "}");
-        assertEquals(keys.size(), 0);
+        assertThat(keys.size()).isEqualTo(0);
     }
 
     @Test
@@ -150,7 +148,7 @@ public class TestJwksDecoder
                 "    }\n" +
                 "  ]\n" +
                 "}");
-        assertEquals(keys.size(), 0);
+        assertThat(keys.size()).isEqualTo(0);
     }
 
     @Test
@@ -169,7 +167,7 @@ public class TestJwksDecoder
                 "    }\n" +
                 "  ]\n" +
                 "}");
-        assertEquals(keys.size(), 0);
+        assertThat(keys.size()).isEqualTo(0);
     }
 
     @Test
@@ -180,11 +178,11 @@ public class TestJwksDecoder
         Map<String, PublicKey> keys = decodeKeys(jwksJson);
 
         RSAPublicKey publicKey = (RSAPublicKey) keys.get("test-rsa");
-        assertNotNull(publicKey);
+        assertThat(publicKey).isNotNull();
 
         RSAPublicKey expectedPublicKey = (RSAPublicKey) PemReader.loadPublicKey(new File(Resources.getResource("jwks/jwk-rsa-public.pem").getPath()));
-        assertEquals(publicKey.getPublicExponent(), expectedPublicKey.getPublicExponent());
-        assertEquals(publicKey.getModulus(), expectedPublicKey.getModulus());
+        assertThat(publicKey.getPublicExponent()).isEqualTo(expectedPublicKey.getPublicExponent());
+        assertThat(publicKey.getModulus()).isEqualTo(expectedPublicKey.getModulus());
 
         PrivateKey privateKey = PemReader.loadPrivateKey(new File(Resources.getResource("jwks/jwk-rsa-private.pem").getPath()), Optional.empty());
         String jwt = Jwts.builder()
@@ -198,13 +196,13 @@ public class TestJwksDecoder
         Jws<Claims> claimsJws = Jwts.parser()
                 .keyLocator(header -> {
                     String keyId = ((DefaultJwsHeader) header).getKeyId();
-                    assertEquals(keyId, "test-rsa");
+                    assertThat(keyId).isEqualTo("test-rsa");
                     return publicKey;
                 })
                 .build()
                 .parseSignedClaims(jwt);
 
-        assertEquals(claimsJws.getPayload().getSubject(), "test-user");
+        assertThat(claimsJws.getPayload().getSubject()).isEqualTo("test-user");
     }
 
     @Test
@@ -222,7 +220,7 @@ public class TestJwksDecoder
                 "    }\n" +
                 "  ]\n" +
                 "}");
-        assertEquals(keys.size(), 1);
+        assertThat(keys.size()).isEqualTo(1);
         assertInstanceOf(keys.get("test-ec"), JwkEcPublicKey.class);
     }
 
@@ -241,7 +239,7 @@ public class TestJwksDecoder
                 "    }\n" +
                 "  ]\n" +
                 "}");
-        assertEquals(keys.size(), 0);
+        assertThat(keys.size()).isEqualTo(0);
     }
 
     @Test
@@ -259,7 +257,7 @@ public class TestJwksDecoder
                 "    }\n" +
                 "  ]\n" +
                 "}");
-        assertEquals(keys.size(), 0);
+        assertThat(keys.size()).isEqualTo(0);
     }
 
     @Test
@@ -277,7 +275,7 @@ public class TestJwksDecoder
                 "    }\n" +
                 "  ]\n" +
                 "}");
-        assertEquals(keys.size(), 0);
+        assertThat(keys.size()).isEqualTo(0);
     }
 
     @Test
@@ -296,16 +294,16 @@ public class TestJwksDecoder
         Map<String, PublicKey> keys = decodeKeys(jwksJson);
 
         ECPublicKey publicKey = (ECPublicKey) keys.get(keyName);
-        assertNotNull(publicKey);
+        assertThat(publicKey).isNotNull();
 
-        assertSame(publicKey.getParams(), expectedSpec);
+        assertThat(publicKey.getParams()).isSameAs(expectedSpec);
 
         ECPublicKey expectedPublicKey = (ECPublicKey) PemReader.loadPublicKey(new File(Resources.getResource("jwks/" + keyName + "-public.pem").getPath()));
-        assertEquals(publicKey.getW(), expectedPublicKey.getW());
-        assertEquals(publicKey.getParams().getCurve(), expectedPublicKey.getParams().getCurve());
-        assertEquals(publicKey.getParams().getGenerator(), expectedPublicKey.getParams().getGenerator());
-        assertEquals(publicKey.getParams().getOrder(), expectedPublicKey.getParams().getOrder());
-        assertEquals(publicKey.getParams().getCofactor(), expectedPublicKey.getParams().getCofactor());
+        assertThat(publicKey.getW()).isEqualTo(expectedPublicKey.getW());
+        assertThat(publicKey.getParams().getCurve()).isEqualTo(expectedPublicKey.getParams().getCurve());
+        assertThat(publicKey.getParams().getGenerator()).isEqualTo(expectedPublicKey.getParams().getGenerator());
+        assertThat(publicKey.getParams().getOrder()).isEqualTo(expectedPublicKey.getParams().getOrder());
+        assertThat(publicKey.getParams().getCofactor()).isEqualTo(expectedPublicKey.getParams().getCofactor());
 
         PrivateKey privateKey = PemReader.loadPrivateKey(new File(Resources.getResource("jwks/" + keyName + "-private.pem").getPath()), Optional.empty());
         String jwt = Jwts.builder()
@@ -319,14 +317,14 @@ public class TestJwksDecoder
         Jws<Claims> claimsJws = Jwts.parser()
                 .keyLocator(header -> {
                     String keyId = ((DefaultJwsHeader) header).getKeyId();
-                    assertEquals(keyId, keyName);
+                    assertThat(keyId).isEqualTo(keyName);
                     String algorithmName = header.getAlgorithm();
-                    assertEquals(algorithmName, signatureAlgorithm.getId());
+                    assertThat(algorithmName).isEqualTo(signatureAlgorithm.getId());
                     return publicKey;
                 })
                 .build()
                 .parseSignedClaims(jwt);
 
-        assertEquals(claimsJws.getPayload().getSubject(), "test-user");
+        assertThat(claimsJws.getPayload().getSubject()).isEqualTo("test-user");
     }
 }

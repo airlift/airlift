@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 import static io.airlift.json.JsonCodecBinder.jsonCodecBinder;
-import static org.testng.Assert.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestJsonCodecBinder
 {
@@ -53,9 +53,9 @@ public class TestJsonCodecBinder
 
         injector.injectMembers(this);
 
-        assertNotNull(personJsonCodec);
-        assertNotNull(personListJsonCodec);
-        assertNotNull(personMapJsonCodec);
+        assertThat(personJsonCodec).isNotNull();
+        assertThat(personListJsonCodec).isNotNull();
+        assertThat(personMapJsonCodec).isNotNull();
 
         Person.validatePersonJsonCodec(personJsonCodec);
         Person.validatePersonListJsonCodec(personListJsonCodec);

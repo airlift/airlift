@@ -29,8 +29,7 @@ import static io.airlift.json.JsonCodec.jsonCodec;
 import static io.airlift.json.JsonCodec.mapJsonCodec;
 import static io.airlift.testing.EquivalenceTester.equivalenceTester;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestAnnouncement
 {
@@ -55,7 +54,7 @@ public class TestAnnouncement
         List<Map<String, Object>> services = toServices(expected.get("services"));
         services.get(0).put("id", announcement.getServices().stream().collect(onlyElement()).getId().toString());
 
-        assertEquals(actual, expected);
+        assertThat(actual).isEqualTo(expected);
     }
 
     @SuppressWarnings("unchecked")
@@ -67,11 +66,11 @@ public class TestAnnouncement
     @Test
     public void testToString()
     {
-        assertNotNull(new Announcement("environment", "node", "pool", "location", ImmutableSet.of(
+        assertThat(new Announcement("environment", "node", "pool", "location", ImmutableSet.of(
                 serviceAnnouncement("foo")
                         .addProperty("http", "http://localhost:8080")
                         .addProperty("jmx", "jmx://localhost:1234")
-                        .build())));
+                        .build()))).isNotNull();
     }
 
     @Test

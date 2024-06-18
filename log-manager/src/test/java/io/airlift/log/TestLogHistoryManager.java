@@ -29,7 +29,7 @@ import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
 import static io.airlift.units.DataSize.Unit.BYTE;
 import static io.airlift.units.DataSize.Unit.GIGABYTE;
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
-import static org.testng.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestLogHistoryManager
 {
@@ -75,11 +75,11 @@ public class TestLogHistoryManager
 
     private static void assertLogFiles(LogHistoryManager logHistoryManager, List<LogFileName> expected)
     {
-        assertEquals(logHistoryManager.getTotalSize(), expected.size() * FILE_SIZE);
+        assertThat(logHistoryManager.getTotalSize()).isEqualTo(expected.size() * FILE_SIZE);
         List<LogFileName> files = logHistoryManager.getFiles().stream()
                 .sorted()
                 .collect(toImmutableList());
-        assertEquals(files, expected);
+        assertThat(files).isEqualTo(expected);
     }
 
     @Test

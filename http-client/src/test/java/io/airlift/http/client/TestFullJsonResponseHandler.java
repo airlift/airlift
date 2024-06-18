@@ -16,12 +16,8 @@ import static io.airlift.http.client.HttpStatus.OK;
 import static io.airlift.http.client.testing.TestingResponse.mockResponse;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNotSame;
-import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
 public class TestFullJsonResponseHandler
@@ -36,19 +32,19 @@ public class TestFullJsonResponseHandler
         String json = codec.toJson(user);
         JsonResponse<User> response = handler.handle(null, mockResponse(OK, JSON_UTF_8, json));
 
-        assertTrue(response.hasValue());
-        assertEquals(response.getJsonBytes(), json.getBytes(UTF_8));
-        assertEquals(response.getJson(), json);
-        assertEquals(response.getValue().getName(), user.getName());
-        assertEquals(response.getValue().getAge(), user.getAge());
+        assertThat(response.hasValue()).isTrue();
+        assertThat(response.getJsonBytes()).isEqualTo(json.getBytes(UTF_8));
+        assertThat(response.getJson()).isEqualTo(json);
+        assertThat(response.getValue().getName()).isEqualTo(user.getName());
+        assertThat(response.getValue().getAge()).isEqualTo(user.getAge());
 
-        assertNotSame(response.getJson(), response.getJson());
-        assertNotSame(response.getJsonBytes(), response.getJsonBytes());
-        assertNotSame(response.getResponseBytes(), response.getResponseBytes());
-        assertNotSame(response.getResponseBody(), response.getResponseBody());
+        assertThat(response.getJson()).isNotSameAs(response.getJson());
+        assertThat(response.getJsonBytes()).isNotSameAs(response.getJsonBytes());
+        assertThat(response.getResponseBytes()).isNotSameAs(response.getResponseBytes());
+        assertThat(response.getResponseBody()).isNotSameAs(response.getResponseBody());
 
-        assertEquals(response.getResponseBytes(), response.getJsonBytes());
-        assertEquals(response.getResponseBody(), response.getJson());
+        assertThat(response.getResponseBytes()).isEqualTo(response.getJsonBytes());
+        assertThat(response.getResponseBody()).isEqualTo(response.getJson());
     }
 
     @Test
@@ -57,16 +53,16 @@ public class TestFullJsonResponseHandler
         String json = "{\"age\": \"foo\"}";
         JsonResponse<User> response = handler.handle(null, mockResponse(OK, JSON_UTF_8, json));
 
-        assertFalse(response.hasValue());
-        assertEquals(response.getException().getMessage(), format("Unable to create %s from JSON response:\n[%s]", User.class, json));
-        assertTrue(response.getException().getCause() instanceof IllegalArgumentException);
-        assertEquals(response.getException().getCause().getMessage(), "Invalid JSON bytes for [simple type, class io.airlift.http.client.TestFullJsonResponseHandler$User]");
+        assertThat(response.hasValue()).isFalse();
+        assertThat(response.getException().getMessage()).isEqualTo(format("Unable to create %s from JSON response:\n[%s]", User.class, json));
+        assertThat(response.getException()).hasCauseInstanceOf(IllegalArgumentException.class);
+        assertThat(response.getException()).hasStackTraceContaining("Invalid JSON bytes for [simple type, class io.airlift.http.client.TestFullJsonResponseHandler$User]");
 
-        assertEquals(response.getJsonBytes(), json.getBytes(UTF_8));
-        assertEquals(response.getJson(), json);
+        assertThat(response.getJsonBytes()).isEqualTo(json.getBytes(UTF_8));
+        assertThat(response.getJson()).isEqualTo(json);
 
-        assertEquals(response.getResponseBytes(), response.getJsonBytes());
-        assertEquals(response.getResponseBody(), response.getJson());
+        assertThat(response.getResponseBytes()).isEqualTo(response.getJsonBytes());
+        assertThat(response.getResponseBody()).isEqualTo(response.getJson());
     }
 
     @Test
@@ -80,14 +76,14 @@ public class TestFullJsonResponseHandler
             fail("expected exception");
         }
         catch (IllegalStateException e) {
-            assertEquals(e.getMessage(), "Response does not contain a JSON value");
-            assertEquals(e.getCause(), response.getException());
+            assertThat(e.getMessage()).isEqualTo("Response does not contain a JSON value");
+            assertThat(e.getCause()).isEqualTo(response.getException());
 
-            assertEquals(response.getJsonBytes(), json.getBytes(UTF_8));
-            assertEquals(response.getJson(), json);
+            assertThat(response.getJsonBytes()).isEqualTo(json.getBytes(UTF_8));
+            assertThat(response.getJson()).isEqualTo(json);
 
-            assertEquals(response.getResponseBytes(), response.getJsonBytes());
-            assertEquals(response.getResponseBody(), response.getJson());
+            assertThat(response.getResponseBytes()).isEqualTo(response.getJsonBytes());
+            assertThat(response.getResponseBody()).isEqualTo(response.getJson());
         }
     }
 
@@ -96,13 +92,13 @@ public class TestFullJsonResponseHandler
     {
         JsonResponse<User> response = handler.handle(null, mockResponse(OK, PLAIN_TEXT_UTF_8, "hello"));
 
-        assertFalse(response.hasValue());
-        assertNull(response.getException());
-        assertNull(response.getJson());
-        assertNull(response.getJsonBytes());
+        assertThat(response.hasValue()).isFalse();
+        assertThat(response.getException()).isNull();
+        assertThat(response.getJson()).isNull();
+        assertThat(response.getJsonBytes()).isNull();
 
-        assertEquals(response.getResponseBytes(), "hello".getBytes(UTF_8));
-        assertEquals(response.getResponseBody(), "hello");
+        assertThat(response.getResponseBytes()).isEqualTo("hello".getBytes(UTF_8));
+        assertThat(response.getResponseBody()).isEqualTo("hello");
     }
 
     @Test
@@ -111,15 +107,15 @@ public class TestFullJsonResponseHandler
         JsonResponse<User> response = handler.handle(null,
                 new TestingResponse(OK, ImmutableListMultimap.<String, String>of(), "hello".getBytes(UTF_8)));
 
-        assertFalse(response.hasValue());
-        assertNull(response.getException());
-        assertNull(response.getJson());
-        assertNull(response.getJsonBytes());
+        assertThat(response.hasValue()).isFalse();
+        assertThat(response.getException()).isNull();
+        assertThat(response.getJson()).isNull();
+        assertThat(response.getJsonBytes()).isNull();
 
-        assertEquals(response.getResponseBytes(), "hello".getBytes(UTF_8));
-        assertEquals(response.getResponseBody(), "hello");
+        assertThat(response.getResponseBytes()).isEqualTo("hello".getBytes(UTF_8));
+        assertThat(response.getResponseBody()).isEqualTo("hello");
 
-        assertTrue(response.getHeaders().isEmpty());
+        assertThat(response.getHeaders().isEmpty()).isTrue();
     }
 
     @Test
@@ -128,14 +124,14 @@ public class TestFullJsonResponseHandler
         String json = "{\"error\": true}";
         JsonResponse<User> response = handler.handle(null, mockResponse(INTERNAL_SERVER_ERROR, JSON_UTF_8, json));
 
-        assertTrue(response.hasValue());
-        assertEquals(response.getJson(), json);
-        assertEquals(response.getJsonBytes(), json.getBytes(UTF_8));
-        assertNull(response.getValue().getName());
-        assertEquals(response.getValue().getAge(), 0);
+        assertThat(response.hasValue()).isTrue();
+        assertThat(response.getJson()).isEqualTo(json);
+        assertThat(response.getJsonBytes()).isEqualTo(json.getBytes(UTF_8));
+        assertThat(response.getValue().getName()).isNull();
+        assertThat(response.getValue().getAge()).isEqualTo(0);
 
-        assertEquals(response.getResponseBytes(), response.getJsonBytes());
-        assertEquals(response.getResponseBody(), response.getJson());
+        assertThat(response.getResponseBytes()).isEqualTo(response.getJsonBytes());
+        assertThat(response.getResponseBody()).isEqualTo(response.getJson());
     }
 
     public static class User

@@ -44,12 +44,12 @@ import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.jetty.http.HttpVersion.HTTP_2;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
-import static org.testng.Assert.assertEquals;
 
 @Test(singleThreaded = true)
 public class TestDelimitedRequestLog
@@ -104,13 +104,13 @@ public class TestDelimitedRequestLog
             logger.stop();
 
             List<Object> events = eventClient.getEvents();
-            assertEquals(events.size(), 3);
+            assertThat(events.size()).isEqualTo(3);
             // first two events should have the token set from the header
             for (int i = 0; i < 2; i++) {
-                assertEquals(((HttpRequestEvent) events.get(i)).traceToken(), token);
+                assertThat(((HttpRequestEvent) events.get(i)).traceToken()).isEqualTo(token);
             }
             // last event should have the token set by the tokenManager
-            assertEquals(((HttpRequestEvent) events.get(2)).traceToken(), tokenManager.getCurrentRequestToken());
+            assertThat(((HttpRequestEvent) events.get(2)).traceToken()).isEqualTo(tokenManager.getCurrentRequestToken());
         }
     }
 
@@ -176,28 +176,28 @@ public class TestDelimitedRequestLog
             logger.stop();
 
             List<Object> events = eventClient.getEvents();
-            assertEquals(events.size(), 1);
+            assertThat(events.size()).isEqualTo(1);
             HttpRequestEvent event = (HttpRequestEvent) events.get(0);
 
-            assertEquals(event.timeStamp().toEpochMilli(), timings.requestStarted().toEpochMilli());
-            assertEquals(event.clientAddress(), ip);
-            assertEquals(event.protocol(), protocol);
-            assertEquals(event.method(), method);
-            assertEquals(event.requestUri(), uri.toString());
-            assertEquals(event.user(), user);
-            assertEquals(event.agent(), agent);
-            assertEquals(event.referrer(), referrer);
-            assertEquals(event.requestSize(), requestSize);
-            assertEquals(event.requestContentType(), requestContentType);
-            assertEquals(event.responseSize(), responseSize);
-            assertEquals(event.responseCode(), responseCode);
-            assertEquals(event.responseContentType(), responseContentType);
-            assertEquals(event.timeToFirstByte(), timeToFirstByte);
-            assertEquals(event.timeToLastByte(), timeToLastByte);
-            assertEquals(event.traceToken(), tokenManager.getCurrentRequestToken());
-            assertEquals(event.timeToHandle(), timeToHandle);
-            assertEquals(event.timeFromFirstToLastContent(), event.timeToLastByte() - event.timeToFirstByte());
-            assertEquals(event.responseContentInterarrivalStats(), responseContentInterarrivalStats);
+            assertThat(event.timeStamp().toEpochMilli()).isEqualTo(timings.requestStarted().toEpochMilli());
+            assertThat(event.clientAddress()).isEqualTo(ip);
+            assertThat(event.protocol()).isEqualTo(protocol);
+            assertThat(event.method()).isEqualTo(method);
+            assertThat(event.requestUri()).isEqualTo(uri.toString());
+            assertThat(event.user()).isEqualTo(user);
+            assertThat(event.agent()).isEqualTo(agent);
+            assertThat(event.referrer()).isEqualTo(referrer);
+            assertThat(event.requestSize()).isEqualTo(requestSize);
+            assertThat(event.requestContentType()).isEqualTo(requestContentType);
+            assertThat(event.responseSize()).isEqualTo(responseSize);
+            assertThat(event.responseCode()).isEqualTo(responseCode);
+            assertThat(event.responseContentType()).isEqualTo(responseContentType);
+            assertThat(event.timeToFirstByte()).isEqualTo(timeToFirstByte);
+            assertThat(event.timeToLastByte()).isEqualTo(timeToLastByte);
+            assertThat(event.traceToken()).isEqualTo(tokenManager.getCurrentRequestToken());
+            assertThat(event.timeToHandle()).isEqualTo(timeToHandle);
+            assertThat(event.timeFromFirstToLastContent()).isEqualTo(event.timeToLastByte() - event.timeToFirstByte());
+            assertThat(event.responseContentInterarrivalStats()).isEqualTo(responseContentInterarrivalStats);
 
             String actual = asCharSource(file, UTF_8).read();
             String expected = String.format("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
@@ -218,7 +218,7 @@ public class TestDelimitedRequestLog
                     firstToLastContentTimeInMillis,
                     format("%.2f, %.2f, %.2f, %d", stats.getMin(), stats.getAverage(), stats.getMax(), stats.getCount()));
 
-            assertEquals(actual, expected);
+            assertThat(actual).isEqualTo(expected);
         }
     }
 
@@ -239,10 +239,10 @@ public class TestDelimitedRequestLog
             logger.stop();
 
             List<Object> events = eventClient.getEvents();
-            assertEquals(events.size(), 1);
+            assertThat(events.size()).isEqualTo(1);
             HttpRequestEvent event = (HttpRequestEvent) events.get(0);
 
-            assertEquals(event.protocol(), protocol);
+            assertThat(event.protocol()).isEqualTo(protocol);
         }
     }
 
@@ -263,10 +263,10 @@ public class TestDelimitedRequestLog
             logger.stop();
 
             List<Object> events = eventClient.getEvents();
-            assertEquals(events.size(), 1);
+            assertThat(events.size()).isEqualTo(1);
             HttpRequestEvent event = (HttpRequestEvent) events.get(0);
 
-            assertEquals(event.clientAddress(), clientIp);
+            assertThat(event.clientAddress()).isEqualTo(clientIp);
         }
     }
 
@@ -288,10 +288,10 @@ public class TestDelimitedRequestLog
             logger.stop();
 
             List<Object> events = eventClient.getEvents();
-            assertEquals(events.size(), 1);
+            assertThat(events.size()).isEqualTo(1);
             HttpRequestEvent event = (HttpRequestEvent) events.get(0);
 
-            assertEquals(event.clientAddress(), clientIp);
+            assertThat(event.clientAddress()).isEqualTo(clientIp);
         }
     }
 

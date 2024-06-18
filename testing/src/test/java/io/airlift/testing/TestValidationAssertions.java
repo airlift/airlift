@@ -23,9 +23,7 @@ import java.lang.annotation.Annotation;
 import static io.airlift.testing.Assertions.assertContains;
 import static io.airlift.testing.ValidationAssertions.assertFailsValidation;
 import static io.airlift.testing.ValidationAssertions.assertValidates;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestValidationAssertions
 {
@@ -51,7 +49,7 @@ public class TestValidationAssertions
             ok = true;
             verifyExceptionMessage(e, null, INVALID_OBJECT, null, null);
         }
-        assertTrue(ok, "Expected AssertionError");
+        assertThat(ok).as("Expected AssertionError").isTrue();
     }
 
     @Test
@@ -66,7 +64,7 @@ public class TestValidationAssertions
             // success
             verifyExceptionMessage(e, MESSAGE, INVALID_OBJECT, null, null);
         }
-        assertTrue(ok, "Expected AssertionError");
+        assertThat(ok).as("Expected AssertionError").isTrue();
     }
 
     @Test
@@ -93,7 +91,7 @@ public class TestValidationAssertions
             verifyExceptionMessage(e, null, VALID_OBJECT, "value", NotNull.class);
         }
 
-        assertTrue(ok, "Expected AssertionError");
+        assertThat(ok).as("Expected AssertionError").isTrue();
     }
 
     @Test
@@ -108,19 +106,19 @@ public class TestValidationAssertions
             // success
             verifyExceptionMessage(e, MESSAGE, VALID_OBJECT, "value", NotNull.class);
         }
-        assertTrue(ok, "Expected AssertionError");
+        assertThat(ok).as("Expected AssertionError").isTrue();
     }
 
     private void verifyExceptionMessage(AssertionError e, String message, Object value, String property, Class<? extends Annotation> annotation)
     {
-        assertNotNull(e);
+        assertThat(e).isNotNull();
         String actualMessage = e.getMessage();
-        assertNotNull(actualMessage);
+        assertThat(actualMessage).isNotNull();
         if (message != null) {
-            assertTrue(actualMessage.startsWith(message + " "));
+            assertThat(actualMessage.startsWith(message + " ")).isTrue();
         }
         else {
-            assertFalse(actualMessage.startsWith(" "));
+            assertThat(actualMessage).doesNotStartWith(" ");
         }
 
         assertContains(actualMessage, "<" + value + ">");

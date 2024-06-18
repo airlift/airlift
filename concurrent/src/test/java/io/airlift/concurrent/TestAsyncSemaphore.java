@@ -21,6 +21,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.common.util.concurrent.Uninterruptibles;
 import jakarta.annotation.Nullable;
+import org.assertj.core.api.Fail;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -49,8 +50,7 @@ import static io.airlift.concurrent.Threads.daemonThreadsNamed;
 import static io.airlift.testing.Assertions.assertLessThanOrEqual;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.fail;
+import static org.assertj.core.api.Fail.fail;
 
 public class TestAsyncSemaphore
 {
@@ -72,7 +72,7 @@ public class TestAsyncSemaphore
         // Wait for completion
         Futures.allAsList(futures).get(1, TimeUnit.MINUTES);
 
-        assertEquals(count.get(), 1000);
+        assertThat(count.get()).isEqualTo(1000);
     }
 
     @Test
@@ -86,7 +86,7 @@ public class TestAsyncSemaphore
 
         List<ListenableFuture<Void>> futures = new ArrayList<>();
         for (int i = 0; i < 1000; i++) {
-            futures.add(asyncSemaphore.submit((Runnable) () -> {
+            futures.add(asyncSemaphore.submit(() -> {
                 count.incrementAndGet();
                 int currentConcurrency = concurrency.incrementAndGet();
                 assertLessThanOrEqual(currentConcurrency, 1);
@@ -98,7 +98,7 @@ public class TestAsyncSemaphore
         // Wait for completion
         Futures.allAsList(futures).get(1, TimeUnit.MINUTES);
 
-        assertEquals(count.get(), 1000);
+        assertThat(count.get()).isEqualTo(1000);
     }
 
     @Test
@@ -124,7 +124,7 @@ public class TestAsyncSemaphore
         // Wait for completion
         Futures.allAsList(futures).get(1, TimeUnit.MINUTES);
 
-        assertEquals(count.get(), 1000);
+        assertThat(count.get()).isEqualTo(1000);
     }
 
     @Test
@@ -141,7 +141,7 @@ public class TestAsyncSemaphore
         for (int i = 0; i < 100; i++) {
             executor.execute(() -> {
                 Uninterruptibles.awaitUninterruptibly(startLatch, 1, TimeUnit.MINUTES);
-                asyncSemaphore.submit((Runnable) () -> {
+                asyncSemaphore.submit(() -> {
                     count.incrementAndGet();
                     int currentConcurrency = concurrency.incrementAndGet();
                     assertLessThanOrEqual(currentConcurrency, 2);
@@ -157,7 +157,7 @@ public class TestAsyncSemaphore
         // Wait for completion
         Uninterruptibles.awaitUninterruptibly(completionLatch, 1, TimeUnit.MINUTES);
 
-        assertEquals(count.get(), 100);
+        assertThat(count.get()).isEqualTo(100);
     }
 
     @Test
@@ -190,8 +190,8 @@ public class TestAsyncSemaphore
             }
         }
 
-        assertEquals(successCount.get(), 0);
-        assertEquals(failureCount.get(), 1000);
+        assertThat(successCount.get()).isEqualTo(0);
+        assertThat(failureCount.get()).isEqualTo(1000);
     }
 
     @Test
@@ -209,7 +209,7 @@ public class TestAsyncSemaphore
         List<ListenableFuture<Void>> futures = new ArrayList<>();
         for (int i = 0; i < 1000; i++) {
             // Should never execute this future
-            ListenableFuture<Void> future = asyncSemaphore.submit(() -> fail(null));
+            ListenableFuture<Void> future = asyncSemaphore.submit(Fail::fail);
             addCallback(future, completionCallback(successCount, failureCount, completionLatch), directExecutor());
             futures.add(future);
         }
@@ -226,8 +226,8 @@ public class TestAsyncSemaphore
             }
         }
 
-        assertEquals(successCount.get(), 0);
-        assertEquals(failureCount.get(), 1000);
+        assertThat(successCount.get()).isEqualTo(0);
+        assertThat(failureCount.get()).isEqualTo(1000);
     }
 
     @Test
@@ -249,7 +249,7 @@ public class TestAsyncSemaphore
             executor.execute(() -> {
                 Uninterruptibles.awaitUninterruptibly(startLatch, 1, TimeUnit.MINUTES);
                 // Should never execute this future
-                ListenableFuture<Void> future = asyncSemaphore.submit(() -> fail(null));
+                ListenableFuture<Void> future = asyncSemaphore.submit(Fail::fail);
                 futures.add(future);
                 addCallback(future, completionCallback(successCount, failureCount, completionLatch), directExecutor());
             });
@@ -270,8 +270,8 @@ public class TestAsyncSemaphore
             }
         }
 
-        assertEquals(successCount.get(), 0);
-        assertEquals(failureCount.get(), 100);
+        assertThat(successCount.get()).isEqualTo(0);
+        assertThat(failureCount.get()).isEqualTo(100);
     }
 
     @Test

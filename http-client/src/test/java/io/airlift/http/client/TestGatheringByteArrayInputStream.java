@@ -10,7 +10,7 @@ import java.util.Random;
 
 import static java.lang.Math.min;
 import static java.lang.System.arraycopy;
-import static org.testng.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestGatheringByteArrayInputStream
 {
@@ -34,19 +34,19 @@ public class TestGatheringByteArrayInputStream
             byte[] buffer = new byte[expectedAll.length + 32];
 
             // read the first part
-            assertEquals(in.read(buffer, 0, expectedPartial.length), expectedPartial.length);
+            assertThat(in.read(buffer, 0, expectedPartial.length)).isEqualTo(expectedPartial.length);
 
             // verify the first part
             assertByteArrayEquals(buffer, 0, expectedPartial, 0, expectedPartial.length);
 
             // read the remaining part
-            assertEquals(in.read(buffer, expectedPartial.length, buffer.length - expectedPartial.length), expectedAll.length - expectedPartial.length);
+            assertThat(in.read(buffer, expectedPartial.length, buffer.length - expectedPartial.length)).isEqualTo(expectedAll.length - expectedPartial.length);
 
             // verify the whole string
             assertByteArrayEquals(buffer, 0, expectedAll, 0, expectedAll.length);
 
             // make sure there is no more data
-            assertEquals(-1, in.read(buffer, 0, expectedAll.length));
+            assertThat(-1).isEqualTo(in.read(buffer, 0, expectedAll.length));
         }
     }
 
@@ -67,7 +67,7 @@ public class TestGatheringByteArrayInputStream
                 resultBuffer[i] = (byte) in.read();
             }
             assertByteArrayEquals(resultBuffer, 0, expected, 0, expected.length);
-            assertEquals(in.read(), -1);
+            assertThat(in.read()).isEqualTo(-1);
         }
     }
 
@@ -77,8 +77,8 @@ public class TestGatheringByteArrayInputStream
         byte[] expected = new byte[1];
         expected[0] = -100;
         try (GatheringByteArrayInputStream in = new GatheringByteArrayInputStream(ImmutableList.of(expected), expected.length)) {
-            assertEquals(in.read(), expected[0] & 0x000000ff);
-            assertEquals(in.read(), -1);
+            assertThat(in.read()).isEqualTo(expected[0] & 0x000000ff);
+            assertThat(in.read()).isEqualTo(-1);
         }
     }
 
@@ -99,18 +99,18 @@ public class TestGatheringByteArrayInputStream
             byte[] actual = new byte[length - skipped + 10];
 
             // read the first part
-            assertEquals(in.read(actual, 0, firstPartLength), firstPartLength);
+            assertThat(in.read(actual, 0, firstPartLength)).isEqualTo(firstPartLength);
             assertByteArrayEquals(actual, 0, allDataBytes, 0, firstPartLength);
 
             // skip some bytes
-            assertEquals(in.skip(skipped), skipped);
+            assertThat(in.skip(skipped)).isEqualTo(skipped);
 
             // read the rest part
-            assertEquals(in.read(actual, firstPartLength, restPartLength + 10), restPartLength);
+            assertThat(in.read(actual, firstPartLength, restPartLength + 10)).isEqualTo(restPartLength);
             assertByteArrayEquals(actual, firstPartLength, allDataBytes, firstPartLength + skipped, restPartLength);
 
-            assertEquals(in.skip(10), 0);
-            assertEquals(in.read(), -1);
+            assertThat(in.skip(10)).isEqualTo(0);
+            assertThat(in.read()).isEqualTo(-1);
         }
     }
 
@@ -135,12 +135,12 @@ public class TestGatheringByteArrayInputStream
             copyBytes = 0;
             while (copyBytes < length) {
                 int currentLength = min(length - copyBytes, random.nextInt(1 << 20) + 64);
-                assertEquals(in.read(actual, copyBytes, currentLength), currentLength);
+                assertThat(in.read(actual, copyBytes, currentLength)).isEqualTo(currentLength);
                 assertByteArrayEquals(actual, copyBytes, expected, copyBytes, currentLength);
                 copyBytes += currentLength;
             }
-            assertEquals(in.skip(100), 0);
-            assertEquals(in.read(), -1);
+            assertThat(in.skip(100)).isEqualTo(0);
+            assertThat(in.read()).isEqualTo(-1);
         }
     }
 
@@ -152,7 +152,7 @@ public class TestGatheringByteArrayInputStream
             int length)
     {
         for (int i = 0; i < length; i++) {
-            assertEquals(actual[i + actualStart], expected[i + expectedStart]);
+            assertThat(actual[i + actualStart]).isEqualTo(expected[i + expectedStart]);
         }
     }
 }

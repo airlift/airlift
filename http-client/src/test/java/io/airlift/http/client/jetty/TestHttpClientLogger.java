@@ -62,8 +62,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.jetty.http.HttpVersion.HTTP_1_1;
 import static org.eclipse.jetty.http.HttpVersion.HTTP_2;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotEquals;
 
 @Test(singleThreaded = true)
 public class TestHttpClientLogger
@@ -127,19 +125,19 @@ public class TestHttpClientLogger
 
         String actual = Files.asCharSource(file, UTF_8).read();
         String[] columns = actual.trim().split("\\t");
-        assertEquals(columns[0], ISO_FORMATTER.format(Instant.ofEpochMilli(requestTimestamp)));
-        assertEquals(columns[1], HTTP_2.toString());
-        assertEquals(columns[2], method);
-        assertEquals(columns[3], uri.toString());
-        assertEquals(columns[4], Integer.toString(status));
-        assertEquals(columns[5], Long.toString(responseSize));
-        assertEquals(columns[6], Long.toString(NANOSECONDS.toMillis(requestTotalTime)));
-        assertEquals(columns[7], Long.toString(NANOSECONDS.toMillis(queueTime)));
-        assertEquals(columns[8], Long.toString(NANOSECONDS.toMillis(requestEnd - requestBegin)));
-        assertEquals(columns[9], Long.toString(NANOSECONDS.toMillis(responseBegin - requestEnd)));
-        assertEquals(columns[10], Long.toString(NANOSECONDS.toMillis(responseComplete - responseBegin)));
-        assertEquals(columns[11], Long.toString(responseInfo.getResponseTimestampMillis() - requestTimestamp));
-        assertEquals(columns[12], "test-token");
+        assertThat(columns[0]).isEqualTo(ISO_FORMATTER.format(Instant.ofEpochMilli(requestTimestamp)));
+        assertThat(columns[1]).isEqualTo(HTTP_2.toString());
+        assertThat(columns[2]).isEqualTo(method);
+        assertThat(columns[3]).isEqualTo(uri.toString());
+        assertThat(columns[4]).isEqualTo(Integer.toString(status));
+        assertThat(columns[5]).isEqualTo(Long.toString(responseSize));
+        assertThat(columns[6]).isEqualTo(Long.toString(NANOSECONDS.toMillis(requestTotalTime)));
+        assertThat(columns[7]).isEqualTo(Long.toString(NANOSECONDS.toMillis(queueTime)));
+        assertThat(columns[8]).isEqualTo(Long.toString(NANOSECONDS.toMillis(requestEnd - requestBegin)));
+        assertThat(columns[9]).isEqualTo(Long.toString(NANOSECONDS.toMillis(responseBegin - requestEnd)));
+        assertThat(columns[10]).isEqualTo(Long.toString(NANOSECONDS.toMillis(responseComplete - responseBegin)));
+        assertThat(columns[11]).isEqualTo(Long.toString(responseInfo.getResponseTimestampMillis() - requestTimestamp));
+        assertThat(columns[12]).isEqualTo("test-token");
     }
 
     @Test
@@ -169,19 +167,19 @@ public class TestHttpClientLogger
 
         String actual = Files.asCharSource(file, UTF_8).read();
         String[] columns = actual.trim().split("\\t");
-        assertEquals(columns[0], ISO_FORMATTER.format(Instant.ofEpochMilli(requestTimestamp)));
-        assertEquals(columns[1], HTTP_1_1.toString());
-        assertEquals(columns[2], method);
-        assertEquals(columns[3], uri.toString());
-        assertEquals(columns[4], getFailureReason(responseInfo).get());
-        assertEquals(columns[5], Integer.toString(NO_RESPONSE));
-        assertNotEquals(columns[6], Long.toString(0));
-        assertEquals(columns[7], Long.toString(0));
-        assertEquals(columns[8], Long.toString(0));
-        assertEquals(columns[9], Long.toString(0));
-        assertEquals(columns[10], Long.toString(0));
-        assertEquals(columns[11], Long.toString(responseInfo.getResponseTimestampMillis() - requestTimestamp));
-        assertEquals(columns[12], "test-token");
+        assertThat(columns[0]).isEqualTo(ISO_FORMATTER.format(Instant.ofEpochMilli(requestTimestamp)));
+        assertThat(columns[1]).isEqualTo(HTTP_1_1.toString());
+        assertThat(columns[2]).isEqualTo(method);
+        assertThat(columns[3]).isEqualTo(uri.toString());
+        assertThat(columns[4]).isEqualTo(getFailureReason(responseInfo).get());
+        assertThat(columns[5]).isEqualTo(Integer.toString(NO_RESPONSE));
+        assertThat(columns[6]).isNotEqualTo(Long.toString(0));
+        assertThat(columns[7]).isEqualTo(Long.toString(0));
+        assertThat(columns[8]).isEqualTo(Long.toString(0));
+        assertThat(columns[9]).isEqualTo(Long.toString(0));
+        assertThat(columns[10]).isEqualTo(Long.toString(0));
+        assertThat(columns[11]).isEqualTo(Long.toString(responseInfo.getResponseTimestampMillis() - requestTimestamp));
+        assertThat(columns[12]).isEqualTo("test-token");
     }
 
     @Test

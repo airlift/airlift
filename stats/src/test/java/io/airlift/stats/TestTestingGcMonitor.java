@@ -5,7 +5,7 @@ import io.airlift.units.Duration;
 import org.testng.annotations.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.testng.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestTestingGcMonitor
 {
@@ -15,17 +15,17 @@ public class TestTestingGcMonitor
     {
         TestingGcMonitor gcMonitor = new TestingGcMonitor();
 
-        assertEquals(gcMonitor.getMajorGcCount(), 0);
-        assertEquals(gcMonitor.getMajorGcTime(), new Duration(0, SECONDS));
+        assertThat(gcMonitor.getMajorGcCount()).isEqualTo(0);
+        assertThat(gcMonitor.getMajorGcTime()).isEqualTo(new Duration(0, SECONDS));
 
         gcMonitor.recordMajorGc(new Duration(3, SECONDS));
 
-        assertEquals(gcMonitor.getMajorGcCount(), 1);
-        assertEquals(gcMonitor.getMajorGcTime(), new Duration(3, SECONDS));
+        assertThat(gcMonitor.getMajorGcCount()).isEqualTo(1);
+        assertThat(gcMonitor.getMajorGcTime()).isEqualTo(new Duration(3, SECONDS));
 
         gcMonitor.recordMajorGc(new Duration(7, SECONDS));
 
-        assertEquals(gcMonitor.getMajorGcCount(), 2);
-        assertEquals(gcMonitor.getMajorGcTime(), new Duration(10, SECONDS));
+        assertThat(gcMonitor.getMajorGcCount()).isEqualTo(2);
+        assertThat(gcMonitor.getMajorGcTime()).isEqualTo(new Duration(10, SECONDS));
     }
 }

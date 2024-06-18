@@ -48,8 +48,8 @@ import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.NOT_RE
 import static io.airlift.testing.EquivalenceTester.comparisonTester;
 import static io.airlift.testing.EquivalenceTester.equivalenceTester;
 import static java.util.Objects.requireNonNull;
-import static org.testng.Assert.assertEquals;
-import static org.testng.FileAssert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 public class TestEquivalenceTester
 {
@@ -58,8 +58,8 @@ public class TestEquivalenceTester
     {
         Object o1 = new Object();
         Object o2 = new Object();
-        assertEquals(new ElementCheckFailure(EQUAL, 0, 0, o1), new ElementCheckFailure(EQUAL, 0, 0, o1));
-        assertEquals(new PairCheckFailure(EQUAL, 0, 0, o1, 1, 0, o2), new PairCheckFailure(EQUAL, 0, 0, o1, 1, 0, o2));
+        assertThat(new ElementCheckFailure(EQUAL, 0, 0, o1)).isEqualTo(new ElementCheckFailure(EQUAL, 0, 0, o1));
+        assertThat(new PairCheckFailure(EQUAL, 0, 0, o1, 1, 0, o2)).isEqualTo(new PairCheckFailure(EQUAL, 0, 0, o1, 1, 0, o2));
     }
 
     @Test

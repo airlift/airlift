@@ -18,26 +18,25 @@ package io.airlift.json;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import com.google.inject.Module;
 import com.google.inject.Scopes;
 import org.testng.annotations.Test;
 
 import static io.airlift.json.JsonCodecBinder.jsonCodecBinder;
-import static org.testng.Assert.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestJsonCodecBinder
 {
     @Test
     public void ignoresRepeatedBinding()
     {
-        Injector injector = Guice.createInjector((Module) binder -> {
+        Injector injector = Guice.createInjector(binder -> {
             jsonCodecBinder(binder).bindJsonCodec(Integer.class);
             jsonCodecBinder(binder).bindJsonCodec(Integer.class);
 
             binder.bind(Dummy.class).in(Scopes.SINGLETON);
         });
 
-        assertNotNull(injector.getInstance(Dummy.class).getCodec());
+        assertThat(injector.getInstance(Dummy.class).getCodec()).isNotNull();
     }
 
     private static class Dummy

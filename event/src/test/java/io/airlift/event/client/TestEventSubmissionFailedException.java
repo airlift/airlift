@@ -24,9 +24,7 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.Map;
 
-import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertSame;
-import static org.testng.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestEventSubmissionFailedException
 {
@@ -41,7 +39,7 @@ public class TestEventSubmissionFailedException
     {
         EventSubmissionFailedException e = new EventSubmissionFailedException("service", "type", Collections.<URI, Exception>emptyMap());
 
-        assertNull(e.getCause());
+        assertThat(e.getCause()).isNull();
     }
 
     @Test
@@ -50,7 +48,7 @@ public class TestEventSubmissionFailedException
         RuntimeException cause = new RuntimeException();
         EventSubmissionFailedException e = new EventSubmissionFailedException("service", "type", ImmutableMap.of(URI.create("/"), cause));
 
-        assertSame(e.getCause(), cause);
+        assertThat(e.getCause()).isSameAs(cause);
     }
 
     @Test
@@ -58,8 +56,8 @@ public class TestEventSubmissionFailedException
     {
         EventSubmissionFailedException e = new EventSubmissionFailedException("serviceX", "typeY", Collections.<URI, Throwable>emptyMap());
 
-        assertTrue(e.getMessage().contains("serviceX"));
-        assertTrue(e.getMessage().contains("typeY"));
+        assertThat(e.getMessage()).contains("serviceX");
+        assertThat(e.getMessage()).contains("typeY");
     }
 
     @Test
@@ -77,6 +75,6 @@ public class TestEventSubmissionFailedException
 
         EventSubmissionFailedException e = new EventSubmissionFailedException("service", "type", causes);
 
-        assertSame(e.getCause(), cause1);
+        assertThat(e.getCause()).isSameAs(cause1);
     }
 }

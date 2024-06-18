@@ -27,8 +27,7 @@ import static io.airlift.node.NodeConfig.AddressSource.HOSTNAME;
 import static io.airlift.node.NodeConfig.AddressSource.IP;
 import static io.airlift.testing.Assertions.assertGreaterThanOrEqual;
 import static io.airlift.testing.Assertions.assertNotEquals;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestNodeInfo
 {
@@ -49,32 +48,32 @@ public class TestNodeInfo
         String externalAddress = "external";
 
         NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, nodeId, internalIp, bindIp, externalAddress, location, binarySpec, configSpec, IP, null);
-        assertEquals(nodeInfo.getEnvironment(), ENVIRONMENT);
-        assertEquals(nodeInfo.getPool(), POOL);
-        assertEquals(nodeInfo.getNodeId(), nodeId);
-        assertEquals(nodeInfo.getLocation(), location);
-        assertEquals(nodeInfo.getBinarySpec(), binarySpec);
-        assertEquals(nodeInfo.getConfigSpec(), configSpec);
-        assertNotNull(nodeInfo.getInstanceId());
+        assertThat(nodeInfo.getEnvironment()).isEqualTo(ENVIRONMENT);
+        assertThat(nodeInfo.getPool()).isEqualTo(POOL);
+        assertThat(nodeInfo.getNodeId()).isEqualTo(nodeId);
+        assertThat(nodeInfo.getLocation()).isEqualTo(location);
+        assertThat(nodeInfo.getBinarySpec()).isEqualTo(binarySpec);
+        assertThat(nodeInfo.getConfigSpec()).isEqualTo(configSpec);
+        assertThat(nodeInfo.getInstanceId()).isNotNull();
 
         assertNotEquals(nodeInfo.getNodeId(), nodeInfo.getInstanceId());
 
-        assertEquals(nodeInfo.getInternalAddress(), internalIp);
-        assertEquals(nodeInfo.getExternalAddress(), externalAddress);
-        assertEquals(nodeInfo.getBindIp(), bindIp);
+        assertThat(nodeInfo.getInternalAddress()).isEqualTo(internalIp);
+        assertThat(nodeInfo.getExternalAddress()).isEqualTo(externalAddress);
+        assertThat(nodeInfo.getBindIp()).isEqualTo(bindIp);
         assertGreaterThanOrEqual(nodeInfo.getStartTime(), testStartTime);
-        assertEquals(nodeInfo.getAnnotations().size(), 0);
+        assertThat(nodeInfo.getAnnotations().size()).isEqualTo(0);
 
         // make sure toString doesn't throw an exception
-        assertNotNull(nodeInfo.toString());
+        assertThat(nodeInfo.toString()).isNotNull();
     }
 
     @Test
     public void testDefaultAddresses()
     {
         NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", "10.0.0.22", null, null, null, null, null, IP, null);
-        assertEquals(nodeInfo.getExternalAddress(), "10.0.0.22");
-        assertEquals(nodeInfo.getBindIp(), InetAddresses.forString("0.0.0.0"));
+        assertThat(nodeInfo.getExternalAddress()).isEqualTo("10.0.0.22");
+        assertThat(nodeInfo.getBindIp()).isEqualTo(InetAddresses.forString("0.0.0.0"));
     }
 
     @Test
@@ -82,9 +81,9 @@ public class TestNodeInfo
             throws UnknownHostException
     {
         NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, IP, null);
-        assertNotNull(nodeInfo.getInternalAddress());
-        assertEquals(nodeInfo.getBindIp(), InetAddresses.forString("0.0.0.0"));
-        assertEquals(nodeInfo.getExternalAddress(), nodeInfo.getInternalAddress());
+        assertThat(nodeInfo.getInternalAddress()).isNotNull();
+        assertThat(nodeInfo.getBindIp()).isEqualTo(InetAddresses.forString("0.0.0.0"));
+        assertThat(nodeInfo.getExternalAddress()).isEqualTo(nodeInfo.getInternalAddress());
     }
 
     @Test
@@ -92,9 +91,9 @@ public class TestNodeInfo
             throws UnknownHostException
     {
         NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, HOSTNAME, null);
-        assertNotNull(nodeInfo.getInternalAddress());
-        assertEquals(nodeInfo.getBindIp(), InetAddresses.forString("0.0.0.0"));
-        assertEquals(nodeInfo.getExternalAddress(), InetAddress.getLocalHost().getHostName());
+        assertThat(nodeInfo.getInternalAddress()).isNotNull();
+        assertThat(nodeInfo.getBindIp()).isEqualTo(InetAddresses.forString("0.0.0.0"));
+        assertThat(nodeInfo.getExternalAddress()).isEqualTo(InetAddress.getLocalHost().getHostName());
     }
 
     @Test
@@ -102,9 +101,9 @@ public class TestNodeInfo
             throws UnknownHostException
     {
         NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, FQDN, null);
-        assertNotNull(nodeInfo.getInternalAddress());
-        assertEquals(nodeInfo.getBindIp(), InetAddresses.forString("0.0.0.0"));
-        assertEquals(nodeInfo.getExternalAddress(), InetAddress.getLocalHost().getCanonicalHostName());
+        assertThat(nodeInfo.getInternalAddress()).isNotNull();
+        assertThat(nodeInfo.getBindIp()).isEqualTo(InetAddresses.forString("0.0.0.0"));
+        assertThat(nodeInfo.getExternalAddress()).isEqualTo(InetAddress.getLocalHost().getCanonicalHostName());
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class, expectedExceptionsMessageRegExp = "nodeId .*")

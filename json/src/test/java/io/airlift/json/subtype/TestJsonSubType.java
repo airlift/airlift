@@ -33,7 +33,7 @@ import org.testng.annotations.Test;
 
 import static io.airlift.json.JsonSubTypeBinder.jsonSubTypeBinder;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.testng.Assert.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class TestJsonSubType
 {
@@ -110,7 +110,8 @@ public class TestJsonSubType
     {
         ObjectMapper objectMapper = new ObjectMapperProvider().get();
 
-        assertThrows(InvalidDefinitionException.class, () -> internalTest(objectMapper));
+        assertThatThrownBy(() -> internalTest(objectMapper))
+                .isInstanceOf(InvalidDefinitionException.class);
     }
 
     @Test
@@ -123,7 +124,8 @@ public class TestJsonSubType
         Injector injector = Guice.createInjector(new JsonModule(), binder -> jsonSubTypeBinder(binder).bindJsonSubType(jsonSubType));
         ObjectMapper objectMapper = injector.getInstance(ObjectMapper.class);
 
-        assertThrows(IllegalArgumentException.class, () -> internalTest(objectMapper));
+        assertThatThrownBy(() -> internalTest(objectMapper))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test

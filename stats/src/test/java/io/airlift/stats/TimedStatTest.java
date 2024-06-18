@@ -27,9 +27,8 @@ import java.util.concurrent.locks.LockSupport;
 import static io.airlift.testing.Assertions.assertGreaterThanOrEqual;
 import static java.lang.Math.min;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 @SuppressWarnings("deprecation")
 public class TimedStatTest
@@ -50,10 +49,10 @@ public class TimedStatTest
         }
         Collections.sort(values);
 
-        assertEquals(stat.getCount(), values.size());
-        assertEquals(stat.getMax(), values.get(values.size() - 1));
-        assertEquals(stat.getMin(), values.get(0));
-        assertEquals(stat.getMean(), (values.get(0) + values.get(values.size() - 1)) / 2.0);
+        assertThat(stat.getCount()).isEqualTo(values.size());
+        assertThat(stat.getMax()).isEqualTo(values.get(values.size() - 1));
+        assertThat(stat.getMin()).isEqualTo(values.get(0));
+        assertThat(stat.getMean()).isEqualTo((values.get(0) + values.get(values.size() - 1)) / 2.0);
 
         assertPercentile("tp50", stat.getTP50(), values, 0.50);
         assertPercentile("tp90", stat.getTP90(), values, 0.90);
@@ -68,14 +67,14 @@ public class TimedStatTest
     public void testEmpty()
     {
         TimedStat stat = new TimedStat();
-        assertTrue(Double.isNaN(stat.getMin()));
-        assertTrue(Double.isNaN(stat.getMax()));
-        assertTrue(Double.isNaN(stat.getTP50()));
-        assertTrue(Double.isNaN(stat.getTP90()));
-        assertTrue(Double.isNaN(stat.getTP99()));
-        assertTrue(Double.isNaN(stat.getTP999()));
-        assertTrue(Double.isNaN(stat.getPercentile(0.80)));
-        assertTrue(Double.isNaN(stat.getPercentile(0.20)));
+        assertThat(Double.isNaN(stat.getMin())).isTrue();
+        assertThat(Double.isNaN(stat.getMax())).isTrue();
+        assertThat(Double.isNaN(stat.getTP50())).isTrue();
+        assertThat(Double.isNaN(stat.getTP90())).isTrue();
+        assertThat(Double.isNaN(stat.getTP99())).isTrue();
+        assertThat(Double.isNaN(stat.getTP999())).isTrue();
+        assertThat(Double.isNaN(stat.getPercentile(0.80))).isTrue();
+        assertThat(Double.isNaN(stat.getPercentile(0.20))).isTrue();
     }
 
     @Test
@@ -88,8 +87,8 @@ public class TimedStatTest
             return null;
         });
 
-        assertEquals(stat.getCount(), 1);
-        assertEquals(stat.getMin(), stat.getMax());
+        assertThat(stat.getCount()).isEqualTo(1);
+        assertThat(stat.getMin()).isEqualTo(stat.getMax());
         assertGreaterThanOrEqual(stat.getMax(), 10.0);
     }
 

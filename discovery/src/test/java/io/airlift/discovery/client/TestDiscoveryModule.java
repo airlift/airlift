@@ -11,8 +11,7 @@ import org.testng.annotations.Test;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestDiscoveryModule
         extends AbstractTestDiscoveryModule
@@ -37,8 +36,8 @@ public class TestDiscoveryModule
         ExecutorService executor = injector.getInstance(Key.get(ScheduledExecutorService.class, ForDiscoveryClient.class));
         LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
 
-        assertFalse(executor.isShutdown());
+        assertThat(executor.isShutdown()).isFalse();
         lifeCycleManager.stop();
-        assertTrue(executor.isShutdown());
+        assertThat(executor.isShutdown()).isTrue();
     }
 }

@@ -36,7 +36,7 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.testng.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestServiceInventory
 {
@@ -49,9 +49,9 @@ public class TestServiceInventory
                     JsonCodec.jsonCodec(ServiceDescriptorsRepresentation.class),
                     httpClient);
 
-            assertEquals(Iterables.size(serviceInventory.getServiceDescriptors()), 0);
+            assertThat(Iterables.size(serviceInventory.getServiceDescriptors())).isEqualTo(0);
             serviceInventory.updateServiceInventory();
-            assertEquals(Iterables.size(serviceInventory.getServiceDescriptors()), 0);
+            assertThat(Iterables.size(serviceInventory.getServiceDescriptors())).isEqualTo(0);
         }
     }
 
@@ -68,13 +68,13 @@ public class TestServiceInventory
                     JsonCodec.jsonCodec(ServiceDescriptorsRepresentation.class),
                     httpClient);
 
-            assertEquals(Iterables.size(serviceInventory.getServiceDescriptors()), 2);
-            assertEquals(Iterables.size(serviceInventory.getServiceDescriptors("discovery")), 2);
-            assertEquals(Iterables.size(serviceInventory.getServiceDescriptors("discovery", "general")), 2);
+            assertThat(Iterables.size(serviceInventory.getServiceDescriptors())).isEqualTo(2);
+            assertThat(Iterables.size(serviceInventory.getServiceDescriptors("discovery"))).isEqualTo(2);
+            assertThat(Iterables.size(serviceInventory.getServiceDescriptors("discovery", "general"))).isEqualTo(2);
             serviceInventory.updateServiceInventory();
-            assertEquals(Iterables.size(serviceInventory.getServiceDescriptors()), 2);
-            assertEquals(Iterables.size(serviceInventory.getServiceDescriptors("discovery")), 2);
-            assertEquals(Iterables.size(serviceInventory.getServiceDescriptors("discovery", "general")), 2);
+            assertThat(Iterables.size(serviceInventory.getServiceDescriptors())).isEqualTo(2);
+            assertThat(Iterables.size(serviceInventory.getServiceDescriptors("discovery"))).isEqualTo(2);
+            assertThat(Iterables.size(serviceInventory.getServiceDescriptors("discovery", "general"))).isEqualTo(2);
         }
     }
 
@@ -115,13 +115,13 @@ public class TestServiceInventory
                     JsonCodec.jsonCodec(ServiceDescriptorsRepresentation.class),
                     httpClient);
 
-            assertEquals(Iterables.size(serviceInventory.getServiceDescriptors()), 2);
-            assertEquals(Iterables.size(serviceInventory.getServiceDescriptors("discovery")), 2);
-            assertEquals(Iterables.size(serviceInventory.getServiceDescriptors("discovery", "general")), 2);
+            assertThat(Iterables.size(serviceInventory.getServiceDescriptors())).isEqualTo(2);
+            assertThat(Iterables.size(serviceInventory.getServiceDescriptors("discovery"))).isEqualTo(2);
+            assertThat(Iterables.size(serviceInventory.getServiceDescriptors("discovery", "general"))).isEqualTo(2);
             serviceInventory.updateServiceInventory();
-            assertEquals(Iterables.size(serviceInventory.getServiceDescriptors()), 2);
-            assertEquals(Iterables.size(serviceInventory.getServiceDescriptors("discovery")), 2);
-            assertEquals(Iterables.size(serviceInventory.getServiceDescriptors("discovery", "general")), 2);
+            assertThat(Iterables.size(serviceInventory.getServiceDescriptors())).isEqualTo(2);
+            assertThat(Iterables.size(serviceInventory.getServiceDescriptors("discovery"))).isEqualTo(2);
+            assertThat(Iterables.size(serviceInventory.getServiceDescriptors("discovery", "general"))).isEqualTo(2);
         }
         finally {
             if (server != null) {

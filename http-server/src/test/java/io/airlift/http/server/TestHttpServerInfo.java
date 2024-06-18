@@ -24,7 +24,7 @@ import java.net.URI;
 import java.util.Optional;
 
 import static io.airlift.testing.Closeables.closeAll;
-import static org.testng.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestHttpServerInfo
 {
@@ -51,16 +51,16 @@ public class TestHttpServerInfo
         HttpServerInfo httpServerInfo = new HttpServerInfo(serverConfig, Optional.ofNullable(httpsConfig), nodeInfo);
 
         int httpPort = httpServerInfo.getHttpUri().getPort();
-        assertEquals(httpServerInfo.getHttpUri(), new URI("http://[::1]:" + httpPort));
-        assertEquals(httpServerInfo.getHttpExternalUri(), new URI("http://[2001:db8::2:1]:" + httpPort));
+        assertThat(httpServerInfo.getHttpUri()).isEqualTo(new URI("http://[::1]:" + httpPort));
+        assertThat(httpServerInfo.getHttpExternalUri()).isEqualTo(new URI("http://[2001:db8::2:1]:" + httpPort));
 
         int httpsPort = httpServerInfo.getHttpsUri().getPort();
-        assertEquals(httpServerInfo.getHttpsUri(), new URI("https://[::1]:" + httpsPort));
-        assertEquals(httpServerInfo.getHttpsExternalUri(), new URI("https://[2001:db8::2:1]:" + httpsPort));
+        assertThat(httpServerInfo.getHttpsUri()).isEqualTo(new URI("https://[::1]:" + httpsPort));
+        assertThat(httpServerInfo.getHttpsExternalUri()).isEqualTo(new URI("https://[2001:db8::2:1]:" + httpsPort));
 
         int adminPort = httpServerInfo.getAdminUri().getPort();
-        assertEquals(httpServerInfo.getAdminUri(), new URI("https://[::1]:" + adminPort));
-        assertEquals(httpServerInfo.getAdminExternalUri(), new URI("https://[2001:db8::2:1]:" + adminPort));
+        assertThat(httpServerInfo.getAdminUri()).isEqualTo(new URI("https://[::1]:" + adminPort));
+        assertThat(httpServerInfo.getAdminExternalUri()).isEqualTo(new URI("https://[2001:db8::2:1]:" + adminPort));
 
         closeChannels(httpServerInfo);
     }

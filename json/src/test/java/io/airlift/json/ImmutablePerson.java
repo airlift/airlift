@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
-import static org.testng.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class ImmutablePerson
 {
@@ -38,10 +38,10 @@ public class ImmutablePerson
         ImmutablePerson expected = new ImmutablePerson("dain", true);
 
         String json = jsonCodec.toJson(expected);
-        assertEquals(jsonCodec.fromJson(json), expected);
+        assertThat(jsonCodec.fromJson(json)).isEqualTo(expected);
 
         byte[] bytes = jsonCodec.toJsonBytes(expected);
-        assertEquals(jsonCodec.fromJson(bytes), expected);
+        assertThat(jsonCodec.fromJson(bytes)).isEqualTo(expected);
     }
 
     public static void validatePersonListJsonCodec(JsonCodec<List<ImmutablePerson>> jsonCodec)
@@ -52,10 +52,10 @@ public class ImmutablePerson
                 new ImmutablePerson("mark", true));
 
         String json = jsonCodec.toJson(expected);
-        assertEquals(jsonCodec.fromJson(json), expected);
+        assertThat(jsonCodec.fromJson(json)).isEqualTo(expected);
 
         byte[] bytes = jsonCodec.toJsonBytes(expected);
-        assertEquals(jsonCodec.fromJson(bytes), expected);
+        assertThat(jsonCodec.fromJson(bytes)).isEqualTo(expected);
     }
 
     public static void validatePersonMapJsonCodec(JsonCodec<Map<String, ImmutablePerson>> jsonCodec)
@@ -67,10 +67,10 @@ public class ImmutablePerson
                 .build();
 
         String json = jsonCodec.toJson(expected);
-        assertEquals(jsonCodec.fromJson(json), expected);
+        assertThat(jsonCodec.fromJson(json)).isEqualTo(expected);
 
         byte[] bytes = jsonCodec.toJsonBytes(expected);
-        assertEquals(jsonCodec.fromJson(bytes), expected);
+        assertThat(jsonCodec.fromJson(bytes)).isEqualTo(expected);
     }
 
     @JsonCreator

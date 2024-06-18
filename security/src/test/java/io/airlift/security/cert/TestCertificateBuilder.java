@@ -30,7 +30,7 @@ import java.time.LocalDate;
 import static io.airlift.security.cert.CertificateBuilder.certificateBuilder;
 import static java.time.ZoneOffset.UTC;
 import static java.time.temporal.ChronoUnit.YEARS;
-import static org.testng.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestCertificateBuilder
 {
@@ -55,12 +55,12 @@ public class TestCertificateBuilder
                 .setSubject(subject)
                 .buildSelfSigned();
 
-        assertEquals(certificate.getSerialNumber(), BigInteger.valueOf(12345));
-        assertEquals(certificate.getIssuerX500Principal(), issuer);
-        assertEquals(certificate.getNotBefore().toInstant(), notBefore.atStartOfDay().toInstant(UTC));
-        assertEquals(certificate.getNotAfter().toInstant(), notAfter.atTime(23, 59, 59).toInstant(UTC));
-        assertEquals(certificate.getSubjectX500Principal(), subject);
-        assertEquals(certificate.getPublicKey(), keyPair.getPublic());
+        assertThat(certificate.getSerialNumber()).isEqualTo(BigInteger.valueOf(12345));
+        assertThat(certificate.getIssuerX500Principal()).isEqualTo(issuer);
+        assertThat(certificate.getNotBefore().toInstant()).isEqualTo(notBefore.atStartOfDay().toInstant(UTC));
+        assertThat(certificate.getNotAfter().toInstant()).isEqualTo(notAfter.atTime(23, 59, 59).toInstant(UTC));
+        assertThat(certificate.getSubjectX500Principal()).isEqualTo(subject);
+        assertThat(certificate.getPublicKey()).isEqualTo(keyPair.getPublic());
 
         // verify certificate trusts itself
         KeyStore keyStore = KeyStore.getInstance("JKS");

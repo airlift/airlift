@@ -33,9 +33,7 @@ import static com.google.common.collect.MoreCollectors.onlyElement;
 import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 import static io.airlift.discovery.client.ServiceTypes.serviceType;
 import static java.util.Objects.requireNonNull;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public abstract class AbstractTestDiscoveryModule
 {
@@ -56,12 +54,12 @@ public abstract class AbstractTestDiscoveryModule
                 discoveryModule);
 
         // should produce a discovery announcement client and a lookup client
-        assertNotNull(injector.getInstance(DiscoveryAnnouncementClient.class));
-        assertNotNull(injector.getInstance(DiscoveryLookupClient.class));
+        assertThat(injector.getInstance(DiscoveryAnnouncementClient.class)).isNotNull();
+        assertThat(injector.getInstance(DiscoveryLookupClient.class)).isNotNull();
         // should produce an Announcer
-        assertNotNull(injector.getInstance(Announcer.class));
+        assertThat(injector.getInstance(Announcer.class)).isNotNull();
         // should produce a ServiceSelectorManager
-        assertNotNull(injector.getInstance(ServiceSelectorManager.class));
+        assertThat(injector.getInstance(ServiceSelectorManager.class)).isNotNull();
     }
 
     @Test
@@ -95,15 +93,15 @@ public abstract class AbstractTestDiscoveryModule
                 });
 
         HttpServiceSelector selector = injector.getInstance(Key.get(HttpServiceSelector.class, serviceType("apple")));
-        assertEquals(selector.selectHttpService().stream().collect(onlyElement()), URI.create("http://127.0.0.1:4444"));
+        assertThat(selector.selectHttpService().stream().collect(onlyElement())).isEqualTo(URI.create("http://127.0.0.1:4444"));
 
         selector = injector.getInstance(Key.get(HttpServiceSelector.class, serviceType("banana")));
-        assertEquals(selector.selectHttpService().stream().collect(onlyElement()), URI.create("http://127.0.0.1:4444"));
+        assertThat(selector.selectHttpService().stream().collect(onlyElement())).isEqualTo(URI.create("http://127.0.0.1:4444"));
 
         selector = injector.getInstance(Key.get(HttpServiceSelector.class, serviceType("carrot")));
-        assertTrue(selector.selectHttpService().isEmpty());
+        assertThat(selector.selectHttpService()).isEmpty();
 
         selector = injector.getInstance(Key.get(HttpServiceSelector.class, serviceType("grape")));
-        assertTrue(selector.selectHttpService().isEmpty());
+        assertThat(selector.selectHttpService()).isEmpty();
     }
 }

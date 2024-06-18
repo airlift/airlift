@@ -26,9 +26,7 @@ import static io.airlift.sample.PersonEvent.personAdded;
 import static io.airlift.sample.PersonEvent.personRemoved;
 import static io.airlift.sample.PersonEvent.personUpdated;
 import static java.util.Arrays.asList;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestPersonStore
 {
@@ -36,7 +34,7 @@ public class TestPersonStore
     public void testStartsEmpty()
     {
         PersonStore store = new PersonStore(new StoreConfig(), new InMemoryEventClient());
-        assertTrue(store.getAll().isEmpty());
+        assertThat(store.getAll()).isEmpty();
     }
 
     @Test
@@ -49,7 +47,7 @@ public class TestPersonStore
         PersonStore store = new PersonStore(config, new InMemoryEventClient());
         store.put("foo", new Person("foo@example.com", "Mr Foo"));
         Thread.sleep(2);
-        assertNull(store.get("foo"));
+        assertThat(store.get("foo")).isNull();
     }
 
     @Test
@@ -59,10 +57,10 @@ public class TestPersonStore
         PersonStore store = new PersonStore(new StoreConfig(), eventClient);
         store.put("foo", new Person("foo@example.com", "Mr Foo"));
 
-        assertEquals(new Person("foo@example.com", "Mr Foo"), store.get("foo"));
-        assertEquals(store.getAll().size(), 1);
+        assertThat(new Person("foo@example.com", "Mr Foo")).isEqualTo(store.get("foo"));
+        assertThat(store.getAll().size()).isEqualTo(1);
 
-        assertEquals(eventClient.getEvents(), ImmutableList.of(personAdded("foo", new Person("foo@example.com", "Mr Foo"))));
+        assertThat(eventClient.getEvents()).isEqualTo(ImmutableList.of(personAdded("foo", new Person("foo@example.com", "Mr Foo"))));
     }
 
     @Test
@@ -73,10 +71,10 @@ public class TestPersonStore
         store.put("foo", new Person("foo@example.com", "Mr Foo"));
         store.put("foo", new Person("foo@example.com", "Mr Bar"));
 
-        assertEquals(new Person("foo@example.com", "Mr Bar"), store.get("foo"));
-        assertEquals(store.getAll().size(), 1);
+        assertThat(new Person("foo@example.com", "Mr Bar")).isEqualTo(store.get("foo"));
+        assertThat(store.getAll().size()).isEqualTo(1);
 
-        assertEquals(eventClient.getEvents(), ImmutableList.of(
+        assertThat(eventClient.getEvents()).isEqualTo(ImmutableList.of(
                 personAdded("foo", new Person("foo@example.com", "Mr Foo")),
                 personUpdated("foo", new Person("foo@example.com", "Mr Bar"))));
     }
@@ -89,10 +87,10 @@ public class TestPersonStore
         store.put("foo", new Person("foo@example.com", "Mr Foo"));
         store.delete("foo");
 
-        assertNull(store.get("foo"));
-        assertTrue(store.getAll().isEmpty());
+        assertThat(store.get("foo")).isNull();
+        assertThat(store.getAll()).isEmpty();
 
-        assertEquals(eventClient.getEvents(), ImmutableList.of(
+        assertThat(eventClient.getEvents()).isEqualTo(ImmutableList.of(
                 personAdded("foo", new Person("foo@example.com", "Mr Foo")),
                 personRemoved("foo", new Person("foo@example.com", "Mr Foo"))));
     }
@@ -105,14 +103,14 @@ public class TestPersonStore
         store.put("foo", new Person("foo@example.com", "Mr Foo"));
 
         store.delete("foo");
-        assertTrue(store.getAll().isEmpty());
-        assertNull(store.get("foo"));
+        assertThat(store.getAll()).isEmpty();
+        assertThat(store.get("foo")).isNull();
 
         store.delete("foo");
-        assertTrue(store.getAll().isEmpty());
-        assertNull(store.get("foo"));
+        assertThat(store.getAll()).isEmpty();
+        assertThat(store.get("foo")).isNull();
 
-        assertEquals(eventClient.getEvents(), ImmutableList.of(
+        assertThat(eventClient.getEvents()).isEqualTo(ImmutableList.of(
                 personAdded("foo", new Person("foo@example.com", "Mr Foo")),
                 personRemoved("foo", new Person("foo@example.com", "Mr Foo"))));
     }
@@ -125,7 +123,7 @@ public class TestPersonStore
         store.put("foo", new Person("foo@example.com", "Mr Foo"));
         store.put("bar", new Person("bar@example.com", "Mr Bar"));
 
-        assertEquals(store.getAll().size(), 2);
-        assertEquals(store.getAll(), asList(new Person("foo@example.com", "Mr Foo"), new Person("bar@example.com", "Mr Bar")));
+        assertThat(store.getAll().size()).isEqualTo(2);
+        assertThat(store.getAll()).isEqualTo(asList(new Person("foo@example.com", "Mr Foo"), new Person("bar@example.com", "Mr Bar")));
     }
 }

@@ -18,7 +18,7 @@ package io.airlift.discovery.client;
 import org.testng.annotations.Test;
 
 import static io.airlift.testing.EquivalenceTester.equivalenceTester;
-import static org.testng.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestServiceTypes
 {
@@ -46,14 +46,14 @@ public class TestServiceTypes
     @Test
     public void testValue()
     {
-        assertEquals(ServiceTypes.serviceType("type").value(), "type");
+        assertThat(ServiceTypes.serviceType("type").value()).isEqualTo("type");
     }
 
     @Test
     public void testAnnotationType()
     {
-        assertEquals(ServiceTypes.serviceType("apple").annotationType(), ServiceType.class);
-        assertEquals(ServiceTypes.serviceType("apple").annotationType(), appleServiceType.annotationType());
+        assertThat(ServiceTypes.serviceType("apple").annotationType()).isEqualTo(ServiceType.class);
+        assertThat(ServiceTypes.serviceType("apple").annotationType()).isEqualTo(appleServiceType.annotationType());
     }
 
     @Test

@@ -27,8 +27,7 @@ import static io.airlift.json.JsonCodec.jsonCodec;
 import static io.airlift.json.JsonCodec.mapJsonCodec;
 import static io.airlift.testing.EquivalenceTester.equivalenceTester;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestServiceAnnouncement
 {
@@ -52,15 +51,15 @@ public class TestServiceAnnouncement
 
     private void assertAnnouncement(ServiceAnnouncement announcement, String type, Map<String, String> properties)
     {
-        assertNotNull(announcement.getId());
-        assertEquals(announcement.getType(), type);
-        assertEquals(announcement.getProperties(), properties);
+        assertThat(announcement.getId()).isNotNull();
+        assertThat(announcement.getType()).isEqualTo(type);
+        assertThat(announcement.getProperties()).isEqualTo(properties);
     }
 
     @Test
     public void testToString()
     {
-        assertNotNull(serviceAnnouncement("foo").build());
+        assertThat(serviceAnnouncement("foo").build()).isNotNull();
     }
 
     @Test
@@ -79,7 +78,7 @@ public class TestServiceAnnouncement
         // set id in expected
         expected.put("id", serviceAnnouncement.getId().toString());
 
-        assertEquals(actual, expected);
+        assertThat(actual).isEqualTo(expected);
     }
 
     @Test

@@ -23,9 +23,7 @@ import java.net.Inet4Address;
 
 import static io.airlift.testing.EquivalenceTester.comparisonTester;
 import static io.airlift.testing.EquivalenceTester.equivalenceTester;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestInet4Network
 {
@@ -42,7 +40,7 @@ public class TestInet4Network
 
     private static void assertCidrValid(String cidr)
     {
-        assertEquals(Inet4Network.fromCidr(cidr).toString(), cidr);
+        assertThat(Inet4Network.fromCidr(cidr).toString()).isEqualTo(cidr);
     }
 
     @DataProvider(name = "invalidCidr")
@@ -92,8 +90,8 @@ public class TestInet4Network
     {
         String startingAddress = cidr.substring(0, cidr.indexOf('/'));
         Inet4Network network = Inet4Network.fromCidr(cidr);
-        assertEquals(network.getStartingAddress(), InetAddresses.forString(startingAddress));
-        assertEquals(network.getEndingAddress(), InetAddresses.forString(endingAddress));
+        assertThat(network.getStartingAddress()).isEqualTo(InetAddresses.forString(startingAddress));
+        assertThat(network.getEndingAddress()).isEqualTo(InetAddresses.forString(endingAddress));
     }
 
     @Test
@@ -109,7 +107,7 @@ public class TestInet4Network
     private static void assertAddressToLong(String address, long ip)
     {
         Inet4Address addr = (Inet4Address) InetAddresses.forString(address);
-        assertEquals(Inet4Network.addressToLong(addr), ip);
+        assertThat(Inet4Network.addressToLong(addr)).isEqualTo(ip);
     }
 
     @Test
@@ -124,7 +122,7 @@ public class TestInet4Network
     private static void assertFromAddress(String address, String cidr, int bits)
     {
         Inet4Address addr = (Inet4Address) InetAddresses.forString(address);
-        assertEquals(Inet4Network.fromAddress(addr, bits), Inet4Network.fromCidr(cidr));
+        assertThat(Inet4Network.fromAddress(addr, bits)).isEqualTo(Inet4Network.fromCidr(cidr));
     }
 
     @Test
@@ -144,35 +142,35 @@ public class TestInet4Network
     private static void assertTruncatedFromAddress(String address, String cidr, int bits)
     {
         Inet4Address addr = (Inet4Address) InetAddresses.forString(address);
-        assertEquals(Inet4Network.truncatedFromAddress(addr, bits), Inet4Network.fromCidr(cidr));
+        assertThat(Inet4Network.truncatedFromAddress(addr, bits)).isEqualTo(Inet4Network.fromCidr(cidr));
     }
 
     @Test
     public void testGetBits()
     {
-        assertEquals(Inet4Network.fromCidr("8.0.0.0/8").getBits(), 8);
-        assertEquals(Inet4Network.fromCidr("8.0.0.0/24").getBits(), 24);
-        assertEquals(Inet4Network.fromCidr("8.0.0.0/32").getBits(), 32);
+        assertThat(Inet4Network.fromCidr("8.0.0.0/8").getBits()).isEqualTo(8);
+        assertThat(Inet4Network.fromCidr("8.0.0.0/24").getBits()).isEqualTo(24);
+        assertThat(Inet4Network.fromCidr("8.0.0.0/32").getBits()).isEqualTo(32);
     }
 
     @Test
     public void testContainsAddress()
     {
-        assertTrue(containsAddress("0.0.0.0/0", "0.0.0.0"));
-        assertTrue(containsAddress("0.0.0.0/0", "1.2.3.4"));
-        assertTrue(containsAddress("0.0.0.0/0", "255.255.255.255"));
-        assertTrue(containsAddress("8.8.8.0/24", "8.8.8.0"));
-        assertTrue(containsAddress("8.8.8.0/24", "8.8.8.8"));
-        assertTrue(containsAddress("8.8.8.0/24", "8.8.8.255"));
-        assertTrue(containsAddress("202.12.128.0/18", "202.12.128.0"));
-        assertTrue(containsAddress("202.12.128.0/18", "202.12.128.255"));
-        assertTrue(containsAddress("202.12.128.0/18", "202.12.157.123"));
-        assertTrue(containsAddress("202.12.128.0/18", "202.12.191.255"));
+        assertThat(containsAddress("0.0.0.0/0", "0.0.0.0")).isTrue();
+        assertThat(containsAddress("0.0.0.0/0", "1.2.3.4")).isTrue();
+        assertThat(containsAddress("0.0.0.0/0", "255.255.255.255")).isTrue();
+        assertThat(containsAddress("8.8.8.0/24", "8.8.8.0")).isTrue();
+        assertThat(containsAddress("8.8.8.0/24", "8.8.8.8")).isTrue();
+        assertThat(containsAddress("8.8.8.0/24", "8.8.8.255")).isTrue();
+        assertThat(containsAddress("202.12.128.0/18", "202.12.128.0")).isTrue();
+        assertThat(containsAddress("202.12.128.0/18", "202.12.128.255")).isTrue();
+        assertThat(containsAddress("202.12.128.0/18", "202.12.157.123")).isTrue();
+        assertThat(containsAddress("202.12.128.0/18", "202.12.191.255")).isTrue();
 
-        assertFalse(containsAddress("8.8.8.0/24", "8.8.9.0"));
-        assertFalse(containsAddress("8.8.8.8/32", "8.8.8.9"));
-        assertFalse(containsAddress("202.12.128.0/18", "202.12.127.255"));
-        assertFalse(containsAddress("202.12.128.0/18", "202.12.192.0"));
+        assertThat(containsAddress("8.8.8.0/24", "8.8.9.0")).isFalse();
+        assertThat(containsAddress("8.8.8.8/32", "8.8.8.9")).isFalse();
+        assertThat(containsAddress("202.12.128.0/18", "202.12.127.255")).isFalse();
+        assertThat(containsAddress("202.12.128.0/18", "202.12.192.0")).isFalse();
     }
 
     private static boolean containsAddress(String cidr, String address)

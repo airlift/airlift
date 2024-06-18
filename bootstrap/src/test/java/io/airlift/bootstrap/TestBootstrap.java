@@ -27,8 +27,7 @@ import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.testing.Assertions.assertContains;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.fail;
+import static org.assertj.core.api.Assertions.fail;
 
 public class TestBootstrap
 {
@@ -118,7 +117,7 @@ public class TestBootstrap
         new Bootstrap().setOptionalConfigurationProperty("log.path", "tcp://0.0.0.0:0").initialize();
         int configuredHandlerCount = root.getHandlers().length;
         new Bootstrap().setOptionalConfigurationProperty("log.path", "tcp://0.0.0.0:0").initialize();
-        assertEquals(root.getHandlers().length, configuredHandlerCount);
+        assertThat(root.getHandlers()).hasSize(configuredHandlerCount);
     }
 
     @SuppressWarnings("AssignmentToStaticFieldFromInstanceMethod")

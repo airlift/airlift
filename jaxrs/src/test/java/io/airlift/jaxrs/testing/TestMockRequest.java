@@ -36,9 +36,7 @@ import static io.airlift.jaxrs.testing.MockRequest.put;
 import static jakarta.ws.rs.core.MediaType.TEXT_PLAIN_TYPE;
 import static jakarta.ws.rs.core.MediaType.TEXT_XML_TYPE;
 import static java.util.Locale.US;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestMockRequest
 {
@@ -69,13 +67,13 @@ public class TestMockRequest
     @Test(dataProvider = "requestBuilders")
     public void testMethod(ConditionalRequestBuilder request, String method, Variant variant)
     {
-        assertEquals(request.unconditionally().getMethod(), method);
+        assertThat(request.unconditionally().getMethod()).isEqualTo(method);
     }
 
     @Test(dataProvider = "requestBuilders")
     public void testSelectVariant(ConditionalRequestBuilder request, String method, Variant variant)
     {
-        assertEquals(request.unconditionally().selectVariant(VARIANTS), variant);
+        assertThat(request.unconditionally().selectVariant(VARIANTS)).isEqualTo(variant);
     }
 
     @Test(dataProvider = "requestBuilders")
@@ -148,27 +146,27 @@ public class TestMockRequest
 
     private void assertPreconditionsMet(ResponseBuilder responseBuilder)
     {
-        assertNull(responseBuilder, "Expected null response builder");
+        assertThat(responseBuilder).as("Expected null response builder").isNull();
     }
 
     private void assertPreconditionsFailed(ResponseBuilder responseBuilder)
     {
-        assertNotNull(responseBuilder, "Expected a response builder");
+        assertThat(responseBuilder).as("Expected a response builder").isNotNull();
         Response response = responseBuilder.build();
-        assertEquals(response.getStatus(), Status.PRECONDITION_FAILED.getStatusCode());
+        assertThat(response.getStatus()).isEqualTo(Status.PRECONDITION_FAILED.getStatusCode());
     }
 
     private void assertIfNoneMatchFailed(String method, ResponseBuilder responseBuilder)
     {
-        assertNotNull(responseBuilder, "Expected a response builder");
+        assertThat(responseBuilder).as("Expected a response builder").isNotNull();
         Response response = responseBuilder.build();
 
         // not modified only applies to GET and HEAD; otherwise it is a precondition failed
         if ("GET".equalsIgnoreCase(method) || "HEAD".equalsIgnoreCase(method)) {
-            assertEquals(response.getStatus(), Status.NOT_MODIFIED.getStatusCode());
+            assertThat(response.getStatus()).isEqualTo(Status.NOT_MODIFIED.getStatusCode());
         }
         else {
-            assertEquals(response.getStatus(), Status.PRECONDITION_FAILED.getStatusCode());
+            assertThat(response.getStatus()).isEqualTo(Status.PRECONDITION_FAILED.getStatusCode());
         }
     }
 
@@ -176,13 +174,13 @@ public class TestMockRequest
     {
         // if modified since only applies to GET and HEAD; otherwise it process request
         if (!("GET".equalsIgnoreCase(method) || "HEAD".equalsIgnoreCase(method))) {
-            assertNull(responseBuilder, "Did NOT expect a response builder");
+            assertThat(responseBuilder).as("Did NOT expect a response builder").isNull();
         }
         else {
-            assertNotNull(responseBuilder, "Expected a response builder");
+            assertThat(responseBuilder).as("Expected a response builder").isNotNull();
             Response response = responseBuilder.build();
 
-            assertEquals(response.getStatus(), Status.NOT_MODIFIED.getStatusCode());
+            assertThat(response.getStatus()).isEqualTo(Status.NOT_MODIFIED.getStatusCode());
         }
     }
 }

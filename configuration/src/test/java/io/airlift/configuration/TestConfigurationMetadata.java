@@ -28,8 +28,8 @@ import java.util.Map;
 import java.util.Set;
 
 import static io.airlift.testing.EquivalenceTester.equivalenceTester;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 public class TestConfigurationMetadata
 {
@@ -870,10 +870,10 @@ public class TestConfigurationMetadata
     private void verifyMetaData(ConfigurationMetadata<?> metadata, Class<?> configClass, String description, boolean securitySensitive, boolean hidden, Map<String, Set<String>> attributeProperties)
             throws Exception
     {
-        assertEquals(metadata.getConfigClass(), configClass);
+        assertThat(metadata.getConfigClass()).isEqualTo(configClass);
 
         if (metadata.getConstructor() != null) {
-            assertEquals(metadata.getConstructor(), configClass.getDeclaredConstructor());
+            assertThat(metadata.getConstructor()).isEqualTo(configClass.getDeclaredConstructor());
         }
         else {
             try {
@@ -884,20 +884,20 @@ public class TestConfigurationMetadata
             }
         }
 
-        assertEquals(metadata.getAttributes().size(), attributeProperties.keySet().size());
+        assertThat(metadata.getAttributes()).hasSameSizeAs(attributeProperties.keySet());
 
         for (String name : attributeProperties.keySet()) {
             AttributeMetadata attribute = metadata.getAttributes().get(name);
-            assertEquals(attribute.getConfigClass(), configClass);
+            assertThat(attribute.getConfigClass()).isEqualTo(configClass);
             Set<String> namesToTest = new HashSet<>();
             namesToTest.add(attribute.getInjectionPoint().getProperty());
             for (ConfigurationMetadata.InjectionPointMetaData legacyInjectionPoint : attribute.getLegacyInjectionPoints()) {
                 namesToTest.add(legacyInjectionPoint.getProperty());
             }
-            assertEquals(namesToTest, attributeProperties.get(name));
-            assertEquals(attribute.getDescription(), description);
-            assertEquals(attribute.isSecuritySensitive(), securitySensitive);
-            assertEquals(attribute.isHidden(), hidden);
+            assertThat(namesToTest).isEqualTo(attributeProperties.get(name));
+            assertThat(attribute.getDescription()).isEqualTo(description);
+            assertThat(attribute.isSecuritySensitive()).isEqualTo(securitySensitive);
+            assertThat(attribute.isHidden()).isEqualTo(hidden);
         }
     }
 

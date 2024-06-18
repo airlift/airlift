@@ -41,8 +41,7 @@ import static io.airlift.testing.Assertions.assertContains;
 import static io.airlift.testing.Assertions.assertEqualsIgnoreOrder;
 import static java.lang.management.ManagementFactory.MEMORY_MXBEAN_NAME;
 import static java.lang.management.ManagementFactory.RUNTIME_MXBEAN_NAME;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestMBeanResource
 {
@@ -99,7 +98,7 @@ public class TestMBeanResource
                 prepareGet().setUri(uriFor("/v1/jmx")).build(),
                 createStringResponseHandler());
 
-        assertEquals(response.getStatusCode(), 200);
+        assertThat(response.getStatusCode()).isEqualTo(200);
         assertContentType(response, HTML_UTF_8);
         assertContains(response.getBody(), "<html>");
     }
@@ -123,12 +122,12 @@ public class TestMBeanResource
         List<String> names = new ArrayList<>();
         for (JsonNode mbean : mbeans) {
             JsonNode name = mbean.get("objectName");
-            assertTrue(name.isTextual());
+            assertThat(name.isTextual()).isTrue();
             names.add(name.asText());
         }
 
-        assertTrue(names.contains(MEMORY_MXBEAN_NAME));
-        assertTrue(names.contains(RUNTIME_MXBEAN_NAME));
+        assertThat(names).contains(MEMORY_MXBEAN_NAME);
+        assertThat(names).contains(RUNTIME_MXBEAN_NAME);
         assertEqualsIgnoreOrder(names, getMBeanNames());
     }
 
@@ -142,8 +141,8 @@ public class TestMBeanResource
         JsonNode mbean = jsonRequest(uri);
 
         JsonNode name = mbean.get("objectName");
-        assertTrue(name.isTextual());
-        assertEquals(name.asText(), mbeanName);
+        assertThat(name.isTextual()).isTrue();
+        assertThat(name.asText()).isEqualTo(mbeanName);
     }
 
     @Test(dataProvider = "mbeanNames")
@@ -156,8 +155,8 @@ public class TestMBeanResource
         JsonNode mbean = jsonpRequest(uri);
 
         JsonNode name = mbean.get("objectName");
-        assertTrue(name.isTextual());
-        assertEquals(name.asText(), mbeanName);
+        assertThat(name.isTextual()).isTrue();
+        assertThat(name.asText()).isEqualTo(mbeanName);
     }
 
     private JsonNode jsonRequest(URI uri)
@@ -166,7 +165,7 @@ public class TestMBeanResource
         Request request = prepareGet().setUri(uri).build();
         StringResponse response = client.execute(request, createStringResponseHandler());
 
-        assertEquals(response.getStatusCode(), 200, response.getBody());
+        assertThat(response.getStatusCode()).as(response.getBody()).isEqualTo(200);
         assertContentType(response, JSON_UTF_8);
 
         return new ObjectMapperProvider().get().readTree(response.getBody());
@@ -181,12 +180,12 @@ public class TestMBeanResource
         Request request = prepareGet().setUri(uri).build();
         StringResponse response = client.execute(request, createStringResponseHandler());
 
-        assertEquals(response.getStatusCode(), 200, response.getBody());
+        assertThat(response.getStatusCode()).as(response.getBody()).isEqualTo(200);
         assertContentType(response, JSON_UTF_8);
 
         String jsonp = response.getBody().trim();
-        assertTrue(jsonp.startsWith("test("), jsonp);
-        assertTrue(jsonp.endsWith(")"), jsonp);
+        assertThat(jsonp).startsWith("test(");
+        assertThat(jsonp).endsWith(")");
         jsonp = jsonp.substring(5, jsonp.length() - 1);
 
         return new ObjectMapperProvider().get().readTree(jsonp);
@@ -209,6 +208,6 @@ public class TestMBeanResource
     private static void assertContentType(StringResponse response, MediaType type)
     {
         String contentType = response.getHeader(CONTENT_TYPE);
-        assertTrue(MediaType.parse(contentType).is(type.withoutParameters()), contentType);
+        assertThat(MediaType.parse(contentType).is(type.withoutParameters())).as(contentType).isTrue();
     }
 }
