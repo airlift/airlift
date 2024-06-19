@@ -831,7 +831,12 @@ public abstract class AbstractHttpClientTest
                 .setUri(baseURI)
                 .build();
         HttpVersion version = executeRequest(request, new HttpVersionResponseHandler());
-        assertEquals(version, createClientConfig().isHttp2Enabled() ? HttpVersion.HTTP_2 : HttpVersion.HTTP_1);
+        if (createClientConfig().isHttp2Enabled()) {
+            assertThat(version).isEqualTo(HttpVersion.HTTP_2);
+        }
+        else {
+            assertThat(version).isEqualTo(HttpVersion.HTTP_1);
+        }
     }
 
     @Test
@@ -843,7 +848,7 @@ public abstract class AbstractHttpClientTest
                 .setUri(baseURI)
                 .build();
         HttpVersion version = executeRequest(upgradeRequest(request, HttpVersion.HTTP_1), new HttpVersionResponseHandler());
-        assertEquals(version, HttpVersion.HTTP_1);
+        assertThat(version).isEqualTo(HttpVersion.HTTP_1);
     }
 
     private void executeExceptionRequest(HttpClientConfig config, Request request)
