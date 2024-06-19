@@ -278,6 +278,9 @@ public class MetricsResource
                     if (attributeValue instanceof Number) {
                         metrics.add(Gauge.from(metricAndAttribute, (Number) attributeValue, labels, attributeDescription));
                     }
+                    if (attributeValue instanceof Boolean) {
+                        metrics.add(Gauge.from(metricAndAttribute, (Boolean) attributeValue ? 1 : 0, labels, attributeDescription));
+                    }
                 }
             }
             catch (ReflectiveOperationException e) {
