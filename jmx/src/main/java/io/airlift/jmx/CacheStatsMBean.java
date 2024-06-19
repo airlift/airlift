@@ -28,7 +28,7 @@ public class CacheStatsMBean
     }
 
     @Managed
-    public long size()
+    public long getSize()
     {
         return cache.size();
     }
