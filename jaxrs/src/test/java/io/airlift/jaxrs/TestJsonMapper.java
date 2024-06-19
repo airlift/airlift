@@ -166,7 +166,7 @@ public class TestJsonMapper
             })).isInstanceOf(ZipException.class);
         }
         catch (WebApplicationException e) {
-            org.assertj.core.api.Assertions.fail("Should not have received a WebApplicationException", e);
+            fail("Should not have received a WebApplicationException", e);
         }
     }
 
