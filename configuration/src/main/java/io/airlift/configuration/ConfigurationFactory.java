@@ -674,9 +674,7 @@ public class ConfigurationFactory
         }
 
         if (type.isSubtypeOf(TypeToken.of(Set.class))) {
-            ParameterizedType argumentType = (ParameterizedType) type.getType();
-            verify(argumentType.getActualTypeArguments().length == 1, "Expected type %s to be parametrized", type);
-            TypeToken<?> argumentToken = TypeToken.of(argumentType.getActualTypeArguments()[0]);
+            TypeToken<?> argumentToken = getActualTypeArgument(type);
 
             return VALUE_SPLITTER.splitToStream(value)
                     .map(item -> coerce(argumentToken, item))
@@ -684,9 +682,7 @@ public class ConfigurationFactory
         }
 
         if (type.isSubtypeOf(TypeToken.of(List.class))) {
-            ParameterizedType argumentType = (ParameterizedType) type.getType();
-            verify(argumentType.getActualTypeArguments().length == 1, "Expected type %s to be parametrized", type);
-            TypeToken<?> argumentToken = TypeToken.of(argumentType.getActualTypeArguments()[0]);
+            TypeToken<?> argumentToken = getActualTypeArgument(type);
 
             return VALUE_SPLITTER.splitToStream(value)
                     .map(item -> coerce(argumentToken, item))
@@ -728,6 +724,13 @@ public class ConfigurationFactory
         }
 
         return executable.getParameters()[0].getType() == String.class;
+    }
+
+    private static TypeToken<?> getActualTypeArgument(TypeToken<?> type)
+    {
+        ParameterizedType argumentType = (ParameterizedType) type.getType();
+        verify(argumentType.getActualTypeArguments().length == 1, "Expected type %s to be parametrized", type);
+        return TypeToken.of(argumentType.getActualTypeArguments()[0]);
     }
 
     private static class ConfigurationHolder<T>
