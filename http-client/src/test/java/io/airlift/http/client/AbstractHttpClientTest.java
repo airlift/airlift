@@ -4,6 +4,7 @@ import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multiset;
+import com.google.common.io.Closer;
 import io.airlift.http.client.HttpClient.HttpResponseFuture;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
@@ -360,7 +361,8 @@ public abstract class AbstractHttpClientTest
     public void testKeepAlive()
             throws Exception
     {
-        try (CloseableTestHttpServer server = newServer(); JettyHttpClient client = server.createClient(createClientConfig())) {
+        try (CloseableTestHttpServer server = newServer()) {
+            JettyHttpClient client = server.createClient(createClientConfig());
             URI uri = URI.create(server.baseURI().toASCIIString() + "/?remotePort=");
             Request request = prepareGet()
                     .setUri(uri)
@@ -1365,7 +1367,7 @@ public abstract class AbstractHttpClientTest
         return keystore.isPresent() ? "https" : "http";
     }
 
-    public record CloseableTestHttpServer(String scheme, TestingHttpServer server, Multiset<Integer> statusCounts, EchoServlet servlet)
+    public record CloseableTestHttpServer(String scheme, TestingHttpServer server, Multiset<Integer> statusCounts, EchoServlet servlet, Closer closer)
             implements AutoCloseable
     {
         public CloseableTestHttpServer
@@ -1373,6 +1375,21 @@ public abstract class AbstractHttpClientTest
             requireNonNull(scheme, "scheme is null");
             requireNonNull(server, "server is null");
             requireNonNull(servlet, "servlet is null");
+            requireNonNull(closer, "closer is null");
+
+            closer.register(() -> {
+                try {
+                    server.close();
+                }
+                catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        }
+
+        public CloseableTestHttpServer(String scheme, TestingHttpServer server, Multiset<Integer> statusCounts, EchoServlet servlet)
+        {
+            this(scheme, server, statusCounts, servlet, Closer.create());
         }
 
         public URI baseURI()
@@ -1384,12 +1401,50 @@ public abstract class AbstractHttpClientTest
         public void close()
                 throws Exception
         {
-            server.close();
+            closer.close();
+        }
+
+        public void registerCloseable(AutoCloseable closeable)
+        {
+            closer.register(() -> {
+                try {
+                    closeable.close();
+                }
+                catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
         }
 
         public JettyHttpClient createClient(HttpClientConfig config)
         {
-            return new JettyHttpClient(UUID.randomUUID().toString(), config, ImmutableList.of(new TestingRequestFilter()), ImmutableSet.of(new TestingStatusListener(statusCounts)));
+            TestingJettyHttpClient client = new TestingJettyHttpClient(UUID.randomUUID().toString(), config, ImmutableList.of(new TestingRequestFilter()), ImmutableSet.of(new TestingStatusListener(statusCounts)));
+            closer.register(client::internalClose);
+            return client;
+        }
+    }
+
+    private static class TestingJettyHttpClient
+            extends JettyHttpClient
+    {
+        public TestingJettyHttpClient(
+                String name,
+                HttpClientConfig config,
+                Iterable<? extends HttpRequestFilter> requestFilters,
+                Iterable<? extends HttpStatusListener> httpStatusListeners)
+        {
+            super(name, config, requestFilters, httpStatusListeners);
+        }
+
+        @Override
+        public void close()
+        {
+            throw new IllegalStateException("close() should not be called on TestingJettyHttpClient");
+        }
+
+        private void internalClose()
+        {
+            super.close();
         }
     }
 

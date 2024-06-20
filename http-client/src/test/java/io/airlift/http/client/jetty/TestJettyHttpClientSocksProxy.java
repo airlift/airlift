@@ -29,9 +29,10 @@ public class TestJettyHttpClientSocksProxy
     public <T, E extends Exception> T executeRequest(CloseableTestHttpServer server, HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
-        try (TestingSocksProxy testingSocksProxy = new TestingSocksProxy().start(); JettyHttpClient client = server.createClient(config.setSocksProxy(testingSocksProxy.getHostAndPort()))) {
-            return client.execute(request, responseHandler);
-        }
+        TestingSocksProxy testingSocksProxy = new TestingSocksProxy().start();
+        server.registerCloseable(testingSocksProxy);
+        JettyHttpClient client = server.createClient(config.setSocksProxy(testingSocksProxy.getHostAndPort()));
+        return client.execute(request, responseHandler);
     }
 
     @Override

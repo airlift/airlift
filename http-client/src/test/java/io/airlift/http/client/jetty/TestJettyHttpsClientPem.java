@@ -47,9 +47,8 @@ public class TestJettyHttpsClientPem
         config.setKeyStorePath(getResource("client.pem").getPath())
                 .setTrustStorePath(getResource("ca.crt").getPath());
 
-        try (JettyHttpClient client = server.createClient(config)) {
-            return client.execute(request, responseHandler);
-        }
+        JettyHttpClient client = server.createClient(config);
+        return client.execute(request, responseHandler);
     }
 
     // TLS connections seem to have some conditions that do not respect timeouts

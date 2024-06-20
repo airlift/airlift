@@ -26,8 +26,7 @@ public class TestJettyHttpClient
     public <T, E extends Exception> T executeRequest(CloseableTestHttpServer server, HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
-        try (JettyHttpClient client = server.createClient(config)) {
-            return client.execute(request, responseHandler);
-        }
+        JettyHttpClient client = server.createClient(config);
+        return client.execute(request, responseHandler);
     }
 }
