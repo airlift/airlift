@@ -137,11 +137,8 @@ public abstract class AbstractHttpClientTest
             throws Exception
     {
         servlet = new EchoServlet();
-
-        TestingHttpServer server = new TestingHttpServer(Optional.ofNullable(keystore), servlet);
-
+        server = new TestingHttpServer(Optional.ofNullable(keystore), servlet);
         baseURI = new URI(scheme, null, server.getHostAndPort().getHost(), server.getHostAndPort().getPort(), null, null, null);
-
         statusCounts.clear();
     }
 
