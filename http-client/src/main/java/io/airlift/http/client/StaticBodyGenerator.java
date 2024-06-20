@@ -15,11 +15,11 @@
  */
 package io.airlift.http.client;
 
-import java.io.OutputStream;
 import java.nio.charset.Charset;
 
-public class StaticBodyGenerator
+public sealed class StaticBodyGenerator
         implements BodyGenerator
+        permits JsonBodyGenerator
 {
     public static StaticBodyGenerator createStaticBodyGenerator(String body, Charset charset)
     {
@@ -41,13 +41,5 @@ public class StaticBodyGenerator
     public byte[] getBody()
     {
         return body;
-    }
-
-    @SuppressWarnings("deprecation")
-    @Override
-    public void write(OutputStream out)
-            throws Exception
-    {
-        out.write(body);
     }
 }

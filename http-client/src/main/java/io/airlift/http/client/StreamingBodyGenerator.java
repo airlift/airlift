@@ -1,11 +1,10 @@
 package io.airlift.http.client;
 
 import java.io.InputStream;
-import java.io.OutputStream;
 
 import static java.util.Objects.requireNonNull;
 
-public class StreamingBodyGenerator
+public final class StreamingBodyGenerator
         implements BodyGenerator
 {
     private final InputStream source;
@@ -23,13 +22,5 @@ public class StreamingBodyGenerator
     private StreamingBodyGenerator(InputStream source)
     {
         this.source = requireNonNull(source, "source is null");
-    }
-
-    @SuppressWarnings("deprecation")
-    @Override
-    public void write(OutputStream out)
-            throws Exception
-    {
-        throw new UnsupportedOperationException();
     }
 }
