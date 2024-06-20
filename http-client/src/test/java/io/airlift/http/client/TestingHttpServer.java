@@ -32,6 +32,8 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -40,6 +42,7 @@ import static java.util.Objects.requireNonNull;
 public class TestingHttpServer
         implements AutoCloseable
 {
+    private final String scheme;
     private final Server server;
     private final HostAndPort hostAndPort;
 
@@ -54,6 +57,7 @@ public class TestingHttpServer
     {
         requireNonNull(keystore, "keyStore is null");
         requireNonNull(servlet, "servlet is null");
+        this.scheme = keystore.isPresent() ? "https" : "http";
 
         Server server = new Server();
 
@@ -129,11 +133,20 @@ public class TestingHttpServer
         return hostAndPort;
     }
 
+    public URI baseURI()
+    {
+        try {
+            return new URI(scheme, null, hostAndPort.getHost(), hostAndPort.getPort(), null, null, null);
+        }
+        catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     @Override
     public void close()
             throws Exception
     {
-        server.setStopTimeout(3000);
         server.stop();
     }
 }

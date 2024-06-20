@@ -1,15 +1,9 @@
 package io.airlift.http.client.jetty;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import io.airlift.http.client.AbstractHttpClientTest;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.ResponseHandler;
-import io.airlift.http.client.TestingRequestFilter;
-import io.airlift.http.client.TestingStatusListener;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -24,23 +18,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public class TestJettyHttpsClient
         extends AbstractHttpClientTest
 {
-    private JettyHttpClient httpClient;
-
     TestJettyHttpsClient()
     {
-        super("localhost", getResource("localhost.keystore").toString());
-    }
-
-    @BeforeAll
-    public void setUpHttpClient()
-    {
-        httpClient = new JettyHttpClient("test-shared", createClientConfig(), ImmutableList.of(new TestingRequestFilter()), ImmutableSet.of(new TestingStatusListener(statusCounts)));
-    }
-
-    @AfterAll
-    public void tearDownHttpClient()
-    {
-        closeQuietly(httpClient);
+        super(getResource("localhost.keystore").toString());
     }
 
     @Override
@@ -55,14 +35,14 @@ public class TestJettyHttpsClient
     }
 
     @Override
-    public <T, E extends Exception> T executeRequest(Request request, ResponseHandler<T, E> responseHandler)
+    public <T, E extends Exception> T executeRequest(CloseableTestHttpServer server, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
-        return httpClient.execute(request, responseHandler);
+        return executeRequest(server, createClientConfig(), request, responseHandler);
     }
 
     @Override
-    public <T, E extends Exception> T executeRequest(HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
+    public <T, E extends Exception> T executeRequest(CloseableTestHttpServer server, HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
         config.setKeyStorePath(getResource("localhost.keystore").getPath())
@@ -70,7 +50,7 @@ public class TestJettyHttpsClient
                 .setTrustStorePath(getResource("localhost.truststore").getPath())
                 .setTrustStorePassword("changeit");
 
-        try (JettyHttpClient client = new JettyHttpClient("test-private", config, ImmutableList.of(new TestingRequestFilter()), ImmutableSet.of(new TestingStatusListener(statusCounts)))) {
+        try (JettyHttpClient client = server.createClient(config)) {
             return client.execute(request, responseHandler);
         }
     }
@@ -89,12 +69,16 @@ public class TestJettyHttpsClient
     public void testCertHostnameMismatch()
             throws Exception
     {
-        URI uri = new URI("https", null, "127.0.0.1", baseURI.getPort(), "/", null, null);
-        Request request = prepareGet()
-                .setUri(uri)
-                .build();
+        try (CloseableTestHttpServer server = newServer()) {
+            URI uri = new URI("https", null, "127.0.0.1", server.baseURI().getPort(), "/", null, null);
+            Request request = prepareGet()
+                    .setUri(uri)
+                    .build();
 
-        assertThatThrownBy(() -> executeRequest(request, new ExceptionResponseHandler()))
-                .isInstanceOf(IOException.class);
+            try (JettyHttpClient client = new JettyHttpClient("test", createClientConfig())) {
+                assertThatThrownBy(() -> client.execute(request, new ExceptionResponseHandler()))
+                        .isInstanceOf(IOException.class);
+            }
+        }
     }
 }
