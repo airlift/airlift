@@ -22,7 +22,7 @@ public class TestJettyHttpClientHttpsProxy
 {
     TestJettyHttpClientHttpsProxy()
     {
-        super("localhost", getResource("localhost.keystore").toString());
+        super(getResource("localhost.keystore").toString());
     }
 
     @Override

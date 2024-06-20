@@ -13,63 +13,35 @@
  */
 package io.airlift.http.client.jetty;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import io.airlift.http.client.AbstractHttpClientTest;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.Response;
 import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.TestingHttpProxy;
-import io.airlift.http.client.TestingRequestFilter;
-import io.airlift.http.client.TestingStatusListener;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 import java.io.IOException;
-import java.util.Optional;
 
 import static io.airlift.http.client.HttpStatus.BAD_GATEWAY;
 import static io.airlift.http.client.HttpStatus.BAD_REQUEST;
-import static io.airlift.testing.Closeables.closeAll;
 import static java.util.Objects.requireNonNull;
 
 public abstract class AbstractHttpClientTestHttpProxy
         extends AbstractHttpClientTest
 {
-    protected JettyHttpClient httpClient;
-    protected TestingHttpProxy testingHttpProxy;
-
     protected AbstractHttpClientTestHttpProxy() {}
 
-    protected AbstractHttpClientTestHttpProxy(String host, String keystore)
+    protected AbstractHttpClientTestHttpProxy(String keystore)
     {
-        super(host, keystore);
-    }
-
-    @BeforeAll
-    public void setUpHttpClient()
-            throws Exception
-    {
-        testingHttpProxy = new TestingHttpProxy(Optional.ofNullable(keystore));
-        httpClient = new JettyHttpClient("test-shared", createClientConfig(), ImmutableList.of(new TestingRequestFilter()), ImmutableSet.of(new TestingStatusListener(statusCounts)));
-    }
-
-    @AfterAll
-    public void tearDownHttpClient()
-            throws Exception
-    {
-        closeAll(httpClient);
-        closeAll(testingHttpProxy);
+        super(keystore);
     }
 
     @Override
     public HttpClientConfig createClientConfig()
     {
-        return new HttpClientConfig()
-                .setHttpProxy(testingHttpProxy.getHostAndPort());
+        return new HttpClientConfig();
     }
 
     @Override
@@ -86,17 +58,17 @@ public abstract class AbstractHttpClientTestHttpProxy
     }
 
     @Override
-    public <T, E extends Exception> T executeRequest(Request request, ResponseHandler<T, E> responseHandler)
+    public <T, E extends Exception> T executeRequest(CloseableTestHttpServer server, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
-        return httpClient.execute(request, new ProxyResponseHandler<>(responseHandler));
+        return executeRequest(server, createClientConfig(), request, responseHandler);
     }
 
     @Override
-    public <T, E extends Exception> T executeRequest(HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
+    public <T, E extends Exception> T executeRequest(CloseableTestHttpServer server, HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
-        try (JettyHttpClient client = new JettyHttpClient("test-private", config, ImmutableList.of(new TestingRequestFilter()), ImmutableSet.of(new TestingStatusListener(statusCounts)))) {
+        try (TestingHttpProxy testingHttpProxy = new TestingHttpProxy(keystore); JettyHttpClient client = server.createClient(config.setHttpProxy(testingHttpProxy.getHostAndPort()))) {
             return client.execute(request, new ProxyResponseHandler<>(responseHandler));
         }
     }
