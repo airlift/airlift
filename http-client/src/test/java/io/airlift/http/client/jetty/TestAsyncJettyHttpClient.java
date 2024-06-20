@@ -35,6 +35,14 @@ public class TestAsyncJettyHttpClient
                 .setHttp2Enabled(false);
     }
 
+    @Override
+    public void testConnectTimeout()
+            throws Exception
+    {
+        // Async client doesn't work properly with timeouts as this is expected for the caller to put timeout on the Future.get
+        doTestConnectTimeout(true);
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public <T, E extends Exception> T executeRequest(Request request, ResponseHandler<T, E> responseHandler)

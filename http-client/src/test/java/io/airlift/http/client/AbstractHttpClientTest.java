@@ -186,7 +186,7 @@ public abstract class AbstractHttpClientTest
         doTestConnectTimeout(false);
     }
 
-    protected void doTestConnectTimeout(boolean proxyTest)
+    protected void doTestConnectTimeout(boolean useIdleTimeout)
             throws Exception
     {
         try (BackloggedServer server = new BackloggedServer()) {
@@ -208,11 +208,7 @@ public abstract class AbstractHttpClientTest
                 if (!(isConnectTimeout(t) || (t instanceof ClosedChannelException) || (t instanceof TimeoutException))) {
                     fail(format("unexpected exception: [%s]", getStackTraceAsString(t)));
                 }
-                // When using a proxy, the connect timeout is for the connection to the proxy server,
-                // not the ultimate destination server. For this test, the connection to the proxy
-                // succeeds immediately, but the proxy's connection to the destination server will
-                // time out. Therefore, we use the idle time as the expected timeout for proxy tests.
-                Duration maxDuration = proxyTest ? config.getIdleTimeout() : config.getConnectTimeout();
+                Duration maxDuration = useIdleTimeout ? config.getIdleTimeout() : config.getConnectTimeout();
                 maxDuration = new Duration(maxDuration.toMillis() + 300, MILLISECONDS);
                 assertLessThan(nanosSince(start), maxDuration);
             }
