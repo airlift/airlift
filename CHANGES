@@ -4,6 +4,7 @@
 - Deprecate CacheStatsMBean
 - Update Jetty to 12.0.11
 - Update airbase to 158
+- Add support for Optional injection into configuration classes
 
 249
 
