@@ -9,6 +9,7 @@ import io.airlift.http.client.FileBodyGenerator;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.HttpRequestFilter;
 import io.airlift.http.client.HttpStatusListener;
+import io.airlift.http.client.InputStreamResponseHandler;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.RequestStats;
 import io.airlift.http.client.ResponseHandler;
@@ -790,6 +791,8 @@ public class JettyHttpClient
     {
         requireNonNull(request, "request is null");
         requireNonNull(responseHandler, "responseHandler is null");
+
+        checkArgument(!(responseHandler instanceof InputStreamResponseHandler), "InputStreamResponseHandler cannot be used with executeAsync()");
 
         try {
             request = applyRequestFilters(request);

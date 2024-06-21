@@ -3,7 +3,6 @@ package io.airlift.http.client.jetty;
 import io.airlift.http.client.AbstractHttpClientTest;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.Request;
-import io.airlift.http.client.ResponseHandler;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -34,21 +33,15 @@ public class TestJettyHttpsClientPem
     }
 
     @Override
-    public <T, E extends Exception> T executeRequest(CloseableTestHttpServer server, Request request, ResponseHandler<T, E> responseHandler)
+    public <T, E extends Exception> T executeOnServer(CloseableTestHttpServer server, HttpClientConfig config, ThrowingFunction<T, E> consumer)
             throws Exception
     {
-        return executeRequest(server, createClientConfig(), request, responseHandler);
-    }
-
-    @Override
-    public <T, E extends Exception> T executeRequest(CloseableTestHttpServer server, HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
-            throws Exception
-    {
-        config.setKeyStorePath(getResource("client.pem").getPath())
+        config
+                .setKeyStorePath(getResource("client.pem").getPath())
                 .setTrustStorePath(getResource("ca.crt").getPath());
 
         try (JettyHttpClient client = server.createClient(config)) {
-            return client.execute(request, responseHandler);
+            return consumer.run(client);
         }
     }
 
