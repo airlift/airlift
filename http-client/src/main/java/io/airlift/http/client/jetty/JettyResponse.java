@@ -11,17 +11,20 @@ import org.eclipse.jetty.http.HttpFields;
 import java.io.InputStream;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static com.google.common.base.Verify.verify;
 
 class JettyResponse
         implements io.airlift.http.client.Response
 {
+    private CompletionCallback callback;
     private final Response response;
     private final CountingInputStream inputStream;
     private final ListMultimap<HeaderName, String> headers;
 
-    public JettyResponse(Response response, InputStream inputStream)
+    public JettyResponse(Response response, InputStream inputStream, CompletionCallback callback)
     {
         this.response = response;
+        this.callback = callback;
         this.inputStream = new CountingInputStream(inputStream);
         this.headers = toHeadersMap(response.getHeaders());
     }
@@ -61,6 +64,18 @@ class JettyResponse
     }
 
     @Override
+    public void setCompletionCallback(CompletionCallback callback)
+    {
+        this.callback = callback;
+    }
+
+    @Override
+    public CompletionCallback getCompletionCallback()
+    {
+        return callback;
+    }
+
+    @Override
     public String toString()
     {
         return toStringHelper(this)
@@ -78,5 +93,13 @@ class JettyResponse
             }
         }
         return builder.build();
+    }
+
+    @Override
+    public void close()
+            throws Exception
+    {
+        verify(callback != null, "CompletionCallback should always be present");
+        callback.onComplete(this);
     }
 }
