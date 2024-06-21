@@ -445,6 +445,7 @@ public class JettyHttpClient
             client.setInitialSessionRecvWindow(toIntExact(config.getHttp2InitialSessionReceiveWindowSize().toBytes()));
             client.setInitialStreamRecvWindow(toIntExact(config.getHttp2InitialStreamReceiveWindowSize().toBytes()));
             client.setInputBufferSize(toIntExact(config.getHttp2InputBufferSize().toBytes()));
+            client.setMaxConcurrentPushedStreams(toIntExact(config.getHttp2MaxConcurrentStreams()));
             client.setSelectors(config.getSelectorCount());
             protocols.add(new ClientConnectionFactoryOverHTTP2.HTTP2(client));
         }
