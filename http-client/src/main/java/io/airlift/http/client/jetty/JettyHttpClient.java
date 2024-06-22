@@ -65,7 +65,6 @@ import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.MonitoredQueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.Sweeper;
@@ -127,6 +126,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.temporal.ChronoUnit.YEARS;
 import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -153,7 +153,6 @@ public class JettyHttpClient
     private final long idleTimeoutMillis;
     private final boolean recordRequestComplete;
     private final boolean logEnabled;
-    private final MonitoredQueuedThreadPoolMBean monitoredQueuedThreadPoolMBean;
     private final ConnectionStats connectionStats;
     private final RequestStats stats = new RequestStats();
     private final CachedDistribution queuedRequestsPerDestination;
@@ -305,7 +304,7 @@ public class JettyHttpClient
         }
 
         httpClient.setByteBufferPool(new ArrayByteBufferPool());
-        httpClient.setExecutor(createExecutor(name, config.getMinThreads(), config.getMaxThreads()));
+        httpClient.setExecutor(newVirtualThreadPerTaskExecutor());
         httpClient.setScheduler(createScheduler(name, config.getTimeoutConcurrency(), config.getTimeoutThreads()));
 
         JettyAsyncSocketAddressResolver resolver = new JettyAsyncSocketAddressResolver(
@@ -368,8 +367,6 @@ public class JettyHttpClient
 
         this.requestFilters = ImmutableList.copyOf(requestFilters);
         this.httpStatusListeners = ImmutableList.copyOf(httpStatusListeners);
-
-        this.monitoredQueuedThreadPoolMBean = new MonitoredQueuedThreadPoolMBean((MonitoredQueuedThreadPool) httpClient.getExecutor());
 
         this.activeConnectionsPerDestination = new ConnectionPoolDistribution(httpClient,
                 (distribution, connectionPool) -> distribution.add(getActiveConnections(connectionPool).size()));
@@ -606,23 +603,6 @@ public class JettyHttpClient
             keyStore.setCertificateEntry(commonName, certificateServer);
         }
         catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static MonitoredQueuedThreadPool createExecutor(String name, int minThreads, int maxThreads)
-    {
-        try {
-            MonitoredQueuedThreadPool pool = new MonitoredQueuedThreadPool(maxThreads, minThreads, 60000, null);
-            pool.setName("http-client-" + name);
-            pool.setDaemon(true);
-            pool.start();
-            pool.setStopTimeout(2000);
-            pool.setDetailedDump(true);
-            return pool;
-        }
-        catch (Exception e) {
-            throwIfUnchecked(e);
             throw new RuntimeException(e);
         }
     }
@@ -1008,13 +988,6 @@ public class JettyHttpClient
 
     @Managed
     @Nested
-    public MonitoredQueuedThreadPoolMBean getThreadPool()
-    {
-        return monitoredQueuedThreadPoolMBean;
-    }
-
-    @Managed
-    @Nested
     public ConnectionStats getConnectionStats()
     {
         return connectionStats;
@@ -1194,7 +1167,6 @@ public class JettyHttpClient
         // client must be destroyed before the pools or
         // you will create a several second busy wait loop
         closeQuietly(httpClient);
-        closeQuietly((LifeCycle) httpClient.getExecutor());
         closeQuietly(httpClient.getScheduler());
         requestLogger.close();
     }
