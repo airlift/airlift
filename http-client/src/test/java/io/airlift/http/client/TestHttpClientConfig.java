@@ -86,7 +86,8 @@ public class TestHttpClientConfig
                 .setLogBufferSize(DataSize.of(1, MEGABYTE))
                 .setLogFlushInterval(new Duration(10, SECONDS))
                 .setLogCompressionEnabled(true)
-                .setTcpKeepAliveIdleTime(null));
+                .setTcpKeepAliveIdleTime(null)
+                .setIpTos(null));
     }
 
     @Test
@@ -133,6 +134,7 @@ public class TestHttpClientConfig
                 .put("http-client.log.flush-interval", "99s")
                 .put("http-client.log.compression.enabled", "false")
                 .put("http-client.tcp-keep-alive-idle-time", "1m")
+                .put("http-client.ip-tos", "16")
                 .build();
 
         HttpClientConfig expected = new HttpClientConfig()
@@ -175,7 +177,8 @@ public class TestHttpClientConfig
                 .setLogBufferSize(DataSize.of(3, MEGABYTE))
                 .setLogFlushInterval(new Duration(99, SECONDS))
                 .setLogCompressionEnabled(false)
-                .setTcpKeepAliveIdleTime(new Duration(1, MINUTES));
+                .setTcpKeepAliveIdleTime(new Duration(1, MINUTES))
+                .setIpTos(16);
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }
