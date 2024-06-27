@@ -1,3 +1,7 @@
+250
+
+- Remove JmxInspector
+
 249
 
 - Fix failure when system properties modified when loading configuration
