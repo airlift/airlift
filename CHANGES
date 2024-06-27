@@ -1,3 +1,7 @@
+250
+
+- Deprecate CacheStatsMBean
+
 249
 
 - Fix failure when system properties modified when loading configuration

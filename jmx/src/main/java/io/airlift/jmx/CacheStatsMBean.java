@@ -18,6 +18,7 @@ import org.weakref.jmx.Managed;
 
 import static java.util.Objects.requireNonNull;
 
+@Deprecated
 public class CacheStatsMBean
 {
     private final Cache<?, ?> cache;
