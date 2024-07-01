@@ -38,8 +38,11 @@ import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
+import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
 import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.jmx.MBeanContainer;
+import org.eclipse.jetty.quic.server.QuicServerConnector;
+import org.eclipse.jetty.quic.server.ServerQuicConfiguration;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
@@ -236,7 +239,16 @@ public class HttpServer
         ServerConnector httpsConnector;
         if (config.isHttpsEnabled()) {
             HttpConfiguration httpsConfiguration = new HttpConfiguration(baseHttpConfiguration);
-            setSecureRequestCustomizer(httpsConfiguration);
+            addRequestCustomizer(httpsConfiguration, new SecureRequestCustomizer(false));
+
+            if (config.isHttp3Enabled()) {
+                addRequestCustomizer(httpsConfiguration, new SvcResponseCustomizer(httpServerInfo.getHttpsUri().getPort()));
+                ServerQuicConfiguration quicConfig = new ServerQuicConfiguration(sslContextFactory.get(), config.getHttp3PemPath().orElseThrow(() ->
+                        new IllegalStateException("http-server.http3.pem-path is required when http-server.http3.enabled")));
+                QuicServerConnector connector = new QuicServerConnector(server, quicConfig, new HTTP3ServerConnectionFactory(quicConfig));
+                connector.setPort(httpServerInfo.getHttpsUri().getPort());
+                server.addConnector(connector);
+            }
 
             HttpsConfig httpsConfig = maybeHttpsConfig.orElseThrow();
             this.sslContextFactory = Optional.of(this.sslContextFactory.orElseGet(() -> createReloadingSslContextFactory(httpsConfig, clientCertificate, nodeInfo.getEnvironment())));
@@ -281,7 +293,7 @@ public class HttpServer
             this.monitoredAdminQueuedThreadPoolMBean = new MonitoredQueuedThreadPoolMBean(adminThreadPool);
 
             if (config.isHttpsEnabled()) {
-                setSecureRequestCustomizer(adminConfiguration);
+                addRequestCustomizer(adminConfiguration, new SecureRequestCustomizer(false));
 
                 HttpsConfig httpsConfig = maybeHttpsConfig.orElseThrow();
                 this.sslContextFactory = Optional.of(this.sslContextFactory.orElseGet(() -> createReloadingSslContextFactory(httpsConfig, clientCertificate, nodeInfo.getEnvironment())));
@@ -394,10 +406,10 @@ public class HttpServer
         return new ConnectionFactory[] {tls, alpn, http2, http1};
     }
 
-    private static void setSecureRequestCustomizer(HttpConfiguration configuration)
+    private static void addRequestCustomizer(HttpConfiguration configuration, HttpConfiguration.Customizer customizer)
     {
         configuration.setCustomizers(ImmutableList.<HttpConfiguration.Customizer>builder()
-                .add(new SecureRequestCustomizer(false))
+                .add(customizer)
                 .addAll(configuration.getCustomizers())
                 .build());
     }

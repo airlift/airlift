@@ -25,6 +25,7 @@ import io.airlift.configuration.ConfigDescription;
 import io.airlift.configuration.ConfigSecuritySensitive;
 import io.airlift.configuration.DefunctConfig;
 import io.airlift.configuration.LegacyConfig;
+import io.airlift.configuration.validation.FileExists;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 import io.airlift.units.MaxDataSize;
@@ -34,6 +35,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
@@ -101,9 +103,12 @@ public class HttpClientConfig
     private int timeoutConcurrency = 1;
 
     private boolean http2Enabled;
+    private boolean http3Enabled;
     private DataSize http2InitialSessionReceiveWindowSize = DataSize.of(16, MEGABYTE);
     private DataSize http2InitialStreamReceiveWindowSize = DataSize.of(16, MEGABYTE);
     private DataSize http2InputBufferSize = DataSize.of(8, KILOBYTE);
+
+    private Optional<Path> http3PemPath = Optional.empty();
 
     private String logPath = "var/log/";
     private boolean logEnabled;
@@ -139,6 +144,34 @@ public class HttpClientConfig
     {
         this.http2Enabled = http2Enabled;
         return this;
+    }
+
+    @Config("http-client.http3.enabled")
+    @ConfigDescription("Enable the experimental HTTP/3 transport")
+    public HttpClientConfig setHttp3Enabled(boolean http3Enabled)
+    {
+        this.http3Enabled = http3Enabled;
+        return this;
+    }
+
+    @ConfigDescription("Path that will be used to export PEM certificates to use for HTTP/3")
+    public Optional<@FileExists Path> getHttp3PemPath()
+    {
+        return http3PemPath;
+    }
+
+    @Config("http-client.http3.pem-path")
+    @ConfigDescription("Enable the experimental HTTP/3 transport")
+    public HttpClientConfig setHttp3PemPath(String http3PemPath)
+    {
+        this.http3PemPath = Optional.ofNullable(http3PemPath)
+                .map(Path::of);
+        return this;
+    }
+
+    public boolean isHttp3Enabled()
+    {
+        return http3Enabled;
     }
 
     @NotNull
