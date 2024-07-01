@@ -9,6 +9,7 @@ import io.airlift.http.client.FileBodyGenerator;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.HttpRequestFilter;
 import io.airlift.http.client.HttpStatusListener;
+import io.airlift.http.client.InputStreamResponseHandler;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.RequestStats;
 import io.airlift.http.client.ResponseHandler;
@@ -108,6 +109,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.google.common.base.MoreObjects.firstNonNull;
@@ -752,28 +754,24 @@ public class JettyHttpClient
 
         // process response
         long responseStart = System.nanoTime();
+        try (JettyResponse jettyResponse = new JettyResponse(response, listener.getInputStream(), onCompletion(span, request, requestStart, responseStart, requestSize::getBytes))) {
+            return responseHandler.handle(request, jettyResponse);
+        }
+        catch (Exception e) {
+            throwIfUnchecked(e);
+            throw new RuntimeException(e);
+        }
+    }
 
-        JettyResponse jettyResponse = null;
-        T value;
-        try {
-            jettyResponse = new JettyResponse(response, listener.getInputStream());
-            value = responseHandler.handle(request, jettyResponse);
-        }
-        finally {
-            if (jettyResponse != null) {
-                try {
-                    jettyResponse.getInputStream().close();
-                }
-                catch (IOException ignored) {
-                    // ignore errors closing the stream
-                }
-                span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, jettyResponse.getBytesRead());
-            }
+    private JettyResponse.CompletionCallback onCompletion(Span span, Request request, long requestStart, long responseStart, Supplier<Long> requestSize)
+    {
+        return (response) -> {
             if (recordRequestComplete) {
-                recordRequestComplete(stats, request, requestSize.getBytes(), requestStart, jettyResponse, responseStart);
+                recordRequestComplete(stats, request, requestSize.get(), requestStart, response, responseStart);
             }
-        }
-        return value;
+            span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, response.getBytesRead());
+            span.end();
+        };
     }
 
     static String getHttpVersion(HttpVersion version)
@@ -793,6 +791,8 @@ public class JettyHttpClient
     {
         requireNonNull(request, "request is null");
         requireNonNull(responseHandler, "responseHandler is null");
+
+        checkArgument(!(responseHandler instanceof InputStreamResponseHandler), "InputStreamResponseHandler cannot be used with executeAsync()");
 
         try {
             request = applyRequestFilters(request);
@@ -1237,7 +1237,7 @@ public class JettyHttpClient
         return "anonymous" + NAME_COUNTER.incrementAndGet();
     }
 
-    static void recordRequestComplete(RequestStats requestStats, Request request, long requestBytes, long requestStart, JettyResponse response, long responseStart)
+    static void recordRequestComplete(RequestStats requestStats, Request request, long requestBytes, long requestStart, io.airlift.http.client.Response response, long responseStart)
     {
         if (response == null) {
             return;

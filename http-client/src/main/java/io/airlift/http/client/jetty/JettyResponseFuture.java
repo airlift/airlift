@@ -18,8 +18,10 @@ import java.io.InputStream;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static com.google.common.base.Throwables.throwIfUnchecked;
 import static io.airlift.http.client.jetty.JettyHttpClient.getHttpVersion;
 import static java.util.Objects.requireNonNull;
 
@@ -121,28 +123,30 @@ class JettyResponseFuture<T, E extends Exception>
     }
 
     private T processResponse(Response response, InputStream content)
-            throws E
     {
         // this time will not include the data fetching portion of the response,
         // since the response is fully cached in memory at this point
         long responseStart = System.nanoTime();
 
         state.set(JettyAsyncHttpState.PROCESSING_RESPONSE);
-        JettyResponse jettyResponse = null;
-        T value;
-        try {
-            jettyResponse = new JettyResponse(response, content);
-            value = responseHandler.handle(request, jettyResponse);
+        try (JettyResponse jettyResponse = new JettyResponse(response, content, onCompletion(span, request, requestStart, responseStart, requestSize::getAsLong))) {
+            return responseHandler.handle(request, jettyResponse);
         }
-        finally {
-            if (jettyResponse != null) {
-                span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, jettyResponse.getBytesRead());
-            }
+        catch (Exception e) {
+            throwIfUnchecked(e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    private JettyResponse.CompletionCallback onCompletion(Span span, Request request, long requestStart, long responseStart, Supplier<Long> requestSize)
+    {
+        return (response) -> {
             if (recordRequestComplete) {
-                JettyHttpClient.recordRequestComplete(stats, request, requestSize.getAsLong(), requestStart, jettyResponse, responseStart);
+                JettyHttpClient.recordRequestComplete(stats, request, requestSize.get(), requestStart, response, responseStart);
             }
-        }
-        return value;
+            span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, response.getBytesRead());
+            span.end();
+        };
     }
 
     void failed(Throwable throwable)

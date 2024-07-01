@@ -25,6 +25,7 @@ public class TestingResponse
     private final HttpStatus status;
     private final ListMultimap<HeaderName, String> headers;
     private final CountingInputStream countingInputStream;
+    private CompletionCallback callback;
 
     public TestingResponse(HttpStatus status, ListMultimap<String, String> headers, byte[] bytes)
     {
@@ -67,6 +68,27 @@ public class TestingResponse
             throws IOException
     {
         return countingInputStream;
+    }
+
+    @Override
+    public void setCompletionCallback(CompletionCallback callback)
+    {
+        this.callback = callback;
+    }
+
+    @Override
+    public CompletionCallback getCompletionCallback()
+    {
+        return callback;
+    }
+
+    @Override
+    public void close()
+            throws Exception
+    {
+        if (callback != null) {
+            callback.onComplete(this);
+        }
     }
 
     @Override

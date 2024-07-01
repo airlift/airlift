@@ -2,8 +2,6 @@ package io.airlift.http.client.jetty;
 
 import io.airlift.http.client.AbstractHttpClientTest;
 import io.airlift.http.client.HttpClientConfig;
-import io.airlift.http.client.Request;
-import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.TestingSocksProxy;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -19,18 +17,11 @@ public class TestJettyHttpClientSocksProxy
     }
 
     @Override
-    public <T, E extends Exception> T executeRequest(CloseableTestHttpServer server, Request request, ResponseHandler<T, E> responseHandler)
-            throws Exception
-    {
-        return executeRequest(server, createClientConfig(), request, responseHandler);
-    }
-
-    @Override
-    public <T, E extends Exception> T executeRequest(CloseableTestHttpServer server, HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
+    public <T, E extends Exception> T executeOnServer(CloseableTestHttpServer server, HttpClientConfig config, ThrowingFunction<T, E> consumer)
             throws Exception
     {
         try (TestingSocksProxy testingSocksProxy = new TestingSocksProxy().start(); JettyHttpClient client = server.createClient(config.setSocksProxy(testingSocksProxy.getHostAndPort()))) {
-            return client.execute(request, responseHandler);
+            return consumer.run(client);
         }
     }
 

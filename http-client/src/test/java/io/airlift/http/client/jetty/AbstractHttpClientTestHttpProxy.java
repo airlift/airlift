@@ -58,18 +58,11 @@ public abstract class AbstractHttpClientTestHttpProxy
     }
 
     @Override
-    public <T, E extends Exception> T executeRequest(CloseableTestHttpServer server, Request request, ResponseHandler<T, E> responseHandler)
-            throws Exception
-    {
-        return executeRequest(server, createClientConfig(), request, responseHandler);
-    }
-
-    @Override
-    public <T, E extends Exception> T executeRequest(CloseableTestHttpServer server, HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
+    public <T, E extends Exception> T executeOnServer(CloseableTestHttpServer server, HttpClientConfig config, ThrowingFunction<T, E> consumer)
             throws Exception
     {
         try (TestingHttpProxy testingHttpProxy = new TestingHttpProxy(keystore); JettyHttpClient client = server.createClient(config.setHttpProxy(testingHttpProxy.getHostAndPort()))) {
-            return client.execute(request, new ProxyResponseHandler<>(responseHandler));
+            return consumer.run(client);
         }
     }
 

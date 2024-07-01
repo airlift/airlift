@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.parallel.Execution;
 
+import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -55,6 +56,7 @@ import static com.google.common.net.HttpHeaders.CONTENT_LENGTH;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.common.net.HttpHeaders.LOCATION;
 import static com.google.common.net.HttpHeaders.USER_AGENT;
+import static io.airlift.http.client.InputStreamResponseHandler.inputStreamResponseHandler;
 import static io.airlift.http.client.Request.Builder.fromRequest;
 import static io.airlift.http.client.Request.Builder.prepareDelete;
 import static io.airlift.http.client.Request.Builder.prepareGet;
@@ -101,11 +103,26 @@ public abstract class AbstractHttpClientTest
 
     protected abstract HttpClientConfig createClientConfig();
 
-    public abstract <T, E extends Exception> T executeRequest(CloseableTestHttpServer server, Request request, ResponseHandler<T, E> responseHandler)
+    public <T, E extends Exception> T executeRequest(CloseableTestHttpServer server, Request request, ResponseHandler<T, E> responseHandler)
+            throws Exception
+    {
+        return executeOnServer(server, createClientConfig(), client -> client.execute(request, responseHandler));
+    }
+
+    public <T, E extends Exception> T executeRequest(CloseableTestHttpServer server, HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
+            throws Exception
+    {
+        return executeOnServer(server, config, client -> client.execute(request, responseHandler));
+    }
+
+    public abstract <T, E extends Exception> T executeOnServer(CloseableTestHttpServer server, HttpClientConfig config, ThrowingFunction<T, E> consumer)
             throws Exception;
 
-    public abstract <T, E extends Exception> T executeRequest(CloseableTestHttpServer server, HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
-            throws Exception;
+    public interface ThrowingFunction<T, E extends Exception>
+    {
+        T run(HttpClient client)
+                throws E;
+    }
 
     protected static Request upgradeRequest(Request request, HttpVersion version)
     {
@@ -873,6 +890,29 @@ public abstract class AbstractHttpClientTest
                     .build();
             HttpVersion version = executeRequest(server, upgradeRequest(request, HttpVersion.HTTP_1), new HttpVersionResponseHandler());
             assertThat(version).isEqualTo(HttpVersion.HTTP_1);
+        }
+    }
+
+    @Test
+    public void testStreamingResponseHandler()
+            throws Exception
+    {
+        try (CloseableTestHttpServer server = newServer()) {
+            server.servlet().setResponseBody(LARGE_CONTENT);
+
+            Request request = prepareGet()
+                    .setUri(server.baseURI())
+                    .build();
+
+            executeOnServer(server, createClientConfig(), client -> {
+                try (InputStreamResponseHandler.InputStreamResponse streamingResponse = client.execute(request, inputStreamResponseHandler())) {
+                    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                    streamingResponse.write(outputStream);
+                    String responseString = outputStream.toString(UTF_8);
+                    assertThat(responseString).isEqualTo(LARGE_CONTENT);
+                }
+                return null;
+            });
         }
     }
 

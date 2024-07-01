@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.util.List;
 
 public interface Response
+        extends AutoCloseable
 {
     HttpVersion getHttpVersion();
 
@@ -46,4 +47,13 @@ public interface Response
 
     InputStream getInputStream()
             throws IOException;
+
+    void setCompletionCallback(CompletionCallback callback);
+
+    CompletionCallback getCompletionCallback();
+
+    interface CompletionCallback
+    {
+        void onComplete(Response response);
+    }
 }
