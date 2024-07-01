@@ -1,6 +1,7 @@
 250
 
 - Remove JmxInspector
+- Deprecate CacheStatsMBean
 
 249
 
