@@ -69,6 +69,7 @@ public class HttpClientConfig
     private Duration idleTimeout = new Duration(1, MINUTES);
     private int maxConnectionsPerServer = 20;
     private int maxRequestsQueuedPerDestination = 1024;
+    private int http2MaxConcurrentStreams = 16384; // Same as HttpServerConfig.http2MaxConcurrentStreams
     private DataSize maxContentLength = DataSize.of(16, MEGABYTE);
     private DataSize requestBufferSize = DataSize.of(4, KILOBYTE);
     private DataSize responseBufferSize = DataSize.of(16, KILOBYTE);
@@ -441,6 +442,19 @@ public class HttpClientConfig
     {
         this.http2InputBufferSize = http2InputBufferSize;
         return this;
+    }
+
+    @Config("http-client.http2.max-concurrent-streams")
+    @ConfigDescription("Maximum number of concurrent streams for HTTP/2")
+    public HttpClientConfig setHttp2MaxConcurrentStreams(int http2MaxConcurrentStreams)
+    {
+        this.http2MaxConcurrentStreams = http2MaxConcurrentStreams;
+        return this;
+    }
+
+    public int getHttp2MaxConcurrentStreams()
+    {
+        return http2MaxConcurrentStreams;
     }
 
     @Min(1)
