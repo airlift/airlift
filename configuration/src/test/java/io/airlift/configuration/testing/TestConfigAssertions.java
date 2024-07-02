@@ -31,6 +31,7 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 import static io.airlift.testing.Assertions.assertContains;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -491,7 +492,8 @@ public class TestConfigAssertions
                 .setMyIntegerList(ImmutableList.of())
                 .setShortOption((short) 0)
                 .setStringOption(null)
-                .setValueClassOption(null));
+                .setValueClassOption(null)
+                .setOptionalValueClassOption(Optional.empty()));
     }
 
     @Test

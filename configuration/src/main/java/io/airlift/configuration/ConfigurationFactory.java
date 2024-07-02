@@ -668,9 +668,7 @@ public class ConfigurationFactory
         }
 
         if (type.isSubtypeOf(TypeToken.of(Set.class))) {
-            ParameterizedType argumentType = (ParameterizedType) type.getType();
-            verify(argumentType.getActualTypeArguments().length == 1, "Expected type %s to be parametrized", type);
-            TypeToken<?> argumentToken = TypeToken.of(argumentType.getActualTypeArguments()[0]);
+            TypeToken<?> argumentToken = getActualTypeArgument(type);
 
             return VALUE_SPLITTER.splitToStream(value)
                     .map(item -> coerce(argumentToken, item))
@@ -678,13 +676,16 @@ public class ConfigurationFactory
         }
 
         if (type.isSubtypeOf(TypeToken.of(List.class))) {
-            ParameterizedType argumentType = (ParameterizedType) type.getType();
-            verify(argumentType.getActualTypeArguments().length == 1, "Expected type %s to be parametrized", type);
-            TypeToken<?> argumentToken = TypeToken.of(argumentType.getActualTypeArguments()[0]);
+            TypeToken<?> argumentToken = getActualTypeArgument(type);
 
             return VALUE_SPLITTER.splitToStream(value)
                     .map(item -> coerce(argumentToken, item))
                     .collect(toImmutableList());
+        }
+
+        if (type.isSubtypeOf(TypeToken.of(Optional.class))) {
+            TypeToken<?> argumentToken = getActualTypeArgument(type);
+            return Optional.ofNullable(coerce(argumentToken, value));
         }
 
         // Look for a static valueOf(String) method
@@ -716,6 +717,13 @@ public class ConfigurationFactory
         }
 
         return null;
+    }
+
+    private static TypeToken<?> getActualTypeArgument(TypeToken<?> type)
+    {
+        ParameterizedType argumentType = (ParameterizedType) type.getType();
+        verify(argumentType.getActualTypeArguments().length == 1, "Expected type %s to be parametrized", type);
+        return TypeToken.of(argumentType.getActualTypeArguments()[0]);
     }
 
     private static class ConfigurationHolder<T>

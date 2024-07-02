@@ -19,6 +19,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public class Config1
@@ -64,6 +65,8 @@ public class Config1
     List<Integer> myIntegerList = ImmutableList.of();
 
     ValueClass valueClassOption;
+
+    Optional<ValueClass> optionalValueClassOption = Optional.empty();
 
     public String getStringOption()
     {
@@ -314,6 +317,18 @@ public class Config1
     public Config1 setValueClassOption(ValueClass valueClassOption)
     {
         this.valueClassOption = valueClassOption;
+        return this;
+    }
+
+    public Optional<ValueClass> getOptionalValueClassOption()
+    {
+        return optionalValueClassOption;
+    }
+
+    @Config("optionalValueClassOption")
+    public Config1 setOptionalValueClassOption(Optional<ValueClass> optionalValueClassOption)
+    {
+        this.optionalValueClassOption = optionalValueClassOption;
         return this;
     }
 }

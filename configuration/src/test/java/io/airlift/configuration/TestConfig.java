@@ -83,6 +83,7 @@ public class TestConfig
             .put("myIntegerList", "10,12,14,16")
             .put("myEnumSecondOption", "bar") // lowercase
             .put("valueClassOption", "a value class")
+            .put("optionalValueClassOption", "a value class")
             .build();
 
     @Test
@@ -198,6 +199,10 @@ public class TestConfig
         assertThat(config.getMyEnumList()).isEqualTo(ImmutableList.of(BAR, FOO));
         assertThat(config.getMyEnumSet()).isEqualTo(ImmutableSet.of(BAR, FOO));
         assertThat(config.getMyIntegerList()).isEqualTo(ImmutableList.of(10, 12, 14, 16));
+        assertThat(config.getOptionalValueClassOption())
+                .isPresent()
+                .hasValueSatisfying(value -> assertThat(value.getValue())
+                        .isEqualTo("a value class"));
     }
 
     @Test
