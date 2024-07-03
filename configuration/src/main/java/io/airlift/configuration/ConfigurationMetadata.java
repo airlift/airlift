@@ -278,14 +278,14 @@ public class ConfigurationMetadata<T>
             return null;
         }
 
-        String propertyName = configMethod.getAnnotation(Config.class).value();
-        final boolean securitySensitive = configMethod.isAnnotationPresent(ConfigSecuritySensitive.class);
-        final boolean hidden = configMethod.isAnnotationPresent(ConfigHidden.class);
-
         // verify parameters
         if (!validateSetter(configMethod)) {
             return null;
         }
+
+        String propertyName = configMethod.getAnnotation(Config.class).value();
+        final boolean securitySensitive = configMethod.isAnnotationPresent(ConfigSecuritySensitive.class);
+        final boolean hidden = configMethod.isAnnotationPresent(ConfigHidden.class);
 
         // determine the attribute name
         String attributeName = configMethod.getName().substring(3);
