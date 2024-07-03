@@ -755,6 +755,11 @@ public class ConfigurationMetadata<T>
             }
         }
 
+        // just right
+        if (getters.size() == 1) {
+            return getters.getFirst();
+        }
+
         // too small
         if (getters.isEmpty()) {
             String unusable = "";
@@ -769,15 +774,9 @@ public class ConfigurationMetadata<T>
             return null;
         }
 
-        // too big
-        if (getters.size() > 1) {
-            // To many getters
-            problems.addError("Multiple getters found for @Config setter [%s]", configMethod.toGenericString());
-            return null;
-        }
-
-        // just right
-        return getters.get(0);
+        // To many getters
+        problems.addError("Multiple getters found for @Config setter [%s]", configMethod.toGenericString());
+        return null;
     }
 
     private static boolean validateGetter(Method method, String attributeName)
