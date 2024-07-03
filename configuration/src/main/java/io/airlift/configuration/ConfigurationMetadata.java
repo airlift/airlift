@@ -674,6 +674,10 @@ public class ConfigurationMetadata<T>
 
     public static Method findAnnotatedMethod(Class<?> configClass, Class<? extends java.lang.annotation.Annotation> annotation, String methodName, Class<?>... paramTypes)
     {
+        if (configClass.equals(Object.class)) {
+            return null;
+        }
+
         try {
             Method method = configClass.getDeclaredMethod(methodName, paramTypes);
             if (method != null && method.isAnnotationPresent(annotation)) {
