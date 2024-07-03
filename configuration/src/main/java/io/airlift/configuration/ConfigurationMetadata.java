@@ -278,8 +278,6 @@ public class ConfigurationMetadata<T>
 
     private AttributeMetadata buildAttributeMetadata(Class<T> configClass, Multimap<String, Method> methods, Method configMethod)
     {
-        checkArgument(configMethod.isAnnotationPresent(Config.class));
-
         if (!validateAnnotations(configMethod)) {
             return null;
         }
