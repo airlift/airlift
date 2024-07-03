@@ -743,15 +743,11 @@ public class ConfigurationMetadata<T>
 
     private Method findGetter(Multimap<String, Method> methods, Method configMethod, String attributeName)
     {
-        // find the getter or is function
-        String getterName = "get" + attributeName;
-        String isName = "is" + attributeName;
-
         List<Method> getters = new ArrayList<>();
         List<Method> unusableGetters = new ArrayList<>();
 
         for (Method method : methods.values()) {
-            if ((method.getName().equals(getterName) || method.getName().equals(isName)) && isUsableMethod(method) && !method.getReturnType().equals(Void.TYPE) && method.getParameterTypes().length == 0) {
+            if (validateGetter(method, attributeName)) {
                 getters.add(method);
             }
             else {
@@ -782,6 +778,19 @@ public class ConfigurationMetadata<T>
 
         // just right
         return getters.get(0);
+    }
+
+    private static boolean validateGetter(Method method, String attributeName)
+    {
+        // find the getter or is function
+        if (!(method.getName().equals("get" + attributeName) || method.getName().equals("is" + attributeName))) {
+            return false;
+        }
+        // method is void or takes parameters
+        if (method.getReturnType().equals(Void.TYPE) || method.getParameterTypes().length > 0) {
+            return false;
+        }
+        return isUsableMethod(method);
     }
 
     private static boolean isUsableMethod(Method method)
