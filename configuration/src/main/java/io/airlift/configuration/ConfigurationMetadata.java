@@ -15,8 +15,10 @@
  */
 package io.airlift.configuration;
 
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.collect.Multimap;
 import com.google.inject.ConfigurationException;
 import io.airlift.configuration.Problems.Monitor;
 import jakarta.validation.Constraint;
@@ -115,18 +117,17 @@ public class ConfigurationMetadata<T>
         }
         this.constructor = constructor;
 
-        this.attributes = ImmutableSortedMap.copyOf(buildAttributeMetadata(configClass));
+        Multimap<String, Method> methods = collectDeclaredMethods(configClass);
+        this.attributes = ImmutableSortedMap.copyOf(buildAttributeMetadata(configClass, methods));
 
         // find invalid config methods not skipped by findConfigMethods()
-        for (Class<?> clazz = configClass; (clazz != null) && !clazz.equals(Object.class); clazz = clazz.getSuperclass()) {
-            for (Method method : clazz.getDeclaredMethods()) {
-                if (method.isAnnotationPresent(Config.class)) {
-                    if (!Modifier.isPublic(method.getModifiers())) {
-                        problems.addError("@Config method [%s] is not public", method.toGenericString());
-                    }
-                    if (Modifier.isStatic(method.getModifiers())) {
-                        problems.addError("@Config method [%s] is static", method.toGenericString());
-                    }
+        for (Method method : methods.values()) {
+            if (method.isAnnotationPresent(Config.class)) {
+                if (!Modifier.isPublic(method.getModifiers())) {
+                    problems.addError("@Config method [%s] is not public", method.toGenericString());
+                }
+                if (Modifier.isStatic(method.getModifiers())) {
+                    problems.addError("@Config method [%s] is static", method.toGenericString());
                 }
             }
         }
@@ -227,11 +228,11 @@ public class ConfigurationMetadata<T>
         return true;
     }
 
-    private Map<String, AttributeMetadata> buildAttributeMetadata(Class<T> configClass)
+    private Map<String, AttributeMetadata> buildAttributeMetadata(Class<T> configClass, Multimap<String, Method> methods)
     {
         Map<String, AttributeMetadata> attributes = new HashMap<>();
-        for (Method configMethod : findConfigMethods(configClass)) {
-            AttributeMetadata attribute = buildAttributeMetadata(configClass, configMethod);
+        for (Method configMethod : findConfigMethods(configClass, methods)) {
+            AttributeMetadata attribute = buildAttributeMetadata(configClass, methods, configMethod);
 
             if (attribute != null) {
                 if (attributes.containsKey(attribute.getName())) {
@@ -242,13 +243,11 @@ public class ConfigurationMetadata<T>
         }
 
         // Find orphan @LegacyConfig methods, in order to report errors
-        Collection<Method> legacyMethods = findLegacyConfigMethods(configClass);
+        Collection<Method> legacyMethods = findLegacyConfigMethods(configClass, methods);
         for (AttributeMetadata attribute : attributes.values()) {
             for (InjectionPointMetaData injectionPoint : attribute.getLegacyInjectionPoints()) {
-                if (legacyMethods.contains(injectionPoint.getSetter())) {
-                    // Don't care about legacy methods which are related to current attributes
-                    legacyMethods.remove(injectionPoint.getSetter());
-                }
+                // Don't care about legacy methods which are related to current attributes
+                legacyMethods.remove(injectionPoint.getSetter());
             }
         }
         for (Method method : legacyMethods) {
@@ -259,7 +258,7 @@ public class ConfigurationMetadata<T>
         }
 
         // Find orphan @ConfigSecuritySensitive methods, in order to report errors
-        Collection<Method> sensitiveMethods = findSensitiveConfigMethods(configClass);
+        Collection<Method> sensitiveMethods = findSensitiveConfigMethods(configClass, methods);
         for (Method method : sensitiveMethods) {
             if (!method.isAnnotationPresent(Config.class)) {
                 problems.addError("@ConfigSecuritySensitive method [%s] is not annotated with @Config.", method.toGenericString());
@@ -267,7 +266,7 @@ public class ConfigurationMetadata<T>
         }
 
         // Find orphan @ConfigHidden methods, in order to report errors
-        Collection<Method> hiddenMethods = findHiddenConfigMethods(configClass);
+        Collection<Method> hiddenMethods = findHiddenConfigMethods(configClass, methods);
         for (Method method : hiddenMethods) {
             if (!method.isAnnotationPresent(Config.class)) {
                 problems.addError("@ConfigHidden method [%s] is not annotated with @Config.", method.toGenericString());
@@ -277,7 +276,7 @@ public class ConfigurationMetadata<T>
         return attributes;
     }
 
-    private AttributeMetadata buildAttributeMetadata(Class<T> configClass, Method configMethod)
+    private AttributeMetadata buildAttributeMetadata(Class<T> configClass, Multimap<String, Method> methods, Method configMethod)
     {
         checkArgument(configMethod.isAnnotationPresent(Config.class));
 
@@ -304,7 +303,7 @@ public class ConfigurationMetadata<T>
         }
 
         // find the getter
-        Method getter = findGetter(configClass, configMethod, attributeName);
+        Method getter = findGetter(methods, configMethod, attributeName);
         if (getter != null) {
             builder.setGetter(getter);
 
@@ -321,7 +320,7 @@ public class ConfigurationMetadata<T>
         builder.addInjectionPoint(InjectionPointMetaData.newCurrent(configClass, propertyName, configMethod));
 
         // Add injection points for legacy setters/properties
-        for (InjectionPointMetaData injectionPoint : findLegacySetters(configClass, propertyName, attributeName)) {
+        for (InjectionPointMetaData injectionPoint : findLegacySetters(configClass, methods, propertyName, attributeName)) {
             if (!injectionPoint.getSetter().isAnnotationPresent(Config.class) && !injectionPoint.getSetter().isAnnotationPresent(Deprecated.class)) {
                 problems.addWarning("Replaced @LegacyConfig method [%s] should be @Deprecated", injectionPoint.getSetter().toGenericString());
             }
@@ -624,24 +623,24 @@ public class ConfigurationMetadata<T>
         }
     }
 
-    private static Collection<Method> findConfigMethods(Class<?> configClass)
+    private static Collection<Method> findConfigMethods(Class<?> configClass, Multimap<String, Method> methods)
     {
-        return findAnnotatedMethods(configClass, Config.class);
+        return findAnnotatedMethods(configClass, methods, Config.class);
     }
 
-    private static Collection<Method> findLegacyConfigMethods(Class<?> configClass)
+    private static Collection<Method> findLegacyConfigMethods(Class<?> configClass, Multimap<String, Method> methods)
     {
-        return findAnnotatedMethods(configClass, LegacyConfig.class);
+        return findAnnotatedMethods(configClass, methods, LegacyConfig.class);
     }
 
-    private static Collection<Method> findSensitiveConfigMethods(Class<?> configClass)
+    private static Collection<Method> findSensitiveConfigMethods(Class<?> configClass, Multimap<String, Method> methods)
     {
-        return findAnnotatedMethods(configClass, ConfigSecuritySensitive.class);
+        return findAnnotatedMethods(configClass, methods, ConfigSecuritySensitive.class);
     }
 
-    private static Collection<Method> findHiddenConfigMethods(Class<?> configClass)
+    private static Collection<Method> findHiddenConfigMethods(Class<?> configClass, Multimap<String, Method> methods)
     {
-        return findAnnotatedMethods(configClass, ConfigHidden.class);
+        return findAnnotatedMethods(configClass, methods, ConfigHidden.class);
     }
 
     /**
@@ -651,10 +650,9 @@ public class ConfigurationMetadata<T>
      * @return a map that associates a concrete method to the actual method tagged
      * (which may belong to a different class in class hierarchy)
      */
-    private static Collection<Method> findAnnotatedMethods(Class<?> configClass, Class<? extends java.lang.annotation.Annotation> annotation)
+    private static Collection<Method> findAnnotatedMethods(Class<?> configClass, Multimap<String, Method> methods, Class<? extends java.lang.annotation.Annotation> annotation)
     {
         List<Method> result = new ArrayList<>();
-
         // gather all publicly available methods
         // this returns everything, even if it's declared in a parent
         for (Method method : configClass.getMethods()) {
@@ -664,7 +662,7 @@ public class ConfigurationMetadata<T>
             }
 
             // look for annotations recursively in super-classes or interfaces
-            Method managedMethod = findAnnotatedMethod(configClass, annotation, method.getName(), method.getParameterTypes());
+            Method managedMethod = findAnnotatedMethod(methods, annotation, method.getName(), method.getParameterTypes());
             if (managedMethod != null) {
                 result.add(managedMethod);
             }
@@ -673,79 +671,79 @@ public class ConfigurationMetadata<T>
         return result;
     }
 
-    public static Method findAnnotatedMethod(Class<?> configClass, Class<? extends java.lang.annotation.Annotation> annotation, String methodName, Class<?>... paramTypes)
+    public static Method findAnnotatedMethod(Multimap<String, Method> methods, Class<? extends java.lang.annotation.Annotation> annotation, String methodName, Class<?>... paramTypes)
     {
-        if (configClass.equals(Object.class)) {
-            return null;
-        }
-
-        Method[] configClassMethods = configClass.getDeclaredMethods();
-        for (Method method : configClassMethods) {
-            if (method.getName().equals(methodName) && Arrays.equals(method.getParameterTypes(), paramTypes) && method.isAnnotationPresent(annotation)) {
+        for (Method method : methods.get(methodName)) {
+            if (Arrays.equals(method.getParameterTypes(), paramTypes) && method.isAnnotationPresent(annotation)) {
                 return method;
             }
         }
-
-        if (configClass.getSuperclass() != null) {
-            Method managedMethod = findAnnotatedMethod(configClass.getSuperclass(), annotation, methodName, paramTypes);
-            if (managedMethod != null) {
-                return managedMethod;
-            }
-        }
-
-        for (Class<?> iface : configClass.getInterfaces()) {
-            Method managedMethod = findAnnotatedMethod(iface, annotation, methodName, paramTypes);
-            if (managedMethod != null) {
-                return managedMethod;
-            }
-        }
-
         return null;
     }
 
-    private Set<InjectionPointMetaData> findLegacySetters(Class<?> configClass, String propertyName, String attributeName)
+    private static Multimap<String, Method> collectDeclaredMethods(Class<?> configClass)
+    {
+        if (configClass.equals(Object.class)) {
+            return ArrayListMultimap.create();
+        }
+
+        Multimap<String, Method> result = ArrayListMultimap.create();
+
+        for (Method method : configClass.getDeclaredMethods()) {
+            result.put(method.getName(), method);
+        }
+
+        if (configClass.getSuperclass() != null && !configClass.getSuperclass().equals(Object.class)) {
+            result.putAll(collectDeclaredMethods(configClass.getSuperclass()));
+        }
+
+        for (Class<?> iface : configClass.getInterfaces()) {
+            result.putAll(collectDeclaredMethods(iface));
+        }
+
+        return result;
+    }
+
+    private Set<InjectionPointMetaData> findLegacySetters(Class<?> configClass, Multimap<String, Method> methods, String propertyName, String attributeName)
     {
         Set<InjectionPointMetaData> setters = new HashSet<>();
-
         String setterName = "set" + attributeName;
 
-        for (Class<?> clazz = configClass; (clazz != null) && !clazz.equals(Object.class); clazz = clazz.getSuperclass()) {
-            for (Method method : clazz.getDeclaredMethods()) {
-                if (isUsableMethod(method)) {
-                    if (method.getName().equals(setterName) && method.isAnnotationPresent(LegacyConfig.class)) {
-                        // Found @LegacyConfig setter with matching attribute name
-                        if (validateSetter(method)) {
-                            for (String property : method.getAnnotation(LegacyConfig.class).value()) {
-                                if (defunctConfig.contains(property)) {
-                                    problems.addError("@LegacyConfig property '%s' on method [%s] is defunct on class [%s]", property, method, configClass);
-                                }
+        for (Method method : methods.values()) {
+            if (isUsableMethod(method)) {
+                if (method.getName().equals(setterName) && method.isAnnotationPresent(LegacyConfig.class)) {
+                    // Found @LegacyConfig setter with matching attribute name
+                    if (validateSetter(method)) {
+                        for (String property : method.getAnnotation(LegacyConfig.class).value()) {
+                            if (defunctConfig.contains(property)) {
+                                problems.addError("@LegacyConfig property '%s' on method [%s] is defunct on class [%s]", property, method, configClass);
+                            }
 
-                                if (!property.equals(propertyName)) {
-                                    setters.add(InjectionPointMetaData.newLegacy(configClass, property, method));
-                                }
-                                else {
-                                    problems.addError("@LegacyConfig property '%s' on method [%s] is replaced by @Config property of same name on method [%s]",
-                                            property, method.toGenericString(), setterName);
-                                }
+                            if (!property.equals(propertyName)) {
+                                setters.add(InjectionPointMetaData.newLegacy(configClass, property, method));
+                            }
+                            else {
+                                problems.addError("@LegacyConfig property '%s' on method [%s] is replaced by @Config property of same name on method [%s]",
+                                        property, method.toGenericString(), setterName);
                             }
                         }
                     }
-                    else if (method.isAnnotationPresent(LegacyConfig.class)
-                            && method.getAnnotation(LegacyConfig.class).replacedBy().equals(propertyName)) {
-                        // Found @LegacyConfig setter linked by replacedBy() property
-                        if (validateSetter(method)) {
-                            for (String property : method.getAnnotation(LegacyConfig.class).value()) {
-                                if (defunctConfig.contains(property)) {
-                                    problems.addError("@LegacyConfig property '%s' on method [%s] is defunct on class [%s]", property, method, configClass);
-                                }
+                }
+                else if (method.isAnnotationPresent(LegacyConfig.class)
+                        && method.getAnnotation(LegacyConfig.class).replacedBy().equals(propertyName)) {
+                    // Found @LegacyConfig setter linked by replacedBy() property
+                    if (validateSetter(method)) {
+                        for (String property : method.getAnnotation(LegacyConfig.class).value()) {
+                            if (defunctConfig.contains(property)) {
+                                problems.addError("@LegacyConfig property '%s' on method [%s] is defunct on class [%s]", property, method, configClass);
+                            }
 
-                                if (!property.equals(propertyName)) {
-                                    setters.add(InjectionPointMetaData.newLegacy(configClass, property, method));
-                                }
-                                else {
-                                    problems.addError("@LegacyConfig property '%s' on method [%s] is replaced by @Config property of same name on method [%s]",
-                                            property, method.toGenericString(), setterName);
-                                }
+                            if (!property.equals(propertyName)) {
+                                setters.add(InjectionPointMetaData.newLegacy(configClass, property, method));
+                            }
+                            else {
+                                problems.addError("@LegacyConfig property '%s' on method [%s] is replaced by @Config property of same name on method [%s]",
+                                        property, method.toGenericString(), setterName);
                             }
                         }
                     }
@@ -755,7 +753,7 @@ public class ConfigurationMetadata<T>
         return setters;
     }
 
-    private Method findGetter(Class<?> configClass, Method configMethod, String attributeName)
+    private Method findGetter(Multimap<String, Method> methods, Method configMethod, String attributeName)
     {
         // find the getter or is function
         String getterName = "get" + attributeName;
@@ -763,16 +761,13 @@ public class ConfigurationMetadata<T>
 
         List<Method> getters = new ArrayList<>();
         List<Method> unusableGetters = new ArrayList<>();
-        for (Class<?> clazz = configClass; (clazz != null) && !clazz.equals(Object.class); clazz = clazz.getSuperclass()) {
-            for (Method method : clazz.getDeclaredMethods()) {
-                if (method.getName().equals(getterName) || method.getName().equals(isName)) {
-                    if (isUsableMethod(method) && !method.getReturnType().equals(Void.TYPE) && method.getParameterTypes().length == 0) {
-                        getters.add(method);
-                    }
-                    else {
-                        unusableGetters.add(method);
-                    }
-                }
+
+        for (Method method : methods.values()) {
+            if ((method.getName().equals(getterName) || method.getName().equals(isName)) && isUsableMethod(method) && !method.getReturnType().equals(Void.TYPE) && method.getParameterTypes().length == 0) {
+                getters.add(method);
+            }
+            else {
+                unusableGetters.add(method);
             }
         }
 
