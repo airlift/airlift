@@ -314,7 +314,7 @@ public class ConfigurationMetadata<T>
         builder.addInjectionPoint(InjectionPointMetaData.newCurrent(configClass, propertyName, configMethod));
 
         // Add injection points for legacy setters/properties
-        for (InjectionPointMetaData injectionPoint : findLegacySetters(configClass, methods, propertyName, attributeName)) {
+        for (InjectionPointMetaData injectionPoint : findLegacySetters(methods, propertyName, attributeName)) {
             if (!injectionPoint.getSetter().isAnnotationPresent(Config.class) && !injectionPoint.getSetter().isAnnotationPresent(Deprecated.class)) {
                 problems.addWarning("Replaced @LegacyConfig method [%s] should be @Deprecated", injectionPoint.getSetter().toGenericString());
             }
@@ -698,7 +698,7 @@ public class ConfigurationMetadata<T>
         return result;
     }
 
-    private Set<InjectionPointMetaData> findLegacySetters(Class<?> configClass, Multimap<String, Method> methods, String propertyName, String attributeName)
+    private Set<InjectionPointMetaData> findLegacySetters(Multimap<String, Method> methods, String propertyName, String attributeName)
     {
         Set<InjectionPointMetaData> setters = new HashSet<>();
         String setterName = "set" + attributeName;
@@ -707,39 +707,35 @@ public class ConfigurationMetadata<T>
             if (!isUsableMethod(method)) {
                 continue;
             }
-            if (method.getName().equals(setterName) && method.isAnnotationPresent(LegacyConfig.class) && validateSetter(method)) {
-                // Found @LegacyConfig setter with matching attribute name
-                for (String property : method.getAnnotation(LegacyConfig.class).value()) {
-                    if (defunctConfig.contains(property)) {
-                        problems.addError("@LegacyConfig property '%s' on method [%s] is defunct on class [%s]", property, method, configClass);
-                    }
 
-                    if (!property.equals(propertyName)) {
-                        setters.add(InjectionPointMetaData.newLegacy(configClass, property, method));
-                    }
-                    else {
-                        problems.addError("@LegacyConfig property '%s' on method [%s] is replaced by @Config property of same name on method [%s]",
-                                property, method.toGenericString(), setterName);
-                    }
-                }
+            if (method.getName().equals(setterName) && method.isAnnotationPresent(LegacyConfig.class) && validateSetter(method)) {
+                setters.addAll(validateLegacyConfig(method, propertyName, setterName));
             }
 
             LegacyConfig annotation = method.getAnnotation(LegacyConfig.class);
             if (annotation != null && annotation.replacedBy().equals(propertyName) && validateSetter(method)) {
-                // Found @LegacyConfig setter linked by replacedBy() property
-                for (String property : method.getAnnotation(LegacyConfig.class).value()) {
-                    if (defunctConfig.contains(property)) {
-                        problems.addError("@LegacyConfig property '%s' on method [%s] is defunct on class [%s]", property, method, configClass);
-                    }
+                setters.addAll(validateLegacyConfig(method, propertyName, setterName));
+            }
+        }
+        return setters;
+    }
 
-                    if (!property.equals(propertyName)) {
-                        setters.add(InjectionPointMetaData.newLegacy(configClass, property, method));
-                    }
-                    else {
-                        problems.addError("@LegacyConfig property '%s' on method [%s] is replaced by @Config property of same name on method [%s]",
-                                property, method.toGenericString(), setterName);
-                    }
-                }
+    private Set<InjectionPointMetaData> validateLegacyConfig(Method method, String propertyName, String setterName)
+    {
+        Set<InjectionPointMetaData> setters = new HashSet<>();
+
+        // Found @LegacyConfig setter linked by replacedBy() property
+        for (String property : method.getAnnotation(LegacyConfig.class).value()) {
+            if (defunctConfig.contains(property)) {
+                problems.addError("@LegacyConfig property '%s' on method [%s] is defunct on class [%s]", property, method, configClass);
+            }
+
+            if (!property.equals(propertyName)) {
+                setters.add(InjectionPointMetaData.newLegacy(configClass, property, method));
+            }
+            else {
+                problems.addError("@LegacyConfig property '%s' on method [%s] is replaced by @Config property of same name on method [%s]",
+                        property, method.toGenericString(), setterName);
             }
         }
         return setters;
