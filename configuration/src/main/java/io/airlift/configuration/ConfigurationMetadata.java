@@ -651,7 +651,7 @@ public class ConfigurationMetadata<T>
         // this returns everything, even if it's declared in a parent
         for (Method method : configClass.getMethods()) {
             // skip methods that are used internally by the vm for implementing covariance, etc
-            if (method.isSynthetic() || method.isBridge() || Modifier.isStatic(method.getModifiers()) || method.getDeclaringClass().equals(Object.class)) {
+            if (!isUsableMethod(method)) {
                 continue;
             }
 
