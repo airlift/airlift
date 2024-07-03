@@ -26,6 +26,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -678,14 +679,11 @@ public class ConfigurationMetadata<T>
             return null;
         }
 
-        try {
-            Method method = configClass.getDeclaredMethod(methodName, paramTypes);
-            if (method != null && method.isAnnotationPresent(annotation)) {
+        Method[] configClassMethods = configClass.getDeclaredMethods();
+        for (Method method : configClassMethods) {
+            if (method.getName().equals(methodName) && Arrays.equals(method.getParameterTypes(), paramTypes) && method.isAnnotationPresent(annotation)) {
                 return method;
             }
-        }
-        catch (NoSuchMethodException e) {
-            // ignore
         }
 
         if (configClass.getSuperclass() != null) {

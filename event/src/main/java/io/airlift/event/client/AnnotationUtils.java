@@ -19,6 +19,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 
 final class AnnotationUtils
@@ -58,14 +59,15 @@ final class AnnotationUtils
 
     private static Method findAnnotatedMethod(Class<?> clazz, Class<? extends Annotation> annotation, String methodName, Class<?>... paramTypes)
     {
-        try {
-            Method method = clazz.getDeclaredMethod(methodName, paramTypes);
-            if (method.isAnnotationPresent(annotation)) {
+        if (clazz.equals(Object.class)) {
+            return null;
+        }
+
+        Method[] configClassMethods = clazz.getDeclaredMethods();
+        for (Method method : configClassMethods) {
+            if (method.getName().equals(methodName) && Arrays.equals(method.getParameterTypes(), paramTypes) && method.isAnnotationPresent(annotation)) {
                 return method;
             }
-        }
-        catch (NoSuchMethodException e) {
-            // ignore
         }
 
         if (clazz.getSuperclass() != null) {
