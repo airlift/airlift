@@ -49,6 +49,7 @@ import org.hibernate.validator.HibernateValidator;
 import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Executable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -706,28 +707,27 @@ public class ConfigurationFactory
         }
 
         // Look for a constructor taking a string
-        try {
-            Constructor<?> constructor = type.getRawType().getConstructor(String.class);
-            try {
-                return constructor.newInstance(value);
+        for (Constructor<?> constructor : type.getRawType().getConstructors()) {
+            if (acceptsSingleStringParameter(constructor)) {
+                try {
+                    return constructor.newInstance(value);
+                }
+                catch (ReflectiveOperationException e) {
+                    return null;
+                }
             }
-            catch (ReflectiveOperationException e) {
-                return null;
-            }
-        }
-        catch (NoSuchMethodException ignored) {
         }
 
         return null;
     }
 
-    private static boolean acceptsSingleStringParameter(Method method)
+    private static boolean acceptsSingleStringParameter(Executable executable)
     {
-        if (method.getParameters().length != 1) {
+        if (executable.getParameterCount() != 1) {
             return false;
         }
 
-        return method.getParameters()[0].getType() == String.class;
+        return executable.getParameters()[0].getType() == String.class;
     }
 
     private static class ConfigurationHolder<T>
