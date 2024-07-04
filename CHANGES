@@ -2,6 +2,7 @@
 
 - Remove JmxInspector
 - Deprecate CacheStatsMBean
+- Update Jetty to 12.0.11
 
 249
 
