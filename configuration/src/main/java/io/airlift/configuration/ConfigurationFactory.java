@@ -67,11 +67,13 @@ import static com.google.common.base.CaseFormat.LOWER_CAMEL;
 import static com.google.common.base.CaseFormat.UPPER_CAMEL;
 import static com.google.common.base.Verify.verify;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.common.collect.Sets.newConcurrentHashSet;
 import static io.airlift.configuration.ConfigurationMetadata.getConfigurationMetadata;
 import static io.airlift.configuration.Problems.exceptionFor;
 import static java.lang.String.format;
+import static java.util.Arrays.stream;
 import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
 
@@ -630,10 +632,15 @@ public class ConfigurationFactory
             return null;
         }
 
-        // Look for a static fromString(String) method. This is used in preference
+        Map<String, Method> stringAcceptingMethods = stream(type.getRawType().getMethods())
+                .filter(ConfigurationFactory::acceptsSingleStringParameter)
+                .map(method -> Map.entry(method.getName(), method))
+                .collect(toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        // Look for a static fromString(String) methods. This is used in preference
         // to the built-in valueOf() method for enums.
-        try {
-            Method fromString = type.getRawType().getMethod("fromString", String.class);
+        Method fromString = stringAcceptingMethods.get("fromString");
+        if (fromString != null) {
             if (type.isSubtypeOf(fromString.getGenericReturnType())) {
                 try {
                     return fromString.invoke(null, value);
@@ -642,8 +649,6 @@ public class ConfigurationFactory
                     return null;
                 }
             }
-        }
-        catch (NoSuchMethodException ignored) {
         }
 
         if (type.isSubtypeOf(TypeToken.of(Enum.class))) {
@@ -688,8 +693,8 @@ public class ConfigurationFactory
         }
 
         // Look for a static valueOf(String) method
-        try {
-            Method valueOf = type.getRawType().getMethod("valueOf", String.class);
+        Method valueOf = stringAcceptingMethods.get("valueOf");
+        if (valueOf != null) {
             if (type.isSubtypeOf(valueOf.getGenericReturnType())) {
                 try {
                     return valueOf.invoke(null, value);
@@ -698,8 +703,6 @@ public class ConfigurationFactory
                     return null;
                 }
             }
-        }
-        catch (NoSuchMethodException ignored) {
         }
 
         // Look for a constructor taking a string
@@ -716,6 +719,15 @@ public class ConfigurationFactory
         }
 
         return null;
+    }
+
+    private static boolean acceptsSingleStringParameter(Method method)
+    {
+        if (method.getParameters().length != 1) {
+            return false;
+        }
+
+        return method.getParameters()[0].getType() == String.class;
     }
 
     private static class ConfigurationHolder<T>
