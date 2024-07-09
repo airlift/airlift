@@ -18,8 +18,9 @@ package io.airlift.configuration;
 import com.google.common.base.Joiner;
 import com.google.inject.spi.Message;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -27,8 +28,8 @@ import static org.assertj.core.api.Assertions.fail;
 class TestMonitor
         implements Problems.Monitor
 {
-    private final List<Message> errors = new ArrayList<>();
-    private final List<Message> warnings = new ArrayList<>();
+    private final Set<Message> errors = new LinkedHashSet<>();
+    private final Set<Message> warnings = new LinkedHashSet<>();
 
     @Override
     public void onError(Message error)
@@ -42,12 +43,12 @@ class TestMonitor
         warnings.add(warning);
     }
 
-    public List<Message> getErrors()
+    public Collection<Message> getErrors()
     {
         return errors;
     }
 
-    public List<Message> getWarnings()
+    public Collection<Message> getWarnings()
     {
         return warnings;
     }
@@ -108,7 +109,7 @@ class TestMonitor
         return messageListAsString(warnings);
     }
 
-    private static String messageListAsString(List<Message> list)
+    private static String messageListAsString(Collection<Message> list)
     {
         StringBuilder builder = new StringBuilder();
         for (Message message : list) {
