@@ -84,6 +84,8 @@ public class ConfigurationFactory
     private static final Validator VALIDATOR;
 
     private static final Splitter VALUE_SPLITTER = Splitter.on(",").omitEmptyStrings().trimResults();
+    private static final LoadingCache<Class<?>, ConfigurationMetadata<?>> METADATA_CACHE = CacheBuilder.newBuilder()
+            .build(CacheLoader.from(ConfigurationMetadata::getConfigurationMetadata));
 
     static {
         ClassLoader currentClassLoader = Thread.currentThread().getContextClassLoader();
@@ -105,6 +107,7 @@ public class ConfigurationFactory
 
     private final Map<String, String> properties;
     private final WarningsMonitor warningsMonitor;
+    // Used only for testing purposes, NULL_MONITOR is default implementation
     private final Problems.Monitor monitor;
     private final ConcurrentMap<ConfigurationProvider<?>, Object> instanceCache = new ConcurrentHashMap<>();
     private final Set<String> usedProperties = newConcurrentHashSet();
@@ -112,15 +115,6 @@ public class ConfigurationFactory
     @GuardedBy("this")
     private final List<Consumer<ConfigurationProvider<?>>> configurationBindingListeners = new ArrayList<>();
     private final ListMultimap<Key<?>, ConfigDefaultsHolder<?>> registeredDefaultConfigs = Multimaps.synchronizedListMultimap(ArrayListMultimap.create());
-    private final LoadingCache<Class<?>, ConfigurationMetadata<?>> metadataCache = CacheBuilder.newBuilder()
-            .build(new CacheLoader<Class<?>, ConfigurationMetadata<?>>()
-            {
-                @Override
-                public ConfigurationMetadata<?> load(Class<?> configClass)
-                {
-                    return getConfigurationMetadata(configClass, monitor);
-                }
-            });
 
     public ConfigurationFactory(Map<String, String> properties)
     {
@@ -391,15 +385,15 @@ public class ConfigurationFactory
         String prefix = configPrefix
                 .map(value -> value + ".")
                 .orElse("");
+        Problems problems = new Problems(monitor);
 
         ConfigurationMetadata<T> configurationMetadata = getMetadata(configClass);
-        configurationMetadata.getProblems().throwIfHasErrors();
+        problems.record(configurationMetadata.getProblems());
+        problems.throwIfHasErrors();
 
         T instance = newInstance(configurationMetadata);
 
         configDefaults.setDefaults(instance);
-
-        Problems problems = new Problems(monitor);
 
         for (AttributeMetadata attribute : configurationMetadata.getAttributes().values()) {
             Problems attributeProblems = new Problems(monitor);
@@ -443,7 +437,6 @@ public class ConfigurationFactory
                         prefix, violation.getMessage(), configClass.getName(), violation.getPropertyPath());
             }
         }
-
         problems.throwIfHasErrors();
 
         return new ConfigurationHolder<>(instance, problems);
@@ -465,7 +458,7 @@ public class ConfigurationFactory
     @SuppressWarnings("unchecked")
     private <T> ConfigurationMetadata<T> getMetadata(Class<T> configClass)
     {
-        return (ConfigurationMetadata<T>) metadataCache.getUnchecked(configClass);
+        return (ConfigurationMetadata<T>) METADATA_CACHE.getUnchecked(configClass);
     }
 
     private static <T> T newInstance(ConfigurationMetadata<T> configurationMetadata)

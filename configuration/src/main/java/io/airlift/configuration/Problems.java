@@ -83,7 +83,9 @@ class Problems
     {
         checkArgument(problems != this, "Can not add problems to itself");
         errors.addAll(problems.errors);
+        problems.errors.forEach(monitor::onError);
         warnings.addAll(problems.warnings);
+        problems.warnings.forEach(monitor::onWarning);
     }
 
     public void addError(String format, Object... params)
