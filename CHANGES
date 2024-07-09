@@ -1,3 +1,7 @@
+252
+
+- Add support for response streaming to http client
+
 251
 
 - Update jjwt to 0.12.6

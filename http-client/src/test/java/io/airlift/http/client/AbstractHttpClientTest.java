@@ -4,11 +4,15 @@ import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multiset;
+import com.google.common.io.ByteStreams;
 import io.airlift.http.client.HttpClient.HttpResponseFuture;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.units.Duration;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpResponseException;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.junit.jupiter.api.Disabled;
@@ -16,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.parallel.Execution;
 
+import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -60,7 +65,6 @@ import static io.airlift.http.client.Request.Builder.prepareDelete;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.Request.Builder.preparePost;
 import static io.airlift.http.client.Request.Builder.preparePut;
-import static io.airlift.http.client.ResponseHandlerUtils.propagate;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static io.airlift.http.client.StreamingBodyGenerator.streamingBodyGenerator;
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
@@ -72,7 +76,6 @@ import static java.lang.String.format;
 import static java.lang.Thread.currentThread;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -100,6 +103,9 @@ public abstract class AbstractHttpClientTest
     }
 
     protected abstract HttpClientConfig createClientConfig();
+
+    public abstract Optional<StreamingResponse> executeRequest(CloseableTestHttpServer server, Request request)
+            throws Exception;
 
     public abstract <T, E extends Exception> T executeRequest(CloseableTestHttpServer server, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception;
@@ -603,6 +609,29 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
+    public void testExecuteStreaming()
+            throws Exception
+    {
+        try (CloseableTestHttpServer server = newServer()) {
+            server.servlet().setResponseBody(LARGE_CONTENT);
+
+            Request request = prepareGet()
+                    .setUri(server.baseURI())
+                    .build();
+
+            executeRequest(server, request).ifPresent(streamingResponse -> {
+                try (streamingResponse) {
+                    String responseString = new String(streamingResponse.getInputStream().readAllBytes(), UTF_8);
+                    assertThat(responseString).isEqualTo(LARGE_CONTENT);
+                }
+                catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            });
+        }
+    }
+
+    @Test
     public void testRequestHeaders()
             throws Exception
     {
@@ -877,104 +906,85 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
-    public void testPutMethodWithLargeStreamingBodyGenerator()
+    public void testPipedLargeContent()
             throws Exception
     {
-        testPutMethodWithStreamingBodyGenerator(true);
+        testPiped(true);
     }
 
     @Test
-    public void testPutMethodWithStreamingBodyGenerator()
+    public void testPipedSmallContent()
             throws Exception
     {
-        testPutMethodWithStreamingBodyGenerator(false);
+        testPiped(false);
     }
 
-    protected void testPutMethodWithStreamingBodyGenerator(boolean largeContent)
+    protected void testPiped(boolean largeContent)
             throws Exception
     {
         String content = largeContent ? LARGE_CONTENT : "hello".repeat(1000);
 
-        try (CloseableTestHttpServer server = newServer()) {
-            URI uri = server.baseURI().resolve("/road/to/nowhere");
-            server.servlet().setResponseBody(content);
+        var locals = new Object()
+        {
+            String putContent;
+            CloseableTestHttpServer server;
+        };
 
-            ResponseHandler<Void, RuntimeException> responseHandler = new ResponseHandler<>()
+        try (JettyHttpClient httpClient = new JettyHttpClient("streaming-test", createClientConfig())) {
+            HttpServlet pipeServlet = new HttpServlet()
             {
                 @Override
-                public Void handleException(Request request, Exception exception)
-                        throws RuntimeException
+                protected void service(HttpServletRequest request, HttpServletResponse response)
+                        throws IOException
                 {
-                    throw propagate(request, exception);
-                }
+                    switch (request.getPathInfo()) {
+                        case "/get" -> {
+                            response.setIntHeader("Content-Length", content.length());
+                            response.setStatus(200);
+                            ByteStreams.copy(new ByteArrayInputStream(content.getBytes(UTF_8)), response.getOutputStream());
+                        }
 
-                @Override
-                public Void handle(Request request, Response response)
-                        throws RuntimeException
-                {
-                    try {
-                        InputStream inputStream = response.getInputStream();
-                        Request streamingRequest = preparePut()
-                                .setUri(uri)
-                                .addHeader(CONTENT_LENGTH, Integer.toString(content.length()))
-                                .addHeader(CONTENT_TYPE, "x-test")
-                                .setBodyGenerator(streamingBodyGenerator(inputStream))
-                                .build();
+                        case "/pipe" -> {
+                            // pipe test is here:
+                            // execute a request to get content and then use the input stream as an argument
+                            // to stream another put request
 
-                        ResponseHandler<Integer, RuntimeException> testResponseHandler = new ResponseHandler<>()
-                        {
-                            @Override
-                            public Integer handleException(Request request, Exception exception)
-                                    throws RuntimeException
-                            {
-                                throw propagate(request, exception);
-                            }
-
-                            @SuppressWarnings("StatementWithEmptyBody")
-                            @Override
-                            public Integer handle(Request request, Response response)
-                                    throws RuntimeException
-                            {
+                            Request pipeRequest = prepareGet()
+                                    .setUri(locals.server.baseURI().resolve("get"))
+                                    .build();
+                            try (StreamingResponse streamingResponse = httpClient.executeStreaming(pipeRequest)) {
+                                Request putRequest = preparePut()
+                                        .setUri(locals.server.baseURI().resolve("put"))
+                                        .setBodyGenerator(streamingBodyGenerator(streamingResponse.getInputStream()))
+                                        .build();
                                 try {
-                                    InputStream in = response.getInputStream();
-                                    while (in.read() >= 0) {
-                                        // do nothing
-                                    }
+                                    executeRequest(locals.server, putRequest, createStatusResponseHandler());
                                 }
-                                catch (IOException e) {
-                                    throw new UncheckedIOException(e);
+                                catch (Exception e) {
+                                    throw new RuntimeException(e);
                                 }
-                                return response.getStatusCode();
                             }
-                        };
+                            response.setStatus(204);
+                        }
 
-                        int statusCode = executeRequest(server, streamingRequest, testResponseHandler);
-                        assertThat(statusCode).isEqualTo(200);
-                        assertThat(server.servlet().getRequestMethod()).isEqualTo("PUT");
-                        assertThat(server.servlet().getRequestUri()).isEqualTo(uri);
-                        assertThat(server.servlet().getRequestHeaders(CONTENT_TYPE)).isEqualTo(ImmutableList.of("x-test"));
-                        assertThat(server.servlet().getRequestBytes()).isEqualTo(content.getBytes());
-                    }
-                    catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
+                        case "/put" -> {
+                            // save the PUT content into a local for validation after the test
+                            locals.putContent = new String(ByteStreams.toByteArray(request.getInputStream()), UTF_8);
+                            response.setStatus(204);
+                        }
 
-                    return null;
+                        default -> response.setStatus(500);
+                    }
                 }
             };
 
-            try (JettyHttpClient httpClient = new JettyHttpClient("streaming-test", createClientConfig())) {
-                Request request = preparePut()
-                        .setUri(uri)
-                        .addHeader(CONTENT_TYPE, "x-test")
-                        .addHeader(CONTENT_LENGTH, Integer.toString(content.length()))
-                        .setBodyGenerator(new StaticBodyGenerator(content.getBytes(UTF_8)))
-                        .build();
+            try (CloseableTestHttpServer server = new CloseableTestHttpServer(getScheme(), new TestingHttpServer(keystore, pipeServlet), HashMultiset.create(), new EchoServlet())) {
+                locals.server = server;
 
-                try (ExecutorService executorService = newVirtualThreadPerTaskExecutor()) {
-                    // processing the large content takes time
-                    executorService.submit(() -> httpClient.execute(request, responseHandler)).get(30, SECONDS);
-                }
+                Request request = preparePut().setUri(locals.server.baseURI().resolve("pipe")).build();
+                executeRequest(server, request, createStatusResponseHandler());
+
+                assertThat(locals.putContent).isEqualTo(content);
             }
         }
     }

@@ -9,6 +9,7 @@ import io.airlift.http.client.Request;
 import io.airlift.http.client.RequestStats;
 import io.airlift.http.client.Response;
 import io.airlift.http.client.ResponseHandler;
+import io.airlift.http.client.StreamingResponse;
 import io.airlift.units.Duration;
 
 import java.util.concurrent.ExecutorService;
@@ -62,6 +63,12 @@ public class TestingHttpClient
         requireNonNull(responseHandler, "responseHandler is null");
         checkState(!closed.get(), "client is closed");
         return execute(request, responseHandler, new AtomicReference<>("SENDING_REQUEST"));
+    }
+
+    @Override
+    public StreamingResponse executeStreaming(Request request)
+    {
+        throw new UnsupportedOperationException();
     }
 
     private <T, E extends Exception> T execute(Request request, ResponseHandler<T, E> responseHandler, AtomicReference<String> state)

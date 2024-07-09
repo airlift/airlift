@@ -18,11 +18,13 @@ import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.Response;
 import io.airlift.http.client.ResponseHandler;
+import io.airlift.http.client.StreamingResponse;
 import io.airlift.http.client.TestingHttpProxy;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 import java.io.IOException;
+import java.util.Optional;
 
 import static io.airlift.http.client.HttpStatus.BAD_GATEWAY;
 import static io.airlift.http.client.HttpStatus.BAD_REQUEST;
@@ -55,6 +57,21 @@ public abstract class AbstractHttpClientTestHttpProxy
         // succeeds immediately, but the proxy's connection to the destination server will
         // time out. Therefore, we use the idle time as the expected timeout for proxy tests.
         doTestConnectTimeout(true);
+    }
+
+    @Override
+    public Optional<StreamingResponse> executeRequest(CloseableTestHttpServer server, Request request)
+            throws Exception
+    {
+        HttpClientConfig config = createClientConfig();
+        TestingHttpProxy testingHttpProxy = new TestingHttpProxy(keystore);
+        JettyHttpClient client = server.createClient(config.setHttpProxy(testingHttpProxy.getHostAndPort()));
+
+        TestingStreamingResponse streamingResponse = new TestingStreamingResponse(() -> client.executeStreaming(request), testingHttpProxy, client);
+        if ((streamingResponse.getStatusCode() == BAD_GATEWAY.code()) || (streamingResponse.getStatusCode() == BAD_REQUEST.code())) {
+            throw new IOException();
+        }
+        return Optional.of(streamingResponse);
     }
 
     @Override
