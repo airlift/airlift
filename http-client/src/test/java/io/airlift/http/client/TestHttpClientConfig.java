@@ -25,6 +25,9 @@ import jakarta.validation.constraints.NotNull;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +52,7 @@ public class TestHttpClientConfig
         ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(HttpClientConfig.class)
                 .setVerifyHostname(true)
                 .setHttp2Enabled(false)
+                .setHttp3Enabled(false)
                 .setConnectTimeout(new Duration(5, SECONDS))
                 .setRequestTimeout(new Duration(5, MINUTES))
                 .setIdleTimeout(new Duration(1, MINUTES))
@@ -71,6 +75,7 @@ public class TestHttpClientConfig
                 .setHttp2InitialSessionReceiveWindowSize(DataSize.of(16, MEGABYTE))
                 .setHttp2InitialStreamReceiveWindowSize(DataSize.of(16, MEGABYTE))
                 .setHttp2InputBufferSize(DataSize.of(8, KILOBYTE))
+                .setHttp3PemPath(null)
                 .setSelectorCount(2)
                 .setRecordRequestComplete(true)
                 .setConnectBlocking(false)
@@ -91,10 +96,14 @@ public class TestHttpClientConfig
 
     @Test
     public void testExplicitPropertyMappings()
+            throws IOException
     {
+        Path tempDirectory = Files.createTempDirectory("pems");
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("http-client.https.hostname-verification", "false")
                 .put("http-client.http2.enabled", "true")
+                .put("http-client.http3.enabled", "true")
+                .put("http-client.http3.pem-path", tempDirectory.toString())
                 .put("http-client.connect-timeout", "4s")
                 .put("http-client.request-timeout", "15s")
                 .put("http-client.idle-timeout", "5s")
@@ -138,6 +147,8 @@ public class TestHttpClientConfig
         HttpClientConfig expected = new HttpClientConfig()
                 .setVerifyHostname(false)
                 .setHttp2Enabled(true)
+                .setHttp3Enabled(true)
+                .setHttp3PemPath(tempDirectory.toString())
                 .setConnectTimeout(new Duration(4, SECONDS))
                 .setRequestTimeout(new Duration(15, SECONDS))
                 .setIdleTimeout(new Duration(5, SECONDS))

@@ -18,12 +18,17 @@ package io.airlift.http.server;
 import io.airlift.configuration.Config;
 import io.airlift.configuration.ConfigDescription;
 import io.airlift.configuration.DefunctConfig;
+import io.airlift.configuration.validation.FileExists;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 import io.airlift.units.MaxDataSize;
 import io.airlift.units.MinDataSize;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Optional;
 
 import static io.airlift.units.DataSize.Unit.KILOBYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
@@ -54,6 +59,7 @@ public class HttpServerConfig
     private int httpAcceptQueueSize = 8000;
 
     private boolean httpsEnabled;
+    private boolean http3Enabled;
 
     private String logPath = "var/log/http-request.log";
     private boolean logEnabled = true;
@@ -89,6 +95,7 @@ public class HttpServerConfig
     private int adminMaxThreads = 200;
 
     private boolean showStackTrace = true;
+    private Optional<Path> http3PemPath = Optional.empty();
 
     public boolean isHttpEnabled()
     {
@@ -493,6 +500,32 @@ public class HttpServerConfig
     public HttpServerConfig setHttp2StreamIdleTimeout(Duration http2StreamIdleTimeout)
     {
         this.http2StreamIdleTimeout = http2StreamIdleTimeout;
+        return this;
+    }
+
+    public boolean isHttp3Enabled()
+    {
+        return http3Enabled;
+    }
+
+    @Config("http-server.http3.enabled")
+    public HttpServerConfig setHttp3Enabled(boolean http3Enabled)
+    {
+        this.http3Enabled = http3Enabled;
+        return this;
+    }
+
+    public Optional<@FileExists Path> getHttp3PemPath()
+    {
+        return http3PemPath;
+    }
+
+    @Config("http-server.http3.pem-path")
+    @ConfigDescription("Path that will be used to export PEM certificates to use for HTTP/3")
+    public HttpServerConfig setHttp3PemPath(String http3PemPath)
+    {
+        this.http3PemPath = Optional.ofNullable(http3PemPath)
+                .map(Paths::get);
         return this;
     }
 }
