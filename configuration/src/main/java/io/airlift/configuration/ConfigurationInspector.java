@@ -177,6 +177,7 @@ public class ConfigurationInspector
         private final String defaultValue;
         private final String currentValue;
         private final String description;
+        private final boolean securitySensitive;
 
         // todo this class needs to be updated to include the concept of deprecated property names
 
@@ -190,19 +191,20 @@ public class ConfigurationInspector
 
             this.attributeName = attributeName;
             this.propertyName = propertyName;
-            if (securitySensitive && defaultValue != null) {
+            if (securitySensitive) {
                 this.defaultValue = "[REDACTED]";
             }
             else {
                 this.defaultValue = defaultValue;
             }
-            if (securitySensitive && currentValue != null) {
+            if (securitySensitive) {
                 this.currentValue = "[REDACTED]";
             }
             else {
                 this.currentValue = currentValue;
             }
             this.description = description;
+            this.securitySensitive = securitySensitive;
         }
 
         public String getAttributeName()
@@ -228,6 +230,11 @@ public class ConfigurationInspector
         public String getDescription()
         {
             return description;
+        }
+
+        public boolean isSecuritySensitive()
+        {
+            return securitySensitive;
         }
 
         @Override
