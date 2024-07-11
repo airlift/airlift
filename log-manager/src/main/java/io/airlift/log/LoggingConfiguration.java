@@ -42,6 +42,7 @@ public class LoggingConfiguration
     private String levelsFile;
     private String logAnnotationFile;
     private Format format = Format.TEXT;
+    private Format consoleFormat = Format.TEXT;
 
     public boolean isConsoleEnabled()
     {
@@ -145,6 +146,18 @@ public class LoggingConfiguration
     public LoggingConfiguration setLogAnnotationFile(String logAnnotationFile)
     {
         this.logAnnotationFile = logAnnotationFile;
+        return this;
+    }
+
+    public Format getConsoleFormat()
+    {
+        return consoleFormat;
+    }
+
+    @Config("log.console-format")
+    public LoggingConfiguration setConsoleFormat(Format format)
+    {
+        this.consoleFormat = format;
         return this;
     }
 }
