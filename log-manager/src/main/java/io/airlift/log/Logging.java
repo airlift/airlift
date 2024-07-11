@@ -27,6 +27,8 @@ import io.airlift.units.DataSize;
 import org.weakref.jmx.MBeanExport;
 import org.weakref.jmx.MBeanExporter;
 
+import java.io.FileDescriptor;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
@@ -134,6 +136,12 @@ public class Logging
                 directExecutor());
     }
 
+    private static void resetStdStreams()
+    {
+        System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out), true));
+        System.setErr(new PrintStream(new FileOutputStream(FileDescriptor.err), true));
+    }
+
     private static void redirectStdStreams()
     {
         System.setOut(new PrintStream(new LoggingOutputStream(Logger.get("stdout")), true));
@@ -142,7 +150,12 @@ public class Logging
 
     private synchronized void enableConsole()
     {
-        consoleHandler = new OutputStreamHandler(System.err);
+        enableConsole(new StaticFormatter());
+    }
+
+    private synchronized void enableConsole(Formatter formatter)
+    {
+        consoleHandler = new OutputStreamHandler(System.err, formatter);
         ROOT.addHandler(consoleHandler);
     }
 
@@ -278,6 +291,13 @@ public class Logging
 
         if (!config.isConsoleEnabled()) {
             disableConsole();
+        }
+        else {
+            // reinitialize console handler with provided configs and redirect standard streams to a reconfigured logger
+            resetStdStreams();
+            disableConsole();
+            enableConsole(config.getConsoleFormat().createFormatter(logAnnotations));
+            redirectStdStreams();
         }
 
         if (config.getLevelsFile() != null) {
