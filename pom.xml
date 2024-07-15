@@ -60,6 +60,7 @@
         <module>openmetrics</module>
         <module>packaging</module>
         <module>sample-server</module>
+        <module>secrets-spi</module>
         <module>security</module>
         <module>security-jwks</module>
 
@@ -253,6 +254,12 @@
             <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>packaging</artifactId>
+                <version>${dep.airlift.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>secrets-spi</artifactId>
                 <version>${dep.airlift.version}</version>
             </dependency>
 

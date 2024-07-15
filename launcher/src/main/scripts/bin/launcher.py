@@ -170,7 +170,7 @@ def create_symlink(source, target):
 
 def create_app_symlinks(options):
     """
-    Symlink the 'etc' and 'plugin' directories into the data directory.
+    Symlink the 'etc', 'plugin' and 'secrets-plugin' directories into the data directory.
 
     This is needed to support programs that reference 'etc/xyz' from within
     their config files: log.levels-file=etc/log.properties
@@ -184,6 +184,9 @@ def create_app_symlinks(options):
         create_symlink(
             pathjoin(options.install_path, 'plugin'),
             pathjoin(options.data_dir, 'plugin'))
+        create_symlink(
+             pathjoin(options.install_path, 'secrets-plugin'),
+             pathjoin(options.data_dir, 'secrets-plugin'))
 
 
 def build_java_execution(options, daemon):
@@ -216,6 +219,9 @@ def build_java_execution(options, daemon):
         raise Exception("Launcher config is missing 'main-class' property")
 
     properties['config'] = options.config_path
+
+    if exists(options.secrets_config_path):
+        properties['secretsConfig'] = options.secrets_config_path
 
     system_properties = ['-D%s=%s' % i for i in properties.items()]
     classpath = pathjoin(options.install_path, 'lib', '*')
@@ -370,6 +376,7 @@ def create_parser():
     parser.add_option('--node-config', metavar='FILE', help='Defaults to ETC_DIR/node.properties')
     parser.add_option('--jvm-config', metavar='FILE', help='Defaults to ETC_DIR/jvm.config')
     parser.add_option('--config', metavar='FILE', help='Defaults to ETC_DIR/config.properties')
+    parser.add_option('--secrets-config', metavar='FILE', help='Defaults to ETC_DIR/secrets.toml')
     parser.add_option('--log-levels-file', metavar='FILE', help='Defaults to ETC_DIR/log.properties')
     parser.add_option('--data-dir', metavar='DIR', help='Defaults to INSTALL_PATH')
     parser.add_option('--pid-file', metavar='FILE', help='Defaults to DATA_DIR/var/run/launcher.pid')
@@ -436,6 +443,7 @@ def main():
     o.node_config = realpath(options.node_config or pathjoin(o.etc_dir, 'node.properties'))
     o.jvm_config = realpath(options.jvm_config or pathjoin(o.etc_dir, 'jvm.config'))
     o.config_path = realpath(options.config or pathjoin(o.etc_dir, 'config.properties'))
+    o.secrets_config_path = realpath(options.secrets_config or pathjoin(o.etc_dir, 'secrets.toml'))
     o.log_levels = realpath(options.log_levels_file or pathjoin(o.etc_dir, 'log.properties'))
     o.log_levels_set = bool(options.log_levels_file)
     o.jvm_options = options.jvm_options or []
