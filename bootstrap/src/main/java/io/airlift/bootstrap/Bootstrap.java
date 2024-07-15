@@ -17,6 +17,7 @@ package io.airlift.bootstrap;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.inject.Binder;
 import com.google.inject.Guice;
@@ -30,10 +31,14 @@ import io.airlift.configuration.ConfigurationInspector.ConfigAttribute;
 import io.airlift.configuration.ConfigurationInspector.ConfigRecord;
 import io.airlift.configuration.ConfigurationModule;
 import io.airlift.configuration.WarningsMonitor;
+import io.airlift.configuration.secrets.SecretsPluginManager;
+import io.airlift.configuration.secrets.SecretsResolver;
+import io.airlift.configuration.secrets.env.EnvironmentVariableSecretProvider;
 import io.airlift.log.Logger;
 import io.airlift.log.Logging;
 import io.airlift.log.LoggingConfiguration;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
@@ -47,7 +52,7 @@ import java.util.TreeMap;
 import static com.google.common.base.Preconditions.checkState;
 import static io.airlift.configuration.ConfigurationLoader.getSystemProperties;
 import static io.airlift.configuration.ConfigurationLoader.loadPropertiesFrom;
-import static io.airlift.configuration.ConfigurationUtils.replaceEnvironmentVariables;
+import static io.airlift.configuration.TomlConfiguration.createTomlConfiguration;
 import static java.lang.String.format;
 
 /**
@@ -72,9 +77,11 @@ public class Bootstrap
     private Map<String, String> optionalConfigurationProperties;
     private boolean initializeLogging = true;
     private boolean quiet;
+    private boolean loadSecretsPlugins;
 
     private State state = State.UNINITIALIZED;
     private ConfigurationFactory configurationFactory;
+    private SecretsResolver secretsResolver;
 
     public Bootstrap(Module... modules)
     {
@@ -134,6 +141,12 @@ public class Bootstrap
         return this;
     }
 
+    public Bootstrap loadSecretsPlugins()
+    {
+        this.loadSecretsPlugins = true;
+        return this;
+    }
+
     /**
      * Validate configuration and return used properties.
      */
@@ -145,6 +158,19 @@ public class Bootstrap
         Logging logging = null;
         if (initializeLogging) {
             logging = Logging.initialize();
+        }
+
+        this.secretsResolver = new SecretsResolver(ImmutableMap.of("env", new EnvironmentVariableSecretProvider()));
+
+        if (loadSecretsPlugins) {
+            log.info("Loading secrets plugins");
+            String secretsConfigFile = System.getProperty("secretsConfig");
+            if (secretsConfigFile != null) {
+                SecretsPluginManager secretsPluginManager = new SecretsPluginManager(createTomlConfiguration(new File(secretsConfigFile)));
+                secretsPluginManager.installPlugins();
+                secretsPluginManager.load();
+                this.secretsResolver = secretsPluginManager.getSecretsResolver();
+            }
         }
 
         Map<String, String> requiredProperties;
@@ -176,15 +202,12 @@ public class Bootstrap
         properties.putAll(requiredProperties);
         properties.putAll(getSystemProperties());
 
-        // replace environment variables in property values
+        // replace secrets in property values
         List<Message> errors = new ArrayList<>();
-        properties = replaceEnvironmentVariables(properties, System.getenv(), (key, error) -> {
+        properties = ImmutableSortedMap.copyOf(secretsResolver.getResolvedConfiguration(properties, (key, error) -> {
             unusedProperties.remove(key);
-            errors.add(new Message(error));
-        });
-
-        // create configuration factory
-        properties = ImmutableSortedMap.copyOf(properties);
+            errors.add(new Message(error.getMessage()));
+        }));
 
         List<Message> warnings = new ArrayList<>();
         configurationFactory = new ConfigurationFactory(properties, warning -> warnings.add(new Message(warning)));
@@ -258,6 +281,7 @@ public class Bootstrap
         moduleList.add(Binder::requireExplicitBindings);
         moduleList.add(Binder::requireExactBindingAnnotations);
 
+        moduleList.add(binder -> binder.bind(SecretsResolver.class).toInstance(secretsResolver));
         moduleList.addAll(modules);
 
         // create the injector
