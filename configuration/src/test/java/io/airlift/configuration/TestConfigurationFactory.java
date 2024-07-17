@@ -29,6 +29,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -65,11 +66,10 @@ public class TestConfigurationFactory
         Map<String, String> properties = new TreeMap<>();
         properties.put("string-value", "some value");
         properties.put("boolean-value", "true");
-        TestMonitor monitor = new TestMonitor();
-        Injector injector = createInjector(properties, monitor, binder -> configBinder(binder).bindConfig(AnnotatedSetter.class));
+        TestingWarningsMonitor warningsMonitor = new TestingWarningsMonitor();
+        Injector injector = createInjector(properties, binder -> configBinder(binder).bindConfig(AnnotatedSetter.class), warningsMonitor);
         AnnotatedSetter annotatedSetter = injector.getInstance(AnnotatedSetter.class);
-        monitor.assertNumberOfErrors(0);
-        monitor.assertNumberOfWarnings(0);
+        assertThat(warningsMonitor.messages()).isEmpty();
         assertThat(annotatedSetter).isNotNull();
         assertThat(annotatedSetter.getStringValue()).isEqualTo("some value");
         assertThat(annotatedSetter.isBooleanValue()).isTrue();
@@ -81,11 +81,10 @@ public class TestConfigurationFactory
         Map<String, String> properties = new TreeMap<>();
         properties.put("string-a", "this is a");
         properties.put("string-b", "this is b");
-        TestMonitor monitor = new TestMonitor();
-        Injector injector = createInjector(properties, monitor, binder -> configBinder(binder).bindConfig(LegacyConfigPresent.class));
+        TestingWarningsMonitor warningsMonitor = new TestingWarningsMonitor();
+        Injector injector = createInjector(properties, binder -> configBinder(binder).bindConfig(LegacyConfigPresent.class), warningsMonitor);
         LegacyConfigPresent legacyConfigPresent = injector.getInstance(LegacyConfigPresent.class);
-        monitor.assertNumberOfErrors(0);
-        monitor.assertNumberOfWarnings(0);
+        assertThat(warningsMonitor.messages()).isEmpty();
         assertThat(legacyConfigPresent).isNotNull();
         assertThat(legacyConfigPresent.getStringA()).isEqualTo("this is a");
         assertThat(legacyConfigPresent.getStringB()).isEqualTo("this is b");
@@ -97,12 +96,11 @@ public class TestConfigurationFactory
         Map<String, String> properties = new TreeMap<>();
         properties.put("string-value", "this is a");
         properties.put("string-b", "this is b");
-        TestMonitor monitor = new TestMonitor();
-        Injector injector = createInjector(properties, monitor, binder -> configBinder(binder).bindConfig(LegacyConfigPresent.class));
+        TestingWarningsMonitor warningsMonitor = new TestingWarningsMonitor();
+        Injector injector = createInjector(properties, binder -> configBinder(binder).bindConfig(LegacyConfigPresent.class), warningsMonitor);
         LegacyConfigPresent legacyConfigPresent = injector.getInstance(LegacyConfigPresent.class);
-        monitor.assertNumberOfErrors(0);
-        monitor.assertNumberOfWarnings(1);
-        monitor.assertMatchingWarningRecorded("Configuration property 'string-value' has been replaced. Use 'string-a' instead.");
+        assertThat(warningsMonitor.messages()).hasSize(1);
+        assertThat(warningsMonitor.messages()).containsExactly("Configuration property 'string-value' has been replaced. Use 'string-a' instead.");
         assertThat(legacyConfigPresent).isNotNull();
         assertThat(legacyConfigPresent.getStringA()).isEqualTo("this is a");
         assertThat(legacyConfigPresent.getStringB()).isEqualTo("this is b");
@@ -114,12 +112,11 @@ public class TestConfigurationFactory
         Map<String, String> properties = new TreeMap<>();
         properties.put("example.string-value", "this is a");
         properties.put("example.string-b", "this is b");
-        TestMonitor monitor = new TestMonitor();
-        Injector injector = createInjector(properties, monitor, binder -> configBinder(binder).bindConfig(LegacyConfigPresent.class, "example"));
+        TestingWarningsMonitor warningsMonitor = new TestingWarningsMonitor();
+        Injector injector = createInjector(properties, binder -> configBinder(binder).bindConfig(LegacyConfigPresent.class, "example"), warningsMonitor);
         LegacyConfigPresent legacyConfigPresent = injector.getInstance(LegacyConfigPresent.class);
-        monitor.assertNumberOfErrors(0);
-        monitor.assertNumberOfWarnings(1);
-        monitor.assertMatchingWarningRecorded("Configuration property 'example.string-value' has been replaced. Use 'example.string-a' instead.");
+        assertThat(warningsMonitor.messages()).hasSize(1);
+        assertThat(warningsMonitor.messages()).containsExactly("Configuration property 'example.string-value' has been replaced. Use 'example.string-a' instead.");
         assertThat(legacyConfigPresent).isNotNull();
         assertThat(legacyConfigPresent.getStringA()).isEqualTo("this is a");
         assertThat(legacyConfigPresent.getStringB()).isEqualTo("this is b");
@@ -135,8 +132,9 @@ public class TestConfigurationFactory
                         .put("string-b", "this is b")
                         .build(),
                 binder -> configBinder(binder).bindConfig(LegacyConfigPresent.class),
-                ImmutableList.of(".*string-value.* conflicts with property 'string-a' .*"),
-                ImmutableList.of(".*Configuration property 'string-value' has been replaced. Use 'string-a' instead."));
+                ImmutableList.of(
+                        ".*string-value.* conflicts with property 'string-a' .*",
+                        ".*Configuration property 'string-value' has been replaced. Use 'string-a' instead."));
     }
 
     @Test
@@ -149,8 +147,9 @@ public class TestConfigurationFactory
                         .put("string-b", "this is b")
                         .build(),
                 binder -> configBinder(binder).bindConfig(LegacyConfigPresent.class),
-                ImmutableList.of(".*string-value.* conflicts with property 'string-a' .*"),
-                ImmutableList.of(".*Configuration property 'string-value' has been replaced. Use 'string-a' instead."));
+                ImmutableList.of(
+                        ".*string-value.* conflicts with property 'string-a' .*",
+                        ".*Configuration property 'string-value' has been replaced. Use 'string-a' instead."));
     }
 
     @Test
@@ -158,11 +157,10 @@ public class TestConfigurationFactory
     {
         Map<String, String> properties = new TreeMap<>();
         properties.put("string-b", "this is b");
-        TestMonitor monitor = new TestMonitor();
-        Injector injector = createInjector(properties, monitor, binder -> configBinder(binder).bindConfig(DeprecatedConfigPresent.class));
+        TestingWarningsMonitor warningsMonitor = new TestingWarningsMonitor();
+        Injector injector = createInjector(properties, binder -> configBinder(binder).bindConfig(DeprecatedConfigPresent.class), warningsMonitor);
         DeprecatedConfigPresent deprecatedConfigPresent = injector.getInstance(DeprecatedConfigPresent.class);
-        monitor.assertNumberOfErrors(0);
-        monitor.assertNumberOfWarnings(0);
+        assertThat(warningsMonitor.messages()).isEmpty();
         assertThat(deprecatedConfigPresent).isNotNull();
         assertThat(deprecatedConfigPresent.getStringA()).isEqualTo("defaultA");
         assertThat(deprecatedConfigPresent.getStringB()).isEqualTo("this is b");
@@ -174,12 +172,11 @@ public class TestConfigurationFactory
         Map<String, String> properties = new TreeMap<>();
         properties.put("string-a", "this is a");
         properties.put("string-b", "this is b");
-        TestMonitor monitor = new TestMonitor();
-        Injector injector = createInjector(properties, monitor, binder -> configBinder(binder).bindConfig(DeprecatedConfigPresent.class));
+        TestingWarningsMonitor warningsMonitor = new TestingWarningsMonitor();
+        Injector injector = createInjector(properties, binder -> configBinder(binder).bindConfig(DeprecatedConfigPresent.class), warningsMonitor);
         DeprecatedConfigPresent deprecatedConfigPresent = injector.getInstance(DeprecatedConfigPresent.class);
-        monitor.assertNumberOfErrors(0);
-        monitor.assertNumberOfWarnings(1);
-        monitor.assertMatchingWarningRecorded("Configuration property 'string-a' is deprecated and should not be used");
+        assertThat(warningsMonitor.messages()).hasSize(1);
+        assertThat(warningsMonitor.messages()).containsExactly("Configuration property 'string-a' is deprecated and should not be used");
         assertThat(deprecatedConfigPresent).isNotNull();
         assertThat(deprecatedConfigPresent.getStringA()).isEqualTo("this is a");
         assertThat(deprecatedConfigPresent.getStringB()).isEqualTo("this is b");
@@ -191,12 +188,11 @@ public class TestConfigurationFactory
         Map<String, String> properties = new TreeMap<>();
         properties.put("example.string-a", "this is a");
         properties.put("example.string-b", "this is b");
-        TestMonitor monitor = new TestMonitor();
-        Injector injector = createInjector(properties, monitor, binder -> configBinder(binder).bindConfig(DeprecatedConfigPresent.class, "example"));
+        TestingWarningsMonitor warningsMonitor = new TestingWarningsMonitor();
+        Injector injector = createInjector(properties, binder -> configBinder(binder).bindConfig(DeprecatedConfigPresent.class, "example"), warningsMonitor);
         DeprecatedConfigPresent deprecatedConfigPresent = injector.getInstance(DeprecatedConfigPresent.class);
-        monitor.assertNumberOfErrors(0);
-        monitor.assertNumberOfWarnings(1);
-        monitor.assertMatchingWarningRecorded("Configuration property 'example.string-a' is deprecated and should not be used");
+        assertThat(warningsMonitor.messages()).hasSize(1);
+        assertThat(warningsMonitor.messages()).containsExactly("Configuration property 'example.string-a' is deprecated and should not be used");
         assertThat(deprecatedConfigPresent).isNotNull();
         assertThat(deprecatedConfigPresent.getStringA()).isEqualTo("this is a");
         assertThat(deprecatedConfigPresent.getStringB()).isEqualTo("this is b");
@@ -232,11 +228,10 @@ public class TestConfigurationFactory
         Map<String, String> properties = new HashMap<>();
         properties.put("string-value", "has a value");
         properties.put("int-value", "50");
-        TestMonitor monitor = new TestMonitor();
-        Injector injector = createInjector(properties, monitor, binder -> configBinder(binder).bindConfig(BeanValidationClass.class));
+        TestingWarningsMonitor warningsMonitor = new TestingWarningsMonitor();
+        Injector injector = createInjector(properties, binder -> configBinder(binder).bindConfig(BeanValidationClass.class), warningsMonitor);
         BeanValidationClass beanValidationClass = injector.getInstance(BeanValidationClass.class);
-        monitor.assertNumberOfErrors(0);
-        monitor.assertNumberOfWarnings(0);
+        assertThat(warningsMonitor.messages()).isEmpty();
         assertThat(beanValidationClass).isNotNull();
         assertThat(beanValidationClass.getStringValue()).isEqualTo("has a value");
         assertThat(beanValidationClass.getIntValue()).isEqualTo(50);
@@ -277,22 +272,20 @@ public class TestConfigurationFactory
         for (String value : ImmutableList.of("true", "TRUE", "tRuE")) {
             Map<String, String> properties = new HashMap<>();
             properties.put("booleanOption", value);
-            TestMonitor monitor = new TestMonitor();
-            Injector injector = createInjector(properties, monitor, binder -> configBinder(binder).bindConfig(Config1.class));
+            TestingWarningsMonitor warningsMonitor = new TestingWarningsMonitor();
+            Injector injector = createInjector(properties, binder -> configBinder(binder).bindConfig(Config1.class), warningsMonitor);
             Config1 config = requireNonNull(injector.getInstance(Config1.class), "injector.getInstance(Config1.class) is null");
-            monitor.assertNumberOfErrors(0);
-            monitor.assertNumberOfWarnings(0);
+            assertThat(warningsMonitor.messages()).isEmpty();
             assertThat(config.getBooleanOption()).isTrue();
         }
 
         for (String value : ImmutableList.of("false", "FALSE", "fAlsE")) {
             Map<String, String> properties = new HashMap<>();
             properties.put("booleanOption", value);
-            TestMonitor monitor = new TestMonitor();
-            Injector injector = createInjector(properties, monitor, binder -> configBinder(binder).bindConfig(Config1.class));
+            TestingWarningsMonitor warningsMonitor = new TestingWarningsMonitor();
+            Injector injector = createInjector(properties, binder -> configBinder(binder).bindConfig(Config1.class), warningsMonitor);
             Config1 config = requireNonNull(injector.getInstance(Config1.class), "injector.getInstance(Config1.class) is null");
-            monitor.assertNumberOfErrors(0);
-            monitor.assertNumberOfWarnings(0);
+            assertThat(warningsMonitor.messages()).isEmpty();
             assertThat(config.getBooleanOption()).isFalse();
         }
     }
@@ -320,12 +313,11 @@ public class TestConfigurationFactory
     @Test
     public void testFromString()
     {
-        TestMonitor monitor = new TestMonitor();
-        Injector injector = createInjector(ImmutableMap.of("value", "value-good-for-fromString"), monitor, binder -> configBinder(binder).bindConfig(FromStringClass.class));
+        TestingWarningsMonitor warningsMonitor = new TestingWarningsMonitor();
+        Injector injector = createInjector(ImmutableMap.of("value", "value-good-for-fromString"), binder -> configBinder(binder).bindConfig(FromStringClass.class), warningsMonitor);
         assertThat(injector.getInstance(FromStringClass.class).value)
                 .isSameAs(FromStringClass.Value.FROM_STRING_VALUE);
-        monitor.assertNumberOfErrors(0);
-        monitor.assertNumberOfWarnings(0);
+        assertThat(warningsMonitor.messages()).isEmpty();
 
         assertInvalidConfig(
                 ImmutableMap.of("value", "value-good-for-valueOf"),
@@ -336,12 +328,11 @@ public class TestConfigurationFactory
     @Test
     public void testEnumWithFromString()
     {
-        TestMonitor monitor = new TestMonitor();
-        Injector injector = createInjector(ImmutableMap.of("value", "yes"), monitor, binder -> configBinder(binder).bindConfig(EnumWithFromStringClass.class));
+        TestingWarningsMonitor warningsMonitor = new TestingWarningsMonitor();
+        Injector injector = createInjector(ImmutableMap.of("value", "yes"), binder -> configBinder(binder).bindConfig(EnumWithFromStringClass.class), warningsMonitor);
         assertThat(injector.getInstance(EnumWithFromStringClass.class).value)
                 .isSameAs(EnumWithFromStringClass.Value.TRUE);
-        monitor.assertNumberOfErrors(0);
-        monitor.assertNumberOfWarnings(0);
+        assertThat(warningsMonitor.messages()).isEmpty();
 
         assertInvalidConfig(
                 ImmutableMap.of("value", "TRUE"),
@@ -352,33 +343,30 @@ public class TestConfigurationFactory
     @Test
     public void testEnum()
     {
-        TestMonitor monitor = new TestMonitor();
-        Injector injector = createInjector(ImmutableMap.of("value", "value"), monitor, binder -> configBinder(binder).bindConfig(EnumClass.class));
+        TestingWarningsMonitor warningsMonitor = new TestingWarningsMonitor();
+        Injector injector = createInjector(ImmutableMap.of("value", "value"), binder -> configBinder(binder).bindConfig(EnumClass.class), warningsMonitor);
         assertThat(injector.getInstance(EnumClass.class).value).isSameAs(EnumClass.Value.VALUE);
-        monitor.assertNumberOfErrors(0);
-        monitor.assertNumberOfWarnings(0);
+        assertThat(warningsMonitor.messages()).isEmpty();
     }
 
     @Test
     public void testEnumValueWithUnderscores()
     {
-        TestMonitor monitor = new TestMonitor();
-        Injector injector = createInjector(ImmutableMap.of("value", "value_with_underscores"), monitor, binder -> configBinder(binder).bindConfig(EnumClass.class));
+        TestingWarningsMonitor warningsMonitor = new TestingWarningsMonitor();
+        Injector injector = createInjector(ImmutableMap.of("value", "value_with_underscores"), binder -> configBinder(binder).bindConfig(EnumClass.class), warningsMonitor);
         assertThat(injector.getInstance(EnumClass.class).value)
                 .isSameAs(EnumClass.Value.VALUE_WITH_UNDERSCORES);
-        monitor.assertNumberOfErrors(0);
-        monitor.assertNumberOfWarnings(0);
+        assertThat(warningsMonitor.messages()).isEmpty();
     }
 
     @Test
     public void testEnumValueWithMinusesInsteadOfUnderscores()
     {
-        TestMonitor monitor = new TestMonitor();
-        Injector injector = createInjector(ImmutableMap.of("value", "value-with-underscores"), monitor, binder -> configBinder(binder).bindConfig(EnumClass.class));
+        TestingWarningsMonitor warningsMonitor = new TestingWarningsMonitor();
+        Injector injector = createInjector(ImmutableMap.of("value", "value-with-underscores"), binder -> configBinder(binder).bindConfig(EnumClass.class), warningsMonitor);
         assertThat(injector.getInstance(EnumClass.class).value)
                 .isSameAs(EnumClass.Value.VALUE_WITH_UNDERSCORES);
-        monitor.assertNumberOfErrors(0);
-        monitor.assertNumberOfWarnings(0);
+        assertThat(warningsMonitor.messages()).isEmpty();
     }
 
     @Test
@@ -393,21 +381,19 @@ public class TestConfigurationFactory
     @Test
     public void testListOfStrings()
     {
-        TestMonitor monitor = new TestMonitor();
-        Injector injector = createInjector(ImmutableMap.of("values", "ala, ma ,kota, "), monitor, binder -> configBinder(binder).bindConfig(ListOfStringsClass.class));
+        TestingWarningsMonitor warningsMonitor = new TestingWarningsMonitor();
+        Injector injector = createInjector(ImmutableMap.of("values", "ala, ma ,kota, "), binder -> configBinder(binder).bindConfig(ListOfStringsClass.class), warningsMonitor);
         assertThat(injector.getInstance(ListOfStringsClass.class).getValues()).isEqualTo(ImmutableList.of("ala", "ma", "kota"));
-        monitor.assertNumberOfErrors(0);
-        monitor.assertNumberOfWarnings(0);
+        assertThat(warningsMonitor.messages()).isEmpty();
     }
 
     @Test
     public void testValueOf()
     {
-        TestMonitor monitor = new TestMonitor();
-        Injector injector = createInjector(ImmutableMap.of("value", "value-good-for-valueOf"), monitor, binder -> configBinder(binder).bindConfig(ValueOfClass.class));
+        TestingWarningsMonitor warningsMonitor = new TestingWarningsMonitor();
+        Injector injector = createInjector(ImmutableMap.of("value", "value-good-for-valueOf"), binder -> configBinder(binder).bindConfig(ValueOfClass.class), warningsMonitor);
         assertThat(injector.getInstance(ValueOfClass.class).value).isSameAs(ValueOfClass.Value.VALUE_OF_VALUE);
-        monitor.assertNumberOfErrors(0);
-        monitor.assertNumberOfWarnings(0);
+        assertThat(warningsMonitor.messages()).isEmpty();
 
         assertInvalidConfig(
                 ImmutableMap.of("value", "anything"),
@@ -418,11 +404,10 @@ public class TestConfigurationFactory
     @Test
     public void testStringConstructor()
     {
-        TestMonitor monitor = new TestMonitor();
-        Injector injector = createInjector(ImmutableMap.of("value", "constructor-value"), monitor, binder -> configBinder(binder).bindConfig(StringConstructorClass.class));
+        TestingWarningsMonitor warningsMonitor = new TestingWarningsMonitor();
+        Injector injector = createInjector(ImmutableMap.of("value", "constructor-value"), binder -> configBinder(binder).bindConfig(StringConstructorClass.class), warningsMonitor);
         assertThat(injector.getInstance(StringConstructorClass.class).value.string).isEqualTo("constructor-argument: constructor-value");
-        monitor.assertNumberOfErrors(0);
-        monitor.assertNumberOfWarnings(0);
+        assertThat(warningsMonitor.messages()).isEmpty();
 
         assertInvalidConfig(
                 ImmutableMap.of("value", "bad-value"),
@@ -438,7 +423,7 @@ public class TestConfigurationFactory
         properties.put("boolean-value", "true");
         properties.put("unused", "unused");
 
-        ConfigurationFactory configurationFactory = new ConfigurationFactory(properties, null, new TestMonitor());
+        ConfigurationFactory configurationFactory = new ConfigurationFactory(properties);
         configurationFactory.registerConfigurationClasses(ImmutableList.of(binder -> configBinder(binder).bindConfig(AnnotatedSetter.class)));
         configurationFactory.validateRegisteredConfigurationProvider();
         assertThat(configurationFactory.getUsedProperties()).hasSameElementsAs(ImmutableSet.of("string-value", "boolean-value"));
@@ -451,16 +436,16 @@ public class TestConfigurationFactory
         properties.put("string-value", "some value");
         properties.put("boolean-value", "invalid");
 
-        ConfigurationFactory configurationFactory = new ConfigurationFactory(properties, null, new TestMonitor());
+        ConfigurationFactory configurationFactory = new ConfigurationFactory(properties);
         configurationFactory.registerConfigurationClasses(ImmutableList.of(binder -> configBinder(binder).bindConfig(AnnotatedSetter.class)));
         List<Message> messages = configurationFactory.validateRegisteredConfigurationProvider();
         assertMessagesMatch(messages, ImmutableList.of(".*Invalid value 'invalid' for type boolean \\(property 'boolean-value'\\).*AnnotatedSetter.*"));
         assertThat(configurationFactory.getUsedProperties()).isEqualTo(properties.keySet());
     }
 
-    private static Injector createInjector(Map<String, String> properties, TestMonitor monitor, Module module)
+    private static Injector createInjector(Map<String, String> properties, Module module, WarningsMonitor warningsMonitor)
     {
-        ConfigurationFactory configurationFactory = new ConfigurationFactory(properties, null, monitor);
+        ConfigurationFactory configurationFactory = new ConfigurationFactory(properties, warningsMonitor);
         configurationFactory.registerConfigurationClasses(ImmutableList.of(module));
         List<Message> messages = configurationFactory.validateRegisteredConfigurationProvider();
         assertThat(configurationFactory.getUsedProperties()).hasSameElementsAs(properties.keySet());
@@ -469,19 +454,16 @@ public class TestConfigurationFactory
 
     private static void assertInvalidConfig(Map<String, String> properties, Module module, String... expectedErrorMessagePatterns)
     {
-        assertInvalidConfig(properties, module, ImmutableList.copyOf(expectedErrorMessagePatterns), ImmutableList.of());
+        assertInvalidConfig(properties, module, ImmutableList.copyOf(expectedErrorMessagePatterns));
     }
 
-    private static void assertInvalidConfig(Map<String, String> properties, Module module, List<String> expectedErrorMessagePatterns, List<String> expectedWarningMessagePatterns)
+    private static void assertInvalidConfig(Map<String, String> properties, Module module, List<String> expectedErrorMessagePatterns)
     {
-        TestMonitor monitor = new TestMonitor();
-
-        ConfigurationFactory configurationFactory = new ConfigurationFactory(properties, null, monitor);
+        ConfigurationFactory configurationFactory = new ConfigurationFactory(properties, null);
         configurationFactory.registerConfigurationClasses(ImmutableList.of(module));
 
         List<Message> messages = configurationFactory.validateRegisteredConfigurationProvider();
-        assertMessagesMatch(monitor.getErrors(), expectedErrorMessagePatterns);
-        assertMessagesMatch(monitor.getWarnings(), expectedWarningMessagePatterns);
+        assertMessagesMatch(messages, expectedErrorMessagePatterns);
 
         try {
             Guice.createInjector(new ConfigurationModule(configurationFactory), module, new ValidationErrorModule(messages));
@@ -491,12 +473,7 @@ public class TestConfigurationFactory
             for (String expectedErrorMessagePattern : expectedErrorMessagePatterns) {
                 e.getMessage().matches(expectedErrorMessagePattern);
             }
-            assertMessagesMatch(
-                    e.getErrorMessages(),
-                    ImmutableList.<String>builder()
-                            .addAll(expectedErrorMessagePatterns)
-                            .addAll(expectedWarningMessagePatterns)
-                            .build());
+            assertMessagesMatch(e.getErrorMessages(), expectedErrorMessagePatterns);
         }
     }
 
@@ -849,6 +826,23 @@ public class TestConfigurationFactory
         public void setValue(Value value)
         {
             this.value = value;
+        }
+    }
+
+    private static class TestingWarningsMonitor
+            implements WarningsMonitor
+    {
+        private final List<String> messages = new ArrayList<>();
+
+        @Override
+        public void onWarning(String message)
+        {
+            messages.add(message);
+        }
+
+        private List<String> messages()
+        {
+            return ImmutableList.copyOf(messages);
         }
     }
 }

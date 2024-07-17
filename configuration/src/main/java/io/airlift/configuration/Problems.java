@@ -31,40 +31,6 @@ class Problems
 {
     private final List<Message> errors = new ArrayList<>();
     private final List<Message> warnings = new ArrayList<>();
-    private final Monitor monitor;
-
-    public interface Monitor
-    {
-        void onError(Message errorMessage);
-
-        void onWarning(Message warningMessage);
-    }
-
-    public static final Problems.Monitor NULL_MONITOR = new NullMonitor();
-
-    private static final class NullMonitor
-            implements Problems.Monitor
-    {
-        @Override
-        public void onError(Message unused)
-        {
-        }
-
-        @Override
-        public void onWarning(Message unused)
-        {
-        }
-    }
-
-    public Problems()
-    {
-        this.monitor = NULL_MONITOR;
-    }
-
-    public Problems(Monitor monitor)
-    {
-        this.monitor = monitor;
-    }
 
     public void throwIfHasErrors()
             throws ConfigurationException
@@ -83,23 +49,19 @@ class Problems
     {
         checkArgument(problems != this, "Can not add problems to itself");
         errors.addAll(problems.errors);
-        problems.errors.forEach(monitor::onError);
         warnings.addAll(problems.warnings);
-        problems.warnings.forEach(monitor::onWarning);
     }
 
     public void addError(String format, Object... params)
     {
         Message message = new Message(format(format, params));
         errors.add(message);
-        monitor.onError(message);
     }
 
     public void addError(Throwable e, String format, Object... params)
     {
         Message message = new Message(emptyList(), format(format, params), e);
         errors.add(message);
-        monitor.onError(message);
     }
 
     public List<Message> getWarnings()
@@ -111,7 +73,6 @@ class Problems
     {
         Message message = new Message(format(format, params));
         warnings.add(message);
-        monitor.onWarning(message);
     }
 
     public String toString()
