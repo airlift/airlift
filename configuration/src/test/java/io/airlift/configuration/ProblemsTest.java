@@ -185,40 +185,4 @@ public class ProblemsTest
             assertContainsAllOf(e.getMessage(), "message e1", "message e2", "message w1", "message w2", "message w3");
         }
     }
-
-    private static class SimpleMonitor
-            implements Problems.Monitor
-    {
-        private String result = "";
-
-        public void onError(Message error)
-        {
-            result = result + "E-" + error.getMessage() + ", ";
-        }
-
-        public void onWarning(Message warning)
-        {
-            result = result + "W-" + warning.getMessage() + ", ";
-        }
-
-        public String getResult()
-        {
-            return result;
-        }
-    }
-
-    @Test
-    public void testMonitor()
-    {
-        SimpleMonitor monitor = new SimpleMonitor();
-        Problems problems = new Problems(monitor);
-
-        problems.addError("1");
-        problems.addWarning("1");
-        problems.addWarning("2");
-        problems.addWarning("3");
-        problems.addError("2");
-
-        assertContains(monitor.getResult(), "E-1, W-1, W-2, W-3, E-2");
-    }
 }

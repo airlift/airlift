@@ -15,7 +15,6 @@
  */
 package io.airlift.configuration;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -71,7 +70,6 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.common.collect.Sets.newConcurrentHashSet;
-import static io.airlift.configuration.ConfigurationMetadata.getConfigurationMetadata;
 import static io.airlift.configuration.Problems.exceptionFor;
 import static java.lang.String.format;
 import static java.util.Arrays.stream;
@@ -107,8 +105,6 @@ public class ConfigurationFactory
 
     private final Map<String, String> properties;
     private final WarningsMonitor warningsMonitor;
-    // Used only for testing purposes, NULL_MONITOR is default implementation
-    private final Problems.Monitor monitor;
     private final ConcurrentMap<ConfigurationProvider<?>, Object> instanceCache = new ConcurrentHashMap<>();
     private final Set<String> usedProperties = newConcurrentHashSet();
     private final Set<ConfigurationProvider<?>> registeredProviders = newConcurrentHashSet();
@@ -118,20 +114,13 @@ public class ConfigurationFactory
 
     public ConfigurationFactory(Map<String, String> properties)
     {
-        this(properties, null, Problems.NULL_MONITOR);
+        this(properties, null);
     }
 
     public ConfigurationFactory(Map<String, String> properties, WarningsMonitor warningsMonitor)
     {
-        this(properties, warningsMonitor, Problems.NULL_MONITOR);
-    }
-
-    @VisibleForTesting
-    ConfigurationFactory(Map<String, String> properties, WarningsMonitor warningsMonitor, Problems.Monitor monitor)
-    {
         this.properties = ImmutableMap.copyOf(properties);
         this.warningsMonitor = warningsMonitor;
-        this.monitor = monitor;
     }
 
     public Map<String, String> getProperties()
@@ -385,7 +374,7 @@ public class ConfigurationFactory
         String prefix = configPrefix
                 .map(value -> value + ".")
                 .orElse("");
-        Problems problems = new Problems(monitor);
+        Problems problems = new Problems();
 
         ConfigurationMetadata<T> configurationMetadata = getMetadata(configClass);
         problems.record(configurationMetadata.getProblems());
@@ -396,7 +385,7 @@ public class ConfigurationFactory
         configDefaults.setDefaults(instance);
 
         for (AttributeMetadata attribute : configurationMetadata.getAttributes().values()) {
-            Problems attributeProblems = new Problems(monitor);
+            Problems attributeProblems = new Problems();
             try {
                 setConfigProperty(instance, attribute, prefix, attributeProblems);
             }

@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Multimap;
 import com.google.inject.ConfigurationException;
-import io.airlift.configuration.Problems.Monitor;
 import jakarta.validation.Constraint;
 
 import java.lang.annotation.Annotation;
@@ -45,40 +44,27 @@ public class ConfigurationMetadata<T>
     public static <T> ConfigurationMetadata<T> getValidConfigurationMetadata(Class<T> configClass)
             throws ConfigurationException
     {
-        return getValidConfigurationMetadata(configClass, Problems.NULL_MONITOR);
-    }
-
-    static <T> ConfigurationMetadata<T> getValidConfigurationMetadata(Class<T> configClass, Problems.Monitor monitor)
-            throws ConfigurationException
-    {
-        ConfigurationMetadata<T> metadata = getConfigurationMetadata(configClass, monitor);
+        ConfigurationMetadata<T> metadata = getConfigurationMetadata(configClass);
         metadata.getProblems().throwIfHasErrors();
         return metadata;
     }
 
     public static <T> ConfigurationMetadata<T> getConfigurationMetadata(Class<T> configClass)
     {
-        return getConfigurationMetadata(configClass, Problems.NULL_MONITOR);
-    }
-
-    static <T> ConfigurationMetadata<T> getConfigurationMetadata(Class<T> configClass, Problems.Monitor monitor)
-    {
-        return new ConfigurationMetadata<>(configClass, monitor);
+        return new ConfigurationMetadata<>(configClass);
     }
 
     private final Class<T> configClass;
-    private final Problems problems;
     private final Constructor<T> constructor;
     private final Map<String, AttributeMetadata> attributes;
     private final Set<String> defunctConfig;
+    private final Problems problems = new Problems();
 
-    private ConfigurationMetadata(Class<T> configClass, Monitor monitor)
+    private ConfigurationMetadata(Class<T> configClass)
     {
         if (configClass == null) {
             throw new NullPointerException("configClass is null");
         }
-
-        this.problems = new Problems(monitor);
 
         this.configClass = configClass;
         if (Modifier.isAbstract(configClass.getModifiers())) {
