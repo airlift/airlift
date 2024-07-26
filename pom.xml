@@ -45,6 +45,7 @@
         <module>discovery</module>
         <module>event</module>
         <module>event-http</module>
+        <module>flight-recorder</module>
         <module>http-client</module>
         <module>http-server</module>
         <module>jaxrs</module>
