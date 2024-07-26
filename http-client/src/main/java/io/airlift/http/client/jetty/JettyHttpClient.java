@@ -48,6 +48,7 @@ import org.eclipse.jetty.client.InputStreamResponseListener;
 import org.eclipse.jetty.client.Origin.Address;
 import org.eclipse.jetty.client.PathRequestContent;
 import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.client.Socks4Proxy;
 import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
@@ -915,7 +916,7 @@ public class JettyHttpClient
         jettyRequest.onResponseBegin(response -> listener.onResponseBegin());
         jettyRequest.onComplete(result -> listener.onFinish());
         jettyRequest.onComplete(result -> {
-            if (result.isFailed() && result.getFailure() instanceof TimeoutException) {
+            if (result.isFailed() && shouldBeDiagnosed(result)) {
                 clientDiagnostics.logDiagnosticsInfo(httpClient);
             }
         });
@@ -954,6 +955,11 @@ public class JettyHttpClient
         jettyRequest.idleTimeout(idleTimeoutMillis, MILLISECONDS);
 
         return jettyRequest;
+    }
+
+    private boolean shouldBeDiagnosed(Result result)
+    {
+        return result.getFailure() instanceof TimeoutException || result.getFailure() instanceof RejectedExecutionException;
     }
 
     private static PathRequestContent fileContent(Path path)
