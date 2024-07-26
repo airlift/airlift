@@ -151,6 +151,7 @@ public class JettyHttpClient
     private final long maxContentLength;
     private final long requestTimeoutMillis;
     private final long idleTimeoutMillis;
+    private final long destinationIdleTimeoutMillis;
     private final boolean recordRequestComplete;
     private final boolean logEnabled;
     private final MonitoredQueuedThreadPoolMBean monitoredQueuedThreadPoolMBean;
@@ -251,6 +252,7 @@ public class JettyHttpClient
         maxContentLength = config.getMaxContentLength().toBytes();
         requestTimeoutMillis = config.getRequestTimeout().toMillis();
         idleTimeoutMillis = config.getIdleTimeout().toMillis();
+        destinationIdleTimeoutMillis = config.getDestinationIdleTimeout().toMillis();
         recordRequestComplete = config.getRecordRequestComplete();
 
         creationLocation.fillInStackTrace();
@@ -281,6 +283,7 @@ public class JettyHttpClient
 
         httpClient.setMaxConnectionsPerDestination(config.getMaxConnectionsPerServer());
         httpClient.setMaxRequestsQueuedPerDestination(config.getMaxRequestsQueuedPerDestination());
+        httpClient.setDestinationIdleTimeout(destinationIdleTimeoutMillis);
 
         // disable cookies
         httpClient.setHttpCookieStore(new HttpCookieStore.Empty());

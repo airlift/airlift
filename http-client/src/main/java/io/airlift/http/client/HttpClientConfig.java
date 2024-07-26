@@ -67,6 +67,7 @@ public class HttpClientConfig
     private Duration connectTimeout = new Duration(5, SECONDS);
     private Duration requestTimeout = new Duration(5, MINUTES);
     private Duration idleTimeout = new Duration(1, MINUTES);
+    private Duration destinationIdleTimeout = new Duration(1, MINUTES);
     private int maxConnectionsPerServer = 20;
     private int maxRequestsQueuedPerDestination = 1024;
     private DataSize maxContentLength = DataSize.of(16, MEGABYTE);
@@ -181,6 +182,19 @@ public class HttpClientConfig
     public HttpClientConfig setIdleTimeout(Duration idleTimeout)
     {
         this.idleTimeout = idleTimeout;
+        return this;
+    }
+
+    @MinDuration("0ms")
+    public Duration getDestinationIdleTimeout()
+    {
+        return destinationIdleTimeout;
+    }
+
+    @Config("http-client.destination-idle-timeout")
+    public HttpClientConfig setDestinationIdleTimeout(Duration destinationIdleTimeout)
+    {
+        this.destinationIdleTimeout = destinationIdleTimeout;
         return this;
     }
 
