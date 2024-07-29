@@ -69,7 +69,6 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.MonitoredQueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.Sweeper;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
@@ -139,7 +138,6 @@ public class JettyHttpClient
         implements io.airlift.http.client.HttpClient
 {
     private static final String STATS_KEY = "airlift_stats";
-    private static final long SWEEP_PERIOD_MILLIS = 5000;
 
     private static final AtomicLong NAME_COUNTER = new AtomicLong();
 
@@ -324,12 +322,6 @@ public class JettyHttpClient
             }
             resolver.resolve(host, port, promise);
         });
-
-        // Jetty client connections can sometimes get stuck while closing which reduces
-        // the available connections.  The Jetty Sweeper periodically scans the active
-        // connection pool looking for connections in the closed state, and if a connection
-        // is observed in the closed state multiple times, it logs, and destroys the connection.
-        httpClient.addBean(new Sweeper(httpClient.getScheduler(), SWEEP_PERIOD_MILLIS), true);
 
         // track connection statistics
         ConnectionStatistics connectionStats = new ConnectionStatistics();
