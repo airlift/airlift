@@ -380,6 +380,7 @@ public class TestConfig
     }
 
     public static class SwitchConfig
+            implements SwitchInterface
     {
         SwitchValue value;
 
@@ -393,6 +394,11 @@ public class TestConfig
         {
             this.value = value;
         }
+    }
+
+    public interface SwitchInterface
+    {
+        SwitchValue getValue();
     }
 
     public enum SwitchValue

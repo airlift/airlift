@@ -733,6 +733,9 @@ public class ConfigurationMetadata<T>
         List<Method> unusableGetters = new ArrayList<>();
 
         for (Method method : methods.values()) {
+            if (Modifier.isAbstract(method.getModifiers())) {
+                continue; // Skip abstract/interface getters
+            }
             if (validateGetter(method, attributeName)) {
                 getters.add(method);
             }
