@@ -725,7 +725,7 @@ parent must switch to use airbase (https://github.com/airlift/airbase/).
 Replace the parent section with
 
     <parent>
-        <groupId>io.airlift</groupId>
+        <groupId>pl.wendigo.airlift</groupId>
         <artifactId>airbase</artifactId>
         <version>... latest version ...</version>
     </parent>
@@ -750,13 +750,13 @@ version of airlift in the parent pom is recommended:
         <dependencies>
             ...
             <dependency>
-                <groupId>io.airlift</groupId>
+                <groupId>pl.wendigo.airlift</groupId>
                 <artifactId>bootstrap</artifactId>
                 <version>${dep.airlift.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>io.airlift</groupId>
+                <groupId>pl.wendigo.airlift</groupId>
                 <artifactId>configuration</artifactId>
                 <version>${dep.airlift.version}</version>
             </dependency>

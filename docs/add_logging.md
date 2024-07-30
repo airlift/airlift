@@ -11,12 +11,12 @@ We need a few additional dependencies. Add the following to the dependencies sec
 
 ```xml 
         <dependency>
-            <groupId>io.airlift</groupId>
+            <groupId>pl.wendigo.airlift</groupId>
             <artifactId>log</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>io.airlift</groupId>
+            <groupId>pl.wendigo.airlift</groupId>
             <artifactId>log-manager</artifactId>
         </dependency>
 ```

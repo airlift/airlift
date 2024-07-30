@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>io.airlift</groupId>
+        <groupId>pl.wendigo.airlift</groupId>
         <artifactId>airlift</artifactId>
         <version>253-SNAPSHOT</version>
     </parent>
@@ -20,15 +20,6 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>http-client</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>log</artifactId>
         </dependency>
 
         <dependency>
@@ -61,6 +52,15 @@
                     <artifactId>junit-jupiter</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>pl.wendigo.airlift</groupId>
+            <artifactId>http-client</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>pl.wendigo.airlift</groupId>
+            <artifactId>log</artifactId>
         </dependency>
 
         <dependency>

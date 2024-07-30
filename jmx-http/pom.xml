@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>io.airlift</groupId>
+        <groupId>pl.wendigo.airlift</groupId>
         <artifactId>airlift</artifactId>
         <version>253-SNAPSHOT</version>
     </parent>
@@ -40,63 +40,44 @@
             <groupId>com.google.inject</groupId>
             <artifactId>guice</artifactId>
         </dependency>
+
         <dependency>
-            <groupId>io.airlift</groupId>
+            <groupId>jakarta.ws.rs</groupId>
+            <artifactId>jakarta.ws.rs-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>pl.wendigo.airlift</groupId>
             <artifactId>discovery</artifactId>
             <exclusions>
                 <!-- only the binder is used, not the client -->
                 <exclusion>
-                    <groupId>io.airlift</groupId>
+                    <groupId>pl.wendigo.airlift</groupId>
                     <artifactId>http-client</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
 
         <dependency>
-            <groupId>io.airlift</groupId>
+            <groupId>pl.wendigo.airlift</groupId>
             <artifactId>jaxrs</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>io.airlift</groupId>
+            <groupId>pl.wendigo.airlift</groupId>
             <artifactId>json</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>jakarta.ws.rs</groupId>
-            <artifactId>jakarta.ws.rs-api</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>io.airlift</groupId>
+            <groupId>pl.wendigo.airlift</groupId>
             <artifactId>http-server</artifactId>
             <scope>runtime</scope>
         </dependency>
 
         <!-- used by tests but also needed transitively -->
         <dependency>
-            <groupId>io.airlift</groupId>
+            <groupId>pl.wendigo.airlift</groupId>
             <artifactId>node</artifactId>
             <scope>runtime</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>bootstrap</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>http-client</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- for testing -->
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>testing</artifactId>
-            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -108,6 +89,25 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>pl.wendigo.airlift</groupId>
+            <artifactId>bootstrap</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>pl.wendigo.airlift</groupId>
+            <artifactId>http-client</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- for testing -->
+        <dependency>
+            <groupId>pl.wendigo.airlift</groupId>
+            <artifactId>testing</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

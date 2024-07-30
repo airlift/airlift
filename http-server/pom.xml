@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>io.airlift</groupId>
+        <groupId>pl.wendigo.airlift</groupId>
         <artifactId>airlift</artifactId>
         <version>253-SNAPSHOT</version>
     </parent>
@@ -32,57 +32,6 @@
         <dependency>
             <groupId>com.google.inject</groupId>
             <artifactId>guice</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>concurrent</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>configuration</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>discovery</artifactId>
-            <exclusions>
-                <!-- only the announcement interface is used, not the client -->
-                <exclusion>
-                    <groupId>io.airlift</groupId>
-                    <artifactId>http-client</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>event</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>log</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>node</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>security</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>stats</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>trace-token</artifactId>
         </dependency>
 
         <dependency>
@@ -156,34 +105,60 @@
         </dependency>
 
         <dependency>
+            <groupId>pl.wendigo.airlift</groupId>
+            <artifactId>concurrent</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>pl.wendigo.airlift</groupId>
+            <artifactId>configuration</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>pl.wendigo.airlift</groupId>
+            <artifactId>discovery</artifactId>
+            <exclusions>
+                <!-- only the announcement interface is used, not the client -->
+                <exclusion>
+                    <groupId>pl.wendigo.airlift</groupId>
+                    <artifactId>http-client</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>pl.wendigo.airlift</groupId>
+            <artifactId>event</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>pl.wendigo.airlift</groupId>
+            <artifactId>log</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>pl.wendigo.airlift</groupId>
+            <artifactId>node</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>pl.wendigo.airlift</groupId>
+            <artifactId>security</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>pl.wendigo.airlift</groupId>
+            <artifactId>stats</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>pl.wendigo.airlift</groupId>
+            <artifactId>trace-token</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-alpn-java-server</artifactId>
             <scope>runtime</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>bootstrap</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>http-client</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>log-manager</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- for testing -->
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>testing</artifactId>
-            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -214,6 +189,31 @@
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
             <version>5.11.0</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>pl.wendigo.airlift</groupId>
+            <artifactId>bootstrap</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>pl.wendigo.airlift</groupId>
+            <artifactId>http-client</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>pl.wendigo.airlift</groupId>
+            <artifactId>log-manager</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- for testing -->
+        <dependency>
+            <groupId>pl.wendigo.airlift</groupId>
+            <artifactId>testing</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

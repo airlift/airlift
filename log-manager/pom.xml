@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>io.airlift</groupId>
+        <groupId>pl.wendigo.airlift</groupId>
         <artifactId>airlift</artifactId>
         <version>253-SNAPSHOT</version>
     </parent>
@@ -45,25 +45,6 @@
 
         <dependency>
             <groupId>io.airlift</groupId>
-            <artifactId>concurrent</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>configuration</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>json</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>log</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>io.airlift</groupId>
             <artifactId>units</artifactId>
         </dependency>
 
@@ -90,6 +71,25 @@
         <dependency>
             <groupId>org.weakref</groupId>
             <artifactId>jmxutils</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>pl.wendigo.airlift</groupId>
+            <artifactId>concurrent</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>pl.wendigo.airlift</groupId>
+            <artifactId>configuration</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>pl.wendigo.airlift</groupId>
+            <artifactId>json</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>pl.wendigo.airlift</groupId>
+            <artifactId>log</artifactId>
         </dependency>
 
         <dependency>

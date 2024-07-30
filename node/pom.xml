@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>io.airlift</groupId>
+        <groupId>pl.wendigo.airlift</groupId>
         <artifactId>airlift</artifactId>
         <version>253-SNAPSHOT</version>
     </parent>
@@ -26,10 +26,6 @@
             <groupId>com.google.inject</groupId>
             <artifactId>guice</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>configuration</artifactId>
-        </dependency>
 
         <dependency>
             <groupId>jakarta.validation</groupId>
@@ -40,12 +36,9 @@
             <groupId>org.weakref</groupId>
             <artifactId>jmxutils</artifactId>
         </dependency>
-
-        <!-- for testing -->
         <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>testing</artifactId>
-            <scope>test</scope>
+            <groupId>pl.wendigo.airlift</groupId>
+            <artifactId>configuration</artifactId>
         </dependency>
 
         <dependency>
@@ -57,6 +50,13 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- for testing -->
+        <dependency>
+            <groupId>pl.wendigo.airlift</groupId>
+            <artifactId>testing</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

@@ -33,7 +33,7 @@ Create `pom.xml` with the following content:
     <version>1.0-SNAPSHOT</version>
 
     <parent>
-        <groupId>io.airlift</groupId>
+        <groupId>pl.wendigo.airlift</groupId>
         <artifactId>airbase</artifactId>
         <version>110</version>
     </parent>
@@ -48,7 +48,7 @@ Create `pom.xml` with the following content:
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>io.airlift</groupId>
+                <groupId>pl.wendigo.airlift</groupId>
                 <artifactId>bom</artifactId>
                 <version>${dep.airlift.version}</version>
                 <type>pom</type>
@@ -69,32 +69,32 @@ Create `pom.xml` with the following content:
         </dependency>
 
         <dependency>
-            <groupId>io.airlift</groupId>
+            <groupId>pl.wendigo.airlift</groupId>
             <artifactId>bootstrap</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>io.airlift</groupId>
+            <groupId>pl.wendigo.airlift</groupId>
             <artifactId>http-server</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>io.airlift</groupId>
+            <groupId>pl.wendigo.airlift</groupId>
             <artifactId>json</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>io.airlift</groupId>
+            <groupId>pl.wendigo.airlift</groupId>
             <artifactId>node</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>io.airlift</groupId>
+            <groupId>pl.wendigo.airlift</groupId>
             <artifactId>event</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>io.airlift</groupId>
+            <groupId>pl.wendigo.airlift</groupId>
             <artifactId>jaxrs</artifactId>
         </dependency>
     </dependencies>

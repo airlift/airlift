@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>io.airlift</groupId>
+        <groupId>pl.wendigo.airlift</groupId>
         <artifactId>airlift</artifactId>
         <version>253-SNAPSHOT</version>
     </parent>
@@ -15,145 +15,145 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>io.airlift</groupId>
+                <groupId>pl.wendigo.airlift</groupId>
                 <artifactId>bootstrap</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>io.airlift</groupId>
+                <groupId>pl.wendigo.airlift</groupId>
                 <artifactId>concurrent</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>io.airlift</groupId>
+                <groupId>pl.wendigo.airlift</groupId>
                 <artifactId>configuration</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>io.airlift</groupId>
+                <groupId>pl.wendigo.airlift</groupId>
                 <artifactId>discovery</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>io.airlift</groupId>
+                <groupId>pl.wendigo.airlift</groupId>
                 <artifactId>event</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>io.airlift</groupId>
+                <groupId>pl.wendigo.airlift</groupId>
                 <artifactId>event-http</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>io.airlift</groupId>
+                <groupId>pl.wendigo.airlift</groupId>
                 <artifactId>http-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>io.airlift</groupId>
+                <groupId>pl.wendigo.airlift</groupId>
                 <artifactId>http-server</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>io.airlift</groupId>
+                <groupId>pl.wendigo.airlift</groupId>
                 <artifactId>jaxrs</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>io.airlift</groupId>
+                <groupId>pl.wendigo.airlift</groupId>
                 <artifactId>jaxrs-testing</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>io.airlift</groupId>
+                <groupId>pl.wendigo.airlift</groupId>
                 <artifactId>jmx</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>io.airlift</groupId>
+                <groupId>pl.wendigo.airlift</groupId>
                 <artifactId>jmx-http</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>io.airlift</groupId>
+                <groupId>pl.wendigo.airlift</groupId>
                 <artifactId>jmx-http-rpc</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>io.airlift</groupId>
+                <groupId>pl.wendigo.airlift</groupId>
                 <artifactId>json</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>io.airlift</groupId>
+                <groupId>pl.wendigo.airlift</groupId>
                 <artifactId>log</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>io.airlift</groupId>
+                <groupId>pl.wendigo.airlift</groupId>
                 <artifactId>log-manager</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>io.airlift</groupId>
+                <groupId>pl.wendigo.airlift</groupId>
                 <artifactId>node</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>io.airlift</groupId>
+                <groupId>pl.wendigo.airlift</groupId>
                 <artifactId>openmetrics</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>io.airlift</groupId>
+                <groupId>pl.wendigo.airlift</groupId>
                 <artifactId>security</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>io.airlift</groupId>
+                <groupId>pl.wendigo.airlift</groupId>
                 <artifactId>security-jwks</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>io.airlift</groupId>
+                <groupId>pl.wendigo.airlift</groupId>
                 <artifactId>stats</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>io.airlift</groupId>
+                <groupId>pl.wendigo.airlift</groupId>
                 <artifactId>testing</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>io.airlift</groupId>
+                <groupId>pl.wendigo.airlift</groupId>
                 <artifactId>trace-token</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>io.airlift</groupId>
+                <groupId>pl.wendigo.airlift</groupId>
                 <artifactId>tracing</artifactId>
                 <version>${project.version}</version>
             </dependency>

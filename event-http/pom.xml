@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>io.airlift</groupId>
+        <groupId>pl.wendigo.airlift</groupId>
         <artifactId>airlift</artifactId>
         <version>253-SNAPSHOT</version>
     </parent>
@@ -27,32 +27,32 @@
         </dependency>
 
         <dependency>
-            <groupId>io.airlift</groupId>
+            <groupId>org.weakref</groupId>
+            <artifactId>jmxutils</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>pl.wendigo.airlift</groupId>
             <artifactId>discovery</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>io.airlift</groupId>
+            <groupId>pl.wendigo.airlift</groupId>
             <artifactId>event</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>io.airlift</groupId>
+            <groupId>pl.wendigo.airlift</groupId>
             <artifactId>http-client</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.airlift</groupId>
+            <groupId>pl.wendigo.airlift</groupId>
             <artifactId>log</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>io.airlift</groupId>
+            <groupId>pl.wendigo.airlift</groupId>
             <artifactId>node</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.weakref</groupId>
-            <artifactId>jmxutils</artifactId>
         </dependency>
 
         <!-- used by tests but also needed transitively -->
@@ -60,20 +60,6 @@
             <groupId>io.airlift</groupId>
             <artifactId>units</artifactId>
             <scope>runtime</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>event</artifactId>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- for testing -->
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>testing</artifactId>
-            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -103,6 +89,20 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>pl.wendigo.airlift</groupId>
+            <artifactId>event</artifactId>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- for testing -->
+        <dependency>
+            <groupId>pl.wendigo.airlift</groupId>
+            <artifactId>testing</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
