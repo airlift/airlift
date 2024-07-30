@@ -82,6 +82,7 @@
         <air.check.skip-license>true</air.check.skip-license>
         <air.javadoc.lint>all,-missing</air.javadoc.lint>
         <air.compiler.fail-warnings>true</air.compiler.fail-warnings>
+        <air.release.preparation-goals>clean verify -DskipTests</air.release.preparation-goals>
 
         <project.build.targetJdk>21</project.build.targetJdk>
         <air.modernizer.java-version>8</air.modernizer.java-version>
