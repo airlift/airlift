@@ -87,6 +87,9 @@ import static com.google.common.net.HttpHeaders.X_FORWARDED_PROTO;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
+import static io.airlift.http.server.HttpServerConfig.ProcessForwardedMode.ACCEPT;
+import static io.airlift.http.server.HttpServerConfig.ProcessForwardedMode.IGNORE;
+import static io.airlift.http.server.HttpServerConfig.ProcessForwardedMode.REJECT;
 import static io.airlift.http.server.TestHttpServerInfo.closeChannels;
 import static io.airlift.testing.Assertions.assertContains;
 import static io.airlift.testing.Assertions.assertNotEquals;
@@ -343,10 +346,10 @@ public class TestHttpServerProvider
     }
 
     @Test
-    public void testForwardedEnabled()
+    public void testForwardedAccepted()
             throws Exception
     {
-        config.setProcessForwarded(true);
+        config.setProcessForwarded(ACCEPT);
         ForwardedServlet servlet = new ForwardedServlet();
         createServer(servlet);
         server.start();
@@ -360,6 +363,46 @@ public class TestHttpServerProvider
 
         assertForward(servlet, Optional.of("unknown"), Optional.of("example.com:1234"), Optional.of("remote.example.com"));
         assertForward(servlet, Optional.of("https"), Optional.of("example.com:1234"), Optional.of("remote.example.com"));
+    }
+
+    @Test
+    public void testForwardedRejecting()
+            throws Exception
+    {
+        config.setProcessForwarded(REJECT);
+        ForwardedServlet servlet = new ForwardedServlet();
+        createServer(servlet);
+        server.start();
+
+        HttpUriBuilder uriBuilder = HttpUriBuilder.uriBuilderFrom(httpServerInfo.getHttpUri()).replacePath("/some/path");
+        try (HttpClient client = new JettyHttpClient()) {
+            Builder builder = prepareGet()
+                    .setHeader(X_FORWARDED_PROTO, "https")
+                    .setUri(uriBuilder.build());
+            StringResponse response = client.execute(builder.build(), createStringResponseHandler());
+            assertThat(response.getStatusCode()).isEqualTo(406);
+        }
+    }
+
+    @Test
+    public void testForwardedDropped()
+            throws Exception
+    {
+        config.setProcessForwarded(IGNORE);
+        ForwardedServlet servlet = new ForwardedServlet();
+        createServer(servlet);
+        server.start();
+
+        HttpUriBuilder uriBuilder = HttpUriBuilder.uriBuilderFrom(httpServerInfo.getHttpUri()).replacePath("/some/path");
+        try (HttpClient client = new JettyHttpClient()) {
+            Builder builder = prepareGet()
+                    .setHeader(X_FORWARDED_PROTO, "https")
+                    .setUri(uriBuilder.build());
+            StringResponse response = client.execute(builder.build(), createStringResponseHandler());
+            assertThat(response.getStatusCode()).isEqualTo(200);
+        }
+
+        assertThat(servlet.getIsSecure()).isEqualTo(false);
     }
 
     private void assertForward(ForwardedServlet servlet, Optional<String> proto, Optional<String> host, Optional<String> remoteHost)

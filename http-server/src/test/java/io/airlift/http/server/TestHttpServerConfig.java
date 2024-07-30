@@ -25,6 +25,8 @@ import java.util.Map;
 import static io.airlift.configuration.testing.ConfigAssertions.assertFullMapping;
 import static io.airlift.configuration.testing.ConfigAssertions.assertRecordedDefaults;
 import static io.airlift.configuration.testing.ConfigAssertions.recordDefaults;
+import static io.airlift.http.server.HttpServerConfig.ProcessForwardedMode.IGNORE;
+import static io.airlift.http.server.HttpServerConfig.ProcessForwardedMode.REJECT;
 import static io.airlift.units.DataSize.Unit.GIGABYTE;
 import static io.airlift.units.DataSize.Unit.KILOBYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
@@ -41,7 +43,7 @@ public class TestHttpServerConfig
                 .setHttpPort(8080)
                 .setHttpAcceptQueueSize(8000)
                 .setHttpsEnabled(false)
-                .setProcessForwarded(false)
+                .setProcessForwarded(REJECT)
                 .setLogPath("var/log/http-request.log")
                 .setLogEnabled(true)
                 .setLogMaxFileSize(DataSize.of(100, MEGABYTE))
@@ -79,7 +81,7 @@ public class TestHttpServerConfig
                 .put("http-server.http.port", "1")
                 .put("http-server.accept-queue-size", "1024")
                 .put("http-server.https.enabled", "true")
-                .put("http-server.process-forwarded", "true")
+                .put("http-server.process-forwarded", "ignore")
                 .put("http-server.log.path", "/log")
                 .put("http-server.log.enabled", "false")
                 .put("http-server.log.max-size", "1GB")
@@ -114,7 +116,7 @@ public class TestHttpServerConfig
                 .setHttpPort(1)
                 .setHttpAcceptQueueSize(1024)
                 .setHttpsEnabled(true)
-                .setProcessForwarded(true)
+                .setProcessForwarded(IGNORE)
                 .setLogPath("/log")
                 .setLogEnabled(false)
                 .setLogMaxFileSize(DataSize.of(1, GIGABYTE))

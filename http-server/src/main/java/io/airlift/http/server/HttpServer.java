@@ -178,12 +178,13 @@ public class HttpServer
         baseHttpConfiguration.setSendServerVersion(false);
         baseHttpConfiguration.setSendXPoweredBy(false);
         baseHttpConfiguration.setNotifyRemoteAsyncErrors(true); // Pass remote exceptions to AsyncContext
-        if (config.isProcessForwarded()) {
-            baseHttpConfiguration.addCustomizer(new ForwardedRequestCustomizer());
-        }
-        else {
-            baseHttpConfiguration.addCustomizer(new RejectForwardedRequestCustomizer());
-        }
+
+        baseHttpConfiguration.addCustomizer(switch (config.getProcessForwarded()) {
+            case REJECT -> new RejectForwardedRequestCustomizer();
+            case ACCEPT -> new ForwardedRequestCustomizer();
+            case IGNORE -> new IgnoreForwardedRequestCustomizer();
+        });
+
         if (config.getMaxRequestHeaderSize() != null) {
             baseHttpConfiguration.setRequestHeaderSize(toIntExact(config.getMaxRequestHeaderSize().toBytes()));
         }

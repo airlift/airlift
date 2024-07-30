@@ -25,8 +25,10 @@ import io.airlift.units.MinDataSize;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
+import static io.airlift.http.server.HttpServerConfig.ProcessForwardedMode.REJECT;
 import static io.airlift.units.DataSize.Unit.KILOBYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
+import static java.util.Locale.ENGLISH;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -62,7 +64,7 @@ public class HttpServerConfig
     private DataSize logMaxFileSize = DataSize.of(100, MEGABYTE);
     private boolean logCompressionEnabled = true;
 
-    private boolean processForwarded;
+    private ProcessForwardedMode processForwarded = REJECT;
 
     private Integer httpAcceptorThreads;
     private Integer httpSelectorThreads;
@@ -174,14 +176,14 @@ public class HttpServerConfig
         return this;
     }
 
-    public boolean isProcessForwarded()
+    public ProcessForwardedMode getProcessForwarded()
     {
         return processForwarded;
     }
 
     @Config("http-server.process-forwarded")
     @ConfigDescription("Process Forwarded and X-Forwarded headers (for proxied environments)")
-    public HttpServerConfig setProcessForwarded(boolean processForwarded)
+    public HttpServerConfig setProcessForwarded(ProcessForwardedMode processForwarded)
     {
         this.processForwarded = processForwarded;
         return this;
@@ -494,5 +496,21 @@ public class HttpServerConfig
     {
         this.http2StreamIdleTimeout = http2StreamIdleTimeout;
         return this;
+    }
+
+    public enum ProcessForwardedMode
+    {
+        ACCEPT,
+        REJECT,
+        IGNORE;
+
+        public static ProcessForwardedMode fromString(String value)
+        {
+            return switch (value.toUpperCase(ENGLISH)) {
+                case "TRUE" -> ACCEPT;
+                case "FALSE" -> REJECT;
+                default -> valueOf(value.toUpperCase(ENGLISH));
+            };
+        }
     }
 }
