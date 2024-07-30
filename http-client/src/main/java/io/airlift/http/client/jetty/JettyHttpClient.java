@@ -268,6 +268,9 @@ public class JettyHttpClient
                 if (config.getTcpKeepAliveIdleTime().isPresent()) {
                     setKeepAlive(selectable, config.getTcpKeepAliveIdleTime().get());
                 }
+                if (config.getIpTos().isPresent()) {
+                    setIpTos(selectable, config.getIpTos().get());
+                }
             }
         };
 
@@ -463,6 +466,17 @@ public class JettyHttpClient
         }
         else {
             throw new IOException("Not a NetworkChannel. Cannot enable keep alive for %s".formatted(selectable.getClass()));
+        }
+    }
+
+    private static void setIpTos(SelectableChannel selectable, Integer ipTos)
+            throws IOException
+    {
+        if (selectable instanceof NetworkChannel channel) {
+            channel.setOption(StandardSocketOptions.IP_TOS, ipTos);
+        }
+        else {
+            throw new IOException("Not a NetworkChannel. Cannot set IP_TOS for %s".formatted(selectable.getClass()));
         }
     }
 

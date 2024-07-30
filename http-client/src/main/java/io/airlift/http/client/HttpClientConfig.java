@@ -84,6 +84,7 @@ public class HttpClientConfig
     private List<String> includedCipherSuites = ImmutableList.of();
     private String automaticHttpsSharedSecret;
     private Optional<Duration> tcpKeepAliveIdleTime = Optional.empty();
+    private Optional<Integer> ipTos = Optional.empty();
 
     /**
      * This property is initialized with Jetty's default excluded ciphers list.
@@ -660,6 +661,19 @@ public class HttpClientConfig
     public HttpClientConfig setTcpKeepAliveIdleTime(Duration tcpKeepAliveIdleTime)
     {
         this.tcpKeepAliveIdleTime = Optional.ofNullable(tcpKeepAliveIdleTime);
+        return this;
+    }
+
+    @NotNull
+    public Optional<Integer> getIpTos()
+    {
+        return ipTos;
+    }
+
+    @Config("http-client.ip-tos")
+    public HttpClientConfig setIpTos(Integer ipTos)
+    {
+        this.ipTos = Optional.ofNullable(ipTos);
         return this;
     }
 
