@@ -1,0 +1,18 @@
+project:
+  name: airlift
+  description: Airlift is a framework for building REST services in Java.
+  license: Apache-2
+  java:
+    groupId: pl.wendigo.airlift
+    version: 253
+
+release:
+  github:
+    owner: wendigo
+    overwrite: true
+    uploadAssets: NEVER
+    files: false
+    draft: true
+    releaseNotes:
+      enabled: true
+      configurationFile: .github/release_config.yml

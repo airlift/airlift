@@ -1,0 +1,45 @@
+name: Release with Maven
+
+on:
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Configure Git user
+        run: |
+          git config user.name "${{ github.event.head_commit.committer.name }}"
+          git config user.email "${{ github.event.head_commit.committer.email }}"
+
+      - name: Prepare release
+        run: ./mvnw -B release:prepare
+
+      - name: Export release version
+        run: |
+          echo "VERSION=$(grep 'scm.tag=' release.properties | cut -d'=' -f2)" >> $GITHUB_ENV
+
+      - name: Publish artifacts to Maven Central
+        run: ./mvnw -B release:perform -Darguments="-Dgpg.skip -Dmaven.deploy.skip=true"
+
+      - name: Finish the release
+        uses: jreleaser/release-action@v2
+        env:
+          JRELEASER_PROJECT_VERSION: ${{ env.VERSION }}
+          JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          setup-java: false
