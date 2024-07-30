@@ -88,6 +88,9 @@
         <air.javadoc.lint>all,-missing</air.javadoc.lint>
         <air.compiler.fail-warnings>true</air.compiler.fail-warnings>
 
+        <!-- do not run tests on release -->
+        <air.release.preparation-goals>clean verify -DskipTests</air.release.preparation-goals>
+
         <project.build.targetJdk>21</project.build.targetJdk>
         <air.modernizer.java-version>8</air.modernizer.java-version>
 
@@ -387,4 +390,26 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>oss-stage</id>
+            <properties>
+                <!-- Stage files to the local directory, JReleaser will push them to OSSRH -->
+                <altDeploymentRepository>local::file:./target/staging-deploy</altDeploymentRepository>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-release-plugin</artifactId>
+                        <configuration>
+                            <!-- we will push commits and tags manually in the workflow -->
+                            <pushChanges>false</pushChanges>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

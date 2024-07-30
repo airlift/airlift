@@ -4,6 +4,7 @@
 target/
 /var
 pom.xml.versionsBackup
+pom.xml.releaseBackup
 test-output/
 /atlassian-ide-plugin.xml
 .idea
@@ -16,3 +17,4 @@ test-output/
 .pmd
 .flattened-pom.xml
 .attach_pid*
+release.properties
