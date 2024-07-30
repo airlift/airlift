@@ -1,3 +1,9 @@
+252
+
+- Allow configuration classes to implement interface
+- Add HTTP client destination idle timeout
+- Set HTTP client idle timeout for HTTP/2
+
 251
 
 - Update jjwt to 0.12.6
