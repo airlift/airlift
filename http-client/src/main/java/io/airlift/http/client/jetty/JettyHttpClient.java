@@ -17,6 +17,7 @@ import io.airlift.http.client.StreamingBodyGenerator;
 import io.airlift.http.client.jetty.HttpClientLogger.RequestInfo;
 import io.airlift.http.client.jetty.HttpClientLogger.ResponseInfo;
 import io.airlift.security.pem.PemReader;
+import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
@@ -147,9 +148,9 @@ public class JettyHttpClient
     private static final AttributeKey<String> CLIENT_NAME = stringKey("airlift.http.client_name");
 
     private final HttpClient httpClient;
-    private final long maxContentLength;
-    private final long requestTimeoutMillis;
-    private final long idleTimeoutMillis;
+    private final DataSize maxContentLength;
+    private final Duration requestTimeout;
+    private final Duration idleTimeout;
     private final long destinationIdleTimeoutMillis;
     private final boolean recordRequestComplete;
     private final boolean logEnabled;
@@ -248,9 +249,9 @@ public class JettyHttpClient
         requireNonNull(requestFilters, "requestFilters is null");
         requireNonNull(httpStatusListeners, "httpStatusListeners is null");
 
-        maxContentLength = config.getMaxContentLength().toBytes();
-        requestTimeoutMillis = config.getRequestTimeout().toMillis();
-        idleTimeoutMillis = config.getIdleTimeout().toMillis();
+        maxContentLength = config.getMaxContentLength();
+        requestTimeout = config.getRequestTimeout();
+        idleTimeout = config.getIdleTimeout();
         destinationIdleTimeoutMillis = config.getDestinationIdleTimeout().toMillis();
         recordRequestComplete = config.getRecordRequestComplete();
 
@@ -291,7 +292,7 @@ public class JettyHttpClient
         httpClient.setUserAgentField(null);
 
         // timeouts
-        httpClient.setIdleTimeout(idleTimeoutMillis);
+        httpClient.setIdleTimeout(idleTimeout.toMillis());
         httpClient.setConnectTimeout(config.getConnectTimeout().toMillis());
         httpClient.setAddressResolutionTimeout(config.getConnectTimeout().toMillis());
 
@@ -441,7 +442,7 @@ public class JettyHttpClient
             client.setInitialSessionRecvWindow(toIntExact(config.getHttp2InitialSessionReceiveWindowSize().toBytes()));
             client.setInitialStreamRecvWindow(toIntExact(config.getHttp2InitialStreamReceiveWindowSize().toBytes()));
             client.setInputBufferSize(toIntExact(config.getHttp2InputBufferSize().toBytes()));
-            client.setStreamIdleTimeout(idleTimeoutMillis);
+            client.setStreamIdleTimeout(idleTimeout.toMillis());
             client.setSelectors(config.getSelectorCount());
             protocols.add(new ClientConnectionFactoryOverHTTP2.HTTP2(client));
         }
@@ -812,7 +813,7 @@ public class JettyHttpClient
 
         JettyResponseFuture<T, E> future = new JettyResponseFuture<>(request, jettyRequest, requestSize::getBytes, responseHandler, span, stats, recordRequestComplete);
 
-        BufferingResponseListener listener = new BufferingResponseListener(future, Ints.saturatedCast(maxContentLength))
+        BufferingResponseListener listener = new BufferingResponseListener(future, Ints.saturatedCast(request.getMaxContentLength().orElse(maxContentLength).toBytes()))
         {
             @Override
             public void onBegin(Response response)
@@ -918,7 +919,6 @@ public class JettyHttpClient
         jettyRequest.method(finalRequest.getMethod());
 
         jettyRequest.headers(headers -> finalRequest.getHeaders().forEach(headers::add));
-
         BodyGenerator bodyGenerator = finalRequest.getBodyGenerator();
         if (bodyGenerator != null) {
             if (bodyGenerator instanceof StaticBodyGenerator generator) {
@@ -943,8 +943,8 @@ public class JettyHttpClient
         setPreserveAuthorization(jettyRequest, finalRequest.isPreserveAuthorizationOnRedirect());
 
         // timeouts
-        jettyRequest.timeout(requestTimeoutMillis, MILLISECONDS);
-        jettyRequest.idleTimeout(idleTimeoutMillis, MILLISECONDS);
+        jettyRequest.timeout(finalRequest.getRequestTimeout().orElse(requestTimeout).toMillis(), MILLISECONDS);
+        jettyRequest.idleTimeout(finalRequest.getIdleTimeout().orElse(idleTimeout).toMillis(), MILLISECONDS);
 
         return jettyRequest;
     }
@@ -990,7 +990,7 @@ public class JettyHttpClient
 
     public long getRequestTimeoutMillis()
     {
-        return requestTimeoutMillis;
+        return requestTimeout.toMillis();
     }
 
     @Override
@@ -999,12 +999,6 @@ public class JettyHttpClient
     public RequestStats getStats()
     {
         return stats;
-    }
-
-    @Override
-    public long getMaxContentLength()
-    {
-        return maxContentLength;
     }
 
     @Managed
