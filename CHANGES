@@ -1,3 +1,8 @@
+253
+
+- Add support for per-request timeouts in the http client
+- Add support for per-request max content length to the http client
+
 252
 
 - Allow configuration classes to implement interface
