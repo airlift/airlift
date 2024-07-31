@@ -4,6 +4,7 @@
 - Add support for per-request max content length to the http client
 - Introduce modes for processing X-Forwarded-* headers on the server
 - Update Jetty to 12.0.12
+- Add Jetty BOM to Airlift BOM
 
 252
 
