@@ -1,5 +1,6 @@
 253
 
+- Add support for response streaming to http client
 - Add support for per-request timeouts in the http client
 - Add support for per-request max content length to the http client
 - Introduce modes for processing X-Forwarded-* headers on the server

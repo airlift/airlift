@@ -4,9 +4,12 @@ import io.airlift.http.client.AbstractHttpClientTest;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.ResponseHandler;
+import io.airlift.http.client.StreamingResponse;
 import io.airlift.http.client.TestingSocksProxy;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+
+import java.util.Optional;
 
 public class TestJettyHttpClientSocksProxy
         extends AbstractHttpClientTest
@@ -16,6 +19,15 @@ public class TestJettyHttpClientSocksProxy
     {
         return new HttpClientConfig()
                 .setHttp2Enabled(false);
+    }
+
+    @Override
+    public Optional<StreamingResponse> executeRequest(CloseableTestHttpServer server, Request request)
+            throws Exception
+    {
+        TestingSocksProxy testingSocksProxy = new TestingSocksProxy().start();
+        JettyHttpClient client = server.createClient(createClientConfig().setSocksProxy(testingSocksProxy.getHostAndPort()));
+        return Optional.of(new TestingStreamingResponse(() -> client.executeStreaming(request), testingSocksProxy, client));
     }
 
     @Override

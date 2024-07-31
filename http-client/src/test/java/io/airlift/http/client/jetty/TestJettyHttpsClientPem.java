@@ -4,12 +4,14 @@ import io.airlift.http.client.AbstractHttpClientTest;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.ResponseHandler;
+import io.airlift.http.client.StreamingResponse;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Optional;
 
 import static com.google.common.io.Resources.getResource;
 import static io.airlift.http.client.Request.Builder.prepareGet;
@@ -34,6 +36,17 @@ public class TestJettyHttpsClientPem
     }
 
     @Override
+    public Optional<StreamingResponse> executeRequest(CloseableTestHttpServer server, Request request)
+            throws Exception
+    {
+        HttpClientConfig config = createClientConfig();
+        applyCertAndPem(config);
+
+        JettyHttpClient client = server.createClient(config);
+        return Optional.of(new TestingStreamingResponse(() -> client.executeStreaming(request), client));
+    }
+
+    @Override
     public <T, E extends Exception> T executeRequest(CloseableTestHttpServer server, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
@@ -44,12 +57,17 @@ public class TestJettyHttpsClientPem
     public <T, E extends Exception> T executeRequest(CloseableTestHttpServer server, HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
-        config.setKeyStorePath(getResource("client.pem").getPath())
-                .setTrustStorePath(getResource("ca.crt").getPath());
+        applyCertAndPem(config);
 
         try (JettyHttpClient client = server.createClient(config)) {
             return client.execute(request, responseHandler);
         }
+    }
+
+    private static void applyCertAndPem(HttpClientConfig config)
+    {
+        HttpClientConfig httpClientConfig = config.setKeyStorePath(getResource("client.pem").getPath());
+        httpClientConfig.setTrustStorePath(getResource("ca.crt").getPath());
     }
 
     // TLS connections seem to have some conditions that do not respect timeouts

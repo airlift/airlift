@@ -4,6 +4,9 @@ import io.airlift.http.client.AbstractHttpClientTest;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.ResponseHandler;
+import io.airlift.http.client.StreamingResponse;
+
+import java.util.Optional;
 
 public class TestJettyHttpClient
         extends AbstractHttpClientTest
@@ -13,6 +16,13 @@ public class TestJettyHttpClient
     {
         return new HttpClientConfig()
                 .setHttp2Enabled(false);
+    }
+
+    @Override
+    public Optional<StreamingResponse> executeRequest(CloseableTestHttpServer server, Request request)
+    {
+        JettyHttpClient client = server.createClient(createClientConfig());
+        return Optional.of(new TestingStreamingResponse(() -> client.executeStreaming(request), client));
     }
 
     @Override

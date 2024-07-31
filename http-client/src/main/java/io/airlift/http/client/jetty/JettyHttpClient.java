@@ -1,11 +1,13 @@
 package io.airlift.http.client.jetty;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ListMultimap;
 import com.google.common.net.HostAndPort;
 import com.google.common.primitives.Ints;
 import io.airlift.http.client.BodyGenerator;
 import io.airlift.http.client.ByteBufferBodyGenerator;
 import io.airlift.http.client.FileBodyGenerator;
+import io.airlift.http.client.HeaderName;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.HttpRequestFilter;
 import io.airlift.http.client.HttpStatusListener;
@@ -14,6 +16,7 @@ import io.airlift.http.client.RequestStats;
 import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.StaticBodyGenerator;
 import io.airlift.http.client.StreamingBodyGenerator;
+import io.airlift.http.client.StreamingResponse;
 import io.airlift.http.client.jetty.HttpClientLogger.RequestInfo;
 import io.airlift.http.client.jetty.HttpClientLogger.ResponseInfo;
 import io.airlift.security.pem.PemReader;
@@ -117,6 +120,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.InetAddresses.isInetAddress;
+import static io.airlift.http.client.ResponseHandlerUtils.propagate;
 import static io.airlift.http.client.jetty.AuthorizationPreservingHttpClient.setPreserveAuthorization;
 import static io.airlift.node.AddressToHostname.tryDecodeHostnameToAddress;
 import static io.airlift.security.cert.CertificateBuilder.certificateBuilder;
@@ -670,7 +674,120 @@ public class JettyHttpClient
         }
     }
 
+    @Override
+    public StreamingResponse executeStreaming(Request request)
+    {
+        request = applyRequestFilters(request);
+
+        Span span = startSpan(request);
+        request = injectTracing(request, span);
+
+        ExceptionHandler<StreamingResponse, RuntimeException> exceptionHandler = (r, exception) -> {
+            try {
+                span.setStatus(StatusCode.ERROR, exception.getMessage());
+                span.recordException(exception, Attributes.of(ExceptionAttributes.EXCEPTION_ESCAPED, true));
+
+                throw propagate(r, exception);
+            }
+            finally {
+                span.end();
+            }
+        };
+
+        return switch (internalExecute(request, exceptionHandler, span)) {
+            case InternalExceptionResponse<StreamingResponse> response -> response.exceptionResponse;
+            case InternalStandardResponse<StreamingResponse> response -> new StreamingResponse()
+            {
+                @Override
+                public io.airlift.http.client.HttpVersion getHttpVersion()
+                {
+                    return response.jettyResponse.getHttpVersion();
+                }
+
+                @Override
+                public int getStatusCode()
+                {
+                    return response.jettyResponse.getStatusCode();
+                }
+
+                @Override
+                public ListMultimap<HeaderName, String> getHeaders()
+                {
+                    return response.jettyResponse.getHeaders();
+                }
+
+                @Override
+                public long getBytesRead()
+                {
+                    return response.jettyResponse.getBytesRead();
+                }
+
+                @Override
+                public InputStream getInputStream()
+                {
+                    return response.jettyResponse.getInputStream();
+                }
+
+                @Override
+                public void close()
+                {
+                    try {
+                        response.completionHandler.run();
+                    }
+                    finally {
+                        span.end();
+                    }
+                }
+            };
+        };
+    }
+
     public <T, E extends Exception> T doExecute(Request request, ResponseHandler<T, E> responseHandler, Span span)
+            throws E
+    {
+        return switch (internalExecute(request, responseHandler::handleException, span)) {
+            case InternalExceptionResponse<T> response -> response.exceptionResponse;
+            case InternalStandardResponse<T> response -> {
+                try {
+                    yield responseHandler.handle(request, response.jettyResponse);
+                }
+                finally {
+                    response.completionHandler.run();
+                }
+            }
+        };
+    }
+
+    @FunctionalInterface
+    private interface ExceptionHandler<T, E extends Exception>
+    {
+        T handleException(Request request, Exception exception)
+                throws E;
+    }
+
+    @SuppressWarnings("unused")
+    private sealed interface InternalResponse<T> {}
+
+    private record InternalExceptionResponse<T>(T exceptionResponse)
+            implements InternalResponse<T>
+    {
+        private InternalExceptionResponse
+        {
+            requireNonNull(exceptionResponse, "exceptionResponse is null");
+        }
+    }
+
+    private record InternalStandardResponse<T>(JettyResponse jettyResponse, Runnable completionHandler)
+            implements InternalResponse<T>
+    {
+        private InternalStandardResponse
+        {
+            requireNonNull(jettyResponse, "jettyResponse is null");
+            requireNonNull(completionHandler, "completionHandler is null");
+        }
+    }
+
+    private <T, E extends Exception> InternalResponse<T> internalExecute(Request request, ExceptionHandler<T, E> exceptionHandler, Span span)
             throws E
     {
         long requestStart = System.nanoTime();
@@ -719,22 +836,22 @@ public class JettyHttpClient
             requestLogger.log(requestInfo, ResponseInfo.failed(Optional.empty(), Optional.of(e)));
             jettyRequest.abort(e);
             Thread.currentThread().interrupt();
-            return responseHandler.handleException(request, e);
+            return new InternalExceptionResponse<>(exceptionHandler.handleException(request, e));
         }
         catch (TimeoutException e) {
             stats.recordRequestFailed();
             requestLogger.log(requestInfo, ResponseInfo.failed(Optional.empty(), Optional.of(e)));
             jettyRequest.abort(e);
-            return responseHandler.handleException(request, e);
+            return new InternalExceptionResponse<>(exceptionHandler.handleException(request, e));
         }
         catch (ExecutionException e) {
             stats.recordRequestFailed();
             requestLogger.log(requestInfo, ResponseInfo.failed(Optional.empty(), Optional.of(e)));
             Throwable cause = e.getCause();
             if (cause instanceof Exception) {
-                return responseHandler.handleException(request, (Exception) cause);
+                return new InternalExceptionResponse<>(exceptionHandler.handleException(request, (Exception) cause));
             }
-            return responseHandler.handleException(request, new RuntimeException(cause));
+            return new InternalExceptionResponse<>(exceptionHandler.handleException(request, new RuntimeException(cause)));
         }
 
         // record attributes
@@ -751,13 +868,25 @@ public class JettyHttpClient
         // process response
         long responseStart = System.nanoTime();
 
-        JettyResponse jettyResponse = null;
-        T value;
         try {
-            jettyResponse = new JettyResponse(response, listener.getInputStream());
-            value = responseHandler.handle(request, jettyResponse);
+            JettyResponse jettyResponse = new JettyResponse(response, listener.getInputStream());
+            Runnable completionHandler = buildCompletionHandler(request, span, jettyResponse, requestSize, requestStart, responseStart);
+            return new InternalStandardResponse<>(jettyResponse, completionHandler);
         }
-        finally {
+        catch (Throwable e) {
+            Runnable completionHandler = buildCompletionHandler(request, span, null, requestSize, requestStart, responseStart);
+            try {
+                throw propagate(request, e);
+            }
+            finally {
+                completionHandler.run();
+            }
+        }
+    }
+
+    private Runnable buildCompletionHandler(Request request, Span span, JettyResponse jettyResponse, RequestSizeListener requestSize, long requestStart, long responseStart)
+    {
+        return () -> {
             if (jettyResponse != null) {
                 try {
                     jettyResponse.getInputStream().close();
@@ -770,8 +899,7 @@ public class JettyHttpClient
             if (recordRequestComplete) {
                 recordRequestComplete(stats, request, requestSize.getBytes(), requestStart, jettyResponse, responseStart);
             }
-        }
-        return value;
+        };
     }
 
     static String getHttpVersion(HttpVersion version)
