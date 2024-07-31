@@ -31,8 +31,6 @@ public interface HttpClient
 
     RequestStats getStats();
 
-    long getMaxContentLength();
-
     @Override
     void close();
 

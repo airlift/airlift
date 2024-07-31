@@ -543,6 +543,33 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
+    public void testReadRequestTimeout()
+            throws Exception
+    {
+        try (CloseableTestHttpServer server = newServer()) {
+            URI uri = URI.create(server.baseURI().toASCIIString() + "/?sleep=1000");
+            Request request = prepareGet()
+                    .setIdleTimeout(new Duration(500, MILLISECONDS))
+                    .setUri(uri)
+                    .build();
+
+            assertThatThrownBy(() -> executeRequest(server, request, new ExceptionResponseHandler()))
+                    .isInstanceOfAny(IOException.class, TimeoutException.class);
+        }
+
+        try (CloseableTestHttpServer server = newServer()) {
+            URI uri = URI.create(server.baseURI().toASCIIString() + "/?sleep=1000");
+            Request request = prepareGet()
+                    .setRequestTimeout(new Duration(500, MILLISECONDS))
+                    .setUri(uri)
+                    .build();
+
+            assertThatThrownBy(() -> executeRequest(server, request, new ExceptionResponseHandler()))
+                    .isInstanceOfAny(IOException.class, TimeoutException.class);
+        }
+    }
+
+    @Test
     public void testResponseBody()
             throws Exception
     {

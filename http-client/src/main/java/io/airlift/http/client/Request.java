@@ -19,6 +19,8 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimap;
+import io.airlift.units.DataSize;
+import io.airlift.units.Duration;
 import io.opentelemetry.api.trace.SpanBuilder;
 
 import java.net.URI;
@@ -36,7 +38,10 @@ public final class Request
     private final URI uri;
     private final String method;
     private final ListMultimap<String, String> headers;
+    private final Optional<Duration> requestTimeout;
+    private final Optional<Duration> idleTimeout;
     private final BodyGenerator bodyGenerator;
+    private final Optional<DataSize> maxContentLength;
     private final Optional<SpanBuilder> spanBuilder;
     private final boolean followRedirects;
     private final boolean preserveAuthorizationOnRedirect;
@@ -46,7 +51,10 @@ public final class Request
             URI uri,
             String method,
             ListMultimap<String, String> headers,
+            Optional<Duration> requestTimeout,
+            Optional<Duration> idleTimeout,
             BodyGenerator bodyGenerator,
+            Optional<DataSize> maxContentLength,
             Optional<SpanBuilder> spanBuilder,
             boolean followRedirects,
             boolean preserveAuthorizationOnRedirect)
@@ -62,7 +70,10 @@ public final class Request
         this.uri = validateUri(uri);
         this.method = method;
         this.headers = ImmutableListMultimap.copyOf(headers);
+        this.requestTimeout = requireNonNull(requestTimeout, "requestTimeout is null");
+        this.idleTimeout = requireNonNull(idleTimeout, "idleTimeout is null");
         this.bodyGenerator = bodyGenerator;
+        this.maxContentLength = requireNonNull(maxContentLength, "maxContentLength is null");
         this.spanBuilder = requireNonNull(spanBuilder, "spanBuilder is null");
         this.followRedirects = followRedirects;
         this.preserveAuthorizationOnRedirect = preserveAuthorizationOnRedirect;
@@ -102,6 +113,21 @@ public final class Request
         return headers;
     }
 
+    public Optional<Duration> getRequestTimeout()
+    {
+        return requestTimeout;
+    }
+
+    public Optional<Duration> getIdleTimeout()
+    {
+        return idleTimeout;
+    }
+
+    public Optional<DataSize> getMaxContentLength()
+    {
+        return maxContentLength;
+    }
+
     public BodyGenerator getBodyGenerator()
     {
         return bodyGenerator;
@@ -130,6 +156,9 @@ public final class Request
                 .add("uri", uri)
                 .add("method", method)
                 .add("headers", headers)
+                .add("timeout", requestTimeout.orElse(null))
+                .add("idleTimeout", idleTimeout.orElse(null))
+                .add("maxContentLength", maxContentLength)
                 .add("bodyGenerator", bodyGenerator)
                 .add("spanBuilder", spanBuilder.isPresent() ? "present" : "empty")
                 .add("followRedirects", followRedirects)
@@ -148,6 +177,9 @@ public final class Request
                 Objects.equals(uri, r.uri) &&
                 Objects.equals(method, r.method) &&
                 Objects.equals(headers, r.headers) &&
+                Objects.equals(requestTimeout, r.requestTimeout) &&
+                Objects.equals(idleTimeout, r.idleTimeout) &&
+                Objects.equals(maxContentLength, r.maxContentLength) &&
                 Objects.equals(bodyGenerator, r.bodyGenerator) &&
                 Objects.equals(spanBuilder, r.spanBuilder) &&
                 Objects.equals(followRedirects, r.followRedirects) &&
@@ -162,6 +194,9 @@ public final class Request
                 uri,
                 method,
                 headers,
+                requestTimeout,
+                idleTimeout,
+                maxContentLength,
                 bodyGenerator,
                 spanBuilder,
                 followRedirects,
@@ -202,7 +237,7 @@ public final class Request
 
         public static Builder fromRequest(Request request)
         {
-            return new Builder()
+            Builder builder = new Builder()
                     .setUri(request.getUri())
                     .setMethod(request.getMethod())
                     .addHeaders(request.getHeaders())
@@ -211,6 +246,12 @@ public final class Request
                     .setFollowRedirects(request.isFollowRedirects())
                     .setVersion(request.getHttpVersion().orElse(null))
                     .setPreserveAuthorizationOnRedirect(request.isPreserveAuthorizationOnRedirect());
+
+            request.getRequestTimeout().ifPresent(builder::setRequestTimeout);
+            request.getIdleTimeout().ifPresent(builder::setIdleTimeout);
+            request.getMaxContentLength().ifPresent(builder::setMaxContentLength);
+
+            return builder;
         }
 
         private URI uri;
@@ -221,6 +262,9 @@ public final class Request
         private Optional<HttpVersion> version = Optional.empty();
         private boolean followRedirects = true;
         private boolean preserveAuthorizationOnRedirect;
+        private Optional<Duration> requestTimeout = Optional.empty();
+        private Optional<Duration> idleTimeout = Optional.empty();
+        private Optional<DataSize> maxContentLength = Optional.empty();
 
         public Builder setUri(URI uri)
         {
@@ -277,6 +321,24 @@ public final class Request
             return this;
         }
 
+        public Builder setRequestTimeout(Duration timeout)
+        {
+            this.requestTimeout = Optional.ofNullable(timeout);
+            return this;
+        }
+
+        public Builder setIdleTimeout(Duration timeout)
+        {
+            this.idleTimeout = Optional.ofNullable(timeout);
+            return this;
+        }
+
+        public Builder setMaxContentLength(DataSize maxContentLength)
+        {
+            this.maxContentLength = Optional.ofNullable(maxContentLength);
+            return this;
+        }
+
         public Builder setPreserveAuthorizationOnRedirect(boolean preserveAuthorizationOnRedirect)
         {
             this.preserveAuthorizationOnRedirect = preserveAuthorizationOnRedirect;
@@ -290,7 +352,10 @@ public final class Request
                     uri,
                     method,
                     headers,
+                    requestTimeout,
+                    idleTimeout,
                     bodyGenerator,
+                    maxContentLength,
                     Optional.ofNullable(spanBuilder),
                     followRedirects,
                     preserveAuthorizationOnRedirect);

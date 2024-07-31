@@ -20,6 +20,7 @@ import io.airlift.http.client.StreamingResponse;
 import io.airlift.http.client.jetty.HttpClientLogger.RequestInfo;
 import io.airlift.http.client.jetty.HttpClientLogger.ResponseInfo;
 import io.airlift.security.pem.PemReader;
+import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
@@ -51,6 +52,7 @@ import org.eclipse.jetty.client.InputStreamResponseListener;
 import org.eclipse.jetty.client.Origin.Address;
 import org.eclipse.jetty.client.PathRequestContent;
 import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.client.Socks4Proxy;
 import org.eclipse.jetty.client.transport.HttpClientConnectionFactory;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
@@ -71,7 +73,6 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.MonitoredQueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.Sweeper;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
@@ -142,7 +143,6 @@ public class JettyHttpClient
         implements io.airlift.http.client.HttpClient
 {
     private static final String STATS_KEY = "airlift_stats";
-    private static final long SWEEP_PERIOD_MILLIS = 5000;
 
     private static final AtomicLong NAME_COUNTER = new AtomicLong();
 
@@ -152,9 +152,10 @@ public class JettyHttpClient
     private static final AttributeKey<String> CLIENT_NAME = stringKey("airlift.http.client_name");
 
     private final HttpClient httpClient;
-    private final long maxContentLength;
-    private final long requestTimeoutMillis;
-    private final long idleTimeoutMillis;
+    private final DataSize maxContentLength;
+    private final Duration requestTimeout;
+    private final Duration idleTimeout;
+    private final long destinationIdleTimeoutMillis;
     private final boolean recordRequestComplete;
     private final boolean logEnabled;
     private final MonitoredQueuedThreadPoolMBean monitoredQueuedThreadPoolMBean;
@@ -252,9 +253,10 @@ public class JettyHttpClient
         requireNonNull(requestFilters, "requestFilters is null");
         requireNonNull(httpStatusListeners, "httpStatusListeners is null");
 
-        maxContentLength = config.getMaxContentLength().toBytes();
-        requestTimeoutMillis = config.getRequestTimeout().toMillis();
-        idleTimeoutMillis = config.getIdleTimeout().toMillis();
+        maxContentLength = config.getMaxContentLength();
+        requestTimeout = config.getRequestTimeout();
+        idleTimeout = config.getIdleTimeout();
+        destinationIdleTimeoutMillis = config.getDestinationIdleTimeout().toMillis();
         recordRequestComplete = config.getRecordRequestComplete();
 
         creationLocation.fillInStackTrace();
@@ -285,6 +287,7 @@ public class JettyHttpClient
 
         httpClient.setMaxConnectionsPerDestination(config.getMaxConnectionsPerServer());
         httpClient.setMaxRequestsQueuedPerDestination(config.getMaxRequestsQueuedPerDestination());
+        httpClient.setDestinationIdleTimeout(destinationIdleTimeoutMillis);
 
         // disable cookies
         httpClient.setHttpCookieStore(new HttpCookieStore.Empty());
@@ -293,7 +296,7 @@ public class JettyHttpClient
         httpClient.setUserAgentField(null);
 
         // timeouts
-        httpClient.setIdleTimeout(idleTimeoutMillis);
+        httpClient.setIdleTimeout(idleTimeout.toMillis());
         httpClient.setConnectTimeout(config.getConnectTimeout().toMillis());
         httpClient.setAddressResolutionTimeout(config.getConnectTimeout().toMillis());
 
@@ -324,12 +327,6 @@ public class JettyHttpClient
             }
             resolver.resolve(host, port, promise);
         });
-
-        // Jetty client connections can sometimes get stuck while closing which reduces
-        // the available connections.  The Jetty Sweeper periodically scans the active
-        // connection pool looking for connections in the closed state, and if a connection
-        // is observed in the closed state multiple times, it logs, and destroys the connection.
-        httpClient.addBean(new Sweeper(httpClient.getScheduler(), SWEEP_PERIOD_MILLIS), true);
 
         // track connection statistics
         ConnectionStatistics connectionStats = new ConnectionStatistics();
@@ -449,6 +446,7 @@ public class JettyHttpClient
             client.setInitialSessionRecvWindow(toIntExact(config.getHttp2InitialSessionReceiveWindowSize().toBytes()));
             client.setInitialStreamRecvWindow(toIntExact(config.getHttp2InitialStreamReceiveWindowSize().toBytes()));
             client.setInputBufferSize(toIntExact(config.getHttp2InputBufferSize().toBytes()));
+            client.setStreamIdleTimeout(idleTimeout.toMillis());
             client.setSelectors(config.getSelectorCount());
             protocols.add(new ClientConnectionFactoryOverHTTP2.HTTP2(client));
         }
@@ -943,7 +941,7 @@ public class JettyHttpClient
 
         JettyResponseFuture<T, E> future = new JettyResponseFuture<>(request, jettyRequest, requestSize::getBytes, responseHandler, span, stats, recordRequestComplete);
 
-        BufferingResponseListener listener = new BufferingResponseListener(future, Ints.saturatedCast(maxContentLength))
+        BufferingResponseListener listener = new BufferingResponseListener(future, Ints.saturatedCast(request.getMaxContentLength().orElse(maxContentLength).toBytes()))
         {
             @Override
             public void onBegin(Response response)
@@ -1039,7 +1037,7 @@ public class JettyHttpClient
         jettyRequest.onResponseBegin(response -> listener.onResponseBegin());
         jettyRequest.onComplete(result -> listener.onFinish());
         jettyRequest.onComplete(result -> {
-            if (result.isFailed() && result.getFailure() instanceof TimeoutException) {
+            if (result.isFailed() && shouldBeDiagnosed(result)) {
                 clientDiagnostics.logDiagnosticsInfo(httpClient);
             }
         });
@@ -1049,7 +1047,6 @@ public class JettyHttpClient
         jettyRequest.method(finalRequest.getMethod());
 
         jettyRequest.headers(headers -> finalRequest.getHeaders().forEach(headers::add));
-
         BodyGenerator bodyGenerator = finalRequest.getBodyGenerator();
         if (bodyGenerator != null) {
             if (bodyGenerator instanceof StaticBodyGenerator generator) {
@@ -1074,10 +1071,15 @@ public class JettyHttpClient
         setPreserveAuthorization(jettyRequest, finalRequest.isPreserveAuthorizationOnRedirect());
 
         // timeouts
-        jettyRequest.timeout(requestTimeoutMillis, MILLISECONDS);
-        jettyRequest.idleTimeout(idleTimeoutMillis, MILLISECONDS);
+        jettyRequest.timeout(finalRequest.getRequestTimeout().orElse(requestTimeout).toMillis(), MILLISECONDS);
+        jettyRequest.idleTimeout(finalRequest.getIdleTimeout().orElse(idleTimeout).toMillis(), MILLISECONDS);
 
         return jettyRequest;
+    }
+
+    private boolean shouldBeDiagnosed(Result result)
+    {
+        return result.getFailure() instanceof TimeoutException || result.getFailure() instanceof RejectedExecutionException;
     }
 
     private static PathRequestContent fileContent(Path path)
@@ -1116,7 +1118,7 @@ public class JettyHttpClient
 
     public long getRequestTimeoutMillis()
     {
-        return requestTimeoutMillis;
+        return requestTimeout.toMillis();
     }
 
     @Override
@@ -1125,12 +1127,6 @@ public class JettyHttpClient
     public RequestStats getStats()
     {
         return stats;
-    }
-
-    @Override
-    public long getMaxContentLength()
-    {
-        return maxContentLength;
     }
 
     @Managed

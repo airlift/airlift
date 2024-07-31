@@ -1,6 +1,17 @@
-252
+253
 
 - Add support for response streaming to http client
+- Add support for per-request timeouts in the http client
+- Add support for per-request max content length to the http client
+- Introduce modes for processing X-Forwarded-* headers on the server
+- Update Jetty to 12.0.12
+- Add Jetty BOM to Airlift BOM
+
+252
+
+- Allow configuration classes to implement interface
+- Add HTTP client destination idle timeout
+- Set HTTP client idle timeout for HTTP/2
 
 251
 
