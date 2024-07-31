@@ -170,7 +170,7 @@ def create_symlink(source, target):
 
 def create_app_symlinks(options):
     """
-    Symlink the 'etc' and 'plugin' directory into the data directory.
+    Symlink the 'etc' and 'plugin' directories into the data directory.
 
     This is needed to support programs that reference 'etc/xyz' from within
     their config files: log.levels-file=etc/log.properties
