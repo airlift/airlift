@@ -183,6 +183,7 @@
                         <properties>remove</properties>
                         <repositories>remove</repositories>
                         <distributionManagement>remove</distributionManagement>
+                        <dependencyManagement>resolve</dependencyManagement>
                     </pomElements>
                 </configuration>
                 <executions>
