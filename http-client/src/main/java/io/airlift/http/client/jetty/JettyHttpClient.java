@@ -314,6 +314,7 @@ public class JettyHttpClient
         httpClient.setByteBufferPool(new ArrayByteBufferPool());
         httpClient.setExecutor(createExecutor(name, config.getMinThreads(), config.getMaxThreads()));
         httpClient.setScheduler(createScheduler(name, config.getTimeoutConcurrency(), config.getTimeoutThreads()));
+        httpClient.setStrictEventOrdering(config.isStrictEventOrdering());
 
         JettyAsyncSocketAddressResolver resolver = new JettyAsyncSocketAddressResolver(
                 httpClient.getExecutor(),
