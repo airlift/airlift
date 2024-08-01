@@ -1,3 +1,11 @@
+255
+
+- Add support for pluggable secret providers
+
+254
+
+- Fix invalid BOM
+
 253
 
 - Add support for response streaming to http client
