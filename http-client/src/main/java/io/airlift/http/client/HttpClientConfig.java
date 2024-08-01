@@ -22,6 +22,7 @@ import com.google.inject.ConfigurationException;
 import com.google.inject.spi.Message;
 import io.airlift.configuration.Config;
 import io.airlift.configuration.ConfigDescription;
+import io.airlift.configuration.ConfigHidden;
 import io.airlift.configuration.ConfigSecuritySensitive;
 import io.airlift.configuration.DefunctConfig;
 import io.airlift.configuration.LegacyConfig;
@@ -84,6 +85,7 @@ public class HttpClientConfig
     private List<String> includedCipherSuites = ImmutableList.of();
     private String automaticHttpsSharedSecret;
     private Optional<Duration> tcpKeepAliveIdleTime = Optional.empty();
+    private boolean strictEventOrdering;
 
     /**
      * This property is initialized with Jetty's default excluded ciphers list.
@@ -660,6 +662,19 @@ public class HttpClientConfig
     public HttpClientConfig setTcpKeepAliveIdleTime(Duration tcpKeepAliveIdleTime)
     {
         this.tcpKeepAliveIdleTime = Optional.ofNullable(tcpKeepAliveIdleTime);
+        return this;
+    }
+
+    public boolean isStrictEventOrdering()
+    {
+        return strictEventOrdering;
+    }
+
+    @ConfigHidden
+    @Config("http-client.strict-event-ordering")
+    public HttpClientConfig setStrictEventOrdering(boolean strictEventOrdering)
+    {
+        this.strictEventOrdering = strictEventOrdering;
         return this;
     }
 
