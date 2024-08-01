@@ -114,6 +114,8 @@ public class HttpClientConfig
     private Duration logFlushInterval = new Duration(10, SECONDS);
     private boolean logCompressionEnabled = true;
     private boolean verifyHostname = true;
+    private Optional<String> httpProxyUser = Optional.empty();
+    private Optional<String> httpProxyPassword = Optional.empty();
 
     public boolean isVerifyHostname()
     {
@@ -272,6 +274,31 @@ public class HttpClientConfig
     public HttpClientConfig setHttpProxy(HostAndPort httpProxy)
     {
         this.httpProxy = httpProxy;
+        return this;
+    }
+
+    public Optional<String> getHttpProxyUser()
+    {
+        return httpProxyUser;
+    }
+
+    @Config("http-client.http-proxy.user")
+    public HttpClientConfig setHttpProxyUser(String httpProxyUser)
+    {
+        this.httpProxyUser = Optional.ofNullable(httpProxyUser);
+        return this;
+    }
+
+    public Optional<String> getHttpProxyPassword()
+    {
+        return httpProxyPassword;
+    }
+
+    @Config("http-client.http-proxy.password")
+    @ConfigSecuritySensitive
+    public HttpClientConfig setHttpProxyPassword(String httpProxyPassword)
+    {
+        this.httpProxyPassword = Optional.ofNullable(httpProxyPassword);
         return this;
     }
 

@@ -37,6 +37,7 @@ import io.opentelemetry.semconv.incubating.HttpIncubatingAttributes;
 import jakarta.annotation.PreDestroy;
 import jdk.net.ExtendedSocketOptions;
 import org.eclipse.jetty.client.AbstractConnectionPool;
+import org.eclipse.jetty.client.BasicAuthentication.BasicResult;
 import org.eclipse.jetty.client.ByteBufferRequestContent;
 import org.eclipse.jetty.client.BytesRequestContent;
 import org.eclipse.jetty.client.Destination;
@@ -133,6 +134,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.eclipse.jetty.client.ConnectionPoolAccessor.getActiveConnections;
 import static org.eclipse.jetty.client.ConnectionPoolAccessor.getIdleConnections;
 import static org.eclipse.jetty.client.HttpClient.normalizePort;
+import static org.eclipse.jetty.http.HttpHeader.PROXY_AUTHORIZATION;
 
 public class JettyHttpClient
         implements io.airlift.http.client.HttpClient
@@ -301,7 +303,13 @@ public class JettyHttpClient
         }
         HostAndPort httpProxy = config.getHttpProxy();
         if (httpProxy != null) {
-            httpClient.getProxyConfiguration().addProxy(new HttpProxy(new Address(httpProxy.getHost(), httpProxy.getPortOrDefault(8080)), config.isSecureProxy()));
+            Address proxyAddress = new Address(httpProxy.getHost(), httpProxy.getPortOrDefault(8080));
+            HttpProxy proxy = new HttpProxy(proxyAddress, config.isSecureProxy());
+            httpClient.getProxyConfiguration().addProxy(proxy);
+            if (config.getHttpProxyUser().isPresent() && config.getHttpProxyPassword().isPresent()) {
+                httpClient.getAuthenticationStore().addAuthenticationResult(
+                        new BasicResult(proxy.getURI(), PROXY_AUTHORIZATION, config.getHttpProxyUser().get(), config.getHttpProxyPassword().get()));
+            }
         }
 
         httpClient.setByteBufferPool(new ArrayByteBufferPool());
