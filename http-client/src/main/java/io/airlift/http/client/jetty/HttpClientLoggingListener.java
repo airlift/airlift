@@ -52,11 +52,6 @@ class HttpClientLoggingListener
     }
 
     @Override
-    public void onCommit(Request request)
-    {
-    }
-
-    @Override
     public void onContent(Request request, ByteBuffer content)
     {
         contentSize += content.remaining();
@@ -66,16 +61,6 @@ class HttpClientLoggingListener
     public void onFailure(Request request, Throwable failure)
     {
         requestEndTimestamp = System.nanoTime();
-    }
-
-    @Override
-    public void onHeaders(Request request)
-    {
-    }
-
-    @Override
-    public void onQueued(Request request)
-    {
     }
 
     @Override
