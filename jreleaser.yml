@@ -73,4 +73,4 @@ release:
     draft: false
     releaseNotes:
       enabled: true
-      configurationFile: .github/changelog_config.yml
+      configurationFile: .github/release.yml
