@@ -802,16 +802,6 @@ public class JettyHttpClient
             {
                 callHttpStatusListeners(response);
             }
-
-            @Override
-            public void onContent(Response response, ByteBuffer content)
-            {
-                // ignore empty blocks
-                if (content.remaining() == 0) {
-                    return;
-                }
-                super.onContent(response, content);
-            }
         };
 
         long requestTimestamp = System.currentTimeMillis();
@@ -983,10 +973,7 @@ public class JettyHttpClient
 
     private void addLoggingListener(HttpRequest jettyRequest, long requestTimestamp)
     {
-        HttpClientLoggingListener loggingListener = new HttpClientLoggingListener(jettyRequest, requestTimestamp, requestLogger);
-        jettyRequest.listener(loggingListener);
-        jettyRequest.onResponseBegin(loggingListener);
-        jettyRequest.onComplete(loggingListener);
+        jettyRequest.listener(new HttpClientLoggingListener(jettyRequest, requestTimestamp, requestLogger));
     }
 
     private Request applyRequestFilters(Request request)
@@ -1034,8 +1021,8 @@ public class JettyHttpClient
         jettyRequest.onRequestBegin(request -> listener.onRequestBegin());
         jettyRequest.onRequestSuccess(request -> listener.onRequestEnd());
         jettyRequest.onResponseBegin(response -> listener.onResponseBegin());
-        jettyRequest.onComplete(result -> listener.onFinish());
         jettyRequest.onComplete(result -> {
+            listener.onFinish();
             if (result.isFailed() && shouldBeDiagnosed(result)) {
                 clientDiagnostics.logDiagnosticsInfo(httpClient);
             }
