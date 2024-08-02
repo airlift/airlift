@@ -68,9 +68,15 @@ public abstract class AbstractHttpClientTestHttpProxy
     public <T, E extends Exception> T executeRequest(CloseableTestHttpServer server, HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
-        try (TestingHttpProxy testingHttpProxy = new TestingHttpProxy(keystore); JettyHttpClient client = server.createClient(config.setHttpProxy(testingHttpProxy.getHostAndPort()))) {
+        try (TestingHttpProxy testingHttpProxy = createTestingHttpProxy(); JettyHttpClient client = server.createClient(config.setHttpProxy(testingHttpProxy.getHostAndPort()))) {
             return client.execute(request, new ProxyResponseHandler<>(responseHandler));
         }
+    }
+
+    protected TestingHttpProxy createTestingHttpProxy()
+            throws Exception
+    {
+        return new TestingHttpProxy(keystore);
     }
 
     public static class ProxyResponseHandler<T, E extends Exception>
