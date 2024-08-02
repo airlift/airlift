@@ -56,7 +56,7 @@ deploy:
         snapshotUrl: https://oss.sonatype.org/content/repositories/snapshots/
         javadocJar: false # Not every module has javadoc (packaging)
         closeRepository: true
-        releaseRepository: false # for the first time let's release manually to see whether next steps will be successful
+        releaseRepository: true
         stagingRepositories:
           - target/checkout/target/staging-deploy
 
