@@ -6,7 +6,7 @@ on:
       push:
         description: 'Push artifacts to Central and commits to the repository'
         required: true
-        default: false
+        default: true
         type: 'boolean'
 
 jobs:
