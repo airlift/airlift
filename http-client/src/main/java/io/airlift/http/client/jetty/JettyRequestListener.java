@@ -1,10 +1,15 @@
 package io.airlift.http.client.jetty;
 
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.client.Result;
+
 import java.net.URI;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 class JettyRequestListener
+        implements Request.Listener, Response.Listener
 {
     enum State
     {
@@ -60,7 +65,8 @@ class JettyRequestListener
         return responseFinished.get();
     }
 
-    public void onRequestBegin()
+    @Override
+    public void onBegin(Request request)
     {
         changeState(State.SENDING_REQUEST);
 
@@ -68,7 +74,8 @@ class JettyRequestListener
         requestStarted.compareAndSet(0, now);
     }
 
-    public void onRequestEnd()
+    @Override
+    public void onSuccess(Request request)
     {
         changeState(State.AWAITING_RESPONSE);
 
@@ -77,7 +84,8 @@ class JettyRequestListener
         requestFinished.compareAndSet(0, now);
     }
 
-    public void onResponseBegin()
+    @Override
+    public void onBegin(Response response)
     {
         changeState(State.READING_RESPONSE);
 
@@ -87,7 +95,8 @@ class JettyRequestListener
         responseStarted.compareAndSet(0, now);
     }
 
-    public void onFinish()
+    @Override
+    public void onComplete(Result result)
     {
         changeState(State.FINISHED);
 
