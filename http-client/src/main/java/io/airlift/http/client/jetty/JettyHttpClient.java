@@ -941,8 +941,7 @@ public class JettyHttpClient
 
         JettyResponseFuture<T, E> future = new JettyResponseFuture<>(request, jettyRequest, requestSize::getBytes, responseHandler, span, stats, recordRequestComplete);
 
-        BufferingResponseListener listener = new BufferingResponseListener(future, Ints.saturatedCast(request.getMaxContentLength().orElse(maxContentLength).toBytes()))
-        {
+        JettyResponseListener<T, E> listener = new JettyResponseListener<>(jettyRequest, future, Ints.saturatedCast(request.getMaxContentLength().orElse(maxContentLength).toBytes())) {
             @Override
             public void onBegin(Response response)
             {
@@ -957,17 +956,17 @@ public class JettyHttpClient
         }
 
         try {
-            jettyRequest.send(listener);
+            return listener.send();
         }
         catch (RuntimeException e) {
             if (!(e instanceof RejectedExecutionException)) {
                 e = new RejectedExecutionException(e);
             }
             // normally this is a rejected execution exception because the client has been closed
-            future.failed(e);
             requestLogger.log(RequestInfo.from(jettyRequest, requestTimestamp), ResponseInfo.failed(Optional.empty(), Optional.of(e)));
+            future.failed(e);
+            return future;
         }
-        return future;
     }
 
     private void callHttpStatusListeners(Response response)
