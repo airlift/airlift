@@ -1,5 +1,6 @@
 package io.airlift.http.client.jetty;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
 import com.google.common.net.HostAndPort;
@@ -1014,7 +1015,13 @@ public class JettyHttpClient
 
     private boolean shouldBeDiagnosed(Result result)
     {
-        return result.getFailure() instanceof TimeoutException || result.getFailure() instanceof RejectedExecutionException;
+        return Throwables.getCausalChain(result.getFailure()).stream()
+                .anyMatch(e ->
+                        e instanceof TimeoutException ||
+                        e instanceof RejectedExecutionException ||
+                        e instanceof InterruptedException ||
+                        e instanceof IllegalArgumentException ||
+                        e instanceof IllegalStateException);
     }
 
     private static PathRequestContent fileContent(Path path)
