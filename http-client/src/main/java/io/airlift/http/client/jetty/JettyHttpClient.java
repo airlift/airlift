@@ -793,20 +793,11 @@ public class JettyHttpClient
         long requestStart = System.nanoTime();
 
         // create jetty request and response listener
-        HttpRequest jettyRequest = buildJettyRequest(request);
-
-        RequestSizeListener requestSizeListener = new RequestSizeListener();
-        jettyRequest.onRequestContent(requestSizeListener);
-
-        long requestTimestamp = System.currentTimeMillis();
-        RequestInfo requestInfo = RequestInfo.from(jettyRequest, requestTimestamp);
-        if (logEnabled) {
-            jettyRequest.listener(new HttpClientLoggingListener(jettyRequest, requestTimestamp, requestLogger));
-        }
+        RequestContext context = buildRequestContext(request);
 
         InputStreamResponseListener listener = new InputStreamResponseListener();
         // fire the request
-        jettyRequest.send(listener);
+        context.request().send(listener);
 
         // wait for response to begin
         Response response;
@@ -815,20 +806,20 @@ public class JettyHttpClient
         }
         catch (InterruptedException e) {
             stats.recordRequestFailed();
-            requestLogger.log(requestInfo, ResponseInfo.failed(Optional.empty(), Optional.of(e)));
-            jettyRequest.abort(e);
+            requestLogger.log(context.info(), ResponseInfo.failed(Optional.empty(), Optional.of(e)));
+            context.request().abort(e);
             Thread.currentThread().interrupt();
             return new InternalExceptionResponse<>(exceptionHandler.handleException(request, e));
         }
         catch (TimeoutException e) {
             stats.recordRequestFailed();
-            requestLogger.log(requestInfo, ResponseInfo.failed(Optional.empty(), Optional.of(e)));
-            jettyRequest.abort(e);
+            requestLogger.log(context.info(), ResponseInfo.failed(Optional.empty(), Optional.of(e)));
+            context.request().abort(e);
             return new InternalExceptionResponse<>(exceptionHandler.handleException(request, e));
         }
         catch (ExecutionException e) {
             stats.recordRequestFailed();
-            requestLogger.log(requestInfo, ResponseInfo.failed(Optional.empty(), Optional.of(e)));
+            requestLogger.log(context.info(), ResponseInfo.failed(Optional.empty(), Optional.of(e)));
             Throwable cause = e.getCause();
             if (cause instanceof Exception) {
                 return new InternalExceptionResponse<>(exceptionHandler.handleException(request, (Exception) cause));
@@ -844,7 +835,7 @@ public class JettyHttpClient
         span.setAttribute(NetworkAttributes.NETWORK_PROTOCOL_VERSION, getHttpVersion(response.getVersion()));
 
         if (request.getBodyGenerator() != null) {
-            span.setAttribute(HttpIncubatingAttributes.HTTP_REQUEST_BODY_SIZE, requestSizeListener.getBytes());
+            span.setAttribute(HttpIncubatingAttributes.HTTP_REQUEST_BODY_SIZE, context.sizeListener().getBytes());
         }
 
         // process response
@@ -852,11 +843,11 @@ public class JettyHttpClient
 
         try {
             JettyResponse jettyResponse = new JettyResponse(response, listener.getInputStream());
-            Runnable completionHandler = buildCompletionHandler(request, span, jettyResponse, requestSizeListener, requestStart, responseStart);
+            Runnable completionHandler = buildCompletionHandler(request, span, jettyResponse, context.sizeListener(), requestStart, responseStart);
             return new InternalStandardResponse<>(jettyResponse, completionHandler);
         }
         catch (Throwable e) {
-            Runnable completionHandler = buildCompletionHandler(request, span, null, requestSizeListener, requestStart, responseStart);
+            Runnable completionHandler = buildCompletionHandler(request, span, null, context.sizeListener(), requestStart, responseStart);
             try {
                 throw propagate(request, e);
             }
@@ -916,21 +907,9 @@ public class JettyHttpClient
         Span span = startSpan(request);
         request = injectTracing(request, span);
 
-        HttpRequest jettyRequest = buildJettyRequest(request);
-        JettyRequestListener requestListener = new JettyRequestListener(request.getUri());
-        jettyRequest.listener(requestListener);
-        jettyRequest.attribute(STATS_KEY, requestListener);
-
-        RequestSizeListener requestSizeListener = new RequestSizeListener();
-        jettyRequest.onRequestContent(requestSizeListener);
-
-        JettyResponseFuture<T, E> future = new JettyResponseFuture<>(request, jettyRequest, requestSizeListener::getBytes, responseHandler, span, stats, recordRequestComplete);
-        JettyResponseListener<T, E> listener = new JettyResponseListener<>(jettyRequest, future, Ints.saturatedCast(request.getMaxContentLength().orElse(maxContentLength).toBytes()));
-
-        long requestTimestamp = System.currentTimeMillis();
-        if (logEnabled) {
-            jettyRequest.listener(new HttpClientLoggingListener(jettyRequest, requestTimestamp, requestLogger));
-        }
+        RequestContext jettyRequest = buildRequestContext(request);
+        JettyResponseFuture<T, E> future = new JettyResponseFuture<>(request, jettyRequest.request(), jettyRequest.sizeListener()::getBytes, responseHandler, span, stats, recordRequestComplete);
+        JettyResponseListener<T, E> listener = new JettyResponseListener<>(jettyRequest.request(), future, Ints.saturatedCast(request.getMaxContentLength().orElse(maxContentLength).toBytes()));
 
         try {
             return listener.send();
@@ -940,7 +919,7 @@ public class JettyHttpClient
                 e = new RejectedExecutionException(e);
             }
             // normally this is a rejected execution exception because the client has been closed
-            requestLogger.log(RequestInfo.from(jettyRequest, requestTimestamp), ResponseInfo.failed(Optional.empty(), Optional.of(e)));
+            requestLogger.log(jettyRequest.info(), ResponseInfo.failed(Optional.empty(), Optional.of(e)));
             future.failed(e);
             return future;
         }
@@ -978,8 +957,9 @@ public class JettyHttpClient
         return builder.build();
     }
 
-    private HttpRequest buildJettyRequest(Request finalRequest)
+    private RequestContext buildRequestContext(Request finalRequest)
     {
+        long requestTime = System.currentTimeMillis();
         HttpRequest jettyRequest = (HttpRequest) httpClient.newRequest(finalRequest.getUri());
         finalRequest.getHttpVersion().ifPresent(version -> {
             switch (version) {
@@ -1020,8 +1000,19 @@ public class JettyHttpClient
         // Add http status listeners
         jettyRequest.onResponseBegin(httpStatusListeners);
 
-        return jettyRequest;
+        // Add log listener
+        if (logEnabled) {
+            jettyRequest.listener(new HttpClientLoggingListener(jettyRequest, requestTime, requestLogger));
+        }
+
+        // Add request size listener
+        RequestSizeListener requestSizeListener = new RequestSizeListener();
+        jettyRequest.onRequestContent(requestSizeListener);
+
+        return new RequestContext(jettyRequest, RequestInfo.from(jettyRequest, requestTime), requestSizeListener, requestTime);
     }
+
+    private record RequestContext(HttpRequest request, RequestInfo info, RequestSizeListener sizeListener, long timestamp) {}
 
     private boolean shouldBeDiagnosed(Result result)
     {
