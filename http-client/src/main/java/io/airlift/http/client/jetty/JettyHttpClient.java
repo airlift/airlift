@@ -171,7 +171,7 @@ public class JettyHttpClient
     private final CachedDistribution currentResponseProcessTime;
 
     private final List<HttpRequestFilter> requestFilters;
-    private final List<HttpStatusListener> httpStatusListeners;
+    private final HttpStatusListeners httpStatusListeners;
     private final Exception creationLocation = new Exception();
     private final String name;
     private final TextMapPropagator propagator;
@@ -368,7 +368,7 @@ public class JettyHttpClient
         this.clientDiagnostics = new JettyClientDiagnostics();
 
         this.requestFilters = ImmutableList.copyOf(requestFilters);
-        this.httpStatusListeners = ImmutableList.copyOf(httpStatusListeners);
+        this.httpStatusListeners = new HttpStatusListeners(ImmutableList.copyOf(httpStatusListeners));
 
         this.monitoredQueuedThreadPoolMBean = new MonitoredQueuedThreadPoolMBean((MonitoredQueuedThreadPool) httpClient.getExecutor());
 
@@ -793,26 +793,18 @@ public class JettyHttpClient
         long requestStart = System.nanoTime();
 
         // create jetty request and response listener
-        JettyRequestListener requestListener = new JettyRequestListener(request.getUri());
-        HttpRequest jettyRequest = buildJettyRequest(request, requestListener);
-        InputStreamResponseListener listener = new InputStreamResponseListener()
-        {
-            @Override
-            public void onBegin(Response response)
-            {
-                callHttpStatusListeners(response);
-            }
-        };
+        HttpRequest jettyRequest = buildJettyRequest(request);
+
+        RequestSizeListener requestSizeListener = new RequestSizeListener();
+        jettyRequest.onRequestContent(requestSizeListener);
 
         long requestTimestamp = System.currentTimeMillis();
         RequestInfo requestInfo = RequestInfo.from(jettyRequest, requestTimestamp);
         if (logEnabled) {
-            addLoggingListener(jettyRequest, requestTimestamp);
+            jettyRequest.listener(new HttpClientLoggingListener(jettyRequest, requestTimestamp, requestLogger));
         }
 
-        RequestSizeListener requestSize = new RequestSizeListener();
-        jettyRequest.onRequestContent(requestSize);
-
+        InputStreamResponseListener listener = new InputStreamResponseListener();
         // fire the request
         jettyRequest.send(listener);
 
@@ -852,7 +844,7 @@ public class JettyHttpClient
         span.setAttribute(NetworkAttributes.NETWORK_PROTOCOL_VERSION, getHttpVersion(response.getVersion()));
 
         if (request.getBodyGenerator() != null) {
-            span.setAttribute(HttpIncubatingAttributes.HTTP_REQUEST_BODY_SIZE, requestSize.getBytes());
+            span.setAttribute(HttpIncubatingAttributes.HTTP_REQUEST_BODY_SIZE, requestSizeListener.getBytes());
         }
 
         // process response
@@ -860,11 +852,11 @@ public class JettyHttpClient
 
         try {
             JettyResponse jettyResponse = new JettyResponse(response, listener.getInputStream());
-            Runnable completionHandler = buildCompletionHandler(request, span, jettyResponse, requestSize, requestStart, responseStart);
+            Runnable completionHandler = buildCompletionHandler(request, span, jettyResponse, requestSizeListener, requestStart, responseStart);
             return new InternalStandardResponse<>(jettyResponse, completionHandler);
         }
         catch (Throwable e) {
-            Runnable completionHandler = buildCompletionHandler(request, span, null, requestSize, requestStart, responseStart);
+            Runnable completionHandler = buildCompletionHandler(request, span, null, requestSizeListener, requestStart, responseStart);
             try {
                 throw propagate(request, e);
             }
@@ -924,25 +916,20 @@ public class JettyHttpClient
         Span span = startSpan(request);
         request = injectTracing(request, span);
 
-        HttpRequest jettyRequest = buildJettyRequest(request, new JettyRequestListener(request.getUri()));
+        HttpRequest jettyRequest = buildJettyRequest(request);
+        JettyRequestListener requestListener = new JettyRequestListener(request.getUri());
+        jettyRequest.listener(requestListener);
+        jettyRequest.attribute(STATS_KEY, requestListener);
 
-        RequestSizeListener requestSize = new RequestSizeListener();
-        jettyRequest.onRequestContent(requestSize);
+        RequestSizeListener requestSizeListener = new RequestSizeListener();
+        jettyRequest.onRequestContent(requestSizeListener);
 
-        JettyResponseFuture<T, E> future = new JettyResponseFuture<>(request, jettyRequest, requestSize::getBytes, responseHandler, span, stats, recordRequestComplete);
-
-        JettyResponseListener<T, E> listener = new JettyResponseListener<>(jettyRequest, future, Ints.saturatedCast(request.getMaxContentLength().orElse(maxContentLength).toBytes())) {
-            @Override
-            public void onBegin(Response response)
-            {
-                callHttpStatusListeners(response);
-            }
-        };
+        JettyResponseFuture<T, E> future = new JettyResponseFuture<>(request, jettyRequest, requestSizeListener::getBytes, responseHandler, span, stats, recordRequestComplete);
+        JettyResponseListener<T, E> listener = new JettyResponseListener<>(jettyRequest, future, Ints.saturatedCast(request.getMaxContentLength().orElse(maxContentLength).toBytes()));
 
         long requestTimestamp = System.currentTimeMillis();
-
         if (logEnabled) {
-            addLoggingListener(jettyRequest, requestTimestamp);
+            jettyRequest.listener(new HttpClientLoggingListener(jettyRequest, requestTimestamp, requestLogger));
         }
 
         try {
@@ -957,23 +944,6 @@ public class JettyHttpClient
             future.failed(e);
             return future;
         }
-    }
-
-    private void callHttpStatusListeners(Response response)
-    {
-        httpStatusListeners.forEach(listener -> {
-            try {
-                listener.statusReceived(response.getStatus());
-            }
-            catch (Exception e) {
-                response.abort(e);
-            }
-        });
-    }
-
-    private void addLoggingListener(HttpRequest jettyRequest, long requestTimestamp)
-    {
-        jettyRequest.listener(new HttpClientLoggingListener(jettyRequest, requestTimestamp, requestLogger));
     }
 
     private Request applyRequestFilters(Request request)
@@ -1008,7 +978,7 @@ public class JettyHttpClient
         return builder.build();
     }
 
-    private HttpRequest buildJettyRequest(Request finalRequest, JettyRequestListener listener)
+    private HttpRequest buildJettyRequest(Request finalRequest)
     {
         HttpRequest jettyRequest = (HttpRequest) httpClient.newRequest(finalRequest.getUri());
         finalRequest.getHttpVersion().ifPresent(version -> {
@@ -1018,20 +988,8 @@ public class JettyHttpClient
                 case HTTP_3 -> jettyRequest.version(HttpVersion.HTTP_3);
             }
         });
-        jettyRequest.onRequestBegin(request -> listener.onRequestBegin());
-        jettyRequest.onRequestSuccess(request -> listener.onRequestEnd());
-        jettyRequest.onResponseBegin(response -> listener.onResponseBegin());
-        jettyRequest.onComplete(result -> {
-            listener.onFinish();
-            if (result.isFailed() && shouldBeDiagnosed(result)) {
-                clientDiagnostics.logDiagnosticsInfo(httpClient);
-            }
-        });
-
-        jettyRequest.attribute(STATS_KEY, listener);
 
         jettyRequest.method(finalRequest.getMethod());
-
         jettyRequest.headers(headers -> finalRequest.getHeaders().forEach(headers::add));
         BodyGenerator bodyGenerator = finalRequest.getBodyGenerator();
         if (bodyGenerator != null) {
@@ -1050,6 +1008,17 @@ public class JettyHttpClient
         // timeouts
         jettyRequest.timeout(finalRequest.getRequestTimeout().orElse(requestTimeout).toMillis(), MILLISECONDS);
         jettyRequest.idleTimeout(finalRequest.getIdleTimeout().orElse(idleTimeout).toMillis(), MILLISECONDS);
+
+        // Add stats collecting listener
+        JettyRequestListener requestListener = new JettyRequestListener(finalRequest.getUri());
+        jettyRequest.listener(requestListener);
+        jettyRequest.attribute(STATS_KEY, requestListener);
+
+        // Add diagnostics listener
+        jettyRequest.onComplete(new DiagnosticListener());
+
+        // Add http status listeners
+        jettyRequest.onResponseBegin(httpStatusListeners);
 
         return jettyRequest;
     }
@@ -1076,7 +1045,7 @@ public class JettyHttpClient
 
     public List<HttpStatusListener> getStatusListeners()
     {
-        return httpStatusListeners;
+        return httpStatusListeners.httpStatusListeners();
     }
 
     public long getRequestTimeoutMillis()
@@ -1355,6 +1324,40 @@ public class JettyHttpClient
         public long getBytes()
         {
             return bytes;
+        }
+    }
+
+    private record HttpStatusListeners(List<HttpStatusListener> httpStatusListeners)
+            implements Response.BeginListener
+    {
+        private HttpStatusListeners
+        {
+            httpStatusListeners = ImmutableList.copyOf(httpStatusListeners);
+        }
+
+        @Override
+        public void onBegin(Response response)
+        {
+            httpStatusListeners.forEach(listener -> {
+                try {
+                    listener.statusReceived(response.getStatus());
+                }
+                catch (Exception e) {
+                    response.abort(e);
+                }
+            });
+        }
+    }
+
+    private class DiagnosticListener
+            implements Response.CompleteListener
+    {
+        @Override
+        public void onComplete(Result result)
+        {
+            if (result.isFailed() && shouldBeDiagnosed(result)) {
+                clientDiagnostics.logDiagnosticsInfo(httpClient);
+            }
         }
     }
 }
