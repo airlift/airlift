@@ -14,6 +14,7 @@
 package io.airlift.http.client;
 
 import com.google.common.net.HostAndPort;
+import jakarta.servlet.Servlet;
 import org.eclipse.jetty.ee10.proxy.ProxyServlet;
 import org.eclipse.jetty.server.handler.ConnectHandler;
 
@@ -27,9 +28,15 @@ public class TestingHttpProxy
     public TestingHttpProxy(Optional<String> keystore)
             throws Exception
     {
+        this(keystore, new ProxyServlet());
+    }
+
+    public TestingHttpProxy(Optional<String> keystore, Servlet servlet)
+            throws Exception
+    {
         this.server = new TestingHttpServer(
                 keystore,
-                new ProxyServlet(),
+                servlet,
                 config -> config.setSendDateHeader(false),
                 Optional.of(new ConnectHandler()));
     }
