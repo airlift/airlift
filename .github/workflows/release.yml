@@ -19,6 +19,12 @@ jobs:
       STAGED_REPOSITORY: target/checkout/target/staging-deploy
 
     steps:
+      - name: Check if release is running from master
+        run: |
+          if [ "${GITHUB_REF}" != "refs/heads/master" ]; then
+            echo "Release is only allowed from master branch"
+            exit 1
+          fi
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
