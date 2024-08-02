@@ -34,7 +34,7 @@ jobs:
 
       - name: Configure git
         run: |
-          git config user.name "Airlift Release Bot"
+          git config user.name "Airlift Release"
           git config user.email "airlift-bot@airlift.io"
 
       - name: Lock branch before release
@@ -75,13 +75,13 @@ jobs:
         env:
           JRELEASER_PROJECT_VERSION: ${{ env.VERSION }}
           JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          JRELEASER_GPG_PUBLIC_KEY: ${{ env.JRELEASER_GPG_PUBLIC_KEY }}
+          JRELEASER_GPG_PUBLIC_KEY: ${{ vars.JRELEASER_GPG_PUBLIC_KEY }}
           JRELEASER_GPG_SECRET_KEY: ${{ secrets.JRELEASER_GPG_SECRET_KEY }}
           JRELEASER_GPG_PASSPHRASE: ${{ secrets.JRELEASER_GPG_PASSPHRASE }}
           JRELEASER_NEXUS2_MAVEN_CENTRAL_USERNAME: ${{ secrets.JRELEASER_NEXUS2_MAVEN_CENTRAL_USERNAME }}
           JRELEASER_NEXUS2_MAVEN_CENTRAL_TOKEN: ${{ secrets.JRELEASER_NEXUS2_MAVEN_CENTRAL_TOKEN }}
-          JRELEASER_NEXUS2_START_STAGE: UPLOAD
-          JRELEASER_NEXUS2_END_STAGE: ${{ inputs.push && 'CLOSE' || 'CLOSE' }}
+          JRELEASER_NEXUS2_END_STAGE: ${{ inputs.push && 'RELEASE' || 'CLOSE' }}
+          JRELEASER_SKIP_RELEASE: ${{ inputs.push && 'false' || 'true' }}
         with:
           setup-java: false
 
