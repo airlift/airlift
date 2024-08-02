@@ -165,6 +165,7 @@ public class HttpServer
         this.monitoredQueuedThreadPoolMBean = new MonitoredQueuedThreadPoolMBean(threadPool);
 
         boolean showStackTrace = config.isShowStackTrace();
+        boolean enableCompression = config.isCompressionEnabled();
 
         this.sslContextFactory = maybeSslContextFactory;
 
@@ -337,11 +338,11 @@ public class HttpServer
 
         // add handlers to Jetty
         StatisticsHandler statsHandler = new StatisticsHandler();
-        statsHandler.setHandler(createServletContext(theServlet, resources, parameters, filters, tokenManager, loginService, Set.of("http", "https"), showStackTrace, enableLegacyUriCompliance));
+        statsHandler.setHandler(createServletContext(theServlet, resources, parameters, filters, tokenManager, loginService, Set.of("http", "https"), showStackTrace, enableLegacyUriCompliance, enableCompression));
 
         ContextHandlerCollection rootHandlers = new ContextHandlerCollection();
         if (theAdminServlet != null && config.isAdminEnabled()) {
-            rootHandlers.addHandler(createServletContext(theAdminServlet, resources, adminParameters, adminFilters, tokenManager, loginService, Set.of("admin"), showStackTrace, enableLegacyUriCompliance));
+            rootHandlers.addHandler(createServletContext(theAdminServlet, resources, adminParameters, adminFilters, tokenManager, loginService, Set.of("admin"), showStackTrace, enableLegacyUriCompliance, enableCompression));
         }
         rootHandlers.addHandler(statsHandler);
 
@@ -411,7 +412,8 @@ public class HttpServer
             LoginService loginService,
             Set<String> connectorNames,
             boolean showStackTrace,
-            boolean enableLegacyUriCompliance)
+            boolean enableLegacyUriCompliance,
+            boolean enableCompression)
     {
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
         ErrorHandler handler = new ErrorHandler();
@@ -445,8 +447,11 @@ public class HttpServer
                     resource.getWelcomeFiles());
             context.addFilter(new FilterHolder(servlet), servlet.getBaseUri() + "/*", null);
         }
-        // -- gzip handler
-        context.insertHandler(new GzipHandler());
+
+        if (enableCompression) {
+            // -- gzip handler
+            context.insertHandler(new GzipHandler());
+        }
 
         // -- the servlet
         ServletHolder servletHolder = new ServletHolder(theServlet);

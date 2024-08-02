@@ -92,6 +92,8 @@ public class HttpServerConfig
 
     private boolean showStackTrace = true;
 
+    private boolean compressionEnabled = true;
+
     public boolean isHttpEnabled()
     {
         return httpEnabled;
@@ -495,6 +497,18 @@ public class HttpServerConfig
     public HttpServerConfig setHttp2StreamIdleTimeout(Duration http2StreamIdleTimeout)
     {
         this.http2StreamIdleTimeout = http2StreamIdleTimeout;
+        return this;
+    }
+
+    public boolean isCompressionEnabled()
+    {
+        return compressionEnabled;
+    }
+
+    @Config("http-server.compression.enabled")
+    public HttpServerConfig setCompressionEnabled(boolean compressionEnabled)
+    {
+        this.compressionEnabled = compressionEnabled;
         return this;
     }
 
