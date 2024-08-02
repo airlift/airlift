@@ -70,7 +70,8 @@ public class TestHttpServerConfig
                 .setHttp2InitialSessionReceiveWindowSize(DataSize.of(16, MEGABYTE))
                 .setHttp2InputBufferSize(DataSize.of(8, KILOBYTE))
                 .setHttp2InitialStreamReceiveWindowSize(DataSize.of(16, MEGABYTE))
-                .setHttp2StreamIdleTimeout(new Duration(15, SECONDS)));
+                .setHttp2StreamIdleTimeout(new Duration(15, SECONDS))
+                .setCompressionEnabled(true));
     }
 
     @Test
@@ -109,6 +110,7 @@ public class TestHttpServerConfig
                 .put("http-server.http2.stream-receive-window-size", "4MB")
                 .put("http-server.http2.input-buffer-size", "4MB")
                 .put("http-server.http2.stream-idle-timeout", "23s")
+                .put("http-server.compression.enabled", "false")
                 .build();
 
         HttpServerConfig expected = new HttpServerConfig()
@@ -143,7 +145,8 @@ public class TestHttpServerConfig
                 .setHttp2InitialSessionReceiveWindowSize(DataSize.of(4, MEGABYTE))
                 .setHttp2InitialStreamReceiveWindowSize(DataSize.of(4, MEGABYTE))
                 .setHttp2InputBufferSize(DataSize.of(4, MEGABYTE))
-                .setHttp2StreamIdleTimeout(new Duration(23, SECONDS));
+                .setHttp2StreamIdleTimeout(new Duration(23, SECONDS))
+                .setCompressionEnabled(false);
 
         assertFullMapping(properties, expected);
     }
