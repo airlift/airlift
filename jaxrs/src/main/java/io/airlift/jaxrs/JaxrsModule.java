@@ -15,6 +15,7 @@
  */
 package io.airlift.jaxrs;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Binder;
 import com.google.inject.Key;
 import com.google.inject.Provides;
@@ -32,6 +33,7 @@ import java.util.Set;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
+import static org.glassfish.jersey.server.ServerProperties.RESPONSE_SET_STATUS_OVER_SEND_ERROR;
 
 public class JaxrsModule
         extends AbstractConfigurationAwareModule
@@ -70,7 +72,8 @@ public class JaxrsModule
     @Provides
     public static ResourceConfig createResourceConfig(@JaxrsResource Set<Object> jaxRsSingletons)
     {
-        return new JaxrsResourceConfig(jaxRsSingletons);
+        return new JaxrsResourceConfig(jaxRsSingletons)
+                .setProperties(ImmutableMap.of(RESPONSE_SET_STATUS_OVER_SEND_ERROR, "true"));
     }
 
     @Provides
