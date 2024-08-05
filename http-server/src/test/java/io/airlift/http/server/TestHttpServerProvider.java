@@ -162,10 +162,6 @@ public class TestHttpServerProvider
         assertThat(httpServerInfo.getHttpsUri()).isNull();
         assertThat(httpServerInfo.getHttpsExternalUri()).isNull();
         assertThat(httpServerInfo.getHttpsChannel()).isNull();
-
-        assertThat(httpServerInfo.getAdminUri()).isNull();
-        assertThat(httpServerInfo.getAdminExternalUri()).isNull();
-        assertThat(httpServerInfo.getAdminChannel()).isNull();
     }
 
     @Test
@@ -181,10 +177,6 @@ public class TestHttpServerProvider
         assertThat(httpServerInfo.getHttpsUri()).isNull();
         assertThat(httpServerInfo.getHttpsExternalUri()).isNull();
         assertThat(httpServerInfo.getHttpsChannel()).isNull();
-
-        assertThat(httpServerInfo.getAdminUri()).isNull();
-        assertThat(httpServerInfo.getAdminExternalUri()).isNull();
-        assertThat(httpServerInfo.getAdminChannel()).isNull();
     }
 
     @Test
@@ -207,70 +199,7 @@ public class TestHttpServerProvider
         assertThat(httpServerInfo.getHttpsUri().getPort()).isEqualTo(httpServerInfo.getHttpsExternalUri().getPort());
         assertThat(httpServerInfo.getHttpsUri().getScheme()).isEqualTo("https");
 
-        assertThat(httpServerInfo.getAdminUri()).isNull();
-        assertThat(httpServerInfo.getAdminExternalUri()).isNull();
-        assertThat(httpServerInfo.getAdminChannel()).isNull();
-
         assertNotEquals(httpServerInfo.getHttpUri().getPort(), httpServerInfo.getHttpsUri().getPort());
-    }
-
-    @Test
-    public void testAdminEnabled()
-    {
-        config.setAdminEnabled(true);
-        httpServerInfo = createHttpServerInfo();
-
-        assertThat(httpServerInfo.getHttpUri()).isNotNull();
-        assertThat(httpServerInfo.getHttpExternalUri()).isNotNull();
-        assertThat(httpServerInfo.getHttpChannel()).isNotNull();
-        assertThat(httpServerInfo.getHttpUri().getScheme()).isEqualTo(httpServerInfo.getHttpExternalUri().getScheme());
-        assertThat(httpServerInfo.getHttpUri().getPort()).isEqualTo(httpServerInfo.getHttpExternalUri().getPort());
-        assertThat(httpServerInfo.getHttpUri().getScheme()).isEqualTo("http");
-
-        assertThat(httpServerInfo.getHttpsUri()).isNull();
-        assertThat(httpServerInfo.getHttpsExternalUri()).isNull();
-        assertThat(httpServerInfo.getHttpsChannel()).isNull();
-
-        assertThat(httpServerInfo.getAdminUri()).isNotNull();
-        assertThat(httpServerInfo.getAdminExternalUri()).isNotNull();
-        assertThat(httpServerInfo.getAdminChannel()).isNotNull();
-        assertThat(httpServerInfo.getAdminUri().getScheme()).isEqualTo(httpServerInfo.getAdminExternalUri().getScheme());
-        assertThat(httpServerInfo.getAdminUri().getPort()).isEqualTo(httpServerInfo.getAdminExternalUri().getPort());
-        assertThat(httpServerInfo.getAdminUri().getScheme()).isEqualTo("http");
-
-        assertNotEquals(httpServerInfo.getHttpUri().getPort(), httpServerInfo.getAdminUri().getPort());
-    }
-
-    @Test
-    public void testHttpsAndAdminEnabled()
-    {
-        config.setHttpsEnabled(true)
-                .setAdminEnabled(true);
-        httpServerInfo = createHttpServerInfo();
-
-        assertThat(httpServerInfo.getHttpUri()).isNotNull();
-        assertThat(httpServerInfo.getHttpExternalUri()).isNotNull();
-        assertThat(httpServerInfo.getHttpChannel()).isNotNull();
-        assertThat(httpServerInfo.getHttpUri().getScheme()).isEqualTo(httpServerInfo.getHttpExternalUri().getScheme());
-        assertThat(httpServerInfo.getHttpUri().getPort()).isEqualTo(httpServerInfo.getHttpExternalUri().getPort());
-        assertThat(httpServerInfo.getHttpUri().getScheme()).isEqualTo("http");
-
-        assertThat(httpServerInfo.getHttpsUri()).isNotNull();
-        assertThat(httpServerInfo.getHttpsExternalUri()).isNotNull();
-        assertThat(httpServerInfo.getHttpsChannel()).isNotNull();
-        assertThat(httpServerInfo.getHttpsUri().getScheme()).isEqualTo(httpServerInfo.getHttpsExternalUri().getScheme());
-        assertThat(httpServerInfo.getHttpsUri().getPort()).isEqualTo(httpServerInfo.getHttpsExternalUri().getPort());
-        assertThat(httpServerInfo.getHttpsUri().getScheme()).isEqualTo("https");
-
-        assertThat(httpServerInfo.getAdminUri()).isNotNull();
-        assertThat(httpServerInfo.getAdminExternalUri()).isNotNull();
-        assertThat(httpServerInfo.getAdminChannel()).isNotNull();
-        assertThat(httpServerInfo.getAdminUri().getScheme()).isEqualTo(httpServerInfo.getAdminExternalUri().getScheme());
-        assertThat(httpServerInfo.getAdminUri().getPort()).isEqualTo(httpServerInfo.getAdminExternalUri().getPort());
-        assertThat(httpServerInfo.getAdminUri().getScheme()).isEqualTo("https");
-
-        assertNotEquals(httpServerInfo.getHttpUri().getPort(), httpServerInfo.getHttpsUri().getPort());
-        assertNotEquals(httpServerInfo.getHttpUri().getPort(), httpServerInfo.getAdminUri().getPort());
     }
 
     @Test
@@ -659,16 +588,6 @@ public class TestHttpServerProvider
     }
 
     @Test
-    public void testInsufficientThreadsAdmin()
-    {
-        config.setAdminEnabled(true)
-                .setAdminMaxThreads(1);
-
-        assertThatThrownBy(this::createAndStartServer)
-                .hasMessageStartingWith("Insufficient configured threads: ");
-    }
-
-    @Test
     public void testKeystoreReloading()
             throws Exception
     {
@@ -722,7 +641,6 @@ public class TestHttpServerProvider
                 servlet,
                 ImmutableSet.of(new DummyFilter()),
                 ImmutableSet.of(),
-                ImmutableSet.of(),
                 false,
                 false,
                 false,
@@ -730,7 +648,6 @@ public class TestHttpServerProvider
                 new RequestStats(),
                 new NullEventClient(),
                 Optional.empty());
-        serverProvider.setTheAdminServlet(new DummyServlet());
         serverProvider.setLoginService(loginServiceProvider.get());
         serverProvider.setTokenManager(new TraceTokenManager());
         server = serverProvider.get();
