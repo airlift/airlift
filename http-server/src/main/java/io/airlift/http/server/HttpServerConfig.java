@@ -49,6 +49,10 @@ import static java.util.concurrent.TimeUnit.SECONDS;
         "jetty.auth.users-file",
         "http-server.https.keystore.password",
         "http-server.log.retention-time",
+        "http-server.admin.enabled",
+        "http-server.admin.port",
+        "http-server.admin.threads.min",
+        "http-server.admin.threads.max",
 })
 public class HttpServerConfig
 {
@@ -85,11 +89,6 @@ public class HttpServerConfig
     private Duration http2StreamIdleTimeout = new Duration(15, SECONDS);
 
     private String userAuthFile;
-
-    private boolean adminEnabled;
-    private int adminPort;
-    private int adminMinThreads = 2;
-    private int adminMaxThreads = 200;
 
     private boolean showStackTrace = true;
 
@@ -348,55 +347,6 @@ public class HttpServerConfig
     public HttpServerConfig setNetworkMaxIdleTime(Duration networkMaxIdleTime)
     {
         this.networkMaxIdleTime = networkMaxIdleTime;
-        return this;
-    }
-
-    public boolean isAdminEnabled()
-    {
-        return adminEnabled;
-    }
-
-    @Config("http-server.admin.enabled")
-    public HttpServerConfig setAdminEnabled(boolean adminEnabled)
-    {
-        this.adminEnabled = adminEnabled;
-        return this;
-    }
-
-    public int getAdminPort()
-    {
-        return adminPort;
-    }
-
-    @Config("http-server.admin.port")
-    public HttpServerConfig setAdminPort(int adminPort)
-    {
-        this.adminPort = adminPort;
-        return this;
-    }
-
-    public int getAdminMinThreads()
-    {
-        return adminMinThreads;
-    }
-
-    @Config("http-server.admin.threads.min")
-    public HttpServerConfig setAdminMinThreads(int adminMinThreads)
-    {
-        this.adminMinThreads = adminMinThreads;
-        return this;
-    }
-
-    @Min(2)
-    public int getAdminMaxThreads()
-    {
-        return adminMaxThreads;
-    }
-
-    @Config("http-server.admin.threads.max")
-    public HttpServerConfig setAdminMaxThreads(int adminMaxThreads)
-    {
-        this.adminMaxThreads = adminMaxThreads;
         return this;
     }
 

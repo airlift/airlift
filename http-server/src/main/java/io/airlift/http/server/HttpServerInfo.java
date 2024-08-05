@@ -37,12 +37,9 @@ public class HttpServerInfo
     private final URI httpExternalUri;
     private final URI httpsUri;
     private final URI httpsExternalUri;
-    private final URI adminUri;
-    private final URI adminExternalUri;
 
     private final ServerSocketChannel httpChannel;
     private final ServerSocketChannel httpsChannel;
-    private final ServerSocketChannel adminChannel;
 
     public HttpServerInfo(HttpServerConfig config, NodeInfo nodeInfo)
     {
@@ -74,23 +71,6 @@ public class HttpServerInfo
             httpsUri = null;
             httpsExternalUri = null;
         }
-
-        if (config.isAdminEnabled()) {
-            adminChannel = createChannel(nodeInfo.getBindIp(), config.getAdminPort(), config.getHttpAcceptQueueSize());
-            if (config.isHttpsEnabled()) {
-                adminUri = buildUri("https", nodeInfo.getInternalAddress(), port(adminChannel));
-                adminExternalUri = buildUri("https", nodeInfo.getExternalAddress(), adminUri.getPort());
-            }
-            else {
-                adminUri = buildUri("http", nodeInfo.getInternalAddress(), port(adminChannel));
-                adminExternalUri = buildUri("http", nodeInfo.getExternalAddress(), adminUri.getPort());
-            }
-        }
-        else {
-            adminChannel = null;
-            adminUri = null;
-            adminExternalUri = null;
-        }
     }
 
     public URI getHttpUri()
@@ -113,16 +93,6 @@ public class HttpServerInfo
         return httpsExternalUri;
     }
 
-    public URI getAdminUri()
-    {
-        return adminUri;
-    }
-
-    public URI getAdminExternalUri()
-    {
-        return adminExternalUri;
-    }
-
     ServerSocketChannel getHttpChannel()
     {
         return httpChannel;
@@ -131,11 +101,6 @@ public class HttpServerInfo
     ServerSocketChannel getHttpsChannel()
     {
         return httpsChannel;
-    }
-
-    ServerSocketChannel getAdminChannel()
-    {
-        return adminChannel;
     }
 
     private static URI buildUri(String scheme, String host, int port)
