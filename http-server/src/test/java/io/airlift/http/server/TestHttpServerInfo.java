@@ -43,7 +43,6 @@ public class TestHttpServerInfo
         serverConfig.setHttpEnabled(true);
         serverConfig.setHttpPort(0);
         serverConfig.setHttpsEnabled(true);
-        serverConfig.setAdminEnabled(true);
 
         HttpsConfig httpsConfig = new HttpsConfig()
                 .setHttpsPort(0);
@@ -58,16 +57,12 @@ public class TestHttpServerInfo
         assertThat(httpServerInfo.getHttpsUri()).isEqualTo(new URI("https://[::1]:" + httpsPort));
         assertThat(httpServerInfo.getHttpsExternalUri()).isEqualTo(new URI("https://[2001:db8::2:1]:" + httpsPort));
 
-        int adminPort = httpServerInfo.getAdminUri().getPort();
-        assertThat(httpServerInfo.getAdminUri()).isEqualTo(new URI("https://[::1]:" + adminPort));
-        assertThat(httpServerInfo.getAdminExternalUri()).isEqualTo(new URI("https://[2001:db8::2:1]:" + adminPort));
-
         closeChannels(httpServerInfo);
     }
 
     static void closeChannels(HttpServerInfo info)
             throws IOException
     {
-        closeAll(info.getHttpChannel(), info.getHttpsChannel(), info.getAdminChannel());
+        closeAll(info.getHttpChannel(), info.getHttpsChannel());
     }
 }

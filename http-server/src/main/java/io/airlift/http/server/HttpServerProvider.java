@@ -54,8 +54,6 @@ public class HttpServerProvider
     private final Set<HttpResourceBinding> resources;
     private final ClientCertificate clientCertificate;
     private Map<String, String> servletInitParameters = ImmutableMap.of();
-    private Servlet theAdminServlet;
-    private Map<String, String> adminServletInitParameters = ImmutableMap.of();
     private final boolean enableVirtualThreads;
     private final boolean enableLegacyUriCompliance;
     private final boolean enableCaseSensitiveHeaderCache;
@@ -63,7 +61,6 @@ public class HttpServerProvider
     private LoginService loginService;
     private final RequestStats stats;
     private final Set<Filter> filters;
-    private final Set<Filter> adminFilters;
     private TraceTokenManager traceTokenManager;
     private final EventClient eventClient;
     private final Optional<SslContextFactory.Server> sslContextFactory;
@@ -76,7 +73,6 @@ public class HttpServerProvider
             @TheServlet Servlet theServlet,
             @TheServlet Set<Filter> filters,
             @TheServlet Set<HttpResourceBinding> resources,
-            @TheAdminServlet Set<Filter> adminFilters,
             @EnableVirtualThreads boolean enableVirtualThreads,
             @EnableLegacyUriCompliance boolean enableLegacyUriCompliance,
             @EnableCaseSensitiveHeaderCache boolean enableCaseSensitiveHeaderCache,
@@ -92,7 +88,6 @@ public class HttpServerProvider
         requireNonNull(theServlet, "theServlet is null");
         requireNonNull(filters, "filters is null");
         requireNonNull(resources, "resources is null");
-        requireNonNull(adminFilters, "adminFilters is null");
         requireNonNull(clientCertificate, "clientCertificate is null");
         requireNonNull(stats, "stats is null");
         requireNonNull(eventClient, "eventClient is null");
@@ -105,7 +100,6 @@ public class HttpServerProvider
         this.theServlet = theServlet;
         this.filters = ImmutableSet.copyOf(filters);
         this.resources = ImmutableSet.copyOf(resources);
-        this.adminFilters = ImmutableSet.copyOf(adminFilters);
         this.enableVirtualThreads = enableVirtualThreads;
         this.enableLegacyUriCompliance = enableLegacyUriCompliance;
         this.enableCaseSensitiveHeaderCache = enableCaseSensitiveHeaderCache;
@@ -119,18 +113,6 @@ public class HttpServerProvider
     public void setServletInitParameters(@TheServlet Map<String, String> parameters)
     {
         this.servletInitParameters = ImmutableMap.copyOf(parameters);
-    }
-
-    @Inject(optional = true)
-    public void setTheAdminServlet(@TheAdminServlet Servlet theAdminServlet)
-    {
-        this.theAdminServlet = theAdminServlet;
-    }
-
-    @Inject(optional = true)
-    public void setAdminServletInitParameters(@TheAdminServlet Map<String, String> parameters)
-    {
-        this.adminServletInitParameters = ImmutableMap.copyOf(parameters);
     }
 
     @Inject(optional = true)
@@ -164,9 +146,6 @@ public class HttpServerProvider
                     servletInitParameters,
                     filters,
                     resources,
-                    theAdminServlet,
-                    adminServletInitParameters,
-                    adminFilters,
                     enableVirtualThreads,
                     enableLegacyUriCompliance,
                     enableCaseSensitiveHeaderCache,

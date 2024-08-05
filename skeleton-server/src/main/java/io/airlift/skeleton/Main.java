@@ -24,7 +24,6 @@ import io.airlift.http.server.HttpServerModule;
 import io.airlift.jaxrs.JaxrsModule;
 import io.airlift.jmx.JmxHttpModule;
 import io.airlift.jmx.JmxModule;
-import io.airlift.jmx.http.rpc.JmxHttpRpcModule;
 import io.airlift.json.JsonModule;
 import io.airlift.log.LogJmxModule;
 import io.airlift.log.Logger;
@@ -54,7 +53,6 @@ public final class Main
                 new MBeanModule(),
                 new JmxModule(),
                 new JmxHttpModule(),
-                new JmxHttpRpcModule(),
                 new JmxOpenMetricsModule(),
                 new LogJmxModule(),
                 new HttpEventModule(),

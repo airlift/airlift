@@ -109,7 +109,6 @@ public class HttpServer
 
     private final Server server;
     private final MonitoredQueuedThreadPoolMBean monitoredQueuedThreadPoolMBean;
-    private final MonitoredQueuedThreadPoolMBean monitoredAdminQueuedThreadPoolMBean;
     private final DelimitedRequestLog requestLog;
     private ConnectionStats httpConnectionStats;
     private ConnectionStats httpsConnectionStats;
@@ -125,9 +124,6 @@ public class HttpServer
             Map<String, String> parameters,
             Set<Filter> filters,
             Set<HttpResourceBinding> resources,
-            Servlet theAdminServlet,
-            Map<String, String> adminParameters,
-            Set<Filter> adminFilters,
             boolean enableVirtualThreads,
             boolean enableLegacyUriCompliance,
             boolean enableCaseSensitiveHeaderCache,
@@ -264,59 +260,6 @@ public class HttpServer
             server.addConnector(httpsConnector);
         }
 
-        // set up NIO-based Admin connector
-        ServerConnector adminConnector;
-        if (theAdminServlet != null && config.isAdminEnabled()) {
-            HttpConfiguration adminConfiguration = new HttpConfiguration(baseHttpConfiguration);
-
-            MonitoredQueuedThreadPool adminThreadPool = new MonitoredQueuedThreadPool(config.getAdminMaxThreads());
-            adminThreadPool.setName("http-admin-worker");
-            adminThreadPool.setMinThreads(config.getAdminMinThreads());
-            adminThreadPool.setIdleTimeout(toIntExact(config.getThreadMaxIdleTime().toMillis()));
-            if (enableVirtualThreads) {
-                Executor executor = getNamedVirtualThreadsExecutor("http-admin-worker#v");
-                if (executor != null) {
-                    adminThreadPool.setVirtualThreadsExecutor(executor);
-                }
-            }
-
-            this.monitoredAdminQueuedThreadPoolMBean = new MonitoredQueuedThreadPoolMBean(adminThreadPool);
-
-            if (config.isHttpsEnabled()) {
-                setSecureRequestCustomizer(adminConfiguration);
-
-                HttpsConfig httpsConfig = maybeHttpsConfig.orElseThrow();
-                this.sslContextFactory = Optional.of(this.sslContextFactory.orElseGet(() -> createReloadingSslContextFactory(httpsConfig, clientCertificate, nodeInfo.getEnvironment())));
-                adminConnector = createServerConnector(
-                        httpServerInfo.getAdminChannel(),
-                        server,
-                        adminThreadPool,
-                        0,
-                        -1,
-                        secureFactories(config, adminConfiguration, sslContextFactory.get()));
-            }
-            else {
-                adminConnector = createServerConnector(
-                        httpServerInfo.getAdminChannel(),
-                        server,
-                        adminThreadPool,
-                        -1,
-                        -1,
-                        insecureFactories(config, adminConfiguration));
-            }
-
-            adminConnector.setName("admin");
-            adminConnector.setPort(httpServerInfo.getAdminUri().getPort());
-            adminConnector.setIdleTimeout(config.getNetworkMaxIdleTime().toMillis());
-            adminConnector.setHost(nodeInfo.getBindIp().getHostAddress());
-            adminConnector.setAcceptQueueSize(config.getHttpAcceptQueueSize());
-
-            server.addConnector(adminConnector);
-        }
-        else {
-            this.monitoredAdminQueuedThreadPoolMBean = null;
-        }
-
         /*
          * structure is:
          *
@@ -332,8 +275,6 @@ public class HttpServer
          *           |       |--- the servlet (normally GuiceContainer)
          *           |       |--- resource handlers
          *           |--- log handler
-         *    |-- admin context handler
-         *           \ --- the admin servlet
          */
 
         // add handlers to Jetty
@@ -341,9 +282,6 @@ public class HttpServer
         statsHandler.setHandler(createServletContext(theServlet, resources, parameters, filters, tokenManager, loginService, Set.of("http", "https"), showStackTrace, enableLegacyUriCompliance, enableCompression));
 
         ContextHandlerCollection rootHandlers = new ContextHandlerCollection();
-        if (theAdminServlet != null && config.isAdminEnabled()) {
-            rootHandlers.addHandler(createServletContext(theAdminServlet, resources, adminParameters, adminFilters, tokenManager, loginService, Set.of("admin"), showStackTrace, enableLegacyUriCompliance, enableCompression));
-        }
         rootHandlers.addHandler(statsHandler);
 
         if (config.isLogEnabled()) {
@@ -558,13 +496,6 @@ public class HttpServer
     public MonitoredQueuedThreadPoolMBean getServerThreadPool()
     {
         return monitoredQueuedThreadPoolMBean;
-    }
-
-    @Managed
-    @Nested
-    public MonitoredQueuedThreadPoolMBean getAdminServerThreadPool()
-    {
-        return monitoredAdminQueuedThreadPoolMBean;
     }
 
     @Managed
