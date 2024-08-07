@@ -87,7 +87,7 @@ public class JsonResponseHandler<T>
         }
         catch (IllegalArgumentException e) {
             String json = new String(bytes, UTF_8);
-            throw new IllegalArgumentException(String.format("Unable to create %s from JSON response:\n<%s>", jsonCodec.getType(), json), e);
+            throw new IllegalArgumentException(String.format("Unable to create %s from JSON response: <%s>", jsonCodec.getType(), json), e);
         }
     }
 }

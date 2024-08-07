@@ -40,7 +40,7 @@ public class TestJsonResponseHandler
             handler.handle(null, mockResponse(OK, JSON_UTF_8, json));
         }
         catch (IllegalArgumentException e) {
-            assertThat(e.getMessage()).isEqualTo(format("Unable to create %s from JSON response:\n<%s>", User.class, json));
+            assertThat(e.getMessage()).isEqualTo(format("Unable to create %s from JSON response: <%s>", User.class, json));
             assertThat(e).hasCauseInstanceOf(IllegalArgumentException.class);
             assertThat(e).hasStackTraceContaining("Invalid JSON bytes for [simple type, class io.airlift.http.client.TestFullJsonResponseHandler$User]");
         }
