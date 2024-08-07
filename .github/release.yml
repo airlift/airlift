@@ -3,10 +3,10 @@ changelog:
     labels:
       - ignore-for-release
   categories:
-    - title: Breaking Changes 🛠
+    - title: Breaking changes 🛠
       labels:
         - breaking
-    - title: Bug Fixes 🐛
+    - title: Bug fixes 🐛
       labels:
         - bug
     - title: Improvements 🎉
