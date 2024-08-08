@@ -85,7 +85,6 @@ public class TestJettyMultipleCerts
                 servlet,
                 ImmutableSet.of(new DummyFilter()),
                 ImmutableSet.of(),
-                ImmutableSet.of(),
                 false,
                 false,
                 false,
@@ -93,7 +92,6 @@ public class TestJettyMultipleCerts
                 new RequestStats(),
                 new NullEventClient(),
                 Optional.empty());
-        serverProvider.setTheAdminServlet(new DummyServlet());
         serverProvider.setLoginService(loginServiceProvider.get());
         serverProvider.setTokenManager(new TraceTokenManager());
 

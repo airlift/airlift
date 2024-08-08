@@ -51,7 +51,6 @@
         <module>jaxrs-testing</module>
         <module>jmx</module>
         <module>jmx-http</module>
-        <module>jmx-http-rpc</module>
         <module>json</module>
         <module>launcher</module>
         <module>log</module>
