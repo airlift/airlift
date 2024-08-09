@@ -24,14 +24,14 @@ import java.util.concurrent.ThreadLocalRandom;
  * <p>
  * Test should always be run with:
  * <pre>
- * {@code   -Xmx1g -Xms1g -XX:+PrintGCApplicationStoppedTime}
+ * {@code   -Xmx1g -Xms1g}
  * </pre>
  * All GC algorithms should be tested:
  * <ul>
  * <li>Serial: {@code -XX:+UseSerialGC }</li>
  * <li>Parallel: {@code -XX:+UseParallelGC}</li>
- * <li>CMS: {@code -XX:+UseConcMarkSweepGC}</li>
  * <li>G1: {@code -XX:+UseG1GC}</li>
+ * <li>Z: {@code -XX:+UseZGC -XX:+ZGenerational}</li>
  * </ul>
  * Verifying stopped time in GC log to the stopped time from GCMonitor.
  */
