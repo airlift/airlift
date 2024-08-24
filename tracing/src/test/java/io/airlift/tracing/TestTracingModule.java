@@ -90,6 +90,6 @@ public class TestTracingModule
         assertThat(span.getResource().getAttributes().asMap()).contains(
                 entry(ServiceAttributes.SERVICE_NAME, "testService"),
                 entry(ServiceAttributes.SERVICE_VERSION, "testVersion"),
-                entry(DeploymentIncubatingAttributes.DEPLOYMENT_ENVIRONMENT, environment));
+                entry(DeploymentIncubatingAttributes.DEPLOYMENT_ENVIRONMENT_NAME, environment));
     }
 }
