@@ -70,7 +70,7 @@ public class OpenTelemetryModule
                 .put(ServiceAttributes.SERVICE_NAME, serviceName)
                 .put(ServiceAttributes.SERVICE_VERSION, serviceVersion)
                 .put(ServiceIncubatingAttributes.SERVICE_INSTANCE_ID, nodeInfo.getNodeId())
-                .put(DeploymentIncubatingAttributes.DEPLOYMENT_ENVIRONMENT, nodeInfo.getEnvironment())
+                .put(DeploymentIncubatingAttributes.DEPLOYMENT_ENVIRONMENT_NAME, nodeInfo.getEnvironment())
                 .put(ProcessIncubatingAttributes.PROCESS_RUNTIME_NAME, System.getProperty("java.runtime.name"))
                 .put(ProcessIncubatingAttributes.PROCESS_RUNTIME_VERSION, System.getProperty("java.runtime.version"))
                 .put(ProcessIncubatingAttributes.PROCESS_RUNTIME_DESCRIPTION, processRuntime())
