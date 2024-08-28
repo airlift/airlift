@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airbase</artifactId>
-        <version>169</version>
+        <version>170</version>
     </parent>
 
     <artifactId>airlift</artifactId>
@@ -325,6 +325,13 @@
                 <groupId>io.jsonwebtoken</groupId>
                 <artifactId>jjwt-jackson</artifactId>
                 <version>${dep.jjwt.version}</version>
+            </dependency>
+
+            <!-- TODO: move to airbase -->
+            <dependency>
+                <groupId>io.opentelemetry</groupId>
+                <artifactId>opentelemetry-api-incubator</artifactId>
+                <version>${dep.opentelemetry.version}-alpha</version>
             </dependency>
 
             <dependency>
