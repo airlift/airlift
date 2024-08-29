@@ -25,6 +25,7 @@ import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.Request.Builder.preparePut;
 import static io.airlift.http.client.StaticBodyGenerator.createStaticBodyGenerator;
 import static io.airlift.testing.EquivalenceTester.equivalenceTester;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class TestRequest
@@ -98,6 +99,30 @@ public class TestRequest
         assertThatThrownBy(() -> prepareGet().setUri(URI.create("gopher://example.com")).build())
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("uri scheme must be http or https: gopher://example.com");
+    }
+
+    @Test
+    public void testHeaderCaseSensitiveness()
+    {
+        Request request = Request.builder()
+                .setMethod("GET")
+                .setUri(URI.create("http://example.com"))
+                .setHeader("mixedHeader", "mixed")
+                .setHeader("alllowercase", "lower")
+                .setHeader("ALLUPPERCASE", "upper")
+                .build();
+
+        assertThat(request.getHeader("mixedHeader")).contains("mixed");
+        assertThat(request.getHeader("mixedheader")).contains("mixed");
+        assertThat(request.getHeader("MIXEDHEADER")).contains("mixed");
+
+        assertThat(request.getHeader("alllowercase")).contains("lower");
+        assertThat(request.getHeader("ALLLOWERCASE")).contains("lower");
+        assertThat(request.getHeader("AllLowercase")).contains("lower");
+
+        assertThat(request.getHeader("alluppercase")).contains("upper");
+        assertThat(request.getHeader("ALLUPPERCASE")).contains("upper");
+        assertThat(request.getHeader("AllUppercase")).contains("upper");
     }
 
     private static URI createUriA()

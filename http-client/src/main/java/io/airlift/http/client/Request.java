@@ -16,9 +16,9 @@
 package io.airlift.http.client;
 
 import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.MultimapBuilder;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 import io.opentelemetry.api.trace.SpanBuilder;
@@ -30,6 +30,7 @@ import java.util.Optional;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
+import static java.lang.String.CASE_INSENSITIVE_ORDER;
 import static java.util.Objects.requireNonNull;
 
 public final class Request
@@ -37,7 +38,10 @@ public final class Request
     private final Optional<HttpVersion> httpVersion;
     private final URI uri;
     private final String method;
-    private final ListMultimap<String, String> headers;
+    private final ListMultimap<String, String> headers = MultimapBuilder
+            .treeKeys(CASE_INSENSITIVE_ORDER)
+            .arrayListValues()
+            .build();
     private final Optional<Duration> requestTimeout;
     private final Optional<Duration> idleTimeout;
     private final BodyGenerator bodyGenerator;
@@ -69,7 +73,7 @@ public final class Request
         this.httpVersion = requireNonNull(httpVersion, "httpVersion is null");
         this.uri = validateUri(uri);
         this.method = method;
-        this.headers = ImmutableListMultimap.copyOf(headers);
+        this.headers.putAll(headers);
         this.requestTimeout = requireNonNull(requestTimeout, "requestTimeout is null");
         this.idleTimeout = requireNonNull(idleTimeout, "idleTimeout is null");
         this.bodyGenerator = bodyGenerator;
@@ -102,8 +106,8 @@ public final class Request
     public String getHeader(String name)
     {
         List<String> values = headers.get(name);
-        if (values != null && !values.isEmpty()) {
-            return values.get(0);
+        if (!values.isEmpty()) {
+            return values.getFirst();
         }
         return null;
     }
