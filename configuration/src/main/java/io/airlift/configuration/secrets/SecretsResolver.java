@@ -28,7 +28,7 @@ import static java.util.regex.Matcher.quoteReplacement;
 
 public class SecretsResolver
 {
-    private static final Pattern PATTERN = Pattern.compile("\\$\\{([a-zA-Z][a-zA-Z0-9_-]*):([a-zA-Z][a-zA-Z0-9_-]*)}");
+    private static final Pattern PATTERN = Pattern.compile("\\$\\{([a-zA-Z][a-zA-Z0-9_-]*):(?<key>[^}]+?)}");
 
     private final Map<String, SecretProvider> secretProviders;
 
