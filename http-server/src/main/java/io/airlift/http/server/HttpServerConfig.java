@@ -25,6 +25,7 @@ import io.airlift.units.MinDataSize;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
+import static io.airlift.http.server.HttpServerConfig.ProcessForwardedMode.ACCEPT;
 import static io.airlift.http.server.HttpServerConfig.ProcessForwardedMode.REJECT;
 import static io.airlift.units.DataSize.Unit.KILOBYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
@@ -189,6 +190,16 @@ public class HttpServerConfig
     {
         this.processForwarded = processForwarded;
         return this;
+    }
+
+    @Deprecated
+    // temporary boolean based setter to provide binary compatibility
+    // with code which used older version of Airlift before setProcessForwarded(ProcessForwardedMode)
+    // was added.
+    // Slated for removal in a couple releases
+    public HttpServerConfig setProcessForwarded(boolean processForwareded)
+    {
+        return setProcessForwarded(processForwareded ? ACCEPT : REJECT);
     }
 
     @Min(1)
