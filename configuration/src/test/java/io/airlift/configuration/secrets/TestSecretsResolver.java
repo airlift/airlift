@@ -18,6 +18,9 @@ import com.google.common.collect.ImmutableMap;
 import io.airlift.spi.secrets.SecretProvider;
 import org.junit.jupiter.api.Test;
 
+import java.util.Map;
+
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -41,6 +44,25 @@ final class TestSecretsResolver
                         "key3", "prefix-key",
                         "key4", "prefix-key",
                         "key5", "normal_key"));
+    }
+
+    @Test
+    public void testSecretsResolutionSpecialCharacters()
+    {
+        SecretsResolver secretsResolver = new SecretsResolver(
+                ImmutableMap.of("special", new MappedSecretProvider(ImmutableMap.of(
+                        "some_path/some_folder", "another_path/another_folder",
+                        "test:password", "test:another_password",
+                        "path/secret:password", "another_path/secret:another_password"))));
+
+        assertThat(secretsResolver.getResolvedConfiguration(ImmutableMap.of(
+                "key1", "${special:some_path/some_folder}",
+                "key2", "${special:test:password}-abc",
+                "key3", "${SPECIAL:path/secret:password}")))
+                .isEqualTo(ImmutableMap.of(
+                        "key1", "another_path/another_folder",
+                        "key2", "test:another_password-abc",
+                        "key3", "another_path/secret:another_password"));
     }
 
     @Test
@@ -69,7 +91,8 @@ final class TestSecretsResolver
                 "key2", "${prefix:key",
                 "key3", "{prefix:key}")))
                 .isEqualTo(ImmutableMap.of(
-                        "key1", "${prefix2:prefix-key}",
+                        // we can match special characters
+                        "key1", "prefix-${prefix:key}",
                         "key2", "${prefix:key",
                         "key3", "{prefix:key}"));
     }
@@ -95,6 +118,23 @@ final class TestSecretsResolver
         assertThat(secretsResolver.getResolvedConfiguration(ImmutableMap.of("key", "${resolver:key}"), (propertyKey, throwable) -> errorMessages.add(throwable.getMessage()))).isEmpty();
 
         assertThat(errorMessages.build()).isEqualTo(ImmutableList.of("Invalid key: key"));
+    }
+
+    private static class MappedSecretProvider
+            implements SecretProvider
+    {
+        private final Map<String, String> mapping;
+
+        public MappedSecretProvider(Map<String, String> mapping)
+        {
+            this.mapping = requireNonNull(mapping, "mapping is null");
+        }
+
+        @Override
+        public String resolveSecretValue(String key)
+        {
+            return mapping.get(key);
+        }
     }
 
     private static class PrefixedSecretProvider
