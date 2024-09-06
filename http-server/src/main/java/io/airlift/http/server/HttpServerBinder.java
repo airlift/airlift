@@ -5,7 +5,6 @@ import com.google.inject.Binder;
 import com.google.inject.Key;
 import org.eclipse.jetty.util.VirtualThreads;
 
-import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,11 +24,6 @@ public class HttpServerBinder
     public static HttpServerBinder httpServerBinder(Binder binder)
     {
         return new HttpServerBinder(binder);
-    }
-
-    public HttpResourceBinding bindResource(String baseUri, String classPathResourceBase)
-    {
-        return bindResource(baseUri, classPathResourceBase, TheServlet.class);
     }
 
     public HttpServerBinder enableVirtualThreads()
@@ -53,12 +47,10 @@ public class HttpServerBinder
         return this;
     }
 
-    private HttpResourceBinding bindResource(String baseUri,
-            String classPathResourceBase,
-            Class<? extends Annotation> annotationType)
+    public HttpResourceBinding bindResource(String baseUri, String classPathResourceBase)
     {
         HttpResourceBinding httpResourceBinding = new HttpResourceBinding(baseUri, classPathResourceBase);
-        newSetBinder(binder, HttpResourceBinding.class, annotationType).addBinding().toInstance(httpResourceBinding);
+        newSetBinder(binder, HttpResourceBinding.class).addBinding().toInstance(httpResourceBinding);
         return httpResourceBinding;
     }
 

@@ -27,7 +27,6 @@ import io.airlift.http.server.HttpServerConfig;
 import io.airlift.http.server.HttpServerInfo;
 import io.airlift.http.server.HttpsConfig;
 import io.airlift.http.server.RequestStats;
-import io.airlift.http.server.TheServlet;
 import io.airlift.node.NodeInfo;
 import io.airlift.tracetoken.TraceTokenManager;
 import jakarta.servlet.Filter;
@@ -35,7 +34,6 @@ import jakarta.servlet.Servlet;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -48,19 +46,17 @@ public class TestingHttpServer
             HttpServerInfo httpServerInfo,
             NodeInfo nodeInfo,
             HttpServerConfig config,
-            @TheServlet Servlet servlet,
-            @TheServlet Map<String, String> initParameters)
+            Servlet servlet)
             throws IOException
     {
-        this(httpServerInfo, nodeInfo, config, servlet, initParameters, false, false, false);
+        this(httpServerInfo, nodeInfo, config, servlet, false, false, false);
     }
 
     public TestingHttpServer(
             HttpServerInfo httpServerInfo,
             NodeInfo nodeInfo,
             HttpServerConfig config,
-            @TheServlet Servlet servlet,
-            @TheServlet Map<String, String> initParameters,
+            Servlet servlet,
             boolean enableVirtualThreads,
             boolean enableLegacyUriCompliance,
             boolean enableCaseSensitiveHeaderCache)
@@ -71,7 +67,6 @@ public class TestingHttpServer
                 config,
                 Optional.empty(),
                 servlet,
-                initParameters,
                 ImmutableSet.of(),
                 ImmutableSet.of(),
                 enableVirtualThreads,
@@ -86,10 +81,9 @@ public class TestingHttpServer
             NodeInfo nodeInfo,
             HttpServerConfig config,
             Optional<HttpsConfig> httpsConfig,
-            @TheServlet Servlet servlet,
-            @TheServlet Map<String, String> initParameters,
-            @TheServlet Set<Filter> filters,
-            @TheServlet Set<HttpResourceBinding> resources,
+            Servlet servlet,
+            Set<Filter> filters,
+            Set<HttpResourceBinding> resources,
             @EnableVirtualThreads boolean enableVirtualThreads,
             @EnableLegacyUriCompliance boolean enableLegacyUriCompliance,
             @EnableCaseSensitiveHeaderCache boolean enableCaseSensitiveHeaderCache,
@@ -101,7 +95,6 @@ public class TestingHttpServer
                 config.setLogEnabled(false),
                 httpsConfig,
                 servlet,
-                initParameters,
                 ImmutableSet.copyOf(filters),
                 ImmutableSet.copyOf(resources),
                 enableVirtualThreads,

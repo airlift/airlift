@@ -15,7 +15,6 @@
  */
 package io.airlift.http.server;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
@@ -32,7 +31,6 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import javax.management.MBeanServer;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -53,7 +51,6 @@ public class HttpServerProvider
     private final Servlet theServlet;
     private final Set<HttpResourceBinding> resources;
     private final ClientCertificate clientCertificate;
-    private Map<String, String> servletInitParameters = ImmutableMap.of();
     private final boolean enableVirtualThreads;
     private final boolean enableLegacyUriCompliance;
     private final boolean enableCaseSensitiveHeaderCache;
@@ -70,9 +67,9 @@ public class HttpServerProvider
             NodeInfo nodeInfo,
             HttpServerConfig config,
             Optional<HttpsConfig> httpsConfig,
-            @TheServlet Servlet theServlet,
-            @TheServlet Set<Filter> filters,
-            @TheServlet Set<HttpResourceBinding> resources,
+            Servlet theServlet,
+            Set<Filter> filters,
+            Set<HttpResourceBinding> resources,
             @EnableVirtualThreads boolean enableVirtualThreads,
             @EnableLegacyUriCompliance boolean enableLegacyUriCompliance,
             @EnableCaseSensitiveHeaderCache boolean enableCaseSensitiveHeaderCache,
@@ -110,12 +107,6 @@ public class HttpServerProvider
     }
 
     @Inject(optional = true)
-    public void setServletInitParameters(@TheServlet Map<String, String> parameters)
-    {
-        this.servletInitParameters = ImmutableMap.copyOf(parameters);
-    }
-
-    @Inject(optional = true)
     public void setMBeanServer(MBeanServer server)
     {
         mbeanServer = server;
@@ -143,7 +134,6 @@ public class HttpServerProvider
                     config,
                     httpsConfig,
                     theServlet,
-                    servletInitParameters,
                     filters,
                     resources,
                     enableVirtualThreads,
