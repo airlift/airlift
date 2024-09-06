@@ -36,6 +36,7 @@ import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.http.UriCompliance;
+import org.eclipse.jetty.http2.server.AuthorityCustomizer;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ConnectionStatistics;
@@ -45,6 +46,7 @@ import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
+import org.eclipse.jetty.server.HostHeaderCustomizer;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
@@ -185,6 +187,12 @@ public class HttpServer
             case ACCEPT -> new ForwardedRequestCustomizer();
             case IGNORE -> new IgnoreForwardedRequestCustomizer();
         });
+
+        // Adds :authority pseudoheader on HTTP/2
+        baseHttpConfiguration.addCustomizer(new AuthorityCustomizer());
+
+        // Adds :host header on HTTP/1.0 and HTTP/2
+        baseHttpConfiguration.addCustomizer(new HostHeaderCustomizer());
 
         if (config.getMaxRequestHeaderSize() != null) {
             baseHttpConfiguration.setRequestHeaderSize(toIntExact(config.getMaxRequestHeaderSize().toBytes()));
