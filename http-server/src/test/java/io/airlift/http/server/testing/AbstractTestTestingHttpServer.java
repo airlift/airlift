@@ -15,12 +15,10 @@
  */
 package io.airlift.http.server.testing;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
 import com.google.inject.Injector;
-import com.google.inject.TypeLiteral;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.bootstrap.LifeCycleManager;
 import io.airlift.http.client.HttpClient;
@@ -34,7 +32,6 @@ import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.http.server.HttpServer.ClientCertificate;
 import io.airlift.http.server.HttpServerConfig;
 import io.airlift.http.server.HttpServerInfo;
-import io.airlift.http.server.TheServlet;
 import io.airlift.log.Logging;
 import io.airlift.node.NodeInfo;
 import io.airlift.node.testing.TestingNodeModule;
@@ -57,7 +54,6 @@ import org.junit.jupiter.api.TestInstance;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -100,12 +96,10 @@ public abstract class AbstractTestTestingHttpServer
     {
         skipUnlessJdkHasVirtualThreads();
         DummyServlet servlet = new DummyServlet();
-        Map<String, String> params = ImmutableMap.of("sampleInitParameter", "the value");
-        TestingHttpServer server = createTestingHttpServer(enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache, servlet, params);
+        TestingHttpServer server = createTestingHttpServer(enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache, servlet);
 
         try {
             server.start();
-            assertThat(servlet.getSampleInitParam()).isEqualTo("the value");
             assertGreaterThan(server.getPort(), 0);
         }
         finally {
@@ -119,7 +113,7 @@ public abstract class AbstractTestTestingHttpServer
     {
         skipUnlessJdkHasVirtualThreads();
         DummyServlet servlet = new DummyServlet();
-        TestingHttpServer server = createTestingHttpServer(enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache, servlet, ImmutableMap.of());
+        TestingHttpServer server = createTestingHttpServer(enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache, servlet);
 
         try {
             server.start();
@@ -143,7 +137,7 @@ public abstract class AbstractTestTestingHttpServer
         skipUnlessJdkHasVirtualThreads();
         DummyServlet servlet = new DummyServlet();
         DummyFilter filter = new DummyFilter();
-        TestingHttpServer server = createTestingHttpServerWithFilter(enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache, servlet, ImmutableMap.of(), filter);
+        TestingHttpServer server = createTestingHttpServerWithFilter(enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache, servlet, filter);
 
         try {
             server.start();
@@ -171,8 +165,7 @@ public abstract class AbstractTestTestingHttpServer
                 new TestingNodeModule(),
                 new TestingHttpServerModule(),
                 binder -> {
-                    binder.bind(Servlet.class).annotatedWith(TheServlet.class).toInstance(servlet);
-                    binder.bind(new TypeLiteral<Map<String, String>>() {}).annotatedWith(TheServlet.class).toInstance(ImmutableMap.of());
+                    binder.bind(Servlet.class).toInstance(servlet);
                 });
 
         Injector injector = app
@@ -204,9 +197,8 @@ public abstract class AbstractTestTestingHttpServer
                 new TestingNodeModule(),
                 new TestingHttpServerModule(),
                 binder -> {
-                    binder.bind(Servlet.class).annotatedWith(TheServlet.class).toInstance(servlet);
-                    binder.bind(new TypeLiteral<Map<String, String>>() {}).annotatedWith(TheServlet.class).toInstance(ImmutableMap.of());
-                    newSetBinder(binder, Filter.class, TheServlet.class).addBinding().toInstance(filter);
+                    binder.bind(Servlet.class).toInstance(servlet);
+                    newSetBinder(binder, Filter.class).addBinding().toInstance(filter);
                 });
 
         Injector injector = app
@@ -239,8 +231,7 @@ public abstract class AbstractTestTestingHttpServer
                 new TestingNodeModule(),
                 new TestingHttpServerModule(0),
                 binder -> {
-                    binder.bind(Servlet.class).annotatedWith(TheServlet.class).toInstance(servlet);
-                    binder.bind(new TypeLiteral<Map<String, String>>() {}).annotatedWith(TheServlet.class).toInstance(ImmutableMap.of());
+                    binder.bind(Servlet.class).toInstance(servlet);
                     httpServerBinder(binder).bindResource("/", "webapp/user").withWelcomeFile("user-welcome.txt");
                     httpServerBinder(binder).bindResource("/", "webapp/user2");
                     httpServerBinder(binder).bindResource("path", "webapp/user").withWelcomeFile("user-welcome.txt");
@@ -284,7 +275,7 @@ public abstract class AbstractTestTestingHttpServer
             throws Exception
     {
         DummyServlet servlet = new DummyServlet();
-        TestingHttpServer server = createTestingHttpServer(enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache, servlet, ImmutableMap.of());
+        TestingHttpServer server = createTestingHttpServer(enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache, servlet);
 
         try {
             server.start();
@@ -324,7 +315,7 @@ public abstract class AbstractTestTestingHttpServer
             throws Exception
     {
         DummyServlet servlet = new DummyServlet();
-        TestingHttpServer server = createTestingHttpServer(enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache, servlet, ImmutableMap.of());
+        TestingHttpServer server = createTestingHttpServer(enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache, servlet);
 
         try {
             server.start();
@@ -362,22 +353,22 @@ public abstract class AbstractTestTestingHttpServer
         assertThat(data.getBody().trim()).isEqualTo(contents);
     }
 
-    private static TestingHttpServer createTestingHttpServer(boolean enableVirtualThreads, boolean enableLegacyUriCompliance, boolean enableCaseSensitiveHeaderCache, DummyServlet servlet, Map<String, String> params)
+    private static TestingHttpServer createTestingHttpServer(boolean enableVirtualThreads, boolean enableLegacyUriCompliance, boolean enableCaseSensitiveHeaderCache, DummyServlet servlet)
             throws IOException
     {
         NodeInfo nodeInfo = new NodeInfo("test");
         HttpServerConfig config = new HttpServerConfig().setHttpPort(0);
         HttpServerInfo httpServerInfo = new HttpServerInfo(config, nodeInfo);
-        return new TestingHttpServer(httpServerInfo, nodeInfo, config, servlet, params, enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache);
+        return new TestingHttpServer(httpServerInfo, nodeInfo, config, servlet, enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache);
     }
 
-    private static TestingHttpServer createTestingHttpServerWithFilter(boolean enableVirtualThreads, boolean enableLegacyUriCompliance, boolean enableCaseSensitiveHeaderCache, DummyServlet servlet, Map<String, String> params, DummyFilter filter)
+    private static TestingHttpServer createTestingHttpServerWithFilter(boolean enableVirtualThreads, boolean enableLegacyUriCompliance, boolean enableCaseSensitiveHeaderCache, DummyServlet servlet, DummyFilter filter)
             throws IOException
     {
         NodeInfo nodeInfo = new NodeInfo("test");
         HttpServerConfig config = new HttpServerConfig().setHttpPort(0);
         HttpServerInfo httpServerInfo = new HttpServerInfo(config, nodeInfo);
-        return new TestingHttpServer(httpServerInfo, nodeInfo, config, Optional.empty(), servlet, params, ImmutableSet.of(filter), ImmutableSet.of(), enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache, ClientCertificate.NONE);
+        return new TestingHttpServer(httpServerInfo, nodeInfo, config, Optional.empty(), servlet, ImmutableSet.of(filter), ImmutableSet.of(), enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache, ClientCertificate.NONE);
     }
 
     static class DummyServlet
@@ -390,12 +381,6 @@ public abstract class AbstractTestTestingHttpServer
         @Override
         public synchronized void init(ServletConfig config)
         {
-            sampleInitParam = config.getInitParameter("sampleInitParameter");
-        }
-
-        public synchronized String getSampleInitParam()
-        {
-            return sampleInitParam;
         }
 
         public synchronized int getCallCount()

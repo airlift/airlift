@@ -24,7 +24,6 @@ import com.google.common.net.MediaType;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.inject.Injector;
-import com.google.inject.Key;
 import com.google.inject.Scopes;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.event.client.AbstractEventClient;
@@ -122,7 +121,7 @@ public class TestHttpServerModule
                 new HttpServerModule(),
                 new TestingNodeModule(),
                 new EventModule(),
-                binder -> binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(DummyServlet.class));
+                binder -> binder.bind(Servlet.class).to(DummyServlet.class));
 
         Injector injector = app
                 .setRequiredConfigurationProperties(properties)
@@ -146,7 +145,7 @@ public class TestHttpServerModule
                 new HttpServerModule(),
                 new TestingNodeModule(),
                 new EventModule(),
-                binder -> binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(DummyServlet.class));
+                binder -> binder.bind(Servlet.class).to(DummyServlet.class));
 
         Injector injector = app
                 .setRequiredConfigurationProperties(properties)
@@ -191,8 +190,8 @@ public class TestHttpServerModule
                 new TestingNodeModule(),
                 new EventModule(),
                 binder -> {
-                    binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(DummyServlet.class);
-                    newSetBinder(binder, Filter.class, TheServlet.class).addBinding().to(DummyFilter.class).in(Scopes.SINGLETON);
+                    binder.bind(Servlet.class).to(DummyServlet.class);
+                    newSetBinder(binder, Filter.class).addBinding().to(DummyFilter.class).in(Scopes.SINGLETON);
                     httpServerBinder(binder).bindResource("/", "webapp/user").withWelcomeFile("user-welcome.txt");
                     httpServerBinder(binder).bindResource("/", "webapp/user2");
                     httpServerBinder(binder).bindResource("path", "webapp/user").withWelcomeFile("user-welcome.txt");
@@ -289,7 +288,7 @@ public class TestHttpServerModule
                 new InMemoryEventModule(),
                 new TraceTokenModule(),
                 binder -> newSetBinder(binder, EventClient.class).addBinding().toInstance(eventClient),
-                binder -> binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(EchoServlet.class).in(Scopes.SINGLETON));
+                binder -> binder.bind(Servlet.class).to(EchoServlet.class).in(Scopes.SINGLETON));
 
         Injector injector = app
                 .setRequiredConfigurationProperties(properties)
@@ -297,7 +296,7 @@ public class TestHttpServerModule
                 .initialize();
 
         HttpServerInfo httpServerInfo = injector.getInstance(HttpServerInfo.class);
-        EchoServlet echoServlet = (EchoServlet) injector.getInstance(Key.get(Servlet.class, TheServlet.class));
+        EchoServlet echoServlet = (EchoServlet) injector.getInstance(Servlet.class);
 
         HttpServer server = injector.getInstance(HttpServer.class);
         server.start();

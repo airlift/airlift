@@ -74,8 +74,8 @@ public class HttpServerModule
         newOptionalBinder(binder, Key.get(Boolean.class, EnableVirtualThreads.class)).setDefault().toInstance(false);
         // override with HttpServerBinder.enableLegacyUriCompliance()
         newOptionalBinder(binder, Key.get(Boolean.class, EnableLegacyUriCompliance.class)).setDefault().toInstance(false);
-        newSetBinder(binder, Filter.class, TheServlet.class);
-        newSetBinder(binder, HttpResourceBinding.class, TheServlet.class);
+        newSetBinder(binder, Filter.class);
+        newSetBinder(binder, HttpResourceBinding.class);
         newOptionalBinder(binder, SslContextFactory.Server.class);
         newOptionalBinder(binder, Key.get(Boolean.class, EnableCaseSensitiveHeaderCache.class)).setDefault().toInstance(false);
 

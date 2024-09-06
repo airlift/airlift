@@ -17,7 +17,6 @@ package io.airlift.http.server;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import io.airlift.event.client.EventClient;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
@@ -75,7 +74,6 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Executor;
@@ -122,8 +120,7 @@ public class HttpServer
             NodeInfo nodeInfo,
             HttpServerConfig config,
             Optional<HttpsConfig> maybeHttpsConfig,
-            Servlet theServlet,
-            Map<String, String> parameters,
+            Servlet servlet,
             Set<Filter> filters,
             Set<HttpResourceBinding> resources,
             boolean enableVirtualThreads,
@@ -142,7 +139,7 @@ public class HttpServer
         requireNonNull(nodeInfo, "nodeInfo is null");
         requireNonNull(config, "config is null");
         requireNonNull(maybeHttpsConfig, "httpsConfig is null");
-        requireNonNull(theServlet, "theServlet is null");
+        requireNonNull(servlet, "servlet is null");
         requireNonNull(maybeSslContextFactory, "maybeSslContextFactory is null");
         requireNonNull(clientCertificate, "clientCertificate is null");
 
@@ -287,7 +284,7 @@ public class HttpServer
 
         // add handlers to Jetty
         StatisticsHandler statsHandler = new StatisticsHandler();
-        statsHandler.setHandler(createServletContext(theServlet, resources, parameters, filters, tokenManager, loginService, Set.of("http", "https"), showStackTrace, enableLegacyUriCompliance, enableCompression));
+        statsHandler.setHandler(createServletContext(servlet, resources, filters, tokenManager, loginService, Set.of("http", "https"), showStackTrace, enableLegacyUriCompliance, enableCompression));
 
         ContextHandlerCollection rootHandlers = new ContextHandlerCollection();
         rootHandlers.addHandler(statsHandler);
@@ -352,7 +349,6 @@ public class HttpServer
 
     private static ServletContextHandler createServletContext(Servlet theServlet,
             Set<HttpResourceBinding> resources,
-            Map<String, String> parameters,
             Set<Filter> filters,
             TraceTokenManager tokenManager,
             LoginService loginService,
@@ -401,7 +397,6 @@ public class HttpServer
 
         // -- the servlet
         ServletHolder servletHolder = new ServletHolder(theServlet);
-        servletHolder.setInitParameters(ImmutableMap.copyOf(parameters));
         context.addServlet(servletHolder, "/*");
 
         // Starting with Jetty 9 there is no way to specify connectors directly, but

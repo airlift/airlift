@@ -20,14 +20,11 @@ import com.google.inject.Binder;
 import com.google.inject.Key;
 import com.google.inject.Provides;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
-import io.airlift.http.server.TheServlet;
 import io.airlift.jaxrs.tracing.JaxrsTracingModule;
 import jakarta.servlet.Servlet;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -51,7 +48,7 @@ public class JaxrsModule
     {
         binder.disableCircularProxies();
 
-        binder.bind(Servlet.class).annotatedWith(TheServlet.class).to(Key.get(ServletContainer.class));
+        binder.bind(Servlet.class).to(Key.get(ServletContainer.class));
         jaxrsBinder(binder).bind(JsonMapper.class);
         jaxrsBinder(binder).bind(SmileMapper.class);
         jaxrsBinder(binder).bind(ParsingExceptionMapper.class);
@@ -74,12 +71,5 @@ public class JaxrsModule
     {
         return new JaxrsResourceConfig(jaxRsSingletons)
                 .setProperties(ImmutableMap.of(RESPONSE_SET_STATUS_OVER_SEND_ERROR, "true"));
-    }
-
-    @Provides
-    @TheServlet
-    public static Map<String, String> createTheServletParams()
-    {
-        return new HashMap<>();
     }
 }
