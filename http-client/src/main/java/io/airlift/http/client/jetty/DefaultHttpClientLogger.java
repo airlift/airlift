@@ -16,7 +16,7 @@ package io.airlift.http.client.jetty;
 import ch.qos.logback.core.AsyncAppenderBase;
 import ch.qos.logback.core.ContextBase;
 import ch.qos.logback.core.rolling.RollingFileAppender;
-import ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP;
+import ch.qos.logback.core.rolling.SizeAndTimeBasedFileNamingAndTriggeringPolicy;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import ch.qos.logback.core.status.ErrorStatus;
 import ch.qos.logback.core.util.FileSize;
@@ -56,7 +56,7 @@ class DefaultHttpClientLogger
         recoverTempFiles(filename);
 
         FlushingFileAppender<HttpRequestEvent> fileAppender = new FlushingFileAppender<>(flushInterval);
-        SizeAndTimeBasedFNATP<HttpRequestEvent> triggeringPolicy = new SizeAndTimeBasedFNATP<>();
+        SizeAndTimeBasedFileNamingAndTriggeringPolicy<HttpRequestEvent> triggeringPolicy = new SizeAndTimeBasedFileNamingAndTriggeringPolicy<>();
         TimeBasedRollingPolicy<HttpRequestEvent> rollingPolicy = new TimeBasedRollingPolicy<>();
 
         rollingPolicy.setContext(context);
