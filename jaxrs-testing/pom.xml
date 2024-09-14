@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airlift</artifactId>
-        <version>267</version>
+        <version>268-SNAPSHOT</version>
     </parent>
     <artifactId>jaxrs-testing</artifactId>
     <packaging>jar</packaging>
