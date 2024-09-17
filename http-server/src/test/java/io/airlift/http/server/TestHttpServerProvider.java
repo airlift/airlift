@@ -72,12 +72,10 @@ import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Base64;
 import java.util.Date;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
-import static com.google.common.io.Files.asCharSink;
 import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
 import static com.google.common.io.Resources.getResource;
@@ -95,7 +93,6 @@ import static io.airlift.testing.Assertions.assertContains;
 import static io.airlift.testing.Assertions.assertNotEquals;
 import static io.airlift.testing.Closeables.closeAll;
 import static java.lang.String.format;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.Files.createTempDirectory;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -360,31 +357,6 @@ public class TestHttpServerProvider
     }
 
     @Test
-    public void testAuth()
-            throws Exception
-    {
-        File file = File.createTempFile("auth", ".properties", tempDir);
-        asCharSink(file, UTF_8).write("user: password");
-
-        config.setUserAuthFile(file.getAbsolutePath());
-
-        createServer();
-        server.start();
-
-        try (HttpClient client = new JettyHttpClient()) {
-            StringResponse response = client.execute(
-                    prepareGet()
-                            .setUri(httpServerInfo.getHttpUri())
-                            .addHeader("Authorization", "Basic " + Base64.getEncoder().encodeToString("user:password".getBytes()).trim())
-                            .build(),
-                    createStringResponseHandler());
-
-            assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_OK);
-            assertThat(response.getBody()).isEqualTo("user");
-        }
-    }
-
-    @Test
     public void testClientCertificateJava()
             throws Exception
     {
@@ -632,7 +604,6 @@ public class TestHttpServerProvider
 
     private void createServer(HttpServlet servlet)
     {
-        HashLoginServiceProvider loginServiceProvider = new HashLoginServiceProvider(config);
         HttpServerProvider serverProvider = new HttpServerProvider(
                 httpServerInfo,
                 nodeInfo,
@@ -648,7 +619,6 @@ public class TestHttpServerProvider
                 new RequestStats(),
                 new NullEventClient(),
                 Optional.empty());
-        serverProvider.setLoginService(loginServiceProvider.get());
         serverProvider.setTokenManager(new TraceTokenManager());
         server = serverProvider.get();
     }

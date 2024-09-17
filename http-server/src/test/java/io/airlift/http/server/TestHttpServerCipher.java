@@ -221,7 +221,6 @@ public class TestHttpServerCipher
 
     private static HttpServer createServer(HttpServlet servlet, NodeInfo nodeInfo, HttpServerInfo httpServerInfo, HttpServerConfig config, HttpsConfig httpsConfig)
     {
-        HashLoginServiceProvider loginServiceProvider = new HashLoginServiceProvider(config);
         HttpServerProvider serverProvider = new HttpServerProvider(
                 httpServerInfo,
                 nodeInfo,
@@ -237,7 +236,6 @@ public class TestHttpServerCipher
                 new RequestStats(),
                 new NullEventClient(),
                 Optional.empty());
-        serverProvider.setLoginService(loginServiceProvider.get());
         serverProvider.setTokenManager(new TraceTokenManager());
         return serverProvider.get();
     }

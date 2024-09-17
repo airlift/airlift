@@ -32,17 +32,12 @@ import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.ee10.servlet.FilterHolder;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
-import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
-import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http2.server.AuthorityCustomizer;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.jmx.MBeanContainer;
-import org.eclipse.jetty.security.LoginService;
-import org.eclipse.jetty.security.SecurityHandler;
-import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.HostHeaderCustomizer;
@@ -95,7 +90,6 @@ import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static org.eclipse.jetty.http.UriCompliance.Violation.AMBIGUOUS_PATH_ENCODING;
 import static org.eclipse.jetty.http.UriCompliance.Violation.AMBIGUOUS_PATH_SEPARATOR;
 import static org.eclipse.jetty.http.UriCompliance.Violation.SUSPICIOUS_PATH_CHARACTERS;
-import static org.eclipse.jetty.security.Constraint.ALLOWED;
 import static org.eclipse.jetty.util.VirtualThreads.getNamedVirtualThreadsExecutor;
 
 public class HttpServer
@@ -128,7 +122,6 @@ public class HttpServer
             boolean enableCaseSensitiveHeaderCache,
             ClientCertificate clientCertificate,
             MBeanServer mbeanServer,
-            LoginService loginService,
             TraceTokenManager tokenManager,
             RequestStats stats,
             EventClient eventClient,
@@ -275,7 +268,6 @@ public class HttpServer
          *           |       |--- trace token filter
          *           |       |--- gzip response filter
          *           |       |--- gzip request filter
-         *           |       |--- security handler
          *           |       |--- user provided filters
          *           |       |--- the servlet (normally GuiceContainer)
          *           |       |--- resource handlers
@@ -284,7 +276,7 @@ public class HttpServer
 
         // add handlers to Jetty
         StatisticsHandler statsHandler = new StatisticsHandler();
-        statsHandler.setHandler(createServletContext(servlet, resources, filters, tokenManager, loginService, Set.of("http", "https"), showStackTrace, enableLegacyUriCompliance, enableCompression));
+        statsHandler.setHandler(createServletContext(servlet, resources, filters, tokenManager, Set.of("http", "https"), showStackTrace, enableLegacyUriCompliance, enableCompression));
 
         ContextHandlerCollection rootHandlers = new ContextHandlerCollection();
         rootHandlers.addHandler(statsHandler);
@@ -351,7 +343,6 @@ public class HttpServer
             Set<HttpResourceBinding> resources,
             Set<Filter> filters,
             TraceTokenManager tokenManager,
-            LoginService loginService,
             Set<String> connectorNames,
             boolean showStackTrace,
             boolean enableLegacyUriCompliance,
@@ -371,12 +362,6 @@ public class HttpServer
         if (tokenManager != null) {
             context.addFilter(new FilterHolder(new TraceTokenFilter(tokenManager)), "/*", null);
         }
-        // -- security handler
-        if (loginService != null) {
-            SecurityHandler securityHandler = createSecurityHandler(loginService);
-            context.setSecurityHandler(securityHandler);
-        }
-
         // -- user provided filters
         for (Filter filter : filters) {
             context.addFilter(new FilterHolder(filter), "/*", null);
@@ -407,21 +392,6 @@ public class HttpServer
 
         context.setVirtualHosts(virtualHosts);
         return context;
-    }
-
-    private static SecurityHandler createSecurityHandler(LoginService loginService)
-    {
-        ConstraintMapping constraintMapping = new ConstraintMapping();
-        constraintMapping.setConstraint(ALLOWED);
-        constraintMapping.setPathSpec("/*");
-
-        ConstraintSecurityHandler securityHandler = new ConstraintSecurityHandler();
-        securityHandler.setLoginService(loginService);
-
-        // TODO: support for other auth schemes (digest, etc)
-        securityHandler.setAuthenticator(new BasicAuthenticator());
-        securityHandler.setConstraintMappings(ImmutableList.of(constraintMapping));
-        return securityHandler;
     }
 
     private static DelimitedRequestLog createDelimitedRequestLog(HttpServerConfig config, TraceTokenManager tokenManager, EventClient eventClient)

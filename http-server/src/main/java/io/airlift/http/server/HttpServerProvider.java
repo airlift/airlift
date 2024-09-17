@@ -26,7 +26,6 @@ import io.airlift.tracetoken.TraceTokenManager;
 import jakarta.annotation.Nullable;
 import jakarta.servlet.Filter;
 import jakarta.servlet.Servlet;
-import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import javax.management.MBeanServer;
@@ -55,7 +54,6 @@ public class HttpServerProvider
     private final boolean enableLegacyUriCompliance;
     private final boolean enableCaseSensitiveHeaderCache;
     private MBeanServer mbeanServer;
-    private LoginService loginService;
     private final RequestStats stats;
     private final Set<Filter> filters;
     private TraceTokenManager traceTokenManager;
@@ -113,12 +111,6 @@ public class HttpServerProvider
     }
 
     @Inject(optional = true)
-    public void setLoginService(@Nullable LoginService loginService)
-    {
-        this.loginService = loginService;
-    }
-
-    @Inject(optional = true)
     public void setTokenManager(@Nullable TraceTokenManager tokenManager)
     {
         this.traceTokenManager = tokenManager;
@@ -141,7 +133,6 @@ public class HttpServerProvider
                     enableCaseSensitiveHeaderCache,
                     clientCertificate,
                     mbeanServer,
-                    loginService,
                     traceTokenManager,
                     stats,
                     eventClient,

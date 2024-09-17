@@ -53,6 +53,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
         "http-server.admin.port",
         "http-server.admin.threads.min",
         "http-server.admin.threads.max",
+        "http-server.auth.users-file",
 })
 public class HttpServerConfig
 {
@@ -87,8 +88,6 @@ public class HttpServerConfig
     private DataSize http2InitialStreamReceiveWindowSize = DataSize.of(16, MEGABYTE);
     private DataSize http2InputBufferSize = DataSize.of(8, KILOBYTE);
     private Duration http2StreamIdleTimeout = new Duration(15, SECONDS);
-
-    private String userAuthFile;
 
     private boolean showStackTrace = true;
 
@@ -323,18 +322,6 @@ public class HttpServerConfig
     public HttpServerConfig setLogCompressionEnabled(boolean logCompressionEnabled)
     {
         this.logCompressionEnabled = logCompressionEnabled;
-        return this;
-    }
-
-    public String getUserAuthFile()
-    {
-        return userAuthFile;
-    }
-
-    @Config("http-server.auth.users-file")
-    public HttpServerConfig setUserAuthFile(String userAuthFile)
-    {
-        this.userAuthFile = userAuthFile;
         return this;
     }
 
