@@ -71,7 +71,6 @@ public class TestJettyMultipleCerts
                 .setKeystorePath(getResource("multiple-certs/server.p12").getPath())
                 .setKeystorePassword("airlift");
 
-        HashLoginServiceProvider loginServiceProvider = new HashLoginServiceProvider(config);
         NodeInfo nodeInfo = new NodeInfo(new NodeConfig()
                 .setEnvironment("test")
                 .setNodeInternalAddress("localhost"));
@@ -92,7 +91,6 @@ public class TestJettyMultipleCerts
                 new RequestStats(),
                 new NullEventClient(),
                 Optional.empty());
-        serverProvider.setLoginService(loginServiceProvider.get());
         serverProvider.setTokenManager(new TraceTokenManager());
 
         try (Closer closer = Closer.create()) {

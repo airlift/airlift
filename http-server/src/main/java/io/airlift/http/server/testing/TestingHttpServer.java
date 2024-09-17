@@ -102,7 +102,6 @@ public class TestingHttpServer
                 enableCaseSensitiveHeaderCache,
                 clientCertificate,
                 null,
-                null,
                 new TraceTokenManager(),
                 new RequestStats(),
                 new NullEventClient(),

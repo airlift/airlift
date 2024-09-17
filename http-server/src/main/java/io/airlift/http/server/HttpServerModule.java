@@ -47,8 +47,6 @@ import static org.weakref.jmx.guice.ExportBinder.newExporter;
  * <p>
  * To enable JMX, an {@link javax.management.MBeanServer} must be bound elsewhere
  * <p>
- * To enable Basic Auth, a {@link org.eclipse.jetty.security.LoginService} must be bound elsewhere
- * <p>
  * To enable HTTPS, {@link HttpServerConfig#isHttpsEnabled()} must return true
  * and {@link HttpsConfig#getKeystorePath()}
  * and {@link HttpsConfig#getKeystorePassword()} must return the path to
