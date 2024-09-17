@@ -56,8 +56,6 @@ import static org.weakref.jmx.guice.ExportBinder.newExporter;
 public class HttpServerModule
         extends AbstractConfigurationAwareModule
 {
-    public static final String REALM_NAME = "Airlift";
-
     @Override
     protected void setup(Binder binder)
     {
