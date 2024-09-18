@@ -47,7 +47,7 @@ public class HttpServerProvider
     private final NodeInfo nodeInfo;
     private final HttpServerConfig config;
     private final Optional<HttpsConfig> httpsConfig;
-    private final Servlet theServlet;
+    private final Servlet servlet;
     private final Set<HttpResourceBinding> resources;
     private final ClientCertificate clientCertificate;
     private final boolean enableVirtualThreads;
@@ -65,7 +65,7 @@ public class HttpServerProvider
             NodeInfo nodeInfo,
             HttpServerConfig config,
             Optional<HttpsConfig> httpsConfig,
-            Servlet theServlet,
+            Servlet servlet,
             Set<Filter> filters,
             Set<HttpResourceBinding> resources,
             @EnableVirtualThreads boolean enableVirtualThreads,
@@ -80,7 +80,7 @@ public class HttpServerProvider
         requireNonNull(nodeInfo, "nodeInfo is null");
         requireNonNull(config, "config is null");
         requireNonNull(httpsConfig, "httpsConfig is null");
-        requireNonNull(theServlet, "theServlet is null");
+        requireNonNull(servlet, "servlet is null");
         requireNonNull(filters, "filters is null");
         requireNonNull(resources, "resources is null");
         requireNonNull(clientCertificate, "clientCertificate is null");
@@ -92,7 +92,7 @@ public class HttpServerProvider
         this.nodeInfo = nodeInfo;
         this.config = config;
         this.httpsConfig = httpsConfig;
-        this.theServlet = theServlet;
+        this.servlet = servlet;
         this.filters = ImmutableSet.copyOf(filters);
         this.resources = ImmutableSet.copyOf(resources);
         this.enableVirtualThreads = enableVirtualThreads;
@@ -125,7 +125,7 @@ public class HttpServerProvider
                     nodeInfo,
                     config,
                     httpsConfig,
-                    theServlet,
+                    servlet,
                     filters,
                     resources,
                     enableVirtualThreads,
