@@ -339,7 +339,7 @@ public class HttpServer
                 .build());
     }
 
-    private static ServletContextHandler createServletContext(Servlet theServlet,
+    private static ServletContextHandler createServletContext(Servlet servlet,
             Set<HttpResourceBinding> resources,
             Set<Filter> filters,
             TraceTokenManager tokenManager,
@@ -368,11 +368,11 @@ public class HttpServer
         }
         // -- static resources
         for (HttpResourceBinding resource : resources) {
-            ClassPathResourceFilter servlet = new ClassPathResourceFilter(
+            ClassPathResourceFilter filter = new ClassPathResourceFilter(
                     resource.getBaseUri(),
                     resource.getClassPathResourceBase(),
                     resource.getWelcomeFiles());
-            context.addFilter(new FilterHolder(servlet), servlet.getBaseUri() + "/*", null);
+            context.addFilter(new FilterHolder(filter), filter.getBaseUri() + "/*", null);
         }
 
         if (enableCompression) {
@@ -381,7 +381,7 @@ public class HttpServer
         }
 
         // -- the servlet
-        ServletHolder servletHolder = new ServletHolder(theServlet);
+        ServletHolder servletHolder = new ServletHolder(servlet);
         context.addServlet(servletHolder, "/*");
 
         // Starting with Jetty 9 there is no way to specify connectors directly, but
