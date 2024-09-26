@@ -28,7 +28,6 @@ import io.airlift.http.server.HttpServerInfo;
 import io.airlift.http.server.HttpsConfig;
 import io.airlift.http.server.RequestStats;
 import io.airlift.node.NodeInfo;
-import io.airlift.tracetoken.TraceTokenManager;
 import jakarta.servlet.Filter;
 import jakarta.servlet.Servlet;
 
@@ -102,7 +101,6 @@ public class TestingHttpServer
                 enableCaseSensitiveHeaderCache,
                 clientCertificate,
                 null,
-                new TraceTokenManager(),
                 new RequestStats(),
                 new NullEventClient(),
                 Optional.empty());

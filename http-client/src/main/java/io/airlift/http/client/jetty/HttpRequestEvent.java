@@ -25,7 +25,6 @@ import java.time.Instant;
 import java.util.Locale;
 import java.util.Optional;
 
-import static io.airlift.http.client.TraceTokenRequestFilter.TRACETOKEN_HEADER;
 import static java.lang.Math.max;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -38,7 +37,6 @@ class HttpRequestEvent
     private final String protocolVersion;
     private final String method;
     private final String requestUri;
-    private final String traceToken;
 
     // Response-related fields can have the value of NO_RESPONSE for the requests
     // that didn't get any response (e.g., due to timeouts or other failures).
@@ -57,7 +55,6 @@ class HttpRequestEvent
             String protocolVersion,
             String method,
             String requestUri,
-            @Nullable String traceToken,
             long responseSize,
             int responseCode,
             long requestTotalTime,
@@ -72,7 +69,6 @@ class HttpRequestEvent
         this.protocolVersion = requireNonNull(protocolVersion, "protocolVersion is null");
         this.method = requireNonNull(method, "method is null");
         this.requestUri = requireNonNull(requestUri, "requestUri is null");
-        this.traceToken = traceToken;
         this.responseSize = responseSize;
         this.responseCode = responseCode;
         this.requestTotalTime = requestTotalTime;
@@ -102,11 +98,6 @@ class HttpRequestEvent
     public String getRequestUri()
     {
         return requestUri;
-    }
-
-    public String getTraceToken()
-    {
-        return traceToken;
     }
 
     public long getResponseSize()
@@ -190,7 +181,6 @@ class HttpRequestEvent
                 request.getVersion().toString(),
                 method,
                 requestUri,
-                getHeader(request, TRACETOKEN_HEADER),
                 responseSize,
                 responseCode,
                 NANOSECONDS.toMillis(requestTotalTimeNanos),

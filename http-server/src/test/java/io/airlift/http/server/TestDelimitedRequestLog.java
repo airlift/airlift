@@ -18,7 +18,6 @@ package io.airlift.http.server;
 import com.google.common.collect.ImmutableList;
 import io.airlift.event.client.InMemoryEventClient;
 import io.airlift.http.server.jetty.RequestTiming;
-import io.airlift.tracetoken.TraceTokenManager;
 import io.airlift.units.Duration;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Request;
@@ -41,7 +40,6 @@ import java.util.DoubleSummaryStatistics;
 import java.util.List;
 
 import static com.google.common.io.Files.asCharSource;
-import static io.airlift.http.server.TraceTokenFilter.TRACETOKEN_HEADER;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
@@ -80,46 +78,6 @@ public class TestDelimitedRequestLog
     }
 
     @Test
-    public void testTraceTokenHeader()
-    {
-        try (MockedStatic<Request> ignored = mockStatic(Request.class, RETURNS_DEEP_STUBS)) {
-            Request request = mock(Request.class, RETURNS_DEEP_STUBS);
-            Response response = mock(Response.class, RETURNS_DEEP_STUBS);
-            TraceTokenManager tokenManager = new TraceTokenManager();
-            InMemoryEventClient eventClient = new InMemoryEventClient();
-            DelimitedRequestLog logger = new DelimitedRequestLog(
-                    file.getAbsolutePath(),
-                    1,
-                    256,
-                    Long.MAX_VALUE,
-                    tokenManager,
-                    eventClient,
-                    false);
-            String token = "test-trace-token";
-            when(request.getConnectionMetaData().getHttpVersion()).thenReturn(HTTP_2);
-            when(request.getHeaders().get(TRACETOKEN_HEADER)).thenReturn(token);
-            // log a request without a token set by tokenManager
-            logger.log(request, response, timings(0, 0, 0, 0, 0, new DoubleSummaryStats(new DoubleSummaryStatistics())));
-            // create and set a new token with tokenManager
-            tokenManager.createAndRegisterNewRequestToken();
-            logger.log(request, response, timings(0, 0, 0, 0, 0, new DoubleSummaryStats(new DoubleSummaryStatistics())));
-            // clear the token HTTP header
-            when(request.getHeaders().get(TRACETOKEN_HEADER)).thenReturn(null);
-            logger.log(request, response, timings(0, 0, 0, 0, 0, new DoubleSummaryStats(new DoubleSummaryStatistics())));
-            logger.stop();
-
-            List<Object> events = eventClient.getEvents();
-            assertThat(events.size()).isEqualTo(3);
-            // first two events should have the token set from the header
-            for (int i = 0; i < 2; i++) {
-                assertThat(((HttpRequestEvent) events.get(i)).traceToken()).isEqualTo(token);
-            }
-            // last event should have the token set by the tokenManager
-            assertThat(((HttpRequestEvent) events.get(2)).traceToken()).isEqualTo(tokenManager.getCurrentRequestToken());
-        }
-    }
-
-    @Test
     public void testWriteLog()
             throws Exception
     {
@@ -153,9 +111,8 @@ public class TestDelimitedRequestLog
             stats.accept(3);
             DoubleSummaryStats responseContentInterarrivalStats = new DoubleSummaryStats(stats);
 
-            TraceTokenManager tokenManager = new TraceTokenManager();
             InMemoryEventClient eventClient = new InMemoryEventClient();
-            DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, 256, Long.MAX_VALUE, tokenManager, eventClient, false);
+            DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, 256, Long.MAX_VALUE, eventClient, false);
 
             when(principal.getName()).thenReturn(user);
             when(request.getHeaders().get("User-Agent")).thenReturn(agent);
@@ -173,8 +130,6 @@ public class TestDelimitedRequestLog
             when(response.getStatus()).thenReturn(responseCode);
             when(Response.getContentBytesWritten(response)).thenReturn(responseSize);
             when(response.getHeaders().get("Content-Type")).thenReturn(responseContentType);
-
-            tokenManager.createAndRegisterNewRequestToken();
             RequestTiming timings = timings(timeToDispatch, timeToHandle, timeToFirstByte, timeToLastByte, beginToEndMillis, responseContentInterarrivalStats);
 
             logger.log(request, response, timings);
@@ -199,13 +154,12 @@ public class TestDelimitedRequestLog
             assertThat(event.responseContentType()).isEqualTo(responseContentType);
             assertThat(event.timeToFirstByte()).isEqualTo(timeToFirstByte);
             assertThat(event.timeToLastByte()).isEqualTo(timeToLastByte);
-            assertThat(event.traceToken()).isEqualTo(tokenManager.getCurrentRequestToken());
             assertThat(event.timeToHandle()).isEqualTo(timeToHandle);
             assertThat(event.timeFromFirstToLastContent()).isEqualTo(event.timeToLastByte() - event.timeToFirstByte());
             assertThat(event.responseContentInterarrivalStats()).isEqualTo(responseContentInterarrivalStats);
 
             String actual = asCharSource(file, UTF_8).read();
-            String expected = String.format("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+            String expected = String.format("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
                     ISO_FORMATTER.format(timings.requestStarted()),
                     ip,
                     method,
@@ -216,7 +170,6 @@ public class TestDelimitedRequestLog
                     requestSize,
                     responseSize,
                     event.timeToLastByte(),
-                    tokenManager.getCurrentRequestToken(),
                     HTTP_2,
                     timeToDispatch,
                     beginToEndMillis,
@@ -239,7 +192,7 @@ public class TestDelimitedRequestLog
             when(request.getConnectionMetaData().getHttpVersion()).thenReturn(HTTP_2);
 
             InMemoryEventClient eventClient = new InMemoryEventClient();
-            DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, 256, Long.MAX_VALUE, null, eventClient, false);
+            DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, 256, Long.MAX_VALUE, eventClient, false);
             logger.log(request, response, timings(0, 0, 0, 0, 0, new DoubleSummaryStats(new DoubleSummaryStatistics())));
             logger.stop();
 
@@ -263,7 +216,7 @@ public class TestDelimitedRequestLog
             when(request.getConnectionMetaData().getHttpVersion()).thenReturn(HTTP_2);
 
             InMemoryEventClient eventClient = new InMemoryEventClient();
-            DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, 256, Long.MAX_VALUE, null, eventClient, false);
+            DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, 256, Long.MAX_VALUE, eventClient, false);
             logger.log(request, response, timings(0, 0, 0, 0, 0, new DoubleSummaryStats(new DoubleSummaryStatistics())));
             logger.stop();
 
@@ -288,7 +241,7 @@ public class TestDelimitedRequestLog
             when(request.getConnectionMetaData().getHttpVersion()).thenReturn(HTTP_2);
 
             InMemoryEventClient eventClient = new InMemoryEventClient();
-            DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, 256, Long.MAX_VALUE, null, eventClient, false);
+            DelimitedRequestLog logger = new DelimitedRequestLog(file.getAbsolutePath(), 1, 256, Long.MAX_VALUE, eventClient, false);
             logger.log(request, response, timings(0, 0, 0, 0, 0, new DoubleSummaryStats(new DoubleSummaryStatistics())));
             logger.stop();
 

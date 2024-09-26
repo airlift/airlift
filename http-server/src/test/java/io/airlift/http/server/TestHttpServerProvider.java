@@ -33,7 +33,6 @@ import io.airlift.log.Logging;
 import io.airlift.node.NodeConfig;
 import io.airlift.node.NodeInfo;
 import io.airlift.testing.TempFile;
-import io.airlift.tracetoken.TraceTokenManager;
 import io.airlift.units.Duration;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -604,7 +603,7 @@ public class TestHttpServerProvider
 
     private void createServer(HttpServlet servlet)
     {
-        HttpServerProvider serverProvider = new HttpServerProvider(
+        server = new HttpServerProvider(
                 httpServerInfo,
                 nodeInfo,
                 config,
@@ -618,9 +617,7 @@ public class TestHttpServerProvider
                 clientCertificate,
                 new RequestStats(),
                 new NullEventClient(),
-                Optional.empty());
-        serverProvider.setTokenManager(new TraceTokenManager());
-        server = serverProvider.get();
+                Optional.empty()).get();
     }
 
     private HttpServerInfo createHttpServerInfo()

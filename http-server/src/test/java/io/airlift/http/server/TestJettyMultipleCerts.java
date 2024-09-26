@@ -24,7 +24,6 @@ import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.http.server.HttpServer.ClientCertificate;
 import io.airlift.node.NodeConfig;
 import io.airlift.node.NodeInfo;
-import io.airlift.tracetoken.TraceTokenManager;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -91,7 +90,6 @@ public class TestJettyMultipleCerts
                 new RequestStats(),
                 new NullEventClient(),
                 Optional.empty());
-        serverProvider.setTokenManager(new TraceTokenManager());
 
         try (Closer closer = Closer.create()) {
             HttpServer server = serverProvider.get();

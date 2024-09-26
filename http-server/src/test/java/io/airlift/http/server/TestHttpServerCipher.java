@@ -17,7 +17,6 @@ import com.google.common.collect.ImmutableSet;
 import io.airlift.event.client.NullEventClient;
 import io.airlift.http.server.HttpServer.ClientCertificate;
 import io.airlift.node.NodeInfo;
-import io.airlift.tracetoken.TraceTokenManager;
 import jakarta.servlet.http.HttpServlet;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
@@ -221,7 +220,7 @@ public class TestHttpServerCipher
 
     private static HttpServer createServer(HttpServlet servlet, NodeInfo nodeInfo, HttpServerInfo httpServerInfo, HttpServerConfig config, HttpsConfig httpsConfig)
     {
-        HttpServerProvider serverProvider = new HttpServerProvider(
+        return new HttpServerProvider(
                 httpServerInfo,
                 nodeInfo,
                 config,
@@ -235,8 +234,6 @@ public class TestHttpServerCipher
                 ClientCertificate.NONE,
                 new RequestStats(),
                 new NullEventClient(),
-                Optional.empty());
-        serverProvider.setTokenManager(new TraceTokenManager());
-        return serverProvider.get();
+                Optional.empty()).get();
     }
 }

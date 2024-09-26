@@ -68,7 +68,6 @@
         <module>skeleton-server</module>
         <module>stats</module>
         <module>testing</module>
-        <module>trace-token</module>
         <module>tracing</module>
     </modules>
 

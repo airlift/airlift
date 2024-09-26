@@ -26,7 +26,6 @@ import com.google.common.math.LongMath;
 import io.airlift.event.client.EventClient;
 import io.airlift.http.server.jetty.RequestTiming;
 import io.airlift.log.Logger;
-import io.airlift.tracetoken.TraceTokenManager;
 import io.airlift.units.DataSize;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -49,7 +48,6 @@ class DelimitedRequestLog
 
     // Tab-separated
     // Time, ip, method, url, user, agent, response code, request length, response length, response time
-    private final TraceTokenManager traceTokenManager;
     private final EventClient eventClient;
     private final AsyncAppenderBase<HttpRequestEvent> asyncAppender;
 
@@ -58,11 +56,9 @@ class DelimitedRequestLog
             int maxHistory,
             int queueSize,
             long maxFileSizeInBytes,
-            TraceTokenManager traceTokenManager,
             EventClient eventClient,
             boolean compressionEnabled)
     {
-        this.traceTokenManager = traceTokenManager;
         this.eventClient = eventClient;
 
         ContextBase context = new ContextBase();
@@ -111,7 +107,7 @@ class DelimitedRequestLog
 
     public void log(Request request, Response response, RequestTiming timing)
     {
-        HttpRequestEvent event = createHttpRequestEvent(request, response, traceTokenManager, timing);
+        HttpRequestEvent event = createHttpRequestEvent(request, response, timing);
         asyncAppender.doAppend(event);
         eventClient.post(event);
     }

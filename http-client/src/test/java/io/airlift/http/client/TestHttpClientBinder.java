@@ -25,7 +25,6 @@ import com.google.inject.TypeLiteral;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.bootstrap.LifeCycleManager;
 import io.airlift.http.client.jetty.JettyHttpClient;
-import io.airlift.tracetoken.TraceTokenModule;
 import io.airlift.units.Duration;
 import org.junit.jupiter.api.Test;
 
@@ -47,8 +46,7 @@ public class TestHttpClientBinder
         Injector injector = new Bootstrap(
                 binder -> httpClientBinder(binder)
                         .bindHttpClient("foo", FooClient.class)
-                        .withConfigDefaults(config -> config.setRequestTimeout(new Duration(33, MINUTES))),
-                new TraceTokenModule())
+                        .withConfigDefaults(config -> config.setRequestTimeout(new Duration(33, MINUTES))))
                 .quiet()
                 .initialize();
 
@@ -104,8 +102,7 @@ public class TestHttpClientBinder
                             .addFilterBinding().toInstance(filter1);
                     httpClientBinder(binder).bindHttpClient("bar", BarClient.class)
                             .addFilterBinding().toInstance(filter2);
-                },
-                new TraceTokenModule())
+                })
                 .quiet()
                 .initialize();
 
@@ -144,18 +141,16 @@ public class TestHttpClientBinder
                 binder -> {
                     httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
                             .withFilter(TestingRequestFilter.class)
-                            .withFilter(AnotherHttpRequestFilter.class)
-                            .withTracing();
+                            .withFilter(AnotherHttpRequestFilter.class);
 
                     httpClientBinder(binder).bindHttpClient("bar", BarClient.class)
                             .withFilter(TestingRequestFilter.class)
                             .addFilterBinding().to(AnotherHttpRequestFilter.class);
-                },
-                new TraceTokenModule())
+                })
                 .quiet()
                 .initialize();
 
-        assertFilterCount(injector.getInstance(Key.get(HttpClient.class, FooClient.class)), 3);
+        assertFilterCount(injector.getInstance(Key.get(HttpClient.class, FooClient.class)), 2);
         assertFilterCount(injector.getInstance(Key.get(HttpClient.class, BarClient.class)), 2);
     }
 
@@ -165,14 +160,12 @@ public class TestHttpClientBinder
         Injector injector = new Bootstrap(
                 binder -> httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
                         .withFilter(TestingRequestFilter.class)
-                        .withFilter(AnotherHttpRequestFilter.class)
-                        .withTracing(),
-                new TraceTokenModule())
+                        .withFilter(AnotherHttpRequestFilter.class))
                 .quiet()
                 .initialize();
 
         HttpClient httpClient = injector.getInstance(Key.get(HttpClient.class, FooClient.class));
-        assertFilterCount(httpClient, 3);
+        assertFilterCount(httpClient, 2);
     }
 
     @Test

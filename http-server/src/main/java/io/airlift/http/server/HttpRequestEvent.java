@@ -21,7 +21,6 @@ import com.google.common.collect.Lists;
 import io.airlift.event.client.EventField;
 import io.airlift.event.client.EventType;
 import io.airlift.http.server.jetty.RequestTiming;
-import io.airlift.tracetoken.TraceTokenManager;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 
@@ -30,12 +29,10 @@ import java.time.Instant;
 import java.util.Enumeration;
 
 import static io.airlift.event.client.EventField.EventFieldMapping.TIMESTAMP;
-import static io.airlift.http.server.TraceTokenFilter.TRACETOKEN_HEADER;
 
 @EventType("HttpRequest")
 public record HttpRequestEvent(
         @EventField(fieldMapping = TIMESTAMP) Instant timeStamp,
-        @EventField String traceToken,
         @EventField String clientAddress,
         @EventField String protocol,
         @EventField String method,
@@ -57,7 +54,7 @@ public record HttpRequestEvent(
         @EventField DoubleSummaryStats responseContentInterarrivalStats,
         @EventField String protocolVersion)
 {
-    public static HttpRequestEvent createHttpRequestEvent(Request request, Response response, TraceTokenManager traceTokenManager, RequestTiming timing)
+    public static HttpRequestEvent createHttpRequestEvent(Request request, Response response, RequestTiming timing)
     {
         String user = null;
         Request.AuthenticationState authenticationState = Request.getAuthenticationState(request);
@@ -66,12 +63,6 @@ public record HttpRequestEvent(
             if (principal != null) {
                 user = principal.getName();
             }
-        }
-
-        // This is required, because async responses are processed in a different thread.
-        String token = request.getHeaders().get(TRACETOKEN_HEADER);
-        if (token == null && traceTokenManager != null) {
-            token = traceTokenManager.getCurrentRequestToken();
         }
 
         ImmutableList.Builder<String> builder = ImmutableList.builder();
@@ -122,7 +113,6 @@ public record HttpRequestEvent(
 
         return new HttpRequestEvent(
                 timing.requestStarted(),
-                token,
                 clientAddress,
                 protocol,
                 method,
