@@ -23,7 +23,6 @@ import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.http.server.jetty.MonitoredQueuedThreadPoolMBean;
 import io.airlift.log.Logger;
 import io.airlift.node.NodeInfo;
-import io.airlift.tracetoken.TraceTokenManager;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.servlet.Filter;
@@ -122,7 +121,6 @@ public class HttpServer
             boolean enableCaseSensitiveHeaderCache,
             ClientCertificate clientCertificate,
             MBeanServer mbeanServer,
-            TraceTokenManager tokenManager,
             RequestStats stats,
             EventClient eventClient,
             Optional<SslContextFactory.Server> maybeSslContextFactory)
@@ -276,13 +274,13 @@ public class HttpServer
 
         // add handlers to Jetty
         StatisticsHandler statsHandler = new StatisticsHandler();
-        statsHandler.setHandler(createServletContext(servlet, resources, filters, tokenManager, Set.of("http", "https"), showStackTrace, enableLegacyUriCompliance, enableCompression));
+        statsHandler.setHandler(createServletContext(servlet, resources, filters, Set.of("http", "https"), showStackTrace, enableLegacyUriCompliance, enableCompression));
 
         ContextHandlerCollection rootHandlers = new ContextHandlerCollection();
         rootHandlers.addHandler(statsHandler);
 
         if (config.isLogEnabled()) {
-            this.requestLog = createDelimitedRequestLog(config, tokenManager, eventClient);
+            this.requestLog = createDelimitedRequestLog(config, eventClient);
         }
         else {
             this.requestLog = null;
@@ -342,7 +340,6 @@ public class HttpServer
     private static ServletContextHandler createServletContext(Servlet servlet,
             Set<HttpResourceBinding> resources,
             Set<Filter> filters,
-            TraceTokenManager tokenManager,
             Set<String> connectorNames,
             boolean showStackTrace,
             boolean enableLegacyUriCompliance,
@@ -357,10 +354,6 @@ public class HttpServer
         if (enableLegacyUriCompliance) {
             // allow encoded slashes to occur in URI paths
             context.getServletHandler().setDecodeAmbiguousURIs(true);
-        }
-
-        if (tokenManager != null) {
-            context.addFilter(new FilterHolder(new TraceTokenFilter(tokenManager)), "/*", null);
         }
         // -- user provided filters
         for (Filter filter : filters) {
@@ -394,7 +387,7 @@ public class HttpServer
         return context;
     }
 
-    private static DelimitedRequestLog createDelimitedRequestLog(HttpServerConfig config, TraceTokenManager tokenManager, EventClient eventClient)
+    private static DelimitedRequestLog createDelimitedRequestLog(HttpServerConfig config, EventClient eventClient)
             throws IOException
     {
         File logFile = new File(config.getLogPath());
@@ -412,7 +405,6 @@ public class HttpServer
                 config.getLogHistory(),
                 config.getLogQueueSize(),
                 config.getLogMaxFileSize().toBytes(),
-                tokenManager,
                 eventClient,
                 config.isLogCompressionEnabled());
     }

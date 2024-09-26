@@ -39,7 +39,6 @@ import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.log.Logging;
 import io.airlift.node.NodeInfo;
 import io.airlift.node.testing.TestingNodeModule;
-import io.airlift.tracetoken.TraceTokenModule;
 import jakarta.servlet.Filter;
 import jakarta.servlet.Servlet;
 import jakarta.servlet.http.HttpServlet;
@@ -286,7 +285,6 @@ public class TestHttpServerModule
                 new HttpServerModule(),
                 new TestingNodeModule(),
                 new InMemoryEventModule(),
-                new TraceTokenModule(),
                 binder -> newSetBinder(binder, EventClient.class).addBinding().toInstance(eventClient),
                 binder -> binder.bind(Servlet.class).to(EchoServlet.class).in(Scopes.SINGLETON));
 
@@ -304,7 +302,6 @@ public class TestHttpServerModule
         URI requestUri = httpServerInfo.getHttpUri().resolve("/my/path");
         String userAgent = "my-user-agent";
         String referrer = "http://www.google.com";
-        String token = "this is a trace token";
         String requestBody = Joiner.on(" ").join(nCopies(50, "request"));
         String requestContentType = "request/type";
 
@@ -326,7 +323,6 @@ public class TestHttpServerModule
                             .addHeader(USER_AGENT, userAgent)
                             .addHeader(CONTENT_TYPE, requestContentType)
                             .addHeader(REFERER, referrer)
-                            .addHeader("X-Airlift-TraceToken", token)
                             .setBodyGenerator(createStaticBodyGenerator(requestBody, UTF_8))
                             .build(),
                     createStringResponseHandler());
@@ -350,7 +346,6 @@ public class TestHttpServerModule
         assertThat(event.user()).isNull();
         assertThat(event.agent()).isEqualTo(userAgent);
         assertThat(event.referrer()).isEqualTo(referrer);
-        assertThat(event.traceToken()).isEqualTo(token);
 
         assertThat(event.requestSize()).isEqualTo(requestBody.length());
         assertThat(event.requestContentType()).isEqualTo(requestContentType);

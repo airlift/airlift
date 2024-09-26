@@ -118,11 +118,6 @@ public class HttpClientBinder
             return this;
         }
 
-        public HttpClientBindingBuilder withTracing()
-        {
-            return withFilter(TraceTokenRequestFilter.class);
-        }
-
         public LinkedBindingBuilder<HttpStatusListener> addStatusListenerBinding()
         {
             return statusListenerBinder.addBinding();

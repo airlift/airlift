@@ -52,8 +52,6 @@ class HttpClientLogLayout
                 .append(event.getResponseBeginToResponseEnd())
                 .append('\t')
                 .append(event.getTimeToLastByte())
-                .append('\t')
-                .append(event.getTraceToken())
                 .append('\n');
         return builder.toString();
     }

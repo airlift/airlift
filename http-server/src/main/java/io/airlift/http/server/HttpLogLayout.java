@@ -45,8 +45,6 @@ public class HttpLogLayout
                 .append('\t')
                 .append(event.timeToLastByte())
                 .append('\t')
-                .append(event.traceToken())
-                .append('\t')
                 .append(event.protocolVersion())
                 .append('\t')
                 .append(event.timeToDispatch())

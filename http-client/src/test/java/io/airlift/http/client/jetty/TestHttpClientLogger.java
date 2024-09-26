@@ -50,7 +50,6 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import static io.airlift.http.client.TraceTokenRequestFilter.TRACETOKEN_HEADER;
 import static io.airlift.http.client.jetty.HttpRequestEvent.NO_RESPONSE;
 import static io.airlift.http.client.jetty.HttpRequestEvent.getFailureReason;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
@@ -100,11 +99,7 @@ public class TestHttpClientLogger
         int status = 200;
         long responseSize = 345;
         long requestTimestamp = System.currentTimeMillis();
-
-        HttpFields.Mutable headers = HttpFields.build();
-        headers.add(TRACETOKEN_HEADER, "test-token");
-
-        Request request = new TestRequest(HTTP_2, method, uri, headers);
+        Request request = new TestRequest(HTTP_2, method, uri, HttpFields.build());
         Response response = new TestResponse(status);
 
         DefaultHttpClientLogger logger = new DefaultHttpClientLogger(
@@ -142,7 +137,6 @@ public class TestHttpClientLogger
         assertThat(columns[9]).isEqualTo(Long.toString(NANOSECONDS.toMillis(responseBegin - requestEnd)));
         assertThat(columns[10]).isEqualTo(Long.toString(NANOSECONDS.toMillis(responseComplete - responseBegin)));
         assertThat(columns[11]).isEqualTo(Long.toString(responseInfo.getResponseTimestampMillis() - requestTimestamp));
-        assertThat(columns[12]).isEqualTo("test-token");
     }
 
     @Test
@@ -152,10 +146,7 @@ public class TestHttpClientLogger
         String method = "GET";
         URI uri = new URI("http://www.google.com");
         long requestTimestamp = System.currentTimeMillis();
-
-        HttpFields.Mutable headers = HttpFields.build();
-        headers.add(TRACETOKEN_HEADER, "test-token");
-        Request request = new TestRequest(HTTP_1_1, method, uri, headers);
+        Request request = new TestRequest(HTTP_1_1, method, uri, HttpFields.build());
 
         DefaultHttpClientLogger logger = new DefaultHttpClientLogger(
                 file.getAbsolutePath(),
@@ -184,7 +175,6 @@ public class TestHttpClientLogger
         assertThat(columns[9]).isEqualTo(Long.toString(0));
         assertThat(columns[10]).isEqualTo(Long.toString(0));
         assertThat(columns[11]).isEqualTo(Long.toString(responseInfo.getResponseTimestampMillis() - requestTimestamp));
-        assertThat(columns[12]).isEqualTo("test-token");
     }
 
     @Test

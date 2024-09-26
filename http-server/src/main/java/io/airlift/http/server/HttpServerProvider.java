@@ -22,8 +22,6 @@ import io.airlift.event.client.EventClient;
 import io.airlift.http.server.HttpServer.ClientCertificate;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.node.NodeInfo;
-import io.airlift.tracetoken.TraceTokenManager;
-import jakarta.annotation.Nullable;
 import jakarta.servlet.Filter;
 import jakarta.servlet.Servlet;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -56,7 +54,6 @@ public class HttpServerProvider
     private MBeanServer mbeanServer;
     private final RequestStats stats;
     private final Set<Filter> filters;
-    private TraceTokenManager traceTokenManager;
     private final EventClient eventClient;
     private final Optional<SslContextFactory.Server> sslContextFactory;
 
@@ -110,12 +107,6 @@ public class HttpServerProvider
         mbeanServer = server;
     }
 
-    @Inject(optional = true)
-    public void setTokenManager(@Nullable TraceTokenManager tokenManager)
-    {
-        this.traceTokenManager = tokenManager;
-    }
-
     @Override
     public HttpServer get()
     {
@@ -133,7 +124,6 @@ public class HttpServerProvider
                     enableCaseSensitiveHeaderCache,
                     clientCertificate,
                     mbeanServer,
-                    traceTokenManager,
                     stats,
                     eventClient,
                     sslContextFactory);

@@ -29,7 +29,6 @@ import io.airlift.log.LogJmxModule;
 import io.airlift.log.Logger;
 import io.airlift.node.NodeModule;
 import io.airlift.openmetrics.JmxOpenMetricsModule;
-import io.airlift.tracetoken.TraceTokenModule;
 import io.airlift.tracing.TracingModule;
 import org.weakref.jmx.guice.MBeanModule;
 
@@ -56,7 +55,6 @@ public final class Main
                 new JmxOpenMetricsModule(),
                 new LogJmxModule(),
                 new HttpEventModule(),
-                new TraceTokenModule(),
                 new TracingModule("skeleton", VERSION),
                 new MainModule());
 
