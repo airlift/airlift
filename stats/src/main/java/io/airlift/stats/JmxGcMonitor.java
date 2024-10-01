@@ -13,7 +13,9 @@
  */
 package io.airlift.stats;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import io.airlift.log.Logger;
 import io.airlift.units.DataSize;
@@ -35,11 +37,14 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryUsage;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static com.sun.management.GarbageCollectionNotificationInfo.GARBAGE_COLLECTION_NOTIFICATION;
 import static io.airlift.units.DataSize.succinctBytes;
 import static java.lang.Math.max;
+import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -55,9 +60,16 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 public class JmxGcMonitor
         implements GcMonitor
 {
+    @VisibleForTesting
+    static final double FRACTION_OF_MAX_HEAP_TO_TRIGGER_WARN = 0.8;
+    private static final double MINIMUM_PERCENTAGE_OF_HEAP_RECLAIMED = 10.0;
+    private static final String MAJOR_ZGC_NAME = "ZGC Major Cycles";
+    private static final Set<String> ZGC_MBEANS = ImmutableSet.of("ZGC Cycles", MAJOR_ZGC_NAME, "ZGC Minor Cycles");
+
     private final Logger log = Logger.get(JmxGcMonitor.class);
 
     private final NotificationListener notificationListener = (notification, ignored) -> onNotification(notification);
+    private final NotificationListener zgcNotificationListener = (notification, ignored) -> onZgcNotification(notification);
 
     private final AtomicLong majorGcCount = new AtomicLong();
     private final AtomicLong majorGcTime = new AtomicLong();
@@ -74,11 +86,21 @@ public class JmxGcMonitor
         for (GarbageCollectorMXBean mbean : ManagementFactory.getGarbageCollectorMXBeans()) {
             ObjectName objectName = mbean.getObjectName();
             try {
-                ManagementFactory.getPlatformMBeanServer().addNotificationListener(
-                        objectName,
-                        notificationListener,
-                        null,
-                        null);
+                // Don't register listeners for ZGC Pauses because it does not report memory usage statistics
+                if (ZGC_MBEANS.contains(mbean.getName())) {
+                    getPlatformMBeanServer().addNotificationListener(
+                            objectName,
+                            zgcNotificationListener,
+                            null,
+                            null);
+                }
+                else {
+                    getPlatformMBeanServer().addNotificationListener(
+                            objectName,
+                            notificationListener,
+                            null,
+                            null);
+                }
             }
             catch (JMException e) {
                 throw new RuntimeException("Unable to add GC listener", e);
@@ -92,7 +114,14 @@ public class JmxGcMonitor
         for (GarbageCollectorMXBean mbean : ManagementFactory.getGarbageCollectorMXBeans()) {
             ObjectName objectName = mbean.getObjectName();
             try {
-                ManagementFactory.getPlatformMBeanServer().removeNotificationListener(objectName, notificationListener);
+                if (mbean.getName().startsWith("ZGC")) {
+                    if (!mbean.getName().equals("ZGC Pauses")) {
+                        getPlatformMBeanServer().removeNotificationListener(objectName, zgcNotificationListener);
+                    }
+                }
+                else {
+                    getPlatformMBeanServer().removeNotificationListener(objectName, notificationListener);
+                }
             }
             catch (JMException ignored) {
                 log.warn("Failed to unregister GC listener");
@@ -128,24 +157,11 @@ public class JmxGcMonitor
 
     private synchronized void onNotification(Notification notification)
     {
-        if ("com.sun.management.gc.notification".equals(notification.getType())) {
+        if (GARBAGE_COLLECTION_NOTIFICATION.equals(notification.getType())) {
             GarbageCollectionNotificationInfo info = new GarbageCollectionNotificationInfo((CompositeData) notification.getUserData());
 
             if (info.isMajorGc()) {
-                majorGcCount.incrementAndGet();
-                majorGcTime.addAndGet(info.getDurationMs());
-                majorGc.add(info.getDurationMs(), MILLISECONDS);
-
-                // assume that major GCs stop the application
-                long applicationRuntime = max(0, info.getStartTime() - lastGcEndTime);
-                lastGcEndTime = info.getEndTime();
-
-                log.info(
-                        "Major GC: application %sms, stopped %sms: %s -> %s",
-                        applicationRuntime,
-                        info.getDurationMs(),
-                        info.getBeforeGcTotal(),
-                        info.getAfterGcTotal());
+                logMajorGc(info);
             }
             else if (info.isMinorGc()) {
                 minorGc.add(info.getDurationMs(), MILLISECONDS);
@@ -158,6 +174,68 @@ public class JmxGcMonitor
                         info.getAfterGcTotal());
             }
         }
+    }
+
+    private synchronized void onZgcNotification(Notification notification)
+    {
+        if (GARBAGE_COLLECTION_NOTIFICATION.equals(notification.getType())) {
+            GarbageCollectionNotificationInfo info = new GarbageCollectionNotificationInfo((CompositeData) notification.getUserData());
+            if (info.isMajorZgc()) {
+                logMajorGc(info);
+            }
+            else {
+                minorGc.add(info.getDurationMs(), MILLISECONDS);
+
+                // assumption that minor GCs run currently, so we do not print stopped or application time
+                log.debug(
+                        "Minor GC: duration %sms: %s -> %s",
+                        info.getDurationMs(),
+                        info.getBeforeGcTotal(),
+                        info.getAfterGcTotal());
+            }
+        }
+    }
+
+    private void logMajorGc(GarbageCollectionNotificationInfo info)
+    {
+        majorGcCount.incrementAndGet();
+        majorGcTime.addAndGet(info.getDurationMs());
+        majorGc.add(info.getDurationMs(), MILLISECONDS);
+
+        // assume that major GCs stop the application
+        long applicationRuntime = max(0, info.getStartTime() - lastGcEndTime);
+        lastGcEndTime = info.getEndTime();
+
+        double percentHeapReclaimed = percentOfMaxHeapReclaimed(
+                ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax(),
+                info.getBeforeGcTotal().toBytes(),
+                info.getAfterGcTotal().toBytes());
+        if (percentHeapReclaimed < MINIMUM_PERCENTAGE_OF_HEAP_RECLAIMED) {
+            log.warn(
+                    "Major GC: application %sms, stopped %sms: %s -> %s (only recovered %.1f%% of heap memory)",
+                    applicationRuntime,
+                    info.getDurationMs(),
+                    info.getBeforeGcTotal(),
+                    info.getAfterGcTotal(),
+                    percentHeapReclaimed);
+            return;
+        }
+
+        log.info(
+                "Major GC: application %sms, stopped %sms: %s -> %s",
+                applicationRuntime,
+                info.getDurationMs(),
+                info.getBeforeGcTotal(),
+                info.getAfterGcTotal());
+    }
+
+    static double percentOfMaxHeapReclaimed(long maxHeapMemoryUsage, double totalBeforeGcMemory, double totalAfterGcMemory)
+    {
+        if (maxHeapMemoryUsage <= 0 || (totalBeforeGcMemory / maxHeapMemoryUsage) < FRACTION_OF_MAX_HEAP_TO_TRIGGER_WARN) {
+            // There is no max heap defined or the heap is not close to the max yet
+            return 100.0;
+        }
+        return (1 - (totalAfterGcMemory / totalBeforeGcMemory)) * 100;
     }
 
     private static class GarbageCollectionNotificationInfo
@@ -232,6 +310,11 @@ public class JmxGcMonitor
         public boolean isMajorGc()
         {
             return gcAction.equalsIgnoreCase(MAJOR_GC_NAME);
+        }
+
+        public boolean isMajorZgc()
+        {
+            return gcName.equalsIgnoreCase(MAJOR_ZGC_NAME);
         }
 
         @Override
