@@ -40,6 +40,7 @@ public class TestLoggingConfiguration
                 .setCompression(CompressionType.GZIP)
                 .setLevelsFile(null)
                 .setFormat(Format.TEXT)
+                .setConsoleFormat(Format.TEXT)
                 .setLogAnnotationFile(null));
     }
 
@@ -56,6 +57,7 @@ public class TestLoggingConfiguration
                 .put("log.compression", "NONE")
                 .put("log.levels-file", "/tmp/levels.txt")
                 .put("log.format", "json")
+                .put("log.console-format", "json")
                 .put("node.annotation-file", annotationFile.getAbsolutePath())
                 .build();
 
@@ -67,6 +69,7 @@ public class TestLoggingConfiguration
                 .setCompression(CompressionType.NONE)
                 .setLevelsFile("/tmp/levels.txt")
                 .setFormat(Format.JSON)
+                .setConsoleFormat(Format.JSON)
                 .setLogAnnotationFile(annotationFile.getAbsolutePath());
 
         ConfigAssertions.assertFullMapping(properties, expected);

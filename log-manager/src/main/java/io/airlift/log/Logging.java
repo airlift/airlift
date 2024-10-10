@@ -142,6 +142,7 @@ public class Logging
 
     private synchronized void enableConsole()
     {
+        log.info("Enabling stderr output");
         consoleHandler = new OutputStreamHandler(System.err);
         ROOT.addHandler(consoleHandler);
     }
@@ -151,6 +152,15 @@ public class Logging
         log.info("Disabling stderr output");
         ROOT.removeHandler(consoleHandler);
         consoleHandler = null;
+    }
+
+    private synchronized void enableJsonConsole(Map<String, String> logAnnotations)
+    {
+        // disabling any existing console allow adding json console
+        disableConsole();
+        log.info("Enabling stderr output in JSON format");
+        consoleHandler = new OutputStreamHandler(System.err, new JsonFormatter(logAnnotations));
+        ROOT.addHandler(consoleHandler);
     }
 
     private void logToFile(String logPath, DataSize maxFileSize, DataSize maxTotalSize, CompressionType compressionType, Formatter formatter, List<LogMBeanExport> mBeanExportCollector)
@@ -276,8 +286,10 @@ public class Logging
             }
         }
 
-        if (!config.isConsoleEnabled()) {
-            disableConsole();
+        boolean isLoggingJsonInConsole = config.getConsoleFormat().equals(Format.JSON);
+
+        if (config.isConsoleEnabled() && isLoggingJsonInConsole) {
+            enableJsonConsole(logAnnotations);
         }
 
         if (config.getLevelsFile() != null) {
