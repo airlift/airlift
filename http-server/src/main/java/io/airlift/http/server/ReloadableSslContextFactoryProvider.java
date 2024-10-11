@@ -81,6 +81,7 @@ final class ReloadableSslContextFactoryProvider
         sslContextFactory.setIncludeCipherSuites(config.getHttpsIncludedCipherSuites().toArray(new String[0]));
         sslContextFactory.setExcludeCipherSuites(config.getHttpsExcludedCipherSuites().toArray(new String[0]));
         sslContextFactory.setSecureRandomAlgorithm(config.getSecureRandomAlgorithm());
+        sslContextFactory.setRenegotiationAllowed(false);
         switch (clientCertificate) {
             case NONE:
                 // no changes
