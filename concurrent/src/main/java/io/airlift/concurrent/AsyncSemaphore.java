@@ -29,6 +29,7 @@ import static com.google.common.base.Verify.verify;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.util.concurrent.Futures.immediateCancelledFuture;
 import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
+import static com.google.common.util.concurrent.Futures.successfulAsList;
 import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static io.airlift.concurrent.MoreFutures.allAsListWithCancellationOnFailure;
 import static java.util.Objects.requireNonNull;
@@ -86,6 +87,48 @@ public class AsyncSemaphore<T, R>
             return submitter.apply(task);
         });
         resultFuture.setFuture(allAsListWithCancellationOnFailure(tasks.stream()
+                .map(semaphore::submit)
+                .collect(toImmutableList())));
+        return resultFuture;
+    }
+
+    /**
+     * Process a list of tasks as a single unit
+     * (similar to {@link com.google.common.util.concurrent.Futures#successfulAsList(ListenableFuture[])})
+     * with limiting the number of tasks running in parallel.
+     * <p>
+     * This method may be useful for limiting the number of concurrent requests sent to a remote server when
+     * trying to run multiple related entities concurrently:
+     * <p>
+     * For example:
+     * <pre>{@code
+     * List<Integer> userIds = Lists.of(1, 2, 3);
+     * ListenableFuture<List<UserInfo>> future = processAllToCompletion(ids, client::getUserInfoById, 2, executor);
+     * List<UserInfo> userInfos = future.get(...);
+     * }</pre>
+     *
+     * @param tasks tasks to process
+     * @param submitter task submitter
+     * @param maxConcurrency maximum number of tasks allowed to run in parallel
+     * @param submitExecutor task submission executor
+     * @return {@link ListenableFuture} containing a list of values returned by the {@code tasks}.
+     * The order of elements in the list matches the order of {@code tasks}.
+     * If the result future is cancelled all the remaining tasks are cancelled (submitted tasks will be cancelled, pending tasks will not be submitted).
+     * If any of the submitted tasks fails or are cancelled, the remaining tasks will continue to execute.
+     * If any of the submitted tasks fails or are cancelled, the remaining pending tasks are cancelled.
+     */
+    public static <T, R> ListenableFuture<List<R>> processAllToCompletion(List<T> tasks, Function<T, ListenableFuture<R>> submitter, int maxConcurrency, Executor submitExecutor)
+    {
+        SettableFuture<List<R>> resultFuture = SettableFuture.create();
+        AsyncSemaphore<T, R> semaphore = new AsyncSemaphore<>(maxConcurrency, submitExecutor, task -> {
+            if (resultFuture.isCancelled()) {
+                // Task cancellation tends to happen in task submission order, which can race with subsequent task submissions after previous cancellations.
+                // This eager check prevents this race from occurring, and can reduce the number of unnecessary submissions.
+                return immediateCancelledFuture();
+            }
+            return submitter.apply(task);
+        });
+        resultFuture.setFuture(successfulAsList(tasks.stream()
                 .map(semaphore::submit)
                 .collect(toImmutableList())));
         return resultFuture;
