@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.Module;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyName;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.cfg.MapperConfig;
@@ -45,6 +46,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static java.util.Objects.requireNonNull;
@@ -52,6 +54,20 @@ import static java.util.Objects.requireNonNull;
 public class JsonSubType
 {
     private final Set<Module> modules;
+
+    public static boolean isJsonSubType(ObjectMapper objectMapper, Object instance)
+    {
+        if (instance != null) {
+            AnnotationIntrospector annotationIntrospector = objectMapper.getSerializationConfig().getAnnotationIntrospector();
+            if (annotationIntrospector != null) {
+                return annotationIntrospector.allIntrospectors()
+                        .stream()
+                        .flatMap(introspector -> (introspector instanceof TypeAddingIntrospector typeAddingIntrospector) ? Stream.of(typeAddingIntrospector) : Stream.empty())
+                        .anyMatch(typeAddingIntrospector -> typeAddingIntrospector.baseClass.isAssignableFrom(instance.getClass()));
+            }
+        }
+        return false;
+    }
 
     public static JsonSubType.Builder builder()
     {
@@ -91,7 +107,7 @@ public class JsonSubType
 
             Supplier<Map<String, Class<?>>> supplier = Suppliers.memoize(subClassBuilder::build);
 
-            TypeAddingModule module = new TypeAddingModule(propertyName, supplier);
+            TypeAddingModule module = new TypeAddingModule(baseClass, propertyName, supplier);
             module.addDeserializer(baseClass, new Deserializer<>(propertyName, supplier));
             modules.add(module);
 
@@ -141,13 +157,15 @@ public class JsonSubType
     {
         private static final AtomicInteger MODULE_ID_SEQ = new AtomicInteger(1);
 
+        private final Class<?> baseClass;
         private final String propertyName;
         private final Supplier<Map<String, Class<?>>> subClassPropertyValues;
 
-        private TypeAddingModule(String propertyName, Supplier<Map<String, Class<?>>> subClassPropertyValues)
+        private TypeAddingModule(Class<?> baseClass, String propertyName, Supplier<Map<String, Class<?>>> subClassPropertyValues)
         {
             super("TypeAddingModule-" + MODULE_ID_SEQ.getAndIncrement(), new Version(1, 0, 0, null, null, null));
 
+            this.baseClass = requireNonNull(baseClass, "baseClass is null");
             this.propertyName = requireNonNull(propertyName, "propertyName is null");
             this.subClassPropertyValues = requireNonNull(subClassPropertyValues, "subClassPropertyValues is null");
         }
@@ -161,18 +179,20 @@ public class JsonSubType
                     .stream()
                     .collect(toImmutableMap(Map.Entry::getValue, Map.Entry::getKey));
 
-            context.insertAnnotationIntrospector(new TypeAddingIntrospector(propertyName, invertedSubClassMap));
+            context.insertAnnotationIntrospector(new TypeAddingIntrospector(baseClass, propertyName, invertedSubClassMap));
         }
     }
 
     private static class TypeAddingIntrospector
             extends AnnotationIntrospector
     {
+        private final Class<?> baseClass;
         private final String propertyName;
         private final Map<Class<?>, String> subClassPropertyValues;
 
-        private TypeAddingIntrospector(String propertyName, Map<Class<?>, String> subClassPropertyValues)
+        private TypeAddingIntrospector(Class<?> baseClass, String propertyName, Map<Class<?>, String> subClassPropertyValues)
         {
+            this.baseClass = requireNonNull(baseClass, "baseClass is null");
             this.propertyName = requireNonNull(propertyName, "propertyName is null");
             this.subClassPropertyValues = ImmutableMap.copyOf(subClassPropertyValues);
         }

@@ -33,6 +33,7 @@ import java.util.function.Supplier;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT;
 import static com.google.common.base.Preconditions.checkArgument;
+import static io.airlift.json.JsonSubType.isJsonSubType;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
@@ -153,6 +154,9 @@ public class JsonCodec<T>
             throws IllegalArgumentException
     {
         try {
+            if (isJsonSubType(mapper, instance)) {
+                return mapper.writeValueAsString(instance);
+            }
             return mapper.writerFor(javaType).writeValueAsString(instance);
         }
         catch (IOException e) {
@@ -214,6 +218,9 @@ public class JsonCodec<T>
             throws IllegalArgumentException
     {
         try {
+            if (isJsonSubType(mapper, instance)) {
+                return mapper.writeValueAsBytes(instance);
+            }
             return mapper.writerFor(javaType).writeValueAsBytes(instance);
         }
         catch (IOException e) {
