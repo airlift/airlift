@@ -33,7 +33,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-import static io.airlift.testing.Assertions.assertContains;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
@@ -65,7 +64,7 @@ public class TestConfigAssertions
         catch (AssertionError e) {
             // expected
             pass = false;
-            assertContains(e.getMessage(), "Phone");
+            assertThat(e.getMessage()).contains("Phone");
         }
 
         if (pass) {
@@ -88,7 +87,7 @@ public class TestConfigAssertions
         catch (AssertionError e) {
             // expected
             pass = false;
-            assertContains(e.getMessage(), "HomePage");
+            assertThat(e.getMessage()).contains("HomePage");
         }
 
         if (pass) {
@@ -112,7 +111,7 @@ public class TestConfigAssertions
         catch (AssertionError e) {
             // expected
             pass = false;
-            assertContains(e.getMessage(), "UnsupportedAttribute");
+            assertThat(e.getMessage()).contains("UnsupportedAttribute");
         }
 
         if (pass) {
@@ -134,7 +133,7 @@ public class TestConfigAssertions
         catch (AssertionError e) {
             // expected
             pass = false;
-            assertContains(e.getMessage(), "HomePage");
+            assertThat(e.getMessage()).contains("HomePage");
         }
 
         if (pass) {
@@ -157,7 +156,7 @@ public class TestConfigAssertions
         catch (AssertionError e) {
             // expected
             pass = false;
-            assertContains(e.getMessage(), "HomePageUrl");
+            assertThat(e.getMessage()).contains("HomePageUrl");
         }
 
         if (pass) {
@@ -208,7 +207,7 @@ public class TestConfigAssertions
         catch (AssertionError e) {
             // expected
             pass = false;
-            assertContains(e.getMessage(), "unsupported-property");
+            assertThat(e.getMessage()).contains("unsupported-property");
         }
 
         if (pass) {
@@ -237,7 +236,7 @@ public class TestConfigAssertions
         catch (AssertionError e) {
             // expected
             pass = false;
-            assertContains(e.getMessage(), "home-page");
+            assertThat(e.getMessage()).contains("home-page");
         }
 
         if (pass) {
@@ -268,7 +267,7 @@ public class TestConfigAssertions
         catch (AssertionError e) {
             // expected
             pass = false;
-            assertContains(e.getMessage(), "Name");
+            assertThat(e.getMessage()).contains("Name");
         }
 
         if (pass) {
@@ -299,7 +298,7 @@ public class TestConfigAssertions
         catch (AssertionError e) {
             // expected
             pass = false;
-            assertContains(e.getMessage(), "HomePage");
+            assertThat(e.getMessage()).contains("HomePage");
         }
 
         if (pass) {
@@ -362,7 +361,7 @@ public class TestConfigAssertions
         catch (AssertionError e) {
             // expected
             pass = false;
-            assertContains(e.getMessage(), "unsupported-property");
+            assertThat(e.getMessage()).contains("unsupported-property");
         }
 
         if (pass) {
@@ -388,7 +387,7 @@ public class TestConfigAssertions
         catch (AssertionError e) {
             // expected
             pass = false;
-            assertContains(e.getMessage(), "notes-id");
+            assertThat(e.getMessage()).contains("notes-id");
         }
 
         if (pass) {
@@ -418,7 +417,7 @@ public class TestConfigAssertions
         catch (AssertionError e) {
             // expected
             pass = false;
-            assertContains(e.getMessage(), "notes-id");
+            assertThat(e.getMessage()).contains("notes-id");
         }
 
         if (pass) {
@@ -511,7 +510,7 @@ public class TestConfigAssertions
         catch (AssertionError e) {
             // expected
             pass = false;
-            assertContains(e.getMessage(), "HomePageUrl");
+            assertThat(e.getMessage()).contains("HomePageUrl");
         }
 
         if (pass) {
@@ -538,7 +537,7 @@ public class TestConfigAssertions
         catch (AssertionError e) {
             // expected
             pass = false;
-            assertContains(e.getMessage(), "hashCode()");
+            assertThat(e.getMessage()).contains("hashCode()");
         }
 
         if (pass) {

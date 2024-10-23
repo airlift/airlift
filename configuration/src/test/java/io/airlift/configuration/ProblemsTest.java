@@ -21,8 +21,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static io.airlift.testing.Assertions.assertContains;
-import static io.airlift.testing.Assertions.assertContainsAllOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
@@ -45,7 +43,7 @@ public class ProblemsTest
             fail("Expected exception from problems object");
         }
         catch (ConfigurationException e) {
-            assertContainsAllOf(e.getMessage(), "message 1");
+            assertThat(e.getMessage()).contains("message 1");
         }
     }
 
@@ -68,7 +66,7 @@ public class ProblemsTest
             fail("Expected exception from problems object");
         }
         catch (ConfigurationException e) {
-            assertContainsAllOf(e.getMessage(), "message 1", "message 2");
+            assertThat(e.getMessage()).contains("message 1", "message 2");
         }
     }
 
@@ -80,7 +78,7 @@ public class ProblemsTest
 
         List<Message> errors = problems.getErrors();
         assertThat(errors).hasSize(1);
-        assertContainsAllOf(errors.get(0).getMessage(), "message %d", "NaN", "IllegalFormatConversionException");
+        assertThat(errors.get(0).getMessage()).contains("message %d", "NaN", "IllegalFormatConversionException");
 
         assertThat(problems.getWarnings().size()).as("Found unexpected warnings in problem object").isEqualTo(0);
 
@@ -89,7 +87,7 @@ public class ProblemsTest
             fail("Expected exception from problems object");
         }
         catch (ConfigurationException e) {
-            assertContains(e.getMessage(), "message %d [NaN]");
+            assertThat(e.getMessage()).contains("message %d [NaN]");
         }
     }
 
@@ -145,7 +143,7 @@ public class ProblemsTest
 
         List<Message> warnings = problems.getWarnings();
         assertThat(warnings).hasSize(1);
-        assertContainsAllOf(warnings.get(0).getMessage(), "message %d", "NaN", "IllegalFormatConversionException");
+        assertThat(warnings.get(0).getMessage()).contains("message %d", "NaN", "IllegalFormatConversionException");
 
         try {
             problems.throwIfHasErrors();
@@ -182,7 +180,7 @@ public class ProblemsTest
             fail("Expected exception from problems object");
         }
         catch (ConfigurationException e) {
-            assertContainsAllOf(e.getMessage(), "message e1", "message e2", "message w1", "message w2", "message w3");
+            assertThat(e.getMessage()).contains("message e1", "message e2", "message w1", "message w2", "message w3");
         }
     }
 }

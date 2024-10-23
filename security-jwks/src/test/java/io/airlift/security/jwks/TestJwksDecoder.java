@@ -34,7 +34,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import static io.airlift.security.jwks.JwksDecoder.decodeKeys;
-import static io.airlift.testing.Assertions.assertInstanceOf;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -66,8 +65,8 @@ public class TestJwksDecoder
                 "  ]\n" +
                 "}");
         assertThat(keys.size()).isEqualTo(2);
-        assertInstanceOf(keys.get("example-rsa"), JwkRsaPublicKey.class);
-        assertInstanceOf(keys.get("example-ec"), JwkEcPublicKey.class);
+        assertThat(keys.get("example-rsa")).isInstanceOf(JwkRsaPublicKey.class);
+        assertThat(keys.get("example-ec")).isInstanceOf(JwkEcPublicKey.class);
     }
 
     @Test
@@ -221,7 +220,7 @@ public class TestJwksDecoder
                 "  ]\n" +
                 "}");
         assertThat(keys.size()).isEqualTo(1);
-        assertInstanceOf(keys.get("test-ec"), JwkEcPublicKey.class);
+        assertThat(keys.get("test-ec")).isInstanceOf(JwkEcPublicKey.class);
     }
 
     @Test

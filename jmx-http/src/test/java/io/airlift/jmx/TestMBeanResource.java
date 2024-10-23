@@ -36,8 +36,6 @@ import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StringResponseHandler.StringResponse;
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
-import static io.airlift.testing.Assertions.assertContains;
-import static io.airlift.testing.Assertions.assertEqualsIgnoreOrder;
 import static java.lang.management.ManagementFactory.MEMORY_MXBEAN_NAME;
 import static java.lang.management.ManagementFactory.RUNTIME_MXBEAN_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -90,7 +88,7 @@ public class TestMBeanResource
 
         assertThat(response.getStatusCode()).isEqualTo(200);
         assertContentType(response, HTML_UTF_8);
-        assertContains(response.getBody(), "<html>");
+        assertThat(response.getBody()).contains("<html>");
     }
 
     @Test
@@ -118,7 +116,7 @@ public class TestMBeanResource
 
         assertThat(names).contains(MEMORY_MXBEAN_NAME);
         assertThat(names).contains(RUNTIME_MXBEAN_NAME);
-        assertEqualsIgnoreOrder(names, getMBeanNames());
+        assertThat(names).containsExactlyInAnyOrderElementsOf(getMBeanNames());
     }
 
     @Test

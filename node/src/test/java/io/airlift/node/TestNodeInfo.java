@@ -25,8 +25,6 @@ import java.net.UnknownHostException;
 import static io.airlift.node.NodeConfig.AddressSource.FQDN;
 import static io.airlift.node.NodeConfig.AddressSource.HOSTNAME;
 import static io.airlift.node.NodeConfig.AddressSource.IP;
-import static io.airlift.testing.Assertions.assertGreaterThanOrEqual;
-import static io.airlift.testing.Assertions.assertNotEquals;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -57,12 +55,12 @@ public class TestNodeInfo
         assertThat(nodeInfo.getConfigSpec()).isEqualTo(configSpec);
         assertThat(nodeInfo.getInstanceId()).isNotNull();
 
-        assertNotEquals(nodeInfo.getNodeId(), nodeInfo.getInstanceId());
+        assertThat(nodeInfo.getNodeId()).isNotEqualTo(nodeInfo.getInstanceId());
 
         assertThat(nodeInfo.getInternalAddress()).isEqualTo(internalIp);
         assertThat(nodeInfo.getExternalAddress()).isEqualTo(externalAddress);
         assertThat(nodeInfo.getBindIp()).isEqualTo(bindIp);
-        assertGreaterThanOrEqual(nodeInfo.getStartTime(), testStartTime);
+        assertThat(nodeInfo.getStartTime()).isGreaterThanOrEqualTo(testStartTime);
         assertThat(nodeInfo.getAnnotations().size()).isEqualTo(0);
 
         // make sure toString doesn't throw an exception

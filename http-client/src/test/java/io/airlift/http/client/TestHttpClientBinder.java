@@ -33,7 +33,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 import static io.airlift.http.client.HttpClientBinder.httpClientBinder;
-import static io.airlift.testing.Assertions.assertInstanceOf;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -252,7 +251,7 @@ public class TestHttpClientBinder
     private static void assertFilterCount(HttpClient httpClient, int filterCount)
     {
         assertThat(httpClient).isNotNull();
-        assertInstanceOf(httpClient, JettyHttpClient.class);
+        assertThat(httpClient).isInstanceOf(JettyHttpClient.class);
         assertThat(((JettyHttpClient) httpClient).getRequestFilters().size()).isEqualTo(filterCount);
     }
 

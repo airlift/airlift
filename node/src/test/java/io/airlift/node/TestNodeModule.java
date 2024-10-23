@@ -30,8 +30,6 @@ import java.net.UnknownHostException;
 import java.util.Map;
 
 import static com.google.common.io.Resources.getResource;
-import static io.airlift.testing.Assertions.assertGreaterThanOrEqual;
-import static io.airlift.testing.Assertions.assertNotEquals;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestNodeModule
@@ -54,13 +52,13 @@ public class TestNodeModule
         assertThat(nodeInfo.getConfigSpec()).isNull();
         assertThat(nodeInfo.getInstanceId()).isNotNull();
 
-        assertNotEquals(nodeInfo.getNodeId(), nodeInfo.getInstanceId());
+        assertThat(nodeInfo.getNodeId()).isNotEqualTo(nodeInfo.getInstanceId());
 
         assertThat(nodeInfo.getInternalAddress()).isNotNull();
         assertThat(InetAddress.getByName(nodeInfo.getInternalAddress()).isAnyLocalAddress()).isFalse();
         assertThat(nodeInfo.getBindIp()).isNotNull();
         assertThat(nodeInfo.getBindIp().isAnyLocalAddress()).isTrue();
-        assertGreaterThanOrEqual(nodeInfo.getStartTime(), testStartTime);
+        assertThat(nodeInfo.getStartTime()).isGreaterThanOrEqualTo(testStartTime);
         assertThat(nodeInfo.getAnnotations().size()).isEqualTo(0);
 
         // make sure toString doesn't throw an exception
@@ -104,11 +102,11 @@ public class TestNodeModule
         assertThat(nodeInfo.getConfigSpec()).isEqualTo(configSpec);
         assertThat(nodeInfo.getInstanceId()).isNotNull();
 
-        assertNotEquals(nodeInfo.getNodeId(), nodeInfo.getInstanceId());
+        assertThat(nodeInfo.getNodeId()).isNotEqualTo(nodeInfo.getInstanceId());
 
         assertThat(nodeInfo.getInternalAddress()).isEqualTo(publicAddress);
         assertThat(nodeInfo.getBindIp()).isEqualTo(InetAddresses.forString("0.0.0.0"));
-        assertGreaterThanOrEqual(nodeInfo.getStartTime(), testStartTime);
+        assertThat(nodeInfo.getStartTime()).isGreaterThanOrEqualTo(testStartTime);
         assertThat(nodeInfo.getAnnotations()).isEqualTo(Map.of("team", "a", "region", "b"));
 
         // make sure toString doesn't throw an exception

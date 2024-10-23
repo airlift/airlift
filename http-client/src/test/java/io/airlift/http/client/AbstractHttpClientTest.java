@@ -68,9 +68,6 @@ import static io.airlift.http.client.Request.Builder.preparePut;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static io.airlift.http.client.StreamingBodyGenerator.streamingBodyGenerator;
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
-import static io.airlift.testing.Assertions.assertBetweenInclusive;
-import static io.airlift.testing.Assertions.assertGreaterThanOrEqual;
-import static io.airlift.testing.Assertions.assertLessThan;
 import static io.airlift.units.Duration.nanosSince;
 import static java.lang.String.format;
 import static java.lang.Thread.currentThread;
@@ -178,7 +175,7 @@ public abstract class AbstractHttpClientTest
                 }
                 Duration maxDuration = useIdleTimeout ? config.getIdleTimeout() : config.getConnectTimeout();
                 maxDuration = new Duration(maxDuration.toMillis() + 300, MILLISECONDS);
-                assertLessThan(nanosSince(start), maxDuration);
+                assertThat(nanosSince(start)).isLessThan(maxDuration);
             }
         }
     }
@@ -388,7 +385,7 @@ public abstract class AbstractHttpClientTest
 
             assertThat(port2).isEqualTo(port1);
             assertThat(port3).isEqualTo(port1);
-            assertBetweenInclusive(port1, 1024, 65535);
+            assertThat(port1).isBetween(1024, 65535);
         }
     }
 
@@ -745,7 +742,7 @@ public abstract class AbstractHttpClientTest
             assertThat(server.servlet().getRequestHeaders().containsKey(HeaderName.of(ACCEPT_ENCODING))).isFalse();
 
             String json = "{\"fuite\":\"apple\",\"hello\":\"world\"}";
-            assertGreaterThanOrEqual(json.length(), GzipHandler.DEFAULT_MIN_GZIP_SIZE);
+            assertThat(json.length()).isGreaterThanOrEqualTo(GzipHandler.DEFAULT_MIN_GZIP_SIZE);
 
             server.servlet().setResponseBody(json);
             server.servlet().addResponseHeader(CONTENT_TYPE, "application/json");
@@ -1018,7 +1015,7 @@ public abstract class AbstractHttpClientTest
             }
         }
         finally {
-            assertLessThan(nanosSince(start), new Duration(1, SECONDS), "Expected request to finish quickly");
+            assertThat(nanosSince(start)).as("Expected request to finish quickly").isLessThan(new Duration(1, SECONDS));
         }
     }
 

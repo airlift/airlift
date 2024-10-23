@@ -56,7 +56,6 @@ import static io.airlift.json.JsonCodec.listJsonCodec;
 import static io.airlift.json.JsonCodec.mapJsonCodec;
 import static io.airlift.sample.PersonEvent.personAdded;
 import static io.airlift.sample.PersonEvent.personRemoved;
-import static io.airlift.testing.Assertions.assertEqualsIgnoreOrder;
 import static jakarta.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static java.net.HttpURLConnection.HTTP_BAD_METHOD;
@@ -143,7 +142,7 @@ public class TestServer
                 prepareGet().setUri(uriFor("/v1/person")).build(),
                 createJsonResponseHandler(listCodec));
 
-        assertEqualsIgnoreOrder(expected, actual);
+        assertThat(expected).containsExactlyInAnyOrderElementsOf(actual);
     }
 
     @Test

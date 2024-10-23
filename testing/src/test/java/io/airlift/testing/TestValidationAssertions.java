@@ -20,7 +20,6 @@ import org.junit.jupiter.api.Test;
 
 import java.lang.annotation.Annotation;
 
-import static io.airlift.testing.Assertions.assertContains;
 import static io.airlift.testing.ValidationAssertions.assertFailsValidation;
 import static io.airlift.testing.ValidationAssertions.assertValidates;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -121,14 +120,14 @@ public class TestValidationAssertions
             assertThat(actualMessage).doesNotStartWith(" ");
         }
 
-        assertContains(actualMessage, "<" + value + ">");
+        assertThat(actualMessage).contains("<" + value + ">");
 
         if (annotation != null) {
-            assertContains(actualMessage, annotation.getName());
+            assertThat(actualMessage).contains(annotation.getName());
         }
 
         if (property != null) {
-            assertContains(actualMessage, property);
+            assertThat(actualMessage).contains(property);
         }
     }
 

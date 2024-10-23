@@ -88,8 +88,6 @@ import static io.airlift.http.server.HttpServerConfig.ProcessForwardedMode.ACCEP
 import static io.airlift.http.server.HttpServerConfig.ProcessForwardedMode.IGNORE;
 import static io.airlift.http.server.HttpServerConfig.ProcessForwardedMode.REJECT;
 import static io.airlift.http.server.TestHttpServerInfo.closeChannels;
-import static io.airlift.testing.Assertions.assertContains;
-import static io.airlift.testing.Assertions.assertNotEquals;
 import static io.airlift.testing.Closeables.closeAll;
 import static java.lang.String.format;
 import static java.nio.file.Files.createTempDirectory;
@@ -195,7 +193,7 @@ public class TestHttpServerProvider
         assertThat(httpServerInfo.getHttpsUri().getPort()).isEqualTo(httpServerInfo.getHttpsExternalUri().getPort());
         assertThat(httpServerInfo.getHttpsUri().getScheme()).isEqualTo("https");
 
-        assertNotEquals(httpServerInfo.getHttpUri().getPort(), httpServerInfo.getHttpsUri().getPort());
+        assertThat(httpServerInfo.getHttpUri().getPort()).isNotEqualTo(httpServerInfo.getHttpsUri().getPort());
     }
 
     @Test
@@ -445,7 +443,7 @@ public class TestHttpServerProvider
         try (HttpClient client = new JettyHttpClient()) {
             StringResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStringResponseHandler());
             assertThat(response.getStatusCode()).isEqualTo(500);
-            assertContains(response.getBody(), "ErrorServlet.java");
+            assertThat(response.getBody()).contains("ErrorServlet.java");
         }
     }
 

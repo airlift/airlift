@@ -29,7 +29,6 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static com.google.common.collect.Lists.newArrayList;
-import static io.airlift.testing.Assertions.assertEqualsIgnoreOrder;
 import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_CLASS_CAST_EXCEPTION;
 import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_EQUAL;
 import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_EQUAL_TO_NULL;
@@ -73,13 +72,11 @@ public class TestEquivalenceTester
             fail("Expected EquivalenceAssertionError");
         }
         catch (EquivalenceAssertionError e) {
-            assertEqualsIgnoreOrder(
-                    e.getFailures(),
-                    newArrayList(
-                            new PairCheckFailure(EQUAL, 0, 0, "foo", 1, 0, "foo"),
-                            new PairCheckFailure(EQUAL, 1, 0, "foo", 0, 0, "foo"),
-                            new PairCheckFailure(COMPARE_EQUAL, 0, 0, "foo", 1, 0, "foo"),
-                            new PairCheckFailure(COMPARE_EQUAL, 1, 0, "foo", 0, 0, "foo")));
+            assertThat(e.getFailures()).containsExactlyInAnyOrder(
+                    new PairCheckFailure(EQUAL, 0, 0, "foo", 1, 0, "foo"),
+                    new PairCheckFailure(EQUAL, 1, 0, "foo", 0, 0, "foo"),
+                    new PairCheckFailure(COMPARE_EQUAL, 0, 0, "foo", 1, 0, "foo"),
+                    new PairCheckFailure(COMPARE_EQUAL, 1, 0, "foo", 0, 0, "foo"));
         }
     }
 
@@ -587,6 +584,6 @@ public class TestEquivalenceTester
 
     private static void assertExpectedFailures(EquivalenceAssertionError e, ElementCheckFailure... expected)
     {
-        assertEqualsIgnoreOrder(e.getFailures(), newArrayList(expected));
+        assertThat(e.getFailures()).containsExactlyInAnyOrder(expected);
     }
 }
