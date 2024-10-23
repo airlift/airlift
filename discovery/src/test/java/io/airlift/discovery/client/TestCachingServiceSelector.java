@@ -29,7 +29,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
-import static io.airlift.testing.Assertions.assertEqualsIgnoreOrder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 
@@ -129,6 +128,6 @@ public class TestCachingServiceSelector
 
         Thread.sleep(100);
 
-        assertEqualsIgnoreOrder(serviceSelector.selectAllServices(), ImmutableList.of(APPLE_1_SERVICE, APPLE_2_SERVICE));
+        assertThat(serviceSelector.selectAllServices()).containsExactlyInAnyOrder(APPLE_1_SERVICE, APPLE_2_SERVICE);
     }
 }

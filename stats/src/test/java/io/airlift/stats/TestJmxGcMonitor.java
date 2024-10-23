@@ -3,7 +3,6 @@ package io.airlift.stats;
 import io.airlift.units.Duration;
 import org.junit.jupiter.api.Test;
 
-import static io.airlift.testing.Assertions.assertGreaterThanOrEqual;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -18,8 +17,8 @@ public class TestJmxGcMonitor
         assertThat(gcMonitor.getMajorGcTime()).isEqualTo(new Duration(0, NANOSECONDS));
         try {
             gcMonitor.start();
-            assertGreaterThanOrEqual(gcMonitor.getMajorGcCount(), (long) 0);
-            assertGreaterThanOrEqual(gcMonitor.getMajorGcTime(), new Duration(0, NANOSECONDS));
+            assertThat(gcMonitor.getMajorGcCount()).isGreaterThanOrEqualTo(0);
+            assertThat(gcMonitor.getMajorGcTime()).isGreaterThanOrEqualTo(new Duration(0, NANOSECONDS));
         }
         finally {
             gcMonitor.stop();

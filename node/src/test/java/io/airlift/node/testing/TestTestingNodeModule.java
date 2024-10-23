@@ -9,8 +9,6 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Optional;
 
-import static io.airlift.testing.Assertions.assertGreaterThanOrEqual;
-import static io.airlift.testing.Assertions.assertNotEquals;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestTestingNodeModule
@@ -33,13 +31,13 @@ public class TestTestingNodeModule
         assertThat(nodeInfo.getConfigSpec()).isNull();
         assertThat(nodeInfo.getInstanceId()).isNotNull();
 
-        assertNotEquals(nodeInfo.getNodeId(), nodeInfo.getInstanceId());
+        assertThat(nodeInfo.getNodeId()).isNotEqualTo(nodeInfo.getInstanceId());
 
         assertThat(nodeInfo.getInternalAddress()).isEqualTo("127.0.0.1");
         assertThat(nodeInfo.getBindIp()).isEqualTo(InetAddress.getByName(nodeInfo.getInternalAddress()));
         assertThat(nodeInfo.getExternalAddress()).isEqualTo("127.0.0.1");
 
-        assertGreaterThanOrEqual(nodeInfo.getStartTime(), testStartTime);
+        assertThat(nodeInfo.getStartTime()).isGreaterThanOrEqualTo(testStartTime);
 
         // make sure toString doesn't throw an exception
         assertThat(nodeInfo.toString()).isNotNull();

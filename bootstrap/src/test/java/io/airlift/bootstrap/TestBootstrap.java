@@ -24,7 +24,6 @@ import io.airlift.configuration.Config;
 import org.junit.jupiter.api.Test;
 
 import static io.airlift.configuration.ConfigBinder.configBinder;
-import static io.airlift.testing.Assertions.assertContains;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
@@ -42,7 +41,7 @@ public class TestBootstrap
             fail("should require explicit bindings");
         }
         catch (ConfigurationException e) {
-            assertContains(e.getErrorMessages().iterator().next().getMessage(), "Explicit bindings are required");
+            assertThat(e.getErrorMessages().iterator().next().getMessage()).contains("Explicit bindings are required");
         }
     }
 
@@ -59,7 +58,7 @@ public class TestBootstrap
             fail("should not allow circular dependencies");
         }
         catch (ProvisionException e) {
-            assertContains(e.getErrorMessages().iterator().next().getMessage(), "circular dependencies are disabled");
+            assertThat(e.getErrorMessages().iterator().next().getMessage()).contains("circular dependencies are disabled");
         }
     }
 
