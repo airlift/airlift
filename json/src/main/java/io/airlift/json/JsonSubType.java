@@ -13,11 +13,11 @@
  */
 package io.airlift.json;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo.Value;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.TreeNode;
 import com.fasterxml.jackson.core.Version;
-import com.fasterxml.jackson.databind.AnnotationIntrospector;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonDeserializer;
@@ -25,9 +25,12 @@ import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.PropertyName;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.cfg.MapperConfig;
+import com.fasterxml.jackson.databind.introspect.Annotated;
 import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
+import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
 import com.fasterxml.jackson.databind.introspect.VirtualAnnotatedMember;
+import com.fasterxml.jackson.databind.jsontype.NamedType;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.node.ValueNode;
 import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
@@ -46,6 +49,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static com.fasterxml.jackson.annotation.JsonTypeInfo.As.EXISTING_PROPERTY;
+import static com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static java.util.Objects.requireNonNull;
 
@@ -91,7 +97,7 @@ public class JsonSubType
 
             Supplier<Map<String, Class<?>>> supplier = Suppliers.memoize(subClassBuilder::build);
 
-            TypeAddingModule module = new TypeAddingModule(propertyName, supplier);
+            TypeAddingModule module = new TypeAddingModule(baseClass, propertyName, supplier);
             module.addDeserializer(baseClass, new Deserializer<>(propertyName, supplier));
             modules.add(module);
 
@@ -141,13 +147,15 @@ public class JsonSubType
     {
         private static final AtomicInteger MODULE_ID_SEQ = new AtomicInteger(1);
 
+        private final Class<?> baseClass;
         private final String propertyName;
         private final Supplier<Map<String, Class<?>>> subClassPropertyValues;
 
-        private TypeAddingModule(String propertyName, Supplier<Map<String, Class<?>>> subClassPropertyValues)
+        private TypeAddingModule(Class<?> baseClass, String propertyName, Supplier<Map<String, Class<?>>> subClassPropertyValues)
         {
             super("TypeAddingModule-" + MODULE_ID_SEQ.getAndIncrement(), new Version(1, 0, 0, null, null, null));
 
+            this.baseClass = requireNonNull(baseClass, "baseClass is null");
             this.propertyName = requireNonNull(propertyName, "propertyName is null");
             this.subClassPropertyValues = requireNonNull(subClassPropertyValues, "subClassPropertyValues is null");
         }
@@ -161,20 +169,49 @@ public class JsonSubType
                     .stream()
                     .collect(toImmutableMap(Map.Entry::getValue, Map.Entry::getKey));
 
-            context.insertAnnotationIntrospector(new TypeAddingIntrospector(propertyName, invertedSubClassMap));
+            context.insertAnnotationIntrospector(new TypeAddingIntrospector(baseClass, propertyName, invertedSubClassMap));
         }
     }
 
     private static class TypeAddingIntrospector
-            extends AnnotationIntrospector
+            extends JacksonAnnotationIntrospector
     {
+        private final Class<?> baseClass;
         private final String propertyName;
         private final Map<Class<?>, String> subClassPropertyValues;
+        private final List<NamedType> namedTypes;
+        private final Value value;
 
-        private TypeAddingIntrospector(String propertyName, Map<Class<?>, String> subClassPropertyValues)
+        private TypeAddingIntrospector(Class<?> baseClass, String propertyName, Map<Class<?>, String> subClassPropertyValues)
         {
+            this.baseClass = requireNonNull(baseClass, "baseClass is null");
             this.propertyName = requireNonNull(propertyName, "propertyName is null");
             this.subClassPropertyValues = ImmutableMap.copyOf(subClassPropertyValues);
+
+            namedTypes = subClassPropertyValues.entrySet()
+                    .stream()
+                    .map(entry -> new NamedType(entry.getKey(), entry.getValue()))
+                    .collect(toImmutableList());
+
+            value = Value.construct(NAME, EXISTING_PROPERTY, propertyName, null, true, true);
+        }
+
+        @Override
+        public Value findPolymorphicTypeInfo(MapperConfig<?> config, Annotated annotated)
+        {
+            if (annotated.getRawType().equals(baseClass)) {
+                return value;
+            }
+            return super.findPolymorphicTypeInfo(config, annotated);
+        }
+
+        @Override
+        public List<NamedType> findSubtypes(Annotated annotated)
+        {
+            if (annotated.getRawType().equals(baseClass)) {
+                return namedTypes;
+            }
+            return super.findSubtypes(annotated);
         }
 
         @Override

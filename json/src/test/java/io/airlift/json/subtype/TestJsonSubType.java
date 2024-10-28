@@ -16,6 +16,7 @@ package io.airlift.json.subtype;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
+import com.fasterxml.jackson.databind.exc.InvalidTypeIdException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Guice;
@@ -125,7 +126,7 @@ public class TestJsonSubType
         ObjectMapper objectMapper = injector.getInstance(ObjectMapper.class);
 
         assertThatThrownBy(() -> internalTest(objectMapper))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(InvalidTypeIdException.class);
     }
 
     @Test
@@ -213,14 +214,21 @@ public class TestJsonSubType
     private static void internalTest(ObjectMapper objectMapper)
             throws JsonProcessingException
     {
+        internalTest(objectMapper, false);
+        internalTest(objectMapper, true);
+    }
+
+    private static void internalTest(ObjectMapper objectMapper, boolean writeWithCodec)
+            throws JsonProcessingException
+    {
         JsonCodecFactory codecFactory = new JsonCodecFactory(() -> objectMapper);
         JsonCodec<Employee> jsonCodec = codecFactory.jsonCodec(Employee.class);
 
-        String programmer1Json = objectMapper.writeValueAsString(programmer1);
-        String programmer2Json = objectMapper.writeValueAsString(programmer2);
-        String programmer3Json = objectMapper.writeValueAsString(programmer3);
-        String manager1Json = objectMapper.writeValueAsString(manager1);
-        String manager2Json = objectMapper.writeValueAsString(manager2);
+        String programmer1Json = writeWithCodec ? jsonCodec.toJson(programmer1) : objectMapper.writeValueAsString(programmer1);
+        String programmer2Json = writeWithCodec ? jsonCodec.toJson(programmer2) : objectMapper.writeValueAsString(programmer2);
+        String programmer3Json = writeWithCodec ? jsonCodec.toJson(programmer3) : objectMapper.writeValueAsString(programmer3);
+        String manager1Json = writeWithCodec ? jsonCodec.toJson(manager1) : objectMapper.writeValueAsString(manager1);
+        String manager2Json = writeWithCodec ? jsonCodec.toJson(manager2) : objectMapper.writeValueAsString(manager2);
 
         for (int i = 0; i < 2; ++i) {
             Employee deserializedProgrammer1 = (i == 0) ? objectMapper.readValue(programmer1Json, Employee.class) : jsonCodec.fromJson(programmer1Json);
