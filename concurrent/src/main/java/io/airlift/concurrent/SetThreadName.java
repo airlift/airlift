@@ -25,8 +25,9 @@ public class SetThreadName
     public SetThreadName(String threadNamePrefix)
     {
         requireNonNull(threadNamePrefix, "threadNamePrefix is null");
-        originalThreadName = Thread.currentThread().getName();
-        Thread.currentThread().setName(threadNamePrefix + "-" + Thread.currentThread().threadId());
+        Thread currentThread = Thread.currentThread();
+        originalThreadName = currentThread.getName();
+        currentThread.setName(threadNamePrefix + "-" + currentThread.threadId());
     }
 
     @Override
