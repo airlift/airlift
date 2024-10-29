@@ -26,14 +26,7 @@ public class SetThreadName
     {
         requireNonNull(threadNamePrefix, "threadNamePrefix is null");
         originalThreadName = Thread.currentThread().getName();
-        Thread.currentThread().setName(threadNamePrefix + "-" + getThreadId(Thread.currentThread()));
-    }
-
-    @SuppressWarnings("deprecation")
-    public static long getThreadId(Thread thread)
-    {
-        // TODO: thread.threadId() when moved to JDK 21
-        return thread.getId();
+        Thread.currentThread().setName(threadNamePrefix + "-" + Thread.currentThread().threadId());
     }
 
     @Override
