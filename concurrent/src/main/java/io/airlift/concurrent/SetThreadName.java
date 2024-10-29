@@ -22,11 +22,11 @@ public class SetThreadName
 {
     private final String originalThreadName;
 
-    public SetThreadName(String format, Object... args)
+    public SetThreadName(String threadNamePrefix)
     {
-        requireNonNull(format, "format is null");
+        requireNonNull(threadNamePrefix, "threadNamePrefix is null");
         originalThreadName = Thread.currentThread().getName();
-        Thread.currentThread().setName(String.format(format, args) + "-" + getThreadId(Thread.currentThread()));
+        Thread.currentThread().setName(threadNamePrefix + "-" + getThreadId(Thread.currentThread()));
     }
 
     @SuppressWarnings("deprecation")
