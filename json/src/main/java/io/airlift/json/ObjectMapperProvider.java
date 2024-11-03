@@ -19,7 +19,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonFactoryBuilder;
 import com.fasterxml.jackson.core.StreamReadConstraints;
+import com.fasterxml.jackson.core.StreamReadFeature;
 import com.fasterxml.jackson.core.StreamWriteConstraints;
+import com.fasterxml.jackson.core.StreamWriteFeature;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.core.util.JsonRecyclerPools;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -88,6 +90,10 @@ public class ObjectMapperProvider
                 .builder()
                 .maxNestingDepth(Integer.MAX_VALUE)
                 .build());
+
+        jsonFactoryBuilder.enable(StreamWriteFeature.USE_FAST_DOUBLE_WRITER);
+        jsonFactoryBuilder.enable(StreamReadFeature.USE_FAST_BIG_NUMBER_PARSER);
+        jsonFactoryBuilder.enable(StreamReadFeature.USE_FAST_DOUBLE_PARSER);
 
         jsonFactoryBuilder.recyclerPool(JsonRecyclerPools.threadLocalPool());
 
