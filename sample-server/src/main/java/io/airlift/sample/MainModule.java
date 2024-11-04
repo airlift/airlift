@@ -21,7 +21,6 @@ import com.google.inject.Scopes;
 
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
-import static io.airlift.event.client.EventBinder.eventBinder;
 import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
@@ -40,7 +39,6 @@ public class MainModule
         jaxrsBinder(binder).bind(PersonResource.class);
 
         configBinder(binder).bindConfig(StoreConfig.class);
-        eventBinder(binder).bindEventClient(PersonEvent.class);
 
         discoveryBinder(binder).bindHttpAnnouncement("person");
     }

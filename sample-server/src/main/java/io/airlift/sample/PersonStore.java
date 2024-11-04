@@ -19,9 +19,6 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
-import io.airlift.event.client.EventClient;
-import org.weakref.jmx.Flatten;
-import org.weakref.jmx.Managed;
 
 import java.util.Collection;
 import java.util.concurrent.ConcurrentMap;
@@ -32,37 +29,23 @@ import static java.util.Objects.requireNonNull;
 public class PersonStore
 {
     private final ConcurrentMap<String, Person> persons;
-    private final PersonStoreStats stats;
 
     @Inject
-    public PersonStore(StoreConfig config, EventClient eventClient)
+    public PersonStore(StoreConfig config)
     {
         requireNonNull(config, "config must not be null");
-        requireNonNull(eventClient, "eventClient is null");
 
         Cache<String, Person> personCache = CacheBuilder.newBuilder()
                 .expireAfterWrite(config.getTtl().toMillis(), TimeUnit.MILLISECONDS)
                 .build();
         persons = personCache.asMap();
-        stats = new PersonStoreStats(eventClient);
-    }
-
-    @Managed
-    @Flatten
-    public PersonStoreStats getStats()
-    {
-        return stats;
     }
 
     public Person get(String id)
     {
         requireNonNull(id, "id must not be null");
 
-        Person person = persons.get(id);
-        if (person != null) {
-            stats.personFetched();
-        }
-        return person;
+        return persons.get(id);
     }
 
     /**
@@ -73,14 +56,7 @@ public class PersonStore
         requireNonNull(id, "id must not be null");
         requireNonNull(person, "person must not be null");
 
-        boolean added = persons.put(id, person) == null;
-        if (added) {
-            stats.personAdded(id, person);
-        }
-        else {
-            stats.personUpdated(id, person);
-        }
-        return added;
+        return persons.put(id, person) == null;
     }
 
     /**
@@ -89,13 +65,7 @@ public class PersonStore
     public boolean delete(String id)
     {
         requireNonNull(id, "id must not be null");
-
-        Person removedPerson = persons.remove(id);
-        if (removedPerson != null) {
-            stats.personRemoved(id, removedPerson);
-        }
-
-        return removedPerson != null;
+        return persons.remove(id) != null;
     }
 
     public Collection<Person> getAll()

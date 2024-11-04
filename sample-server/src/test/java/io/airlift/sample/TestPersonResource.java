@@ -15,8 +15,6 @@
  */
 package io.airlift.sample;
 
-import com.google.common.collect.ImmutableList;
-import io.airlift.event.client.InMemoryEventClient;
 import io.airlift.jaxrs.testing.MockUriInfo;
 import jakarta.ws.rs.core.Response;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,9 +24,6 @@ import org.junit.jupiter.api.parallel.Execution;
 
 import java.net.URI;
 
-import static io.airlift.sample.PersonEvent.personAdded;
-import static io.airlift.sample.PersonEvent.personRemoved;
-import static io.airlift.sample.PersonEvent.personUpdated;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
@@ -40,13 +35,11 @@ public class TestPersonResource
 {
     private PersonResource resource;
     private PersonStore store;
-    private InMemoryEventClient eventClient;
 
     @BeforeEach
     public void setup()
     {
-        eventClient = new InMemoryEventClient();
-        store = new PersonStore(new StoreConfig(), eventClient);
+        store = new PersonStore(new StoreConfig());
         resource = new PersonResource(store);
     }
 
@@ -85,9 +78,6 @@ public class TestPersonResource
         assertThat(response.getMetadata().get("Content-Type")).isNull(); // content type is set by JAX-RS based on @Produces
 
         assertThat(store.get("foo")).isEqualTo(new Person("foo@example.com", "Mr Foo"));
-
-        assertThat(eventClient.getEvents()).isEqualTo(ImmutableList.of(
-                personAdded("foo", new Person("foo@example.com", "Mr Foo"))));
     }
 
     @Test
@@ -116,10 +106,6 @@ public class TestPersonResource
         assertThat(response.getMetadata().get("Content-Type")).isNull(); // content type is set by JAX-RS based on @Produces
 
         assertThat(store.get("foo")).isEqualTo(new Person("bar@example.com", "Mr Bar"));
-
-        assertThat(eventClient.getEvents()).isEqualTo(ImmutableList.of(
-                personAdded("foo", new Person("foo@example.com", "Mr Foo")),
-                personUpdated("foo", new Person("bar@example.com", "Mr Bar"))));
     }
 
     @Test
@@ -132,10 +118,6 @@ public class TestPersonResource
         assertThat(response.getEntity()).isNull();
 
         assertThat(store.get("foo")).isNull();
-
-        assertThat(eventClient.getEvents()).isEqualTo(ImmutableList.of(
-                personAdded("foo", new Person("foo@example.com", "Mr Foo")),
-                personRemoved("foo", new Person("foo@example.com", "Mr Foo"))));
     }
 
     @Test

@@ -15,7 +15,6 @@
  */
 package io.airlift.sample;
 
-import io.airlift.event.client.NullEventClient;
 import jakarta.ws.rs.core.Response;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,7 +39,7 @@ public class TestPersonsResource
     @BeforeEach
     public void setup()
     {
-        store = new PersonStore(new StoreConfig(), new NullEventClient());
+        store = new PersonStore(new StoreConfig());
         resource = new PersonsResource(store);
     }
 

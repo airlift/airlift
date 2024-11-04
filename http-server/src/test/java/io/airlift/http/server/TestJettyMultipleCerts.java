@@ -17,7 +17,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Closer;
 import com.google.common.net.HostAndPort;
-import io.airlift.event.client.NullEventClient;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.jetty.JettyHttpClient;
@@ -87,8 +86,6 @@ public class TestJettyMultipleCerts
                 false,
                 false,
                 ClientCertificate.NONE,
-                new RequestStats(),
-                new NullEventClient(),
                 Optional.empty());
 
         try (Closer closer = Closer.create()) {

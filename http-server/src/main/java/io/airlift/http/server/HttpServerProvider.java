@@ -18,7 +18,6 @@ package io.airlift.http.server;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-import io.airlift.event.client.EventClient;
 import io.airlift.http.server.HttpServer.ClientCertificate;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.node.NodeInfo;
@@ -52,9 +51,7 @@ public class HttpServerProvider
     private final boolean enableLegacyUriCompliance;
     private final boolean enableCaseSensitiveHeaderCache;
     private MBeanServer mbeanServer;
-    private final RequestStats stats;
     private final Set<Filter> filters;
-    private final EventClient eventClient;
     private final Optional<SslContextFactory.Server> sslContextFactory;
 
     @Inject
@@ -69,8 +66,6 @@ public class HttpServerProvider
             @EnableLegacyUriCompliance boolean enableLegacyUriCompliance,
             @EnableCaseSensitiveHeaderCache boolean enableCaseSensitiveHeaderCache,
             ClientCertificate clientCertificate,
-            RequestStats stats,
-            EventClient eventClient,
             Optional<SslContextFactory.Server> sslContextFactory)
     {
         requireNonNull(httpServerInfo, "httpServerInfo is null");
@@ -81,8 +76,6 @@ public class HttpServerProvider
         requireNonNull(filters, "filters is null");
         requireNonNull(resources, "resources is null");
         requireNonNull(clientCertificate, "clientCertificate is null");
-        requireNonNull(stats, "stats is null");
-        requireNonNull(eventClient, "eventClient is null");
         requireNonNull(sslContextFactory, "sslContextFactory is null");
 
         this.httpServerInfo = httpServerInfo;
@@ -96,8 +89,6 @@ public class HttpServerProvider
         this.enableLegacyUriCompliance = enableLegacyUriCompliance;
         this.enableCaseSensitiveHeaderCache = enableCaseSensitiveHeaderCache;
         this.clientCertificate = clientCertificate;
-        this.stats = stats;
-        this.eventClient = eventClient;
         this.sslContextFactory = sslContextFactory;
     }
 
@@ -124,8 +115,6 @@ public class HttpServerProvider
                     enableCaseSensitiveHeaderCache,
                     clientCertificate,
                     mbeanServer,
-                    stats,
-                    eventClient,
                     sslContextFactory);
             httpServer.start();
             return httpServer;

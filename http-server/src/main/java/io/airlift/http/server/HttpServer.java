@@ -18,7 +18,6 @@ package io.airlift.http.server;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import io.airlift.event.client.EventClient;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.http.server.jetty.MonitoredQueuedThreadPoolMBean;
 import io.airlift.log.Logger;
@@ -46,9 +45,7 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ErrorHandler;
-import org.eclipse.jetty.server.handler.EventsHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -58,7 +55,6 @@ import org.weakref.jmx.Nested;
 
 import javax.management.MBeanServer;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.channels.ServerSocketChannel;
 import java.security.KeyStore;
@@ -80,7 +76,6 @@ import static com.google.common.base.Verify.verify;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
 import static java.lang.Math.toIntExact;
-import static java.lang.String.format;
 import static java.time.temporal.ChronoUnit.DAYS;
 import static java.util.Collections.list;
 import static java.util.Comparator.naturalOrder;
@@ -102,7 +97,6 @@ public class HttpServer
 
     private final Server server;
     private final MonitoredQueuedThreadPoolMBean monitoredQueuedThreadPoolMBean;
-    private final DelimitedRequestLog requestLog;
     private ConnectionStats httpConnectionStats;
     private ConnectionStats httpsConnectionStats;
     private ScheduledExecutorService scheduledExecutorService;
@@ -121,8 +115,6 @@ public class HttpServer
             boolean enableCaseSensitiveHeaderCache,
             ClientCertificate clientCertificate,
             MBeanServer mbeanServer,
-            RequestStats stats,
-            EventClient eventClient,
             Optional<SslContextFactory.Server> maybeSslContextFactory)
             throws IOException
     {
@@ -257,40 +249,20 @@ public class HttpServer
         }
 
         /*
-         * structure is:
-         *
-         *
-         *  channel listener
-         *    |--- statistics handler
-         *           |--- context handler
-         *           |       |--- trace token filter
-         *           |       |--- gzip response filter
-         *           |       |--- gzip request filter
-         *           |       |--- user provided filters
-         *           |       |--- the servlet (normally GuiceContainer)
-         *           |       |--- resource handlers
-         *           |--- log handler
+         * Jetty's handlers chain is:
+         *  channel listener (protocol)
+         *    |--- stats handler
+         *         |--- gzip handler
+         *         |--- trace token filter
+         *         |--- user provided filters
+         *         |--- the servlet (normally GuiceContainer)
+         *         |--- resource handlers
+         *    |--- error handler
          */
-
-        // add handlers to Jetty
         StatisticsHandler statsHandler = new StatisticsHandler();
         statsHandler.setHandler(createServletContext(servlet, resources, filters, Set.of("http", "https"), showStackTrace, enableLegacyUriCompliance, enableCompression));
 
-        ContextHandlerCollection rootHandlers = new ContextHandlerCollection();
-        rootHandlers.addHandler(statsHandler);
-
-        if (config.isLogEnabled()) {
-            this.requestLog = createDelimitedRequestLog(config, eventClient);
-        }
-        else {
-            this.requestLog = null;
-        }
-
-        DispatchingRequestLogHandler dispatchingHandler = new DispatchingRequestLogHandler(requestLog, stats);
-        EventsHandler eventsHandler = new RequestTimingEventHandler(rootHandlers);
-
-        server.setRequestLog(dispatchingHandler);
-        server.setHandler(eventsHandler);
+        server.setHandler(statsHandler);
 
         ErrorHandler errorHandler = new ErrorHandler();
         errorHandler.setShowMessageInTitle(showStackTrace);
@@ -387,28 +359,6 @@ public class HttpServer
         return context;
     }
 
-    private static DelimitedRequestLog createDelimitedRequestLog(HttpServerConfig config, EventClient eventClient)
-            throws IOException
-    {
-        File logFile = new File(config.getLogPath());
-        if (logFile.exists() && !logFile.isFile()) {
-            throw new IOException(format("Log path %s exists but is not a file", logFile.getAbsolutePath()));
-        }
-
-        File logPath = logFile.getParentFile();
-        if (!logPath.mkdirs() && !logPath.exists()) {
-            throw new IOException(format("Cannot create %s and path does not already exist", logPath.getAbsolutePath()));
-        }
-
-        return new DelimitedRequestLog(
-                config.getLogPath(),
-                config.getLogHistory(),
-                config.getLogQueueSize(),
-                config.getLogMaxFileSize().toBytes(),
-                eventClient,
-                config.isLogCompressionEnabled());
-    }
-
     @VisibleForTesting
     Set<X509Certificate> getCertificates()
     {
@@ -463,15 +413,6 @@ public class HttpServer
         return monitoredQueuedThreadPoolMBean;
     }
 
-    @Managed
-    public int getLoggerQueueSize()
-    {
-        if (requestLog == null) {
-            return 0;
-        }
-        return requestLog.getQueueSize();
-    }
-
     @PostConstruct
     public void start()
             throws Exception
@@ -488,9 +429,6 @@ public class HttpServer
         server.stop();
         if (scheduledExecutorService != null) {
             scheduledExecutorService.shutdown();
-        }
-        if (requestLog != null) {
-            requestLog.stop();
         }
     }
 

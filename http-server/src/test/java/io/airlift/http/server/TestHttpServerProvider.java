@@ -18,7 +18,6 @@ package io.airlift.http.server;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.net.HostAndPort;
-import io.airlift.event.client.NullEventClient;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.HttpClient.HttpResponseFuture;
 import io.airlift.http.client.HttpClientConfig;
@@ -613,8 +612,6 @@ public class TestHttpServerProvider
                 false,
                 false,
                 clientCertificate,
-                new RequestStats(),
-                new NullEventClient(),
                 Optional.empty()).get();
     }
 

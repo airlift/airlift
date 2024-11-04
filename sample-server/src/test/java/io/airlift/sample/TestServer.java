@@ -20,8 +20,6 @@ import com.google.common.io.Resources;
 import com.google.inject.Injector;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.bootstrap.LifeCycleManager;
-import io.airlift.event.client.InMemoryEventClient;
-import io.airlift.event.client.InMemoryEventModule;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
@@ -54,8 +52,6 @@ import static io.airlift.http.client.StatusResponseHandler.createStatusResponseH
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
 import static io.airlift.json.JsonCodec.listJsonCodec;
 import static io.airlift.json.JsonCodec.mapJsonCodec;
-import static io.airlift.sample.PersonEvent.personAdded;
-import static io.airlift.sample.PersonEvent.personRemoved;
 import static jakarta.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static java.net.HttpURLConnection.HTTP_BAD_METHOD;
@@ -79,7 +75,6 @@ public class TestServer
 
     private final JsonCodec<Map<String, Object>> mapCodec = mapJsonCodec(String.class, Object.class);
     private final JsonCodec<List<Object>> listCodec = listJsonCodec(Object.class);
-    private InMemoryEventClient eventClient;
     private LifeCycleManager lifeCycleManager;
 
     @BeforeEach
@@ -87,7 +82,6 @@ public class TestServer
     {
         Bootstrap app = new Bootstrap(
                 new TestingNodeModule(),
-                new InMemoryEventModule(),
                 new TestingHttpServerModule(),
                 new JsonModule(),
                 new JaxrsModule(),
@@ -101,7 +95,6 @@ public class TestServer
 
         server = injector.getInstance(TestingHttpServer.class);
         store = injector.getInstance(PersonStore.class);
-        eventClient = injector.getInstance(InMemoryEventClient.class);
 
         client = new JettyHttpClient();
     }
@@ -180,9 +173,6 @@ public class TestServer
         assertThat(response.getStatusCode()).isEqualTo(HTTP_CREATED);
 
         assertThat(store.get("foo")).isEqualTo(new Person("foo@example.com", "Mr Foo"));
-
-        assertThat(eventClient.getEvents()).isEqualTo(ImmutableList.of(
-                personAdded("foo", new Person("foo@example.com", "Mr Foo"))));
     }
 
     @Test
@@ -200,10 +190,6 @@ public class TestServer
         assertThat(response.getStatusCode()).isEqualTo(HTTP_NO_CONTENT);
 
         assertThat(store.get("foo")).isNull();
-
-        assertThat(eventClient.getEvents()).isEqualTo(ImmutableList.of(
-                personAdded("foo", new Person("foo@example.com", "Mr Foo")),
-                personRemoved("foo", new Person("foo@example.com", "Mr Foo"))));
     }
 
     @Test
