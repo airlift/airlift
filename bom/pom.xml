@@ -40,18 +40,6 @@
 
             <dependency>
                 <groupId>io.airlift</groupId>
-                <artifactId>event</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.airlift</groupId>
-                <artifactId>event-http</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.airlift</groupId>
                 <artifactId>http-client</artifactId>
                 <version>${project.version}</version>
             </dependency>

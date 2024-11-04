@@ -14,7 +14,6 @@
 package io.airlift.http.server;
 
 import com.google.common.collect.ImmutableSet;
-import io.airlift.event.client.NullEventClient;
 import io.airlift.http.server.HttpServer.ClientCertificate;
 import io.airlift.node.NodeInfo;
 import jakarta.servlet.http.HttpServlet;
@@ -232,8 +231,6 @@ public class TestHttpServerCipher
                 false,
                 false,
                 ClientCertificate.NONE,
-                new RequestStats(),
-                new NullEventClient(),
                 Optional.empty()).get();
     }
 }

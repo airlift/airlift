@@ -17,7 +17,6 @@ package io.airlift.http.server.testing;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
-import io.airlift.event.client.NullEventClient;
 import io.airlift.http.server.EnableCaseSensitiveHeaderCache;
 import io.airlift.http.server.EnableLegacyUriCompliance;
 import io.airlift.http.server.EnableVirtualThreads;
@@ -26,7 +25,6 @@ import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.http.server.HttpServerConfig;
 import io.airlift.http.server.HttpServerInfo;
 import io.airlift.http.server.HttpsConfig;
-import io.airlift.http.server.RequestStats;
 import io.airlift.node.NodeInfo;
 import jakarta.servlet.Filter;
 import jakarta.servlet.Servlet;
@@ -101,8 +99,6 @@ public class TestingHttpServer
                 enableCaseSensitiveHeaderCache,
                 clientCertificate,
                 null,
-                new RequestStats(),
-                new NullEventClient(),
                 Optional.empty());
         this.httpServerInfo = httpServerInfo;
     }

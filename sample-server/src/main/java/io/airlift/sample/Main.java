@@ -19,7 +19,6 @@ import com.google.inject.Injector;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.discovery.client.Announcer;
 import io.airlift.discovery.client.DiscoveryModule;
-import io.airlift.event.client.http.HttpEventModule;
 import io.airlift.http.server.HttpServerModule;
 import io.airlift.jaxrs.JaxrsModule;
 import io.airlift.jmx.JmxHttpModule;
@@ -54,7 +53,6 @@ public final class Main
                 new JmxHttpModule(),
                 new JmxOpenMetricsModule(),
                 new LogJmxModule(),
-                new HttpEventModule(),
                 new TracingModule("sample", VERSION),
                 new MainModule());
 

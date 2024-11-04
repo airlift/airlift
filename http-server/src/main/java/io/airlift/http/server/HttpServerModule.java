@@ -29,7 +29,6 @@ import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
 import static io.airlift.configuration.ConditionalModule.conditionalModule;
 import static io.airlift.configuration.ConfigBinder.configBinder;
-import static io.airlift.event.client.EventBinder.eventBinder;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 /**
@@ -65,7 +64,6 @@ public class HttpServerModule
         newOptionalBinder(binder, ClientCertificate.class).setDefault().toInstance(ClientCertificate.NONE);
         newExporter(binder).export(HttpServer.class).withGeneratedName();
         binder.bind(HttpServerInfo.class).in(Scopes.SINGLETON);
-        binder.bind(RequestStats.class).in(Scopes.SINGLETON);
         // override with HttpServerBinder.enableVirtualThreads()
         newOptionalBinder(binder, Key.get(Boolean.class, EnableVirtualThreads.class)).setDefault().toInstance(false);
         // override with HttpServerBinder.enableLegacyUriCompliance()
@@ -75,12 +73,8 @@ public class HttpServerModule
         newOptionalBinder(binder, SslContextFactory.Server.class);
         newOptionalBinder(binder, Key.get(Boolean.class, EnableCaseSensitiveHeaderCache.class)).setDefault().toInstance(false);
 
-        newExporter(binder).export(RequestStats.class).withGeneratedName();
-
         configBinder(binder).bindConfig(HttpServerConfig.class);
         newOptionalBinder(binder, HttpsConfig.class);
-
-        eventBinder(binder).bindEventClient(HttpRequestEvent.class);
 
         binder.bind(AnnouncementHttpServerInfo.class).to(LocalAnnouncementHttpServerInfo.class).in(Scopes.SINGLETON);
 

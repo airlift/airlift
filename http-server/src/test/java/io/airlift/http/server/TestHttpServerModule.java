@@ -15,21 +15,11 @@
  */
 package io.airlift.http.server;
 
-import com.google.common.base.Joiner;
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ListMultimap;
-import com.google.common.io.ByteStreams;
 import com.google.common.net.MediaType;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
 import io.airlift.bootstrap.Bootstrap;
-import io.airlift.event.client.AbstractEventClient;
-import io.airlift.event.client.EventClient;
-import io.airlift.event.client.EventModule;
-import io.airlift.event.client.InMemoryEventModule;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.HttpStatus;
 import io.airlift.http.client.HttpUriBuilder;
@@ -41,8 +31,6 @@ import io.airlift.node.NodeInfo;
 import io.airlift.node.testing.TestingNodeModule;
 import jakarta.servlet.Filter;
 import jakarta.servlet.Servlet;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -55,29 +43,19 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.TimeUnit;
 
-import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.common.net.HttpHeaders.LOCATION;
-import static com.google.common.net.HttpHeaders.REFERER;
-import static com.google.common.net.HttpHeaders.USER_AGENT;
 import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
-import static com.google.common.util.concurrent.Futures.nonCancellationPropagating;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
 import static io.airlift.http.client.Request.Builder.prepareGet;
-import static io.airlift.http.client.Request.Builder.preparePost;
-import static io.airlift.http.client.StaticBodyGenerator.createStaticBodyGenerator;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
 import static io.airlift.http.server.HttpServerBinder.httpServerBinder;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.Files.createTempDirectory;
-import static java.util.Collections.nCopies;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
@@ -119,7 +97,6 @@ public class TestHttpServerModule
         Bootstrap app = new Bootstrap(
                 new HttpServerModule(),
                 new TestingNodeModule(),
-                new EventModule(),
                 binder -> binder.bind(Servlet.class).to(DummyServlet.class));
 
         Injector injector = app
@@ -143,7 +120,6 @@ public class TestHttpServerModule
         Bootstrap app = new Bootstrap(
                 new HttpServerModule(),
                 new TestingNodeModule(),
-                new EventModule(),
                 binder -> binder.bind(Servlet.class).to(DummyServlet.class));
 
         Injector injector = app
@@ -187,7 +163,6 @@ public class TestHttpServerModule
         Bootstrap app = new Bootstrap(
                 new HttpServerModule(),
                 new TestingNodeModule(),
-                new EventModule(),
                 binder -> {
                     binder.bind(Servlet.class).to(DummyServlet.class);
                     newSetBinder(binder, Filter.class).addBinding().to(DummyFilter.class).in(Scopes.SINGLETON);
@@ -268,139 +243,5 @@ public class TestHttpServerModule
         assertThat(response.getHeader(LOCATION)).isEqualTo(redirect);
         assertThat(response.getHeader(CONTENT_TYPE)).as(CONTENT_TYPE + " header should be absent").isNull();
         assertThat(response.getBody()).as("Response body").isEqualTo("");
-    }
-
-    @Test
-    public void testHttpRequestEvent()
-            throws Exception
-    {
-        Map<String, String> properties = new ImmutableMap.Builder<String, String>()
-                .put("http-server.http.port", "0")
-                .put("http-server.log.path", new File(tempDir, "http-request.log").getAbsolutePath())
-                .build();
-
-        SingleUseEventClient eventClient = new SingleUseEventClient();
-
-        Bootstrap app = new Bootstrap(
-                new HttpServerModule(),
-                new TestingNodeModule(),
-                new InMemoryEventModule(),
-                binder -> newSetBinder(binder, EventClient.class).addBinding().toInstance(eventClient),
-                binder -> binder.bind(Servlet.class).to(EchoServlet.class).in(Scopes.SINGLETON));
-
-        Injector injector = app
-                .setRequiredConfigurationProperties(properties)
-                .doNotInitializeLogging()
-                .initialize();
-
-        HttpServerInfo httpServerInfo = injector.getInstance(HttpServerInfo.class);
-        EchoServlet echoServlet = (EchoServlet) injector.getInstance(Servlet.class);
-
-        HttpServer server = injector.getInstance(HttpServer.class);
-        server.start();
-
-        URI requestUri = httpServerInfo.getHttpUri().resolve("/my/path");
-        String userAgent = "my-user-agent";
-        String referrer = "http://www.google.com";
-        String requestBody = Joiner.on(" ").join(nCopies(50, "request"));
-        String requestContentType = "request/type";
-
-        int responseCode = 555;
-        String responseBody = Joiner.on(" ").join(nCopies(100, "response"));
-        String responseContentType = "response/type";
-
-        echoServlet.responseBody = responseBody;
-        echoServlet.responseStatusCode = responseCode;
-        echoServlet.responseHeaders.put("Content-Type", responseContentType);
-
-        long beforeRequest = System.currentTimeMillis();
-        long afterRequest;
-        HttpRequestEvent event;
-        try (JettyHttpClient client = new JettyHttpClient()) {
-            // test servlet bound correctly
-            StringResponse response = client.execute(
-                    preparePost().setUri(requestUri)
-                            .addHeader(USER_AGENT, userAgent)
-                            .addHeader(CONTENT_TYPE, requestContentType)
-                            .addHeader(REFERER, referrer)
-                            .setBodyGenerator(createStaticBodyGenerator(requestBody, UTF_8))
-                            .build(),
-                    createStringResponseHandler());
-
-            afterRequest = System.currentTimeMillis();
-
-            assertThat(response.getStatusCode()).isEqualTo(responseCode);
-            assertThat(response.getBody()).isEqualTo(responseBody);
-            assertThat(response.getHeader("Content-Type")).isEqualTo(responseContentType);
-
-            event = (HttpRequestEvent) eventClient.getEvent().get(10, TimeUnit.SECONDS);
-        }
-        finally {
-            server.stop();
-        }
-
-        assertThat(event.clientAddress()).isEqualTo(echoServlet.remoteAddress);
-        assertThat(event.protocol()).isEqualTo("http");
-        assertThat(event.method()).isEqualTo("POST");
-        assertThat(event.requestUri()).isEqualTo(requestUri.getPath());
-        assertThat(event.user()).isNull();
-        assertThat(event.agent()).isEqualTo(userAgent);
-        assertThat(event.referrer()).isEqualTo(referrer);
-
-        assertThat(event.requestSize()).isEqualTo(requestBody.length());
-        assertThat(event.requestContentType()).isEqualTo(requestContentType);
-        assertThat(event.responseSize()).isEqualTo(responseBody.length());
-        assertThat(event.responseCode()).isEqualTo(responseCode);
-        assertThat(event.responseContentType()).isEqualTo(responseContentType);
-        assertThat(event.timeStamp().toEpochMilli()).isGreaterThanOrEqualTo(beforeRequest);
-        assertThat(event.timeToLastByte()).isLessThanOrEqualTo(afterRequest - beforeRequest);
-        assertThat(event.timeToFirstByte()).isLessThanOrEqualTo(event.timeToLastByte());
-        assertThat(event.timeToDispatch()).isLessThanOrEqualTo(event.timeToFirstByte());
-        assertThat(event.timeToFirstByte()).isLessThanOrEqualTo(event.timeToLastByte());
-    }
-
-    private static final class EchoServlet
-            extends HttpServlet
-    {
-        private int responseStatusCode = 300;
-        private final ListMultimap<String, String> responseHeaders = ArrayListMultimap.create();
-        public String responseBody;
-        private String remoteAddress;
-
-        @Override
-        protected void service(HttpServletRequest request, HttpServletResponse response)
-                throws IOException
-        {
-            ByteStreams.copy(request.getInputStream(), ByteStreams.nullOutputStream());
-
-            remoteAddress = request.getRemoteAddr();
-            for (Entry<String, String> entry : responseHeaders.entries()) {
-                response.addHeader(entry.getKey(), entry.getValue());
-            }
-
-            response.setStatus(responseStatusCode);
-
-            if (responseBody != null) {
-                response.getOutputStream().write(responseBody.getBytes(UTF_8));
-            }
-        }
-    }
-
-    private static class SingleUseEventClient
-            extends AbstractEventClient
-    {
-        private final SettableFuture<Object> future = SettableFuture.create();
-
-        @Override
-        protected synchronized <T> void postEvent(T event)
-        {
-            checkState(!future.isDone(), "event already posted");
-            future.set(event);
-        }
-
-        public ListenableFuture<Object> getEvent()
-        {
-            return nonCancellationPropagating(future);
-        }
     }
 }

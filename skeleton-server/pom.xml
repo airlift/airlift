@@ -40,11 +40,6 @@
 
         <dependency>
             <groupId>io.airlift</groupId>
-            <artifactId>event-http</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>io.airlift</groupId>
             <artifactId>http-server</artifactId>
         </dependency>
 
