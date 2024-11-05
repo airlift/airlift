@@ -69,6 +69,7 @@ public class HttpServerConfig
     private int logQueueSize = 10_000;
     private DataSize logMaxFileSize = DataSize.of(100, MEGABYTE);
     private boolean logCompressionEnabled = true;
+    private boolean logImmediateFlush;
 
     private ProcessForwardedMode processForwarded = REJECT;
 
@@ -322,6 +323,18 @@ public class HttpServerConfig
     public HttpServerConfig setLogCompressionEnabled(boolean logCompressionEnabled)
     {
         this.logCompressionEnabled = logCompressionEnabled;
+        return this;
+    }
+
+    public boolean isLogImmediateFlush()
+    {
+        return logImmediateFlush;
+    }
+
+    @Config("http-server.log.immediate-flush")
+    public HttpServerConfig setLogImmediateFlush(boolean logImmediateFlush)
+    {
+        this.logImmediateFlush = logImmediateFlush;
         return this;
     }
 
