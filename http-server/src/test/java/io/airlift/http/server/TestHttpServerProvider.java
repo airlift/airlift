@@ -102,6 +102,7 @@ public class TestHttpServerProvider
 {
     private HttpServer server;
     private File tempDir;
+    private File logFile;
     private NodeInfo nodeInfo;
     private HttpServerConfig config;
     private HttpsConfig httpsConfig;
@@ -119,9 +120,10 @@ public class TestHttpServerProvider
             throws IOException
     {
         tempDir = createTempDirectory(getClass().getSimpleName()).toFile();
+        logFile = new File(tempDir, "http-request.log");
         config = new HttpServerConfig()
                 .setHttpPort(0)
-                .setLogPath(new File(tempDir, "http-request.log").getAbsolutePath());
+                .setLogPath(logFile.getAbsolutePath());
         httpsConfig = new HttpsConfig()
                 .setHttpsPort(0);
         clientCertificate = ClientCertificate.NONE;
@@ -459,6 +461,29 @@ public class TestHttpServerProvider
             assertThat(response.getStatusCode()).isEqualTo(500);
             assertThat(response.getBody()).doesNotContain("ErrorServlet.java");
         }
+    }
+
+    @Test
+    public void testRequestLogging()
+            throws Exception
+    {
+        config.setLogQueueSize(1);
+        config.setLogImmediateFlush(true);
+        config.setShowStackTrace(false); // changes the body size to 391
+
+        createServer(new ErrorServlet());
+        server.start();
+
+        try (HttpClient client = new JettyHttpClient()) {
+            StringResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStringResponseHandler());
+            assertThat(response.getStatusCode()).isEqualTo(500);
+        }
+
+        assertThat(logFile).exists();
+        assertThat(logFile)
+                .content()
+                .hasLineCount(1)
+                .matches(".*\t127.0.0.1\tGET\t/\tnull\tnull\t500\t0\t391\t\\d+\tHTTP/1.1\t\\d+\t\\d+\\s+");
     }
 
     @Test

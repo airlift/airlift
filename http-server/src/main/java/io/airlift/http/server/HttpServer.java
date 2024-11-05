@@ -262,6 +262,16 @@ public class HttpServer
         StatisticsHandler statsHandler = new StatisticsHandler();
         statsHandler.setHandler(createServletContext(servlet, resources, filters, Set.of("http", "https"), showStackTrace, enableLegacyUriCompliance, enableCompression));
 
+        if (config.isLogEnabled()) {
+            server.setRequestLog(new JettyRequestLog(
+                    config.getLogPath(),
+                    config.getLogHistory(),
+                    config.getLogQueueSize(),
+                    config.getLogMaxFileSize().toBytes(),
+                    config.isCompressionEnabled(),
+                    config.isLogImmediateFlush()));
+        }
+
         server.setHandler(statsHandler);
 
         ErrorHandler errorHandler = new ErrorHandler();
