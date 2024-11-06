@@ -39,12 +39,9 @@ public class TestRequest
                 .addEquivalentGroup(
                         prepareGet().setUri(createUriA()).addHeaders(createHeadersA()).build(),
                         prepareGet().setUri(createUriA()).addHeaders(createHeadersA()).build(),
-                        prepareGet().setUri(createUriA()).addHeaders(createHeadersA()).setFollowRedirects(true).build(),
-                        prepareGet().setUri(createUriA()).addHeaders(createHeadersA()).setPreserveAuthorizationOnRedirect(false).build())
+                        prepareGet().setUri(createUriA()).addHeaders(createHeadersA()).setFollowRedirects(true).build())
                 .addEquivalentGroup(
                         preparePut().setUri(createUriA()).addHeaders(createHeadersA()).setFollowRedirects(false).build())
-                .addEquivalentGroup(
-                        preparePut().setUri(createUriA()).addHeaders(createHeadersA()).setPreserveAuthorizationOnRedirect(true).build())
                 .addEquivalentGroup(
                         prepareGet().setUri(createUriA()).addHeaders(createHeadersA()).setBodyGenerator(bodyGenerator).build(),
                         prepareGet().setUri(createUriA()).addHeaders(createHeadersA()).setBodyGenerator(bodyGenerator).build())

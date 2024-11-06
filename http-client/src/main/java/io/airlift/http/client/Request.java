@@ -48,7 +48,6 @@ public final class Request
     private final Optional<DataSize> maxContentLength;
     private final Optional<SpanBuilder> spanBuilder;
     private final boolean followRedirects;
-    private final boolean preserveAuthorizationOnRedirect;
 
     private Request(
             Optional<HttpVersion> httpVersion,
@@ -60,8 +59,7 @@ public final class Request
             BodyGenerator bodyGenerator,
             Optional<DataSize> maxContentLength,
             Optional<SpanBuilder> spanBuilder,
-            boolean followRedirects,
-            boolean preserveAuthorizationOnRedirect)
+            boolean followRedirects)
     {
         requireNonNull(uri, "uri is null");
         checkArgument(uri.getHost() != null, "uri does not have a host: %s", uri);
@@ -80,7 +78,6 @@ public final class Request
         this.maxContentLength = requireNonNull(maxContentLength, "maxContentLength is null");
         this.spanBuilder = requireNonNull(spanBuilder, "spanBuilder is null");
         this.followRedirects = followRedirects;
-        this.preserveAuthorizationOnRedirect = preserveAuthorizationOnRedirect;
     }
 
     public static Request.Builder builder()
@@ -147,11 +144,6 @@ public final class Request
         return followRedirects;
     }
 
-    public boolean isPreserveAuthorizationOnRedirect()
-    {
-        return preserveAuthorizationOnRedirect;
-    }
-
     @Override
     public String toString()
     {
@@ -166,7 +158,6 @@ public final class Request
                 .add("bodyGenerator", bodyGenerator)
                 .add("spanBuilder", spanBuilder.isPresent() ? "present" : "empty")
                 .add("followRedirects", followRedirects)
-                .add("preserveAuthorizationOnRedirect", preserveAuthorizationOnRedirect)
                 .toString();
     }
 
@@ -186,8 +177,7 @@ public final class Request
                 Objects.equals(maxContentLength, r.maxContentLength) &&
                 Objects.equals(bodyGenerator, r.bodyGenerator) &&
                 Objects.equals(spanBuilder, r.spanBuilder) &&
-                Objects.equals(followRedirects, r.followRedirects) &&
-                Objects.equals(preserveAuthorizationOnRedirect, r.preserveAuthorizationOnRedirect);
+                Objects.equals(followRedirects, r.followRedirects);
     }
 
     @Override
@@ -203,8 +193,7 @@ public final class Request
                 maxContentLength,
                 bodyGenerator,
                 spanBuilder,
-                followRedirects,
-                preserveAuthorizationOnRedirect);
+                followRedirects);
     }
 
     public static final class Builder
@@ -248,8 +237,7 @@ public final class Request
                     .setBodyGenerator(request.getBodyGenerator())
                     .setSpanBuilder(request.getSpanBuilder().orElse(null))
                     .setFollowRedirects(request.isFollowRedirects())
-                    .setVersion(request.getHttpVersion().orElse(null))
-                    .setPreserveAuthorizationOnRedirect(request.isPreserveAuthorizationOnRedirect());
+                    .setVersion(request.getHttpVersion().orElse(null));
 
             request.getRequestTimeout().ifPresent(builder::setRequestTimeout);
             request.getIdleTimeout().ifPresent(builder::setIdleTimeout);
@@ -343,12 +331,6 @@ public final class Request
             return this;
         }
 
-        public Builder setPreserveAuthorizationOnRedirect(boolean preserveAuthorizationOnRedirect)
-        {
-            this.preserveAuthorizationOnRedirect = preserveAuthorizationOnRedirect;
-            return this;
-        }
-
         public Request build()
         {
             return new Request(
@@ -361,8 +343,7 @@ public final class Request
                     bodyGenerator,
                     maxContentLength,
                     Optional.ofNullable(spanBuilder),
-                    followRedirects,
-                    preserveAuthorizationOnRedirect);
+                    followRedirects);
         }
     }
 
