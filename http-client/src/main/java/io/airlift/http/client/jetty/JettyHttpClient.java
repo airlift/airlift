@@ -122,7 +122,6 @@ import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.InetAddresses.isInetAddress;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
-import static io.airlift.http.client.jetty.AuthorizationPreservingHttpClient.setPreserveAuthorization;
 import static io.airlift.node.AddressToHostname.tryDecodeHostnameToAddress;
 import static io.airlift.security.cert.CertificateBuilder.certificateBuilder;
 import static io.opentelemetry.api.common.AttributeKey.stringKey;
@@ -279,7 +278,7 @@ public class JettyHttpClient
         connector.setSelectors(config.getSelectorCount());
         connector.setSslContextFactory(sslContextFactory);
 
-        httpClient = new AuthorizationPreservingHttpClient(getClientTransport(connector, config));
+        httpClient = new HttpClient(getClientTransport(connector, config));
 
         // request and response buffer size
         httpClient.setRequestBufferSize(toIntExact(config.getRequestBufferSize().toBytes()));
@@ -989,8 +988,6 @@ public class JettyHttpClient
         }
 
         jettyRequest.followRedirects(finalRequest.isFollowRedirects());
-
-        setPreserveAuthorization(jettyRequest, finalRequest.isPreserveAuthorizationOnRedirect());
 
         // timeouts
         jettyRequest.timeout(finalRequest.getRequestTimeout().orElse(requestTimeout).toMillis(), MILLISECONDS);
