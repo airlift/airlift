@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airlift</artifactId>
-        <version>284</version>
+        <version>285-SNAPSHOT</version>
     </parent>
     <artifactId>secrets-spi</artifactId>
     <packaging>jar</packaging>
