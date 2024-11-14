@@ -32,5 +32,9 @@
             <directory>src/main/resources/procname</directory>
             <outputDirectory>/bin/procname</outputDirectory>
         </fileSet>
+        <fileSet>
+            <directory>target/binaries</directory>
+            <outputDirectory>/bin/</outputDirectory>
+        </fileSet>
     </fileSets>
 </assembly>

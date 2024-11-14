@@ -18,6 +18,46 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.5.0</version>
+                <executions>
+                    <execution>
+                        <id>build</id>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <phase>compile</phase>
+                        <configuration>
+                            <executable>src/main/go/build.sh</executable>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>test</id>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <phase>test</phase>
+                        <configuration>
+                            <skip>${skipTests}</skip>
+                            <workingDirectory>${project.basedir}/src/main/go</workingDirectory>
+                            <executable>go</executable>
+                            <arguments>
+                                <argument>test</argument>
+                                <argument>-v</argument>
+                                <argument>-race</argument>
+                                <argument>-parallel=10</argument>
+                                <argument>-timeout=10s</argument>
+                                <argument>./...</argument>
+                            </arguments>
+                            <environmentVariables>
+                                <JAVA_HOME />
+                            </environmentVariables>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <executions>
                     <execution>
@@ -35,7 +75,7 @@
                     </execution>
 
                     <execution>
-                        <id>properties-tgz</id>
+                        <id>static-tgz</id>
                         <goals>
                             <goal>single</goal>
                         </goals>
@@ -43,7 +83,7 @@
                         <configuration>
                             <attach>true</attach>
                             <descriptors>
-                                <descriptor>src/main/assemblies/properties.xml</descriptor>
+                                <descriptor>src/main/assemblies/static.xml</descriptor>
                             </descriptors>
                         </configuration>
                     </execution>

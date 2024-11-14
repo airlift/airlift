@@ -11,5 +11,9 @@
             <source>src/main/resources/launcher.properties</source>
             <outputDirectory>/bin</outputDirectory>
         </file>
+        <file>
+            <source>src/main/resources/launcher</source>
+            <outputDirectory>/bin</outputDirectory>
+        </file>
     </files>
 </assembly>

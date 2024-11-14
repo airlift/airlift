@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+case "$(uname -s)" in
+    Linux*)     os=linux;;
+    Darwin*)    os=darwin;;
+    *)          os=Unknown;;
+esac
+
+if [ "${os}" = "Unknown" ]; then
+    echo "launcher does not support running on operating system: $(uname -s)"
+    exit 1
+fi
+
+case "$(arch)" in
+    arm64*)     architecture=arm64;;
+    aarch64*)   architecture=arm64;;
+    amd64*)     architecture=amd64;;
+    x86_64*)    architecture=amd64;;
+    ppc64*)     architecture=ppc64le;;
+    *)          architecture=Unknown;;
+esac
+
+if [ "${architecture}" = "Unknown" ]; then
+    echo "launcher does not support running on architecture: $(arch)"
+    exit 1
+fi
+
+
+SOURCE=${BASH_SOURCE[0]}
+while [ -L "$SOURCE" ]; do
+  DIR=$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )
+  SOURCE=$(readlink "$SOURCE")
+  [[ $SOURCE != /* ]] && SOURCE=$DIR/$SOURCE
+done
+
+DIR=$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )
+LAUNCHER_BIN="${DIR}/${os}-${architecture}/launcher"
+
+if [ ! -f "${LAUNCHER_BIN}" ]; then
+  echo "launcher binary does not exist: ${LAUNCHER_BIN}"
+  exit 1
+fi
+
+"${LAUNCHER_BIN}" "$@"

@@ -20,6 +20,11 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: ${{ matrix.java-version }}
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache: false
       - name: Maven Install
         run: ./mvnw install -B -V -DskipTests -Dair.check.skip-all
       - name: Maven Tests
