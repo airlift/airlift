@@ -26,6 +26,15 @@ build_for_os_and_arch() {
 
   echo "Building for ${os}/${arch} into ${path}/${EXECUTABLE_NAME}"
   CGO_ENABLED=0 GOOS="${os}" GOARCH="${arch}" go build -ldflags="-s -w -extldflags=-static -X launcher/args.Version=$(git describe HEAD)" -o "${DIR}/${OUTPUT_DIR}${path}/${EXECUTABLE_NAME}" .
+
+  echo "Compressing binary with upx"
+  if [[ "${os}" == "darwin" ]]; then
+    echo "Skipping upx for MacOS"
+  else
+    upx "${DIR}/${OUTPUT_DIR}${path}/${EXECUTABLE_NAME}"
+  fi
+
+  echo "Done building for ${os}/${arch}, size: $(du -sh "${DIR}/${OUTPUT_DIR}${path}/${EXECUTABLE_NAME}" | cut -f1)"
 }
 
 build_for_os_and_arch "linux" "amd64"
