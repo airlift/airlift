@@ -35,9 +35,10 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.File;
 import java.io.IOException;
@@ -86,16 +87,19 @@ public class TestHttpServerModule
         deleteRecursively(tempDir.toPath(), ALLOW_INSECURE);
     }
 
-    @Test
-    public void testCanConstructServer()
+    @ParameterizedTest
+    @ValueSource(strings = {"", "testPrefix"})
+    public void testCanConstructServer(String configPrefix)
     {
+        String propertyPrefix = configPrefix.isEmpty() ? "" : (configPrefix + ".");
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
-                .put("http-server.http.port", "0")
-                .put("http-server.log.path", new File(tempDir, "http-request.log").getAbsolutePath())
+                .put(propertyPrefix + "http-server.http.port", "0")
+                .put(propertyPrefix + "http-server.log.path", new File(tempDir, "http-request.log").getAbsolutePath())
                 .build();
 
+        HttpServerModule httpServerModule = configPrefix.isEmpty() ? new HttpServerModule() : new HttpServerModule(configPrefix);
         Bootstrap app = new Bootstrap(
-                new HttpServerModule(),
+                httpServerModule,
                 new TestingNodeModule(),
                 binder -> binder.bind(Servlet.class).to(DummyServlet.class));
 
@@ -108,17 +112,20 @@ public class TestHttpServerModule
         assertThat(server).isNotNull();
     }
 
-    @Test
-    public void testHttpServerUri()
+    @ParameterizedTest
+    @ValueSource(strings = {"", "testPrefix"})
+    public void testHttpServerUri(String configPrefix)
             throws Exception
     {
+        String propertyPrefix = configPrefix.isEmpty() ? "" : (configPrefix + ".");
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
-                .put("http-server.http.port", "0")
-                .put("http-server.log.path", new File(tempDir, "http-request.log").getAbsolutePath())
+                .put(propertyPrefix + "http-server.http.port", "0")
+                .put(propertyPrefix + "http-server.log.path", new File(tempDir, "http-request.log").getAbsolutePath())
                 .build();
 
+        HttpServerModule httpServerModule = configPrefix.isEmpty() ? new HttpServerModule() : new HttpServerModule(configPrefix);
         Bootstrap app = new Bootstrap(
-                new HttpServerModule(),
+                httpServerModule,
                 new TestingNodeModule(),
                 binder -> binder.bind(Servlet.class).to(DummyServlet.class));
 
@@ -144,24 +151,27 @@ public class TestHttpServerModule
         }
     }
 
-    @Test
-    public void testServer()
+    @ParameterizedTest
+    @ValueSource(strings = {"", "testPrefix"})
+    public void testServer(String configPrefix)
             throws Exception
     {
-        doTestServerCompliance(true);
-        doTestServerCompliance(false);
+        doTestServerCompliance(configPrefix, true);
+        doTestServerCompliance(configPrefix, false);
     }
 
-    public void doTestServerCompliance(boolean enableLegacyUriCompliance)
+    public void doTestServerCompliance(String configPrefix, boolean enableLegacyUriCompliance)
             throws Exception
     {
+        String propertyPrefix = configPrefix.isEmpty() ? "" : (configPrefix + ".");
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
-                .put("http-server.http.port", "0")
-                .put("http-server.log.path", new File(tempDir, "http-request.log").getAbsolutePath())
+                .put(propertyPrefix + "http-server.http.port", "0")
+                .put(propertyPrefix + "http-server.log.path", new File(tempDir, "http-request.log").getAbsolutePath())
                 .build();
 
+        HttpServerModule httpServerModule = configPrefix.isEmpty() ? new HttpServerModule() : new HttpServerModule(configPrefix);
         Bootstrap app = new Bootstrap(
-                new HttpServerModule(),
+                httpServerModule,
                 new TestingNodeModule(),
                 binder -> {
                     binder.bind(Servlet.class).to(DummyServlet.class);

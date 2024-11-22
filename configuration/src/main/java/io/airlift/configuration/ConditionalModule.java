@@ -67,6 +67,11 @@ public class ConditionalModule<T>
         return new ConditionalModule<>(config, Optional.of(prefix), predicate, module);
     }
 
+    public static <T> Module conditionalModule(Class<T> config, Optional<String> prefix, Predicate<T> predicate, Module module)
+    {
+        return new ConditionalModule<>(config, prefix, predicate, module);
+    }
+
     private final Class<T> config;
     private final Optional<String> prefix;
     private final Predicate<T> predicate;
