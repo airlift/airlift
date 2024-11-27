@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airbase</artifactId>
-        <version>200</version>
+        <version>201</version>
     </parent>
 
     <artifactId>airlift</artifactId>
@@ -92,7 +92,6 @@
         <dep.airlift.version>287-SNAPSHOT</dep.airlift.version>
         <dep.bouncycastle.version>1.79</dep.bouncycastle.version>
         <dep.modernizer.version>2.7.0</dep.modernizer.version>
-        <dep.packaging.version>${dep.airlift.version}</dep.packaging.version>
         <dep.jersey.version>3.1.9</dep.jersey.version>
         <dep.jjwt.version>0.12.6</dep.jjwt.version>
         <dep.jackson.version>2.17.2</dep.jackson.version>
@@ -183,8 +182,16 @@
             <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>launcher</artifactId>
-                <version>${dep.airlift.version}</version>
+                <version>${dep.launcher.version}</version>
                 <classifier>bin</classifier>
+                <type>tar.gz</type>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>launcher</artifactId>
+                <version>${dep.launcher.version}</version>
+                <classifier>properties</classifier>
                 <type>tar.gz</type>
             </dependency>
 
