@@ -50,7 +50,6 @@
         <module>jmx</module>
         <module>jmx-http</module>
         <module>json</module>
-        <module>launcher</module>
         <module>log</module>
         <module>log-manager</module>
         <module>node</module>
