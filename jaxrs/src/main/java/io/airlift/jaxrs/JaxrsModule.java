@@ -47,13 +47,10 @@ public class JaxrsModule
     protected void setup(Binder binder)
     {
         binder.disableCircularProxies();
-
         binder.bind(Servlet.class).to(Key.get(ServletContainer.class));
-        jaxrsBinder(binder).bind(JsonMapper.class);
-        jaxrsBinder(binder).bind(SmileMapper.class);
-        jaxrsBinder(binder).bind(ParsingExceptionMapper.class);
-
         newSetBinder(binder, Object.class, JaxrsResource.class).permitDuplicates();
+        jaxrsBinder(binder).bind(JsonMapper.class);
+        jaxrsBinder(binder).bind(JacksonMapper.class);
 
         if (getProperty("tracing.enabled").map(Boolean::parseBoolean).orElse(false)) {
             install(new JaxrsTracingModule());
