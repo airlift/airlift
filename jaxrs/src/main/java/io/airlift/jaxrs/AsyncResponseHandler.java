@@ -16,6 +16,7 @@ package io.airlift.jaxrs;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import io.airlift.log.Logger;
 import io.airlift.units.Duration;
 import jakarta.ws.rs.container.AsyncResponse;
 import jakarta.ws.rs.core.Response;
@@ -32,6 +33,8 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class AsyncResponseHandler
 {
+    private static final Logger log = Logger.get(AsyncResponseHandler.class);
+
     private final AsyncResponse asyncResponse;
     private final WeakReference<Future<?>> futureResponseReference;
 
@@ -96,7 +99,25 @@ public class AsyncResponseHandler
             public void onSuccess(T value)
             {
                 checkArgument(!(value instanceof Response.ResponseBuilder), "Value is a ResponseBuilder. Did you forget to call build?");
-                asyncResponse.resume(value);
+                if (asyncResponse.isSuspended()) {
+                    try {
+                        asyncResponse.resume(value);
+                    }
+                    catch (IllegalStateException e) {
+                        if (e.getCause().getMessage().equals("Response does not exist (likely recycled)")) {
+                            log.warn(e, "Response does not exist");
+                            asyncResponse.resume(e);
+                            return;
+                        }
+                        throw e;
+                    }
+                }
+                else if (asyncResponse.isCancelled()) {
+                    log.warn("Attempted to call onSuccess for canceled async response");
+                }
+                else if (asyncResponse.isDone()) {
+                    log.warn("Attempted to call onSuccess for finished async response");
+                }
             }
 
             @Override
