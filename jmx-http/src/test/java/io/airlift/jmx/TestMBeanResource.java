@@ -98,13 +98,6 @@ public class TestMBeanResource
         assertMBeansResponse(jsonRequest(uriFor("/v1/jmx/mbean")));
     }
 
-    @Test
-    public void testGetMBeansJsonp()
-            throws Exception
-    {
-        assertMBeansResponse(jsonpRequest(uriFor("/v1/jmx/mbean")));
-    }
-
     private void assertMBeansResponse(JsonNode mbeans)
     {
         List<String> names = new ArrayList<>();
@@ -135,22 +128,6 @@ public class TestMBeanResource
         }
     }
 
-    @Test
-    public void testGetMBeanJsonp()
-            throws Exception
-    {
-        for (String mbeanName : getMBeanNames()) {
-            URI uri = uriBuilderFrom(uriFor("/v1/jmx/mbean"))
-                    .appendPath(mbeanName)
-                    .build();
-            JsonNode mbean = jsonpRequest(uri);
-
-            JsonNode name = mbean.get("objectName");
-            assertThat(name.isTextual()).isTrue();
-            assertThat(name.asText()).isEqualTo(mbeanName);
-        }
-    }
-
     private JsonNode jsonRequest(URI uri)
             throws IOException
     {
@@ -161,26 +138,6 @@ public class TestMBeanResource
         assertContentType(response, JSON_UTF_8);
 
         return new ObjectMapperProvider().get().readTree(response.getBody());
-    }
-
-    private JsonNode jsonpRequest(URI uri)
-            throws IOException
-    {
-        uri = uriBuilderFrom(uri)
-                .addParameter("jsonp", "test")
-                .build();
-        Request request = prepareGet().setUri(uri).build();
-        StringResponse response = client.execute(request, createStringResponseHandler());
-
-        assertThat(response.getStatusCode()).as(response.getBody()).isEqualTo(200);
-        assertContentType(response, JSON_UTF_8);
-
-        String jsonp = response.getBody().trim();
-        assertThat(jsonp).startsWith("test(");
-        assertThat(jsonp).endsWith(")");
-        jsonp = jsonp.substring(5, jsonp.length() - 1);
-
-        return new ObjectMapperProvider().get().readTree(jsonp);
     }
 
     private URI uriFor(String path)
