@@ -1,5 +1,7 @@
 package io.airlift.jaxrs.tracing;
 
+import com.google.common.base.Throwables;
+import io.airlift.log.Logger;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
@@ -23,6 +25,7 @@ import jakarta.ws.rs.container.ContainerResponseContext;
 import jakarta.ws.rs.container.ContainerResponseFilter;
 import jakarta.ws.rs.core.HttpHeaders;
 import org.glassfish.jersey.server.ContainerRequest;
+import org.glassfish.jersey.server.internal.process.MappableException;
 
 import java.net.URI;
 
@@ -35,6 +38,7 @@ import static java.util.Objects.requireNonNull;
 public final class TracingFilter
         implements ContainerRequestFilter, ContainerResponseFilter
 {
+    private static final Logger log = Logger.get(TracingFilter.class);
     static final String REMOTE_ADDRESS = "airlift.remote-address";
     static final String REQUEST_SCOPE = "airlift.trace-scope";
     static final String REQUEST_SPAN = "airlift.trace-span";
@@ -110,15 +114,32 @@ public final class TracingFilter
     @Override
     public void filter(ContainerRequestContext request, ContainerResponseContext response)
     {
-        Scope scope = (Scope) request.getProperty(REQUEST_SCOPE);
-        Span span = (Span) request.getProperty(REQUEST_SPAN);
+        if (request.getRequest() == null) {
+            log.info("Request does not exist (likely recycled)");
+            return;
+        }
+        try {
+            Scope scope = (Scope) request.getProperty(REQUEST_SCOPE);
+            Span span = (Span) request.getProperty(REQUEST_SPAN);
 
-        try (scope) {
-            if (response.getStatus() != -1) {
-                span.setAttribute(HttpAttributes.HTTP_RESPONSE_STATUS_CODE, response.getStatus());
+            try (scope) {
+                if (response.getStatus() != -1) {
+                    span.setAttribute(HttpAttributes.HTTP_RESPONSE_STATUS_CODE, response.getStatus());
+                }
+                if (response.hasEntity() && (response.getLength() != -1)) {
+                    span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, response.getLength());
+                }
             }
-            if (response.hasEntity() && (response.getLength() != -1)) {
-                span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, response.getLength());
+        }
+        catch (MappableException e) {
+            // That means request has been already recycled by ServletChannel#recycle, see https://github.com/jetty/jetty.project/issues/12518
+            Throwable rootCause = Throwables.getRootCause(e);
+            if (rootCause instanceof NullPointerException &&
+                    rootCause.getMessage().contains("Cannot invoke \"org.eclipse.jetty.server.Request.getAttribute(String)\" because the return value of \"org.eclipse.jetty.ee10.servlet.ServletApiRequest.getRequest()\" is null")) {
+                log.warn("Request does not exist (likely recycled)");
+            }
+            else {
+                throw e;
             }
         }
     }
