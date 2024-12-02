@@ -1303,8 +1303,8 @@ public class JettyHttpClient
             return;
         }
 
-        Duration responseProcessingTime = Duration.nanosSince(responseStart);
-        Duration requestProcessingTime = new Duration(responseStart - requestStart, NANOSECONDS);
+        Duration responseProcessingTime = new Duration(max(0, System.nanoTime() - responseStart), NANOSECONDS);
+        Duration requestProcessingTime = new Duration(max(0, responseStart - requestStart), NANOSECONDS);
 
         requestStats.recordResponseReceived(request.getMethod(),
                 response.getStatusCode(),
