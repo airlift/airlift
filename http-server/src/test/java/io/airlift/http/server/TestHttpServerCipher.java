@@ -48,7 +48,7 @@ public class TestHttpServerCipher
 {
     private static final String KEY_STORE_PATH = constructKeyStorePath();
     private static final String KEY_STORE_PASSWORD = "airlift";
-    public static final String CIPHER_1 = "TLS_RSA_WITH_AES_128_CBC_SHA256";
+    public static final String CIPHER_1 = "TLS_DHE_RSA_WITH_AES_128_CBC_SHA256";
     public static final String CIPHER_2 = "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256";
     public static final String CIPHER_3 = "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256";
 
@@ -198,9 +198,6 @@ public class TestHttpServerCipher
     {
         SslContextFactory.Client sslContextFactory = new SslContextFactory.Client(true);
         sslContextFactory.setIncludeCipherSuites(includedCipherSuites);
-        // Since Jetty 9.4.12 the list of excluded cipher suites includes "^TLS_RSA_.*$" by default.
-        // We reset that list here to enable use of those cipher suites.
-        sslContextFactory.setExcludeCipherSuites();
         sslContextFactory.setKeyStorePath(KEY_STORE_PATH);
         sslContextFactory.setKeyStorePassword(KEY_STORE_PASSWORD);
 
