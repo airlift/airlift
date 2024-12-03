@@ -15,7 +15,7 @@ import static java.util.Objects.requireNonNull;
 public final class TracingFilter
         implements ContainerRequestFilter
 {
-    static final String REQUEST_SCOPE = "airlift.trace-scope";
+    // Same as TracingServletFilter.REQUEST_SPAN
     static final String REQUEST_SPAN = "airlift.trace-span";
 
     private final String className;

@@ -22,6 +22,7 @@ import io.airlift.configuration.AbstractConfigurationAwareModule;
 import io.airlift.discovery.client.AnnouncementHttpServerInfo;
 import io.airlift.http.server.HttpServer.ClientCertificate;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
+import io.airlift.http.server.tracing.TracingServletFilter;
 import jakarta.servlet.Filter;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
@@ -68,7 +69,8 @@ public class HttpServerModule
         newOptionalBinder(binder, Key.get(Boolean.class, EnableVirtualThreads.class)).setDefault().toInstance(false);
         // override with HttpServerBinder.enableLegacyUriCompliance()
         newOptionalBinder(binder, Key.get(Boolean.class, EnableLegacyUriCompliance.class)).setDefault().toInstance(false);
-        newSetBinder(binder, Filter.class);
+        newSetBinder(binder, Filter.class).addBinding()
+                .to(TracingServletFilter.class).in(Scopes.SINGLETON);
         newSetBinder(binder, HttpResourceBinding.class);
         newOptionalBinder(binder, SslContextFactory.Server.class);
         newOptionalBinder(binder, Key.get(Boolean.class, EnableCaseSensitiveHeaderCache.class)).setDefault().toInstance(false);
