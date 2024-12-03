@@ -20,6 +20,7 @@ import io.opentelemetry.semconv.ServerAttributes;
 import io.opentelemetry.semconv.UrlAttributes;
 import io.opentelemetry.semconv.UserAgentAttributes;
 import io.opentelemetry.semconv.incubating.HttpIncubatingAttributes;
+import io.opentelemetry.semconv.incubating.TlsIncubatingAttributes;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -72,6 +73,13 @@ public final class TracingServletFilter
                 .setAttribute(ServerAttributes.SERVER_PORT, getPort(httpRequest))
                 .setAttribute(ClientAttributes.CLIENT_ADDRESS, request.getRemoteAddr())
                 .setAttribute(NetworkAttributes.NETWORK_PROTOCOL_NAME, "http");
+
+        // https://github.com/jetty/jetty.project/blob/jetty-12.0.x/jetty-ee10/jetty-ee10-servlet/src/main/java/org/eclipse/jetty/ee10/servlet/ServletContextRequest.java#L63
+        String sessionId = (String) request.getAttribute("jakarta.servlet.request.ssl_session_id");
+        if (sessionId != null) {
+            spanBuilder.setAttribute(TlsIncubatingAttributes.TLS_ESTABLISHED, true);
+            spanBuilder.setAttribute(TlsIncubatingAttributes.TLS_CIPHER, (String) request.getAttribute("jakarta.servlet.request.cipher_suite"));
+        }
 
         if (request.getProtocol().equalsIgnoreCase("HTTP/1.1")) {
             spanBuilder.setAttribute(NetworkAttributes.NETWORK_PROTOCOL_VERSION, "1.1");
