@@ -29,6 +29,7 @@ import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.log.Logging;
 import io.airlift.node.NodeInfo;
 import io.airlift.node.testing.TestingNodeModule;
+import io.airlift.tracing.TracingModule;
 import jakarta.servlet.Filter;
 import jakarta.servlet.Servlet;
 import jakarta.servlet.http.HttpServletResponse;
@@ -97,6 +98,7 @@ public class TestHttpServerModule
         Bootstrap app = new Bootstrap(
                 new HttpServerModule(),
                 new TestingNodeModule(),
+                new TracingModule("airlift.http-server", "1.0"),
                 binder -> binder.bind(Servlet.class).to(DummyServlet.class));
 
         Injector injector = app
@@ -120,6 +122,7 @@ public class TestHttpServerModule
         Bootstrap app = new Bootstrap(
                 new HttpServerModule(),
                 new TestingNodeModule(),
+                new TracingModule("airlift.http-server", "1.0"),
                 binder -> binder.bind(Servlet.class).to(DummyServlet.class));
 
         Injector injector = app
@@ -163,6 +166,7 @@ public class TestHttpServerModule
         Bootstrap app = new Bootstrap(
                 new HttpServerModule(),
                 new TestingNodeModule(),
+                new TracingModule("airlift.http-server", "1.0"),
                 binder -> {
                     binder.bind(Servlet.class).to(DummyServlet.class);
                     newSetBinder(binder, Filter.class).addBinding().to(DummyFilter.class).in(Scopes.SINGLETON);

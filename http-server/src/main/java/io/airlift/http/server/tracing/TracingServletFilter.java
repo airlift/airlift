@@ -1,4 +1,4 @@
-package io.airlift.jaxrs.tracing;
+package io.airlift.http.server.tracing;
 
 import com.google.inject.Inject;
 import io.opentelemetry.api.OpenTelemetry;
@@ -28,20 +28,23 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.ws.rs.core.HttpHeaders;
 
 import java.io.IOException;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.base.Strings.nullToEmpty;
-import static io.airlift.jaxrs.tracing.TracingFilter.REQUEST_SCOPE;
-import static io.airlift.jaxrs.tracing.TracingFilter.REQUEST_SPAN;
+import static com.google.common.net.HttpHeaders.CONTENT_LENGTH;
+import static com.google.common.net.HttpHeaders.USER_AGENT;
 import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
+import static org.eclipse.jetty.ee10.servlet.ServletContextRequest.SSL_CIPHER_SUITE;
+import static org.eclipse.jetty.ee10.servlet.ServletContextRequest.SSL_SESSION_ID;
 
 public final class TracingServletFilter
         implements Filter
 {
+    static final String REQUEST_SPAN = "airlift.trace-span";
+
     private final TextMapPropagator propagator;
     private final Tracer tracer;
 
@@ -74,11 +77,10 @@ public final class TracingServletFilter
                 .setAttribute(ClientAttributes.CLIENT_ADDRESS, request.getRemoteAddr())
                 .setAttribute(NetworkAttributes.NETWORK_PROTOCOL_NAME, "http");
 
-        // https://github.com/jetty/jetty.project/blob/jetty-12.0.x/jetty-ee10/jetty-ee10-servlet/src/main/java/org/eclipse/jetty/ee10/servlet/ServletContextRequest.java#L63
-        String sessionId = (String) request.getAttribute("jakarta.servlet.request.ssl_session_id");
+        String sessionId = (String) request.getAttribute(SSL_SESSION_ID);
         if (sessionId != null) {
             spanBuilder.setAttribute(TlsIncubatingAttributes.TLS_ESTABLISHED, true);
-            spanBuilder.setAttribute(TlsIncubatingAttributes.TLS_CIPHER, (String) request.getAttribute("jakarta.servlet.request.cipher_suite"));
+            spanBuilder.setAttribute(TlsIncubatingAttributes.TLS_CIPHER, (String) request.getAttribute(SSL_CIPHER_SUITE));
         }
 
         if (request.getProtocol().equalsIgnoreCase("HTTP/1.1")) {
@@ -97,22 +99,21 @@ public final class TracingServletFilter
             spanBuilder.setAttribute(UrlAttributes.URL_PATH, target);
         }
 
-        String userAgent = httpRequest.getHeader(HttpHeaders.USER_AGENT);
+        String userAgent = httpRequest.getHeader(USER_AGENT);
         if (!isNullOrEmpty(userAgent)) {
             spanBuilder.setAttribute(UserAgentAttributes.USER_AGENT_ORIGINAL, userAgent);
         }
 
         Span span = spanBuilder.startSpan();
+        // Add to request attributes for TracingFilter to be able to update Span attributes
         request.setAttribute(REQUEST_SPAN, span);
 
-        try (Scope scope = span.makeCurrent()) {
-            // Add to request attributes for TracingFilter to be able to update Span attributes
-            request.setAttribute(REQUEST_SCOPE, scope);
+        try (Scope ignored = span.makeCurrent()) {
             chain.doFilter(request, response);
 
             // ignore requests such as GET that might have a content length
-            if (httpResponse.containsHeader(HttpHeaders.CONTENT_LENGTH)) {
-                String length = nullToEmpty(httpResponse.getHeader(HttpHeaders.CONTENT_LENGTH));
+            if (httpResponse.containsHeader(CONTENT_LENGTH)) {
+                String length = nullToEmpty(httpResponse.getHeader(CONTENT_LENGTH));
                 if (!length.isEmpty()) {
                     span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, Long.parseLong(length));
                 }
