@@ -15,6 +15,7 @@ import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.semconv.ClientAttributes;
 import io.opentelemetry.semconv.ExceptionAttributes;
 import io.opentelemetry.semconv.HttpAttributes;
+import io.opentelemetry.semconv.NetworkAttributes;
 import io.opentelemetry.semconv.ServerAttributes;
 import io.opentelemetry.semconv.UrlAttributes;
 import io.opentelemetry.semconv.UserAgentAttributes;
@@ -69,7 +70,15 @@ public final class TracingServletFilter
                 .setAttribute(UrlAttributes.URL_SCHEME, httpRequest.getScheme())
                 .setAttribute(ServerAttributes.SERVER_ADDRESS, httpRequest.getServerName())
                 .setAttribute(ServerAttributes.SERVER_PORT, getPort(httpRequest))
-                .setAttribute(ClientAttributes.CLIENT_ADDRESS, request.getRemoteAddr());
+                .setAttribute(ClientAttributes.CLIENT_ADDRESS, request.getRemoteAddr())
+                .setAttribute(NetworkAttributes.NETWORK_PROTOCOL_NAME, "http");
+
+        if (request.getProtocol().equalsIgnoreCase("HTTP/1.1")) {
+            spanBuilder.setAttribute(NetworkAttributes.NETWORK_PROTOCOL_VERSION, "1.1");
+        }
+        else if (request.getProtocol().equalsIgnoreCase("HTTP/2.0")) {
+            spanBuilder.setAttribute(NetworkAttributes.NETWORK_PROTOCOL_VERSION, "2.0");
+        }
 
         if (request.getContentLengthLong() > 0) {
             spanBuilder.setAttribute(HttpIncubatingAttributes.HTTP_REQUEST_BODY_SIZE, request.getContentLengthLong());
