@@ -71,6 +71,10 @@ public final class TracingServletFilter
                 .setAttribute(ServerAttributes.SERVER_PORT, getPort(httpRequest))
                 .setAttribute(ClientAttributes.CLIENT_ADDRESS, request.getRemoteAddr());
 
+        if (request.getContentLengthLong() > 0) {
+            spanBuilder.setAttribute(HttpIncubatingAttributes.HTTP_REQUEST_BODY_SIZE, request.getContentLengthLong());
+        }
+
         String target = getTarget(httpRequest);
         if (!isNullOrEmpty(target)) {
             spanBuilder.setAttribute(UrlAttributes.URL_PATH, target);
