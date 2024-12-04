@@ -652,43 +652,6 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
-    public void testRedirectRequestHeaders()
-            throws Exception
-    {
-        String basic = "Basic dGVzdDphYmM=";
-        String bearer = "Bearer testxyz";
-
-        try (CloseableTestHttpServer server = newServer()) {
-            Request request = prepareGet()
-                    .setUri(URI.create(server.baseURI().toASCIIString() + "/?redirect=/redirect"))
-                    .addHeader("X-Test", "xtest1")
-                    .addHeader("X-Test", "xtest2")
-                    .setHeader(USER_AGENT, "testagent")
-                    .addHeader(AUTHORIZATION, basic)
-                    .addHeader(AUTHORIZATION, bearer)
-                    .build();
-
-            StatusResponse response = executeRequest(server, request, createStatusResponseHandler());
-            assertThat(response.getStatusCode()).isEqualTo(200);
-            assertThat(server.servlet().getRequestUri()).isEqualTo(URI.create(server.baseURI().toASCIIString() + "/redirect"));
-            assertThat(server.servlet().getRequestHeaders("X-Test")).containsExactly("xtest1", "xtest2");
-            assertThat(server.servlet().getRequestHeaders(USER_AGENT)).containsExactly("testagent");
-            assertThat(server.servlet().getRequestHeaders(AUTHORIZATION)).isEmpty();
-
-            request = Request.Builder.fromRequest(request)
-                    .setPreserveAuthorizationOnRedirect(true)
-                    .build();
-
-            response = executeRequest(server, request, createStatusResponseHandler());
-            assertThat(response.getStatusCode()).isEqualTo(200);
-            assertThat(server.servlet().getRequestUri()).isEqualTo(URI.create(server.baseURI().toASCIIString() + "/redirect"));
-            assertThat(server.servlet().getRequestHeaders("X-Test")).containsExactly("xtest1", "xtest2");
-            assertThat(server.servlet().getRequestHeaders(USER_AGENT)).containsExactly("testagent");
-            assertThat(server.servlet().getRequestHeaders(AUTHORIZATION)).containsExactly(basic, bearer);
-        }
-    }
-
-    @Test
     public void testFollowRedirects()
             throws Exception
     {

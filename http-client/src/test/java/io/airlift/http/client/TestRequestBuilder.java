@@ -65,7 +65,6 @@ public class TestRequestBuilder
                 .addHeader("anotherheader", "anothervalue")
                 .setBodyGenerator(NULL_BODY_GENERATOR)
                 .setFollowRedirects(false)
-                .setPreserveAuthorizationOnRedirect(true)
                 .build();
     }
 }
