@@ -28,6 +28,7 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponseWrapper;
 
 import java.io.IOException;
 
@@ -109,18 +110,7 @@ public final class TracingServletFilter
         request.setAttribute(REQUEST_SPAN, span);
 
         try (Scope ignored = span.makeCurrent()) {
-            chain.doFilter(request, response);
-
-            // ignore requests such as GET that might have a content length
-            if (httpResponse.containsHeader(CONTENT_LENGTH)) {
-                String length = nullToEmpty(httpResponse.getHeader(CONTENT_LENGTH));
-                if (!length.isEmpty()) {
-                    span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, Long.parseLong(length));
-                }
-            }
-            if (httpResponse.getStatus() > 0) {
-                span.setAttribute(HttpAttributes.HTTP_RESPONSE_STATUS_CODE, httpResponse.getStatus());
-            }
+            chain.doFilter(request, new TracingHttpServletResponse(httpResponse, span));
         }
         catch (Throwable t) {
             span.setStatus(StatusCode.ERROR, t.getMessage());
@@ -170,5 +160,92 @@ public final class TracingServletFilter
             case "https" -> 443;
             default -> -1;
         };
+    }
+
+    private static class TracingHttpServletResponse
+            extends HttpServletResponseWrapper
+    {
+        private final Span span;
+
+        public TracingHttpServletResponse(HttpServletResponse delegate, Span span)
+        {
+            super(delegate);
+            this.span = requireNonNull(span, "span is null");
+        }
+
+        @Override
+        public void sendError(int statusCode, String msg)
+                throws IOException
+        {
+            span.setAttribute(HttpAttributes.HTTP_RESPONSE_STATUS_CODE, statusCode);
+            span.setStatus(StatusCode.ERROR, msg);
+            super.sendError(statusCode, msg);
+        }
+
+        @Override
+        public void sendError(int statusCode)
+                throws IOException
+        {
+            span.setAttribute(HttpAttributes.HTTP_RESPONSE_STATUS_CODE, statusCode);
+            span.setStatus(StatusCode.ERROR);
+            super.sendError(statusCode);
+        }
+
+        @Override
+        public void setStatus(int statusCode)
+        {
+            span.setAttribute(HttpAttributes.HTTP_RESPONSE_STATUS_CODE, statusCode);
+            super.setStatus(statusCode);
+        }
+
+        @Override
+        public void setHeader(String name, String value)
+        {
+            if (name.equalsIgnoreCase(CONTENT_LENGTH)) {
+                span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, Long.parseLong(value));
+            }
+            super.setHeader(name, value);
+        }
+
+        @Override
+        public void addHeader(String name, String value)
+        {
+            if (name.equalsIgnoreCase(CONTENT_LENGTH)) {
+                span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, Long.parseLong(value));
+            }
+            super.addHeader(name, value);
+        }
+
+        @Override
+        public void setIntHeader(String name, int value)
+        {
+            if (name.equalsIgnoreCase(CONTENT_LENGTH)) {
+                span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, value);
+            }
+            super.setIntHeader(name, value);
+        }
+
+        @Override
+        public void addIntHeader(String name, int value)
+        {
+            if (name.equalsIgnoreCase(CONTENT_LENGTH)) {
+                span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, value);
+            }
+            super.addIntHeader(name, value);
+        }
+
+        @Override
+        public void setContentLength(int length)
+        {
+            span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, length);
+            super.setContentLength(length);
+        }
+
+        @Override
+        public void setContentLengthLong(long length)
+        {
+            span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, length);
+            super.setContentLengthLong(length);
+        }
     }
 }
