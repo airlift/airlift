@@ -9,7 +9,7 @@
     </parent>
 
     <artifactId>airlift</artifactId>
-    <version>290</version>
+    <version>291-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>airlift</name>
@@ -71,7 +71,7 @@
     <scm>
         <connection>scm:git:git://github.com/airlift/airlift.git</connection>
         <developerConnection>scm:git:git@github.com:airlift/airlift.git</developerConnection>
-        <tag>290</tag>
+        <tag>HEAD</tag>
         <url>https://github.com/airlift/airlift/tree/master</url>
     </scm>
 
@@ -89,7 +89,7 @@
         <project.build.targetJdk>21</project.build.targetJdk>
         <air.modernizer.java-version>8</air.modernizer.java-version>
 
-        <dep.airlift.version>290</dep.airlift.version>
+        <dep.airlift.version>291-SNAPSHOT</dep.airlift.version>
         <dep.bouncycastle.version>1.79</dep.bouncycastle.version>
         <dep.modernizer.version>2.7.0</dep.modernizer.version>
         <dep.jersey.version>3.1.9</dep.jersey.version>
