@@ -29,25 +29,45 @@ import io.airlift.http.server.HttpsConfig;
 import io.airlift.http.server.LocalAnnouncementHttpServerInfo;
 import jakarta.servlet.Filter;
 
+import java.util.Optional;
+
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
 import static io.airlift.configuration.ConditionalModule.conditionalModule;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
+import static java.util.Objects.requireNonNull;
 
 public class TestingHttpServerModule
         extends AbstractConfigurationAwareModule
 {
     private final int httpPort;
+    private final Optional<String> configPrefix;
 
     public TestingHttpServerModule()
     {
-        this(0);
+        this(0, Optional.empty());
     }
 
     public TestingHttpServerModule(int httpPort)
     {
+        this(httpPort, Optional.empty());
+    }
+
+    public TestingHttpServerModule(String configPrefix)
+    {
+        this(0, Optional.of(configPrefix));
+    }
+
+    public TestingHttpServerModule(int httpPort, String configPrefix)
+    {
+        this(httpPort, Optional.of(configPrefix));
+    }
+
+    private TestingHttpServerModule(int httpPort, Optional<String> configPrefix)
+    {
         this.httpPort = httpPort;
+        this.configPrefix = requireNonNull(configPrefix, "configPrefix is null");
     }
 
     @Override
@@ -55,7 +75,7 @@ public class TestingHttpServerModule
     {
         binder.disableCircularProxies();
 
-        configBinder(binder).bindConfig(HttpServerConfig.class);
+        configBinder(binder).bindConfig(HttpServerConfig.class, configPrefix.orElse(null));
         configBinder(binder).bindConfigDefaults(HttpServerConfig.class, config -> config.setHttpPort(httpPort));
 
         binder.bind(HttpServerInfo.class).in(Scopes.SINGLETON);
@@ -72,8 +92,8 @@ public class TestingHttpServerModule
         newOptionalBinder(binder, Key.get(Boolean.class, EnableCaseSensitiveHeaderCache.class)).setDefault().toInstance(false);
 
         newOptionalBinder(binder, HttpsConfig.class);
-        install(conditionalModule(HttpServerConfig.class, HttpServerConfig::isHttpsEnabled, moduleBinder -> {
-            configBinder(moduleBinder).bindConfig(HttpsConfig.class);
+        install(conditionalModule(HttpServerConfig.class, configPrefix, HttpServerConfig::isHttpsEnabled, moduleBinder -> {
+            configBinder(moduleBinder).bindConfig(HttpsConfig.class, configPrefix.orElse(null));
             configBinder(moduleBinder).bindConfigDefaults(HttpsConfig.class, config -> {
                 if (httpPort == 0) {
                     config.setHttpsPort(0);
