@@ -46,6 +46,22 @@ public final class Threads
                 .build();
     }
 
+    /**
+     * Creates a {@link ThreadFactory} that creates named virtual threads.
+     * using the specified naming format and passing current thread's context
+     * class loader.
+     *
+     * @param nameFormat see {@link #threadsNamed(String)}
+     * @return the created ThreadFactory
+     */
+    public static ThreadFactory virtualThreadsNamed(String nameFormat)
+    {
+        return new ThreadFactoryBuilder()
+                .setNameFormat(nameFormat)
+                .setThreadFactory(new ContextClassLoaderThreadFactory(Thread.currentThread().getContextClassLoader(), Thread.ofVirtual().factory()))
+                .build();
+    }
+
     private static class ContextClassLoaderThreadFactory
             implements ThreadFactory
     {

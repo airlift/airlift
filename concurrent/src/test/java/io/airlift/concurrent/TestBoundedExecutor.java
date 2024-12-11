@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.google.common.util.concurrent.Uninterruptibles.awaitUninterruptibly;
+import static io.airlift.concurrent.Threads.virtualThreadsNamed;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -28,7 +29,7 @@ public class TestBoundedExecutor
     @BeforeAll
     public void setUp()
     {
-        executorService = newCachedThreadPool();
+        executorService = newCachedThreadPool(virtualThreadsNamed("TestBoundedExecutor-%s"));
     }
 
     @AfterAll
