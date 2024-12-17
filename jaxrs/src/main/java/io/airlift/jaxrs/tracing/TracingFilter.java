@@ -31,6 +31,11 @@ public final class TracingFilter
     public void filter(ContainerRequestContext requestContext)
     {
         ContainerRequest request = (ContainerRequest) requestContext.getRequest();
+        if (request == null) {
+            // Request was already recycled
+            return;
+        }
+
         String route = request.getUriInfo().getMatchedTemplates().stream()
                 .map(template -> normalizePath(template.getTemplate()))
                 .reduce((first, second) -> second + first)
