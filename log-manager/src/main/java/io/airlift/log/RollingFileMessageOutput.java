@@ -451,7 +451,7 @@ final class RollingFileMessageOutput
         List<String> errorMessages = new ArrayList<>();
         for (File tempFile : tempFiles) {
             String newName = tempFile.getName().substring(0, tempFile.getName().length() - TEMP_FILE_EXTENSION.length());
-            File newFile = new File(tempFile.getParent(), newName + LOG_FILE_EXTENSION);
+            File newFile = Paths.get(tempFile.getParent(), newName + LOG_FILE_EXTENSION).toFile();
 
             if (!tempFile.renameTo(newFile)) {
                 errorMessages.add(format("Could not rename temp file [%s] to [%s]", tempFile, newFile));

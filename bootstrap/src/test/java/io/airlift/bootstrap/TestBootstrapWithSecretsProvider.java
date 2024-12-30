@@ -18,12 +18,13 @@ import com.google.inject.Injector;
 import io.airlift.configuration.Config;
 import org.junit.jupiter.api.Test;
 
+import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static io.airlift.configuration.ConfigBinder.configBinder;
+import static java.nio.file.Files.newBufferedWriter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -112,7 +113,7 @@ final class TestBootstrapWithSecretsProvider
         File tomlFile = File.createTempFile("config_resolver", ".toml");
         tomlFile.deleteOnExit();
 
-        try (FileWriter writer = new FileWriter(tomlFile)) {
+        try (BufferedWriter writer = newBufferedWriter(tomlFile.toPath())) {
             writer.append(configurationFile);
         }
 
