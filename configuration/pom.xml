@@ -88,18 +88,4 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.gaul</groupId>
-                <artifactId>modernizer-maven-plugin</artifactId>
-                <configuration>
-                    <exclusions>
-                        <exclusion>com/google/inject/Provider</exclusion>
-                    </exclusions>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 </project>

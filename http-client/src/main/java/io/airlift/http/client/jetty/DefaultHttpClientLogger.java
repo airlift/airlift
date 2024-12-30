@@ -27,6 +27,7 @@ import io.airlift.units.Duration;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static io.airlift.http.client.jetty.HttpRequestEvent.createHttpRequestEvent;
@@ -125,7 +126,7 @@ class DefaultHttpClientLogger
         if (tempFiles != null) {
             for (File tempFile : tempFiles) {
                 String newName = tempFile.getName().substring(0, tempFile.getName().length() - TEMP_FILE_EXTENSION.length());
-                File newFile = new File(tempFile.getParent(), newName + LOG_FILE_EXTENSION);
+                File newFile = Paths.get(tempFile.getParent(), newName + LOG_FILE_EXTENSION).toFile();
                 if (tempFile.renameTo(newFile)) {
                     LOG.info("Recovered temp file: %s", tempFile);
                 }
