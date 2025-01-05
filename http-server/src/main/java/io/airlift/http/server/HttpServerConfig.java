@@ -17,13 +17,17 @@ package io.airlift.http.server;
 
 import io.airlift.configuration.Config;
 import io.airlift.configuration.ConfigDescription;
+import io.airlift.configuration.ConfigHidden;
 import io.airlift.configuration.DefunctConfig;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 import io.airlift.units.MaxDataSize;
 import io.airlift.units.MinDataSize;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+
+import java.util.Optional;
 
 import static io.airlift.http.server.HttpServerConfig.ProcessForwardedMode.ACCEPT;
 import static io.airlift.http.server.HttpServerConfig.ProcessForwardedMode.REJECT;
@@ -93,6 +97,9 @@ public class HttpServerConfig
     private boolean showStackTrace = true;
 
     private boolean compressionEnabled = true;
+
+    private Optional<DataSize> maxHeapMemory = Optional.empty();
+    private Optional<DataSize> maxDirectMemory = Optional.empty();
 
     public boolean isHttpEnabled()
     {
@@ -471,6 +478,38 @@ public class HttpServerConfig
     {
         this.compressionEnabled = compressionEnabled;
         return this;
+    }
+
+    public Optional<@MinDataSize("16MB") DataSize> getMaxHeapMemory()
+    {
+        return maxHeapMemory;
+    }
+
+    @Config("http-server.max-heap-memory")
+    @ConfigHidden
+    public HttpServerConfig setMaxHeapMemory(DataSize maxHeapMemory)
+    {
+        this.maxHeapMemory = Optional.ofNullable(maxHeapMemory);
+        return this;
+    }
+
+    public Optional<@MinDataSize("16MB") DataSize> getMaxDirectMemory()
+    {
+        return maxDirectMemory;
+    }
+
+    @Config("http-server.max-direct-memory")
+    @ConfigHidden
+    public HttpServerConfig setMaxDirectMemory(DataSize maxDirectMemory)
+    {
+        this.maxDirectMemory = Optional.ofNullable(maxDirectMemory);
+        return this;
+    }
+
+    @AssertTrue(message = "either both http-server.max-heap-memory and http-server.max-direct-memory are set or none of them")
+    public boolean eitherBothMemorySettingsAreSetOrNone()
+    {
+        return maxHeapMemory.isPresent() == maxDirectMemory.isPresent();
     }
 
     public enum ProcessForwardedMode
