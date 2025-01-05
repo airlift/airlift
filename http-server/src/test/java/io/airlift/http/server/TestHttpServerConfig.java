@@ -27,6 +27,7 @@ import static io.airlift.configuration.testing.ConfigAssertions.assertRecordedDe
 import static io.airlift.configuration.testing.ConfigAssertions.recordDefaults;
 import static io.airlift.http.server.HttpServerConfig.ProcessForwardedMode.IGNORE;
 import static io.airlift.http.server.HttpServerConfig.ProcessForwardedMode.REJECT;
+import static io.airlift.http.server.HttpServerConfig.max;
 import static io.airlift.units.DataSize.Unit.GIGABYTE;
 import static io.airlift.units.DataSize.Unit.KILOBYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
@@ -67,7 +68,9 @@ public class TestHttpServerConfig
                 .setHttp2InputBufferSize(DataSize.of(8, KILOBYTE))
                 .setHttp2InitialStreamReceiveWindowSize(DataSize.of(16, MEGABYTE))
                 .setHttp2StreamIdleTimeout(new Duration(15, SECONDS))
-                .setCompressionEnabled(true));
+                .setCompressionEnabled(true)
+                .setMaxHeapMemory(max(DataSize.ofBytes(Runtime.getRuntime().maxMemory() / 8), DataSize.of(16, MEGABYTE)))
+                .setMaxDirectMemory(max(DataSize.ofBytes(Runtime.getRuntime().maxMemory() / 8), DataSize.of(16, MEGABYTE))));
     }
 
     @Test
@@ -103,6 +106,8 @@ public class TestHttpServerConfig
                 .put("http-server.http2.input-buffer-size", "4MB")
                 .put("http-server.http2.stream-idle-timeout", "23s")
                 .put("http-server.compression.enabled", "false")
+                .put("http-server.max-heap-memory", "127GB")
+                .put("http-server.max-direct-memory", "129GB")
                 .build();
 
         HttpServerConfig expected = new HttpServerConfig()
@@ -134,7 +139,9 @@ public class TestHttpServerConfig
                 .setHttp2InitialStreamReceiveWindowSize(DataSize.of(4, MEGABYTE))
                 .setHttp2InputBufferSize(DataSize.of(4, MEGABYTE))
                 .setHttp2StreamIdleTimeout(new Duration(23, SECONDS))
-                .setCompressionEnabled(false);
+                .setCompressionEnabled(false)
+                .setMaxHeapMemory(DataSize.of(127, GIGABYTE))
+                .setMaxDirectMemory(DataSize.of(129, GIGABYTE));
 
         assertFullMapping(properties, expected);
     }

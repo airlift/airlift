@@ -15,8 +15,10 @@
  */
 package io.airlift.http.server;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.airlift.configuration.Config;
 import io.airlift.configuration.ConfigDescription;
+import io.airlift.configuration.ConfigHidden;
 import io.airlift.configuration.DefunctConfig;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
@@ -93,6 +95,14 @@ public class HttpServerConfig
     private boolean showStackTrace = true;
 
     private boolean compressionEnabled = true;
+
+    private DataSize maxHeapMemory = max(
+            DataSize.ofBytes(Runtime.getRuntime().maxMemory() / 8),
+            DataSize.of(16, MEGABYTE));
+
+    private DataSize maxDirectMemory = max(
+            DataSize.ofBytes(Runtime.getRuntime().maxMemory() / 8),
+            DataSize.of(16, MEGABYTE));
 
     public boolean isHttpEnabled()
     {
@@ -473,6 +483,34 @@ public class HttpServerConfig
         return this;
     }
 
+    @MinDataSize("16MB")
+    public DataSize getMaxHeapMemory()
+    {
+        return maxHeapMemory;
+    }
+
+    @Config("http-server.max-heap-memory")
+    @ConfigHidden
+    public HttpServerConfig setMaxHeapMemory(DataSize maxHeapMemory)
+    {
+        this.maxHeapMemory = maxHeapMemory;
+        return this;
+    }
+
+    @MinDataSize("16MB")
+    public DataSize getMaxDirectMemory()
+    {
+        return maxDirectMemory;
+    }
+
+    @Config("http-server.max-direct-memory")
+    @ConfigHidden
+    public HttpServerConfig setMaxDirectMemory(DataSize maxDirectMemory)
+    {
+        this.maxDirectMemory = maxDirectMemory;
+        return this;
+    }
+
     public enum ProcessForwardedMode
     {
         ACCEPT,
@@ -487,5 +525,14 @@ public class HttpServerConfig
                 default -> valueOf(value.toUpperCase(ENGLISH));
             };
         }
+    }
+
+    @VisibleForTesting
+    static DataSize max(DataSize value, DataSize value2)
+    {
+        if (value.compareTo(value2) < 0) {
+            return value2;
+        }
+        return value;
     }
 }
