@@ -22,6 +22,7 @@ import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.http.server.jetty.MonitoredQueuedThreadPoolMBean;
 import io.airlift.log.Logger;
 import io.airlift.node.NodeInfo;
+import io.airlift.units.DataSize;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.servlet.Filter;
@@ -34,6 +35,8 @@ import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http2.server.AuthorityCustomizer;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.ConnectionFactory;
@@ -65,6 +68,7 @@ import java.time.ZonedDateTime;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
@@ -75,6 +79,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Verify.verify;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
+import static java.lang.Math.max;
 import static java.lang.Math.toIntExact;
 import static java.time.temporal.ChronoUnit.DAYS;
 import static java.util.Collections.list;
@@ -140,7 +145,12 @@ public class HttpServer
             log.info("Virtual threads support is enabled");
             threadPool.setVirtualThreadsExecutor(executor);
         }
-        server = new Server(threadPool);
+
+        int maxBufferSize = toIntExact(max(
+                toSafeBytes(config.getMaxRequestHeaderSize()).orElse(65536),
+                toSafeBytes(config.getMaxResponseHeaderSize()).orElse(65536)));
+
+        server = new Server(threadPool, null, createByteBufferPool(maxBufferSize, config));
         this.monitoredQueuedThreadPoolMBean = new MonitoredQueuedThreadPoolMBean(threadPool);
 
         boolean showStackTrace = config.isShowStackTrace();
@@ -274,12 +284,23 @@ public class HttpServer
         }
 
         server.setHandler(statsHandler);
-
         ErrorHandler errorHandler = new ErrorHandler();
         errorHandler.setShowMessageInTitle(showStackTrace);
         errorHandler.setShowStacks(showStackTrace);
         errorHandler.setDefaultResponseMimeType(TEXT_PLAIN.asString());
         server.setErrorHandler(errorHandler);
+    }
+
+    private ByteBufferPool createByteBufferPool(int maxBufferSize, HttpServerConfig config)
+    {
+        return new ArrayByteBufferPool.Quadratic(
+                0,
+                maxBufferSize,
+                Integer.MAX_VALUE,
+                config.getMaxHeapMemory().map(DataSize::toBytes)
+                        .orElse(0L), // Use default heuristics for max heap memory
+                config.getMaxDirectMemory().map(DataSize::toBytes)
+                        .orElse(0L)); // Use default heuristics for max direct memory
     }
 
     private ConnectionFactory[] insecureFactories(HttpServerConfig config, HttpConfiguration httpConfiguration)
@@ -472,5 +493,14 @@ public class HttpServer
         ServerConnector connector = new ServerConnector(server, executor, null, null, acceptors, selectors, factories);
         connector.open(channel);
         return connector;
+    }
+
+    private static OptionalLong toSafeBytes(DataSize dataSize)
+    {
+        if (dataSize == null) {
+            return OptionalLong.empty();
+        }
+
+        return OptionalLong.of(dataSize.toBytes());
     }
 }
