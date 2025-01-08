@@ -92,7 +92,7 @@
         <dep.airlift.version>295-SNAPSHOT</dep.airlift.version>
         <dep.bouncycastle.version>1.79</dep.bouncycastle.version>
         <dep.modernizer.version>2.7.0</dep.modernizer.version>
-        <dep.jersey.version>3.1.9</dep.jersey.version>
+        <dep.jersey.version>3.1.10</dep.jersey.version>
         <dep.jjwt.version>0.12.6</dep.jjwt.version>
         <dep.jackson.version>2.17.2</dep.jackson.version>
     </properties>
