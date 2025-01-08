@@ -15,16 +15,23 @@
  */
 package io.airlift.bootstrap;
 
+import com.google.inject.Binder;
 import com.google.inject.ConfigurationException;
+import com.google.inject.CreationException;
 import com.google.inject.Inject;
 import com.google.inject.ProvisionException;
 import com.google.inject.Scopes;
 import com.google.inject.spi.Message;
+import io.airlift.configuration.AbstractConfigurationAwareModule;
 import io.airlift.configuration.Config;
+import io.airlift.configuration.ConfigPropertyMetadata;
+import io.airlift.configuration.ConfigSecuritySensitive;
 import org.junit.jupiter.api.Test;
 
+import static io.airlift.configuration.ConditionalModule.conditionalModule;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 
@@ -119,7 +126,7 @@ public class TestBootstrap
         assertThat(root.getHandlers()).hasSize(configuredHandlerCount);
     }
 
-    @SuppressWarnings("AssignmentToStaticFieldFromInstanceMethod")
+    @SuppressWarnings({"AssignmentToStaticFieldFromInstanceMethod", "deprecation"})
     @Test
     public void testSeparateConfigureAndInitialize()
     {
@@ -131,10 +138,111 @@ public class TestBootstrap
         bootstrap.setOptionalConfigurationProperty("bar.enabled", "true");
 
         fooInstanceCreated = false;
-        assertThat(bootstrap.configure()).containsExactly("foo.enabled");
+        assertThat(bootstrap.configure())
+                .extracting(ConfigPropertyMetadata::name)
+                .containsExactly("foo.enabled");
         assertThat(fooInstanceCreated).isFalse();
         bootstrap.initialize();
         assertThat(fooInstanceCreated).isTrue();
+    }
+
+    @SuppressWarnings("AssignmentToStaticFieldFromInstanceMethod")
+    @Test
+    public void testSeparateConfigureReturningMetadataAndInitialize()
+    {
+        Bootstrap bootstrap = new Bootstrap(binder -> {
+            configBinder(binder).bindConfig(FooConfig.class);
+            binder.bind(FooInstance.class).in(Scopes.SINGLETON);
+        });
+        bootstrap.setOptionalConfigurationProperty("foo.enabled", "true");
+        bootstrap.setOptionalConfigurationProperty("foo.password", "secret");
+        bootstrap.setOptionalConfigurationProperty("bar.enabled", "true");
+
+        fooInstanceCreated = false;
+        assertThat(bootstrap.configure()).containsExactly(
+                new ConfigPropertyMetadata("foo.enabled", false),
+                new ConfigPropertyMetadata("foo.password", true));
+        assertThat(fooInstanceCreated).isFalse();
+        bootstrap.initialize();
+        assertThat(fooInstanceCreated).isTrue();
+    }
+
+    @SuppressWarnings("AssignmentToStaticFieldFromInstanceMethod")
+    @Test
+    public void testConfigureAndGetUsedPropertiesWithConditionalModule()
+    {
+        AbstractConfigurationAwareModule module = new AbstractConfigurationAwareModule()
+        {
+            @Override
+            protected void setup(Binder binder)
+            {
+                install(conditionalModule(
+                        FooConfig.class,
+                        FooConfig::isFoo,
+                        innerBinder -> configBinder(innerBinder).bindConfig(BarConfig.class)));
+            }
+        };
+        Bootstrap bootstrap = new Bootstrap(module);
+        bootstrap.setOptionalConfigurationProperty("foo.enabled", "true");
+        bootstrap.setOptionalConfigurationProperty("foo.password", "secret");
+        bootstrap.setOptionalConfigurationProperty("bar.enabled", "false");
+        bootstrap.setOptionalConfigurationProperty("bar.password", "password");
+
+        assertThat(bootstrap.configure())
+                .containsExactly(
+                        new ConfigPropertyMetadata("bar.enabled", false),
+                        new ConfigPropertyMetadata("bar.password", true),
+                        new ConfigPropertyMetadata("foo.enabled", false),
+                        new ConfigPropertyMetadata("foo.password", true));
+    }
+
+    @SuppressWarnings("AssignmentToStaticFieldFromInstanceMethod")
+    @Test
+    public void testConfigureAndGetUsedPropertiesWithPrefix()
+    {
+        Bootstrap bootstrap = new Bootstrap(
+                binder -> configBinder(binder).bindConfig(BarConfig.class, "foo"));
+        bootstrap.setOptionalConfigurationProperty("foo.bar.enabled", "true");
+        bootstrap.setOptionalConfigurationProperty("foo.bar.password", "secret");
+        bootstrap.setOptionalConfigurationProperty("bar.enabled", "true");
+        bootstrap.setOptionalConfigurationProperty("bar.password", "secret");
+
+        assertThat(bootstrap.configure())
+                .containsExactly(
+                        new ConfigPropertyMetadata("foo.bar.enabled", false),
+                        new ConfigPropertyMetadata("foo.bar.password", true));
+    }
+
+    @SuppressWarnings("AssignmentToStaticFieldFromInstanceMethod")
+    @Test
+    public void testConfigureDoesNotInitializeEagerSingletons()
+    {
+        fooInstanceCreated = false;
+
+        Bootstrap bootstrap = new Bootstrap(binder -> {
+            configBinder(binder).bindConfig(FooConfig.class);
+            binder.bind(FooInstance.class).asEagerSingleton();
+        });
+        bootstrap.setOptionalConfigurationProperty("foo.enabled", "true");
+
+        bootstrap.configure();
+        assertThat(fooInstanceCreated).isFalse();
+    }
+
+    @Test
+    public void testSuppressErrorsAndWarnings()
+    {
+        Bootstrap bootstrap = new Bootstrap(binder -> {
+            configBinder(binder).bindConfig(FooConfig.class);
+            binder.bind(FooInstance.class).asEagerSingleton();
+        });
+        bootstrap.setOptionalConfigurationProperty("foo.enabled", "shouldBeBoolean");
+        bootstrap.suppressErrorsAndWarnings();
+
+        assertThatCode(bootstrap::configure).doesNotThrowAnyException();
+        assertThatThrownBy(bootstrap::initialize)
+                .isInstanceOf(CreationException.class)
+                .hasMessageContaining("Invalid value 'shouldBeBoolean' for type boolean (property 'foo.enabled')");
     }
 
     public static class Instance {}
@@ -164,6 +272,7 @@ public class TestBootstrap
     public static class FooConfig
     {
         private boolean foo;
+        public String password;
 
         public boolean isFoo()
         {
@@ -174,6 +283,50 @@ public class TestBootstrap
         public FooConfig setFoo(boolean foo)
         {
             this.foo = foo;
+            return this;
+        }
+
+        public String getPassword()
+        {
+            return password;
+        }
+
+        @ConfigSecuritySensitive
+        @Config("foo.password")
+        public FooConfig setPassword(String password)
+        {
+            this.password = password;
+            return this;
+        }
+    }
+
+    public static class BarConfig
+    {
+        private boolean bar;
+        public String password;
+
+        public boolean isBar()
+        {
+            return bar;
+        }
+
+        @Config("bar.enabled")
+        public BarConfig setBar(boolean bar)
+        {
+            this.bar = bar;
+            return this;
+        }
+
+        public String getPassword()
+        {
+            return password;
+        }
+
+        @ConfigSecuritySensitive
+        @Config("bar.password")
+        public BarConfig setPassword(String password)
+        {
+            this.password = password;
             return this;
         }
     }

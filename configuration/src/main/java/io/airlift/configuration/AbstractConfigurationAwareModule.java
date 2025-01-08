@@ -52,9 +52,9 @@ public abstract class AbstractConfigurationAwareModule
         }
     }
 
-    protected void consumeProperty(String name)
+    protected void consumeProperty(ConfigPropertyMetadata property)
     {
-        configurationFactory.consumeProperty(name);
+        configurationFactory.consumeProperty(property);
     }
 
     protected Map<String, String> getProperties()

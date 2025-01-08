@@ -415,6 +415,7 @@ public class TestConfigurationFactory
                 ".*Invalid value 'bad-value' for type.*\\(property 'value'\\).*StringConstructorClass.*");
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     public void testUsedProperties()
     {
@@ -426,9 +427,12 @@ public class TestConfigurationFactory
         ConfigurationFactory configurationFactory = new ConfigurationFactory(properties);
         configurationFactory.registerConfigurationClasses(ImmutableList.of(binder -> configBinder(binder).bindConfig(AnnotatedSetter.class)));
         configurationFactory.validateRegisteredConfigurationProvider();
-        assertThat(configurationFactory.getUsedProperties()).hasSameElementsAs(ImmutableSet.of("string-value", "boolean-value"));
+        assertThat(configurationFactory.getUsedProperties())
+                .extracting(ConfigPropertyMetadata::name)
+                .hasSameElementsAs(ImmutableSet.of("string-value", "boolean-value"));
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     public void testUsedPropertiesWithFailure()
     {
@@ -440,15 +444,20 @@ public class TestConfigurationFactory
         configurationFactory.registerConfigurationClasses(ImmutableList.of(binder -> configBinder(binder).bindConfig(AnnotatedSetter.class)));
         List<Message> messages = configurationFactory.validateRegisteredConfigurationProvider();
         assertMessagesMatch(messages, ImmutableList.of(".*Invalid value 'invalid' for type boolean \\(property 'boolean-value'\\).*AnnotatedSetter.*"));
-        assertThat(configurationFactory.getUsedProperties()).isEqualTo(properties.keySet());
+        assertThat(configurationFactory.getUsedProperties())
+                .extracting(ConfigPropertyMetadata::name)
+                .containsAll(properties.keySet());
     }
 
+    @SuppressWarnings("deprecation")
     private static Injector createInjector(Map<String, String> properties, Module module, WarningsMonitor warningsMonitor)
     {
         ConfigurationFactory configurationFactory = new ConfigurationFactory(properties, warningsMonitor);
         configurationFactory.registerConfigurationClasses(ImmutableList.of(module));
         List<Message> messages = configurationFactory.validateRegisteredConfigurationProvider();
-        assertThat(configurationFactory.getUsedProperties()).hasSameElementsAs(properties.keySet());
+        assertThat(configurationFactory.getUsedProperties())
+                .extracting(ConfigPropertyMetadata::name)
+                .hasSameElementsAs(properties.keySet());
         return Guice.createInjector(new ConfigurationModule(configurationFactory), module, new ValidationErrorModule(messages));
     }
 

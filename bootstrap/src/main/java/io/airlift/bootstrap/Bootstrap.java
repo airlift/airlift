@@ -25,6 +25,7 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Stage;
 import com.google.inject.spi.Message;
+import io.airlift.configuration.ConfigPropertyMetadata;
 import io.airlift.configuration.ConfigurationFactory;
 import io.airlift.configuration.ConfigurationInspector;
 import io.airlift.configuration.ConfigurationInspector.ConfigAttribute;
@@ -50,6 +51,7 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static io.airlift.configuration.ConfigurationLoader.getSystemProperties;
 import static io.airlift.configuration.ConfigurationLoader.loadPropertiesFrom;
 import static io.airlift.configuration.TomlConfiguration.createTomlConfiguration;
@@ -78,6 +80,7 @@ public class Bootstrap
     private boolean initializeLogging = true;
     private boolean quiet;
     private boolean loadSecretsPlugins;
+    private boolean suppressErrorsAndWarnings;
 
     private State state = State.UNINITIALIZED;
     private ConfigurationFactory configurationFactory;
@@ -147,10 +150,16 @@ public class Bootstrap
         return this;
     }
 
+    public Bootstrap suppressErrorsAndWarnings()
+    {
+        this.suppressErrorsAndWarnings = true;
+        return this;
+    }
+
     /**
      * Validate configuration and return used properties.
      */
-    public Set<String> configure()
+    public Set<ConfigPropertyMetadata> configure()
     {
         checkState(state == State.UNINITIALIZED, "Already configured");
         state = State.CONFIGURED;
@@ -229,14 +238,18 @@ public class Bootstrap
 
         // at this point all config file properties should be used
         // so we can calculate the unused properties
-        unusedProperties.keySet().removeAll(configurationFactory.getUsedProperties());
+        unusedProperties.keySet()
+                .removeAll(configurationFactory.getUsedProperties()
+                        .stream()
+                        .map(ConfigPropertyMetadata::name)
+                        .collect(toImmutableSet()));
 
         for (String key : unusedProperties.keySet()) {
             errors.add(new Message(format("Configuration property '%s' was not used", key)));
         }
 
         // If there are configuration errors, fail-fast to keep output clean
-        if (!errors.isEmpty()) {
+        if (!suppressErrorsAndWarnings && !errors.isEmpty()) {
             throw new ApplicationConfigurationException(errors, warnings);
         }
 
@@ -246,7 +259,7 @@ public class Bootstrap
         }
 
         // Log any warnings
-        if (!warnings.isEmpty()) {
+        if (!suppressErrorsAndWarnings && !warnings.isEmpty()) {
             StringBuilder message = new StringBuilder();
             message.append("Configuration warnings\n");
             message.append("==========\n\n");
