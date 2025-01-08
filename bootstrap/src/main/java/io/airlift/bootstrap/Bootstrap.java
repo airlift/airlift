@@ -80,6 +80,7 @@ public class Bootstrap
     private boolean initializeLogging = true;
     private boolean quiet;
     private boolean loadSecretsPlugins;
+    private boolean skipErrorReporting;
 
     private State state = State.UNINITIALIZED;
     private ConfigurationFactory configurationFactory;
@@ -146,6 +147,12 @@ public class Bootstrap
     public Bootstrap loadSecretsPlugins()
     {
         this.loadSecretsPlugins = true;
+        return this;
+    }
+
+    public Bootstrap skipErrorReporting()
+    {
+        this.skipErrorReporting = true;
         return this;
     }
 
@@ -241,7 +248,7 @@ public class Bootstrap
         }
 
         // If there are configuration errors, fail-fast to keep output clean
-        if (!errors.isEmpty()) {
+        if (!skipErrorReporting && !errors.isEmpty()) {
             throw new ApplicationConfigurationException(errors, warnings);
         }
 
@@ -251,7 +258,7 @@ public class Bootstrap
         }
 
         // Log any warnings
-        if (!warnings.isEmpty()) {
+        if (!skipErrorReporting && !warnings.isEmpty()) {
             StringBuilder message = new StringBuilder();
             message.append("Configuration warnings\n");
             message.append("==========\n\n");

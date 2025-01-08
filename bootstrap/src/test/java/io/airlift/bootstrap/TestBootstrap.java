@@ -17,6 +17,7 @@ package io.airlift.bootstrap;
 
 import com.google.inject.Binder;
 import com.google.inject.ConfigurationException;
+import com.google.inject.CreationException;
 import com.google.inject.Inject;
 import com.google.inject.ProvisionException;
 import com.google.inject.Scopes;
@@ -203,6 +204,23 @@ public class TestBootstrap
 
         bootstrap.configure();
         assertThat(fooInstanceCreated).isFalse();
+    }
+
+    @Test
+    public void testSkipErrorReporting()
+    {
+        Bootstrap bootstrap = new Bootstrap(binder -> {
+            configBinder(binder).bindConfig(FooConfig.class);
+            binder.bind(FooInstance.class).asEagerSingleton();
+        });
+        bootstrap.setOptionalConfigurationProperty("foo.enabled", "shouldBeBoolean");
+        bootstrap.skipErrorReporting();
+
+        bootstrap.configure(); // This should not fail when error reporting is skipped
+
+        assertThatThrownBy(bootstrap::initialize)
+                .isInstanceOf(CreationException.class)
+                .hasMessageContaining("Invalid value 'shouldBeBoolean' for type boolean (property 'foo.enabled')");
     }
 
     public static class Instance {}
