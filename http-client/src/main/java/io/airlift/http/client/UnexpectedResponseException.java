@@ -83,6 +83,7 @@ public class UnexpectedResponseException
     public String toString()
     {
         return toStringHelper(this)
+                .add("message", getLocalizedMessage())
                 .add("request", requestMethod + " " + requestUri)
                 .add("statusCode", statusCode)
                 .add("headers", headers)
