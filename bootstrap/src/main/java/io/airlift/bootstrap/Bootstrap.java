@@ -25,6 +25,7 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Stage;
 import com.google.inject.spi.Message;
+import io.airlift.configuration.ConfigPropertyMetadata;
 import io.airlift.configuration.ConfigurationFactory;
 import io.airlift.configuration.ConfigurationInspector;
 import io.airlift.configuration.ConfigurationInspector.ConfigAttribute;
@@ -50,6 +51,7 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static io.airlift.configuration.ConfigurationLoader.getSystemProperties;
 import static io.airlift.configuration.ConfigurationLoader.loadPropertiesFrom;
 import static io.airlift.configuration.TomlConfiguration.createTomlConfiguration;
@@ -150,7 +152,7 @@ public class Bootstrap
     /**
      * Validate configuration and return used properties.
      */
-    public Set<String> configure()
+    public Set<ConfigPropertyMetadata> configure()
     {
         checkState(state == State.UNINITIALIZED, "Already configured");
         state = State.CONFIGURED;
@@ -229,7 +231,10 @@ public class Bootstrap
 
         // at this point all config file properties should be used
         // so we can calculate the unused properties
-        unusedProperties.keySet().removeAll(configurationFactory.getUsedProperties());
+        Set<String> usedProperties = configurationFactory.getUsedProperties().stream()
+                .map(ConfigPropertyMetadata::name)
+                .collect(toImmutableSet());
+        unusedProperties.keySet().removeAll(usedProperties);
 
         for (String key : unusedProperties.keySet()) {
             errors.add(new Message(format("Configuration property '%s' was not used", key)));

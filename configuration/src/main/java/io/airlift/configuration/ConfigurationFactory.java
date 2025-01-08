@@ -106,7 +106,7 @@ public class ConfigurationFactory
     private final Map<String, String> properties;
     private final WarningsMonitor warningsMonitor;
     private final ConcurrentMap<ConfigurationProvider<?>, Object> instanceCache = new ConcurrentHashMap<>();
-    private final Set<String> usedProperties = newConcurrentHashSet();
+    private final Set<ConfigPropertyMetadata> usedProperties = newConcurrentHashSet();
     private final Set<ConfigurationProvider<?>> registeredProviders = newConcurrentHashSet();
     @GuardedBy("this")
     private final List<Consumer<ConfigurationProvider<?>>> configurationBindingListeners = new ArrayList<>();
@@ -131,13 +131,13 @@ public class ConfigurationFactory
     /**
      * Marks the specified property as consumed.
      */
-    public void consumeProperty(String property)
+    public void consumeProperty(ConfigPropertyMetadata property)
     {
         requireNonNull(property, "property is null");
         usedProperties.add(property);
     }
 
-    public Set<String> getUsedProperties()
+    public Set<ConfigPropertyMetadata> getUsedProperties()
     {
         return ImmutableSortedSet.copyOf(usedProperties);
     }
@@ -545,7 +545,7 @@ public class ConfigurationFactory
             throws InvalidConfigurationException
     {
         String name = prefix + injectionPoint.getProperty();
-        usedProperties.add(name);
+        usedProperties.add(new ConfigPropertyMetadata(name, attribute.isSecuritySensitive()));
 
         // Get the property value
         String value = properties.get(name);
