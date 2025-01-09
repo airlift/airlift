@@ -5,7 +5,6 @@ import java.io.UncheckedIOException;
 import java.net.ConnectException;
 
 import static com.google.common.base.Throwables.throwIfUnchecked;
-import static com.google.common.io.ByteStreams.toByteArray;
 
 public final class ResponseHandlerUtils
 {
@@ -28,7 +27,7 @@ public final class ResponseHandlerUtils
     public static byte[] readResponseBytes(Request request, Response response)
     {
         try {
-            return toByteArray(response.getInputStream());
+            return response.getInputStream().readAllBytes();
         }
         catch (IOException e) {
             throw new UncheckedIOException("Failed reading response from server: " + urlFor(request), e);
