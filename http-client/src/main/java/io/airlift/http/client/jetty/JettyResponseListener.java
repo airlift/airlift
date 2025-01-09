@@ -1,6 +1,5 @@
 package io.airlift.http.client.jetty;
 
-import org.eclipse.jetty.client.BufferingResponseListener;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Result;
 
