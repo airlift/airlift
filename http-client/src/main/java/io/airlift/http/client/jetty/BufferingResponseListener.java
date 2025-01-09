@@ -15,6 +15,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
+import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
 
@@ -134,11 +135,8 @@ public abstract class BufferingResponseListener
      */
     public String getContentAsString()
     {
-        String encoding = this.encoding;
-        if (encoding == null) {
-            return getContentAsString(StandardCharsets.UTF_8);
-        }
-        return getContentAsString(encoding);
+        return getContentAsString(Optional.ofNullable(encoding)
+                .orElse(StandardCharsets.UTF_8.name()));
     }
 
     /**
@@ -148,11 +146,7 @@ public abstract class BufferingResponseListener
      */
     public String getContentAsString(String encoding)
     {
-        if (buffer.getLength() == 0) {
-            return null;
-        }
-        ByteBuffer output = buffer.takeByteBuffer(); // Releases a buffer
-        return new String(output.array(), 0, output.remaining(), Charset.forName(encoding));
+        return getContentAsString(Charset.forName(encoding));
     }
 
     /**
