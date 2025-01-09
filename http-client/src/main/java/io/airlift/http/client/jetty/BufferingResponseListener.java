@@ -6,7 +6,8 @@ import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.io.ByteBufferAccumulator;
+import org.eclipse.jetty.io.ByteBufferPool;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -15,20 +16,22 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
+import static java.util.Objects.requireNonNull;
+
 public abstract class BufferingResponseListener
         implements Response.Listener
 {
+    private final ByteBufferAccumulator buffer;
     private final int maxLength;
-    private ByteBuffer buffer;
     private String mediaType;
     private String encoding;
 
     /**
      * Creates an instance with a default maximum length of 2 MiB.
      */
-    public BufferingResponseListener()
+    public BufferingResponseListener(ByteBufferPool byteBufferPool)
     {
-        this(2 * 1024 * 1024);
+        this(byteBufferPool, 2 * 1024 * 1024);
     }
 
     /**
@@ -36,8 +39,9 @@ public abstract class BufferingResponseListener
      *
      * @param maxLength the maximum length of the content
      */
-    public BufferingResponseListener(int maxLength)
+    public BufferingResponseListener(ByteBufferPool byteBufferPool, int maxLength)
     {
+        this.buffer = new ByteBufferAccumulator(requireNonNull(byteBufferPool, "byteBufferPool is null"), true);
         if (maxLength < 0) {
             throw new IllegalArgumentException("Invalid max length " + maxLength);
         }
@@ -95,16 +99,7 @@ public abstract class BufferingResponseListener
         if (length == 0) {
             return;
         }
-        if (length > BufferUtil.space(buffer)) {
-            int remaining = buffer == null ? 0 : buffer.remaining();
-            if (remaining + length > maxLength) {
-                response.abort(new IllegalArgumentException("Buffering capacity " + maxLength + " exceeded"));
-            }
-            int requiredCapacity = buffer == null ? length : buffer.capacity() + length;
-            int newCapacity = Math.min(Integer.highestOneBit(requiredCapacity) << 1, maxLength);
-            buffer = BufferUtil.ensureCapacity(buffer, newCapacity);
-        }
-        BufferUtil.append(buffer, content);
+        buffer.copyBuffer(content);
     }
 
     @Override
@@ -126,10 +121,10 @@ public abstract class BufferingResponseListener
      */
     public byte[] getContent()
     {
-        if (buffer == null) {
+        if (buffer.getLength() == 0) {
             return new byte[0];
         }
-        return BufferUtil.toArray(buffer);
+        return buffer.takeByteBuffer().array();
     }
 
     /**
@@ -153,10 +148,11 @@ public abstract class BufferingResponseListener
      */
     public String getContentAsString(String encoding)
     {
-        if (buffer == null) {
+        if (buffer.getLength() == 0) {
             return null;
         }
-        return BufferUtil.toString(buffer, Charset.forName(encoding));
+        ByteBuffer output = buffer.takeByteBuffer(); // Releases a buffer
+        return new String(output.array(), 0, output.remaining(), Charset.forName(encoding));
     }
 
     /**
@@ -166,10 +162,11 @@ public abstract class BufferingResponseListener
      */
     public String getContentAsString(Charset encoding)
     {
-        if (buffer == null) {
+        if (buffer.getLength() == 0) {
             return null;
         }
-        return BufferUtil.toString(buffer, encoding);
+        ByteBuffer output = buffer.takeByteBuffer(); // Releases a buffer
+        return new String(output.array(), 0, output.remaining(), encoding);
     }
 
     /**
@@ -177,9 +174,10 @@ public abstract class BufferingResponseListener
      */
     public InputStream getContentAsInputStream()
     {
-        if (buffer == null) {
+        if (buffer.getLength() == 0) {
             return new ByteArrayInputStream(new byte[0]);
         }
-        return new ByteArrayInputStream(buffer.array(), buffer.arrayOffset(), buffer.remaining());
+        ByteBuffer output = buffer.takeByteBuffer(); // Releases a buffer
+        return new ByteArrayInputStream(output.array(), output.arrayOffset(), output.remaining());
     }
 }

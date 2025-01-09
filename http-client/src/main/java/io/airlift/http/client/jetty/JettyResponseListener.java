@@ -2,6 +2,7 @@ package io.airlift.http.client.jetty;
 
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Result;
+import org.eclipse.jetty.io.ByteBufferPool;
 
 import static java.util.Objects.requireNonNull;
 
@@ -11,9 +12,9 @@ class JettyResponseListener<T, E extends Exception>
     private final Request request;
     private final JettyResponseFuture<T, E> future;
 
-    public JettyResponseListener(Request request, JettyResponseFuture<T, E> future, int maxLength)
+    public JettyResponseListener(Request request, JettyResponseFuture<T, E> future, ByteBufferPool byteBufferPool, int maxLength)
     {
-        super(maxLength);
+        super(byteBufferPool, maxLength);
         this.future = requireNonNull(future, "future is null");
         this.request = requireNonNull(request, "request is null");
     }
