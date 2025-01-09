@@ -6,29 +6,27 @@ import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.io.ByteBufferAccumulator;
+import org.eclipse.jetty.io.ByteBufferInputStream;
+import org.eclipse.jetty.io.ByteBufferPool;
 
-import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.util.Locale;
+
+import static java.util.Objects.requireNonNull;
 
 public abstract class BufferingResponseListener
         implements Response.Listener
 {
+    private final ByteBufferAccumulator buffer;
     private final int maxLength;
-    private ByteBuffer buffer;
-    private String mediaType;
-    private String encoding;
 
     /**
      * Creates an instance with a default maximum length of 2 MiB.
      */
-    public BufferingResponseListener()
+    public BufferingResponseListener(ByteBufferPool byteBufferPool)
     {
-        this(2 * 1024 * 1024);
+        this(byteBufferPool, 2 * 1024 * 1024);
     }
 
     /**
@@ -36,8 +34,9 @@ public abstract class BufferingResponseListener
      *
      * @param maxLength the maximum length of the content
      */
-    public BufferingResponseListener(int maxLength)
+    public BufferingResponseListener(ByteBufferPool byteBufferPool, int maxLength)
     {
+        this.buffer = new ByteBufferAccumulator(requireNonNull(byteBufferPool, "byteBufferPool is null"), false);
         if (maxLength < 0) {
             throw new IllegalArgumentException("Invalid max length " + maxLength);
         }
@@ -55,36 +54,6 @@ public abstract class BufferingResponseListener
         }
         if (length > maxLength) {
             response.abort(new IllegalArgumentException("Buffering capacity " + maxLength + " exceeded"));
-            return;
-        }
-
-        String contentType = headers.get(HttpHeader.CONTENT_TYPE);
-        if (contentType != null) {
-            String media = contentType;
-
-            String charset = "charset=";
-            int index = contentType.toLowerCase(Locale.ENGLISH).indexOf(charset);
-            if (index > 0) {
-                media = contentType.substring(0, index);
-                String encoding = contentType.substring(index + charset.length());
-                // Sometimes charsets arrive with an ending semicolon.
-                int semicolon = encoding.indexOf(';');
-                if (semicolon > 0) {
-                    encoding = encoding.substring(0, semicolon).trim();
-                }
-                // Sometimes charsets are quoted.
-                int lastIndex = encoding.length() - 1;
-                if (encoding.charAt(0) == '"' && encoding.charAt(lastIndex) == '"') {
-                    encoding = encoding.substring(1, lastIndex).trim();
-                }
-                this.encoding = encoding;
-            }
-
-            int semicolon = media.indexOf(';');
-            if (semicolon > 0) {
-                media = media.substring(0, semicolon).trim();
-            }
-            this.mediaType = media;
         }
     }
 
@@ -95,91 +64,17 @@ public abstract class BufferingResponseListener
         if (length == 0) {
             return;
         }
-        if (length > BufferUtil.space(buffer)) {
-            int remaining = buffer == null ? 0 : buffer.remaining();
-            if (remaining + length > maxLength) {
-                response.abort(new IllegalArgumentException("Buffering capacity " + maxLength + " exceeded"));
-            }
-            int requiredCapacity = buffer == null ? length : buffer.capacity() + length;
-            int newCapacity = Math.min(Integer.highestOneBit(requiredCapacity) << 1, maxLength);
-            buffer = BufferUtil.ensureCapacity(buffer, newCapacity);
-        }
-        BufferUtil.append(buffer, content);
+        buffer.copyBuffer(content);
     }
 
     @Override
     public abstract void onComplete(Result result);
-
-    public String getMediaType()
-    {
-        return mediaType;
-    }
-
-    public String getEncoding()
-    {
-        return encoding;
-    }
-
-    /**
-     * @return the content as bytes
-     * @see #getContentAsString()
-     */
-    public byte[] getContent()
-    {
-        if (buffer == null) {
-            return new byte[0];
-        }
-        return BufferUtil.toArray(buffer);
-    }
-
-    /**
-     * @return the content as a string, using the "Content-Type" header to detect the encoding
-     * or defaulting to UTF-8 if the encoding could not be detected.
-     * @see #getContentAsString(String)
-     */
-    public String getContentAsString()
-    {
-        String encoding = this.encoding;
-        if (encoding == null) {
-            return getContentAsString(StandardCharsets.UTF_8);
-        }
-        return getContentAsString(encoding);
-    }
-
-    /**
-     * @param encoding the encoding of the content bytes
-     * @return the content as a string, with the specified encoding
-     * @see #getContentAsString()
-     */
-    public String getContentAsString(String encoding)
-    {
-        if (buffer == null) {
-            return null;
-        }
-        return BufferUtil.toString(buffer, Charset.forName(encoding));
-    }
-
-    /**
-     * @param encoding the encoding of the content bytes
-     * @return the content as a string, with the specified encoding
-     * @see #getContentAsString()
-     */
-    public String getContentAsString(Charset encoding)
-    {
-        if (buffer == null) {
-            return null;
-        }
-        return BufferUtil.toString(buffer, encoding);
-    }
 
     /**
      * @return Content as InputStream
      */
     public InputStream getContentAsInputStream()
     {
-        if (buffer == null) {
-            return new ByteArrayInputStream(new byte[0]);
-        }
-        return new ByteArrayInputStream(buffer.array(), buffer.arrayOffset(), buffer.remaining());
+        return new ByteBufferInputStream(buffer.takeByteBuffer());
     }
 }
