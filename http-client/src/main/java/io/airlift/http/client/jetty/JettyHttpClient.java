@@ -183,6 +183,8 @@ public class JettyHttpClient
     private final HttpClientLogger requestLogger;
     private final JettyClientDiagnostics clientDiagnostics;
 
+    private final ByteBufferPool byteBufferPool;
+
     public JettyHttpClient()
     {
         this(new HttpClientConfig());
@@ -320,7 +322,7 @@ public class JettyHttpClient
 
         int maxBufferSize = toIntExact(max(max(config.getMaxContentLength().toBytes(), config.getRequestBufferSize().toBytes()), config.getResponseBufferSize().toBytes()));
 
-        ByteBufferPool byteBufferPool = new ArrayByteBufferPool.Quadratic(
+        this.byteBufferPool = new ArrayByteBufferPool.Quadratic(
                 0,
                 maxBufferSize,
                 Integer.MAX_VALUE,
@@ -930,7 +932,7 @@ public class JettyHttpClient
                 .ifPresent(maxRequestContentLength -> verify(maxRequestContentLength.compareTo(maxContentLength) <= 0, "maxRequestContentLength must be less than or equal to maxContentLength"));
 
         JettyResponseFuture<T, E> future = new JettyResponseFuture<>(request, jettyRequest.request(), jettyRequest.sizeListener()::getBytes, responseHandler, span, stats, recordRequestComplete);
-        JettyResponseListener<T, E> listener = new JettyResponseListener<>(jettyRequest.request(), future, Ints.saturatedCast(request.getMaxContentLength().orElse(maxContentLength).toBytes()));
+        JettyResponseListener<T, E> listener = new JettyResponseListener<>(jettyRequest.request(), future, byteBufferPool, Ints.saturatedCast(request.getMaxContentLength().orElse(maxContentLength).toBytes()));
 
         try {
             return listener.send();
