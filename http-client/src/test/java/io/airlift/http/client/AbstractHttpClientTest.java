@@ -4,7 +4,6 @@ import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multiset;
-import com.google.common.io.ByteStreams;
 import io.airlift.http.client.HttpClient.HttpResponseFuture;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
@@ -899,7 +898,7 @@ public abstract class AbstractHttpClientTest
                         case "/get" -> {
                             response.setIntHeader("Content-Length", content.length());
                             response.setStatus(200);
-                            ByteStreams.copy(new ByteArrayInputStream(content.getBytes(UTF_8)), response.getOutputStream());
+                            new ByteArrayInputStream(content.getBytes(UTF_8)).transferTo(response.getOutputStream());
                         }
 
                         case "/pipe" -> {
@@ -926,9 +925,11 @@ public abstract class AbstractHttpClientTest
                         }
 
                         case "/put" -> {
-                            // save the PUT content into a local for validation after the test
-                            locals.putContent = new String(ByteStreams.toByteArray(request.getInputStream()), UTF_8);
-                            response.setStatus(204);
+                            try (InputStream stream = request.getInputStream()) {
+                                // save the PUT content into a local for validation after the test
+                                locals.putContent = new String(stream.readAllBytes(), UTF_8);
+                                response.setStatus(204);
+                            }
                         }
 
                         default -> response.setStatus(500);

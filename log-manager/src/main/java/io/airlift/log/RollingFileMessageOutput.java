@@ -15,7 +15,6 @@ package io.airlift.log;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.io.ByteStreams;
 import com.google.common.io.MoreFiles;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
@@ -325,7 +324,7 @@ final class RollingFileMessageOutput
         try (
                 InputStream input = Files.newInputStream(originalFile);
                 GZIPOutputStream gzipOutputStream = new GZIPOutputStream(Files.newOutputStream(tempFile))) {
-            ByteStreams.copy(input, gzipOutputStream);
+            input.transferTo(gzipOutputStream);
         }
         catch (IOException e) {
             throw new IOException("Unable to compress log file", e);

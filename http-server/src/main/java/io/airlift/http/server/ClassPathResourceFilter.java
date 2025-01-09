@@ -16,7 +16,6 @@
 package io.airlift.http.server;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.io.ByteStreams;
 import com.google.common.net.HttpHeaders;
 import jakarta.annotation.Nullable;
 import jakarta.servlet.FilterChain;
@@ -126,7 +125,7 @@ public class ClassPathResourceFilter
                 return;
             }
 
-            ByteStreams.copy(resourceStream, response.getOutputStream());
+            resourceStream.transferTo(response.getOutputStream());
         }
         finally {
             closeQuietly(resourceStream);

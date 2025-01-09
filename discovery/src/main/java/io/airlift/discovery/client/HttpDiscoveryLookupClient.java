@@ -16,7 +16,6 @@
 package io.airlift.discovery.client;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.io.ByteStreams;
 import com.google.common.net.HttpHeaders;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.inject.Inject;
@@ -35,6 +34,7 @@ import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.util.Optional;
 import java.util.concurrent.CancellationException;
@@ -139,8 +139,8 @@ public class HttpDiscoveryLookupClient
                 }
 
                 byte[] json;
-                try {
-                    json = ByteStreams.toByteArray(response.getInputStream());
+                try (InputStream stream = response.getInputStream()) {
+                    json = stream.readAllBytes();
                 }
                 catch (IOException e) {
                     throw new DiscoveryException(format("Lookup of %s failed", type), e);

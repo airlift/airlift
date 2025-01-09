@@ -2,7 +2,6 @@ package io.airlift.log;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Multiset;
-import com.google.common.io.ByteStreams;
 import com.google.common.net.HostAndPort;
 import com.google.common.util.concurrent.RateLimiter;
 import org.junit.jupiter.api.Test;
@@ -46,7 +45,7 @@ public class TestSocketHandler
 
             try (Socket listeningSocket = serverSocket.accept();
                     InputStream inputStream = listeningSocket.getInputStream()) {
-                String received = new String(ByteStreams.toByteArray(inputStream), StandardCharsets.UTF_8);
+                String received = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
                 String[] lines = received.split("\n");
                 for (int i = 0; i < lines.length; i++) {
                     String[] parts = lines[i].split("\t");

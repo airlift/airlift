@@ -407,7 +407,7 @@ public class TestingSocksProxy
         public void run()
         {
             try {
-                ByteStreams.copy(in, out);
+                in.transferTo(out);
             }
             catch (IOException e) {
                 // ignored nothing we can do about this
