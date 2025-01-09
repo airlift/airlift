@@ -18,13 +18,13 @@ package io.airlift.http.client;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
-import com.google.common.io.ByteStreams;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
@@ -59,7 +59,9 @@ public final class EchoServlet
             requestHeaders.putAll(HeaderName.of(name), Collections.list(request.getHeaders(name)));
         }
 
-        requestBytes = ByteStreams.toByteArray(request.getInputStream());
+        try (InputStream inputStream = request.getInputStream()) {
+            requestBytes = inputStream.readAllBytes();
+        }
 
         response.setStatus(responseStatusCode);
 

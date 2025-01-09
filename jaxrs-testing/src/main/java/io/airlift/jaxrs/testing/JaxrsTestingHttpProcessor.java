@@ -40,6 +40,7 @@ import org.glassfish.jersey.test.inmemory.InMemoryTestContainerFactory;
 import org.glassfish.jersey.test.spi.TestContainer;
 
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
@@ -48,7 +49,6 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.google.common.collect.MoreCollectors.onlyElement;
-import static com.google.common.io.ByteStreams.toByteArray;
 
 public class JaxrsTestingHttpProcessor
         implements TestingHttpClient.Processor
@@ -102,7 +102,11 @@ public class JaxrsTestingHttpProcessor
                 case StaticBodyGenerator generator -> generator.getBody();
                 case ByteBufferBodyGenerator generator -> getBytes(generator.getByteBuffers());
                 case FileBodyGenerator generator -> Files.readAllBytes(generator.getPath());
-                case StreamingBodyGenerator generator -> toByteArray(generator.source());
+                case StreamingBodyGenerator generator -> {
+                    try (InputStream stream = generator.source()) {
+                        yield stream.readAllBytes();
+                    }
+                }
             };
             Entity<byte[]> entity = Entity.entity(bytes, (String) requestHeaders.get("Content-Type").stream().collect(onlyElement()));
             invocation = invocationBuilder.build(request.getMethod(), entity);
