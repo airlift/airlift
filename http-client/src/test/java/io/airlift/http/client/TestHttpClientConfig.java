@@ -33,6 +33,7 @@ import static io.airlift.http.client.HttpClientConfig.JAVAX_NET_SSL_KEY_STORE;
 import static io.airlift.http.client.HttpClientConfig.JAVAX_NET_SSL_KEY_STORE_PASSWORD;
 import static io.airlift.http.client.HttpClientConfig.JAVAX_NET_SSL_TRUST_STORE;
 import static io.airlift.http.client.HttpClientConfig.JAVAX_NET_SSL_TRUST_STORE_PASSWORD;
+import static io.airlift.http.client.HttpClientConfig.max;
 import static io.airlift.testing.ValidationAssertions.assertFailsValidation;
 import static io.airlift.units.DataSize.Unit.GIGABYTE;
 import static io.airlift.units.DataSize.Unit.KILOBYTE;
@@ -58,6 +59,8 @@ public class TestHttpClientConfig
                 .setMaxContentLength(DataSize.of(16, MEGABYTE))
                 .setRequestBufferSize(DataSize.of(4, KILOBYTE))
                 .setResponseBufferSize(DataSize.of(16, KILOBYTE))
+                .setMaxHeapMemory(max(DataSize.ofBytes(Runtime.getRuntime().maxMemory() / 8), DataSize.of(16, MEGABYTE)))
+                .setMaxDirectMemory(max(DataSize.ofBytes(Runtime.getRuntime().maxMemory() / 8), DataSize.of(16, MEGABYTE)))
                 .setSocksProxy(null)
                 .setHttpProxy(null)
                 .setHttpProxyUser(null)
@@ -108,6 +111,8 @@ public class TestHttpClientConfig
                 .put("http-client.max-content-length", "1MB")
                 .put("http-client.request-buffer-size", "42kB")
                 .put("http-client.response-buffer-size", "43kB")
+                .put("http-client.max-heap-memory", "1337MB")
+                .put("http-client.max-direct-memory", "2137MB")
                 .put("http-client.socks-proxy", "localhost:1080")
                 .put("http-client.http-proxy", "localhost:8080")
                 .put("http-client.http-proxy.user", "user")
@@ -155,6 +160,8 @@ public class TestHttpClientConfig
                 .setMaxContentLength(DataSize.of(1, MEGABYTE))
                 .setRequestBufferSize(DataSize.of(42, KILOBYTE))
                 .setResponseBufferSize(DataSize.of(43, KILOBYTE))
+                .setMaxHeapMemory(DataSize.of(1337, MEGABYTE))
+                .setMaxDirectMemory(DataSize.of(2137, MEGABYTE))
                 .setSocksProxy(HostAndPort.fromParts("localhost", 1080))
                 .setHttpProxy(HostAndPort.fromParts("localhost", 8080))
                 .setHttpProxyUser("user")

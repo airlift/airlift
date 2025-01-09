@@ -15,6 +15,7 @@
  */
 package io.airlift.http.client;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.HostAndPort;
@@ -74,6 +75,12 @@ public class HttpClientConfig
     private DataSize maxContentLength = DataSize.of(16, MEGABYTE);
     private DataSize requestBufferSize = DataSize.of(4, KILOBYTE);
     private DataSize responseBufferSize = DataSize.of(16, KILOBYTE);
+    private DataSize maxHeapMemory = max(
+            DataSize.ofBytes(Runtime.getRuntime().maxMemory() / 8),
+            DataSize.of(16, MEGABYTE));
+    private DataSize maxDirectMemory = max(
+            DataSize.ofBytes(Runtime.getRuntime().maxMemory() / 8),
+            DataSize.of(16, MEGABYTE));
     private HostAndPort socksProxy;
     private HostAndPort httpProxy;
     private boolean secureProxy;
@@ -266,6 +273,32 @@ public class HttpClientConfig
     public HttpClientConfig setResponseBufferSize(DataSize responseBufferSize)
     {
         this.responseBufferSize = responseBufferSize;
+        return this;
+    }
+
+    @MinDataSize("16MB")
+    public DataSize getMaxHeapMemory()
+    {
+        return maxHeapMemory;
+    }
+
+    @Config("http-client.max-heap-memory")
+    public HttpClientConfig setMaxHeapMemory(DataSize maxHeapMemory)
+    {
+        this.maxHeapMemory = maxHeapMemory;
+        return this;
+    }
+
+    @MinDataSize("16MB")
+    public DataSize getMaxDirectMemory()
+    {
+        return maxDirectMemory;
+    }
+
+    @Config("http-client.max-direct-memory")
+    public HttpClientConfig setMaxDirectMemory(DataSize maxDirectMemory)
+    {
+        this.maxDirectMemory = maxDirectMemory;
         return this;
     }
 
@@ -717,5 +750,14 @@ public class HttpClientConfig
             throw new ConfigurationException(ImmutableList.of(
                     new Message("http-client.http-proxy.secure can be enabled only when http-client.http-proxy is set")));
         }
+    }
+
+    @VisibleForTesting
+    static DataSize max(DataSize value, DataSize value2)
+    {
+        if (value.compareTo(value2) < 0) {
+            return value2;
+        }
+        return value;
     }
 }

@@ -67,6 +67,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.transport.ClientConnectionFactoryOverHTTP2;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.ConnectionStatistics;
@@ -317,7 +318,16 @@ public class JettyHttpClient
             }
         }
 
-        httpClient.setByteBufferPool(new ArrayByteBufferPool());
+        int maxBufferSize = toIntExact(max(max(config.getMaxContentLength().toBytes(), config.getRequestBufferSize().toBytes()), config.getResponseBufferSize().toBytes()));
+
+        ByteBufferPool byteBufferPool = new ArrayByteBufferPool.Quadratic(
+                0,
+                maxBufferSize,
+                Integer.MAX_VALUE,
+                config.getMaxHeapMemory().toBytes(),
+                config.getMaxDirectMemory().toBytes());
+
+        httpClient.setByteBufferPool(byteBufferPool);
         httpClient.setExecutor(createExecutor(name, config.getMinThreads(), config.getMaxThreads()));
         httpClient.setScheduler(createScheduler(name, config.getTimeoutConcurrency(), config.getTimeoutThreads()));
         httpClient.setStrictEventOrdering(config.isStrictEventOrdering());
