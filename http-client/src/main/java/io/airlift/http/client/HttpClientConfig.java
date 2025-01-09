@@ -32,6 +32,7 @@ import io.airlift.units.MaxDataSize;
 import io.airlift.units.MinDataSize;
 import io.airlift.units.MinDuration;
 import jakarta.annotation.PostConstruct;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
@@ -74,6 +75,8 @@ public class HttpClientConfig
     private DataSize maxContentLength = DataSize.of(16, MEGABYTE);
     private DataSize requestBufferSize = DataSize.of(4, KILOBYTE);
     private DataSize responseBufferSize = DataSize.of(16, KILOBYTE);
+    private Optional<DataSize> maxHeapMemory = Optional.empty();
+    private Optional<DataSize> maxDirectMemory = Optional.empty();
     private HostAndPort socksProxy;
     private HostAndPort httpProxy;
     private boolean secureProxy;
@@ -266,6 +269,30 @@ public class HttpClientConfig
     public HttpClientConfig setResponseBufferSize(DataSize responseBufferSize)
     {
         this.responseBufferSize = responseBufferSize;
+        return this;
+    }
+
+    public Optional<@MinDataSize("16MB") DataSize> getMaxHeapMemory()
+    {
+        return maxHeapMemory;
+    }
+
+    @Config("http-client.max-heap-memory")
+    public HttpClientConfig setMaxHeapMemory(DataSize maxHeapMemory)
+    {
+        this.maxHeapMemory = Optional.ofNullable(maxHeapMemory);
+        return this;
+    }
+
+    public Optional<@MinDataSize("16MB") DataSize> getMaxDirectMemory()
+    {
+        return maxDirectMemory;
+    }
+
+    @Config("http-client.max-direct-memory")
+    public HttpClientConfig setMaxDirectMemory(DataSize maxDirectMemory)
+    {
+        this.maxDirectMemory = Optional.ofNullable(maxDirectMemory);
         return this;
     }
 
@@ -703,6 +730,12 @@ public class HttpClientConfig
     {
         this.strictEventOrdering = strictEventOrdering;
         return this;
+    }
+
+    @AssertTrue(message = "either both http-client.max-heap-memory and http-client.max-direct-memory are set or none of them")
+    public boolean eitherBothMemorySettingsAreSetOrNone()
+    {
+        return maxHeapMemory.isPresent() == maxDirectMemory.isPresent();
     }
 
     @PostConstruct
