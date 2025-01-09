@@ -81,6 +81,7 @@ import static java.util.Collections.list;
 import static java.util.Comparator.naturalOrder;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
+import static org.eclipse.jetty.http.MimeTypes.Type.TEXT_PLAIN;
 import static org.eclipse.jetty.http.UriCompliance.Violation.AMBIGUOUS_PATH_ENCODING;
 import static org.eclipse.jetty.http.UriCompliance.Violation.AMBIGUOUS_PATH_SEPARATOR;
 import static org.eclipse.jetty.http.UriCompliance.Violation.SUSPICIOUS_PATH_CHARACTERS;
@@ -277,6 +278,7 @@ public class HttpServer
         ErrorHandler errorHandler = new ErrorHandler();
         errorHandler.setShowMessageInTitle(showStackTrace);
         errorHandler.setShowStacks(showStackTrace);
+        errorHandler.setDefaultResponseMimeType(TEXT_PLAIN.asString());
         server.setErrorHandler(errorHandler);
     }
 
