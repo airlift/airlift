@@ -175,7 +175,6 @@ public class JettyHttpClient
 
     private final List<HttpRequestFilter> requestFilters;
     private final HttpStatusListeners httpStatusListeners;
-    private final Exception creationLocation = new Exception();
     private final String name;
     private final TextMapPropagator propagator;
     private final Tracer tracer;
@@ -261,8 +260,6 @@ public class JettyHttpClient
         requestTimeout = config.getRequestTimeout();
         idleTimeout = config.getIdleTimeout();
         recordRequestComplete = config.getRecordRequestComplete();
-
-        creationLocation.fillInStackTrace();
 
         SslContextFactory.Client sslContextFactory = maybeSslContextFactory.orElseGet(() -> getSslContextFactory(config, environment));
 
@@ -1284,12 +1281,6 @@ public class JettyHttpClient
         return toStringHelper(this)
                 .addValue(name)
                 .toString();
-    }
-
-    @SuppressWarnings("UnusedDeclaration")
-    public StackTraceElement[] getCreationLocation()
-    {
-        return creationLocation.getStackTrace();
     }
 
     private static void closeQuietly(LifeCycle service)
