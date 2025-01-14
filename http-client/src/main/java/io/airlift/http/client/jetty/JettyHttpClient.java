@@ -446,7 +446,7 @@ public class JettyHttpClient
 
     private ByteBufferPool createByteBufferPool(int maxBufferSize, HttpClientConfig config)
     {
-        return new ArrayByteBufferPool.Quadratic(
+        ArrayByteBufferPool pool = new ArrayByteBufferPool.Quadratic(
                 0,
                 maxBufferSize,
                 Integer.MAX_VALUE,
@@ -454,6 +454,8 @@ public class JettyHttpClient
                         .orElse(0L), // Use default heuristics for max heap memory
                 config.getMaxDirectMemory().map(DataSize::toBytes)
                         .orElse(0L)); // Use default heuristics for max directory memory
+        pool.setStatisticsEnabled(true);
+        return pool;
     }
 
     private HttpClientTransport getClientTransport(ClientConnector connector, HttpClientConfig config)

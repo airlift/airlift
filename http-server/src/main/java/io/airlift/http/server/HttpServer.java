@@ -293,7 +293,7 @@ public class HttpServer
 
     private ByteBufferPool createByteBufferPool(int maxBufferSize, HttpServerConfig config)
     {
-        return new ArrayByteBufferPool.Quadratic(
+        ArrayByteBufferPool pool = new ArrayByteBufferPool.Quadratic(
                 0,
                 maxBufferSize,
                 Integer.MAX_VALUE,
@@ -301,6 +301,8 @@ public class HttpServer
                         .orElse(0L), // Use default heuristics for max heap memory
                 config.getMaxDirectMemory().map(DataSize::toBytes)
                         .orElse(0L)); // Use default heuristics for max direct memory
+        pool.setStatisticsEnabled(true);
+        return pool;
     }
 
     private ConnectionFactory[] insecureFactories(HttpServerConfig config, HttpConfiguration httpConfiguration)
