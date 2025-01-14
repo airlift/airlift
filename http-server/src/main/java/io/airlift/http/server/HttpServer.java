@@ -147,8 +147,8 @@ public class HttpServer
         }
 
         int maxBufferSize = toIntExact(max(max(
-                toSafeBytes(config.getMaxRequestHeaderSize()).orElse(65536),
-                toSafeBytes(config.getMaxResponseHeaderSize()).orElse(65536)),
+                toSafeBytes(config.getMaxRequestHeaderSize()).orElse(8192),
+                toSafeBytes(config.getMaxResponseHeaderSize()).orElse(8192)),
                 toSafeBytes(config.getOutputBufferSize()).orElse(32768)));
 
         server = new Server(threadPool, null, createByteBufferPool(maxBufferSize, config));
