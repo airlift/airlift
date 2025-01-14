@@ -146,9 +146,10 @@ public class HttpServer
             threadPool.setVirtualThreadsExecutor(executor);
         }
 
-        int maxBufferSize = toIntExact(max(
+        int maxBufferSize = toIntExact(max(max(
                 toSafeBytes(config.getMaxRequestHeaderSize()).orElse(65536),
-                toSafeBytes(config.getMaxResponseHeaderSize()).orElse(65536)));
+                toSafeBytes(config.getMaxResponseHeaderSize()).orElse(65536)),
+                toSafeBytes(config.getOutputBufferSize()).orElse(32768)));
 
         server = new Server(threadPool, null, createByteBufferPool(maxBufferSize, config));
         this.monitoredQueuedThreadPoolMBean = new MonitoredQueuedThreadPoolMBean(threadPool);
@@ -186,6 +187,9 @@ public class HttpServer
         }
         if (config.getMaxResponseHeaderSize() != null) {
             baseHttpConfiguration.setResponseHeaderSize(toIntExact(config.getMaxResponseHeaderSize().toBytes()));
+        }
+        if (config.getOutputBufferSize() != null) {
+            baseHttpConfiguration.setOutputBufferSize(toIntExact(config.getOutputBufferSize().toBytes()));
         }
 
         // see https://bugs.eclipse.org/bugs/show_bug.cgi?id=414449#c4
