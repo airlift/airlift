@@ -35,7 +35,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.google.common.io.ByteStreams.nullOutputStream;
+import static java.io.OutputStream.nullOutputStream;
 
 @JsonPropertyOrder({"objectName", "className", "description", "descriptor", "attributes", "operations"})
 public class MBeanRepresentation
