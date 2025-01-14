@@ -314,17 +314,17 @@ public class TestJsonCodec
                 new MyRecordAdditionalGetter("my value", true, true),
                 """
                 {
-                  "additionalProperty" : "additional property value",
                   "condition" : true,
                   "foo" : "my value",
-                  "isCool" : true
+                  "isCool" : true,
+                  "additionalProperty" : "additional property value"
                 }\
                 """);
 
         assertThat(JsonCodec.jsonCodec(LegacyRecordAdditionalGetter.class).toJson(new LegacyRecordAdditionalGetter("my value"))).isEqualTo("""
                 {
-                  "bar" : "there is no bar field in the record",
                   "foo" : "not really a foo value",
+                  "bar" : "there is no bar field in the record",
                   "safe" : false
                 }\
                 """);
