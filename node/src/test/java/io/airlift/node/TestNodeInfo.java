@@ -85,6 +85,21 @@ public class TestNodeInfo
     }
 
     @Test
+    public void testIpDiscoveryIpv6Preferred()
+    {
+        NodeInfo.setPreferIpv6ForTest(true);
+        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, IP, null);
+        try {
+            assertThat(nodeInfo.getInternalAddress()).isNotNull();
+            assertThat(nodeInfo.getBindIp()).isEqualTo(InetAddresses.forString("0.0.0.0"));
+            assertThat(nodeInfo.getExternalAddress()).isEqualTo(nodeInfo.getInternalAddress());
+        }
+        finally {
+            NodeInfo.setPreferIpv6ForTest(false);
+        }
+    }
+
+    @Test
     public void testHostnameDiscovery()
             throws UnknownHostException
     {
