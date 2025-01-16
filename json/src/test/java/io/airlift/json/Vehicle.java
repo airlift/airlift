@@ -5,9 +5,12 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStreamReader;
 import java.util.List;
 import java.util.Map;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @JsonTypeInfo(
@@ -30,6 +33,10 @@ public interface Vehicle
         byte[] bytes = jsonCodec.toJsonBytes(expected);
         assertThat(jsonCodec.fromJson(bytes)).isEqualTo(expected);
 
+        assertThat(jsonCodec.fromJson(new ByteArrayInputStream(bytes))).isEqualTo(expected);
+
+        assertThat(jsonCodec.fromJson(new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8))).isEqualTo(expected);
+
         expected = new Truck("volvo");
 
         json = jsonCodec.toJson(expected);
@@ -38,6 +45,10 @@ public interface Vehicle
 
         bytes = jsonCodec.toJsonBytes(expected);
         assertThat(jsonCodec.fromJson(bytes)).isEqualTo(expected);
+
+        assertThat(jsonCodec.fromJson(new ByteArrayInputStream(bytes))).isEqualTo(expected);
+
+        assertThat(jsonCodec.fromJson(new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8))).isEqualTo(expected);
     }
 
     static void validateVehicleListJsonCodec(JsonCodec<List<Vehicle>> jsonCodec)
@@ -51,6 +62,10 @@ public interface Vehicle
 
         byte[] bytes = jsonCodec.toJsonBytes(expected);
         assertThat(jsonCodec.fromJson(bytes)).isEqualTo(expected);
+
+        assertThat(jsonCodec.fromJson(new ByteArrayInputStream(bytes))).isEqualTo(expected);
+
+        assertThat(jsonCodec.fromJson(new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8))).isEqualTo(expected);
     }
 
     static void validateVehicleMapJsonCodec(JsonCodec<Map<String, Vehicle>> jsonCodec)
@@ -65,5 +80,9 @@ public interface Vehicle
 
         byte[] bytes = jsonCodec.toJsonBytes(expected);
         assertThat(jsonCodec.fromJson(bytes)).isEqualTo(expected);
+
+        assertThat(jsonCodec.fromJson(new ByteArrayInputStream(bytes))).isEqualTo(expected);
+
+        assertThat(jsonCodec.fromJson(new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8))).isEqualTo(expected);
     }
 }

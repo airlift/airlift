@@ -21,6 +21,9 @@ import com.google.common.base.Strings;
 import com.google.common.reflect.TypeToken;
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -232,6 +235,10 @@ public class TestJsonCodec
 
         byte[] bytes = jsonCodec.toJsonBytes(person);
         assertThat(jsonCodec.fromJson(bytes)).isEqualTo(person);
+
+        assertThat(jsonCodec.fromJson(new ByteArrayInputStream(bytes))).isEqualTo(person);
+
+        assertThat(jsonCodec.fromJson(new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8))).isEqualTo(person);
     }
 
     @Test
@@ -278,12 +285,30 @@ public class TestJsonCodec
                 .hasMessage("Invalid JSON bytes for [simple type, class io.airlift.json.ImmutablePerson]")
                 .hasStackTraceContaining("Unrecognized token 'trailer': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')");
 
+        assertThatThrownBy(() -> codec.fromJson(new ByteArrayInputStream(jsonWithTrailingContent.getBytes(UTF_8))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Invalid JSON bytes for [simple type, class io.airlift.json.ImmutablePerson]")
+                .hasStackTraceContaining("Unrecognized token 'trailer': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')");
+
+        assertThatThrownBy(() -> codec.fromJson(new StringReader(jsonWithTrailingContent)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Invalid JSON characters for [simple type, class io.airlift.json.ImmutablePerson]")
+                .hasStackTraceContaining("Unrecognized token 'trailer': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')");
+
         String jsonWithTrailingJsonContent = json + " \"valid json value\"";
         assertThatThrownBy(() -> codec.fromJson(jsonWithTrailingJsonContent))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Found characters after the expected end of input");
 
         assertThatThrownBy(() -> codec.fromJson(jsonWithTrailingJsonContent.getBytes(UTF_8)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Found characters after the expected end of input");
+
+        assertThatThrownBy(() -> codec.fromJson(new ByteArrayInputStream(jsonWithTrailingJsonContent.getBytes(UTF_8))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Found characters after the expected end of input");
+
+        assertThatThrownBy(() -> codec.fromJson(new StringReader(jsonWithTrailingJsonContent)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Found characters after the expected end of input");
     }

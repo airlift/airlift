@@ -73,7 +73,7 @@ public class DefaultingJsonResponseHandler<T>
             return defaultValue;
         }
         try (InputStream inputStream = response.getInputStream()) {
-            return jsonCodec.fromJson(inputStream.readAllBytes());
+            return jsonCodec.fromJson(inputStream);
         }
         catch (Exception e) {
             return defaultValue;

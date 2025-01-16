@@ -20,11 +20,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStreamReader;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ImmutablePerson
@@ -42,6 +45,10 @@ public class ImmutablePerson
 
         byte[] bytes = jsonCodec.toJsonBytes(expected);
         assertThat(jsonCodec.fromJson(bytes)).isEqualTo(expected);
+
+        assertThat(jsonCodec.fromJson(new ByteArrayInputStream(bytes))).isEqualTo(expected);
+
+        assertThat(jsonCodec.fromJson(new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8))).isEqualTo(expected);
     }
 
     public static void validatePersonListJsonCodec(JsonCodec<List<ImmutablePerson>> jsonCodec)
@@ -56,6 +63,10 @@ public class ImmutablePerson
 
         byte[] bytes = jsonCodec.toJsonBytes(expected);
         assertThat(jsonCodec.fromJson(bytes)).isEqualTo(expected);
+
+        assertThat(jsonCodec.fromJson(new ByteArrayInputStream(bytes))).isEqualTo(expected);
+
+        assertThat(jsonCodec.fromJson(new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8))).isEqualTo(expected);
     }
 
     public static void validatePersonMapJsonCodec(JsonCodec<Map<String, ImmutablePerson>> jsonCodec)
@@ -71,6 +82,10 @@ public class ImmutablePerson
 
         byte[] bytes = jsonCodec.toJsonBytes(expected);
         assertThat(jsonCodec.fromJson(bytes)).isEqualTo(expected);
+
+        assertThat(jsonCodec.fromJson(new ByteArrayInputStream(bytes))).isEqualTo(expected);
+
+        assertThat(jsonCodec.fromJson(new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8))).isEqualTo(expected);
     }
 
     @JsonCreator
