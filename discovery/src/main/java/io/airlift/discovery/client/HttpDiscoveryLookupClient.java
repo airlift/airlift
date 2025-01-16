@@ -138,15 +138,14 @@ public class HttpDiscoveryLookupClient
                     throw new DiscoveryException(format("Lookup of %s failed with status code %s", type, response.getStatusCode()));
                 }
 
-                byte[] json;
+                ServiceDescriptorsRepresentation serviceDescriptorsRepresentation;
                 try (InputStream stream = response.getInputStream()) {
-                    json = stream.readAllBytes();
+                    serviceDescriptorsRepresentation = serviceDescriptorsCodec.fromJson(stream);
                 }
                 catch (IOException e) {
                     throw new DiscoveryException(format("Lookup of %s failed", type), e);
                 }
 
-                ServiceDescriptorsRepresentation serviceDescriptorsRepresentation = serviceDescriptorsCodec.fromJson(json);
                 if (!environment.equals(serviceDescriptorsRepresentation.getEnvironment())) {
                     throw new DiscoveryException(format("Expected environment to be %s, but was %s", environment, serviceDescriptorsRepresentation.getEnvironment()));
                 }

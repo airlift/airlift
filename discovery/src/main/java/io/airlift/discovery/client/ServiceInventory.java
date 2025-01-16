@@ -42,7 +42,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
 import static io.airlift.http.client.JsonResponseHandler.createJsonResponseHandler;
 import static io.airlift.http.client.Request.Builder.prepareGet;
-import static java.nio.file.Files.readAllBytes;
+import static java.nio.file.Files.newBufferedReader;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static java.util.stream.Collectors.toList;
@@ -156,7 +156,7 @@ public class ServiceInventory
             }
             else {
                 File file = new File(serviceInventoryUri);
-                serviceDescriptorsRepresentation = serviceDescriptorsCodec.fromJson(readAllBytes(file.toPath()));
+                serviceDescriptorsRepresentation = serviceDescriptorsCodec.fromJson(newBufferedReader(file.toPath()));
             }
 
             if (!environment.equals(serviceDescriptorsRepresentation.getEnvironment())) {

@@ -24,6 +24,8 @@ import com.google.common.reflect.TypeToken;
 import io.airlift.json.LengthLimitedWriter.LengthLimitExceededException;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
 import java.io.StringWriter;
 import java.lang.reflect.Type;
 import java.util.List;
@@ -218,6 +220,46 @@ public class JsonCodec<T>
         }
         catch (IOException e) {
             throw new IllegalArgumentException(format("%s could not be converted to JSON", instance.getClass().getName()), e);
+        }
+    }
+
+    /**
+     * Coverts the specified {@link InputStream} (UTF-8) into an instance of type T.
+     *
+     * @param json the json stream (UTF-8) to parse
+     * @return parsed response; never null
+     * @throws IllegalArgumentException if the json bytes can not be converted to the type T
+     */
+    public T fromJson(InputStream json)
+            throws IllegalArgumentException
+    {
+        try (JsonParser parser = mapper.createParser(json)) {
+            T value = mapper.readerFor(javaType).readValue(parser);
+            checkArgument(parser.nextToken() == null, "Found characters after the expected end of input");
+            return value;
+        }
+        catch (IOException e) {
+            throw new IllegalArgumentException(format("Invalid JSON bytes for %s", javaType), e);
+        }
+    }
+
+    /**
+     * Coverts the specified {@link Reader} into an instance of type T.
+     *
+     * @param json the json character stream to parse
+     * @return parsed response; never null
+     * @throws IllegalArgumentException if the json characters can not be converted to the type T
+     */
+    public T fromJson(Reader json)
+            throws IllegalArgumentException
+    {
+        try (JsonParser parser = mapper.createParser(json)) {
+            T value = mapper.readerFor(javaType).readValue(parser);
+            checkArgument(parser.nextToken() == null, "Found characters after the expected end of input");
+            return value;
+        }
+        catch (IOException e) {
+            throw new IllegalArgumentException(format("Invalid JSON characters for %s", javaType), e);
         }
     }
 
