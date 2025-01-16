@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public interface Vehicle
 {
     static void validateVehicleJsonCodec(JsonCodec<Vehicle> jsonCodec)
+            throws IOException
     {
         Vehicle expected = new Car("bmw");
 
@@ -52,6 +54,7 @@ public interface Vehicle
     }
 
     static void validateVehicleListJsonCodec(JsonCodec<List<Vehicle>> jsonCodec)
+            throws IOException
     {
         ImmutableList<Vehicle> expected = ImmutableList.of(
                 new Car("bmw"),
@@ -69,6 +72,7 @@ public interface Vehicle
     }
 
     static void validateVehicleMapJsonCodec(JsonCodec<Map<String, Vehicle>> jsonCodec)
+            throws IOException
     {
         ImmutableMap<String, Vehicle> expected = ImmutableMap.<String, Vehicle>builder()
                 .put("bmw", new Car("bmw"))

@@ -76,6 +76,7 @@ public class TestJsonModule
 
     @Test
     public void testJsonCodecFactoryBinding()
+            throws IOException
     {
         Injector injector = Guice.createInjector(new JsonModule());
         JsonCodecFactory codecFactory = injector.getInstance(JsonCodecFactory.class);

@@ -22,6 +22,7 @@ import com.google.common.reflect.TypeToken;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -42,6 +43,7 @@ public class TestJsonCodec
 {
     @Test
     public void testJsonCodec()
+            throws IOException
     {
         JsonCodec<Person> jsonCodec = jsonCodec(Person.class);
 
@@ -54,6 +56,7 @@ public class TestJsonCodec
 
     @Test
     public void testListJsonCodec()
+            throws IOException
     {
         JsonCodec<List<Person>> jsonCodec = listJsonCodec(Person.class);
 
@@ -66,6 +69,7 @@ public class TestJsonCodec
 
     @Test
     public void testListJsonCodecFromJsonCodec()
+            throws IOException
     {
         JsonCodec<List<Person>> jsonCodec = listJsonCodec(jsonCodec(Person.class));
 
@@ -78,6 +82,7 @@ public class TestJsonCodec
 
     @Test
     public void testTypeTokenList()
+            throws IOException
     {
         JsonCodec<List<Person>> jsonCodec = jsonCodec(new TypeToken<List<Person>>() {});
 
@@ -102,6 +107,7 @@ public class TestJsonCodec
 
     @Test
     public void testMapJsonCodec()
+            throws IOException
     {
         JsonCodec<Map<String, Person>> jsonCodec = mapJsonCodec(String.class, Person.class);
 
@@ -114,6 +120,7 @@ public class TestJsonCodec
 
     @Test
     public void testMapJsonCodecFromJsonCodec()
+            throws IOException
     {
         JsonCodec<Map<String, Person>> jsonCodec = mapJsonCodec(String.class, jsonCodec(Person.class));
 
@@ -126,6 +133,7 @@ public class TestJsonCodec
 
     @Test
     public void testTypeLiteralMap()
+            throws IOException
     {
         JsonCodec<Map<String, Person>> jsonCodec = jsonCodec(new TypeToken<Map<String, Person>>() {});
 
@@ -150,6 +158,7 @@ public class TestJsonCodec
 
     @Test
     public void testImmutableJsonCodec()
+            throws IOException
     {
         JsonCodec<ImmutablePerson> jsonCodec = jsonCodec(ImmutablePerson.class);
 
@@ -166,6 +175,7 @@ public class TestJsonCodec
 
     @Test
     public void testImmutableListJsonCodec()
+            throws IOException
     {
         JsonCodec<List<ImmutablePerson>> jsonCodec = listJsonCodec(ImmutablePerson.class);
 
@@ -174,6 +184,7 @@ public class TestJsonCodec
 
     @Test
     public void testImmutableListJsonCodecFromJsonCodec()
+            throws IOException
     {
         JsonCodec<List<ImmutablePerson>> jsonCodec = listJsonCodec(jsonCodec(ImmutablePerson.class));
 
@@ -182,6 +193,7 @@ public class TestJsonCodec
 
     @Test
     public void testImmutableTypeTokenList()
+            throws IOException
     {
         JsonCodec<List<ImmutablePerson>> jsonCodec = jsonCodec(new TypeToken<List<ImmutablePerson>>() {});
 
@@ -190,6 +202,7 @@ public class TestJsonCodec
 
     @Test
     public void testImmutableMapJsonCodec()
+            throws IOException
     {
         JsonCodec<Map<String, ImmutablePerson>> jsonCodec = mapJsonCodec(String.class, ImmutablePerson.class);
 
@@ -198,6 +211,7 @@ public class TestJsonCodec
 
     @Test
     public void testImmutableMapJsonCodecFromJsonCodec()
+            throws IOException
     {
         JsonCodec<Map<String, ImmutablePerson>> jsonCodec = mapJsonCodec(String.class, jsonCodec(ImmutablePerson.class));
 
@@ -206,6 +220,7 @@ public class TestJsonCodec
 
     @Test
     public void testImmutableTypeTokenMap()
+            throws IOException
     {
         JsonCodec<Map<String, ImmutablePerson>> jsonCodec = jsonCodec(new TypeToken<Map<String, ImmutablePerson>>() {});
 
@@ -226,6 +241,7 @@ public class TestJsonCodec
 
     @Test
     public void testToJsonExceedingDefaultStringLimit()
+            throws IOException
     {
         JsonCodec<ImmutablePerson> jsonCodec = jsonCodec(ImmutablePerson.class);
         ImmutablePerson person = new ImmutablePerson(Strings.repeat("a", DEFAULT_MAX_STRING_LEN + 1), false);
@@ -292,7 +308,7 @@ public class TestJsonCodec
 
         assertThatThrownBy(() -> codec.fromJson(new StringReader(jsonWithTrailingContent)))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Invalid JSON characters for [simple type, class io.airlift.json.ImmutablePerson]")
+                .hasMessage("Invalid JSON bytes for [simple type, class io.airlift.json.ImmutablePerson]")
                 .hasStackTraceContaining("Unrecognized token 'trailer': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')");
 
         String jsonWithTrailingJsonContent = json + " \"valid json value\"";

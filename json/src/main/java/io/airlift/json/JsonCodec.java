@@ -16,6 +16,7 @@
 package io.airlift.json;
 
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Suppliers;
@@ -231,14 +232,14 @@ public class JsonCodec<T>
      * @throws IllegalArgumentException if the json bytes can not be converted to the type T
      */
     public T fromJson(InputStream json)
-            throws IllegalArgumentException
+            throws IllegalArgumentException, IOException
     {
         try (JsonParser parser = mapper.createParser(json)) {
             T value = mapper.readerFor(javaType).readValue(parser);
             checkArgument(parser.nextToken() == null, "Found characters after the expected end of input");
             return value;
         }
-        catch (IOException e) {
+        catch (JsonProcessingException e) {
             throw new IllegalArgumentException(format("Invalid JSON bytes for %s", javaType), e);
         }
     }
@@ -251,15 +252,15 @@ public class JsonCodec<T>
      * @throws IllegalArgumentException if the json characters can not be converted to the type T
      */
     public T fromJson(Reader json)
-            throws IllegalArgumentException
+            throws IllegalArgumentException, IOException
     {
         try (JsonParser parser = mapper.createParser(json)) {
             T value = mapper.readerFor(javaType).readValue(parser);
             checkArgument(parser.nextToken() == null, "Found characters after the expected end of input");
             return value;
         }
-        catch (IOException e) {
-            throw new IllegalArgumentException(format("Invalid JSON characters for %s", javaType), e);
+        catch (JsonProcessingException e) {
+            throw new IllegalArgumentException(format("Invalid JSON bytes for %s", javaType), e);
         }
     }
 

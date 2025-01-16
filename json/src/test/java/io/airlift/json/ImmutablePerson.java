@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,7 @@ public class ImmutablePerson
     private final String notWritable = null;
 
     public static void validatePersonJsonCodec(JsonCodec<ImmutablePerson> jsonCodec)
+            throws IOException
     {
         ImmutablePerson expected = new ImmutablePerson("dain", true);
 
@@ -52,6 +54,7 @@ public class ImmutablePerson
     }
 
     public static void validatePersonListJsonCodec(JsonCodec<List<ImmutablePerson>> jsonCodec)
+            throws IOException
     {
         ImmutableList<ImmutablePerson> expected = ImmutableList.of(
                 new ImmutablePerson("dain", true),
@@ -70,6 +73,7 @@ public class ImmutablePerson
     }
 
     public static void validatePersonMapJsonCodec(JsonCodec<Map<String, ImmutablePerson>> jsonCodec)
+            throws IOException
     {
         ImmutableMap<String, ImmutablePerson> expected = ImmutableMap.<String, ImmutablePerson>builder()
                 .put("dain", new ImmutablePerson("dain", true))
