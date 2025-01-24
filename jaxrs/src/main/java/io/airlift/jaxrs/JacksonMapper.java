@@ -24,8 +24,8 @@ public class JacksonMapper
             // Server errors
             case StreamWriteException streamWriteException -> Response.status(Response.Status.BAD_REQUEST)
                     .entity(formatErrorMessage(streamWriteException, "Could not write JSON value")).build();
-            case JsonMappingException mappingException -> Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("Could not map JSON value: " + mappingException.getMessage()).build();
+            case JsonMappingException mappingException -> Response.status(Response.Status.BAD_REQUEST)
+                    .entity(new Message(getMessage(mappingException))).build();
             default -> Response.serverError().entity(exception.getMessage()).build();
         };
     }
@@ -33,5 +33,19 @@ public class JacksonMapper
     private static String formatErrorMessage(JsonProcessingException e, String message)
     {
         return "%s: %s at location %s".formatted(message, e.getOriginalMessage(), e.getLocation());
+    }
+
+    private static String getMessage(Throwable t)
+    {
+        while (true) {
+            String message = t.getMessage();
+            if (t.getCause() == null) {
+                return message;
+            }
+            t = t.getCause();
+        }
+    }
+    public record Message(String message)
+    {
     }
 }
