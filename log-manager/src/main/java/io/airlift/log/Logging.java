@@ -276,7 +276,12 @@ public class Logging
             }
         }
 
-        if (!config.isConsoleEnabled()) {
+        if (config.isConsoleEnabled()) {
+            ROOT.removeHandler(consoleHandler);
+            consoleHandler = new OutputStreamHandler(System.err, config.getConsoleFormat().createFormatter(logAnnotations));
+            ROOT.addHandler(consoleHandler);
+        }
+        else {
             disableConsole();
         }
 
