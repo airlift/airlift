@@ -39,6 +39,7 @@ public final class LifeCycleManager
 {
     private final Logger log = Logger.get(LifeCycleManager.class);
     private final AtomicReference<State> state = new AtomicReference<>(State.LATENT);
+    private final ConcurrentWeakIdentitySet startedInstances = new ConcurrentWeakIdentitySet();
     private final Queue<Object> managedInstances = new ConcurrentLinkedQueue<>();
     private final LifeCycleMethodsMap methodsMap;
     private final AtomicReference<Thread> shutdownHook = new AtomicReference<>();
@@ -208,9 +209,6 @@ public final class LifeCycleManager
         State currentState = state.get();
         checkState((currentState != State.STOPPING) && (currentState != State.STOPPED), "life cycle is stopped");
         startInstance(instance);
-        if (methodsMap.get(instance.getClass()).hasFor(PreDestroy.class)) {
-            managedInstances.add(instance);
-        }
     }
 
     private void stopInstance(Object obj, LifeCycleStopFailureHandler handler)
@@ -233,6 +231,22 @@ public final class LifeCycleManager
     {
         log.debug("Starting %s", obj.getClass().getName());
         LifeCycleMethods methods = methodsMap.get(obj.getClass());
+
+        if (!methods.hasFor(PostConstruct.class) && !methods.hasFor(PreDestroy.class)) {
+            // no need to track in startedInstances or managedInstances
+            return;
+        }
+
+        // Guice can double provision instances (in particular with Optional binding).
+        // Protect against calling post-construct and pre-destroy methods more than once
+        if (!startedInstances.add(obj)) {
+            return;
+        }
+
+        if (methods.hasFor(PreDestroy.class)) {
+            managedInstances.add(obj);
+        }
+
         for (Method postConstruct : methods.methodsFor(PostConstruct.class)) {
             log.debug("- invoke %s::%s()", postConstruct.getDeclaringClass().getName(), postConstruct.getName());
             try {

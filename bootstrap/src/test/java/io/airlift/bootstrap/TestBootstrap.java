@@ -19,6 +19,7 @@ import com.google.inject.Binder;
 import com.google.inject.ConfigurationException;
 import com.google.inject.CreationException;
 import com.google.inject.Inject;
+import com.google.inject.Module;
 import com.google.inject.ProvisionException;
 import com.google.inject.Scopes;
 import com.google.inject.spi.Message;
@@ -28,6 +29,7 @@ import io.airlift.configuration.ConfigPropertyMetadata;
 import io.airlift.configuration.ConfigSecuritySensitive;
 import org.junit.jupiter.api.Test;
 
+import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
 import static io.airlift.configuration.ConditionalModule.conditionalModule;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -221,6 +223,22 @@ public class TestBootstrap
         assertThatThrownBy(bootstrap::initialize)
                 .isInstanceOf(CreationException.class)
                 .hasMessageContaining("Invalid value 'shouldBeBoolean' for type boolean (property 'foo.enabled')");
+    }
+
+    @Test
+    public void testOptionalBindingWithLifeCycle()
+    {
+        Module module = binder -> {
+            binder.bind(ControllerWithInstance.class).in(Scopes.SINGLETON);
+            newOptionalBinder(binder, InstanceWithLifecycle.class)
+                    .setDefault()
+                    .to(InstanceWithLifecycleImpl.class)
+                    .in(Scopes.SINGLETON);
+        };
+
+        Bootstrap bootstrap = new Bootstrap(module);
+        LifeCycleManager lifeCycleManager = bootstrap.initialize().getInstance(LifeCycleManager.class);
+        lifeCycleManager.stop();
     }
 
     public static class Instance {}
