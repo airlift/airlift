@@ -46,7 +46,7 @@ public final class TracingFilter
             span.updateName(requestContext.getMethod() + " " + route);
             span.setAttribute(HttpAttributes.HTTP_ROUTE, route);
             span.setAttribute(CodeIncubatingAttributes.CODE_NAMESPACE, className);
-            span.setAttribute(CodeIncubatingAttributes.CODE_FUNCTION, methodName);
+            span.setAttribute(CodeIncubatingAttributes.CODE_FUNCTION_NAME, methodName);
         }
     }
 

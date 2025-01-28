@@ -2,6 +2,7 @@ package io.airlift.http.server.tracing;
 
 import com.google.inject.Inject;
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
@@ -13,7 +14,6 @@ import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.semconv.ClientAttributes;
-import io.opentelemetry.semconv.ExceptionAttributes;
 import io.opentelemetry.semconv.HttpAttributes;
 import io.opentelemetry.semconv.NetworkAttributes;
 import io.opentelemetry.semconv.ServerAttributes;
@@ -44,6 +44,8 @@ import static org.eclipse.jetty.ee10.servlet.ServletContextRequest.SSL_SESSION_I
 public final class TracingServletFilter
         implements Filter
 {
+    // This attribute will be deprecated in OTEL soon
+    static final AttributeKey<Boolean> EXCEPTION_ESCAPED = AttributeKey.booleanKey("exception.escaped");
     static final String REQUEST_SPAN = "airlift.trace-span";
 
     private final TextMapPropagator propagator;
@@ -114,7 +116,7 @@ public final class TracingServletFilter
         }
         catch (Throwable t) {
             span.setStatus(StatusCode.ERROR, t.getMessage());
-            span.recordException(t, Attributes.of(ExceptionAttributes.EXCEPTION_ESCAPED, true));
+            span.recordException(t, Attributes.of(EXCEPTION_ESCAPED, true));
             throw t;
         }
         finally {
