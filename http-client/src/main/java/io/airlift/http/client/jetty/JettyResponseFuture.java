@@ -8,7 +8,6 @@ import io.airlift.http.client.ResponseHandler;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.StatusCode;
-import io.opentelemetry.semconv.ExceptionAttributes;
 import io.opentelemetry.semconv.HttpAttributes;
 import io.opentelemetry.semconv.NetworkAttributes;
 import io.opentelemetry.semconv.incubating.HttpIncubatingAttributes;
@@ -20,6 +19,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongSupplier;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static io.airlift.http.client.jetty.JettyHttpClient.EXCEPTION_ESCAPED;
 import static io.airlift.http.client.jetty.JettyHttpClient.getHttpVersion;
 import static java.util.Objects.requireNonNull;
 
@@ -188,7 +188,7 @@ class JettyResponseFuture<T, E extends Exception>
         setException(throwable);
 
         span.setStatus(StatusCode.ERROR, throwable.getMessage());
-        span.recordException(throwable, Attributes.of(ExceptionAttributes.EXCEPTION_ESCAPED, true));
+        span.recordException(throwable, Attributes.of(EXCEPTION_ESCAPED, true));
     }
 
     @Override

@@ -33,7 +33,6 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapPropagator;
-import io.opentelemetry.semconv.ExceptionAttributes;
 import io.opentelemetry.semconv.HttpAttributes;
 import io.opentelemetry.semconv.NetworkAttributes;
 import io.opentelemetry.semconv.ServerAttributes;
@@ -145,6 +144,9 @@ import static org.eclipse.jetty.http.HttpHeader.PROXY_AUTHORIZATION;
 public class JettyHttpClient
         implements io.airlift.http.client.HttpClient
 {
+    // This attribute will be deprecated in OTEL soon
+    static final AttributeKey<Boolean> EXCEPTION_ESCAPED = AttributeKey.booleanKey("exception.escaped");
+
     private static final String STATS_KEY = "airlift_stats";
 
     private static final AtomicLong NAME_COUNTER = new AtomicLong();
@@ -686,7 +688,7 @@ public class JettyHttpClient
         }
         catch (Throwable t) {
             span.setStatus(StatusCode.ERROR, t.getMessage());
-            span.recordException(t, Attributes.of(ExceptionAttributes.EXCEPTION_ESCAPED, true));
+            span.recordException(t, Attributes.of(EXCEPTION_ESCAPED, true));
             throw t;
         }
         finally {
@@ -705,7 +707,7 @@ public class JettyHttpClient
         ExceptionHandler<StreamingResponse, RuntimeException> exceptionHandler = (r, exception) -> {
             try {
                 span.setStatus(StatusCode.ERROR, exception.getMessage());
-                span.recordException(exception, Attributes.of(ExceptionAttributes.EXCEPTION_ESCAPED, true));
+                span.recordException(exception, Attributes.of(EXCEPTION_ESCAPED, true));
 
                 throw propagate(r, exception);
             }
@@ -919,7 +921,7 @@ public class JettyHttpClient
         catch (RuntimeException e) {
             startSpan(request)
                     .setStatus(StatusCode.ERROR, e.getMessage())
-                    .recordException(e, Attributes.of(ExceptionAttributes.EXCEPTION_ESCAPED, true))
+                    .recordException(e, Attributes.of(EXCEPTION_ESCAPED, true))
                     .end();
             return new FailedHttpResponseFuture<>(e);
         }
