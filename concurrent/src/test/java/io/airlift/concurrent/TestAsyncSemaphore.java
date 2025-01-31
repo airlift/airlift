@@ -670,8 +670,7 @@ public class TestAsyncSemaphore
 
         public ListenableFuture<String> submit(Integer value)
         {
-            Supplier<ListenableFuture<String>> failure = failures.get(value);
-            if (failure != null) {
+            if (failures.get(value) instanceof Supplier<ListenableFuture<String>> failure) {
                 return failure.get();
             }
             SettableFuture<String> future = SettableFuture.create();
