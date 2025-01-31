@@ -622,8 +622,7 @@ public class ConfigurationFactory
 
         // Look for a static fromString(String) methods. This is used in preference
         // to the built-in valueOf() method for enums.
-        Method fromString = stringAcceptingMethods.get("fromString");
-        if (fromString != null) {
+        if (stringAcceptingMethods.get("fromString") instanceof Method fromString) {
             if (type.isSubtypeOf(fromString.getGenericReturnType())) {
                 try {
                     return fromString.invoke(null, value);
@@ -677,8 +676,7 @@ public class ConfigurationFactory
         }
 
         // Look for a static valueOf(String) method
-        Method valueOf = stringAcceptingMethods.get("valueOf");
-        if (valueOf != null) {
+        if (stringAcceptingMethods.get("valueOf") instanceof Method valueOf) {
             if (type.isSubtypeOf(valueOf.getGenericReturnType())) {
                 try {
                     return valueOf.invoke(null, value);

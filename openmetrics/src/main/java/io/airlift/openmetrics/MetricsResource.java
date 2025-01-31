@@ -265,8 +265,7 @@ public class MetricsResource
                 String metricAndAttribute = managedClass.isAttributeFlatten(attributeName) ? metricName : metricName + "_" + attributeName;
                 String attributeDescription = managedClass.getAttributeDescription(attributeName);
 
-                ManagedClass child = managedClass.getChildren().get(attributeName);
-                if (child != null) {
+                if (managedClass.getChildren().get(attributeName) instanceof ManagedClass child) {
                     // The managed class is directly translatable to an openmetrics type, don't recurse any further
                     Optional<Metric> metricFromTarget = getMetricFromTarget(child, metricAndAttribute, attributeDescription);
                     if (metricFromTarget.isPresent()) {
