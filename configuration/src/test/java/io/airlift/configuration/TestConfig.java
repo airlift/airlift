@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -81,9 +82,12 @@ public class TestConfig
             .put("myEnumSet", "FOO,bar")
             .put("myEnumList", "BAR,foo")
             .put("myIntegerList", "10,12,14,16")
+            .put("myPathList", "/dev/null,/proc/self")
             .put("myEnumSecondOption", "bar") // lowercase
+            .put("pathOption", "/dev/null")
             .put("valueClassOption", "a value class")
             .put("optionalValueClassOption", "a value class")
+            .put("optionalPathOption", "/dev/null")
             .build();
 
     @Test
@@ -195,14 +199,18 @@ public class TestConfig
         assertThat(Double.MAX_VALUE).isEqualTo(config.getBoxedDoubleOption());
         assertThat(FOO).isEqualTo(config.getMyEnumOption());
         assertThat(BAR).isEqualTo(config.getMyEnumSecondOption());
+        assertThat(Paths.get("/dev/null")).isEqualTo(config.getPathOption());
         assertThat(config.getValueClassOption().getValue()).isEqualTo("a value class");
         assertThat(config.getMyEnumList()).isEqualTo(ImmutableList.of(BAR, FOO));
         assertThat(config.getMyEnumSet()).isEqualTo(ImmutableSet.of(BAR, FOO));
         assertThat(config.getMyIntegerList()).isEqualTo(ImmutableList.of(10, 12, 14, 16));
+        assertThat(config.getMyPathList()).isEqualTo(ImmutableList.of(Paths.get("/dev/null"), Paths.get("/proc/self")));
         assertThat(config.getOptionalValueClassOption())
                 .isPresent()
                 .hasValueSatisfying(value -> assertThat(value.getValue())
                         .isEqualTo("a value class"));
+        assertThat(config.getOptionalPathOption())
+                .contains(Paths.get("/dev/null"));
     }
 
     @Test

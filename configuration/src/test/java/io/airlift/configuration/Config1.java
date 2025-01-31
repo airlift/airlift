@@ -18,6 +18,7 @@ package io.airlift.configuration;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -58,15 +59,21 @@ public class Config1
 
     MyEnum myEnumSecondOption;
 
+    Path pathOption;
+
     Set<MyEnum> myEnumSet = ImmutableSet.of();
 
     List<MyEnum> myEnumList = ImmutableList.of();
 
     List<Integer> myIntegerList = ImmutableList.of();
 
+    List<Path> myPathList = ImmutableList.of();
+
     ValueClass valueClassOption;
 
     Optional<ValueClass> optionalValueClassOption = Optional.empty();
+
+    Optional<Path> optionalPathOption = Optional.empty();
 
     public String getStringOption()
     {
@@ -272,6 +279,18 @@ public class Config1
         return this;
     }
 
+    public Path getPathOption()
+    {
+        return pathOption;
+    }
+
+    @Config("pathOption")
+    public Config1 setPathOption(Path pathOption)
+    {
+        this.pathOption = pathOption;
+        return this;
+    }
+
     public Set<MyEnum> getMyEnumSet()
     {
         return myEnumSet;
@@ -308,6 +327,18 @@ public class Config1
         return this;
     }
 
+    public List<Path> getMyPathList()
+    {
+        return myPathList;
+    }
+
+    @Config("myPathList")
+    public Config1 setMyPathList(List<Path> myPathList)
+    {
+        this.myPathList = myPathList;
+        return this;
+    }
+
     public ValueClass getValueClassOption()
     {
         return valueClassOption;
@@ -329,6 +360,18 @@ public class Config1
     public Config1 setOptionalValueClassOption(Optional<ValueClass> optionalValueClassOption)
     {
         this.optionalValueClassOption = optionalValueClassOption;
+        return this;
+    }
+
+    public Optional<Path> getOptionalPathOption()
+    {
+        return optionalPathOption;
+    }
+
+    @Config("optionalPathOption")
+    public Config1 setOptionalPathOption(Optional<Path> optionalPathOption)
+    {
+        this.optionalPathOption = optionalPathOption;
         return this;
     }
 }
