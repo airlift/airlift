@@ -627,7 +627,7 @@ public class ConfigurationFactory
         if (stringAcceptingMethods.get("fromString") instanceof Method fromString) {
             if (type.isSubtypeOf(fromString.getGenericReturnType())) {
                 try {
-                    return fromString.invoke(null, value);
+                    return invokeFactory(fromString, value);
                 }
                 catch (ReflectiveOperationException e) {
                     return null;
@@ -681,7 +681,19 @@ public class ConfigurationFactory
         if (stringAcceptingMethods.get("valueOf") instanceof Method valueOf) {
             if (type.isSubtypeOf(valueOf.getGenericReturnType())) {
                 try {
-                    return valueOf.invoke(null, value);
+                    return invokeFactory(valueOf, value);
+                }
+                catch (ReflectiveOperationException e) {
+                    return null;
+                }
+            }
+        }
+
+        // Look for a static of(String) method
+        if (stringAcceptingMethods.get("of") instanceof Method of) {
+            if (type.isSubtypeOf(of.getGenericReturnType())) {
+                try {
+                    return invokeFactory(of, value);
                 }
                 catch (ReflectiveOperationException e) {
                     return null;
@@ -693,6 +705,9 @@ public class ConfigurationFactory
         for (Constructor<?> constructor : type.getRawType().getConstructors()) {
             if (acceptsSingleStringParameter(constructor)) {
                 try {
+                    if (constructor.isVarArgs()) {
+                        return constructor.newInstance(value, new String[0]);
+                    }
                     return constructor.newInstance(value);
                 }
                 catch (ReflectiveOperationException e) {
@@ -706,11 +721,16 @@ public class ConfigurationFactory
 
     private static boolean acceptsSingleStringParameter(Executable executable)
     {
-        if (executable.getParameterCount() != 1) {
-            return false;
+        if (executable.getParameterCount() == 1) {
+            return executable.getParameters()[0].getType() == String.class;
         }
 
-        return executable.getParameters()[0].getType() == String.class;
+        if (executable.isVarArgs() && executable.getParameterCount() == 2) {
+            return executable.getParameters()[0].getType() == String.class
+                    && executable.getParameters()[1].getType() == String[].class;
+        }
+
+        return false;
     }
 
     private static TypeToken<?> getActualTypeArgument(TypeToken<?> type)
@@ -718,6 +738,15 @@ public class ConfigurationFactory
         ParameterizedType argumentType = (ParameterizedType) type.getType();
         verify(argumentType.getActualTypeArguments().length == 1, "Expected type %s to be parametrized", type);
         return TypeToken.of(argumentType.getActualTypeArguments()[0]);
+    }
+
+    private static Object invokeFactory(Method factory, String value)
+            throws ReflectiveOperationException
+    {
+        if (factory.isVarArgs()) {
+            return factory.invoke(null, value, new String[0]);
+        }
+        return factory.invoke(null, value);
     }
 
     private static class ConfigurationHolder<T>

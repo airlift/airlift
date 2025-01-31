@@ -486,13 +486,16 @@ public class TestConfigAssertions
                 .setLongOption(0)
                 .setMyEnumOption(null)
                 .setMyEnumSecondOption(null)
+                .setPathOption(null)
                 .setMyEnumList(ImmutableList.of())
                 .setMyEnumSet(ImmutableSet.of())
                 .setMyIntegerList(ImmutableList.of())
+                .setMyPathList(ImmutableList.of())
                 .setShortOption((short) 0)
                 .setStringOption(null)
                 .setValueClassOption(null)
-                .setOptionalValueClassOption(Optional.empty()));
+                .setOptionalValueClassOption(Optional.empty())
+                .setOptionalPathOption(Optional.empty()));
     }
 
     @Test
