@@ -51,6 +51,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -617,6 +618,7 @@ public class ConfigurationFactory
         }
 
         Map<String, Method> stringAcceptingMethods = stream(type.getRawType().getMethods())
+                .filter(method -> Modifier.isStatic(method.getModifiers()))
                 .filter(ConfigurationFactory::acceptsSingleStringParameter)
                 .collect(toImmutableMap(Method::getName, identity()));
 
