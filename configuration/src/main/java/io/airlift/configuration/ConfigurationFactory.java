@@ -75,6 +75,7 @@ import static java.lang.String.format;
 import static java.util.Arrays.stream;
 import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
+import static java.util.function.Function.identity;
 
 public class ConfigurationFactory
 {
@@ -617,8 +618,7 @@ public class ConfigurationFactory
 
         Map<String, Method> stringAcceptingMethods = stream(type.getRawType().getMethods())
                 .filter(ConfigurationFactory::acceptsSingleStringParameter)
-                .map(method -> Map.entry(method.getName(), method))
-                .collect(toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+                .collect(toImmutableMap(Method::getName, identity()));
 
         // Look for a static fromString(String) methods. This is used in preference
         // to the built-in valueOf() method for enums.
