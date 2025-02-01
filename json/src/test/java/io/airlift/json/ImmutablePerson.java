@@ -126,7 +126,7 @@ public class ImmutablePerson
         }
         ImmutablePerson o = (ImmutablePerson) obj;
         return Objects.equals(this.name, o.name) &&
-                Objects.equals(this.rocks, o.rocks) &&
+                this.rocks == o.rocks &&
                 Objects.equals(this.notWritable, o.notWritable);
     }
 

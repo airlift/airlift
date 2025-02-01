@@ -810,7 +810,7 @@ public class TestConfigurationMetadata
         }
         else {
             try {
-                configClass.getDeclaredConstructor();
+                var ignored = configClass.getDeclaredConstructor();
                 fail(String.format("Expected configClass [%s] not to have a constructor", configClass.getName()));
             }
             catch (NoSuchMethodException expected) {
@@ -924,6 +924,7 @@ public class TestConfigurationMetadata
             return value;
         }
 
+        @Override
         public void setValue(String value)
         {
             this.value = value;

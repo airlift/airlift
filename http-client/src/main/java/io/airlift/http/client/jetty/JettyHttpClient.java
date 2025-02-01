@@ -871,8 +871,8 @@ public class JettyHttpClient
             stats.recordRequestFailed();
             requestLogger.log(context.info(), ResponseInfo.failed(Optional.empty(), Optional.of(e)));
             Throwable cause = e.getCause();
-            if (cause instanceof Exception) {
-                return new InternalExceptionResponse<>(exceptionHandler.handleException(request, (Exception) cause));
+            if (cause instanceof Exception exception) {
+                return new InternalExceptionResponse<>(exceptionHandler.handleException(request, exception));
             }
             return new InternalExceptionResponse<>(exceptionHandler.handleException(request, new RuntimeException(cause)));
         }

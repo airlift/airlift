@@ -372,6 +372,7 @@ public class QuantileDigest
         {
             private double sum;
 
+            @Override
             public boolean process(int node)
             {
                 sum += counts[node];
@@ -1203,7 +1204,7 @@ public class QuantileDigest
             mask = 0xFFFF_FFFF_FFFF_FFFFL >>> (MAX_BITS - levels[node]);
         }
 
-        return bitsToLong(values[node] & (~mask));
+        return bitsToLong(values[node] & ~mask);
     }
 
     private long middle(int node)
@@ -1281,6 +1282,7 @@ public class QuantileDigest
             return result;
         }
 
+        @Override
         public String toString()
         {
             return String.format("[count: %f, mean: %f]", count, mean);

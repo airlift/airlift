@@ -62,6 +62,7 @@ public class TestHttpAnnouncementImpl
         equivalenceTester()
                 .addEquivalentGroup(appleHttpAnnouncement, new HttpAnnouncementImpl("apple"))
                 .addEquivalentGroup(bananaHttpAnnouncement, new HttpAnnouncementImpl("banana"))
+                .addEquivalentGroup(httpAnnouncementWithCharacters, new HttpAnnouncementImpl("quot\"ation-and-\\backslash"))
                 .check();
     }
 }

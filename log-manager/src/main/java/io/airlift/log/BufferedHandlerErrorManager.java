@@ -19,6 +19,7 @@ public class BufferedHandlerErrorManager
         this.stdErr = stdErr;
     }
 
+    @Override
     public synchronized void error(String msg, Exception exception, int code)
     {
         if (!reported) {

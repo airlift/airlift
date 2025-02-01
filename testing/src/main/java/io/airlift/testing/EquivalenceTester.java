@@ -102,7 +102,7 @@ public final class EquivalenceTester
             }
         }
 
-        @SuppressWarnings("ObjectEqualsNull")
+        @SuppressWarnings({"ObjectEqualsNull", "SelfEquals", "EqualsNull"})
         private List<ElementCheckFailure> checkEquivalence()
         {
             ImmutableList.Builder<ElementCheckFailure> errors = new ImmutableList.Builder<>();
@@ -440,6 +440,7 @@ public final class EquivalenceTester
         }
     }
 
+    @SuppressWarnings("EqualsHashCode")
     public static class ElementCheckFailure
     {
         protected final EquivalenceFailureType type;

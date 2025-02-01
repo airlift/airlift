@@ -89,7 +89,7 @@ public class TestJsonModule
     public void testSetup()
             throws Exception
     {
-        assertThat(CAR).isEqualTo(CAR);
+        assertThat(CAR.equals(CAR)).isTrue();
         String json = objectMapper.writeValueAsString(CAR);
         Car actual = objectMapper.readValue(json, Car.class);
         assertThat(actual).isEqualTo(CAR);
@@ -279,11 +279,9 @@ public class TestJsonModule
             if (this == o) {
                 return true;
             }
-            if (!(o instanceof Car)) {
+            if (!(o instanceof Car car)) {
                 return false;
             }
-
-            Car car = (Car) o;
 
             if (year != car.year) {
                 return false;
@@ -387,11 +385,6 @@ public class TestJsonModule
 
         private SuperDuperNameList(String superDuperNameList)
         {
-            this(superDuperNameList, null);
-        }
-
-        private SuperDuperNameList(String superDuperNameList, Object stopJacksonFromUsingStringConstructor)
-        {
             this.name = ImmutableList.copyOf(Splitter.on('*').split(superDuperNameList));
         }
 
@@ -412,11 +405,9 @@ public class TestJsonModule
             if (this == o) {
                 return true;
             }
-            if (!(o instanceof SuperDuperNameList)) {
+            if (!(o instanceof SuperDuperNameList that)) {
                 return false;
             }
-
-            SuperDuperNameList that = (SuperDuperNameList) o;
 
             if (!name.equals(that.name)) {
                 return false;
@@ -446,7 +437,7 @@ public class TestJsonModule
         {
             JsonToken token = jp.getCurrentToken();
             if (token == JsonToken.VALUE_STRING) {
-                return new SuperDuperNameList(jp.getText(), null);
+                return new SuperDuperNameList(jp.getText());
             }
             context.handleUnexpectedToken(handledType(), jp);
             throw JsonMappingException.from(jp, null);
@@ -455,6 +446,6 @@ public class TestJsonModule
 
     public static SuperDuperNameList superDuper(String superDuperNameList)
     {
-        return new SuperDuperNameList(superDuperNameList, null);
+        return new SuperDuperNameList(superDuperNameList);
     }
 }

@@ -509,9 +509,6 @@ public class TestConfigurationFactory
             fail("Expected an exception in object creation due to conflicting configuration");
         }
         catch (CreationException e) {
-            for (String expectedErrorMessagePattern : expectedErrorMessagePatterns) {
-                e.getMessage().matches(expectedErrorMessagePattern);
-            }
             assertMessagesMatch(e.getErrorMessages(), expectedErrorMessagePatterns);
         }
     }

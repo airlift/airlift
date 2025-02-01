@@ -404,7 +404,7 @@ public class ConfigurationFactory
                 setConfigProperty(instance, attribute, prefix, attributeProblems);
             }
             catch (InvalidConfigurationException e) {
-                attributeProblems.addError(e.getCause(), e.getMessage());
+                attributeProblems.addError(e);
             }
             problems.record(attributeProblems);
         }
@@ -542,7 +542,7 @@ public class ConfigurationFactory
                 if (attribute.getInjectionPoint() != null) {
                     replacement = format("replaced. Use '%s' instead.", prefix + attribute.getInjectionPoint().getProperty());
                 }
-                problems.addWarning("Configuration property '%s' has been " + replacement, fullName);
+                problems.addWarning("Configuration property '%s' has been %s", fullName, replacement);
 
                 if (operativeValue == null) {
                     operativeInjectionPoint = injectionPoint;
@@ -649,7 +649,8 @@ public class ConfigurationFactory
 
         // Look for a static fromString(String) methods. This is used in preference
         // to the built-in valueOf() method for enums.
-        if (stringAcceptingMethods.get("fromString") instanceof Method fromString) {
+        if (stringAcceptingMethods.containsKey("fromString")) {
+            Method fromString = stringAcceptingMethods.get("fromString");
             if (type.isSubtypeOf(fromString.getGenericReturnType())) {
                 try {
                     return invokeFactory(fromString, value);
@@ -703,7 +704,8 @@ public class ConfigurationFactory
         }
 
         // Look for a static valueOf(String) method
-        if (stringAcceptingMethods.get("valueOf") instanceof Method valueOf) {
+        if (stringAcceptingMethods.containsKey("valueOf")) {
+            Method valueOf = stringAcceptingMethods.get("valueOf");
             if (type.isSubtypeOf(valueOf.getGenericReturnType())) {
                 try {
                     return invokeFactory(valueOf, value);
@@ -715,7 +717,8 @@ public class ConfigurationFactory
         }
 
         // Look for a static of(String) method
-        if (stringAcceptingMethods.get("of") instanceof Method of) {
+        if (stringAcceptingMethods.containsKey("of")) {
+            Method of = stringAcceptingMethods.get("of");
             if (type.isSubtypeOf(of.getGenericReturnType())) {
                 try {
                     return invokeFactory(of, value);

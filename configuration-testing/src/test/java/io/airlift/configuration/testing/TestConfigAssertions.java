@@ -532,7 +532,7 @@ public class TestConfigAssertions
                     .setHomePage(URI.create("http://iq80.com"));
 
             // extra non setter method invoked
-            config.hashCode();
+            var ignored = config.hashCode();
 
             ConfigAssertions.assertRecordedDefaults(config);
         }

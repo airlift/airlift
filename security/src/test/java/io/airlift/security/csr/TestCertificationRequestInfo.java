@@ -45,7 +45,6 @@ public class TestCertificationRequestInfo
         CertificationRequestInfo actualInfo = new CertificationRequestInfo(new X500Principal(name), keyPair.getPublic());
         assertThat(actualInfo.getPublicKey()).isEqualTo(keyPair.getPublic());
         assertThat(actualInfo.getSubject().getName()).isEqualTo(name);
-        assertThat(actualInfo).isEqualTo(actualInfo);
         assertThat(actualInfo.hashCode()).isEqualTo(actualInfo.hashCode());
 
         org.bouncycastle.asn1.pkcs.CertificationRequestInfo expectedInfo = new org.bouncycastle.asn1.pkcs.CertificationRequestInfo(new X500Name(name), SubjectPublicKeyInfo.getInstance(keyPair.getPublic().getEncoded()), new DERSet());

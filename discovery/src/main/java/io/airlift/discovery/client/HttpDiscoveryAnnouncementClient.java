@@ -160,7 +160,7 @@ public class HttpDiscoveryAnnouncementClient
         return DEFAULT_DELAY;
     }
 
-    private class DiscoveryResponseHandler<T>
+    private static class DiscoveryResponseHandler<T>
             implements ResponseHandler<T, DiscoveryException>
     {
         private final String name;
@@ -187,8 +187,8 @@ public class HttpDiscoveryAnnouncementClient
             if (exception instanceof CancellationException) {
                 throw new DiscoveryException(name + " was canceled for " + uri);
             }
-            if (exception instanceof DiscoveryException) {
-                throw (DiscoveryException) exception;
+            if (exception instanceof DiscoveryException discoveryException) {
+                throw discoveryException;
             }
 
             throw new DiscoveryException(name + " failed for " + uri, exception);

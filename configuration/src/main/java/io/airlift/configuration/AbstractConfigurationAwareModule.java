@@ -81,8 +81,8 @@ public abstract class AbstractConfigurationAwareModule
 
     protected synchronized void install(Module module)
     {
-        if (module instanceof ConfigurationAwareModule) {
-            ((ConfigurationAwareModule) module).setConfigurationFactory(configurationFactory);
+        if (module instanceof ConfigurationAwareModule configurationAwareModule) {
+            configurationAwareModule.setConfigurationFactory(configurationFactory);
         }
         binder.install(module);
     }

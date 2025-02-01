@@ -10,6 +10,7 @@ import java.util.Random;
 
 import static java.lang.Math.min;
 import static java.lang.System.arraycopy;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestGatheringByteArrayInputStream
@@ -17,18 +18,18 @@ public class TestGatheringByteArrayInputStream
     @Test
     public void testNormal()
     {
-        byte[] lastStringArray = "client".getBytes();
+        byte[] lastStringArray = "client".getBytes(UTF_8);
         byte[] lastArray = Arrays.copyOf(lastStringArray, lastStringArray.length + 32);
         arraycopy(lastStringArray, 0, lastArray, 0, lastStringArray.length);
 
         List<byte[]> buffers = ImmutableList.of(
-                "hello ".getBytes(),
-                "this ".getBytes(),
-                "is ".getBytes(),
-                "http ".getBytes(),
+                "hello ".getBytes(UTF_8),
+                "this ".getBytes(UTF_8),
+                "is ".getBytes(UTF_8),
+                "http ".getBytes(UTF_8),
                 lastArray);
-        byte[] expectedAll = "hello this is http client".getBytes();
-        byte[] expectedPartial = "hello this".getBytes();
+        byte[] expectedAll = "hello this is http client".getBytes(UTF_8);
+        byte[] expectedPartial = "hello this".getBytes(UTF_8);
 
         try (GatheringByteArrayInputStream in = new GatheringByteArrayInputStream(buffers, expectedAll.length)) {
             byte[] buffer = new byte[expectedAll.length + 32];
@@ -53,13 +54,13 @@ public class TestGatheringByteArrayInputStream
     @Test
     public void testSingleByteRead()
     {
-        byte[] expected = "This is a test for single byte read".getBytes();
+        byte[] expected = "This is a test for single byte read".getBytes(UTF_8);
         List<byte[]> buffers = ImmutableList.of(
-                "This ".getBytes(),
-                "is ".getBytes(),
-                "a test ".getBytes(),
-                "for".getBytes(),
-                " single byte read".getBytes());
+                "This ".getBytes(UTF_8),
+                "is ".getBytes(UTF_8),
+                "a test ".getBytes(UTF_8),
+                "for".getBytes(UTF_8),
+                " single byte read".getBytes(UTF_8));
         byte[] resultBuffer = new byte[expected.length];
 
         try (GatheringByteArrayInputStream in = new GatheringByteArrayInputStream(buffers, expected.length)) {
@@ -85,7 +86,7 @@ public class TestGatheringByteArrayInputStream
     @Test
     public void testSkip()
     {
-        byte[] allDataBytes = "Hello, this is http client package, and I am just a test for GatheringByteArrayInputStream".getBytes();
+        byte[] allDataBytes = "Hello, this is http client package, and I am just a test for GatheringByteArrayInputStream".getBytes(UTF_8);
         int length = allDataBytes.length;
         try (GatheringByteArrayInputStream in = new GatheringByteArrayInputStream(
                 ImmutableList.of(

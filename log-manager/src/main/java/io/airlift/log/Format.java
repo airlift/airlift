@@ -6,12 +6,14 @@ import java.util.logging.Formatter;
 public enum Format
 {
     JSON {
+        @Override
         public Formatter createFormatter(Map<String, String> logAnnotations, boolean interactive)
         {
             return new JsonFormatter(logAnnotations);
         }
     },
     TEXT {
+        @Override
         public Formatter createFormatter(Map<String, String> logAnnotations, boolean interactive)
         {
             return new StaticFormatter(logAnnotations, interactive);

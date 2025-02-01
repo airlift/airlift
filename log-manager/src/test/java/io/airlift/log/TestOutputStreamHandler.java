@@ -13,6 +13,7 @@ import static com.google.common.base.Throwables.getStackTraceAsString;
 import static io.airlift.json.JsonCodec.jsonCodec;
 import static io.airlift.json.JsonCodec.mapJsonCodec;
 import static io.airlift.log.Level.fromJulLevel;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.temporal.ChronoUnit.NANOS;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -28,7 +29,7 @@ public class TestOutputStreamHandler
         LogRecord logRecord = new LogRecord(Level.INFO.toJulLevel(), "Test message");
         handler.publish(logRecord);
 
-        String consoleMessage = out.toString();
+        String consoleMessage = out.toString(UTF_8);
         JsonRecord jsonRecord = jsonCodec(JsonRecord.class).fromJson(consoleMessage);
         assertThat(consoleMessage).as("Log lines should end with newline").endsWith("\n");
 
@@ -51,7 +52,7 @@ public class TestOutputStreamHandler
         logRecord.setThrown(testException);
         handler.publish(logRecord);
 
-        String consoleMessage = out.toString();
+        String consoleMessage = out.toString(UTF_8);
         Map<String, Object> jsonMap = mapJsonCodec(String.class, Object.class).fromJson(consoleMessage);
         JsonRecord jsonRecord = jsonCodec(JsonRecord.class).fromJson(consoleMessage);
 

@@ -75,7 +75,8 @@ public class TestHyperLogLog
     @Test
     public void testRetainedSize()
     {
-        assertThat(HyperLogLog.newInstance(8).estimatedInMemorySize()).isEqualTo(toIntExact(instanceSize(HyperLogLog.class) + (new SparseHll(10)).estimatedInMemorySize()));
+        assertThat(HyperLogLog.newInstance(8).estimatedInMemorySize())
+                .isEqualTo(toIntExact(instanceSize(HyperLogLog.class) + new SparseHll(10).estimatedInMemorySize()));
     }
 
     @Test

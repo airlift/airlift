@@ -218,24 +218,24 @@ final class ReloadableSslContextFactoryProvider
         }
     }
 
-    private static KeyStore loadTrustStore(File truststoreFile, String truststorePassword)
+    private static KeyStore loadTrustStore(File trustStoreFile, String trustStorePassword)
     {
         try {
-            if (PemReader.isPem(truststoreFile)) {
-                return PemReader.loadTrustStore(truststoreFile);
+            if (PemReader.isPem(trustStoreFile)) {
+                return PemReader.loadTrustStore(trustStoreFile);
             }
         }
         catch (IOException | GeneralSecurityException e) {
-            throw new IllegalArgumentException("Error loading PEM trust store: " + truststoreFile, e);
+            throw new IllegalArgumentException("Error loading PEM trust store: " + trustStoreFile, e);
         }
 
-        try (InputStream in = new FileInputStream(truststoreFile)) {
+        try (InputStream in = new FileInputStream(trustStoreFile)) {
             KeyStore keyStore = KeyStore.getInstance("JKS");
-            keyStore.load(in, truststorePassword == null ? null : truststorePassword.toCharArray());
+            keyStore.load(in, trustStorePassword == null ? null : trustStorePassword.toCharArray());
             return keyStore;
         }
         catch (IOException | GeneralSecurityException e) {
-            throw new IllegalArgumentException("Error loading Java trust store: " + truststoreFile, e);
+            throw new IllegalArgumentException("Error loading Java trust store: " + trustStoreFile, e);
         }
     }
 

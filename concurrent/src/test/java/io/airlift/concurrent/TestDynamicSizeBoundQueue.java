@@ -18,7 +18,6 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-import com.google.common.util.concurrent.Uninterruptibles;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,6 +32,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static com.google.common.base.Verify.verify;
+import static com.google.common.util.concurrent.Uninterruptibles.awaitUninterruptibly;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
@@ -287,7 +288,7 @@ public class TestDynamicSizeBoundQueue
         ListenableFuture<Boolean> offerFuture = executorService.submit(() -> queue.offer("b", 10, TimeUnit.SECONDS));
 
         // Wait for the offering thread to block for space
-        Uninterruptibles.awaitUninterruptibly(awaitDequeueLatch, 10, TimeUnit.SECONDS);
+        verify(awaitUninterruptibly(awaitDequeueLatch, 10, TimeUnit.SECONDS), "Waiting for latch timed out");
         assertThat(offerFuture.isDone()).isFalse();
 
         assertThat(queue.poll())
@@ -350,7 +351,7 @@ public class TestDynamicSizeBoundQueue
         });
 
         // Wait for the offering thread to block for space
-        Uninterruptibles.awaitUninterruptibly(awaitDequeueLatch, 10, TimeUnit.SECONDS);
+        verify(awaitUninterruptibly(awaitDequeueLatch, 10, TimeUnit.SECONDS), "Waiting for latch timed out");
         assertThat(putFuture.isDone()).isFalse();
 
         assertThat(queue.poll())
@@ -419,7 +420,7 @@ public class TestDynamicSizeBoundQueue
         ListenableFuture<String> pollFuture = executorService.submit(() -> queue.poll(10, TimeUnit.SECONDS));
 
         // Wait for the polling thread to block for data
-        Uninterruptibles.awaitUninterruptibly(awaitEnqueueLatch, 10, TimeUnit.SECONDS);
+        verify(awaitUninterruptibly(awaitEnqueueLatch, 10, TimeUnit.SECONDS), "Waiting for latch timed out");
         assertThat(pollFuture.isDone()).isFalse();
 
         queue.offer("a");
@@ -465,7 +466,7 @@ public class TestDynamicSizeBoundQueue
         });
 
         // Wait for the polling thread to block for a new element
-        Uninterruptibles.awaitUninterruptibly(awaitEnqueueLatch, 10, TimeUnit.SECONDS);
+        verify(awaitUninterruptibly(awaitEnqueueLatch, 10, TimeUnit.SECONDS), "Waiting for latch timed out");
         assertThat(takeFuture.isDone()).isFalse();
 
         assertThat(queue.offer("a"))

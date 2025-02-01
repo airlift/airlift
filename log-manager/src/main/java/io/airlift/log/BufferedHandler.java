@@ -218,7 +218,6 @@ public class BufferedHandler
                                     droppedMessages.incrementAndGet();
                                 }
                             }
-
                             // Merge back dropped messages snapshot
                             dropSnapshot.forEachEntry(dropCountBySource::add);
                         }

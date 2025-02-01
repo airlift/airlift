@@ -201,6 +201,7 @@ public class TestLogger
     }
 
     @Test
+    @SuppressWarnings("FormatStringAnnotation")
     public void testInsufficientArgsLogsErrorForDebug()
     {
         String format = "some message: %s, %d";
@@ -212,6 +213,7 @@ public class TestLogger
     }
 
     @Test
+    @SuppressWarnings("FormatStringAnnotation")
     public void testInsufficientArgsLogsErrorForInfo()
     {
         String format = "some message: %s, %d";
@@ -223,6 +225,7 @@ public class TestLogger
     }
 
     @Test
+    @SuppressWarnings("FormatStringAnnotation")
     public void testInsufficientArgsLogsErrorForWarn()
     {
         String format = "some message: %s, %d";
@@ -234,6 +237,7 @@ public class TestLogger
     }
 
     @Test
+    @SuppressWarnings("FormatStringAnnotation")
     public void testInsufficientArgsLogsErrorForError()
     {
         String format = "some message: %s, %d";
@@ -245,6 +249,7 @@ public class TestLogger
     }
 
     @Test
+    @SuppressWarnings("FormatStringAnnotation")
     public void testInsufficientArgsLogsOriginalExceptionForWarn()
     {
         Throwable exception = new Throwable("foo");
@@ -257,6 +262,7 @@ public class TestLogger
     }
 
     @Test
+    @SuppressWarnings("FormatStringAnnotation")
     public void testInsufficientArgsLogsOriginalExceptionForError()
     {
         Throwable exception = new Throwable("foo");

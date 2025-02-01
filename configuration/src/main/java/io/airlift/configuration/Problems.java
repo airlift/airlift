@@ -16,6 +16,8 @@
 package io.airlift.configuration;
 
 import com.google.common.collect.ImmutableList;
+import com.google.errorprone.annotations.FormatMethod;
+import com.google.errorprone.annotations.FormatString;
 import com.google.inject.ConfigurationException;
 import com.google.inject.spi.Message;
 
@@ -52,15 +54,23 @@ class Problems
         warnings.addAll(problems.warnings);
     }
 
-    public void addError(String format, Object... params)
+    @FormatMethod
+    public void addError(@FormatString String format, Object... params)
     {
         Message message = new Message(format(format, params));
         errors.add(message);
     }
 
-    public void addError(Throwable e, String format, Object... params)
+    @FormatMethod
+    public void addError(Throwable e, @FormatString String format, Object... params)
     {
         Message message = new Message(emptyList(), format(format, params), e);
+        errors.add(message);
+    }
+
+    public void addError(Throwable e)
+    {
+        Message message = new Message(emptyList(), e.getMessage(), e.getCause());
         errors.add(message);
     }
 
@@ -69,12 +79,20 @@ class Problems
         return ImmutableList.copyOf(warnings);
     }
 
-    public void addWarning(String format, Object... params)
+    @FormatMethod
+    public void addWarning(@FormatString String format, Object... params)
     {
         Message message = new Message(format(format, params));
         warnings.add(message);
     }
 
+    public void addWarning(String text)
+    {
+        Message message = new Message(text);
+        warnings.add(message);
+    }
+
+    @Override
     public String toString()
     {
         StringBuilder builder = new StringBuilder();
@@ -98,21 +116,24 @@ class Problems
         return new ConfigurationException(messages);
     }
 
-    public static ConfigurationException exceptionFor(String format, Object... params)
+    @FormatMethod
+    public static ConfigurationException exceptionFor(@FormatString String format, Object... params)
     {
         Problems problems = new Problems();
         problems.addError(format, params);
         return problems.getException();
     }
 
-    public static ConfigurationException exceptionFor(Throwable e, String format, Object... params)
+    @FormatMethod
+    public static ConfigurationException exceptionFor(Throwable e, @FormatString String format, Object... params)
     {
         Problems problems = new Problems();
         problems.addError(e, format, params);
         return problems.getException();
     }
 
-    private static String format(String format, Object... params)
+    @FormatMethod
+    private static String format(@FormatString String format, Object... params)
     {
         if (format == null || params.length == 0) {
             return format;
