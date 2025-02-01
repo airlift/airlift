@@ -432,6 +432,29 @@ public class TestConfigurationFactory
     }
 
     @Test
+    public void testDeprecatedProperties()
+    {
+        Map<String, String> properties = new TreeMap<>();
+        properties.put("deprecated", "some value");
+        properties.put("deprecated.since", "some value");
+        properties.put("deprecated.removal", "some value");
+        properties.put("deprecated.since.removal", "some value");
+
+        TestingWarningsMonitor warningsMonitor = new TestingWarningsMonitor();
+
+        ConfigurationFactory configurationFactory = new ConfigurationFactory(properties, warningsMonitor);
+        configurationFactory.registerConfigurationClasses(ImmutableList.of(binder -> configBinder(binder).bindConfig(DeprecatedConfiguration.class)));
+        configurationFactory.validateRegisteredConfigurationProvider();
+
+        assertThat(warningsMonitor.messages())
+                .hasSize(4)
+                .contains("Configuration property 'deprecated' is deprecated and should not be used")
+                .contains("Configuration property 'deprecated.removal' is deprecated and will be removed in the future")
+                .contains("Configuration property 'deprecated.since' is deprecated since yesterday and should not be used")
+                .contains("Configuration property 'deprecated.since.removal' is deprecated since yesterday and will be removed in the future");
+    }
+
+    @Test
     public void testUsedPropertiesWithFailure()
     {
         Map<String, String> properties = new TreeMap<>();
@@ -832,6 +855,70 @@ public class TestConfigurationFactory
         public void setValue(Value value)
         {
             this.value = value;
+        }
+    }
+
+    public static class DeprecatedConfiguration
+    {
+        private String deprecated;
+        private String deprecatedSince;
+        private String deprecatedForRemoval;
+        private String deprecatedSinceForRemoval;
+
+        @Deprecated
+        public String getDeprecated()
+        {
+            return deprecated;
+        }
+
+        @Config("deprecated")
+        @Deprecated
+        public DeprecatedConfiguration setDeprecated(String deprecated)
+        {
+            this.deprecated = deprecated;
+            return this;
+        }
+
+        @Deprecated
+        public String getDeprecatedSince()
+        {
+            return deprecatedSince;
+        }
+
+        @Config("deprecated.since")
+        @Deprecated(since = "yesterday")
+        public DeprecatedConfiguration setDeprecatedSince(String deprecatedSince)
+        {
+            this.deprecatedSince = deprecatedSince;
+            return this;
+        }
+
+        @Deprecated
+        public String getDeprecatedForRemoval()
+        {
+            return deprecatedForRemoval;
+        }
+
+        @Config("deprecated.removal")
+        @Deprecated(forRemoval = true)
+        public DeprecatedConfiguration setDeprecatedForRemoval(String deprecatedForRemoval)
+        {
+            this.deprecatedForRemoval = deprecatedForRemoval;
+            return this;
+        }
+
+        @Deprecated
+        public String getDeprecatedSinceForRemoval()
+        {
+            return deprecatedSinceForRemoval;
+        }
+
+        @Config("deprecated.since.removal")
+        @Deprecated(since = "yesterday", forRemoval = true)
+        public DeprecatedConfiguration setDeprecatedSinceForRemoval(String deprecatedSinceForRemoval)
+        {
+            this.deprecatedSinceForRemoval = deprecatedSinceForRemoval;
+            return this;
         }
     }
 
