@@ -161,9 +161,9 @@ public class TestQuantileDigest
 
         assertThat(digest.getQuantileLowerBound(0.0)).isEqualTo(1);
         for (int i = 1; i <= 10; i++) {
-            assertThat(digest.getQuantileLowerBound(i / 10.0) <= i * 10).isTrue();
+            assertThat(digest.getQuantileLowerBound(i / 10.0) <= i * 10L).isTrue();
             if (i > 5) {
-                assertThat(digest.getQuantileLowerBound(i / 10.0) >= (i - 5) * 10).isTrue();
+                assertThat(digest.getQuantileLowerBound(i / 10.0) >= (i - 5) * 10L).isTrue();
             }
         }
 
@@ -179,9 +179,9 @@ public class TestQuantileDigest
 
         assertThat(digest.getQuantileUpperBound(1.0)).isEqualTo(99);
         for (int i = 0; i < 10; i++) {
-            assertThat(digest.getQuantileUpperBound(i / 10.0) >= i * 10).isTrue();
+            assertThat(digest.getQuantileUpperBound(i / 10.0) >= i * 10L).isTrue();
             if (i < 5) {
-                assertThat(digest.getQuantileUpperBound(i / 10.0) <= (i + 5) * 10).isTrue();
+                assertThat(digest.getQuantileUpperBound(i / 10.0) <= (i + 5) * 10L).isTrue();
             }
         }
 
@@ -446,7 +446,7 @@ public class TestQuantileDigest
     public void testRescaleWithDecayKeepsCompactTree()
     {
         TestingTicker ticker = new TestingTicker();
-        int targetAgeInSeconds = (int) (QuantileDigest.RESCALE_THRESHOLD_SECONDS);
+        int targetAgeInSeconds = (int) QuantileDigest.RESCALE_THRESHOLD_SECONDS;
 
         QuantileDigest digest = new QuantileDigest(0.01,
                 ExponentialDecay.computeAlpha(QuantileDigest.ZERO_WEIGHT_THRESHOLD / 2, targetAgeInSeconds),

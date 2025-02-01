@@ -30,11 +30,13 @@ class HttpAnnouncementImpl
         this.announcementId = requireNonNull(announcementId, "announcementId is null");
     }
 
+    @Override
     public String announcementId()
     {
         return announcementId;
     }
 
+    @Override
     public String toString()
     {
         return format("@%s(announcementId=\"%s\")", annotationType().getName(), announcementId.replace("\"", "\\\""));
@@ -58,6 +60,7 @@ class HttpAnnouncementImpl
         return result;
     }
 
+    @Override
     public Class<? extends Annotation> annotationType()
     {
         return HttpAnnouncement.class;

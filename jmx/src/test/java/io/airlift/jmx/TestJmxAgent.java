@@ -8,6 +8,7 @@ import javax.management.remote.JMXServiceURL;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@SuppressWarnings("BanJNDI")
 public class TestJmxAgent
 {
     @Test
@@ -20,7 +21,8 @@ public class TestJmxAgent
 
         assertThat(url.toString()).matches("service:jmx:rmi:///jndi/rmi://.*:\\d+/jmxrmi");
 
-        JMXConnector connector = JMXConnectorFactory.connect(url);
-        connector.connect();
+        try (JMXConnector connector = JMXConnectorFactory.connect(url)) {
+            connector.connect();
+        }
     }
 }

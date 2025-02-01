@@ -52,7 +52,6 @@ public class TestCertificationRequest
         assertThat(certificationRequest.getCertificationRequestInfo()).isEqualTo(certificationRequestInfo);
         assertThat(certificationRequest.getSignatureAlgorithmIdentifier()).isEqualTo(signatureAlgorithmIdentifier);
         assertThat(base16().encode(certificationRequest.getSignature())).isEqualTo(base16().encode(signature));
-        assertThat(certificationRequest).isEqualTo(certificationRequest);
         assertThat(certificationRequest.hashCode()).isEqualTo(certificationRequest.hashCode());
 
         PKCS10CertificationRequest expectedCertificationRequest = new PKCS10CertificationRequest(new org.bouncycastle.asn1.pkcs.CertificationRequest(

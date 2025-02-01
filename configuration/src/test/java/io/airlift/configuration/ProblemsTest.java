@@ -71,6 +71,7 @@ public class ProblemsTest
     }
 
     @Test
+    @SuppressWarnings("FormatStringAnnotation")
     public void testFormatError()
     {
         Problems problems = new Problems();
@@ -134,6 +135,7 @@ public class ProblemsTest
     }
 
     @Test
+    @SuppressWarnings("FormatStringAnnotation")
     public void testFormatWarning()
     {
         Problems problems = new Problems();

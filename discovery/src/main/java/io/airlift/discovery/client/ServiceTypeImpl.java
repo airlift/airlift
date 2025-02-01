@@ -30,11 +30,13 @@ class ServiceTypeImpl
         this.value = value;
     }
 
+    @Override
     public String value()
     {
         return value;
     }
 
+    @Override
     public String toString()
     {
         return String.format("@%s(value=\"%s\")", ServiceType.class.getName(), value.replace("\"", "\\\""));
@@ -68,6 +70,7 @@ class ServiceTypeImpl
         return result;
     }
 
+    @Override
     public Class<? extends Annotation> annotationType()
     {
         return ServiceType.class;
