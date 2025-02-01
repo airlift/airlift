@@ -477,7 +477,7 @@ public class ConfigurationFactory
         }
 
         if (injectionPoint.getSetter().isAnnotationPresent(Deprecated.class)) {
-            problems.addWarning("Configuration property '%s' is deprecated and should not be used", prefix + injectionPoint.getProperty());
+            problems.addWarning(describeDeprecation(prefix, injectionPoint));
         }
 
         Object value = getInjectedValue(attribute, injectionPoint, prefix);
@@ -491,6 +491,16 @@ public class ConfigurationFactory
             }
             throw new InvalidConfigurationException(e, format("Error invoking configuration method [%s]", injectionPoint.getSetter().toGenericString()));
         }
+    }
+
+    private static String describeDeprecation(String prefix, ConfigurationMetadata.InjectionPointMetaData injectionPoint)
+    {
+        Deprecated deprecated = injectionPoint.getSetter().getAnnotation(Deprecated.class);
+        String deprecationNotice = "Configuration property '%s' is deprecated".formatted(prefix + injectionPoint.getProperty());
+        if (!deprecated.since().isBlank()) {
+            deprecationNotice = deprecationNotice + " since " + deprecated.since();
+        }
+        return deprecationNotice + (deprecated.forRemoval() ? " and will be removed in the future" : " and should not be used");
     }
 
     private ConfigurationMetadata.InjectionPointMetaData findOperativeInjectionPoint(AttributeMetadata attribute, String prefix, Problems problems)
