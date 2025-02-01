@@ -39,12 +39,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
+import static com.google.common.base.Verify.verify;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.util.concurrent.Futures.addCallback;
 import static com.google.common.util.concurrent.Futures.immediateCancelledFuture;
 import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static com.google.common.util.concurrent.MoreExecutors.listeningDecorator;
+import static com.google.common.util.concurrent.Uninterruptibles.awaitUninterruptibly;
 import static io.airlift.concurrent.MoreFutures.asVoid;
 import static io.airlift.concurrent.MoreFutures.getFutureValue;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
@@ -139,7 +141,7 @@ public class TestAsyncSemaphore
         CountDownLatch completionLatch = new CountDownLatch(100);
         for (int i = 0; i < 100; i++) {
             executor.execute(() -> {
-                Uninterruptibles.awaitUninterruptibly(startLatch, 1, TimeUnit.MINUTES);
+                verify(awaitUninterruptibly(startLatch, 1, TimeUnit.MINUTES), "Waiting for latch timed out");
                 asyncSemaphore.submit(() -> {
                     count.incrementAndGet();
                     int currentConcurrency = concurrency.incrementAndGet();
@@ -154,7 +156,7 @@ public class TestAsyncSemaphore
         startLatch.countDown();
 
         // Wait for completion
-        Uninterruptibles.awaitUninterruptibly(completionLatch, 1, TimeUnit.MINUTES);
+        verify(awaitUninterruptibly(completionLatch, 1, TimeUnit.MINUTES), "Waiting for latch timed out");
 
         assertThat(count.get()).isEqualTo(100);
     }
@@ -245,7 +247,7 @@ public class TestAsyncSemaphore
         Queue<ListenableFuture<Void>> futures = new ConcurrentLinkedQueue<>();
         for (int i = 0; i < 100; i++) {
             executor.execute(() -> {
-                Uninterruptibles.awaitUninterruptibly(startLatch, 1, TimeUnit.MINUTES);
+                verify(awaitUninterruptibly(startLatch, 1, TimeUnit.MINUTES), "Waiting for latch timed out");
                 // Should never execute this future
                 ListenableFuture<Void> future = asyncSemaphore.submit(Fail::fail);
                 futures.add(future);
@@ -256,7 +258,7 @@ public class TestAsyncSemaphore
         startLatch.countDown();
 
         // Wait for completion
-        Uninterruptibles.awaitUninterruptibly(completionLatch, 1, TimeUnit.MINUTES);
+        verify(awaitUninterruptibly(completionLatch, 1, TimeUnit.MINUTES), "Waiting for latch timed out");
 
         // Make sure they all report failure
         for (ListenableFuture<Void> future : futures) {
@@ -427,8 +429,7 @@ public class TestAsyncSemaphore
                     concurrency,
                     () -> {
                         throw new RuntimeException("callable failed");
-                    },
-                    "callable failed");
+                    });
         }
     }
 
@@ -449,8 +450,7 @@ public class TestAsyncSemaphore
         for (int concurrency : testedConcurrency()) {
             testProcessAllToCompletionFailure(
                     concurrency,
-                    () -> immediateFailedFuture(new RuntimeException("future failed")),
-                    "future failed");
+                    () -> immediateFailedFuture(new RuntimeException("future failed")));
         }
     }
 
@@ -471,8 +471,7 @@ public class TestAsyncSemaphore
         for (int concurrency : testedConcurrency()) {
             testProcessAllToCompletionFailure(
                     concurrency,
-                    Futures::immediateCancelledFuture,
-                    "Task was cancelled");
+                    Futures::immediateCancelledFuture);
         }
     }
 
@@ -594,7 +593,7 @@ public class TestAsyncSemaphore
         }
     }
 
-    private static void testProcessAllToCompletionFailure(int concurrency, Supplier<ListenableFuture<String>> failure, String message)
+    private static void testProcessAllToCompletionFailure(int concurrency, Supplier<ListenableFuture<String>> failure)
     {
         TestingTasks tasks = new TestingTasks(concurrency);
         tasks.injectFailure(concurrency - 1, failure);
@@ -670,8 +669,8 @@ public class TestAsyncSemaphore
 
         public ListenableFuture<String> submit(Integer value)
         {
-            if (failures.get(value) instanceof Supplier<ListenableFuture<String>> failure) {
-                return failure.get();
+            if (failures.get(value) != null) {
+                return failures.get(value).get();
             }
             SettableFuture<String> future = SettableFuture.create();
             futures.add(future);

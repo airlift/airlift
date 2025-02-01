@@ -29,7 +29,7 @@ public class SwitchModule<T>
             Function<V, Module> moduleProvider)
     {
         requireNonNull(valueProvider, "valueProvider is null");
-        moduleProvider = requireNonNull(moduleProvider, "moduleProvider is null");
+        requireNonNull(moduleProvider, "moduleProvider is null");
         return new SwitchModule<>(config, valueProvider.andThen(moduleProvider));
     }
 

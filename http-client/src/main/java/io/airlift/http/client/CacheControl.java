@@ -221,6 +221,7 @@ public class CacheControl
         return cacheControl;
     }
 
+    @Override
     public String toString()
     {
         StringBuilder buffer = new StringBuilder();
@@ -354,14 +355,14 @@ public class CacheControl
         }
 
         CacheControl other = (CacheControl) obj;
-        return Objects.equals(this.maxAge, other.maxAge) &&
-                Objects.equals(this.sMaxAge, other.sMaxAge) &&
-                Objects.equals(this.isPrivate, other.isPrivate) &&
-                Objects.equals(this.noCache, other.noCache) &&
-                Objects.equals(this.noStore, other.noStore) &&
-                Objects.equals(this.noTransform, other.noTransform) &&
-                Objects.equals(this.mustRevalidate, other.mustRevalidate) &&
-                Objects.equals(this.proxyRevalidate, other.proxyRevalidate) &&
+        return this.maxAge == other.maxAge &&
+                this.sMaxAge == other.sMaxAge &&
+                this.isPrivate == other.isPrivate &&
+                this.noCache == other.noCache &&
+                this.noStore == other.noStore &&
+                this.noTransform == other.noTransform &&
+                this.mustRevalidate == other.mustRevalidate &&
+                this.proxyRevalidate == other.proxyRevalidate &&
                 Objects.equals(this.cacheExtensions, other.cacheExtensions) &&
                 Objects.equals(this.noCacheFields, other.noCacheFields) &&
                 Objects.equals(this.privateFields, other.privateFields);

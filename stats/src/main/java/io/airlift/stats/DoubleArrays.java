@@ -48,7 +48,7 @@ final class DoubleArrays
      * <p>
      * This method implement an <em>indirect</em> sort. The elements of {@code perm}
      * (which must be exactly the numbers in the interval {@code [0..perm.length)})
-     * will be permuted so that {@code x[perm[i]] &le; x[perm[i + 1]]}.
+     * will be permuted so that {@code x[perm[i]] <= x[perm[i + 1]]}.
      *
      * <p>
      * Note that this implementation does not allocate any object, contrarily to the
@@ -88,13 +88,13 @@ final class DoubleArrays
         int d = c;
         while (true) {
             int comparison;
-            while (b <= c && (comparison = (Double.compare((x[perm[b]]), (v)))) <= 0) {
+            while (b <= c && (comparison = Double.compare(x[perm[b]], v)) <= 0) {
                 if (comparison == 0) {
                     swap(perm, a++, b);
                 }
                 b++;
             }
-            while (c >= b && (comparison = (Double.compare((x[perm[c]]), (v)))) >= 0) {
+            while (c >= b && (comparison = Double.compare(x[perm[c]], v)) >= 0) {
                 if (comparison == 0) {
                     swap(perm, c, d--);
                 }
@@ -125,7 +125,7 @@ final class DoubleArrays
         for (int i = from; ++i < to; ) {
             int t = perm[i];
             int j = i;
-            for (int u = perm[j - 1]; (Double.compare((a[t]), (a[u])) < 0); u = perm[--j - 1]) {
+            for (int u = perm[j - 1]; Double.compare(a[t], a[u]) < 0; u = perm[--j - 1]) {
                 perm[j] = u;
                 if (from == j - 1) {
                     --j;
@@ -141,9 +141,9 @@ final class DoubleArrays
         final double aa = x[perm[a]];
         final double bb = x[perm[b]];
         final double cc = x[perm[c]];
-        final int ab = (Double.compare((aa), (bb)));
-        final int ac = (Double.compare((aa), (cc)));
-        final int bc = (Double.compare((bb), (cc)));
+        final int ab = Double.compare(aa, bb);
+        final int ac = Double.compare(aa, cc);
+        final int bc = Double.compare(bb, cc);
         return (ab < 0 ? (bc < 0 ? b : ac < 0 ? c : a) : (bc > 0 ? b : ac > 0 ? c : a));
     }
 

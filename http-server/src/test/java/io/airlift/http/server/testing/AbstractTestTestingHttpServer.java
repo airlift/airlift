@@ -373,7 +373,6 @@ public abstract class AbstractTestTestingHttpServer
     static class DummyServlet
             extends HttpServlet
     {
-        private String sampleInitParam;
         private int callCount;
         private String contentTypeHeader;
 
