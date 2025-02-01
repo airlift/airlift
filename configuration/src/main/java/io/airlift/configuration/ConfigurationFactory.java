@@ -477,7 +477,19 @@ public class ConfigurationFactory
         }
 
         if (injectionPoint.getSetter().isAnnotationPresent(Deprecated.class)) {
-            problems.addWarning("Configuration property '%s' is deprecated and should not be used", prefix + injectionPoint.getProperty());
+            Deprecated deprecated = injectionPoint.getSetter().getAnnotation(Deprecated.class);
+
+            String deprecationNotice = "is deprecated";
+            if (!deprecated.since().isBlank()) {
+                deprecationNotice = deprecationNotice + " since " + deprecated.since();
+            }
+
+            if (deprecated.forRemoval()) {
+                problems.addWarning("Configuration property '%s' %s and will be removed in the future", prefix + injectionPoint.getProperty(), deprecationNotice);
+            }
+            else {
+                problems.addWarning("Configuration property '%s' %s and should not be used", prefix + injectionPoint.getProperty(), deprecationNotice);
+            }
         }
 
         Object value = getInjectedValue(attribute, injectionPoint, prefix);
