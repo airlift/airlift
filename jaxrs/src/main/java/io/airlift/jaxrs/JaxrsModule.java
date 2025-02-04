@@ -50,7 +50,6 @@ public class JaxrsModule
         binder.bind(Servlet.class).to(Key.get(ServletContainer.class));
         newSetBinder(binder, Object.class, JaxrsResource.class).permitDuplicates();
         jaxrsBinder(binder).bind(JsonMapper.class);
-        jaxrsBinder(binder).bind(JacksonMapper.class);
 
         if (getProperty("tracing.enabled").map(Boolean::parseBoolean).orElse(false)) {
             install(new JaxrsTracingModule());
