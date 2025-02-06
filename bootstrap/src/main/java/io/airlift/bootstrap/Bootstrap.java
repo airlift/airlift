@@ -134,25 +134,45 @@ public class Bootstrap
 
     public Bootstrap doNotInitializeLogging()
     {
-        this.initializeLogging = false;
-        return this;
+        return withInitializeLogging(false);
     }
 
     public Bootstrap quiet()
     {
-        this.quiet = true;
-        return this;
+        return withQuiet(true);
     }
 
     public Bootstrap loadSecretsPlugins()
     {
-        this.loadSecretsPlugins = true;
-        return this;
+        return withLoadSecretsPlugins(true);
     }
 
     public Bootstrap skipErrorReporting()
     {
-        this.skipErrorReporting = true;
+        return withSkipErrorReporting(true);
+    }
+
+    public Bootstrap withInitializeLogging(boolean initializeLogging)
+    {
+        this.initializeLogging = initializeLogging;
+        return this;
+    }
+
+    public Bootstrap withQuiet(boolean quiet)
+    {
+        this.quiet = quiet;
+        return this;
+    }
+
+    public Bootstrap withLoadSecretsPlugins(boolean load)
+    {
+        this.loadSecretsPlugins = load;
+        return this;
+    }
+
+    public Bootstrap withSkipErrorReporting(boolean skip)
+    {
+        this.skipErrorReporting = skip;
         return this;
     }
 
