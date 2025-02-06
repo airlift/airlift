@@ -20,6 +20,7 @@ import io.airlift.http.client.StreamingBodyGenerator;
 import io.airlift.http.client.StreamingResponse;
 import io.airlift.http.client.jetty.HttpClientLogger.RequestInfo;
 import io.airlift.http.client.jetty.HttpClientLogger.ResponseInfo;
+import io.airlift.memory.jetty.ConcurrentRetainableBufferPool;
 import io.airlift.security.pem.PemReader;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
@@ -449,14 +450,20 @@ public class JettyHttpClient
 
     private ByteBufferPool createByteBufferPool(int maxBufferSize, HttpClientConfig config)
     {
+        long maxHeapMemory = config.getMaxHeapMemory().map(DataSize::toBytes).orElse(0L);
+        long maxOffHeapMemory = config.getMaxDirectMemory().map(DataSize::toBytes).orElse(0L);
+
+        if (config.getHttpBufferPoolType() == HttpClientConfig.HttpBufferPoolType.FFM) {
+            return new ConcurrentRetainableBufferPool(maxHeapMemory, maxOffHeapMemory);
+        }
+
+        // default
         ArrayByteBufferPool pool = new ArrayByteBufferPool.Quadratic(
                 0,
                 maxBufferSize,
                 Integer.MAX_VALUE,
-                config.getMaxHeapMemory().map(DataSize::toBytes)
-                        .orElse(0L), // Use default heuristics for max heap memory
-                config.getMaxDirectMemory().map(DataSize::toBytes)
-                        .orElse(0L)); // Use default heuristics for max directory memory
+                maxHeapMemory,
+                maxOffHeapMemory);
         pool.setStatisticsEnabled(true);
         return pool;
     }

@@ -101,6 +101,7 @@ public class HttpServerConfig
 
     private Optional<DataSize> maxHeapMemory = Optional.empty();
     private Optional<DataSize> maxDirectMemory = Optional.empty();
+    private HttpBufferPoolType httpBufferPoolType = HttpBufferPoolType.FFM;
 
     public boolean isHttpEnabled()
     {
@@ -493,7 +494,7 @@ public class HttpServerConfig
         return this;
     }
 
-    public Optional<@MinDataSize("16MB") DataSize> getMaxHeapMemory()
+    public Optional<@MinDataSize("8MB") DataSize> getMaxHeapMemory()
     {
         return maxHeapMemory;
     }
@@ -506,7 +507,7 @@ public class HttpServerConfig
         return this;
     }
 
-    public Optional<@MinDataSize("16MB") DataSize> getMaxDirectMemory()
+    public Optional<@MinDataSize("8MB") DataSize> getMaxDirectMemory()
     {
         return maxDirectMemory;
     }
@@ -516,6 +517,18 @@ public class HttpServerConfig
     public HttpServerConfig setMaxDirectMemory(DataSize maxDirectMemory)
     {
         this.maxDirectMemory = Optional.ofNullable(maxDirectMemory);
+        return this;
+    }
+
+    public HttpBufferPoolType getHttpBufferPoolType()
+    {
+        return httpBufferPoolType;
+    }
+
+    @Config("http-server.buffer-pool-type")
+    public HttpServerConfig setHttpBufferPoolType(HttpBufferPoolType httpBufferPoolType)
+    {
+        this.httpBufferPoolType = httpBufferPoolType;
         return this;
     }
 
@@ -536,6 +549,21 @@ public class HttpServerConfig
             return switch (value.toUpperCase(ENGLISH)) {
                 case "TRUE" -> ACCEPT;
                 case "FALSE" -> REJECT;
+                default -> valueOf(value.toUpperCase(ENGLISH));
+            };
+        }
+    }
+
+    public enum HttpBufferPoolType
+    {
+        DEFAULT,
+        FFM;
+
+        public static HttpBufferPoolType fromString(String value)
+        {
+            return switch (value.toUpperCase(ENGLISH)) {
+                case "DEFAULT" -> DEFAULT;
+                case "FFM" -> FFM;
                 default -> valueOf(value.toUpperCase(ENGLISH));
             };
         }

@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableSet;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.http.server.jetty.MonitoredQueuedThreadPoolMBean;
 import io.airlift.log.Logger;
+import io.airlift.memory.jetty.ConcurrentRetainableBufferPool;
 import io.airlift.node.NodeInfo;
 import io.airlift.units.DataSize;
 import jakarta.annotation.PostConstruct;
@@ -298,14 +299,20 @@ public class HttpServer
 
     private ByteBufferPool createByteBufferPool(int maxBufferSize, HttpServerConfig config)
     {
+        long maxHeapMemory = config.getMaxHeapMemory().map(DataSize::toBytes).orElse(0L);
+        long maxOffHeapMemory = config.getMaxDirectMemory().map(DataSize::toBytes).orElse(0L);
+
+        if (config.getHttpBufferPoolType() == HttpServerConfig.HttpBufferPoolType.FFM) {
+            return new ConcurrentRetainableBufferPool(maxHeapMemory, maxOffHeapMemory);
+        }
+
+        // default
         ArrayByteBufferPool pool = new ArrayByteBufferPool.Quadratic(
                 0,
                 maxBufferSize,
                 Integer.MAX_VALUE,
-                config.getMaxHeapMemory().map(DataSize::toBytes)
-                        .orElse(0L), // Use default heuristics for max heap memory
-                config.getMaxDirectMemory().map(DataSize::toBytes)
-                        .orElse(0L)); // Use default heuristics for max direct memory
+                maxHeapMemory,
+                maxOffHeapMemory);
         pool.setStatisticsEnabled(true);
         return pool;
     }
