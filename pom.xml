@@ -47,6 +47,7 @@
         <module>http-server</module>
         <module>jaxrs</module>
         <module>jaxrs-testing</module>
+        <module>jetty-memory</module>
         <module>jmx</module>
         <module>jmx-http</module>
         <module>json</module>
@@ -145,6 +146,12 @@
             <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>jaxrs</artifactId>
+                <version>${dep.airlift.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>jetty-memory</artifactId>
                 <version>${dep.airlift.version}</version>
             </dependency>
 

@@ -25,6 +25,8 @@ import java.util.Map;
 import static io.airlift.configuration.testing.ConfigAssertions.assertFullMapping;
 import static io.airlift.configuration.testing.ConfigAssertions.assertRecordedDefaults;
 import static io.airlift.configuration.testing.ConfigAssertions.recordDefaults;
+import static io.airlift.http.server.HttpServerConfig.HttpBufferPoolType.DEFAULT;
+import static io.airlift.http.server.HttpServerConfig.HttpBufferPoolType.FFM;
 import static io.airlift.http.server.HttpServerConfig.ProcessForwardedMode.IGNORE;
 import static io.airlift.http.server.HttpServerConfig.ProcessForwardedMode.REJECT;
 import static io.airlift.units.DataSize.Unit.GIGABYTE;
@@ -70,7 +72,8 @@ public class TestHttpServerConfig
                 .setHttp2StreamIdleTimeout(new Duration(15, SECONDS))
                 .setCompressionEnabled(true)
                 .setMaxHeapMemory(null)
-                .setMaxDirectMemory(null));
+                .setMaxDirectMemory(null)
+                .setHttpBufferPoolType(DEFAULT));
     }
 
     @Test
@@ -109,6 +112,7 @@ public class TestHttpServerConfig
                 .put("http-server.compression.enabled", "false")
                 .put("http-server.max-heap-memory", "127GB")
                 .put("http-server.max-direct-memory", "129GB")
+                .put("http-server.buffer-pool-type", "FFM")
                 .build();
 
         HttpServerConfig expected = new HttpServerConfig()
@@ -143,7 +147,8 @@ public class TestHttpServerConfig
                 .setHttp2StreamIdleTimeout(new Duration(23, SECONDS))
                 .setCompressionEnabled(false)
                 .setMaxHeapMemory(DataSize.of(127, GIGABYTE))
-                .setMaxDirectMemory(DataSize.of(129, GIGABYTE));
+                .setMaxDirectMemory(DataSize.of(129, GIGABYTE))
+                .setHttpBufferPoolType(FFM);
 
         assertFullMapping(properties, expected);
     }

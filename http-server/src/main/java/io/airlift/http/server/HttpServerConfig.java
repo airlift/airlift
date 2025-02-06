@@ -101,6 +101,7 @@ public class HttpServerConfig
 
     private Optional<DataSize> maxHeapMemory = Optional.empty();
     private Optional<DataSize> maxDirectMemory = Optional.empty();
+    private HttpBufferPoolType httpBufferPoolType = HttpBufferPoolType.DEFAULT;
 
     public boolean isHttpEnabled()
     {
@@ -519,6 +520,18 @@ public class HttpServerConfig
         return this;
     }
 
+    public HttpBufferPoolType getHttpBufferPoolType()
+    {
+        return httpBufferPoolType;
+    }
+
+    @Config("http-server.buffer-pool-type")
+    public HttpServerConfig setHttpBufferPoolType(HttpBufferPoolType httpBufferPoolType)
+    {
+        this.httpBufferPoolType = httpBufferPoolType;
+        return this;
+    }
+
     @AssertTrue(message = "either both http-server.max-heap-memory and http-server.max-direct-memory are set or none of them")
     public boolean eitherBothMemorySettingsAreSetOrNone()
     {
@@ -539,5 +552,11 @@ public class HttpServerConfig
                 default -> valueOf(value.toUpperCase(ENGLISH));
             };
         }
+    }
+
+    public enum HttpBufferPoolType
+    {
+        DEFAULT,
+        FFM;
     }
 }
