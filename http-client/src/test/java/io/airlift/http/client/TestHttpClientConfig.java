@@ -29,6 +29,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import static io.airlift.http.client.HttpClientConfig.HttpBufferPoolType.DEFAULT;
+import static io.airlift.http.client.HttpClientConfig.HttpBufferPoolType.FFM;
 import static io.airlift.http.client.HttpClientConfig.JAVAX_NET_SSL_KEY_STORE;
 import static io.airlift.http.client.HttpClientConfig.JAVAX_NET_SSL_KEY_STORE_PASSWORD;
 import static io.airlift.http.client.HttpClientConfig.JAVAX_NET_SSL_TRUST_STORE;
@@ -60,6 +62,7 @@ public class TestHttpClientConfig
                 .setResponseBufferSize(DataSize.of(16, KILOBYTE))
                 .setMaxHeapMemory(null)
                 .setMaxDirectMemory(null)
+                .setHttpBufferPoolType(DEFAULT)
                 .setSocksProxy(null)
                 .setHttpProxy(null)
                 .setHttpProxyUser(null)
@@ -112,6 +115,7 @@ public class TestHttpClientConfig
                 .put("http-client.response-buffer-size", "43kB")
                 .put("http-client.max-heap-memory", "1337MB")
                 .put("http-client.max-direct-memory", "2137MB")
+                .put("http-client.buffer-pool-type", "FFM")
                 .put("http-client.socks-proxy", "localhost:1080")
                 .put("http-client.http-proxy", "localhost:8080")
                 .put("http-client.http-proxy.user", "user")
@@ -161,6 +165,7 @@ public class TestHttpClientConfig
                 .setResponseBufferSize(DataSize.of(43, KILOBYTE))
                 .setMaxHeapMemory(DataSize.of(1337, MEGABYTE))
                 .setMaxDirectMemory(DataSize.of(2137, MEGABYTE))
+                .setHttpBufferPoolType(FFM)
                 .setSocksProxy(HostAndPort.fromParts("localhost", 1080))
                 .setHttpProxy(HostAndPort.fromParts("localhost", 8080))
                 .setHttpProxyUser("user")

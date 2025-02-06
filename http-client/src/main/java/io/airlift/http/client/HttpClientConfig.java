@@ -77,6 +77,7 @@ public class HttpClientConfig
     private DataSize responseBufferSize = DataSize.of(16, KILOBYTE);
     private Optional<DataSize> maxHeapMemory = Optional.empty();
     private Optional<DataSize> maxDirectMemory = Optional.empty();
+    private HttpBufferPoolType httpBufferPoolType = HttpBufferPoolType.DEFAULT;
     private HostAndPort socksProxy;
     private HostAndPort httpProxy;
     private boolean secureProxy;
@@ -293,6 +294,18 @@ public class HttpClientConfig
     public HttpClientConfig setMaxDirectMemory(DataSize maxDirectMemory)
     {
         this.maxDirectMemory = Optional.ofNullable(maxDirectMemory);
+        return this;
+    }
+
+    public HttpBufferPoolType getHttpBufferPoolType()
+    {
+        return httpBufferPoolType;
+    }
+
+    @Config("http-client.buffer-pool-type")
+    public HttpClientConfig setHttpBufferPoolType(HttpBufferPoolType httpBufferPoolType)
+    {
+        this.httpBufferPoolType = httpBufferPoolType;
         return this;
     }
 
@@ -750,5 +763,11 @@ public class HttpClientConfig
             throw new ConfigurationException(ImmutableList.of(
                     new Message("http-client.http-proxy.secure can be enabled only when http-client.http-proxy is set")));
         }
+    }
+
+    public enum HttpBufferPoolType
+    {
+        DEFAULT,
+        FFM;
     }
 }

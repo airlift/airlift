@@ -20,6 +20,7 @@ import io.airlift.http.client.StreamingBodyGenerator;
 import io.airlift.http.client.StreamingResponse;
 import io.airlift.http.client.jetty.HttpClientLogger.RequestInfo;
 import io.airlift.http.client.jetty.HttpClientLogger.ResponseInfo;
+import io.airlift.memory.jetty.ConcurrentRetainableBufferPool;
 import io.airlift.security.pem.PemReader;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
@@ -122,6 +123,7 @@ import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.base.Verify.verify;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.InetAddresses.isInetAddress;
+import static io.airlift.http.client.HttpClientConfig.HttpBufferPoolType.FFM;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
 import static io.airlift.node.AddressToHostname.tryDecodeHostnameToAddress;
 import static io.airlift.security.cert.CertificateBuilder.certificateBuilder;
@@ -449,14 +451,19 @@ public class JettyHttpClient
 
     private ByteBufferPool createByteBufferPool(int maxBufferSize, HttpClientConfig config)
     {
+        long maxHeapMemory = config.getMaxHeapMemory().map(DataSize::toBytes).orElse(0L); // Use default heuristics for max heap memory
+        long maxOffHeapMemory = config.getMaxDirectMemory().map(DataSize::toBytes).orElse(0L); // Use default heuristics for max off heap memory
+
+        if (config.getHttpBufferPoolType() == FFM) {
+            return new ConcurrentRetainableBufferPool(maxHeapMemory, maxOffHeapMemory);
+        }
+
         ArrayByteBufferPool pool = new ArrayByteBufferPool.Quadratic(
                 0,
                 maxBufferSize,
                 Integer.MAX_VALUE,
-                config.getMaxHeapMemory().map(DataSize::toBytes)
-                        .orElse(0L), // Use default heuristics for max heap memory
-                config.getMaxDirectMemory().map(DataSize::toBytes)
-                        .orElse(0L)); // Use default heuristics for max directory memory
+                maxHeapMemory,
+                maxOffHeapMemory);
         pool.setStatisticsEnabled(true);
         return pool;
     }
