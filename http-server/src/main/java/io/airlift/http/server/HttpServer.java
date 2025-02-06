@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableSet;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.http.server.jetty.MonitoredQueuedThreadPoolMBean;
 import io.airlift.log.Logger;
+import io.airlift.memory.jetty.ArrayByteBufferPool;
 import io.airlift.node.NodeInfo;
 import io.airlift.units.DataSize;
 import jakarta.annotation.PostConstruct;
@@ -35,7 +36,6 @@ import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http2.server.AuthorityCustomizer;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.jmx.MBeanContainer;
@@ -297,16 +297,9 @@ public class HttpServer
 
     private ByteBufferPool createByteBufferPool(int maxBufferSize, HttpServerConfig config)
     {
-        ArrayByteBufferPool pool = new ArrayByteBufferPool.Quadratic(
-                0,
-                maxBufferSize,
-                Integer.MAX_VALUE,
-                config.getMaxHeapMemory().map(DataSize::toBytes)
-                        .orElse(0L), // Use default heuristics for max heap memory
-                config.getMaxDirectMemory().map(DataSize::toBytes)
-                        .orElse(0L)); // Use default heuristics for max direct memory
-        pool.setStatisticsEnabled(true);
-        return pool;
+        return new ArrayByteBufferPool(maxBufferSize,
+                config.getMaxHeapMemory().map(DataSize::toBytes).orElse(0L), // Use default heuristics for max heap memory
+                config.getMaxDirectMemory().map(DataSize::toBytes).orElse(0L)); // Use default heuristics for max direct memory
     }
 
     private ConnectionFactory[] insecureFactories(HttpServerConfig config, HttpConfiguration httpConfiguration)

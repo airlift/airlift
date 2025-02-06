@@ -20,6 +20,7 @@ import io.airlift.http.client.StreamingBodyGenerator;
 import io.airlift.http.client.StreamingResponse;
 import io.airlift.http.client.jetty.HttpClientLogger.RequestInfo;
 import io.airlift.http.client.jetty.HttpClientLogger.ResponseInfo;
+import io.airlift.memory.jetty.ArrayByteBufferPool;
 import io.airlift.security.pem.PemReader;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
@@ -65,7 +66,6 @@ import org.eclipse.jetty.http.HttpCookieStore;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.transport.ClientConnectionFactoryOverHTTP2;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
@@ -448,16 +448,9 @@ public class JettyHttpClient
 
     private ByteBufferPool createByteBufferPool(int maxBufferSize, HttpClientConfig config)
     {
-        ArrayByteBufferPool pool = new ArrayByteBufferPool.Quadratic(
-                0,
-                maxBufferSize,
-                Integer.MAX_VALUE,
-                config.getMaxHeapMemory().map(DataSize::toBytes)
-                        .orElse(0L), // Use default heuristics for max heap memory
-                config.getMaxDirectMemory().map(DataSize::toBytes)
-                        .orElse(0L)); // Use default heuristics for max directory memory
-        pool.setStatisticsEnabled(true);
-        return pool;
+        return new ArrayByteBufferPool(maxBufferSize,
+                config.getMaxHeapMemory().map(DataSize::toBytes).orElse(0L), // Use default heuristics for max heap memory
+                config.getMaxDirectMemory().map(DataSize::toBytes).orElse(0L)); // Use default heuristics for max directory memory
     }
 
     private HttpClientTransport getClientTransport(ClientConnector connector, HttpClientConfig config)
