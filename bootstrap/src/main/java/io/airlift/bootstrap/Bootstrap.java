@@ -79,6 +79,7 @@ public class Bootstrap
     private Map<String, String> requiredConfigurationProperties;
     private Map<String, String> optionalConfigurationProperties;
     private boolean initializeLogging = true;
+    private boolean envInterpolation = true;
     private boolean quiet;
     private boolean loadSecretsPlugins;
     private boolean skipErrorReporting;
@@ -138,6 +139,11 @@ public class Bootstrap
         return withInitializeLogging(false);
     }
 
+    public Bootstrap disableEnvInterpolation()
+    {
+        return withEnvInterpolation(false);
+    }
+
     public Bootstrap quiet()
     {
         return withQuiet(true);
@@ -177,6 +183,12 @@ public class Bootstrap
         return this;
     }
 
+    public Bootstrap withEnvInterpolation(boolean interpolate)
+    {
+        this.envInterpolation = interpolate;
+        return this;
+    }
+
     /**
      * Validate configuration and return used properties.
      */
@@ -190,7 +202,9 @@ public class Bootstrap
             logging = Logging.initialize();
         }
 
-        this.secretsResolver = new SecretsResolver(ImmutableMap.of("env", new EnvironmentVariableSecretProvider()));
+        this.secretsResolver = envInterpolation ?
+                new SecretsResolver(ImmutableMap.of("env", new EnvironmentVariableSecretProvider())) :
+                new SecretsResolver(ImmutableMap.of());
 
         if (loadSecretsPlugins) {
             log.info("Loading secrets plugins");
