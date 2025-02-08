@@ -226,6 +226,40 @@ public class TestBootstrap
     }
 
     @Test
+    public void testDisableEnvInterpolation()
+    {
+        FooConfig interpolatedConfig = new Bootstrap(binder -> {
+            configBinder(binder).bindConfig(FooConfig.class);
+            binder.bind(FooInstance.class).asEagerSingleton();
+        })
+                .setOptionalConfigurationProperty("foo.password", "${ENV:FOO_PASSWORD}")
+                .initialize()
+                .getInstance(FooConfig.class);
+
+        assertThat(interpolatedConfig.getPassword()).isEqualTo("superSecretPassword");
+
+        Bootstrap bootstrap = new Bootstrap(binder -> {
+            configBinder(binder).bindConfig(FooConfig.class);
+            binder.bind(FooInstance.class).asEagerSingleton();
+        })
+                .disableEnvInterpolation();
+
+        assertThatThrownBy(bootstrap.setOptionalConfigurationProperty("foo.password", "${env:FOO_PASSWORD}")::initialize)
+                .isInstanceOf(ApplicationConfigurationException.class)
+                .hasMessageContaining("No secret provider for key 'env'");
+
+        Bootstrap otherBootstrap = new Bootstrap(binder -> {
+            configBinder(binder).bindConfig(FooConfig.class);
+            binder.bind(FooInstance.class).asEagerSingleton();
+        })
+                .disableEnvInterpolation();
+
+        assertThatThrownBy(otherBootstrap.setOptionalConfigurationProperty("foo.password", "${Env:FOO_PASSWORD}")::initialize)
+                .isInstanceOf(ApplicationConfigurationException.class)
+                .hasMessageContaining("No secret provider for key 'env'");
+    }
+
+    @Test
     public void testOptionalBindingWithLifeCycle()
     {
         Module module = binder -> {

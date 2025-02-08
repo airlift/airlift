@@ -73,6 +73,7 @@
                 <configuration>
                     <environmentVariables>
                         <TEST_KEY>test_value</TEST_KEY>
+                        <FOO_PASSWORD>superSecretPassword</FOO_PASSWORD>
                     </environmentVariables>
                 </configuration>
             </plugin>
