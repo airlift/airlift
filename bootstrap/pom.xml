@@ -31,6 +31,7 @@
             <groupId>io.airlift</groupId>
             <artifactId>configuration</artifactId>
         </dependency>
+
         <dependency>
             <groupId>io.airlift</groupId>
             <artifactId>log</artifactId>
@@ -44,6 +45,12 @@
         <dependency>
             <groupId>jakarta.annotation</groupId>
             <artifactId>jakarta.annotation-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>me.xdrop</groupId>
+            <artifactId>fuzzywuzzy</artifactId>
+            <version>1.4.0</version>
         </dependency>
 
         <!-- for testing -->

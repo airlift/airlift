@@ -73,13 +73,18 @@ public class TestBootstrap
     @Test
     public void testUnusedProperty()
     {
-        Bootstrap bootstrap = new Bootstrap()
-                .setRequiredConfigurationProperty("test-required", "foo");
+        Bootstrap bootstrap = new Bootstrap(binder -> {
+            configBinder(binder).bindConfig(FooConfig.class);
+            binder.bind(FooInstance.class).asEagerSingleton();
+        })
+                .setRequiredConfigurationProperty("foo.pasword", "foo")
+                .setRequiredConfigurationProperty("foo.disabled", "true");
 
         assertThatThrownBy(bootstrap::initialize)
                 .isInstanceOfSatisfying(ApplicationConfigurationException.class, e ->
                         assertThat(e.getErrors()).containsExactly(
-                                new Message("Configuration property 'test-required' was not used")));
+                                new Message("Configuration property 'foo.disabled' was not used. Did you mean to use 'foo.enabled'?"),
+                                new Message("Configuration property 'foo.pasword' was not used. Did you mean to use 'foo.password' or 'foo.password2'?")));
     }
 
     @Test
@@ -269,6 +274,7 @@ public class TestBootstrap
     {
         private boolean foo;
         public String password;
+        public String password2;
 
         public boolean isFoo()
         {
@@ -292,6 +298,19 @@ public class TestBootstrap
         public FooConfig setPassword(String password)
         {
             this.password = password;
+            return this;
+        }
+
+        public String getPassword2()
+        {
+            return password2;
+        }
+
+        @ConfigSecuritySensitive
+        @Config("foo.password2")
+        public FooConfig setPassword2(String password)
+        {
+            this.password2 = password;
             return this;
         }
     }
