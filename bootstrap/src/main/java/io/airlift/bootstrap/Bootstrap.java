@@ -52,6 +52,7 @@ import java.util.TreeMap;
 
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
+import static io.airlift.bootstrap.FuzzyMatcher.findSimilar;
 import static io.airlift.configuration.ConfigurationLoader.getSystemProperties;
 import static io.airlift.configuration.ConfigurationLoader.loadPropertiesFrom;
 import static io.airlift.configuration.TomlConfiguration.createTomlConfiguration;
@@ -264,7 +265,7 @@ public class Bootstrap
         unusedProperties.keySet().removeAll(usedProperties);
 
         for (String key : unusedProperties.keySet()) {
-            errors.add(new Message(format("Configuration property '%s' was not used", key)));
+            errors.add(new Message(format("Configuration property '%s' was not used" + suggest(key, configurationFactory.getAllSeenProperties()), key)));
         }
 
         // If there are configuration errors, fail-fast to keep output clean
@@ -353,5 +354,19 @@ public class Bootstrap
             }
         }
         return columnPrinter;
+    }
+
+    private static String suggest(String key, Set<String> knownProperties)
+    {
+        List<String> suggestions = findSimilar(key, knownProperties, 3);
+        if (suggestions.isEmpty()) {
+            return "";
+        }
+
+        return ". Did you mean to use " + switch (suggestions.size()) {
+            case 3 -> "'" + suggestions.get(0) + "', '" + suggestions.get(1) + "' or '" + suggestions.get(2) + "'?";
+            case 2 -> "'" + suggestions.get(0) + "' or '" + suggestions.get(1) + "'?";
+            default -> "'" + suggestions.get(0) + "'?";
+        };
     }
 }
