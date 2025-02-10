@@ -55,6 +55,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -109,6 +110,7 @@ public class ConfigurationFactory
     private final WarningsMonitor warningsMonitor;
     private final ConcurrentMap<ConfigurationProvider<?>, Object> instanceCache = new ConcurrentHashMap<>();
     private final Set<ConfigPropertyMetadata> usedProperties = newConcurrentHashSet();
+    private final Set<String> allSeenProperties = new HashSet<>();
     private final Set<ConfigurationProvider<?>> registeredProviders = newConcurrentHashSet();
     @GuardedBy("this")
     private final List<Consumer<ConfigurationProvider<?>>> configurationBindingListeners = new ArrayList<>();
@@ -153,6 +155,14 @@ public class ConfigurationFactory
     public Collection<Message> registerConfigurationClasses(Module module)
     {
         return registerConfigurationClasses(ImmutableList.of(module));
+    }
+
+    /**
+     * Returns names of all configuration properties that were seen during the configuration
+     */
+    public Set<String> getAllSeenProperties()
+    {
+        return allSeenProperties;
     }
 
     /**
@@ -387,6 +397,7 @@ public class ConfigurationFactory
         configDefaults.setDefaults(instance);
 
         for (AttributeMetadata attribute : configurationMetadata.getAttributes().values()) {
+            allSeenProperties.add(prefix + attribute.getInjectionPoint().getProperty());
             Problems attributeProblems = new Problems();
             try {
                 setConfigProperty(instance, attribute, prefix, attributeProblems);
