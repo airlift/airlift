@@ -31,6 +31,7 @@ import java.util.Optional;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.lang.String.CASE_INSENSITIVE_ORDER;
+import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
 
 public final class Request
@@ -64,7 +65,7 @@ public final class Request
         requireNonNull(uri, "uri is null");
         checkArgument(uri.getHost() != null, "uri does not have a host: %s", uri);
         checkArgument(uri.getScheme() != null, "uri does not have a scheme: %s", uri);
-        String scheme = uri.getScheme().toLowerCase();
+        String scheme = uri.getScheme().toLowerCase(ENGLISH);
         checkArgument("http".equals(scheme) || "https".equals(scheme), "uri scheme must be http or https: %s", uri);
         requireNonNull(method, "method is null");
 
@@ -177,7 +178,7 @@ public final class Request
                 Objects.equals(maxContentLength, r.maxContentLength) &&
                 Objects.equals(bodyGenerator, r.bodyGenerator) &&
                 Objects.equals(spanBuilder, r.spanBuilder) &&
-                Objects.equals(followRedirects, r.followRedirects);
+                followRedirects == r.followRedirects;
     }
 
     @Override
@@ -253,7 +254,6 @@ public final class Request
         private SpanBuilder spanBuilder;
         private Optional<HttpVersion> version = Optional.empty();
         private boolean followRedirects = true;
-        private boolean preserveAuthorizationOnRedirect;
         private Optional<Duration> requestTimeout = Optional.empty();
         private Optional<Duration> idleTimeout = Optional.empty();
         private Optional<DataSize> maxContentLength = Optional.empty();

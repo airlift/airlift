@@ -89,7 +89,6 @@ public class TestJsonModule
     public void testSetup()
             throws Exception
     {
-        assertThat(CAR).isEqualTo(CAR);
         String json = objectMapper.writeValueAsString(CAR);
         Car actual = objectMapper.readValue(json, Car.class);
         assertThat(actual).isEqualTo(CAR);
@@ -390,7 +389,7 @@ public class TestJsonModule
             this(superDuperNameList, null);
         }
 
-        private SuperDuperNameList(String superDuperNameList, Object stopJacksonFromUsingStringConstructor)
+        private SuperDuperNameList(String superDuperNameList, Object ignored)
         {
             this.name = ImmutableList.copyOf(Splitter.on('*').split(superDuperNameList));
         }

@@ -23,7 +23,7 @@ import jakarta.annotation.PreDestroy;
 public class InstanceOne
 {
     @Inject
-    public InstanceOne(DependentInstance otro) {}
+    public InstanceOne(DependentInstance ignored) {}
 
     @PostConstruct
     public void postMakeOne()

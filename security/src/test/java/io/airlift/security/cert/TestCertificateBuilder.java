@@ -70,8 +70,7 @@ public class TestCertificateBuilder
         trustManagerFactory.init(keyStore);
 
         for (TrustManager trustManager : trustManagerFactory.getTrustManagers()) {
-            if (trustManager instanceof X509TrustManager) {
-                X509TrustManager x509TrustManager = (X509TrustManager) trustManager;
+            if (trustManager instanceof X509TrustManager x509TrustManager) {
                 x509TrustManager.checkServerTrusted(new X509Certificate[] {certificate}, "RSA");
             }
         }
