@@ -60,12 +60,22 @@ public class OpenTelemetryModule
 
     @Provides
     @Singleton
-    public OpenTelemetry createOpenTelemetry(NodeInfo nodeInfo, Set<SpanProcessor> spanProcessors, OpenTelemetryConfig config)
+    public OpenTelemetry createOpenTelemetry(Set<SpanProcessor> spanProcessors, SdkTracerProvider tracerProvider)
     {
         if (spanProcessors.isEmpty()) {
             return OpenTelemetry.noop();
         }
 
+        return OpenTelemetrySdk.builder()
+                .setTracerProvider(tracerProvider)
+                .setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
+                .build();
+    }
+
+    @Provides
+    @Singleton
+    public SdkTracerProvider createTracerProvider(NodeInfo nodeInfo, Set<SpanProcessor> spanProcessors, OpenTelemetryConfig config)
+    {
         AttributesBuilder attributes = Attributes.builder()
                 .put(ServiceAttributes.SERVICE_NAME, serviceName)
                 .put(ServiceAttributes.SERVICE_VERSION, serviceVersion)
@@ -82,15 +92,10 @@ public class OpenTelemetryModule
 
         Resource resource = Resource.getDefault().merge(Resource.create(attributes.build()));
 
-        SdkTracerProvider tracerProvider = SdkTracerProvider.builder()
+        return SdkTracerProvider.builder()
                 .setSampler(parentBased(traceIdRatioBased(config.getSamplingRatio())))
                 .addSpanProcessor(SpanProcessor.composite(spanProcessors))
                 .setResource(resource)
-                .build();
-
-        return OpenTelemetrySdk.builder()
-                .setTracerProvider(tracerProvider)
-                .setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
                 .build();
     }
 
