@@ -86,7 +86,7 @@
         <!-- do not run tests on release -->
         <air.release.preparation-goals>clean verify -DskipTests</air.release.preparation-goals>
 
-        <project.build.targetJdk>21</project.build.targetJdk>
+        <project.build.targetJdk>23</project.build.targetJdk>
         <air.modernizer.java-version>8</air.modernizer.java-version>
 
         <dep.airlift.version>305-SNAPSHOT</dep.airlift.version>
