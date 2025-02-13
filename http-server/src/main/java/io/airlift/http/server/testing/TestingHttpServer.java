@@ -99,6 +99,7 @@ public class TestingHttpServer
                 enableCaseSensitiveHeaderCache,
                 clientCertificate,
                 null,
+                Optional.empty(),
                 Optional.empty());
         this.httpServerInfo = httpServerInfo;
     }

@@ -24,6 +24,7 @@ import io.airlift.http.server.HttpServer.ClientCertificate;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.http.server.tracing.TracingServletFilter;
 import jakarta.servlet.Filter;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
@@ -77,6 +78,7 @@ public class HttpServerModule
 
         configBinder(binder).bindConfig(HttpServerConfig.class);
         newOptionalBinder(binder, HttpsConfig.class);
+        newOptionalBinder(binder, ByteBufferPool.class);
 
         binder.bind(AnnouncementHttpServerInfo.class).to(LocalAnnouncementHttpServerInfo.class).in(Scopes.SINGLETON);
 
