@@ -31,6 +31,7 @@ import io.airlift.node.NodeInfo;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.TracerProvider;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import java.lang.annotation.Annotation;
@@ -80,6 +81,9 @@ public class HttpClientModule
 
         // kick off the binding for the filter set
         newSetBinder(binder, HttpRequestFilter.class, annotation);
+
+        // kick off the binding for the byte buffer pool
+        newOptionalBinder(binder, Key.get(ByteBufferPool.class, annotation));
 
         // export stats
         newExporter(binder).export(HttpClient.class).annotatedWith(annotation).withGeneratedName();
@@ -136,6 +140,7 @@ public class HttpClientModule
             HttpClientConfig config = injector.getInstance(Key.get(HttpClientConfig.class, annotation));
             Optional<String> environment = Optional.ofNullable(nodeInfo).map(NodeInfo::getEnvironment);
             Optional<SslContextFactory.Client> sslContextFactory = injector.getInstance(Key.get(new TypeLiteral<>() {}));
+            Optional<ByteBufferPool> byteBufferPool = injector.getInstance(Key.get(new TypeLiteral<>() {}));
 
             Set<HttpRequestFilter> filters = ImmutableSet.<HttpRequestFilter>builder()
                     .addAll(injector.getInstance(Key.get(new TypeLiteral<Set<HttpRequestFilter>>() {}, GlobalFilter.class)))
@@ -147,7 +152,7 @@ public class HttpClientModule
                     .addAll(injector.getInstance(Key.get(new TypeLiteral<Set<HttpStatusListener>>() {}, annotation)))
                     .build();
 
-            return new JettyHttpClient(name, config, ImmutableList.copyOf(filters), openTelemetry, tracer, environment, sslContextFactory, httpStatusListeners);
+            return new JettyHttpClient(name, config, ImmutableList.copyOf(filters), openTelemetry, tracer, environment, sslContextFactory, byteBufferPool, httpStatusListeners);
         }
     }
 }
