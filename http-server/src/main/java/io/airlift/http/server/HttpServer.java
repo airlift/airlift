@@ -121,7 +121,8 @@ public class HttpServer
             boolean enableCaseSensitiveHeaderCache,
             ClientCertificate clientCertificate,
             MBeanServer mbeanServer,
-            Optional<SslContextFactory.Server> maybeSslContextFactory)
+            Optional<SslContextFactory.Server> maybeSslContextFactory,
+            Optional<ByteBufferPool> byteBufferPool)
             throws IOException
     {
         requireNonNull(httpServerInfo, "httpServerInfo is null");
@@ -151,7 +152,7 @@ public class HttpServer
                 toSafeBytes(config.getMaxResponseHeaderSize()).orElse(8192)),
                 toSafeBytes(config.getOutputBufferSize()).orElse(32768)));
 
-        server = new Server(threadPool, null, createByteBufferPool(maxBufferSize, config));
+        server = new Server(threadPool, null, byteBufferPool.orElseGet(() -> createByteBufferPool(maxBufferSize, config)));
         this.monitoredQueuedThreadPoolMBean = new MonitoredQueuedThreadPoolMBean(threadPool);
 
         boolean showStackTrace = config.isShowStackTrace();

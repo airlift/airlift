@@ -228,6 +228,7 @@ public class TestHttpServerCipher
                 false,
                 false,
                 ClientCertificate.NONE,
+                Optional.empty(),
                 Optional.empty()).get();
     }
 }

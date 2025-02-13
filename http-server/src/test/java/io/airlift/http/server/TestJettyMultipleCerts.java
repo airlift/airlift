@@ -86,6 +86,7 @@ public class TestJettyMultipleCerts
                 false,
                 false,
                 ClientCertificate.NONE,
+                Optional.empty(),
                 Optional.empty());
 
         try (Closer closer = Closer.create()) {
