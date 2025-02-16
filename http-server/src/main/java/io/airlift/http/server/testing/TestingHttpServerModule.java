@@ -28,6 +28,7 @@ import io.airlift.http.server.HttpServerInfo;
 import io.airlift.http.server.HttpsConfig;
 import io.airlift.http.server.LocalAnnouncementHttpServerInfo;
 import jakarta.servlet.Filter;
+import org.eclipse.jetty.io.ByteBufferPool;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
@@ -70,6 +71,7 @@ public class TestingHttpServerModule
         newSetBinder(binder, HttpResourceBinding.class);
         binder.bind(AnnouncementHttpServerInfo.class).to(LocalAnnouncementHttpServerInfo.class);
         newOptionalBinder(binder, Key.get(Boolean.class, EnableCaseSensitiveHeaderCache.class)).setDefault().toInstance(false);
+        newOptionalBinder(binder, ByteBufferPool.class);
 
         newOptionalBinder(binder, HttpsConfig.class);
         install(conditionalModule(HttpServerConfig.class, HttpServerConfig::isHttpsEnabled, moduleBinder -> {
