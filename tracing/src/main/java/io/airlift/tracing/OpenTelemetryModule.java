@@ -33,6 +33,7 @@ import static com.google.common.base.StandardSystemProperty.OS_VERSION;
 import static com.google.common.base.Strings.nullToEmpty;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static io.airlift.configuration.ConfigBinder.configBinder;
+import static io.airlift.tracing.Tracing.noopTracer;
 import static io.opentelemetry.sdk.trace.samplers.Sampler.parentBased;
 import static io.opentelemetry.sdk.trace.samplers.Sampler.traceIdRatioBased;
 import static java.lang.String.format;
@@ -101,9 +102,12 @@ public class OpenTelemetryModule
 
     @Provides
     @Singleton
-    public Tracer createTracer(OpenTelemetry openTelemetry)
+    public Tracer createTracer(Set<SpanProcessor> spanProcessors, SdkTracerProvider tracerProvider)
     {
-        return openTelemetry.getTracer(serviceName);
+        if (spanProcessors.isEmpty()) {
+            return noopTracer();
+        }
+        return tracerProvider.get(serviceName);
     }
 
     private static String processRuntime()
