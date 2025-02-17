@@ -34,7 +34,8 @@ final class TestBootstrapWithSecretsProvider
     void testBootstrapWithDefaultSecretsProvider()
     {
         Bootstrap bootstrap = new Bootstrap(binder -> configBinder(binder).bindConfig(FooConfig.class))
-                .setRequiredConfigurationProperties(ImmutableMap.of("foo.value", "${ENV:TEST_KEY}"));
+                .setRequiredConfigurationProperties(ImmutableMap.of("foo.value", "${ENV:TEST_KEY}"))
+                .enableEnvInterpolation();
 
         Injector injector = bootstrap.initialize();
 
