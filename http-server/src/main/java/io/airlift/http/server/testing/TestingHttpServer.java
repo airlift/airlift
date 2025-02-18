@@ -28,6 +28,7 @@ import io.airlift.http.server.HttpsConfig;
 import io.airlift.node.NodeInfo;
 import jakarta.servlet.Filter;
 import jakarta.servlet.Servlet;
+import org.eclipse.jetty.io.ByteBufferPool;
 
 import java.io.IOException;
 import java.net.URI;
@@ -69,7 +70,8 @@ public class TestingHttpServer
                 enableVirtualThreads,
                 enableLegacyUriCompliance,
                 enableCaseSensitiveHeaderCache,
-                ClientCertificate.NONE);
+                ClientCertificate.NONE,
+                Optional.empty());
     }
 
     @Inject
@@ -84,7 +86,8 @@ public class TestingHttpServer
             @EnableVirtualThreads boolean enableVirtualThreads,
             @EnableLegacyUriCompliance boolean enableLegacyUriCompliance,
             @EnableCaseSensitiveHeaderCache boolean enableCaseSensitiveHeaderCache,
-            ClientCertificate clientCertificate)
+            ClientCertificate clientCertificate,
+            Optional<ByteBufferPool> byteBufferPool)
             throws IOException
     {
         super(httpServerInfo,
@@ -100,7 +103,7 @@ public class TestingHttpServer
                 clientCertificate,
                 null,
                 Optional.empty(),
-                Optional.empty());
+                byteBufferPool);
         this.httpServerInfo = httpServerInfo;
     }
 

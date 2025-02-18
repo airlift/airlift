@@ -367,7 +367,7 @@ public abstract class AbstractTestTestingHttpServer
         NodeInfo nodeInfo = new NodeInfo("test");
         HttpServerConfig config = new HttpServerConfig().setHttpPort(0);
         HttpServerInfo httpServerInfo = new HttpServerInfo(config, nodeInfo);
-        return new TestingHttpServer(httpServerInfo, nodeInfo, config, Optional.empty(), servlet, ImmutableSet.of(filter), ImmutableSet.of(), enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache, ClientCertificate.NONE);
+        return new TestingHttpServer(httpServerInfo, nodeInfo, config, Optional.empty(), servlet, ImmutableSet.of(filter), ImmutableSet.of(), enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache, ClientCertificate.NONE, Optional.empty());
     }
 
     static class DummyServlet
