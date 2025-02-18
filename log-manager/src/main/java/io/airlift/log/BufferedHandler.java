@@ -12,6 +12,8 @@ import org.weakref.jmx.Managed;
 
 import java.time.Duration;
 import java.util.Deque;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
@@ -41,7 +43,7 @@ import static java.util.logging.ErrorManager.WRITE_FAILURE;
 import static java.util.stream.Collectors.joining;
 
 @ThreadSafe
-class BufferedHandler
+public class BufferedHandler
         extends Handler
 {
     public interface DropSummaryFormatter
@@ -49,7 +51,8 @@ class BufferedHandler
         String formatDropSummary(Multiset<String> dropCountBySource);
     }
 
-    private static final MessageAndSource TERMINAL_MESSAGE = new MessageAndSource(new byte[] {}, "");
+    private static final byte[] EMPTY_BYTES = new byte[0];
+    private static final MessageAndSource TERMINAL_MESSAGE = new MessageAndSource(EMPTY_BYTES, "", null);
 
     private final ExecutorService bufferDrainExecutor = newSingleThreadExecutor(daemonThreadsNamed("log-buffer-drainer"));
     private final AtomicBoolean initialized = new AtomicBoolean();
@@ -70,6 +73,9 @@ class BufferedHandler
     private final Multiset<String> dropCountBySource = HashMultiset.create();
     @GuardedBy("queueDrainLock")
     private boolean terminalMessageDequeued;
+    @Nullable
+    @GuardedBy("queueDrainLock")
+    private CompletableFuture<Void> flushedSignal;
 
     public BufferedHandler(MessageOutput messageOutput, Formatter formatter, ErrorManager errorManager)
     {
@@ -129,6 +135,7 @@ class BufferedHandler
             try {
                 Multiset<String> dropSnapshot = ImmutableMultiset.of();
                 MessageAndSource message = null;
+                CompletableFuture<Void> flushedSignal = null;
                 try {
                     // Extract work to do
                     queueDrainLock.lock();
@@ -144,13 +151,17 @@ class BufferedHandler
                             // Note: queuePollFirst() will return null and set terminalMessageDequeued when encountering TERMINAL_MESSAGE.
                             message = queuePollFirst();
 
-                            if (!dropSnapshot.isEmpty() || message != null) {
+                            flushedSignal = this.flushedSignal;
+                            this.flushedSignal = null;
+
+                            if (!dropSnapshot.isEmpty() || message != null || flushedSignal != null) {
                                 // Work found
                                 break;
                             }
 
                             if (terminalMessageDequeued) {
-                                // No more work and terminal message was already located
+                                // No more work and terminal message was already located, gather any flush signals pending to notify them
+                                flushedSignal = removeAndGatherPendingFlushMessages();
                                 return; // Graceful way to exit the drain loop (other than via interruption)
                             }
 
@@ -182,8 +193,8 @@ class BufferedHandler
                         flushCounter++;
                     }
 
-                    // Flush after some number of messages or if there is nothing more to process at the moment
-                    if (flushCounter >= messageFlushCount || !hasDrainingWork()) {
+                    // Flush after some number of messages or if a flush was requested or if there is nothing more to process at the moment
+                    if (flushCounter >= messageFlushCount || flushedSignal != null || !hasDrainingWork()) {
                         flushMessageOutputSafe();
                         flushCounter = 0;
                     }
@@ -210,6 +221,16 @@ class BufferedHandler
                         finally {
                             queueDrainLock.unlock();
                         }
+                    }
+                    // Ensure a message output is flushed and notify the initiators, if flush has been requested
+                    if (flushedSignal != null) {
+                        // Ensure a flush occurs before notifying. When the terminal message is encountered message output may not
+                        // yet have been flushed
+                        if (flushCounter > 0) {
+                            flushMessageOutputSafe();
+                            flushCounter = 0;
+                        }
+                        flushedSignal.complete(null);
                     }
                 }
             }
@@ -238,13 +259,47 @@ class BufferedHandler
         }
 
         MessageAndSource message = queue.pollFirst();
+        if (message == null) {
+            return null;
+        }
 
         if (message == TERMINAL_MESSAGE) {
             terminalMessageDequeued = true;
             return null;
         }
 
+        if (message.flushSignal != null) {
+            if (this.flushedSignal == null) {
+                this.flushedSignal = message.flushSignal;
+            }
+            else {
+                combineFlushSignalFutures(this.flushedSignal, message.flushSignal);
+            }
+            return null;
+        }
+
         return message;
+    }
+
+    @GuardedBy("queueDrainLock")
+    private CompletableFuture<Void> removeAndGatherPendingFlushMessages()
+    {
+        checkState(queueDrainLock.isHeldByCurrentThread());
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        // Remove any pending flush signal messages in the queue after the terminal message is dequeued
+        queue.removeIf(message -> {
+            if (message.flushSignal != null) {
+                combineFlushSignalFutures(future, message.flushSignal);
+                return true;
+            }
+            return false;
+        });
+        return future;
+    }
+
+    private static void combineFlushSignalFutures(CompletableFuture<Void> first, CompletableFuture<Void> second)
+    {
+        first.thenAccept(second::complete);
     }
 
     private boolean hasDrainingWork()
@@ -308,7 +363,7 @@ class BufferedHandler
 
     private MessageAndSource toMessageAndSource(LogRecord record)
     {
-        return new MessageAndSource(formatMessageBytes(record), determineSourceName(record));
+        return new MessageAndSource(formatMessageBytes(record), determineSourceName(record), null);
     }
 
     private byte[] formatMessageBytes(LogRecord logRecord)
@@ -366,6 +421,27 @@ class BufferedHandler
 
         // This technically does not follow traditional buffer flush semantics, but it is not needed for airlift logging uses
         flushMessageOutputSafe();
+    }
+
+    /**
+     * Requests a full flush of all currently queued messages from the background thread. If the handler has already been closed,
+     * this method will return an empty {@link Optional}. Otherwise, the returned {@link Optional} will contain a {@link CompletableFuture}
+     * that will complete when the background flush has completed.
+     */
+    public Optional<CompletableFuture<Void>> requestFullFlush()
+    {
+        queueDrainLock.lock();
+        try {
+            if (inputClosed.get() || terminalMessageDequeued) {
+                return Optional.empty();
+            }
+            CompletableFuture<Void> flushedSignal = new CompletableFuture<>();
+            queueInsert(new MessageAndSource(EMPTY_BYTES, "", flushedSignal));
+            return Optional.of(flushedSignal);
+        }
+        finally {
+            queueDrainLock.unlock();
+        }
     }
 
     @Override
@@ -447,7 +523,11 @@ class BufferedHandler
         }
     }
 
-    private record MessageAndSource(byte[] logMessage, String sourceName)
+    private record MessageAndSource(
+            byte[] logMessage,
+            String sourceName,
+            // Only present on a control message that indicates a flush should occur. The logMessage will be discarded if this field is set
+            @Nullable CompletableFuture<Void> flushSignal)
     {
         private MessageAndSource
         {
