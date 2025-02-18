@@ -58,6 +58,11 @@
 
         <dependency>
             <groupId>io.airlift</groupId>
+            <artifactId>memory</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.airlift</groupId>
             <artifactId>node</artifactId>
         </dependency>
 

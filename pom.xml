@@ -52,6 +52,7 @@
         <module>json</module>
         <module>log</module>
         <module>log-manager</module>
+        <module>memory</module>
         <module>node</module>
         <module>openmetrics</module>
         <module>packaging</module>
@@ -203,6 +204,12 @@
             <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>log-manager</artifactId>
+                <version>${dep.airlift.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>memory</artifactId>
                 <version>${dep.airlift.version}</version>
             </dependency>
 

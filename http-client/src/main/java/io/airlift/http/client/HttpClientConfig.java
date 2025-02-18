@@ -42,6 +42,7 @@ import java.util.Optional;
 import static io.airlift.units.DataSize.Unit.GIGABYTE;
 import static io.airlift.units.DataSize.Unit.KILOBYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
+import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -77,6 +78,7 @@ public class HttpClientConfig
     private DataSize responseBufferSize = DataSize.of(16, KILOBYTE);
     private Optional<DataSize> maxHeapMemory = Optional.empty();
     private Optional<DataSize> maxDirectMemory = Optional.empty();
+    private HttpBufferPoolType httpBufferPoolType = HttpBufferPoolType.FFM;
     private HostAndPort socksProxy;
     private HostAndPort httpProxy;
     private boolean secureProxy;
@@ -272,7 +274,7 @@ public class HttpClientConfig
         return this;
     }
 
-    public Optional<@MinDataSize("16MB") DataSize> getMaxHeapMemory()
+    public Optional<@MinDataSize("8MB") DataSize> getMaxHeapMemory()
     {
         return maxHeapMemory;
     }
@@ -284,7 +286,7 @@ public class HttpClientConfig
         return this;
     }
 
-    public Optional<@MinDataSize("16MB") DataSize> getMaxDirectMemory()
+    public Optional<@MinDataSize("8MB") DataSize> getMaxDirectMemory()
     {
         return maxDirectMemory;
     }
@@ -293,6 +295,18 @@ public class HttpClientConfig
     public HttpClientConfig setMaxDirectMemory(DataSize maxDirectMemory)
     {
         this.maxDirectMemory = Optional.ofNullable(maxDirectMemory);
+        return this;
+    }
+
+    public HttpBufferPoolType getHttpBufferPoolType()
+    {
+        return httpBufferPoolType;
+    }
+
+    @Config("http-client.buffer-pool-type")
+    public HttpClientConfig setHttpBufferPoolType(HttpBufferPoolType httpBufferPoolType)
+    {
+        this.httpBufferPoolType = httpBufferPoolType;
         return this;
     }
 
@@ -749,6 +763,21 @@ public class HttpClientConfig
         if (secureProxy && httpProxy == null) {
             throw new ConfigurationException(ImmutableList.of(
                     new Message("http-client.http-proxy.secure can be enabled only when http-client.http-proxy is set")));
+        }
+    }
+
+    public enum HttpBufferPoolType
+    {
+        DEFAULT,
+        FFM;
+
+        public static HttpBufferPoolType fromString(String value)
+        {
+            return switch (value.toUpperCase(ENGLISH)) {
+                case "DEFAULT" -> DEFAULT;
+                case "FFM" -> FFM;
+                default -> valueOf(value.toUpperCase(ENGLISH));
+            };
         }
     }
 }
