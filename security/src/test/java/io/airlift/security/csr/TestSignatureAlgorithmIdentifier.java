@@ -43,7 +43,6 @@ public class TestSignatureAlgorithmIdentifier
             }
             assertThat(signatureAlgorithmIdentifier.getOid()).isEqualTo(algorithmIdentifier.getAlgorithm().getId());
             assertThat(base16().encode(signatureAlgorithmIdentifier.getEncoded())).isEqualTo(base16().encode(algorithmIdentifier.getAlgorithm().getEncoded("DER")));
-            assertThat(algorithmIdentifier).isEqualTo(algorithmIdentifier);
             assertThat(algorithmIdentifier.hashCode()).isEqualTo(algorithmIdentifier.hashCode());
             verifiedCount++;
         }

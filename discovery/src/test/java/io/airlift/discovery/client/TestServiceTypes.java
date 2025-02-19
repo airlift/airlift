@@ -62,6 +62,7 @@ public class TestServiceTypes
         equivalenceTester()
                 .addEquivalentGroup(appleServiceType, ServiceTypes.serviceType("apple"))
                 .addEquivalentGroup(bananaServiceType, ServiceTypes.serviceType("banana"))
+                .addEquivalentGroup(serviceTypeWithCharacters, ServiceTypes.serviceType("quot\"ation-and-\\backslash"))
                 .check();
     }
 }

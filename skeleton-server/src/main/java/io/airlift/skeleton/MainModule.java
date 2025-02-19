@@ -23,6 +23,7 @@ import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 public class MainModule
         implements Module
 {
+    @Override
     public void configure(Binder binder)
     {
         binder.requireExplicitBindings();

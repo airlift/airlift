@@ -167,7 +167,7 @@ public class Person
         }
         Person o = (Person) obj;
         return Objects.equals(this.name, o.name) &&
-                Objects.equals(this.rocks, o.rocks);
+                this.rocks == o.rocks;
     }
 
     @Override

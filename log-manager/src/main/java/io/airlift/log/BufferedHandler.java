@@ -190,9 +190,9 @@ class BufferedHandler
                 }
                 finally {
                     if (message != null || !dropSnapshot.isEmpty()) {
-                        // Return messages that failed
-                        queueDrainLock.lock();
                         try {
+                            // Return messages that failed
+                            queueDrainLock.lock();
                             // Return a failed message to the queue, or drop it if at capacity.
                             if (message != null) {
                                 // If TERMINAL_MESSAGE has been dequeued, the queue is finished and this message must now become part of the drop summary.
@@ -204,6 +204,7 @@ class BufferedHandler
                                 }
                             }
 
+                            checkState(queueDrainLock.isLocked());
                             // Merge back dropped messages snapshot
                             dropSnapshot.forEachEntry(dropCountBySource::add);
                         }
