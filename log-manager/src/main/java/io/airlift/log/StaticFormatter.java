@@ -16,6 +16,13 @@ import java.util.Map;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
 
+import static io.airlift.log.TerminalColors.Color.BRIGHT_BLACK;
+import static io.airlift.log.TerminalColors.Color.CYAN;
+import static io.airlift.log.TerminalColors.Color.GREEN;
+import static io.airlift.log.TerminalColors.Color.PURPLE;
+import static io.airlift.log.TerminalColors.Color.WHITE;
+import static io.airlift.log.TerminalColors.colored;
+import static io.airlift.log.TerminalColors.coloredWriter;
 import static java.time.temporal.ChronoField.DAY_OF_MONTH;
 import static java.time.temporal.ChronoField.HOUR_OF_DAY;
 import static java.time.temporal.ChronoField.MILLI_OF_SECOND;
@@ -71,23 +78,24 @@ class StaticFormatter
     public String format(LogRecord record)
     {
         ZonedDateTime timestamp = ZonedDateTime.ofInstant(Instant.ofEpochMilli(record.getMillis()), SYSTEM_ZONE);
+        Level level = Level.fromJulLevel(record.getLevel());
 
         StringWriter stringWriter = new StringWriter()
-                .append(TIMESTAMP_FORMATTER.format(timestamp))
+                .append(colored(TIMESTAMP_FORMATTER.format(timestamp), BRIGHT_BLACK))
                 .append('\t')
-                .append(Level.fromJulLevel(record.getLevel()).name())
+                .append(colored(level.name(), level))
                 .append('\t')
-                .append(Thread.currentThread().getName())
+                .append(colored(Thread.currentThread().getName(), CYAN))
                 .append('\t')
-                .append(record.getLoggerName());
+                .append(colored(record.getLoggerName(), PURPLE));
 
         if (!logAnnotations.isEmpty()) {
             stringWriter.append('\t')
-                    .append(Joiner.on(",").withKeyValueSeparator("=").join(logAnnotations));
+                    .append(colored(Joiner.on(",").withKeyValueSeparator("=").join(logAnnotations), level));
         }
 
         stringWriter.append('\t')
-                .append(record.getMessage());
+                .append(colored(record.getMessage(), WHITE));
 
         if (record.getParameters() != null && record.getParameters().length != 0) {
             stringWriter.append(" parameters=").append(deepToString(record.getParameters()));
@@ -95,7 +103,7 @@ class StaticFormatter
 
         if (record.getThrown() != null) {
             stringWriter.append('\n');
-            record.getThrown().printStackTrace(new PrintWriter(stringWriter));
+            record.getThrown().printStackTrace(coloredWriter(new PrintWriter(stringWriter), GREEN));
             stringWriter.append('\n');
         }
 
