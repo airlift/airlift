@@ -494,7 +494,7 @@ public class HttpServerConfig
         return this;
     }
 
-    public Optional<@MinDataSize("16MB") DataSize> getMaxHeapMemory()
+    public Optional<@MinDataSize("8MB") DataSize> getMaxHeapMemory()
     {
         return maxHeapMemory;
     }
@@ -507,7 +507,7 @@ public class HttpServerConfig
         return this;
     }
 
-    public Optional<@MinDataSize("16MB") DataSize> getMaxDirectMemory()
+    public Optional<@MinDataSize("8MB") DataSize> getMaxDirectMemory()
     {
         return maxDirectMemory;
     }
