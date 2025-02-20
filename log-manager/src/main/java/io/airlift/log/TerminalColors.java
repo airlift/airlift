@@ -13,7 +13,12 @@ public class TerminalColors
     private static final boolean isColorSupported = detectIsColorSupported();
     private static final String ANSI_RESET = "\033[0m";
 
-    private TerminalColors() {}
+    private final boolean interactive;
+
+    public TerminalColors(boolean interactive)
+    {
+        this.interactive = interactive;
+    }
 
     public enum Color
     {
@@ -39,15 +44,18 @@ public class TerminalColors
         }
     }
 
-    public static String colored(String text, Color color)
+    public String colored(String text, Color color)
     {
         if (!isColorSupported) {
+            return text;
+        }
+        if (!interactive) {
             return text;
         }
         return color.getCode() + text + ANSI_RESET;
     }
 
-    public static String colored(String text, Level level)
+    public String colored(String text, Level level)
     {
         return switch (level) {
             case OFF -> text;

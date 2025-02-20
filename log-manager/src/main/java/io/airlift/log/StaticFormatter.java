@@ -21,7 +21,6 @@ import static io.airlift.log.TerminalColors.Color.CYAN;
 import static io.airlift.log.TerminalColors.Color.GREEN;
 import static io.airlift.log.TerminalColors.Color.PURPLE;
 import static io.airlift.log.TerminalColors.Color.WHITE;
-import static io.airlift.log.TerminalColors.colored;
 import static io.airlift.log.TerminalColors.coloredWriter;
 import static java.time.temporal.ChronoField.DAY_OF_MONTH;
 import static java.time.temporal.ChronoField.HOUR_OF_DAY;
@@ -38,6 +37,7 @@ class StaticFormatter
 {
     private static final ZoneId SYSTEM_ZONE = ZoneId.systemDefault().normalized();
     private final Map<String, String> logAnnotations;
+    private final TerminalColors colors;
 
     private static final DateTimeFormatter TIMESTAMP_FORMATTER = new DateTimeFormatterBuilder()
             .parseCaseInsensitive()
@@ -59,12 +59,13 @@ class StaticFormatter
 
     public StaticFormatter()
     {
-        this(ImmutableMap.of());
+        this(ImmutableMap.of(), false);
     }
 
-    public StaticFormatter(Map<String, String> logAnnotations)
+    public StaticFormatter(Map<String, String> logAnnotations, boolean interactive)
     {
         this.logAnnotations = ImmutableMap.copyOf(requireNonNull(logAnnotations, "logAnnotations is null"));
+        this.colors = new TerminalColors(interactive);
     }
 
     @Override
@@ -81,21 +82,21 @@ class StaticFormatter
         Level level = Level.fromJulLevel(record.getLevel());
 
         StringWriter stringWriter = new StringWriter()
-                .append(colored(TIMESTAMP_FORMATTER.format(timestamp), BRIGHT_BLACK))
+                .append(colors.colored(TIMESTAMP_FORMATTER.format(timestamp), BRIGHT_BLACK))
                 .append('\t')
-                .append(colored(level.name(), level))
+                .append(colors.colored(level.name(), level))
                 .append('\t')
-                .append(colored(Thread.currentThread().getName(), CYAN))
+                .append(colors.colored(Thread.currentThread().getName(), CYAN))
                 .append('\t')
-                .append(colored(record.getLoggerName(), PURPLE));
+                .append(colors.colored(record.getLoggerName(), PURPLE));
 
         if (!logAnnotations.isEmpty()) {
             stringWriter.append('\t')
-                    .append(colored(Joiner.on(",").withKeyValueSeparator("=").join(logAnnotations), level));
+                    .append(colors.colored(Joiner.on(",").withKeyValueSeparator("=").join(logAnnotations), level));
         }
 
         stringWriter.append('\t')
-                .append(colored(record.getMessage(), WHITE));
+                .append(colors.colored(record.getMessage(), WHITE));
 
         if (record.getParameters() != null && record.getParameters().length != 0) {
             stringWriter.append(" parameters=").append(deepToString(record.getParameters()));
