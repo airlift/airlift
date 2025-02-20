@@ -48,6 +48,7 @@ import static com.google.common.util.concurrent.Futures.transform;
 import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static io.airlift.configuration.ConfigurationLoader.loadPropertiesFrom;
 import static io.airlift.configuration.ConfigurationUtils.replaceEnvironmentVariables;
+import static io.airlift.log.Format.TEXT;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -150,7 +151,7 @@ public class Logging
 
     private synchronized void enableConsole()
     {
-        enableConsole(new StaticFormatter());
+        enableConsole(TEXT.createFormatter(Map.of(), true));
     }
 
     private synchronized void enableConsole(Formatter formatter)
