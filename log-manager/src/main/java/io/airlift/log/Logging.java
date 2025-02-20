@@ -276,7 +276,7 @@ public class Logging
 
         if (config.getLogPath() != null) {
             if (config.getLogPath().startsWith("tcp://")) {
-                logToSocket(config.getLogPath(), config.getFormat().createFormatter(logAnnotations), mBeanExportCollector);
+                logToSocket(config.getLogPath(), config.getFormat().createFormatter(logAnnotations, false), mBeanExportCollector);
             }
             else {
                 logToFile(
@@ -284,7 +284,7 @@ public class Logging
                         config.getMaxSize(),
                         config.getMaxTotalSize(),
                         config.getCompression(),
-                        config.getFormat().createFormatter(logAnnotations),
+                        config.getFormat().createFormatter(logAnnotations, false),
                         mBeanExportCollector);
             }
         }
@@ -296,7 +296,7 @@ public class Logging
             // reinitialize console handler with provided configs and redirect standard streams to a reconfigured logger
             resetStdStreams();
             disableConsole();
-            enableConsole(config.getConsoleFormat().createFormatter(logAnnotations));
+            enableConsole(config.getConsoleFormat().createFormatter(logAnnotations, true));
             redirectStdStreams();
         }
 
