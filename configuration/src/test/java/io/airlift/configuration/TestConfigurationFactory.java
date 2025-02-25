@@ -455,6 +455,17 @@ public class TestConfigurationFactory
     }
 
     @Test
+    public void testFailingInitialization()
+    {
+        assertInvalidConfig(
+                ImmutableMap.<String, String>builder()
+                        .put("string-value", "this is a")
+                        .build(),
+                binder -> configBinder(binder).bindConfig(FailingClass.class, "example"),
+                "Error creating instance of configuration class \\[io.airlift.configuration.TestConfigurationFactory\\$FailingClass\\], caused by RuntimeException: This is expected to happen");
+    }
+
+    @Test
     public void testUsedPropertiesWithFailure()
     {
         Map<String, String> properties = new TreeMap<>();
@@ -855,6 +866,27 @@ public class TestConfigurationFactory
         public void setValue(Value value)
         {
             this.value = value;
+        }
+    }
+
+    public static class FailingClass
+    {
+        private String stringValue = thisWillThrow();
+
+        public String getStringValue()
+        {
+            return stringValue;
+        }
+
+        @Config("string-value")
+        public void setStringValue(String value)
+        {
+            this.stringValue = value;
+        }
+
+        private String thisWillThrow()
+        {
+            throw new RuntimeException("This is expected to happen");
         }
     }
 
