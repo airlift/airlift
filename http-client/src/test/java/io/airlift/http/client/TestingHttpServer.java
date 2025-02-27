@@ -14,7 +14,6 @@
 package io.airlift.http.client;
 
 import com.google.common.net.HostAndPort;
-import io.airlift.memory.jetty.UnsafeArrayByteBufferPool;
 import jakarta.servlet.Servlet;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
@@ -60,7 +59,7 @@ public class TestingHttpServer
         requireNonNull(servlet, "servlet is null");
         this.scheme = keystore.isPresent() ? "https" : "http";
 
-        Server server = new Server(null, null, new UnsafeArrayByteBufferPool.Quadratic());
+        Server server = new Server(null, null, null);
 
         HttpConfiguration httpConfiguration = new HttpConfiguration();
         httpConfiguration.setSendServerVersion(false);
