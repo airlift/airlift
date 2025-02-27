@@ -9,6 +9,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Executor;
 
@@ -26,14 +27,14 @@ class JettyAsyncSocketAddressResolver
     }
 
     @Override
-    public void resolve(String host, int port, Promise<List<InetSocketAddress>> promise)
+    public void resolve(String host, int port, Map<String, Object> context, Promise<List<InetSocketAddress>> promise)
     {
         Optional<InetAddress> address = resolve(host);
         if (address.isPresent()) {
             promise.succeeded(ImmutableList.of(new InetSocketAddress(address.get(), port)));
             return;
         }
-        super.resolve(host, port, promise);
+        super.resolve(host, port, context, promise);
     }
 
     private static Optional<InetAddress> resolve(String host)

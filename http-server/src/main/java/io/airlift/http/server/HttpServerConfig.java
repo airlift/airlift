@@ -29,10 +29,8 @@ import jakarta.validation.constraints.NotNull;
 
 import java.util.Optional;
 
-import static io.airlift.http.server.HttpServerConfig.HttpBufferPoolType.UNSAFE;
 import static io.airlift.http.server.HttpServerConfig.ProcessForwardedMode.ACCEPT;
 import static io.airlift.http.server.HttpServerConfig.ProcessForwardedMode.REJECT;
-import static io.airlift.memory.jetty.UnsafeArrayByteBufferPool.isUnsafeAvailable;
 import static io.airlift.units.DataSize.Unit.KILOBYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
 import static java.util.Locale.ENGLISH;
@@ -60,6 +58,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
         "http-server.admin.threads.min",
         "http-server.admin.threads.max",
         "http-server.auth.users-file",
+        "http-server.buffer-pool-type",
 })
 public class HttpServerConfig
 {
@@ -103,7 +102,6 @@ public class HttpServerConfig
 
     private Optional<DataSize> maxHeapMemory = Optional.empty();
     private Optional<DataSize> maxDirectMemory = Optional.empty();
-    private HttpBufferPoolType httpBufferPoolType = HttpBufferPoolType.DEFAULT;
 
     public boolean isHttpEnabled()
     {
@@ -522,31 +520,10 @@ public class HttpServerConfig
         return this;
     }
 
-    public HttpBufferPoolType getHttpBufferPoolType()
-    {
-        return httpBufferPoolType;
-    }
-
-    @Config("http-server.buffer-pool-type")
-    public HttpServerConfig setHttpBufferPoolType(HttpBufferPoolType httpBufferPoolType)
-    {
-        this.httpBufferPoolType = httpBufferPoolType;
-        return this;
-    }
-
     @AssertTrue(message = "either both http-server.max-heap-memory and http-server.max-direct-memory are set or none of them")
     public boolean eitherBothMemorySettingsAreSetOrNone()
     {
         return maxHeapMemory.isPresent() == maxDirectMemory.isPresent();
-    }
-
-    @AssertTrue(message = "http-server.buffer-pool-type=UNSAFE requires sun.misc.Unsafe to be available")
-    public boolean isUnsafeAllowedWhenUsingUnsafeBufferPool()
-    {
-        if (httpBufferPoolType == UNSAFE) {
-            return isUnsafeAvailable();
-        }
-        return true;
     }
 
     public enum ProcessForwardedMode
@@ -563,12 +540,5 @@ public class HttpServerConfig
                 default -> valueOf(value.toUpperCase(ENGLISH));
             };
         }
-    }
-
-    public enum HttpBufferPoolType
-    {
-        DEFAULT,
-        UNSAFE,
-        FFM;
     }
 }

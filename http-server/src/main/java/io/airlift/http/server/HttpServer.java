@@ -21,8 +21,6 @@ import com.google.common.collect.ImmutableSet;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.http.server.jetty.MonitoredQueuedThreadPoolMBean;
 import io.airlift.log.Logger;
-import io.airlift.memory.jetty.ConcurrentRetainableBufferPool;
-import io.airlift.memory.jetty.UnsafeArrayByteBufferPool;
 import io.airlift.node.NodeInfo;
 import io.airlift.units.DataSize;
 import jakarta.annotation.PostConstruct;
@@ -304,29 +302,14 @@ public class HttpServer
         long maxHeapMemory = config.getMaxHeapMemory().map(DataSize::toBytes).orElse(0L); // Use default heuristics for max heap memory
         long maxOffHeapMemory = config.getMaxDirectMemory().map(DataSize::toBytes).orElse(0L); // Use default heuristics for max off heap memory
 
-        return switch (config.getHttpBufferPoolType()) {
-            case FFM -> new ConcurrentRetainableBufferPool(maxHeapMemory, maxOffHeapMemory);
-            case DEFAULT -> {
-                var pool = new ArrayByteBufferPool.Quadratic(
-                        0,
-                        maxBufferSize,
-                        Integer.MAX_VALUE,
-                        maxHeapMemory,
-                        maxOffHeapMemory);
-                pool.setStatisticsEnabled(true);
-                yield pool;
-            }
-            case UNSAFE -> {
-                var pool = new UnsafeArrayByteBufferPool.Quadratic(
-                        0,
-                        maxBufferSize,
-                        Integer.MAX_VALUE,
-                        maxHeapMemory,
-                        maxOffHeapMemory);
-                pool.setStatisticsEnabled(true);
-                yield pool;
-            }
-        };
+        ArrayByteBufferPool pool = new ArrayByteBufferPool.Quadratic(
+                0,
+                maxBufferSize,
+                Integer.MAX_VALUE,
+                maxHeapMemory,
+                maxOffHeapMemory);
+        pool.setStatisticsEnabled(true);
+        return pool;
     }
 
     private ConnectionFactory[] insecureFactories(HttpServerConfig config, HttpConfiguration httpConfiguration)
