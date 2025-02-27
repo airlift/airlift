@@ -20,8 +20,6 @@ import io.airlift.http.client.StreamingBodyGenerator;
 import io.airlift.http.client.StreamingResponse;
 import io.airlift.http.client.jetty.HttpClientLogger.RequestInfo;
 import io.airlift.http.client.jetty.HttpClientLogger.ResponseInfo;
-import io.airlift.memory.jetty.ConcurrentRetainableBufferPool;
-import io.airlift.memory.jetty.UnsafeArrayByteBufferPool;
 import io.airlift.security.pem.PemReader;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
@@ -323,13 +321,13 @@ public class JettyHttpClient
                 httpClient.getExecutor(),
                 httpClient.getScheduler(),
                 config.getConnectTimeout().toMillis());
-        httpClient.setSocketAddressResolver((host, port, promise) -> {
+        httpClient.setSocketAddressResolver((host, port, context, promise) -> {
             Optional<InetAddress> inetAddress = tryDecodeHostnameToAddress(host);
             if (inetAddress.isPresent()) {
                 promise.succeeded(ImmutableList.of(new InetSocketAddress(inetAddress.get(), port)));
                 return;
             }
-            resolver.resolve(host, port, promise);
+            resolver.resolve(host, port, context, promise);
         });
 
         // track connection statistics
@@ -447,29 +445,14 @@ public class JettyHttpClient
         long maxHeapMemory = config.getMaxHeapMemory().map(DataSize::toBytes).orElse(0L); // Use default heuristics for max heap memory
         long maxOffHeapMemory = config.getMaxDirectMemory().map(DataSize::toBytes).orElse(0L); // Use default heuristics for max off heap memory
 
-        return switch (config.getHttpBufferPoolType()) {
-            case FFM -> new ConcurrentRetainableBufferPool(maxHeapMemory, maxOffHeapMemory);
-            case DEFAULT -> {
-                var pool = new ArrayByteBufferPool.Quadratic(
-                        0,
-                        maxBufferSize,
-                        Integer.MAX_VALUE,
-                        maxHeapMemory,
-                        maxOffHeapMemory);
-                pool.setStatisticsEnabled(true);
-                yield pool;
-            }
-            case UNSAFE -> {
-                var pool = new UnsafeArrayByteBufferPool.Quadratic(
-                        0,
-                        maxBufferSize,
-                        Integer.MAX_VALUE,
-                        maxHeapMemory,
-                        maxOffHeapMemory);
-                pool.setStatisticsEnabled(true);
-                yield pool;
-            }
-        };
+        ArrayByteBufferPool pool = new ArrayByteBufferPool.Quadratic(
+                    0,
+                    maxBufferSize,
+                    Integer.MAX_VALUE,
+                    maxHeapMemory,
+                    maxOffHeapMemory);
+        pool.setStatisticsEnabled(true);
+        return pool;
     }
 
     private HttpClientTransport getClientTransport(ClientConnector connector, HttpClientConfig config)
@@ -925,7 +908,8 @@ public class JettyHttpClient
                 .ifPresent(maxRequestContentLength -> verify(maxRequestContentLength.compareTo(maxContentLength) <= 0, "maxRequestContentLength must be less than or equal to maxContentLength"));
 
         JettyResponseFuture<T, E> future = new JettyResponseFuture<>(request, jettyRequest.request(), jettyRequest.sizeListener()::getBytes, responseHandler, span, stats, recordRequestComplete);
-        JettyResponseListener<T, E> listener = new JettyResponseListener<>(jettyRequest.request(), future, httpClient.getByteBufferPool(), Ints.saturatedCast(request.getMaxContentLength().orElse(maxContentLength).toBytes()));
+        int maxByteBufferSize = Ints.saturatedCast(request.getMaxContentLength().orElse(maxContentLength).toBytes());
+        JettyResponseListener<T, E> listener = new JettyResponseListener<>(jettyRequest.request(), future, maxByteBufferSize);
 
         try {
             return listener.send();
@@ -993,7 +977,7 @@ public class JettyHttpClient
                 case StaticBodyGenerator generator -> jettyRequest.body(new BytesRequestContent(generator.getBody()));
                 case ByteBufferBodyGenerator generator -> jettyRequest.body(new ByteBufferRequestContent(generator.getByteBuffers()));
                 case FileBodyGenerator generator -> jettyRequest.body(fileContent(generator.getPath()));
-                case StreamingBodyGenerator generator -> jettyRequest.body(new InputStreamRequestContent(generator.source()));
+                case StreamingBodyGenerator generator -> jettyRequest.body(new InputStreamRequestContent(generator.contentType().toString(), generator.source(), new ByteBufferPool.Sized(httpClient.getByteBufferPool())));
             }
         }
 
@@ -1004,10 +988,10 @@ public class JettyHttpClient
         jettyRequest.idleTimeout(finalRequest.getIdleTimeout().orElse(idleTimeout).toMillis(), MILLISECONDS);
 
         // Add stats collecting listener
-        JettyRequestListener requestListener = new JettyRequestListener(finalRequest.getUri());
-        jettyRequest.onRequestListener(requestListener);
-        jettyRequest.onResponseListener(requestListener);
-        jettyRequest.attribute(STATS_KEY, requestListener);
+        JettyRequestListener listener = new JettyRequestListener(finalRequest.getUri());
+        jettyRequest.onRequestListener(listener);
+        jettyRequest.onResponseListener(listener);
+        jettyRequest.attribute(STATS_KEY, listener);
 
         // Add diagnostics listener
         jettyRequest.onComplete(new DiagnosticListener());
@@ -1017,9 +1001,9 @@ public class JettyHttpClient
 
         // Add log listener
         if (logEnabled) {
-            HttpClientLoggingListener httpClientLoggingListener = new HttpClientLoggingListener(jettyRequest, requestTime, requestLogger);
-            jettyRequest.onRequestListener(httpClientLoggingListener);
-            jettyRequest.onResponseListener(httpClientLoggingListener);
+            HttpClientLoggingListener loggingListener = new HttpClientLoggingListener(jettyRequest, requestTime, requestLogger);
+            jettyRequest.onRequestListener(loggingListener);
+            jettyRequest.onResponseListener(loggingListener);
         }
 
         // Add request size listener

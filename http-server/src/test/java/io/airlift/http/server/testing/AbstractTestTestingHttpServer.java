@@ -64,7 +64,6 @@ import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
 import static io.airlift.http.server.HttpServerBinder.httpServerBinder;
-import static io.airlift.http.server.HttpServerConfig.HttpBufferPoolType.UNSAFE;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.abort;
@@ -302,7 +301,7 @@ public abstract class AbstractTestTestingHttpServer
                 assertThat(contentTypeHeader).isEqualTo(finalContentType);
             }
             else {
-                assertThat(contentTypeHeader).isEqualTo(contentType);
+                assertThat(contentTypeHeader).isEqualTo(finalContentType);
             }
         }
         finally {
@@ -357,7 +356,7 @@ public abstract class AbstractTestTestingHttpServer
             throws IOException
     {
         NodeInfo nodeInfo = new NodeInfo("test");
-        HttpServerConfig config = new HttpServerConfig().setHttpBufferPoolType(UNSAFE).setHttpPort(0);
+        HttpServerConfig config = new HttpServerConfig().setHttpPort(0);
         HttpServerInfo httpServerInfo = new HttpServerInfo(config, nodeInfo);
         return new TestingHttpServer(httpServerInfo, nodeInfo, config, servlet, enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache);
     }
@@ -366,7 +365,7 @@ public abstract class AbstractTestTestingHttpServer
             throws IOException
     {
         NodeInfo nodeInfo = new NodeInfo("test");
-        HttpServerConfig config = new HttpServerConfig().setHttpBufferPoolType(UNSAFE).setHttpPort(0);
+        HttpServerConfig config = new HttpServerConfig().setHttpPort(0);
         HttpServerInfo httpServerInfo = new HttpServerInfo(config, nodeInfo);
         return new TestingHttpServer(httpServerInfo, nodeInfo, config, Optional.empty(), servlet, ImmutableSet.of(filter), ImmutableSet.of(), enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache, ClientCertificate.NONE);
     }
