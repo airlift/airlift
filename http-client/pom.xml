@@ -51,11 +51,6 @@
 
         <dependency>
             <groupId>io.airlift</groupId>
-            <artifactId>jetty-memory</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>io.airlift</groupId>
             <artifactId>json</artifactId>
         </dependency>
 
