@@ -303,7 +303,6 @@ public class HttpServer
     {
         long maxHeapMemory = config.getMaxHeapMemory().map(DataSize::toBytes).orElse(0L); // Use default heuristics for max heap memory
         long maxOffHeapMemory = config.getMaxDirectMemory().map(DataSize::toBytes).orElse(0L); // Use default heuristics for max off heap memory
-
         if (config.getHttpBufferPoolType() == FFM) {
             return new ConcurrentRetainableBufferPool(maxHeapMemory, maxOffHeapMemory);
         }

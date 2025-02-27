@@ -16,6 +16,7 @@ package io.airlift.memory.jetty;
 import io.airlift.units.DataSize;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.util.BufferUtil;
 
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
@@ -23,7 +24,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
 import static java.lang.Integer.numberOfLeadingZeros;
@@ -36,7 +36,7 @@ import static java.util.Arrays.stream;
 public class ConcurrentRetainableBufferPool
         implements ByteBufferPool
 {
-    private static final long DEFAULT_MAX_MEMORY = DataSize.of(1, MEGABYTE).toBytes();
+    private static final long DEFAULT_MAX_MEMORY = DataSize.of(16, MEGABYTE).toBytes();
 
     // It's not memory efficient to have large pools of very small allocation sizes like 1 or 2 bytes.
     // The minimal buffer size should be large enough to avoid allocations overhead but small enough
@@ -83,13 +83,15 @@ public class ConcurrentRetainableBufferPool
     }
 
     @Override
-    public RetainableByteBuffer acquire(int size, boolean offHeap)
+    public RetainableByteBuffer.Mutable acquire(int size, boolean offHeap)
     {
         int bucketId = floorMod(currentThread().threadId(), numBuckets);
         if (offHeap) {
             return offHeapBuckets[bucketId].alloc(size);
         }
-        return heapBuckets[bucketId].alloc(size);
+        else {
+            return heapBuckets[bucketId].alloc(size);
+        }
     }
 
     // Based on the original Jetty code
@@ -121,12 +123,12 @@ public class ConcurrentRetainableBufferPool
         }
     }
 
-    private long getOffHeapMemory()
+    long getOffHeapMemory()
     {
         return getMemory(true);
     }
 
-    private long getHeapMemory()
+    long getHeapMemory()
     {
         return getMemory(false);
     }
@@ -158,30 +160,24 @@ public class ConcurrentRetainableBufferPool
 
     private class ArenaBucket
     {
-        private Arena sharedArena;
-        private final Arena autoArena;
         private final int bucketId;
         private final boolean offHeap;
         private final List<FixedSizeBufferPool> pools;
 
         ArenaBucket(boolean offHeap, int bucketId)
         {
-            this.sharedArena = Arena.ofShared();
-            this.autoArena = Arena.ofAuto();
             this.bucketId = bucketId;
             this.offHeap = offHeap;
             this.pools = new ArrayList<>();
         }
 
-        synchronized RetainableByteBuffer alloc(int size)
+        synchronized RetainableByteBuffer.Mutable alloc(int size)
         {
             int poolSizeShift = getPoolSizeShift(size);
             if (poolSizeShift >= pools.size()) {
                 addNewPools(poolSizeShift);
             }
-            // We are explicitly avoiding pool of size 32K (shift 8) for shared arenas
-            // to circumvent a JDK bug (https://bugs.openjdk.org/browse/JDK-8333849, fixed in JDK 24).
-            return pools.get(poolSizeShift).allocate((offHeap && (poolSizeShift == 8)) ? autoArena : sharedArena);
+            return pools.get(poolSizeShift).allocate();
         }
 
         private int getPoolSizeShift(int size)
@@ -212,15 +208,8 @@ public class ConcurrentRetainableBufferPool
 
         synchronized void evict()
         {
-            boolean canClose = offHeap;
             for (FixedSizeBufferPool pool : pools) {
                 pool.evict();
-                canClose &= pool.getBufferCount() == 0;
-            }
-            if (canClose) {
-                // Free shared arena and create a new one
-                sharedArena.close();
-                sharedArena = Arena.ofShared();
             }
         }
 
@@ -253,12 +242,12 @@ public class ConcurrentRetainableBufferPool
             this.offHeap = offHeap;
         }
 
-        synchronized Buffer allocate(Arena arena)
+        synchronized RetainableByteBuffer.Mutable allocate()
         {
             // For safety, we acquire buffers from the list head, but return them to the tail.
-            MemorySegment buffer = buffers.isEmpty() ? allocateNewBuffer(arena) : buffers.removeFirst();
+            MemorySegment buffer = buffers.isEmpty() ? allocateNewDirectBuffer() : buffers.removeFirst();
             allocatedBuffers++;
-            return new Buffer(buffer, this);
+            return RetainableByteBuffer.wrap(toByteBuffer(buffer), () -> free(buffer));
         }
 
         synchronized void free(MemorySegment buffer)
@@ -268,6 +257,7 @@ public class ConcurrentRetainableBufferPool
             }
             allocatedBuffers--;
             buffers.add(buffer);
+            checkMaxMemory(offHeap);
         }
 
         synchronized void evict()
@@ -275,89 +265,21 @@ public class ConcurrentRetainableBufferPool
             buffers.clear();
         }
 
-        private MemorySegment allocateNewBuffer(Arena arena)
+        private MemorySegment allocateNewDirectBuffer()
         {
-            return offHeap ? arena.allocate(bufferSize, Integer.BYTES) : MemorySegment.ofArray(new byte[bufferSize]);
+            return offHeap ? Arena.ofAuto().allocate(bufferSize, Integer.BYTES) : MemorySegment.ofArray(new byte[bufferSize]);
+        }
+
+        private ByteBuffer toByteBuffer(MemorySegment buffer)
+        {
+            ByteBuffer byteBuffer = buffer.asByteBuffer();
+            BufferUtil.reset(byteBuffer);
+            return byteBuffer;
         }
 
         long getMemory()
         {
             return (allocatedBuffers + buffers.size()) * (long) bufferSize;
-        }
-
-        int getBufferCount()
-        {
-            return allocatedBuffers + buffers.size();
-        }
-
-        boolean isOffHeap()
-        {
-            return offHeap;
-        }
-    }
-
-    // Similar the Jetty's ArrayByteBufferPool.Quadratic
-    private class Buffer
-            implements RetainableByteBuffer
-    {
-        private final AtomicInteger refCount;
-        private final MemorySegment buffer;
-        private final FixedSizeBufferPool pool;
-        private ByteBuffer byteBuffer;
-
-        Buffer(MemorySegment buffer, FixedSizeBufferPool pool)
-        {
-            this.refCount = new AtomicInteger(1);
-            this.buffer = buffer;
-            this.pool = pool;
-
-            this.byteBuffer = buffer.asByteBuffer();
-            // Jetty requires a ByteBuffer with position and limit set to 0
-            byteBuffer.limit(0);
-            byteBuffer.position(0);
-        }
-
-        @Override
-        public void retain()
-        {
-            if (byteBuffer == null) {
-                throw new IllegalStateException("Buffer cannot be retained since already released");
-            }
-            refCount.getAndUpdate(c -> c + 1);
-        }
-
-        @Override
-        public boolean release()
-        {
-            if (byteBuffer == null) {
-                return true;
-            }
-            boolean shouldRelease = refCount.updateAndGet(c -> c - 1) == 0;
-            if (shouldRelease) {
-                pool.free(buffer);
-                byteBuffer = null;
-
-                checkMaxMemory(pool.isOffHeap());
-            }
-            return shouldRelease;
-        }
-
-        @Override
-        public boolean canRetain()
-        {
-            return true;
-        }
-
-        @Override
-        public boolean isRetained()
-        {
-            return refCount.get() > 1;
-        }
-
-        @Override
-        public ByteBuffer getByteBuffer()
-        {
-            return byteBuffer;
         }
     }
 }

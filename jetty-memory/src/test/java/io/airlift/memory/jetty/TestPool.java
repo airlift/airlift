@@ -42,7 +42,6 @@ public class TestPool
         // free
         for (int i = 0; i < buffers.length; i++, size *= 10) {
             buffers[i].release();
-            assertThat(buffers[i].getByteBuffer()).isNull();
         }
     }
 
@@ -66,7 +65,6 @@ public class TestPool
         // free
         for (int i = 0; i < buffers.length; i++, size *= 10) {
             buffers[i].release();
-            assertThat(buffers[i].getByteBuffer()).isNull();
         }
     }
 
@@ -93,7 +91,6 @@ public class TestPool
         while (bufferIx > 0) {
             bufferIx--;
             buffers[bufferIx].release();
-            assertThat(buffers[bufferIx].getByteBuffer()).isNull();
         }
     }
 
