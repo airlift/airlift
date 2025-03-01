@@ -16,8 +16,10 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -310,6 +312,74 @@ public class TestBufferedHandler
                 .isZero();
 
         assertThat(testingMessageOutput.getFlushedMessages()).containsExactly(testingFormatter().format(record));
+    }
+
+    @Test
+    public void testFullFlushSucceeds()
+    {
+        TestingMessageOutput testingMessageOutput = new TestingMessageOutput();
+        BufferedHandler bufferedHandler = new BufferedHandler(
+                testingMessageOutput,
+                testingFormatter(),
+                TestBufferedHandler::serializeMultiset,
+                new ErrorManager(),
+                RateLimiter.create(10),
+                Duration.ofSeconds(5),
+                1000,
+                1000);
+        bufferedHandler.initialize();
+
+        LogRecord record = logRecord(INFO, "TestLogger", "Test message");
+        for (int i = 0; i < 100; i++) {
+            bufferedHandler.publish(record);
+        }
+        Optional<CompletableFuture<Void>> flushed = bufferedHandler.requestFullFlush();
+        assertThat(flushed).isPresent();
+        assertThat(flushed.get()).succeedsWithin(1, TimeUnit.SECONDS);
+        bufferedHandler.close();
+    }
+
+    @Test
+    public void testFullFlushAfterClose()
+    {
+        TestingMessageOutput testingMessageOutput = new TestingMessageOutput();
+        BufferedHandler bufferedHandler = new BufferedHandler(
+                testingMessageOutput,
+                testingFormatter(),
+                TestBufferedHandler::serializeMultiset,
+                new ErrorManager(),
+                RateLimiter.create(10),
+                Duration.ofSeconds(5),
+                2,
+                2);
+        bufferedHandler.initialize();
+
+        bufferedHandler.close();
+        assertThat(bufferedHandler.requestFullFlush()).isEmpty();
+    }
+
+    @Test
+    public void testFullFlushOnEmptyQueue()
+            throws InterruptedException
+    {
+        TestingMessageOutput testingMessageOutput = new TestingMessageOutput();
+        BufferedHandler bufferedHandler = new BufferedHandler(
+                testingMessageOutput,
+                testingFormatter(),
+                TestBufferedHandler::serializeMultiset,
+                new ErrorManager(),
+                RateLimiter.create(10),
+                Duration.ofSeconds(5),
+                2,
+                2);
+        bufferedHandler.initialize();
+        // Allow the background thread to reach an idle state
+        Thread.sleep(500);
+        Optional<CompletableFuture<Void>> flushed = bufferedHandler.requestFullFlush();
+        assertThat(flushed).isPresent();
+        // Request full flush after the background thread is idle
+        assertThat(flushed.get()).succeedsWithin(1, TimeUnit.SECONDS);
+        bufferedHandler.close();
     }
 
     private static Formatter testingFormatter()
