@@ -47,7 +47,6 @@
         <module>http-server</module>
         <module>jaxrs</module>
         <module>jaxrs-testing</module>
-        <module>jetty-memory</module>
         <module>jmx</module>
         <module>jmx-http</module>
         <module>json</module>
@@ -94,6 +93,7 @@
         <dep.bouncycastle.version>1.80</dep.bouncycastle.version>
         <dep.modernizer.version>2.7.0</dep.modernizer.version>
         <dep.jersey.version>3.1.10</dep.jersey.version>
+        <dep.jetty.version>12.1.0-SNAPSHOT</dep.jetty.version>
         <dep.jjwt.version>0.12.6</dep.jjwt.version>
     </properties>
 
