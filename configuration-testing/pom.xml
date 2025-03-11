@@ -7,13 +7,12 @@
         <artifactId>airlift</artifactId>
         <version>315-SNAPSHOT</version>
     </parent>
-    <artifactId>jmx</artifactId>
+    <artifactId>configuration-testing</artifactId>
     <packaging>jar</packaging>
-    <name>jmx</name>
+    <name>configuration-testing</name>
 
     <properties>
         <air.main.basedir>${project.parent.basedir}</air.main.basedir>
-        <air.test.jvm.additional-arguments>-Djdk.attach.allowAttachSelf=true</air.test.jvm.additional-arguments>
     </properties>
 
     <dependencies>
@@ -24,33 +23,13 @@
         </dependency>
 
         <dependency>
-            <groupId>com.google.inject</groupId>
-            <artifactId>guice</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>io.airlift</groupId>
             <artifactId>configuration</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>discovery</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>log</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.weakref</groupId>
-            <artifactId>jmxutils</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>configuration-testing</artifactId>
-            <scope>test</scope>
+            <groupId>net.bytebuddy</groupId>
+            <artifactId>byte-buddy</artifactId>
         </dependency>
 
         <dependency>
@@ -59,6 +38,7 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- for testing -->
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>

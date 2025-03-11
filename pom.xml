@@ -42,6 +42,7 @@
         <module>bootstrap</module>
         <module>concurrent</module>
         <module>configuration</module>
+        <module>configuration-testing</module>
         <module>discovery</module>
         <module>http-client</module>
         <module>http-server</module>
@@ -122,6 +123,12 @@
             <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>configuration</artifactId>
+                <version>${dep.airlift.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>configuration-testing</artifactId>
                 <version>${dep.airlift.version}</version>
             </dependency>
 
