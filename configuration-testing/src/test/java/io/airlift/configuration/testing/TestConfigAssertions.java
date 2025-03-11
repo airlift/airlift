@@ -19,7 +19,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import io.airlift.configuration.Config;
-import io.airlift.configuration.Config1;
 import io.airlift.configuration.LegacyConfig;
 import io.airlift.configuration.testing.ConfigAssertions.$$RecordedConfigData;
 import org.junit.jupiter.api.Test;

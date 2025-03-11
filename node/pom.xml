@@ -26,6 +26,7 @@
             <groupId>com.google.inject</groupId>
             <artifactId>guice</artifactId>
         </dependency>
+
         <dependency>
             <groupId>io.airlift</groupId>
             <artifactId>configuration</artifactId>
@@ -42,6 +43,12 @@
         </dependency>
 
         <!-- for testing -->
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>configuration-testing</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <dependency>
             <groupId>io.airlift</groupId>
             <artifactId>testing</artifactId>

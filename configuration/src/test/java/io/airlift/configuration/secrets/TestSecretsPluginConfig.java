@@ -21,9 +21,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
-import static io.airlift.configuration.testing.ConfigAssertions.assertFullMapping;
-import static io.airlift.configuration.testing.ConfigAssertions.assertRecordedDefaults;
-import static io.airlift.configuration.testing.ConfigAssertions.recordDefaults;
+import static io.airlift.configuration.secrets.ConfigAssertions.assertFullMapping;
+import static io.airlift.configuration.secrets.ConfigAssertions.assertRecordedDefaults;
+import static io.airlift.configuration.secrets.ConfigAssertions.recordDefaults;
 
 final class TestSecretsPluginConfig
 {
