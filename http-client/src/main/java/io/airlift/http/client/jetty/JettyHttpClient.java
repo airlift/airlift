@@ -459,7 +459,7 @@ public class JettyHttpClient
         }
 
         ArrayByteBufferPool pool = new ArrayByteBufferPool.Quadratic(
-                1,
+                0,
                 maxBufferSize,
                 Integer.MAX_VALUE,
                 maxHeapMemory,
