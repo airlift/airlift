@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airlift</artifactId>
-        <version>318-SNAPSHOT</version>
+        <version>318</version>
     </parent>
     <artifactId>jetty-memory</artifactId>
     <packaging>jar</packaging>
