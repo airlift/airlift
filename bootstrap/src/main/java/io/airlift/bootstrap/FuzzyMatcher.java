@@ -1,17 +1,20 @@
 package io.airlift.bootstrap;
 
-import me.xdrop.fuzzywuzzy.FuzzySearch;
+import info.debatty.java.stringsimilarity.JaroWinkler;
+import info.debatty.java.stringsimilarity.interfaces.StringSimilarity;
 
 import java.util.List;
 import java.util.Set;
 
 import static com.google.common.base.Verify.verify;
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static java.util.Comparator.comparingInt;
+import static java.util.Comparator.comparingDouble;
 import static java.util.Objects.requireNonNull;
 
 class FuzzyMatcher
 {
+    private static final StringSimilarity SIMILARITY = new JaroWinkler();
+
     private FuzzyMatcher() {}
 
     public static List<String> findSimilar(String key, Set<String> candidates, int count)
@@ -21,20 +24,20 @@ class FuzzyMatcher
         }
 
         return candidates.stream()
-                .map(candidate -> new Match(candidate, FuzzySearch.ratio(candidate, key)))
-                .filter(match -> match.ratio() > 75)
-                .sorted(comparingInt(Match::ratio).reversed())
+                .map(candidate -> new Match(candidate, SIMILARITY.similarity(candidate, key)))
+                .filter(match -> match.ratio() > 0.85)
+                .sorted(comparingDouble(Match::ratio).reversed())
                 .limit(count)
                 .map(Match::key)
                 .collect(toImmutableList());
     }
 
-    private record Match(String key, int ratio)
+    private record Match(String key, double ratio)
     {
         public Match
         {
             requireNonNull(key, "key is null");
-            verify(ratio >= 0 && ratio < 100, "ratio must be in the [0, 100) range");
+            verify(ratio >= 0.0 && ratio <= 1.0, "ratio must be in the [0, 1.0] range");
         }
     }
 }

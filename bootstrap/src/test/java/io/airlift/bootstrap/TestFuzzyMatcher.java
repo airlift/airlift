@@ -20,7 +20,7 @@ class TestFuzzyMatcher
                 .containsExactly("foo");
 
         assertThat(findSimilar("fo", ImmutableSet.of("foo", "fooz", "foox"), 3))
-                .containsExactly("foo");
+                .containsExactly("foo", "fooz", "foox");
 
         assertThat(findSimilar("foo.enabled", ImmutableSet.of("foo.disabled", "bar.disabled", "bar.enabled"), 3))
                 .containsExactly("foo.disabled");
