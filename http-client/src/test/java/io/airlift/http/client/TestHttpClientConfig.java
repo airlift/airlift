@@ -95,7 +95,8 @@ public class TestHttpClientConfig
                 .setLogFlushInterval(new Duration(10, SECONDS))
                 .setLogCompressionEnabled(true)
                 .setTcpKeepAliveIdleTime(null)
-                .setStrictEventOrdering(false));
+                .setStrictEventOrdering(false)
+                .setUseVirtualThreads(false));
     }
 
     @Test
@@ -149,6 +150,7 @@ public class TestHttpClientConfig
                 .put("http-client.log.compression.enabled", "false")
                 .put("http-client.tcp-keep-alive-idle-time", "1m")
                 .put("http-client.strict-event-ordering", "true")
+                .put("http-client.use-virtual-threads", "true")
                 .build();
 
         HttpClientConfig expected = new HttpClientConfig()
@@ -198,7 +200,8 @@ public class TestHttpClientConfig
                 .setLogFlushInterval(new Duration(99, SECONDS))
                 .setLogCompressionEnabled(false)
                 .setTcpKeepAliveIdleTime(new Duration(1, MINUTES))
-                .setStrictEventOrdering(true);
+                .setStrictEventOrdering(true)
+                .setUseVirtualThreads(true);
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }

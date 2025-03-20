@@ -90,6 +90,7 @@ public class HttpClientConfig
     private String automaticHttpsSharedSecret;
     private Optional<Duration> tcpKeepAliveIdleTime = Optional.empty();
     private boolean strictEventOrdering;
+    private boolean useVirtualThreads;
 
     /**
      * This property is initialized with Jetty's default excluded ciphers list.
@@ -742,6 +743,19 @@ public class HttpClientConfig
     public HttpClientConfig setStrictEventOrdering(boolean strictEventOrdering)
     {
         this.strictEventOrdering = strictEventOrdering;
+        return this;
+    }
+
+    public boolean isUseVirtualThreads()
+    {
+        return useVirtualThreads;
+    }
+
+    @ConfigHidden
+    @Config("http-client.use-virtual-threads")
+    public HttpClientConfig setUseVirtualThreads(boolean useVirtualThreads)
+    {
+        this.useVirtualThreads = useVirtualThreads;
         return this;
     }
 

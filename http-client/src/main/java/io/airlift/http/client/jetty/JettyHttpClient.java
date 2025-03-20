@@ -76,6 +76,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.MonitoredQueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.VirtualThreadPool;
 import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
@@ -322,7 +323,7 @@ public class JettyHttpClient
 
         int maxBufferSize = toIntExact(max(max(config.getMaxContentLength().toBytes(), config.getRequestBufferSize().toBytes()), config.getResponseBufferSize().toBytes()));
         httpClient.setByteBufferPool(byteBufferPool.orElseGet(() -> createByteBufferPool(maxBufferSize, config)));
-        httpClient.setExecutor(createExecutor(name, config.getMinThreads(), config.getMaxThreads()));
+        httpClient.setExecutor(createExecutor(name, config.getMinThreads(), config.getMaxThreads(), config.isUseVirtualThreads()));
         httpClient.setScheduler(createScheduler(name, config.getTimeoutConcurrency(), config.getTimeoutThreads()));
         httpClient.setStrictEventOrdering(config.isStrictEventOrdering());
 
@@ -641,7 +642,7 @@ public class JettyHttpClient
         }
     }
 
-    private static MonitoredQueuedThreadPool createExecutor(String name, int minThreads, int maxThreads)
+    private static MonitoredQueuedThreadPool createExecutor(String name, int minThreads, int maxThreads, boolean useVirtualThreads)
     {
         try {
             MonitoredQueuedThreadPool pool = new MonitoredQueuedThreadPool(maxThreads, minThreads, 60000, null);
@@ -650,6 +651,14 @@ public class JettyHttpClient
             pool.start();
             pool.setStopTimeout(2000);
             pool.setDetailedDump(true);
+
+            if (useVirtualThreads) {
+                VirtualThreadPool virtualExecutor = new VirtualThreadPool();
+                virtualExecutor.setMaxThreads(maxThreads);
+                virtualExecutor.setName("http-client-" + name + "-virtual");
+                virtualExecutor.setDetailedDump(true);
+                pool.setVirtualThreadsExecutor(virtualExecutor);
+            }
             return pool;
         }
         catch (Exception e) {
