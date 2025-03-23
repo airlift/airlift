@@ -54,6 +54,7 @@ import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.MonitoredQueuedThreadPool;
+import org.eclipse.jetty.util.thread.VirtualThreadPool;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
 
@@ -77,7 +78,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.base.Verify.verify;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
 import static io.airlift.http.server.HttpServerConfig.HttpBufferPoolType.FFM;
@@ -92,7 +92,6 @@ import static org.eclipse.jetty.http.MimeTypes.Type.TEXT_PLAIN;
 import static org.eclipse.jetty.http.UriCompliance.Violation.AMBIGUOUS_PATH_ENCODING;
 import static org.eclipse.jetty.http.UriCompliance.Violation.AMBIGUOUS_PATH_SEPARATOR;
 import static org.eclipse.jetty.http.UriCompliance.Violation.SUSPICIOUS_PATH_CHARACTERS;
-import static org.eclipse.jetty.util.VirtualThreads.getNamedVirtualThreadsExecutor;
 
 public class HttpServer
 {
@@ -143,10 +142,12 @@ public class HttpServer
         threadPool.setName("http-worker");
         threadPool.setDetailedDump(true);
         if (enableVirtualThreads) {
-            Executor executor = getNamedVirtualThreadsExecutor("http-worker#v");
-            verify(executor != null, "Could not create virtual threads executor");
+            VirtualThreadPool virtualExecutor = new VirtualThreadPool();
+            virtualExecutor.setMaxThreads(config.getMaxThreads());
+            virtualExecutor.setName("http-worker#v");
+            virtualExecutor.setDetailedDump(true);
             log.info("Virtual threads support is enabled");
-            threadPool.setVirtualThreadsExecutor(executor);
+            threadPool.setVirtualThreadsExecutor(virtualExecutor);
         }
 
         int maxBufferSize = toIntExact(max(max(
