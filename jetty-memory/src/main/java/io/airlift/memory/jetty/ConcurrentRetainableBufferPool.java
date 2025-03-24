@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
 import static java.lang.Integer.numberOfLeadingZeros;
@@ -76,13 +77,13 @@ public class ConcurrentRetainableBufferPool
         heapBuckets = new ArenaBucket[numBuckets];
         offHeapBuckets = new ArenaBucket[numBuckets];
         for (int bucketId = 0; bucketId < numBuckets; bucketId++) {
-            heapBuckets[bucketId] = new ArenaBucket(this, false, bucketId);
-            offHeapBuckets[bucketId] = new ArenaBucket(this, true, bucketId);
+            heapBuckets[bucketId] = new ArenaBucket(false, bucketId);
+            offHeapBuckets[bucketId] = new ArenaBucket(true, bucketId);
         }
     }
 
     @Override
-    public RetainableByteBuffer.Mutable acquire(int size, boolean offHeap)
+    public RetainableByteBuffer acquire(int size, boolean offHeap)
     {
         int bucketId = floorMod(currentThread().threadId(), numBuckets);
         if (offHeap) {
@@ -162,19 +163,17 @@ public class ConcurrentRetainableBufferPool
         private final int bucketId;
         private final boolean offHeap;
         private final List<FixedSizeBufferPool> pools;
-        private final ByteBufferPool parentPool;
 
-        ArenaBucket(ByteBufferPool parentPool, boolean offHeap, int bucketId)
+        ArenaBucket(boolean offHeap, int bucketId)
         {
             this.sharedArena = Arena.ofShared();
             this.autoArena = Arena.ofAuto();
             this.bucketId = bucketId;
             this.offHeap = offHeap;
             this.pools = new ArrayList<>();
-            this.parentPool = parentPool;
         }
 
-        synchronized RetainableByteBuffer.Mutable alloc(int size)
+        synchronized RetainableByteBuffer alloc(int size)
         {
             int poolSizeShift = getPoolSizeShift(size);
             if (poolSizeShift >= pools.size()) {
@@ -194,7 +193,7 @@ public class ConcurrentRetainableBufferPool
         {
             int newPoolSizeShift;
             for (newPoolSizeShift = pools.size(); newPoolSizeShift <= poolSizeShift; newPoolSizeShift++) {
-                pools.add(new FixedSizeBufferPool(parentPool, poolSizeShiftToSize[newPoolSizeShift], offHeap));
+                pools.add(new FixedSizeBufferPool(poolSizeShiftToSize[newPoolSizeShift], offHeap));
             }
             updateMaxMemoryIfNeeded(poolSizeShiftToSize[newPoolSizeShift] * 16); // heuristically set the maximum to factor of the maximal buffer size
         }
@@ -245,15 +244,13 @@ public class ConcurrentRetainableBufferPool
         private final List<MemorySegment> buffers;
         private final int bufferSize;
         private final boolean offHeap;
-        private final ByteBufferPool parentPool;
         private int allocatedBuffers;
 
-        FixedSizeBufferPool(ByteBufferPool parentPool, int bufferSize, boolean offHeap)
+        FixedSizeBufferPool(int bufferSize, boolean offHeap)
         {
             this.buffers = new ArrayList<>();
             this.bufferSize = bufferSize;
             this.offHeap = offHeap;
-            this.parentPool = parentPool;
         }
 
         synchronized Buffer allocate(Arena arena)
@@ -261,7 +258,7 @@ public class ConcurrentRetainableBufferPool
             // For safety, we acquire buffers from the list head, but return them to the tail.
             MemorySegment buffer = buffers.isEmpty() ? allocateNewBuffer(arena) : buffers.removeFirst();
             allocatedBuffers++;
-            return new Buffer(buffer, buffer.asByteBuffer(), this);
+            return new Buffer(buffer, this);
         }
 
         synchronized void free(MemorySegment buffer)
@@ -276,12 +273,6 @@ public class ConcurrentRetainableBufferPool
         synchronized void evict()
         {
             buffers.clear();
-        }
-
-        void clear(ByteBuffer byteBuffer)
-        {
-            byteBuffer.limit(0);
-            byteBuffer.position(0);
         }
 
         private MemorySegment allocateNewBuffer(Arena arena)
@@ -303,28 +294,36 @@ public class ConcurrentRetainableBufferPool
         {
             return offHeap;
         }
-
-        ByteBufferPool getParentPool()
-        {
-            return parentPool;
-        }
     }
 
     // Similar the Jetty's ArrayByteBufferPool.Quadratic
     private class Buffer
-            extends RetainableByteBuffer.Pooled
+            implements RetainableByteBuffer
     {
+        private final AtomicInteger refCount;
         private final MemorySegment buffer;
         private final FixedSizeBufferPool pool;
         private ByteBuffer byteBuffer;
 
-        Buffer(MemorySegment buffer, ByteBuffer byteBuffer, FixedSizeBufferPool pool)
+        Buffer(MemorySegment buffer, FixedSizeBufferPool pool)
         {
-            super(pool.getParentPool(), byteBuffer, new ReferenceCounter());
+            this.refCount = new AtomicInteger(1);
             this.buffer = buffer;
-            this.byteBuffer = byteBuffer;
             this.pool = pool;
-            clear();
+
+            this.byteBuffer = buffer.asByteBuffer();
+            // Jetty requires a ByteBuffer with position and limit set to 0
+            byteBuffer.limit(0);
+            byteBuffer.position(0);
+        }
+
+        @Override
+        public void retain()
+        {
+            if (byteBuffer == null) {
+                throw new IllegalStateException("Buffer cannot be retained since already released");
+            }
+            refCount.getAndUpdate(c -> c + 1);
         }
 
         @Override
@@ -333,30 +332,32 @@ public class ConcurrentRetainableBufferPool
             if (byteBuffer == null) {
                 return true;
             }
-            boolean released = super.release();
-            if (released) {
+            boolean shouldRelease = refCount.updateAndGet(c -> c - 1) == 0;
+            if (shouldRelease) {
                 pool.free(buffer);
                 byteBuffer = null;
+
                 checkMaxMemory(pool.isOffHeap());
             }
-            return released;
+            return shouldRelease;
+        }
+
+        @Override
+        public boolean canRetain()
+        {
+            return true;
+        }
+
+        @Override
+        public boolean isRetained()
+        {
+            return refCount.get() > 1;
         }
 
         @Override
         public ByteBuffer getByteBuffer()
         {
-            if (byteBuffer == null) {
-                return null;
-            }
-            return super.getByteBuffer();
-        }
-
-        @Override
-        public void clear()
-        {
-            if (byteBuffer != null) {
-                pool.clear(byteBuffer);
-            }
+            return byteBuffer;
         }
     }
 }

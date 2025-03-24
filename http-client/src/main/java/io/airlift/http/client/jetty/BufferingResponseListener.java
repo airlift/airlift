@@ -6,23 +6,19 @@ import org.eclipse.jetty.client.Result;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.io.ByteBufferAccumulator;
+import org.eclipse.jetty.io.ByteBufferInputStream;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.RetainableByteBuffer;
 
-import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 
-import static java.lang.Math.toIntExact;
 import static java.util.Objects.requireNonNull;
-import static org.eclipse.jetty.util.BufferUtil.EMPTY_BYTES;
 
 public abstract class BufferingResponseListener
         implements Response.Listener
 {
-    private byte[] content;
-    private final RetainableByteBuffer.Mutable buffer;
+    private final ByteBufferAccumulator buffer;
     private final int maxLength;
 
     /**
@@ -40,7 +36,7 @@ public abstract class BufferingResponseListener
      */
     public BufferingResponseListener(ByteBufferPool byteBufferPool, int maxLength)
     {
-        this.buffer = new RetainableByteBuffer.DynamicCapacity(requireNonNull(byteBufferPool, "byteBufferPool is null"));
+        this.buffer = new ByteBufferAccumulator(requireNonNull(byteBufferPool, "byteBufferPool is null"), false);
         if (maxLength < 0) {
             throw new IllegalArgumentException("Invalid max length " + maxLength);
         }
@@ -68,32 +64,7 @@ public abstract class BufferingResponseListener
         if (length == 0) {
             return;
         }
-        buffer.append(content);
-    }
-
-    public byte[] getContent()
-    {
-        if (content == null) {
-            content = take();
-        }
-        return content;
-    }
-
-    private byte[] take()
-    {
-        if (buffer.isEmpty()) {
-            return EMPTY_BYTES;
-        }
-
-        long size = buffer.size();
-        if (size > Integer.MAX_VALUE) {
-            throw new BufferOverflowException();
-        }
-        int length = toIntExact(size);
-        byte[] bytes = new byte[length];
-        buffer.getByteBuffer().get(bytes);
-        buffer.clear();
-        return bytes;
+        buffer.copyBuffer(content);
     }
 
     @Override
@@ -104,6 +75,6 @@ public abstract class BufferingResponseListener
      */
     public InputStream getContentAsInputStream()
     {
-        return new ByteArrayInputStream(getContent());
+        return new ByteBufferInputStream(buffer.takeByteBuffer());
     }
 }

@@ -73,7 +73,7 @@ public class TestHttpServerConfig
                 .setCompressionEnabled(true)
                 .setMaxHeapMemory(null)
                 .setMaxDirectMemory(null)
-                .setHttpBufferPoolType(FFM));
+                .setHttpBufferPoolType(DEFAULT));
     }
 
     @Test
@@ -112,7 +112,7 @@ public class TestHttpServerConfig
                 .put("http-server.compression.enabled", "false")
                 .put("http-server.max-heap-memory", "127GB")
                 .put("http-server.max-direct-memory", "129GB")
-                .put("http-server.buffer-pool-type", "DEFAULT")
+                .put("http-server.buffer-pool-type", "FFM")
                 .build();
 
         HttpServerConfig expected = new HttpServerConfig()
@@ -148,7 +148,7 @@ public class TestHttpServerConfig
                 .setCompressionEnabled(false)
                 .setMaxHeapMemory(DataSize.of(127, GIGABYTE))
                 .setMaxDirectMemory(DataSize.of(129, GIGABYTE))
-                .setHttpBufferPoolType(DEFAULT);
+                .setHttpBufferPoolType(FFM);
 
         assertFullMapping(properties, expected);
     }

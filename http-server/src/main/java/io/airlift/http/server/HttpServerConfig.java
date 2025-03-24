@@ -101,7 +101,7 @@ public class HttpServerConfig
 
     private Optional<DataSize> maxHeapMemory = Optional.empty();
     private Optional<DataSize> maxDirectMemory = Optional.empty();
-    private HttpBufferPoolType httpBufferPoolType = HttpBufferPoolType.FFM;
+    private HttpBufferPoolType httpBufferPoolType = HttpBufferPoolType.DEFAULT;
 
     public boolean isHttpEnabled()
     {

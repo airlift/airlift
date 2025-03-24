@@ -301,7 +301,7 @@ public abstract class AbstractTestTestingHttpServer
                 assertThat(contentTypeHeader).isEqualTo(finalContentType);
             }
             else {
-                assertThat(contentTypeHeader).isEqualTo(finalContentType);
+                assertThat(contentTypeHeader).isEqualTo(contentType);
             }
         }
         finally {
