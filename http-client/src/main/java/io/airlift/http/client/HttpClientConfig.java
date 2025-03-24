@@ -77,7 +77,7 @@ public class HttpClientConfig
     private DataSize responseBufferSize = DataSize.of(16, KILOBYTE);
     private Optional<DataSize> maxHeapMemory = Optional.empty();
     private Optional<DataSize> maxDirectMemory = Optional.empty();
-    private HttpBufferPoolType httpBufferPoolType = HttpBufferPoolType.FFM;
+    private HttpBufferPoolType httpBufferPoolType = HttpBufferPoolType.DEFAULT;
     private HostAndPort socksProxy;
     private HostAndPort httpProxy;
     private boolean secureProxy;
