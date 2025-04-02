@@ -26,6 +26,7 @@ import io.airlift.bootstrap.Bootstrap;
 import io.airlift.bootstrap.LifeCycleManager;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.units.Duration;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.Test;
 
 import java.lang.annotation.ElementType;
@@ -36,6 +37,7 @@ import static io.airlift.http.client.HttpClientBinder.httpClientBinder;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class TestHttpClientBinder
 {
@@ -210,6 +212,58 @@ public class TestHttpClientBinder
     }
 
     @Test
+    public void testBindClientWithSslContext()
+    {
+        SslContextFactory.Client passingFactory = new SslContextFactory.Client();
+        SslContextFactory.Client failingFactory = new FailingSslContextFactory();
+
+        new Bootstrap(
+                binder -> {
+                    binder.bind(SslContextFactory.Client.class).toInstance(passingFactory);
+                    httpClientBinder(binder).bindHttpClient("foo", FooClient.class);
+                })
+                .quiet()
+                .initialize();
+
+        assertThatThrownBy(() -> new Bootstrap(
+                binder -> {
+                    binder.bind(SslContextFactory.Client.class).toInstance(failingFactory);
+                    httpClientBinder(binder).bindHttpClient("foo", FooClient.class);
+                })
+                .quiet()
+                .initialize())
+                .hasMessageContaining("RuntimeException: fail");
+    }
+
+    @Test
+    public void testBindClientWithSslContextWithAnnotation()
+    {
+        SslContextFactory.Client passingFactory = new SslContextFactory.Client();
+        SslContextFactory.Client failingFactory = new FailingSslContextFactory();
+
+        // if failing instance is bound globally but overridden by normal instance, it should succeed
+        new Bootstrap(
+                binder -> {
+                    binder.bind(SslContextFactory.Client.class).toInstance(failingFactory);
+                    binder.bind(SslContextFactory.Client.class).annotatedWith(FooClient.class).toInstance(passingFactory);
+                    httpClientBinder(binder).bindHttpClient("foo", FooClient.class);
+                })
+                .quiet()
+                .initialize();
+
+        // if normal instance is bound globally but overridden by failing instance, it should fail
+        assertThatThrownBy(() -> new Bootstrap(
+                binder -> {
+                    binder.bind(SslContextFactory.Client.class).toInstance(passingFactory);
+                    binder.bind(SslContextFactory.Client.class).annotatedWith(FooClient.class).toInstance(failingFactory);
+                    httpClientBinder(binder).bindHttpClient("foo", FooClient.class);
+                })
+                .quiet()
+                .initialize())
+                .hasMessageContaining("RuntimeException: fail");
+    }
+
+    @Test
     public void testMultipleClients()
     {
         Injector injector = new Bootstrap(
@@ -303,6 +357,16 @@ public class TestHttpClientBinder
         public Request filterRequest(Request request)
         {
             return request;
+        }
+    }
+
+    private static class FailingSslContextFactory
+            extends SslContextFactory.Client
+    {
+        @Override
+        protected void checkConfiguration()
+        {
+            throw new RuntimeException("fail");
         }
     }
 }

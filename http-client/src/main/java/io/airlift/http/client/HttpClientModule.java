@@ -70,8 +70,10 @@ public class HttpClientModule
         // bind the configuration
         configBinder(binder).bindConfig(HttpClientConfig.class, annotation, name);
 
-        // Allow users to bind their own SslContextFactory
+        // Allow users to bind their own SslContextFactory, pulling a globally-bound
+        // SslContextFactory if one is not bound with the specific annotation
         newOptionalBinder(binder, SslContextFactory.Client.class);
+        newOptionalBinder(binder, Key.get(SslContextFactory.Client.class, annotation));
 
         // bind the client
         binder.bind(HttpClient.class).annotatedWith(annotation).toProvider(new HttpClientProvider(name, annotation)).in(Scopes.SINGLETON);
@@ -139,7 +141,9 @@ public class HttpClientModule
         {
             HttpClientConfig config = injector.getInstance(Key.get(HttpClientConfig.class, annotation));
             Optional<String> environment = Optional.ofNullable(nodeInfo).map(NodeInfo::getEnvironment);
-            Optional<SslContextFactory.Client> sslContextFactory = injector.getInstance(Key.get(new TypeLiteral<>() {}));
+            Optional<SslContextFactory.Client> sslContextFactoryAnnotated = injector.getInstance(Key.get(new TypeLiteral<>() {}, annotation));
+            Optional<SslContextFactory.Client> sslContextFactoryGlobal = injector.getInstance(Key.get(new TypeLiteral<>() {}));
+            Optional<SslContextFactory.Client> sslContextFactory = sslContextFactoryAnnotated.or(() -> sslContextFactoryGlobal);
             Optional<ByteBufferPool> byteBufferPool = injector.getInstance(Key.get(new TypeLiteral<>() {}));
 
             Set<HttpRequestFilter> filters = ImmutableSet.<HttpRequestFilter>builder()
