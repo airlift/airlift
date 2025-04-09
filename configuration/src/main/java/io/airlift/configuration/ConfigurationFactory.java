@@ -472,7 +472,7 @@ public class ConfigurationFactory
             if (e instanceof InvocationTargetException && e.getCause() != null) {
                 e = e.getCause();
             }
-            throw exceptionFor(e, "Error creating instance of configuration class [%s]", configurationMetadata.getConfigClass().getName());
+            throw exceptionFor(e, "Error creating instance of configuration class [%s], caused by %s: %s", configurationMetadata.getConfigClass().getName(), e.getClass().getSimpleName(), e.getMessage());
         }
     }
 
