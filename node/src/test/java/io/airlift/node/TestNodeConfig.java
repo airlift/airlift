@@ -18,13 +18,14 @@ package io.airlift.node;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.net.InetAddresses;
 import io.airlift.configuration.testing.ConfigAssertions;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.net.URISyntaxException;
-import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static com.google.common.io.Resources.getResource;
@@ -50,6 +51,7 @@ public class TestNodeConfig
                 .setConfigSpec(null)
                 .setInternalAddressSource(IP)
                 .setAnnotationFile(null)
+                .setAnnotations((String) null)
                 .setPreferIpv6Address(false));
     }
 
@@ -58,40 +60,71 @@ public class TestNodeConfig
             throws URISyntaxException
     {
         File annotationFile = new File(getResource("annotations.properties").toURI());
-        Map<String, String> properties = new ImmutableMap.Builder<String, String>()
-                .put("node.environment", "environment")
-                .put("node.pool", "pool")
-                .put("node.id", "nodeId")
-                .put("node.internal-address", "internal")
-                .put("node.bind-ip", "10.11.12.13")
-                .put("node.external-address", "external")
-                .put("node.location", "location")
-                .put("node.binary-spec", "binary")
-                .put("node.config-spec", "config")
-                .put("node.internal-address-source", "HOSTNAME")
-                .put("node.annotation-file", annotationFile.getAbsolutePath())
-                .put("node.prefer-ipv6-address", "true")
-                .build();
 
-        NodeConfig expected = new NodeConfig()
-                .setEnvironment("environment")
-                .setPool("pool")
-                .setNodeId("nodeId")
-                .setNodeInternalAddress("internal")
-                .setNodeBindIp(InetAddresses.forString("10.11.12.13"))
-                .setNodeExternalAddress("external")
-                .setLocation("location")
-                .setBinarySpec("binary")
-                .setConfigSpec("config")
-                .setInternalAddressSource(HOSTNAME)
-                .setAnnotationFile(annotationFile.getAbsolutePath())
-                .setPreferIpv6Address(true);
+        ConfigAssertions.assertFullMapping(
+                new ImmutableMap.Builder<String, String>()
+                        .put("node.environment", "environment")
+                        .put("node.pool", "pool")
+                        .put("node.id", "nodeId")
+                        .put("node.internal-address", "internal")
+                        .put("node.bind-ip", "10.11.12.13")
+                        .put("node.external-address", "external")
+                        .put("node.location", "location")
+                        .put("node.binary-spec", "binary")
+                        .put("node.config-spec", "config")
+                        .put("node.internal-address-source", "HOSTNAME")
+                        .put("node.annotation-file", annotationFile.getAbsolutePath())
+                        .put("node.prefer-ipv6-address", "true")
+                        .build(),
+                new NodeConfig()
+                        .setEnvironment("environment")
+                        .setPool("pool")
+                        .setNodeId("nodeId")
+                        .setNodeInternalAddress("internal")
+                        .setNodeBindIp(InetAddresses.forString("10.11.12.13"))
+                        .setNodeExternalAddress("external")
+                        .setLocation("location")
+                        .setBinarySpec("binary")
+                        .setConfigSpec("config")
+                        .setInternalAddressSource(HOSTNAME)
+                        .setAnnotationFile(annotationFile.getAbsolutePath())
+                        .setPreferIpv6Address(true),
+                Set.of("node.annotations"));
 
-        ConfigAssertions.assertFullMapping(properties, expected);
+        ConfigAssertions.assertFullMapping(
+                new ImmutableMap.Builder<String, String>()
+                        .put("node.environment", "environment")
+                        .put("node.pool", "pool")
+                        .put("node.id", "nodeId")
+                        .put("node.internal-address", "internal")
+                        .put("node.bind-ip", "10.11.12.13")
+                        .put("node.external-address", "external")
+                        .put("node.location", "location")
+                        .put("node.binary-spec", "binary")
+                        .put("node.config-spec", "config")
+                        .put("node.internal-address-source", "HOSTNAME")
+                        .put("node.annotations", "team=a,region=b")
+                        .put("node.prefer-ipv6-address", "true")
+                        .build(),
+                new NodeConfig()
+                        .setEnvironment("environment")
+                        .setPool("pool")
+                        .setNodeId("nodeId")
+                        .setNodeInternalAddress("internal")
+                        .setNodeBindIp(InetAddresses.forString("10.11.12.13"))
+                        .setNodeExternalAddress("external")
+                        .setLocation("location")
+                        .setBinarySpec("binary")
+                        .setConfigSpec("config")
+                        .setInternalAddressSource(HOSTNAME)
+                        .setAnnotations("team=a,region=b")
+                        .setPreferIpv6Address(true),
+                Set.of("node.annotation-file"));
     }
 
     @Test
     public void testValidations()
+            throws URISyntaxException
     {
         assertValidates(new NodeConfig()
                 .setEnvironment("test")
@@ -103,5 +136,13 @@ public class TestNodeConfig
         assertFailsValidation(new NodeConfig().setEnvironment("FOO"), "environment", "should match [a-z0-9][_a-z0-9]*", Pattern.class);
 
         assertFailsValidation(new NodeConfig().setPool("FOO"), "pool", "should match [a-z0-9][_a-z0-9]*", Pattern.class);
+
+        File annotationFile = new File(getResource("annotations.properties").toURI());
+        assertFailsValidation(new NodeConfig()
+                        .setAnnotations("team=a,region=b")
+                        .setAnnotationFile(annotationFile.getAbsolutePath()),
+                "configurationValid",
+                "only one of node.annotations or node.annotation-file can be set",
+                AssertTrue.class);
     }
 }

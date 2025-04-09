@@ -15,15 +15,19 @@
  */
 package io.airlift.node;
 
+import com.google.common.base.Splitter;
 import com.google.common.net.InetAddresses;
 import io.airlift.configuration.Config;
 import io.airlift.configuration.DefunctConfig;
 import io.airlift.configuration.LegacyConfig;
 import io.airlift.configuration.validation.FileExists;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 
 import java.net.InetAddress;
+import java.util.Map;
+import java.util.Optional;
 
 @DefunctConfig({"http-server.ip", "jetty.ip"})
 public class NodeConfig
@@ -34,6 +38,9 @@ public class NodeConfig
     public static final String ENV_REGEXP_ERROR = "should match " + ENV_REGEXP;
     public static final String POOL_REGEXP = "[a-z0-9][_a-z0-9]*";
     public static final String POOL_REGEXP_ERROR = "should match " + POOL_REGEXP;
+    public static final Splitter.MapSplitter ANNOTATION_SPLITTER = Splitter.on(",")
+            .omitEmptyStrings()
+            .withKeyValueSeparator("=");
 
     private String environment;
     private String pool = "general";
@@ -47,6 +54,7 @@ public class NodeConfig
     private AddressSource internalAddressSource = AddressSource.IP;
     private String annotationFile;
     private boolean preferIpv6Address = "true".equalsIgnoreCase(System.getenv("java.net.preferIPv6Address"));
+    private Map<String, String> annotations;
 
     @NotNull
     @Pattern(regexp = ENV_REGEXP, message = ENV_REGEXP_ERROR)
@@ -213,5 +221,31 @@ public class NodeConfig
     public boolean getPreferIpv6Address()
     {
         return this.preferIpv6Address;
+    }
+
+    public Map<String, String> getAnnotations()
+    {
+        return annotations;
+    }
+
+    @Config("node.annotations")
+    public NodeConfig setAnnotations(String annotations)
+    {
+        this.annotations = Optional.ofNullable(annotations)
+                .map(ANNOTATION_SPLITTER::split)
+                .orElse(null);
+        return this;
+    }
+
+    public NodeConfig setAnnotations(Map<String, String> annotations)
+    {
+        this.annotations = annotations;
+        return this;
+    }
+
+    @AssertTrue(message = "only one of node.annotations or node.annotation-file can be set")
+    public boolean isConfigurationValid()
+    {
+        return annotationFile == null || annotations == null;
     }
 }

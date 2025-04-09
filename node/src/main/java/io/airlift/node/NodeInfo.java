@@ -41,6 +41,7 @@ import java.util.function.Function;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Verify.verify;
 import static io.airlift.configuration.ConfigurationLoader.loadPropertiesFrom;
 import static io.airlift.configuration.ConfigurationUtils.replaceEnvironmentVariables;
 import static io.airlift.node.AddressToHostname.encodeAddressAsHostname;
@@ -82,6 +83,7 @@ public class NodeInfo
                 config.getConfigSpec(),
                 config.getInternalAddressSource(),
                 config.getAnnotationFile(),
+                config.getAnnotations(),
                 config.getPreferIpv6Address());
     }
 
@@ -96,6 +98,7 @@ public class NodeInfo
             String configSpec,
             AddressSource internalAddressSource,
             String annotationFile,
+            Map<String, String> annotations,
             boolean preferIpv6Address)
     {
         requireNonNull(environment, "environment is null");
@@ -147,6 +150,7 @@ public class NodeInfo
             this.externalAddress = this.internalAddress;
         }
 
+        verify(annotationFile == null || annotations == null, "Only one of annotationFile or annotations should be set, but not both");
         if (annotationFile != null) {
             try {
                 this.annotations = ImmutableMap.copyOf(replaceEnvironmentVariables(loadPropertiesFrom(annotationFile)));
@@ -154,6 +158,9 @@ public class NodeInfo
             catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
+        }
+        else if (annotations != null) {
+            this.annotations = ImmutableMap.copyOf(annotations);
         }
         else {
             this.annotations = ImmutableMap.of();
