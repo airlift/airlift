@@ -49,7 +49,8 @@ public class TestNodeConfig
                 .setBinarySpec(null)
                 .setConfigSpec(null)
                 .setInternalAddressSource(IP)
-                .setAnnotationFile(null));
+                .setAnnotationFile(null)
+                .setAnnotationString(null));
     }
 
     @Test
@@ -69,6 +70,7 @@ public class TestNodeConfig
                 .put("node.config-spec", "config")
                 .put("node.internal-address-source", "HOSTNAME")
                 .put("node.annotation-file", annotationFile.getAbsolutePath())
+                .put("node.annotation-string", "team=a")
                 .build();
 
         NodeConfig expected = new NodeConfig()
@@ -82,7 +84,8 @@ public class TestNodeConfig
                 .setBinarySpec("binary")
                 .setConfigSpec("config")
                 .setInternalAddressSource(HOSTNAME)
-                .setAnnotationFile(annotationFile.getAbsolutePath());
+                .setAnnotationFile(annotationFile.getAbsolutePath())
+                .setAnnotationString("team=a");
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }

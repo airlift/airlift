@@ -46,6 +46,7 @@ public class NodeConfig
     private String configSpec;
     private AddressSource internalAddressSource = AddressSource.IP;
     private String annotationFile;
+    private String annotationString;
 
     @NotNull
     @Pattern(regexp = ENV_REGEXP, message = ENV_REGEXP_ERROR)
@@ -199,6 +200,18 @@ public class NodeConfig
     public NodeConfig setAnnotationFile(String annotationFile)
     {
         this.annotationFile = annotationFile;
+        return this;
+    }
+
+    public String getAnnotationString()
+    {
+        return annotationString;
+    }
+
+    @Config("node.annotation-string")
+    public NodeConfig setAnnotationString(String annotationString)
+    {
+        this.annotationString = annotationString;
         return this;
     }
 }
