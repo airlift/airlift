@@ -15,6 +15,7 @@
  */
 package io.airlift.node;
 
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.net.InetAddresses;
@@ -77,7 +78,8 @@ public class NodeInfo
                 config.getBinarySpec(),
                 config.getConfigSpec(),
                 config.getInternalAddressSource(),
-                config.getAnnotationFile());
+                config.getAnnotationFile(),
+                config.getAnnotationString());
     }
 
     public NodeInfo(String environment,
@@ -90,7 +92,8 @@ public class NodeInfo
             String binarySpec,
             String configSpec,
             AddressSource internalAddressSource,
-            String annotationFile)
+            String annotationFile,
+            String annotationString)
     {
         requireNonNull(environment, "environment is null");
         requireNonNull(pool, "pool is null");
@@ -140,6 +143,10 @@ public class NodeInfo
             this.externalAddress = this.internalAddress;
         }
 
+        if (annotationFile != null && annotationString != null) {
+            throw new IllegalArgumentException("Only one of annotationFile or annotationString should be set, but not both.");
+        }
+
         if (annotationFile != null) {
             try {
                 this.annotations = ImmutableMap.copyOf(replaceEnvironmentVariables(loadPropertiesFrom(annotationFile)));
@@ -147,6 +154,9 @@ public class NodeInfo
             catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
+        }
+        else if (annotationString != null) {
+            this.annotations = ImmutableMap.copyOf(replaceEnvironmentVariables(Splitter.on(",").withKeyValueSeparator("=").split(annotationString)));
         }
         else {
             this.annotations = ImmutableMap.of();
