@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Pattern;
 public class OpenTelemetryExporterConfig
 {
     private String endpoint = "http://localhost:4317";
+    private String protocol = "grpc"; // Default protocol
 
     @NotNull
     @Pattern(regexp = "^(http|https)://.*$", message = "must start with http:// or https://")
@@ -19,6 +20,20 @@ public class OpenTelemetryExporterConfig
     public OpenTelemetryExporterConfig setEndpoint(String endpoint)
     {
         this.endpoint = endpoint;
+        return this;
+    }
+
+    @NotNull
+    @Pattern(regexp = "grpc|http/protobuf", message = "must be one of: grpc, http/protobuf")
+    public String getProtocol()
+    {
+        return protocol;
+    }
+
+    @Config("tracing.exporter.protocol")
+    public OpenTelemetryExporterConfig setProtocol(String protocol)
+    {
+        this.protocol = protocol;
         return this;
     }
 }
