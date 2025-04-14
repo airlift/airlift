@@ -31,10 +31,13 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -58,6 +61,7 @@ public class NodeInfo
     private final InetAddress bindIp;
     private final long startTime = System.currentTimeMillis();
     private final Map<String, String> annotations;
+    private static boolean preferIpv6ForTest;
 
     public NodeInfo(String environment)
     {
@@ -302,12 +306,71 @@ public class NodeInfo
 
     private static InetAddress findInternalIp()
     {
+        List<Function<List<InetAddress>, Optional<InetAddress>>> searchOrder = new ArrayList<>(3);
+        boolean preferV6 = isSystemPrefersIpv6();
+        if (preferV6) {
+            searchOrder.add(NodeInfo::findIpv6address);
+            searchOrder.add(NodeInfo::findLocalAddress);
+            searchOrder.add(NodeInfo::findIpv4address);
+        }
+        else {
+            searchOrder.add(NodeInfo::findLocalAddress);
+            searchOrder.add(NodeInfo::findIpv4address);
+            searchOrder.add(NodeInfo::findIpv6address);
+        }
+
+        List<InetAddress> goodAddresses = getGoodAddresses();
+        return searchOrder.stream()                             // list of sources
+            .map(source -> source.apply(goodAddresses))         // potential results
+            .filter(Optional::isPresent)                        // select only valid results
+            .findFirst()                                        // take the first value
+            .orElse(Optional.empty())                     // we could not find any source
+            .orElse(null);                                // it is most likely that this is a disconnected developer machine
+    }
+
+    private static boolean isSystemPrefersIpv6()
+    {
+        if (preferIpv6ForTest) {
+            return true;
+        }
+        return "true".equalsIgnoreCase(System.getenv("java.net.preferIPv6Address"));
+    }
+
+    static void setPreferIpv6ForTest(boolean state)
+    {
+        preferIpv6ForTest = state;
+    }
+
+    private static Optional<InetAddress> findIpv4address(List<InetAddress> goodAddresses)
+    {
+        // check all up network interfaces for a good v4 address
+        for (InetAddress address : goodAddresses) {
+            if (isV4Address(address)) {
+                return Optional.of(address);
+            }
+        }
+        return Optional.empty();
+    }
+
+    private static Optional<InetAddress> findIpv6address(List<InetAddress> goodAddresses)
+    {
+        // check all up network interfaces for a good v6 address
+        for (InetAddress address : goodAddresses) {
+            if (isV6Address(address)) {
+                return Optional.of(address);
+            }
+        }
+        return Optional.empty();
+    }
+
+    private static Optional<InetAddress> findLocalAddress(List<InetAddress> goodAddresses)
+    {
         // Check if local host address is a good v4 address
         InetAddress localAddress = null;
         try {
             localAddress = InetAddress.getLocalHost();
             if (isV4Address(localAddress) && getGoodAddresses().contains(localAddress)) {
-                return localAddress;
+                return Optional.of(localAddress);
             }
         }
         catch (UnknownHostException ignored) {
@@ -320,24 +383,7 @@ public class NodeInfo
                 throw new AssertionError("Could not get local ip address");
             }
         }
-
-        // check all up network interfaces for a good v4 address
-        for (InetAddress address : getGoodAddresses()) {
-            if (isV4Address(address)) {
-                return address;
-            }
-        }
-
-        // check all up network interfaces for a good v6 address
-        for (InetAddress address : getGoodAddresses()) {
-            if (isV6Address(address)) {
-                return address;
-            }
-        }
-
-        // just return the local host address
-        // it is most likely that this is a disconnected developer machine
-        return localAddress;
+        return Optional.ofNullable(localAddress);
     }
 
     private static List<InetAddress> getGoodAddresses()
