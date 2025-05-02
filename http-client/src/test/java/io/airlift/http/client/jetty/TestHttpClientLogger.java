@@ -463,12 +463,6 @@ public class TestHttpClientLogger
         }
 
         @Override
-        public Request listener(Listener listener)
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
         public Request onRequestQueued(QueuedListener listener)
         {
             throw new UnsupportedOperationException();
