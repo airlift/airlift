@@ -1032,7 +1032,8 @@ public class JettyHttpClient
 
         // Add stats collecting listener
         JettyRequestListener requestListener = new JettyRequestListener(finalRequest.getUri());
-        jettyRequest.listener(requestListener);
+        jettyRequest.onRequestListener(requestListener);
+        jettyRequest.onResponseListener(requestListener);
         jettyRequest.attribute(STATS_KEY, requestListener);
 
         // Add diagnostics listener
@@ -1043,7 +1044,9 @@ public class JettyHttpClient
 
         // Add log listener
         if (logEnabled) {
-            jettyRequest.listener(new HttpClientLoggingListener(jettyRequest, requestTime, requestLogger));
+            HttpClientLoggingListener httpClientLoggingListener = new HttpClientLoggingListener(jettyRequest, requestTime, requestLogger);
+            jettyRequest.onRequestListener(httpClientLoggingListener);
+            jettyRequest.onResponseListener(httpClientLoggingListener);
         }
 
         // Add request size listener
