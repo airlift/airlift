@@ -15,13 +15,17 @@
  */
 package io.airlift.node;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.net.InetAddresses;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.io.UncheckedIOException;
 import java.net.InetAddress;
+import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 
+import static com.google.common.io.Resources.getResource;
 import static io.airlift.node.NodeConfig.AddressSource.FQDN;
 import static io.airlift.node.NodeConfig.AddressSource.HOSTNAME;
 import static io.airlift.node.NodeConfig.AddressSource.IP;
@@ -46,7 +50,7 @@ public class TestNodeInfo
         InetAddress bindIp = InetAddresses.forString("10.0.0.33");
         String externalAddress = "external";
 
-        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, nodeId, internalIp, bindIp, externalAddress, location, binarySpec, configSpec, IP, null);
+        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, nodeId, internalIp, bindIp, externalAddress, location, binarySpec, configSpec, IP, null, null);
         assertThat(nodeInfo.getEnvironment()).isEqualTo(ENVIRONMENT);
         assertThat(nodeInfo.getPool()).isEqualTo(POOL);
         assertThat(nodeInfo.getNodeId()).isEqualTo(nodeId);
@@ -70,7 +74,7 @@ public class TestNodeInfo
     @Test
     public void testDefaultAddresses()
     {
-        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", "10.0.0.22", null, null, null, null, null, IP, null);
+        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", "10.0.0.22", null, null, null, null, null, IP, null, null);
         assertThat(nodeInfo.getExternalAddress()).isEqualTo("10.0.0.22");
         assertThat(nodeInfo.getBindIp()).isEqualTo(InetAddresses.forString("0.0.0.0"));
     }
@@ -78,7 +82,7 @@ public class TestNodeInfo
     @Test
     public void testIpDiscovery()
     {
-        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, IP, null);
+        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, IP, null, null);
         assertThat(nodeInfo.getInternalAddress()).isNotNull();
         assertThat(nodeInfo.getBindIp()).isEqualTo(InetAddresses.forString("0.0.0.0"));
         assertThat(nodeInfo.getExternalAddress()).isEqualTo(nodeInfo.getInternalAddress());
@@ -88,7 +92,7 @@ public class TestNodeInfo
     public void testHostnameDiscovery()
             throws UnknownHostException
     {
-        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, HOSTNAME, null);
+        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, HOSTNAME, null, null);
         assertThat(nodeInfo.getInternalAddress()).isNotNull();
         assertThat(nodeInfo.getBindIp()).isEqualTo(InetAddresses.forString("0.0.0.0"));
         assertThat(nodeInfo.getExternalAddress()).isEqualTo(InetAddress.getLocalHost().getHostName());
@@ -98,16 +102,35 @@ public class TestNodeInfo
     public void testFqdnDiscovery()
             throws UnknownHostException
     {
-        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, FQDN, null);
+        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, FQDN, null, null);
         assertThat(nodeInfo.getInternalAddress()).isNotNull();
         assertThat(nodeInfo.getBindIp()).isEqualTo(InetAddresses.forString("0.0.0.0"));
         assertThat(nodeInfo.getExternalAddress()).isEqualTo(InetAddress.getLocalHost().getCanonicalHostName());
     }
 
     @Test
+    public void testAnnotationFile()
+            throws URISyntaxException
+    {
+        String annotationFile = new File(getResource("annotations.properties").toURI()).getAbsolutePath();
+        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, IP, annotationFile, null);
+        assertThat(nodeInfo.getAnnotations()).isNotNull();
+        assertThat(nodeInfo.getAnnotations()).isEqualTo(ImmutableMap.of("team", "a", "region", "b"));
+    }
+
+    @Test
+    public void testAnnotationString()
+    {
+        String annotationString = "team=a,region=b";
+        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, IP, null, annotationString);
+        assertThat(nodeInfo.getAnnotations()).isNotNull();
+        assertThat(nodeInfo.getAnnotations()).isEqualTo(ImmutableMap.of("team", "a", "region", "b"));
+    }
+
+    @Test
     public void testInvalidNodeId()
     {
-        assertThatThrownBy(() -> new NodeInfo(ENVIRONMENT, POOL, "abc/123", null, null, null, null, null, null, IP, null))
+        assertThatThrownBy(() -> new NodeInfo(ENVIRONMENT, POOL, "abc/123", null, null, null, null, null, null, IP, null, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageMatching("nodeId .*");
     }
@@ -115,7 +138,7 @@ public class TestNodeInfo
     @Test
     public void testInvalidEnvironment()
     {
-        assertThatThrownBy(() -> new NodeInfo("ENV", POOL, null, null, null, null, null, null, null, IP, null))
+        assertThatThrownBy(() -> new NodeInfo("ENV", POOL, null, null, null, null, null, null, null, IP, null, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageMatching("environment .*");
     }
@@ -123,7 +146,7 @@ public class TestNodeInfo
     @Test
     public void testInvalidPool()
     {
-        assertThatThrownBy(() -> new NodeInfo(ENVIRONMENT, "POOL", null, null, null, null, null, null, null, IP, null))
+        assertThatThrownBy(() -> new NodeInfo(ENVIRONMENT, "POOL", null, null, null, null, null, null, null, IP, null, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageMatching("pool .*");
     }
@@ -131,8 +154,24 @@ public class TestNodeInfo
     @Test
     public void testInvalidAnnotationFile()
     {
-        assertThatThrownBy(() -> new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, IP, "invalid.file"))
+        assertThatThrownBy(() -> new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, IP, "invalid.file", null))
                 .isInstanceOf(UncheckedIOException.class)
                 .hasMessageMatching("java.io.FileNotFoundException: invalid.file \\(No such file or directory\\)");
+    }
+
+    @Test
+    public void testInvalidAnnotationString()
+    {
+        assertThatThrownBy(() -> new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, IP, null, "invalid"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageMatching("Chunk \\[invalid\\] is not a valid entry");
+    }
+
+    @Test
+    public void testAnnotationFileAndAnnotationString()
+    {
+        assertThatThrownBy(() -> new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, IP, "invalid.file", "invalid"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageMatching("Only one of annotationFile or annotationString should be set, but not both\\.");
     }
 }
