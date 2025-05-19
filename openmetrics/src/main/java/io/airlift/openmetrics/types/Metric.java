@@ -44,6 +44,7 @@ public interface Metric
         return NAME_WITH_LABELS_LINE_FORMAT.formatted(
                 name,
                 labels.entrySet().stream()
+                        .sorted(Map.Entry.comparingByKey())
                         .map(e -> "%s=\"%s\"".formatted(e.getKey(), e.getValue()))
                         .collect(Collectors.joining(",")));
     }

@@ -15,13 +15,25 @@ package io.airlift.openmetrics;
 
 import com.google.common.collect.ImmutableMap;
 import io.airlift.openmetrics.types.BigCounter;
+import io.airlift.openmetrics.types.CompositeMetric;
 import io.airlift.openmetrics.types.Counter;
 import io.airlift.openmetrics.types.Gauge;
 import io.airlift.openmetrics.types.Info;
 import io.airlift.openmetrics.types.Summary;
 import org.junit.jupiter.api.Test;
 
+import javax.management.openmbean.CompositeData;
+import javax.management.openmbean.CompositeDataSupport;
+import javax.management.openmbean.CompositeType;
+import javax.management.openmbean.OpenType;
+import javax.management.openmbean.SimpleType;
+import javax.management.openmbean.TabularData;
+import javax.management.openmbean.TabularDataSupport;
+import javax.management.openmbean.TabularType;
+
 import java.math.BigInteger;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -133,5 +145,125 @@ public class TestMetricExpositions
                 """;
 
         assertThat(new Summary("metric_name", 10L, 2.0, 3.0, ImmutableMap.of(0.5, 0.25), ImmutableMap.of("fruit", "apple"), "metric_help").getMetricExposition()).isEqualTo(expected);
+    }
+
+    @Test
+    public void testCompositeMetricExposition()
+    {
+        String expected = """
+                # TYPE metric_name_committed gauge
+                # HELP metric_name_committed metric_help
+                metric_name_committed 200.0
+                # TYPE metric_name_max gauge
+                # HELP metric_name_max metric_help
+                metric_name_max 1000.0
+                # TYPE metric_name_used gauge
+                # HELP metric_name_used metric_help
+                metric_name_used 100.0
+                """;
+
+        CompositeData compositeData = createMemoryUsageCompositeData(100L, 200L, 1000L);
+        CompositeMetric compositeMetric = CompositeMetric.from("metric_name", compositeData, ImmutableMap.of(), "metric_help");
+        assertThat(compositeMetric.getMetricExposition()).isEqualTo(expected);
+    }
+
+    @Test
+    public void testCompositeMetricExpositionLabels()
+    {
+        String expected = """
+                # TYPE metric_name_committed gauge
+                # HELP metric_name_committed metric_help
+                metric_name_committed{type="cavendish"} 200.0
+                # TYPE metric_name_max gauge
+                # HELP metric_name_max metric_help
+                metric_name_max{type="cavendish"} 1000.0
+                # TYPE metric_name_used gauge
+                # HELP metric_name_used metric_help
+                metric_name_used{type="cavendish"} 100.0
+                """;
+
+        CompositeData compositeData = createMemoryUsageCompositeData(100L, 200L, 1000L);
+        CompositeMetric compositeMetric = CompositeMetric.from("metric_name", compositeData, ImmutableMap.of("type", "cavendish"), "metric_help");
+        assertThat(compositeMetric.getMetricExposition()).isEqualTo(expected);
+    }
+
+    private CompositeData createMemoryUsageCompositeData(long used, long committed, long max)
+    {
+        try {
+            String[] itemNames = {"used", "committed", "max"};
+            OpenType<?>[] itemTypes = {SimpleType.LONG, SimpleType.LONG, SimpleType.LONG};
+            CompositeType compositeType = new CompositeType("MemoryUsage", "Memory Usage", itemNames, itemNames, itemTypes);
+
+            Map<String, Object> values = new HashMap<>();
+            values.put("used", used);
+            values.put("committed", committed);
+            values.put("max", max);
+
+            return new CompositeDataSupport(compositeType, values);
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void testTabularDataExposition()
+    {
+        String expected = """
+                # TYPE metric_name_value gauge
+                # HELP metric_name_value metric_help
+                metric_name_value{region="us-east",zone="1a"} 100.0
+                metric_name_value{region="us-west",zone="2b"} 200.0
+                """;
+
+        TabularData tabularData = createTestTabularData();
+        CompositeMetric compositeMetric = CompositeMetric.from("metric_name", tabularData, ImmutableMap.of(), "metric_help");
+        assertThat(compositeMetric.getMetricExposition()).isEqualTo(expected);
+    }
+
+    @Test
+    public void testTabularDataExpositionLabels()
+    {
+        String expected = """
+                # TYPE metric_name_value gauge
+                # HELP metric_name_value metric_help
+                metric_name_value{region="us-east",type="cavendish",zone="1a"} 100.0
+                metric_name_value{region="us-west",type="cavendish",zone="2b"} 200.0
+                """;
+
+        TabularData tabularData = createTestTabularData();
+        CompositeMetric compositeMetric = CompositeMetric.from("metric_name", tabularData, ImmutableMap.of("type", "cavendish"), "metric_help");
+        assertThat(compositeMetric.getMetricExposition()).isEqualTo(expected);
+    }
+
+    private TabularData createTestTabularData()
+    {
+        try {
+            String[] itemNames = {"region", "zone", "value"};
+            OpenType<?>[] itemTypes = {SimpleType.STRING, SimpleType.STRING, SimpleType.LONG};
+            CompositeType compositeType = new CompositeType("TestData", "Test Data", itemNames, itemNames, itemTypes);
+
+            String[] indexNames = {"region", "zone"};
+            TabularType tabularType = new TabularType("TestTable", "Test Table", compositeType, indexNames);
+
+            TabularDataSupport tabularData = new TabularDataSupport(tabularType);
+
+            Map<String, Object> row1 = new HashMap<>();
+            row1.put("region", "us-east");
+            row1.put("zone", "1a");
+            row1.put("value", 100L);
+            tabularData.put(new CompositeDataSupport(compositeType, row1));
+
+            Map<String, Object> row2 = new HashMap<>();
+            row2.put("region", "us-west");
+            row2.put("zone", "2b");
+            row2.put("value", 200L);
+            tabularData.put(new CompositeDataSupport(compositeType, row2));
+
+            return tabularData;
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }
