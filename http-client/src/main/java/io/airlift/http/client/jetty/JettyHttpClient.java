@@ -1020,7 +1020,7 @@ public class JettyHttpClient
                 case StaticBodyGenerator generator -> jettyRequest.body(new BytesRequestContent(generator.getBody()));
                 case ByteBufferBodyGenerator generator -> jettyRequest.body(new ByteBufferRequestContent(generator.getByteBuffers()));
                 case FileBodyGenerator generator -> jettyRequest.body(fileContent(generator.getPath()));
-                case StreamingBodyGenerator generator -> jettyRequest.body(new InputStreamRequestContent(generator.contentType().toString(), generator.source(), new ByteBufferPool.Sized(httpClient.getByteBufferPool())));
+                case StreamingBodyGenerator generator -> jettyRequest.body(new InputStreamRequestContent(generator.contentType().toString(), generator.source(), new ByteBufferPool.Sized(null, false, 4096)));
             }
         }
 
