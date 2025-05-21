@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airlift</artifactId>
-        <version>335</version>
+        <version>336-SNAPSHOT</version>
     </parent>
     <artifactId>sample-server</artifactId>
     <name>sample-server</name>
