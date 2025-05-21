@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableSet;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.http.server.jetty.MonitoredQueuedThreadPoolMBean;
 import io.airlift.log.Logger;
-import io.airlift.memory.jetty.ConcurrentRetainableBufferPool;
 import io.airlift.node.NodeInfo;
 import io.airlift.units.DataSize;
 import jakarta.annotation.PostConstruct;
@@ -80,7 +79,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
-import static io.airlift.http.server.HttpServerConfig.HttpBufferPoolType.FFM;
 import static java.lang.Math.max;
 import static java.lang.Math.toIntExact;
 import static java.time.temporal.ChronoUnit.DAYS;
@@ -303,10 +301,6 @@ public class HttpServer
     {
         long maxHeapMemory = config.getMaxHeapMemory().map(DataSize::toBytes).orElse(0L); // Use default heuristics for max heap memory
         long maxOffHeapMemory = config.getMaxDirectMemory().map(DataSize::toBytes).orElse(0L); // Use default heuristics for max off heap memory
-        if (config.getHttpBufferPoolType() == FFM) {
-            return new ConcurrentRetainableBufferPool(maxHeapMemory, maxOffHeapMemory);
-        }
-
         ArrayByteBufferPool pool = new ArrayByteBufferPool.Quadratic(
                 0,
                 maxBufferSize,
