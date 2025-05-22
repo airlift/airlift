@@ -144,6 +144,7 @@ public class HttpServer
             virtualExecutor.setMaxThreads(config.getMaxThreads());
             virtualExecutor.setName("http-worker#v");
             virtualExecutor.setDetailedDump(true);
+            virtualExecutor.setTracking(true);
             log.info("Virtual threads support is enabled");
             threadPool.setVirtualThreadsExecutor(virtualExecutor);
         }
