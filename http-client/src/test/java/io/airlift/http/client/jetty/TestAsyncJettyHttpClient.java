@@ -50,12 +50,12 @@ public class TestAsyncJettyHttpClient
         }
     }
 
-    protected void testPutMethodWithStreamingBodyGenerator(boolean largeContent)
+    protected void testPiped(boolean largeContent)
             throws Exception
     {
         // don't test with async clients as they buffer responses and the LARGE content is too big
         if (!largeContent) {
-            super.testPiped(largeContent);
+            super.testPiped(false);
         }
     }
 }
