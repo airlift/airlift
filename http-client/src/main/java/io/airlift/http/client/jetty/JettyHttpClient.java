@@ -650,6 +650,7 @@ public class JettyHttpClient
                 virtualExecutor.setMaxThreads(maxThreads);
                 virtualExecutor.setName("http-client-" + name + "#v");
                 virtualExecutor.setDetailedDump(true);
+                virtualExecutor.setTracking(true);
                 pool.setVirtualThreadsExecutor(virtualExecutor);
             }
             return pool;
