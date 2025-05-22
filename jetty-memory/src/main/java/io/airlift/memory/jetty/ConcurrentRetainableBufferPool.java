@@ -42,6 +42,10 @@ public class ConcurrentRetainableBufferPool
     // The minimal buffer size should be large enough to avoid allocations overhead but small enough
     // to avoid wasting bytes if the requested buffers are smaller. We picked minimum allocation size to be 128 bytes.
     private static final int MIN_POOL_SIZE_POWER = 7;
+    // From JDK-24 address() API is not supported on byte buffers that represent a memory segment from shared arena
+    // This API is used on smaller buffers by some crypto java packages. To avoid this issue but still benefit from shared arena
+    // on the larger pool sizes we will use auto arena on smaller pools and shared arena on the larger ones.
+    private static final int MIN_SHARED_ARENA_SIZE_POWER = 8;
     private static final int[] poolSizeShiftToSize;
 
     private final ArenaBucket[] heapBuckets;
@@ -163,12 +167,16 @@ public class ConcurrentRetainableBufferPool
         private final int bucketId;
         private final boolean offHeap;
         private final List<FixedSizeBufferPool> pools;
+        private Arena sharedArena;
+        private Arena autoArena;
 
         ArenaBucket(boolean offHeap, int bucketId)
         {
             this.bucketId = bucketId;
             this.offHeap = offHeap;
             this.pools = new ArrayList<>();
+            this.sharedArena = Arena.ofShared();
+            this.autoArena = Arena.ofAuto();
         }
 
         synchronized RetainableByteBuffer.Mutable alloc(int size)
@@ -177,7 +185,7 @@ public class ConcurrentRetainableBufferPool
             if (poolSizeShift >= pools.size()) {
                 addNewPools(poolSizeShift);
             }
-            return pools.get(poolSizeShift).allocate();
+            return pools.get(poolSizeShift).allocate((poolSizeShift != MIN_SHARED_ARENA_SIZE_POWER) ? sharedArena : autoArena);
         }
 
         private int getPoolSizeShift(int size)
@@ -208,8 +216,14 @@ public class ConcurrentRetainableBufferPool
 
         synchronized void evict()
         {
+            boolean canClose = offHeap;
             for (FixedSizeBufferPool pool : pools) {
-                pool.evict();
+                canClose &= pool.evict();
+            }
+            if (canClose) {
+                // Free shared arena and create a new one
+                sharedArena.close();
+                sharedArena = Arena.ofShared();
             }
         }
 
@@ -242,10 +256,10 @@ public class ConcurrentRetainableBufferPool
             this.offHeap = offHeap;
         }
 
-        synchronized RetainableByteBuffer.Mutable allocate()
+        synchronized RetainableByteBuffer.Mutable allocate(Arena arena)
         {
             // For safety, we acquire buffers from the list head, but return them to the tail.
-            MemorySegment buffer = buffers.isEmpty() ? allocateNewDirectBuffer() : buffers.removeFirst();
+            MemorySegment buffer = buffers.isEmpty() ? allocateNewDirectBuffer(arena) : buffers.removeFirst();
             allocatedBuffers++;
             return RetainableByteBuffer.wrap(toByteBuffer(buffer), () -> free(buffer));
         }
@@ -260,14 +274,16 @@ public class ConcurrentRetainableBufferPool
             checkMaxMemory(offHeap);
         }
 
-        synchronized void evict()
+        // returns true if there are not buffers in this pool including allocated ones
+        synchronized boolean evict()
         {
             buffers.clear();
+            return allocatedBuffers == 0;
         }
 
-        private MemorySegment allocateNewDirectBuffer()
+        private MemorySegment allocateNewDirectBuffer(Arena arena)
         {
-            return offHeap ? Arena.ofAuto().allocate(bufferSize, Integer.BYTES) : MemorySegment.ofArray(new byte[bufferSize]);
+            return offHeap ? arena.allocate(bufferSize, Integer.BYTES) : MemorySegment.ofArray(new byte[bufferSize]);
         }
 
         private ByteBuffer toByteBuffer(MemorySegment buffer)
