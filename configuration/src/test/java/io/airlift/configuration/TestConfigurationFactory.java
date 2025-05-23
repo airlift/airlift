@@ -29,6 +29,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import org.junit.jupiter.api.Test;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -384,6 +385,15 @@ public class TestConfigurationFactory
         TestingWarningsMonitor warningsMonitor = new TestingWarningsMonitor();
         Injector injector = createInjector(ImmutableMap.of("values", "ala, ma ,kota, "), binder -> configBinder(binder).bindConfig(ListOfStringsClass.class), warningsMonitor);
         assertThat(injector.getInstance(ListOfStringsClass.class).getValues()).isEqualTo(ImmutableList.of("ala", "ma", "kota"));
+        assertThat(warningsMonitor.messages()).isEmpty();
+    }
+
+    @Test
+    public void testURI()
+    {
+        TestingWarningsMonitor warningsMonitor = new TestingWarningsMonitor();
+        Injector injector = createInjector(ImmutableMap.of("uri", "https://google.com/search"), binder -> configBinder(binder).bindConfig(UriClass.class), warningsMonitor);
+        assertThat(injector.getInstance(UriClass.class).getUri()).isEqualTo(URI.create("https://google.com/search"));
         assertThat(warningsMonitor.messages()).isEmpty();
     }
 
@@ -799,6 +809,22 @@ public class TestConfigurationFactory
         public void setValues(List<String> values)
         {
             this.values = values;
+        }
+    }
+
+    public static class UriClass
+    {
+        private URI uri;
+
+        public URI getUri()
+        {
+            return uri;
+        }
+
+        @Config("uri")
+        public void setUri(URI uri)
+        {
+            this.uri = uri;
         }
     }
 
