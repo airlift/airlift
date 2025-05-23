@@ -53,6 +53,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -631,6 +632,9 @@ public class ConfigurationFactory
             }
             if (Double.class == type.getRawType() || double.class == type.getRawType()) {
                 return Double.valueOf(value);
+            }
+            if (URI.class == type.getRawType()) {
+                return URI.create(value);
             }
         }
         catch (Exception ignored) {
