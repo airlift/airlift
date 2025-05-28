@@ -863,6 +863,7 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
+    @Timeout(value = 5, unit = SECONDS)
     public void testPipedLargeContent()
             throws Exception
     {
@@ -870,6 +871,7 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
+    @Timeout(value = 5, unit = SECONDS)
     public void testPipedSmallContent()
             throws Exception
     {
@@ -892,47 +894,45 @@ public abstract class AbstractHttpClientTest
             {
                 @Override
                 protected void service(HttpServletRequest request, HttpServletResponse response)
-                        throws IOException
                 {
-                    switch (request.getPathInfo()) {
-                        case "/get" -> {
-                            response.setIntHeader("Content-Length", content.length());
-                            response.setStatus(200);
-                            new ByteArrayInputStream(content.getBytes(UTF_8)).transferTo(response.getOutputStream());
-                        }
+                    try {
+                        switch (request.getPathInfo()) {
+                            case "/get" -> {
+                                response.setIntHeader("Content-Length", content.length());
+                                response.setStatus(200);
+                                new ByteArrayInputStream(content.getBytes(UTF_8)).transferTo(response.getOutputStream());
+                            }
 
-                        case "/pipe" -> {
-                            // pipe test is here:
-                            // execute a request to get content and then use the input stream as an argument
-                            // to stream another put request
-
-                            Request pipeRequest = prepareGet()
-                                    .setUri(locals.server.baseURI().resolve("get"))
-                                    .build();
-                            try (StreamingResponse streamingResponse = httpClient.executeStreaming(pipeRequest)) {
-                                Request putRequest = preparePut()
-                                        .setUri(locals.server.baseURI().resolve("put"))
-                                        .setBodyGenerator(streamingBodyGenerator(streamingResponse.getInputStream()))
+                            case "/pipe" -> {
+                                // pipe test is here:
+                                // execute a request to get content and then use the input stream as an argument
+                                // to stream another put request
+                                Request pipeRequest = prepareGet()
+                                        .setUri(locals.server.baseURI().resolve("get"))
                                         .build();
-                                try {
+                                try (StreamingResponse streamingResponse = httpClient.executeStreaming(pipeRequest)) {
+                                    Request putRequest = preparePut()
+                                            .setUri(locals.server.baseURI().resolve("put"))
+                                            .setBodyGenerator(streamingBodyGenerator(streamingResponse.getInputStream()))
+                                            .build();
                                     executeRequest(locals.server, putRequest, createStatusResponseHandler());
-                                }
-                                catch (Exception e) {
-                                    throw new RuntimeException(e);
+                                    response.setStatus(204);
                                 }
                             }
-                            response.setStatus(204);
-                        }
 
-                        case "/put" -> {
-                            try (InputStream stream = request.getInputStream()) {
-                                // save the PUT content into a local for validation after the test
-                                locals.putContent = new String(stream.readAllBytes(), UTF_8);
-                                response.setStatus(204);
+                            case "/put" -> {
+                                try (InputStream stream = request.getInputStream()) {
+                                    // save the PUT content into a local for validation after the test
+                                    locals.putContent = new String(stream.readAllBytes(), UTF_8);
+                                    response.setStatus(204);
+                                }
                             }
-                        }
 
-                        default -> response.setStatus(500);
+                            default -> response.setStatus(500);
+                        }
+                    }
+                    catch (Exception e) {
+                        fail(e);
                     }
                 }
             };
