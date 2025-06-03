@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airlift</artifactId>
-        <version>336</version>
+        <version>337-SNAPSHOT</version>
     </parent>
 
     <artifactId>secrets-keystore-plugin</artifactId>
