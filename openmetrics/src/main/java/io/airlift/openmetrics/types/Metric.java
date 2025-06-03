@@ -32,8 +32,8 @@ public interface Metric
     static String formatSingleValuedMetric(String name, String type, String help, Map<String, String> labels, String value)
     {
         return TYPE_LINE_FORMAT.formatted(name, type) +
-               (Strings.isNullOrEmpty(help) ? "" : HELP_LINE_FORMAT.formatted(name, help)) +
-               VALUE_LINE_FORMAT.formatted(formatNameWithLabels(name, labels), value);
+                (Strings.isNullOrEmpty(help) ? "" : HELP_LINE_FORMAT.formatted(name, help)) +
+                VALUE_LINE_FORMAT.formatted(formatNameWithLabels(name, labels), value);
     }
 
     static String formatNameWithLabels(String name, Map<String, String> labels)
