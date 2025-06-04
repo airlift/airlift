@@ -10,6 +10,7 @@
     <artifactId>jmx</artifactId>
     <packaging>jar</packaging>
     <name>jmx</name>
+    <description>Airlift - JMX support</description>
 
     <properties>
         <air.main.basedir>${project.parent.basedir}</air.main.basedir>

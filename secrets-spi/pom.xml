@@ -10,6 +10,7 @@
     <artifactId>secrets-spi</artifactId>
     <packaging>jar</packaging>
     <name>configuration</name>
+    <description>Airlift - Secrets SPI</description>
 
     <properties>
         <air.main.basedir>${project.parent.basedir}</air.main.basedir>

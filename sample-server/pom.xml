@@ -9,6 +9,7 @@
     </parent>
     <artifactId>sample-server</artifactId>
     <name>sample-server</name>
+    <description>Airlift - Sample application</description>
 
     <properties>
         <air.main.basedir>${project.parent.basedir}</air.main.basedir>

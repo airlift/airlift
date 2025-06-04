@@ -9,6 +9,7 @@
     </parent>
     <artifactId>http-client</artifactId>
     <packaging>jar</packaging>
+    <description>Airlift - HTTP client</description>
 
     <properties>
         <air.main.basedir>${project.parent.basedir}</air.main.basedir>

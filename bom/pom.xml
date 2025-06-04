@@ -11,6 +11,7 @@
     <packaging>pom</packaging>
 
     <name>bom</name>
+    <description>Airlift - Bill of materials</description>
 
     <dependencyManagement>
         <dependencies>

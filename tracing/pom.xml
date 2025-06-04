@@ -10,6 +10,7 @@
     <artifactId>tracing</artifactId>
     <packaging>jar</packaging>
     <name>tracing</name>
+    <description>Airlift - Application tracing</description>
 
     <properties>
         <air.main.basedir>${project.parent.basedir}</air.main.basedir>

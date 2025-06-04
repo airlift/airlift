@@ -10,6 +10,7 @@
     <artifactId>configuration</artifactId>
     <packaging>jar</packaging>
     <name>configuration</name>
+    <description>Airlift - Configuration</description>
 
     <properties>
         <air.main.basedir>${project.parent.basedir}</air.main.basedir>

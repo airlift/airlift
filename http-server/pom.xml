@@ -10,6 +10,7 @@
     <artifactId>http-server</artifactId>
     <packaging>jar</packaging>
     <name>http-server</name>
+    <description>Airlift - HTTP server</description>
 
     <properties>
         <air.main.basedir>${project.parent.basedir}</air.main.basedir>
