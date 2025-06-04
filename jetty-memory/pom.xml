@@ -10,6 +10,7 @@
     <artifactId>jetty-memory</artifactId>
     <packaging>jar</packaging>
     <name>jetty-memory</name>
+    <description>Airlift - Jetty memory management</description>
 
     <properties>
         <air.main.basedir>${project.parent.basedir}</air.main.basedir>

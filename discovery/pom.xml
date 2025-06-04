@@ -9,6 +9,7 @@
     </parent>
     <artifactId>discovery</artifactId>
     <packaging>jar</packaging>
+    <description>Airlift - Cluster discovery</description>
 
     <properties>
         <air.main.basedir>${project.parent.basedir}</air.main.basedir>

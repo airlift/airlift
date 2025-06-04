@@ -10,6 +10,7 @@
     <artifactId>security</artifactId>
     <packaging>jar</packaging>
     <name>security</name>
+    <description>Airlift - Security utilities</description>
 
     <properties>
         <air.main.basedir>${project.parent.basedir}</air.main.basedir>

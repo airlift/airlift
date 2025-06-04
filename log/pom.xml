@@ -10,6 +10,7 @@
     <artifactId>log</artifactId>
     <packaging>jar</packaging>
     <name>log</name>
+    <description>Airlift - Logging</description>
 
     <properties>
         <air.main.basedir>${project.parent.basedir}</air.main.basedir>

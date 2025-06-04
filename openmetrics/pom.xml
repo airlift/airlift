@@ -9,6 +9,7 @@
     </parent>
     <artifactId>openmetrics</artifactId>
     <packaging>jar</packaging>
+    <description>Airlift - OpenMetrics support</description>
 
     <properties>
         <air.main.basedir>${project.parent.basedir}</air.main.basedir>

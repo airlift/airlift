@@ -10,6 +10,7 @@
     <artifactId>bootstrap</artifactId>
     <packaging>jar</packaging>
     <name>bootstrap</name>
+    <description>Airlift - Application bootstrap</description>
 
     <properties>
         <air.main.basedir>${project.parent.basedir}</air.main.basedir>
