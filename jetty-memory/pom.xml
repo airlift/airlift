@@ -14,10 +14,10 @@
 
     <properties>
         <air.main.basedir>${project.parent.basedir}</air.main.basedir>
+        <air.compiler.fail-warnings>false</air.compiler.fail-warnings>
     </properties>
 
     <dependencies>
-
         <dependency>
             <groupId>io.airlift</groupId>
             <artifactId>units</artifactId>

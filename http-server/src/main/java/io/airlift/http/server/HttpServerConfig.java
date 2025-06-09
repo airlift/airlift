@@ -29,8 +29,10 @@ import jakarta.validation.constraints.NotNull;
 
 import java.util.Optional;
 
+import static io.airlift.http.server.HttpServerConfig.HttpBufferPoolType.UNSAFE;
 import static io.airlift.http.server.HttpServerConfig.ProcessForwardedMode.ACCEPT;
 import static io.airlift.http.server.HttpServerConfig.ProcessForwardedMode.REJECT;
+import static io.airlift.memory.jetty.UnsafeArrayByteBufferPool.isUnsafeAvailable;
 import static io.airlift.units.DataSize.Unit.KILOBYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
 import static java.util.Locale.ENGLISH;
@@ -538,6 +540,15 @@ public class HttpServerConfig
         return maxHeapMemory.isPresent() == maxDirectMemory.isPresent();
     }
 
+    @AssertTrue(message = "http-server.buffer-pool-type=UNSAFE requires sun.misc.Unsafe to be available")
+    public boolean isUnsafeAllowedWhenUsingUnsafeBufferPool()
+    {
+        if (httpBufferPoolType == UNSAFE) {
+            return isUnsafeAvailable();
+        }
+        return true;
+    }
+
     public enum ProcessForwardedMode
     {
         ACCEPT,
@@ -557,6 +568,7 @@ public class HttpServerConfig
     public enum HttpBufferPoolType
     {
         DEFAULT,
+        UNSAFE,
         FFM;
     }
 }

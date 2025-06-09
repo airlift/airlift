@@ -39,6 +39,8 @@ import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Optional;
 
+import static io.airlift.http.client.HttpClientConfig.HttpBufferPoolType.UNSAFE;
+import static io.airlift.memory.jetty.UnsafeArrayByteBufferPool.isUnsafeAvailable;
 import static io.airlift.units.DataSize.Unit.GIGABYTE;
 import static io.airlift.units.DataSize.Unit.KILOBYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
@@ -765,6 +767,15 @@ public class HttpClientConfig
         return maxHeapMemory.isPresent() == maxDirectMemory.isPresent();
     }
 
+    @AssertTrue(message = "http-client.buffer-pool-type=UNSAFE requires sun.misc.Unsafe to be available")
+    public boolean isUnsafeAllowedWhenUsingUnsafeBufferPool()
+    {
+        if (httpBufferPoolType == UNSAFE) {
+            return isUnsafeAvailable();
+        }
+        return true;
+    }
+
     @PostConstruct
     public void validate()
     {
@@ -782,6 +793,7 @@ public class HttpClientConfig
     public enum HttpBufferPoolType
     {
         DEFAULT,
-        FFM;
+        FFM,
+        UNSAFE;
     }
 }
