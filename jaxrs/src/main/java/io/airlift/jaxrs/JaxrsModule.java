@@ -17,6 +17,7 @@ package io.airlift.jaxrs;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Binder;
+import com.google.inject.Inject;
 import com.google.inject.Key;
 import com.google.inject.Provides;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
@@ -30,6 +31,7 @@ import java.util.Set;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
+import static org.glassfish.jersey.server.ServerProperties.LOCATION_HEADER_RELATIVE_URI_RESOLUTION_DISABLED;
 import static org.glassfish.jersey.server.ServerProperties.RESPONSE_SET_STATUS_OVER_SEND_ERROR;
 
 public class JaxrsModule
@@ -46,6 +48,7 @@ public class JaxrsModule
     @Override
     protected void setup(Binder binder)
     {
+        buildConfigObject(JaxrsConfig.class);
         binder.disableCircularProxies();
         binder.bind(Servlet.class).to(Key.get(ServletContainer.class));
         newSetBinder(binder, Object.class, JaxrsResource.class).permitDuplicates();
@@ -63,9 +66,11 @@ public class JaxrsModule
     }
 
     @Provides
-    public static ResourceConfig createResourceConfig(@JaxrsResource Set<Object> jaxRsSingletons)
+    @Inject
+    public static ResourceConfig createResourceConfig(@JaxrsResource Set<Object> jaxRsSingletons, JaxrsConfig config)
     {
-        return new JaxrsResourceConfig(jaxRsSingletons)
-                .setProperties(ImmutableMap.of(RESPONSE_SET_STATUS_OVER_SEND_ERROR, "true"));
+        return new JaxrsResourceConfig(jaxRsSingletons).setProperties(ImmutableMap.of(
+                RESPONSE_SET_STATUS_OVER_SEND_ERROR, "true",
+                LOCATION_HEADER_RELATIVE_URI_RESOLUTION_DISABLED, Boolean.toString(config.isRelativeLocationResolutionDisabled())));
     }
 }
