@@ -1,8 +1,8 @@
 package io.airlift.jaxrs.tracing;
 
 import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.semconv.CodeAttributes;
 import io.opentelemetry.semconv.HttpAttributes;
-import io.opentelemetry.semconv.incubating.CodeIncubatingAttributes;
 import jakarta.annotation.Priority;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
@@ -45,7 +45,7 @@ public final class TracingFilter
         if (requestContext.getProperty(REQUEST_SPAN) instanceof Span span) {
             span.updateName(requestContext.getMethod() + " " + route);
             span.setAttribute(HttpAttributes.HTTP_ROUTE, route);
-            span.setAttribute(CodeIncubatingAttributes.CODE_FUNCTION_NAME, className + "." + methodName);
+            span.setAttribute(CodeAttributes.CODE_FUNCTION_NAME, className + "." + methodName);
         }
     }
 
