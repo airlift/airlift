@@ -27,12 +27,16 @@ import io.airlift.http.client.Request;
 import io.airlift.http.client.Response;
 import io.airlift.http.client.ResponseHandler;
 import io.airlift.json.JsonCodec;
+import io.airlift.log.Logger;
 import io.airlift.node.NodeInfo;
 import io.airlift.units.Duration;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.InetAddress;
 import java.net.URI;
+import java.net.UnknownHostException;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
@@ -51,11 +55,14 @@ public class HttpDiscoveryAnnouncementClient
         implements DiscoveryAnnouncementClient
 {
     private static final MediaType MEDIA_TYPE_JSON = MediaType.create("application", "json");
+    private static final Logger log = Logger.get(HttpDiscoveryAnnouncementClient.class);
 
     private final Supplier<URI> discoveryServiceURI;
     private final NodeInfo nodeInfo;
     private final JsonCodec<Announcement> announcementCodec;
     private final HttpClient httpClient;
+    private Optional<InetAddress> lastReportedDiscoveryServiceAddress = Optional.empty();
+    private boolean priorResolutionSucceeded = true;
 
     @Inject
     public HttpDiscoveryAnnouncementClient(
@@ -84,6 +91,13 @@ public class HttpDiscoveryAnnouncementClient
         if (uri == null) {
             return immediateFailedFuture(new DiscoveryException("No discovery servers are available"));
         }
+
+        reportChangedAddressResolution(uri, lastReportedDiscoveryServiceAddress, priorResolutionSucceeded).ifPresentOrElse(
+                inetAddr -> {
+                    lastReportedDiscoveryServiceAddress = Optional.of(inetAddr);
+                    priorResolutionSucceeded = true;
+                },
+                () -> priorResolutionSucceeded = false);
 
         Announcement announcement = new Announcement(nodeInfo.getEnvironment(), nodeInfo.getNodeId(), nodeInfo.getPool(), nodeInfo.getLocation(), services);
         Request request = preparePut()
@@ -146,6 +160,30 @@ public class HttpDiscoveryAnnouncementClient
                 .appendPath("/v1/announcement")
                 .appendPath(nodeId)
                 .build();
+    }
+
+    @VisibleForTesting
+    static Optional<InetAddress> reportChangedAddressResolution(
+            URI discoveryServiceURI,
+            Optional<InetAddress> lastReportedDiscoveryServiceAddress,
+            boolean priorResolutionSucceeded)
+    {
+        try {
+            InetAddress resolvedDiscoveryServiceAddress = InetAddress.getByName(discoveryServiceURI.getHost());
+            lastReportedDiscoveryServiceAddress.ifPresent(last -> {
+                if (!last.equals(resolvedDiscoveryServiceAddress)) {
+                    log.warn("Discovery service address changed from " + last + " to " + resolvedDiscoveryServiceAddress);
+                }
+            });
+            return Optional.of(resolvedDiscoveryServiceAddress);
+        }
+        catch (UnknownHostException e) {
+            // Avoid spamming the log
+            if (priorResolutionSucceeded) {
+                log.error(e, "Discovery Service location URI resolution failed");
+            }
+        }
+        return Optional.empty();
     }
 
     private static Duration extractMaxAge(Response response)
