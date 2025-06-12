@@ -46,7 +46,7 @@ public class TestNodeInfo
         InetAddress bindIp = InetAddresses.forString("10.0.0.33");
         String externalAddress = "external";
 
-        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, nodeId, internalIp, bindIp, externalAddress, location, binarySpec, configSpec, IP, null);
+        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, nodeId, internalIp, bindIp, externalAddress, location, binarySpec, configSpec, IP, null, false);
         assertThat(nodeInfo.getEnvironment()).isEqualTo(ENVIRONMENT);
         assertThat(nodeInfo.getPool()).isEqualTo(POOL);
         assertThat(nodeInfo.getNodeId()).isEqualTo(nodeId);
@@ -70,7 +70,7 @@ public class TestNodeInfo
     @Test
     public void testDefaultAddresses()
     {
-        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", "10.0.0.22", null, null, null, null, null, IP, null);
+        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", "10.0.0.22", null, null, null, null, null, IP, null, false);
         assertThat(nodeInfo.getExternalAddress()).isEqualTo("10.0.0.22");
         assertThat(nodeInfo.getBindIp()).isEqualTo(InetAddresses.forString("0.0.0.0"));
     }
@@ -78,7 +78,7 @@ public class TestNodeInfo
     @Test
     public void testIpDiscovery()
     {
-        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, IP, null);
+        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, IP, null, false);
         assertThat(nodeInfo.getInternalAddress()).isNotNull();
         assertThat(nodeInfo.getBindIp()).isEqualTo(InetAddresses.forString("0.0.0.0"));
         assertThat(nodeInfo.getExternalAddress()).isEqualTo(nodeInfo.getInternalAddress());
@@ -87,23 +87,17 @@ public class TestNodeInfo
     @Test
     public void testIpDiscoveryIpv6Preferred()
     {
-        NodeInfo.setPreferIpv6ForTest(true);
-        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, IP, null);
-        try {
-            assertThat(nodeInfo.getInternalAddress()).isNotNull();
-            assertThat(nodeInfo.getBindIp()).isEqualTo(InetAddresses.forString("0.0.0.0"));
-            assertThat(nodeInfo.getExternalAddress()).isEqualTo(nodeInfo.getInternalAddress());
-        }
-        finally {
-            NodeInfo.setPreferIpv6ForTest(false);
-        }
+        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, IP, null, true);
+        assertThat(nodeInfo.getInternalAddress()).isNotNull();
+        assertThat(nodeInfo.getBindIp()).isEqualTo(InetAddresses.forString("0.0.0.0"));
+        assertThat(nodeInfo.getExternalAddress()).isEqualTo(nodeInfo.getInternalAddress());
     }
 
     @Test
     public void testHostnameDiscovery()
             throws UnknownHostException
     {
-        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, HOSTNAME, null);
+        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, HOSTNAME, null, false);
         assertThat(nodeInfo.getInternalAddress()).isNotNull();
         assertThat(nodeInfo.getBindIp()).isEqualTo(InetAddresses.forString("0.0.0.0"));
         assertThat(nodeInfo.getExternalAddress()).isEqualTo(InetAddress.getLocalHost().getHostName());
@@ -113,7 +107,7 @@ public class TestNodeInfo
     public void testFqdnDiscovery()
             throws UnknownHostException
     {
-        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, FQDN, null);
+        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, FQDN, null, false);
         assertThat(nodeInfo.getInternalAddress()).isNotNull();
         assertThat(nodeInfo.getBindIp()).isEqualTo(InetAddresses.forString("0.0.0.0"));
         assertThat(nodeInfo.getExternalAddress()).isEqualTo(InetAddress.getLocalHost().getCanonicalHostName());
@@ -122,7 +116,7 @@ public class TestNodeInfo
     @Test
     public void testInvalidNodeId()
     {
-        assertThatThrownBy(() -> new NodeInfo(ENVIRONMENT, POOL, "abc/123", null, null, null, null, null, null, IP, null))
+        assertThatThrownBy(() -> new NodeInfo(ENVIRONMENT, POOL, "abc/123", null, null, null, null, null, null, IP, null, false))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageMatching("nodeId .*");
     }
@@ -130,7 +124,7 @@ public class TestNodeInfo
     @Test
     public void testInvalidEnvironment()
     {
-        assertThatThrownBy(() -> new NodeInfo("ENV", POOL, null, null, null, null, null, null, null, IP, null))
+        assertThatThrownBy(() -> new NodeInfo("ENV", POOL, null, null, null, null, null, null, null, IP, null, false))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageMatching("environment .*");
     }
@@ -138,7 +132,7 @@ public class TestNodeInfo
     @Test
     public void testInvalidPool()
     {
-        assertThatThrownBy(() -> new NodeInfo(ENVIRONMENT, "POOL", null, null, null, null, null, null, null, IP, null))
+        assertThatThrownBy(() -> new NodeInfo(ENVIRONMENT, "POOL", null, null, null, null, null, null, null, IP, null, false))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageMatching("pool .*");
     }
@@ -146,7 +140,7 @@ public class TestNodeInfo
     @Test
     public void testInvalidAnnotationFile()
     {
-        assertThatThrownBy(() -> new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, IP, "invalid.file"))
+        assertThatThrownBy(() -> new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, IP, "invalid.file", false))
                 .isInstanceOf(UncheckedIOException.class)
                 .hasMessageMatching("java.io.FileNotFoundException: invalid.file \\(No such file or directory\\)");
     }
