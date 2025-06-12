@@ -322,10 +322,10 @@ public class NodeInfo
         }
 
         List<InetAddress> goodAddresses = getGoodAddresses();
-        return searchOrder.stream()                             // list of sources
-            .map(source -> source.apply(goodAddresses))         // potential results
+        return searchOrder.stream()
+            .map(source -> source.apply(goodAddresses))
             .filter(Optional::isPresent)                        // select only valid results
-            .findFirst()                                        // take the first value
+            .findFirst()
             .orElse(Optional.empty())                     // we could not find any source
             .orElse(null);                                // it is most likely that this is a disconnected developer machine
     }
