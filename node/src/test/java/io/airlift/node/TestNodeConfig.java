@@ -49,7 +49,8 @@ public class TestNodeConfig
                 .setBinarySpec(null)
                 .setConfigSpec(null)
                 .setInternalAddressSource(IP)
-                .setAnnotationFile(null));
+                .setAnnotationFile(null)
+                .setPreferIpv6Address(false));
     }
 
     @Test
@@ -69,6 +70,7 @@ public class TestNodeConfig
                 .put("node.config-spec", "config")
                 .put("node.internal-address-source", "HOSTNAME")
                 .put("node.annotation-file", annotationFile.getAbsolutePath())
+                .put("node.prefer-ipv6-address", "true")
                 .build();
 
         NodeConfig expected = new NodeConfig()
@@ -82,7 +84,8 @@ public class TestNodeConfig
                 .setBinarySpec("binary")
                 .setConfigSpec("config")
                 .setInternalAddressSource(HOSTNAME)
-                .setAnnotationFile(annotationFile.getAbsolutePath());
+                .setAnnotationFile(annotationFile.getAbsolutePath())
+                .setPreferIpv6Address(true);
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }

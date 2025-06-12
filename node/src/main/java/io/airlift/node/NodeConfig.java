@@ -46,6 +46,7 @@ public class NodeConfig
     private String configSpec;
     private AddressSource internalAddressSource = AddressSource.IP;
     private String annotationFile;
+    private boolean preferIpv6Address = "true".equalsIgnoreCase(System.getenv("java.net.preferIPv6Address"));
 
     @NotNull
     @Pattern(regexp = ENV_REGEXP, message = ENV_REGEXP_ERROR)
@@ -200,5 +201,17 @@ public class NodeConfig
     {
         this.annotationFile = annotationFile;
         return this;
+    }
+
+    @Config("node.prefer-ipv6-address")
+    public NodeConfig setPreferIpv6Address(boolean preferIpv6Address)
+    {
+        this.preferIpv6Address = preferIpv6Address;
+        return this;
+    }
+
+    public boolean getPreferIpv6Address()
+    {
+        return this.preferIpv6Address;
     }
 }

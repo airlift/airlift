@@ -61,7 +61,7 @@ public class NodeInfo
     private final InetAddress bindIp;
     private final long startTime = System.currentTimeMillis();
     private final Map<String, String> annotations;
-    private static boolean preferIpv6ForTest;
+    private final boolean preferIpv6Address;
 
     public NodeInfo(String environment)
     {
@@ -81,7 +81,8 @@ public class NodeInfo
                 config.getBinarySpec(),
                 config.getConfigSpec(),
                 config.getInternalAddressSource(),
-                config.getAnnotationFile());
+                config.getAnnotationFile(),
+                config.getPreferIpv6Address());
     }
 
     public NodeInfo(String environment,
@@ -94,7 +95,8 @@ public class NodeInfo
             String binarySpec,
             String configSpec,
             AddressSource internalAddressSource,
-            String annotationFile)
+            String annotationFile,
+            boolean preferIpv6Address)
     {
         requireNonNull(environment, "environment is null");
         requireNonNull(pool, "pool is null");
@@ -104,6 +106,7 @@ public class NodeInfo
 
         this.environment = environment;
         this.pool = pool;
+        this.preferIpv6Address = preferIpv6Address;
 
         if (nodeId != null) {
             checkArgument(nodeId.matches(NodeConfig.ID_REGEXP), "nodeId '%s' %s", nodeId, NodeConfig.ID_REGEXP_ERROR);
@@ -294,7 +297,7 @@ public class NodeInfo
                 .toString();
     }
 
-    private static String findInternalAddress(AddressSource addressSource)
+    private String findInternalAddress(AddressSource addressSource)
     {
         return switch (addressSource) {
             case IP -> InetAddresses.toAddrString(findInternalIp());
@@ -304,11 +307,10 @@ public class NodeInfo
         };
     }
 
-    private static InetAddress findInternalIp()
+    private InetAddress findInternalIp()
     {
         List<Function<List<InetAddress>, Optional<InetAddress>>> searchOrder = new ArrayList<>(3);
-        boolean preferV6 = isSystemPrefersIpv6();
-        if (preferV6) {
+        if (this.preferIpv6Address) {
             searchOrder.add(NodeInfo::findIpv6address);
             searchOrder.add(NodeInfo::findLocalAddress);
             searchOrder.add(NodeInfo::findIpv4address);
@@ -328,23 +330,10 @@ public class NodeInfo
             .orElse(null);                                // it is most likely that this is a disconnected developer machine
     }
 
-    private static boolean isSystemPrefersIpv6()
-    {
-        if (preferIpv6ForTest) {
-            return true;
-        }
-        return "true".equalsIgnoreCase(System.getenv("java.net.preferIPv6Address"));
-    }
-
-    static void setPreferIpv6ForTest(boolean state)
-    {
-        preferIpv6ForTest = state;
-    }
-
-    private static Optional<InetAddress> findIpv4address(List<InetAddress> goodAddresses)
+    private static Optional<InetAddress> findIpv4address(List<InetAddress> candidates)
     {
         // check all up network interfaces for a good v4 address
-        for (InetAddress address : goodAddresses) {
+        for (InetAddress address : candidates) {
             if (isV4Address(address)) {
                 return Optional.of(address);
             }
@@ -352,10 +341,10 @@ public class NodeInfo
         return Optional.empty();
     }
 
-    private static Optional<InetAddress> findIpv6address(List<InetAddress> goodAddresses)
+    private static Optional<InetAddress> findIpv6address(List<InetAddress> candidates)
     {
         // check all up network interfaces for a good v6 address
-        for (InetAddress address : goodAddresses) {
+        for (InetAddress address : candidates) {
             if (isV6Address(address)) {
                 return Optional.of(address);
             }
@@ -363,7 +352,7 @@ public class NodeInfo
         return Optional.empty();
     }
 
-    private static Optional<InetAddress> findLocalAddress(List<InetAddress> goodAddresses)
+    private static Optional<InetAddress> findLocalAddress(List<InetAddress> candidates)
     {
         // Check if local host address is a good v4 address
         InetAddress localAddress = null;
