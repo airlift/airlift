@@ -85,7 +85,6 @@ import org.weakref.jmx.Nested;
 import javax.net.ssl.SNIHostName;
 import javax.net.ssl.SNIServerName;
 import javax.net.ssl.SSLEngine;
-import javax.security.auth.x500.X500Principal;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -102,13 +101,7 @@ import java.nio.channels.SelectableChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
 import java.security.KeyStore;
-import java.security.SecureRandom;
-import java.security.cert.X509Certificate;
-import java.security.spec.ECGenParameterSpec;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -128,12 +121,11 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.InetAddresses.isInetAddress;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
 import static io.airlift.node.AddressToHostname.tryDecodeHostnameToAddress;
-import static io.airlift.security.cert.CertificateBuilder.certificateBuilder;
+import static io.airlift.security.mtls.AutomaticMtls.addClientTrust;
 import static io.opentelemetry.api.common.AttributeKey.stringKey;
 import static java.lang.Math.max;
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -530,7 +522,7 @@ public class JettyHttpClient
         if (config.getTrustStorePath() != null || config.getAutomaticHttpsSharedSecret() != null) {
             KeyStore trustStore = loadTrustStore(config.getTrustStorePath(), config.getTrustStorePassword());
             if (config.getAutomaticHttpsSharedSecret() != null) {
-                addAutomaticTrust(config.getAutomaticHttpsSharedSecret(), trustStore, environment
+                addClientTrust(config.getAutomaticHttpsSharedSecret(), trustStore, environment
                         .orElseThrow(() -> new IllegalArgumentException("Environment must be provided when automatic HTTPS is enabled")));
             }
             sslContextFactory.setTrustStore(trustStore);
@@ -620,36 +612,6 @@ public class JettyHttpClient
         }
         catch (IOException | GeneralSecurityException e) {
             throw new IllegalArgumentException("Error loading Java trust store: " + truststorePath, e);
-        }
-    }
-
-    private static void addAutomaticTrust(String sharedSecret, KeyStore keyStore, String commonName)
-    {
-        try {
-            byte[] seed = sharedSecret.getBytes(UTF_8);
-            SecureRandom secureRandom = SecureRandom.getInstance("SHA1PRNG");
-            secureRandom.setSeed(seed);
-
-            KeyPairGenerator generator = KeyPairGenerator.getInstance("EC");
-            generator.initialize(new ECGenParameterSpec("secp256r1"), secureRandom);
-            KeyPair keyPair = generator.generateKeyPair();
-
-            X500Principal subject = new X500Principal("CN=" + commonName);
-            LocalDate notBefore = LocalDate.now();
-            LocalDate notAfter = notBefore.plusYears(10);
-            X509Certificate certificateServer = certificateBuilder()
-                    .setKeyPair(keyPair)
-                    .setSerialNumber(System.currentTimeMillis())
-                    .setIssuer(subject)
-                    .setNotBefore(notBefore)
-                    .setNotAfter(notAfter)
-                    .setSubject(subject)
-                    .buildSelfSigned();
-
-            keyStore.setCertificateEntry(commonName, certificateServer);
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
         }
     }
 
