@@ -30,13 +30,7 @@ public final class AutomaticMtls
     public static void addServerKeyAndCertificateForCurrentNode(String sharedSecret, KeyStore keyStore, String commonName, String keyManagerPassword)
     {
         try {
-            byte[] seed = sharedSecret.getBytes(UTF_8);
-            SecureRandom secureRandom = SecureRandom.getInstance("SHA1PRNG");
-            secureRandom.setSeed(seed);
-
-            KeyPairGenerator generator = KeyPairGenerator.getInstance("EC");
-            generator.initialize(new ECGenParameterSpec("secp256r1"), secureRandom);
-            KeyPair keyPair = generator.generateKeyPair();
+            KeyPair keyPair = fromSharedSecret(sharedSecret);
 
             X500Principal subject = new X500Principal("CN=" + commonName);
             LocalDate notBefore = LocalDate.now();
@@ -67,13 +61,7 @@ public final class AutomaticMtls
     public static void addClientTrust(String sharedSecret, KeyStore keyStore, String commonName)
     {
         try {
-            byte[] seed = sharedSecret.getBytes(UTF_8);
-            SecureRandom secureRandom = SecureRandom.getInstance("SHA1PRNG");
-            secureRandom.setSeed(seed);
-
-            KeyPairGenerator generator = KeyPairGenerator.getInstance("EC");
-            generator.initialize(new ECGenParameterSpec("secp256r1"), secureRandom);
-            KeyPair keyPair = generator.generateKeyPair();
+            KeyPair keyPair = fromSharedSecret(sharedSecret);
 
             X500Principal subject = new X500Principal("CN=" + commonName);
             LocalDate notBefore = LocalDate.now();
@@ -106,5 +94,21 @@ public final class AutomaticMtls
             }
         }
         return list.build();
+    }
+
+    private static KeyPair fromSharedSecret(String sharedSecret)
+    {
+        try {
+            byte[] seed = sharedSecret.getBytes(UTF_8);
+            SecureRandom secureRandom = SecureRandom.getInstance("SHA1PRNG");
+            secureRandom.setSeed(seed);
+
+            KeyPairGenerator generator = KeyPairGenerator.getInstance("EC");
+            generator.initialize(new ECGenParameterSpec("secp256r1"), secureRandom);
+            return generator.generateKeyPair();
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }
