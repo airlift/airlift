@@ -107,6 +107,7 @@ import java.security.KeyPairGenerator;
 import java.security.KeyStore;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
+import java.security.spec.ECGenParameterSpec;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
@@ -630,8 +631,8 @@ public class JettyHttpClient
             SecureRandom secureRandom = SecureRandom.getInstance("SHA1PRNG");
             secureRandom.setSeed(seed);
 
-            KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
-            generator.initialize(2048, secureRandom);
+            KeyPairGenerator generator = KeyPairGenerator.getInstance("EC");
+            generator.initialize(new ECGenParameterSpec("secp256r1"), secureRandom);
             KeyPair keyPair = generator.generateKeyPair();
 
             X500Principal subject = new X500Principal("CN=" + commonName);

@@ -26,8 +26,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.Signature;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
+import java.security.interfaces.ECPrivateKey;
+import java.security.interfaces.ECPublicKey;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -50,14 +50,14 @@ import static java.util.Objects.requireNonNull;
 
 public class CertificateBuilder
 {
-    private static final byte[] SHA_256_WITH_RSA_ENCRYPTION_OID = encodeOid("1.2.840.113549.1.1.11");
+    private static final byte[] SHA_256_WITH_ECDSA_ENCRYPTION_OID = encodeOid("1.2.840.10045.4.3.2");
     private static final byte[] SUBJECT_KEY_IDENTIFIER_OID = encodeOid("2.5.29.14");
     private static final byte[] AUTHORITY_KEY_IDENTIFIER_OID = encodeOid("2.5.29.35");
     private static final byte[] BASIC_CONSTRAINTS_OID = encodeOid("2.5.29.19");
     private static final byte[] SUBJECT_ALT_NAME_OID = encodeOid("2.5.29.17");
 
-    private RSAPublicKey publicKey;
-    private RSAPrivateKey privateKey;
+    private ECPublicKey publicKey;
+    private ECPrivateKey privateKey;
 
     private long serialNumber;
     private X500Principal issuer;
@@ -77,20 +77,20 @@ public class CertificateBuilder
     public CertificateBuilder setKeyPair(KeyPair keyPair)
     {
         requireNonNull(keyPair, "keyPair is null");
-        checkArgument(keyPair.getPublic() instanceof RSAPublicKey, "not an RSA key: %s", keyPair.getPublic());
-        checkArgument(keyPair.getPrivate() instanceof RSAPrivateKey, "not an RSA key: %s", keyPair.getPrivate());
-        setPublicKey((RSAPublicKey) keyPair.getPublic());
-        setPrivateKey((RSAPrivateKey) keyPair.getPrivate());
+        checkArgument(keyPair.getPublic() instanceof ECPublicKey, "not an EC key: %s", keyPair.getPublic());
+        checkArgument(keyPair.getPrivate() instanceof ECPrivateKey, "not an EC key: %s", keyPair.getPrivate());
+        setPublicKey((ECPublicKey) keyPair.getPublic());
+        setPrivateKey((ECPrivateKey) keyPair.getPrivate());
         return this;
     }
 
-    public CertificateBuilder setPublicKey(RSAPublicKey publicKey)
+    public CertificateBuilder setPublicKey(ECPublicKey publicKey)
     {
         this.publicKey = requireNonNull(publicKey, "publicKey is null");
         return this;
     }
 
-    public CertificateBuilder setPrivateKey(RSAPrivateKey privateKey)
+    public CertificateBuilder setPrivateKey(ECPrivateKey privateKey)
     {
         this.privateKey = requireNonNull(privateKey, "privateKey is null");
         return this;
@@ -196,7 +196,7 @@ public class CertificateBuilder
                 encodeInteger(serialNumber),
                 // signature kind
                 encodeSequence(
-                        SHA_256_WITH_RSA_ENCRYPTION_OID,
+                        SHA_256_WITH_ECDSA_ENCRYPTION_OID,
                         encodeNull()),
                 // issuer
                 issuer.getEncoded(),
@@ -233,7 +233,7 @@ public class CertificateBuilder
                 rawCertificate,
                 // signature kind
                 encodeSequence(
-                        SHA_256_WITH_RSA_ENCRYPTION_OID,
+                        SHA_256_WITH_ECDSA_ENCRYPTION_OID,
                         encodeNull()),
                 // signature
                 DerUtils.encodeBitString(0, signature));
@@ -245,19 +245,18 @@ public class CertificateBuilder
     private byte[] signCertificate(byte[] rawCertificate)
             throws GeneralSecurityException
     {
-        Signature signature = Signature.getInstance("SHA256withRSA");
+        Signature signature = Signature.getInstance("SHA256withECDSA");
         signature.initSign(privateKey);
         signature.update(rawCertificate);
-        byte[] digitalSignature = signature.sign();
-        return digitalSignature;
+        return signature.sign();
     }
 
     private byte[] hashPublicKey()
             throws NoSuchAlgorithmException
     {
         byte[] rawKey = encodeSequence(
-                encodeInteger(publicKey.getModulus()),
-                encodeInteger(publicKey.getPublicExponent()));
+                encodeInteger(publicKey.getW().getAffineX()),
+                encodeInteger(publicKey.getW().getAffineY()));
         MessageDigest digest = MessageDigest.getInstance("SHA-1");
         return digest.digest(rawKey);
     }

@@ -25,6 +25,7 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
 import java.security.cert.X509Certificate;
+import java.security.spec.ECGenParameterSpec;
 import java.time.LocalDate;
 
 import static io.airlift.security.cert.CertificateBuilder.certificateBuilder;
@@ -38,8 +39,8 @@ public class TestCertificateBuilder
     public void test()
             throws Exception
     {
-        KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
-        generator.initialize(2048);
+        KeyPairGenerator generator = KeyPairGenerator.getInstance("EC");
+        generator.initialize(new ECGenParameterSpec("secp256r1"));
         KeyPair keyPair = generator.generateKeyPair();
 
         X500Principal issuer = new X500Principal("CN=issuer,O=Airlift");
@@ -72,7 +73,7 @@ public class TestCertificateBuilder
         for (TrustManager trustManager : trustManagerFactory.getTrustManagers()) {
             if (trustManager instanceof X509TrustManager) {
                 X509TrustManager x509TrustManager = (X509TrustManager) trustManager;
-                x509TrustManager.checkServerTrusted(new X509Certificate[] {certificate}, "RSA");
+                x509TrustManager.checkServerTrusted(new X509Certificate[] {certificate}, "EC");
             }
         }
     }
