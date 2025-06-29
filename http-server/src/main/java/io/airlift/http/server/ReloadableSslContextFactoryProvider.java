@@ -38,7 +38,6 @@ import static com.google.common.hash.Hashing.sha256;
 import static io.airlift.security.cert.CertificateBuilder.certificateBuilder;
 import static java.lang.Math.toIntExact;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.time.temporal.ChronoUnit.YEARS;
 import static java.util.Collections.list;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -147,7 +146,7 @@ final class ReloadableSslContextFactoryProvider
 
             X500Principal subject = new X500Principal("CN=" + commonName);
             LocalDate notBefore = LocalDate.now();
-            LocalDate notAfter = notBefore.plus(10, YEARS);
+            LocalDate notAfter = notBefore.plusYears(10);
             List<InetAddress> allLocalIpAddresses = getAllLocalIpAddresses();
             List<String> ipAddressMappedNames = allLocalIpAddresses.stream()
                     .map(AddressToHostname::encodeAddressAsHostname)

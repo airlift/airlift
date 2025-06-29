@@ -134,7 +134,6 @@ import static java.lang.Math.max;
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.time.temporal.ChronoUnit.YEARS;
 import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -637,7 +636,7 @@ public class JettyHttpClient
 
             X500Principal subject = new X500Principal("CN=" + commonName);
             LocalDate notBefore = LocalDate.now();
-            LocalDate notAfter = notBefore.plus(10, YEARS);
+            LocalDate notAfter = notBefore.plusYears(10);
             X509Certificate certificateServer = certificateBuilder()
                     .setKeyPair(keyPair)
                     .setSerialNumber(System.currentTimeMillis())
