@@ -2,6 +2,7 @@ package io.airlift.security.mtls;
 
 import com.google.common.collect.ImmutableList;
 import io.airlift.node.AddressToHostname;
+import io.airlift.security.cert.CertificateBuilder;
 
 import javax.security.auth.x500.X500Principal;
 
@@ -19,7 +20,6 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static io.airlift.security.cert.CertificateBuilder.certificateBuilder;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.list;
 
@@ -31,21 +31,11 @@ public final class AutomaticMtls
     {
         try {
             KeyPair keyPair = fromSharedSecret(sharedSecret);
-
-            X500Principal subject = certificateSubject(commonName);
-            LocalDate notBefore = LocalDate.now();
-            LocalDate notAfter = notBefore.plusYears(10);
             List<InetAddress> allLocalIpAddresses = getAllLocalIpAddresses();
             List<String> ipAddressMappedNames = allLocalIpAddresses.stream()
                     .map(AddressToHostname::encodeAddressAsHostname)
                     .collect(toImmutableList());
-            X509Certificate certificateServer = certificateBuilder()
-                    .setKeyPair(keyPair)
-                    .setSerialNumber(System.currentTimeMillis())
-                    .setIssuer(subject)
-                    .setNotBefore(notBefore)
-                    .setNotAfter(notAfter)
-                    .setSubject(subject)
+            X509Certificate certificateServer = certificateBuilder(sharedSecret, commonName)
                     .addSanIpAddresses(allLocalIpAddresses)
                     .addSanDnsNames(ipAddressMappedNames)
                     .buildSelfSigned();
@@ -61,18 +51,7 @@ public final class AutomaticMtls
     public static void addClientTrust(String sharedSecret, KeyStore keyStore, String commonName)
     {
         try {
-            KeyPair keyPair = fromSharedSecret(sharedSecret);
-
-            X500Principal subject = certificateSubject(commonName);
-            LocalDate notBefore = LocalDate.now();
-            LocalDate notAfter = notBefore.plusYears(10);
-            X509Certificate certificateServer = certificateBuilder()
-                    .setKeyPair(keyPair)
-                    .setSerialNumber(System.currentTimeMillis())
-                    .setIssuer(subject)
-                    .setNotBefore(notBefore)
-                    .setNotAfter(notAfter)
-                    .setSubject(subject)
+            X509Certificate certificateServer = certificateBuilder(sharedSecret, commonName)
                     .buildSelfSigned();
 
             keyStore.setCertificateEntry(commonName, certificateServer);
@@ -110,6 +89,21 @@ public final class AutomaticMtls
         catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static CertificateBuilder certificateBuilder(String sharedSecret, String commonName)
+    {
+        KeyPair keyPair = fromSharedSecret(sharedSecret);
+        LocalDate notBefore = LocalDate.now();
+        LocalDate notAfter = notBefore.plusYears(10);
+        X500Principal subject = certificateSubject(commonName);
+        return CertificateBuilder.certificateBuilder()
+                .setKeyPair(keyPair)
+                .setSerialNumber(System.currentTimeMillis())
+                .setIssuer(subject)
+                .setNotBefore(notBefore)
+                .setNotAfter(notAfter)
+                .setSubject(subject);
     }
 
     private static X500Principal certificateSubject(String commonName)
