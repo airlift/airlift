@@ -32,7 +32,7 @@ public class AutomaticMutualTls
         try {
             KeyPair keyPair = fromSharedSecret(sharedSecret);
 
-            X500Principal subject = new X500Principal("CN=" + commonName);
+            X500Principal subject = certificateSubject(commonName);
             LocalDate notBefore = LocalDate.now();
             LocalDate notAfter = notBefore.plusYears(10);
             List<InetAddress> allLocalIpAddresses = getAllLocalIpAddresses();
@@ -63,7 +63,7 @@ public class AutomaticMutualTls
         try {
             KeyPair keyPair = fromSharedSecret(sharedSecret);
 
-            X500Principal subject = new X500Principal("CN=" + commonName);
+            X500Principal subject = certificateSubject(commonName);
             LocalDate notBefore = LocalDate.now();
             LocalDate notAfter = notBefore.plusYears(10);
             X509Certificate certificateServer = certificateBuilder()
@@ -110,5 +110,10 @@ public class AutomaticMutualTls
         catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static X500Principal certificateSubject(String commonName)
+    {
+        return new X500Principal("CN=" + commonName);
     }
 }
