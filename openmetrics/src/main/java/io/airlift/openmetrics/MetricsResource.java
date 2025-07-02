@@ -19,6 +19,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.airlift.log.Logger;
 import io.airlift.node.NodeInfo;
+import io.airlift.openmetrics.types.CompositeMetric;
 import io.airlift.openmetrics.types.Counter;
 import io.airlift.openmetrics.types.Gauge;
 import io.airlift.openmetrics.types.Metric;
@@ -41,6 +42,7 @@ import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
+import javax.management.openmbean.CompositeData;
 
 import java.util.List;
 import java.util.Map;
@@ -90,7 +92,7 @@ public class MetricsResource
         StringBuilder body = new StringBuilder();
         if (filter != null && !filter.isEmpty()) {
             for (String metricName : filter) {
-                toMetricExposition(metricName).ifPresent(exposition -> body.append(exposition));
+                toMetricExposition(metricName).ifPresent(body::append);
             }
         }
         else {
@@ -208,16 +210,11 @@ public class MetricsResource
     {
         try {
             Object attributeValue = mbeanServer.getAttribute(objectName, attributeName);
-
-            if (attributeValue == null) {
-                return Optional.empty();
-            }
-
-            if (attributeValue instanceof Number) {
-                return Optional.of(Gauge.from(metricName, (Number) attributeValue, labels, description));
-            }
-
-            return Optional.empty();
+            return switch (attributeValue) {
+                case Number number -> Optional.of(Gauge.from(metricName, number, labels, description));
+                case CompositeData compositeData -> Optional.of(CompositeMetric.from(metricName, compositeData, labels, description));
+                case null, default -> Optional.empty();
+            };
         }
         catch (JMException ex) {
             log.debug(ex, "Unable to get metric for ObjectName %s and Attribute %s.", objectName.getCanonicalName(), attributeName);
