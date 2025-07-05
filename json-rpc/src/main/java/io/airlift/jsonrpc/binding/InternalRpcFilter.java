@@ -10,6 +10,7 @@ import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.container.ContainerResponseContext;
 import jakarta.ws.rs.container.ContainerResponseFilter;
 import jakarta.ws.rs.container.PreMatching;
+import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
 
@@ -19,7 +20,9 @@ import java.net.URI;
 import java.util.Optional;
 
 import static io.airlift.jsonrpc.model.JsonRpcErrorCode.METHOD_NOT_FOUND;
+import static jakarta.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
+import static jakarta.ws.rs.core.MediaType.SERVER_SENT_EVENTS_TYPE;
 import static jakarta.ws.rs.core.Response.Status.OK;
 import static java.util.Objects.requireNonNull;
 
@@ -66,7 +69,9 @@ public class InternalRpcFilter
     @Override
     public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext)
     {
-        jsonRpcRequest(requestContext).ifPresent(internalRequest -> finalizeJsonRpcResponse(responseContext, internalRequest));
+        jsonRpcRequest(requestContext)
+                .filter(_ -> !isSseResponse(responseContext))
+                .ifPresent(internalRequest -> finalizeJsonRpcResponse(responseContext, internalRequest));
     }
 
     public static Optional<Object> requestId(ContainerRequestContext requestContext)
@@ -77,6 +82,12 @@ public class InternalRpcFilter
     static Optional<InternalRequest> jsonRpcRequest(ContainerRequestContext requestContext)
     {
         return Optional.ofNullable((InternalRequest) requestContext.getProperty(InternalRpcFilter.class.getName()));
+    }
+
+    private boolean isSseResponse(ContainerResponseContext responseContext)
+    {
+        MediaType maybeContentType = (MediaType) responseContext.getHeaders().getFirst(CONTENT_TYPE);
+        return SERVER_SENT_EVENTS_TYPE.equals(maybeContentType);
     }
 
     private void finalizeJsonRpcResponse(ContainerResponseContext responseContext, InternalRequest internalRequest)

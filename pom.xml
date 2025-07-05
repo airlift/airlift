@@ -55,6 +55,7 @@
         <module>json-rpc</module>
         <module>log</module>
         <module>log-manager</module>
+        <module>mcp</module>
         <module>node</module>
         <module>openmetrics</module>
         <module>packaging</module>
@@ -195,6 +196,13 @@
 
             <dependency>
                 <groupId>io.airlift</groupId>
+                <artifactId>json-rpc</artifactId>
+                <version>${dep.airlift.version}</version>
+                <type>test-jar</type>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
                 <artifactId>junit-extensions</artifactId>
                 <version>2</version>
             </dependency>
@@ -224,6 +232,12 @@
             <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>log-manager</artifactId>
+                <version>${dep.airlift.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>mcp</artifactId>
                 <version>${dep.airlift.version}</version>
             </dependency>
 
