@@ -26,6 +26,7 @@
         <dependency>
             <groupId>com.google.inject</groupId>
             <artifactId>guice</artifactId>
+            <classifier>classes</classifier>
         </dependency>
 
         <dependency>
@@ -58,6 +59,14 @@
         <dependency>
             <groupId>jakarta.annotation</groupId>
             <artifactId>jakarta.annotation-api</artifactId>
+        </dependency>
+
+        <!-- TODO: remove this when we move to airbase -->
+        <dependency>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm</artifactId>
+            <version>${dep.asm.version}</version>
+            <scope>runtime</scope>
         </dependency>
 
         <!-- for testing -->

@@ -108,6 +108,14 @@
                 <scope>import</scope>
             </dependency>
 
+            <!-- TODO: remove this when we move to airbase -->
+            <dependency>
+                <groupId>com.google.inject</groupId>
+                <artifactId>guice</artifactId>
+                <version>${dep.guice.version}</version>
+                <classifier>classes</classifier>
+            </dependency>
+
             <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>bootstrap</artifactId>
