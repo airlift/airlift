@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airbase</artifactId>
-        <version>276</version>
+        <version>277</version>
     </parent>
 
     <artifactId>airlift</artifactId>
@@ -106,14 +106,6 @@
                 <version>${dep.jersey.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
-            </dependency>
-
-            <!-- TODO: remove this when we move to airbase -->
-            <dependency>
-                <groupId>com.google.inject</groupId>
-                <artifactId>guice</artifactId>
-                <version>${dep.guice.version}</version>
-                <classifier>classes</classifier>
             </dependency>
 
             <dependency>
