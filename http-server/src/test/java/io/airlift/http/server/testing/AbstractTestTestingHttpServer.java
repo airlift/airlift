@@ -32,6 +32,7 @@ import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.http.server.HttpServer.ClientCertificate;
 import io.airlift.http.server.HttpServerConfig;
 import io.airlift.http.server.HttpServerInfo;
+import io.airlift.http.server.ServerFeature;
 import io.airlift.log.Logging;
 import io.airlift.node.NodeInfo;
 import io.airlift.node.testing.TestingNodeModule;
@@ -55,6 +56,7 @@ import org.junit.jupiter.api.TestInstance;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
@@ -64,6 +66,7 @@ import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
 import static io.airlift.http.server.HttpServerBinder.httpServerBinder;
+import static io.airlift.http.server.ServerFeature.VIRTUAL_THREADS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.abort;
@@ -72,15 +75,15 @@ import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 @TestInstance(PER_CLASS)
 public abstract class AbstractTestTestingHttpServer
 {
-    private final boolean enableVirtualThreads;
-    private final boolean enableLegacyUriCompliance;
-    private final boolean enableCaseSensitiveHeaderCache;
+    private final Set<ServerFeature> serverFeatures;
 
     AbstractTestTestingHttpServer(boolean enableVirtualThreads, boolean enableLegacyUriCompliance, boolean enableCaseSensitiveHeaderCache)
     {
-        this.enableVirtualThreads = enableVirtualThreads;
-        this.enableLegacyUriCompliance = enableLegacyUriCompliance;
-        this.enableCaseSensitiveHeaderCache = enableCaseSensitiveHeaderCache;
+        this.serverFeatures = ServerFeature.builder()
+                .withVirtualThreads(enableVirtualThreads)
+                .withLegacyUriCompliance(enableLegacyUriCompliance)
+                .withCaseSensitiveHeaderCache(enableCaseSensitiveHeaderCache)
+                .build();
     }
 
     @BeforeAll
@@ -95,7 +98,7 @@ public abstract class AbstractTestTestingHttpServer
     {
         skipUnlessJdkHasVirtualThreads();
         DummyServlet servlet = new DummyServlet();
-        TestingHttpServer server = createTestingHttpServer(enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache, servlet);
+        TestingHttpServer server = createTestingHttpServer(serverFeatures, servlet);
 
         try {
             server.start();
@@ -112,7 +115,7 @@ public abstract class AbstractTestTestingHttpServer
     {
         skipUnlessJdkHasVirtualThreads();
         DummyServlet servlet = new DummyServlet();
-        TestingHttpServer server = createTestingHttpServer(enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache, servlet);
+        TestingHttpServer server = createTestingHttpServer(serverFeatures, servlet);
 
         try {
             server.start();
@@ -136,7 +139,7 @@ public abstract class AbstractTestTestingHttpServer
         skipUnlessJdkHasVirtualThreads();
         DummyServlet servlet = new DummyServlet();
         DummyFilter filter = new DummyFilter();
-        TestingHttpServer server = createTestingHttpServerWithFilter(enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache, servlet, filter);
+        TestingHttpServer server = createTestingHttpServerWithFilter(serverFeatures, servlet, filter);
 
         try {
             server.start();
@@ -235,9 +238,7 @@ public abstract class AbstractTestTestingHttpServer
                     httpServerBinder(binder).bindResource("/", "webapp/user2");
                     httpServerBinder(binder).bindResource("path", "webapp/user").withWelcomeFile("user-welcome.txt");
                     httpServerBinder(binder).bindResource("path", "webapp/user2");
-                    if (enableVirtualThreads) {
-                        httpServerBinder(binder).enableVirtualThreads();
-                    }
+                    httpServerBinder(binder).withFeatures(serverFeatures);
                 });
 
         Injector injector = app
@@ -274,7 +275,7 @@ public abstract class AbstractTestTestingHttpServer
             throws Exception
     {
         DummyServlet servlet = new DummyServlet();
-        TestingHttpServer server = createTestingHttpServer(enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache, servlet);
+        TestingHttpServer server = createTestingHttpServer(serverFeatures, servlet);
 
         try {
             server.start();
@@ -297,12 +298,7 @@ public abstract class AbstractTestTestingHttpServer
             synchronized (servlet) {
                 contentTypeHeader = servlet.contentTypeHeader;
             }
-            if (enableCaseSensitiveHeaderCache) {
-                assertThat(contentTypeHeader).isEqualTo(finalContentType);
-            }
-            else {
-                assertThat(contentTypeHeader).isEqualTo(finalContentType);
-            }
+            assertThat(contentTypeHeader).isEqualTo(finalContentType);
         }
         finally {
             server.stop();
@@ -314,7 +310,7 @@ public abstract class AbstractTestTestingHttpServer
             throws Exception
     {
         DummyServlet servlet = new DummyServlet();
-        TestingHttpServer server = createTestingHttpServer(enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache, servlet);
+        TestingHttpServer server = createTestingHttpServer(serverFeatures, servlet);
 
         try {
             server.start();
@@ -337,7 +333,7 @@ public abstract class AbstractTestTestingHttpServer
 
     private void skipUnlessJdkHasVirtualThreads()
     {
-        if (enableVirtualThreads && !VirtualThreads.areSupported()) {
+        if (serverFeatures.contains(VIRTUAL_THREADS) && !VirtualThreads.areSupported()) {
             abort("Virtual threads are not supported");
         }
     }
@@ -352,22 +348,22 @@ public abstract class AbstractTestTestingHttpServer
         assertThat(data.getBody().trim()).isEqualTo(contents);
     }
 
-    private static TestingHttpServer createTestingHttpServer(boolean enableVirtualThreads, boolean enableLegacyUriCompliance, boolean enableCaseSensitiveHeaderCache, DummyServlet servlet)
+    private static TestingHttpServer createTestingHttpServer(Set<ServerFeature> serverFeatures, DummyServlet servlet)
             throws IOException
     {
         NodeInfo nodeInfo = new NodeInfo("test");
         HttpServerConfig config = new HttpServerConfig().setHttpPort(0);
         HttpServerInfo httpServerInfo = new HttpServerInfo(config, nodeInfo);
-        return new TestingHttpServer(httpServerInfo, nodeInfo, config, servlet, enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache);
+        return new TestingHttpServer(httpServerInfo, nodeInfo, config, servlet, serverFeatures);
     }
 
-    private static TestingHttpServer createTestingHttpServerWithFilter(boolean enableVirtualThreads, boolean enableLegacyUriCompliance, boolean enableCaseSensitiveHeaderCache, DummyServlet servlet, DummyFilter filter)
+    private static TestingHttpServer createTestingHttpServerWithFilter(Set<ServerFeature> serverFeatures, DummyServlet servlet, DummyFilter filter)
             throws IOException
     {
         NodeInfo nodeInfo = new NodeInfo("test");
         HttpServerConfig config = new HttpServerConfig().setHttpPort(0);
         HttpServerInfo httpServerInfo = new HttpServerInfo(config, nodeInfo);
-        return new TestingHttpServer(httpServerInfo, nodeInfo, config, Optional.empty(), servlet, ImmutableSet.of(filter), ImmutableSet.of(), enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache, ClientCertificate.NONE);
+        return new TestingHttpServer(httpServerInfo, nodeInfo, config, Optional.empty(), servlet, ImmutableSet.of(filter), ImmutableSet.of(), serverFeatures, ClientCertificate.NONE);
     }
 
     static class DummyServlet
