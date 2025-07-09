@@ -29,6 +29,7 @@ import io.airlift.discovery.client.ServiceAnnouncement.ServiceAnnouncementBuilde
 
 import java.lang.annotation.Annotation;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.google.inject.multibindings.MapBinder.newMapBinder;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
@@ -95,9 +96,14 @@ public class DiscoveryBinder
 
     public HttpAnnouncementBindingBuilder bindHttpAnnouncement(String type)
     {
+        return bindHttpAnnouncement(type, null);
+    }
+
+    public HttpAnnouncementBindingBuilder bindHttpAnnouncement(String type, Class<? extends Annotation> bindingAnnotation)
+    {
         HttpAnnouncement annotation = new HttpAnnouncementImpl(type + "." + randomUUID());
         MapBinder<String, String> propertiesBinder = newMapBinder(binder, String.class, String.class, annotation);
-        bindServiceAnnouncement(new HttpAnnouncementProvider(type, annotation));
+        bindServiceAnnouncement(new HttpAnnouncementProvider(type, annotation, Optional.ofNullable(bindingAnnotation)));
         return new HttpAnnouncementBindingBuilder(propertiesBinder);
     }
 
@@ -169,13 +175,14 @@ public class DiscoveryBinder
     {
         private final String type;
         private final Annotation annotation;
+        private final Optional<Class<? extends Annotation>> announcementAnnotation;
         private Injector injector;
-        private AnnouncementHttpServerInfo httpServerInfo;
 
-        public HttpAnnouncementProvider(String type, Annotation annotation)
+        public HttpAnnouncementProvider(String type, Annotation annotation, Optional<Class<? extends Annotation>> announcementAnnotation)
         {
-            this.type = type;
-            this.annotation = annotation;
+            this.type = requireNonNull(type, "type is null");
+            this.annotation = requireNonNull(annotation, "annotation is null");
+            this.announcementAnnotation = requireNonNull(announcementAnnotation, "announcementAnnotation is null");
         }
 
         @Inject
@@ -184,17 +191,13 @@ public class DiscoveryBinder
             this.injector = injector;
         }
 
-        @Inject
-        public void setAnnouncementHttpServerInfo(AnnouncementHttpServerInfo httpServerInfo)
-        {
-            this.httpServerInfo = httpServerInfo;
-        }
-
         @Override
         public ServiceAnnouncement get()
         {
             ServiceAnnouncementBuilder builder = serviceAnnouncement(type);
-            builder.addProperties(injector.getInstance(Key.get(new TypeLiteral<Map<String, String>>() {}, annotation)));
+            builder.addProperties(injector.getInstance(Key.get(new TypeLiteral<>() {}, annotation)));
+
+            AnnouncementHttpServerInfo httpServerInfo = injector.getInstance(qualifiedKey(announcementAnnotation, AnnouncementHttpServerInfo.class));
 
             if (httpServerInfo.getHttpUri() != null) {
                 builder.addProperty("http", httpServerInfo.getHttpUri().toString());
@@ -206,5 +209,12 @@ public class DiscoveryBinder
             }
             return builder.build();
         }
+    }
+
+    static <T> Key<T> qualifiedKey(Optional<Class<? extends Annotation>> qualifier, Class<T> type)
+    {
+        return qualifier
+                .map(annotation -> Key.get(type, annotation))
+                .orElseGet(() -> Key.get(type));
     }
 }
