@@ -26,6 +26,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.parallel.Execution;
+import org.weakref.jmx.testing.TestingMBeanServer;
 
 import java.io.File;
 import java.io.IOException;
@@ -216,18 +217,29 @@ public class TestHttpServerCipher
 
     private static HttpServer createServer(HttpServlet servlet, NodeInfo nodeInfo, HttpServerInfo httpServerInfo, HttpServerConfig config, HttpsConfig httpsConfig)
     {
-        return new HttpServerProvider(
-                httpServerInfo,
-                nodeInfo,
-                config,
-                Optional.of(httpsConfig),
-                servlet,
-                ImmutableSet.of(new DummyFilter()),
-                ImmutableSet.of(),
-                false,
-                false,
-                false,
-                ClientCertificate.NONE,
-                Optional.empty()).get();
+        try {
+            HttpServer httpServer = new HttpServer(
+                    "test",
+                    httpServerInfo,
+                    nodeInfo,
+                    config,
+                    Optional.of(httpsConfig),
+                    servlet,
+                    ImmutableSet.of(new DummyFilter()),
+                    ImmutableSet.of(),
+                    ServerFeature.defaults(),
+                    ClientCertificate.NONE,
+                    Optional.of(new TestingMBeanServer()),
+                    Optional.empty());
+            httpServer.start();
+            return httpServer;
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

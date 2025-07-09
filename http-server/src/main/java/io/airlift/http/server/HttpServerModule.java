@@ -17,7 +17,6 @@ package io.airlift.http.server;
 
 import com.google.inject.Binder;
 import com.google.inject.Key;
-import com.google.inject.Scopes;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
 import io.airlift.discovery.client.AnnouncementHttpServerInfo;
 import io.airlift.http.server.HttpServer.ClientCertificate;
@@ -26,10 +25,15 @@ import io.airlift.http.server.tracing.TracingServletFilter;
 import jakarta.servlet.Filter;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
+import java.lang.annotation.Annotation;
+import java.util.Optional;
+
+import static com.google.inject.Scopes.SINGLETON;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
 import static io.airlift.configuration.ConditionalModule.conditionalModule;
 import static io.airlift.configuration.ConfigBinder.configBinder;
+import static java.util.Objects.requireNonNull;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 /**
@@ -56,31 +60,68 @@ import static org.weakref.jmx.guice.ExportBinder.newExporter;
 public class HttpServerModule
         extends AbstractConfigurationAwareModule
 {
+    private final String name;
+    private final Optional<Class<? extends Annotation>> qualifier;
+    private final Optional<String> configPrefix;
+
+    public HttpServerModule(String name, Optional<Class<? extends Annotation>> qualifier, Optional<String> configPrefix)
+    {
+        this.name = requireNonNull(name, "name is null");
+        this.qualifier = requireNonNull(qualifier, "qualifier is null");
+        this.configPrefix = requireNonNull(configPrefix, "config prefix is null");
+
+        if (this.configPrefix.isPresent() != this.qualifier.isPresent()) {
+            throw new IllegalArgumentException("configPrefix and qualifier must both be present or both be absent");
+        }
+    }
+
+    public HttpServerModule(String name, Class<? extends Annotation> qualifier, String configPrefix)
+    {
+        this(name, Optional.of(requireNonNull(qualifier, "qualifier is null")), Optional.of(requireNonNull(configPrefix, "config prefix is null")));
+    }
+
+    public HttpServerModule()
+    {
+        this("http-server", Optional.empty(), Optional.empty());
+    }
+
     @Override
     protected void setup(Binder binder)
     {
         binder.disableCircularProxies();
 
-        binder.bind(HttpServer.class).toProvider(HttpServerProvider.class).in(Scopes.SINGLETON);
-        newOptionalBinder(binder, ClientCertificate.class).setDefault().toInstance(ClientCertificate.NONE);
-        newExporter(binder).export(HttpServer.class).withGeneratedName();
-        binder.bind(HttpServerInfo.class).in(Scopes.SINGLETON);
-        // override with HttpServerBinder.enableVirtualThreads()
-        newOptionalBinder(binder, Key.get(Boolean.class, EnableVirtualThreads.class)).setDefault().toInstance(false);
-        // override with HttpServerBinder.enableLegacyUriCompliance()
-        newOptionalBinder(binder, Key.get(Boolean.class, EnableLegacyUriCompliance.class)).setDefault().toInstance(false);
-        newSetBinder(binder, Filter.class).addBinding()
-                .to(TracingServletFilter.class).in(Scopes.SINGLETON);
-        newSetBinder(binder, HttpResourceBinding.class);
-        newOptionalBinder(binder, SslContextFactory.Server.class);
-        newOptionalBinder(binder, Key.get(Boolean.class, EnableCaseSensitiveHeaderCache.class)).setDefault().toInstance(false);
+        binder.bind(qualifiedKey(HttpServer.class))
+                .toProvider(new HttpServerProvider(name, qualifier))
+                .in(SINGLETON);
+        newOptionalBinder(binder, qualifiedKey(ClientCertificate.class)).setDefault().toInstance(ClientCertificate.NONE);
+        newExporter(binder).export(qualifiedKey(HttpServer.class)).withGeneratedName();
+        newSetBinder(binder, qualifiedKey(ServerFeature.class));
+        newSetBinder(binder, qualifiedKey(Filter.class)).addBinding()
+                .to(TracingServletFilter.class)
+                .in(SINGLETON);
+        newSetBinder(binder, qualifiedKey(HttpResourceBinding.class));
+        newOptionalBinder(binder, qualifiedKey(SslContextFactory.Server.class));
+        configBinder(binder).bindConfig(qualifiedKey(HttpServerConfig.class), HttpServerConfig.class, configPrefix);
+        newOptionalBinder(binder, qualifiedKey(HttpsConfig.class));
 
-        configBinder(binder).bindConfig(HttpServerConfig.class);
-        newOptionalBinder(binder, HttpsConfig.class);
+        binder.bind(qualifiedKey(AnnouncementHttpServerInfo.class))
+                .toProvider(new AnnouncementHttpServerInfoProvider(qualifier))
+                .in(SINGLETON);
 
-        binder.bind(AnnouncementHttpServerInfo.class).to(LocalAnnouncementHttpServerInfo.class).in(Scopes.SINGLETON);
+        binder.bind(qualifiedKey(HttpServerInfo.class))
+                    .toProvider(new HttpServerInfoProvider(qualifier))
+                    .in(SINGLETON);
 
-        install(conditionalModule(HttpServerConfig.class, HttpServerConfig::isHttpsEnabled, moduleBinder ->
-                configBinder(moduleBinder).bindConfig(HttpsConfig.class)));
+        install(conditionalModule(qualifiedKey(HttpServerConfig.class), HttpServerConfig.class, configPrefix, HttpServerConfig::isHttpsEnabled, moduleBinder ->
+                configBinder(moduleBinder).bindConfig(qualifiedKey(HttpsConfig.class), HttpsConfig.class, configPrefix)));
+
+        configBinder(binder).bindConfig(qualifiedKey(HttpServerConfig.class), HttpServerConfig.class, configPrefix);
+    }
+
+    private <T> Key<T> qualifiedKey(Class<T> type)
+    {
+        return qualifier
+                .map(annotation -> Key.get(type, annotation))
+                .orElseGet(() -> Key.get(type));
     }
 }
