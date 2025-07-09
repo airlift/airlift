@@ -15,22 +15,21 @@
  */
 package io.airlift.http.server;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
+import com.google.inject.Injector;
 import com.google.inject.Provider;
+import com.google.inject.TypeLiteral;
 import io.airlift.http.server.HttpServer.ClientCertificate;
-import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.node.NodeInfo;
-import jakarta.servlet.Filter;
 import jakarta.servlet.Servlet;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import javax.management.MBeanServer;
 
+import java.lang.annotation.Annotation;
 import java.util.Optional;
-import java.util.Set;
 
 import static com.google.common.base.Throwables.throwIfUnchecked;
+import static io.airlift.http.server.BinderUtils.qualifiedKey;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -40,62 +39,28 @@ import static java.util.Objects.requireNonNull;
 public class HttpServerProvider
         implements Provider<HttpServer>
 {
-    private final HttpServerInfo httpServerInfo;
-    private final NodeInfo nodeInfo;
-    private final HttpServerConfig config;
-    private final Optional<HttpsConfig> httpsConfig;
-    private final Servlet servlet;
-    private final Set<HttpResourceBinding> resources;
-    private final ClientCertificate clientCertificate;
-    private final boolean enableVirtualThreads;
-    private final boolean enableLegacyUriCompliance;
-    private final boolean enableCaseSensitiveHeaderCache;
+    private final String name;
+    private final Optional<Class<? extends Annotation>> qualifier;
+
+    private Injector injector;
     private Optional<MBeanServer> mbeanServer = Optional.empty();
-    private final Set<Filter> filters;
-    private final Optional<SslContextFactory.Server> sslContextFactory;
 
-    @Inject
-    public HttpServerProvider(HttpServerInfo httpServerInfo,
-                  NodeInfo nodeInfo,
-                  HttpServerConfig config,
-                  Optional<HttpsConfig> httpsConfig,
-                  Servlet servlet,
-                  Set<Filter> filters,
-                  Set<HttpResourceBinding> resources,
-                  @EnableVirtualThreads boolean enableVirtualThreads,
-                  @EnableLegacyUriCompliance boolean enableLegacyUriCompliance,
-                  @EnableCaseSensitiveHeaderCache boolean enableCaseSensitiveHeaderCache,
-                  ClientCertificate clientCertificate,
-                  Optional<SslContextFactory.Server> sslContextFactory)
+    public HttpServerProvider(String name, Optional<Class<? extends Annotation>> qualifier)
     {
-        requireNonNull(httpServerInfo, "httpServerInfo is null");
-        requireNonNull(nodeInfo, "nodeInfo is null");
-        requireNonNull(config, "config is null");
-        requireNonNull(httpsConfig, "httpsConfig is null");
-        requireNonNull(servlet, "servlet is null");
-        requireNonNull(filters, "filters is null");
-        requireNonNull(resources, "resources is null");
-        requireNonNull(clientCertificate, "clientCertificate is null");
-        requireNonNull(sslContextFactory, "sslContextFactory is null");
-
-        this.httpServerInfo = httpServerInfo;
-        this.nodeInfo = nodeInfo;
-        this.config = config;
-        this.httpsConfig = httpsConfig;
-        this.servlet = servlet;
-        this.filters = ImmutableSet.copyOf(filters);
-        this.resources = ImmutableSet.copyOf(resources);
-        this.enableVirtualThreads = enableVirtualThreads;
-        this.enableLegacyUriCompliance = enableLegacyUriCompliance;
-        this.enableCaseSensitiveHeaderCache = enableCaseSensitiveHeaderCache;
-        this.clientCertificate = clientCertificate;
-        this.sslContextFactory = sslContextFactory;
+        this.name = requireNonNull(name, "name is null");
+        this.qualifier = requireNonNull(qualifier, "qualifier is null");
     }
 
     @Inject(optional = true)
-    public void setMBeanServer(MBeanServer server)
+    public void setMBeanServer(MBeanServer mBeanServer)
     {
-        mbeanServer = Optional.of(server);
+        mbeanServer = Optional.of(requireNonNull(mBeanServer, "mBeanServer is null"));
+    }
+
+    @Inject
+    public void setInjector(Injector injector)
+    {
+        this.injector = requireNonNull(injector, "injector is null");
     }
 
     @Override
@@ -103,21 +68,24 @@ public class HttpServerProvider
     {
         try {
             HttpServer httpServer = new HttpServer(
-                    httpServerInfo,
-                    nodeInfo,
-                    config,
-                    httpsConfig,
-                    servlet,
-                    filters,
-                    resources,
-                    enableVirtualThreads,
-                    enableLegacyUriCompliance,
-                    enableCaseSensitiveHeaderCache,
-                    clientCertificate,
+                    name,
+                    injector.getInstance(qualifiedKey(qualifier, HttpServerInfo.class)),
+                    injector.getInstance(NodeInfo.class),
+                    injector.getInstance(qualifiedKey(qualifier, HttpServerConfig.class)),
+                    injector.getInstance(qualifiedKey(qualifier, new TypeLiteral<>() {})),
+                    injector.getInstance(qualifiedKey(qualifier, Servlet.class)),
+                    injector.getInstance(qualifiedKey(qualifier, new TypeLiteral<>() {})),
+                    injector.getInstance(qualifiedKey(qualifier, new TypeLiteral<>() {})),
+                    injector.getInstance(qualifiedKey(qualifier, new TypeLiteral<>() {})),
+                    injector.getInstance(qualifiedKey(qualifier, ClientCertificate.class)),
                     mbeanServer,
-                    sslContextFactory);
+                    injector.getInstance(qualifiedKey(qualifier, new TypeLiteral<>() {})));
             httpServer.start();
             return httpServer;
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
         }
         catch (Exception e) {
             throwIfUnchecked(e);

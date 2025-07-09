@@ -2,55 +2,81 @@ package io.airlift.http.server;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Binder;
-import com.google.inject.Key;
-import org.eclipse.jetty.util.VirtualThreads;
+import com.google.inject.multibindings.Multibinder;
+import jakarta.annotation.Nullable;
 
+import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
-import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
+import static io.airlift.http.server.BinderUtils.qualifiedKey;
+import static io.airlift.http.server.ServerFeature.CASE_SENSITIVE_HEADER_CACHE;
+import static io.airlift.http.server.ServerFeature.LEGACY_URI_COMPLIANCE;
+import static io.airlift.http.server.ServerFeature.VIRTUAL_THREADS;
 import static java.util.Objects.requireNonNull;
 
 public class HttpServerBinder
 {
     private final Binder binder;
+    private final Multibinder<ServerFeature> features;
+    private final Optional<Class<? extends Annotation>> qualifier;
 
-    private HttpServerBinder(Binder binder)
+    private HttpServerBinder(Binder binder, @Nullable Class<? extends Annotation> qualifier)
     {
-        this.binder = requireNonNull(binder, "binder is null").skipSources(getClass());
+        requireNonNull(binder, "binder is null");
+        this.binder = binder.skipSources(getClass());
+        this.qualifier = Optional.ofNullable(qualifier);
+        this.features = newSetBinder(binder, qualifiedKey(this.qualifier, ServerFeature.class));
     }
 
     public static HttpServerBinder httpServerBinder(Binder binder)
     {
-        return new HttpServerBinder(binder);
+        return new HttpServerBinder(binder, null);
     }
 
+    public static HttpServerBinder httpServerBinder(Binder binder, Class<? extends Annotation> qualifier)
+    {
+        requireNonNull(qualifier, "qualifier is null");
+        return new HttpServerBinder(binder, qualifier);
+    }
+
+    @Deprecated // Use withFeature(VIRTUAL_THREADS) instead
     public HttpServerBinder enableVirtualThreads()
     {
-        if (!VirtualThreads.areSupported()) {
-            binder.addError("Virtual threads are not supported");
-        }
-        newOptionalBinder(binder, Key.get(Boolean.class, EnableVirtualThreads.class)).setBinding().toInstance(true);
-        return this;
+        return withFeature(VIRTUAL_THREADS);
     }
 
+    @Deprecated  // Use withFeature(CASE_SENSITIVE_HEADER_CACHE) instead
     public HttpServerBinder enableCaseSensitiveHeaderCache()
     {
-        newOptionalBinder(binder, Key.get(Boolean.class, EnableCaseSensitiveHeaderCache.class)).setBinding().toInstance(true);
+        return withFeature(CASE_SENSITIVE_HEADER_CACHE);
+    }
+
+    @Deprecated // Use withFeature(LEGACY_URI_COMPLIANCE) instead
+    public HttpServerBinder enableLegacyUriCompliance()
+    {
+        return withFeature(LEGACY_URI_COMPLIANCE);
+    }
+
+    public HttpServerBinder withFeature(ServerFeature serverFeature)
+    {
+        features.addBinding().toInstance(serverFeature);
         return this;
     }
 
-    public HttpServerBinder enableLegacyUriCompliance()
+    public HttpServerBinder withFeatures(Set<ServerFeature> serverFeatures)
     {
-        newOptionalBinder(binder, Key.get(Boolean.class, EnableLegacyUriCompliance.class)).setBinding().toInstance(true);
+        serverFeatures.forEach(this::withFeature);
         return this;
     }
 
     public HttpResourceBinding bindResource(String baseUri, String classPathResourceBase)
     {
         HttpResourceBinding httpResourceBinding = new HttpResourceBinding(baseUri, classPathResourceBase);
-        newSetBinder(binder, HttpResourceBinding.class).addBinding().toInstance(httpResourceBinding);
+        newSetBinder(binder, qualifiedKey(qualifier, HttpResourceBinding.class)).addBinding().toInstance(httpResourceBinding);
         return httpResourceBinding;
     }
 
