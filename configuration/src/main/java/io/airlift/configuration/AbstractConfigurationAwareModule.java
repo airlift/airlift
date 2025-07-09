@@ -15,6 +15,7 @@ package io.airlift.configuration;
 
 import com.google.common.reflect.AbstractInvocationHandler;
 import com.google.inject.Binder;
+import com.google.inject.Key;
 import com.google.inject.Module;
 
 import java.lang.reflect.Method;
@@ -69,13 +70,23 @@ public abstract class AbstractConfigurationAwareModule
 
     protected synchronized <T> T buildConfigObject(Class<T> configClass)
     {
-        configBinder(binder).bindConfig(configClass);
-        return configurationFactory.build(configClass);
+        return buildConfigObject(configClass, null);
     }
 
     protected synchronized <T> T buildConfigObject(Class<T> configClass, String prefix)
     {
         configBinder(binder).bindConfig(configClass, prefix);
+        return configurationFactory.build(configClass, prefix);
+    }
+
+    protected synchronized <T> T buildConfigObject(Key<T> key, Class<T> configClass)
+    {
+        return buildConfigObject(key, configClass, null);
+    }
+
+    protected synchronized <T> T buildConfigObject(Key<T> key, Class<T> configClass, String prefix)
+    {
+        configBinder(binder).bindConfig(key, configClass, prefix);
         return configurationFactory.build(configClass, prefix);
     }
 

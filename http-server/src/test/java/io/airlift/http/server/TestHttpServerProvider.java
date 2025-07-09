@@ -48,6 +48,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.parallel.Execution;
+import org.weakref.jmx.testing.TestingMBeanServer;
 
 import javax.security.auth.x500.X500Principal;
 
@@ -74,6 +75,7 @@ import java.util.Date;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
+import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
 import static com.google.common.io.Resources.getResource;
@@ -625,20 +627,27 @@ public class TestHttpServerProvider
 
     private void createServer(HttpServlet servlet)
     {
-        server = new HttpServerProvider(
-                httpServerInfo,
-                nodeInfo,
-                config,
-                optionalHttpsConfig(),
-                servlet,
-                ImmutableSet.of(new DummyFilter()),
-                ImmutableSet.of(),
-                false,
-                false,
-                false,
-                clientCertificate,
-                Optional.empty(),
-                Optional.empty()).get();
+        try {
+            server = new HttpServer(
+                    "test",
+                    httpServerInfo,
+                    nodeInfo,
+                    config,
+                    optionalHttpsConfig(),
+                    servlet,
+                    ImmutableSet.of(new DummyFilter()),
+                    ImmutableSet.of(),
+                    ServerFeature.defaults(),
+                    clientCertificate,
+                    Optional.of(new TestingMBeanServer()),
+                    Optional.empty(),
+                    Optional.empty());
+            server.start();
+        }
+        catch (Exception e) {
+            throwIfUnchecked(e);
+            throw new RuntimeException(e);
+        }
     }
 
     private HttpServerInfo createHttpServerInfo()

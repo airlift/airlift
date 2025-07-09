@@ -17,7 +17,9 @@ package io.airlift.http.server;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.net.MediaType;
+import com.google.inject.BindingAnnotation;
 import com.google.inject.Injector;
+import com.google.inject.Key;
 import com.google.inject.Scopes;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.http.client.HttpClient;
@@ -42,6 +44,8 @@ import org.junit.jupiter.api.parallel.Execution;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 import java.net.URI;
 import java.util.Map;
 
@@ -56,6 +60,11 @@ import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
 import static io.airlift.http.server.HttpServerBinder.httpServerBinder;
+import static io.airlift.http.server.ServerFeature.LEGACY_URI_COMPLIANCE;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static java.nio.file.Files.createTempDirectory;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
@@ -88,7 +97,7 @@ public class TestHttpServerModule
     }
 
     @Test
-    public void testCanConstructServer()
+    public void testCanConstructSingleServer()
     {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("http-server.http.port", "0")
@@ -108,6 +117,44 @@ public class TestHttpServerModule
 
         HttpServer server = injector.getInstance(HttpServer.class);
         assertThat(server).isNotNull();
+    }
+
+    @Test
+    public void testCanConstructMultipleServers()
+    {
+        Map<String, String> properties = new ImmutableMap.Builder<String, String>()
+                .put("http-server.http.port", "0")
+                .put("http-server.log.path", new File(tempDir, "zhttp-request.log").getAbsolutePath())
+                .put("internal.http-server.http.port", "0")
+                .put("internal.http-server.log.path", new File(tempDir, "internal-http-request.log").getAbsolutePath())
+                .build();
+
+        Bootstrap app = new Bootstrap(
+                new HttpServerModule("internal-server", Internal.class, "internal"),
+                new HttpServerModule(),
+                new TestingNodeModule(),
+                new TracingModule("airlift.http-server", "1.0"),
+                binder -> {
+                    binder.bind(Key.get(Servlet.class, Internal.class)).to(DummyServlet.class);
+                    binder.bind(Servlet.class).to(DummyServlet.class);
+                });
+
+        Injector injector = app
+                .setRequiredConfigurationProperties(properties)
+                .doNotInitializeLogging()
+                .initialize();
+
+        HttpServer primaryServer = injector.getInstance(HttpServer.class);
+        HttpServerInfo primaryInfo = injector.getInstance(HttpServerInfo.class);
+
+        HttpServer secondaryServer = injector.getInstance(Key.get(HttpServer.class, Internal.class));
+        HttpServerInfo secondaryInfo = injector.getInstance(Key.get(HttpServerInfo.class, Internal.class));
+
+        assertThat(primaryServer).isNotNull();
+        assertThat(secondaryServer).isNotNull();
+
+        assertThat(primaryServer).isNotEqualTo(secondaryServer);
+        assertThat(primaryInfo.getHttpUri()).isNotEqualTo(secondaryInfo.getHttpUri());
     }
 
     @Test
@@ -175,7 +222,7 @@ public class TestHttpServerModule
                     httpServerBinder(binder).bindResource("path", "webapp/user").withWelcomeFile("user-welcome.txt");
                     httpServerBinder(binder).bindResource("path", "webapp/user2");
                     if (enableLegacyUriCompliance) {
-                        httpServerBinder(binder).enableLegacyUriCompliance();
+                        httpServerBinder(binder).withFeature(LEGACY_URI_COMPLIANCE);
                     }
                 });
 
@@ -247,5 +294,12 @@ public class TestHttpServerModule
         assertThat(response.getHeader(LOCATION)).isEqualTo(redirect);
         assertThat(response.getHeader(CONTENT_TYPE)).as(CONTENT_TYPE + " header should be absent").isNull();
         assertThat(response.getBody()).as("Response body").isEqualTo("");
+    }
+
+    @Retention(RUNTIME)
+    @Target({FIELD, PARAMETER, METHOD})
+    @BindingAnnotation
+    public @interface Internal
+    {
     }
 }

@@ -17,14 +17,12 @@ package io.airlift.http.server.testing;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
-import io.airlift.http.server.EnableCaseSensitiveHeaderCache;
-import io.airlift.http.server.EnableLegacyUriCompliance;
-import io.airlift.http.server.EnableVirtualThreads;
 import io.airlift.http.server.HttpServer;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.http.server.HttpServerConfig;
 import io.airlift.http.server.HttpServerInfo;
 import io.airlift.http.server.HttpsConfig;
+import io.airlift.http.server.ServerFeature;
 import io.airlift.node.NodeInfo;
 import jakarta.servlet.Filter;
 import jakarta.servlet.Servlet;
@@ -46,7 +44,7 @@ public class TestingHttpServer
             Servlet servlet)
             throws IOException
     {
-        this(httpServerInfo, nodeInfo, config, servlet, false, false, false);
+        this(httpServerInfo, nodeInfo, config, servlet, ServerFeature.builder().build());
     }
 
     public TestingHttpServer(
@@ -54,9 +52,7 @@ public class TestingHttpServer
             NodeInfo nodeInfo,
             HttpServerConfig config,
             Servlet servlet,
-            boolean enableVirtualThreads,
-            boolean enableLegacyUriCompliance,
-            boolean enableCaseSensitiveHeaderCache)
+            Set<ServerFeature> serverFeatures)
             throws IOException
     {
         this(httpServerInfo,
@@ -66,9 +62,7 @@ public class TestingHttpServer
                 servlet,
                 ImmutableSet.of(),
                 ImmutableSet.of(),
-                enableVirtualThreads,
-                enableLegacyUriCompliance,
-                enableCaseSensitiveHeaderCache,
+                serverFeatures,
                 ClientCertificate.NONE);
     }
 
@@ -81,22 +75,19 @@ public class TestingHttpServer
             Servlet servlet,
             Set<Filter> filters,
             Set<HttpResourceBinding> resources,
-            @EnableVirtualThreads boolean enableVirtualThreads,
-            @EnableLegacyUriCompliance boolean enableLegacyUriCompliance,
-            @EnableCaseSensitiveHeaderCache boolean enableCaseSensitiveHeaderCache,
+            Set<ServerFeature> serverFeatures,
             ClientCertificate clientCertificate)
             throws IOException
     {
-        super(httpServerInfo,
+        super("testing",
+                httpServerInfo,
                 nodeInfo,
                 config.setLogEnabled(false),
                 httpsConfig,
                 servlet,
                 ImmutableSet.copyOf(filters),
                 ImmutableSet.copyOf(resources),
-                enableVirtualThreads,
-                enableLegacyUriCompliance,
-                enableCaseSensitiveHeaderCache,
+                serverFeatures,
                 clientCertificate,
                 Optional.empty(),
                 Optional.empty(),

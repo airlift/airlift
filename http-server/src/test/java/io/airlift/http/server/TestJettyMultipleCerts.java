@@ -17,6 +17,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Closer;
 import com.google.common.net.HostAndPort;
+import com.google.inject.Provider;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.jetty.JettyHttpClient;
@@ -27,6 +28,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.Test;
+import org.weakref.jmx.testing.TestingMBeanServer;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -74,20 +76,30 @@ public class TestJettyMultipleCerts
                 .setNodeInternalAddress("localhost"));
 
         HttpServerInfo httpServerInfo = new HttpServerInfo(config, Optional.of(httpsConfig), nodeInfo);
-        HttpServerProvider serverProvider = new HttpServerProvider(
-                httpServerInfo,
-                nodeInfo,
-                config,
-                Optional.of(httpsConfig),
-                servlet,
-                ImmutableSet.of(new DummyFilter()),
-                ImmutableSet.of(),
-                false,
-                false,
-                false,
-                ClientCertificate.NONE,
-                Optional.empty(),
-                Optional.empty());
+
+        Provider<HttpServer> serverProvider = () -> {
+            try {
+                HttpServer server = new HttpServer(
+                        "multiple-certs",
+                        httpServerInfo,
+                        nodeInfo,
+                        config,
+                        Optional.of(httpsConfig),
+                        servlet,
+                        ImmutableSet.of(new DummyFilter()),
+                        ImmutableSet.of(),
+                        ServerFeature.defaults(),
+                        ClientCertificate.NONE,
+                        Optional.of(new TestingMBeanServer()),
+                        Optional.empty(),
+                        Optional.empty());
+                server.start();
+                return server;
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        };
 
         try (Closer closer = Closer.create()) {
             HttpServer server = serverProvider.get();
