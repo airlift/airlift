@@ -7,8 +7,10 @@
         <artifactId>airlift</artifactId>
         <version>339-SNAPSHOT</version>
     </parent>
+
     <artifactId>openmetrics</artifactId>
     <packaging>jar</packaging>
+    <name>openmetrics</name>
     <description>Airlift - OpenMetrics support</description>
 
     <properties>

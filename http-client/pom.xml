@@ -9,6 +9,7 @@
     </parent>
     <artifactId>http-client</artifactId>
     <packaging>jar</packaging>
+    <name>http-client</name>
     <description>Airlift - HTTP client</description>
 
     <properties>

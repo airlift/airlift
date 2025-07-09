@@ -9,6 +9,7 @@
     </parent>
     <artifactId>jmx-http</artifactId>
     <packaging>jar</packaging>
+    <name>jmx-http</name>
     <description>Airlift - JMX over HTTP</description>
 
     <properties>

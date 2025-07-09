@@ -9,6 +9,7 @@
     </parent>
     <artifactId>json</artifactId>
     <packaging>jar</packaging>
+    <name>json</name>
     <description>Airlift - JSON support</description>
 
     <properties>

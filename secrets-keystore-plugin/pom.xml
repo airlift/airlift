@@ -10,6 +10,7 @@
 
     <artifactId>secrets-keystore-plugin</artifactId>
     <packaging>trino-plugin</packaging>
+    <name>secrets-keystore-plugin</name>
     <description>Airlift - Secrets keystore plugins</description>
 
     <dependencies>

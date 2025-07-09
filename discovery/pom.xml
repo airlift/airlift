@@ -9,6 +9,7 @@
     </parent>
     <artifactId>discovery</artifactId>
     <packaging>jar</packaging>
+    <name>discovery</name>
     <description>Airlift - Cluster discovery</description>
 
     <properties>
