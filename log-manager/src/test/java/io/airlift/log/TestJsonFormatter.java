@@ -39,7 +39,7 @@ public class TestJsonFormatter
                 ImmutableMap.of());
 
         RuntimeException exception = new RuntimeException("Test Exception 2");
-        String minimalJsonErrorLogLine = (new JsonFormatter(ImmutableMap.of())).minimalJsonErrorLogLine(original, exception);
+        String minimalJsonErrorLogLine = new JsonFormatter(ImmutableMap.of()).minimalJsonErrorLogLine(original, exception);
 
         assertThat(minimalJsonErrorLogLine).as("Log lines should end with newline").endsWith("\n");
 
@@ -61,7 +61,7 @@ public class TestJsonFormatter
         LogRecord record = new LogRecord(Level.DEBUG.toJulLevel(), "Testing");
         record.setLoggerName("TestLogger");
 
-        assertThat((new JsonFormatter(ImmutableMap.of())).format(record))
+        assertThat(new JsonFormatter(ImmutableMap.of()).format(record))
                 .matches("\\{\"timestamp\":\".*\",\"level\":\"DEBUG\",\"thread\":\".*\",\"logger\":\"TestLogger\",\"message\":\"Testing\"}\n");
     }
 
@@ -99,7 +99,7 @@ public class TestJsonFormatter
         record.setLoggerName("TestLogger");
         record.setThrown(testException);
 
-        String logMessage = (new JsonFormatter(ImmutableMap.of())).format(record);
+        String logMessage = new JsonFormatter(ImmutableMap.of()).format(record);
 
         Map<String, Object> jsonMap = mapJsonCodec(String.class, Object.class).fromJson(logMessage);
         JsonRecord jsonRecord = jsonCodec(JsonRecord.class).fromJson(logMessage);
@@ -144,7 +144,7 @@ public class TestJsonFormatter
 
             String logMessage;
             try (var ignored = span.makeCurrent()) {
-                logMessage = (new JsonFormatter(ImmutableMap.of())).format(record);
+                logMessage = new JsonFormatter(ImmutableMap.of()).format(record);
             }
             finally {
                 span.end();
@@ -164,7 +164,7 @@ public class TestJsonFormatter
         LogRecord record = new LogRecord(Level.DEBUG.toJulLevel(), "Test Log Message");
         Map<String, String> logAnnotations = ImmutableMap.of("foo", "apple", "bar", "banana");
 
-        String logMessage = (new JsonFormatter(logAnnotations)).format(record);
+        String logMessage = new JsonFormatter(logAnnotations).format(record);
 
         Map<String, Object> jsonMap = mapJsonCodec(String.class, Object.class).fromJson(logMessage);
         JsonRecord jsonRecord = jsonCodec(JsonRecord.class).fromJson(logMessage);

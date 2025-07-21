@@ -61,7 +61,7 @@ public class RequestStats
 
         allResponse.update(1);
         switch (familyForStatusCode(responseCode)) {
-            case INFORMATIONAL:
+            case INFORMATIONAL, OTHER:
                 informationalResponse.update(1);
                 break;
             case SUCCESSFUL:

@@ -1,5 +1,6 @@
 package io.airlift.jmx;
 
+import com.google.common.collect.ImmutableMap;
 import org.junit.jupiter.api.Test;
 
 import javax.management.remote.JMXConnector;
@@ -20,7 +21,8 @@ public class TestJmxAgent
 
         assertThat(url.toString()).matches("service:jmx:rmi:///jndi/rmi://.*:\\d+/jmxrmi");
 
-        JMXConnector connector = JMXConnectorFactory.connect(url);
-        connector.connect();
+        try (JMXConnector connector = JMXConnectorFactory.newJMXConnector(url, ImmutableMap.of())) {
+            connector.connect();
+        }
     }
 }

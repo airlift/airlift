@@ -41,6 +41,7 @@ class HttpServiceSelectorProvider
         this.injector = injector;
     }
 
+    @Override
     public HttpServiceSelector get()
     {
         requireNonNull(injector, "injector is null");

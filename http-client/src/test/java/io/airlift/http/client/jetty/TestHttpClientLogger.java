@@ -589,7 +589,7 @@ public class TestHttpClientLogger
         }
     }
 
-    private class TestResponse
+    private static class TestResponse
             implements Response
     {
         private final int status;

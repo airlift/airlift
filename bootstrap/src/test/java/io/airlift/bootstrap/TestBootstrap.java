@@ -285,20 +285,20 @@ public class TestBootstrap
     public static class InstanceA
     {
         @Inject
-        public InstanceA(InstanceB b) {}
+        public InstanceA(InstanceB ignored) {}
     }
 
     public static class InstanceB
     {
         @Inject
-        public InstanceB(InstanceA a) {}
+        public InstanceB(InstanceA ignored) {}
     }
 
     public static class FooInstance
     {
         @SuppressWarnings("AssignmentToStaticFieldFromInstanceMethod")
         @Inject
-        public FooInstance(FooConfig config)
+        public FooInstance(FooConfig ignored)
         {
             fooInstanceCreated = true;
         }

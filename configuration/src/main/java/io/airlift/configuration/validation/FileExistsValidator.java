@@ -42,16 +42,16 @@ public class FileExistsValidator
 
     private static boolean exists(Object path)
     {
-        if (path instanceof String) {
-            return Files.exists(Paths.get((String) path));
+        if (path instanceof String stringValue) {
+            return Files.exists(Paths.get(stringValue));
         }
 
-        if (path instanceof Path) {
-            return Files.exists((Path) path);
+        if (path instanceof Path pathValue) {
+            return Files.exists(pathValue);
         }
 
-        if (path instanceof File) {
-            return ((File) path).exists();
+        if (path instanceof File fileValue) {
+            return fileValue.exists();
         }
 
         throw new ConstraintDeclarationException("Unsupported type for @FileExists: " + path.getClass().getName());

@@ -718,13 +718,13 @@ public class TestMoreFutures
     {
         assertThat(getter.apply(immediateFuture("foo"))).isEqualTo("foo");
 
-        assertFailure(() -> getter.apply(immediateFailedFuture(new IllegalArgumentException("foo"))), e -> {
+        assertFailure(() -> assertThat(getter.apply(immediateFailedFuture(new IllegalArgumentException("foo")))).isNull(), e -> {
             assertThat(e)
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("foo");
         });
 
-        assertFailure(() -> getter.apply(immediateFailedFuture(new SQLException("foo"))), e -> {
+        assertFailure(() -> assertThat(getter.apply(immediateFailedFuture(new SQLException("foo")))).isNull(), e -> {
             assertThat(e)
                     .isInstanceOf(RuntimeException.class)
                     .hasCauseInstanceOf(SQLException.class)
@@ -732,7 +732,7 @@ public class TestMoreFutures
         });
 
         Thread.currentThread().interrupt();
-        assertFailure(() -> getter.apply(SettableFuture.create()), e -> {
+        assertFailure(() -> assertThat(getter.apply(SettableFuture.create())).isNull(), e -> {
             assertThat(e)
                     .isInstanceOf(RuntimeException.class)
                     .hasCauseInstanceOf(InterruptedException.class);
@@ -742,7 +742,7 @@ public class TestMoreFutures
 
         SettableFuture<Object> canceledFuture = SettableFuture.create();
         canceledFuture.cancel(true);
-        assertFailure(() -> getter.apply(canceledFuture), e -> assertThat(e).isInstanceOf(CancellationException.class));
+        assertFailure(() -> assertThat(getter.apply(canceledFuture)).isNull(), e -> assertThat(e).isInstanceOf(CancellationException.class));
 
         assertThat(getter.apply(immediateFuture(null))).isEqualTo(null);
     }

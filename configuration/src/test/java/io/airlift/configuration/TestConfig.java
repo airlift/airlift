@@ -234,15 +234,15 @@ public class TestConfig
         int customValue = 3;
 
         Module module = binder -> {
-            configBinder(binder).bindConfigGlobalDefaults(Config1.class, (config -> {
+            configBinder(binder).bindConfigGlobalDefaults(Config1.class, config -> {
                 config.setByteOption(globalDefaultValue);
                 config.setIntegerOption(globalDefaultValue);
                 config.setLongOption(globalDefaultValue);
-            }));
-            configBinder(binder).bindConfigDefaults(Config1.class, MyAnnotation.class, (config -> {
+            });
+            configBinder(binder).bindConfigDefaults(Config1.class, MyAnnotation.class, config -> {
                 config.setIntegerOption(defaultValue);
                 config.setLongOption(defaultValue);
-            }));
+            });
             configBinder(binder).bindConfig(Config1.class, MyAnnotation.class);
         };
 
@@ -392,6 +392,7 @@ public class TestConfig
     {
         SwitchValue value;
 
+        @Override
         public SwitchValue getValue()
         {
             return value;

@@ -213,8 +213,8 @@ public class MetricsResource
                 return Optional.empty();
             }
 
-            if (attributeValue instanceof Number) {
-                return Optional.of(Gauge.from(metricName, (Number) attributeValue, labels, description));
+            if (attributeValue instanceof Number number) {
+                return Optional.of(Gauge.from(metricName, number, labels, description));
             }
 
             return Optional.empty();
@@ -265,7 +265,8 @@ public class MetricsResource
                 String metricAndAttribute = managedClass.isAttributeFlatten(attributeName) ? metricName : metricName + "_" + attributeName;
                 String attributeDescription = managedClass.getAttributeDescription(attributeName);
 
-                if (managedClass.getChildren().get(attributeName) instanceof ManagedClass child) {
+                if (managedClass.getChildren().containsKey(attributeName)) {
+                    ManagedClass child = managedClass.getChildren().get(attributeName);
                     // The managed class is directly translatable to an openmetrics type, don't recurse any further
                     Optional<Metric> metricFromTarget = getMetricFromTarget(child, metricAndAttribute, attributeDescription);
                     if (metricFromTarget.isPresent()) {
@@ -279,11 +280,11 @@ public class MetricsResource
                 else {
                     // Attempt to infer a numeric gauge
                     Object attributeValue = managedClass.invokeAttribute(attributeName);
-                    if (attributeValue instanceof Number) {
-                        metrics.add(Gauge.from(metricAndAttribute, (Number) attributeValue, labels, attributeDescription));
+                    if (attributeValue instanceof Number numberValue) {
+                        metrics.add(Gauge.from(metricAndAttribute, numberValue, labels, attributeDescription));
                     }
-                    if (attributeValue instanceof Boolean) {
-                        metrics.add(Gauge.from(metricAndAttribute, (Boolean) attributeValue ? 1 : 0, labels, attributeDescription));
+                    if (attributeValue instanceof Boolean booleanValue) {
+                        metrics.add(Gauge.from(metricAndAttribute, booleanValue ? 1 : 0, labels, attributeDescription));
                     }
                 }
             }

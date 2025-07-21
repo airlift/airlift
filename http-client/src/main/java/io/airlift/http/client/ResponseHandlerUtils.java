@@ -14,11 +14,11 @@ public final class ResponseHandlerUtils
 
     public static RuntimeException propagate(Request request, Throwable exception)
     {
-        if (exception instanceof ConnectException) {
-            throw new UncheckedIOException("Server refused connection: " + urlFor(request), (ConnectException) exception);
+        if (exception instanceof ConnectException connectException) {
+            throw new UncheckedIOException("Server refused connection: " + urlFor(request), connectException);
         }
-        if (exception instanceof IOException) {
-            throw new UncheckedIOException("Failed communicating with server: " + urlFor(request), (IOException) exception);
+        if (exception instanceof IOException ioException) {
+            throw new UncheckedIOException("Failed communicating with server: " + urlFor(request), ioException);
         }
         throwIfUnchecked(exception);
         throw new RuntimeException(exception);

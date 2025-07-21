@@ -83,12 +83,12 @@ public class TestingHttpClient
             state.set("FAILED");
             long responseStart = System.nanoTime();
             Duration requestProcessingTime = new Duration(responseStart - requestStart, NANOSECONDS);
-            if (e instanceof Exception) {
+            if (e instanceof Exception exception) {
                 if (e instanceof InterruptedException) {
                     Thread.currentThread().interrupt();
                 }
                 try {
-                    return responseHandler.handleException(request, (Exception) e);
+                    return responseHandler.handleException(request, exception);
                 }
                 finally {
                     stats.recordResponseReceived(request.getMethod(),
@@ -151,7 +151,7 @@ public class TestingHttpClient
                 throws Exception;
     }
 
-    private class TestingHttpResponseFuture<T>
+    private static class TestingHttpResponseFuture<T>
             extends ForwardingListenableFuture<T>
             implements HttpResponseFuture<T>
     {

@@ -95,10 +95,10 @@ public class TestEquivalenceTester
         }
     }
 
-    @SuppressWarnings({"EqualsAndHashcode", "checkstyle:EqualsHashCode"})
+    @SuppressWarnings({"EqualsAndHashcode", "EqualsHashCode", "checkstyle:EqualsHashCode"})
     static class NotReflexive
     {
-        @SuppressWarnings("override")
+        @Override
         public boolean equals(Object that)
         {
             return (that instanceof NotReflexive) && (this != that);
@@ -165,7 +165,7 @@ public class TestEquivalenceTester
         @Override
         public boolean equals(Object that)
         {
-            return (that instanceof NotSymmetric) && (id >= ((NotSymmetric) that).id);
+            return that instanceof NotSymmetric notSymmetric && id >= notSymmetric.id;
         }
 
         @Override
@@ -243,7 +243,7 @@ public class TestEquivalenceTester
         }
     }
 
-    @SuppressWarnings({"EqualsAndHashcode", "checkstyle:EqualsHashCode"})
+    @SuppressWarnings({"EqualsAndHashcode", "checkstyle:EqualsHashCode", "EqualsHashCode"})
     static class EqualsNull
     {
         @Override
@@ -269,11 +269,11 @@ public class TestEquivalenceTester
         }
     }
 
-    @SuppressWarnings({"EqualsAndHashcode", "checkstyle:EqualsHashCode"})
+    @SuppressWarnings({"EqualsAndHashcode", "checkstyle:EqualsHashCode", "EqualsHashCode"})
     static class EqualsNullThrowsException
     {
         @Override
-        @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
+        @SuppressWarnings({"EqualsWhichDoesntCheckParameterClass", "EqualsUsingHashCode"})
         public boolean equals(Object that)
         {
             return this.hashCode() == that.hashCode();
@@ -295,7 +295,7 @@ public class TestEquivalenceTester
         }
     }
 
-    @SuppressWarnings({"EqualsAndHashcode", "checkstyle:EqualsHashCode"})
+    @SuppressWarnings({"EqualsAndHashcode", "checkstyle:EqualsHashCode", "EqualsHashCode"})
     static class EqualsUnrelatedClass
     {
         @Override
@@ -321,7 +321,7 @@ public class TestEquivalenceTester
         }
     }
 
-    @SuppressWarnings({"EqualsAndHashcode", "checkstyle:EqualsHashCode"})
+    @SuppressWarnings({"EqualsAndHashcode", "checkstyle:EqualsHashCode", "EqualsHashCode", "EqualsUsingHashCode"})
     static class EqualsOtherClassThrowsException
     {
         @Override
@@ -571,8 +571,8 @@ public class TestEquivalenceTester
         @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
         public boolean equals(Object that)
         {
-            return (that instanceof ComparableThatDoesNotThrowNPE) &&
-                    (value == ((ComparableThatDoesNotThrowNPE) that).value);
+            return that instanceof ComparableThatDoesNotThrowNPE comparableThatDoesNotThrowNPE &&
+                    value == comparableThatDoesNotThrowNPE.value;
         }
 
         @Override

@@ -16,6 +16,7 @@
 package io.airlift.log;
 
 import com.google.errorprone.annotations.FormatMethod;
+import com.google.errorprone.annotations.FormatString;
 
 import java.util.IllegalFormatException;
 
@@ -93,7 +94,7 @@ public class Logger
      * @param args arguments for the format string
      */
     @FormatMethod
-    public void debug(String format, Object... args)
+    public void debug(@FormatString String format, Object... args)
     {
         debug(null, format, args);
     }
@@ -113,7 +114,7 @@ public class Logger
      * @param args arguments for the format string
      */
     @FormatMethod
-    public void debug(Throwable exception, String format, Object... args)
+    public void debug(Throwable exception, @FormatString String format, Object... args)
     {
         if (logger.isLoggable(FINE)) {
             logger.log(FINE, formatMessage(format, "DEBUG", args), exception);
@@ -144,7 +145,7 @@ public class Logger
      * @param args arguments for the format string
      */
     @FormatMethod
-    public void info(String format, Object... args)
+    public void info(@FormatString String format, Object... args)
     {
         if (logger.isLoggable(INFO)) {
             logger.log(INFO, formatMessage(format, "INFO", args));
@@ -187,7 +188,7 @@ public class Logger
      * @param args arguments for the format string
      */
     @FormatMethod
-    public void warn(Throwable exception, String format, Object... args)
+    public void warn(Throwable exception, @FormatString String format, Object... args)
     {
         if (logger.isLoggable(WARNING)) {
             logger.log(WARNING, formatMessage(format, "WARN", args), exception);
@@ -208,7 +209,7 @@ public class Logger
      * @param args arguments for the format string
      */
     @FormatMethod
-    public void warn(String format, Object... args)
+    public void warn(@FormatString String format, Object... args)
     {
         warn(null, format, args);
     }
@@ -249,7 +250,7 @@ public class Logger
      * @param args arguments for the format string
      */
     @FormatMethod
-    public void error(Throwable exception, String format, Object... args)
+    public void error(Throwable exception, @FormatString String format, Object... args)
     {
         if (logger.isLoggable(SEVERE)) {
             logger.log(SEVERE, formatMessage(format, "ERROR", args), exception);
@@ -287,7 +288,7 @@ public class Logger
      * @param args arguments for the format string
      */
     @FormatMethod
-    public void error(String format, Object... args)
+    public void error(@FormatString String format, Object... args)
     {
         error(null, format, args);
     }

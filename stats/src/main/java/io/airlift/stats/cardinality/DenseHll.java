@@ -139,6 +139,7 @@ final class DenseHll
         return formatTag == Format.DENSE_V1.getTag() || formatTag == Format.DENSE_V2.getTag();
     }
 
+    @Override
     public void insertHash(long hash)
     {
         int index = computeIndex(hash, indexBitLength);
@@ -270,6 +271,7 @@ final class DenseHll
         }
     }
 
+    @Override
     public Slice serialize()
     {
         int size = estimatedSerializedSize();
@@ -317,6 +319,7 @@ final class DenseHll
         return this;
     }
 
+    @Override
     public int estimatedSerializedSize()
     {
         return SizeOf.SIZE_OF_BYTE + // type + version
@@ -573,7 +576,7 @@ final class DenseHll
     private static int shiftForBucket(int bucket)
     {
         // ((1 - bucket) % 2) * BITS_PER_BUCKET
-        return ((~bucket) & 1) << 2;
+        return (~bucket & 1) << 2;
     }
 
     private static void validatePrefixLength(int indexBitLength)
