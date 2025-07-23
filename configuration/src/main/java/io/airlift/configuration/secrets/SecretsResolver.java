@@ -18,6 +18,7 @@ import io.airlift.spi.secrets.SecretProvider;
 
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -30,11 +31,16 @@ public class SecretsResolver
 {
     private static final Pattern PATTERN = Pattern.compile("\\$\\{([a-zA-Z][a-zA-Z0-9_-]*):(?<key>[^}]+?)}");
 
-    private final Map<String, SecretProvider> secretProviders;
+    private final Function<String, SecretProvider> secretProvidersFactory;
 
     public SecretsResolver(Map<String, SecretProvider> secretProviders)
     {
-        this.secretProviders = ImmutableMap.copyOf(requireNonNull(secretProviders, "secretProviders is null"));
+        this(ImmutableMap.copyOf(secretProviders)::get);
+    }
+
+    public SecretsResolver(Function<String, SecretProvider> secretProvidersFactory)
+    {
+        this.secretProvidersFactory = requireNonNull(secretProvidersFactory, "secretProvidersFactory is null");
     }
 
     public Map<String, String> getResolvedConfiguration(Map<String, String> properties)
@@ -73,7 +79,7 @@ public class SecretsResolver
 
     public String resolveSecret(String secretProviderName, String keyName)
     {
-        SecretProvider secretProvider = secretProviders.get(secretProviderName);
+        SecretProvider secretProvider = secretProvidersFactory.apply(secretProviderName);
         checkArgument(secretProvider != null, "No secret provider for key '%s'", secretProviderName);
         return secretProvider.resolveSecretValue(keyName);
     }
