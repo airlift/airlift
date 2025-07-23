@@ -64,12 +64,17 @@ public class SecretsResolver
         Matcher matcher = PATTERN.matcher(configurationValue);
         while (matcher.find()) {
             String secretProviderName = matcher.group(1).toLowerCase(ENGLISH);
-            SecretProvider secretProvider = secretProviders.get(secretProviderName);
-            checkArgument(secretProvider != null, "No secret provider for key '%s'", secretProviderName);
             String keyName = matcher.group(2);
-            matcher.appendReplacement(replacedPropertyValue, quoteReplacement(secretProvider.resolveSecretValue(keyName)));
+            matcher.appendReplacement(replacedPropertyValue, quoteReplacement(resolveSecret(secretProviderName, keyName)));
         }
         matcher.appendTail(replacedPropertyValue);
         return replacedPropertyValue.toString();
+    }
+
+    public String resolveSecret(String secretProviderName, String keyName)
+    {
+        SecretProvider secretProvider = secretProviders.get(secretProviderName);
+        checkArgument(secretProvider != null, "No secret provider for key '%s'", secretProviderName);
+        return secretProvider.resolveSecretValue(keyName);
     }
 }
