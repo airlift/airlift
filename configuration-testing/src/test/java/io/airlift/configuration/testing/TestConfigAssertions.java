@@ -183,6 +183,23 @@ public class TestConfigAssertions
     }
 
     @Test
+    public void testExplicitPropertyMappingsWithSkipped()
+    {
+        Map<String, String> properties = new ImmutableMap.Builder<String, String>()
+                .put("name", "Jenny")
+                .put("email", "jenny@compuserve.com")
+                .put("home-page", "http://example.com")
+                .build();
+
+        PersonConfig expected = new PersonConfig()
+                .setName("Jenny")
+                .setEmail("jenny@compuserve.com")
+                .setHomePage(URI.create("http://example.com"));
+
+        ConfigAssertions.assertFullMapping(properties, expected, ImmutableSet.of("phone"));
+    }
+
+    @Test
     public void testExplicitPropertyMappingsFailUnsupportedProperty()
     {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()

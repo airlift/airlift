@@ -102,6 +102,11 @@ public final class ConfigAssertions
 
     public static <T> void assertFullMapping(Map<String, String> properties, T expected)
     {
+        assertFullMapping(properties, expected, ImmutableSet.of());
+    }
+
+    public static <T> void assertFullMapping(Map<String, String> properties, T expected, Set<String> skipped)
+    {
         requireNonNull(properties, "properties");
         requireNonNull(expected, "expected");
 
@@ -111,15 +116,17 @@ public final class ConfigAssertions
         // verify all supplied properties are supported and not deprecated
         assertPropertiesSupported(metadata, properties.keySet(), false);
 
-        // verify that every (non-deprecated) property is tested
-        Set<String> nonDeprecatedProperties = new TreeSet<>();
+        // verify that every (non-deprecated and not exlicitly skipped) property is tested
+        Set<String> nonSkippedProperties = new TreeSet<>();
         for (AttributeMetadata attribute : metadata.getAttributes().values()) {
             if (attribute.getInjectionPoint().getProperty() != null) {
-                nonDeprecatedProperties.add(attribute.getInjectionPoint().getProperty());
+                nonSkippedProperties.add(attribute.getInjectionPoint().getProperty());
             }
         }
-        if (!properties.keySet().equals(nonDeprecatedProperties)) {
-            Set<String> untestedProperties = new TreeSet<>(nonDeprecatedProperties);
+        nonSkippedProperties.removeAll(skipped);
+
+        if (!properties.keySet().equals(nonSkippedProperties)) {
+            Set<String> untestedProperties = new TreeSet<>(nonSkippedProperties);
             untestedProperties.removeAll(properties.keySet());
             throw new AssertionError("Untested properties " + untestedProperties);
         }
@@ -127,7 +134,7 @@ public final class ConfigAssertions
         // verify that none of the values are the same as a default for the configuration
         T actual = newInstance(configClass, properties);
         T defaultInstance = newDefaultInstance(configClass);
-        assertAttributesNotEqual(metadata, actual, defaultInstance);
+        assertAttributesNotEqual(metadata, actual, defaultInstance, skipped);
 
         // verify that a configuration object created from the properties is equivalent to the expected object
         assertAttributesEqual(metadata, actual, expected);
@@ -217,13 +224,17 @@ public final class ConfigAssertions
         }
     }
 
-    private static <T> void assertAttributesNotEqual(ConfigurationMetadata<T> metadata, T actual, T expected)
+    private static <T> void assertAttributesNotEqual(ConfigurationMetadata<T> metadata, T actual, T expected, Set<String> skipped)
     {
         for (AttributeMetadata attribute : metadata.getAttributes().values()) {
             Method getter = attribute.getGetter();
             if (getter == null) {
                 continue;
             }
+            if (skipped.contains(attribute.getInjectionPoint().getProperty())) {
+                continue;
+            }
+
             Object actualAttributeValue = invoke(actual, getter);
             Object expectedAttributeValue = invoke(expected, getter);
 
