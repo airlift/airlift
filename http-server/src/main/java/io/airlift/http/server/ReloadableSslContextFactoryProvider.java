@@ -19,7 +19,7 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.hash.Hashing.sha256;
-import static io.airlift.security.mtls.AutomaticMtls.addServerKeyAndCertificateForCurrentNode;
+import static io.airlift.security.mtls.AutomaticMtls.addCertificateAndKeyForCurrentNode;
 import static java.lang.Math.toIntExact;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -98,7 +98,7 @@ final class ReloadableSslContextFactoryProvider
         }
 
         if (automaticHttpsSharedSecret != null) {
-            addServerKeyAndCertificateForCurrentNode(automaticHttpsSharedSecret, keyStore, environment, password);
+            addCertificateAndKeyForCurrentNode(automaticHttpsSharedSecret, environment, keyStore, password);
         }
 
         sslContextFactory.setKeyStore(keyStore);
