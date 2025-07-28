@@ -2,9 +2,13 @@ package io.airlift.security.mtls;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import io.airlift.node.AddressToHostname;
 import io.airlift.security.cert.CertificateBuilder;
 
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import javax.security.auth.x500.X500Principal;
 
@@ -26,28 +30,43 @@ import java.util.List;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.security.KeyStore.getDefaultType;
 import static java.util.Collections.list;
 import static java.util.Objects.requireNonNull;
+import static javax.net.ssl.KeyManagerFactory.getDefaultAlgorithm;
 
 public final class AutomaticMtls
 {
     private AutomaticMtls() {}
 
-    public static void addServerKeyAndCertificateForCurrentNode(String sharedSecret, KeyStore keyStore, String commonName, String keyManagerPassword)
+    @CanIgnoreReturnValue
+    public static X509Certificate addCertificateAndKeyForCurrentNode(String sharedSecret, String commonName, KeyStore keyStore, String keyStorePassword)
     {
         try {
-            KeyPair keyPair = fromSharedSecret(sharedSecret);
             List<InetAddress> allLocalIpAddresses = getAllLocalIpAddresses();
             List<String> ipAddressMappedNames = allLocalIpAddresses.stream()
                     .map(AddressToHostname::encodeAddressAsHostname)
                     .collect(toImmutableList());
-            X509Certificate certificateServer = certificateBuilder(sharedSecret, commonName)
+            X509Certificate certificate = certificateBuilder(sharedSecret, commonName)
                     .addSanIpAddresses(allLocalIpAddresses)
                     .addSanDnsNames(ipAddressMappedNames)
                     .buildSelfSigned();
 
-            char[] password = keyManagerPassword == null ? new char[0] : keyManagerPassword.toCharArray();
-            keyStore.setKeyEntry(commonName, keyPair.getPrivate(), password, new Certificate[] {certificateServer});
+            return addCertificateToKeyStore(sharedSecret, commonName, certificate, keyStore, keyStorePassword);
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @VisibleForTesting
+    static X509Certificate addCertificateToKeyStore(String sharedSecret, String commonName, X509Certificate certificate, KeyStore keyStore, String keyStorePassword)
+    {
+        try {
+            KeyPair keyPair = fromSharedSecret(sharedSecret);
+            char[] password = keyStorePassword == null ? new char[0] : keyStorePassword.toCharArray();
+            keyStore.setKeyEntry(commonName, keyPair.getPrivate(), password, new Certificate[] {certificate});
+            return certificate;
         }
         catch (Exception e) {
             throw new RuntimeException(e);
@@ -72,6 +91,21 @@ public final class AutomaticMtls
         try {
             KeyPair keyPair = fromSharedSecret(sharedSecret);
             return new SingleCertificateTrustManager(keyPair.getPublic(), commonName);
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static SSLContext createSSLContext(String sharedSecret, String commonName, KeyStore keyStore, String keyManagerPassword)
+    {
+        try {
+            KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(getDefaultAlgorithm());
+            keyManagerFactory.init(keyStore, keyManagerPassword.toCharArray());
+
+            SSLContext context = SSLContext.getInstance("TLS");
+            context.init(keyManagerFactory.getKeyManagers(), new TrustManager[] {createTrustManager(sharedSecret, commonName)}, null);
+            return context;
         }
         catch (Exception e) {
             throw new RuntimeException(e);
@@ -189,6 +223,18 @@ public final class AutomaticMtls
         public X509Certificate[] getAcceptedIssuers()
         {
             return new X509Certificate[0];
+        }
+    }
+
+    public static KeyStore inMemoryKeyStore()
+    {
+        try {
+            KeyStore keyStore = KeyStore.getInstance(getDefaultType());
+            keyStore.load(null, null);
+            return keyStore;
+        }
+        catch (Exception e) {
+            throw new RuntimeException("Failed to create in-memory keystore", e);
         }
     }
 }
