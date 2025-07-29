@@ -13,7 +13,7 @@ import java.lang.reflect.Method;
 import java.util.List;
 
 import static io.airlift.mcp.McpException.exception;
-import static io.airlift.mcp.reflection.Predicates.isHttpRequest;
+import static io.airlift.mcp.reflection.Predicates.isHttpRequestOrSessonId;
 import static io.airlift.mcp.reflection.Predicates.isNotifier;
 import static io.airlift.mcp.reflection.Predicates.returnsResourceTemplateList;
 import static io.airlift.mcp.reflection.ReflectionHelper.validate;
@@ -34,7 +34,7 @@ public class ListResourceTemplatesHandlerProvider
         this.method = requireNonNull(method, "method is null");
         this.parameters = ImmutableList.copyOf(parameters);
 
-        validate(method, parameters, isHttpRequest.or(isNotifier), returnsResourceTemplateList);
+        validate(method, parameters, isHttpRequestOrSessonId.or(isNotifier), returnsResourceTemplateList);
     }
 
     @Override
@@ -42,8 +42,8 @@ public class ListResourceTemplatesHandlerProvider
     {
         Object instance = injector.getInstance(clazz);
         MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper);
-        return (request, notifier) -> {
-            Object result = methodInvoker.builder(request)
+        return (request, sessionId, notifier) -> {
+            Object result = methodInvoker.builder(request, sessionId)
                     .withNotifier(notifier)
                     .invoke();
             if (result == null) {

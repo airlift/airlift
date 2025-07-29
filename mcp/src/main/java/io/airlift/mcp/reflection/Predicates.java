@@ -4,6 +4,13 @@ import io.airlift.mcp.handler.ResourceTemplatesEntry;
 import io.airlift.mcp.handler.ResourcesEntry;
 import io.airlift.mcp.model.Completion;
 import io.airlift.mcp.model.GetPromptResult;
+import io.airlift.mcp.reflection.MethodParameter.CallToolRequestParameter;
+import io.airlift.mcp.reflection.MethodParameter.CompletionRequestParameter;
+import io.airlift.mcp.reflection.MethodParameter.GetPromptRequestParameter;
+import io.airlift.mcp.reflection.MethodParameter.HttpRequestParameter;
+import io.airlift.mcp.reflection.MethodParameter.NotifierParameter;
+import io.airlift.mcp.reflection.MethodParameter.ObjectParameter;
+import io.airlift.mcp.reflection.MethodParameter.SessionIdParameter;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -15,13 +22,13 @@ import static io.airlift.mcp.reflection.ReflectionHelper.optionalReturnArgument;
 
 public interface Predicates
 {
-    Predicate<MethodParameter> isHttpRequest = methodParameter -> methodParameter instanceof MethodParameter.HttpRequestParameter;
-    Predicate<MethodParameter> isNotifier = methodParameter -> methodParameter instanceof MethodParameter.NotifierParameter;
-    Predicate<MethodParameter> isCompletionRequest = methodParameter -> methodParameter instanceof MethodParameter.CompletionRequestParameter;
-    Predicate<MethodParameter> isGetPromptRequest = methodParameter -> methodParameter instanceof MethodParameter.GetPromptRequestParameter;
-    Predicate<MethodParameter> isCallToolRequest = methodParameter -> methodParameter instanceof MethodParameter.CallToolRequestParameter;
-    Predicate<MethodParameter> isObject = methodParameter -> (methodParameter instanceof MethodParameter.ObjectParameter);
-    Predicate<MethodParameter> isString = methodParameter -> (methodParameter instanceof MethodParameter.ObjectParameter objectParameter)
+    Predicate<MethodParameter> isHttpRequestOrSessonId = methodParameter -> (methodParameter instanceof HttpRequestParameter) || (methodParameter instanceof SessionIdParameter);
+    Predicate<MethodParameter> isNotifier = methodParameter -> methodParameter instanceof NotifierParameter;
+    Predicate<MethodParameter> isCompletionRequest = methodParameter -> methodParameter instanceof CompletionRequestParameter;
+    Predicate<MethodParameter> isGetPromptRequest = methodParameter -> methodParameter instanceof GetPromptRequestParameter;
+    Predicate<MethodParameter> isCallToolRequest = methodParameter -> methodParameter instanceof CallToolRequestParameter;
+    Predicate<MethodParameter> isObject = methodParameter -> (methodParameter instanceof ObjectParameter);
+    Predicate<MethodParameter> isString = methodParameter -> (methodParameter instanceof ObjectParameter objectParameter)
             && objectParameter.rawType().equals(String.class);
 
     Predicate<Method> returnsAnything = _ -> true;

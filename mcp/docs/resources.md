@@ -19,6 +19,7 @@ applied to methods in a class that conform to the following rules:
 
 - Parameters can be:
     - `jakarta.ws.rs.core.Request`
+    - SessionId ([see doc on sessions](sessions.md))
     - [McpNotifier](misc.md#notifications-to-clients)
 - Returns either:
     - [ResourcesEntry](../src/main/java/io/airlift/mcp/handler/ResourcesEntry.java)
@@ -55,3 +56,8 @@ public interface ListResourceTemplatesHandler
 mcpHandlers.addResource(handler);
 mcpHandlers.addResourceTemplate(handler);
 ```
+
+## Note on cancellation
+
+Use the `cancellationRequested()` method of the `McpNotifier` to check if
+the request/operation has been requested to be cancelled.

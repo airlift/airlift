@@ -12,17 +12,27 @@ import io.airlift.mcp.handler.PromptHandler;
 import io.airlift.mcp.handler.ToolEntry;
 import io.airlift.mcp.handler.ToolHandler;
 import io.airlift.mcp.model.InitializeResult;
+import io.airlift.mcp.model.InitializeResult.LoggingCapabilities;
 import io.airlift.mcp.model.InitializeResult.ServerCapabilities;
 import io.airlift.mcp.model.ListChanged;
 import io.airlift.mcp.model.Prompt;
 import io.airlift.mcp.model.SubscribeListChanged;
 import io.airlift.mcp.model.Tool;
+import io.airlift.mcp.session.NotificationType;
+import io.airlift.mcp.session.SessionMetadata;
 
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
+
+import static io.airlift.mcp.session.NotificationType.PROMPTS_LIST_CHANGED;
+import static io.airlift.mcp.session.NotificationType.RESOURCES_LIST_CHANGED;
+import static io.airlift.mcp.session.NotificationType.RESOURCE_UPDATED;
+import static io.airlift.mcp.session.NotificationType.SERVER_TO_CLIENT_LOGGING;
+import static io.airlift.mcp.session.NotificationType.TOOLS_LIST_CHANGED;
+import static java.util.Objects.requireNonNull;
 
 public class McpHandlers
 {
@@ -31,29 +41,34 @@ public class McpHandlers
     private final Set<ListResourcesHandler> resources;
     private final Set<ListResourceTemplatesHandler> resourceTemplates;
     private final Set<CompletionHandler> completions;
+    private final SessionMetadata sessionMetadata;
 
     @Inject
     public McpHandlers(Map<String, ToolEntry> boundTools,
             Map<String, PromptEntry> boundPrompts,
             Set<ListResourcesHandler> boundResources,
             Set<ListResourceTemplatesHandler> boundResourceTemplates,
-            Set<CompletionHandler> boundCompletions)
+            Set<CompletionHandler> boundCompletions,
+            SessionMetadata sessionMetadata)
     {
         tools = new ConcurrentHashMap<>(boundTools);
         prompts = new ConcurrentHashMap<>(boundPrompts);
         resources = Sets.newConcurrentHashSet(boundResources);
         resourceTemplates = Sets.newConcurrentHashSet(boundResourceTemplates);
         completions = Sets.newConcurrentHashSet(boundCompletions);
+        this.sessionMetadata = requireNonNull(sessionMetadata, "sessionMetadata is null");
     }
 
     public ServerCapabilities serverCapabilities()
     {
+        Set<NotificationType> supportedNotifications = sessionMetadata.supportedNotifications();
+
         return new ServerCapabilities(
                 completions.isEmpty() ? Optional.empty() : Optional.of(new InitializeResult.CompletionCapabilities()),
-                Optional.empty(),
-                prompts.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(true)),
-                (resources.isEmpty() && resourceTemplates.isEmpty()) ? Optional.empty() : Optional.of(new SubscribeListChanged(false, false)),
-                tools.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(false)));
+                supportedNotifications.contains(SERVER_TO_CLIENT_LOGGING) ? Optional.of(new LoggingCapabilities()) : Optional.empty(),
+                prompts.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(supportedNotifications.contains(PROMPTS_LIST_CHANGED))),
+                (resources.isEmpty() && resourceTemplates.isEmpty()) ? Optional.empty() : Optional.of(new SubscribeListChanged(supportedNotifications.contains(RESOURCE_UPDATED), supportedNotifications.contains(RESOURCES_LIST_CHANGED))),
+                tools.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(supportedNotifications.contains(TOOLS_LIST_CHANGED))));
     }
 
     public void addTool(Tool tool, ToolHandler toolHandler)

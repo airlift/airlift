@@ -15,7 +15,7 @@ import java.util.Optional;
 
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.reflection.Predicates.isCompletionRequest;
-import static io.airlift.mcp.reflection.Predicates.isHttpRequest;
+import static io.airlift.mcp.reflection.Predicates.isHttpRequestOrSessonId;
 import static io.airlift.mcp.reflection.Predicates.isNotifier;
 import static io.airlift.mcp.reflection.Predicates.returnsOptionalCompletion;
 import static io.airlift.mcp.reflection.Predicates.returnsOptionalListOfString;
@@ -39,7 +39,7 @@ public class CompletionHandlerProvider
         this.method = requireNonNull(method, "method is null");
         this.parameters = ImmutableList.copyOf(parameters);
 
-        validate(method, parameters, isHttpRequest.or(isNotifier).or(isCompletionRequest), returnsOptionalCompletion.or(returnsOptionalListOfString));
+        validate(method, parameters, isHttpRequestOrSessonId.or(isNotifier).or(isCompletionRequest), returnsOptionalCompletion.or(returnsOptionalListOfString));
 
         isStringListResult = listArgument(method.getGenericReturnType()).map(type -> type.equals(String.class)).orElse(false);
     }
@@ -50,8 +50,8 @@ public class CompletionHandlerProvider
     {
         Object instance = injector.getInstance(clazz);
         MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper);
-        return (request, notifier, completionRequest) -> {
-            Object result = methodInvoker.builder(request)
+        return (request, sessionId, notifier, completionRequest) -> {
+            Object result = methodInvoker.builder(request, sessionId)
                     .withCompletionRequest(completionRequest)
                     .withNotifier(notifier)
                     .invoke();

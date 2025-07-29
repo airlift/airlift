@@ -23,17 +23,23 @@ variations of MCP servers defined by the standard. This module supports:
 - `context` field [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/changelog) in `CompletionRequest`
 - Structured content [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/tools#structured-content)
 
-It does not support:
+If a session controller implementation is provided (see [the doc](docs/sessions.md)), this module also supports:
 
 - Sessions [(see spec)](https://modelcontextprotocol.io/docs/concepts/transports#session-management)
-- Cancellation [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/cancellation)
 - List changed events [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/lifecycle#initialization)
 - Subscriptions [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/lifecycle#initialization)
 - Server-sent logging [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/logging)
+- Cancellation [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/cancellation)
+- Server-to-client features:
+  - Elicitation [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/client/elicitation)
+  - Roots [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/client/roots)
+  - Sampling [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/client/sampling)
+  - Note: it is the implementer's responsibility to support these features. This module merely provides
+  the structure to implement them.
+
+It does not support:
+
 - Pagination (no benefit) [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/pagination)
-- Elicitation [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/client/elicitation)
-- Roots [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/client/roots)
-- Sampling [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/client/sampling)
 
 Additionally, this module is agnostic regarding authentication and authorization.
 It is assumed that authz will be handled by the application adding MCP server
@@ -51,6 +57,7 @@ For a quick start, see the [quick start guide](docs/quick-start.md).
 - [Prompts](docs/prompts.md)
 - [Resources and resource templates](docs/resources.md)
 - [Completions](docs/completions.md)
+- [Sessions](docs/sessions.md)
 - [Installation and configuration](docs/install.md)
 - [Miscellaneous](docs/misc.md)
 

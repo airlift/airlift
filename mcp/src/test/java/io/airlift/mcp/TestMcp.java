@@ -47,6 +47,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
 import static io.airlift.http.client.FullJsonResponseHandler.createFullJsonResponseHandler;
 import static io.airlift.http.client.JsonResponseHandler.createJsonResponseHandler;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
@@ -63,7 +64,7 @@ public class TestMcp
 {
     public TestMcp()
     {
-        super(McpModule.builder().addAllInClass(TestingEndpoints.class));
+        super(McpModule.builder().addAllInClass(TestingEndpoints.class), binder -> newOptionalBinder(binder, TestingSessionController.class));
     }
 
     @Test
@@ -78,7 +79,7 @@ public class TestMcp
         assertThat(toolsResponse.result()).map(ListToolsResponse::tools).get()
                 .asInstanceOf(InstanceOfAssertFactories.list(Tool.class))
                 .extracting(Tool::name)
-                .containsExactlyInAnyOrder("add", "uppercase", "lookupPerson", "throws", "uppercaseSoon", "itsSimple");
+                .containsExactlyInAnyOrder("add", "uppercase", "lookupPerson", "throws", "uppercaseSoon", "itsSimple", "logging", "sendResourcesUpdatedNotification", "sendListChangedEvents", "showCurrentRoots", "sendSamplingMessage", "takeCreateMessageResults");
 
         request = buildRequest(requestId, METHOD_CALL_TOOL, new TypeToken<>() {}, Optional.of(new CallToolRequest("add", ImmutableMap.of("x", 6, "y", 24))));
         try (StreamingResponse response = httpClient.executeStreaming(request)) {

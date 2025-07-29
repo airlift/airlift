@@ -13,6 +13,8 @@ import io.airlift.mcp.reflection.MethodParameter.GetPromptRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.HttpRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.NotifierParameter;
 import io.airlift.mcp.reflection.MethodParameter.ObjectParameter;
+import io.airlift.mcp.reflection.MethodParameter.SessionIdParameter;
+import io.airlift.mcp.session.SessionId;
 import jakarta.ws.rs.core.Request;
 
 import java.lang.annotation.Annotation;
@@ -58,11 +60,15 @@ public interface ReflectionHelper
                     Parameter parameter = method.getParameters()[index];
                     Type genericType = method.getGenericParameterTypes()[index];
 
-                    if (parameter.getType().equals(Request.class)) {
+                    if (Request.class.isAssignableFrom(parameter.getType())) {
                         return HttpRequestParameter.INSTANCE;
                     }
 
-                    if (parameter.getType().equals(McpNotifier.class)) {
+                    if (SessionId.class.isAssignableFrom(parameter.getType())) {
+                        return SessionIdParameter.INSTANCE;
+                    }
+
+                    if (McpNotifier.class.isAssignableFrom(parameter.getType())) {
                         return NotifierParameter.INSTANCE;
                     }
 

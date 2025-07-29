@@ -1,23 +1,48 @@
 package io.airlift.mcp;
 
 import com.google.common.collect.ImmutableList;
+import com.google.inject.Inject;
+import io.airlift.jsonrpc.model.JsonRpcRequest;
 import io.airlift.mcp.Person.Address;
 import io.airlift.mcp.handler.ResourceTemplatesEntry;
 import io.airlift.mcp.handler.ResourcesEntry;
+import io.airlift.mcp.model.CallToolResult;
 import io.airlift.mcp.model.Completion;
 import io.airlift.mcp.model.CompletionReference;
 import io.airlift.mcp.model.CompletionRequest;
+import io.airlift.mcp.model.Content;
+import io.airlift.mcp.model.Content.TextContent;
+import io.airlift.mcp.model.CreateMessageRequest;
+import io.airlift.mcp.model.CreateMessageResult;
+import io.airlift.mcp.model.LoggingLevel;
+import io.airlift.mcp.model.ModelHint;
+import io.airlift.mcp.model.ModelPreferences;
 import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.ResourceTemplate;
+import io.airlift.mcp.model.Role;
+import io.airlift.mcp.model.SamplingMessage;
+import io.airlift.mcp.session.ListType;
+import io.airlift.mcp.session.SessionId;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.mcp.McpException.exception;
+import static java.util.Objects.requireNonNull;
 
 public class TestingEndpoints
 {
+    private final Optional<TestingSessionController> sessionController;
+
+    @Inject
+    public TestingEndpoints(Optional<TestingSessionController> sessionController)
+    {
+        this.sessionController = requireNonNull(sessionController, "sessionController is null");
+    }
+
     @McpTool(name = "add")
     public int add(@McpDescription("X marks the spot") int x, @McpDescription("Because we like you") int y)
     {
@@ -49,13 +74,67 @@ public class TestingEndpoints
         return 0;
     }
 
+    @McpTool(name = "logging", description = "Do some logging (at the \"warning\" level")
+    public void doLogging(McpNotifier notifier)
+    {
+        notifier.sendLog(LoggingLevel.warning, "This is a warning message", new SimpleThing(ImmutableList.of("a", "b"), 123.456));
+    }
+
+    @McpTool(name = "showCurrentRoots", description = "List the current roots")
+    public CallToolResult showCurrentRoots(SessionId sessionId)
+    {
+        List<String> roots = sessionController.orElseThrow().roots(sessionId);
+        List<Content> content = roots
+                .stream()
+                .map(TextContent::new)
+                .collect(toImmutableList());
+        return new CallToolResult(content);
+    }
+
+    @McpTool(name = "sendListChangedEvents", description = "Simulate sending list changed events")
+    public void sendListChangedNotification(SessionId sessionId)
+    {
+        sessionController.orElseThrow().simulateListChanged(sessionId, ListType.RESOURCES);
+        sessionController.orElseThrow().simulateListChanged(sessionId, ListType.PROMPTS);
+        sessionController.orElseThrow().simulateListChanged(sessionId, ListType.TOOLS);
+    }
+
+    @McpTool(name = "takeCreateMessageResults", description = "Show the results of create message requests")
+    public CallToolResult takeCreateMessageResults(SessionId sessionId)
+    {
+        List<CreateMessageResult> createMessageResults = sessionController.orElseThrow().takeCreateMessageResults(sessionId);
+        List<Content> content = createMessageResults.stream()
+                .map(CreateMessageResult::content)
+                .collect(toImmutableList());
+        return new CallToolResult(content);
+    }
+
+    @McpTool(name = "sendResourcesUpdatedNotification", description = "Simulate sending resource updated notifications")
+    public String sendResourcesUpdatedNotification(SessionId sessionId, String uri)
+    {
+        return sessionController.orElseThrow().simulateResourcesUpdated(sessionId, uri)
+                ? "Resources updated notification sent for URI: " + uri
+                : "You are not subscribed to: " + uri;
+    }
+
+    @McpTool(name = "sendSamplingMessage", description = "Simulate sending a sampling message")
+    public void sendSamplingMessage(McpNotifier notifier)
+    {
+        List<SamplingMessage> messages = ImmutableList.of(new SamplingMessage(Role.user, new TextContent("This is some content")));
+        ModelPreferences modelPreferences = new ModelPreferences(new ModelHint("Only a test"));
+        CreateMessageRequest createMessageRequest = new CreateMessageRequest(messages, modelPreferences, "This is only a test", 500);
+        JsonRpcRequest<CreateMessageRequest> request = JsonRpcRequest.buildRequest("sendSamplingMessage", "sampling/createMessage", createMessageRequest);
+        //sessionController.orElseThrow().addClientToServerRequest(sessionId, request);
+        notifier.sendRequest(request);
+    }
+
     @McpResources
     public ResourcesEntry listResources()
     {
         Resource resource1 = new Resource("example1", "file://example1.txt", Optional.of("This is example1 resource."), "text/plain", Optional.empty(), Optional.empty());
         Resource resource2 = new Resource("example2", "file://example2.txt", Optional.of("This is example2 resource."), "text/plain", Optional.empty(), Optional.empty());
 
-        return new ResourcesEntry(ImmutableList.of(resource1, resource2), (_, notifier, _, readResourceRequest) -> {
+        return new ResourcesEntry(ImmutableList.of(resource1, resource2), (_, sessionId, notifier, _, readResourceRequest) -> {
             if (readResourceRequest.uri().contains("example2")) {
                 sendProgress(notifier);
             }
@@ -69,7 +148,7 @@ public class TestingEndpoints
     public ResourceTemplatesEntry listResourceTemplates()
     {
         ResourceTemplate resource = new ResourceTemplate("example1", "file://{part}.txt", Optional.of("This is example1 resource."), "text/plain", Optional.empty(), Optional.empty());
-        return new ResourceTemplatesEntry(ImmutableList.of(resource), (_, _, _, readResourceRequest, pathTemplateValues) -> {
+        return new ResourceTemplatesEntry(ImmutableList.of(resource), (_, sessionId, _, _, readResourceRequest, pathTemplateValues) -> {
             if (readResourceRequest.uri().equals("file://one.txt")) {
                 ResourceContents contents = new ResourceContents("foo2", readResourceRequest.uri(), "text/plain", pathTemplateValues.get("part"));
                 return ImmutableList.of(contents);

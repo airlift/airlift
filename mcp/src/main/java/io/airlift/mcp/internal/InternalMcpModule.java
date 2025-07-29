@@ -7,6 +7,8 @@ import com.google.inject.Module;
 import com.google.inject.binder.LinkedBindingBuilder;
 import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.OptionalBinder;
+import io.airlift.jaxrs.JaxrsBinder;
 import io.airlift.json.JsonSubType;
 import io.airlift.json.JsonSubTypeBinder;
 import io.airlift.jsonrpc.JsonRpcMethod;
@@ -39,30 +41,41 @@ import io.airlift.mcp.reflection.ListResourceTemplatesHandlerProvider;
 import io.airlift.mcp.reflection.ListResourcesHandlerProvider;
 import io.airlift.mcp.reflection.PromptHandlerProvider;
 import io.airlift.mcp.reflection.ToolHandlerProvider;
+import io.airlift.mcp.session.SessionController;
+import io.airlift.mcp.session.SessionMetadata;
+import org.glassfish.jersey.server.model.Resource;
 
+import java.util.Optional;
 import java.util.function.Consumer;
 
 import static com.google.inject.Scopes.SINGLETON;
 import static com.google.inject.multibindings.MapBinder.newMapBinder;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
+import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
 import static io.airlift.json.JsonSubTypeBinder.jsonSubTypeBinder;
 import static io.airlift.mcp.reflection.ReflectionHelper.forAllInClass;
+import static java.util.Objects.requireNonNull;
 
 public class InternalMcpModule
 {
+    private static final String DEFAULT_MCP_PATH = "mcp";
+
     private InternalMcpModule() {}
 
     public static McpModule.Builder builder()
     {
         return new McpModule.Builder()
         {
-            private final JsonRpcModule.Builder<?> jsonRpcBuilder = JsonRpcModule.builder().withBasePath("mcp");
+            private final JsonRpcModule.Builder<?> jsonRpcBuilder = JsonRpcModule.builder().withBasePath(DEFAULT_MCP_PATH);
             private final ImmutableSet.Builder<Class<?>> instances = ImmutableSet.builder();
             private final ImmutableMap.Builder<String, ToolHandlerProvider> tools = ImmutableMap.builder();
             private final ImmutableMap.Builder<String, PromptHandlerProvider> prompts = ImmutableMap.builder();
             private final ImmutableSet.Builder<CompletionHandlerProvider> completions = ImmutableSet.builder();
             private final ImmutableSet.Builder<ListResourcesHandlerProvider> resources = ImmutableSet.builder();
             private final ImmutableSet.Builder<ListResourceTemplatesHandlerProvider> resourceTemplates = ImmutableSet.builder();
+            private Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding = Optional.empty();
+            private String mcpPath = DEFAULT_MCP_PATH;
+            private SessionMetadata sessionMetadata = SessionMetadata.DEFAULT;
             private ServerInfo serverInfo = new ServerInfo("MCP", "1.0.0", "");
 
             @Override
@@ -75,6 +88,7 @@ public class InternalMcpModule
             @Override
             public McpModule.Builder withBasePath(String basePath)
             {
+                this.mcpPath = requireNonNull(basePath, "basePath is null");
                 jsonRpcBuilder.withBasePath(basePath);
                 return this;
             }
@@ -107,6 +121,14 @@ public class InternalMcpModule
             }
 
             @Override
+            public McpModule.Builder withSessionHandling(SessionMetadata sessionMetadata, Consumer<LinkedBindingBuilder<SessionController>> binding)
+            {
+                this.sessionMetadata = requireNonNull(sessionMetadata, "sessionMetadata is null");
+                sessionControllerBinding = Optional.of(binding);
+                return this;
+            }
+
+            @Override
             public Module build()
             {
                 JsonRpcMethod.addAllInClass(jsonRpcBuilder, InternalRpcMethods.class);
@@ -123,8 +145,30 @@ public class InternalMcpModule
                     bindPrompts(binder);
                     bindResources(binder);
                     bindCompletions(binder);
+                    bindSessionHandling(binder);
                     bindJsonSubTypes(binder);
                 };
+            }
+
+            private void bindSessionHandling(Binder binder)
+            {
+                binder.bind(SessionMetadata.class).toInstance(sessionMetadata);
+
+                OptionalBinder<SessionController> sessionBinder = OptionalBinder.newOptionalBinder(binder, SessionController.class);
+
+                JaxrsBinder jaxrsBinder = jaxrsBinder(binder);
+                jaxrsBinder.bind(SessionIdValueProvider.class);
+
+                sessionControllerBinding.ifPresent(binding -> {
+                    binding.accept(sessionBinder.setBinding());
+
+                    Resource resource = Resource.builder(InternalSessionResource.class)
+                            .path(mcpPath)
+                            .build();
+
+                    jaxrsBinder.bind(InternalSessionResource.class);
+                    jaxrsBinder.bindInstance(resource);
+                });
             }
 
             private void bindResources(Binder binder)

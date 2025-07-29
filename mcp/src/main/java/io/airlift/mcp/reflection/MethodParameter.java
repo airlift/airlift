@@ -13,6 +13,12 @@ public sealed interface MethodParameter
         public static final HttpRequestParameter INSTANCE = new HttpRequestParameter();
     }
 
+    record SessionIdParameter()
+            implements MethodParameter
+    {
+        public static final SessionIdParameter INSTANCE = new SessionIdParameter();
+    }
+
     record CompletionRequestParameter()
             implements MethodParameter
     {

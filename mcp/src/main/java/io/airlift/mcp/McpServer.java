@@ -30,6 +30,7 @@ import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.model.ServerInfo;
 import io.airlift.mcp.model.Tool;
+import io.airlift.mcp.session.SessionId;
 import jakarta.ws.rs.core.Request;
 import org.glassfish.jersey.uri.UriTemplate;
 
@@ -77,13 +78,13 @@ public class McpServer
         return new ListToolsResponse(toolsList);
     }
 
-    public CallToolResult callTool(Request request, McpNotifier notifier, CallToolRequest callToolRequest)
+    public CallToolResult callTool(Request request, SessionId sessionId, McpNotifier notifier, CallToolRequest callToolRequest)
             throws McpException
     {
         return handlers.tool(callToolRequest.name())
                 .map(toolEntry -> {
                     try {
-                        return toolEntry.toolHandler().callTool(request, notifier, callToolRequest);
+                        return toolEntry.toolHandler().callTool(request, sessionId, notifier, callToolRequest);
                     }
                     catch (Exception e) {
                         throw handleException(e);
@@ -98,13 +99,13 @@ public class McpServer
         return new ListPromptsResult(pomptsList);
     }
 
-    public GetPromptResult getPrompt(Request request, McpNotifier notifier, GetPromptRequest getPromptRequest)
+    public GetPromptResult getPrompt(Request request, SessionId sessionId, McpNotifier notifier, GetPromptRequest getPromptRequest)
             throws McpException
     {
         return handlers.prompt(getPromptRequest.name())
                 .map(promptEntry -> {
                     try {
-                        return promptEntry.promptHandler().getPrompt(request, notifier, getPromptRequest);
+                        return promptEntry.promptHandler().getPrompt(request, sessionId, notifier, getPromptRequest);
                     }
                     catch (Exception e) {
                         throw handleException(e);
@@ -113,12 +114,12 @@ public class McpServer
                 .orElseThrow(() -> McpException.exception(INVALID_PARAMS, "Prompt not found", ImmutableMap.of("name", getPromptRequest.name())));
     }
 
-    public ListResourcesResult listResources(Request request, McpNotifier notifier)
+    public ListResourcesResult listResources(Request request, SessionId sessionId, McpNotifier notifier)
             throws McpException
     {
         try {
             List<Resource> resourcesList = handlers.streamResources()
-                    .flatMap(resource -> resource.listResources(request, notifier).resources().stream())
+                    .flatMap(resource -> resource.listResources(request, sessionId, notifier).resources().stream())
                     .collect(toImmutableList());
             return new ListResourcesResult(resourcesList);
         }
@@ -127,12 +128,12 @@ public class McpServer
         }
     }
 
-    public ListResourceTemplatesResult listResourceTemplates(Request request, McpNotifier notifier)
+    public ListResourceTemplatesResult listResourceTemplates(Request request, SessionId sessionId, McpNotifier notifier)
             throws McpException
     {
         try {
             List<ResourceTemplate> resoureTemplatesList = handlers.streamResourceTemplates()
-                    .flatMap(resource -> resource.listResourceTemplates(request, notifier).resourceTemplates().stream())
+                    .flatMap(resource -> resource.listResourceTemplates(request, sessionId, notifier).resourceTemplates().stream())
                     .collect(toImmutableList());
             return new ListResourceTemplatesResult(resoureTemplatesList);
         }
@@ -141,27 +142,27 @@ public class McpServer
         }
     }
 
-    public ReadResourceResult readResources(Request request, McpNotifier notifier, ReadResourceRequest readResourceRequest)
+    public ReadResourceResult readResources(Request request, SessionId sessionId, McpNotifier notifier, ReadResourceRequest readResourceRequest)
             throws McpException
     {
         try {
             Stream<ResourceContents> resourceContentsStream = handlers.streamResources()
                     .flatMap(set -> {
-                        ResourcesEntry resourcesEntry = set.listResources(request, notifier);
+                        ResourcesEntry resourcesEntry = set.listResources(request, sessionId, notifier);
                         return resourcesEntry.resources().stream()
                                 .filter(resource -> resource.uri().equals(readResourceRequest.uri()))
-                                .flatMap(resource -> resourcesEntry.handler().readResource(request, notifier, resource, readResourceRequest).stream());
+                                .flatMap(resource -> resourcesEntry.handler().readResource(request, sessionId, notifier, resource, readResourceRequest).stream());
                     });
 
             Stream<ResourceContents> resourceTemplateContentsStream = handlers.streamResourceTemplates()
                     .flatMap(set -> {
-                        ResourceTemplatesEntry resourceTemplatesEntry = set.listResourceTemplates(request, notifier);
+                        ResourceTemplatesEntry resourceTemplatesEntry = set.listResourceTemplates(request, sessionId, notifier);
                         return resourceTemplatesEntry.resourceTemplates().stream()
                                 .flatMap(resourceTemplate -> {
                                     UriTemplate uriTemplate = new UriTemplate(resourceTemplate.uriTemplate());
                                     Map<String, String> templateVariableToValue = new HashMap<>();
                                     if (uriTemplate.match(readResourceRequest.uri(), templateVariableToValue)) {
-                                        return resourceTemplatesEntry.handler().readResource(request, notifier, resourceTemplate, readResourceRequest, templateVariableToValue).stream();
+                                        return resourceTemplatesEntry.handler().readResource(request, sessionId, notifier, resourceTemplate, readResourceRequest, templateVariableToValue).stream();
                                     }
                                     return Stream.of();
                                 });
@@ -176,12 +177,12 @@ public class McpServer
         }
     }
 
-    public CompletionResult completeCompletion(Request request, McpNotifier notifier, CompletionRequest completionRequest)
+    public CompletionResult completeCompletion(Request request, SessionId sessionId, McpNotifier notifier, CompletionRequest completionRequest)
             throws McpException
     {
         try {
             Completion completion = handlers.streamCompletions()
-                    .flatMap(completionHandler -> completionHandler.completeCompletion(request, notifier, completionRequest).stream())
+                    .flatMap(completionHandler -> completionHandler.completeCompletion(request, sessionId, notifier, completionRequest).stream())
                     .reduce(new Completion(ImmutableList.of()), this::mergeCompletions);
             return new CompletionResult(completion);
         }
