@@ -8,6 +8,7 @@ import io.airlift.jsonrpc.model.JsonRpcErrorDetail;
 import io.airlift.jsonrpc.model.JsonRpcResponse;
 import org.junit.jupiter.api.Test;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import static io.airlift.http.client.JsonResponseHandler.createJsonResponseHandler;
@@ -63,5 +64,13 @@ public class TestJsonRpc
         assertThat(response.result()).isEmpty();
         assertThat(response.error()).map(JsonRpcErrorDetail::code).contains(CONNECTION_CLOSED.code());
         assertThat(response.error()).map(JsonRpcErrorDetail::message).contains("Test throws");
+    }
+
+    @Test
+    public void testSendResult()
+    {
+        Request request = buildResponse(1234, new TypeToken<>() {}, Optional.of(new ErrorDetail("test")));
+        StatusResponse response = httpClient.execute(request, createStatusResponseHandler());
+        assertThat(response.getStatusCode()).isEqualTo(204);
     }
 }

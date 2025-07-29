@@ -16,6 +16,7 @@ import io.airlift.json.JsonCodec;
 import io.airlift.json.JsonModule;
 import io.airlift.jsonrpc.JsonRpcModule.Builder;
 import io.airlift.jsonrpc.model.JsonRpcRequest;
+import io.airlift.jsonrpc.model.JsonRpcResponse;
 import io.airlift.node.NodeModule;
 import jakarta.annotation.Nullable;
 
@@ -72,6 +73,16 @@ public abstract class TestBase
     protected Request buildNotification(String method)
     {
         return internalBuildRequest(null, method, new TypeToken<>() {}, Optional.empty());
+    }
+
+    protected <T> Request buildResponse(Object id, TypeToken<JsonRpcResponse<T>> type, Optional<T> maybeResult)
+    {
+        JsonRpcResponse<T> jsonRpcResponse = new JsonRpcResponse<>(id, Optional.empty(), maybeResult);
+        Request.Builder builder = Request.Builder.preparePost()
+                .setUri(uri())
+                .setHeader("Content-Type", "application/json")
+                .setBodyGenerator(jsonBodyGenerator(JsonCodec.jsonCodec(type), jsonRpcResponse));
+        return builder.build();
     }
 
     private <T> Request internalBuildRequest(@Nullable Object id, String method, TypeToken<JsonRpcRequest<T>> type, Optional<T> maybeParams)

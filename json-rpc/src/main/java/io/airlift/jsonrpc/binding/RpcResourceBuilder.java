@@ -26,7 +26,7 @@ class RpcResourceBuilder
         builder = Resource.builder(path);
     }
 
-    void add(Class<?> clazz, Method javaMethod, String rpcMethod, String httpMethod)
+    void add(Class<?> clazz, Method javaMethod, String rpcMethod, String httpMethod, boolean isRpcResult)
     {
         rpcMethod = normalize(rpcMethod);
 
@@ -38,7 +38,7 @@ class RpcResourceBuilder
         }
 
         String methodPath = path + "/" + rpcMethod;
-        methodMap.put(rpcMethod, new MethodMetadata(clazz, httpMethod, methodPath, source));
+        methodMap.put(rpcMethod, new MethodMetadata(clazz, httpMethod, methodPath, source, isRpcResult));
 
         String[] produces = Optional.ofNullable(javaMethod.getAnnotation(Produces.class))
                 .map(Produces::value)

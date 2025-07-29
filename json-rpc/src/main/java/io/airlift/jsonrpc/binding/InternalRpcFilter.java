@@ -49,14 +49,16 @@ public class InternalRpcFilter
         RpcMetadata rpcMetadata = rpcHelper.jsonRpcMetadata();
         InternalRequest internalRequest = rpcHelper.buildRequest(requestContext.getEntityStream());
 
-        MethodMetadata methodMetadata = rpcMetadata.methodMap().get(internalRequest.method());
+        rpcRequestFilter.ifPresent(filter -> filter.filter(requestContext.getRequest(), internalRequest.method()));
+
+        MethodMetadata methodMetadata = internalRequest.method().map(method -> rpcMetadata.methodMap().get(method))
+                .or(rpcMetadata::rpcResultMethod)
+                .orElse(null);
         if (methodMetadata == null) {
             Object error = rpcHelper.rpcError(internalRequest.id(), METHOD_NOT_FOUND, "No method found for JSON-RPC request: " + internalRequest.method(), Optional.empty());
             requestContext.abortWith(Response.status(OK).type(APPLICATION_JSON_TYPE).entity(error).build());
             return;
         }
-
-        rpcRequestFilter.ifPresent(filter -> filter.filter(requestContext.getRequest(), internalRequest.method()));
 
         requestContext.setProperty(InternalRpcFilter.class.getName(), internalRequest);
 

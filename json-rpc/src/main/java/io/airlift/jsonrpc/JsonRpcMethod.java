@@ -12,7 +12,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static jakarta.ws.rs.HttpMethod.POST;
 import static java.util.Objects.requireNonNull;
 
-public record JsonRpcMethod(Class<?> clazz, Method javaMethod, String rpcMethod, String httpMethod)
+public record JsonRpcMethod(Class<?> clazz, Method javaMethod, String rpcMethod, String httpMethod, boolean isRpcResult)
 {
     public JsonRpcMethod
     {
@@ -33,12 +33,27 @@ public record JsonRpcMethod(Class<?> clazz, Method javaMethod, String rpcMethod,
         return Stream.of(clazz.getMethods())
                 .flatMap(method -> {
                     JsonRpc jsonRpc = method.getAnnotation(JsonRpc.class);
+                    JsonRpcResult jsonRpcResult = method.getAnnotation(JsonRpcResult.class);
+
+                    if ((jsonRpc != null) && (jsonRpcResult != null)) {
+                        throw new IllegalStateException("Method %s in class %s has both @%s and @%s annotations. Only one is allowed."
+                                .formatted(method.getName(), clazz.getName(), JsonRpc.class.getSimpleName(), JsonRpcResult.class.getSimpleName()));
+                    }
+
                     if (jsonRpc != null) {
                         String value = jsonRpc.value();
                         String rpcMethod = value.isEmpty() ? httpPath(method).orElseThrow(() -> missingPathException(clazz, method)) : value;
                         String httpMethod = httpMethod(method).orElse(POST);
-                        return Stream.of(new JsonRpcMethod(clazz, method, rpcMethod, httpMethod));
+                        return Stream.of(new JsonRpcMethod(clazz, method, rpcMethod, httpMethod, false));
                     }
+
+                    if (jsonRpcResult != null) {
+                        String value = jsonRpcResult.value();
+                        String rpcMethod = value.isEmpty() ? httpPath(method).orElseThrow(() -> missingPathException(clazz, method)) : value;
+                        String httpMethod = httpMethod(method).orElse(POST);
+                        return Stream.of(new JsonRpcMethod(clazz, method, rpcMethod, httpMethod, true));
+                    }
+
                     return Stream.empty();
                 })
                 .collect(toImmutableList());

@@ -20,6 +20,11 @@ public record JsonRpcResponse<T>(String jsonrpc, @Nullable Object id, Optional<J
         requireNonNull(result, "result is null");
     }
 
+    public JsonRpcResponse(@Nullable Object id, Optional<JsonRpcErrorDetail> error, Optional<T> result)
+    {
+        this(JSON_RPC_VERSION, id, error, result);
+    }
+
     public static <T> JsonRpcResponse<T> buildResponse(Request request, T result)
     {
         Object requestId = (request instanceof ContainerRequest containerRequest) ? requestId(containerRequest).orElse(null) : null;

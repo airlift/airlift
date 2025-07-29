@@ -1,5 +1,6 @@
 package io.airlift.jsonrpc;
 
+import io.airlift.jsonrpc.model.JsonRpcResponse;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.WebApplicationException;
@@ -8,6 +9,7 @@ import java.util.Optional;
 
 import static io.airlift.jsonrpc.model.JsonRpcErrorCode.CONNECTION_CLOSED;
 import static io.airlift.jsonrpc.model.JsonRpcErrorDetail.exception;
+import static jakarta.ws.rs.core.Response.Status.BAD_REQUEST;
 import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
 
 public class PersonResource
@@ -43,5 +45,13 @@ public class PersonResource
     public void throwsError()
     {
         throw exception(CONNECTION_CLOSED, "Test throws");
+    }
+
+    @JsonRpcResult("result")
+    public void handleResponse(JsonRpcResponse<ErrorDetail> result)
+    {
+        if (!result.result().orElseThrow().detail().equals("test")) {
+            throw new WebApplicationException("Unexpected error detail", BAD_REQUEST);
+        }
     }
 }

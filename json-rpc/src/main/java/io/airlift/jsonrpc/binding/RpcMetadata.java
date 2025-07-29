@@ -12,12 +12,13 @@ package io.airlift.jsonrpc.binding;
 import com.google.common.collect.ImmutableMap;
 
 import java.util.Map;
+import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
 
-record RpcMetadata(String basePath, Map<String, MethodMetadata> methodMap)
+record RpcMetadata(String basePath, Map<String, MethodMetadata> methodMap, Optional<MethodMetadata> rpcResultMethod)
 {
-    record MethodMetadata(Class<?> clazz, String httpMethod, String methodPath, String source)
+    record MethodMetadata(Class<?> clazz, String httpMethod, String methodPath, String source, boolean isRpcResult)
     {
         public MethodMetadata
         {
@@ -32,5 +33,6 @@ record RpcMetadata(String basePath, Map<String, MethodMetadata> methodMap)
     {
         requireNonNull(basePath, "basePath is null");
         methodMap = ImmutableMap.copyOf(methodMap);
+        requireNonNull(rpcResultMethod, "rpcResultMethod is null");
     }
 }

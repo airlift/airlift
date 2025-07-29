@@ -106,24 +106,31 @@ class InternalRpcHelper
         }
 
         JsonNode methodNode = tree.get("method");
-        if (methodNode == null) {
-            throw rpcException(id, INVALID_REQUEST, "Missing \"method\" field", Optional.empty());
+        String methodText = (methodNode != null) ? methodNode.asText() : "";
+
+        if (methodText.isEmpty()) {
+            // extension - we're receiving a JSON-RPC response
+            return new InternalRequest(id, Optional.empty(), Optional.of(tree), Optional.of(reparseNode(tree, id)));
         }
-        String method = methodNode.asText();
+
+        Optional<String> method = Optional.of(methodText);
 
         Optional<JsonNode> params = Optional.ofNullable(tree.get("params"));
-        Optional<InputStream> paramsInputStream = params.map(paramNode -> {
-            // NOTE: this should be relatively efficient for most requests. However, very large
-            // requests imply the overhead of the ByteArrayInputStream. JSON-RPC isn't usually
-            // used for very large requests.
-            try {
-                return new ByteArrayInputStream(objectMapper.writeValueAsBytes(paramNode));
-            }
-            catch (JsonProcessingException e) {
-                throw rpcException(id, INVALID_PARAMS, "Could not parse \"params\": " + e.getMessage(), Optional.empty());
-            }
-        });
+        Optional<InputStream> paramsInputStream = params.map(paramNode -> reparseNode(paramNode, id));
         return new InternalRequest(id, method, params, paramsInputStream);
+    }
+
+    private ByteArrayInputStream reparseNode(JsonNode paramNode, Object id)
+    {
+        // NOTE: this should be relatively efficient for most requests. However, very large
+        // requests imply the overhead of the ByteArrayInputStream. JSON-RPC isn't usually
+        // used for very large requests.
+        try {
+            return new ByteArrayInputStream(objectMapper.writeValueAsBytes(paramNode));
+        }
+        catch (JsonProcessingException e) {
+            throw rpcException(id, INVALID_PARAMS, "Could not parse \"params\": " + e.getMessage(), Optional.empty());
+        }
     }
 
     private JsonNode parseStream(InputStream inputStream)

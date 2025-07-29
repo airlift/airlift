@@ -8,7 +8,7 @@ import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
 
-record InternalRequest(@Nullable Object id, String method, Optional<JsonNode> params, Optional<InputStream> payload)
+record InternalRequest(@Nullable Object id, Optional<String> method, Optional<JsonNode> params, Optional<InputStream> payload)
 {
     InternalRequest
     {

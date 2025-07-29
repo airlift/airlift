@@ -46,7 +46,7 @@ public class InternalRpcModule
 
         methods.forEach(method -> {
             binder.bind(method.clazz()).in(SINGLETON);
-            resourceBuilder.add(method.clazz(), method.javaMethod(), method.rpcMethod(), method.httpMethod());
+            resourceBuilder.add(method.clazz(), method.javaMethod(), method.rpcMethod(), method.httpMethod(), method.isRpcResult());
         });
 
         JaxrsBinder jaxrsBinder = jaxrsBinder(binder);
@@ -54,7 +54,18 @@ public class InternalRpcModule
         jaxrsBinder.bindInstance(resourceBuilder.build());
         jaxrsBinder.bind(BindingBridge.class);
 
-        binder.bind(RpcMetadata.class).toInstance(new RpcMetadata(basePath, methodMap));
+        Optional<MethodMetadata> rpcResultMethod = Optional.empty();
+        Map<String, MethodMetadata> filteredMethodMap = new HashMap<>();
+        for (Map.Entry<String, MethodMetadata> entry : methodMap.entrySet()) {
+            if (entry.getValue().isRpcResult()) {
+                rpcResultMethod = Optional.of(entry.getValue());
+            }
+            else {
+                filteredMethodMap.put(entry.getKey(), entry.getValue());
+            }
+        }
+
+        binder.bind(RpcMetadata.class).toInstance(new RpcMetadata(basePath, filteredMethodMap, rpcResultMethod));
 
         OptionalBinder<JsonRpcRequestFilter> requestFilterBinder = newOptionalBinder(binder, JsonRpcRequestFilter.class);
         requestFilterBinding.ifPresent(binding -> binding.accept(requestFilterBinder.setBinding()));
