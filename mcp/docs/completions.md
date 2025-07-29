@@ -20,6 +20,7 @@ applied to methods in a class that conform to the following rules:
 - Parameters can be:
     - [CompletionRequest](../src/main/java/io/airlift/mcp/model/CompletionRequest.java)
     - `jakarta.ws.rs.core.Request`
+    - SessionId ([see doc on sessions](sessions.md))
     - [McpNotifier](misc.md#notifications-to-clients)
 - Returns either:
     - `List<String>`
@@ -44,3 +45,8 @@ public interface CompletionHandler
 ```java
 mcpServer.completions().add("name", new CompletionEntry("name", handler));
 ```
+
+## Note on cancellation
+
+Use the `cancellationRequested()` method of the `McpNotifier` to check if
+the request/operation has been requested to be cancelled.

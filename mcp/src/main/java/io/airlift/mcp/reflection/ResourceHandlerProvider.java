@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static io.airlift.mcp.McpException.exception;
-import static io.airlift.mcp.reflection.Predicates.isHttpRequest;
+import static io.airlift.mcp.reflection.Predicates.isHttpRequestOrSessonId;
 import static io.airlift.mcp.reflection.Predicates.isNotifier;
 import static io.airlift.mcp.reflection.Predicates.isReadResourceRequest;
 import static io.airlift.mcp.reflection.Predicates.isSourceResource;
@@ -45,7 +45,7 @@ public class ResourceHandlerProvider
         this.method = requireNonNull(method, "method is null");
         this.parameters = ImmutableList.copyOf(parameters);
 
-        validate(method, parameters, isHttpRequest.or(isNotifier).or(isReadResourceRequest).or(isSourceResource), returnsResourceContents.or(returnsResourceContentsList));
+        validate(method, parameters, isHttpRequestOrSessonId.or(isNotifier).or(isReadResourceRequest).or(isSourceResource), returnsResourceContents.or(returnsResourceContentsList));
         resultIsSingleContent = returnsResourceContents.test(method);
 
         resource = buildResource(
@@ -64,8 +64,8 @@ public class ResourceHandlerProvider
         Object instance = injector.getInstance(clazz);
         MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper);
 
-        ResourceHandler resourceHandler = (request, notifier, sourceResource, readResourceRequest) -> {
-            Object result = methodInvoker.builder(request)
+        ResourceHandler resourceHandler = (request, sessionId, notifier, sourceResource, readResourceRequest) -> {
+            Object result = methodInvoker.builder(request, sessionId)
                     .withNotifier(notifier)
                     .withReadResourceRequest(sourceResource, readResourceRequest)
                     .invoke();

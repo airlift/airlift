@@ -22,8 +22,10 @@ import io.airlift.mcp.reflection.MethodParameter.NotifierParameter;
 import io.airlift.mcp.reflection.MethodParameter.ObjectParameter;
 import io.airlift.mcp.reflection.MethodParameter.PathTemplateValuesParameter;
 import io.airlift.mcp.reflection.MethodParameter.ReadResourceRequestParameter;
+import io.airlift.mcp.reflection.MethodParameter.SessionIdParameter;
 import io.airlift.mcp.reflection.MethodParameter.SourceResourceParameter;
 import io.airlift.mcp.reflection.MethodParameter.SourceResourceTemplateParameter;
+import io.airlift.mcp.session.SessionId;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Request;
 
@@ -71,7 +73,7 @@ public class MethodInvoker
         Object invoke();
     }
 
-    public Builder builder(Request request)
+    public Builder builder(Request request, SessionId sessionId)
     {
         return new Builder()
         {
@@ -144,6 +146,7 @@ public class MethodInvoker
                     Object[] methodArguments = parameters.stream()
                             .map(parameter -> switch (parameter) {
                                 case HttpRequestParameter _ -> request;
+                                case SessionIdParameter _ -> sessionId;
                                 case NotifierParameter _ -> notifier.orElseThrow(() -> new IllegalArgumentException("Notifier is required"));
                                 case CompletionRequestParameter _ -> completion.orElseThrow(() -> new IllegalArgumentException("Completion is required"));
                                 case GetPromptRequestParameter _ -> getPromptRequest.orElseThrow(() -> new IllegalArgumentException("GetPromptRequest is required"));

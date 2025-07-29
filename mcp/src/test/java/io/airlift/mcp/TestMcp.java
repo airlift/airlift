@@ -13,12 +13,14 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.reflect.TypeToken;
 import io.airlift.TestBase;
+import io.airlift.http.client.FullJsonResponseHandler.JsonResponse;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.StreamingResponse;
 import io.airlift.jsonrpc.model.JsonRpcResponse;
 import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.CallToolResult;
+import io.airlift.mcp.model.CancellationRequest;
 import io.airlift.mcp.model.CompletionReference;
 import io.airlift.mcp.model.CompletionRequest;
 import io.airlift.mcp.model.CompletionResult;
@@ -39,14 +41,22 @@ import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.model.Tool;
+import io.airlift.mcp.session.SessionMetadata;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
+import static com.google.inject.Scopes.SINGLETON;
 import static io.airlift.http.client.FullJsonResponseHandler.createFullJsonResponseHandler;
 import static io.airlift.http.client.JsonResponseHandler.createJsonResponseHandler;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
@@ -54,16 +64,28 @@ import static io.airlift.json.JsonCodec.jsonCodec;
 import static io.airlift.mcp.model.Constants.METHOD_CALL_TOOL;
 import static io.airlift.mcp.model.Constants.METHOD_GET_PROMPT;
 import static io.airlift.mcp.model.Constants.METHOD_READ_RESOURCES;
+import static io.airlift.mcp.model.Constants.NOTIFICATION_CANCELLED;
 import static io.airlift.mcp.model.Constants.PROTOCOL_VERSION;
+import static io.airlift.mcp.model.Constants.SESSION_HEADER;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 
+@TestInstance(PER_CLASS)
 public class TestMcp
         extends TestBase
 {
     public TestMcp()
     {
-        super(McpModule.builder().addAllInClass(TestingEndpoints.class));
+        super(moduleBuilder(), binder -> binder.bind(TestingSessionController.class).in(SINGLETON));
+    }
+
+    private static McpModule.Builder moduleBuilder()
+    {
+        return McpModule.builder()
+                .addAllInClass(TestingEndpoints.class)
+                .withSessionHandling(SessionMetadata.DEFAULT, binding -> binding.to(TestingSessionController.class).in(SINGLETON));
     }
 
     @Test
@@ -78,7 +100,7 @@ public class TestMcp
         assertThat(toolsResponse.result()).map(ListToolsResponse::tools).get()
                 .asInstanceOf(InstanceOfAssertFactories.list(Tool.class))
                 .extracting(Tool::name)
-                .containsExactlyInAnyOrder("add", "uppercase", "lookupPerson", "throws", "uppercaseSoon", "itsSimple");
+                .containsExactlyInAnyOrder("add", "uppercase", "lookupPerson", "throws", "uppercaseSoon", "itsSimple", "logging", "sendResourcesUpdatedNotification", "sendListChangedEvents", "showCurrentRoots", "sendSamplingMessage", "takeCreateMessageResults");
 
         request = buildRequest(requestId, METHOD_CALL_TOOL, new TypeToken<>() {}, Optional.of(new CallToolRequest("add", ImmutableMap.of("x", 6, "y", 24))));
         try (StreamingResponse response = httpClient.executeStreaming(request)) {
@@ -110,7 +132,7 @@ public class TestMcp
         assertThat(promptsResponse.result()).map(ListPromptsResult::prompts).get()
                 .asInstanceOf(InstanceOfAssertFactories.list(Prompt.class))
                 .extracting(Prompt::name)
-                .containsExactlyInAnyOrder("greeting", "progress");
+                .containsExactlyInAnyOrder("greeting", "progress", "testCancellation");
 
         request = buildRequest(requestId, METHOD_GET_PROMPT, new TypeToken<>() {}, Optional.of(new GetPromptRequest("greeting", ImmutableMap.of("name", "Galt"))));
         try (StreamingResponse response = httpClient.executeStreaming(request)) {
@@ -217,11 +239,48 @@ public class TestMcp
         }
     }
 
+    @Test
+    public void testCancellation()
+            throws Exception
+    {
+        String requestId = UUID.randomUUID().toString();
+        initialize(requestId);
+
+        CountDownLatch startedLatch = new CountDownLatch(1);
+        Future<Boolean> future = Executors.newVirtualThreadPerTaskExecutor().submit(() -> {
+            Request request = buildRequest(requestId, METHOD_GET_PROMPT, new TypeToken<>() {}, Optional.of(new GetPromptRequest("testCancellation", ImmutableMap.of())));
+            try (StreamingResponse response = httpClient.executeStreaming(request)) {
+                startedLatch.countDown();
+
+                for (Map<String, String> event : readEvents(response.getInputStream())) {
+                    JsonRpcResponse<Object> jsonRpcResponse = parseData(event, new TypeReference<>() {});
+                    if (jsonRpcResponse.error().isPresent()) {
+                        throw new RuntimeException("Error in response: " + jsonRpcResponse.error().get());
+                    }
+                }
+
+                return true;
+            }
+            catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
+
+        assertTrue(startedLatch.await(10, TimeUnit.SECONDS));
+
+        Request request = buildNotification(NOTIFICATION_CANCELLED, new TypeToken<>() {}, new CancellationRequest(requestId));
+        StatusResponse status = httpClient.execute(request, createStatusResponseHandler());
+        assertThat(status.getStatusCode()).isBetween(200, 299);
+
+        assertTrue(future.get(10, TimeUnit.SECONDS));
+    }
+
     private void initialize(String requestId)
     {
         InitializeRequest initializeRequest = new InitializeRequest(PROTOCOL_VERSION, new ClientCapabilities(Optional.empty(), Optional.empty(), Optional.empty()), new Implementation("hey", "1.0.0"));
         Request request = buildRequest(requestId, "initialize", new TypeToken<>() {}, initializeRequest);
-        httpClient.execute(request, createFullJsonResponseHandler(jsonCodec(new TypeToken<>() {})));
+        JsonResponse<Object> response = httpClient.execute(request, createFullJsonResponseHandler(jsonCodec(new TypeToken<>() {})));
+        requestHeaders.put(SESSION_HEADER, response.getHeader(SESSION_HEADER));
 
         request = buildRequest(requestId, "notifications/initialized", new TypeToken<>() {}, Optional.empty());
         StatusResponse status = httpClient.execute(request, createStatusResponseHandler());

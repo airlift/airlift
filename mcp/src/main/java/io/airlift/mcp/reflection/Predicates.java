@@ -3,6 +3,8 @@ package io.airlift.mcp.reflection;
 import io.airlift.mcp.model.Completion;
 import io.airlift.mcp.model.GetPromptResult;
 import io.airlift.mcp.model.ResourceContents;
+import io.airlift.mcp.reflection.MethodParameter.HttpRequestParameter;
+import io.airlift.mcp.reflection.MethodParameter.SessionIdParameter;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -14,7 +16,7 @@ import static io.airlift.mcp.reflection.ReflectionHelper.optionalReturnArgument;
 
 public interface Predicates
 {
-    Predicate<MethodParameter> isHttpRequest = methodParameter -> methodParameter instanceof MethodParameter.HttpRequestParameter;
+    Predicate<MethodParameter> isHttpRequestOrSessonId = methodParameter -> (methodParameter instanceof HttpRequestParameter) || (methodParameter instanceof SessionIdParameter);
     Predicate<MethodParameter> isNotifier = methodParameter -> methodParameter instanceof MethodParameter.NotifierParameter;
     Predicate<MethodParameter> isCompletionRequest = methodParameter -> methodParameter instanceof MethodParameter.CompletionRequestParameter;
     Predicate<MethodParameter> isGetPromptRequest = methodParameter -> methodParameter instanceof MethodParameter.GetPromptRequestParameter;

@@ -37,6 +37,7 @@ import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.model.ServerInfo;
 import io.airlift.mcp.model.SubscribeListChanged;
 import io.airlift.mcp.model.Tool;
+import io.airlift.mcp.session.SessionId;
 import jakarta.ws.rs.core.Request;
 import org.glassfish.jersey.uri.UriTemplate;
 
@@ -130,13 +131,13 @@ public class McpServer
         return new ListToolsResponse(toolsList);
     }
 
-    public CallToolResult callTool(Request request, McpNotifier notifier, CallToolRequest callToolRequest)
+    public CallToolResult callTool(Request request, SessionId sessionId, McpNotifier notifier, CallToolRequest callToolRequest)
             throws McpException
     {
         return tools.entry(callToolRequest.name())
                 .map(toolEntry -> {
                     try {
-                        return toolEntry.toolHandler().callTool(request, notifier, callToolRequest);
+                        return toolEntry.toolHandler().callTool(request, sessionId, notifier, callToolRequest);
                     }
                     catch (Exception e) {
                         throw handleException(e);
@@ -151,13 +152,13 @@ public class McpServer
         return new ListPromptsResult(pomptsList);
     }
 
-    public GetPromptResult getPrompt(Request request, McpNotifier notifier, GetPromptRequest getPromptRequest)
+    public GetPromptResult getPrompt(Request request, SessionId sessionId, McpNotifier notifier, GetPromptRequest getPromptRequest)
             throws McpException
     {
         return prompts.entry(getPromptRequest.name())
                 .map(promptEntry -> {
                     try {
-                        return promptEntry.promptHandler().getPrompt(request, notifier, getPromptRequest);
+                        return promptEntry.promptHandler().getPrompt(request, sessionId, notifier, getPromptRequest);
                     }
                     catch (Exception e) {
                         throw handleException(e);
@@ -178,20 +179,20 @@ public class McpServer
         return new ListResourceTemplatesResult(resourceTemplatesList);
     }
 
-    public ReadResourceResult readResources(Request request, McpNotifier notifier, ReadResourceRequest readResourceRequest)
+    public ReadResourceResult readResources(Request request, SessionId sessionId, McpNotifier notifier, ReadResourceRequest readResourceRequest)
             throws McpException
     {
         try {
             Stream<ResourceContents> resourceContentsStream = resources.entries()
                     .filter(resourceEntry -> resourceEntry.resource().uri().equals(readResourceRequest.uri()))
-                    .flatMap(resourceEntry -> resourceEntry.handler().readResource(request, notifier, resourceEntry.resource(), readResourceRequest).stream());
+                    .flatMap(resourceEntry -> resourceEntry.handler().readResource(request, sessionId, notifier, resourceEntry.resource(), readResourceRequest).stream());
 
             Stream<ResourceContents> resourceTemplateContentsStream = resourceTemplates.entries()
                     .flatMap(resourceTemplateEntry -> {
                         UriTemplate uriTemplate = new UriTemplate(resourceTemplateEntry.resourceTemplate().uriTemplate());
                         Map<String, String> templateVariableToValue = new HashMap<>();
                         if (uriTemplate.match(readResourceRequest.uri(), templateVariableToValue)) {
-                            return resourceTemplateEntry.handler().readResource(request, notifier, resourceTemplateEntry.resourceTemplate(), readResourceRequest, new PathTemplateValues(templateVariableToValue)).stream();
+                            return resourceTemplateEntry.handler().readResource(request, sessionId, notifier, resourceTemplateEntry.resourceTemplate(), readResourceRequest, new PathTemplateValues(templateVariableToValue)).stream();
                         }
                         return Stream.of();
                     });
@@ -205,13 +206,13 @@ public class McpServer
         }
     }
 
-    public CompletionResult completeCompletion(Request request, McpNotifier notifier, CompletionRequest completionRequest)
+    public CompletionResult completeCompletion(Request request, SessionId sessionId, McpNotifier notifier, CompletionRequest completionRequest)
             throws McpException
     {
         try {
             Completion completion = completions.entries()
                     .map(CompletionEntry::completionHandler)
-                    .flatMap(completionHandler -> completionHandler.completeCompletion(request, notifier, completionRequest).stream())
+                    .flatMap(completionHandler -> completionHandler.completeCompletion(request, sessionId, notifier, completionRequest).stream())
                     .reduce(new Completion(ImmutableList.of()), this::mergeCompletions);
             return new CompletionResult(completion);
         }

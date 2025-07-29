@@ -23,7 +23,7 @@ import java.util.stream.Stream;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.reflection.Predicates.isGetPromptRequest;
-import static io.airlift.mcp.reflection.Predicates.isHttpRequest;
+import static io.airlift.mcp.reflection.Predicates.isHttpRequestOrSessonId;
 import static io.airlift.mcp.reflection.Predicates.isNotifier;
 import static io.airlift.mcp.reflection.Predicates.isString;
 import static io.airlift.mcp.reflection.Predicates.returnsGetPromptResult;
@@ -51,7 +51,7 @@ public class PromptHandlerProvider
         this.parameters = ImmutableList.copyOf(parameters);
         this.role = requireNonNull(role, "role is null");
 
-        validate(method, parameters, isHttpRequest.or(isNotifier).or(isString).or(isGetPromptRequest), returnsString.or(returnsGetPromptResult));
+        validate(method, parameters, isHttpRequestOrSessonId.or(isNotifier).or(isString).or(isGetPromptRequest), returnsString.or(returnsGetPromptResult));
 
         prompt = buildPrompt(mcpPrompt, parameters);
         isGetPromptResult = GetPromptResult.class.isAssignableFrom(method.getReturnType());
@@ -63,8 +63,8 @@ public class PromptHandlerProvider
         Object instance = injector.getInstance(clazz);
         MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper);
 
-        PromptHandler promptHandler = (request, notifier, promptRequest) -> {
-            Object result = methodInvoker.builder(request)
+        PromptHandler promptHandler = (request, sessionId, notifier, promptRequest) -> {
+            Object result = methodInvoker.builder(request, sessionId)
                     .withArguments(promptRequest.arguments())
                     .withNotifier(notifier)
                     .withGetPromptRequest(promptRequest)

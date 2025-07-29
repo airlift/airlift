@@ -23,6 +23,7 @@ applied to methods in a class that conform to the following rules:
 - Parameters can be:
     - `String` for the prompt arguments
     - `jakarta.ws.rs.core.Request`
+    - SessionId ([see doc on sessions](sessions.md))
     - [GetPromptRequest](../src/main/java/io/airlift/mcp/model/GetPromptRequest.java)
     - [McpNotifier](misc.md#notifications-to-clients)
 - Returns either:
@@ -50,3 +51,8 @@ public interface PromptHandler
 ```java
 mcpServer.prompts().add("name", new PromptEntry(prompt, handler));
 ```
+
+## Note on cancellation
+
+Use the `cancellationRequested()` method of the `McpNotifier` to check if
+the request/operation has been requested to be cancelled.

@@ -44,6 +44,7 @@ public abstract class TestBase
     protected final HttpClient httpClient;
     protected final URI baseUri;
     protected final ObjectMapper objectMapper;
+    protected final Map<String, String> requestHeaders = new HashMap<>();
 
     protected TestBase(Builder<?> rpcModuleBuilder, Module... additionalModules)
     {
@@ -86,6 +87,11 @@ public abstract class TestBase
     protected Request buildNotification(String method)
     {
         return internalBuildRequest(null, method, new TypeToken<>() {}, Optional.empty());
+    }
+
+    protected <T> Request buildNotification(String method, TypeToken<JsonRpcRequest<T>> type, T params)
+    {
+        return internalBuildRequest(null, method, type, Optional.of(params));
     }
 
     protected <T> Request buildResponse(Object id, TypeToken<JsonRpcResponse<T>> type, Optional<T> maybeResult)
@@ -161,12 +167,13 @@ public abstract class TestBase
 
     private <T> Request internalBuildRequest(@Nullable Object id, String method, TypeToken<JsonRpcRequest<T>> type, Optional<T> maybeParams)
     {
-        JsonRpcRequest<T> jsonRpcRequest = maybeParams.map(params -> (id == null) ? JsonRpcRequest.<T>buildNotification(method) : JsonRpcRequest.buildRequest(id, method, params))
+        JsonRpcRequest<T> jsonRpcRequest = maybeParams.map(params -> (id == null) ? JsonRpcRequest.<T>buildNotification(method, params) : JsonRpcRequest.buildRequest(id, method, params))
                 .orElseGet(() -> JsonRpcRequest.buildRequest(id, method));
         Request.Builder builder = Request.Builder.preparePost()
                 .setUri(uri())
                 .setHeader("Content-Type", "application/json")
                 .setBodyGenerator(jsonBodyGenerator(JsonCodec.jsonCodec(type), jsonRpcRequest));
+        requestHeaders.forEach(builder::addHeader);
         return builder.build();
     }
 }

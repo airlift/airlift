@@ -23,6 +23,7 @@ applied to methods in a class that conform to the following rules:
 - Parameters can be:
   - types that conform to the [supported types](misc.md#supported-types)
   - `jakarta.ws.rs.core.Request`
+  - SessionId ([see doc on sessions](sessions.md))
   - [McpNotifier](misc.md#notifications-to-clients)
   - [CallToolRequest](../src/main/java/io/airlift/mcp/model/CallToolRequest.java)
 - Returns either:
@@ -51,3 +52,8 @@ public interface ToolHandler
 ```java
 mcpServer.tools().add("name", new ToolEntry(tool, handler));
 ```
+
+## Note on cancellation
+
+Use the `cancellationRequested()` method of the `McpNotifier` to check if 
+the request/operation has been requested to be cancelled.
