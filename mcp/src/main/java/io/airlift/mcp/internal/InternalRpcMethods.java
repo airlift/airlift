@@ -10,6 +10,7 @@ import io.airlift.jsonrpc.model.JsonRpcResponse;
 import io.airlift.log.Logger;
 import io.airlift.mcp.McpException;
 import io.airlift.mcp.McpServer;
+import io.airlift.mcp.handler.RequestContext;
 import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.CancellationRequest;
 import io.airlift.mcp.model.CompletionRequest;
@@ -34,6 +35,8 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.Request;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.StreamingOutput;
+import jakarta.ws.rs.ext.Providers;
+import org.glassfish.jersey.spi.ContextResolvers;
 
 import java.util.Map;
 import java.util.Optional;
@@ -172,12 +175,12 @@ public class InternalRpcMethods
 
     @JsonRpc(METHOD_CALL_TOOL)
     @Produces({SERVER_SENT_EVENTS, APPLICATION_JSON})
-    public Response callTool(@Context Request request, @Context SessionId sessionId, CallToolRequest callToolRequest)
+    public Response callTool(@Context Request request, @Context SessionId sessionId, @Context Providers providers, @Context ContextResolvers contextResolvers, CallToolRequest callToolRequest)
     {
         log.debug("Received call tool request: %s, sessionId: %s", callToolRequest, sessionId);
 
         return asStreamingOutput(request, sessionId, callToolRequest,
-                notifier -> mcpServer.callTool(request, sessionId, notifier, callToolRequest));
+                notifier -> mcpServer.callTool(new RequestContext(request, sessionId, providers, contextResolvers), notifier, callToolRequest));
     }
 
     @JsonRpc(METHOD_PROMPTS_LIST)
@@ -190,12 +193,12 @@ public class InternalRpcMethods
 
     @JsonRpc(METHOD_GET_PROMPT)
     @Produces({SERVER_SENT_EVENTS, APPLICATION_JSON})
-    public Response getPrompt(@Context Request request, @Context SessionId sessionId, GetPromptRequest getPromptRequest)
+    public Response getPrompt(@Context Request request, @Context SessionId sessionId, @Context Providers providers, @Context ContextResolvers contextResolvers, GetPromptRequest getPromptRequest)
     {
         log.debug("Received get prompt request: %s, sessionId: %s", getPromptRequest, sessionId);
 
         return asStreamingOutput(request, sessionId, getPromptRequest,
-                notifier -> mcpServer.getPrompt(request, sessionId, notifier, getPromptRequest));
+                notifier -> mcpServer.getPrompt(new RequestContext(request, sessionId, providers, contextResolvers), notifier, getPromptRequest));
     }
 
     @JsonRpc(METHOD_RESOURCES_LIST)
@@ -216,22 +219,22 @@ public class InternalRpcMethods
 
     @JsonRpc(METHOD_READ_RESOURCES)
     @Produces({SERVER_SENT_EVENTS, APPLICATION_JSON})
-    public Response readResources(@Context Request request, @Context SessionId sessionId, ReadResourceRequest readResourceRequest)
+    public Response readResources(@Context Request request, @Context SessionId sessionId, @Context Providers providers, @Context ContextResolvers contextResolvers, ReadResourceRequest readResourceRequest)
     {
         log.debug("Received read resources request: %s, sessionId: %s", readResourceRequest, sessionId);
 
         return asStreamingOutput(request, sessionId, readResourceRequest,
-                notifier -> mcpServer.readResources(request, sessionId, notifier, readResourceRequest));
+                notifier -> mcpServer.readResources(new RequestContext(request, sessionId, providers, contextResolvers), notifier, readResourceRequest));
     }
 
     @JsonRpc(METHOD_COMPLETION_COMPLETE)
     @Produces({SERVER_SENT_EVENTS, APPLICATION_JSON})
-    public Response completeCompletion(@Context Request request, @Context SessionId sessionId, CompletionRequest completionRequest)
+    public Response completeCompletion(@Context Request request, @Context SessionId sessionId, @Context Providers providers, @Context ContextResolvers contextResolvers, CompletionRequest completionRequest)
     {
         log.debug("Received completion request: %s, sessionId: %s", completionRequest, sessionId);
 
         return asStreamingOutput(request, sessionId, completionRequest,
-                notifier -> mcpServer.completeCompletion(request, sessionId, notifier, completionRequest));
+                notifier -> mcpServer.completeCompletion(new RequestContext(request, sessionId, providers, contextResolvers), notifier, completionRequest));
     }
 
     @JsonRpc(METHOD_SET_LOGGING_LEVEL)

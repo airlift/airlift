@@ -11,10 +11,12 @@ import io.airlift.mcp.model.GetPromptRequest;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceTemplate;
+import io.airlift.mcp.reflection.JerseyContextEmulation.InternalContextResolver;
 import io.airlift.mcp.reflection.MethodParameter.CallToolRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.CompletionRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.GetPromptRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.HttpRequestParameter;
+import io.airlift.mcp.reflection.MethodParameter.JaxrsContextParameter;
 import io.airlift.mcp.reflection.MethodParameter.NotifierParameter;
 import io.airlift.mcp.reflection.MethodParameter.ObjectParameter;
 import io.airlift.mcp.reflection.MethodParameter.PathTemplateValuesParameter;
@@ -23,6 +25,7 @@ import io.airlift.mcp.reflection.MethodParameter.SessionIdParameter;
 import io.airlift.mcp.reflection.MethodParameter.SourceResourceParameter;
 import io.airlift.mcp.reflection.MethodParameter.SourceResourceTemplateParameter;
 import io.airlift.mcp.session.SessionId;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.Request;
 
 import java.lang.annotation.Annotation;
@@ -32,8 +35,10 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -106,6 +111,19 @@ public interface ReflectionHelper
 
                     if (PathTemplateValues.class.isAssignableFrom(parameter.getType())) {
                         return PathTemplateValuesParameter.INSTANCE;
+                    }
+
+                    if (parameter.getAnnotation(Context.class) != null) {
+                        AtomicReference<InternalContextResolver> contextResolver = new AtomicReference<>();
+                        Function<JerseyContextEmulation, Supplier<InternalContextResolver>> contextResolverProc = jerseyContextEmulation -> () -> contextResolver.updateAndGet(currentValue -> {
+                            if (currentValue != null) {
+                                return currentValue;
+                            }
+
+                            return jerseyContextEmulation.resolveContextInstance(method.getDeclaringClass(), parameter.getType(), genericType, parameter.getAnnotations())
+                                    .orElseThrow(() -> new IllegalStateException("No context provider found for parameter: " + parameter));
+                        });
+                        return new JaxrsContextParameter(contextResolverProc);
                     }
 
                     Optional<String> description = Optional.ofNullable(parameter.getAnnotation(McpDescription.class)).map(McpDescription::value);

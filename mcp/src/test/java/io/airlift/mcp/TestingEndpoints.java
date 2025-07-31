@@ -3,6 +3,7 @@ package io.airlift.mcp;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.airlift.jsonrpc.model.JsonRpcRequest;
+import io.airlift.log.Logger;
 import io.airlift.mcp.Person.Address;
 import io.airlift.mcp.handler.ResourceTemplateHandler.PathTemplateValues;
 import io.airlift.mcp.model.CallToolResult;
@@ -22,7 +23,10 @@ import io.airlift.mcp.model.Role;
 import io.airlift.mcp.model.SamplingMessage;
 import io.airlift.mcp.session.ListType;
 import io.airlift.mcp.session.SessionId;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.HttpHeaders;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -34,6 +38,8 @@ import static java.util.Objects.requireNonNull;
 
 public class TestingEndpoints
 {
+    private static final Logger log = Logger.get(TestingEndpoints.class);
+
     private final TestingSessionController sessionController;
 
     @Inject
@@ -150,8 +156,10 @@ public class TestingEndpoints
     }
 
     @McpPrompt(name = "greeting", description = "Generate a greeting message")
-    public String greeting(@McpDescription("Name of the person to greet") String name)
+    public String greeting(@McpDescription("Name of the person to greet") String name, @Context URI requestUri, @Context HttpHeaders httpHeaders, @Context TestingContext testingContext)
     {
+        log.info("Received greeting request for name: %s, request URI: %s, content-type: %s, now: %s", name, requestUri, httpHeaders.getRequestHeaders().getFirst("Content-Type"), testingContext.now());
+
         return "Hello, " + name + "!";
     }
 

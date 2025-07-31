@@ -27,6 +27,7 @@ applied to methods in a class that conform to the following rules:
     - For resource templates:
       - [ResourceTemplate](../src/main/java/io/airlift/mcp/model/ResourceTemplate.java) - the source resource being read
     - [ReadResourceRequest](../src/main/java/io/airlift/mcp/model/ReadResourceRequest.java)
+    - JAX-RS `@Context` parameters
 - Returns either:
     - [ResourceContents](../src/main/java/io/airlift/mcp/model/ResourceContents.java)
     - [List&lt;ResourceContents&gt;](../src/main/java/io/airlift/mcp/model/ResourceContents.java)

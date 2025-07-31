@@ -17,6 +17,7 @@ import io.airlift.http.client.FullJsonResponseHandler.JsonResponse;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.StreamingResponse;
+import io.airlift.jaxrs.JaxrsBinder;
 import io.airlift.jsonrpc.model.JsonRpcResponse;
 import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.CallToolResult;
@@ -60,6 +61,7 @@ import static com.google.inject.Scopes.SINGLETON;
 import static io.airlift.http.client.FullJsonResponseHandler.createFullJsonResponseHandler;
 import static io.airlift.http.client.JsonResponseHandler.createJsonResponseHandler;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
+import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
 import static io.airlift.json.JsonCodec.jsonCodec;
 import static io.airlift.mcp.model.Constants.METHOD_CALL_TOOL;
 import static io.airlift.mcp.model.Constants.METHOD_GET_PROMPT;
@@ -78,7 +80,13 @@ public class TestMcp
 {
     public TestMcp()
     {
-        super(moduleBuilder(), binder -> binder.bind(TestingSessionController.class).in(SINGLETON));
+        super(moduleBuilder(), binder -> {
+            binder.bind(TestingSessionController.class).in(SINGLETON);
+
+            JaxrsBinder jaxrsBinder = jaxrsBinder(binder);
+            jaxrsBinder.bind(TestingValueParam.class);
+            jaxrsBinder.bind(TestingContextResolver.class);
+        });
     }
 
     private static McpModule.Builder moduleBuilder()

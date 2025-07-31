@@ -18,9 +18,9 @@ import java.util.List;
 import java.util.Optional;
 
 import static io.airlift.mcp.McpException.exception;
-import static io.airlift.mcp.reflection.Predicates.isHttpRequestOrSessonId;
 import static io.airlift.mcp.reflection.Predicates.isNotifier;
 import static io.airlift.mcp.reflection.Predicates.isReadResourceRequest;
+import static io.airlift.mcp.reflection.Predicates.isRequestParameter;
 import static io.airlift.mcp.reflection.Predicates.isSourceResource;
 import static io.airlift.mcp.reflection.Predicates.returnsResourceContents;
 import static io.airlift.mcp.reflection.Predicates.returnsResourceContentsList;
@@ -38,6 +38,7 @@ public class ResourceHandlerProvider
     private final boolean resultIsSingleContent;
     @Inject private Injector injector;
     @Inject private ObjectMapper objectMapper;
+    @Inject private JerseyContextEmulation jerseyContextEmulation;
 
     public ResourceHandlerProvider(McpResource mcpResource, Class<?> clazz, Method method, List<MethodParameter> parameters)
     {
@@ -45,7 +46,7 @@ public class ResourceHandlerProvider
         this.method = requireNonNull(method, "method is null");
         this.parameters = ImmutableList.copyOf(parameters);
 
-        validate(method, parameters, isHttpRequestOrSessonId.or(isNotifier).or(isReadResourceRequest).or(isSourceResource), returnsResourceContents.or(returnsResourceContentsList));
+        validate(method, parameters, isRequestParameter.or(isNotifier).or(isReadResourceRequest).or(isSourceResource), returnsResourceContents.or(returnsResourceContentsList));
         resultIsSingleContent = returnsResourceContents.test(method);
 
         resource = buildResource(
@@ -62,10 +63,10 @@ public class ResourceHandlerProvider
     public ResourceEntry get()
     {
         Object instance = injector.getInstance(clazz);
-        MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper);
+        MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper, jerseyContextEmulation);
 
-        ResourceHandler resourceHandler = (request, sessionId, notifier, sourceResource, readResourceRequest) -> {
-            Object result = methodInvoker.builder(request, sessionId)
+        ResourceHandler resourceHandler = (requestContext, notifier, sourceResource, readResourceRequest) -> {
+            Object result = methodInvoker.builder(requestContext)
                     .withNotifier(notifier)
                     .withReadResourceRequest(sourceResource, readResourceRequest)
                     .invoke();

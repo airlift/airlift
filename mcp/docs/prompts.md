@@ -26,6 +26,7 @@ applied to methods in a class that conform to the following rules:
     - SessionId ([see doc on sessions](sessions.md))
     - [GetPromptRequest](../src/main/java/io/airlift/mcp/model/GetPromptRequest.java)
     - [McpNotifier](misc.md#notifications-to-clients)
+    - JAX-RS `@Context` parameters
 - Returns either:
     - `String`
     - one of the [Content](../src/main/java/io/airlift/mcp/model/Content.java) subtypes
@@ -40,7 +41,7 @@ applied to methods in a class that conform to the following rules:
 ```java
 public interface PromptHandler
 {
-    GetPromptResult getPrompt(Request request, McpNotifier notifier, GetPromptRequest getPromptRequest);
+    GetPromptResult getPrompt(RequestContext requestContext, McpNotifier notifier, GetPromptRequest getPromptRequest);
 }
 ```
 

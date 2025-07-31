@@ -17,8 +17,8 @@ import java.util.Optional;
 
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.reflection.Predicates.isCompletionRequest;
-import static io.airlift.mcp.reflection.Predicates.isHttpRequestOrSessonId;
 import static io.airlift.mcp.reflection.Predicates.isNotifier;
+import static io.airlift.mcp.reflection.Predicates.isRequestParameter;
 import static io.airlift.mcp.reflection.Predicates.returnsOptionalCompletion;
 import static io.airlift.mcp.reflection.Predicates.returnsOptionalListOfString;
 import static io.airlift.mcp.reflection.ReflectionHelper.listArgument;
@@ -35,6 +35,7 @@ public class CompletionHandlerProvider
     private final String name;
     @Inject private Injector injector;
     @Inject private ObjectMapper objectMapper;
+    @Inject private JerseyContextEmulation jerseyContextEmulation;
 
     public CompletionHandlerProvider(McpCompletion mcpCompletion, Class<?> clazz, Method method, List<MethodParameter> parameters)
     {
@@ -43,7 +44,7 @@ public class CompletionHandlerProvider
         this.parameters = ImmutableList.copyOf(parameters);
         this.name = mcpCompletion.name();
 
-        validate(method, parameters, isHttpRequestOrSessonId.or(isNotifier).or(isCompletionRequest), returnsOptionalCompletion.or(returnsOptionalListOfString));
+        validate(method, parameters, isRequestParameter.or(isNotifier).or(isCompletionRequest), returnsOptionalCompletion.or(returnsOptionalListOfString));
 
         isStringListResult = listArgument(method.getGenericReturnType()).map(type -> type.equals(String.class)).orElse(false);
     }
@@ -53,9 +54,9 @@ public class CompletionHandlerProvider
     public CompletionEntry get()
     {
         Object instance = injector.getInstance(clazz);
-        MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper);
-        CompletionHandler completionHandler = (request, sessionId, notifier, completionRequest) -> {
-            Object result = methodInvoker.builder(request, sessionId)
+        MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper, jerseyContextEmulation);
+        CompletionHandler completionHandler = (requestContext, notifier, completionRequest) -> {
+            Object result = methodInvoker.builder(requestContext)
                     .withCompletionRequest(completionRequest)
                     .withNotifier(notifier)
                     .invoke();

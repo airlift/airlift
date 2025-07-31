@@ -14,10 +14,10 @@ import io.airlift.mcp.model.ResourceTemplate;
 import java.lang.reflect.Method;
 import java.util.List;
 
-import static io.airlift.mcp.reflection.Predicates.isHttpRequestOrSessonId;
 import static io.airlift.mcp.reflection.Predicates.isNotifier;
 import static io.airlift.mcp.reflection.Predicates.isPathTemplateValues;
 import static io.airlift.mcp.reflection.Predicates.isReadResourceRequest;
+import static io.airlift.mcp.reflection.Predicates.isRequestParameter;
 import static io.airlift.mcp.reflection.Predicates.isSourceResourceTemplate;
 import static io.airlift.mcp.reflection.Predicates.returnsResourceContents;
 import static io.airlift.mcp.reflection.Predicates.returnsResourceContentsList;
@@ -35,6 +35,7 @@ public class ResourceTemplateHandlerProvider
     private final boolean resultIsSingleContent;
     @Inject private Injector injector;
     @Inject private ObjectMapper objectMapper;
+    @Inject private JerseyContextEmulation jerseyContextEmulation;
 
     public ResourceTemplateHandlerProvider(McpResourceTemplate mcpResourceTemplate, Class<?> clazz, Method method, List<MethodParameter> parameters)
     {
@@ -42,7 +43,7 @@ public class ResourceTemplateHandlerProvider
         this.method = requireNonNull(method, "method is null");
         this.parameters = ImmutableList.copyOf(parameters);
 
-        validate(method, parameters, isHttpRequestOrSessonId.or(isNotifier).or(isReadResourceRequest).or(isSourceResourceTemplate).or(isPathTemplateValues), returnsResourceContents.or(returnsResourceContentsList));
+        validate(method, parameters, isRequestParameter.or(isNotifier).or(isReadResourceRequest).or(isSourceResourceTemplate).or(isPathTemplateValues), returnsResourceContents.or(returnsResourceContentsList));
         resultIsSingleContent = returnsResourceContents.test(method);
 
         resourceTemplate = buildResourceTemplate(mcpResourceTemplate);
@@ -52,10 +53,10 @@ public class ResourceTemplateHandlerProvider
     public ResourceTemplateEntry get()
     {
         Object instance = injector.getInstance(clazz);
-        MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper);
+        MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper, jerseyContextEmulation);
 
-        ResourceTemplateHandler resourceTemplateHandler = (request, sessionId, notifier, sourceResourceTemplate, readResourceRequest, pathTemplateValues) -> {
-            Object result = methodInvoker.builder(request, sessionId)
+        ResourceTemplateHandler resourceTemplateHandler = (requestContext, notifier, sourceResourceTemplate, readResourceRequest, pathTemplateValues) -> {
+            Object result = methodInvoker.builder(requestContext)
                     .withNotifier(notifier)
                     .withReadResourceTemplateRequest(sourceResourceTemplate, readResourceRequest, pathTemplateValues)
                     .invoke();

@@ -26,6 +26,7 @@ applied to methods in a class that conform to the following rules:
   - SessionId ([see doc on sessions](sessions.md))
   - [McpNotifier](misc.md#notifications-to-clients)
   - [CallToolRequest](../src/main/java/io/airlift/mcp/model/CallToolRequest.java)
+  - JAX-RS `@Context` parameters
 - Returns either:
   - `void`
   - the [supported types](misc.md#supported-types)
@@ -41,7 +42,7 @@ applied to methods in a class that conform to the following rules:
 ```java
 public interface ToolHandler
 {
-    CallToolResult callTool(Request request, McpNotifier notifier, CallToolRequest toolRequest);
+    CallToolResult callTool(RequestContext requestContext, McpNotifier notifier, CallToolRequest toolRequest);
 }
 ```
 

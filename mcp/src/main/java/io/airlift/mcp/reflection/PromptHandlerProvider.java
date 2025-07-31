@@ -23,8 +23,8 @@ import java.util.stream.Stream;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.reflection.Predicates.isGetPromptRequest;
-import static io.airlift.mcp.reflection.Predicates.isHttpRequestOrSessonId;
 import static io.airlift.mcp.reflection.Predicates.isNotifier;
+import static io.airlift.mcp.reflection.Predicates.isRequestParameter;
 import static io.airlift.mcp.reflection.Predicates.isString;
 import static io.airlift.mcp.reflection.Predicates.returnsGetPromptResult;
 import static io.airlift.mcp.reflection.Predicates.returnsString;
@@ -43,6 +43,7 @@ public class PromptHandlerProvider
     private final boolean isGetPromptResult;
     @Inject private Injector injector;
     @Inject private ObjectMapper objectMapper;
+    @Inject private JerseyContextEmulation jerseyContextEmulation;
 
     public PromptHandlerProvider(McpPrompt mcpPrompt, Class<?> clazz, Method method, List<MethodParameter> parameters, Role role)
     {
@@ -51,7 +52,7 @@ public class PromptHandlerProvider
         this.parameters = ImmutableList.copyOf(parameters);
         this.role = requireNonNull(role, "role is null");
 
-        validate(method, parameters, isHttpRequestOrSessonId.or(isNotifier).or(isString).or(isGetPromptRequest), returnsString.or(returnsGetPromptResult));
+        validate(method, parameters, isRequestParameter.or(isNotifier).or(isString).or(isGetPromptRequest), returnsString.or(returnsGetPromptResult));
 
         prompt = buildPrompt(mcpPrompt, parameters);
         isGetPromptResult = GetPromptResult.class.isAssignableFrom(method.getReturnType());
@@ -61,10 +62,10 @@ public class PromptHandlerProvider
     public PromptEntry get()
     {
         Object instance = injector.getInstance(clazz);
-        MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper);
+        MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper, jerseyContextEmulation);
 
-        PromptHandler promptHandler = (request, sessionId, notifier, promptRequest) -> {
-            Object result = methodInvoker.builder(request, sessionId)
+        PromptHandler promptHandler = (requestContext, notifier, promptRequest) -> {
+            Object result = methodInvoker.builder(requestContext)
                     .withArguments(promptRequest.arguments())
                     .withNotifier(notifier)
                     .withGetPromptRequest(promptRequest)

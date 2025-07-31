@@ -22,6 +22,7 @@ applied to methods in a class that conform to the following rules:
     - `jakarta.ws.rs.core.Request`
     - SessionId ([see doc on sessions](sessions.md))
     - [McpNotifier](misc.md#notifications-to-clients)
+    - JAX-RS `@Context` parameters
 - Returns either:
     - `List<String>`
   - [Optional&lt;Completion&gt;](../src/main/java/io/airlift/mcp/model/Completion.java)
@@ -36,7 +37,7 @@ applied to methods in a class that conform to the following rules:
 ```java
 public interface CompletionHandler
 {
-    Optional<Completion> completeCompletion(Request request, McpNotifier notifier, CompletionRequest completionRequest);
+    Optional<Completion> completeCompletion(RequestContext requestContext, McpNotifier notifier, CompletionRequest completionRequest);
 }
 ```
 
