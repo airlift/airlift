@@ -8,6 +8,7 @@ import io.airlift.mcp.reflection.MethodParameter.CallToolRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.CompletionRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.GetPromptRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.HttpRequestParameter;
+import io.airlift.mcp.reflection.MethodParameter.JaxrsContextParameter;
 import io.airlift.mcp.reflection.MethodParameter.NotifierParameter;
 import io.airlift.mcp.reflection.MethodParameter.ObjectParameter;
 import io.airlift.mcp.reflection.MethodParameter.SessionIdParameter;
@@ -22,7 +23,6 @@ import static io.airlift.mcp.reflection.ReflectionHelper.optionalReturnArgument;
 
 public interface Predicates
 {
-    Predicate<MethodParameter> isHttpRequestOrSessonId = methodParameter -> (methodParameter instanceof HttpRequestParameter) || (methodParameter instanceof SessionIdParameter);
     Predicate<MethodParameter> isNotifier = methodParameter -> methodParameter instanceof NotifierParameter;
     Predicate<MethodParameter> isCompletionRequest = methodParameter -> methodParameter instanceof CompletionRequestParameter;
     Predicate<MethodParameter> isGetPromptRequest = methodParameter -> methodParameter instanceof GetPromptRequestParameter;
@@ -30,6 +30,9 @@ public interface Predicates
     Predicate<MethodParameter> isObject = methodParameter -> (methodParameter instanceof ObjectParameter);
     Predicate<MethodParameter> isString = methodParameter -> (methodParameter instanceof ObjectParameter objectParameter)
             && objectParameter.rawType().equals(String.class);
+    Predicate<MethodParameter> isRequestParameter = methodParameter -> (methodParameter instanceof HttpRequestParameter)
+            || (methodParameter instanceof SessionIdParameter)
+            || (methodParameter instanceof JaxrsContextParameter);
 
     Predicate<Method> returnsAnything = _ -> true;
     Predicate<Method> returnsOptionalCompletion = method -> optionalReturnArgument(method).equals(Completion.class);

@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Streams;
 import com.google.inject.Inject;
 import io.airlift.jsonrpc.model.JsonRpcErrorDetail;
+import io.airlift.mcp.handler.RequestContext;
 import io.airlift.mcp.handler.ResourceTemplatesEntry;
 import io.airlift.mcp.handler.ResourcesEntry;
 import io.airlift.mcp.model.CallToolRequest;
@@ -30,8 +31,6 @@ import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.model.ServerInfo;
 import io.airlift.mcp.model.Tool;
-import io.airlift.mcp.session.SessionId;
-import jakarta.ws.rs.core.Request;
 import org.glassfish.jersey.uri.UriTemplate;
 
 import java.io.PrintWriter;
@@ -78,13 +77,13 @@ public class McpServer
         return new ListToolsResponse(toolsList);
     }
 
-    public CallToolResult callTool(Request request, SessionId sessionId, McpNotifier notifier, CallToolRequest callToolRequest)
+    public CallToolResult callTool(RequestContext requestContext, McpNotifier notifier, CallToolRequest callToolRequest)
             throws McpException
     {
         return handlers.tool(callToolRequest.name())
                 .map(toolEntry -> {
                     try {
-                        return toolEntry.toolHandler().callTool(request, sessionId, notifier, callToolRequest);
+                        return toolEntry.toolHandler().callTool(requestContext, notifier, callToolRequest);
                     }
                     catch (Exception e) {
                         throw handleException(e);
@@ -99,13 +98,13 @@ public class McpServer
         return new ListPromptsResult(pomptsList);
     }
 
-    public GetPromptResult getPrompt(Request request, SessionId sessionId, McpNotifier notifier, GetPromptRequest getPromptRequest)
+    public GetPromptResult getPrompt(RequestContext requestContext, McpNotifier notifier, GetPromptRequest getPromptRequest)
             throws McpException
     {
         return handlers.prompt(getPromptRequest.name())
                 .map(promptEntry -> {
                     try {
-                        return promptEntry.promptHandler().getPrompt(request, sessionId, notifier, getPromptRequest);
+                        return promptEntry.promptHandler().getPrompt(requestContext, notifier, getPromptRequest);
                     }
                     catch (Exception e) {
                         throw handleException(e);
@@ -114,12 +113,12 @@ public class McpServer
                 .orElseThrow(() -> McpException.exception(INVALID_PARAMS, "Prompt not found", ImmutableMap.of("name", getPromptRequest.name())));
     }
 
-    public ListResourcesResult listResources(Request request, SessionId sessionId, McpNotifier notifier)
+    public ListResourcesResult listResources(RequestContext requestContext, McpNotifier notifier)
             throws McpException
     {
         try {
             List<Resource> resourcesList = handlers.streamResources()
-                    .flatMap(resource -> resource.listResources(request, sessionId, notifier).resources().stream())
+                    .flatMap(resource -> resource.listResources(requestContext, notifier).resources().stream())
                     .collect(toImmutableList());
             return new ListResourcesResult(resourcesList);
         }
@@ -128,12 +127,12 @@ public class McpServer
         }
     }
 
-    public ListResourceTemplatesResult listResourceTemplates(Request request, SessionId sessionId, McpNotifier notifier)
+    public ListResourceTemplatesResult listResourceTemplates(RequestContext requestContext, McpNotifier notifier)
             throws McpException
     {
         try {
             List<ResourceTemplate> resoureTemplatesList = handlers.streamResourceTemplates()
-                    .flatMap(resource -> resource.listResourceTemplates(request, sessionId, notifier).resourceTemplates().stream())
+                    .flatMap(resource -> resource.listResourceTemplates(requestContext, notifier).resourceTemplates().stream())
                     .collect(toImmutableList());
             return new ListResourceTemplatesResult(resoureTemplatesList);
         }
@@ -142,27 +141,27 @@ public class McpServer
         }
     }
 
-    public ReadResourceResult readResources(Request request, SessionId sessionId, McpNotifier notifier, ReadResourceRequest readResourceRequest)
+    public ReadResourceResult readResources(RequestContext requestContext, McpNotifier notifier, ReadResourceRequest readResourceRequest)
             throws McpException
     {
         try {
             Stream<ResourceContents> resourceContentsStream = handlers.streamResources()
                     .flatMap(set -> {
-                        ResourcesEntry resourcesEntry = set.listResources(request, sessionId, notifier);
+                        ResourcesEntry resourcesEntry = set.listResources(requestContext, notifier);
                         return resourcesEntry.resources().stream()
                                 .filter(resource -> resource.uri().equals(readResourceRequest.uri()))
-                                .flatMap(resource -> resourcesEntry.handler().readResource(request, sessionId, notifier, resource, readResourceRequest).stream());
+                                .flatMap(resource -> resourcesEntry.handler().readResource(requestContext, notifier, resource, readResourceRequest).stream());
                     });
 
             Stream<ResourceContents> resourceTemplateContentsStream = handlers.streamResourceTemplates()
                     .flatMap(set -> {
-                        ResourceTemplatesEntry resourceTemplatesEntry = set.listResourceTemplates(request, sessionId, notifier);
+                        ResourceTemplatesEntry resourceTemplatesEntry = set.listResourceTemplates(requestContext, notifier);
                         return resourceTemplatesEntry.resourceTemplates().stream()
                                 .flatMap(resourceTemplate -> {
                                     UriTemplate uriTemplate = new UriTemplate(resourceTemplate.uriTemplate());
                                     Map<String, String> templateVariableToValue = new HashMap<>();
                                     if (uriTemplate.match(readResourceRequest.uri(), templateVariableToValue)) {
-                                        return resourceTemplatesEntry.handler().readResource(request, sessionId, notifier, resourceTemplate, readResourceRequest, templateVariableToValue).stream();
+                                        return resourceTemplatesEntry.handler().readResource(requestContext, notifier, resourceTemplate, readResourceRequest, templateVariableToValue).stream();
                                     }
                                     return Stream.of();
                                 });
@@ -177,12 +176,12 @@ public class McpServer
         }
     }
 
-    public CompletionResult completeCompletion(Request request, SessionId sessionId, McpNotifier notifier, CompletionRequest completionRequest)
+    public CompletionResult completeCompletion(RequestContext requestContext, McpNotifier notifier, CompletionRequest completionRequest)
             throws McpException
     {
         try {
             Completion completion = handlers.streamCompletions()
-                    .flatMap(completionHandler -> completionHandler.completeCompletion(request, sessionId, notifier, completionRequest).stream())
+                    .flatMap(completionHandler -> completionHandler.completeCompletion(requestContext, notifier, completionRequest).stream())
                     .reduce(new Completion(ImmutableList.of()), this::mergeCompletions);
             return new CompletionResult(completion);
         }

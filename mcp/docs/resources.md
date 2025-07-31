@@ -21,6 +21,7 @@ applied to methods in a class that conform to the following rules:
     - `jakarta.ws.rs.core.Request`
     - SessionId ([see doc on sessions](sessions.md))
     - [McpNotifier](misc.md#notifications-to-clients)
+    - JAX-RS `@Context` parameters
 - Returns either:
     - [ResourcesEntry](../src/main/java/io/airlift/mcp/handler/ResourcesEntry.java)
     - [ResourceTemplatesEntry](../src/main/java/io/airlift/mcp/handler/ResourceTemplatesEntry.java)
@@ -35,18 +36,14 @@ and the handler to be used to read the contents of the resources/templates.
 1. Define a handler for resources or resource templates listing and resource reading:
 
 ```java
-import io.airlift.mcp.McpNotifier;
-import io.airlift.mcp.handler.ResourceTemplatesEntry;
-import io.airlift.mcp.handler.ResourcesEntry;
-
 public interface ListResourcesHandler
 {
-  ResourcesEntry listResources(Request request, McpNotifier notifier);
+  ResourcesEntry listResources(RequestContext requestContext, McpNotifier notifier);
 }
 
 public interface ListResourceTemplatesHandler
 {
-  ResourceTemplatesEntry listResourceTemplates(Request request, McpNotifier notifier);
+  ResourceTemplatesEntry listResourceTemplates(RequestContext requestContext, McpNotifier notifier);
 }
 ```
 

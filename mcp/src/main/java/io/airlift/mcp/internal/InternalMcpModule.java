@@ -37,6 +37,7 @@ import io.airlift.mcp.model.Content.ResourceLink;
 import io.airlift.mcp.model.Content.TextContent;
 import io.airlift.mcp.model.ServerInfo;
 import io.airlift.mcp.reflection.CompletionHandlerProvider;
+import io.airlift.mcp.reflection.JerseyContextEmulation;
 import io.airlift.mcp.reflection.ListResourceTemplatesHandlerProvider;
 import io.airlift.mcp.reflection.ListResourcesHandlerProvider;
 import io.airlift.mcp.reflection.PromptHandlerProvider;
@@ -136,6 +137,7 @@ public class InternalMcpModule
                 return binder -> {
                     binder.bind(McpServer.class).in(SINGLETON);
                     binder.bind(McpHandlers.class).in(SINGLETON);
+                    binder.bind(JerseyContextEmulation.class).in(SINGLETON);
                     binder.bind(ServerInfo.class).toInstance(serverInfo);
                     binder.install(jsonRpcBuilder.build());
 

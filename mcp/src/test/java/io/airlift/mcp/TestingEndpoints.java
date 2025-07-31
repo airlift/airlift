@@ -3,6 +3,7 @@ package io.airlift.mcp;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.airlift.jsonrpc.model.JsonRpcRequest;
+import io.airlift.log.Logger;
 import io.airlift.mcp.Person.Address;
 import io.airlift.mcp.handler.ResourceTemplatesEntry;
 import io.airlift.mcp.handler.ResourcesEntry;
@@ -24,7 +25,10 @@ import io.airlift.mcp.model.Role;
 import io.airlift.mcp.model.SamplingMessage;
 import io.airlift.mcp.session.ListType;
 import io.airlift.mcp.session.SessionId;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.HttpHeaders;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -35,6 +39,8 @@ import static java.util.Objects.requireNonNull;
 
 public class TestingEndpoints
 {
+    private static final Logger log = Logger.get(TestingEndpoints.class);
+
     private final Optional<TestingSessionController> sessionController;
 
     @Inject
@@ -69,7 +75,7 @@ public class TestingEndpoints
     }
 
     @McpTool(name = "itsSimple", description = "It's just so simple")
-    public int itsSimple(@McpDescription("A simple thing") SimpleThing thing)
+    public int itsSimple(@McpDescription("A simple thing") SimpleThing ignore)
     {
         return 0;
     }
@@ -134,7 +140,7 @@ public class TestingEndpoints
         Resource resource1 = new Resource("example1", "file://example1.txt", Optional.of("This is example1 resource."), "text/plain", Optional.empty(), Optional.empty());
         Resource resource2 = new Resource("example2", "file://example2.txt", Optional.of("This is example2 resource."), "text/plain", Optional.empty(), Optional.empty());
 
-        return new ResourcesEntry(ImmutableList.of(resource1, resource2), (_, sessionId, notifier, _, readResourceRequest) -> {
+        return new ResourcesEntry(ImmutableList.of(resource1, resource2), (_, notifier, _, readResourceRequest) -> {
             if (readResourceRequest.uri().contains("example2")) {
                 sendProgress(notifier);
             }
@@ -148,7 +154,7 @@ public class TestingEndpoints
     public ResourceTemplatesEntry listResourceTemplates()
     {
         ResourceTemplate resource = new ResourceTemplate("example1", "file://{part}.txt", Optional.of("This is example1 resource."), "text/plain", Optional.empty(), Optional.empty());
-        return new ResourceTemplatesEntry(ImmutableList.of(resource), (_, sessionId, _, _, readResourceRequest, pathTemplateValues) -> {
+        return new ResourceTemplatesEntry(ImmutableList.of(resource), (_, _, _, readResourceRequest, pathTemplateValues) -> {
             if (readResourceRequest.uri().equals("file://one.txt")) {
                 ResourceContents contents = new ResourceContents("foo2", readResourceRequest.uri(), "text/plain", pathTemplateValues.get("part"));
                 return ImmutableList.of(contents);
@@ -158,8 +164,10 @@ public class TestingEndpoints
     }
 
     @McpPrompt(name = "greeting", description = "Generate a greeting message")
-    public String greeting(@McpDescription("Name of the person to greet") String name)
+    public String greeting(@McpDescription("Name of the person to greet") String name, @Context URI requestUri, @Context HttpHeaders httpHeaders, @Context TestingContext testingContext)
     {
+        log.info("Received greeting request for name: %s, request URI: %s, content-type: %s, now: %s", name, requestUri, httpHeaders.getRequestHeaders().getFirst("Content-Type"), testingContext.now());
+
         return "Hello, " + name + "!";
     }
 

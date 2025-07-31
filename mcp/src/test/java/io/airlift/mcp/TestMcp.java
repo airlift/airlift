@@ -16,6 +16,7 @@ import io.airlift.TestBase;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.StreamingResponse;
+import io.airlift.jaxrs.JaxrsBinder;
 import io.airlift.jsonrpc.model.JsonRpcResponse;
 import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.CallToolResult;
@@ -51,6 +52,7 @@ import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
 import static io.airlift.http.client.FullJsonResponseHandler.createFullJsonResponseHandler;
 import static io.airlift.http.client.JsonResponseHandler.createJsonResponseHandler;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
+import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
 import static io.airlift.json.JsonCodec.jsonCodec;
 import static io.airlift.mcp.model.Constants.METHOD_CALL_TOOL;
 import static io.airlift.mcp.model.Constants.METHOD_GET_PROMPT;
@@ -64,7 +66,13 @@ public class TestMcp
 {
     public TestMcp()
     {
-        super(McpModule.builder().addAllInClass(TestingEndpoints.class), binder -> newOptionalBinder(binder, TestingSessionController.class));
+        super(McpModule.builder().addAllInClass(TestingEndpoints.class), binder -> {
+            newOptionalBinder(binder, TestingSessionController.class);
+
+            JaxrsBinder jaxrsBinder = jaxrsBinder(binder);
+            jaxrsBinder.bind(TestingValueParam.class);
+            jaxrsBinder.bind(TestingContextResolver.class);
+        });
     }
 
     @Test

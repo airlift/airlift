@@ -4,9 +4,9 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.inject.Inject;
 import io.airlift.mcp.McpException;
 import io.airlift.mcp.McpNotifier;
+import io.airlift.mcp.handler.RequestContext;
 import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.CompletionRequest;
 import io.airlift.mcp.model.GetPromptRequest;
@@ -14,17 +14,18 @@ import io.airlift.mcp.reflection.MethodParameter.CallToolRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.CompletionRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.GetPromptRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.HttpRequestParameter;
+import io.airlift.mcp.reflection.MethodParameter.JaxrsContextParameter;
 import io.airlift.mcp.reflection.MethodParameter.NotifierParameter;
 import io.airlift.mcp.reflection.MethodParameter.ObjectParameter;
 import io.airlift.mcp.reflection.MethodParameter.SessionIdParameter;
-import io.airlift.mcp.session.SessionId;
 import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Request;
+import org.glassfish.jersey.server.ContainerRequest;
 
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static io.airlift.jsonrpc.model.JsonRpcErrorCode.INVALID_REQUEST;
 import static io.airlift.mcp.McpException.exception;
@@ -36,14 +37,21 @@ public class MethodInvoker
     private final Method method;
     private final List<MethodParameter> parameters;
     private final ObjectMapper objectMapper;
+    private final JerseyContextEmulation jerseyContextEmulation;
 
-    @Inject
-    public MethodInvoker(Object instance, Method method, List<MethodParameter> parameters, ObjectMapper objectMapper)
+    public MethodInvoker(Object instance, Method method, List<MethodParameter> parameters, ObjectMapper objectMapper, JerseyContextEmulation jerseyContextEmulation)
     {
         this.instance = requireNonNull(instance, "instance is null");
         this.method = requireNonNull(method, "method is null");
         this.parameters = ImmutableList.copyOf(parameters);
         this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
+        this.jerseyContextEmulation = requireNonNull(jerseyContextEmulation, "jerseyContextEmulation is null");
+
+        // call the supplier for any jaxrsContextParameters so that they are initialized
+        // most implementations should use a memoized supplier
+        parameters.stream()
+                .flatMap(parameter -> (parameter instanceof JaxrsContextParameter jaxrsContextParameter) ? Stream.of(jaxrsContextParameter) : Stream.empty())
+                .forEach(jaxrsContextParameter -> jaxrsContextParameter.contextResolverSupplier().apply(jerseyContextEmulation).get());
     }
 
     public interface Builder
@@ -61,8 +69,12 @@ public class MethodInvoker
         Object invoke();
     }
 
-    public Builder builder(Request request, SessionId sessionId)
+    public Builder builder(RequestContext requestContext)
     {
+        if (!(requestContext.request() instanceof ContainerRequest)) {
+            throw new IllegalArgumentException("request is not a ContainerRequest");
+        }
+
         return new Builder()
         {
             private Map<String, Object> arguments = ImmutableMap.of();
@@ -112,8 +124,9 @@ public class MethodInvoker
                 try {
                     Object[] methodArguments = parameters.stream()
                             .map(parameter -> switch (parameter) {
-                                case HttpRequestParameter _ -> request;
-                                case SessionIdParameter _ -> sessionId;
+                                case HttpRequestParameter _ -> requestContext.request();
+                                case SessionIdParameter _ -> requestContext.sessionId();
+                                case JaxrsContextParameter jaxrsContextParameter -> jaxrsContextParameter.contextResolverSupplier().apply(jerseyContextEmulation).get().resolve(requestContext);
                                 case NotifierParameter _ -> notifier.orElseThrow(() -> new IllegalArgumentException("Notifier is required"));
                                 case CompletionRequestParameter _ -> completion.orElseThrow(() -> new IllegalArgumentException("Completion is required"));
                                 case GetPromptRequestParameter _ -> getPromptRequest.orElseThrow(() -> new IllegalArgumentException("GetPromptRequest is required"));

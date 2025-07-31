@@ -24,9 +24,9 @@ import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.model.JsonSchemaBuilder.isPrimitiveType;
 import static io.airlift.mcp.model.JsonSchemaBuilder.isSupportedType;
 import static io.airlift.mcp.reflection.Predicates.isCallToolRequest;
-import static io.airlift.mcp.reflection.Predicates.isHttpRequestOrSessonId;
 import static io.airlift.mcp.reflection.Predicates.isNotifier;
 import static io.airlift.mcp.reflection.Predicates.isObject;
+import static io.airlift.mcp.reflection.Predicates.isRequestParameter;
 import static io.airlift.mcp.reflection.Predicates.returnsAnything;
 import static io.airlift.mcp.reflection.ReflectionHelper.mapToContent;
 import static io.airlift.mcp.reflection.ReflectionHelper.validate;
@@ -42,6 +42,7 @@ public class ToolHandlerProvider
     private final ReturnType returnType;
     @Inject private Injector injector;
     @Inject private ObjectMapper objectMapper;
+    @Inject private JerseyContextEmulation jerseyContextEmulation;
 
     public ToolHandlerProvider(McpTool mcpTool, Class<?> clazz, Method method, List<MethodParameter> parameters)
     {
@@ -49,7 +50,7 @@ public class ToolHandlerProvider
         this.method = requireNonNull(method, "method is null");
         this.parameters = ImmutableList.copyOf(parameters);
 
-        validate(method, parameters, isHttpRequestOrSessonId.or(isNotifier).or(isObject).or(isCallToolRequest), returnsAnything);
+        validate(method, parameters, isRequestParameter.or(isNotifier).or(isObject).or(isCallToolRequest), returnsAnything);
 
         tool = buildTool(mcpTool, method, parameters);
 
@@ -81,10 +82,10 @@ public class ToolHandlerProvider
     public ToolEntry get()
     {
         Object instance = injector.getInstance(clazz);
-        MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper);
+        MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper, jerseyContextEmulation);
 
-        ToolHandler toolHandler = (request, sessionId, notifier, toolRequest) -> {
-            Object result = methodInvoker.builder(request, sessionId)
+        ToolHandler toolHandler = (requestContext, notifier, toolRequest) -> {
+            Object result = methodInvoker.builder(requestContext)
                     .withArguments(toolRequest.arguments())
                     .withNotifier(notifier)
                     .withCallToolRequest(toolRequest)

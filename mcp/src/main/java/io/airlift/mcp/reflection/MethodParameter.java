@@ -1,7 +1,11 @@
 package io.airlift.mcp.reflection;
 
+import io.airlift.mcp.reflection.JerseyContextEmulation.InternalContextResolver;
+
 import java.lang.reflect.Type;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
 
@@ -41,6 +45,15 @@ public sealed interface MethodParameter
             implements MethodParameter
     {
         public static final NotifierParameter INSTANCE = new NotifierParameter();
+    }
+
+    record JaxrsContextParameter(Function<JerseyContextEmulation, Supplier<InternalContextResolver>> contextResolverSupplier)
+            implements MethodParameter
+    {
+        public JaxrsContextParameter
+        {
+            requireNonNull(contextResolverSupplier, "contextResolverSupplier is null");
+        }
     }
 
     record ObjectParameter(

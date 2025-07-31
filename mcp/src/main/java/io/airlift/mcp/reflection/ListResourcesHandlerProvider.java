@@ -13,8 +13,8 @@ import java.lang.reflect.Method;
 import java.util.List;
 
 import static io.airlift.mcp.McpException.exception;
-import static io.airlift.mcp.reflection.Predicates.isHttpRequestOrSessonId;
 import static io.airlift.mcp.reflection.Predicates.isNotifier;
+import static io.airlift.mcp.reflection.Predicates.isRequestParameter;
 import static io.airlift.mcp.reflection.Predicates.returnsResourceList;
 import static io.airlift.mcp.reflection.ReflectionHelper.validate;
 import static java.util.Objects.requireNonNull;
@@ -27,6 +27,7 @@ public class ListResourcesHandlerProvider
     private final List<MethodParameter> parameters;
     @Inject private Injector injector;
     @Inject private ObjectMapper objectMapper;
+    @Inject private JerseyContextEmulation jerseyContextEmulation;
 
     public ListResourcesHandlerProvider(Class<?> clazz, Method method, List<MethodParameter> parameters)
     {
@@ -34,16 +35,16 @@ public class ListResourcesHandlerProvider
         this.method = requireNonNull(method, "method is null");
         this.parameters = ImmutableList.copyOf(parameters);
 
-        validate(method, parameters, isHttpRequestOrSessonId.or(isNotifier), returnsResourceList);
+        validate(method, parameters, isRequestParameter.or(isNotifier), returnsResourceList);
     }
 
     @Override
     public ListResourcesHandler get()
     {
         Object instance = injector.getInstance(clazz);
-        MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper);
-        return (request, sessionId, notifier) -> {
-            Object result = methodInvoker.builder(request, sessionId)
+        MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper, jerseyContextEmulation);
+        return (requestContext, notifier) -> {
+            Object result = methodInvoker.builder(requestContext)
                     .withNotifier(notifier)
                     .invoke();
             if (result == null) {
