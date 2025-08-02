@@ -1,0 +1,56 @@
+package io.airlift.mcp.reflection;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
+import com.google.inject.Inject;
+import com.google.inject.Injector;
+import com.google.inject.Provider;
+import io.airlift.jsonrpc.model.JsonRpcErrorCode;
+import io.airlift.mcp.handler.ListResourcesHandler;
+import io.airlift.mcp.handler.ResourcesEntry;
+
+import java.lang.reflect.Method;
+import java.util.List;
+
+import static io.airlift.mcp.McpException.exception;
+import static io.airlift.mcp.reflection.Predicates.isNotifier;
+import static io.airlift.mcp.reflection.Predicates.isRequestParameter;
+import static io.airlift.mcp.reflection.Predicates.returnsResourceList;
+import static io.airlift.mcp.reflection.ReflectionHelper.validate;
+import static java.util.Objects.requireNonNull;
+
+public class ListResourcesHandlerProvider
+        implements Provider<ListResourcesHandler>
+{
+    private final Class<?> clazz;
+    private final Method method;
+    private final List<MethodParameter> parameters;
+    @Inject private Injector injector;
+    @Inject private ObjectMapper objectMapper;
+    @Inject private JerseyContextEmulation jerseyContextEmulation;
+
+    public ListResourcesHandlerProvider(Class<?> clazz, Method method, List<MethodParameter> parameters)
+    {
+        this.clazz = requireNonNull(clazz, "clazz is null");
+        this.method = requireNonNull(method, "method is null");
+        this.parameters = ImmutableList.copyOf(parameters);
+
+        validate(method, parameters, isRequestParameter.or(isNotifier), returnsResourceList);
+    }
+
+    @Override
+    public ListResourcesHandler get()
+    {
+        Object instance = injector.getInstance(clazz);
+        MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper, jerseyContextEmulation);
+        return (requestContext, notifier) -> {
+            Object result = methodInvoker.builder(requestContext)
+                    .withNotifier(notifier)
+                    .invoke();
+            if (result == null) {
+                throw exception(JsonRpcErrorCode.INTERNAL_ERROR, "ListResources %s returned null".formatted(method.getName()));
+            }
+            return (ResourcesEntry) result;
+        };
+    }
+}
