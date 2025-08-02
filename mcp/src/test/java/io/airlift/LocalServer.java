@@ -16,6 +16,7 @@ import io.airlift.log.Logger;
 import io.airlift.mcp.McpModule;
 import io.airlift.mcp.TestingEndpoints;
 import io.airlift.mcp.TestingSessionController;
+import io.airlift.mcp.model.PaginationMetadata;
 import io.airlift.mcp.session.SessionMetadata;
 import io.airlift.node.NodeModule;
 
@@ -43,7 +44,8 @@ public class LocalServer
 
         McpModule.Builder builder = McpModule.builder()
                 .addAllInClass(TestingEndpoints.class)
-                .withSessionHandling(SessionMetadata.DEFAULT, binding -> binding.to(TestingSessionController.class).in(SINGLETON));
+                .withSessionHandling(SessionMetadata.DEFAULT, binding -> binding.to(TestingSessionController.class).in(SINGLETON))
+                .withPaginationMetadata(new PaginationMetadata(7)); // so that we can test pagination
         Module module = new Module()
         {
             @Override

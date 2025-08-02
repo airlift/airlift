@@ -29,6 +29,9 @@ import io.airlift.mcp.model.ListPromptsResult;
 import io.airlift.mcp.model.ListResourceTemplatesResult;
 import io.airlift.mcp.model.ListResourcesResult;
 import io.airlift.mcp.model.ListToolsResponse;
+import io.airlift.mcp.model.Paginated;
+import io.airlift.mcp.model.Pagination;
+import io.airlift.mcp.model.PaginationMetadata;
 import io.airlift.mcp.model.Prompt;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.ReadResourceResult;
@@ -46,6 +49,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static com.google.common.base.Throwables.getRootCause;
@@ -58,6 +63,7 @@ import static java.util.Objects.requireNonNull;
 public class McpServer
 {
     private final ServerInfo serverInfo;
+    private final PaginationMetadata paginationMetadata;
     private final Handlers<ToolEntry> tools = new Handlers<>();
     private final Handlers<PromptEntry> prompts = new Handlers<>();
     private final Handlers<ResourceEntry> resources = new Handlers<>();
@@ -67,6 +73,7 @@ public class McpServer
     @Inject
     public McpServer(
             ServerInfo serverInfo,
+            PaginationMetadata paginationMetadata,
             Map<String, ToolEntry> boundTools,
             Map<String, PromptEntry> boundPrompts,
             Map<String, ResourceEntry> boundResources,
@@ -74,6 +81,7 @@ public class McpServer
             Map<String, CompletionEntry> boundCompletions)
     {
         this.serverInfo = requireNonNull(serverInfo, "serverInfo is null");
+        this.paginationMetadata = requireNonNull(paginationMetadata, "paginationMetadata is null");
 
         boundTools.forEach(tools::add);
         boundPrompts.forEach(prompts::add);
@@ -124,10 +132,12 @@ public class McpServer
         return new InitializeResult(PROTOCOL_VERSION, serverCapabilities, new Implementation(serverInfo.serverName(), serverInfo.serverVersion()), serverInfo.instructions());
     }
 
-    public ListToolsResponse listTools()
+    public ListToolsResponse listTools(Pagination pagination)
     {
-        List<Tool> toolsList = tools.entries().map(ToolEntry::tool).collect(toImmutableList());
-        return new ListToolsResponse(toolsList);
+        return paginated(tools, pagination, paginationMetadata.pageSize(), entry -> entry.tool().name(), (toolEntries, nextCursor) -> {
+            List<Tool> tools = toolEntries.stream().map(ToolEntry::tool).collect(toImmutableList());
+            return new ListToolsResponse(tools, nextCursor);
+        });
     }
 
     public CallToolResult callTool(RequestContext requestContext, McpNotifier notifier, CallToolRequest callToolRequest)
@@ -145,10 +155,12 @@ public class McpServer
                 .orElseThrow(() -> McpException.exception(INVALID_PARAMS, "Tool not found", ImmutableMap.of("name", callToolRequest.name())));
     }
 
-    public ListPromptsResult listPrompts()
+    public ListPromptsResult listPrompts(Pagination pagination)
     {
-        List<Prompt> pomptsList = prompts.entries().map(PromptEntry::prompt).collect(toImmutableList());
-        return new ListPromptsResult(pomptsList);
+        return paginated(prompts, pagination, paginationMetadata.pageSize(), entry -> entry.prompt().name(), (promptEntries, nextCursor) -> {
+            List<Prompt> prompts = promptEntries.stream().map(PromptEntry::prompt).collect(toImmutableList());
+            return new ListPromptsResult(prompts, nextCursor);
+        });
     }
 
     public GetPromptResult getPrompt(RequestContext requestContext, McpNotifier notifier, GetPromptRequest getPromptRequest)
@@ -166,16 +178,20 @@ public class McpServer
                 .orElseThrow(() -> McpException.exception(INVALID_PARAMS, "Prompt not found", ImmutableMap.of("name", getPromptRequest.name())));
     }
 
-    public ListResourcesResult listResources()
+    public ListResourcesResult listResources(Pagination pagination)
     {
-        List<Resource> resourcesList = resources.entries().map(ResourceEntry::resource).collect(toImmutableList());
-        return new ListResourcesResult(resourcesList);
+        return paginated(resources, pagination, paginationMetadata.pageSize(), entry -> entry.resource().name(), (promptEntries, nextCursor) -> {
+            List<Resource> resources = promptEntries.stream().map(ResourceEntry::resource).collect(toImmutableList());
+            return new ListResourcesResult(resources, nextCursor);
+        });
     }
 
-    public ListResourceTemplatesResult listResourceTemplates()
+    public ListResourceTemplatesResult listResourceTemplates(Pagination pagination)
     {
-        List<ResourceTemplate> resourceTemplatesList = resourceTemplates.entries().map(ResourceTemplateEntry::resourceTemplate).collect(toImmutableList());
-        return new ListResourceTemplatesResult(resourceTemplatesList);
+        return paginated(resourceTemplates, pagination, paginationMetadata.pageSize(), entry -> entry.resourceTemplate().name(), (promptEntries, nextCursor) -> {
+            List<ResourceTemplate> resourceTemplates = promptEntries.stream().map(ResourceTemplateEntry::resourceTemplate).collect(toImmutableList());
+            return new ListResourceTemplatesResult(resourceTemplates, nextCursor);
+        });
     }
 
     public ReadResourceResult readResources(RequestContext requestContext, McpNotifier notifier, ReadResourceRequest readResourceRequest)
@@ -245,5 +261,19 @@ public class McpServer
         exception.printStackTrace(new PrintWriter(stringWriter));
 
         return new JsonRpcErrorDetail(INTERNAL_ERROR, stringWriter.toString());
+    }
+
+    private static <T, R extends Paginated> R paginated(Handlers<T> handlers, Pagination pagination, int pageSize, Function<T, String> nameAccessor, BiFunction<List<T>, Optional<String>, R> mapper)
+    {
+        var adjustedMap = pagination.cursor().map(handlers::entriesAfter).orElseGet(handlers::entries);
+
+        List<T> results = adjustedMap.limit(pageSize)
+                .collect(toImmutableList());
+
+        Optional<String> nextCursor = (results.size() >= pageSize)
+                ? Optional.of(nameAccessor.apply(results.getLast()))
+                : Optional.empty();
+
+        return mapper.apply(results, nextCursor);
     }
 }

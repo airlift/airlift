@@ -40,4 +40,9 @@ public class Handlers<T>
     {
         return entries.values().stream();
     }
+
+    public Stream<T> entriesAfter(String name)
+    {
+        return entries.tailMap(name, false).values().stream();
+    }
 }

@@ -22,6 +22,7 @@ variations of MCP servers defined by the standard. This module supports:
 - `_meta` field [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic#meta)
 - `context` field [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/changelog) in `CompletionRequest`
 - Structured content [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/tools#structured-content)
+- Pagination [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/pagination)
 
 If a session controller implementation is provided (see [the doc](docs/sessions.md)), this module also supports:
 
@@ -30,16 +31,13 @@ If a session controller implementation is provided (see [the doc](docs/sessions.
 - Subscriptions [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/lifecycle#initialization)
 - Server-sent logging [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/logging)
 - Cancellation [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/cancellation)
+- Pagination [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/pagination)
 - Server-to-client features:
   - Elicitation [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/client/elicitation)
   - Roots [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/client/roots)
   - Sampling [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/client/sampling)
   - Note: it is the implementer's responsibility to support these features. This module merely provides
   the structure to implement them.
-
-It does not support:
-
-- Pagination (no benefit) [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/pagination)
 
 Additionally, this module is agnostic regarding authentication and authorization.
 It is assumed that authz will be handled by the application adding MCP server

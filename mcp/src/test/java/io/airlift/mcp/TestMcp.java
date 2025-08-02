@@ -31,10 +31,16 @@ import io.airlift.mcp.model.GetPromptResult;
 import io.airlift.mcp.model.Implementation;
 import io.airlift.mcp.model.InitializeRequest;
 import io.airlift.mcp.model.InitializeRequest.ClientCapabilities;
+import io.airlift.mcp.model.ListPromptsRequest;
 import io.airlift.mcp.model.ListPromptsResult;
+import io.airlift.mcp.model.ListResourceTemplatesRequest;
 import io.airlift.mcp.model.ListResourceTemplatesResult;
+import io.airlift.mcp.model.ListResourcesRequest;
 import io.airlift.mcp.model.ListResourcesResult;
+import io.airlift.mcp.model.ListToolsRequest;
 import io.airlift.mcp.model.ListToolsResponse;
+import io.airlift.mcp.model.Paginated;
+import io.airlift.mcp.model.PaginationMetadata;
 import io.airlift.mcp.model.Prompt;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.ReadResourceResult;
@@ -49,6 +55,8 @@ import org.junit.jupiter.api.TestInstance;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -56,6 +64,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import static com.google.inject.Scopes.SINGLETON;
 import static io.airlift.http.client.FullJsonResponseHandler.createFullJsonResponseHandler;
@@ -93,7 +102,8 @@ public class TestMcp
     {
         return McpModule.builder()
                 .addAllInClass(TestingEndpoints.class)
-                .withSessionHandling(SessionMetadata.DEFAULT, binding -> binding.to(TestingSessionController.class).in(SINGLETON));
+                .withSessionHandling(SessionMetadata.DEFAULT, binding -> binding.to(TestingSessionController.class).in(SINGLETON))
+                .withPaginationMetadata(new PaginationMetadata(2));
     }
 
     @Test
@@ -103,14 +113,16 @@ public class TestMcp
         String requestId = UUID.randomUUID().toString();
         initialize(requestId);
 
-        Request request = buildRequest(requestId, "tools/list", new TypeToken<>() {}, Optional.empty());
-        JsonRpcResponse<ListToolsResponse> toolsResponse = httpClient.execute(request, createJsonResponseHandler(jsonCodec(new TypeToken<>() {})));
-        assertThat(toolsResponse.result()).map(ListToolsResponse::tools).get()
-                .asInstanceOf(InstanceOfAssertFactories.list(Tool.class))
+        List<Tool> tools = listAllPaginated(ListToolsResponse::tools, cursor -> {
+            Request request = buildRequest(requestId, "tools/list", new TypeToken<>() {}, Optional.of(new ListToolsRequest(cursor)));
+            JsonRpcResponse<ListToolsResponse> toolsResponse = httpClient.execute(request, createJsonResponseHandler(jsonCodec(new TypeToken<>() {})));
+            return toolsResponse.result().orElseThrow();
+        });
+        assertThat(tools)
                 .extracting(Tool::name)
                 .containsExactlyInAnyOrder("add", "uppercase", "lookupPerson", "throws", "uppercaseSoon", "itsSimple", "logging", "sendResourcesUpdatedNotification", "sendListChangedEvents", "showCurrentRoots", "sendSamplingMessage", "takeCreateMessageResults");
 
-        request = buildRequest(requestId, METHOD_CALL_TOOL, new TypeToken<>() {}, Optional.of(new CallToolRequest("add", ImmutableMap.of("x", 6, "y", 24))));
+        Request request = buildRequest(requestId, METHOD_CALL_TOOL, new TypeToken<>() {}, Optional.of(new CallToolRequest("add", ImmutableMap.of("x", 6, "y", 24))));
         try (StreamingResponse response = httpClient.executeStreaming(request)) {
             for (Map<String, String> event : readEvents(response.getInputStream())) {
                 JsonRpcResponse<Object> jsonRpcResponse = parseData(event, new TypeReference<>() {});
@@ -135,14 +147,16 @@ public class TestMcp
         String requestId = UUID.randomUUID().toString();
         initialize(requestId);
 
-        Request request = buildRequest(requestId, "prompts/list", new TypeToken<>() {}, Optional.empty());
-        JsonRpcResponse<ListPromptsResult> promptsResponse = httpClient.execute(request, createJsonResponseHandler(jsonCodec(new TypeToken<>() {})));
-        assertThat(promptsResponse.result()).map(ListPromptsResult::prompts).get()
-                .asInstanceOf(InstanceOfAssertFactories.list(Prompt.class))
+        List<Prompt> prompts = listAllPaginated(ListPromptsResult::prompts, cursor -> {
+            Request request = buildRequest(requestId, "prompts/list", new TypeToken<>() {}, Optional.of(new ListPromptsRequest(cursor)));
+            JsonRpcResponse<ListPromptsResult> promptsResponse = httpClient.execute(request, createJsonResponseHandler(jsonCodec(new TypeToken<>() {})));
+            return promptsResponse.result().orElseThrow();
+        });
+        assertThat(prompts)
                 .extracting(Prompt::name)
                 .containsExactlyInAnyOrder("greeting", "progress", "testCancellation");
 
-        request = buildRequest(requestId, METHOD_GET_PROMPT, new TypeToken<>() {}, Optional.of(new GetPromptRequest("greeting", ImmutableMap.of("name", "Galt"))));
+        Request request = buildRequest(requestId, METHOD_GET_PROMPT, new TypeToken<>() {}, Optional.of(new GetPromptRequest("greeting", ImmutableMap.of("name", "Galt"))));
         try (StreamingResponse response = httpClient.executeStreaming(request)) {
             for (Map<String, String> event : readEvents(response.getInputStream())) {
                 JsonRpcResponse<Object> jsonRpcResponse = parseData(event, new TypeReference<>() {});
@@ -168,14 +182,16 @@ public class TestMcp
         String requestId = UUID.randomUUID().toString();
         initialize(requestId);
 
-        Request request = buildRequest(requestId, "resources/list", new TypeToken<>() {}, Optional.empty());
-        JsonRpcResponse<ListResourcesResult> resourcesResponse = httpClient.execute(request, createJsonResponseHandler(jsonCodec(new TypeToken<>() {})));
-        ListResourcesResult listResourcesResult = resourcesResponse.result().orElseThrow();
-        assertThat(listResourcesResult.resources())
+        List<Resource> resources = listAllPaginated(ListResourcesResult::resources, cursor -> {
+            Request request = buildRequest(requestId, "resources/list", new TypeToken<>() {}, Optional.of(new ListResourcesRequest(cursor)));
+            JsonRpcResponse<ListResourcesResult> resourcesResponse = httpClient.execute(request, createJsonResponseHandler(jsonCodec(new TypeToken<>() {})));
+            return resourcesResponse.result().orElseThrow();
+        });
+        assertThat(resources)
                 .extracting(Resource::name)
                 .containsExactlyInAnyOrder("example1", "example2");
 
-        request = buildRequest(requestId, METHOD_READ_RESOURCES, new TypeToken<>() {}, Optional.of(new ReadResourceRequest("file://example1.txt", Optional.empty())));
+        Request request = buildRequest(requestId, METHOD_READ_RESOURCES, new TypeToken<>() {}, Optional.of(new ReadResourceRequest("file://example1.txt", Optional.empty())));
         try (StreamingResponse response = httpClient.executeStreaming(request)) {
             for (Map<String, String> event : readEvents(response.getInputStream())) {
                 JsonRpcResponse<Object> jsonRpcResponse = parseData(event, new TypeReference<>() {});
@@ -200,15 +216,17 @@ public class TestMcp
         String requestId = UUID.randomUUID().toString();
         initialize(requestId);
 
-        Request request = buildRequest(requestId, "resources/templates/list", new TypeToken<>() {}, Optional.empty());
-        JsonRpcResponse<ListResourceTemplatesResult> resourcesResponse = httpClient.execute(request, createJsonResponseHandler(jsonCodec(new TypeToken<>() {})));
-        ListResourceTemplatesResult templatesResult = resourcesResponse.result().orElseThrow();
-        assertThat(templatesResult.resourceTemplates())
+        List<ResourceTemplate> resourceTemplates = listAllPaginated(ListResourceTemplatesResult::resourceTemplates, cursor -> {
+            Request request = buildRequest(requestId, "resources/templates/list", new TypeToken<>() {}, Optional.of(new ListResourceTemplatesRequest(cursor)));
+            JsonRpcResponse<ListResourceTemplatesResult> resourcesResponse = httpClient.execute(request, createJsonResponseHandler(jsonCodec(new TypeToken<>() {})));
+            return resourcesResponse.result().orElseThrow();
+        });
+        assertThat(resourceTemplates)
                 .hasSize(1)
                 .extracting(ResourceTemplate::uriTemplate)
                 .containsExactly("file://{part}.txt");
 
-        request = buildRequest(requestId, METHOD_READ_RESOURCES, new TypeToken<>() {}, Optional.of(new ReadResourceRequest("file://one.txt", Optional.empty())));
+        Request request = buildRequest(requestId, METHOD_READ_RESOURCES, new TypeToken<>() {}, Optional.of(new ReadResourceRequest("file://one.txt", Optional.empty())));
         try (StreamingResponse response = httpClient.executeStreaming(request)) {
             for (Map<String, String> event : readEvents(response.getInputStream())) {
                 JsonRpcResponse<Object> jsonRpcResponse = parseData(event, new TypeReference<>() {});
@@ -307,5 +325,21 @@ public class TestMcp
         catch (Exception e) {
             return fail(e);
         }
+    }
+
+    private <R extends Paginated, T> List<T> listAllPaginated(Function<R, List<T>> mapper, Function<Optional<String>, R> requestProc)
+    {
+        Optional<String> cursor = Optional.empty();
+
+        List<T> results = new ArrayList<>();
+        do {
+            R response = requestProc.apply(cursor);
+            List<T> items = mapper.apply(response);
+            results.addAll(items);
+            cursor = response.nextCursor();
+        }
+        while (cursor.isPresent());
+
+        return results;
     }
 }

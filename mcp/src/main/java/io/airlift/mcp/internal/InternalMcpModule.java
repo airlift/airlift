@@ -32,6 +32,7 @@ import io.airlift.mcp.model.Content.EmbeddedResource;
 import io.airlift.mcp.model.Content.ImageContent;
 import io.airlift.mcp.model.Content.ResourceLink;
 import io.airlift.mcp.model.Content.TextContent;
+import io.airlift.mcp.model.PaginationMetadata;
 import io.airlift.mcp.model.ServerInfo;
 import io.airlift.mcp.reflection.CompletionHandlerProvider;
 import io.airlift.mcp.reflection.JerseyContextEmulation;
@@ -74,6 +75,7 @@ public class InternalMcpModule
             private String mcpPath = DEFAULT_MCP_PATH;
             private SessionMetadata sessionMetadata = SessionMetadata.DEFAULT;
             private ServerInfo serverInfo = new ServerInfo("MCP", "1.0.0", "");
+            private PaginationMetadata paginationMetadata = PaginationMetadata.DEFAULT;
 
             @Override
             public McpModule.Builder withServerInfo(String serverName, String serverVersion, String instructions)
@@ -127,6 +129,13 @@ public class InternalMcpModule
             }
 
             @Override
+            public McpModule.Builder withPaginationMetadata(PaginationMetadata paginationMetadata)
+            {
+                this.paginationMetadata = requireNonNull(paginationMetadata, "paginationMetadata is null");
+                return this;
+            }
+
+            @Override
             public Module build()
             {
                 JsonRpcMethod.addAllInClass(jsonRpcBuilder, InternalRpcMethods.class);
@@ -136,6 +145,7 @@ public class InternalMcpModule
                     binder.bind(JerseyContextEmulation.class).in(SINGLETON);
                     binder.bind(ServerInfo.class).toInstance(serverInfo);
                     binder.install(jsonRpcBuilder.build());
+                    binder.bind(PaginationMetadata.class).toInstance(paginationMetadata);
 
                     instances.build().forEach(instance -> binder.bind(instance).in(SINGLETON));
 

@@ -17,11 +17,16 @@ import io.airlift.mcp.model.CompletionRequest;
 import io.airlift.mcp.model.GetPromptRequest;
 import io.airlift.mcp.model.InitializeRequest;
 import io.airlift.mcp.model.InitializeResult;
+import io.airlift.mcp.model.ListPromptsRequest;
 import io.airlift.mcp.model.ListPromptsResult;
+import io.airlift.mcp.model.ListResourceTemplatesRequest;
 import io.airlift.mcp.model.ListResourceTemplatesResult;
+import io.airlift.mcp.model.ListResourcesRequest;
 import io.airlift.mcp.model.ListResourcesResult;
+import io.airlift.mcp.model.ListToolsRequest;
 import io.airlift.mcp.model.ListToolsResponse;
 import io.airlift.mcp.model.Meta;
+import io.airlift.mcp.model.Pagination;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.RootsResponse;
 import io.airlift.mcp.model.SetLoggingLevelRequest;
@@ -166,11 +171,13 @@ public class InternalRpcMethods
     }
 
     @JsonRpc(METHOD_TOOLS_LIST)
-    public ListToolsResponse listTools(@Context SessionId sessionId)
+    public ListToolsResponse listTools(@Context SessionId sessionId, Optional<ListToolsRequest> listToolsRequest)
     {
-        log.debug("Received list tools request. SessionId: %s", sessionId);
+        Pagination pagination = listToolsRequest.map(Pagination.class::cast).orElse(Pagination.NONE);
 
-        return mcpServer.listTools();
+        log.debug("Received list tools request. SessionId: %s, Cursor: %s", sessionId, pagination);
+
+        return mcpServer.listTools(pagination);
     }
 
     @JsonRpc(METHOD_CALL_TOOL)
@@ -180,15 +187,17 @@ public class InternalRpcMethods
         log.debug("Received call tool request: %s, sessionId: %s", callToolRequest, sessionId);
 
         return asStreamingOutput(request, sessionId, callToolRequest,
-                notifier -> mcpServer.callTool(new RequestContext(request, sessionId, providers, contextResolvers), notifier, callToolRequest));
+                notifier -> mcpServer.callTool(new RequestContext(request, sessionId, providers, contextResolvers, Pagination.NONE), notifier, callToolRequest));
     }
 
     @JsonRpc(METHOD_PROMPTS_LIST)
-    public ListPromptsResult listPrompts(@Context SessionId sessionId)
+    public ListPromptsResult listPrompts(@Context SessionId sessionId, Optional<ListPromptsRequest> listPromptsRequest)
     {
-        log.debug("Received list prompts request. SessionId: %s", sessionId);
+        Pagination pagination = listPromptsRequest.map(Pagination.class::cast).orElse(Pagination.NONE);
 
-        return mcpServer.listPrompts();
+        log.debug("Received list prompts request. SessionId: %s, Cursor: %s", sessionId, pagination);
+
+        return mcpServer.listPrompts(pagination);
     }
 
     @JsonRpc(METHOD_GET_PROMPT)
@@ -198,23 +207,27 @@ public class InternalRpcMethods
         log.debug("Received get prompt request: %s, sessionId: %s", getPromptRequest, sessionId);
 
         return asStreamingOutput(request, sessionId, getPromptRequest,
-                notifier -> mcpServer.getPrompt(new RequestContext(request, sessionId, providers, contextResolvers), notifier, getPromptRequest));
+                notifier -> mcpServer.getPrompt(new RequestContext(request, sessionId, providers, contextResolvers, Pagination.NONE), notifier, getPromptRequest));
     }
 
     @JsonRpc(METHOD_RESOURCES_LIST)
-    public ListResourcesResult listResources(@Context SessionId sessionId)
+    public ListResourcesResult listResources(@Context SessionId sessionId, Optional<ListResourcesRequest> listResourcesRequest)
     {
-        log.debug("Received list resources request. SessionId: %s", sessionId);
+        Pagination pagination = listResourcesRequest.map(Pagination.class::cast).orElse(Pagination.NONE);
 
-        return mcpServer.listResources();
+        log.debug("Received list resources request. SessionId: %s, Cursor: %s", sessionId, pagination);
+
+        return mcpServer.listResources(pagination);
     }
 
     @JsonRpc(METHOD_RESOURCES_TEMPLATES_LIST)
-    public ListResourceTemplatesResult listResourceTemplates(@Context Request request, @Context SessionId sessionId)
+    public ListResourceTemplatesResult listResourceTemplates(@Context Request request, @Context SessionId sessionId, Optional<ListResourceTemplatesRequest> listResourceTemplatesRequest)
     {
-        log.debug("Received list resources templates request. SessionId: %s", sessionId);
+        Pagination pagination = listResourceTemplatesRequest.map(Pagination.class::cast).orElse(Pagination.NONE);
 
-        return mcpServer.listResourceTemplates();
+        log.debug("Received list resources templates request. SessionId: %s, Cursor: %s", sessionId, pagination);
+
+        return mcpServer.listResourceTemplates(pagination);
     }
 
     @JsonRpc(METHOD_READ_RESOURCES)
@@ -224,7 +237,7 @@ public class InternalRpcMethods
         log.debug("Received read resources request: %s, sessionId: %s", readResourceRequest, sessionId);
 
         return asStreamingOutput(request, sessionId, readResourceRequest,
-                notifier -> mcpServer.readResources(new RequestContext(request, sessionId, providers, contextResolvers), notifier, readResourceRequest));
+                notifier -> mcpServer.readResources(new RequestContext(request, sessionId, providers, contextResolvers, Pagination.NONE), notifier, readResourceRequest));
     }
 
     @JsonRpc(METHOD_COMPLETION_COMPLETE)
@@ -234,7 +247,7 @@ public class InternalRpcMethods
         log.debug("Received completion request: %s, sessionId: %s", completionRequest, sessionId);
 
         return asStreamingOutput(request, sessionId, completionRequest,
-                notifier -> mcpServer.completeCompletion(new RequestContext(request, sessionId, providers, contextResolvers), notifier, completionRequest));
+                notifier -> mcpServer.completeCompletion(new RequestContext(request, sessionId, providers, contextResolvers, Pagination.NONE), notifier, completionRequest));
     }
 
     @JsonRpc(METHOD_SET_LOGGING_LEVEL)
