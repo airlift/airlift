@@ -31,6 +31,7 @@ Airlift takes the best-of-breed libraries from the Java ecosystem and glues them
 - TBD - Tracing
 - TBD - Maven BOM
 - TBD - Jackson/JSON
+- [MCP server support](mcp/README.md)
 
 ## Recipes
 
