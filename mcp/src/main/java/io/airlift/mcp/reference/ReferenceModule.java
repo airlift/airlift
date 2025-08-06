@@ -1,0 +1,65 @@
+package io.airlift.mcp.reference;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.inject.Binder;
+import com.google.inject.Module;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import io.airlift.mcp.McpMetadata;
+import io.modelcontextprotocol.server.McpServer;
+import io.modelcontextprotocol.server.McpServer.StatelessSyncSpecification;
+import io.modelcontextprotocol.server.McpStatelessSyncServer;
+import io.modelcontextprotocol.server.transport.HttpServletStatelessServerTransport;
+import io.modelcontextprotocol.spec.McpSchema;
+import jakarta.servlet.Filter;
+
+import static com.google.inject.Scopes.SINGLETON;
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
+import static io.airlift.mcp.McpMetadata.CONTEXT_REQUEST_KEY;
+
+public class ReferenceModule
+        implements Module
+{
+    @Override
+    public void configure(Binder binder)
+    {
+        binder.bind(ReferenceServer.class).asEagerSingleton();
+        newSetBinder(binder, Filter.class).addBinding().to(ReferenceFilter.class).in(SINGLETON);
+    }
+
+    @Singleton
+    @Provides
+    public HttpServletStatelessServerTransport mcpTransport(McpMetadata metadata, ObjectMapper objectMapper)
+    {
+        return HttpServletStatelessServerTransport.builder()
+                .messageEndpoint(metadata.uriPath())
+                .objectMapper(objectMapper)
+                .contextExtractor((request, transportContext) -> {
+                    transportContext.put(CONTEXT_REQUEST_KEY, request);
+                    return transportContext;
+                })
+                .build();
+    }
+
+    @Singleton
+    @Provides
+    public McpStatelessSyncServer buildServer(HttpServletStatelessServerTransport transport, McpMetadata metadata, ObjectMapper objectMapper)
+    {
+        McpSchema.ServerCapabilities serverCapabilities = new McpSchema.ServerCapabilities(
+                null,
+                null,
+                null,
+                metadata.prompts() ? new McpSchema.ServerCapabilities.PromptCapabilities(false) : null,
+                metadata.resources() ? new McpSchema.ServerCapabilities.ResourceCapabilities(false, false) : null,
+                metadata.tools() ? new McpSchema.ServerCapabilities.ToolCapabilities(false) : null);
+
+        StatelessSyncSpecification builder = McpServer.sync(transport)
+                .objectMapper(objectMapper)
+                .capabilities(serverCapabilities)
+                .serverInfo(metadata.implementation().name(), metadata.implementation().version());
+
+        metadata.instructions().map(builder::instructions);
+
+        return builder.build();
+    }
+}
