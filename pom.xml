@@ -54,6 +54,7 @@
         <module>json</module>
         <module>log</module>
         <module>log-manager</module>
+        <module>mcp</module>
         <module>node</module>
         <module>openmetrics</module>
         <module>packaging</module>
@@ -96,6 +97,7 @@
         <dep.modernizer.version>2.7.0</dep.modernizer.version>
         <dep.jersey.version>3.1.11</dep.jersey.version>
         <dep.jjwt.version>0.12.6</dep.jjwt.version>
+        <dep.modelcontextprotocol.sdk.version>0.11.0</dep.modelcontextprotocol.sdk.version>
     </properties>
 
     <dependencyManagement>
@@ -222,6 +224,12 @@
 
             <dependency>
                 <groupId>io.airlift</groupId>
+                <artifactId>mcp</artifactId>
+                <version>${dep.airlift.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
                 <artifactId>node</artifactId>
                 <version>${dep.airlift.version}</version>
             </dependency>
@@ -296,6 +304,12 @@
                 <groupId>io.jsonwebtoken</groupId>
                 <artifactId>jjwt-jackson</artifactId>
                 <version>${dep.jjwt.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.modelcontextprotocol.sdk</groupId>
+                <artifactId>mcp</artifactId>
+                <version>${dep.modelcontextprotocol.sdk.version}</version>
             </dependency>
 
             <!-- TODO: move to airbase -->
