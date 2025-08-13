@@ -33,8 +33,13 @@ public class LocalServer
             }
         };
 
+        Module mcpModule = McpModule.builder()
+                .withAllInClass(TestingEndpoints.class)
+                .withIdentityMapper(TestingIdentity.class, binding -> binding.toInstance(_ -> new TestingIdentity("Mr. Tester")))
+                .build();
+
         ImmutableList.Builder<Module> modules = ImmutableList.<Module>builder()
-                .add(McpModule.builder().withAllInClass(TestingEndpoints.class).build())
+                .add(mcpModule)
                 .add(binder -> binder.bind(TestingEndpoints.class).in(SINGLETON))
                 .add(new NodeModule())
                 .add(new TestingHttpServerModule(port.orElse(0)))
