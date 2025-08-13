@@ -97,7 +97,7 @@
         <dep.modernizer.version>2.7.0</dep.modernizer.version>
         <dep.jersey.version>3.1.11</dep.jersey.version>
         <dep.jjwt.version>0.12.6</dep.jjwt.version>
-        <dep.modelcontextprotocol.sdk.version>0.11.0</dep.modelcontextprotocol.sdk.version>
+        <dep.modelcontextprotocol.sdk.version>0.11.2</dep.modelcontextprotocol.sdk.version>
     </properties>
 
     <dependencyManagement>
