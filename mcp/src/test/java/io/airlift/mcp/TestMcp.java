@@ -55,7 +55,7 @@ import static io.airlift.http.client.HttpClientBinder.httpClientBinder;
 import static io.airlift.http.client.JsonResponseHandler.createJsonResponseHandler;
 import static io.airlift.http.client.Request.Builder.preparePost;
 import static io.airlift.json.JsonCodec.jsonCodec;
-import static io.airlift.mcp.model.JsonRpcErrorCode.INTERNAL_ERROR;
+import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.InstanceOfAssertFactories.type;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
@@ -132,9 +132,8 @@ public class TestMcp
         JsonRpcRequest<?> jsonrpcRequest = JsonRpcRequest.buildRequest(1, "tools/call", callToolRequest);
         JsonRpcResponse<?> response = rpcCall(jsonrpcRequest);
 
-        // NOTE: should be "INVALID_REQUEST". Our PR will fix this: https://github.com/modelcontextprotocol/java-sdk/pull/465
         assertThat(response.error())
-                .contains(new JsonRpcErrorDetail(INTERNAL_ERROR, "this ain't good"));
+                .contains(new JsonRpcErrorDetail(INVALID_REQUEST, "this ain't good"));
     }
 
     @Test
