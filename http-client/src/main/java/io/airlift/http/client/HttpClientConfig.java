@@ -39,8 +39,6 @@ import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Optional;
 
-import static io.airlift.http.client.HttpClientConfig.HttpBufferPoolType.UNSAFE;
-import static io.airlift.memory.jetty.UnsafeArrayByteBufferPool.isUnsafeAvailable;
 import static io.airlift.units.DataSize.Unit.GIGABYTE;
 import static io.airlift.units.DataSize.Unit.KILOBYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
@@ -59,7 +57,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
         "http.authentication.krb5.config",
         "http.authentication.krb5.credential-cache",
         "http.authentication.krb5.keytab",
-        "http.authentication.krb5.use-canonical-hostname"
+        "http.authentication.krb5.use-canonical-hostname",
+        "http-client.buffer-pool-type",
 })
 public class HttpClientConfig
 {
@@ -79,7 +78,6 @@ public class HttpClientConfig
     private DataSize responseBufferSize = DataSize.of(16, KILOBYTE);
     private Optional<DataSize> maxHeapMemory = Optional.empty();
     private Optional<DataSize> maxDirectMemory = Optional.empty();
-    private HttpBufferPoolType httpBufferPoolType = HttpBufferPoolType.DEFAULT;
     private HostAndPort socksProxy;
     private HostAndPort httpProxy;
     private boolean secureProxy;
@@ -297,18 +295,6 @@ public class HttpClientConfig
     public HttpClientConfig setMaxDirectMemory(DataSize maxDirectMemory)
     {
         this.maxDirectMemory = Optional.ofNullable(maxDirectMemory);
-        return this;
-    }
-
-    public HttpBufferPoolType getHttpBufferPoolType()
-    {
-        return httpBufferPoolType;
-    }
-
-    @Config("http-client.buffer-pool-type")
-    public HttpClientConfig setHttpBufferPoolType(HttpBufferPoolType httpBufferPoolType)
-    {
-        this.httpBufferPoolType = httpBufferPoolType;
         return this;
     }
 
@@ -767,15 +753,6 @@ public class HttpClientConfig
         return maxHeapMemory.isPresent() == maxDirectMemory.isPresent();
     }
 
-    @AssertTrue(message = "http-client.buffer-pool-type=UNSAFE requires sun.misc.Unsafe to be available")
-    public boolean isUnsafeAllowedWhenUsingUnsafeBufferPool()
-    {
-        if (httpBufferPoolType == UNSAFE) {
-            return isUnsafeAvailable();
-        }
-        return true;
-    }
-
     @PostConstruct
     public void validate()
     {
@@ -788,12 +765,5 @@ public class HttpClientConfig
             throw new ConfigurationException(ImmutableList.of(
                     new Message("http-client.http-proxy.secure can be enabled only when http-client.http-proxy is set")));
         }
-    }
-
-    public enum HttpBufferPoolType
-    {
-        DEFAULT,
-        FFM,
-        UNSAFE;
     }
 }
