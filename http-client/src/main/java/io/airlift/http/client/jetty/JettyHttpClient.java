@@ -70,6 +70,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.ConnectionStatistics;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.MonitoredQueuedThreadPool;
@@ -803,6 +804,7 @@ public class JettyHttpClient
             stats.recordRequestFailed();
             requestLogger.log(context.info(), ResponseInfo.failed(Optional.empty(), Optional.of(e)));
             context.request().abort(e);
+            IO.close(listener);
             Thread.currentThread().interrupt();
             return new InternalExceptionResponse<>(exceptionHandler.handleException(request, e));
         }
@@ -810,11 +812,13 @@ public class JettyHttpClient
             stats.recordRequestFailed();
             requestLogger.log(context.info(), ResponseInfo.failed(Optional.empty(), Optional.of(e)));
             context.request().abort(e);
+            IO.close(listener);
             return new InternalExceptionResponse<>(exceptionHandler.handleException(request, e));
         }
         catch (ExecutionException e) {
             stats.recordRequestFailed();
             requestLogger.log(context.info(), ResponseInfo.failed(Optional.empty(), Optional.of(e)));
+            IO.close(listener);
             Throwable cause = e.getCause();
             if (cause instanceof Exception) {
                 return new InternalExceptionResponse<>(exceptionHandler.handleException(request, (Exception) cause));
@@ -838,11 +842,11 @@ public class JettyHttpClient
 
         try {
             JettyResponse jettyResponse = new JettyResponse(response, listener.getInputStream());
-            Runnable completionHandler = buildCompletionHandler(request, span, jettyResponse, context.sizeListener(), requestStart, responseStart);
+            Runnable completionHandler = buildCompletionHandler(request, listener, span, jettyResponse, context.sizeListener(), requestStart, responseStart);
             return new InternalStandardResponse<>(jettyResponse, completionHandler);
         }
         catch (Throwable e) {
-            Runnable completionHandler = buildCompletionHandler(request, span, null, context.sizeListener(), requestStart, responseStart);
+            Runnable completionHandler = buildCompletionHandler(request, listener, span, null, context.sizeListener(), requestStart, responseStart);
             try {
                 throw propagate(request, e);
             }
@@ -852,9 +856,10 @@ public class JettyHttpClient
         }
     }
 
-    private Runnable buildCompletionHandler(Request request, Span span, JettyResponse jettyResponse, RequestSizeListener requestSize, long requestStart, long responseStart)
+    private Runnable buildCompletionHandler(Request request, InputStreamResponseListener listener, Span span, JettyResponse jettyResponse, RequestSizeListener requestSize, long requestStart, long responseStart)
     {
         return () -> {
+            IO.close(listener);
             if (jettyResponse != null) {
                 try {
                     jettyResponse.getInputStream().close();
