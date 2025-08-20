@@ -94,7 +94,6 @@
         <dep.airlift.version>348-SNAPSHOT</dep.airlift.version>
         <dep.bouncycastle.version>1.81</dep.bouncycastle.version>
         <dep.mcp.sdk.version>0.11.2</dep.mcp.sdk.version>
-        <dep.modernizer.version>2.7.0</dep.modernizer.version>
         <dep.jakarta.servlet-api.version>6.1.0</dep.jakarta.servlet-api.version>
         <dep.jersey.version>3.1.11</dep.jersey.version>
         <dep.jjwt.version>0.12.7</dep.jjwt.version>
