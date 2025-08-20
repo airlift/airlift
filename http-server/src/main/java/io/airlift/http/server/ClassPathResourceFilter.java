@@ -42,10 +42,11 @@ import static java.util.Objects.requireNonNull;
 public class ClassPathResourceFilter
         extends HttpFilter
 {
-    private static final MimeTypes MIME_TYPES;
+    private static final MimeTypes.Mutable MIME_TYPES;
 
     static {
-        MIME_TYPES = new MimeTypes();
+        MIME_TYPES = new MimeTypes.Mutable();
+        MIME_TYPES.addAssumed("text/plain", "utf-8");
     }
 
     private final String baseUri; // "" or "/foo"
@@ -120,6 +121,7 @@ public class ClassPathResourceFilter
 
             String contentType = MIME_TYPES.getMimeByExtension(resource.toString());
             response.setContentType(contentType);
+            response.setCharacterEncoding(MIME_TYPES.getCharset(contentType));
 
             if (skipContent) {
                 return;
