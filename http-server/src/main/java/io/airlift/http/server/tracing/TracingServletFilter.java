@@ -38,8 +38,8 @@ import static com.google.common.net.HttpHeaders.CONTENT_LENGTH;
 import static com.google.common.net.HttpHeaders.USER_AGENT;
 import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
-import static org.eclipse.jetty.ee10.servlet.ServletContextRequest.SSL_CIPHER_SUITE;
-import static org.eclipse.jetty.ee10.servlet.ServletContextRequest.SSL_SESSION_ID;
+import static org.eclipse.jetty.ee11.servlet.ServletContextRequest.SSL_CIPHER_SUITE;
+import static org.eclipse.jetty.ee11.servlet.ServletContextRequest.SSL_SESSION_ID;
 
 public final class TracingServletFilter
         implements Filter
