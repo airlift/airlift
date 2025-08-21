@@ -28,6 +28,9 @@ import jakarta.annotation.PreDestroy;
 import jakarta.servlet.Filter;
 import jakarta.servlet.Servlet;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
+import org.eclipse.jetty.compression.Compression;
+import org.eclipse.jetty.compression.server.CompressionConfig;
+import org.eclipse.jetty.compression.server.CompressionHandler;
 import org.eclipse.jetty.ee11.servlet.FilterHolder;
 import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee11.servlet.ServletHolder;
@@ -50,7 +53,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
-import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.MonitoredQueuedThreadPool;
 import org.eclipse.jetty.util.thread.VirtualThreadPool;
@@ -70,6 +72,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
@@ -267,17 +270,39 @@ public class HttpServer
 
         /*
          * Jetty's handlers chain is:
-         *  channel listener (protocol)
-         *    |--- stats handler
-         *         |--- gzip handler
-         *         |--- trace token filter
-         *         |--- user provided filters
-         *         |--- the servlet (normally GuiceContainer)
-         *         |--- resource handlers
+         *    channel listener (protocol)
+         *    |--- statistics handler
+         *         |--- compression handler (if enabled)
+         *              |--- servlet context handler
+         *                   |--- error handler
+         *                   |--- servlet filters (i.e. tracing)
+         *                   |--- the servlet (i.e. Jersey's ServletContainer)
+         *                   |--- static resources
          *    |--- error handler
          */
         StatisticsHandler statsHandler = new StatisticsHandler();
-        statsHandler.setHandler(createServletContext(servlet, resources, filters, Set.of("http", "https"), showStackTrace, enableLegacyUriCompliance, enableCompression));
+
+        ServletContextHandler servletContext = createServletContext(servlet, resources, filters, Set.of("http", "https"), showStackTrace, enableLegacyUriCompliance);
+
+        if (enableCompression) {
+            CompressionHandler compressionHandler = new CompressionHandler();
+
+            for (Compression compression : ServiceLoader.load(Compression.class, HttpServer.class.getClassLoader())) {
+                compressionHandler.putCompression(compression);
+            }
+
+            CompressionConfig compressionConfig = CompressionConfig.builder()
+                    .defaults()
+                    .build();
+
+            compressionHandler.putConfiguration("/*", compressionConfig);
+            compressionHandler.setHandler(servletContext);
+
+            statsHandler.setHandler(compressionHandler);
+        }
+        else {
+            statsHandler.setHandler(servletContext);
+        }
 
         if (config.isLogEnabled()) {
             server.setRequestLog(new JettyRequestLog(
@@ -356,8 +381,7 @@ public class HttpServer
             Set<Filter> filters,
             Set<String> connectorNames,
             boolean showStackTrace,
-            boolean enableLegacyUriCompliance,
-            boolean enableCompression)
+            boolean enableLegacyUriCompliance)
     {
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
         ErrorHandler handler = new ErrorHandler();
@@ -381,12 +405,6 @@ public class HttpServer
                     resource.getWelcomeFiles());
             context.addFilter(new FilterHolder(filter), filter.getBaseUri() + "/*", null);
         }
-
-        if (enableCompression) {
-            // -- gzip handler
-            context.insertHandler(new GzipHandler());
-        }
-
         // -- the servlet
         ServletHolder servletHolder = new ServletHolder(servlet);
         context.addServlet(servletHolder, "/*");
