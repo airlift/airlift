@@ -56,6 +56,11 @@
 
         <dependency>
             <groupId>io.airlift</groupId>
+            <artifactId>json</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.airlift</groupId>
             <artifactId>units</artifactId>
             <optional>true</optional>
         </dependency>
@@ -101,12 +106,6 @@
         </dependency>
 
         <!-- used by tests but also needed transitively -->
-        <dependency>
-            <groupId>io.airlift</groupId>
-            <artifactId>json</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-
         <dependency>
             <groupId>io.airlift</groupId>
             <artifactId>node</artifactId>
@@ -183,6 +182,12 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-params</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

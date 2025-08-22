@@ -20,6 +20,7 @@ import com.google.inject.Binder;
 import com.google.inject.Key;
 import com.google.inject.Provides;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
+import io.airlift.jaxrs.JsonParsingFeature.MappingEnabled;
 import io.airlift.jaxrs.tracing.JaxrsTracingModule;
 import jakarta.servlet.Servlet;
 import org.glassfish.jersey.server.ResourceConfig;
@@ -29,7 +30,9 @@ import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
+import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
 import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
+import static io.airlift.jaxrs.JsonParsingFeature.MappingEnabled.ENABLED;
 import static org.glassfish.jersey.server.ServerProperties.RESPONSE_SET_STATUS_OVER_SEND_ERROR;
 
 public class JaxrsModule
@@ -49,7 +52,14 @@ public class JaxrsModule
         binder.disableCircularProxies();
         binder.bind(Servlet.class).to(Key.get(ServletContainer.class));
         newSetBinder(binder, Object.class, JaxrsResource.class).permitDuplicates();
-        jaxrsBinder(binder).bind(JsonMapper.class);
+
+        JaxrsBinder jaxrsBinder = jaxrsBinder(binder);
+        jaxrsBinder.bind(JsonMapper.class);
+        jaxrsBinder.bind(JsonParsingFeature.class);
+
+        newOptionalBinder(binder, MappingEnabled.class)
+                .setDefault()
+                .toInstance(ENABLED);
 
         if (getProperty("tracing.enabled").map(Boolean::parseBoolean).orElse(false)) {
             install(new JaxrsTracingModule());

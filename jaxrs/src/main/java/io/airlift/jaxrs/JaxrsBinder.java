@@ -4,9 +4,12 @@ import com.google.inject.Binder;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.Multibinder;
+import io.airlift.jaxrs.JsonParsingFeature.MappingEnabled;
 
 import static com.google.inject.Scopes.SINGLETON;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
+import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
+import static io.airlift.jaxrs.JsonParsingFeature.MappingEnabled.DISABLED;
 import static java.util.Objects.requireNonNull;
 
 public class JaxrsBinder
@@ -41,6 +44,12 @@ public class JaxrsBinder
     {
         binder.bind(targetKey).in(SINGLETON);
         resourceBinder.addBinding().to(targetKey).in(SINGLETON);
+    }
+
+    public JaxrsBinder disableJsonExceptionMapper()
+    {
+        newOptionalBinder(binder, MappingEnabled.class).setBinding().toInstance(DISABLED);
+        return this;
     }
 
     public void bindInstance(Object instance)
