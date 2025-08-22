@@ -501,6 +501,7 @@ public class TDigest
     {
         if (needsMerge) {
             merge(compression);
+            needsMerge = false;
         }
     }
 
