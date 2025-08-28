@@ -18,7 +18,7 @@ import io.airlift.http.client.TestingHttpProxy;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee10.proxy.ProxyServlet;
+import org.eclipse.jetty.ee11.proxy.ProxyServlet;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
