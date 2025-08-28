@@ -15,7 +15,7 @@ package io.airlift.http.client;
 
 import com.google.common.net.HostAndPort;
 import jakarta.servlet.Servlet;
-import org.eclipse.jetty.ee10.proxy.ProxyServlet;
+import org.eclipse.jetty.ee11.proxy.ProxyServlet;
 import org.eclipse.jetty.server.handler.ConnectHandler;
 
 import java.util.Optional;
