@@ -15,67 +15,58 @@
  */
 package io.airlift.jaxrs;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.inject.Binder;
-import com.google.inject.Key;
-import com.google.inject.Provides;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
 import io.airlift.jaxrs.JsonParsingFeature.MappingEnabled;
-import io.airlift.jaxrs.tracing.JaxrsTracingModule;
+import io.airlift.jaxrs.tracing.TracingDynamicFeature;
+import jakarta.annotation.Nullable;
 import jakarta.servlet.Servlet;
 import org.glassfish.jersey.server.ResourceConfig;
-import org.glassfish.jersey.servlet.ServletContainer;
 
-import java.util.Set;
+import java.lang.annotation.Annotation;
+import java.util.Optional;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
+import static io.airlift.jaxrs.BinderUtils.qualifiedKey;
 import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
 import static io.airlift.jaxrs.JsonParsingFeature.MappingEnabled.ENABLED;
-import static org.glassfish.jersey.server.ServerProperties.RESPONSE_SET_STATUS_OVER_SEND_ERROR;
 
 public class JaxrsModule
         extends AbstractConfigurationAwareModule
 {
-    public JaxrsModule() {}
+    private final Optional<Class<? extends Annotation>> qualifier;
 
-    @Deprecated
-    public JaxrsModule(boolean requireExplicitBindings)
+    public JaxrsModule()
     {
-        checkArgument(requireExplicitBindings, "non-explicit bindings are no longer supported");
+        this(null);
+    }
+
+    public JaxrsModule(@Nullable Class<? extends Annotation> qualifier)
+    {
+        this.qualifier = Optional.ofNullable(qualifier);
     }
 
     @Override
     protected void setup(Binder binder)
     {
         binder.disableCircularProxies();
-        binder.bind(Servlet.class).to(Key.get(ServletContainer.class));
-        newSetBinder(binder, Object.class, JaxrsResource.class).permitDuplicates();
+        binder.bind(qualifiedKey(qualifier, Servlet.class))
+                .toProvider(new JaxrsServletProvider(qualifier));
+        binder.bind(qualifiedKey(qualifier, ResourceConfig.class))
+                .toProvider(new JaxrsResourceConfigProvider(qualifier));
+        newSetBinder(binder, qualifiedKey(qualifier, Object.class)).permitDuplicates();
 
-        JaxrsBinder jaxrsBinder = jaxrsBinder(binder);
+        JaxrsBinder jaxrsBinder = jaxrsBinder(binder, qualifier);
         jaxrsBinder.bind(JsonMapper.class);
-        jaxrsBinder.bind(JsonParsingFeature.class);
+        jaxrsBinder.bind(JsonParsingFeature.class, new JsonParsingFeature.Provider(qualifier));
 
-        newOptionalBinder(binder, MappingEnabled.class)
+        newOptionalBinder(binder, qualifiedKey(qualifier, MappingEnabled.class))
                 .setDefault()
                 .toInstance(ENABLED);
 
         if (getProperty("tracing.enabled").map(Boolean::parseBoolean).orElse(false)) {
-            install(new JaxrsTracingModule());
+            jaxrsBinder.bind(TracingDynamicFeature.class);
         }
-    }
-
-    @Provides
-    public static ServletContainer createServletContainer(ResourceConfig resourceConfig)
-    {
-        return new ServletContainer(resourceConfig);
-    }
-
-    @Provides
-    public static ResourceConfig createResourceConfig(@JaxrsResource Set<Object> jaxRsSingletons)
-    {
-        return new JaxrsResourceConfig(jaxRsSingletons)
-                .setProperties(ImmutableMap.of(RESPONSE_SET_STATUS_OVER_SEND_ERROR, "true"));
     }
 }
