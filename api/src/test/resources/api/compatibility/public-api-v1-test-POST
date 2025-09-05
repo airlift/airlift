@@ -1,0 +1,25 @@
+test|public|1|POST|resource(test|RESOURCE|message|BASIC|java.lang.String)|resource(detail|RESOURCE)|[]|[]|[400|401|403]
+
+Metadata:
+POST
+io.airlift.api.servertests.integration.testingserver.external.PublicWidgetApi
+createDetail
+public/api/v1/test
+
+
+Return:
+ModelResource[type=class io.airlift.api.servertests.integration.testingserver.external.StringResult, name=test, openApiName=Optional.empty, description=Used to return strings from test methods, components=[ModelResource[type=class java.lang.String, name=message, openApiName=Optional.empty, description=, components=[], resourceType=BASIC, containerType=class java.lang.String, modifiers=[], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional.empty, enumDescriptions=Optional.empty]], resourceType=RESOURCE, containerType=class io.airlift.api.servertests.integration.testingserver.external.StringResult, modifiers=[], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional.empty, enumDescriptions=Optional.empty]
+
+Parameter(s):
+none
+
+Optional Parameter(s):
+none
+
+Body:
+ModelResource[type=interface io.airlift.api.servertests.integration.testingserver.external.Detail, name=detail, openApiName=Optional.empty, description=A polymorphic resource example, components=[], resourceType=RESOURCE, containerType=interface io.airlift.api.servertests.integration.testingserver.external.Detail, modifiers=[], quotas=[DETAIL], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional[ModelPolyResource[key=typeKey, subResources=[ModelResource[type=class io.airlift.api.servertests.integration.testingserver.external.Detail$NameAndAge, name=nameAndAge, openApiName=Optional.empty, description=A name and an age, components=[ModelResource[type=class java.lang.String, name=name, openApiName=Optional.empty, description=A name, components=[], resourceType=BASIC, containerType=class java.lang.String, modifiers=[], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional.empty, enumDescriptions=Optional.empty], ModelResource[type=int, name=age, openApiName=Optional.empty, description=An age, components=[], resourceType=BASIC, containerType=int, modifiers=[], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional.empty, enumDescriptions=Optional.empty]], resourceType=RESOURCE, containerType=class io.airlift.api.servertests.integration.testingserver.external.Detail$NameAndAge, modifiers=[], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional.empty, enumDescriptions=Optional.empty], ModelResource[type=class io.airlift.api.servertests.integration.testingserver.external.Detail$Schedule, name=schedule, openApiName=Optional.empty, description=A schedule, components=[ModelResource[type=class java.lang.String, name=name, openApiName=Optional.empty, description=A schedule name, components=[], resourceType=BASIC, containerType=class java.lang.String, modifiers=[], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional.empty, enumDescriptions=Optional.empty], ModelResource[type=class java.time.Instant, name=startDate, openApiName=Optional.empty, description=Start date, components=[], resourceType=BASIC, containerType=class java.time.Instant, modifiers=[], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional.empty, enumDescriptions=Optional.empty], ModelResource[type=class java.time.Instant, name=endDate, openApiName=Optional.empty, description=End date, components=[], resourceType=BASIC, containerType=class java.time.Instant, modifiers=[], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional.empty, enumDescriptions=Optional.empty]], resourceType=RESOURCE, containerType=class io.airlift.api.servertests.integration.testingserver.external.Detail$Schedule, modifiers=[], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional.empty, enumDescriptions=Optional.empty]]]], enumDescriptions=Optional.empty]
+
+Response(s):
+400
+401
+403
