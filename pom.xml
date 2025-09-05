@@ -35,6 +35,9 @@
     </developers>
 
     <modules>
+        <!-- components -->
+        <module>api</module>
+
         <!-- bom -->
         <module>bom</module>
 
@@ -108,6 +111,12 @@
                 <version>${dep.jersey.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>api</artifactId>
+                <version>${dep.airlift.version}</version>
             </dependency>
 
             <dependency>

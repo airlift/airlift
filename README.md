@@ -20,6 +20,7 @@ Airlift takes the best-of-breed libraries from the Java ecosystem and glues them
 
 - [Configuration](docs/ref_configuration.md)
 - [Lifecycle/Bootstrapping](docs/ref_lifecycle.md)
+- [APIs](api/README.md)
 - TBD - Concurrency
 - TBD - Database Pooling
 - TBD - Discovery

@@ -1,0 +1,25 @@
+test:recursive|public|1|POST|resource(test|RESOURCE|message|BASIC|java.lang.String)|resource(recursive|RESOURCE|name|BASIC|java.lang.String|items|LIST|io.airlift.api.servertests.integration.testingserver.external.RecursiveDetail$Item|qty|BASIC|int|recursiveDetails|LIST|io.airlift.api.servertests.integration.testingserver.external.RecursiveDetail)|[]|[]|[400|401|403]
+
+Metadata:
+POST
+io.airlift.api.servertests.integration.testingserver.external.PublicWidgetApi
+recursiveTest
+public/api/v1/test:recursive
+
+
+Return:
+ModelResource[type=class io.airlift.api.servertests.integration.testingserver.external.StringResult, name=test, openApiName=Optional.empty, description=Used to return strings from test methods, components=[ModelResource[type=class java.lang.String, name=message, openApiName=Optional.empty, description=, components=[], resourceType=BASIC, containerType=class java.lang.String, modifiers=[], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional.empty, enumDescriptions=Optional.empty]], resourceType=RESOURCE, containerType=class io.airlift.api.servertests.integration.testingserver.external.StringResult, modifiers=[], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional.empty, enumDescriptions=Optional.empty]
+
+Parameter(s):
+none
+
+Optional Parameter(s):
+none
+
+Body:
+ModelResource[type=class io.airlift.api.servertests.integration.testingserver.external.RecursiveDetail, name=recursive, openApiName=Optional.empty, description=Recursive resource test, components=[ModelResource[type=class java.lang.String, name=name, openApiName=Optional.empty, description=name, components=[], resourceType=BASIC, containerType=class java.lang.String, modifiers=[], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional.empty, enumDescriptions=Optional.empty], ModelResource[type=class io.airlift.api.servertests.integration.testingserver.external.RecursiveDetail$Item, name=items, openApiName=Optional.empty, description=items, components=[ModelResource[type=int, name=qty, openApiName=Optional.empty, description=qty, components=[], resourceType=BASIC, containerType=int, modifiers=[], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional.empty, enumDescriptions=Optional.empty], ModelResource[type=class io.airlift.api.servertests.integration.testingserver.external.RecursiveDetail, name=recursiveDetails, openApiName=Optional.empty, description=recursive, components=[], resourceType=LIST, containerType=java.util.List<io.airlift.api.servertests.integration.testingserver.external.RecursiveDetail>, modifiers=[RECURSIVE_REFERENCE], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional.empty, enumDescriptions=Optional.empty]], resourceType=LIST, containerType=java.util.List<io.airlift.api.servertests.integration.testingserver.external.RecursiveDetail$Item>, modifiers=[READ_ONLY], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional.empty, enumDescriptions=Optional.empty]], resourceType=RESOURCE, containerType=class io.airlift.api.servertests.integration.testingserver.external.RecursiveDetail, modifiers=[], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional.empty, enumDescriptions=Optional.empty]
+
+Response(s):
+400
+401
+403
