@@ -82,6 +82,9 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
+import static io.airlift.http.server.ServerFeature.CASE_SENSITIVE_HEADER_CACHE;
+import static io.airlift.http.server.ServerFeature.LEGACY_URI_COMPLIANCE;
+import static io.airlift.http.server.ServerFeature.VIRTUAL_THREADS;
 import static java.lang.Math.max;
 import static java.lang.Math.toIntExact;
 import static java.time.temporal.ChronoUnit.DAYS;
@@ -118,9 +121,7 @@ public class HttpServer
             Servlet servlet,
             Set<Filter> filters,
             Set<HttpResourceBinding> resources,
-            boolean enableVirtualThreads,
-            boolean enableLegacyUriCompliance,
-            boolean enableCaseSensitiveHeaderCache,
+            Set<ServerFeature> serverFeatures,
             ClientCertificate clientCertificate,
             MBeanServer mbeanServer,
             Optional<SslContextFactory.Server> maybeSslContextFactory,
@@ -142,7 +143,7 @@ public class HttpServer
         threadPool.setIdleTimeout(toIntExact(config.getThreadMaxIdleTime().toMillis()));
         threadPool.setName("http-worker");
         threadPool.setDetailedDump(true);
-        if (enableVirtualThreads) {
+        if (serverFeatures.contains(VIRTUAL_THREADS)) {
             VirtualThreadPool virtualExecutor = new VirtualThreadPool();
             virtualExecutor.setMaxThreads(config.getMaxThreads());
             virtualExecutor.setName("http-worker#v");
@@ -198,9 +199,9 @@ public class HttpServer
         }
 
         // see https://bugs.eclipse.org/bugs/show_bug.cgi?id=414449#c4
-        baseHttpConfiguration.setHeaderCacheCaseSensitive(enableCaseSensitiveHeaderCache);
+        baseHttpConfiguration.setHeaderCacheCaseSensitive(serverFeatures.contains(CASE_SENSITIVE_HEADER_CACHE));
 
-        if (enableLegacyUriCompliance) {
+        if (serverFeatures.contains(LEGACY_URI_COMPLIANCE)) {
             // allow encoded slashes to occur in URI paths
             UriCompliance uriCompliance = UriCompliance.from(EnumSet.of(AMBIGUOUS_PATH_SEPARATOR, AMBIGUOUS_PATH_ENCODING, SUSPICIOUS_PATH_CHARACTERS));
             baseHttpConfiguration.setUriCompliance(uriCompliance);
@@ -282,7 +283,7 @@ public class HttpServer
          */
         StatisticsHandler statsHandler = new StatisticsHandler();
 
-        ServletContextHandler servletContext = createServletContext(servlet, resources, filters, Set.of("http", "https"), showStackTrace, enableLegacyUriCompliance);
+        ServletContextHandler servletContext = createServletContext(servlet, resources, filters, Set.of("http", "https"), showStackTrace, serverFeatures.contains(LEGACY_URI_COMPLIANCE));
 
         if (enableCompression) {
             CompressionHandler compressionHandler = new CompressionHandler();

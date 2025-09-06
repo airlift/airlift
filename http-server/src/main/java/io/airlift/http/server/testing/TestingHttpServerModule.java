@@ -18,15 +18,13 @@ import com.google.inject.Key;
 import com.google.inject.Scopes;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
 import io.airlift.discovery.client.AnnouncementHttpServerInfo;
-import io.airlift.http.server.EnableCaseSensitiveHeaderCache;
-import io.airlift.http.server.EnableLegacyUriCompliance;
-import io.airlift.http.server.EnableVirtualThreads;
 import io.airlift.http.server.HttpServer;
 import io.airlift.http.server.HttpServer.ClientCertificate;
 import io.airlift.http.server.HttpServerConfig;
 import io.airlift.http.server.HttpServerInfo;
 import io.airlift.http.server.HttpsConfig;
 import io.airlift.http.server.LocalAnnouncementHttpServerInfo;
+import io.airlift.http.server.ServerFeature;
 import jakarta.servlet.Filter;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
@@ -62,14 +60,10 @@ public class TestingHttpServerModule
         binder.bind(TestingHttpServer.class).in(Scopes.SINGLETON);
         newOptionalBinder(binder, ClientCertificate.class).setDefault().toInstance(ClientCertificate.NONE);
         binder.bind(HttpServer.class).to(Key.get(TestingHttpServer.class));
-        // override with HttpServerBinder.enableVirtualThreads()
-        newOptionalBinder(binder, Key.get(Boolean.class, EnableVirtualThreads.class)).setDefault().toInstance(false);
-        // override with HttpServerBinder.enableLegacyUriCompliance()
-        newOptionalBinder(binder, Key.get(Boolean.class, EnableLegacyUriCompliance.class)).setDefault().toInstance(false);
+        newSetBinder(binder, ServerFeature.class);
         newSetBinder(binder, Filter.class);
         newSetBinder(binder, HttpResourceBinding.class);
         binder.bind(AnnouncementHttpServerInfo.class).to(LocalAnnouncementHttpServerInfo.class);
-        newOptionalBinder(binder, Key.get(Boolean.class, EnableCaseSensitiveHeaderCache.class)).setDefault().toInstance(false);
 
         newOptionalBinder(binder, HttpsConfig.class);
         install(conditionalModule(HttpServerConfig.class, HttpServerConfig::isHttpsEnabled, moduleBinder -> {

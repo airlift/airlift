@@ -14,6 +14,7 @@
 package io.airlift.configuration;
 
 import com.google.inject.Binder;
+import com.google.inject.Key;
 import com.google.inject.Module;
 
 import java.util.Optional;
@@ -64,9 +65,15 @@ public class ConditionalModule<T>
 
     public static <T> Module conditionalModule(Class<T> config, String prefix, Predicate<T> predicate, Module module)
     {
-        return new ConditionalModule<>(config, Optional.of(prefix), predicate, module);
+        return new ConditionalModule<>(config, Optional.ofNullable(prefix), predicate, module);
     }
 
+    public static <T> Module conditionalModule(Key<T> key, Class<T> config, String prefix, Predicate<T> predicate, Module module)
+    {
+        return new ConditionalModule<>(key, config, Optional.ofNullable(prefix), predicate, module);
+    }
+
+    private final Key<T> key;
     private final Class<T> config;
     private final Optional<String> prefix;
     private final Predicate<T> predicate;
@@ -74,6 +81,12 @@ public class ConditionalModule<T>
 
     private ConditionalModule(Class<T> config, Optional<String> prefix, Predicate<T> predicate, Module module)
     {
+        this(Key.get(config), config, prefix, predicate, module);
+    }
+
+    private ConditionalModule(Key<T> key, Class<T> config, Optional<String> prefix, Predicate<T> predicate, Module module)
+    {
+        this.key = requireNonNull(key, "key is null");
         this.config = requireNonNull(config, "config is null");
         this.prefix = requireNonNull(prefix, "prefix is null");
         this.predicate = requireNonNull(predicate, "predicate is null");
@@ -84,8 +97,8 @@ public class ConditionalModule<T>
     protected void setup(Binder binder)
     {
         T configuration = prefix
-                .map(value -> buildConfigObject(config, value))
-                .orElseGet(() -> buildConfigObject(config));
+                .map(value -> buildConfigObject(key, config, value))
+                .orElseGet(() -> buildConfigObject(key, config));
         if (predicate.test(configuration)) {
             install(module);
         }
