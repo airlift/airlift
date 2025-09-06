@@ -1,11 +1,13 @@
 package io.airlift.mcp.reference;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import io.airlift.mcp.McpMetadata;
+import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServer.StatelessSyncSpecification;
 import io.modelcontextprotocol.server.McpStatelessSyncServer;
@@ -34,10 +36,7 @@ public class ReferenceModule
         return HttpServletStatelessServerTransport.builder()
                 .messageEndpoint(metadata.uriPath())
                 .objectMapper(objectMapper)
-                .contextExtractor((request, transportContext) -> {
-                    transportContext.put(CONTEXT_REQUEST_KEY, request);
-                    return transportContext;
-                })
+                .contextExtractor(request -> McpTransportContext.create(ImmutableMap.of(CONTEXT_REQUEST_KEY, request)))
                 .build();
     }
 
