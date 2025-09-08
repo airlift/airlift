@@ -76,6 +76,8 @@ public class HttpClientConfig
     private DataSize maxContentLength = DataSize.of(16, MEGABYTE);
     private DataSize requestBufferSize = DataSize.of(4, KILOBYTE);
     private DataSize responseBufferSize = DataSize.of(16, KILOBYTE);
+    private DataSize maxRequestHeaderSize = DataSize.of(8, KILOBYTE);
+    private DataSize maxResponseHeaderSize = DataSize.of(16, KILOBYTE);
     private Optional<DataSize> maxHeapMemory = Optional.empty();
     private Optional<DataSize> maxDirectMemory = Optional.empty();
     private HostAndPort socksProxy;
@@ -271,6 +273,34 @@ public class HttpClientConfig
     public HttpClientConfig setResponseBufferSize(DataSize responseBufferSize)
     {
         this.responseBufferSize = responseBufferSize;
+        return this;
+    }
+
+    @NotNull
+    @MaxDataSize("32MB")
+    public DataSize getMaxRequestHeaderSize()
+    {
+        return maxRequestHeaderSize;
+    }
+
+    @Config("http-client.max-request-header-size")
+    public HttpClientConfig setMaxRequestHeaderSize(DataSize maxRequestHeaderSize)
+    {
+        this.maxRequestHeaderSize = maxRequestHeaderSize;
+        return this;
+    }
+
+    @NotNull
+    @MaxDataSize("32MB")
+    public DataSize getMaxResponseHeaderSize()
+    {
+        return maxResponseHeaderSize;
+    }
+
+    @Config("http-client.max-response-header-size")
+    public HttpClientConfig setMaxResponseHeaderSize(DataSize maxResponseHeaderSize)
+    {
+        this.maxResponseHeaderSize = maxResponseHeaderSize;
         return this;
     }
 
