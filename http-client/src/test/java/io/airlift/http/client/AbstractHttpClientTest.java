@@ -13,7 +13,6 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpResponseException;
-import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -83,6 +82,7 @@ import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 @Execution(CONCURRENT)
 public abstract class AbstractHttpClientTest
 {
+    private static final int DEFAULT_MIN_GZIP_SIZE = 32; // org.eclipse.jetty.compression.gzip.GzipCompression.DEFAULT_MIN_GZIP_SIZE
     private static final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
 
     public static final String LARGE_CONTENT = IntStream.range(0, 10_000_000).mapToObj(ignore -> "hello").collect(Collectors.joining());
@@ -704,7 +704,7 @@ public abstract class AbstractHttpClientTest
             assertThat(server.servlet().getRequestHeaders().containsKey(HeaderName.of(ACCEPT_ENCODING))).isFalse();
 
             String json = "{\"fuite\":\"apple\",\"hello\":\"world\"}";
-            assertThat(json.length()).isGreaterThanOrEqualTo(GzipHandler.DEFAULT_MIN_GZIP_SIZE);
+            assertThat(json.length()).isGreaterThanOrEqualTo(DEFAULT_MIN_GZIP_SIZE);
 
             server.servlet().setResponseBody(json);
             server.servlet().addResponseHeader(CONTENT_TYPE, "application/json");
