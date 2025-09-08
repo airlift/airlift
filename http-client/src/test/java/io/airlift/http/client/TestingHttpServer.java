@@ -16,6 +16,8 @@ package io.airlift.http.client;
 import com.google.common.net.HostAndPort;
 import jakarta.servlet.Servlet;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
+import org.eclipse.jetty.compression.gzip.GzipCompression;
+import org.eclipse.jetty.compression.server.CompressionHandler;
 import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee11.servlet.ServletHolder;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
@@ -29,7 +31,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import java.net.URI;
@@ -91,17 +92,18 @@ public class TestingHttpServer
         ContextHandlerCollection handlers = new ContextHandlerCollection();
         handlers.addHandler(context);
 
-        GzipHandler gzipHandler = new GzipHandler();
-        gzipHandler.setHandler(handlers);
-        server.setHandler(gzipHandler);
+        CompressionHandler compressionHandler = new CompressionHandler();
+        compressionHandler.putCompression(new GzipCompression());
+        compressionHandler.setHandler(handlers);
+        server.setHandler(compressionHandler);
 
         if (additionalHandle.isPresent()) {
             Handler.Wrapper handler = additionalHandle.get();
-            handler.setHandler(gzipHandler);
+            handler.setHandler(compressionHandler);
             server.setHandler(handler);
         }
         else {
-            server.setHandler(gzipHandler);
+            server.setHandler(compressionHandler);
         }
 
         this.server = server;

@@ -69,6 +69,7 @@ import java.security.cert.X509Certificate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.EnumSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -287,8 +288,16 @@ public class HttpServer
         if (enableCompression) {
             CompressionHandler compressionHandler = new CompressionHandler();
 
-            for (Compression compression : ServiceLoader.load(Compression.class, HttpServer.class.getClassLoader())) {
-                compressionHandler.putCompression(compression);
+            Iterator<Compression> loader = ServiceLoader.load(Compression.class, HttpServer.class.getClassLoader())
+                    .iterator();
+
+            while (loader.hasNext()) {
+                try {
+                    compressionHandler.putCompression(loader.next());
+                }
+                catch (Throwable t) {
+                    log.error(t, "Error loading http server compression");
+                }
             }
 
             CompressionConfig compressionConfig = CompressionConfig.builder()

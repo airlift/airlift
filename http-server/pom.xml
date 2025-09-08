@@ -146,19 +146,16 @@
         <dependency>
             <groupId>org.eclipse.jetty.compression</groupId>
             <artifactId>jetty-compression-common</artifactId>
-            <version>${dep.jetty.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.eclipse.jetty.compression</groupId>
             <artifactId>jetty-compression-server</artifactId>
-            <version>${dep.jetty.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.eclipse.jetty.ee11</groupId>
             <artifactId>jetty-ee11-servlet</artifactId>
-            <version>${dep.jetty.version}</version>
         </dependency>
 
         <dependency>
@@ -177,25 +174,21 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- TODO: uncomment once https://github.com/jetty/jetty.project/issues/13499 is solved -->
-        <!--        <dependency>-->
-        <!--            <groupId>org.eclipse.jetty.compression</groupId>-->
-        <!--            <artifactId>jetty-compression-brotli</artifactId>-->
-        <!--            <version>${dep.jetty.version}</version>-->
-        <!--            <scope>runtime</scope>-->
-        <!--        </dependency>-->
+        <dependency>
+            <groupId>org.eclipse.jetty.compression</groupId>
+            <artifactId>jetty-compression-brotli</artifactId>
+            <scope>runtime</scope>
+        </dependency>
 
         <dependency>
             <groupId>org.eclipse.jetty.compression</groupId>
             <artifactId>jetty-compression-gzip</artifactId>
-            <version>${dep.jetty.version}</version>
             <scope>runtime</scope>
         </dependency>
 
         <dependency>
             <groupId>org.eclipse.jetty.compression</groupId>
             <artifactId>jetty-compression-zstandard</artifactId>
-            <version>${dep.jetty.version}</version>
             <scope>runtime</scope>
         </dependency>
 
