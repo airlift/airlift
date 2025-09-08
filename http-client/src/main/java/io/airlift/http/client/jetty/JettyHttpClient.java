@@ -131,7 +131,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.eclipse.jetty.client.ConnectionPoolAccessor.getActiveConnections;
-import static org.eclipse.jetty.client.ConnectionPoolAccessor.getIdleConnections;
 import static org.eclipse.jetty.client.HttpClient.normalizePort;
 import static org.eclipse.jetty.http.HttpHeader.PROXY_AUTHORIZATION;
 
@@ -376,10 +375,10 @@ public class JettyHttpClient
         this.monitoredQueuedThreadPoolMBean = new MonitoredQueuedThreadPoolMBean((MonitoredQueuedThreadPool) httpClient.getExecutor());
 
         this.activeConnectionsPerDestination = new ConnectionPoolDistribution(httpClient,
-                (distribution, connectionPool) -> distribution.add(getActiveConnections(connectionPool).size()));
+                (distribution, connectionPool) -> distribution.add(connectionPool.getActiveConnectionCount()));
 
         this.idleConnectionsPerDestination = new ConnectionPoolDistribution(httpClient,
-                (distribution, connectionPool) -> distribution.add(getIdleConnections(connectionPool).size()));
+                (distribution, connectionPool) -> distribution.add(connectionPool.getIdleConnectionCount()));
 
         this.queuedRequestsPerDestination = new DestinationDistribution(httpClient,
                 (distribution, destination) -> distribution.add(destination.getHttpExchanges().size()));
