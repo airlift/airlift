@@ -10,9 +10,4 @@ public final class ConnectionPoolAccessor
     {
         return pool.getActiveConnections();
     }
-
-    public static Collection<Connection> getIdleConnections(AbstractConnectionPool pool)
-    {
-        return pool.getIdleConnections();
-    }
 }
