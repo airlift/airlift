@@ -279,6 +279,8 @@ public class JettyHttpClient
         // request and response buffer size
         httpClient.setRequestBufferSize(toIntExact(config.getRequestBufferSize().toBytes()));
         httpClient.setResponseBufferSize(toIntExact(config.getResponseBufferSize().toBytes()));
+        httpClient.setMaxRequestHeadersSize(toIntExact(config.getMaxRequestHeaderSize().toBytes()));
+        httpClient.setMaxResponseHeadersSize(toIntExact(config.getMaxResponseHeaderSize().toBytes()));
 
         httpClient.setMaxConnectionsPerDestination(config.getMaxConnectionsPerServer());
         httpClient.setMaxRequestsQueuedPerDestination(config.getMaxRequestsQueuedPerDestination());
