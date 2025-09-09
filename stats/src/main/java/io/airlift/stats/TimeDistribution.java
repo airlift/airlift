@@ -1,7 +1,5 @@
 package io.airlift.stats;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import org.weakref.jmx.Managed;
 
@@ -9,7 +7,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Verify.verify;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -194,119 +191,21 @@ public class TimeDistribution
         digest = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
     }
 
-    public static class TimeDistributionSnapshot
+    public record TimeDistributionSnapshot(
+            double count,
+            double p50,
+            double p75,
+            double p90,
+            double p95,
+            double p99,
+            double min,
+            double max,
+            double avg,
+            TimeUnit unit)
     {
-        private final double count;
-        private final double p50;
-        private final double p75;
-        private final double p90;
-        private final double p95;
-        private final double p99;
-        private final double min;
-        private final double max;
-        private final double avg;
-        private final TimeUnit unit;
-
-        @JsonCreator
-        public TimeDistributionSnapshot(
-                @JsonProperty("count") double count,
-                @JsonProperty("p50") double p50,
-                @JsonProperty("p75") double p75,
-                @JsonProperty("p90") double p90,
-                @JsonProperty("p95") double p95,
-                @JsonProperty("p99") double p99,
-                @JsonProperty("min") double min,
-                @JsonProperty("max") double max,
-                @JsonProperty("avg") double avg,
-                @JsonProperty("unit") TimeUnit unit)
+        public TimeDistributionSnapshot
         {
-            this.count = count;
-            this.p50 = p50;
-            this.p75 = p75;
-            this.p90 = p90;
-            this.p95 = p95;
-            this.p99 = p99;
-            this.min = min;
-            this.max = max;
-            this.avg = avg;
-            this.unit = unit;
-        }
-
-        @JsonProperty
-        public double getCount()
-        {
-            return count;
-        }
-
-        @JsonProperty
-        public double getP50()
-        {
-            return p50;
-        }
-
-        @JsonProperty
-        public double getP75()
-        {
-            return p75;
-        }
-
-        @JsonProperty
-        public double getP90()
-        {
-            return p90;
-        }
-
-        @JsonProperty
-        public double getP95()
-        {
-            return p95;
-        }
-
-        @JsonProperty
-        public double getP99()
-        {
-            return p99;
-        }
-
-        @JsonProperty
-        public double getMin()
-        {
-            return min;
-        }
-
-        @JsonProperty
-        public double getMax()
-        {
-            return max;
-        }
-
-        @JsonProperty
-        public double getAvg()
-        {
-            return avg;
-        }
-
-        @JsonProperty
-        public TimeUnit unit()
-        {
-            return unit;
-        }
-
-        @Override
-        public String toString()
-        {
-            return toStringHelper(this)
-                    .add("count", count)
-                    .add("p50", p50)
-                    .add("p75", p75)
-                    .add("p90", p90)
-                    .add("p95", p95)
-                    .add("p99", p99)
-                    .add("min", min)
-                    .add("max", max)
-                    .add("avg", avg)
-                    .add("unit", unit)
-                    .toString();
+            requireNonNull(unit, "unit is null");
         }
     }
 }
