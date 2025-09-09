@@ -56,6 +56,6 @@ public class TestCpuTimer
         TestingTicker ticker = new TestingTicker();
         CpuTimer timer = new CpuTimer(ticker, true);
         ticker.increment(1, SECONDS);
-        assertThat(timer.elapsedTime().getWall()).isEqualTo(succinctDuration(1, SECONDS));
+        assertThat(timer.elapsedTime().wall()).isEqualTo(succinctDuration(1, SECONDS));
     }
 }

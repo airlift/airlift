@@ -21,7 +21,6 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.util.Optional;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
@@ -125,33 +124,11 @@ public class CpuTimer
         return new Duration(Math.abs(end - start), NANOSECONDS);
     }
 
-    public static class CpuDuration
+    public record CpuDuration(Duration wall, Duration cpu, @Nullable Duration user)
     {
-        private final Duration wall;
-        private final Duration cpu;
-        @Nullable
-        private final Duration user;
-
         public CpuDuration()
         {
             this(ZERO_NANOS, ZERO_NANOS, ZERO_NANOS);
-        }
-
-        public CpuDuration(Duration wall, Duration cpu, @Nullable Duration user)
-        {
-            this.wall = wall;
-            this.cpu = cpu;
-            this.user = user;
-        }
-
-        public Duration getWall()
-        {
-            return wall;
-        }
-
-        public Duration getCpu()
-        {
-            return cpu;
         }
 
         public boolean hasUser()
@@ -160,17 +137,18 @@ public class CpuTimer
         }
 
         /**
-         * This method will report zero duration when no user time was collected. Check {@link CpuDuration#hasUser()} or use {@link CpuDuration#getUserIfPresent()}
+         * This method will report zero duration when no user time was collected. Check {@link CpuDuration#hasUser()} or use {@link CpuDuration#userIfPresent()}
          * in order distinguish a true zero user CPU time from no value being present.
          *
          * @return The {@link CpuDuration#user} value if present, otherwise returns a value of zero nanoseconds
          */
-        public Duration getUser()
+        @Override
+        public Duration user()
         {
             return user == null ? ZERO_NANOS : user;
         }
 
-        public Optional<Duration> getUserIfPresent()
+        public Optional<Duration> userIfPresent()
         {
             return Optional.ofNullable(user);
         }
@@ -199,16 +177,6 @@ public class CpuTimer
         private static Duration subtractDurations(Duration a, Duration b)
         {
             return new Duration(Math.max(0, a.getValue(NANOSECONDS) - b.getValue(NANOSECONDS)), NANOSECONDS);
-        }
-
-        @Override
-        public String toString()
-        {
-            return toStringHelper(this)
-                    .add("wall", wall)
-                    .add("cpu", cpu)
-                    .add("user", user)
-                    .toString();
         }
     }
 }
