@@ -1,7 +1,5 @@
 package io.airlift.stats;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.errorprone.annotations.ThreadSafe;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import org.weakref.jmx.Managed;
@@ -9,7 +7,6 @@ import org.weakref.jmx.Managed;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Verify.verify;
 import static java.util.Objects.requireNonNull;
 
@@ -207,159 +204,21 @@ public class Distribution
                 average);
     }
 
-    public static class DistributionSnapshot
+    public record DistributionSnapshot(
+            double count,
+            double total,
+            double p01,
+            double p05,
+            double p10,
+            double p25,
+            double p50,
+            double p75,
+            double p90,
+            double p95,
+            double p99,
+            double min,
+            double max,
+            double avg)
     {
-        private final double count;
-        private final double total;
-        private final double p01;
-        private final double p05;
-        private final double p10;
-        private final double p25;
-        private final double p50;
-        private final double p75;
-        private final double p90;
-        private final double p95;
-        private final double p99;
-        private final double min;
-        private final double max;
-        private final double avg;
-
-        @JsonCreator
-        public DistributionSnapshot(
-                @JsonProperty("count") double count,
-                @JsonProperty("total") double total,
-                @JsonProperty("p01") double p01,
-                @JsonProperty("p05") double p05,
-                @JsonProperty("p10") double p10,
-                @JsonProperty("p25") double p25,
-                @JsonProperty("p50") double p50,
-                @JsonProperty("p75") double p75,
-                @JsonProperty("p90") double p90,
-                @JsonProperty("p95") double p95,
-                @JsonProperty("p99") double p99,
-                @JsonProperty("min") double min,
-                @JsonProperty("max") double max,
-                @JsonProperty("avg") double avg)
-        {
-            this.count = count;
-            this.total = total;
-            this.p01 = p01;
-            this.p05 = p05;
-            this.p10 = p10;
-            this.p25 = p25;
-            this.p50 = p50;
-            this.p75 = p75;
-            this.p90 = p90;
-            this.p95 = p95;
-            this.p99 = p99;
-            this.min = min;
-            this.max = max;
-            this.avg = avg;
-        }
-
-        @JsonProperty
-        public double getCount()
-        {
-            return count;
-        }
-
-        @JsonProperty
-        public double getTotal()
-        {
-            return total;
-        }
-
-        @JsonProperty
-        public double getP01()
-        {
-            return p01;
-        }
-
-        @JsonProperty
-        public double getP05()
-        {
-            return p05;
-        }
-
-        @JsonProperty
-        public double getP10()
-        {
-            return p10;
-        }
-
-        @JsonProperty
-        public double getP25()
-        {
-            return p25;
-        }
-
-        @JsonProperty
-        public double getP50()
-        {
-            return p50;
-        }
-
-        @JsonProperty
-        public double getP75()
-        {
-            return p75;
-        }
-
-        @JsonProperty
-        public double getP90()
-        {
-            return p90;
-        }
-
-        @JsonProperty
-        public double getP95()
-        {
-            return p95;
-        }
-
-        @JsonProperty
-        public double getP99()
-        {
-            return p99;
-        }
-
-        @JsonProperty
-        public double getMin()
-        {
-            return min;
-        }
-
-        @JsonProperty
-        public double getMax()
-        {
-            return max;
-        }
-
-        @JsonProperty
-        public double getAvg()
-        {
-            return avg;
-        }
-
-        @Override
-        public String toString()
-        {
-            return toStringHelper(this)
-                    .add("count", count)
-                    .add("total", total)
-                    .add("p01", p01)
-                    .add("p05", p05)
-                    .add("p10", p10)
-                    .add("p25", p25)
-                    .add("p50", p50)
-                    .add("p75", p75)
-                    .add("p90", p90)
-                    .add("p95", p95)
-                    .add("p99", p99)
-                    .add("min", min)
-                    .add("max", max)
-                    .add("avg", avg)
-                    .toString();
-        }
     }
 }
