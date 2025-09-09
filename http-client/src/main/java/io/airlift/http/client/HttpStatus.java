@@ -125,19 +125,13 @@ public enum HttpStatus
 
     public static Family familyForStatusCode(int code)
     {
-        switch (code / 100) {
-            case 1:
-                return Family.INFORMATIONAL;
-            case 2:
-                return Family.SUCCESSFUL;
-            case 3:
-                return Family.REDIRECTION;
-            case 4:
-                return Family.CLIENT_ERROR;
-            case 5:
-                return Family.SERVER_ERROR;
-            default:
-                return Family.OTHER;
-        }
+        return switch (code / 100) {
+            case 1 -> Family.INFORMATIONAL;
+            case 2 -> Family.SUCCESSFUL;
+            case 3 -> Family.REDIRECTION;
+            case 4 -> Family.CLIENT_ERROR;
+            case 5 -> Family.SERVER_ERROR;
+            default -> Family.OTHER;
+        };
     }
 }
