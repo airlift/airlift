@@ -15,8 +15,6 @@
  */
 package io.airlift.stats;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Ticker;
 import io.airlift.stats.TimeDistribution.TimeDistributionSnapshot;
 import io.airlift.units.Duration;
@@ -26,7 +24,6 @@ import org.weakref.jmx.Nested;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
 import static java.util.Objects.requireNonNull;
 
 public class TimeStat
@@ -164,59 +161,18 @@ public class TimeStat
         allTime.reset();
     }
 
-    public static class TimeDistributionStatSnapshot
+    public record TimeDistributionStatSnapshot(
+            TimeDistributionSnapshot oneMinute,
+            TimeDistributionSnapshot fiveMinute,
+            TimeDistributionSnapshot fifteenMinute,
+            TimeDistributionSnapshot allTime)
     {
-        private final TimeDistributionSnapshot oneMinute;
-        private final TimeDistributionSnapshot fiveMinute;
-        private final TimeDistributionSnapshot fifteenMinute;
-        private final TimeDistributionSnapshot allTime;
-
-        @JsonCreator
-        public TimeDistributionStatSnapshot(
-                @JsonProperty("oneMinute") TimeDistributionSnapshot oneMinute,
-                @JsonProperty("fiveMinute") TimeDistributionSnapshot fiveMinute,
-                @JsonProperty("fifteenMinute") TimeDistributionSnapshot fifteenMinute,
-                @JsonProperty("allTime") TimeDistributionSnapshot allTime)
+        public TimeDistributionStatSnapshot
         {
-            this.oneMinute = oneMinute;
-            this.fiveMinute = fiveMinute;
-            this.fifteenMinute = fifteenMinute;
-            this.allTime = allTime;
-        }
-
-        @JsonProperty
-        public TimeDistributionSnapshot getOneMinute()
-        {
-            return oneMinute;
-        }
-
-        @JsonProperty
-        public TimeDistributionSnapshot getFiveMinutes()
-        {
-            return fiveMinute;
-        }
-
-        @JsonProperty
-        public TimeDistributionSnapshot getFifteenMinutes()
-        {
-            return fifteenMinute;
-        }
-
-        @JsonProperty
-        public TimeDistributionSnapshot getAllTime()
-        {
-            return allTime;
-        }
-
-        @Override
-        public String toString()
-        {
-            return toStringHelper(this)
-                    .add("oneMinute", oneMinute)
-                    .add("fiveMinute", fiveMinute)
-                    .add("fifteenMinute", fifteenMinute)
-                    .add("allTime", allTime)
-                    .toString();
+            requireNonNull(oneMinute, "oneMinute is null");
+            requireNonNull(fiveMinute, "fiveMinute is null");
+            requireNonNull(fifteenMinute, "fifteenMinute is null");
+            requireNonNull(allTime, "allTime is null");
         }
     }
 }
