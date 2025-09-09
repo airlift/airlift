@@ -23,16 +23,12 @@ final class Utils
 
     public static double alpha(int indexBitLength)
     {
-        switch (indexBitLength) {
-            case 4:
-                return 0.673;
-            case 5:
-                return 0.697;
-            case 6:
-                return 0.709;
-            default:
-                return (0.7213 / (1 + 1.079 / numberOfBuckets(indexBitLength)));
-        }
+        return switch (indexBitLength) {
+            case 4 -> 0.673;
+            case 5 -> 0.697;
+            case 6 -> 0.709;
+            default -> (0.7213 / (1 + 1.079 / numberOfBuckets(indexBitLength)));
+        };
     }
 
     public static boolean isPowerOf2(long value)
