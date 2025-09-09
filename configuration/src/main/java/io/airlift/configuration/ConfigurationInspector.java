@@ -76,13 +76,13 @@ public class ConfigurationInspector
             requireNonNull(configurationProvider, "configurationProvider");
 
             ConfigurationBinding<T> configurationBinding = configurationProvider.getConfigurationBinding();
-            key = configurationBinding.getKey();
-            configClass = configurationBinding.getConfigClass();
-            prefix = configurationBinding.getPrefix().orElse(null);
+            key = configurationBinding.key();
+            configClass = configurationBinding.configClass();
+            prefix = configurationBinding.prefix().orElse(null);
 
-            ConfigurationMetadata<T> metadata = getConfigurationMetadata(configurationBinding.getConfigClass());
+            ConfigurationMetadata<T> metadata = getConfigurationMetadata(configurationBinding.configClass());
 
-            T defaults = configurationFactory.getDefaultConfig(configurationBinding.getKey());
+            T defaults = configurationFactory.getDefaultConfig(configurationBinding.key());
 
             T instance = null;
             try {
@@ -93,7 +93,7 @@ public class ConfigurationInspector
                 // this is catch throwable because we may get an AssertionError
             }
 
-            String prefix = configurationBinding.getPrefix()
+            String prefix = configurationBinding.prefix()
                     .map(value -> value + ".")
                     .orElse("");
 
