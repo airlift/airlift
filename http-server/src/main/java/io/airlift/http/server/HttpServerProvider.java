@@ -51,7 +51,7 @@ public class HttpServerProvider
     private final boolean enableVirtualThreads;
     private final boolean enableLegacyUriCompliance;
     private final boolean enableCaseSensitiveHeaderCache;
-    private MBeanServer mbeanServer;
+    private Optional<MBeanServer> mbeanServer = Optional.empty();
     private final Set<Filter> filters;
     private final Optional<SslContextFactory.Server> sslContextFactory;
     private final Optional<ByteBufferPool> byteBufferPool;
@@ -100,7 +100,7 @@ public class HttpServerProvider
     @Inject(optional = true)
     public void setMBeanServer(MBeanServer server)
     {
-        mbeanServer = server;
+        mbeanServer = Optional.of(server);
     }
 
     @Override

@@ -123,7 +123,7 @@ public class HttpServer
             boolean enableLegacyUriCompliance,
             boolean enableCaseSensitiveHeaderCache,
             ClientCertificate clientCertificate,
-            MBeanServer mbeanServer,
+            Optional<MBeanServer> mbeanServer,
             Optional<SslContextFactory.Server> maybeSslContextFactory,
             Optional<ByteBufferPool> byteBufferPool)
             throws IOException
@@ -135,6 +135,7 @@ public class HttpServer
         requireNonNull(servlet, "servlet is null");
         requireNonNull(maybeSslContextFactory, "maybeSslContextFactory is null");
         requireNonNull(clientCertificate, "clientCertificate is null");
+        requireNonNull(mbeanServer, "mbeanServer is null");
 
         checkArgument(!config.isHttpsEnabled() || maybeHttpsConfig.isPresent(), "httpsConfig must be present when HTTPS is enabled");
 
@@ -165,9 +166,9 @@ public class HttpServer
 
         this.sslContextFactory = maybeSslContextFactory;
 
-        if (mbeanServer != null) {
+        if (mbeanServer.isPresent()) {
             // export jmx mbeans if a server was provided
-            MBeanContainer mbeanContainer = new MBeanContainer(mbeanServer);
+            MBeanContainer mbeanContainer = new MBeanContainer(mbeanServer.orElseThrow());
             server.addBean(mbeanContainer);
         }
 
