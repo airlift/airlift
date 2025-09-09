@@ -1,12 +1,10 @@
 package io.airlift.stats;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.airlift.stats.Distribution.DistributionSnapshot;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
+import static java.util.Objects.requireNonNull;
 
 public class DistributionStat
 {
@@ -76,59 +74,18 @@ public class DistributionStat
                 getAllTime().snapshot());
     }
 
-    public static class DistributionStatSnapshot
+    public record DistributionStatSnapshot(
+            DistributionSnapshot oneMinute,
+            DistributionSnapshot fiveMinute,
+            DistributionSnapshot fifteenMinute,
+            DistributionSnapshot allTime)
     {
-        private final DistributionSnapshot oneMinute;
-        private final DistributionSnapshot fiveMinute;
-        private final DistributionSnapshot fifteenMinute;
-        private final DistributionSnapshot allTime;
-
-        @JsonCreator
-        public DistributionStatSnapshot(
-                @JsonProperty("oneMinute") DistributionSnapshot oneMinute,
-                @JsonProperty("fiveMinute") DistributionSnapshot fiveMinute,
-                @JsonProperty("fifteenMinute") DistributionSnapshot fifteenMinute,
-                @JsonProperty("allTime") DistributionSnapshot allTime)
+        public DistributionStatSnapshot
         {
-            this.oneMinute = oneMinute;
-            this.fiveMinute = fiveMinute;
-            this.fifteenMinute = fifteenMinute;
-            this.allTime = allTime;
-        }
-
-        @JsonProperty
-        public DistributionSnapshot getOneMinute()
-        {
-            return oneMinute;
-        }
-
-        @JsonProperty
-        public DistributionSnapshot getFiveMinutes()
-        {
-            return fiveMinute;
-        }
-
-        @JsonProperty
-        public DistributionSnapshot getFifteenMinutes()
-        {
-            return fifteenMinute;
-        }
-
-        @JsonProperty
-        public DistributionSnapshot getAllTime()
-        {
-            return allTime;
-        }
-
-        @Override
-        public String toString()
-        {
-            return toStringHelper(this)
-                    .add("oneMinute", oneMinute)
-                    .add("fiveMinute", fiveMinute)
-                    .add("fifteenMinute", fifteenMinute)
-                    .add("allTime", allTime)
-                    .toString();
+            requireNonNull(oneMinute, "oneMinute is null");
+            requireNonNull(fiveMinute, "fiveMinute is null");
+            requireNonNull(fifteenMinute, "fifteenMinute is null");
+            requireNonNull(allTime, "allTime is null");
         }
     }
 }
