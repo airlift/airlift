@@ -49,7 +49,7 @@ public class ConfigBinder
         @Override
         public <T> void bind(ConfigurationBinding<T> configurationBinding)
         {
-            Key<T> key = configurationBinding.getKey();
+            Key<T> key = configurationBinding.key();
             binder.bind(key).toProvider(new ConfigurationProvider<>(configurationBinding));
             createConfigDefaultsBinder(key);
         }

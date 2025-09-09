@@ -8,37 +8,14 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
 
-public final class ConfigurationBinding<T>
+public record ConfigurationBinding<T>(Key<T> key, Class<T> configClass, Optional<String> prefix)
 {
-    private final Key<T> key;
-    private final Class<T> configClass;
-    private final Optional<String> prefix;
-
-    public ConfigurationBinding(Key<T> key, Class<T> configClass, Optional<String> prefix)
+    public ConfigurationBinding
     {
         requireNonNull(key, "key");
         requireNonNull(configClass, "configClass");
         requireNonNull(prefix, "prefix is null");
         checkArgument(!prefix.isPresent() || !prefix.get().isEmpty(), "prefix is empty");
-
-        this.key = key;
-        this.configClass = configClass;
-        this.prefix = prefix;
-    }
-
-    public Key<T> getKey()
-    {
-        return key;
-    }
-
-    public Class<T> getConfigClass()
-    {
-        return configClass;
-    }
-
-    public Optional<String> getPrefix()
-    {
-        return prefix;
     }
 
     @Override

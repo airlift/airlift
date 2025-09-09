@@ -346,7 +346,7 @@ public class ConfigurationFactory
         }
 
         ConfigurationBinding<T> configurationBinding = configurationProvider.getConfigurationBinding();
-        ConfigurationHolder<T> holder = build(configurationBinding.getConfigClass(), configurationBinding.getPrefix(), getConfigDefaults(configurationBinding.getKey()));
+        ConfigurationHolder<T> holder = build(configurationBinding.configClass(), configurationBinding.prefix(), getConfigDefaults(configurationBinding.key()));
         instance = holder.getInstance();
 
         // inform caller about warnings

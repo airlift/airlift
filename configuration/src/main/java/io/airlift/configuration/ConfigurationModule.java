@@ -62,7 +62,7 @@ public class ConfigurationModule
 
     private static <T> void bindConfigurationProvider(Binder binder, ConfigurationProvider<T> configurationProvider)
     {
-        binder.bind(configurationProvider.getConfigurationBinding().getKey()).toProvider(configurationProvider);
+        binder.bind(configurationProvider.getConfigurationBinding().key()).toProvider(configurationProvider);
     }
 
     /**
