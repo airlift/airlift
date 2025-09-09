@@ -98,7 +98,7 @@ public class TestingHttpServer
                 enableLegacyUriCompliance,
                 enableCaseSensitiveHeaderCache,
                 clientCertificate,
-                null,
+                Optional.empty(),
                 Optional.empty(),
                 Optional.empty());
         this.httpServerInfo = httpServerInfo;
