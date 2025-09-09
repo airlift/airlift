@@ -247,9 +247,9 @@ public final class ConfigAssertions
     public static <T> void assertRecordedDefaults(T recordedConfig)
     {
         $$RecordedConfigData<T> recordedConfigData = getRecordedConfig(recordedConfig);
-        Set<Method> invokedMethods = recordedConfigData.getInvokedMethods();
+        Set<Method> invokedMethods = recordedConfigData.invokedMethods();
 
-        T config = recordedConfigData.getInstance();
+        T config = recordedConfigData.instance();
 
         Class<T> configClass = getClass(config);
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getValidConfigurationMetadata(configClass);
@@ -338,25 +338,12 @@ public final class ConfigAssertions
     }
 
     @SuppressWarnings("checkstyle:TypeName")
-    public static class $$RecordedConfigData<T>
+    public record $$RecordedConfigData<T>(T instance, Set<Method> invokedMethods)
     {
-        private final T instance;
-        private final Set<Method> invokedMethods;
-
-        public $$RecordedConfigData(T instance, Set<Method> invokedMethods)
+        public $$RecordedConfigData
         {
-            this.instance = instance;
-            this.invokedMethods = ImmutableSet.copyOf(invokedMethods);
-        }
-
-        public T getInstance()
-        {
-            return instance;
-        }
-
-        public Set<Method> getInvokedMethods()
-        {
-            return invokedMethods;
+            requireNonNull(instance, "instance is null");
+            invokedMethods = ImmutableSet.copyOf(invokedMethods);
         }
     }
 
