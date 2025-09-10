@@ -10,6 +10,11 @@ public final class ExponentialDecay
     {
     }
 
+    public static double all()
+    {
+        return 0;
+    }
+
     public static double oneMinute()
     {
         // alpha for a target weight of 1/E at 1 minute

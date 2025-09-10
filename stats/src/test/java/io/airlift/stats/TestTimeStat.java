@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.math.DoubleMath.fuzzyEquals;
+import static io.airlift.stats.TimeDistribution.MERGE_THRESHOLD_NANOS;
 import static java.lang.Math.min;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -52,7 +53,7 @@ public class TestTimeStat
     @Test
     public void testBasic()
     {
-        TimeStat stat = new TimeStat();
+        TimeStat stat = new TimeStat(ticker);
         List<Long> values = new ArrayList<>(VALUES);
         for (long i = 0; i < VALUES; i++) {
             values.add(i);
@@ -63,6 +64,7 @@ public class TestTimeStat
         }
         Collections.sort(values);
 
+        ticker.increment(MERGE_THRESHOLD_NANOS, TimeUnit.NANOSECONDS); // force a merge
         TimeDistribution allTime = stat.getAllTime();
         assertThat(allTime.getCount()).isEqualTo(values.size());
         assertThat(fuzzyEquals(allTime.getMax(), values.get(values.size() - 1) * 0.001, 0.000_000_000_1)).isTrue();
@@ -79,7 +81,7 @@ public class TestTimeStat
     @Test
     public void testAddIllegalDoubles()
     {
-        TimeStat stat = new TimeStat();
+        TimeStat stat = new TimeStat(ticker);
 
         assertThatThrownBy(() -> stat.add(-1.0, TimeUnit.MILLISECONDS))
                 .isInstanceOf(IllegalArgumentException.class);
@@ -93,6 +95,7 @@ public class TestTimeStat
                 .isInstanceOf(IllegalArgumentException.class);
 
         stat.add(0.0, TimeUnit.MILLISECONDS); // 0.0 is valid
+        ticker.increment(MERGE_THRESHOLD_NANOS, TimeUnit.NANOSECONDS); // force a merge
         assertThat(stat.getAllTime().getCount()).isEqualTo(1.0);
         assertThat(stat.getAllTime().getMin()).isEqualTo(0.0);
         assertThat(stat.getAllTime().getMax()).isEqualTo(0.0);
@@ -101,11 +104,12 @@ public class TestTimeStat
     @Test
     public void testReset()
     {
-        TimeStat stat = new TimeStat();
+        TimeStat stat = new TimeStat(ticker);
         for (long value = 0; value < VALUES; value++) {
             stat.add(value, TimeUnit.MILLISECONDS);
         }
 
+        ticker.increment(MERGE_THRESHOLD_NANOS, TimeUnit.NANOSECONDS); // force a merge
         assertThat(stat.getAllTime().getCount()).isEqualTo(VALUES);
         assertThat(stat.getOneMinute().getCount()).isEqualTo(VALUES);
         assertThat(stat.getFiveMinutes().getCount()).isEqualTo(VALUES);
@@ -132,7 +136,7 @@ public class TestTimeStat
     @Test
     public void testEmpty()
     {
-        TimeStat stat = new TimeStat();
+        TimeStat stat = new TimeStat(ticker);
         TimeDistribution allTime = stat.getAllTime();
         assertThat(allTime.getMin()).isNaN();
         assertThat(allTime.getMax()).isNaN();
@@ -165,6 +169,7 @@ public class TestTimeStat
         }
 
         TimeDistribution allTime = stat.getAllTime();
+        ticker.increment(MERGE_THRESHOLD_NANOS, TimeUnit.NANOSECONDS); // force a merge
         assertThat(allTime.getCount()).isEqualTo(2.0);
         assertThat(allTime.getMin()).isEqualTo(0.010);
         assertThat(allTime.getMax()).isEqualTo(0.020);
@@ -179,6 +184,7 @@ public class TestTimeStat
         }
 
         TimeDistribution allTime = stat.getAllTime();
+        ticker.increment(MERGE_THRESHOLD_NANOS - 10, TimeUnit.NANOSECONDS); // force a merge
         assertThat(allTime.getCount()).isEqualTo(1.0);
         assertThat(allTime.getMin()).isEqualTo(0.010);
         assertThat(allTime.getMax()).isEqualTo(0.010);
@@ -190,6 +196,7 @@ public class TestTimeStat
         TimeStat stat = new TimeStat(ticker, TimeUnit.MILLISECONDS);
         stat.add(1, TimeUnit.SECONDS);
 
+        ticker.increment(MERGE_THRESHOLD_NANOS, TimeUnit.NANOSECONDS); // force a merge
         TimeDistribution allTime = stat.getAllTime();
         assertThat(allTime.getMin()).isEqualTo(1000.0);
         assertThat(allTime.getMax()).isEqualTo(1000.0);
@@ -202,6 +209,7 @@ public class TestTimeStat
         stat.add(1, TimeUnit.MILLISECONDS);
         stat.addNanos(1L);
 
+        ticker.increment(MERGE_THRESHOLD_NANOS, TimeUnit.NANOSECONDS); // force a merge
         TimeDistribution allTime = stat.getAllTime();
         assertThat(allTime.getMin()).isEqualTo(1.0);
         assertThat(allTime.getMax()).isEqualTo(1000000.0);
