@@ -175,14 +175,6 @@ public class TimeDistribution
         return merged;
     }
 
-    private double convertToUnit(long nanos)
-    {
-        if (nanos == Long.MAX_VALUE || nanos == Long.MIN_VALUE) {
-            return Double.NaN;
-        }
-        return nanos * 1.0 / unit.toNanos(1);
-    }
-
     private double convertToUnit(double nanos)
     {
         return convertToUnit(nanos, (double) unit.toNanos(1));
