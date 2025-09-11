@@ -191,9 +191,4 @@ public class DecayTDigest
     {
         return new DecayTDigest(TDigest.copyOf(digest), alpha, ticker, landmarkInSeconds);
     }
-
-    public void merge(DecayTDigest other)
-    {
-        digest.mergeWith(other.digest);
-    }
 }
