@@ -8,13 +8,17 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Verify.verify;
+import static java.lang.Math.floorMod;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class TimeDistribution
 {
+    private static final long MERGE_THRESHOLD_NANOS = MILLISECONDS.toNanos(100);
     private static final double[] SNAPSHOT_QUANTILES = new double[] {0.5, 0.75, 0.9, 0.95, 0.99};
     private static final double[] PERCENTILES;
+    private static final int STRIPES = 16;
 
     static {
         PERCENTILES = new double[100];
@@ -24,9 +28,13 @@ public class TimeDistribution
     }
 
     private final double alpha;
+    private final Object[] locks = new Object[STRIPES];
+    @GuardedBy("locks")
+    private final DecayTDigest[] partials = new DecayTDigest[STRIPES];
     @GuardedBy("this")
-    private DecayTDigest digest;
+    private DecayTDigest merged;
     @GuardedBy("this")
+    private long lastMerge;
     private final DecayCounter total;
     private final TimeUnit unit;
 
@@ -49,63 +57,70 @@ public class TimeDistribution
     {
         requireNonNull(unit, "unit is null");
         this.alpha = alpha;
-        digest = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
+        merged = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
+        for (int i = 0; i < STRIPES; i++) {
+            locks[i] = new Object();
+            partials[i] = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
+        }
         total = new DecayCounter(alpha);
         this.unit = unit;
     }
 
-    public synchronized void add(long value)
+    public void add(long value)
     {
-        digest.add(value);
+        int segment = floorMod(Thread.currentThread().threadId(), STRIPES);
+        synchronized (locks[segment]) {
+            partials[segment].add(value);
+        }
         total.add(value);
     }
 
     @Managed
-    public synchronized double getCount()
+    public double getCount()
     {
-        return digest.getCount();
+        return mergeAndGetIfNeeded().getCount();
     }
 
     @Managed
-    public synchronized double getP50()
+    public double getP50()
     {
-        return convertToUnit(digest.valueAt(0.5));
+        return convertToUnit(mergeAndGetIfNeeded().valueAt(0.5));
     }
 
     @Managed
-    public synchronized double getP75()
+    public double getP75()
     {
-        return convertToUnit(digest.valueAt(0.75));
+        return convertToUnit(mergeAndGetIfNeeded().valueAt(0.75));
     }
 
     @Managed
-    public synchronized double getP90()
+    public double getP90()
     {
-        return convertToUnit(digest.valueAt(0.90));
+        return convertToUnit(mergeAndGetIfNeeded().valueAt(0.90));
     }
 
     @Managed
-    public synchronized double getP95()
+    public double getP95()
     {
-        return convertToUnit(digest.valueAt(0.95));
+        return convertToUnit(mergeAndGetIfNeeded().valueAt(0.95));
     }
 
     @Managed
-    public synchronized double getP99()
+    public double getP99()
     {
-        return convertToUnit(digest.valueAt(0.99));
+        return convertToUnit(mergeAndGetIfNeeded().valueAt(0.99));
     }
 
     @Managed
-    public synchronized double getMin()
+    public double getMin()
     {
-        return convertToUnit(digest.getMin());
+        return convertToUnit(mergeAndGetIfNeeded().getMin());
     }
 
     @Managed
-    public synchronized double getMax()
+    public double getMax()
     {
-        return convertToUnit(digest.getMax());
+        return convertToUnit(mergeAndGetIfNeeded().getMax());
     }
 
     @Managed
@@ -123,10 +138,9 @@ public class TimeDistribution
     @Managed
     public Map<Double, Double> getPercentiles()
     {
-        double[] values;
-        synchronized (this) {
-            values = digest.valuesAt(PERCENTILES);
-        }
+        double[] values = mergeAndGetIfNeeded(true)
+                .valuesAt(PERCENTILES);
+
         verify(values.length == PERCENTILES.length, "values length mismatch");
 
         Map<Double, Double> result = new LinkedHashMap<>(values.length);
@@ -135,6 +149,30 @@ public class TimeDistribution
         }
 
         return result;
+    }
+
+    private DecayTDigest mergeAndGetIfNeeded()
+    {
+        return mergeAndGetIfNeeded(false);
+    }
+
+    private DecayTDigest mergeAndGetIfNeeded(boolean forceMerge)
+    {
+        synchronized (this) {
+            if (forceMerge || System.nanoTime() - lastMerge > MERGE_THRESHOLD_NANOS) {
+                merged = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
+                for (int i = 0; i < STRIPES; i++) {
+                    synchronized (locks[i]) {
+                        merged.merge(partials[i]);
+                        // Reset the partial
+                        partials[i] = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
+                    }
+                }
+                lastMerge = System.nanoTime();
+            }
+        }
+
+        return merged;
     }
 
     private double convertToUnit(double nanos)
@@ -155,6 +193,7 @@ public class TimeDistribution
         double max;
         double[] quantiles;
         synchronized (this) {
+            DecayTDigest digest = mergeAndGetIfNeeded(true);
             totalCount = total.getCount();
             digestCount = digest.getCount();
             min = digest.getMin();
@@ -180,7 +219,13 @@ public class TimeDistribution
     public synchronized void reset()
     {
         total.reset();
-        digest = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
+        merged = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
+        // Reset all partial digests (stripes) to avoid stale data
+        for (int i = 0; i < partials.length; i++) {
+            synchronized (locks[i]) {
+                partials[i] = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
+            }
+        }
     }
 
     public record TimeDistributionSnapshot(
