@@ -7,7 +7,7 @@ import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
 
-public record CallToolResult(List<Content> content, Optional<StructuredContent<?>> structuredContent, boolean isError)
+public record CallToolResult<T>(List<Content> content, Optional<StructuredContent<T>> structuredContent, boolean isError)
 {
     public CallToolResult
     {

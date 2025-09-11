@@ -4,7 +4,7 @@ import io.airlift.mcp.model.Tool;
 
 import static java.util.Objects.requireNonNull;
 
-public record ToolEntry(Tool tool, ToolHandler toolHandler)
+public record ToolEntry(Tool tool, ToolHandler<?> toolHandler)
 {
     public ToolEntry
     {

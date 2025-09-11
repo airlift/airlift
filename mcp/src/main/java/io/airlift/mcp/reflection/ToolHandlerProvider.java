@@ -18,6 +18,8 @@ import io.airlift.mcp.model.StructuredContent;
 import io.airlift.mcp.model.Tool;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Optional;
 
@@ -103,7 +105,7 @@ public class ToolHandlerProvider
         Object instance = injector.getInstance(clazz);
         MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper, identityMapper);
 
-        ToolHandler toolHandler = (request, toolRequest) -> {
+        ToolHandler<?> toolHandler = (request, toolRequest) -> {
             Object result = methodInvoker.builder(request)
                     .withArguments(toolRequest.arguments())
                     .withCallToolRequest(toolRequest)
@@ -113,9 +115,9 @@ public class ToolHandlerProvider
             }
 
             return switch (returnType) {
-                case VOID -> new CallToolResult(ImmutableList.of());
-                case CONTENT -> new CallToolResult(mapToContent(result));
-                case STRUCTURED -> new CallToolResult(ImmutableList.of(mapToContent(result)), Optional.of(new StructuredContent<>(result)), false);
+                case VOID -> new CallToolResult<>(ImmutableList.of());
+                case CONTENT -> new CallToolResult<>(mapToContent(result));
+                case STRUCTURED -> new CallToolResult<>(ImmutableList.of(mapToContent(result)), Optional.of(new StructuredContent<>(result)), false);
                 case CALL_TOOL_RESULT -> (CallToolResult) result;
             };
         };
@@ -137,7 +139,18 @@ public class ToolHandlerProvider
                 tool.returnDirect());
 
         Optional<ObjectNode> outputSchema;
-        if (method.getReturnType().isRecord()) {
+        if (CallToolResult.class.isAssignableFrom(method.getReturnType())) {
+            JsonSchemaBuilder jsonSchemaBuilder = new JsonSchemaBuilder("Tool (return): " + tool.name());
+            Type genericReturnType = method.getGenericReturnType();
+            if (genericReturnType instanceof ParameterizedType parameterizedType && ((Class<?>) parameterizedType.getActualTypeArguments()[0]).isRecord()) {
+                Type typeArgument = parameterizedType.getActualTypeArguments()[0];
+                outputSchema = Optional.of(jsonSchemaBuilder.build(description, (Class<?>) typeArgument));
+            }
+            else {
+                outputSchema = Optional.empty();
+            }
+        }
+        else if (method.getReturnType().isRecord()) {
             JsonSchemaBuilder jsonSchemaBuilder = new JsonSchemaBuilder("Tool (return): " + tool.name());
             outputSchema = Optional.of(jsonSchemaBuilder.build(description, method.getReturnType()));
         }

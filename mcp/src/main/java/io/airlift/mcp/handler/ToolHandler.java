@@ -4,7 +4,7 @@ import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.CallToolResult;
 import jakarta.servlet.http.HttpServletRequest;
 
-public interface ToolHandler
+public interface ToolHandler<T>
 {
-    CallToolResult callTool(HttpServletRequest request, CallToolRequest toolRequest);
+    CallToolResult<T> callTool(HttpServletRequest request, CallToolRequest toolRequest);
 }

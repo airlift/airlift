@@ -54,7 +54,7 @@ public class ReferenceServer
     }
 
     @Override
-    public void addTool(Tool tool, ToolHandler toolHandler)
+    public void addTool(Tool tool, ToolHandler<?> toolHandler)
     {
         server.addTool(Mapper.mapTool(objectMapper, tool, toolHandler));
     }

@@ -11,7 +11,7 @@ public interface McpServer
 {
     void stop();
 
-    void addTool(Tool tool, ToolHandler toolHandler);
+    void addTool(Tool tool, ToolHandler<?> toolHandler);
 
     void removeTool(String toolName);
 

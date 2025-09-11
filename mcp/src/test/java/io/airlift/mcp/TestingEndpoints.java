@@ -1,6 +1,12 @@
 package io.airlift.mcp;
 
+import com.google.common.collect.ImmutableList;
+import io.airlift.mcp.model.CallToolResult;
+import io.airlift.mcp.model.Content;
 import io.airlift.mcp.model.ResourceContents;
+import io.airlift.mcp.model.StructuredContent;
+
+import java.util.Optional;
 
 import static io.airlift.mcp.McpException.exception;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -13,6 +19,28 @@ public class TestingEndpoints
         assertThat(testingIdentity.name()).isEqualTo("Mr. Tester");
 
         return a + b;
+    }
+
+    @McpTool(name = "addThree", description = "Add three numbers")
+    public CallToolResult<String> addThree(TestingIdentity testingIdentity, int a, int b, int c)
+    {
+        assertThat(testingIdentity.name()).isEqualTo("Mr. Tester");
+
+        return new CallToolResult<>(ImmutableList.of(new Content.TextContent(String.valueOf(a + b + c))),
+                Optional.empty(),
+                false);
+    }
+
+    public record TwoAndThree(int firstTwo, int allThree) {}
+
+    @McpTool(name = "addFirstTwoAndAllThree", description = "Add the first two numbers together, and add all three numbers together")
+    public CallToolResult<TwoAndThree> addTwoAndThree(TestingIdentity testingIdentity, int a, int b, int c)
+    {
+        assertThat(testingIdentity.name()).isEqualTo("Mr. Tester");
+
+        return new CallToolResult<>(ImmutableList.of(new Content.TextContent(String.valueOf(a + b + c))),
+                Optional.of(new StructuredContent<>(new TwoAndThree(a + b, a + b + c))),
+                false);
     }
 
     @McpTool(name = "throws", description = "Throws an exception for testing purposes")

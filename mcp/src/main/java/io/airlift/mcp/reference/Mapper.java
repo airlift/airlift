@@ -171,7 +171,7 @@ interface Mapper
         return new McpSchema.PromptArgument(ourArgument.name(), ourArgument.description().orElse(null), ourArgument.required());
     }
 
-    static McpStatelessServerFeatures.SyncToolSpecification mapTool(ObjectMapper objectMapper, Tool ourTool, ToolHandler ourHandler)
+    static McpStatelessServerFeatures.SyncToolSpecification mapTool(ObjectMapper objectMapper, Tool ourTool, ToolHandler<?> ourHandler)
     {
         try {
             McpSchema.Tool.Builder theirToolBuilder = McpSchema.Tool.builder()
@@ -196,7 +196,7 @@ interface Mapper
                 HttpServletRequest request = (HttpServletRequest) context.get(McpMetadata.CONTEXT_REQUEST_KEY);
                 CallToolRequest callToolRequest = new CallToolRequest(theirCallToolRequest.name(), theirCallToolRequest.arguments(), Optional.ofNullable(theirCallToolRequest.meta()));
 
-                CallToolResult callToolResult = ourHandler.callTool(request, callToolRequest);
+                CallToolResult<?> callToolResult = ourHandler.callTool(request, callToolRequest);
 
                 List<McpSchema.Content> theirContent = callToolResult.content()
                         .stream()
