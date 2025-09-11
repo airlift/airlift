@@ -52,10 +52,10 @@ public class TimeStat
     public TimeStat(Ticker ticker, TimeUnit unit)
     {
         this.ticker = ticker;
-        oneMinute = new TimeDistribution(ExponentialDecay.oneMinute(), unit);
-        fiveMinutes = new TimeDistribution(ExponentialDecay.fiveMinutes(), unit);
-        fifteenMinutes = new TimeDistribution(ExponentialDecay.fifteenMinutes(), unit);
-        allTime = new TimeDistribution(unit);
+        oneMinute = new TimeDistribution(ticker, ExponentialDecay.oneMinute(), unit);
+        fiveMinutes = new TimeDistribution(ticker, ExponentialDecay.fiveMinutes(), unit);
+        fifteenMinutes = new TimeDistribution(ticker, ExponentialDecay.fifteenMinutes(), unit);
+        allTime = new TimeDistribution(ticker, ExponentialDecay.all(), unit);
     }
 
     public void add(double value, TimeUnit timeUnit)
