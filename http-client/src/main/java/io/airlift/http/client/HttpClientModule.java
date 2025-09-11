@@ -34,8 +34,6 @@ import io.opentelemetry.api.trace.TracerProvider;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
-import javax.management.MBeanServer;
-
 import java.lang.annotation.Annotation;
 import java.util.Optional;
 import java.util.Set;
@@ -107,7 +105,6 @@ public class HttpClientModule
         private NodeInfo nodeInfo;
         private OpenTelemetry openTelemetry = OpenTelemetry.noop();
         private Tracer tracer = TracerProvider.noop().get("noop");
-        private Optional<MBeanServer> mbeanServer = Optional.empty();
 
         private HttpClientProvider(String name, Class<? extends Annotation> annotation)
         {
@@ -139,12 +136,6 @@ public class HttpClientModule
             this.tracer = tracer;
         }
 
-        @Inject(optional = true)
-        public void setMBeanServer(MBeanServer mBeanServer)
-        {
-            this.mbeanServer = Optional.of(mBeanServer);
-        }
-
         @Override
         public HttpClient get()
         {
@@ -165,7 +156,7 @@ public class HttpClientModule
                     .addAll(injector.getInstance(Key.get(new TypeLiteral<Set<HttpStatusListener>>() {}, annotation)))
                     .build();
 
-            return new JettyHttpClient(name, config, ImmutableList.copyOf(filters), openTelemetry, tracer, mbeanServer, environment, sslContextFactory, byteBufferPool, httpStatusListeners);
+            return new JettyHttpClient(name, config, ImmutableList.copyOf(filters), openTelemetry, tracer, environment, sslContextFactory, byteBufferPool, httpStatusListeners);
         }
     }
 }
