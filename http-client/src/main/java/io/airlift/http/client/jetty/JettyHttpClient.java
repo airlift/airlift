@@ -69,7 +69,6 @@ import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
-import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -78,9 +77,7 @@ import org.eclipse.jetty.util.thread.MonitoredQueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.VirtualThreadPool;
-import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
-import org.weakref.jmx.Nested;
 
 import javax.management.MBeanServer;
 import javax.net.ssl.SNIHostName;
@@ -157,18 +154,6 @@ public class JettyHttpClient
     private final Duration idleTimeout;
     private final boolean recordRequestComplete;
     private final boolean logEnabled;
-    private final MonitoredQueuedThreadPoolMBean monitoredQueuedThreadPoolMBean;
-    private final ConnectionStats connectionStats;
-    private final RequestStats stats = new RequestStats();
-    private final CachedDistribution queuedRequestsPerDestination;
-    private final CachedDistribution activeConnectionsPerDestination;
-    private final CachedDistribution idleConnectionsPerDestination;
-
-    private final CachedDistribution currentQueuedTime;
-    private final CachedDistribution currentRequestTime;
-    private final CachedDistribution currentRequestSendTime;
-    private final CachedDistribution currentResponseWaitTime;
-    private final CachedDistribution currentResponseProcessTime;
 
     private final List<HttpRequestFilter> requestFilters;
     private final HttpStatusListeners httpStatusListeners;
@@ -343,11 +328,6 @@ public class JettyHttpClient
             resolver.resolve(host, port, context, promise);
         });
 
-        // track connection statistics
-        ConnectionStatistics connectionStats = new ConnectionStatistics();
-        httpClient.addBean(connectionStats);
-        this.connectionStats = new ConnectionStats(connectionStats);
-
         // configure logging
         this.logEnabled = config.isLogEnabled();
         if (logEnabled) {
@@ -384,73 +364,6 @@ public class JettyHttpClient
 
         this.requestFilters = ImmutableList.copyOf(requestFilters);
         this.httpStatusListeners = new HttpStatusListeners(ImmutableList.copyOf(httpStatusListeners));
-
-        this.monitoredQueuedThreadPoolMBean = new MonitoredQueuedThreadPoolMBean((MonitoredQueuedThreadPool) httpClient.getExecutor());
-
-        this.activeConnectionsPerDestination = new ConnectionPoolDistribution(httpClient,
-                (distribution, connectionPool) -> distribution.add(connectionPool.getActiveConnectionCount()));
-
-        this.idleConnectionsPerDestination = new ConnectionPoolDistribution(httpClient,
-                (distribution, connectionPool) -> distribution.add(connectionPool.getIdleConnectionCount()));
-
-        this.queuedRequestsPerDestination = new DestinationDistribution(httpClient,
-                (distribution, destination) -> distribution.add(destination.getHttpExchanges().size()));
-
-        this.currentQueuedTime = new RequestDistribution(httpClient, (distribution, listener, now) -> {
-            long started = listener.getRequestStarted();
-            if (started == 0) {
-                started = now;
-            }
-            distribution.add(NANOSECONDS.toMillis(started - listener.getCreated()));
-        });
-
-        this.currentRequestTime = new RequestDistribution(httpClient, (distribution, listener, now) -> {
-            long started = listener.getRequestStarted();
-            if (started == 0) {
-                return;
-            }
-            long finished = listener.getResponseFinished();
-            if (finished == 0) {
-                finished = now;
-            }
-            distribution.add(NANOSECONDS.toMillis(finished - started));
-        });
-
-        this.currentRequestSendTime = new RequestDistribution(httpClient, (distribution, listener, now) -> {
-            long started = listener.getRequestStarted();
-            if (started == 0) {
-                return;
-            }
-            long requestSent = listener.getRequestFinished();
-            if (requestSent == 0) {
-                requestSent = now;
-            }
-            distribution.add(NANOSECONDS.toMillis(requestSent - started));
-        });
-
-        this.currentResponseWaitTime = new RequestDistribution(httpClient, (distribution, listener, now) -> {
-            long requestSent = listener.getRequestFinished();
-            if (requestSent == 0) {
-                return;
-            }
-            long responseStarted = listener.getResponseStarted();
-            if (responseStarted == 0) {
-                responseStarted = now;
-            }
-            distribution.add(NANOSECONDS.toMillis(responseStarted - requestSent));
-        });
-
-        this.currentResponseProcessTime = new RequestDistribution(httpClient, (distribution, listener, now) -> {
-            long responseStarted = listener.getResponseStarted();
-            if (responseStarted == 0) {
-                return;
-            }
-            long finished = listener.getResponseFinished();
-            if (finished == 0) {
-                finished = now;
-            }
-            distribution.add(NANOSECONDS.toMillis(finished - responseStarted));
-        });
     }
 
     private ByteBufferPool createByteBufferPool(int maxBufferSize, HttpClientConfig config)
@@ -813,7 +726,6 @@ public class JettyHttpClient
             response = listener.get(httpClient.getIdleTimeout(), MILLISECONDS);
         }
         catch (InterruptedException e) {
-            stats.recordRequestFailed();
             requestLogger.log(context.info(), ResponseInfo.failed(Optional.empty(), Optional.of(e)));
             context.request().abort(e);
             IO.close(listener);
@@ -821,14 +733,12 @@ public class JettyHttpClient
             return new InternalExceptionResponse<>(exceptionHandler.handleException(request, e));
         }
         catch (TimeoutException e) {
-            stats.recordRequestFailed();
             requestLogger.log(context.info(), ResponseInfo.failed(Optional.empty(), Optional.of(e)));
             context.request().abort(e);
             IO.close(listener);
             return new InternalExceptionResponse<>(exceptionHandler.handleException(request, e));
         }
         catch (ExecutionException e) {
-            stats.recordRequestFailed();
             requestLogger.log(context.info(), ResponseInfo.failed(Optional.empty(), Optional.of(e)));
             IO.close(listener);
             Throwable cause = e.getCause();
@@ -881,9 +791,6 @@ public class JettyHttpClient
                 }
                 span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, jettyResponse.getBytesRead());
             }
-            if (recordRequestComplete) {
-                recordRequestComplete(stats, request, requestSize.getBytes(), requestStart, jettyResponse, responseStart);
-            }
         };
     }
 
@@ -924,7 +831,7 @@ public class JettyHttpClient
         request.getMaxContentLength()
                 .ifPresent(maxRequestContentLength -> verify(maxRequestContentLength.compareTo(maxContentLength) <= 0, "maxRequestContentLength must be less than or equal to maxContentLength"));
 
-        JettyResponseFuture<T, E> future = new JettyResponseFuture<>(request, jettyRequest.request(), jettyRequest.sizeListener()::getBytes, responseHandler, span, stats, recordRequestComplete);
+        JettyResponseFuture<T, E> future = new JettyResponseFuture<>(request, jettyRequest.request(), jettyRequest.sizeListener()::getBytes, responseHandler, span, recordRequestComplete);
         JettyResponseListener<T, E> listener = new JettyResponseListener<>(jettyRequest.request(), future, Ints.saturatedCast(request.getMaxContentLength().orElse(maxContentLength).toBytes()));
 
         try {
@@ -1065,84 +972,6 @@ public class JettyHttpClient
     public long getRequestTimeoutMillis()
     {
         return requestTimeout.toMillis();
-    }
-
-    @Override
-    @Managed
-    @Flatten
-    public RequestStats getStats()
-    {
-        return stats;
-    }
-
-    @Managed
-    @Nested
-    public MonitoredQueuedThreadPoolMBean getThreadPool()
-    {
-        return monitoredQueuedThreadPoolMBean;
-    }
-
-    @Managed
-    @Nested
-    public ConnectionStats getConnectionStats()
-    {
-        return connectionStats;
-    }
-
-    @Managed
-    @Nested
-    public CachedDistribution getActiveConnectionsPerDestination()
-    {
-        return activeConnectionsPerDestination;
-    }
-
-    @Managed
-    @Nested
-    public CachedDistribution getIdleConnectionsPerDestination()
-    {
-        return idleConnectionsPerDestination;
-    }
-
-    @Managed
-    @Nested
-    public CachedDistribution getQueuedRequestsPerDestination()
-    {
-        return queuedRequestsPerDestination;
-    }
-
-    @Managed
-    @Nested
-    public CachedDistribution getCurrentQueuedTime()
-    {
-        return currentQueuedTime;
-    }
-
-    @Managed
-    @Nested
-    public CachedDistribution getCurrentRequestTime()
-    {
-        return currentRequestTime;
-    }
-
-    @Managed
-    @Nested
-    public CachedDistribution getCurrentRequestSendTime()
-    {
-        return currentRequestSendTime;
-    }
-
-    @Managed
-    @Nested
-    public CachedDistribution getCurrentResponseWaitTime()
-    {
-        return currentResponseWaitTime;
-    }
-
-    @Managed
-    @Nested
-    public CachedDistribution getCurrentResponseProcessTime()
-    {
-        return currentResponseProcessTime;
     }
 
     @Managed

@@ -5,11 +5,9 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.Request;
-import io.airlift.http.client.RequestStats;
 import io.airlift.http.client.Response;
 import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.StreamingResponse;
-import io.airlift.units.Duration;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -19,15 +17,12 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.util.concurrent.MoreExecutors.listeningDecorator;
 import static com.google.common.util.concurrent.MoreExecutors.newDirectExecutorService;
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 public class TestingHttpClient
         implements HttpClient
 {
     private final Processor processor;
     private final ListeningExecutorService executor;
-
-    private final RequestStats stats = new RequestStats();
     private final AtomicBoolean closed = new AtomicBoolean();
 
     public TestingHttpClient(Processor processor)
@@ -81,56 +76,25 @@ public class TestingHttpClient
         }
         catch (Exception | Error e) {
             state.set("FAILED");
-            long responseStart = System.nanoTime();
-            Duration requestProcessingTime = new Duration(responseStart - requestStart, NANOSECONDS);
             if (e instanceof Exception) {
                 if (e instanceof InterruptedException) {
                     Thread.currentThread().interrupt();
                 }
-                try {
-                    return responseHandler.handleException(request, (Exception) e);
-                }
-                finally {
-                    stats.recordResponseReceived(request.getMethod(),
-                            0,
-                            0,
-                            0,
-                            requestProcessingTime,
-                            Duration.nanosSince(responseStart));
-                }
+
+                return responseHandler.handleException(request, (Exception) e);
             }
-            stats.recordResponseReceived(request.getMethod(),
-                    0,
-                    0,
-                    0,
-                    requestProcessingTime,
-                    new Duration(0, NANOSECONDS));
             throw (Error) e;
         }
         checkState(response != null, "response is null");
 
         // notify handler
         state.set("PROCESSING_RESPONSE");
-        long responseStart = System.nanoTime();
-        Duration requestProcessingTime = new Duration(responseStart - requestStart, NANOSECONDS);
         try {
             return responseHandler.handle(request, response);
         }
         finally {
             state.set("DONE");
-            stats.recordResponseReceived(request.getMethod(),
-                    response.getStatusCode(),
-                    response.getBytesRead(),
-                    response.getBytesRead(),
-                    requestProcessingTime,
-                    Duration.nanosSince(responseStart));
         }
-    }
-
-    @Override
-    public RequestStats getStats()
-    {
-        return stats;
     }
 
     @Override

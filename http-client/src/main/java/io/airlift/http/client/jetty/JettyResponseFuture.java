@@ -3,7 +3,6 @@ package io.airlift.http.client.jetty;
 import com.google.common.util.concurrent.AbstractFuture;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.Request;
-import io.airlift.http.client.RequestStats;
 import io.airlift.http.client.ResponseHandler;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Span;
@@ -43,7 +42,6 @@ class JettyResponseFuture<T, E extends Exception>
     private final LongSupplier requestSize;
     private final ResponseHandler<T, E> responseHandler;
     private final Span span;
-    private final RequestStats stats;
     private final boolean recordRequestComplete;
 
     JettyResponseFuture(
@@ -52,7 +50,6 @@ class JettyResponseFuture<T, E extends Exception>
             LongSupplier requestSize,
             ResponseHandler<T, E> responseHandler,
             Span span,
-            RequestStats stats,
             boolean recordRequestComplete)
     {
         this.request = requireNonNull(request, "request is null");
@@ -60,7 +57,6 @@ class JettyResponseFuture<T, E extends Exception>
         this.requestSize = requireNonNull(requestSize, "requestSize is null");
         this.responseHandler = requireNonNull(responseHandler, "responseHandler is null");
         this.span = requireNonNull(span, "span is null");
-        this.stats = requireNonNull(stats, "stats is null");
         this.recordRequestComplete = recordRequestComplete;
     }
 
@@ -75,7 +71,6 @@ class JettyResponseFuture<T, E extends Exception>
     {
         try {
             span.setStatus(StatusCode.ERROR, "cancelled");
-            stats.recordRequestCanceled();
             state.set(JettyAsyncHttpState.CANCELED);
             jettyRequest.abort(new CancellationException());
             return super.cancel(mayInterruptIfRunning);
@@ -138,9 +133,6 @@ class JettyResponseFuture<T, E extends Exception>
             if (jettyResponse != null) {
                 span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, jettyResponse.getBytesRead());
             }
-            if (recordRequestComplete) {
-                JettyHttpClient.recordRequestComplete(stats, request, requestSize.getAsLong(), requestStart, jettyResponse, responseStart);
-            }
         }
         return value;
     }
@@ -150,9 +142,6 @@ class JettyResponseFuture<T, E extends Exception>
         if (state.get() == JettyAsyncHttpState.CANCELED) {
             return;
         }
-
-        stats.recordRequestFailed();
-
         // give handler a chance to rewrite the exception or return a value instead
         if (throwable instanceof Exception) {
             try {

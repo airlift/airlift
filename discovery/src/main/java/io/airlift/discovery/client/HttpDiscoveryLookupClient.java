@@ -24,14 +24,11 @@ import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.HttpUriBuilder;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.Request.Builder;
-import io.airlift.http.client.RequestStats;
 import io.airlift.http.client.Response;
 import io.airlift.http.client.ResponseHandler;
 import io.airlift.json.JsonCodec;
 import io.airlift.node.NodeInfo;
 import io.airlift.units.Duration;
-import org.weakref.jmx.Flatten;
-import org.weakref.jmx.Managed;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -76,13 +73,6 @@ public class HttpDiscoveryLookupClient
         this.discoveryServiceURI = discoveryServiceURI;
         this.serviceDescriptorsCodec = serviceDescriptorsCodec;
         this.httpClient = httpClient;
-    }
-
-    @Flatten
-    @Managed
-    public RequestStats getStats()
-    {
-        return httpClient.getStats();
     }
 
     @Override
