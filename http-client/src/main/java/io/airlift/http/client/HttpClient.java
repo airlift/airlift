@@ -29,8 +29,6 @@ public interface HttpClient
 
     StreamingResponse executeStreaming(Request request);
 
-    RequestStats getStats();
-
     @Override
     void close();
 
