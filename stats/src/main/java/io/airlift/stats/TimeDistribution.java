@@ -1,7 +1,5 @@
 package io.airlift.stats;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Ticker;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import org.weakref.jmx.Managed;
 
@@ -9,7 +7,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static com.google.common.base.Ticker.systemTicker;
 import static com.google.common.base.Verify.verify;
 import static java.lang.Math.floorMod;
 import static java.util.Objects.requireNonNull;
@@ -18,8 +15,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class TimeDistribution
 {
-    @VisibleForTesting
-    static final long MERGE_THRESHOLD_NANOS = MILLISECONDS.toNanos(100);
+    private static final long MERGE_THRESHOLD_NANOS = MILLISECONDS.toNanos(100);
     private static final double[] SNAPSHOT_QUANTILES = new double[] {0.5, 0.75, 0.9, 0.95, 0.99};
     private static final double[] PERCENTILES;
     private static final int STRIPES = 16;
@@ -31,7 +27,6 @@ public class TimeDistribution
         }
     }
 
-    private final Ticker ticker;
     private final double alpha;
     private final Object[] locks = new Object[STRIPES];
     @GuardedBy("locks")
@@ -41,7 +36,6 @@ public class TimeDistribution
     @GuardedBy("this")
     private long lastMerge;
     private final DecayCounter total;
-    private final DecayCounter partialTotal;
     private final TimeUnit unit;
 
     public TimeDistribution()
@@ -51,22 +45,16 @@ public class TimeDistribution
 
     public TimeDistribution(TimeUnit unit)
     {
-        this(systemTicker(), 0, unit);
-    }
-
-    public TimeDistribution(Ticker ticker)
-    {
-        this(ticker, 0, SECONDS);
+        this(0, unit);
     }
 
     public TimeDistribution(double alpha)
     {
-        this(systemTicker(), alpha, SECONDS);
+        this(alpha, SECONDS);
     }
 
-    public TimeDistribution(Ticker ticker, double alpha, TimeUnit unit)
+    public TimeDistribution(double alpha, TimeUnit unit)
     {
-        requireNonNull(ticker, "ticker is null");
         requireNonNull(unit, "unit is null");
         this.alpha = alpha;
         merged = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
@@ -75,10 +63,7 @@ public class TimeDistribution
             partials[i] = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
         }
         total = new DecayCounter(alpha);
-        partialTotal = new DecayCounter(alpha);
-        this.ticker = ticker;
         this.unit = unit;
-        this.lastMerge = ticker.read(); // do not merge immediately
     }
 
     public void add(long value)
@@ -87,7 +72,7 @@ public class TimeDistribution
         synchronized (locks[segment]) {
             partials[segment].add(value);
         }
-        partialTotal.add(value); // Fine outside of lock as DecayCounter is thread safe
+        total.add(value);
     }
 
     @Managed
@@ -141,8 +126,7 @@ public class TimeDistribution
     @Managed
     public synchronized double getAvg()
     {
-        double digestCount = mergeAndGetIfNeeded().getCount();
-        return convertToUnit(total.getCount()) / digestCount;
+        return convertToUnit(total.getCount()) / getCount();
     }
 
     @Managed
@@ -175,7 +159,8 @@ public class TimeDistribution
     private DecayTDigest mergeAndGetIfNeeded(boolean forceMerge)
     {
         synchronized (this) {
-            if (forceMerge || ticker.read() - lastMerge >= MERGE_THRESHOLD_NANOS) {
+            if (forceMerge || System.nanoTime() - lastMerge > MERGE_THRESHOLD_NANOS) {
+                merged = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
                 for (int i = 0; i < STRIPES; i++) {
                     synchronized (locks[i]) {
                         merged.merge(partials[i]);
@@ -183,9 +168,7 @@ public class TimeDistribution
                         partials[i] = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
                     }
                 }
-                total.merge(partialTotal);
-                partialTotal.reset();
-                lastMerge = ticker.read();
+                lastMerge = System.nanoTime();
             }
         }
 
@@ -236,7 +219,6 @@ public class TimeDistribution
     public synchronized void reset()
     {
         total.reset();
-        partialTotal.reset();
         merged = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
         // Reset all partial digests (stripes) to avoid stale data
         for (int i = 0; i < partials.length; i++) {
