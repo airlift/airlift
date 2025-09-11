@@ -70,7 +70,6 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.ConnectionStatistics;
-import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -82,7 +81,6 @@ import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
 
-import javax.management.MBeanServer;
 import javax.net.ssl.SNIHostName;
 import javax.net.ssl.SNIServerName;
 import javax.net.ssl.SSLEngine;
@@ -208,7 +206,7 @@ public class JettyHttpClient
             Iterable<? extends HttpRequestFilter> requestFilters,
             Iterable<? extends HttpStatusListener> httpStatusListeners)
     {
-        this(name, config, requestFilters, NOOP_OPEN_TELEMETRY, NOOP_TRACER, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), httpStatusListeners);
+        this(name, config, requestFilters, NOOP_OPEN_TELEMETRY, NOOP_TRACER, Optional.empty(), Optional.empty(), Optional.empty(), httpStatusListeners);
     }
 
     public JettyHttpClient(
@@ -230,7 +228,7 @@ public class JettyHttpClient
             Optional<String> environment,
             Optional<SslContextFactory.Client> maybeSslContextFactory)
     {
-        this(name, config, requestFilters, openTelemetry, tracer, Optional.empty(), environment, maybeSslContextFactory, Optional.empty(), ImmutableList.of());
+        this(name, config, requestFilters, openTelemetry, tracer, environment, maybeSslContextFactory, Optional.empty(), ImmutableList.of());
     }
 
     public JettyHttpClient(
@@ -239,7 +237,6 @@ public class JettyHttpClient
             Iterable<? extends HttpRequestFilter> requestFilters,
             OpenTelemetry openTelemetry,
             Tracer tracer,
-            Optional<MBeanServer> mbeanServer,
             Optional<String> environment,
             Optional<SslContextFactory.Client> maybeSslContextFactory,
             Optional<ByteBufferPool> byteBufferPool,
@@ -249,7 +246,6 @@ public class JettyHttpClient
         this.propagator = openTelemetry.getPropagators().getTextMapPropagator();
         this.tracer = requireNonNull(tracer, "tracer is null");
 
-        requireNonNull(mbeanServer, "mbeanServer is null");
         requireNonNull(config, "config is null");
         requireNonNull(requestFilters, "requestFilters is null");
         requireNonNull(httpStatusListeners, "httpStatusListeners is null");
@@ -278,7 +274,6 @@ public class JettyHttpClient
         connector.setSslContextFactory(sslContextFactory);
 
         httpClient = new HttpClient(getClientTransport(connector, config));
-        httpClient.setName(name);
 
         // request and response buffer size
         httpClient.setRequestBufferSize(toIntExact(config.getRequestBufferSize().toBytes()));
@@ -302,12 +297,6 @@ public class JettyHttpClient
         httpClient.setAddressResolutionTimeout(config.getConnectTimeout().toMillis());
 
         httpClient.setConnectBlocking(config.isConnectBlocking());
-
-        if (mbeanServer.isPresent()) {
-            // export jmx mbeans if a server was provided
-            MBeanContainer mbeanContainer = new MBeanContainer(mbeanServer.orElseThrow());
-            httpClient.addBean(mbeanContainer);
-        }
 
         HostAndPort socksProxy = config.getSocksProxy();
         if (socksProxy != null) {
