@@ -145,4 +145,16 @@ public interface ReflectionHelper
 
         return Optional.empty();
     }
+
+    static Class<?> requiredArgument(Type type)
+    {
+        if (type instanceof ParameterizedType parameterizedType) {
+            Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
+            if ((actualTypeArguments.length == 1) && (actualTypeArguments[0] instanceof Class<?> clazz)) {
+                return clazz;
+            }
+        }
+
+        throw new IllegalArgumentException("Type does not have a single type-argument that is a class: " + type);
+    }
 }
