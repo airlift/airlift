@@ -58,11 +58,11 @@ public class ToolHandlerProvider
         if (void.class.equals(method.getReturnType())) {
             returnType = ReturnType.VOID;
         }
-        else if (Content.class.isAssignableFrom(method.getReturnType()) || isPrimitiveType(method.getGenericReturnType())) {
-            returnType = ReturnType.CONTENT;
-        }
         else if (CallToolResult.class.isAssignableFrom(method.getReturnType())) {
             returnType = ReturnType.CALL_TOOL_RESULT;
+        }
+        else if (Content.class.isAssignableFrom(method.getReturnType()) || isPrimitiveType(method.getGenericReturnType())) {
+            returnType = ReturnType.CONTENT;
         }
         else if (isSupportedType(method.getGenericReturnType())) {
             returnType = ReturnType.STRUCTURED;
@@ -137,7 +137,10 @@ public class ToolHandlerProvider
                 tool.returnDirect());
 
         Optional<ObjectNode> outputSchema;
-        if (method.getReturnType().isRecord()) {
+        if (CallToolResult.class.isAssignableFrom(method.getReturnType())) {
+            outputSchema = Optional.empty();
+        }
+        else if (method.getReturnType().isRecord()) {
             JsonSchemaBuilder jsonSchemaBuilder = new JsonSchemaBuilder("Tool (return): " + tool.name());
             outputSchema = Optional.of(jsonSchemaBuilder.build(description, method.getReturnType()));
         }
