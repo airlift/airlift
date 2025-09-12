@@ -72,7 +72,6 @@ public class TimeDistribution
         merged = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
         for (int i = 0; i < STRIPES; i++) {
             locks[i] = new Object();
-            partials[i] = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
         }
         total = new DecayCounter(alpha);
         partialTotal = new DecayCounter(alpha);
@@ -85,6 +84,9 @@ public class TimeDistribution
     {
         int segment = floorMod(Thread.currentThread().threadId(), STRIPES);
         synchronized (locks[segment]) {
+            if (partials[segment] == null) {
+                partials[segment] = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
+            }
             partials[segment].add(value);
         }
         partialTotal.add(value); // Fine outside of lock as DecayCounter is thread safe
@@ -178,9 +180,12 @@ public class TimeDistribution
             if (forceMerge || ticker.read() - lastMerge >= MERGE_THRESHOLD_NANOS) {
                 for (int i = 0; i < STRIPES; i++) {
                     synchronized (locks[i]) {
+                        if (partials[i] == null) {
+                            continue;
+                        }
                         merged.merge(partials[i]);
                         // Reset the partial
-                        partials[i] = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
+                        partials[i] = null;
                     }
                 }
                 total.merge(partialTotal);
@@ -241,7 +246,7 @@ public class TimeDistribution
         // Reset all partial digests (stripes) to avoid stale data
         for (int i = 0; i < partials.length; i++) {
             synchronized (locks[i]) {
-                partials[i] = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
+                partials[i] = null;
             }
         }
     }
