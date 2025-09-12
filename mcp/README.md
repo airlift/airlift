@@ -132,6 +132,7 @@ A browser should open with the MCP Inspector tool. Set the "Transport Type" to
     - the supported Java types
     - one of the [Content](src/main/java/io/airlift/mcp/model/Content.java) subtypes
     - [CallToolResult](src/main/java/io/airlift/mcp/model/CallToolResult.java)
+    - [StructuredContentResult](src/main/java/io/airlift/mcp/model/StructuredContentResult.java)
 
 #### Prompts
 

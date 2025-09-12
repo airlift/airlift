@@ -15,6 +15,7 @@ import io.airlift.mcp.model.Content;
 import io.airlift.mcp.model.JsonRpcErrorCode;
 import io.airlift.mcp.model.JsonSchemaBuilder;
 import io.airlift.mcp.model.StructuredContent;
+import io.airlift.mcp.model.StructuredContentResult;
 import io.airlift.mcp.model.Tool;
 
 import java.lang.reflect.Method;
@@ -30,6 +31,7 @@ import static io.airlift.mcp.reflection.Predicates.isIdentity;
 import static io.airlift.mcp.reflection.Predicates.isObject;
 import static io.airlift.mcp.reflection.Predicates.returnsAnything;
 import static io.airlift.mcp.reflection.ReflectionHelper.mapToContent;
+import static io.airlift.mcp.reflection.ReflectionHelper.requiredArgument;
 import static io.airlift.mcp.reflection.ReflectionHelper.validate;
 import static java.util.Objects.requireNonNull;
 
@@ -60,6 +62,9 @@ public class ToolHandlerProvider
         }
         else if (CallToolResult.class.isAssignableFrom(method.getReturnType())) {
             returnType = ReturnType.CALL_TOOL_RESULT;
+        }
+        else if (StructuredContentResult.class.isAssignableFrom(method.getReturnType())) {
+            returnType = ReturnType.STRUCTURED_RESULT;
         }
         else if (Content.class.isAssignableFrom(method.getReturnType()) || isPrimitiveType(method.getGenericReturnType())) {
             returnType = ReturnType.CONTENT;
@@ -95,6 +100,7 @@ public class ToolHandlerProvider
         CALL_TOOL_RESULT,
         CONTENT,
         STRUCTURED,
+        STRUCTURED_RESULT,
     }
 
     @Override
@@ -117,10 +123,16 @@ public class ToolHandlerProvider
                 case CONTENT -> new CallToolResult(mapToContent(result));
                 case STRUCTURED -> new CallToolResult(ImmutableList.of(mapToContent(result)), Optional.of(new StructuredContent<>(result)), false);
                 case CALL_TOOL_RESULT -> (CallToolResult) result;
+                case STRUCTURED_RESULT -> mapStructuredContentResult((StructuredContentResult<?>) result);
             };
         };
 
         return new ToolEntry(tool, toolHandler);
+    }
+
+    private CallToolResult mapStructuredContentResult(StructuredContentResult<?> result)
+    {
+        return new CallToolResult(result.content(), Optional.of(new StructuredContent<>(result.structuredContent())), result.isError());
     }
 
     private static Tool buildTool(McpTool tool, Method method, List<MethodParameter> parameters)
@@ -139,6 +151,10 @@ public class ToolHandlerProvider
         Optional<ObjectNode> outputSchema;
         if (CallToolResult.class.isAssignableFrom(method.getReturnType())) {
             outputSchema = Optional.empty();
+        }
+        else if (StructuredContentResult.class.isAssignableFrom(method.getReturnType())) {
+            JsonSchemaBuilder jsonSchemaBuilder = new JsonSchemaBuilder("Tool (return): " + tool.name());
+            outputSchema = Optional.of(jsonSchemaBuilder.build(description, requiredArgument(method.getGenericReturnType())));
         }
         else if (method.getReturnType().isRecord()) {
             JsonSchemaBuilder jsonSchemaBuilder = new JsonSchemaBuilder("Tool (return): " + tool.name());

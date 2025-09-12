@@ -9,6 +9,8 @@
  */
 package io.airlift.mcp;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -42,6 +44,7 @@ import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.ReadResourceResult;
 import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceContents;
+import io.airlift.mcp.model.StructuredContent;
 import io.airlift.mcp.model.Tool;
 import io.airlift.node.NodeModule;
 import org.junit.jupiter.api.AfterAll;
@@ -103,6 +106,74 @@ public class TestMcp
     }
 
     @Test
+    public void testToolPrimitiveStructuredContent()
+    {
+        JsonRpcRequest<?> listToolsRpcRequest = JsonRpcRequest.buildRequest(1, "tools/list");
+
+        JsonRpcResponse<?> listToolsResponse = rpcCall(listToolsRpcRequest);
+        ListToolsResult listToolsResult = objectMapper.convertValue(listToolsResponse.result().orElseThrow(), ListToolsResult.class);
+        assertThat(listToolsResult.tools())
+                .filteredOn(tool -> tool.name().equals("addThree"))
+                .hasSize(1)
+                .first()
+                .extracting(Tool::outputSchema)
+                .satisfies(node -> assertThat(node.isEmpty()));
+
+        CallToolRequest callToolRequest = new CallToolRequest("addThree", ImmutableMap.of("a", 1, "b", 2, "c", 3));
+        JsonRpcRequest<?> jsonrpcRequest = JsonRpcRequest.buildRequest(1, "tools/call", callToolRequest);
+        JsonRpcResponse<?> response = rpcCall(jsonrpcRequest);
+        CallToolResult callToolResult = objectMapper.convertValue(response.result().orElseThrow(), new TypeReference<>() {});
+        assertThat(callToolResult.structuredContent())
+                .isEmpty();
+        assertThat(callToolResult.content())
+                .hasSize(1)
+                .first()
+                .asInstanceOf(type(TextContent.class))
+                .extracting(TextContent::text)
+                .isEqualTo("6");
+    }
+
+    @Test
+    public void testToolEmbeddedStructuredContent()
+    {
+        JsonRpcRequest<?> listToolsRpcRequest = JsonRpcRequest.buildRequest(1, "tools/list");
+
+        JsonRpcResponse<?> listToolsResponse = rpcCall(listToolsRpcRequest);
+        ListToolsResult listToolsResult = objectMapper.convertValue(listToolsResponse.result().orElseThrow(), ListToolsResult.class);
+        assertThat(listToolsResult.tools())
+                .filteredOn(tool -> tool.name().equals("addFirstTwoAndAllThree"))
+                .hasSize(1)
+                .first()
+                .extracting(Tool::outputSchema)
+                .extracting(Optional::get)
+                .satisfies(node -> {
+                    assertThat(node.get("type").asText()).isEqualTo("object");
+
+                    assertThat(node.get("required"))
+                            .isNotNull()
+                            .extracting(JsonNode::asText)
+                            .containsExactlyInAnyOrder("firstTwo", "allThree");
+
+                    assertThat(node.get("properties")).isNotNull();
+                    JsonNode properties = node.get("properties");
+                    assertThat(properties.fieldNames()).toIterable().containsExactlyInAnyOrder("firstTwo", "allThree");
+
+                    assertThat(properties.get("firstTwo").get("type").asText()).isEqualTo("integer");
+                    assertThat(properties.get("allThree").get("type").asText()).isEqualTo("integer");
+                });
+
+        CallToolRequest callToolRequest = new CallToolRequest("addFirstTwoAndAllThree", ImmutableMap.of("a", 1, "b", 2, "c", 3));
+        JsonRpcRequest<?> jsonrpcRequest = JsonRpcRequest.buildRequest(1, "tools/call", callToolRequest);
+        JsonRpcResponse<?> response = rpcCall(jsonrpcRequest);
+        CallToolResult twoAndThreeCallToolResult = objectMapper.convertValue(response.result().orElseThrow(), new TypeReference<>() {});
+        assertThat(twoAndThreeCallToolResult.structuredContent())
+                .isPresent()
+                .get()
+                .extracting(StructuredContent::value)
+                .isEqualTo(ImmutableMap.of("firstTwo", 3, "allThree", 6));
+    }
+
+    @Test
     public void testTools()
     {
         JsonRpcRequest<?> jsonrpcRequest = JsonRpcRequest.buildRequest(1, "tools/list");
@@ -111,7 +182,7 @@ public class TestMcp
         ListToolsResult listToolsResult = objectMapper.convertValue(response.result().orElseThrow(), ListToolsResult.class);
         assertThat(listToolsResult.tools())
                 .extracting(Tool::name)
-                .containsExactlyInAnyOrder("add", "throws");
+                .containsExactlyInAnyOrder("add", "throws", "addThree", "addFirstTwoAndAllThree");
 
         CallToolRequest callToolRequest = new CallToolRequest("add", ImmutableMap.of("a", 1, "b", 2));
         jsonrpcRequest = JsonRpcRequest.buildRequest(1, "tools/call", callToolRequest);
