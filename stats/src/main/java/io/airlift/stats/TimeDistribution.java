@@ -22,7 +22,7 @@ public class TimeDistribution
     static final long MERGE_THRESHOLD_NANOS = MILLISECONDS.toNanos(100);
     private static final double[] SNAPSHOT_QUANTILES = new double[] {0.5, 0.75, 0.9, 0.95, 0.99};
     private static final double[] PERCENTILES;
-    private static final int STRIPES = 16;
+    private static final int STRIPES = 8;
 
     static {
         PERCENTILES = new double[100];
