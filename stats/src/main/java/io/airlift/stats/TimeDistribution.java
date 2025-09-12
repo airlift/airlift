@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Ticker.systemTicker;
 import static com.google.common.base.Verify.verify;
+import static java.lang.Math.clamp;
 import static java.lang.Math.floorMod;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -22,7 +23,7 @@ public class TimeDistribution
     static final long MERGE_THRESHOLD_NANOS = MILLISECONDS.toNanos(100);
     private static final double[] SNAPSHOT_QUANTILES = new double[] {0.5, 0.75, 0.9, 0.95, 0.99};
     private static final double[] PERCENTILES;
-    private static final int STRIPES = 16;
+    private static final int STRIPES = clamp(2, Runtime.getRuntime().availableProcessors(), 16);
 
     static {
         PERCENTILES = new double[100];
