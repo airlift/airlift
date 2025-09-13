@@ -22,7 +22,7 @@ public class TimeDistribution
     static final long MERGE_THRESHOLD_NANOS = MILLISECONDS.toNanos(100);
     private static final double[] SNAPSHOT_QUANTILES = new double[] {0.5, 0.75, 0.9, 0.95, 0.99};
     private static final double[] PERCENTILES;
-    private static final int STRIPES = 16;
+    private static final int STRIPES = 8;
 
     static {
         PERCENTILES = new double[100];
@@ -72,7 +72,6 @@ public class TimeDistribution
         merged = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
         for (int i = 0; i < STRIPES; i++) {
             locks[i] = new Object();
-            partials[i] = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
         }
         total = new DecayCounter(alpha);
         partialTotal = new DecayCounter(alpha);
@@ -85,6 +84,9 @@ public class TimeDistribution
     {
         int segment = floorMod(Thread.currentThread().threadId(), STRIPES);
         synchronized (locks[segment]) {
+            if (partials[segment] == null) {
+                partials[segment] = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
+            }
             partials[segment].add(value);
         }
         partialTotal.add(value); // Fine outside of lock as DecayCounter is thread safe
@@ -178,9 +180,12 @@ public class TimeDistribution
             if (forceMerge || ticker.read() - lastMerge >= MERGE_THRESHOLD_NANOS) {
                 for (int i = 0; i < STRIPES; i++) {
                     synchronized (locks[i]) {
+                        if (partials[i] == null) {
+                            continue;
+                        }
                         merged.merge(partials[i]);
                         // Reset the partial
-                        partials[i] = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
+                        partials[i] = null;
                     }
                 }
                 total.merge(partialTotal);
@@ -241,7 +246,7 @@ public class TimeDistribution
         // Reset all partial digests (stripes) to avoid stale data
         for (int i = 0; i < partials.length; i++) {
             synchronized (locks[i]) {
-                partials[i] = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
+                partials[i] = null;
             }
         }
     }
