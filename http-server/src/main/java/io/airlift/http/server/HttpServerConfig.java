@@ -102,6 +102,7 @@ public class HttpServerConfig
 
     private Optional<DataSize> maxHeapMemory = Optional.empty();
     private Optional<DataSize> maxDirectMemory = Optional.empty();
+    private boolean notifyRemoteAsyncErrors = true;
 
     public boolean isHttpEnabled()
     {
@@ -524,6 +525,19 @@ public class HttpServerConfig
     public boolean eitherBothMemorySettingsAreSetOrNone()
     {
         return maxHeapMemory.isPresent() == maxDirectMemory.isPresent();
+    }
+
+    public boolean isNotifyRemoteAsyncErrors()
+    {
+        return notifyRemoteAsyncErrors;
+    }
+
+    @Config("http-server.notify-remote-async-errors")
+    @ConfigDescription("Should remote exceptions be passed to AsyncContext")
+    public HttpServerConfig setNotifyRemoteAsyncErrors(boolean notifyRemoteAsyncErrors)
+    {
+        this.notifyRemoteAsyncErrors = notifyRemoteAsyncErrors;
+        return this;
     }
 
     public enum ProcessForwardedMode
