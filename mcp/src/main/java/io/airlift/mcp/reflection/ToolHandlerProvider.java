@@ -132,7 +132,7 @@ public class ToolHandlerProvider
 
     private CallToolResult mapStructuredContentResult(StructuredContentResult<?> result)
     {
-        return new CallToolResult(result.content(), Optional.of(new StructuredContent<>(result.structuredContent())), result.isError());
+        return new CallToolResult(result.content(), result.structuredContent().map(StructuredContent::new), result.isError());
     }
 
     private static Tool buildTool(McpTool tool, Method method, List<MethodParameter> parameters)
