@@ -1,8 +1,5 @@
 package io.airlift.mcp.reference;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.mcp.McpException;
 import io.airlift.mcp.McpMetadata;
@@ -24,11 +21,14 @@ import io.airlift.mcp.model.Role;
 import io.airlift.mcp.model.StructuredContent;
 import io.airlift.mcp.model.Tool;
 import io.modelcontextprotocol.common.McpTransportContext;
+import io.modelcontextprotocol.json.McpJsonMapper;
+import io.modelcontextprotocol.json.TypeRef;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures;
 import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema;
 import jakarta.servlet.http.HttpServletRequest;
 
+import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Map;
@@ -171,14 +171,14 @@ interface Mapper
         return new McpSchema.PromptArgument(ourArgument.name(), ourArgument.description().orElse(null), ourArgument.required());
     }
 
-    static McpStatelessServerFeatures.SyncToolSpecification mapTool(ObjectMapper objectMapper, Tool ourTool, ToolHandler ourHandler)
+    static McpStatelessServerFeatures.SyncToolSpecification mapTool(McpJsonMapper objectMapper, Tool ourTool, ToolHandler ourHandler)
     {
         try {
             McpSchema.Tool.Builder theirToolBuilder = McpSchema.Tool.builder()
                     .name(ourTool.name())
-                    .inputSchema(objectMapper.writeValueAsString(ourTool.inputSchema()));
+                    .inputSchema(objectMapper, objectMapper.writeValueAsString(ourTool.inputSchema()));
             if (ourTool.outputSchema().isPresent()) {
-                theirToolBuilder.outputSchema(objectMapper.writeValueAsString(ourTool.outputSchema().get()));
+                theirToolBuilder.outputSchema(objectMapper, objectMapper.writeValueAsString(ourTool.outputSchema().get()));
             }
 
             ourTool.description().ifPresent(theirToolBuilder::description);
@@ -207,7 +207,13 @@ interface Mapper
                         .map(ourStructuredContent -> mapStructuredContent(objectMapper, ourStructuredContent))
                         .orElse(null);
 
-                return new McpSchema.CallToolResult(theirContent, callToolResult.isError(), theirStructuredContent);
+                McpSchema.CallToolResult.Builder builder = McpSchema.CallToolResult.builder()
+                        .isError(callToolResult.isError())
+                        .content(theirContent);
+                if (theirStructuredContent != null) {
+                    builder.structuredContent(theirStructuredContent);
+                }
+                return builder.build();
             });
 
             return McpStatelessServerFeatures.SyncToolSpecification.builder()
@@ -215,13 +221,13 @@ interface Mapper
                     .callHandler(exceptionSafeHandler(callHandler))
                     .build();
         }
-        catch (JsonProcessingException e) {
+        catch (IOException e) {
             throw new UncheckedIOException("Could not serialize tool's schema: " + ourTool, e);
         }
     }
 
-    static Map<String, Object> mapStructuredContent(ObjectMapper objectMapper, StructuredContent<?> ourStructuredContent)
+    static Map<String, Object> mapStructuredContent(McpJsonMapper objectMapper, StructuredContent<?> ourStructuredContent)
     {
-        return objectMapper.convertValue(ourStructuredContent, new TypeReference<>() {});
+        return objectMapper.convertValue(ourStructuredContent, new TypeRef<>() {});
     }
 }

@@ -1,6 +1,5 @@
 package io.airlift.mcp.reference;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 import io.airlift.log.Logger;
 import io.airlift.mcp.McpServer;
@@ -13,6 +12,7 @@ import io.airlift.mcp.handler.ToolHandler;
 import io.airlift.mcp.model.Prompt;
 import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.Tool;
+import io.modelcontextprotocol.json.McpJsonMapper;
 import io.modelcontextprotocol.server.McpStatelessSyncServer;
 import jakarta.annotation.PreDestroy;
 
@@ -27,10 +27,10 @@ public class ReferenceServer
     private static final Logger log = Logger.get(ReferenceServer.class);
 
     private final McpStatelessSyncServer server;
-    private final ObjectMapper objectMapper;
+    private final McpJsonMapper objectMapper;
 
     @Inject
-    public ReferenceServer(McpStatelessSyncServer server, ObjectMapper objectMapper, Set<ToolEntry> tools, Set<PromptEntry> prompts, Set<ResourceEntry> resources)
+    public ReferenceServer(McpStatelessSyncServer server, McpJsonMapper objectMapper, Set<ToolEntry> tools, Set<PromptEntry> prompts, Set<ResourceEntry> resources)
     {
         this.server = requireNonNull(server, "server is null");
         this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
