@@ -8,6 +8,8 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import io.airlift.mcp.McpMetadata;
 import io.modelcontextprotocol.common.McpTransportContext;
+import io.modelcontextprotocol.json.McpJsonMapper;
+import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServer.StatelessSyncSpecification;
 import io.modelcontextprotocol.server.McpStatelessSyncServer;
@@ -31,18 +33,18 @@ public class ReferenceModule
 
     @Singleton
     @Provides
-    public HttpServletStatelessServerTransport mcpTransport(McpMetadata metadata, ObjectMapper objectMapper)
+    public HttpServletStatelessServerTransport mcpTransport(McpMetadata metadata, McpJsonMapper objectMapper)
     {
         return HttpServletStatelessServerTransport.builder()
                 .messageEndpoint(metadata.uriPath())
-                .objectMapper(objectMapper)
+                .jsonMapper(objectMapper)
                 .contextExtractor(request -> McpTransportContext.create(ImmutableMap.of(CONTEXT_REQUEST_KEY, request)))
                 .build();
     }
 
     @Singleton
     @Provides
-    public McpStatelessSyncServer buildServer(HttpServletStatelessServerTransport transport, McpMetadata metadata, ObjectMapper objectMapper)
+    public McpStatelessSyncServer buildServer(HttpServletStatelessServerTransport transport, McpMetadata metadata, McpJsonMapper objectMapper)
     {
         McpSchema.ServerCapabilities serverCapabilities = new McpSchema.ServerCapabilities(
                 null,
@@ -53,12 +55,19 @@ public class ReferenceModule
                 metadata.tools() ? new McpSchema.ServerCapabilities.ToolCapabilities(false) : null);
 
         StatelessSyncSpecification builder = McpServer.sync(transport)
-                .objectMapper(objectMapper)
+                .jsonMapper(objectMapper)
                 .capabilities(serverCapabilities)
                 .serverInfo(metadata.implementation().name(), metadata.implementation().version());
 
         metadata.instructions().map(builder::instructions);
 
         return builder.build();
+    }
+
+    @Singleton
+    @Provides
+    public McpJsonMapper mcpJsonMapper(ObjectMapper objectMapper)
+    {
+        return new JacksonMcpJsonMapper(objectMapper);
     }
 }
