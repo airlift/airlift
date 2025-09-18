@@ -93,7 +93,7 @@
 
         <dep.airlift.version>360-SNAPSHOT</dep.airlift.version>
         <dep.bouncycastle.version>1.82</dep.bouncycastle.version>
-        <dep.mcp.sdk.version>0.12.1</dep.mcp.sdk.version>
+        <dep.mcp.sdk.version>0.13.0</dep.mcp.sdk.version>
         <dep.jersey.version>3.1.11</dep.jersey.version>
         <dep.jjwt.version>0.13.0</dep.jjwt.version>
     </properties>
