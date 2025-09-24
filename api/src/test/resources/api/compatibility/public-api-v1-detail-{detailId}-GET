@@ -1,0 +1,28 @@
+detail/{detailId}|public|1|GET|resource(detail|RESOURCE|detailId|BASIC|io.airlift.api.servertests.integration.testingserver.external.DetailId|syncToken|BASIC|io.airlift.api.ApiResourceVersion|detail)||[detailId]|[]|[400|401|403]
+
+Metadata:
+GET
+io.airlift.api.servertests.integration.testingserver.external.PublicWidgetApi
+getDetail
+public/api/v1/detail/{detailId}
+
+
+Return:
+ModelResource[type=class io.airlift.api.servertests.integration.testingserver.external.DetailResult, name=detail, openApiName=Optional[detailResult], description=Detail result instance, components=[ModelResource[type=class io.airlift.api.servertests.integration.testingserver.external.DetailId, name=detailId, openApiName=Optional.empty, description=ID, components=[], resourceType=BASIC, containerType=class io.airlift.api.servertests.integration.testingserver.external.DetailId, modifiers=[], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional.empty, enumDescriptions=Optional.empty], ModelResource[type=class io.airlift.api.ApiResourceVersion, name=syncToken, openApiName=Optional.empty, description=Used to ensure consistency for resource updates. A syncToken that is returned
+from the server is valid until the resource is updated when a new syncToken will
+be generated. Only the latest version of the object is maintained.
+, components=[], resourceType=BASIC, containerType=class io.airlift.api.ApiResourceVersion, modifiers=[READ_ONLY], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional.empty, enumDescriptions=Optional.empty], ModelResource[type=interface io.airlift.api.servertests.integration.testingserver.external.Detail, name=detail, openApiName=Optional.empty, description=, components=[], resourceType=RESOURCE, containerType=interface io.airlift.api.servertests.integration.testingserver.external.Detail, modifiers=[IS_UNWRAPPED], quotas=[DETAIL], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional[ModelPolyResource[key=typeKey, subResources=[ModelResource[type=class io.airlift.api.servertests.integration.testingserver.external.Detail$NameAndAge, name=nameAndAge, openApiName=Optional.empty, description=A name and an age, components=[ModelResource[type=class java.lang.String, name=name, openApiName=Optional.empty, description=A name, components=[], resourceType=BASIC, containerType=class java.lang.String, modifiers=[], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional.empty, enumDescriptions=Optional.empty], ModelResource[type=int, name=age, openApiName=Optional.empty, description=An age, components=[], resourceType=BASIC, containerType=int, modifiers=[], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional.empty, enumDescriptions=Optional.empty]], resourceType=RESOURCE, containerType=class io.airlift.api.servertests.integration.testingserver.external.Detail$NameAndAge, modifiers=[], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional.empty, enumDescriptions=Optional.empty], ModelResource[type=class io.airlift.api.servertests.integration.testingserver.external.Detail$Schedule, name=schedule, openApiName=Optional.empty, description=A schedule, components=[ModelResource[type=class java.lang.String, name=name, openApiName=Optional.empty, description=A schedule name, components=[], resourceType=BASIC, containerType=class java.lang.String, modifiers=[], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional.empty, enumDescriptions=Optional.empty], ModelResource[type=class java.time.Instant, name=startDate, openApiName=Optional.empty, description=Start date, components=[], resourceType=BASIC, containerType=class java.time.Instant, modifiers=[], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional.empty, enumDescriptions=Optional.empty], ModelResource[type=class java.time.Instant, name=endDate, openApiName=Optional.empty, description=End date, components=[], resourceType=BASIC, containerType=class java.time.Instant, modifiers=[], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional.empty, enumDescriptions=Optional.empty]], resourceType=RESOURCE, containerType=class io.airlift.api.servertests.integration.testingserver.external.Detail$Schedule, modifiers=[], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional.empty, enumDescriptions=Optional.empty]]]], enumDescriptions=Optional.empty]], resourceType=RESOURCE, containerType=class io.airlift.api.servertests.integration.testingserver.external.DetailResult, modifiers=[HAS_VERSION, HAS_RESOURCE_ID], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional.empty, enumDescriptions=Optional.empty]
+
+Parameter(s):
+detailId
+
+Optional Parameter(s):
+none
+
+Body:
+none
+
+Response(s):
+400
+401
+403
