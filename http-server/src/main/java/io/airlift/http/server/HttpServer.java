@@ -84,6 +84,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
+import static io.airlift.http.server.PortAvailability.checkPortAvailability;
 import static java.lang.Math.max;
 import static java.lang.Math.toIntExact;
 import static java.time.temporal.ChronoUnit.DAYS;
@@ -139,6 +140,11 @@ public class HttpServer
         requireNonNull(mbeanServer, "mbeanServer is null");
 
         checkArgument(!config.isHttpsEnabled() || maybeHttpsConfig.isPresent(), "httpsConfig must be present when HTTPS is enabled");
+
+        checkPortAvailability(config.getHttpPort());
+        if (config.isHttpsEnabled()) {
+            checkPortAvailability(maybeHttpsConfig.orElseThrow().getHttpsPort());
+        }
 
         MonitoredQueuedThreadPool threadPool = new MonitoredQueuedThreadPool(config.getMaxThreads());
         threadPool.setMinThreads(config.getMinThreads());
