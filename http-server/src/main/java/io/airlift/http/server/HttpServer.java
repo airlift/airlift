@@ -35,6 +35,7 @@ import org.eclipse.jetty.ee11.servlet.FilterHolder;
 import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee11.servlet.ServletHolder;
 import org.eclipse.jetty.http.UriCompliance;
+import org.eclipse.jetty.http2.RateControl;
 import org.eclipse.jetty.http2.server.AuthorityCustomizer;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
@@ -356,6 +357,7 @@ public class HttpServer
         http2c.setMaxConcurrentStreams(config.getHttp2MaxConcurrentStreams());
         http2c.setInputBufferSize(toIntExact(config.getHttp2InputBufferSize().toBytes()));
         http2c.setStreamIdleTimeout(config.getHttp2StreamIdleTimeout().toMillis());
+        http2c.setRateControlFactory(new RateControl.Factory() {}); // disable rate control
 
         return new ConnectionFactory[] {http1, http2c};
     }
@@ -374,6 +376,7 @@ public class HttpServer
         http2.setMaxConcurrentStreams(config.getHttp2MaxConcurrentStreams());
         http2.setInputBufferSize(toIntExact(config.getHttp2InputBufferSize().toBytes()));
         http2.setStreamIdleTimeout(config.getHttp2StreamIdleTimeout().toMillis());
+        http2.setRateControlFactory(new RateControl.Factory() {}); // disable rate control
 
         return new ConnectionFactory[] {tls, alpn, http2, http1};
     }
