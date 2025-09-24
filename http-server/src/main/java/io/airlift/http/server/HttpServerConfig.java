@@ -102,7 +102,7 @@ public class HttpServerConfig
 
     private Optional<DataSize> maxHeapMemory = Optional.empty();
     private Optional<DataSize> maxDirectMemory = Optional.empty();
-    private boolean notifyRemoteAsyncErrors = true;
+    private boolean notifyRemoteAsyncErrors;
 
     public boolean isHttpEnabled()
     {
