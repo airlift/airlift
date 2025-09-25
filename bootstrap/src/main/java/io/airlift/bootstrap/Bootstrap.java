@@ -57,6 +57,7 @@ import static io.airlift.configuration.ConfigurationLoader.getSystemProperties;
 import static io.airlift.configuration.ConfigurationLoader.loadPropertiesFrom;
 import static io.airlift.configuration.TomlConfiguration.createTomlConfiguration;
 import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Entry point for an application built using the platform codebase.
@@ -71,9 +72,11 @@ import static java.lang.String.format;
  */
 public class Bootstrap
 {
+    private final String name;
+    private final Logger log;
+
     private enum State { UNINITIALIZED, CONFIGURED, INITIALIZED }
 
-    private final Logger log = Logger.get("Bootstrap");
     private final List<Module> modules;
 
     private Map<String, String> requiredConfigurationProperties;
@@ -88,14 +91,26 @@ public class Bootstrap
     private ConfigurationFactory configurationFactory;
     private SecretsResolver secretsResolver;
 
+    public Bootstrap(String name, Module... modules)
+    {
+        this(name, ImmutableList.copyOf(modules));
+    }
+
+    public Bootstrap(Iterable<? extends Module> modules)
+    {
+        this("Bootstrap", modules);
+    }
+
     public Bootstrap(Module... modules)
     {
         this(ImmutableList.copyOf(modules));
     }
 
-    public Bootstrap(Iterable<? extends Module> modules)
+    public Bootstrap(String name, Iterable<? extends Module> modules)
     {
+        this.name = requireNonNull(name, "name is null");
         this.modules = ImmutableList.copyOf(modules);
+        this.log = Logger.get(name);
     }
 
     public Bootstrap setRequiredConfigurationProperty(String key, String value)
@@ -319,7 +334,7 @@ public class Bootstrap
 
         // system modules
         Builder<Module> moduleList = ImmutableList.builder();
-        moduleList.add(new LifeCycleModule());
+        moduleList.add(new LifeCycleModule(name));
         moduleList.add(new ConfigurationModule(configurationFactory));
         moduleList.add(binder -> binder.bind(WarningsMonitor.class).toInstance(log::warn));
 

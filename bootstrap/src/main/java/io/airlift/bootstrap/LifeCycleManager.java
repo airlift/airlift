@@ -31,13 +31,15 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.base.Preconditions.checkState;
 import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Manages PostConstruct and PreDestroy life cycles
  */
 public final class LifeCycleManager
 {
-    private final Logger log = Logger.get(LifeCycleManager.class);
+    private final String name;
+    private final Logger log;
     private final AtomicReference<State> state = new AtomicReference<>(State.LATENT);
     private final ConcurrentWeakIdentitySet startedInstances = new ConcurrentWeakIdentitySet();
     private final Queue<Object> managedInstances = new ConcurrentLinkedQueue<>();
@@ -68,9 +70,12 @@ public final class LifeCycleManager
      * @param methodsMap existing or new methods map
      * @throws LifeCycleStartException exceptions starting instances (depending on mode)
      */
-    public LifeCycleManager(List<Object> managedInstances, LifeCycleMethodsMap methodsMap)
+    public LifeCycleManager(String name, List<Object> managedInstances, LifeCycleMethodsMap methodsMap)
             throws LifeCycleStartException
     {
+        // Lifecycle gets its name from the bootstrap which makes both log to same logger
+        this.name = requireNonNull(name, "name is null");
+        this.log = Logger.get(name);
         this.methodsMap = (methodsMap != null) ? methodsMap : new LifeCycleMethodsMap();
         for (Object instance : managedInstances) {
             addInstance(instance);
@@ -94,7 +99,7 @@ public final class LifeCycleManager
             throws LifeCycleStartException
     {
         if (!state.compareAndSet(State.LATENT, State.STARTING)) {
-            throw new LifeCycleStartException("System already starting");
+            throw new LifeCycleStartException("Lifecycle '%s' already starting".formatted(name));
         }
 
         for (Object obj : managedInstances) {
@@ -106,22 +111,24 @@ public final class LifeCycleManager
 
         Thread thread = new Thread(() -> {
             try {
-                log.info("JVM is shutting down, cleaning up");
                 stop();
             }
             catch (Exception e) {
-                log.error(e, "Trying to shut down");
+                log.error(e, "Failed while stopping lifecycle");
             }
-        }, "LifeCycleManager Shutdown Hook");
+        }, "cleanup");
         shutdownHook.set(thread);
         Runtime.getRuntime().addShutdownHook(thread);
 
         state.set(State.STARTED);
-        log.debug("Life cycle started");
+
+        if (!managedInstances.isEmpty()) {
+            log.info("Lifecycle started with %d managed instance(s)", managedInstances.size());
+        }
     }
 
     /**
-     * Stop the life cycle - all instances will have their {@link PreDestroy} method(s) called
+     * Stop the lifecycle - all instances will have their {@link PreDestroy} method(s) called
      * and any exceptions raised will be collected and thrown in a wrapped {@link LifeCycleStopException} as
      * suppressed exceptions. Those failures will not be logged and are the responsibility of the caller to
      * handle appropriately.
@@ -183,7 +190,7 @@ public final class LifeCycleManager
             }
         }
 
-        log.debug("Life cycle stopping...");
+        log.debug("Lifecycle stopping...", name);
 
         List<Object> reversedInstances = new ArrayList<>(managedInstances);
         Collections.reverse(reversedInstances);
@@ -193,7 +200,9 @@ public final class LifeCycleManager
         }
 
         state.set(State.STOPPED);
-        log.debug("Life cycle stopped");
+        if (!managedInstances.isEmpty()) {
+            log.info("Lifecycle stopped with %d managed instance(s)", managedInstances.size());
+        }
     }
 
     /**
@@ -207,7 +216,7 @@ public final class LifeCycleManager
             throws LifeCycleStartException
     {
         State currentState = state.get();
-        checkState((currentState != State.STOPPING) && (currentState != State.STOPPED), "life cycle is stopped");
+        checkState((currentState != State.STOPPING) && (currentState != State.STOPPED), "Lifecycle '%s' is stopped", name);
         startInstance(instance);
     }
 
@@ -270,6 +279,6 @@ public final class LifeCycleManager
      */
     private static Exception unwrapInvocationTargetException(Exception e)
     {
-        return (e instanceof InvocationTargetException && e.getCause() instanceof Exception) ? (Exception) e.getCause() : e;
+        return (e instanceof InvocationTargetException && e.getCause() instanceof Exception exception) ? exception : e;
     }
 }
