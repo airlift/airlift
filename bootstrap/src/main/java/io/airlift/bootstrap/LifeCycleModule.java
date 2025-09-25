@@ -72,8 +72,7 @@ public class LifeCycleModule
 
     @Provides
     @Singleton
-    public LifeCycleManager getServerManager()
-            throws Exception
+    public LifeCycleManager getLifeCycleManager()
     {
         LifeCycleManager lifeCycleManager = new LifeCycleManager(injectedInstances, lifeCycleMethodsMap);
         this.lifeCycleManager.set(lifeCycleManager);
