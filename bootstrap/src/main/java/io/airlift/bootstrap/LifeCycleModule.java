@@ -15,6 +15,7 @@
  */
 package io.airlift.bootstrap;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Provides;
@@ -29,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.inject.matcher.Matchers.any;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Guice module for binding the LifeCycle manager
@@ -36,9 +38,21 @@ import static com.google.inject.matcher.Matchers.any;
 public class LifeCycleModule
         implements Module
 {
+    private final String name;
     private final List<Object> injectedInstances = new ArrayList<>();
     private final LifeCycleMethodsMap lifeCycleMethodsMap = new LifeCycleMethodsMap();
     private final AtomicReference<LifeCycleManager> lifeCycleManager = new AtomicReference<>(null);
+
+    @VisibleForTesting
+    LifeCycleModule()
+    {
+        this("LifeCycleManager");
+    }
+
+    public LifeCycleModule(String name)
+    {
+        this.name = requireNonNull(name, "name is null");
+    }
 
     @Override
     public void configure(Binder binder)
@@ -74,7 +88,7 @@ public class LifeCycleModule
     @Singleton
     public LifeCycleManager getLifeCycleManager()
     {
-        LifeCycleManager lifeCycleManager = new LifeCycleManager(injectedInstances, lifeCycleMethodsMap);
+        LifeCycleManager lifeCycleManager = new LifeCycleManager(name, injectedInstances, lifeCycleMethodsMap);
         this.lifeCycleManager.set(lifeCycleManager);
         return lifeCycleManager;
     }
