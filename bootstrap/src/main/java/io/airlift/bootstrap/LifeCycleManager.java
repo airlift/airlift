@@ -123,7 +123,7 @@ public final class LifeCycleManager
         state.set(State.STARTED);
 
         if (!managedInstances.isEmpty()) {
-            log.info("Lifecycle started with %d managed instance(s)", managedInstances.size());
+            log.debug("Lifecycle started with %d managed instance(s)", managedInstances.size());
         }
     }
 
@@ -201,7 +201,7 @@ public final class LifeCycleManager
 
         state.set(State.STOPPED);
         if (!managedInstances.isEmpty()) {
-            log.info("Lifecycle stopped with %d managed instance(s)", managedInstances.size());
+            log.debug("Lifecycle stopped with %d managed instance(s)", managedInstances.size());
         }
     }
 
