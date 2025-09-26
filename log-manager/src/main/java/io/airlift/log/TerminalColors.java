@@ -1,5 +1,6 @@
 package io.airlift.log;
 
+import java.io.Console;
 import java.io.PrintWriter;
 
 import static io.airlift.log.TerminalColors.Color.BLUE;
@@ -10,7 +11,7 @@ import static io.airlift.log.TerminalColors.Color.YELLOW;
 
 public class TerminalColors
 {
-    private static final boolean isColorSupported = detectIsColorSupported();
+    private static final boolean isColorSupported = isColorSupported();
     private static final String ANSI_RESET = "\033[0m";
 
     private final boolean interactive;
@@ -93,10 +94,14 @@ public class TerminalColors
         };
     }
 
-    private static boolean detectIsColorSupported()
+    private static boolean isColorSupported()
     {
-        // Non-interactive terminal
-        if (System.console() == null) {
+        Console console = System.console();
+
+        // https://github.com/openjdk/jdk/pull/26273 changed the behavior of System.console()
+        // to return null if there is no console attached, even if the output is redirected to
+        // a terminal.
+        if (console == null && Runtime.version().feature() < 25) {
             return false;
         }
 
