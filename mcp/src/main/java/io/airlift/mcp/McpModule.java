@@ -7,6 +7,7 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.binder.LinkedBindingBuilder;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.OptionalBinder;
+import io.airlift.json.JsonBinder;
 import io.airlift.json.JsonSubType;
 import io.airlift.json.JsonSubTypeBinder;
 import io.airlift.mcp.handler.PromptEntry;
@@ -19,11 +20,13 @@ import io.airlift.mcp.model.Content.ImageContent;
 import io.airlift.mcp.model.Content.ResourceLink;
 import io.airlift.mcp.model.Content.TextContent;
 import io.airlift.mcp.model.Role;
+import io.airlift.mcp.reference.McpErrorSerializer;
 import io.airlift.mcp.reference.ReferenceModule;
 import io.airlift.mcp.reflection.IdentityMapperMetadata;
 import io.airlift.mcp.reflection.PromptHandlerProvider;
 import io.airlift.mcp.reflection.ResourceHandlerProvider;
 import io.airlift.mcp.reflection.ToolHandlerProvider;
+import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema;
 
 import java.util.Locale;
@@ -36,6 +39,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.inject.Scopes.SINGLETON;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
+import static io.airlift.json.JsonBinder.jsonBinder;
 import static io.airlift.json.JsonSubTypeBinder.jsonSubTypeBinder;
 import static io.airlift.mcp.reflection.ReflectionHelper.forAllInClass;
 import static java.util.Objects.requireNonNull;
@@ -169,6 +173,7 @@ public class McpModule
         bindPrompts(binder);
         bindResources(binder);
         bindJsonSubTypes(binder);
+        bindCustomErrorTypes(binder);
         bindIdentityMapper(binder);
 
         if (mode == Mode.REFERENCE_SDK) {
@@ -224,6 +229,12 @@ public class McpModule
                 .add(ResourceLink.class, "resource_link")
                 .build();
         jsonSubTypeBinder.bindJsonSubType(contentJsonSubType);
+    }
+
+    private void bindCustomErrorTypes(Binder binder)
+    {
+        JsonBinder jsonBinder = jsonBinder(binder);
+        jsonBinder.addSerializerBinding(McpError.class).to(McpErrorSerializer.class).in(SINGLETON);
     }
 
     private void validateRoles()
