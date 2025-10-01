@@ -7,7 +7,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import io.airlift.mcp.McpException;
-import io.airlift.mcp.McpIdentityMapper;
 import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.GetPromptRequest;
 import io.airlift.mcp.model.ReadResourceRequest;
@@ -32,6 +31,7 @@ import java.util.Optional;
 
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
+import static io.airlift.mcp.reference.ReferenceFilter.retrieveIdentityValue;
 import static java.util.Objects.requireNonNull;
 
 public class MethodInvoker
@@ -39,16 +39,14 @@ public class MethodInvoker
     private final String methodName;
     private final List<MethodParameter> parameters;
     private final ObjectMapper objectMapper;
-    private final Optional<McpIdentityMapper<?>> identityMapper;
     private final MethodHandle methodHandle;
 
     @Inject
-    public MethodInvoker(Object instance, Method method, List<MethodParameter> parameters, ObjectMapper objectMapper, Optional<McpIdentityMapper<?>> identityMapper)
+    public MethodInvoker(Object instance, Method method, List<MethodParameter> parameters, ObjectMapper objectMapper)
     {
         this.methodName = method.getName();
         this.parameters = ImmutableList.copyOf(parameters);
         this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
-        this.identityMapper = requireNonNull(identityMapper, "identityMapper is null");
 
         try {
             MethodType methodType = MethodType.methodType(method.getReturnType(), method.getParameterTypes());
@@ -123,7 +121,7 @@ public class MethodInvoker
                                 case CallToolRequestParameter _ -> callToolRequest.orElseThrow(() -> new IllegalStateException("CallToolRequest is required"));
                                 case SourceResourceParameter _ -> sourceResource.orElseThrow(() -> new IllegalStateException("SourceResource is required"));
                                 case ReadResourceRequestParameter _ -> readResourceRequest.orElseThrow(() -> new IllegalStateException("ReadResourceRequest is required"));
-                                case IdentityParameter _ -> identityMapper.orElseThrow(() -> new IllegalStateException("IdentityMapper is required")).map(request);
+                                case IdentityParameter _ -> retrieveIdentityValue(request);
                                 case ObjectParameter objectParameter -> valueForObjectParameter(arguments, objectParameter);
                             })
                             .toArray();

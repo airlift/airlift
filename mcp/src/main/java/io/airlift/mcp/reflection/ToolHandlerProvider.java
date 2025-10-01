@@ -6,7 +6,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Provider;
-import io.airlift.mcp.McpIdentityMapper;
 import io.airlift.mcp.McpTool;
 import io.airlift.mcp.handler.ToolEntry;
 import io.airlift.mcp.handler.ToolHandler;
@@ -45,7 +44,6 @@ public class ToolHandlerProvider
     private final ReturnType returnType;
     private Injector injector;
     private ObjectMapper objectMapper;
-    private Optional<McpIdentityMapper<?>> identityMapper = Optional.empty();
 
     public ToolHandlerProvider(McpTool mcpTool, Class<?> clazz, Method method, List<MethodParameter> parameters)
     {
@@ -89,12 +87,6 @@ public class ToolHandlerProvider
         this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
     }
 
-    @Inject
-    public void setIdentityMapper(Optional<McpIdentityMapper<?>> identityMapper)
-    {
-        this.identityMapper = requireNonNull(identityMapper, "identityMapper is null");
-    }
-
     private enum ReturnType {
         VOID,
         CALL_TOOL_RESULT,
@@ -107,7 +99,7 @@ public class ToolHandlerProvider
     public ToolEntry get()
     {
         Object instance = injector.getInstance(clazz);
-        MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper, identityMapper);
+        MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper);
 
         ToolHandler toolHandler = (request, toolRequest) -> {
             Object result = methodInvoker.builder(request)

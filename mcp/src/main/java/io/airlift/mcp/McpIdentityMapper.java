@@ -1,8 +1,9 @@
 package io.airlift.mcp;
 
+import io.airlift.mcp.model.McpIdentity;
 import jakarta.servlet.http.HttpServletRequest;
 
-public interface McpIdentityMapper<T>
+public interface McpIdentityMapper
 {
-    T map(HttpServletRequest request);
+    McpIdentity map(HttpServletRequest request);
 }

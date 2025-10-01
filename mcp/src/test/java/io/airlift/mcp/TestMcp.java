@@ -21,6 +21,7 @@ import com.google.inject.Module;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.bootstrap.LifeCycleManager;
 import io.airlift.http.client.FullJsonResponseHandler;
+import io.airlift.http.client.FullJsonResponseHandler.JsonResponse;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.JsonBodyGenerator;
 import io.airlift.http.client.Request;
@@ -51,15 +52,20 @@ import io.airlift.node.NodeModule;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.net.URI;
 import java.util.Optional;
+import java.util.stream.Stream;
 
+import static com.google.inject.Scopes.SINGLETON;
 import static io.airlift.http.client.FullJsonResponseHandler.createFullJsonResponseHandler;
 import static io.airlift.http.client.HttpClientBinder.httpClientBinder;
-import static io.airlift.http.client.JsonResponseHandler.createJsonResponseHandler;
 import static io.airlift.http.client.Request.Builder.preparePost;
 import static io.airlift.json.JsonCodec.jsonCodec;
+import static io.airlift.mcp.TestingIdentityMapper.ERRORED_IDENTITY;
+import static io.airlift.mcp.TestingIdentityMapper.EXPECTED_IDENTITY;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.InstanceOfAssertFactories.type;
@@ -68,7 +74,7 @@ import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 @TestInstance(PER_CLASS)
 public class TestMcp
 {
-    private static final String IDENTITY_HEADER = "X-Testing-Identity";
+    public static final String IDENTITY_HEADER = "X-Testing-Identity";
 
     private final HttpClient httpClient;
     private final Injector injector;
@@ -79,7 +85,7 @@ public class TestMcp
     {
         Module mcpModule = McpModule.builder()
                 .withAllInClass(TestingEndpoints.class)
-                .withIdentityMapper(TestingIdentity.class, binding -> binding.toInstance(request -> new TestingIdentity(request.getHeader(IDENTITY_HEADER))))
+                .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
                 .build();
 
         ImmutableList.Builder<Module> modules = ImmutableList.<Module>builder()
@@ -105,6 +111,43 @@ public class TestMcp
     public void shutdown()
     {
         injector.getInstance(LifeCycleManager.class).stop();
+    }
+
+    static Stream<JsonRpcRequest<?>> authRpcRequests()
+    {
+        return Stream.of(
+                JsonRpcRequest.buildRequest(1, "tools/list"),
+                JsonRpcRequest.buildRequest(1, "tools/call", new CallToolRequest("add", ImmutableMap.of("a", 1, "b", 2))),
+                JsonRpcRequest.buildRequest(1, "prompts/list", 1),
+                JsonRpcRequest.buildRequest(1, "prompts/get", new GetPromptRequest("greeting", ImmutableMap.of("name", "Galt"))),
+                JsonRpcRequest.buildRequest(1, "resources/list"),
+                JsonRpcRequest.buildRequest(1, "resources/read", new ReadResourceRequest("file://example1.txt")));
+    }
+
+    @ParameterizedTest
+    @MethodSource("authRpcRequests")
+    public void testAuth(JsonRpcRequest<?> request)
+    {
+        // No identity header
+        JsonResponse<JsonRpcResponse<?>> response = rpcCall("", request);
+        assertThat(response.getStatusCode()).isEqualTo(401);
+        assertThat(response.getHeaders("WWW-Authenticate")).hasSize(1).first().isEqualTo(IDENTITY_HEADER);
+        assertThat(response.getResponseBody()).contains("Empty or missing identity header");
+
+        // Invalid identity header
+        response = rpcCall("Invalid Identity", request);
+        assertThat(response.getStatusCode()).isEqualTo(403);
+        assertThat(response.getHeaders("WWW-Authenticate")).isEmpty();
+        assertThat(response.getResponseBody()).contains("Identity Invalid Identity is not authorized to access");
+
+        response = rpcCall(ERRORED_IDENTITY, request);
+        assertThat(response.getStatusCode()).isEqualTo(500);
+        assertThat(response.getHeaders("WWW-Authenticate")).isEmpty();
+        assertThat(response.getResponseBody()).contains("This identity cannot catch a break");
+
+        // Valid identity header
+        response = rpcCall(EXPECTED_IDENTITY, request);
+        assertThat(response.getStatusCode()).isEqualTo(200);
     }
 
     @Test
@@ -303,13 +346,18 @@ public class TestMcp
 
     private JsonRpcResponse<?> rpcCall(JsonRpcRequest<?> jsonrpcRequest)
     {
+        return rpcCall("Mr. Tester", jsonrpcRequest).getValue();
+    }
+
+    private JsonResponse<JsonRpcResponse<?>> rpcCall(String identityHeader, JsonRpcRequest<?> jsonrpcRequest)
+    {
         Request request = preparePost().setUri(baseUri)
                 .addHeader("Content-Type", "application/json")
                 .addHeader("Accept", "application/json,text/event-stream")
-                .addHeader(IDENTITY_HEADER, "Mr. Tester")
+                .addHeader(IDENTITY_HEADER, identityHeader)
                 .setBodyGenerator(JsonBodyGenerator.jsonBodyGenerator(jsonCodec(new TypeToken<JsonRpcRequest<?>>() {}), jsonrpcRequest))
                 .build();
 
-        return httpClient.execute(request, createJsonResponseHandler(jsonCodec(new TypeToken<>() {})));
+        return httpClient.execute(request, createFullJsonResponseHandler(jsonCodec(new TypeToken<>() {})));
     }
 }
