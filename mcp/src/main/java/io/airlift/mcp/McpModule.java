@@ -118,7 +118,7 @@ public class McpModule
             return this;
         }
 
-        public <T> Builder withIdentityMapper(Class<T> identityType, Consumer<LinkedBindingBuilder<McpIdentityMapper<T>>> identityMapperBinding)
+        public <T> Builder withIdentityMapper(Class<T> identityType, Consumer<LinkedBindingBuilder<McpIdentityMapper>> identityMapperBinding)
         {
             this.identityMapperBinding = Optional.of(new IdentityMapperBinding(identityType, identityMapperBinding));
             return this;
@@ -184,7 +184,7 @@ public class McpModule
     @SuppressWarnings({"unchecked", "rawtypes"})
     private void bindIdentityMapper(Binder binder)
     {
-        OptionalBinder<? extends McpIdentityMapper<?>> identityBinder = OptionalBinder.newOptionalBinder(binder, new TypeLiteral<>() {});
+        OptionalBinder<? extends McpIdentityMapper> identityBinder = OptionalBinder.newOptionalBinder(binder, new TypeLiteral<>() {});
 
         identityMapperBinding.ifPresent(binding -> {
             Consumer rawConsumer = binding.identityMapperBinding;
