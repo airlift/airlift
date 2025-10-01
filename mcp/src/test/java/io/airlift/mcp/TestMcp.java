@@ -20,6 +20,7 @@ import com.google.inject.Key;
 import com.google.inject.Module;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.bootstrap.LifeCycleManager;
+import io.airlift.http.client.FullJsonResponseHandler;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.JsonBodyGenerator;
 import io.airlift.http.client.Request;
@@ -54,6 +55,7 @@ import org.junit.jupiter.api.TestInstance;
 import java.net.URI;
 import java.util.Optional;
 
+import static io.airlift.http.client.FullJsonResponseHandler.createFullJsonResponseHandler;
 import static io.airlift.http.client.HttpClientBinder.httpClientBinder;
 import static io.airlift.http.client.JsonResponseHandler.createJsonResponseHandler;
 import static io.airlift.http.client.Request.Builder.preparePost;
@@ -103,6 +105,37 @@ public class TestMcp
     public void shutdown()
     {
         injector.getInstance(LifeCycleManager.class).stop();
+    }
+
+    @Test
+    public void testInvalidRpcRequests()
+    {
+        CallToolRequest callToolRequest = new CallToolRequest("add", ImmutableMap.of("a", 1, "b", 2));
+        JsonRpcRequest<?> jsonrpcRequest = JsonRpcRequest.buildRequest(1, "tools/call", callToolRequest);
+
+        // missing proper Accept header
+        Request request = preparePost().setUri(baseUri)
+                .addHeader("Content-Type", "application/json")
+                .addHeader(IDENTITY_HEADER, "Mr. Tester")
+                .setBodyGenerator(JsonBodyGenerator.jsonBodyGenerator(jsonCodec(new TypeToken<JsonRpcRequest<?>>() {}), jsonrpcRequest))
+                .build();
+
+        FullJsonResponseHandler.JsonResponse<Object> response = httpClient.execute(request, createFullJsonResponseHandler(jsonCodec(new TypeToken<>() {})));
+        assertThat(response.getStatusCode()).isEqualTo(400);
+        assertThat(response.getResponseBody())
+                .isEqualTo("{\"message\":\"Both application/json and text/event-stream required in Accept header\"}");
+
+        // nonsensical object in body
+        request = preparePost().setUri(baseUri)
+                .addHeader("Content-Type", "application/json")
+                .addHeader("Accept", "application/json, text/event-stream")
+                .addHeader(IDENTITY_HEADER, "Mr. Tester")
+                .setBodyGenerator(JsonBodyGenerator.jsonBodyGenerator(jsonCodec(new TypeToken<>() {}), new ListToolsResult(ImmutableList.of())))
+                .build();
+        response = httpClient.execute(request, createFullJsonResponseHandler(jsonCodec(new TypeToken<>() {})));
+        assertThat(response.getStatusCode()).isEqualTo(400);
+        assertThat(response.getResponseBody())
+                .isEqualTo("{\"message\":\"Invalid message format\"}");
     }
 
     @Test
