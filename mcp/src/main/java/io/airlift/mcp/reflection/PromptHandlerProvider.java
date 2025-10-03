@@ -5,7 +5,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Provider;
-import io.airlift.mcp.McpIdentityMapper;
 import io.airlift.mcp.McpPrompt;
 import io.airlift.mcp.handler.PromptEntry;
 import io.airlift.mcp.handler.PromptHandler;
@@ -45,7 +44,6 @@ public class PromptHandlerProvider
     private final boolean isGetPromptResult;
     private Injector injector;
     private ObjectMapper objectMapper;
-    private Optional<McpIdentityMapper<?>> identityMapper = Optional.empty();
 
     public PromptHandlerProvider(McpPrompt mcpPrompt, Class<?> clazz, Method method, List<MethodParameter> parameters)
     {
@@ -72,17 +70,11 @@ public class PromptHandlerProvider
         this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
     }
 
-    @Inject
-    public void setIdentityMapper(Optional<McpIdentityMapper<?>> identityMapper)
-    {
-        this.identityMapper = requireNonNull(identityMapper, "identityMapper is null");
-    }
-
     @Override
     public PromptEntry get()
     {
         Object instance = injector.getInstance(clazz);
-        MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper, identityMapper);
+        MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper);
 
         PromptHandler promptHandler = (request, promptRequest) -> {
             Object result = methodInvoker.builder(request)

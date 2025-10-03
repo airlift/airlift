@@ -15,6 +15,7 @@ import io.airlift.node.NodeModule;
 import java.util.Optional;
 
 import static com.google.inject.Scopes.SINGLETON;
+import static io.airlift.mcp.model.McpIdentity.Authenticated.authenticated;
 
 public class LocalServer
 {
@@ -35,7 +36,7 @@ public class LocalServer
 
         Module mcpModule = McpModule.builder()
                 .withAllInClass(TestingEndpoints.class)
-                .withIdentityMapper(TestingIdentity.class, binding -> binding.toInstance(_ -> new TestingIdentity("Mr. Tester")))
+                .withIdentityMapper(TestingIdentity.class, binding -> binding.toInstance(_ -> authenticated(new TestingIdentity("Mr. Tester"))))
                 .build();
 
         ImmutableList.Builder<Module> modules = ImmutableList.<Module>builder()

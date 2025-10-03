@@ -5,7 +5,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Provider;
-import io.airlift.mcp.McpIdentityMapper;
 import io.airlift.mcp.McpResource;
 import io.airlift.mcp.handler.ResourceEntry;
 import io.airlift.mcp.handler.ResourceHandler;
@@ -42,7 +41,6 @@ public class ResourceHandlerProvider
     private final boolean resultIsSingleContent;
     private Injector injector;
     private ObjectMapper objectMapper;
-    private Optional<McpIdentityMapper<?>> identityMapper = Optional.empty();
 
     public ResourceHandlerProvider(McpResource mcpResource, Class<?> clazz, Method method, List<MethodParameter> parameters)
     {
@@ -75,16 +73,11 @@ public class ResourceHandlerProvider
         this.objectMapper = objectMapper;
     }
 
-    public void setIdentityMapper(Optional<McpIdentityMapper<?>> identityMapper)
-    {
-        this.identityMapper = identityMapper;
-    }
-
     @Override
     public ResourceEntry get()
     {
         Object instance = injector.getInstance(clazz);
-        MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper, identityMapper);
+        MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper);
 
         ResourceHandler resourceHandler = (request, sourceResource, readResourceRequest) -> {
             Object result = methodInvoker.builder(request)
