@@ -53,6 +53,11 @@ public final class ConfigAssertions
 
     public static <T> void assertDefaults(Map<String, Object> expectedAttributeValues, Class<T> configClass)
     {
+        assertDefaults(expectedAttributeValues, configClass, ImmutableSet.of());
+    }
+
+    public static <T> void assertDefaults(Map<String, Object> expectedAttributeValues, Class<T> configClass, Set<String> skippedAttributes)
+    {
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getValidConfigurationMetadata(configClass);
 
         // verify all supplied attributes are supported
@@ -69,6 +74,7 @@ public final class ConfigAssertions
                 nonDeprecatedAttributes.add(attribute.getName());
             }
         }
+        nonDeprecatedAttributes.removeAll(skippedAttributes);
         if (!nonDeprecatedAttributes.containsAll(expectedAttributeValues.keySet())) {
             Set<String> unsupportedAttributes = new TreeSet<>(expectedAttributeValues.keySet());
             unsupportedAttributes.removeAll(nonDeprecatedAttributes);
@@ -89,6 +95,9 @@ public final class ConfigAssertions
         for (AttributeMetadata attribute : metadata.getAttributes().values()) {
             Method getter = attribute.getGetter();
             if (getter == null) {
+                continue;
+            }
+            if (skippedAttributes.contains(attribute.getName())) {
                 continue;
             }
             Object actualAttributeValue = invoke(actual, getter);
@@ -246,6 +255,11 @@ public final class ConfigAssertions
 
     public static <T> void assertRecordedDefaults(T recordedConfig)
     {
+        assertRecordedDefaults(recordedConfig, ImmutableSet.of());
+    }
+
+    public static <T> void assertRecordedDefaults(T recordedConfig, Set<String> skippedAttributes)
+    {
         $$RecordedConfigData<T> recordedConfigData = getRecordedConfig(recordedConfig);
         Set<Method> invokedMethods = recordedConfigData.invokedMethods();
 
@@ -285,7 +299,7 @@ public final class ConfigAssertions
             invalidInvocations.removeAll(validSetterMethods);
             throw new AssertionError("Invoked non-attribute setter methods: " + invalidInvocations);
         }
-        assertDefaults(attributeValues, configClass);
+        assertDefaults(attributeValues, configClass, skippedAttributes);
     }
 
     public static <T> T recordDefaults(Class<T> type)

@@ -515,6 +515,35 @@ public class TestConfigAssertions
     }
 
     @Test
+    public void testRecordedDefaultsSkippingAttributes()
+    {
+        ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(Config1.class)
+                .setBoxedBooleanOption(null)
+                .setBoxedByteOption(null)
+                .setBoxedDoubleOption(null)
+                .setBoxedFloatOption(null)
+                .setBoxedIntegerOption(null)
+                .setBoxedLongOption(null)
+                .setBoxedShortOption(null)
+                .setByteOption((byte) 0)
+                .setDoubleOption(0.0)
+                .setFloatOption(0.0f)
+                .setIntegerOption(0)
+                .setLongOption(0)
+                .setMyEnumOption(null)
+                .setPathOption(null)
+                .setMyEnumList(ImmutableList.of())
+                .setMyEnumSet(ImmutableSet.of())
+                .setMyIntegerList(ImmutableList.of())
+                .setMyPathList(ImmutableList.of())
+                .setShortOption((short) 0)
+                .setStringOption(null)
+                .setValueClassOption(null)
+                .setOptionalValueClassOption(Optional.empty())
+                .setOptionalPathOption(Optional.empty()), ImmutableSet.of("BooleanOption", "MyEnumSecondOption"));
+    }
+
+    @Test
     public void testRecordedDefaultsFailInvokedDeprecatedSetter()
             throws MalformedURLException
     {
