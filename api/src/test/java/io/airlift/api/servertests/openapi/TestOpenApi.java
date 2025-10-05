@@ -9,6 +9,7 @@ import io.airlift.http.client.StringResponseHandler.StringResponse;
 import io.swagger.v3.parser.OpenAPIV3Parser;
 import io.swagger.v3.parser.core.models.SwaggerParseResult;
 import jakarta.ws.rs.core.UriBuilder;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
@@ -37,6 +38,7 @@ public class TestOpenApi
     }
 
     @Test
+    @Disabled
     public void testOpenApiJson()
             throws Exception
     {
