@@ -29,7 +29,7 @@ public record JsonParsingFeature(MappingEnabled enabled)
             return false;
         }
 
-        context.register(new JsonParsingExceptionMapper());
+        context.register(new JacksonExceptionMapper());
         return true;
     }
 }

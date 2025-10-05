@@ -15,15 +15,17 @@
  */
 package io.airlift.jaxrs;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
 import com.google.common.net.HttpHeaders;
 import com.google.common.reflect.TypeToken;
 import io.airlift.jaxrs.testing.GuavaMultivaluedMap;
 import io.airlift.json.JsonCodec;
+import io.airlift.json.JsonMapperProvider;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MultivaluedMap;
 import org.junit.jupiter.api.Test;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.exc.JacksonIOException;
+import tools.jackson.core.exc.UnexpectedEndOfInputException;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -37,9 +39,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 
-public class TestJsonMapper
+public class TestJacksonJsonMapper
 {
-    private static final JsonMapper jsonMapper = new JsonMapper(new ObjectMapper());
+    private static final JacksonJsonMapper jsonMapper = new JacksonJsonMapper(new JsonMapperProvider().get());
 
     @Test
     public void testSuccess()
@@ -67,13 +69,12 @@ public class TestJsonMapper
 
     @Test
     public void testJsonEofExceptionMapping()
-            throws IOException
     {
         try {
             jsonMapper.readFrom(Object.class, Object.class, null, null, null, new ByteArrayInputStream("{".getBytes(UTF_8)));
             fail("Should have thrown an Exception");
         }
-        catch (JsonParsingException e) {
+        catch (UnexpectedEndOfInputException e) {
             // intended
         }
     }
@@ -104,7 +105,7 @@ public class TestJsonMapper
         catch (JsonParsingException e) {
             fail("jsonMapper.writeTo() should not throw JsonParsingException");
         }
-        catch (InvalidDefinitionException e) {
+        catch (JacksonException e) {
             // intended
         }
     }
@@ -135,7 +136,9 @@ public class TestJsonMapper
                 {
                     throw new ZipException("forced ZipException");
                 }
-            })).isInstanceOf(ZipException.class);
+            }))
+                    .isInstanceOf(JacksonIOException.class)
+                    .hasCauseInstanceOf(ZipException.class);
         }
         catch (WebApplicationException e) {
             fail("Should not have received a WebApplicationException", e);
