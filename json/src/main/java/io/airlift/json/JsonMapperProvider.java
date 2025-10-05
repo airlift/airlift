@@ -15,11 +15,11 @@
  */
 package io.airlift.json;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonFactoryBuilder;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.airlift.jackson.BaseJacksonProvider;
+import tools.jackson.core.StreamWriteFeature;
+import tools.jackson.core.json.JsonFactory;
+import tools.jackson.core.json.JsonFactoryBuilder;
+import tools.jackson.databind.json.JsonMapper;
 
 import static java.util.Objects.requireNonNull;
 
@@ -43,7 +43,7 @@ public class JsonMapperProvider
         // When serialization fails in the middle, it's better to return a truncated (invalid) JSON
         // than something that could be interpreted as a valid (but incorrect) result.
         // This is especially applicable to server endpoints that return JSON responses.
-        mapperBuilder().disable(JsonGenerator.Feature.AUTO_CLOSE_JSON_CONTENT);
+        mapperBuilder().disable(StreamWriteFeature.AUTO_CLOSE_CONTENT);
     }
 
     @Override

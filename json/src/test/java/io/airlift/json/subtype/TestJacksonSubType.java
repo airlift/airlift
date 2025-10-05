@@ -15,12 +15,6 @@ package io.airlift.json.subtype;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
-import com.fasterxml.jackson.databind.exc.InvalidTypeIdException;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Guice;
@@ -35,6 +29,11 @@ import io.airlift.json.subtype.Employee.Programmer;
 import io.airlift.json.subtype.Part.Container;
 import io.airlift.json.subtype.Part.Item;
 import org.junit.jupiter.api.Test;
+import tools.jackson.core.StreamReadFeature;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.exc.InvalidDefinitionException;
+import tools.jackson.databind.exc.InvalidTypeIdException;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.List;
 
@@ -56,7 +55,6 @@ public class TestJacksonSubType
 
     @Test
     public void testAddBinding()
-            throws Exception
     {
         JacksonSubType jacksonSubType = JacksonSubType.builder()
                 .forBase(Employee.class, "type")
@@ -71,7 +69,6 @@ public class TestJacksonSubType
 
     @Test
     public void testAddBindingSpecifiedNames()
-            throws Exception
     {
         JacksonSubType jacksonSubType = JacksonSubType.builder()
                 .forBase(Employee.class, "specified")
@@ -86,7 +83,6 @@ public class TestJacksonSubType
 
     @Test
     public void testAddPermittedSubClassBindings()
-            throws Exception
     {
         JacksonSubType jacksonSubType = JacksonSubType.builder()
                 .forBase(Employee.class, "type")
@@ -100,7 +96,6 @@ public class TestJacksonSubType
 
     @Test
     public void testAddPermittedSubClassBindingsSpecifiedNames()
-            throws Exception
     {
         JacksonSubType jacksonSubType = JacksonSubType.builder()
                 .forBase(Employee.class, "bogus")
@@ -137,7 +132,6 @@ public class TestJacksonSubType
 
     @Test
     public void testBuildMultipleTypes()
-            throws Exception
     {
         JacksonSubType jacksonSubType = JacksonSubType.builder()
                 .forBase(Employee.class, "type")
@@ -175,7 +169,6 @@ public class TestJacksonSubType
 
     @Test
     public void testStandalone()
-            throws Exception
     {
         JacksonSubType jacksonSubType = JacksonSubType.builder()
                 .forBase(Employee.class, "type")
@@ -190,7 +183,6 @@ public class TestJacksonSubType
 
     @Test
     public void testExpectedJson()
-            throws Exception
     {
         JacksonSubType jacksonSubType1 = JacksonSubType.builder()
                 .forBase(Employee.class, "type")
@@ -219,7 +211,6 @@ public class TestJacksonSubType
 
     @Test
     public void testAnnotatedSubtypeHasOneDiscriminator()
-            throws Exception
     {
         JacksonSubType jacksonSubType = JacksonSubType.builder()
                 .forBase(AnnotatedValue.class, "type")
@@ -236,10 +227,10 @@ public class TestJacksonSubType
                     jsonMapper.writerFor(value.getClass()).writeValueAsString(value))) {
                 assertThat(json).isEqualTo(expectedJson);
                 assertThat((Object) jsonMapper.readerFor(AnnotatedValue.class)
-                        .with(JsonParser.Feature.STRICT_DUPLICATE_DETECTION)
+                        .with(StreamReadFeature.STRICT_DUPLICATE_DETECTION)
                         .readValue(json)).isEqualTo(value);
                 assertThat((Object) jsonMapper.readerFor(value.getClass())
-                        .with(JsonParser.Feature.STRICT_DUPLICATE_DETECTION)
+                        .with(StreamReadFeature.STRICT_DUPLICATE_DETECTION)
                         .readValue(json)).isEqualTo(value);
             }
         }
@@ -249,7 +240,6 @@ public class TestJacksonSubType
 
     @Test
     public void testAnnotatedSubtypeHasOneDiscriminatorWithOtherRegistries()
-            throws Exception
     {
         JacksonSubType annotatedRegistry = JacksonSubType.builder()
                 .forBase(AnnotatedValue.class, "type")
@@ -279,7 +269,7 @@ public class TestJacksonSubType
                     jsonMapper.writerFor(FirstValue.class).writeValueAsString(value))) {
                 assertThat(json).isEqualTo(expectedJson);
                 assertThat((Object) jsonMapper.readerFor(AnnotatedValue.class)
-                        .with(JsonParser.Feature.STRICT_DUPLICATE_DETECTION)
+                        .with(StreamReadFeature.STRICT_DUPLICATE_DETECTION)
                         .readValue(json)).isEqualTo(value);
             }
 
@@ -289,7 +279,7 @@ public class TestJacksonSubType
             assertThat(programmerJson).isEqualTo("{\"name\":\"Joe\",\"type\":\"Programmer\"}");
             assertThat(jsonMapper.writerFor(Employee.class).writeValueAsString(programmer)).isEqualTo(programmerJson);
             assertThat((Object) jsonMapper.readerFor(Employee.class)
-                    .with(JsonParser.Feature.STRICT_DUPLICATE_DETECTION)
+                    .with(StreamReadFeature.STRICT_DUPLICATE_DETECTION)
                     .readValue(programmerJson)).isEqualTo(programmer);
             assertThat(jsonMapper.readValue("{\"name\":\"Joe\"}", Programmer.class)).isEqualTo(programmer);
         }
@@ -297,7 +287,6 @@ public class TestJacksonSubType
 
     @Test
     public void testSubtypeKeepsItsOwnTypeInfo()
-            throws Exception
     {
         JacksonSubType jacksonSubType = JacksonSubType.builder()
                 .forBase(AnnotatedValue.class, "type")
@@ -325,7 +314,6 @@ public class TestJacksonSubType
 
     @Test
     public void testSubtypeKeepsSideInterfaceTypeInfo()
-            throws Exception
     {
         JacksonSubType jacksonSubType = JacksonSubType.builder()
                 .forBase(AnnotatedValue.class, "type")
@@ -345,7 +333,6 @@ public class TestJacksonSubType
 
     @Test
     public void testSubtypeKeepsMixInTypeInfo()
-            throws Exception
     {
         JacksonSubType jacksonSubType = JacksonSubType.builder()
                 .forBase(AnnotatedValue.class, "type")
@@ -406,14 +393,12 @@ public class TestJacksonSubType
             implements KindValue {}
 
     private static void internalTest(JsonMapper jsonMapper)
-            throws JsonProcessingException
     {
         internalTest(jsonMapper, false);
         internalTest(jsonMapper, true);
     }
 
     private static void internalTest(JsonMapper jsonMapper, boolean writeWithCodec)
-            throws JsonProcessingException
     {
         JsonCodecFactory codecFactory = new JsonCodecFactory(jsonMapper);
         JsonCodec<Employee> jsonCodec = codecFactory.jsonCodec(Employee.class);

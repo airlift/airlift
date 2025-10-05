@@ -30,13 +30,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.fasterxml.jackson.core.StreamReadConstraints.DEFAULT_MAX_STRING_LEN;
 import static io.airlift.json.JsonCodec.jsonCodec;
 import static io.airlift.json.JsonCodec.listJsonCodec;
 import static io.airlift.json.JsonCodec.mapJsonCodec;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static tools.jackson.core.StreamReadConstraints.DEFAULT_MAX_STRING_LEN;
 
 public class TestJsonCodec
 {
@@ -267,6 +267,36 @@ public class TestJsonCodec
     }
 
     @Test
+    public void testToJsonWithLengthLimitFailure()
+    {
+        JsonCodec<FailingGetter> jsonCodec = jsonCodec(FailingGetter.class);
+
+        assertThatThrownBy(() -> jsonCodec.toJsonWithLengthLimit(new FailingGetter(), 1000))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("%s could not be converted to JSON".formatted(FailingGetter.class.getName()));
+    }
+
+    public static class FailingGetter
+    {
+        @JsonProperty
+        public String getValue()
+        {
+            throw new IllegalStateException("getter failed");
+        }
+    }
+
+    @Test
+    public void testSingleComponentRecord()
+    {
+        JsonCodec<MyRecord> jsonCodec = jsonCodec(MyRecord.class);
+
+        assertThat(jsonCodec.toJson(new MyRecord("value"))).isEqualTo("{\n  \"foo\" : \"value\"\n}");
+        assertThat(jsonCodec.fromJson("{\"foo\":\"value\"}")).isEqualTo(new MyRecord("value"));
+        assertThatThrownBy(() -> jsonCodec.fromJson("\"value\""))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
     public void testTrailingContent()
     {
         JsonCodec<ImmutablePerson> codec = jsonCodec(ImmutablePerson.class);
@@ -339,8 +369,8 @@ public class TestJsonCodec
                 new MyRecordAdditionalGetter("my value", true, true),
                 """
                 {
-                  "condition" : true,
                   "foo" : "my value",
+                  "condition" : true,
                   "isCool" : true,
                   "additionalProperty" : "additional property value"
                 }\

@@ -15,26 +15,25 @@
  */
 package io.airlift.jmx;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Binder;
 import com.google.inject.Module;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.jsonFormatVisitors.JsonArrayFormatVisitor;
+import tools.jackson.databind.jsonFormatVisitors.JsonFormatTypes;
+import tools.jackson.databind.jsonFormatVisitors.JsonFormatVisitorWrapper;
+import tools.jackson.databind.ser.std.StdSerializer;
+import tools.jackson.databind.ser.std.ToStringSerializer;
 
 import javax.management.ObjectName;
 import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.OpenType;
 import javax.management.openmbean.TabularData;
 
-import java.io.IOException;
-import java.lang.reflect.Type;
 import java.net.InetAddress;
 import java.util.List;
 import java.util.Map;
@@ -65,16 +64,15 @@ public class JmxHttpModule
     {
         public TabularDataSerializer()
         {
-            super(TabularData.class, true);
+            super(TabularData.class);
         }
 
         @Override
-        public void serialize(TabularData data, JsonGenerator jsonGenerator, SerializerProvider provider)
-                throws IOException
+        public void serialize(TabularData data, JsonGenerator jsonGenerator, SerializationContext provider)
         {
             jsonGenerator.writeStartArray();
 
-            JsonSerializer<Object> mapSerializer = provider.findValueSerializer(Map.class, null);
+            ValueSerializer<Object> mapSerializer = provider.findValueSerializer(Map.class);
             for (Map<String, Object> map : toList(data)) {
                 if (!map.isEmpty()) {
                     mapSerializer.serialize(map, jsonGenerator, provider);
@@ -85,14 +83,13 @@ public class JmxHttpModule
         }
 
         @Override
-        @SuppressWarnings("deprecation")
-        public JsonNode getSchema(SerializerProvider provider, Type typeHint)
-                throws JsonMappingException
+        public void acceptJsonFormatVisitor(JsonFormatVisitorWrapper visitor, JavaType typeHint)
         {
-            // List<Map<String, Object>
-            ObjectNode o = createSchemaNode("array", true);
-            o.set("items", createSchemaNode("object", true));
-            return o;
+            // List<Map<String, Object>>
+            JsonArrayFormatVisitor arrayVisitor = visitor.expectArrayFormat(typeHint);
+            if (arrayVisitor != null) {
+                arrayVisitor.itemsFormat(JsonFormatTypes.OBJECT);
+            }
         }
     }
 
@@ -101,42 +98,41 @@ public class JmxHttpModule
     {
         public CompositeDataSerializer()
         {
-            super(CompositeData.class, true);
+            super(CompositeData.class);
         }
 
         @Override
-        public void serialize(CompositeData data, JsonGenerator jsonGenerator, SerializerProvider provider)
-                throws IOException
+        public void serialize(CompositeData data, JsonGenerator jsonGenerator, SerializationContext context)
         {
             Map<String, Object> map = toMap(data);
             if (!map.isEmpty()) {
                 jsonGenerator.writeStartObject();
-                JsonSerializer<Object> cachedSerializer = null;
+                ValueSerializer<Object> cachedSerializer = null;
                 Class<?> cachedType = null;
 
                 for (Map.Entry<String, Object> entry : map.entrySet()) {
                     String key = entry.getKey();
-                    jsonGenerator.writeFieldName(key);
+                    jsonGenerator.writeName(key);
 
                     Object value = entry.getValue();
 
                     // get the serializer, but cache to reduce lookups
                     Class<?> valueType = value.getClass();
-                    JsonSerializer<Object> serializer;
+                    ValueSerializer<Object> serializer;
                     if (valueType == cachedType) {
                         serializer = cachedSerializer;
                     }
                     else {
-                        serializer = provider.findValueSerializer(valueType, null);
+                        serializer = context.findValueSerializer(valueType);
                         cachedSerializer = serializer;
                         cachedType = valueType;
                     }
 
                     try {
-                        serializer.serialize(value, jsonGenerator, provider);
+                        serializer.serialize(value, jsonGenerator, context);
                     }
                     catch (Exception e) {
-                        wrapAndThrow(provider, e, map, key);
+                        wrapAndThrow(context, e, map, key);
                     }
                 }
                 jsonGenerator.writeEndObject();
@@ -147,10 +143,9 @@ public class JmxHttpModule
         }
 
         @Override
-        @SuppressWarnings("deprecation")
-        public JsonNode getSchema(SerializerProvider provider, Type typeHint)
+        public void acceptJsonFormatVisitor(JsonFormatVisitorWrapper visitor, JavaType typeHint)
         {
-            return createSchemaNode("object", true);
+            visitor.expectObjectFormat(typeHint);
         }
     }
 

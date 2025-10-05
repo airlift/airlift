@@ -15,7 +15,9 @@ import io.airlift.api.openapi.OpenApiProvider;
 import io.airlift.api.openapi.models.OpenAPI;
 import io.airlift.api.servertests.ServerTestBase;
 import io.airlift.json.JsonCodec;
+import io.airlift.json.JsonMapperProvider;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Duration;
 import java.util.Collection;
@@ -61,7 +63,10 @@ public class TestRecursive
         validateOpenApiJson(json);
 
         String expectedJson = Resources.toString(Resources.getResource("openapi/complex-recursive.json"), UTF_8);
-        assertThat(json).isEqualTo(expectedJson.strip());
+
+        JsonMapper mapper = new JsonMapperProvider().get();
+        // Schema can have different order of fields
+        assertThat(mapper.readTree(json)).isEqualTo(mapper.readTree(expectedJson));
     }
 
     @Test
@@ -79,7 +84,10 @@ public class TestRecursive
         validateOpenApiJson(json);
 
         String expectedJson = Resources.toString(Resources.getResource("openapi/simple-recursive.json"), UTF_8);
-        assertThat(json).isEqualTo(expectedJson.strip());
+
+        JsonMapper mapper = new JsonMapperProvider().get();
+        // Schema can have different order of fields
+        assertThat(mapper.readTree(json)).isEqualTo(mapper.readTree(expectedJson));
     }
 
     @Test

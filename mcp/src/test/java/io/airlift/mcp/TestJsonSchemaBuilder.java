@@ -1,13 +1,13 @@
 package io.airlift.mcp;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import io.airlift.mcp.model.JsonSchemaBuilder;
 import io.airlift.mcp.reflection.MethodParameter;
 import io.airlift.mcp.reflection.MethodParameter.ObjectParameter;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
@@ -102,24 +102,24 @@ public class TestJsonSchemaBuilder
     public void testEmptyRecord()
     {
         ObjectNode schema = jsonSchemaBuilder.build(EmptyRecord.class);
-        assertThat(schema.get("type").asText()).isEqualTo("object");
-        assertThat(schema.get("$schema").asText()).isEqualTo("https://json-schema.org/draft/2020-12/schema");
+        assertThat(schema.get("type").asString()).isEqualTo("object");
+        assertThat(schema.get("$schema").asString()).isEqualTo("https://json-schema.org/draft/2020-12/schema");
     }
 
     @Test
     public void testNestedRecord()
     {
         ObjectNode schema = jsonSchemaBuilder.build(NestedRecord.class);
-        assertThat(schema.get("type").asText()).isEqualTo("object");
-        assertThat(schema.get("$schema").asText()).isEqualTo("https://json-schema.org/draft/2020-12/schema");
+        assertThat(schema.get("type").asString()).isEqualTo("object");
+        assertThat(schema.get("$schema").asString()).isEqualTo("https://json-schema.org/draft/2020-12/schema");
 
         ObjectNode properties = (ObjectNode) schema.get("properties");
         assertThat(properties.has("label")).isTrue();
-        assertThat(properties.get("label").get("type").asText()).isEqualTo("string");
+        assertThat(properties.get("label").get("type").asString()).isEqualTo("string");
 
         // Nested record should be inlined as an object with its own properties
         ObjectNode innerSchema = (ObjectNode) properties.get("inner");
-        assertThat(innerSchema.get("type").asText()).isEqualTo("object");
+        assertThat(innerSchema.get("type").asString()).isEqualTo("object");
         ObjectNode innerProperties = (ObjectNode) innerSchema.get("properties");
         assertThat(innerProperties.has("name")).isTrue();
         assertThat(innerProperties.has("qty")).isTrue();
@@ -127,7 +127,7 @@ public class TestJsonSchemaBuilder
 
         ArrayNode required = (ArrayNode) schema.get("required");
         List<String> requiredFields = StreamSupport.stream(required.spliterator(), false)
-                .map(JsonNode::asText)
+                .map(JsonNode::asString)
                 .toList();
         assertThat(requiredFields).containsExactlyInAnyOrder("inner", "label");
     }
@@ -137,12 +137,12 @@ public class TestJsonSchemaBuilder
     {
         ObjectNode schema = jsonSchemaBuilder.build(RecordWithBoolean.class);
         ObjectNode properties = (ObjectNode) schema.get("properties");
-        assertThat(properties.get("active").get("type").asText()).isEqualTo("boolean");
-        assertThat(properties.get("verified").get("type").asText()).isEqualTo("boolean");
+        assertThat(properties.get("active").get("type").asString()).isEqualTo("boolean");
+        assertThat(properties.get("verified").get("type").asString()).isEqualTo("boolean");
 
         ArrayNode required = (ArrayNode) schema.get("required");
         List<String> requiredFields = StreamSupport.stream(required.spliterator(), false)
-                .map(JsonNode::asText)
+                .map(JsonNode::asString)
                 .toList();
         assertThat(requiredFields).containsExactlyInAnyOrder("active", "verified");
     }
@@ -154,11 +154,11 @@ public class TestJsonSchemaBuilder
         ObjectNode properties = (ObjectNode) schema.get("properties");
         assertThat(properties.has("color")).isTrue();
         assertThat(properties.has("label")).isTrue();
-        assertThat(properties.get("label").get("type").asText()).isEqualTo("string");
+        assertThat(properties.get("label").get("type").asString()).isEqualTo("string");
 
         ArrayNode required = (ArrayNode) schema.get("required");
         List<String> requiredFields = StreamSupport.stream(required.spliterator(), false)
-                .map(JsonNode::asText)
+                .map(JsonNode::asString)
                 .toList();
         assertThat(requiredFields).containsExactlyInAnyOrder("color", "label");
     }
@@ -177,7 +177,7 @@ public class TestJsonSchemaBuilder
         // name should be required, nickname (Optional) should not
         ArrayNode required = (ArrayNode) schema.get("required");
         List<String> requiredFields = StreamSupport.stream(required.spliterator(), false)
-                .map(JsonNode::asText)
+                .map(JsonNode::asString)
                 .toList();
         assertThat(requiredFields).containsExactly("name");
     }
@@ -189,11 +189,11 @@ public class TestJsonSchemaBuilder
         ObjectNode properties = (ObjectNode) schema.get("properties");
         assertThat(properties.has("metadata")).isTrue();
         assertThat(properties.has("name")).isTrue();
-        assertThat(properties.get("name").get("type").asText()).isEqualTo("string");
+        assertThat(properties.get("name").get("type").asString()).isEqualTo("string");
 
         ArrayNode required = (ArrayNode) schema.get("required");
         List<String> requiredFields = StreamSupport.stream(required.spliterator(), false)
-                .map(JsonNode::asText)
+                .map(JsonNode::asString)
                 .toList();
         assertThat(requiredFields).containsExactlyInAnyOrder("metadata", "name");
     }
@@ -202,9 +202,9 @@ public class TestJsonSchemaBuilder
     public void testRecordWithDescription()
     {
         ObjectNode schema = jsonSchemaBuilder.build(Optional.of("A basic record"), BasicRecord.class);
-        assertThat(schema.get("type").asText()).isEqualTo("object");
-        assertThat(schema.get("description").asText()).isEqualTo("A basic record");
-        assertThat(schema.get("$schema").asText()).isEqualTo("https://json-schema.org/draft/2020-12/schema");
+        assertThat(schema.get("type").asString()).isEqualTo("object");
+        assertThat(schema.get("description").asString()).isEqualTo("A basic record");
+        assertThat(schema.get("$schema").asString()).isEqualTo("https://json-schema.org/draft/2020-12/schema");
         assertThat(schema.get("properties").has("name")).isTrue();
     }
 
@@ -275,22 +275,22 @@ public class TestJsonSchemaBuilder
                 new ObjectParameter("label", String.class, String.class, Optional.empty(), Optional.empty(), false));
 
         ObjectNode schema = jsonSchemaBuilder.build(Optional.empty(), parameters);
-        assertThat(schema.get("type").asText()).isEqualTo("object");
-        assertThat(schema.get("$schema").asText()).isEqualTo("https://json-schema.org/draft/2020-12/schema");
+        assertThat(schema.get("type").asString()).isEqualTo("object");
+        assertThat(schema.get("$schema").asString()).isEqualTo("https://json-schema.org/draft/2020-12/schema");
         assertThat(schema.has("description")).isFalse();
 
         ObjectNode properties = (ObjectNode) schema.get("properties");
         assertThat(properties.has("name")).isTrue();
-        assertThat(properties.get("name").get("type").asText()).isEqualTo("string");
+        assertThat(properties.get("name").get("type").asString()).isEqualTo("string");
         assertThat(properties.has("count")).isTrue();
-        assertThat(properties.get("count").get("type").asText()).isEqualTo("integer");
+        assertThat(properties.get("count").get("type").asString()).isEqualTo("integer");
         assertThat(properties.has("label")).isTrue();
-        assertThat(properties.get("label").get("type").asText()).isEqualTo("string");
+        assertThat(properties.get("label").get("type").asString()).isEqualTo("string");
 
         // name and count are required, label is not
         ArrayNode required = (ArrayNode) schema.get("required");
         List<String> requiredFields = StreamSupport.stream(required.spliterator(), false)
-                .map(JsonNode::asText)
+                .map(JsonNode::asString)
                 .toList();
         assertThat(requiredFields).containsExactly("name", "count");
     }
@@ -308,22 +308,22 @@ public class TestJsonSchemaBuilder
         ObjectNode properties = (ObjectNode) schema.get("properties");
 
         ObjectNode labelSchema = (ObjectNode) properties.get("label");
-        assertThat(labelSchema.get("type").asText()).isEqualTo("string");
+        assertThat(labelSchema.get("type").asString()).isEqualTo("string");
         assertThat(labelSchema.has("properties")).isFalse();
-        assertThat(labelSchema.get("description").asText()).isEqualTo("Optional label");
+        assertThat(labelSchema.get("description").asString()).isEqualTo("Optional label");
 
         ObjectNode tagsSchema = (ObjectNode) properties.get("tags");
-        assertThat(tagsSchema.get("type").asText()).isEqualTo("array");
+        assertThat(tagsSchema.get("type").asString()).isEqualTo("array");
         assertThat(tagsSchema.has("properties")).isFalse();
-        assertThat(tagsSchema.get("items").get("type").asText()).isEqualTo("string");
+        assertThat(tagsSchema.get("items").get("type").asString()).isEqualTo("string");
 
         ObjectNode attributesSchema = (ObjectNode) properties.get("attributes");
-        assertThat(attributesSchema.get("type").asText()).isEqualTo("object");
+        assertThat(attributesSchema.get("type").asString()).isEqualTo("object");
         assertThat(attributesSchema.has("properties")).isFalse();
 
         ArrayNode required = (ArrayNode) schema.get("required");
         List<String> requiredFields = StreamSupport.stream(required.spliterator(), false)
-                .map(JsonNode::asText)
+                .map(JsonNode::asString)
                 .toList();
         assertThat(requiredFields).containsExactly("requiredName");
     }
@@ -335,9 +335,9 @@ public class TestJsonSchemaBuilder
                 new ObjectParameter("id", int.class, int.class, Optional.empty(), Optional.empty(), true));
 
         ObjectNode schema = jsonSchemaBuilder.build(Optional.of("Tool parameters"), parameters);
-        assertThat(schema.get("type").asText()).isEqualTo("object");
-        assertThat(schema.get("description").asText()).isEqualTo("Tool parameters");
-        assertThat(schema.get("$schema").asText()).isEqualTo("https://json-schema.org/draft/2020-12/schema");
+        assertThat(schema.get("type").asString()).isEqualTo("object");
+        assertThat(schema.get("description").asString()).isEqualTo("Tool parameters");
+        assertThat(schema.get("$schema").asString()).isEqualTo("https://json-schema.org/draft/2020-12/schema");
     }
 
     @Test
@@ -355,19 +355,19 @@ public class TestJsonSchemaBuilder
         // Only the ObjectParameter should appear in properties
         assertThat(properties.size()).isEqualTo(1);
         assertThat(properties.has("name")).isTrue();
-        assertThat(properties.get("name").get("type").asText()).isEqualTo("string");
+        assertThat(properties.get("name").get("type").asString()).isEqualTo("string");
 
         ArrayNode required = (ArrayNode) schema.get("required");
         assertThat(required).hasSize(1);
-        assertThat(required.get(0).asText()).isEqualTo("name");
+        assertThat(required.get(0).asString()).isEqualTo("name");
     }
 
     @Test
     public void testBuildWithEmptyParameters()
     {
         ObjectNode schema = jsonSchemaBuilder.build(Optional.empty(), ImmutableList.of());
-        assertThat(schema.get("type").asText()).isEqualTo("object");
-        assertThat(schema.get("$schema").asText()).isEqualTo("https://json-schema.org/draft/2020-12/schema");
+        assertThat(schema.get("type").asString()).isEqualTo("object");
+        assertThat(schema.get("$schema").asString()).isEqualTo("https://json-schema.org/draft/2020-12/schema");
 
         ObjectNode properties = (ObjectNode) schema.get("properties");
         assertThat(properties.size()).isEqualTo(0);

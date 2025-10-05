@@ -1,6 +1,5 @@
 package io.airlift.api.servertests.standard;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import io.airlift.api.ApiResourceVersion;
 import io.airlift.api.servertests.ServerTestBase;
 import io.airlift.bootstrap.ApplicationConfigurationException;
@@ -295,7 +294,6 @@ public class TestApiMethods
     @SuppressWarnings("unchecked")
     @Test
     public void testPolyResourcesWithBadKey()
-            throws JsonProcessingException
     {
         String badJson =
                 """

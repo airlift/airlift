@@ -1,12 +1,12 @@
 package io.airlift.mcp;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import io.airlift.mcp.model.CallToolResult;
 import io.airlift.mcp.model.Content.TextContent;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.InputStream;
 import java.net.HttpURLConnection;

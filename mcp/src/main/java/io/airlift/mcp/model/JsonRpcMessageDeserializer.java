@@ -1,23 +1,15 @@
 package io.airlift.mcp.model;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-
-import java.io.IOException;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ValueDeserializer;
 
 public class JsonRpcMessageDeserializer
-        extends StdDeserializer<JsonRpcMessage>
+        extends ValueDeserializer<JsonRpcMessage>
 {
-    public JsonRpcMessageDeserializer()
-    {
-        super(JsonRpcMessage.class);
-    }
-
     @Override
     public JsonRpcMessage deserialize(JsonParser parser, DeserializationContext context)
-            throws IOException
     {
         JsonNode tree = context.readTree(parser);
 

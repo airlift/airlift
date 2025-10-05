@@ -1,6 +1,5 @@
 package io.airlift.api.servertests.integration;
 
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Closer;
@@ -33,6 +32,7 @@ import io.airlift.http.client.StringResponseHandler.StringResponse;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.json.JsonCodec;
 import io.airlift.json.JsonCodecFactory;
+import io.airlift.json.JsonMapperProvider;
 import io.swagger.v3.parser.OpenAPIV3Parser;
 import io.swagger.v3.parser.core.models.SwaggerParseResult;
 import jakarta.ws.rs.core.UriBuilder;
@@ -44,6 +44,7 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.net.URI;
@@ -275,7 +276,11 @@ public class IntegrationTests
 
         String actual = response.getBody();
         String expected = Resources.toString(Resources.getResource("openapi/widget.json"), UTF_8);
-        assertThat(actual.strip()).isEqualTo(expected.strip());
+
+        JsonMapper mapper = new JsonMapperProvider().get();
+
+        // Schema can have different order of fields
+        assertThat(mapper.readTree(actual)).isEqualTo(mapper.readTree(expected));
 
         SwaggerParseResult result = new OpenAPIV3Parser().readLocation(uri.toString(), null, null);
         assertThat(result.getMessages()).isEmpty();
