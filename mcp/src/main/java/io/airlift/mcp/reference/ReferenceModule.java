@@ -1,6 +1,5 @@
 package io.airlift.mcp.reference;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Binder;
 import com.google.inject.Module;
@@ -9,7 +8,6 @@ import com.google.inject.Singleton;
 import io.airlift.mcp.McpMetadata;
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.json.McpJsonMapper;
-import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServer.StatelessSyncSpecification;
 import io.modelcontextprotocol.server.McpStatelessSyncServer;
@@ -66,8 +64,8 @@ public class ReferenceModule
 
     @Singleton
     @Provides
-    public McpJsonMapper mcpJsonMapper(ObjectMapper objectMapper)
+    public McpJsonMapper mcpJsonMapper(tools.jackson.databind.ObjectMapper objectMapper)
     {
-        return new JacksonMcpJsonMapper(objectMapper);
+        return new Jackson3McpMapper(objectMapper);
     }
 }

@@ -13,24 +13,24 @@
  */
 package io.airlift.json.subtype;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
-import com.fasterxml.jackson.databind.exc.InvalidTypeIdException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import io.airlift.json.JsonCodec;
 import io.airlift.json.JsonCodecFactory;
+import io.airlift.json.JsonMapperProvider;
 import io.airlift.json.JsonModule;
 import io.airlift.json.JsonSubType;
-import io.airlift.json.ObjectMapperProvider;
 import io.airlift.json.subtype.Employee.Manager;
 import io.airlift.json.subtype.Employee.Programmer;
 import io.airlift.json.subtype.Part.Container;
 import io.airlift.json.subtype.Part.Item;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.exc.InvalidDefinitionException;
+import tools.jackson.databind.exc.InvalidTypeIdException;
+import tools.jackson.databind.json.JsonMapper;
 
 import static io.airlift.json.JsonSubTypeBinder.jsonSubTypeBinder;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -58,7 +58,7 @@ public class TestJsonSubType
                 .add(Manager.class)
                 .build();
         Injector injector = Guice.createInjector(new JsonModule(), binder -> jsonSubTypeBinder(binder).bindJsonSubType(jsonSubType));
-        ObjectMapper objectMapper = injector.getInstance(ObjectMapper.class);
+        JsonMapper objectMapper = injector.getInstance(JsonMapper.class);
 
         internalTest(objectMapper);
     }
@@ -73,7 +73,7 @@ public class TestJsonSubType
                 .add(Manager.class, "bar")
                 .build();
         Injector injector = Guice.createInjector(new JsonModule(), binder -> jsonSubTypeBinder(binder).bindJsonSubType(jsonSubType));
-        ObjectMapper objectMapper = injector.getInstance(ObjectMapper.class);
+        JsonMapper objectMapper = injector.getInstance(JsonMapper.class);
 
         internalTest(objectMapper);
     }
@@ -87,7 +87,7 @@ public class TestJsonSubType
                 .addPermittedSubClasses()
                 .build();
         Injector injector = Guice.createInjector(new JsonModule(), binder -> jsonSubTypeBinder(binder).bindJsonSubType(jsonSubType));
-        ObjectMapper objectMapper = injector.getInstance(ObjectMapper.class);
+        JsonMapper objectMapper = injector.getInstance(JsonMapper.class);
 
         internalTest(objectMapper);
     }
@@ -101,7 +101,7 @@ public class TestJsonSubType
                 .addPermittedSubClasses(clazz -> "xxx__" + clazz.getName() + "__XXX")
                 .build();
         Injector injector = Guice.createInjector(new JsonModule(), binder -> jsonSubTypeBinder(binder).bindJsonSubType(jsonSubType));
-        ObjectMapper objectMapper = injector.getInstance(ObjectMapper.class);
+        JsonMapper objectMapper = injector.getInstance(JsonMapper.class);
 
         internalTest(objectMapper);
     }
@@ -109,7 +109,7 @@ public class TestJsonSubType
     @Test
     public void testFailsWithoutSubClassBindings()
     {
-        ObjectMapper objectMapper = new ObjectMapperProvider().get();
+        JsonMapper objectMapper = new JsonMapperProvider().get();
 
         assertThatThrownBy(() -> internalTest(objectMapper))
                 .isInstanceOf(InvalidDefinitionException.class);
@@ -123,7 +123,7 @@ public class TestJsonSubType
                 .add(Programmer.class)
                 .build();
         Injector injector = Guice.createInjector(new JsonModule(), binder -> jsonSubTypeBinder(binder).bindJsonSubType(jsonSubType));
-        ObjectMapper objectMapper = injector.getInstance(ObjectMapper.class);
+        JsonMapper objectMapper = injector.getInstance(JsonMapper.class);
 
         assertThatThrownBy(() -> internalTest(objectMapper))
                 .isInstanceOf(InvalidTypeIdException.class);
@@ -141,7 +141,7 @@ public class TestJsonSubType
                 .build();
 
         Injector injector = Guice.createInjector(new JsonModule(), binder -> jsonSubTypeBinder(binder).bindJsonSubType(jsonSubType));
-        ObjectMapper objectMapper = injector.getInstance(ObjectMapper.class);
+        JsonMapper objectMapper = injector.getInstance(JsonMapper.class);
 
         internalTest(objectMapper);
 
@@ -177,9 +177,9 @@ public class TestJsonSubType
                 .add(Manager.class)
                 .build();
 
-        ObjectMapperProvider objectMapperProvider = new ObjectMapperProvider().withJsonSubTypes(ImmutableSet.of(jsonSubType));
+        JsonMapperProvider jsonMapperProvider = new JsonMapperProvider().withJsonSubTypes(ImmutableSet.of(jsonSubType));
 
-        internalTest(objectMapperProvider.get());
+        internalTest(jsonMapperProvider.get());
     }
 
     @Test
@@ -191,7 +191,7 @@ public class TestJsonSubType
                 .add(Programmer.class)
                 .add(Manager.class)
                 .build();
-        ObjectMapper objectMapper1 = new ObjectMapperProvider().withJsonSubTypes(ImmutableSet.of(jsonSubType1)).get();
+        ObjectMapper objectMapper1 = new JsonMapperProvider().withJsonSubTypes(ImmutableSet.of(jsonSubType1)).get();
         String programmer1Json = objectMapper1.writeValueAsString(programmer1);
         String manager1Json = objectMapper1.writeValueAsString(manager1);
 
@@ -200,7 +200,7 @@ public class TestJsonSubType
                 .add(Programmer.class)
                 .add(Manager.class)
                 .build();
-        ObjectMapper objectMapper2 = new ObjectMapperProvider().withJsonSubTypes(ImmutableSet.of(jsonSubType2)).get();
+        ObjectMapper objectMapper2 = new JsonMapperProvider().withJsonSubTypes(ImmutableSet.of(jsonSubType2)).get();
         String programmer2Json = objectMapper2.writeValueAsString(programmer1);
         String manager2Json = objectMapper2.writeValueAsString(manager1);
 
@@ -211,15 +211,13 @@ public class TestJsonSubType
         assertThat(manager2Json).isEqualTo("{\"name\":\"Jane\",\"reports\":[{\"name\":\"Joe\",\"category\":\"Programmer\"},{\"name\":\"Rachel\",\"category\":\"Programmer\"}],\"category\":\"Manager\"}");
     }
 
-    private static void internalTest(ObjectMapper objectMapper)
-            throws JsonProcessingException
+    private static void internalTest(JsonMapper objectMapper)
     {
         internalTest(objectMapper, false);
         internalTest(objectMapper, true);
     }
 
-    private static void internalTest(ObjectMapper objectMapper, boolean writeWithCodec)
-            throws JsonProcessingException
+    private static void internalTest(JsonMapper objectMapper, boolean writeWithCodec)
     {
         JsonCodecFactory codecFactory = new JsonCodecFactory(() -> objectMapper);
         JsonCodec<Employee> jsonCodec = codecFactory.jsonCodec(Employee.class);

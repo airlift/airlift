@@ -6,7 +6,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.json.JsonCodec;
 import io.airlift.json.JsonCodecFactory;
-import io.airlift.json.ObjectMapperProvider;
+import io.airlift.json.JsonMapperProvider;
 import io.opentelemetry.context.Context;
 
 import java.io.IOException;
@@ -21,7 +21,7 @@ public class JsonFormatter
         extends Formatter
 {
     private static final Object[] EMPTY_ARRAY = new Object[0];
-    private static final JsonCodec<JsonRecord> CODEC = new JsonCodecFactory(new ObjectMapperProvider()).jsonCodec(JsonRecord.class);
+    private static final JsonCodec<JsonRecord> CODEC = new JsonCodecFactory(new JsonMapperProvider()).jsonCodec(JsonRecord.class);
     private static final JsonFactory jsonFactory = new JsonFactory();
     private final Map<String, String> logAnnotations;
 

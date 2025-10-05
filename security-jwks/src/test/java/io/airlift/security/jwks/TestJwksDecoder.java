@@ -20,6 +20,7 @@ import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.impl.DefaultJwsHeader;
 import io.jsonwebtoken.security.SignatureAlgorithm;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -70,6 +71,7 @@ public class TestJwksDecoder
     }
 
     @Test
+    @Disabled("https://github.com/fasterxml/jackson-databind/issues/5535")
     public void testNoKeyId()
     {
         Map<String, PublicKey> keys = decodeKeys("" +
