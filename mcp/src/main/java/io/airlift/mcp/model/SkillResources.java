@@ -1,17 +1,16 @@
 package io.airlift.mcp.model;
 
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.google.common.collect.ImmutableList;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.deser.std.StdDeserializer;
 
-import java.io.IOException;
 import java.util.List;
 
-import static com.fasterxml.jackson.core.JsonToken.START_ARRAY;
-import static com.fasterxml.jackson.core.JsonToken.VALUE_STRING;
+import static tools.jackson.core.JsonToken.START_ARRAY;
+import static tools.jackson.core.JsonToken.VALUE_STRING;
 
 @JsonDeserialize(using = SkillResources.Deserializer.class)
 public sealed interface SkillResources
@@ -47,9 +46,8 @@ public sealed interface SkillResources
 
         @Override
         public SkillResources deserialize(JsonParser parser, DeserializationContext context)
-                throws IOException
         {
-            if (parser.hasToken(VALUE_STRING) && parser.getText().equals(Dynamic.DYNAMIC.value())) {
+            if (parser.hasToken(VALUE_STRING) && parser.getString().equals(Dynamic.DYNAMIC.value())) {
                 return Dynamic.DYNAMIC;
             }
             if (parser.hasToken(START_ARRAY)) {

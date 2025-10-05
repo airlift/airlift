@@ -1,6 +1,5 @@
 package io.airlift.mcp.reflection;
 
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.base.Suppliers;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
@@ -33,6 +32,8 @@ import io.airlift.mcp.reflection.MethodParameter.ReadResourceRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.ResourceTemplateValuesParameter;
 import io.airlift.mcp.reflection.MethodParameter.SourceResourceParameter;
 import io.airlift.mcp.reflection.MethodParameter.SourceResourceTemplateParameter;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -194,6 +195,8 @@ public class MethodInvoker
                     Throwable rootCause = Throwables.getRootCause(e);
                     throw switch (rootCause) {
                         case McpException mcpException -> mcpException.isSelfContained() ? mcpException : new McpClientException(mcpException);
+                        // Jackson 3 exceptions are unchecked; keep reporting them as protocol errors as with Jackson 2's checked exceptions
+                        case JacksonException jacksonException -> new McpException(jacksonException, new JsonRpcErrorDetail(INTERNAL_ERROR, "Failed to invoke method: " + methodName));
                         case RuntimeException runtimeException -> new McpClientException(exception(runtimeException));
                         case InvocationTargetException invocationTargetException -> {
                             Throwable targetException = invocationTargetException.getTargetException();

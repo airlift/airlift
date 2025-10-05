@@ -1,8 +1,5 @@
 package io.airlift.mcp.reflection;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -24,8 +21,10 @@ import io.airlift.mcp.model.StructuredContent;
 import io.airlift.mcp.model.StructuredContentResult;
 import io.airlift.mcp.model.Tool;
 import io.airlift.mcp.model.UiToolVisibility;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ObjectNode;
 
-import java.io.UncheckedIOException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.List;
@@ -208,8 +207,8 @@ public class ToolHandlerProvider
                         })
                         .map(jsonNode -> (ObjectNode) jsonNode);
             }
-            catch (JsonProcessingException e) {
-                throw new UncheckedIOException("Could not parse rawSchema for Tool: %s, Schema: %s".formatted(toolName, mcpSchema.rawSchema()), e);
+            catch (JacksonException e) {
+                throw new IllegalArgumentException("Could not parse rawSchema for Tool: %s, Schema: %s".formatted(toolName, mcpSchema.rawSchema()), e);
             }
         }
         else if (hasSchemaClass) {

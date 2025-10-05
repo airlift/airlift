@@ -219,7 +219,7 @@ class TestServerSentEventStream
         return new TestingStreamingResponse(new ByteArrayInputStream(content.getBytes(UTF_8)));
     }
 
-    record TestEvent(String message, int count) {}
+    public record TestEvent(String message, int count) {}
 
     private static final class TestingStreamingResponse
             extends TestingResponse

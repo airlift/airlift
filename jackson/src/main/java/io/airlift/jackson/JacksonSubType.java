@@ -15,32 +15,31 @@ package io.airlift.jackson;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Value;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.Version;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.Module;
-import com.fasterxml.jackson.databind.PropertyName;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.cfg.MapperConfig;
-import com.fasterxml.jackson.databind.introspect.Annotated;
-import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
-import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
-import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
-import com.fasterxml.jackson.databind.introspect.VirtualAnnotatedMember;
-import com.fasterxml.jackson.databind.jsontype.NamedType;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
-import com.fasterxml.jackson.databind.ser.impl.AttributePropertyWriter;
-import com.fasterxml.jackson.databind.util.SimpleBeanPropertyDefinition;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.Version;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JacksonModule;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.PropertyName;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.cfg.MapperConfig;
+import tools.jackson.databind.introspect.Annotated;
+import tools.jackson.databind.introspect.AnnotatedClass;
+import tools.jackson.databind.introspect.AnnotatedMember;
+import tools.jackson.databind.introspect.JacksonAnnotationIntrospector;
+import tools.jackson.databind.introspect.VirtualAnnotatedMember;
+import tools.jackson.databind.jsontype.NamedType;
+import tools.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.ser.BeanPropertyWriter;
+import tools.jackson.databind.ser.impl.AttributePropertyWriter;
+import tools.jackson.databind.util.SimpleBeanPropertyDefinition;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -57,7 +56,7 @@ import static java.util.Objects.requireNonNull;
 
 public class JacksonSubType
 {
-    private final Set<Module> modules;
+    private final Set<JacksonModule> modules;
 
     public static JacksonSubType.Builder builder()
     {
@@ -87,7 +86,7 @@ public class JacksonSubType
 
     public static class Builder
     {
-        private final ImmutableSet.Builder<Module> modules = ImmutableSet.builder();
+        private final ImmutableSet.Builder<JacksonModule> modules = ImmutableSet.builder();
 
         private Builder() {}
 
@@ -133,12 +132,12 @@ public class JacksonSubType
         }
     }
 
-    public Set<Module> modules()
+    public Set<JacksonModule> modules()
     {
         return modules;
     }
 
-    private JacksonSubType(Set<Module> modules)
+    private JacksonSubType(Set<JacksonModule> modules)
     {
         this.modules = modules;
     }
@@ -242,12 +241,12 @@ public class JacksonSubType
         }
 
         @Override
-        public List<NamedType> findSubtypes(Annotated annotated)
+        public List<NamedType> findSubtypes(MapperConfig<?> config, Annotated annotated)
         {
             if (annotated.getRawType().equals(baseClass)) {
                 return namedTypes;
             }
-            return super.findSubtypes(annotated);
+            return super.findSubtypes(config, annotated);
         }
 
         @Override
@@ -267,7 +266,7 @@ public class JacksonSubType
             AttributePropertyWriter propertyWriter = new AttributePropertyWriter(propertyName, propDef, null, stringType)
             {
                 @Override
-                protected Object value(Object bean, JsonGenerator generator, SerializerProvider provider)
+                protected Object value(Object bean, JsonGenerator jgen, SerializationContext prov)
                 {
                     return propertyValue;
                 }
@@ -284,7 +283,7 @@ public class JacksonSubType
     }
 
     private static class Deserializer<B>
-            extends JsonDeserializer<B>
+            extends ValueDeserializer<B>
     {
         private final String propertyName;
         private final Supplier<Map<String, Class<?>>> subClassPropertyValues;
@@ -298,12 +297,11 @@ public class JacksonSubType
         @SuppressWarnings("unchecked")
         @Override
         public B deserialize(JsonParser parser, DeserializationContext context)
-                throws IOException
         {
             JsonNode jsonNode = context.readTree(parser);
             JsonNode propertyNode = jsonNode.get(propertyName);
 
-            String propertyValue = ((propertyNode != null) && propertyNode.isValueNode()) ? propertyNode.textValue() : null;
+            String propertyValue = ((propertyNode != null) && propertyNode.isValueNode()) ? propertyNode.stringValue(null) : null;
             if (propertyValue == null) {
                 throw new IllegalArgumentException("JSON expected to have a property named \"%s\". Double check the addBinding() or addPermittedSubClassBindings()".formatted(propertyName));
             }
@@ -312,7 +310,6 @@ public class JacksonSubType
             if (subClass == null) {
                 throw new IllegalArgumentException("No binding was made for property name \"%s\" and value \"%s\". Double check the addBinding() or addPermittedSubClassBindings().".formatted(propertyName, propertyValue));
             }
-
             return (B) context.readTreeAsValue(jsonNode, subClass);
         }
     }

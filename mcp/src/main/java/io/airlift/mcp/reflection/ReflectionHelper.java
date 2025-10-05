@@ -1,7 +1,5 @@
 package io.airlift.mcp.reflection;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableList;
 import io.airlift.json.JsonMapperProvider;
 import io.airlift.mcp.McpDefaultValue;
@@ -34,8 +32,9 @@ import io.airlift.mcp.reflection.MethodParameter.ResourceTemplateValuesParameter
 import io.airlift.mcp.reflection.MethodParameter.SourceResourceParameter;
 import io.airlift.mcp.reflection.MethodParameter.SourceResourceTemplateParameter;
 import jakarta.servlet.http.HttpServletRequest;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 
-import java.io.UncheckedIOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -173,8 +172,8 @@ public interface ReflectionHelper
                             try {
                                 yield jsonMapper.readValue(jsonValue, Object.class);
                             }
-                            catch (JsonProcessingException e) {
-                                throw new UncheckedIOException("Could not parse JSON meta: " + jsonValue, e);
+                            catch (JacksonException e) {
+                                throw new IllegalArgumentException("Could not parse JSON meta: " + jsonValue, e);
                             }
                         }
                         case 1 -> value[0];

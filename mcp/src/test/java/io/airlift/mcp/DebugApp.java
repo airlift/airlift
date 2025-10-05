@@ -1,7 +1,6 @@
 package io.airlift.mcp;
 
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
@@ -14,6 +13,7 @@ import io.airlift.mcp.model.Content.TextContent;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.StructuredContent;
 import jakarta.annotation.PreDestroy;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.File;
 import java.io.IOException;

@@ -1,12 +1,12 @@
 package io.airlift.api.internals;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.airlift.api.ApiJsonList;
 import io.airlift.api.ApiJsonNode;
 import io.airlift.api.ApiJsonObject;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 import static io.airlift.api.internals.ApiJsonTypes.apiJsonResourceDescription;
 import static io.airlift.api.internals.ApiJsonTypes.apiJsonResourceName;
