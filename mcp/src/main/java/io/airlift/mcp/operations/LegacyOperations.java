@@ -1,7 +1,5 @@
 package io.airlift.mcp.operations;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
@@ -59,8 +57,8 @@ import io.airlift.mcp.sessions.SessionValueKey;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.WebApplicationException;
+import tools.jackson.databind.json.JsonMapper;
 
-import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
@@ -199,14 +197,9 @@ class LegacyOperations
 
         response.setStatus(SC_OK);
 
-        try {
-            JsonRpcResponse<?> rpcResponse = new JsonRpcResponse<>(requestId, Optional.empty(), Optional.of(result));
-            messageWriter.write(jsonMapper.writeValueAsString(rpcResponse));
-            messageWriter.flushMessages();
-        }
-        catch (JsonProcessingException e) {
-            throw new UncheckedIOException(e);
-        }
+        JsonRpcResponse<?> rpcResponse = new JsonRpcResponse<>(requestId, Optional.empty(), Optional.of(result));
+        messageWriter.write(jsonMapper.writeValueAsString(rpcResponse));
+        messageWriter.flushMessages();
 
         sessionController.ifPresent(controller -> optionalSessionId(request)
                 .ifPresent(sessionId -> checkSaveSentMessages(controller, sessionId, messageWriter)));

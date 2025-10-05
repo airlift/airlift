@@ -1,6 +1,5 @@
 package io.airlift.tracing;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import io.airlift.json.JsonCodec;
 import io.airlift.json.JsonCodecFactory;
 import io.airlift.json.JsonMapperProvider;
@@ -14,6 +13,7 @@ import io.opentelemetry.api.trace.TraceState;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.DeserializationFeature;
 
 import java.util.Map;
 

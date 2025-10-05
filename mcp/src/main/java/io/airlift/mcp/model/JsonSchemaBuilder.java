@@ -1,8 +1,5 @@
 package io.airlift.mcp.model;
 
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.TypeLiteral;
 import io.airlift.json.JsonMapperProvider;
@@ -10,6 +7,9 @@ import io.airlift.mcp.McpDefaultValue;
 import io.airlift.mcp.McpDescription;
 import io.airlift.mcp.reflection.MethodParameter;
 import io.airlift.mcp.reflection.MethodParameter.ObjectParameter;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.RecordComponent;

@@ -15,8 +15,6 @@
  */
 package io.airlift.jaxrs;
 
-import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.net.HttpHeaders;
 import com.google.common.reflect.TypeToken;
 import io.airlift.jaxrs.testing.GuavaMultivaluedMap;
@@ -24,6 +22,9 @@ import io.airlift.json.JsonCodec;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MultivaluedMap;
 import org.junit.jupiter.api.Test;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.exc.JacksonIOException;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -36,10 +37,14 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
+import static tools.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 
 public class TestJaxRsJsonMapper
 {
-    private static final JaxRsJsonMapper jsonMapper = new JaxRsJsonMapper(new JsonMapper());
+    private static final JaxRsJsonMapper jsonMapper = new JaxRsJsonMapper(new JsonMapper()
+            .rebuild()
+            .enable(FAIL_ON_UNKNOWN_PROPERTIES) // Jackson 2.x had this enabled by default while 3.x has it disabled
+            .build());
 
     @Test
     public void testSuccess()
@@ -53,7 +58,6 @@ public class TestJaxRsJsonMapper
     }
 
     private static void assertRoundTrip(String value)
-            throws IOException
     {
         JsonCodec<String> jsonCodec = JsonCodec.jsonCodec(String.class);
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -67,7 +71,6 @@ public class TestJaxRsJsonMapper
 
     @Test
     public void testJsonEofExceptionMapping()
-            throws IOException
     {
         try {
             jsonMapper.readFrom(Object.class, Object.class, null, null, null, new ByteArrayInputStream("{".getBytes(UTF_8)));
@@ -80,7 +83,6 @@ public class TestJaxRsJsonMapper
 
     @Test
     public void testJsonBindingExceptionMapping()
-            throws IOException
     {
         try {
             jsonMapper.readFrom(Object.class, ExamplePojo.class, null, null, null, new ByteArrayInputStream("{\"notAField\": null}".getBytes(UTF_8)));
@@ -93,18 +95,16 @@ public class TestJaxRsJsonMapper
 
     @Test
     public void testJsonWriteExceptionMapping()
-            throws IOException
     {
         try {
             ByteArrayOutputStream stream = new ByteArrayOutputStream(1);
             jsonMapper.writeTo(new OtherExamplePojo("nah", "bro"), List.class, new TypeToken<List<String>>() {}.getType(), null, null, new GuavaMultivaluedMap<>(), stream);
-            System.out.println("stream: " + stream.toString());
             fail("Should have thrown an Exception");
         }
         catch (JsonParsingException e) {
             fail("jsonMapper.writeTo() should not throw JsonParsingException");
         }
-        catch (InvalidDefinitionException e) {
+        catch (JacksonException e) {
             // intended
         }
     }
@@ -113,8 +113,7 @@ public class TestJaxRsJsonMapper
     public void testOtherIOExceptionThrowsIOException()
     {
         try {
-            assertThatThrownBy(() -> jsonMapper.readFrom(Object.class, Object.class, null, null, null, new InputStream()
-            {
+            assertThatThrownBy(() -> jsonMapper.readFrom(Object.class, Object.class, null, null, null, new InputStream() {
                 @Override
                 public int read()
                         throws IOException
@@ -135,7 +134,9 @@ public class TestJaxRsJsonMapper
                 {
                     throw new ZipException("forced ZipException");
                 }
-            })).isInstanceOf(ZipException.class);
+            }))
+                    .isInstanceOf(JacksonIOException.class)
+                    .hasCauseInstanceOf(ZipException.class);
         }
         catch (WebApplicationException e) {
             fail("Should not have received a WebApplicationException", e);

@@ -19,8 +19,6 @@
         <air.check.skip-modernizer>true</air.check.skip-modernizer>
 
         <dep.openapi-generator-maven-plugin.version>7.21.0</dep.openapi-generator-maven-plugin.version>
-        <openapitools.jackson.version>2.21.2</openapitools.jackson.version>
-        <openapitools.jackson-databind-nullable.version>0.2.10</openapitools.jackson-databind-nullable.version>
         <openapitools.jakarta-annotation.version>3.0.0</openapitools.jakarta-annotation.version>
     </properties>
 
@@ -32,33 +30,21 @@
         </dependency>
 
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-            <version>${openapitools.jackson.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${openapitools.jackson.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jsr310</artifactId>
-            <version>${openapitools.jackson.version}</version>
-        </dependency>
-
-        <dependency>
             <groupId>jakarta.annotation</groupId>
             <artifactId>jakarta.annotation-api</artifactId>
             <version>${openapitools.jakarta-annotation.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.openapitools</groupId>
-            <artifactId>jackson-databind-nullable</artifactId>
-            <version>${openapitools.jackson-databind-nullable.version}</version>
+            <groupId>tools.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${dep.jackson3.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>tools.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${dep.jackson3.version}</version>
         </dependency>
     </dependencies>
 
@@ -73,6 +59,8 @@
                     <configOptions>
                         <sourceFolder>/</sourceFolder>
                         <useJakartaEe>true</useJakartaEe>
+                        <useJackson3>true</useJackson3>
+                        <openApiNullable>false</openApiNullable>
                     </configOptions>
                     <output>${project.build.directory}/openapi-test-client</output>
                     <generateApiDocumentation>false</generateApiDocumentation>
@@ -91,7 +79,7 @@
                             <goal>generate</goal>
                         </goals>
                         <phase>generate-sources</phase>
-                        <configuration>
+                        <configuration combine.children="merge">
                             <!-- Note: this references a file in the "api" module -->
                             <inputSpec>${project.parent.basedir}/api/src/test/resources/openapi/complex-recursive.json</inputSpec>
                         </configuration>
@@ -102,7 +90,7 @@
                             <goal>generate</goal>
                         </goals>
                         <phase>generate-sources</phase>
-                        <configuration>
+                        <configuration combine.children="merge">
                             <!-- Note: this references a file in the "api" module -->
                             <inputSpec>${project.parent.basedir}/api/src/test/resources/openapi/simple-recursive.json</inputSpec>
                         </configuration>

@@ -1,6 +1,6 @@
 package io.airlift.mcp.model;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.util.Map;
 import java.util.Optional;

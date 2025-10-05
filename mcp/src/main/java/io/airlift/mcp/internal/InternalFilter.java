@@ -1,7 +1,5 @@
 package io.airlift.mcp.internal;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import io.airlift.mcp.ErrorHandler;
@@ -17,6 +15,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -161,7 +161,6 @@ public class InternalFilter
     }
 
     private Object deserializeJsonRpcMessage(String json)
-            throws Exception
     {
         JsonNode tree = jsonMapper.readTree(json);
 
