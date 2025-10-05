@@ -1,12 +1,12 @@
 package io.airlift.api.binding;
 
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.inject.Binder;
+import com.google.inject.Inject;
+import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Provider;
 import com.google.inject.Scopes;
@@ -40,6 +40,8 @@ import io.airlift.api.validation.ResourceSerializationValidator;
 import io.airlift.api.validation.ValidatorException;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.container.ContainerResponseFilter;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -51,7 +53,6 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static com.fasterxml.jackson.databind.SerializationFeature.FAIL_ON_UNWRAPPED_TYPE_IDENTIFIERS;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
@@ -59,6 +60,7 @@ import static io.airlift.api.binding.ApiBindingKeys.annotatedKey;
 import static io.airlift.api.binding.ApiMapBinders.newMapBinder;
 import static io.airlift.api.binding.JaxrsResourceBuilder.jaxrsResourceBuilder;
 import static java.util.Objects.requireNonNull;
+import static tools.jackson.databind.SerializationFeature.FAIL_ON_UNWRAPPED_TYPE_IDENTIFIERS;
 
 public class ApiModule
         implements Module
@@ -299,6 +301,10 @@ public class ApiModule
             binder.bind(annotatedKey(ApiCompatibilityTester.class, bindingAnnotation)).toInstance(tester);
             binder.bind(annotatedKey(ApiCompatibility.class, bindingAnnotation)).toProvider(apiCompatibilityProvider(binder)).asEagerSingleton();
         });
+
+        binder.bind(JsonMapper.class)
+                .annotatedWith(ForSerializatorValidator.class)
+                .toProvider(JsonMapperForSerializatorValidator.class);
     }
 
     private void bindApi(Binder binder)
@@ -357,13 +363,11 @@ public class ApiModule
     @SuppressWarnings("unused")
     static class SerializationValidator
     {
-        SerializationValidator(ResourceSerializationValidator validator, JsonMapper jsonMapper)
+        @Inject
+        SerializationValidator(ResourceSerializationValidator validator, @ForSerializatorValidator JsonMapper jsonMapper)
         {
             requireNonNull(validator, "validator is null");
-            jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null")
-                    .rebuild()
-                    .disable(FAIL_ON_UNWRAPPED_TYPE_IDENTIFIERS)
-                    .build();
+            requireNonNull(jsonMapper, "jsonMapper is null");
             validator.validateSerialization(jsonMapper);
         }
     }
@@ -372,7 +376,7 @@ public class ApiModule
     {
         ApiBindingProvider bindingProvider = new ApiBindingProvider(binder, bindingAnnotation);
         Provider<ResourceSerializationValidator> validator = bindingProvider.get(ResourceSerializationValidator.class);
-        Provider<JsonMapper> jsonMapper = bindingProvider.getUnqualified(JsonMapper.class);
+        Provider<JsonMapper> jsonMapper = binder.getProvider(Key.get(JsonMapper.class, ForSerializatorValidator.class));
         return () -> new SerializationValidator(validator.get(), jsonMapper.get());
     }
 
@@ -390,11 +394,8 @@ public class ApiModule
             return;
         }
 
-        MapBinder<Class<?>, JsonDeserializer<?>> mapBinder = MapBinder.newMapBinder(binder, new TypeLiteral<>() {}, new TypeLiteral<>() {});
-        resourcesWithUnwrappedComponents.forEach(clazz -> {
-            UnwrappedDeserializer deserializer = new UnwrappedDeserializer(clazz);
-            mapBinder.addBinding(clazz).toInstance(deserializer);
-        });
+        MapBinder<Class<?>, ValueDeserializer<?>> mapBinder = MapBinder.newMapBinder(binder, new TypeLiteral<>() {}, new TypeLiteral<>() {});
+        resourcesWithUnwrappedComponents.forEach(clazz -> mapBinder.addBinding(clazz).toInstance(new UnwrappedDeserializer(clazz)));
     }
 
     private void bindPolyResources(Binder binder, Set<Class<?>> polyResources)
@@ -423,6 +424,27 @@ public class ApiModule
                     .map(Class::getName)
                     .collect(Collectors.joining(", "));
             throw new ValidatorException("There are Ids used in service methods that are annotated with %s but missing a binding of %s. Id types: %s".formatted(ApiIdSupportsLookup.class.getSimpleName(), ApiIdLookup.class.getSimpleName(), missing));
+        }
+    }
+
+    private static class JsonMapperForSerializatorValidator
+            implements Provider<JsonMapper>
+    {
+        private final JsonMapper mapper;
+
+        @Inject
+        public JsonMapperForSerializatorValidator(JsonMapper mapper)
+        {
+            this.mapper = requireNonNull(mapper, "mapper is null")
+                    .rebuild()
+                    .disable(FAIL_ON_UNWRAPPED_TYPE_IDENTIFIERS)
+                    .build();
+        }
+
+        @Override
+        public JsonMapper get()
+        {
+            return mapper;
         }
     }
 }

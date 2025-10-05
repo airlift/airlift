@@ -1,8 +1,8 @@
 package io.airlift.json;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonFactoryBuilder;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.json.JsonFactory;
+import tools.jackson.core.json.JsonFactoryBuilder;
+import tools.jackson.databind.ObjectMapper;
 
 import static java.util.Objects.requireNonNull;
 

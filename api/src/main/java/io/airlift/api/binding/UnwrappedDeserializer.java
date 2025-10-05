@@ -1,14 +1,13 @@
 package io.airlift.api.binding;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
 import io.airlift.api.ApiUnwrapped;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.exc.StreamReadException;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ValueDeserializer;
 
-import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.RecordComponent;
 import java.util.Optional;
@@ -18,7 +17,7 @@ import java.util.stream.Stream;
 // see: https://github.com/FasterXML/jackson-databind/issues/3726
 // NOTE: this deserializer relies on removing FAIL_ON_UNKNOWN_PROPERTIES from the mapper
 class UnwrappedDeserializer
-        extends JsonDeserializer<Object>
+        extends ValueDeserializer<Object>
 {
     private final Class<?> clazz;
     private final Constructor<?> constructor;
@@ -33,10 +32,8 @@ class UnwrappedDeserializer
 
     @Override
     public Object deserialize(JsonParser parser, DeserializationContext context)
-            throws IOException
     {
         JsonNode tree = context.readTree(parser);
-
         RecordComponent[] recordComponents = clazz.getRecordComponents();
         Object[] arguments = new Object[recordComponents.length];
 
@@ -56,7 +53,7 @@ class UnwrappedDeserializer
                         value = Optional.empty();
                     }
                     else {
-                        throw new JsonParseException(parser, "Expected component not found: %s".formatted(recordComponent.getName()));
+                        throw new StreamReadException(parser, "Expected component not found: %s".formatted(recordComponent.getName()));
                     }
                 }
                 else {
@@ -70,7 +67,7 @@ class UnwrappedDeserializer
             return constructor.newInstance(arguments);
         }
         catch (Exception e) {
-            throw new JsonParseException(parser, "Could not create instance");
+            throw new StreamReadException(parser, "Could not create instance");
         }
     }
 

@@ -1,6 +1,5 @@
 package io.airlift.api.servertests.streaming;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import io.airlift.api.ApiBuilderConfig;
 import io.airlift.api.builders.ApiBuilder;
 import io.airlift.api.model.ModelService;
@@ -14,6 +13,7 @@ import io.airlift.http.client.StringResponseHandler.StringResponse;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.UriBuilder;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
 
 import java.net.URI;
 import java.time.Duration;
@@ -79,15 +79,15 @@ public class TestStreaming
             throws Exception
     {
         JsonNode openApi = getOpenApi();
-        assertThat(openApi.at("/openapi").asText()).isEqualTo("3.0.1");
+        assertThat(openApi.at("/openapi").asString()).isEqualTo("3.0.1");
 
         JsonNode outputMediaType = openApi.at("/paths/~1public~1api~1v1~1streamer:output/get/responses/200/content/application~1octet-stream");
-        assertThat(outputMediaType.at("/schema/type").asText()).isEqualTo("string");
+        assertThat(outputMediaType.at("/schema/type").asString()).isEqualTo("string");
         assertThat(outputMediaType.has("x-airlift-event-schema")).isFalse();
 
         JsonNode eventMediaType = openApi.at("/paths/~1public~1api~1v1~1streamer:events/get/responses/200/content/text~1event-stream");
-        assertThat(eventMediaType.at("/schema/type").asText()).isEqualTo("string");
-        assertThat(eventMediaType.at("/x-airlift-event-schema/$ref").asText()).isEqualTo("#/components/schemas/StreamingEvent");
+        assertThat(eventMediaType.at("/schema/type").asString()).isEqualTo("string");
+        assertThat(eventMediaType.at("/x-airlift-event-schema/$ref").asString()).isEqualTo("#/components/schemas/StreamingEvent");
         assertThat(openApi.at("/components/schemas/StreamingEvent").isMissingNode()).isFalse();
     }
 
@@ -101,14 +101,14 @@ public class TestStreaming
         OpenApiProvider provider = OpenApiProvider.create(modelServices, new OpenApiMetadata(Optional.empty(), List.of(), "/", Duration.ofMinutes(5), OPENAPI_3_2_0), ApiBuilderConfig.jackson());
         JsonNode openApi = jsonMapper.readTree(jsonMapper.writeValueAsString(provider.build(service.service().type(), _ -> true)));
 
-        assertThat(openApi.at("/openapi").asText()).isEqualTo("3.2.0");
+        assertThat(openApi.at("/openapi").asString()).isEqualTo("3.2.0");
         JsonNode eventMediaType = openApi.at("/paths/~1public~1api~1v1~1streamer:events/get/responses/200/content/text~1event-stream");
         assertThat(eventMediaType.has("schema")).isFalse();
-        assertThat(eventMediaType.at("/itemSchema/type").asText()).isEqualTo("object");
-        assertThat(eventMediaType.at("/itemSchema/required/0").asText()).isEqualTo("data");
-        assertThat(eventMediaType.at("/itemSchema/properties/data/type").asText()).isEqualTo("string");
-        assertThat(eventMediaType.at("/itemSchema/properties/data/contentMediaType").asText()).isEqualTo("application/json");
-        assertThat(eventMediaType.at("/itemSchema/properties/data/contentSchema/$ref").asText()).isEqualTo("#/components/schemas/StreamingEvent");
+        assertThat(eventMediaType.at("/itemSchema/type").asString()).isEqualTo("object");
+        assertThat(eventMediaType.at("/itemSchema/required/0").asString()).isEqualTo("data");
+        assertThat(eventMediaType.at("/itemSchema/properties/data/type").asString()).isEqualTo("string");
+        assertThat(eventMediaType.at("/itemSchema/properties/data/contentMediaType").asString()).isEqualTo("application/json");
+        assertThat(eventMediaType.at("/itemSchema/properties/data/contentSchema/$ref").asString()).isEqualTo("#/components/schemas/StreamingEvent");
         assertThat(eventMediaType.at("/itemSchema/properties/event").isMissingNode()).isTrue();
     }
 

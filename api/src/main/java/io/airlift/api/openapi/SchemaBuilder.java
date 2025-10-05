@@ -1,8 +1,5 @@
 package io.airlift.api.openapi;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.reflect.TypeToken;
 import io.airlift.api.ApiEnumValueResolver;
@@ -22,6 +19,9 @@ import io.airlift.api.openapi.models.MapSchema;
 import io.airlift.api.openapi.models.NumberSchema;
 import io.airlift.api.openapi.models.Schema;
 import io.airlift.api.openapi.models.StringSchema;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.lang.reflect.Type;
 import java.math.BigDecimal;

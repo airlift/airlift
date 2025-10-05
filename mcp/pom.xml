@@ -18,7 +18,7 @@
         <dep.docker-java.version>3.7.1</dep.docker-java.version>
         <dep.hikari.version>7.0.2</dep.hikari.version>
         <dep.postgresql.version>42.7.11</dep.postgresql.version>
-        <dep.jsonschema-generator.version>4.38.0</dep.jsonschema-generator.version>
+        <dep.jsonschema-generator.version>5.0.0</dep.jsonschema-generator.version>
     </properties>
 
     <dependencies>
@@ -30,11 +30,6 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
         </dependency>
 
         <dependency>
@@ -117,6 +112,16 @@
         <dependency>
             <groupId>org.glassfish.jersey.core</groupId>
             <artifactId>jersey-common</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>tools.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>tools.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
         </dependency>
 
         <dependency>

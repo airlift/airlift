@@ -1,6 +1,5 @@
 package io.airlift.mcp.operations.legacy;
 
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Suppliers;
 import io.airlift.mcp.McpIdentity.Authenticated;
@@ -21,8 +20,9 @@ import io.airlift.mcp.operations.legacy.sessions.SessionId;
 import io.airlift.mcp.operations.legacy.sessions.SessionValueKey;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.OptionalDouble;
@@ -239,7 +239,7 @@ class LegacyRequestContextImpl
             messageWriter.writeMessage(json);
             messageWriter.flush();
         }
-        catch (IOException e) {
+        catch (JacksonException e) {
             throw exception(e);
         }
     }

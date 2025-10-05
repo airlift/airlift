@@ -1,6 +1,5 @@
 package io.airlift.api.servertests.unwrapped;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import io.airlift.api.servertests.ServerTestBase;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.StatusResponseHandler;
@@ -36,7 +35,6 @@ public class TestUnwrapped
 
     @Test
     public void testSerialization()
-            throws JsonProcessingException
     {
         Instant now = Instant.now();
         TopLevel topLevel = new TopLevel("topLevel", 123, new ChildLevel(now, 456, Optional.of(40), new ChildChildLevel(true)));

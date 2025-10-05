@@ -1,6 +1,5 @@
 package io.airlift.mcp;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -31,6 +30,7 @@ import io.airlift.mcp.model.StructuredContentResult;
 import io.airlift.mcp.model.Tool;
 import io.airlift.mcp.operations.legacy.LegacyServerToClientRequest;
 import jakarta.servlet.http.HttpServletRequest;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.time.Duration;
 import java.util.List;

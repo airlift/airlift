@@ -1,7 +1,5 @@
 package io.airlift.mcp.reflection;
 
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
@@ -21,6 +19,8 @@ import io.airlift.mcp.model.StructuredContent;
 import io.airlift.mcp.model.StructuredContentResult;
 import io.airlift.mcp.model.Tool;
 import io.airlift.mcp.model.UiToolVisibility;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.lang.reflect.Method;
 import java.util.List;

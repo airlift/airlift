@@ -1,12 +1,12 @@
 package io.airlift.mcp.operations;
 
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.mcp.McpIdentity.Authenticated;
 import io.airlift.mcp.model.JsonRpcRequest;
 import io.airlift.mcp.model.JsonRpcResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import tools.jackson.databind.json.JsonMapper;
 
 public interface Operations
 {

@@ -1,12 +1,12 @@
 package io.airlift.api.internals;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.airlift.api.ApiJson;
 import io.airlift.api.ApiJsonList;
 import io.airlift.api.ApiJsonNode;
 import io.airlift.api.ApiJsonObject;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.lang.reflect.Type;
 
