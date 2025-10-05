@@ -1,7 +1,5 @@
 package io.airlift.mcp.internal;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 import io.airlift.log.Logger;
 import io.airlift.mcp.ErrorHandler;
@@ -15,6 +13,8 @@ import io.airlift.mcp.model.JsonRpcResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.WebApplicationException;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -103,7 +103,7 @@ public class InternalErrorHandler
         try {
             rpcResponseJson = objectMapper.writeValueAsString(rpcResponse);
         }
-        catch (JsonProcessingException e) {
+        catch (JacksonException e) {
             log.error(e, "Failed to serialize error response: %s", rpcResponse);
             throw new McpException(e, error);
         }

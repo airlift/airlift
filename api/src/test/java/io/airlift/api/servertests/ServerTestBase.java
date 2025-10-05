@@ -1,6 +1,5 @@
 package io.airlift.api.servertests;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Closer;
@@ -20,6 +19,7 @@ import io.airlift.node.NodeModule;
 import jakarta.ws.rs.core.UriBuilder;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.TestInstance;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.net.URI;

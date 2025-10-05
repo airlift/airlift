@@ -1,20 +1,19 @@
 package io.airlift.tracing;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.google.inject.Inject;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.context.propagation.TextMapPropagator;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.deser.std.StdDeserializer;
+import tools.jackson.databind.ser.std.StdSerializer;
 
-import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -38,13 +37,12 @@ public final class SpanSerialization
 
         @SuppressWarnings("DataFlowIssue")
         @Override
-        public void serialize(Span span, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
-                throws IOException
+        public void serialize(Span span, JsonGenerator jsonGenerator, SerializationContext serializationContext)
         {
             Context context = Context.root().with(span);
             Map<String, String> map = new LinkedHashMap<>();
             propagator.inject(context, map, Map::put);
-            jsonGenerator.writeObject(map);
+            jsonGenerator.writePOJO(map);
         }
     }
 
@@ -63,7 +61,6 @@ public final class SpanSerialization
 
         @Override
         public Span deserialize(JsonParser jsonParser, DeserializationContext deserializationContext)
-                throws IOException
         {
             Map<String, String> map = jsonParser.readValueAs(MAP_TYPE);
             Context context = propagator.extract(Context.root(), map, MapTextMapGetter.INSTANCE);

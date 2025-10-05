@@ -1,6 +1,5 @@
 package io.airlift.api.servertests.standard;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import io.airlift.api.ApiResourceVersion;
 import io.airlift.api.servertests.ServerTestBase;
 import io.airlift.bootstrap.ApplicationConfigurationException;
@@ -121,7 +120,7 @@ public class TestApiMethods
                 .build();
         StringResponse response = httpClient.execute(request, createStringResponseHandler());
         assertThat(response.getStatusCode()).isEqualTo(400);
-        assertThat(response.getBody()).contains("Could not parse entity: ThingId");
+        assertThat(response.getBody()).contains("Cannot construct instance of `io.airlift.api.servertests.standard.ThingId`");
     }
 
     @Test
@@ -145,7 +144,7 @@ public class TestApiMethods
                 .build();
         StringResponse response = httpClient.execute(request, createStringResponseHandler());
         assertThat(response.getStatusCode()).isEqualTo(400);
-        assertThat(response.getBody()).contains("Could not parse entity: ApiResourceVersion");
+        assertThat(response.getBody()).contains("Cannot construct instance of `io.airlift.api.ApiResourceVersion`");
     }
 
     @Test
@@ -293,7 +292,6 @@ public class TestApiMethods
     @SuppressWarnings("unchecked")
     @Test
     public void testPolyResourcesWithBadKey()
-            throws JsonProcessingException
     {
         String badJson = """
                 {

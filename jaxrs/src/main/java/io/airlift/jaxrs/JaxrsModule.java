@@ -58,7 +58,7 @@ public class JaxrsModule
         newSetBinder(binder, qualifiedKey(qualifier, Object.class)).permitDuplicates();
 
         JaxrsBinder jaxrsBinder = jaxrsBinder(binder, qualifier);
-        jaxrsBinder.bind(JsonMapper.class);
+        jaxrsBinder.bind(JacksonJsonMapper.class);
         jaxrsBinder.bind(JsonParsingFeature.class, new JsonParsingFeature.Provider(qualifier));
 
         newOptionalBinder(binder, qualifiedKey(qualifier, MappingEnabled.class))
