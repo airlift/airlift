@@ -1,6 +1,5 @@
 package io.airlift.jmx;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.MediaType;
 import com.google.inject.Injector;
@@ -19,6 +18,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import tools.jackson.databind.JsonNode;
 
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -103,8 +103,8 @@ public class TestMBeanResource
         List<String> names = new ArrayList<>();
         for (JsonNode mbean : mbeans) {
             JsonNode name = mbean.get("objectName");
-            assertThat(name.isTextual()).isTrue();
-            names.add(name.asText());
+            assertThat(name.isString()).isTrue();
+            names.add(name.asString());
         }
 
         assertThat(names).contains(MEMORY_MXBEAN_NAME);
@@ -123,8 +123,8 @@ public class TestMBeanResource
             JsonNode mbean = jsonRequest(uri);
 
             JsonNode name = mbean.get("objectName");
-            assertThat(name.isTextual()).isTrue();
-            assertThat(name.asText()).isEqualTo(mbeanName);
+            assertThat(name.isString()).isTrue();
+            assertThat(name.asString()).isEqualTo(mbeanName);
         }
     }
 

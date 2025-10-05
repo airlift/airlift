@@ -1,9 +1,9 @@
 package io.airlift.jaxrs;
 
-import java.io.IOException;
+import tools.jackson.core.JacksonException;
 
 public class JsonParsingException
-        extends IOException
+        extends JacksonException
 {
     public JsonParsingException(Throwable cause)
     {

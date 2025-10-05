@@ -42,7 +42,6 @@ public class TestJsonFormatter
         String minimalJsonErrorLogLine = (new JsonFormatter(ImmutableMap.of())).minimalJsonErrorLogLine(original, exception);
 
         assertThat(minimalJsonErrorLogLine).as("Log lines should end with newline").endsWith("\n");
-
         assertThat(jsonCodec(JsonRecord.class).fromJson(minimalJsonErrorLogLine)).isEqualTo(new JsonRecord(
                 original.getTimestamp(),
                 Level.ERROR,

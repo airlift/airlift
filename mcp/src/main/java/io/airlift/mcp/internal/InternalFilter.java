@@ -1,7 +1,5 @@
 package io.airlift.mcp.internal;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableMap;
@@ -38,6 +36,8 @@ import jakarta.servlet.http.HttpFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.WebApplicationException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -350,7 +350,6 @@ public class InternalFilter
     }
 
     private void handleRpcRequest(HttpServletRequest request, HttpServletResponse response, Authenticated<?> authenticated, JsonRpcRequest<?> rpcRequest, InternalMessageWriter messageWriter)
-            throws Exception
     {
         request.setAttribute(RPC_MESSAGE_ATTRIBUTE, rpcRequest);
 
@@ -440,7 +439,6 @@ public class InternalFilter
     }
 
     private Object deserializeJsonRpcMessage(String json)
-            throws Exception
     {
         JsonNode tree = objectMapper.readTree(json);
 

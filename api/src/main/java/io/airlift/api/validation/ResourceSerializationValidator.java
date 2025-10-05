@@ -1,13 +1,13 @@
 package io.airlift.api.validation;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import io.airlift.api.ApiId;
 import io.airlift.api.ApiPatch;
 import io.airlift.api.ApiPolyResource;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.RecordComponent;
@@ -49,14 +49,14 @@ public class ResourceSerializationValidator
         try {
             json = objectMapper.writeValueAsString(instance);
         }
-        catch (JsonProcessingException e) {
+        catch (JacksonException e) {
             throw new ValidatorException("Could not serialize Resource %s. Error: %s".formatted(resourceClass.getName(), e.getMessage()));
         }
         Object readInstance;
         try {
             readInstance = objectMapper.readValue(json, resourceClass);
         }
-        catch (JsonProcessingException e) {
+        catch (JacksonException e) {
             throw new ValidatorException("Could not deserialize Resource %s. Error: %s".formatted(resourceClass.getName(), e.getMessage()));
         }
         if (!instance.equals(readInstance)) {

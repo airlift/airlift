@@ -17,9 +17,9 @@ package io.airlift.jmx;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import tools.jackson.databind.ObjectMapper;
 
 import javax.management.Attribute;
 import javax.management.Descriptor;

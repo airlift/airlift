@@ -15,7 +15,6 @@
  */
 package io.airlift.jmx;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
 import com.google.inject.Inject;
@@ -24,6 +23,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+import tools.jackson.databind.ObjectMapper;
 
 import javax.management.JMException;
 import javax.management.MBeanServer;
