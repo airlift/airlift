@@ -16,7 +16,8 @@
         <it-plugin.version>@project.version@</it-plugin.version>
         <dep.airlift.version>@project.version@</dep.airlift.version>
         <dep.jackson.version>2.18.11</dep.jackson.version>
-        <dep.openapi-generator-maven-plugin.version>7.21.0</dep.openapi-generator-maven-plugin.version>
+        <dep.jackson-annotations.version>2.22</dep.jackson-annotations.version>
+        <dep.openapi-generator-maven-plugin.version>7.27.0</dep.openapi-generator-maven-plugin.version>
         <api.serviceTypeClass>io.airlift.test.TestServiceType</api.serviceTypeClass>
         <api.outputFile>${project.build.directory}/openapi.json</api.outputFile>
         <api.prettyPrint>true</api.prettyPrint>
@@ -34,7 +35,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
-            <version>${dep.jackson.version}</version>
+            <version>${dep.jackson-annotations.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -114,6 +115,7 @@
                             <configOptions>
                                 <sourceFolder>/</sourceFolder>
                                 <useJakartaEe>true</useJakartaEe>
+                                <useJackson3>true</useJackson3>
                             </configOptions>
                         </configuration>
                     </execution>

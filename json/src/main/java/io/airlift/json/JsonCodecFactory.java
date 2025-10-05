@@ -15,18 +15,18 @@
  */
 package io.airlift.json;
 
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 
-import static com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT;
 import static java.util.Objects.requireNonNull;
+import static tools.jackson.databind.SerializationFeature.INDENT_OUTPUT;
 
 public class JsonCodecFactory
 {
@@ -63,7 +63,6 @@ public class JsonCodecFactory
     public <T> JsonCodec<T> jsonCodec(Class<T> type)
     {
         requireNonNull(type, "type is null");
-
         return new JsonCodec<>(jsonMapper, type);
     }
 
@@ -77,7 +76,6 @@ public class JsonCodecFactory
     public <T> JsonCodec<T> jsonCodec(TypeToken<T> type)
     {
         requireNonNull(type, "type is null");
-
         return new JsonCodec<>(jsonMapper, type.getType());
     }
 
