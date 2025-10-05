@@ -1,6 +1,5 @@
 package io.airlift.mcp;
 
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.reflect.TypeToken;
 import com.google.inject.Module;
@@ -16,6 +15,7 @@ import io.airlift.mcp.model.JsonRpcRequest;
 import io.airlift.mcp.model.ListRequest;
 import io.airlift.mcp.model.Protocol;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.net.URI;
 import java.util.List;

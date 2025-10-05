@@ -1,6 +1,5 @@
 package io.airlift.api.servertests.standard;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import io.airlift.api.ApiResourceVersion;
 import io.airlift.api.servertests.ServerTestBase;
 import io.airlift.bootstrap.ApplicationConfigurationException;
@@ -151,6 +150,32 @@ public class TestApiMethods
     }
 
     @Test
+    public void testUpdateWithOverflowingNumber()
+    {
+        String thingInvalidJsonStringified =
+                """
+                {
+                  "syncToken" : "1",
+                  "thingId" : "12345",
+                  "name" : "dummy",
+                  "qty" : 3000000000,
+                  "code" : "code"
+                }
+                """;
+
+        URI uri = UriBuilder.fromUri(baseUri).path("public/api/v1/thing/{thingId}").build(new ThingId("12345"));
+        Request request = preparePut()
+                .setUri(uri)
+                .setHeader(CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .setBodyGenerator(createStaticBodyGenerator(thingInvalidJsonStringified.getBytes(UTF_8)))
+                .build();
+        StringResponse response = httpClient.execute(request, createStringResponseHandler());
+        assertThat(response.getStatusCode()).isEqualTo(400);
+        // numeric overflow (InputCoercionException) reports Jackson's message; with Jackson 2 it was "Unrecognized entity"
+        assertThat(response.getBody()).contains("Numeric value (3000000000) out of range of `int`");
+    }
+
+    @Test
     public void testUpdateWithNewerEntity()
     {
         NewerThing newerThing = new NewerThing(new ApiResourceVersion(1), new ThingId("6789"), "hey", 101, Optional.of("code"), Optional.of("foo"));
@@ -295,7 +320,6 @@ public class TestApiMethods
     @SuppressWarnings("unchecked")
     @Test
     public void testPolyResourcesWithBadKey()
-            throws JsonProcessingException
     {
         String badJson =
                 """

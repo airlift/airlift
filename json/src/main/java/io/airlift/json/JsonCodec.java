@@ -15,16 +15,18 @@
  */
 package io.airlift.json;
 
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.base.Suppliers;
 import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
 import com.google.errorprone.annotations.ThreadSafe;
 import io.airlift.json.LengthLimitedWriter.LengthLimitExceededException;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.exc.JacksonIOException;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.ObjectWriter;
+import tools.jackson.databind.exc.MismatchedInputException;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,8 +38,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import static com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT;
+import static com.google.common.base.Throwables.getCausalChain;
 import static java.util.Objects.requireNonNull;
+import static tools.jackson.databind.SerializationFeature.INDENT_OUTPUT;
 
 @ThreadSafe
 public class JsonCodec<T>
@@ -164,8 +167,8 @@ public class JsonCodec<T>
         try {
             return writer.get().writeValueAsString(instance);
         }
-        catch (IOException e) {
-            throw new IllegalArgumentException("%s could not be converted to JSON".formatted(instance.getClass().getName()), e);
+        catch (JacksonException e) {
+            throw writeFailure(instance, e);
         }
     }
 
@@ -184,8 +187,11 @@ public class JsonCodec<T>
             writer.get().writeValue(lengthLimitedWriter, instance);
             return Optional.of(stringWriter.getBuffer().toString());
         }
-        catch (LengthLimitExceededException e) {
-            return Optional.empty();
+        catch (JacksonException e) {
+            if (getCausalChain(e).stream().anyMatch(LengthLimitExceededException.class::isInstance)) {
+                return Optional.empty();
+            }
+            throw writeFailure(instance, e);
         }
         catch (IOException e) {
             throw new IllegalArgumentException("%s could not be converted to JSON".formatted(instance.getClass().getName()), e);
@@ -223,8 +229,8 @@ public class JsonCodec<T>
         try {
             return writer.get().writeValueAsBytes(instance);
         }
-        catch (IOException e) {
-            throw new IllegalArgumentException("%s could not be converted to JSON".formatted(instance.getClass().getName()), e);
+        catch (JacksonException e) {
+            throw writeFailure(instance, e);
         }
     }
 
@@ -264,10 +270,18 @@ public class JsonCodec<T>
         }
     }
 
+    private static IllegalArgumentException writeFailure(Object instance, JacksonException e)
+    {
+        // Jackson 3 wraps I/O failures in JacksonIOException; report the I/O failure itself, as with Jackson 2
+        Throwable cause = (e instanceof JacksonIOException) ? e.getCause() : e;
+        return new IllegalArgumentException("%s could not be converted to JSON".formatted(instance.getClass().getName()), cause);
+    }
+
     private static IllegalArgumentException mapException(Exception e, String source, Type type)
     {
         return switch (e) {
             case MismatchedInputException mismatchedInputException when mismatchedInputException.getMessage().contains("not allowed as per `DeserializationFeature.FAIL_ON_TRAILING_TOKENS`") -> new IllegalArgumentException("Found characters after the expected end of input", e);
+            case JacksonIOException jacksonIOException -> new IllegalArgumentException("Invalid JSON %s for %s".formatted(source, type), jacksonIOException.getCause());
             case IllegalArgumentException iae -> iae;
             default -> new IllegalArgumentException("Invalid JSON %s for %s".formatted(source, type), e);
         };

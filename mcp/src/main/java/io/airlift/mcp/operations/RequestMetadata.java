@@ -1,6 +1,5 @@
 package io.airlift.mcp.operations;
 
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.mcp.McpException;
 import io.airlift.mcp.model.Implementation;
@@ -10,6 +9,7 @@ import io.airlift.mcp.model.LoggingLevel;
 import io.airlift.mcp.model.Meta;
 import io.airlift.mcp.model.Protocol;
 import jakarta.servlet.http.HttpServletRequest;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.List;
 import java.util.Map;

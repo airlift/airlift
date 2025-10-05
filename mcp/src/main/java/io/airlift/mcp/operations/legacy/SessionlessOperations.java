@@ -1,6 +1,5 @@
 package io.airlift.mcp.operations.legacy;
 
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
@@ -31,6 +30,7 @@ import io.airlift.mcp.model.Tool;
 import io.airlift.mcp.reflection.IconHelper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.List;
 import java.util.Optional;

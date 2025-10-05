@@ -1,14 +1,15 @@
 package io.airlift.log;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.json.JsonCodec;
 import io.airlift.json.JsonCodecFactory;
 import io.opentelemetry.context.Context;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.ObjectWriteContext;
+import tools.jackson.core.json.JsonFactory;
 
-import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Map;
 import java.util.logging.Formatter;
@@ -75,14 +76,14 @@ public class JsonFormatter
     {
         // Emit a log line that is at least json parseable and indicates things are broken
         StringWriter stringWriter = new StringWriter();
-        try (JsonGenerator jsonGenerator = jsonFactory.createGenerator(stringWriter)) {
+        try (JsonGenerator jsonGenerator = jsonFactory.createGenerator(ObjectWriteContext.empty(), stringWriter)) {
             jsonGenerator.writeStartObject();
-            jsonGenerator.writeStringField("timestamp", jsonRecord.getTimestamp().toString());
-            jsonGenerator.writeStringField("message", exception.getMessage());
-            jsonGenerator.writeStringField("level", Level.ERROR.name());
+            jsonGenerator.writeStringProperty("timestamp", jsonRecord.getTimestamp().toString());
+            jsonGenerator.writeStringProperty("message", exception.getMessage());
+            jsonGenerator.writeStringProperty("level", Level.ERROR.name());
             jsonGenerator.writeEndObject();
         }
-        catch (IOException e) {
+        catch (JacksonException e) {
             e.addSuppressed(exception);
             // We're using a StringWriter, so all of the operations should be in-memory, and there shouldn't be a way to throw an IOException, but just in case...
             throw new RuntimeException("Unable to generate json logs", e);
