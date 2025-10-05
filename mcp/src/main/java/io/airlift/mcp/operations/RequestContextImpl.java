@@ -1,6 +1,5 @@
 package io.airlift.mcp.operations;
 
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.airlift.mcp.McpIdentity.Authenticated;
 import io.airlift.mcp.McpRequestContext;
 import io.airlift.mcp.messages.MessageWriter;
@@ -10,8 +9,9 @@ import io.airlift.mcp.model.LoggingLevel;
 import io.airlift.mcp.model.LoggingMessageNotification;
 import io.airlift.mcp.model.ProgressNotification;
 import jakarta.servlet.http.HttpServletRequest;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 
-import java.io.IOException;
 import java.util.Optional;
 import java.util.OptionalDouble;
 
@@ -118,7 +118,7 @@ class RequestContextImpl
             messageWriter.writeMessage(json);
             messageWriter.flush();
         }
-        catch (IOException e) {
+        catch (JacksonException e) {
             throw exception(e);
         }
     }

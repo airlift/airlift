@@ -1,18 +1,17 @@
 package io.airlift.mcp;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
-import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.mcp.model.Constants;
 import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceTemplate;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.dataformat.yaml.YAMLMapper;
+import tools.jackson.dataformat.yaml.YAMLWriteFeature;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.io.UncheckedIOException;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -34,10 +33,10 @@ public final class McpSkillBuilder
     private static final String FRONTMATTER_DELIMITER = "---";
 
     private static final YAMLMapper YAML_MAPPER = YAMLMapper.builder()
-            .disable(YAMLGenerator.Feature.WRITE_DOC_START_MARKER)
-            .disable(YAMLGenerator.Feature.SPLIT_LINES)
-            .enable(YAMLGenerator.Feature.MINIMIZE_QUOTES)
-            .enable(YAMLGenerator.Feature.ALWAYS_QUOTE_NUMBERS_AS_STRINGS)
+            .disable(YAMLWriteFeature.WRITE_DOC_START_MARKER)
+            .disable(YAMLWriteFeature.SPLIT_LINES)
+            .enable(YAMLWriteFeature.MINIMIZE_QUOTES)
+            .enable(YAMLWriteFeature.ALWAYS_QUOTE_NUMBERS_AS_STRINGS)
             .build();
 
     private final ImmutableMap.Builder<String, Object> frontmatter = ImmutableMap.builder();
@@ -95,7 +94,7 @@ public final class McpSkillBuilder
         try {
             frontmatter = YAML_MAPPER.readValue(String.join("\n", lines.subList(1, end)), new TypeReference<LinkedHashMap<String, Object>>() {});
         }
-        catch (JsonProcessingException e) {
+        catch (JacksonException e) {
             throw new IllegalArgumentException(Constants.SKILL_MD_FILE + " frontmatter is not valid YAML", e);
         }
         checkArgument(frontmatter != null, "%s frontmatter is empty", Constants.SKILL_MD_FILE);
@@ -164,8 +163,8 @@ public final class McpSkillBuilder
         try {
             yaml = YAML_MAPPER.writeValueAsString(frontmatter.buildOrThrow());
         }
-        catch (JsonProcessingException e) {
-            throw new UncheckedIOException(e);
+        catch (JacksonException e) {
+            throw new IllegalStateException(e);
         }
 
         StringWriter skillFile = new StringWriter();

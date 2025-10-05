@@ -15,13 +15,13 @@ package io.airlift.http.client;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import io.airlift.json.JsonCodec;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 import jakarta.annotation.Nullable;
+import tools.jackson.databind.DatabindException;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -378,9 +378,9 @@ public final class ClientCredentialsTokenProvider
         private static String invalidTokenResponseReason(IllegalArgumentException failure)
         {
             // report where the document is invalid, never the parser's text, which quotes the token document
-            if (failure.getCause() instanceof JsonMappingException mappingException && !mappingException.getPath().isEmpty()) {
+            if (failure.getCause() instanceof DatabindException mappingException && !mappingException.getPath().isEmpty()) {
                 return mappingException.getPath().stream()
-                        .map(reference -> reference.getFieldName() != null ? reference.getFieldName() : String.valueOf(reference.getIndex()))
+                        .map(reference -> reference.getPropertyName() != null ? reference.getPropertyName() : String.valueOf(reference.getIndex()))
                         .collect(joining(".", "", " has an invalid value"));
             }
             if (failure.getCause() != null) {

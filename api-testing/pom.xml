@@ -26,28 +26,18 @@
         </dependency>
 
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jsr310</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>jakarta.annotation</groupId>
             <artifactId>jakarta.annotation-api</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>org.openapitools</groupId>
-            <artifactId>jackson-databind-nullable</artifactId>
+            <groupId>tools.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>tools.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
         </dependency>
     </dependencies>
 
@@ -61,6 +51,8 @@
                     <configOptions>
                         <sourceFolder>/</sourceFolder>
                         <useJakartaEe>true</useJakartaEe>
+                        <useJackson3>true</useJackson3>
+                        <openApiNullable>false</openApiNullable>
                     </configOptions>
                     <output>${project.build.directory}/openapi-test-client</output>
                     <generateApiDocumentation>false</generateApiDocumentation>
@@ -79,7 +71,7 @@
                             <goal>generate</goal>
                         </goals>
                         <phase>generate-sources</phase>
-                        <configuration>
+                        <configuration combine.children="merge">
                             <!-- Note: this references a file in the "api" module -->
                             <inputSpec>${project.parent.basedir}/api/src/test/resources/openapi/complex-recursive.json</inputSpec>
                         </configuration>
@@ -90,7 +82,7 @@
                             <goal>generate</goal>
                         </goals>
                         <phase>generate-sources</phase>
-                        <configuration>
+                        <configuration combine.children="merge">
                             <!-- Note: this references a file in the "api" module -->
                             <inputSpec>${project.parent.basedir}/api/src/test/resources/openapi/simple-recursive.json</inputSpec>
                         </configuration>

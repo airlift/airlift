@@ -43,7 +43,7 @@ class LengthLimitedWriter
         writer.close();
     }
 
-    // this needs to extend IOException so that Jackson doesn't wrap it
+    // Writer methods can only throw IOException; Jackson wraps it in an unchecked JacksonIOException
     public static class LengthLimitExceededException
             extends IOException {}
 }

@@ -15,16 +15,16 @@
  */
 package io.airlift.json;
 
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.KeyDeserializer;
-import com.fasterxml.jackson.databind.Module;
 import com.google.inject.Binder;
 import com.google.inject.TypeLiteral;
 import com.google.inject.binder.LinkedBindingBuilder;
 import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
 import io.airlift.jackson.JacksonKeySerde;
+import tools.jackson.databind.JacksonModule;
+import tools.jackson.databind.KeyDeserializer;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.ValueSerializer;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
@@ -32,11 +32,11 @@ import static java.util.Objects.requireNonNull;
 
 public class JsonBinder
 {
-    private final MapBinder<Class<?>, JsonSerializer<?>> keySerializerMapBinder;
+    private final MapBinder<Class<?>, ValueSerializer<?>> keySerializerMapBinder;
     private final MapBinder<Class<?>, KeyDeserializer> keyDeserializerMapBinder;
-    private final MapBinder<Class<?>, JsonSerializer<?>> serializerMapBinder;
-    private final MapBinder<Class<?>, JsonDeserializer<?>> deserializerMapBinder;
-    private final Multibinder<Module> moduleBinder;
+    private final MapBinder<Class<?>, ValueSerializer<?>> serializerMapBinder;
+    private final MapBinder<Class<?>, ValueDeserializer<?>> deserializerMapBinder;
+    private final Multibinder<JacksonModule> moduleBinder;
 
     public static JsonBinder jsonBinder(Binder binder)
     {
@@ -50,10 +50,10 @@ public class JsonBinder
         keyDeserializerMapBinder = MapBinder.newMapBinder(binder, new TypeLiteral<>() {}, new TypeLiteral<>() {}, JacksonKeySerde.class);
         serializerMapBinder = MapBinder.newMapBinder(binder, new TypeLiteral<>() {}, new TypeLiteral<>() {});
         deserializerMapBinder = MapBinder.newMapBinder(binder, new TypeLiteral<>() {}, new TypeLiteral<>() {});
-        moduleBinder = newSetBinder(binder, Module.class);
+        moduleBinder = newSetBinder(binder, JacksonModule.class);
     }
 
-    public LinkedBindingBuilder<JsonSerializer<?>> addKeySerializerBinding(Class<?> type)
+    public LinkedBindingBuilder<ValueSerializer<?>> addKeySerializerBinding(Class<?> type)
     {
         requireNonNull(type, "type is null");
         return keySerializerMapBinder.addBinding(type);
@@ -65,24 +65,24 @@ public class JsonBinder
         return keyDeserializerMapBinder.addBinding(type);
     }
 
-    public LinkedBindingBuilder<JsonSerializer<?>> addSerializerBinding(Class<?> type)
+    public LinkedBindingBuilder<ValueSerializer<?>> addSerializerBinding(Class<?> type)
     {
         requireNonNull(type, "type is null");
         return serializerMapBinder.addBinding(type);
     }
 
-    public LinkedBindingBuilder<JsonDeserializer<?>> addDeserializerBinding(Class<?> type)
+    public LinkedBindingBuilder<ValueDeserializer<?>> addDeserializerBinding(Class<?> type)
     {
         requireNonNull(type, "type is null");
         return deserializerMapBinder.addBinding(type);
     }
 
-    public LinkedBindingBuilder<Module> addModuleBinding()
+    public LinkedBindingBuilder<JacksonModule> addModuleBinding()
     {
         return moduleBinder.addBinding();
     }
 
-    public <T> void bindSerializer(JsonSerializer<T> jsonSerializer)
+    public <T> void bindSerializer(ValueSerializer<T> jsonSerializer)
     {
         requireNonNull(jsonSerializer, "jsonSerializer is null");
 

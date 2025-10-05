@@ -13,11 +13,12 @@
  */
 package io.airlift.json;
 
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.ser.std.ToStringSerializer;
 
 import static io.airlift.json.JsonBinder.jsonBinder;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -27,11 +28,24 @@ public class TestJsonBinder
 {
     @Test
     public void testBindSerializer()
-            throws Exception
     {
         Injector injector = Guice.createInjector(
                 new JsonModule(),
                 binder -> jsonBinder(binder).bindSerializer(new ToStringSerializer(Name.class)));
+
+        JsonMapper jsonMapper = injector.getInstance(JsonMapper.class);
+        assertThat(jsonMapper.writeValueAsString(new Name("ashhar"))).isEqualTo("\"ashhar\"");
+    }
+
+    @Test
+    public void testAddModuleBinding()
+    {
+        SimpleModule module = new SimpleModule("name-module");
+        module.addSerializer(Name.class, new ToStringSerializer(Name.class));
+
+        Injector injector = Guice.createInjector(
+                new JsonModule(),
+                binder -> jsonBinder(binder).addModuleBinding().toInstance(module));
 
         JsonMapper jsonMapper = injector.getInstance(JsonMapper.class);
         assertThat(jsonMapper.writeValueAsString(new Name("ashhar"))).isEqualTo("\"ashhar\"");

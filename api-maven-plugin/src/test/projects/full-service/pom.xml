@@ -114,6 +114,8 @@
                             <configOptions>
                                 <sourceFolder>/</sourceFolder>
                                 <useJakartaEe>true</useJakartaEe>
+                                <useJackson3>true</useJackson3>
+                                <openApiNullable>false</openApiNullable>
                             </configOptions>
                         </configuration>
                     </execution>
