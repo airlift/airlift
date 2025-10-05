@@ -1,12 +1,10 @@
 package io.airlift.json;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
+import tools.jackson.core.json.JsonFactory;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -14,54 +12,49 @@ public class TestLimits
 {
     @Test
     public void testNameLimitDefaultJsonFactory()
-            throws IOException
     {
-        testNameLengthLimit(new ObjectMapperProvider());
+        testNameLengthLimit(new JsonMapperProvider());
+        testStringLengthLimit(new JsonMapperProvider());
     }
 
     @Test
     public void testNameLimitCustomJsonFactory()
-            throws IOException
     {
         JsonFactory myJsonFactory = new JsonFactory();
-        testNameLengthLimit(new ObjectMapperProvider(myJsonFactory));
+        testNameLengthLimit(new JsonMapperProvider(myJsonFactory));
     }
 
-    private void testNameLengthLimit(ObjectMapperProvider objectMapperProvider)
-            throws IOException
+    private void testNameLengthLimit(JsonMapperProvider jsonMapperProvider)
     {
-        ObjectMapper objectMapper = objectMapperProvider.get();
+        ObjectMapper objectMapper = jsonMapperProvider.get();
         String longName = Strings.repeat("a", 100000);
 
         String content = String.format("{ \"%s\" : \"value\" }", longName);
         JsonNode jsonNode = objectMapper.reader().readTree(content);
         assertThat(jsonNode.has(longName)).isTrue();
-        assertThat(jsonNode.findValue(longName).asText()).isEqualTo("value");
+        assertThat(jsonNode.findValue(longName).asString()).isEqualTo("value");
     }
 
     @Test
     public void testStringLimitDefaultJsonFactory()
-            throws IOException
     {
-        testNameLengthLimit(new ObjectMapperProvider());
+        testNameLengthLimit(new JsonMapperProvider());
     }
 
     @Test
     public void testStringLimitCustomJsonFactory()
-            throws IOException
     {
         JsonFactory myJsonFactory = new JsonFactory();
-        testNameLengthLimit(new ObjectMapperProvider(myJsonFactory));
+        testNameLengthLimit(new JsonMapperProvider(myJsonFactory));
     }
 
-    private void testStringLengthLimit(ObjectMapperProvider objectMapperProvider)
-            throws IOException
+    private void testStringLengthLimit(JsonMapperProvider jsonMapperProvider)
     {
-        ObjectMapper objectMapper = objectMapperProvider.get();
+        ObjectMapper objectMapper = jsonMapperProvider.get();
         String longValue = Strings.repeat("a", 100000);
 
         String content = String.format("{ \"key\" : \"%s\" }", longValue);
         JsonNode jsonNode = objectMapper.reader().readTree(content);
-        assertThat(jsonNode.findValue("key").asText()).isEqualTo(longValue);
+        assertThat(jsonNode.findValue("key").asString()).isEqualTo(longValue);
     }
 }

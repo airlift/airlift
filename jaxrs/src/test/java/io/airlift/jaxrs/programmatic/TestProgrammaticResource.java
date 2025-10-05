@@ -15,7 +15,6 @@
  */
 package io.airlift.jaxrs.programmatic;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import io.airlift.bootstrap.Bootstrap;
@@ -86,7 +85,6 @@ public class TestProgrammaticResource
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     public void testJsonParsingExceptionMapper(boolean useMapper)
-            throws JsonProcessingException
     {
         Injector injector = new Bootstrap(
                 binder -> {
