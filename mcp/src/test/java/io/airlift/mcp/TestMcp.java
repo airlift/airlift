@@ -9,9 +9,6 @@
  */
 package io.airlift.mcp;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.reflect.TypeToken;
@@ -54,6 +51,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import java.net.URI;
 import java.util.Optional;
@@ -226,19 +226,19 @@ public class TestMcp
                 .extracting(Tool::outputSchema)
                 .extracting(Optional::get)
                 .satisfies(node -> {
-                    assertThat(node.get("type").asText()).isEqualTo("object");
+                    assertThat(node.get("type").asString()).isEqualTo("object");
 
                     assertThat(node.get("required"))
                             .isNotNull()
-                            .extracting(JsonNode::asText)
+                            .extracting(JsonNode::asString)
                             .containsExactlyInAnyOrder("firstTwo", "allThree");
 
                     assertThat(node.get("properties")).isNotNull();
                     JsonNode properties = node.get("properties");
-                    assertThat(properties.fieldNames()).toIterable().containsExactlyInAnyOrder("firstTwo", "allThree");
+                    assertThat(properties.propertyNames()).containsExactlyInAnyOrder("firstTwo", "allThree");
 
-                    assertThat(properties.get("firstTwo").get("type").asText()).isEqualTo("integer");
-                    assertThat(properties.get("allThree").get("type").asText()).isEqualTo("integer");
+                    assertThat(properties.get("firstTwo").get("type").asString()).isEqualTo("integer");
+                    assertThat(properties.get("allThree").get("type").asString()).isEqualTo("integer");
                 });
 
         CallToolRequest callToolRequest = new CallToolRequest("addFirstTwoAndAllThree", ImmutableMap.of("a", 1, "b", 2, "c", 3));
