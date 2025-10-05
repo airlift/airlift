@@ -1,7 +1,5 @@
 package io.airlift.mcp.reflection;
 
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Suppliers;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
@@ -33,6 +31,8 @@ import io.airlift.mcp.reflection.MethodParameter.ResourceTemplateValuesParameter
 import io.airlift.mcp.reflection.MethodParameter.SourceResourceParameter;
 import io.airlift.mcp.reflection.MethodParameter.SourceResourceTemplateParameter;
 import jakarta.servlet.http.HttpServletRequest;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.ObjectMapper;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;

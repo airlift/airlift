@@ -1,7 +1,6 @@
 package io.airlift.jaxrs;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.google.inject.Injector;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.bootstrap.LifeCycleManager;
@@ -15,6 +14,7 @@ import io.airlift.node.testing.TestingNodeModule;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
 
 import java.net.URI;
 
@@ -71,7 +71,7 @@ public class TestThrowingResource
                 assertThatThrownBy(() -> client.execute(request, createJsonResponseHandler(jsonCodec(JsonNode.class))))
                         .hasMessageMatching(
                                 """
-                                Unable to create class com.fasterxml.jackson.databind.JsonNode from JSON response: <\\{("id":"dummy-id")?>""")
+                                Unable to create class tools.jackson.databind.JsonNode from JSON response: <\\{("id":"dummy-id")?>""")
                         .hasStackTraceContaining("Unexpected end-of-input: expected close marker for Object");
             }
         }

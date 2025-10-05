@@ -1,6 +1,5 @@
 package io.airlift.mcp.internal;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -22,8 +21,9 @@ import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.sessions.SessionId;
 import io.airlift.mcp.sessions.SessionValueKey;
 import jakarta.servlet.http.HttpServletRequest;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
@@ -248,7 +248,7 @@ class InternalRequestContext
             messageWriter.writeMessage(json);
             messageWriter.flushMessages();
         }
-        catch (IOException e) {
+        catch (JacksonException e) {
             throw exception(e);
         }
     }

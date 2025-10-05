@@ -15,13 +15,15 @@ import java.util.Map;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
 
+import static io.airlift.json.ObjectMapperProvider.toObjectMapperProvider;
 import static java.util.Objects.requireNonNull;
 
 public class JsonFormatter
         extends Formatter
 {
     private static final Object[] EMPTY_ARRAY = new Object[0];
-    private static final JsonCodec<JsonRecord> CODEC = new JsonCodecFactory(new ObjectMapperProvider()).jsonCodec(JsonRecord.class);
+    private static final JsonCodec<JsonRecord> CODEC = new JsonCodecFactory(toObjectMapperProvider(new ObjectMapperProvider()))
+            .jsonCodec(JsonRecord.class);
     private static final JsonFactory jsonFactory = new JsonFactory();
     private final Map<String, String> logAnnotations;
 

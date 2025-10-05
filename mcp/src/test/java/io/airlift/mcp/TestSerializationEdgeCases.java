@@ -1,8 +1,5 @@
 package io.airlift.mcp;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -19,6 +16,9 @@ import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.StructuredContent;
 import io.airlift.mcp.model.StructuredContentResult;
 import org.junit.jupiter.api.Test;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.io.File;
 import java.lang.reflect.ParameterizedType;
@@ -234,7 +234,7 @@ public class TestSerializationEdgeCases
                 assertThat(deserialized).isEqualTo(value);
             }
         }
-        catch (JsonProcessingException e) {
+        catch (JacksonException e) {
             throw new RuntimeException(e);
         }
 

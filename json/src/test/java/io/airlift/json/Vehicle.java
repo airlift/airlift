@@ -28,6 +28,7 @@ public interface Vehicle
 
         String json = jsonCodec.toJson(expected);
         assertThat(jsonCodec.fromJson(json)).isEqualTo(expected);
+
         assertThat(json.contains("\"@type\" : \"car\"")).isTrue();
 
         byte[] bytes = jsonCodec.toJsonBytes(expected);

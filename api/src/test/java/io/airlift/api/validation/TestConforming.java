@@ -1,6 +1,4 @@
 package io.airlift.api.validation;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Guice;
@@ -17,6 +15,7 @@ import io.airlift.api.model.ModelServiceType;
 import io.airlift.api.model.ModelServices;
 import io.airlift.json.JsonModule;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 

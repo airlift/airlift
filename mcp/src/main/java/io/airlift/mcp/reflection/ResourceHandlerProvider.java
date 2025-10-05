@@ -1,6 +1,5 @@
 package io.airlift.mcp.reflection;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
@@ -12,6 +11,7 @@ import io.airlift.mcp.model.Annotations;
 import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.Role;
+import tools.jackson.databind.ObjectMapper;
 
 import java.lang.reflect.Method;
 import java.util.List;

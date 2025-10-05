@@ -1,20 +1,20 @@
 package io.airlift.api.binding;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.TreeNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 import io.airlift.api.ApiPatch;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.TreeNode;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.function.Function;
 
 import static io.airlift.api.responses.ApiException.badRequest;
 import static java.util.Objects.requireNonNull;
+import static tools.jackson.core.StreamReadFeature.AUTO_CLOSE_SOURCE;
 
 public class PatchFieldsBuilder
 {
@@ -23,15 +23,18 @@ public class PatchFieldsBuilder
     @Inject
     public PatchFieldsBuilder(ObjectMapper objectMapper)
     {
-        this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
+        this.objectMapper = requireNonNull(objectMapper, "objectMapper is null")
+                .rebuild()
+                // Do not close underlying stream after mapping
+                .disable(AUTO_CLOSE_SOURCE)
+                .build();
     }
 
     public <T> ApiPatch<T> buildPatchFields(InputStream entityStream)
     {
         try {
             JsonParser jsonParser = objectMapper.createParser(entityStream);
-            // Do not close underlying stream after mapping
-            jsonParser.disable(JsonParser.Feature.AUTO_CLOSE_SOURCE);
+
             TreeNode treeNode = jsonParser.readValueAsTree();
 
             Map<String, Function<Type, Object>> fields = new HashMap<>();
@@ -46,9 +49,7 @@ public class PatchFieldsBuilder
 
     private void buildFields(TreeNode node, Map<String, Function<Type, Object>> fields)
     {
-        Iterator<String> names = node.fieldNames();
-        while (names.hasNext()) {
-            String name = names.next();
+        for (String name : node.propertyNames()) {
             TreeNode child = node.get(name);
             fields.put(name, type -> {
                 try {

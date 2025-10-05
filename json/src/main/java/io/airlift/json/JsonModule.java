@@ -15,10 +15,11 @@
  */
 package io.airlift.json;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 public class JsonModule
         implements Module
@@ -28,9 +29,8 @@ public class JsonModule
     {
         binder.disableCircularProxies();
 
-        // NOTE: this MUST NOT be a singleton because ObjectMappers are mutable.  This means
-        // one component could reconfigure the mapper and break all other components
-        binder.bind(ObjectMapper.class).toProvider(ObjectMapperProvider.class);
+        binder.bind(ObjectMapper.class).toProvider(ObjectMapperProvider.class).in(Scopes.SINGLETON);
+        binder.bind(JsonMapper.class).toProvider(ObjectMapperProvider.class).in(Scopes.SINGLETON);
 
         binder.bind(JsonCodecFactory.class).in(Scopes.SINGLETON);
     }

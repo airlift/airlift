@@ -2,20 +2,18 @@ package io.airlift.json;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.core.Version;
-import com.fasterxml.jackson.databind.AnnotationIntrospector;
-import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
-import com.fasterxml.jackson.databind.introspect.AnnotatedField;
-import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
-import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
-import com.fasterxml.jackson.databind.introspect.VisibilityChecker;
-import com.fasterxml.jackson.databind.module.SimpleModule;
+import tools.jackson.core.Version;
+import tools.jackson.databind.AnnotationIntrospector;
+import tools.jackson.databind.cfg.MapperConfig;
+import tools.jackson.databind.introspect.AnnotatedClass;
+import tools.jackson.databind.introspect.AnnotatedField;
+import tools.jackson.databind.introspect.AnnotatedMember;
+import tools.jackson.databind.introspect.AnnotatedMethod;
+import tools.jackson.databind.introspect.VisibilityChecker;
+import tools.jackson.databind.module.SimpleModule;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import java.lang.reflect.Field;
-import java.lang.reflect.Member;
-import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.RecordComponent;
 import java.util.Set;
@@ -43,19 +41,19 @@ public class RecordAutoDetectModule
     private static class Introspector
             extends AnnotationIntrospector
     {
-        private static final VisibilityChecker.Std RECORD_VISIBILITY_CHECKER = VisibilityChecker.Std.defaultInstance()
+        private static final VisibilityChecker RECORD_VISIBILITY_CHECKER = VisibilityChecker.defaultInstance()
                 .withGetterVisibility(JsonAutoDetect.Visibility.PUBLIC_ONLY)
                 .withCreatorVisibility(JsonAutoDetect.Visibility.DEFAULT)
                 .withFieldVisibility(JsonAutoDetect.Visibility.DEFAULT)
                 .withIsGetterVisibility(JsonAutoDetect.Visibility.DEFAULT);
 
         @Override
-        public VisibilityChecker<?> findAutoDetectVisibility(AnnotatedClass ac, VisibilityChecker<?> checker)
+        public VisibilityChecker findAutoDetectVisibility(MapperConfig<?> mapperConfig, AnnotatedClass ac, VisibilityChecker checker)
         {
             if (ac.getRawType().isRecord()) {
                 JsonAutoDetect overrideAnnotation = ac.getRawType().getAnnotation(JsonAutoDetect.class);
                 if (overrideAnnotation != null) {
-                    return VisibilityChecker.Std.construct(JsonAutoDetect.Value.from(overrideAnnotation));
+                    return VisibilityChecker.construct(JsonAutoDetect.Value.from(overrideAnnotation));
                 }
                 if (ac.getRawType().isAnnotationPresent(LegacyRecordIntrospection.class)) {
                     return RECORD_VISIBILITY_CHECKER;
@@ -73,21 +71,16 @@ public class RecordAutoDetectModule
     }
 
     private static class RecordVisibilityChecker
-            implements VisibilityChecker<RecordVisibilityChecker>
+            extends VisibilityChecker
     {
         private final Set<String> componentNames;
 
         public RecordVisibilityChecker(Class<? extends Record> recordClass)
         {
+            super(JsonAutoDetect.Visibility.PUBLIC_ONLY);
             componentNames = Stream.of(recordClass.getRecordComponents())
                     .map(RecordComponent::getName)
                     .collect(toImmutableSet());
-        }
-
-        @Override
-        public RecordVisibilityChecker with(JsonAutoDetect annotation)
-        {
-            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -139,7 +132,7 @@ public class RecordAutoDetectModule
         }
 
         @Override
-        public boolean isGetterVisible(Method method)
+        public boolean isGetterVisible(AnnotatedMethod method)
         {
             if (!Modifier.isPublic(method.getModifiers())) {
                 return false;
@@ -148,25 +141,7 @@ public class RecordAutoDetectModule
         }
 
         @Override
-        public boolean isGetterVisible(AnnotatedMethod annotatedMethod)
-        {
-            return isGetterVisible(annotatedMethod.getAnnotated());
-        }
-
-        @Override
-        public boolean isIsGetterVisible(Method method)
-        {
-            return false;
-        }
-
-        @Override
         public boolean isIsGetterVisible(AnnotatedMethod annotatedMethod)
-        {
-            return false;
-        }
-
-        @Override
-        public boolean isSetterVisible(Method method)
         {
             return false;
         }
@@ -178,21 +153,9 @@ public class RecordAutoDetectModule
         }
 
         @Override
-        public boolean isCreatorVisible(Member member)
-        {
-            return true;
-        }
-
-        @Override
         public boolean isCreatorVisible(AnnotatedMember annotatedMember)
         {
             return true;
-        }
-
-        @Override
-        public boolean isFieldVisible(Field field)
-        {
-            return false;
         }
 
         @Override
