@@ -1,0 +1,25 @@
+test:hidden|public|1|GET|resource(test|RESOURCE|message|BASIC|java.lang.String)||[]|[]|[400|401|403]
+
+Metadata:
+GET
+io.airlift.api.servertests.integration.testingserver.external.PublicWidgetApi
+hiddenMethod
+public/api/v1/test:hidden
+
+
+Return:
+ModelResource[type=class io.airlift.api.servertests.integration.testingserver.external.StringResult, name=test, openApiName=Optional.empty, description=Used to return strings from test methods, components=[ModelResource[type=class java.lang.String, name=message, openApiName=Optional.empty, description=, components=[], resourceType=BASIC, containerType=class java.lang.String, modifiers=[], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional.empty, enumDescriptions=Optional.empty]], resourceType=RESOURCE, containerType=class io.airlift.api.servertests.integration.testingserver.external.StringResult, modifiers=[], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional.empty, enumDescriptions=Optional.empty]
+
+Parameter(s):
+none
+
+Optional Parameter(s):
+none
+
+Body:
+none
+
+Response(s):
+400
+401
+403
