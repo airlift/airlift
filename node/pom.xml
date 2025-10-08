@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airlift</artifactId>
-        <version>365</version>
+        <version>366-SNAPSHOT</version>
     </parent>
     <artifactId>node</artifactId>
     <packaging>jar</packaging>
