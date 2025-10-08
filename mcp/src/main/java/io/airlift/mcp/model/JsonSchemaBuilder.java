@@ -1,14 +1,14 @@
 package io.airlift.mcp.model;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.TypeLiteral;
-import io.airlift.json.ObjectMapperProvider;
+import io.airlift.json.JsonMapperProvider;
 import io.airlift.mcp.McpDescription;
 import io.airlift.mcp.reflection.MethodParameter;
 import io.airlift.mcp.reflection.MethodParameter.ObjectParameter;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.RecordComponent;
@@ -29,7 +29,7 @@ import static java.util.Objects.requireNonNull;
 
 public class JsonSchemaBuilder
 {
-    private static final ObjectMapper objectMapper = new ObjectMapperProvider().get();
+    private static final JsonMapper jsonMapper = new JsonMapperProvider().get();
 
     private static final Map<Class<?>, String> primitiveTypes = ImmutableMap.<Class<?>, String>builder()
             .put(String.class, "string")
@@ -68,7 +68,7 @@ public class JsonSchemaBuilder
                                 buildRecord(objectParameter.rawType(), objectProperties, objectRequried));
                     }
                     else {
-                        typeNode = objectMapper.createObjectNode();
+                        typeNode = jsonMapper.createObjectNode();
                         typeNode.put("type", primitiveType(objectParameter.rawType()));
                         description.ifPresent(value -> typeNode.put("description", value));
                     }
@@ -169,7 +169,7 @@ public class JsonSchemaBuilder
             typeNode = buildArray(description, collectionType);
         }
         else {
-            typeNode = objectMapper.createObjectNode();
+            typeNode = jsonMapper.createObjectNode();
             typeNode.put("type", primitiveType(rawType));
             description.ifPresent(value -> typeNode.put("description", value));
         }
@@ -181,7 +181,7 @@ public class JsonSchemaBuilder
         Class<?> rawType = TypeLiteral.get(genericType).getRawType();
         ObjectNode objectNode = convertType("[]", Optional.empty(), genericType, rawType);
 
-        ObjectNode typeNode = objectMapper.createObjectNode();
+        ObjectNode typeNode = jsonMapper.createObjectNode();
         typeNode.put("type", "array");
         typeNode.set("items", objectNode);
         description.ifPresent(value -> typeNode.put("description", value));
@@ -190,10 +190,10 @@ public class JsonSchemaBuilder
 
     private ObjectNode buildMap(Optional<String> description)
     {
-        ObjectNode additionalPropertiesNode = objectMapper.createObjectNode();
+        ObjectNode additionalPropertiesNode = jsonMapper.createObjectNode();
         additionalPropertiesNode.put("type", "string");
 
-        ObjectNode typeNode = objectMapper.createObjectNode();
+        ObjectNode typeNode = jsonMapper.createObjectNode();
         typeNode.put("type", "object");
         typeNode.set("additionalProperties", additionalPropertiesNode);
         description.ifPresent(value -> typeNode.put("description", value));
@@ -203,11 +203,11 @@ public class JsonSchemaBuilder
 
     private ObjectNode buildObject(Optional<String> description, BiConsumer<ObjectNode, ArrayNode> propertiesConsumer)
     {
-        ArrayNode requiredNode = objectMapper.createArrayNode();
-        ObjectNode propertiesNode = objectMapper.createObjectNode();
+        ArrayNode requiredNode = jsonMapper.createArrayNode();
+        ObjectNode propertiesNode = jsonMapper.createObjectNode();
         propertiesConsumer.accept(propertiesNode, requiredNode);
 
-        ObjectNode objectNode = objectMapper.createObjectNode();
+        ObjectNode objectNode = jsonMapper.createObjectNode();
         objectNode.put("$schema", "https://json-schema.org/draft/2020-12/schema");
         description.ifPresent(value -> objectNode.put("description", value));
         objectNode.put("type", "object");

@@ -15,46 +15,48 @@
  */
 package io.airlift.json;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Suppliers;
 import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
 import io.airlift.json.LengthLimitedWriter.LengthLimitExceededException;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringWriter;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import static com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT;
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 public class JsonCodec<T>
 {
-    private static final Supplier<ObjectMapper> OBJECT_MAPPER_SUPPLIER = Suppliers.memoize(
-            () -> new ObjectMapperProvider().get().enable(INDENT_OUTPUT));
+    private static final Supplier<JsonMapper> JSON_MAPPER_SUPPLIER = Suppliers.memoize(() -> new JsonMapperProvider()
+            .withPrettyPrint(true)
+            .get());
 
     public static <T> JsonCodec<T> jsonCodec(Class<T> type)
     {
         requireNonNull(type, "type is null");
 
-        return new JsonCodec<>(OBJECT_MAPPER_SUPPLIER.get(), type);
+        return new JsonCodec<>(JSON_MAPPER_SUPPLIER.get(), type);
     }
 
     public static <T> JsonCodec<T> jsonCodec(TypeToken<T> type)
     {
         requireNonNull(type, "type is null");
 
-        return new JsonCodec<>(OBJECT_MAPPER_SUPPLIER.get(), type.getType());
+        return new JsonCodec<>(JSON_MAPPER_SUPPLIER.get(), type.getType());
     }
 
     public static <T> JsonCodec<List<T>> listJsonCodec(Class<T> type)
@@ -65,7 +67,7 @@ public class JsonCodec<T>
                 .where(new TypeParameter<T>() {}, type)
                 .getType();
 
-        return new JsonCodec<>(OBJECT_MAPPER_SUPPLIER.get(), listType);
+        return new JsonCodec<>(JSON_MAPPER_SUPPLIER.get(), listType);
     }
 
     public static <T> JsonCodec<List<T>> listJsonCodec(JsonCodec<T> type)
@@ -76,7 +78,7 @@ public class JsonCodec<T>
                 .where(new TypeParameter<T>() {}, type.getTypeToken())
                 .getType();
 
-        return new JsonCodec<>(OBJECT_MAPPER_SUPPLIER.get(), listType);
+        return new JsonCodec<>(JSON_MAPPER_SUPPLIER.get(), listType);
     }
 
     public static <K, V> JsonCodec<Map<K, V>> mapJsonCodec(Class<K> keyType, Class<V> valueType)
@@ -89,7 +91,7 @@ public class JsonCodec<T>
                 .where(new TypeParameter<V>() {}, valueType)
                 .getType();
 
-        return new JsonCodec<>(OBJECT_MAPPER_SUPPLIER.get(), mapType);
+        return new JsonCodec<>(JSON_MAPPER_SUPPLIER.get(), mapType);
     }
 
     public static <K, V> JsonCodec<Map<K, V>> mapJsonCodec(Class<K> keyType, JsonCodec<V> valueType)
@@ -102,14 +104,14 @@ public class JsonCodec<T>
                 .where(new TypeParameter<V>() {}, valueType.getTypeToken())
                 .getType();
 
-        return new JsonCodec<>(OBJECT_MAPPER_SUPPLIER.get(), mapType);
+        return new JsonCodec<>(JSON_MAPPER_SUPPLIER.get(), mapType);
     }
 
-    private final ObjectMapper mapper;
+    private final JsonMapper mapper;
     private final Type type;
     private final JavaType javaType;
 
-    JsonCodec(ObjectMapper mapper, Type type)
+    JsonCodec(JsonMapper mapper, Type type)
     {
         this.mapper = mapper;
         this.type = type;
@@ -139,7 +141,7 @@ public class JsonCodec<T>
             checkArgument(parser.nextToken() == null, "Found characters after the expected end of input");
             return value;
         }
-        catch (IOException e) {
+        catch (JacksonException | UncheckedIOException e) {
             throw new IllegalArgumentException(format("Invalid JSON string for %s", javaType), e);
         }
     }
@@ -157,7 +159,7 @@ public class JsonCodec<T>
         try {
             return mapper.writerFor(javaType).writeValueAsString(instance);
         }
-        catch (IOException e) {
+        catch (JacksonException | UncheckedIOException e) {
             throw new IllegalArgumentException(format("%s could not be converted to JSON", instance.getClass().getName()), e);
         }
     }
@@ -177,10 +179,13 @@ public class JsonCodec<T>
             mapper.writeValue(lengthLimitedWriter, instance);
             return Optional.of(stringWriter.getBuffer().toString());
         }
-        catch (LengthLimitExceededException e) {
-            return Optional.empty();
+        catch (JacksonException e) {
+            if (e.getCause() instanceof LengthLimitExceededException) {
+                return Optional.empty();
+            }
+            throw e;
         }
-        catch (IOException e) {
+        catch (IOException | UncheckedIOException e) {
             throw new IllegalArgumentException(format("%s could not be converted to JSON", instance.getClass().getName()), e);
         }
     }
@@ -200,7 +205,7 @@ public class JsonCodec<T>
             checkArgument(parser.nextToken() == null, "Found characters after the expected end of input");
             return value;
         }
-        catch (IOException e) {
+        catch (JacksonException | UncheckedIOException e) {
             throw new IllegalArgumentException(format("Invalid JSON bytes for %s", javaType), e);
         }
     }
@@ -218,7 +223,7 @@ public class JsonCodec<T>
         try {
             return mapper.writerFor(javaType).writeValueAsBytes(instance);
         }
-        catch (IOException e) {
+        catch (JacksonException | UncheckedIOException e) {
             throw new IllegalArgumentException(format("%s could not be converted to JSON", instance.getClass().getName()), e);
         }
     }
@@ -238,7 +243,7 @@ public class JsonCodec<T>
             checkArgument(parser.nextToken() == null, "Found characters after the expected end of input");
             return value;
         }
-        catch (IOException e) {
+        catch (JacksonException | UncheckedIOException e) {
             throw new IllegalArgumentException(format("Invalid JSON bytes for %s", javaType), e);
         }
     }
@@ -258,7 +263,7 @@ public class JsonCodec<T>
             checkArgument(parser.nextToken() == null, "Found characters after the expected end of input");
             return value;
         }
-        catch (IOException e) {
+        catch (JacksonException | UncheckedIOException e) {
             throw new IllegalArgumentException(format("Invalid JSON characters for %s", javaType), e);
         }
     }

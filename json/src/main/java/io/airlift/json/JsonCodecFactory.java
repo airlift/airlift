@@ -15,65 +15,63 @@
  */
 package io.airlift.json;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 
-import static com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT;
 import static java.util.Objects.requireNonNull;
+import static tools.jackson.databind.SerializationFeature.INDENT_OUTPUT;
 
 public class JsonCodecFactory
 {
-    private final Provider<ObjectMapper> objectMapperProvider;
-    private final boolean prettyPrint;
+    private final JsonMapper jsonMapper;
 
     public JsonCodecFactory()
     {
-        this(new ObjectMapperProvider());
+        this(new JsonMapperProvider());
     }
 
     @Inject
-    public JsonCodecFactory(Provider<ObjectMapper> objectMapperProvider)
+    public JsonCodecFactory(Provider<JsonMapper> jsonMapperProvider)
     {
-        this(objectMapperProvider, false);
+        this(jsonMapperProvider, false);
     }
 
-    public JsonCodecFactory(Provider<ObjectMapper> objectMapperProvider, boolean prettyPrint)
+    public JsonCodecFactory(Provider<JsonMapper> jsonMapperProvider, boolean prettyPrint)
     {
-        this.objectMapperProvider = objectMapperProvider;
-        this.prettyPrint = prettyPrint;
+        this.jsonMapper = createJsonMapper(requireNonNull(jsonMapperProvider, "jsonMapperProvider is null"), prettyPrint);
     }
 
     public JsonCodecFactory prettyPrint()
     {
-        return new JsonCodecFactory(objectMapperProvider, true);
+        return new JsonCodecFactory(() -> jsonMapper, true);
     }
 
     public <T> JsonCodec<T> jsonCodec(Class<T> type)
     {
         requireNonNull(type, "type is null");
 
-        return new JsonCodec<>(createObjectMapper(), type);
+        return new JsonCodec<>(jsonMapper, type);
     }
 
     public <T> JsonCodec<T> jsonCodec(Type type)
     {
         requireNonNull(type, "type is null");
 
-        return new JsonCodec<>(createObjectMapper(), type);
+        return new JsonCodec<>(jsonMapper, type);
     }
 
     public <T> JsonCodec<T> jsonCodec(TypeToken<T> type)
     {
         requireNonNull(type, "type is null");
 
-        return new JsonCodec<>(createObjectMapper(), type.getType());
+        return new JsonCodec<>(jsonMapper, type.getType());
     }
 
     public <T> JsonCodec<List<T>> listJsonCodec(Class<T> type)
@@ -84,7 +82,7 @@ public class JsonCodecFactory
                 .where(new TypeParameter<T>() {}, type)
                 .getType();
 
-        return new JsonCodec<>(createObjectMapper(), listType);
+        return new JsonCodec<>(jsonMapper, listType);
     }
 
     public <T> JsonCodec<List<T>> listJsonCodec(JsonCodec<T> type)
@@ -95,7 +93,7 @@ public class JsonCodecFactory
                 .where(new TypeParameter<T>() {}, type.getTypeToken())
                 .getType();
 
-        return new JsonCodec<>(createObjectMapper(), listType);
+        return new JsonCodec<>(jsonMapper, listType);
     }
 
     public <K, V> JsonCodec<Map<K, V>> mapJsonCodec(Class<K> keyType, Class<V> valueType)
@@ -108,7 +106,7 @@ public class JsonCodecFactory
                 .where(new TypeParameter<V>() {}, valueType)
                 .getType();
 
-        return new JsonCodec<>(createObjectMapper(), mapType);
+        return new JsonCodec<>(jsonMapper, mapType);
     }
 
     public <K, V> JsonCodec<Map<K, V>> mapJsonCodec(Class<K> keyType, JsonCodec<V> valueType)
@@ -121,11 +119,16 @@ public class JsonCodecFactory
                 .where(new TypeParameter<V>() {}, valueType.getTypeToken())
                 .getType();
 
-        return new JsonCodec<>(createObjectMapper(), mapType);
+        return new JsonCodec<>(jsonMapper, mapType);
     }
 
-    private ObjectMapper createObjectMapper()
+    private static JsonMapper createJsonMapper(Provider<JsonMapper> jsonMapperProvider, boolean prettyPrint)
     {
-        return objectMapperProvider.get().configure(INDENT_OUTPUT, prettyPrint);
+        if (prettyPrint) {
+            return jsonMapperProvider.get().rebuild()
+                    .enable(INDENT_OUTPUT)
+                    .build();
+        }
+        return jsonMapperProvider.get();
     }
 }
