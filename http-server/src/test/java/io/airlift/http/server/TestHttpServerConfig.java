@@ -68,7 +68,7 @@ public class TestHttpServerConfig
                 .setHttp2InputBufferSize(DataSize.of(8, KILOBYTE))
                 .setHttp2InitialStreamReceiveWindowSize(DataSize.of(16, MEGABYTE))
                 .setHttp2StreamIdleTimeout(new Duration(15, SECONDS))
-                .setCompressionEnabled(false)
+                .setCompressionEnabled(true)
                 .setMaxHeapMemory(null)
                 .setMaxDirectMemory(null)
                 .setNotifyRemoteAsyncErrors(false));
@@ -107,7 +107,7 @@ public class TestHttpServerConfig
                 .put("http-server.http2.stream-receive-window-size", "4MB")
                 .put("http-server.http2.input-buffer-size", "4MB")
                 .put("http-server.http2.stream-idle-timeout", "23s")
-                .put("http-server.compression.enabled", "true")
+                .put("http-server.compression.enabled", "false")
                 .put("http-server.max-heap-memory", "127GB")
                 .put("http-server.max-direct-memory", "129GB")
                 .put("http-server.notify-remote-async-errors", "true")
@@ -143,7 +143,7 @@ public class TestHttpServerConfig
                 .setHttp2InitialStreamReceiveWindowSize(DataSize.of(4, MEGABYTE))
                 .setHttp2InputBufferSize(DataSize.of(4, MEGABYTE))
                 .setHttp2StreamIdleTimeout(new Duration(23, SECONDS))
-                .setCompressionEnabled(true)
+                .setCompressionEnabled(false)
                 .setMaxHeapMemory(DataSize.of(127, GIGABYTE))
                 .setMaxDirectMemory(DataSize.of(129, GIGABYTE))
                 .setNotifyRemoteAsyncErrors(true);

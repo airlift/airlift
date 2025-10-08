@@ -98,7 +98,7 @@ public class HttpServerConfig
 
     private boolean showStackTrace = true;
 
-    private boolean compressionEnabled;
+    private boolean compressionEnabled = true;
 
     private Optional<DataSize> maxHeapMemory = Optional.empty();
     private Optional<DataSize> maxDirectMemory = Optional.empty();
