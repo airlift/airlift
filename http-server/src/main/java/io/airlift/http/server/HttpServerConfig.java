@@ -87,6 +87,7 @@ public class HttpServerConfig
     private int maxThreads = 200;
     private Duration threadMaxIdleTime = new Duration(1, MINUTES);
     private Duration networkMaxIdleTime = new Duration(200, SECONDS);
+    private Duration stopTimeout = new Duration(30, SECONDS);
     private DataSize maxRequestHeaderSize;
     private DataSize maxResponseHeaderSize;
     private DataSize outputBufferSize;
@@ -357,6 +358,19 @@ public class HttpServerConfig
     public HttpServerConfig setNetworkMaxIdleTime(Duration networkMaxIdleTime)
     {
         this.networkMaxIdleTime = networkMaxIdleTime;
+        return this;
+    }
+
+    public Duration getStopTimeout()
+    {
+        return stopTimeout;
+    }
+
+    @Config("http-server.stop-timeout")
+    @ConfigDescription("Maximum time to wait for active requests to complete during graceful shutdown")
+    public HttpServerConfig setStopTimeout(Duration stopTimeout)
+    {
+        this.stopTimeout = stopTimeout;
         return this;
     }
 
