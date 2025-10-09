@@ -87,6 +87,9 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
+import static io.airlift.http.server.ServerFeature.CASE_SENSITIVE_HEADER_CACHE;
+import static io.airlift.http.server.ServerFeature.LEGACY_URI_COMPLIANCE;
+import static io.airlift.http.server.ServerFeature.VIRTUAL_THREADS;
 import static java.lang.Math.max;
 import static java.lang.Math.toIntExact;
 import static java.time.temporal.ChronoUnit.DAYS;
@@ -116,6 +119,7 @@ public class HttpServer
     private Optional<SslContextFactory.Server> sslContextFactory;
 
     public HttpServer(
+            String name,
             HttpServerInfo httpServerInfo,
             NodeInfo nodeInfo,
             HttpServerConfig config,
@@ -123,9 +127,7 @@ public class HttpServer
             Servlet servlet,
             Set<Filter> filters,
             Set<HttpResourceBinding> resources,
-            boolean enableVirtualThreads,
-            boolean enableLegacyUriCompliance,
-            boolean enableCaseSensitiveHeaderCache,
+            Set<ServerFeature> serverFeatures,
             ClientCertificate clientCertificate,
             Optional<MBeanServer> mbeanServer,
             Optional<SslContextFactory.Server> maybeSslContextFactory,
@@ -146,12 +148,12 @@ public class HttpServer
         MonitoredQueuedThreadPool threadPool = new MonitoredQueuedThreadPool(config.getMaxThreads());
         threadPool.setMinThreads(config.getMinThreads());
         threadPool.setIdleTimeout(toIntExact(config.getThreadMaxIdleTime().toMillis()));
-        threadPool.setName("http-worker");
+        threadPool.setName(name + "-worker");
         threadPool.setDetailedDump(true);
-        if (enableVirtualThreads) {
+        if (serverFeatures.contains(VIRTUAL_THREADS)) {
             VirtualThreadPool virtualExecutor = new VirtualThreadPool();
             virtualExecutor.setMaxThreads(config.getMaxThreads());
-            virtualExecutor.setName("http-worker#v");
+            virtualExecutor.setName(name + "-worker#v");
             virtualExecutor.setDetailedDump(true);
             log.info("Virtual threads support is enabled");
             threadPool.setVirtualThreadsExecutor(virtualExecutor);
@@ -162,8 +164,8 @@ public class HttpServer
                 toSafeBytes(config.getMaxResponseHeaderSize()).orElse(8192)),
                 toSafeBytes(config.getOutputBufferSize()).orElse(32768)));
 
-        server = new Server(threadPool, createScheduler("http-scheduler"), byteBufferPool.orElseGet(() -> createByteBufferPool(maxBufferSize, config)));
-        server.setName("http-server");
+        server = new Server(threadPool, createScheduler(name + "-scheduler"), byteBufferPool.orElseGet(() -> createByteBufferPool(maxBufferSize, config)));
+        server.setName(name);
 
         this.monitoredQueuedThreadPoolMBean = new MonitoredQueuedThreadPoolMBean(threadPool);
 
@@ -174,8 +176,7 @@ public class HttpServer
 
         if (mbeanServer.isPresent()) {
             // export jmx mbeans if a server was provided
-            MBeanContainer mbeanContainer = new MBeanContainer(mbeanServer.orElseThrow());
-            server.addBean(mbeanContainer);
+            server.addBean(new MBeanContainer(mbeanServer.orElseThrow()));
         }
 
         HttpConfiguration baseHttpConfiguration = new HttpConfiguration();
@@ -206,9 +207,9 @@ public class HttpServer
         }
 
         // see https://bugs.eclipse.org/bugs/show_bug.cgi?id=414449#c4
-        baseHttpConfiguration.setHeaderCacheCaseSensitive(enableCaseSensitiveHeaderCache);
+        baseHttpConfiguration.setHeaderCacheCaseSensitive(serverFeatures.contains(CASE_SENSITIVE_HEADER_CACHE));
 
-        if (enableLegacyUriCompliance) {
+        if (serverFeatures.contains(LEGACY_URI_COMPLIANCE)) {
             // allow encoded slashes to occur in URI paths
             UriCompliance uriCompliance = UriCompliance.from(EnumSet.of(AMBIGUOUS_PATH_SEPARATOR, AMBIGUOUS_PATH_ENCODING, SUSPICIOUS_PATH_CHARACTERS));
             baseHttpConfiguration.setUriCompliance(uriCompliance);
@@ -253,7 +254,7 @@ public class HttpServer
             setSecureRequestCustomizer(httpsConfiguration);
 
             HttpsConfig httpsConfig = maybeHttpsConfig.orElseThrow();
-            this.sslContextFactory = Optional.of(this.sslContextFactory.orElseGet(() -> createReloadingSslContextFactory(httpsConfig, clientCertificate, nodeInfo.getEnvironment())));
+            this.sslContextFactory = Optional.of(this.sslContextFactory.orElseGet(() -> createReloadingSslContextFactory(name, httpsConfig, clientCertificate, nodeInfo.getEnvironment())));
             Integer acceptors = config.getHttpsAcceptorThreads();
             Integer selectors = config.getHttpsSelectorThreads();
             httpsConnector = createServerConnector(
@@ -290,7 +291,7 @@ public class HttpServer
          */
         StatisticsHandler statsHandler = new StatisticsHandler();
 
-        ServletContextHandler servletContext = createServletContext(servlet, resources, filters, Set.of("http", "https"), showStackTrace, enableLegacyUriCompliance);
+        ServletContextHandler servletContext = createServletContext(servlet, resources, filters, Set.of("http", "https"), showStackTrace, serverFeatures.contains(LEGACY_URI_COMPLIANCE));
 
         if (enableCompression) {
             CompressionHandler compressionHandler = new CompressionHandler();
@@ -517,10 +518,10 @@ public class HttpServer
         server.join();
     }
 
-    private SslContextFactory.Server createReloadingSslContextFactory(HttpsConfig config, ClientCertificate clientCertificate, String environment)
+    private SslContextFactory.Server createReloadingSslContextFactory(String name, HttpsConfig config, ClientCertificate clientCertificate, String environment)
     {
         if (scheduledExecutorService == null) {
-            scheduledExecutorService = newSingleThreadScheduledExecutor(daemonThreadsNamed("HttpServerScheduler"));
+            scheduledExecutorService = newSingleThreadScheduledExecutor(daemonThreadsNamed(name + "-ssl-reloader"));
         }
 
         return new ReloadableSslContextFactoryProvider(config, scheduledExecutorService, clientCertificate, environment).getSslContextFactory();

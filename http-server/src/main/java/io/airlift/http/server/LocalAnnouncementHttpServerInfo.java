@@ -20,6 +20,8 @@ import io.airlift.discovery.client.AnnouncementHttpServerInfo;
 
 import java.net.URI;
 
+import static com.google.common.base.MoreObjects.toStringHelper;
+
 public class LocalAnnouncementHttpServerInfo
         implements AnnouncementHttpServerInfo
 {
@@ -53,5 +55,16 @@ public class LocalAnnouncementHttpServerInfo
     public URI getHttpsExternalUri()
     {
         return httpServerInfo.getHttpsExternalUri();
+    }
+
+    @Override
+    public String toString()
+    {
+        return toStringHelper(this)
+                .add("httpUri", getHttpUri())
+                .add("httpsUri", getHttpsUri())
+                .add("httpExternalUri", getHttpExternalUri())
+                .add("httpsExternalUri", getHttpsExternalUri())
+                .toString();
     }
 }

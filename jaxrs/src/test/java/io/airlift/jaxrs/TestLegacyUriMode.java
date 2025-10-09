@@ -29,6 +29,7 @@ import static io.airlift.http.client.FullJsonResponseHandler.createFullJsonRespo
 import static io.airlift.http.client.HttpClientBinder.httpClientBinder;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.server.HttpServerBinder.httpServerBinder;
+import static io.airlift.http.server.ServerFeature.LEGACY_URI_COMPLIANCE;
 import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
 import static io.airlift.json.JsonCodec.listJsonCodec;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
@@ -102,7 +103,7 @@ public class TestLegacyUriMode
                     jaxrsBinder(binder).bind(MyResource.class);
                     httpClientBinder(binder).bindHttpClient("test", ForTest.class);
                     if (legacyUriComplianceEnabled) {
-                        httpServerBinder(binder).enableLegacyUriCompliance();
+                        httpServerBinder(binder).withFeature(LEGACY_URI_COMPLIANCE);
                     }
                 },
                 new TestingNodeModule(),
