@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.inject.matcher.Matchers.any;
 import static java.util.Objects.requireNonNull;
+import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 /**
  * Guice module for binding the LifeCycle manager
@@ -60,6 +61,8 @@ public class LifeCycleModule
         binder.disableCircularProxies();
 
         binder.bindListener(any(), this::provision);
+
+        newExporter(binder).export(LifeCycleManager.class).withGeneratedName();
     }
 
     private <T> void provision(ProvisionInvocation<T> provision)
