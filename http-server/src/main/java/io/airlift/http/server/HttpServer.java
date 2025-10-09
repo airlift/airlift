@@ -23,6 +23,7 @@ import io.airlift.http.server.jetty.MonitoredQueuedThreadPoolMBean;
 import io.airlift.log.Logger;
 import io.airlift.node.NodeInfo;
 import io.airlift.units.DataSize;
+import io.airlift.units.Duration;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.servlet.Filter;
@@ -53,6 +54,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.server.handler.GracefulHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.MonitoredQueuedThreadPool;
@@ -94,6 +96,7 @@ import static java.util.Collections.list;
 import static java.util.Comparator.naturalOrder;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.eclipse.jetty.http.MimeTypes.Type.TEXT_PLAIN;
 import static org.eclipse.jetty.http.UriCompliance.Violation.AMBIGUOUS_PATH_ENCODING;
 import static org.eclipse.jetty.http.UriCompliance.Violation.AMBIGUOUS_PATH_SEPARATOR;
@@ -142,7 +145,6 @@ public class HttpServer
         requireNonNull(mbeanServer, "mbeanServer is null");
 
         checkArgument(!config.isHttpsEnabled() || maybeHttpsConfig.isPresent(), "httpsConfig must be present when HTTPS is enabled");
-
         MonitoredQueuedThreadPool threadPool = new MonitoredQueuedThreadPool(config.getMaxThreads());
         threadPool.setMinThreads(config.getMinThreads());
         threadPool.setIdleTimeout(toIntExact(config.getThreadMaxIdleTime().toMillis()));
@@ -164,6 +166,8 @@ public class HttpServer
 
         server = new Server(threadPool, createScheduler("http-scheduler"), byteBufferPool.orElseGet(() -> createByteBufferPool(maxBufferSize, config)));
         server.setName("http-server");
+        server.setStopAtShutdown(true);
+        server.setStopTimeout(config.getStopTimeout().toMillis());
 
         this.monitoredQueuedThreadPoolMBean = new MonitoredQueuedThreadPoolMBean(threadPool);
 
@@ -279,13 +283,14 @@ public class HttpServer
         /*
          * Jetty's handlers chain is:
          *    channel listener (protocol)
-         *    |--- statistics handler
-         *         |--- compression handler (if enabled)
-         *              |--- servlet context handler
-         *                   |--- error handler
-         *                   |--- servlet filters (i.e. tracing)
-         *                   |--- the servlet (i.e. Jersey's ServletContainer)
-         *                   |--- static resources
+         *    |--- graceful handler (tracks active requests)
+         *         |--- statistics handler
+         *              |--- compression handler (if enabled)
+         *                   |--- servlet context handler
+         *                        |--- error handler
+         *                        |--- servlet filters (i.e. tracing)
+         *                        |--- the servlet (i.e. Jersey's ServletContainer)
+         *                        |--- static resources
          *    |--- error handler
          */
         StatisticsHandler statsHandler = new StatisticsHandler();
@@ -329,8 +334,7 @@ public class HttpServer
                     config.isCompressionEnabled(),
                     config.isLogImmediateFlush()));
         }
-
-        server.setHandler(statsHandler);
+        server.setHandler(new GracefulHandler(statsHandler));
         ErrorHandler errorHandler = new ErrorHandler();
         errorHandler.setShowMessageInTitle(showStackTrace);
         errorHandler.setShowStacks(showStackTrace);
@@ -503,11 +507,21 @@ public class HttpServer
     public void stop()
             throws Exception
     {
-        server.setStopTimeout(0);
+        long activeRequests = server.getHandlers().stream()
+                .filter(GracefulHandler.class::isInstance)
+                .map(GracefulHandler.class::cast)
+                .findFirst()
+                .map(GracefulHandler::getCurrentRequestCount)
+                .orElse(0L);
+
+        log.debug("Server %s stopping in %s, %d active requests to complete", Duration.succinctDuration(server.getStopTimeout(), MILLISECONDS), activeRequests);
         server.stop();
+
         if (scheduledExecutorService != null) {
             scheduledExecutorService.shutdown();
         }
+
+        log.info("Server %s shutdown complete", server.getName());
     }
 
     @VisibleForTesting
