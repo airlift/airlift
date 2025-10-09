@@ -160,6 +160,8 @@ public class HttpServer
                 toSafeBytes(config.getOutputBufferSize()).orElse(32768)));
 
         server = new Server(threadPool, null, byteBufferPool.orElseGet(() -> createByteBufferPool(maxBufferSize, config)));
+        server.setName("http-server");
+
         this.monitoredQueuedThreadPoolMBean = new MonitoredQueuedThreadPoolMBean(threadPool);
 
         boolean showStackTrace = config.isShowStackTrace();
