@@ -18,7 +18,9 @@ package io.airlift.bootstrap;
 import io.airlift.log.Logger;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import org.weakref.jmx.Managed;
 
+import java.io.Closeable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -82,6 +84,12 @@ public final class LifeCycleManager
         }
     }
 
+    @Managed
+    public long getManagedInstanceCount()
+    {
+        return managedInstances.size();
+    }
+
     /**
      * Returns the number of managed instances
      *
@@ -135,6 +143,7 @@ public final class LifeCycleManager
      *
      * @throws LifeCycleStopException If any failure occurs during the clean up process
      */
+    @Managed
     public void stopWithoutFailureLogging()
             throws LifeCycleStopException
     {
@@ -157,6 +166,7 @@ public final class LifeCycleManager
      *
      * @throws LifeCycleStopException If any failure occurs during the clean up process
      */
+    @Managed
     public void stop()
             throws LifeCycleStopException
     {
@@ -226,7 +236,7 @@ public final class LifeCycleManager
         LifeCycleMethods methods = methodsMap.get(obj.getClass());
         for (Method preDestroy : methods.methodsFor(PreDestroy.class)) {
             log.debug("- invoke %s::%s()", preDestroy.getDeclaringClass().getName(), preDestroy.getName());
-            try {
+            try (ThreadContextClassLoader _ = new ThreadContextClassLoader(obj.getClass().getClassLoader())) {
                 preDestroy.invoke(obj);
             }
             catch (Exception e) {
@@ -280,5 +290,23 @@ public final class LifeCycleManager
     private static Exception unwrapInvocationTargetException(Exception e)
     {
         return (e instanceof InvocationTargetException && e.getCause() instanceof Exception exception) ? exception : e;
+    }
+
+    class ThreadContextClassLoader
+            implements Closeable
+    {
+        private final ClassLoader originalThreadContextClassLoader;
+
+        public ThreadContextClassLoader(ClassLoader newThreadContextClassLoader)
+        {
+            this.originalThreadContextClassLoader = Thread.currentThread().getContextClassLoader();
+            Thread.currentThread().setContextClassLoader(newThreadContextClassLoader);
+        }
+
+        @Override
+        public void close()
+        {
+            Thread.currentThread().setContextClassLoader(originalThreadContextClassLoader);
+        }
     }
 }
