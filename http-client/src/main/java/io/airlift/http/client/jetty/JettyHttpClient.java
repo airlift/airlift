@@ -274,6 +274,7 @@ public class JettyHttpClient
         connector.setSslContextFactory(sslContextFactory);
 
         httpClient = new HttpClient(getClientTransport(connector, config));
+        httpClient.setName("http-client-" + name);
 
         // request and response buffer size
         httpClient.setRequestBufferSize(toIntExact(config.getRequestBufferSize().toBytes()));
