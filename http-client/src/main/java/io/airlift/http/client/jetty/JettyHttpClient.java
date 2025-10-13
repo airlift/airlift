@@ -360,7 +360,9 @@ public class JettyHttpClient
 
             // remove the GZIP encoding from the client
             // TODO: there should be a better way to to do this
-            httpClient.getContentDecoderFactories().clear();
+            if (!config.isPreserveContentDecoderFactories()) {
+                httpClient.getContentDecoderFactories().clear();
+            }
         }
         catch (Exception e) {
             if (e instanceof InterruptedException) {
