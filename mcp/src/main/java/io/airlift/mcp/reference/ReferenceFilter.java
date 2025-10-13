@@ -1,5 +1,6 @@
 package io.airlift.mcp.reference;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import io.airlift.log.Logger;
 import io.airlift.mcp.McpException;
@@ -23,6 +24,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.util.Optional;
+import java.util.Set;
 
 import static com.google.common.net.HttpHeaders.WWW_AUTHENTICATE;
 import static io.modelcontextprotocol.server.transport.HttpServletStatelessServerTransport.APPLICATION_JSON;
@@ -34,6 +36,7 @@ public class ReferenceFilter
         extends HttpFilter
 {
     private static final String MCP_IDENTITY_ATTRIBUTE = "airlift.mcp.identity";
+    private static final Set<String> ALLOWED_HTTP_METHODS = ImmutableSet.of("GET", "POST");
     private static final Logger log = Logger.get(ReferenceFilter.class);
 
     private final HttpServletStatelessServerTransport transport;
@@ -95,7 +98,7 @@ public class ReferenceFilter
 
     private boolean isMcpRequest(HttpServletRequest request)
     {
-        if (request.getMethod().equalsIgnoreCase("POST")) {
+        if (ALLOWED_HTTP_METHODS.contains(request.getMethod())) {
             return metadata.uriPath().equals(request.getRequestURI());
         }
         return false;

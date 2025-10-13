@@ -62,11 +62,14 @@ import java.util.stream.Stream;
 import static com.google.inject.Scopes.SINGLETON;
 import static io.airlift.http.client.FullJsonResponseHandler.createFullJsonResponseHandler;
 import static io.airlift.http.client.HttpClientBinder.httpClientBinder;
+import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.Request.Builder.preparePost;
 import static io.airlift.json.JsonCodec.jsonCodec;
 import static io.airlift.mcp.TestingIdentityMapper.ERRORED_IDENTITY;
 import static io.airlift.mcp.TestingIdentityMapper.EXPECTED_IDENTITY;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
+import static jakarta.servlet.http.HttpServletResponse.SC_METHOD_NOT_ALLOWED;
+import static jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.InstanceOfAssertFactories.type;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
@@ -342,6 +345,27 @@ public class TestMcp
                 .first()
                 .extracting(ResourceContents::text)
                 .isEqualTo(Optional.of("This is the content of file://example2.txt"));
+    }
+
+    @Test
+    public void testGetMcpReturns405()
+    {
+        Request request = prepareGet()
+                .setUri(baseUri)
+                .addHeader("Accept", "application/json,text/event-stream")
+                .build();
+
+        var response = httpClient.execute(request, createFullJsonResponseHandler(jsonCodec(new TypeToken<>() {})));
+        assertThat(response.getStatusCode()).isEqualTo(SC_UNAUTHORIZED);
+
+        request = prepareGet()
+                .setUri(baseUri)
+                .addHeader("Accept", "application/json,text/event-stream")
+                .addHeader(IDENTITY_HEADER, EXPECTED_IDENTITY)
+                .build();
+
+        response = httpClient.execute(request, createFullJsonResponseHandler(jsonCodec(new TypeToken<>() {})));
+        assertThat(response.getStatusCode()).isEqualTo(SC_METHOD_NOT_ALLOWED);
     }
 
     private JsonRpcResponse<?> rpcCall(JsonRpcRequest<?> jsonrpcRequest)
