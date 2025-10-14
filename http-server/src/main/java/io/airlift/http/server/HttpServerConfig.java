@@ -104,6 +104,7 @@ public class HttpServerConfig
     private Optional<DataSize> maxHeapMemory = Optional.empty();
     private Optional<DataSize> maxDirectMemory = Optional.empty();
     private boolean notifyRemoteAsyncErrors;
+    private boolean trackMemoryAllocations;
 
     public boolean isHttpEnabled()
     {
@@ -551,6 +552,20 @@ public class HttpServerConfig
     public HttpServerConfig setNotifyRemoteAsyncErrors(boolean notifyRemoteAsyncErrors)
     {
         this.notifyRemoteAsyncErrors = notifyRemoteAsyncErrors;
+        return this;
+    }
+
+    public boolean isTrackMemoryAllocations()
+    {
+        return trackMemoryAllocations;
+    }
+
+    @Config("http-server.track-memory-allocations")
+    @ConfigDescription("Enables tracking of memory allocations to detect potential leaks")
+    @ConfigHidden
+    public HttpServerConfig setTrackMemoryAllocations(boolean trackMemoryAllocations)
+    {
+        this.trackMemoryAllocations = trackMemoryAllocations;
         return this;
     }
 
