@@ -126,6 +126,7 @@ public class HttpClientConfig
     private boolean verifyHostname = true;
     private Optional<String> httpProxyUser = Optional.empty();
     private Optional<String> httpProxyPassword = Optional.empty();
+    private boolean trackMemoryAllocations;
 
     public boolean isVerifyHostname()
     {
@@ -774,6 +775,20 @@ public class HttpClientConfig
     public HttpClientConfig setUseVirtualThreads(boolean useVirtualThreads)
     {
         this.useVirtualThreads = useVirtualThreads;
+        return this;
+    }
+
+    public boolean isTrackMemoryAllocations()
+    {
+        return trackMemoryAllocations;
+    }
+
+    @Config("http-client.track-memory-allocations")
+    @ConfigDescription("Enables tracking of memory allocations to detect potential leaks")
+    @ConfigHidden
+    public HttpClientConfig setTrackMemoryAllocations(boolean trackMemoryAllocations)
+    {
+        this.trackMemoryAllocations = trackMemoryAllocations;
         return this;
     }
 
