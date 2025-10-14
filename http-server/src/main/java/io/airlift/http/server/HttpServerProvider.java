@@ -23,7 +23,6 @@ import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.node.NodeInfo;
 import jakarta.servlet.Filter;
 import jakarta.servlet.Servlet;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import javax.management.MBeanServer;
@@ -54,7 +53,6 @@ public class HttpServerProvider
     private Optional<MBeanServer> mbeanServer = Optional.empty();
     private final Set<Filter> filters;
     private final Optional<SslContextFactory.Server> sslContextFactory;
-    private final Optional<ByteBufferPool> byteBufferPool;
 
     @Inject
     public HttpServerProvider(HttpServerInfo httpServerInfo,
@@ -68,8 +66,7 @@ public class HttpServerProvider
                   @EnableLegacyUriCompliance boolean enableLegacyUriCompliance,
                   @EnableCaseSensitiveHeaderCache boolean enableCaseSensitiveHeaderCache,
                   ClientCertificate clientCertificate,
-                  Optional<SslContextFactory.Server> sslContextFactory,
-                  Optional<ByteBufferPool> byteBufferPool)
+                  Optional<SslContextFactory.Server> sslContextFactory)
     {
         requireNonNull(httpServerInfo, "httpServerInfo is null");
         requireNonNull(nodeInfo, "nodeInfo is null");
@@ -80,7 +77,6 @@ public class HttpServerProvider
         requireNonNull(resources, "resources is null");
         requireNonNull(clientCertificate, "clientCertificate is null");
         requireNonNull(sslContextFactory, "sslContextFactory is null");
-        requireNonNull(byteBufferPool, "byteBufferPool is null");
 
         this.httpServerInfo = httpServerInfo;
         this.nodeInfo = nodeInfo;
@@ -94,7 +90,6 @@ public class HttpServerProvider
         this.enableCaseSensitiveHeaderCache = enableCaseSensitiveHeaderCache;
         this.clientCertificate = clientCertificate;
         this.sslContextFactory = sslContextFactory;
-        this.byteBufferPool = byteBufferPool;
     }
 
     @Inject(optional = true)
@@ -120,8 +115,7 @@ public class HttpServerProvider
                     enableCaseSensitiveHeaderCache,
                     clientCertificate,
                     mbeanServer,
-                    sslContextFactory,
-                    byteBufferPool);
+                    sslContextFactory);
             httpServer.start();
             return httpServer;
         }
