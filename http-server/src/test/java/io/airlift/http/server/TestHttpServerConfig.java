@@ -72,7 +72,8 @@ public class TestHttpServerConfig
                 .setCompressionEnabled(true)
                 .setMaxHeapMemory(null)
                 .setMaxDirectMemory(null)
-                .setNotifyRemoteAsyncErrors(false));
+                .setNotifyRemoteAsyncErrors(false)
+                .setTrackMemoryAllocations(false));
     }
 
     @Test
@@ -113,6 +114,7 @@ public class TestHttpServerConfig
                 .put("http-server.max-heap-memory", "127GB")
                 .put("http-server.max-direct-memory", "129GB")
                 .put("http-server.notify-remote-async-errors", "true")
+                .put("http-server.track-memory-allocations", "true")
                 .build();
 
         HttpServerConfig expected = new HttpServerConfig()
@@ -149,7 +151,8 @@ public class TestHttpServerConfig
                 .setCompressionEnabled(false)
                 .setMaxHeapMemory(DataSize.of(127, GIGABYTE))
                 .setMaxDirectMemory(DataSize.of(129, GIGABYTE))
-                .setNotifyRemoteAsyncErrors(true);
+                .setNotifyRemoteAsyncErrors(true)
+                .setTrackMemoryAllocations(true);
 
         assertFullMapping(properties, expected);
     }
