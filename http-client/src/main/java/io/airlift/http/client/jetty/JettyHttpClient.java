@@ -206,7 +206,7 @@ public class JettyHttpClient
             Iterable<? extends HttpRequestFilter> requestFilters,
             Iterable<? extends HttpStatusListener> httpStatusListeners)
     {
-        this(name, config, requestFilters, NOOP_OPEN_TELEMETRY, NOOP_TRACER, Optional.empty(), Optional.empty(), Optional.empty(), httpStatusListeners);
+        this(name, config, requestFilters, NOOP_OPEN_TELEMETRY, NOOP_TRACER, Optional.empty(), Optional.empty(), httpStatusListeners);
     }
 
     public JettyHttpClient(
@@ -228,7 +228,7 @@ public class JettyHttpClient
             Optional<String> environment,
             Optional<SslContextFactory.Client> maybeSslContextFactory)
     {
-        this(name, config, requestFilters, openTelemetry, tracer, environment, maybeSslContextFactory, Optional.empty(), ImmutableList.of());
+        this(name, config, requestFilters, openTelemetry, tracer, environment, maybeSslContextFactory, ImmutableList.of());
     }
 
     public JettyHttpClient(
@@ -239,7 +239,6 @@ public class JettyHttpClient
             Tracer tracer,
             Optional<String> environment,
             Optional<SslContextFactory.Client> maybeSslContextFactory,
-            Optional<ByteBufferPool> byteBufferPool,
             Iterable<? extends HttpStatusListener> httpStatusListeners)
     {
         this.name = requireNonNull(name, "name is null");
@@ -315,7 +314,7 @@ public class JettyHttpClient
         }
 
         int maxBufferSize = toIntExact(max(max(config.getMaxContentLength().toBytes(), config.getRequestBufferSize().toBytes()), config.getResponseBufferSize().toBytes()));
-        httpClient.setByteBufferPool(byteBufferPool.orElseGet(() -> createByteBufferPool(maxBufferSize, config)));
+        httpClient.setByteBufferPool(createByteBufferPool(maxBufferSize, config));
         httpClient.setExecutor(createExecutor(name, config.getMinThreads(), config.getMaxThreads(), config.isUseVirtualThreads()));
         httpClient.setScheduler(createScheduler(name, config.getTimeoutConcurrency(), config.getTimeoutThreads()));
         httpClient.setStrictEventOrdering(config.isStrictEventOrdering());

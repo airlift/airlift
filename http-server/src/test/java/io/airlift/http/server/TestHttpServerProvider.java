@@ -637,7 +637,6 @@ public class TestHttpServerProvider
                 false,
                 false,
                 clientCertificate,
-                Optional.empty(),
                 Optional.empty()).get();
     }
 
