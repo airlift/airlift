@@ -13,10 +13,24 @@
  */
 package io.airlift.http.server;
 
+import static com.google.common.io.MoreFiles.deleteRecursively;
+import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
+import static com.google.common.io.Resources.getResource;
+import static java.nio.file.Files.createTempDirectory;
+import static org.assertj.core.api.Assertions.fail;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
+import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
+
 import com.google.common.collect.ImmutableSet;
 import io.airlift.http.server.HttpServer.ClientCertificate;
 import io.airlift.node.NodeInfo;
 import jakarta.servlet.http.HttpServlet;
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpClientTransportDynamic;
 import org.eclipse.jetty.io.ClientConnector;
@@ -27,25 +41,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.parallel.Execution;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Optional;
-import java.util.concurrent.ExecutionException;
-
-import static com.google.common.io.MoreFiles.deleteRecursively;
-import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
-import static com.google.common.io.Resources.getResource;
-import static java.nio.file.Files.createTempDirectory;
-import static org.assertj.core.api.Assertions.fail;
-import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
-import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
-
 @TestInstance(PER_CLASS)
 @Execution(SAME_THREAD)
-public class TestHttpServerCipher
-{
+public class TestHttpServerCipher {
     private static final String KEY_STORE_PATH = constructKeyStorePath();
     private static final String KEY_STORE_PASSWORD = "airlift";
     public static final String CIPHER_1 = "TLS_DHE_RSA_WITH_AES_128_CBC_SHA256";
@@ -54,38 +52,29 @@ public class TestHttpServerCipher
 
     private File tempDir;
 
-    private static String constructKeyStorePath()
-    {
+    private static String constructKeyStorePath() {
         try {
             return new File(getResource("test.keystore").toURI()).getAbsolutePath();
-        }
-        catch (URISyntaxException e) {
+        } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
     }
 
     @BeforeEach
-    public void setup()
-            throws IOException
-    {
+    public void setup() throws IOException {
         tempDir = createTempDirectory(null).toFile();
     }
 
     @AfterEach
-    public void teardown()
-            throws Exception
-    {
+    public void teardown() throws Exception {
         deleteRecursively(tempDir.toPath(), ALLOW_INSECURE);
     }
 
     @Test
-    public void testIncludeCipherEmpty()
-            throws Exception
-    {
+    public void testIncludeCipherEmpty() throws Exception {
         HttpServerConfig config = createHttpServerConfig();
-        HttpsConfig httpsConfig = createHttpsConfig()
-                .setHttpsExcludedCipherSuites("")
-                .setHttpsIncludedCipherSuites(" ,   ");
+        HttpsConfig httpsConfig =
+                createHttpsConfig().setHttpsExcludedCipherSuites("").setHttpsIncludedCipherSuites(" ,   ");
         NodeInfo nodeInfo = new NodeInfo("test");
         HttpServerInfo httpServerInfo = new HttpServerInfo(config, Optional.of(httpsConfig), nodeInfo);
         HttpServer server = createServer(nodeInfo, httpServerInfo, config, httpsConfig);
@@ -101,16 +90,13 @@ public class TestHttpServerCipher
 
             httpClient = createClientIncludeCiphers(CIPHER_3);
             httpClient.GET(httpsUri);
-        }
-        finally {
+        } finally {
             server.stop();
         }
     }
 
     @Test
-    public void testIncludedCipher()
-            throws Exception
-    {
+    public void testIncludedCipher() throws Exception {
         HttpServerConfig config = createHttpServerConfig();
         HttpsConfig httpsConfig = createHttpsConfig()
                 .setHttpsExcludedCipherSuites("")
@@ -134,23 +120,18 @@ public class TestHttpServerCipher
             try {
                 httpClient.GET(httpsUri);
                 fail("SSL handshake should fail because client included only ciphers the server didn't include");
-            }
-            catch (ExecutionException e) {
+            } catch (ExecutionException e) {
                 // expected
             }
-        }
-        finally {
+        } finally {
             server.stop();
         }
     }
 
     @Test
-    public void testExcludedCipher()
-            throws Exception
-    {
+    public void testExcludedCipher() throws Exception {
         HttpServerConfig config = createHttpServerConfig();
-        HttpsConfig httpsConfig = createHttpsConfig()
-                .setHttpsExcludedCipherSuites(CIPHER_1 + "," + CIPHER_2);
+        HttpsConfig httpsConfig = createHttpsConfig().setHttpsExcludedCipherSuites(CIPHER_1 + "," + CIPHER_2);
         NodeInfo nodeInfo = new NodeInfo("test");
         HttpServerInfo httpServerInfo = new HttpServerInfo(config, Optional.of(httpsConfig), nodeInfo);
         HttpServer server = createServer(nodeInfo, httpServerInfo, config, httpsConfig);
@@ -167,35 +148,29 @@ public class TestHttpServerCipher
             try {
                 httpClient.GET(httpsUri);
                 fail("SSL handshake should fail because client included only ciphers the server excluded");
-            }
-            catch (ExecutionException e) {
+            } catch (ExecutionException e) {
                 // expected
             }
-        }
-        finally {
+        } finally {
             server.stop();
         }
     }
 
-    private HttpServerConfig createHttpServerConfig()
-    {
+    private HttpServerConfig createHttpServerConfig() {
         return new HttpServerConfig()
                 .setHttpEnabled(false)
                 .setHttpsEnabled(true)
                 .setLogPath(new File(tempDir, "http-request.log").getAbsolutePath());
     }
 
-    private static HttpsConfig createHttpsConfig()
-    {
+    private static HttpsConfig createHttpsConfig() {
         return new HttpsConfig()
                 .setHttpsPort(0)
                 .setKeystorePath(KEY_STORE_PATH)
                 .setKeystorePassword(KEY_STORE_PASSWORD);
     }
 
-    private static HttpClient createClientIncludeCiphers(String... includedCipherSuites)
-            throws Exception
-    {
+    private static HttpClient createClientIncludeCiphers(String... includedCipherSuites) throws Exception {
         SslContextFactory.Client sslContextFactory = new SslContextFactory.Client(true);
         sslContextFactory.setIncludeCipherSuites(includedCipherSuites);
         sslContextFactory.setKeyStorePath(KEY_STORE_PATH);
@@ -209,25 +184,30 @@ public class TestHttpServerCipher
         return httpClient;
     }
 
-    private static HttpServer createServer(NodeInfo nodeInfo, HttpServerInfo httpServerInfo, HttpServerConfig config, HttpsConfig httpsConfig)
-    {
+    private static HttpServer createServer(
+            NodeInfo nodeInfo, HttpServerInfo httpServerInfo, HttpServerConfig config, HttpsConfig httpsConfig) {
         return createServer(new DummyServlet(), nodeInfo, httpServerInfo, config, httpsConfig);
     }
 
-    private static HttpServer createServer(HttpServlet servlet, NodeInfo nodeInfo, HttpServerInfo httpServerInfo, HttpServerConfig config, HttpsConfig httpsConfig)
-    {
+    private static HttpServer createServer(
+            HttpServlet servlet,
+            NodeInfo nodeInfo,
+            HttpServerInfo httpServerInfo,
+            HttpServerConfig config,
+            HttpsConfig httpsConfig) {
         return new HttpServerProvider(
-                httpServerInfo,
-                nodeInfo,
-                config,
-                Optional.of(httpsConfig),
-                servlet,
-                ImmutableSet.of(new DummyFilter()),
-                ImmutableSet.of(),
-                false,
-                false,
-                false,
-                ClientCertificate.NONE,
-                Optional.empty()).get();
+                        httpServerInfo,
+                        nodeInfo,
+                        config,
+                        Optional.of(httpsConfig),
+                        servlet,
+                        ImmutableSet.of(new DummyFilter()),
+                        ImmutableSet.of(),
+                        false,
+                        false,
+                        false,
+                        ClientCertificate.NONE,
+                        Optional.empty())
+                .get();
     }
 }

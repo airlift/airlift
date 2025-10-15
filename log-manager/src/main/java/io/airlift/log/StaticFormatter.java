@@ -1,21 +1,5 @@
 package io.airlift.log;
 
-import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableMap;
-
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
-import java.time.format.SignStyle;
-import java.util.Locale;
-import java.util.Map;
-import java.util.logging.Formatter;
-import java.util.logging.LogRecord;
-
 import static io.airlift.log.TerminalColors.Color.BRIGHT_BLACK;
 import static io.airlift.log.TerminalColors.Color.CYAN;
 import static io.airlift.log.TerminalColors.Color.GREEN;
@@ -32,9 +16,22 @@ import static java.time.temporal.ChronoField.YEAR;
 import static java.util.Arrays.deepToString;
 import static java.util.Objects.requireNonNull;
 
-class StaticFormatter
-        extends Formatter
-{
+import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableMap;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.format.SignStyle;
+import java.util.Locale;
+import java.util.Map;
+import java.util.logging.Formatter;
+import java.util.logging.LogRecord;
+
+class StaticFormatter extends Formatter {
     private static final ZoneId SYSTEM_ZONE = ZoneId.systemDefault().normalized();
     private final Map<String, String> logAnnotations;
     private final TerminalColors colors;
@@ -57,27 +54,23 @@ class StaticFormatter
             .appendOffset("+HHMM", "Z")
             .toFormatter(Locale.US);
 
-    public StaticFormatter()
-    {
+    public StaticFormatter() {
         this(ImmutableMap.of(), false);
     }
 
-    public StaticFormatter(Map<String, String> logAnnotations, boolean interactive)
-    {
+    public StaticFormatter(Map<String, String> logAnnotations, boolean interactive) {
         this.logAnnotations = ImmutableMap.copyOf(requireNonNull(logAnnotations, "logAnnotations is null"));
         this.colors = new TerminalColors(interactive);
     }
 
     @Override
     @SuppressWarnings("NonSynchronizedMethodOverridesSynchronizedMethod")
-    public String formatMessage(LogRecord record)
-    {
+    public String formatMessage(LogRecord record) {
         return format(record);
     }
 
     @Override
-    public String format(LogRecord record)
-    {
+    public String format(LogRecord record) {
         ZonedDateTime timestamp = ZonedDateTime.ofInstant(Instant.ofEpochMilli(record.getMillis()), SYSTEM_ZONE);
         Level level = Level.fromJulLevel(record.getLevel());
 
@@ -91,12 +84,13 @@ class StaticFormatter
                 .append(colors.colored(record.getLoggerName(), PURPLE));
 
         if (!logAnnotations.isEmpty()) {
-            stringWriter.append('\t')
-                    .append(colors.colored(Joiner.on(",").withKeyValueSeparator("=").join(logAnnotations), level));
+            stringWriter
+                    .append('\t')
+                    .append(colors.colored(
+                            Joiner.on(",").withKeyValueSeparator("=").join(logAnnotations), level));
         }
 
-        stringWriter.append('\t')
-                .append(colors.colored(record.getMessage(), WHITE));
+        stringWriter.append('\t').append(colors.colored(record.getMessage(), WHITE));
 
         if (record.getParameters() != null && record.getParameters().length != 0) {
             stringWriter.append(" parameters=").append(deepToString(record.getParameters()));

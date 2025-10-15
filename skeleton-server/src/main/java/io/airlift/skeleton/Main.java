@@ -15,6 +15,8 @@
  */
 package io.airlift.skeleton;
 
+import static com.google.common.base.MoreObjects.firstNonNull;
+
 import com.google.inject.Injector;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.discovery.client.Announcer;
@@ -31,17 +33,13 @@ import io.airlift.openmetrics.JmxOpenMetricsModule;
 import io.airlift.tracing.TracingModule;
 import org.weakref.jmx.guice.MBeanModule;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
-
-public final class Main
-{
+public final class Main {
     private static final String VERSION = firstNonNull(Main.class.getPackage().getImplementationVersion(), "unknown");
     private static final Logger log = Logger.get(Main.class);
 
     private Main() {}
 
-    public static void main(String[] args)
-    {
+    public static void main(String[] args) {
         Bootstrap app = new Bootstrap(
                 new NodeModule(),
                 new DiscoveryModule(),
@@ -59,8 +57,7 @@ public final class Main
         try {
             Injector injector = app.initialize();
             injector.getInstance(Announcer.class).start();
-        }
-        catch (Throwable e) {
+        } catch (Throwable e) {
             log.error(e);
             System.exit(1);
         }

@@ -18,8 +18,7 @@ package io.airlift.bootstrap;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 
-public interface DependentBoundInstance
-{
+public interface DependentBoundInstance {
     @PostConstruct
     void postDependentBoundInstance();
 

@@ -15,6 +15,9 @@
  */
 package io.airlift.sample;
 
+import static io.airlift.sample.PersonRepresentation.from;
+import static java.util.Objects.requireNonNull;
+
 import com.google.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
@@ -29,17 +32,12 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.core.UriInfo;
 
-import static io.airlift.sample.PersonRepresentation.from;
-import static java.util.Objects.requireNonNull;
-
 @Path("/v1/person/{id: \\w+}")
-public class PersonResource
-{
+public class PersonResource {
     private final PersonStore store;
 
     @Inject
-    public PersonResource(PersonStore store)
-    {
+    public PersonResource(PersonStore store) {
         requireNonNull(store, "store must not be null");
 
         this.store = store;
@@ -47,14 +45,15 @@ public class PersonResource
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public Response get(@PathParam("id") String id, @Context UriInfo uriInfo)
-    {
+    public Response get(@PathParam("id") String id, @Context UriInfo uriInfo) {
         requireNonNull(id, "id must not be null");
 
         Person person = store.get(id);
 
         if (person == null) {
-            return Response.status(Response.Status.NOT_FOUND).entity("[" + id + "]").build();
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity("[" + id + "]")
+                    .build();
         }
 
         return Response.ok(from(person, uriInfo.getRequestUri())).build();
@@ -62,8 +61,7 @@ public class PersonResource
 
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response put(@PathParam("id") String id, PersonRepresentation person)
-    {
+    public Response put(@PathParam("id") String id, PersonRepresentation person) {
         requireNonNull(id, "id must not be null");
         requireNonNull(person, "person must not be null");
 
@@ -77,8 +75,7 @@ public class PersonResource
     }
 
     @DELETE
-    public Response delete(@PathParam("id") String id)
-    {
+    public Response delete(@PathParam("id") String id) {
         requireNonNull(id, "id must not be null");
 
         if (!store.delete(id)) {

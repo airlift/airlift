@@ -17,27 +17,23 @@ import static io.airlift.stats.cardinality.Utils.computeIndex;
 import static io.airlift.stats.cardinality.Utils.computeValue;
 import static io.airlift.stats.cardinality.Utils.numberOfBuckets;
 
-public class TestingHll
-{
+public class TestingHll {
     private final int indexBitLength;
     private final int[] buckets;
 
-    public TestingHll(int indexBitLength)
-    {
+    public TestingHll(int indexBitLength) {
         this.indexBitLength = indexBitLength;
         buckets = new int[numberOfBuckets(indexBitLength)];
     }
 
-    public void insertHash(long hash)
-    {
+    public void insertHash(long hash) {
         int index = computeIndex(hash, indexBitLength);
         int value = computeValue(hash, indexBitLength);
 
         buckets[index] = Math.max(buckets[index], value);
     }
 
-    public int[] getBuckets()
-    {
+    public int[] getBuckets() {
         return buckets;
     }
 }

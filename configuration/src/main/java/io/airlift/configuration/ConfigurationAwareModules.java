@@ -16,16 +16,14 @@ package io.airlift.configuration;
 
 import com.google.inject.Module;
 
-public final class ConfigurationAwareModules
-{
+public final class ConfigurationAwareModules {
     private ConfigurationAwareModules() {}
 
     /**
      * @deprecated use {@link ConfigurationAwareModule#combine}
      */
     @Deprecated
-    public static Module combine(Module... modules)
-    {
+    public static Module combine(Module... modules) {
         return ConfigurationAwareModule.combine(modules);
     }
 }

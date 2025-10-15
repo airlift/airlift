@@ -1,27 +1,22 @@
 package io.airlift.mcp.model;
 
-import com.google.common.collect.ImmutableList;
+import static java.util.Objects.requireNonNull;
 
+import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Optional;
 
-import static java.util.Objects.requireNonNull;
-
-public record CallToolResult(List<Content> content, Optional<StructuredContent<?>> structuredContent, boolean isError)
-{
-    public CallToolResult
-    {
+public record CallToolResult(List<Content> content, Optional<StructuredContent<?>> structuredContent, boolean isError) {
+    public CallToolResult {
         requireNonNull(content, "content is null");
         requireNonNull(structuredContent, "structuredContent is null");
     }
 
-    public CallToolResult(Content content)
-    {
+    public CallToolResult(Content content) {
         this(ImmutableList.of(content), Optional.empty(), false);
     }
 
-    public CallToolResult(List<Content> content)
-    {
+    public CallToolResult(List<Content> content) {
         this(content, Optional.empty(), false);
     }
 }

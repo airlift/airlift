@@ -1,15 +1,14 @@
 package io.airlift.discovery.client;
 
-import com.google.errorprone.annotations.concurrent.GuardedBy;
-import io.airlift.log.Logger;
-import io.airlift.units.Duration;
-
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-class ExponentialBackOff
-{
+import com.google.errorprone.annotations.concurrent.GuardedBy;
+import io.airlift.log.Logger;
+import io.airlift.units.Duration;
+
+class ExponentialBackOff {
     private static final long ERROR_LOGGING_DELAY_NANOS = MILLISECONDS.toNanos(500);
 
     private final long initialWait;
@@ -26,8 +25,8 @@ class ExponentialBackOff
     @GuardedBy("this")
     private long currentWaitInMillis = -1;
 
-    public ExponentialBackOff(Duration initialWait, Duration maxWait, String serverUpMessage, String serverDownMessage, Logger log)
-    {
+    public ExponentialBackOff(
+            Duration initialWait, Duration maxWait, String serverUpMessage, String serverDownMessage, Logger log) {
         this.initialWait = requireNonNull(initialWait, "initialWait is null").toMillis();
         this.maxWait = requireNonNull(maxWait, "maxWait is null").toMillis();
         checkArgument(this.initialWait <= this.maxWait, "initialWait %s is less than maxWait %s", initialWait, maxWait);
@@ -37,8 +36,7 @@ class ExponentialBackOff
         this.log = requireNonNull(log, "log is null");
     }
 
-    public synchronized void success()
-    {
+    public synchronized void success() {
         if (!serverUp) {
             serverUp = true;
             log.info(serverUpMessage);
@@ -46,8 +44,7 @@ class ExponentialBackOff
         currentWaitInMillis = -1;
     }
 
-    public synchronized Duration failed(Throwable t)
-    {
+    public synchronized Duration failed(Throwable t) {
         if (serverUp) {
             // skip logging until 500ms has passed
             if ((System.nanoTime() - requestStart) >= ERROR_LOGGING_DELAY_NANOS) {
@@ -58,8 +55,7 @@ class ExponentialBackOff
 
         if (currentWaitInMillis <= 0) {
             currentWaitInMillis = initialWait;
-        }
-        else {
+        } else {
             currentWaitInMillis = Math.min(currentWaitInMillis * 2, maxWait);
         }
         return new Duration(currentWaitInMillis, MILLISECONDS);

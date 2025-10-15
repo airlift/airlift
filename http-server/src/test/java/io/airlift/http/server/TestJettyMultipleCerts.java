@@ -13,6 +13,13 @@ package io.airlift.http.server;
  * limitations under the License.
  */
 
+import static com.google.common.io.Resources.getResource;
+import static io.airlift.http.client.Request.Builder.prepareGet;
+import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Closer;
@@ -26,34 +33,20 @@ import io.airlift.node.NodeInfo;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.junit.jupiter.api.Test;
-
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.Test;
 
-import static com.google.common.io.Resources.getResource;
-import static io.airlift.http.client.Request.Builder.prepareGet;
-import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
-public class TestJettyMultipleCerts
-{
+public class TestJettyMultipleCerts {
     @Test
-    public void test()
-            throws Exception
-    {
-        HttpServlet servlet = new HttpServlet()
-        {
+    public void test() throws Exception {
+        HttpServlet servlet = new HttpServlet() {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response)
-                    throws IOException
-            {
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException {
                 response.setStatus(200);
                 response.getOutputStream().write((request.getServerName() + " OK").getBytes(UTF_8));
             }
@@ -69,9 +62,7 @@ public class TestJettyMultipleCerts
                 .setKeystorePath(getResource("multiple-certs/server.p12").getPath())
                 .setKeystorePassword("airlift");
 
-        NodeInfo nodeInfo = new NodeInfo(new NodeConfig()
-                .setEnvironment("test")
-                .setNodeInternalAddress("localhost"));
+        NodeInfo nodeInfo = new NodeInfo(new NodeConfig().setEnvironment("test").setNodeInternalAddress("localhost"));
 
         HttpServerInfo httpServerInfo = new HttpServerInfo(config, Optional.of(httpsConfig), nodeInfo);
         HttpServerProvider serverProvider = new HttpServerProvider(
@@ -93,8 +84,7 @@ public class TestJettyMultipleCerts
             closer.register(() -> {
                 try {
                     server.stop();
-                }
-                catch (Exception ignore) {
+                } catch (Exception ignore) {
                 }
             });
             server.start();
@@ -126,28 +116,21 @@ public class TestJettyMultipleCerts
         }
     }
 
-    private static boolean doesDomainResolveToLocalhost(String name)
-    {
+    private static boolean doesDomainResolveToLocalhost(String name) {
         try {
             InetAddress localhost = InetAddress.getByAddress(new byte[] {127, 0, 0, 1});
             return ImmutableList.copyOf(InetAddress.getAllByName(name)).contains(localhost);
-        }
-        catch (UnknownHostException ignored) {
+        } catch (UnknownHostException ignored) {
             return false;
         }
     }
 
-    private static void tryHost(JettyHttpClient client, HostAndPort address)
-    {
+    private static void tryHost(JettyHttpClient client, HostAndPort address) {
         try {
             StatusResponse statusResponse = client.execute(
-                    prepareGet()
-                            .setUri(URI.create("https://" + address))
-                            .build(),
-                    createStatusResponseHandler());
+                    prepareGet().setUri(URI.create("https://" + address)).build(), createStatusResponseHandler());
             assertThat(statusResponse.getStatusCode()).isEqualTo(200);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException(address.getHost() + " " + e.getMessage(), e);
         }
     }

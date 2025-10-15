@@ -15,71 +15,57 @@
  */
 package io.airlift.http.client;
 
+import static io.airlift.http.client.ResponseHandlerUtils.propagate;
+
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import jakarta.annotation.Nullable;
-
 import java.util.List;
 
-import static io.airlift.http.client.ResponseHandlerUtils.propagate;
-
-public class StatusResponseHandler
-        implements ResponseHandler<StatusResponse, RuntimeException>
-{
+public class StatusResponseHandler implements ResponseHandler<StatusResponse, RuntimeException> {
     private static final StatusResponseHandler statusResponseHandler = new StatusResponseHandler();
 
-    public static StatusResponseHandler createStatusResponseHandler()
-    {
+    public static StatusResponseHandler createStatusResponseHandler() {
         return statusResponseHandler;
     }
 
-    private StatusResponseHandler()
-    {
-    }
+    private StatusResponseHandler() {}
 
     @Override
-    public StatusResponse handleException(Request request, Exception exception)
-    {
+    public StatusResponse handleException(Request request, Exception exception) {
         throw propagate(request, exception);
     }
 
     @Override
-    public StatusResponse handle(Request request, Response response)
-    {
+    public StatusResponse handle(Request request, Response response) {
         return new StatusResponse(response.getStatusCode(), response.getHeaders());
     }
 
-    public static class StatusResponse
-    {
+    public static class StatusResponse {
         private final int statusCode;
         private final ListMultimap<HeaderName, String> headers;
 
-        public StatusResponse(int statusCode, ListMultimap<HeaderName, String> headers)
-        {
+        public StatusResponse(int statusCode, ListMultimap<HeaderName, String> headers) {
             this.statusCode = statusCode;
             this.headers = ImmutableListMultimap.copyOf(headers);
         }
 
-        public int getStatusCode()
-        {
+        public int getStatusCode() {
             return statusCode;
         }
 
         @Nullable
-        public String getHeader(String name)
-        {
+        public String getHeader(String name) {
             List<String> values = getHeaders().get(HeaderName.of(name));
             return values.isEmpty() ? null : values.get(0);
         }
 
-        public List<String> getHeaders(String name)
-        {
+        public List<String> getHeaders(String name) {
             return headers.get(HeaderName.of(name));
         }
 
-        public ListMultimap<HeaderName, String> getHeaders()
-        {
+        public ListMultimap<HeaderName, String> getHeaders() {
             return headers;
         }
     }

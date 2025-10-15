@@ -1,32 +1,26 @@
 package io.airlift.json;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
-import java.util.Objects;
-
 import static java.util.Objects.requireNonNull;
 
-public class Truck
-        implements Vehicle
-{
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Objects;
+
+public class Truck implements Vehicle {
     private final String name;
 
     @JsonCreator
-    public Truck(String name)
-    {
+    public Truck(String name) {
         this.name = requireNonNull(name, "Name is null");
     }
 
     @JsonProperty
-    public String getName()
-    {
+    public String getName() {
         return name;
     }
 
     @Override
-    public boolean equals(Object obj)
-    {
+    public boolean equals(Object obj) {
         if (this == obj) {
             return true;
         }
@@ -38,14 +32,12 @@ public class Truck
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return Objects.hash(name);
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return name;
     }
 }

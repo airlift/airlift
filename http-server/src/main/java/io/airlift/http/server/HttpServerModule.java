@@ -15,6 +15,12 @@
  */
 package io.airlift.http.server;
 
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
+import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
+import static io.airlift.configuration.ConditionalModule.conditionalModule;
+import static io.airlift.configuration.ConfigBinder.configBinder;
+import static org.weakref.jmx.guice.ExportBinder.newExporter;
+
 import com.google.inject.Binder;
 import com.google.inject.Key;
 import com.google.inject.Scopes;
@@ -25,12 +31,6 @@ import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.http.server.tracing.TracingServletFilter;
 import jakarta.servlet.Filter;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-
-import static com.google.inject.multibindings.Multibinder.newSetBinder;
-import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
-import static io.airlift.configuration.ConditionalModule.conditionalModule;
-import static io.airlift.configuration.ConfigBinder.configBinder;
-import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
 /**
  * Provides a fully configured instance of an HTTP server,
@@ -53,12 +53,9 @@ import static org.weakref.jmx.guice.ExportBinder.newExporter;
  * the keystore containing the SSL cert and the password to the keystore, respectively.
  * The HTTPS port is specified via {@link HttpsConfig#getHttpsPort()}.
  */
-public class HttpServerModule
-        extends AbstractConfigurationAwareModule
-{
+public class HttpServerModule extends AbstractConfigurationAwareModule {
     @Override
-    protected void setup(Binder binder)
-    {
+    protected void setup(Binder binder) {
         binder.disableCircularProxies();
 
         binder.bind(HttpServer.class).toProvider(HttpServerProvider.class).in(Scopes.SINGLETON);
@@ -66,21 +63,32 @@ public class HttpServerModule
         newExporter(binder).export(HttpServer.class).withGeneratedName();
         binder.bind(HttpServerInfo.class).in(Scopes.SINGLETON);
         // override with HttpServerBinder.enableVirtualThreads()
-        newOptionalBinder(binder, Key.get(Boolean.class, EnableVirtualThreads.class)).setDefault().toInstance(false);
+        newOptionalBinder(binder, Key.get(Boolean.class, EnableVirtualThreads.class))
+                .setDefault()
+                .toInstance(false);
         // override with HttpServerBinder.enableLegacyUriCompliance()
-        newOptionalBinder(binder, Key.get(Boolean.class, EnableLegacyUriCompliance.class)).setDefault().toInstance(false);
-        newSetBinder(binder, Filter.class).addBinding()
-                .to(TracingServletFilter.class).in(Scopes.SINGLETON);
+        newOptionalBinder(binder, Key.get(Boolean.class, EnableLegacyUriCompliance.class))
+                .setDefault()
+                .toInstance(false);
+        newSetBinder(binder, Filter.class)
+                .addBinding()
+                .to(TracingServletFilter.class)
+                .in(Scopes.SINGLETON);
         newSetBinder(binder, HttpResourceBinding.class);
         newOptionalBinder(binder, SslContextFactory.Server.class);
-        newOptionalBinder(binder, Key.get(Boolean.class, EnableCaseSensitiveHeaderCache.class)).setDefault().toInstance(false);
+        newOptionalBinder(binder, Key.get(Boolean.class, EnableCaseSensitiveHeaderCache.class))
+                .setDefault()
+                .toInstance(false);
 
         configBinder(binder).bindConfig(HttpServerConfig.class);
         newOptionalBinder(binder, HttpsConfig.class);
 
-        binder.bind(AnnouncementHttpServerInfo.class).to(LocalAnnouncementHttpServerInfo.class).in(Scopes.SINGLETON);
+        binder.bind(AnnouncementHttpServerInfo.class)
+                .to(LocalAnnouncementHttpServerInfo.class)
+                .in(Scopes.SINGLETON);
 
-        install(conditionalModule(HttpServerConfig.class, HttpServerConfig::isHttpsEnabled, moduleBinder ->
-                configBinder(moduleBinder).bindConfig(HttpsConfig.class)));
+        install(conditionalModule(
+                HttpServerConfig.class, HttpServerConfig::isHttpsEnabled, moduleBinder -> configBinder(moduleBinder)
+                        .bindConfig(HttpsConfig.class)));
     }
 }

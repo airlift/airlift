@@ -15,8 +15,10 @@
  */
 package io.airlift.configuration;
 
-import com.google.common.collect.ImmutableSortedMap;
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
+import static com.google.common.collect.Maps.fromProperties;
 
+import com.google.common.collect.ImmutableSortedMap;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,16 +27,10 @@ import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.TreeMap;
 
-import static com.google.common.collect.ImmutableMap.toImmutableMap;
-import static com.google.common.collect.Maps.fromProperties;
-
-public final class ConfigurationLoader
-{
+public final class ConfigurationLoader {
     private ConfigurationLoader() {}
 
-    public static Map<String, String> loadProperties()
-            throws IOException
-    {
+    public static Map<String, String> loadProperties() throws IOException {
         Map<String, String> result = new TreeMap<>();
         String configFile = System.getProperty("config");
         if (configFile != null) {
@@ -53,9 +49,7 @@ public final class ConfigurationLoader
      * @return properties
      * @throws IOException errors
      */
-    public static Map<String, String> loadPropertiesFrom(String path)
-            throws IOException
-    {
+    public static Map<String, String> loadPropertiesFrom(String path) throws IOException {
         Properties properties = new Properties();
         try (InputStream inputStream = new FileInputStream(path)) {
             properties.load(inputStream);
@@ -65,8 +59,7 @@ public final class ConfigurationLoader
                 .collect(toImmutableMap(Entry::getKey, entry -> entry.getValue().trim()));
     }
 
-    public static Map<String, String> getSystemProperties()
-    {
+    public static Map<String, String> getSystemProperties() {
         Properties systemProperties = System.getProperties();
         synchronized (systemProperties) {
             return fromProperties(systemProperties);

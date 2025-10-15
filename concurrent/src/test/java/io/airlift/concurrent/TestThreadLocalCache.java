@@ -13,18 +13,15 @@
  */
 package io.airlift.concurrent;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.atomic.AtomicInteger;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class TestThreadLocalCache
-{
+import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.jupiter.api.Test;
+
+public class TestThreadLocalCache {
     @Test
-    public void testSanity()
-    {
+    public void testSanity() {
         AtomicInteger count = new AtomicInteger(0);
         ThreadLocalCache<String, String> cache = new ThreadLocalCache<>(2, key -> {
             // Concatenate key with counter
@@ -51,8 +48,7 @@ public class TestThreadLocalCache
     }
 
     @Test
-    public void testDisallowsNulls()
-    {
+    public void testDisallowsNulls() {
         assertThatThrownBy(() -> new ThreadLocalCache<>(10, key -> null).get("foo"))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageMatching("loader returned null value");

@@ -15,41 +15,28 @@ package io.airlift.http.client;
 
 import com.google.common.net.HostAndPort;
 import jakarta.servlet.Servlet;
+import java.util.Optional;
 import org.eclipse.jetty.ee11.proxy.ProxyServlet;
 import org.eclipse.jetty.server.handler.ConnectHandler;
 
-import java.util.Optional;
-
-public class TestingHttpProxy
-        implements AutoCloseable
-{
+public class TestingHttpProxy implements AutoCloseable {
     private final TestingHttpServer server;
 
-    public TestingHttpProxy(Optional<String> keystore)
-            throws Exception
-    {
+    public TestingHttpProxy(Optional<String> keystore) throws Exception {
         this(keystore, new ProxyServlet());
     }
 
-    public TestingHttpProxy(Optional<String> keystore, Servlet servlet)
-            throws Exception
-    {
+    public TestingHttpProxy(Optional<String> keystore, Servlet servlet) throws Exception {
         this.server = new TestingHttpServer(
-                keystore,
-                servlet,
-                config -> config.setSendDateHeader(false),
-                Optional.of(new ConnectHandler()));
+                keystore, servlet, config -> config.setSendDateHeader(false), Optional.of(new ConnectHandler()));
     }
 
-    public HostAndPort getHostAndPort()
-    {
+    public HostAndPort getHostAndPort() {
         return server.getHostAndPort();
     }
 
     @Override
-    public void close()
-            throws Exception
-    {
+    public void close() throws Exception {
         server.close();
     }
 }

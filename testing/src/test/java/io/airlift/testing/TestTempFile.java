@@ -1,18 +1,14 @@
 package io.airlift.testing;
 
-import org.junit.jupiter.api.Test;
-
-import java.io.File;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TestTempFile
-{
+import java.io.File;
+import org.junit.jupiter.api.Test;
+
+public class TestTempFile {
     @SuppressWarnings("IOResourceOpenedButNotSafelyClosed")
     @Test
-    public void testTempFile()
-            throws Exception
-    {
+    public void testTempFile() throws Exception {
         TempFile tempFile = new TempFile();
         File file = tempFile.file();
 

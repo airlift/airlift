@@ -15,10 +15,12 @@
  */
 package io.airlift.http.server;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static java.lang.String.format;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import io.airlift.node.NodeInfo;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetAddress;
@@ -28,11 +30,7 @@ import java.net.URISyntaxException;
 import java.nio.channels.ServerSocketChannel;
 import java.util.Optional;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static java.lang.String.format;
-
-public class HttpServerInfo
-{
+public class HttpServerInfo {
     private final URI httpUri;
     private final URI httpExternalUri;
     private final URI httpsUri;
@@ -41,20 +39,17 @@ public class HttpServerInfo
     private final ServerSocketChannel httpChannel;
     private final ServerSocketChannel httpsChannel;
 
-    public HttpServerInfo(HttpServerConfig config, NodeInfo nodeInfo)
-    {
+    public HttpServerInfo(HttpServerConfig config, NodeInfo nodeInfo) {
         this(config, Optional.empty(), nodeInfo);
     }
 
     @Inject
-    public HttpServerInfo(HttpServerConfig config, Optional<HttpsConfig> httpsConfig, NodeInfo nodeInfo)
-    {
+    public HttpServerInfo(HttpServerConfig config, Optional<HttpsConfig> httpsConfig, NodeInfo nodeInfo) {
         if (config.isHttpEnabled()) {
             httpChannel = createChannel(nodeInfo.getBindIp(), config.getHttpPort(), config.getHttpAcceptQueueSize());
             httpUri = buildUri("http", nodeInfo.getInternalAddress(), port(httpChannel));
             httpExternalUri = buildUri("http", nodeInfo.getExternalAddress(), httpUri.getPort());
-        }
-        else {
+        } else {
             httpChannel = null;
             httpUri = null;
             httpExternalUri = null;
@@ -62,77 +57,65 @@ public class HttpServerInfo
 
         if (config.isHttpsEnabled()) {
             checkArgument(httpsConfig.isPresent(), "httpsConfig must be present when HTTPS is enabled");
-            httpsChannel = createChannel(nodeInfo.getBindIp(), httpsConfig.get().getHttpsPort(), config.getHttpAcceptQueueSize());
+            httpsChannel = createChannel(
+                    nodeInfo.getBindIp(), httpsConfig.get().getHttpsPort(), config.getHttpAcceptQueueSize());
             httpsUri = buildUri("https", nodeInfo.getInternalAddress(), port(httpsChannel));
             httpsExternalUri = buildUri("https", nodeInfo.getExternalAddress(), httpsUri.getPort());
-        }
-        else {
+        } else {
             httpsChannel = null;
             httpsUri = null;
             httpsExternalUri = null;
         }
     }
 
-    public URI getHttpUri()
-    {
+    public URI getHttpUri() {
         return httpUri;
     }
 
-    public URI getHttpExternalUri()
-    {
+    public URI getHttpExternalUri() {
         return httpExternalUri;
     }
 
-    public URI getHttpsUri()
-    {
+    public URI getHttpsUri() {
         return httpsUri;
     }
 
-    public URI getHttpsExternalUri()
-    {
+    public URI getHttpsExternalUri() {
         return httpsExternalUri;
     }
 
-    ServerSocketChannel getHttpChannel()
-    {
+    ServerSocketChannel getHttpChannel() {
         return httpChannel;
     }
 
-    ServerSocketChannel getHttpsChannel()
-    {
+    ServerSocketChannel getHttpsChannel() {
         return httpsChannel;
     }
 
-    private static URI buildUri(String scheme, String host, int port)
-    {
+    private static URI buildUri(String scheme, String host, int port) {
         try {
             return new URI(scheme, null, host, port, null, null, null);
-        }
-        catch (URISyntaxException e) {
+        } catch (URISyntaxException e) {
             throw new IllegalArgumentException(e);
         }
     }
 
     @VisibleForTesting
-    static int port(ServerSocketChannel channel)
-    {
+    static int port(ServerSocketChannel channel) {
         try {
             return ((InetSocketAddress) channel.getLocalAddress()).getPort();
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
 
-    private static ServerSocketChannel createChannel(InetAddress address, int port, int acceptQueueSize)
-    {
+    private static ServerSocketChannel createChannel(InetAddress address, int port, int acceptQueueSize) {
         try {
             ServerSocketChannel channel = ServerSocketChannel.open();
             channel.socket().setReuseAddress(true);
             channel.socket().bind(new InetSocketAddress(address, port), acceptQueueSize);
             return channel;
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new UncheckedIOException(format("Failed to bind to %s:%s", address, port), e);
         }
     }

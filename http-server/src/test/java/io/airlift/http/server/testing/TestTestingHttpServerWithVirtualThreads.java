@@ -15,11 +15,8 @@
  */
 package io.airlift.http.server.testing;
 
-public class TestTestingHttpServerWithVirtualThreads
-        extends AbstractTestTestingHttpServer
-{
-    TestTestingHttpServerWithVirtualThreads()
-    {
+public class TestTestingHttpServerWithVirtualThreads extends AbstractTestTestingHttpServer {
+    TestTestingHttpServerWithVirtualThreads() {
         super(true, false, false);
     }
 }

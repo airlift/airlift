@@ -19,15 +19,13 @@ import io.airlift.log.Logger;
 import org.eclipse.jetty.client.HttpClient;
 
 @ThreadSafe
-class JettyClientDiagnostics
-{
+class JettyClientDiagnostics {
     private static final Logger log = Logger.get(JettyClientDiagnostics.class);
 
     // log at most once per 10s
     private final RateLimiter rateLimiter = RateLimiter.create(0.1);
 
-    void logDiagnosticsInfo(HttpClient httpClient)
-    {
+    void logDiagnosticsInfo(HttpClient httpClient) {
         if (!log.isDebugEnabled() || !rateLimiter.tryAcquire()) {
             return;
         }

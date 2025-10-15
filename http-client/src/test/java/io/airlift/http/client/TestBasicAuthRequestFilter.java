@@ -13,34 +13,30 @@
  */
 package io.airlift.http.client;
 
-import org.junit.jupiter.api.Test;
-
-import java.net.URI;
-import java.util.function.Predicate;
-
 import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TestBasicAuthRequestFilter
-{
+import java.net.URI;
+import java.util.function.Predicate;
+import org.junit.jupiter.api.Test;
+
+public class TestBasicAuthRequestFilter {
     @Test
-    public void testBasicAuthentication()
-    {
+    public void testBasicAuthentication() {
         Predicate<Request> predicate = request -> request.getUri().getPath().startsWith("/private");
         HttpRequestFilter filter = new BasicAuthRequestFilter(predicate, "Aladdin", "open sesame");
 
         Request publicResourceRequest = createTestRequest("/public");
-        assertThat(filter.filterRequest(publicResourceRequest).getHeader(AUTHORIZATION)).isNull();
+        assertThat(filter.filterRequest(publicResourceRequest).getHeader(AUTHORIZATION))
+                .isNull();
 
         Request privateResourceRequest = createTestRequest("/private");
-        assertThat(filter.filterRequest(privateResourceRequest).getHeader(AUTHORIZATION)).isEqualTo("Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==");
+        assertThat(filter.filterRequest(privateResourceRequest).getHeader(AUTHORIZATION))
+                .isEqualTo("Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==");
     }
 
-    private static Request createTestRequest(String path)
-    {
-        return prepareGet()
-                .setUri(URI.create("http://example.com" + path))
-                .build();
+    private static Request createTestRequest(String path) {
+        return prepareGet().setUri(URI.create("http://example.com" + path)).build();
     }
 }

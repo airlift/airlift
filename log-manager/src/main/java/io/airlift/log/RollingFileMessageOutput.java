@@ -13,13 +13,23 @@
  */
 package io.airlift.log;
 
+import static io.airlift.units.DataSize.Unit.MEGABYTE;
+import static java.lang.Math.toIntExact;
+import static java.lang.String.format;
+import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
+import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
+import static java.nio.file.StandardOpenOption.CREATE_NEW;
+import static java.util.Objects.requireNonNull;
+import static java.util.UUID.randomUUID;
+import static java.util.concurrent.Executors.newSingleThreadExecutor;
+import static java.util.logging.ErrorManager.GENERIC_FAILURE;
+
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.MoreFiles;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import io.airlift.units.DataSize;
-
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -43,40 +53,25 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.ErrorManager;
 import java.util.zip.GZIPOutputStream;
 
-import static io.airlift.units.DataSize.Unit.MEGABYTE;
-import static java.lang.Math.toIntExact;
-import static java.lang.String.format;
-import static java.nio.file.LinkOption.NOFOLLOW_LINKS;
-import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
-import static java.nio.file.StandardOpenOption.CREATE_NEW;
-import static java.util.Objects.requireNonNull;
-import static java.util.UUID.randomUUID;
-import static java.util.concurrent.Executors.newSingleThreadExecutor;
-import static java.util.logging.ErrorManager.GENERIC_FAILURE;
-
-final class RollingFileMessageOutput
-        implements MessageOutput
-{
-    public enum CompressionType
-    {
+final class RollingFileMessageOutput implements MessageOutput {
+    public enum CompressionType {
         NONE(Optional.empty()),
         GZIP(Optional.of(".gz"));
 
         private final Optional<String> extension;
 
-        CompressionType(Optional<String> extension)
-        {
+        CompressionType(Optional<String> extension) {
             this.extension = requireNonNull(extension, "extension is null");
         }
 
-        public Optional<String> getExtension()
-        {
+        public Optional<String> getExtension() {
             return extension;
         }
     }
 
     private static final int MAX_OPEN_NEW_LOG_ATTEMPTS = 100;
-    private static final int MAX_BATCH_BYTES = toIntExact(DataSize.of(1, MEGABYTE).toBytes());
+    private static final int MAX_BATCH_BYTES =
+            toIntExact(DataSize.of(1, MEGABYTE).toBytes());
     private static final String TEMP_PREFIX = ".tmp.";
     private static final String DELETED_PREFIX = ".deleted.";
 
@@ -88,10 +83,13 @@ final class RollingFileMessageOutput
 
     @GuardedBy("this")
     private Path currentOutputFile;
+
     @GuardedBy("this")
     private LogFileName currentOutputFileName;
+
     @GuardedBy("this")
     private long currentFileSize;
+
     @GuardedBy("this")
     private OutputStream currentOutputStream;
 
@@ -99,8 +97,8 @@ final class RollingFileMessageOutput
 
     private final ExecutorService compressionExecutor;
 
-    RollingFileMessageOutput(String filename, DataSize maxFileSize, DataSize maxTotalSize, CompressionType compressionType)
-    {
+    RollingFileMessageOutput(
+            String filename, DataSize maxFileSize, DataSize maxTotalSize, CompressionType compressionType) {
         requireNonNull(filename, "filename is null");
         requireNonNull(maxFileSize, "maxFileSize is null");
         requireNonNull(maxTotalSize, "maxTotalSize is null");
@@ -114,16 +112,14 @@ final class RollingFileMessageOutput
         // ensure log directory can be created
         try {
             MoreFiles.createParentDirectories(symlink);
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
 
         // convert from legacy logger
         try {
             recoverLegacyTempFiles(filename);
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             new ErrorManager().error("Unable to recover legacy logging temp files", e, GENERIC_FAILURE);
         }
 
@@ -134,15 +130,18 @@ final class RollingFileMessageOutput
                 if (Files.isDirectory(symlink)) {
                     throw new IllegalArgumentException("Log file is an existing directory: " + filename);
                 }
-                // if existing symlink file is a legacy (non-symlink) log file, rename it so file can be recreated as a symlink
+                // if existing symlink file is a legacy (non-symlink) log file, rename it so file can be recreated as a
+                // symlink
                 if (!Files.isSymbolicLink(symlink)) {
                     BasicFileAttributes attributes = Files.readAttributes(symlink, BasicFileAttributes.class);
-                    LocalDateTime createTime = LocalDateTime.ofInstant(attributes.creationTime().toInstant(), ZoneId.systemDefault()).withNano(0);
-                    Path logFile = symlink.resolveSibling(symlink.getFileName() + DATE_TIME_FORMATTER.format(createTime) + "--" + randomUUID());
+                    LocalDateTime createTime = LocalDateTime.ofInstant(
+                                    attributes.creationTime().toInstant(), ZoneId.systemDefault())
+                            .withNano(0);
+                    Path logFile = symlink.resolveSibling(
+                            symlink.getFileName() + DATE_TIME_FORMATTER.format(createTime) + "--" + randomUUID());
                     Files.move(symlink, logFile, ATOMIC_MOVE);
                 }
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 throw new UncheckedIOException("Unable to update move legacy log file to a new file", e);
             }
         }
@@ -154,8 +153,7 @@ final class RollingFileMessageOutput
         // open initial log file
         try {
             rollFile();
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
 
@@ -164,38 +162,31 @@ final class RollingFileMessageOutput
                     .setDaemon(true)
                     .setNameFormat("log-compression-%d")
                     .build());
-        }
-        else {
+        } else {
             compressionExecutor = null;
         }
     }
 
     @Override
-    public synchronized void flush()
-            throws IOException
-    {
+    public synchronized void flush() throws IOException {
         if (currentOutputStream != null) {
             currentOutputStream.flush();
         }
     }
 
     @Override
-    public synchronized void close()
-            throws IOException
-    {
+    public synchronized void close() throws IOException {
         IOException exception = new IOException("Exception thrown attempting to close the file output.");
 
         if (currentOutputStream != null) {
             try {
                 currentOutputStream.flush();
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 exception.addSuppressed(e);
             }
             try {
                 currentOutputStream.close();
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 exception.addSuppressed(e);
             }
         }
@@ -205,8 +196,7 @@ final class RollingFileMessageOutput
             compressionExecutor.shutdown();
             try {
                 compressionExecutor.awaitTermination(1, TimeUnit.MINUTES);
-            }
-            catch (InterruptedException e) {
+            } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
         }
@@ -222,14 +212,11 @@ final class RollingFileMessageOutput
     }
 
     @Override
-    public synchronized void writeMessage(byte[] message)
-            throws IOException
-    {
+    public synchronized void writeMessage(byte[] message) throws IOException {
         if (currentFileSize > 0 && (currentFileSize + message.length > maxFileSize)) {
             try {
                 rollFile();
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 // It is possible the roll worked, but there was a problem cleaning up, and it is possible it failed;
                 // Either way, roll will be attempted again once file grows by maxFileSize.
                 currentFileSize = 0;
@@ -241,9 +228,7 @@ final class RollingFileMessageOutput
         currentOutputStream.write(message);
     }
 
-    private synchronized void rollFile()
-            throws IOException
-    {
+    private synchronized void rollFile() throws IOException {
         // carefully update the stream, so if there is a problem logging can continue
 
         LogFileName newFileName = null;
@@ -255,8 +240,7 @@ final class RollingFileMessageOutput
                 newFile = symlink.resolveSibling(newFileName.getFileName());
                 newOutputStream = new BufferedOutputStream(Files.newOutputStream(newFile, CREATE_NEW), MAX_BATCH_BYTES);
                 break;
-            }
-            catch (FileAlreadyExistsException ignore) {
+            } catch (FileAlreadyExistsException ignore) {
             }
         }
 
@@ -267,14 +251,14 @@ final class RollingFileMessageOutput
 
         // The new file is open, so we will always switch to this new output stream
         // If any error occurs, with the cleanup steps, we add them to this exception as suppressed and throw at the end
-        IOException exception = new IOException(format("Unable to %s log file", currentOutputStream == null ? "setup initial" : "roll"));
+        IOException exception = new IOException(
+                format("Unable to %s log file", currentOutputStream == null ? "setup initial" : "roll"));
 
         // close and optionally compress the currently open log (there is no open log during initial setup)
         if (currentOutputStream != null) {
             try {
                 currentOutputStream.close();
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 exception.addSuppressed(new IOException("Unable to close old output stream: " + currentOutputFile, e));
             }
             historyManager.addFile(currentOutputFile, currentOutputFileName, currentFileSize);
@@ -285,8 +269,7 @@ final class RollingFileMessageOutput
                 compressionExecutor.submit(() -> {
                     try {
                         compressInternal(originalFile, originalLogFileName, originalFileSize);
-                    }
-                    catch (IOException e) {
+                    } catch (IOException e) {
                         exception.addSuppressed(e);
                     }
                 });
@@ -302,8 +285,7 @@ final class RollingFileMessageOutput
         try {
             Files.deleteIfExists(symlink);
             Files.createSymbolicLink(symlink, newFile.getFileName());
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             exception.addSuppressed(new IOException(format("Unable to update symlink %s to %s", symlink, newFile), e));
         }
 
@@ -313,20 +295,17 @@ final class RollingFileMessageOutput
     }
 
     private void compressInternal(Path originalFile, LogFileName originalLogFileName, long originalFileSize)
-            throws IOException
-    {
+            throws IOException {
         tryCleanupTempFiles(symlink);
 
         String compressionExtension = compressionType.getExtension().orElseThrow(IllegalStateException::new);
 
         // compress file
         Path tempFile = originalFile.resolveSibling(TEMP_PREFIX + originalFile.getFileName() + compressionExtension);
-        try (
-                InputStream input = Files.newInputStream(originalFile);
+        try (InputStream input = Files.newInputStream(originalFile);
                 GZIPOutputStream gzipOutputStream = new GZIPOutputStream(Files.newOutputStream(tempFile))) {
             input.transferTo(gzipOutputStream);
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new IOException("Unable to compress log file", e);
         }
 
@@ -334,8 +313,7 @@ final class RollingFileMessageOutput
         long compressedSize;
         try {
             compressedSize = Files.size(tempFile);
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new IOException("Unable to get size of compress log file", e);
         }
 
@@ -346,8 +324,7 @@ final class RollingFileMessageOutput
                 // file was removed during compression
                 try {
                     Files.deleteIfExists(tempFile);
-                }
-                catch (IOException e) {
+                } catch (IOException e) {
                     throw new IOException("Unable to delete compress log file", e);
                 }
                 return;
@@ -359,16 +336,14 @@ final class RollingFileMessageOutput
             LogFileName compressedFileName = originalLogFileName.withCompression(compressedFile);
             try {
                 Files.move(tempFile, compressedFile, ATOMIC_MOVE);
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 // add the original file back to the history manager
                 historyManager.addFile(originalFile, originalLogFileName, originalFileSize);
 
                 // move failed, delete the temp file
                 try {
                     Files.deleteIfExists(tempFile);
-                }
-                catch (IOException ignored) {
+                } catch (IOException ignored) {
                     // delete failed, system will attempt to delete temp files periodically
                 }
             }
@@ -377,13 +352,14 @@ final class RollingFileMessageOutput
             // 3. Delete original file
             try {
                 Files.deleteIfExists(originalFile);
-            }
-            catch (IOException deleteException) {
+            } catch (IOException deleteException) {
                 // delete failed, try to move the file out of the way
                 try {
-                    Files.move(originalFile, originalFile.resolveSibling(DELETED_PREFIX + originalFile.getFileName()), ATOMIC_MOVE);
-                }
-                catch (IOException ignored) {
+                    Files.move(
+                            originalFile,
+                            originalFile.resolveSibling(DELETED_PREFIX + originalFile.getFileName()),
+                            ATOMIC_MOVE);
+                } catch (IOException ignored) {
                     // delete and move failed, there is nothing that can be done
                     throw new IOException("Unable to delete original file after compression", deleteException);
                 }
@@ -391,39 +367,35 @@ final class RollingFileMessageOutput
         }
     }
 
-    private static void tryCleanupTempFiles(Path masterLogFile)
-    {
+    private static void tryCleanupTempFiles(Path masterLogFile) {
         try {
             for (Path file : MoreFiles.listFiles(masterLogFile.getParent())) {
                 String fileName = file.getFileName().toString();
                 String fileNameWithoutPrefix;
                 if (fileName.startsWith(TEMP_PREFIX)) {
                     fileNameWithoutPrefix = fileName.substring(TEMP_PREFIX.length());
-                }
-                else if (fileName.startsWith(DELETED_PREFIX)) {
+                } else if (fileName.startsWith(DELETED_PREFIX)) {
                     fileNameWithoutPrefix = fileName.substring(DELETED_PREFIX.length());
-                }
-                else {
+                } else {
                     continue;
                 }
-                if (LogFileName.parseHistoryLogFileName(masterLogFile.getFileName().toString(), fileNameWithoutPrefix).isPresent()) {
+                if (LogFileName.parseHistoryLogFileName(
+                                masterLogFile.getFileName().toString(), fileNameWithoutPrefix)
+                        .isPresent()) {
                     // this is our temp or "to be deleted' file, so try to delete it
                     try {
                         Files.deleteIfExists(file);
-                    }
-                    catch (IOException ignored) {
+                    } catch (IOException ignored) {
                     }
                 }
             }
-        }
-        catch (IOException ignored) {
+        } catch (IOException ignored) {
         }
     }
 
-    public synchronized Set<LogFileName> getFiles()
-    {
-        ImmutableSet.Builder<LogFileName> files = ImmutableSet.<LogFileName>builder()
-                .addAll(historyManager.getFiles());
+    public synchronized Set<LogFileName> getFiles() {
+        ImmutableSet.Builder<LogFileName> files =
+                ImmutableSet.<LogFileName>builder().addAll(historyManager.getFiles());
         if (currentOutputFileName != null) {
             files.add(currentOutputFileName);
         }
@@ -433,9 +405,7 @@ final class RollingFileMessageOutput
     private static final String TEMP_FILE_EXTENSION = ".tmp";
     private static final String LOG_FILE_EXTENSION = ".log";
 
-    static void recoverLegacyTempFiles(String logPath)
-            throws IOException
-    {
+    static void recoverLegacyTempFiles(String logPath) throws IOException {
         // Logback has a tendency to leave around temp files if it is interrupted.
         // These .tmp files are log files that are about to be compressed.
         // This method recovers them so that they aren't orphaned.
@@ -449,15 +419,18 @@ final class RollingFileMessageOutput
 
         List<String> errorMessages = new ArrayList<>();
         for (File tempFile : tempFiles) {
-            String newName = tempFile.getName().substring(0, tempFile.getName().length() - TEMP_FILE_EXTENSION.length());
-            File newFile = Paths.get(tempFile.getParent(), newName + LOG_FILE_EXTENSION).toFile();
+            String newName =
+                    tempFile.getName().substring(0, tempFile.getName().length() - TEMP_FILE_EXTENSION.length());
+            File newFile = Paths.get(tempFile.getParent(), newName + LOG_FILE_EXTENSION)
+                    .toFile();
 
             if (!tempFile.renameTo(newFile)) {
                 errorMessages.add(format("Could not rename temp file [%s] to [%s]", tempFile, newFile));
             }
         }
         if (!errorMessages.isEmpty()) {
-            throw new IOException("Error recovering temp files\n" + Joiner.on("\n").join(errorMessages));
+            throw new IOException(
+                    "Error recovering temp files\n" + Joiner.on("\n").join(errorMessages));
         }
     }
 }

@@ -15,68 +15,57 @@
  */
 package io.airlift.configuration;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static java.util.Collections.emptyList;
+
 import com.google.common.collect.ImmutableList;
 import com.google.inject.ConfigurationException;
 import com.google.inject.spi.Message;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.IllegalFormatException;
 import java.util.List;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static java.util.Collections.emptyList;
-
-class Problems
-{
+class Problems {
     private final List<Message> errors = new ArrayList<>();
     private final List<Message> warnings = new ArrayList<>();
 
-    public void throwIfHasErrors()
-            throws ConfigurationException
-    {
+    public void throwIfHasErrors() throws ConfigurationException {
         if (!errors.isEmpty()) {
             throw getException();
         }
     }
 
-    public List<Message> getErrors()
-    {
+    public List<Message> getErrors() {
         return ImmutableList.copyOf(errors);
     }
 
-    void record(Problems problems)
-    {
+    void record(Problems problems) {
         checkArgument(problems != this, "Can not add problems to itself");
         errors.addAll(problems.errors);
         warnings.addAll(problems.warnings);
     }
 
-    public void addError(String format, Object... params)
-    {
+    public void addError(String format, Object... params) {
         Message message = new Message(format(format, params));
         errors.add(message);
     }
 
-    public void addError(Throwable e, String format, Object... params)
-    {
+    public void addError(Throwable e, String format, Object... params) {
         Message message = new Message(emptyList(), format(format, params), e);
         errors.add(message);
     }
 
-    public List<Message> getWarnings()
-    {
+    public List<Message> getWarnings() {
         return ImmutableList.copyOf(warnings);
     }
 
-    public void addWarning(String format, Object... params)
-    {
+    public void addWarning(String format, Object... params) {
         Message message = new Message(format(format, params));
         warnings.add(message);
     }
 
-    public String toString()
-    {
+    public String toString() {
         StringBuilder builder = new StringBuilder();
         for (Message error : errors) {
             builder.append(error.getMessage()).append('\n');
@@ -87,10 +76,8 @@ class Problems
         return builder.toString();
     }
 
-    private ConfigurationException getException()
-    {
-        ImmutableList<Message> messages
-                = new ImmutableList.Builder<Message>()
+    private ConfigurationException getException() {
+        ImmutableList<Message> messages = new ImmutableList.Builder<Message>()
                 .addAll(errors)
                 .addAll(warnings)
                 .build();
@@ -98,30 +85,26 @@ class Problems
         return new ConfigurationException(messages);
     }
 
-    public static ConfigurationException exceptionFor(String format, Object... params)
-    {
+    public static ConfigurationException exceptionFor(String format, Object... params) {
         Problems problems = new Problems();
         problems.addError(format, params);
         return problems.getException();
     }
 
-    public static ConfigurationException exceptionFor(Throwable e, String format, Object... params)
-    {
+    public static ConfigurationException exceptionFor(Throwable e, String format, Object... params) {
         Problems problems = new Problems();
         problems.addError(e, format, params);
         return problems.getException();
     }
 
-    private static String format(String format, Object... params)
-    {
+    private static String format(String format, Object... params) {
         if (format == null || params.length == 0) {
             return format;
         }
 
         try {
             return String.format(format, params);
-        }
-        catch (IllegalFormatException e) {
+        } catch (IllegalFormatException e) {
             return String.format("%s %s <%s>", format, Arrays.toString(params), e);
         }
     }

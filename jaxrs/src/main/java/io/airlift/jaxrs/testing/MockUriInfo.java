@@ -24,102 +24,86 @@ import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.PathSegment;
 import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.core.UriInfo;
-
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.util.List;
 
-public class MockUriInfo
-        implements UriInfo
-{
+public class MockUriInfo implements UriInfo {
     private static final Splitter PATH_SPLITTER = Splitter.on('/');
-    private static final Splitter QUERY_STRING_SPLITTER = Splitter.on('&').trimResults().omitEmptyStrings();
+    private static final Splitter QUERY_STRING_SPLITTER =
+            Splitter.on('&').trimResults().omitEmptyStrings();
     private static final Splitter QUERY_PARAM_SPLITTER = Splitter.on('=');
     private static final Joiner QUERY_PARAM_VALUE_JOINER = Joiner.on("");
 
     private final URI requestUri;
     private final URI baseUri;
 
-    public static UriInfo from(String requestUri)
-    {
+    public static UriInfo from(String requestUri) {
         return new MockUriInfo(URI.create(requestUri));
     }
 
-    public static UriInfo from(URI requestUri)
-    {
+    public static UriInfo from(URI requestUri) {
         return new MockUriInfo(requestUri);
     }
 
-    public MockUriInfo(URI requestUri)
-    {
+    public MockUriInfo(URI requestUri) {
         this(requestUri, requestUri.resolve("/"));
     }
 
-    public MockUriInfo(URI requestUri, URI baseUri)
-    {
+    public MockUriInfo(URI requestUri, URI baseUri) {
         this.requestUri = requestUri;
         this.baseUri = baseUri;
     }
 
     @Override
-    public URI getBaseUri()
-    {
+    public URI getBaseUri() {
         return baseUri;
     }
 
     @Override
-    public UriBuilder getBaseUriBuilder()
-    {
+    public UriBuilder getBaseUriBuilder() {
         return UriBuilder.fromUri(getBaseUri());
     }
 
     @Override
-    public URI getRequestUri()
-    {
+    public URI getRequestUri() {
         return requestUri;
     }
 
     @Override
-    public UriBuilder getRequestUriBuilder()
-    {
+    public UriBuilder getRequestUriBuilder() {
         return UriBuilder.fromUri(getRequestUri());
     }
 
     @Override
-    public URI getAbsolutePath()
-    {
+    public URI getAbsolutePath() {
         return UriBuilder.fromUri(requestUri).replaceQuery("").fragment("").build();
     }
 
     @Override
-    public UriBuilder getAbsolutePathBuilder()
-    {
+    public UriBuilder getAbsolutePathBuilder() {
         return UriBuilder.fromUri(getAbsolutePath());
     }
 
     @Override
-    public String getPath()
-    {
+    public String getPath() {
         return getPath(true);
     }
 
     @Override
-    public String getPath(boolean decode)
-    {
+    public String getPath(boolean decode) {
         // todo decode is ignored
         return getRequestUri().getRawPath().substring(getBaseUri().getRawPath().length());
     }
 
     @Override
-    public List<PathSegment> getPathSegments()
-    {
+    public List<PathSegment> getPathSegments() {
         return getPathSegments(true);
     }
 
     @Override
-    public List<PathSegment> getPathSegments(boolean decode)
-    {
+    public List<PathSegment> getPathSegments(boolean decode) {
         Builder<PathSegment> builder = ImmutableList.builder();
         for (String path : PATH_SPLITTER.split(getPath(decode))) {
             builder.add(new ImmutablePathSegment(path));
@@ -128,34 +112,29 @@ public class MockUriInfo
     }
 
     @Override
-    public MultivaluedMap<String, String> getQueryParameters()
-    {
+    public MultivaluedMap<String, String> getQueryParameters() {
         return getQueryParameters(true);
     }
 
     @Override
-    public MultivaluedMap<String, String> getQueryParameters(boolean decode)
-    {
+    public MultivaluedMap<String, String> getQueryParameters(boolean decode) {
         return decodeQuery(getRequestUri().getRawQuery(), decode);
     }
 
     @Override
-    public URI resolve(URI uri)
-    {
+    public URI resolve(URI uri) {
         return baseUri.resolve(uri);
     }
 
     @Override
-    public URI relativize(URI uri)
-    {
+    public URI relativize(URI uri) {
         if (!uri.isAbsolute()) {
             uri = resolve(uri);
         }
         return baseUri.resolve(uri);
     }
 
-    public static MultivaluedMap<String, String> decodeQuery(String query, boolean decode)
-    {
+    public static MultivaluedMap<String, String> decodeQuery(String query, boolean decode) {
         if (query == null) {
             return new GuavaMultivaluedMap<>();
         }
@@ -181,68 +160,56 @@ public class MockUriInfo
         return new GuavaMultivaluedMap<>(map);
     }
 
-    private static String urlDecode(String value)
-    {
+    private static String urlDecode(String value) {
         try {
             return URLDecoder.decode(value, "UTF-8");
-        }
-        catch (UnsupportedEncodingException e) {
+        } catch (UnsupportedEncodingException e) {
             throw new IllegalArgumentException(e);
         }
     }
 
     @Override
-    public MultivaluedMap<String, String> getPathParameters()
-    {
+    public MultivaluedMap<String, String> getPathParameters() {
         return getPathParameters(true);
     }
 
     @Override
-    public MultivaluedMap<String, String> getPathParameters(boolean decode)
-    {
+    public MultivaluedMap<String, String> getPathParameters(boolean decode) {
         // this requires knowledge of @Path
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public List<String> getMatchedURIs()
-    {
+    public List<String> getMatchedURIs() {
         return getMatchedURIs(true);
     }
 
     @Override
-    public List<String> getMatchedURIs(boolean decode)
-    {
+    public List<String> getMatchedURIs(boolean decode) {
         // this requires knowledge of @Path
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public List<Object> getMatchedResources()
-    {
+    public List<Object> getMatchedResources() {
         // this requires knowledge of @Path
         throw new UnsupportedOperationException();
     }
 
-    private static class ImmutablePathSegment
-            implements PathSegment
-    {
+    private static class ImmutablePathSegment implements PathSegment {
         private final String path;
 
-        public ImmutablePathSegment(String path)
-        {
+        public ImmutablePathSegment(String path) {
             this.path = path;
         }
 
         @Override
-        public String getPath()
-        {
+        public String getPath() {
             return path;
         }
 
         @Override
-        public MultivaluedMap<String, String> getMatrixParameters()
-        {
+        public MultivaluedMap<String, String> getMatrixParameters() {
             return new GuavaMultivaluedMap<>();
         }
     }

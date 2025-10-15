@@ -13,16 +13,6 @@
  */
 package io.airlift.log;
 
-import io.airlift.units.DataSize;
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
@@ -31,14 +21,20 @@ import static io.airlift.units.DataSize.Unit.GIGABYTE;
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TestLogHistoryManager
-{
+import io.airlift.units.DataSize;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
+
+public class TestLogHistoryManager {
     private static final int FILE_SIZE = 100;
 
     @Test
-    public void testInitialLoad()
-            throws IOException
-    {
+    public void testInitialLoad() throws IOException {
         Path tempDir = Files.createTempDirectory("logging-test");
         try {
             Path masterLogName = tempDir.resolve("test");
@@ -48,16 +44,13 @@ public class TestLogHistoryManager
             }
             LogHistoryManager logHistoryManager = new LogHistoryManager(masterLogName, DataSize.of(1, GIGABYTE));
             assertLogFiles(logHistoryManager, logFileNames);
-        }
-        finally {
+        } finally {
             deleteRecursively(tempDir, ALLOW_INSECURE);
         }
     }
 
     @Test
-    public void testInitialPrune()
-            throws IOException
-    {
+    public void testInitialPrune() throws IOException {
         Path tempDir = Files.createTempDirectory("logging-test");
         try {
             Path masterLogName = tempDir.resolve("test");
@@ -65,27 +58,22 @@ public class TestLogHistoryManager
             for (int i = 0; i < FILE_SIZE; i++) {
                 logFileNames.add(createTestFile(masterLogName));
             }
-            LogHistoryManager logHistoryManager = new LogHistoryManager(masterLogName, DataSize.of(10 * FILE_SIZE, BYTE));
+            LogHistoryManager logHistoryManager =
+                    new LogHistoryManager(masterLogName, DataSize.of(10 * FILE_SIZE, BYTE));
             assertLogFiles(logHistoryManager, logFileNames.subList(90, logFileNames.size()));
-        }
-        finally {
+        } finally {
             deleteRecursively(tempDir, ALLOW_INSECURE);
         }
     }
 
-    private static void assertLogFiles(LogHistoryManager logHistoryManager, List<LogFileName> expected)
-    {
+    private static void assertLogFiles(LogHistoryManager logHistoryManager, List<LogFileName> expected) {
         assertThat(logHistoryManager.getTotalSize()).isEqualTo(expected.size() * FILE_SIZE);
-        List<LogFileName> files = logHistoryManager.getFiles().stream()
-                .sorted()
-                .collect(toImmutableList());
+        List<LogFileName> files = logHistoryManager.getFiles().stream().sorted().collect(toImmutableList());
         assertThat(files).isEqualTo(expected);
     }
 
     @Test
-    public void testRuntimePrune()
-            throws IOException, InterruptedException
-    {
+    public void testRuntimePrune() throws IOException, InterruptedException {
         Path tempDir = Files.createTempDirectory("logging-test");
         try {
             Path masterLogName = tempDir.resolve("test");
@@ -93,7 +81,8 @@ public class TestLogHistoryManager
             for (int i = 0; i < 100; i++) {
                 logFileNames.add(createTestFile(masterLogName));
             }
-            LogHistoryManager logHistoryManager = new LogHistoryManager(masterLogName, DataSize.of(100 * FILE_SIZE, BYTE));
+            LogHistoryManager logHistoryManager =
+                    new LogHistoryManager(masterLogName, DataSize.of(100 * FILE_SIZE, BYTE));
             assertLogFiles(logHistoryManager, logFileNames);
 
             // add 2 more files
@@ -132,15 +121,12 @@ public class TestLogHistoryManager
             logHistoryManager.pruneLogFilesIfNecessary(2 * FILE_SIZE);
             logFileNames = logFileNames.subList(4, logFileNames.size());
             assertLogFiles(logHistoryManager, logFileNames);
-        }
-        finally {
+        } finally {
             deleteRecursively(tempDir, ALLOW_INSECURE);
         }
     }
 
-    private static LogFileName createTestFile(Path masterLogName)
-            throws IOException
-    {
+    private static LogFileName createTestFile(Path masterLogName) throws IOException {
         LogFileName logFileName = LogFileName.generateNextLogFileName(masterLogName, Optional.empty());
         Files.write(masterLogName.resolveSibling(logFileName.getFileName()), new byte[FILE_SIZE], CREATE_NEW);
         return logFileName;

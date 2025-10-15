@@ -13,23 +13,20 @@
  */
 package io.airlift.jmx;
 
+import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.net.HostAndPort;
 import com.google.inject.Inject;
 import com.sun.tools.attach.AttachNotSupportedException;
 import com.sun.tools.attach.VirtualMachine;
 import io.airlift.log.Logger;
-
-import javax.management.remote.JMXServiceURL;
-
 import java.io.IOException;
 import java.util.Objects;
 import java.util.Properties;
+import javax.management.remote.JMXServiceURL;
 
-import static java.lang.String.format;
-import static java.util.Objects.requireNonNull;
-
-public class JmxAgent
-{
+public class JmxAgent {
     private static final Logger log = Logger.get(JmxAgent.class);
 
     private static final String JMX_REGISTRY_PORT = "com.sun.management.jmxremote.port";
@@ -39,9 +36,7 @@ public class JmxAgent
     private final JMXServiceURL url;
 
     @Inject
-    public JmxAgent(JmxConfig config)
-            throws IOException
-    {
+    public JmxAgent(JmxConfig config) throws IOException {
         int registryPort = requireNonNull(config.getRmiRegistryPort(), "RMI registry port is not configured");
         Integer existingRegistryPort = Integer.getInteger(JMX_REGISTRY_PORT);
 
@@ -53,8 +48,7 @@ public class JmxAgent
             }
             if (existingRegistryPort.equals(0)) {
                 throw new RuntimeException(format(
-                        "JMX agent already running on an unknown port (system property '%s' is 0)",
-                        JMX_REGISTRY_PORT));
+                        "JMX agent already running on an unknown port (system property '%s' is 0)", JMX_REGISTRY_PORT));
             }
         }
 
@@ -77,22 +71,19 @@ public class JmxAgent
         if (existingRegistryPort == null) {
             startJmxAgent(registryPort, serverPort);
             log.info("JMX agent started and listening on %s", address);
-        }
-        else {
+        } else {
             log.info("JMX agent already running and listening on %s", address);
         }
 
-        this.url = new JMXServiceURL(format("service:jmx:rmi:///jndi/rmi://%s:%s/jmxrmi", address.getHost(), address.getPort()));
+        this.url = new JMXServiceURL(
+                format("service:jmx:rmi:///jndi/rmi://%s:%s/jmxrmi", address.getHost(), address.getPort()));
     }
 
-    public JMXServiceURL getUrl()
-    {
+    public JMXServiceURL getUrl() {
         return url;
     }
 
-    private static void startJmxAgent(int registryPort, int serverPort)
-            throws IOException
-    {
+    private static void startJmxAgent(int registryPort, int serverPort) throws IOException {
         try {
             VirtualMachine virtualMachine = VirtualMachine.attach(Long.toString(getProcessId()));
             try {
@@ -104,15 +95,12 @@ public class JmxAgent
                 properties.setProperty("com.sun.management.jmxremote.authenticate", "false");
                 properties.setProperty("com.sun.management.jmxremote.ssl", "false");
                 virtualMachine.startManagementAgent(properties);
-            }
-            finally {
+            } finally {
                 virtualMachine.detach();
             }
-        }
-        catch (AttachNotSupportedException e) {
+        } catch (AttachNotSupportedException e) {
             throw new RuntimeException(e);
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             if (!Boolean.getBoolean(ALLOW_SELF_ATTACH)) {
                 throw new IOException(format("%s (try adding '-D%s=true' to the JVM config)", e, ALLOW_SELF_ATTACH));
             }
@@ -120,8 +108,7 @@ public class JmxAgent
         }
     }
 
-    private static long getProcessId()
-    {
+    private static long getProcessId() {
         return ProcessHandle.current().pid();
     }
 }

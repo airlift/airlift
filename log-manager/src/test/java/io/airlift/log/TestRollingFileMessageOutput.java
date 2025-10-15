@@ -13,28 +13,6 @@
  */
 package io.airlift.log;
 
-import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.io.ByteSource;
-import io.airlift.units.DataSize;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.ErrorManager;
-import java.util.logging.Formatter;
-import java.util.logging.Level;
-import java.util.logging.LogRecord;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
-
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.common.io.MoreFiles.asByteSource;
@@ -53,20 +31,44 @@ import static java.util.function.Predicate.not;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.io.ByteSource;
+import io.airlift.units.DataSize;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.ErrorManager;
+import java.util.logging.Formatter;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+
 @Timeout(value = 5, unit = TimeUnit.MINUTES)
-public class TestRollingFileMessageOutput
-{
+public class TestRollingFileMessageOutput {
     public static final ImmutableMap<String, String> TESTING_ANNOTATIONS = ImmutableMap.of("environment", "testing");
 
     @Test
-    public void testBasicLogging()
-            throws Exception
-    {
+    public void testBasicLogging() throws Exception {
         Path tempDir = Files.createTempDirectory("logging-test");
         try {
             Path masterFile = tempDir.resolve("launcher.log");
 
-            BufferedHandler handler = createRollingFileHandler(masterFile.toString(), DataSize.of(1, MEGABYTE), DataSize.of(10, MEGABYTE), NONE, TEXT.createFormatter(TESTING_ANNOTATIONS), new ErrorManager());
+            BufferedHandler handler = createRollingFileHandler(
+                    masterFile.toString(),
+                    DataSize.of(1, MEGABYTE),
+                    DataSize.of(10, MEGABYTE),
+                    NONE,
+                    TEXT.createFormatter(TESTING_ANNOTATIONS),
+                    new ErrorManager());
             assertLogDirectory(masterFile);
 
             assertThat(masterFile).exists();
@@ -79,9 +81,7 @@ public class TestRollingFileMessageOutput
             assertThat(lines)
                     .filteredOn(line -> line.contains("environment=testing"))
                     .hasSize(1);
-            assertThat(lines)
-                    .filteredOn(line -> line.contains("apple"))
-                    .hasSize(1);
+            assertThat(lines).filteredOn(line -> line.contains("apple")).hasSize(1);
 
             handler.publish(new LogRecord(Level.SEVERE, "banana"));
             lines = waitForExactLines(masterFile, 2);
@@ -93,23 +93,26 @@ public class TestRollingFileMessageOutput
             assertLogDirectory(masterFile);
             handler.close();
             assertLogDirectory(masterFile);
-        }
-        finally {
+        } finally {
             deleteRecursively(tempDir, ALLOW_INSECURE);
         }
     }
 
     @Test
-    public void testBrokenLink()
-            throws Exception
-    {
+    public void testBrokenLink() throws Exception {
         Path tempDir = Files.createTempDirectory("logging-test");
         try {
             Path masterFile = tempDir.resolve("launcher.log");
             // start with a broken symlink
             Files.createSymbolicLink(masterFile, tempDir.resolve("launcher.log.broken"));
 
-            BufferedHandler handler = createRollingFileHandler(masterFile.toString(), DataSize.of(1, MEGABYTE), DataSize.of(10, MEGABYTE), NONE, TEXT.createFormatter(TESTING_ANNOTATIONS), new ErrorManager());
+            BufferedHandler handler = createRollingFileHandler(
+                    masterFile.toString(),
+                    DataSize.of(1, MEGABYTE),
+                    DataSize.of(10, MEGABYTE),
+                    NONE,
+                    TEXT.createFormatter(TESTING_ANNOTATIONS),
+                    new ErrorManager());
             assertLogDirectory(masterFile);
 
             assertThat(masterFile).exists();
@@ -123,16 +126,13 @@ public class TestRollingFileMessageOutput
             assertLogDirectory(masterFile);
             handler.close();
             assertLogDirectory(masterFile);
-        }
-        finally {
+        } finally {
             deleteRecursively(tempDir, ALLOW_INSECURE);
         }
     }
 
     @Test
-    public void testExistingDirectory()
-            throws Exception
-    {
+    public void testExistingDirectory() throws Exception {
         Path tempDir = Files.createTempDirectory("logging-test");
         try {
             Path masterFile = tempDir.resolve("launcher.log");
@@ -140,12 +140,12 @@ public class TestRollingFileMessageOutput
             // master file is a directory
             Files.createDirectories(masterFile);
             assertThatThrownBy(() -> createRollingFileHandler(
-                    masterFile.toString(),
-                    DataSize.of(1, MEGABYTE),
-                    DataSize.of(10, MEGABYTE),
-                    NONE,
-                    TEXT.createFormatter(TESTING_ANNOTATIONS),
-                    new ErrorManager()))
+                            masterFile.toString(),
+                            DataSize.of(1, MEGABYTE),
+                            DataSize.of(10, MEGABYTE),
+                            NONE,
+                            TEXT.createFormatter(TESTING_ANNOTATIONS),
+                            new ErrorManager()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("Log file is an existing directory");
             Files.delete(masterFile);
@@ -155,24 +155,21 @@ public class TestRollingFileMessageOutput
             Files.createDirectories(someDirectory);
             Files.createSymbolicLink(masterFile, someDirectory);
             assertThatThrownBy(() -> createRollingFileHandler(
-                    masterFile.toString(),
-                    DataSize.of(1, MEGABYTE),
-                    DataSize.of(10, MEGABYTE),
-                    NONE,
-                    TEXT.createFormatter(TESTING_ANNOTATIONS),
-                    new ErrorManager()))
+                            masterFile.toString(),
+                            DataSize.of(1, MEGABYTE),
+                            DataSize.of(10, MEGABYTE),
+                            NONE,
+                            TEXT.createFormatter(TESTING_ANNOTATIONS),
+                            new ErrorManager()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("Log file is an existing directory");
-        }
-        finally {
+        } finally {
             deleteRecursively(tempDir, ALLOW_INSECURE);
         }
     }
 
     @Test
-    public void testRollAndPrune()
-            throws Exception
-    {
+    public void testRollAndPrune() throws Exception {
         String message = Strings.padEnd("", 99, 'x') + "\n";
 
         Path tempDir = Files.createTempDirectory("logging-test");
@@ -181,17 +178,17 @@ public class TestRollingFileMessageOutput
             BufferedHandler handler = createRollingFileHandler(
                     masterFile.toString(),
                     DataSize.of(message.length() * 5L, BYTE),
-                    DataSize.of(message.length() * 2L + message.length() * 5L + message.length() * 5L, BYTE), // 2 messages + 2 closed files
+                    DataSize.of(
+                            message.length() * 2L + message.length() * 5L + message.length() * 5L,
+                            BYTE), // 2 messages + 2 closed files
                     NONE,
                     TEXT.createFormatter(ImmutableMap.of()),
                     new ErrorManager());
 
             // use a handler that prints the raw message
-            handler.setFormatter(new Formatter()
-            {
+            handler.setFormatter(new Formatter() {
                 @Override
-                public String format(LogRecord record)
-                {
+                public String format(LogRecord record) {
                     return record.getMessage();
                 }
             });
@@ -243,16 +240,13 @@ public class TestRollingFileMessageOutput
 
             handler.close();
             assertLogDirectory(masterFile);
-        }
-        finally {
+        } finally {
             deleteRecursively(tempDir, ALLOW_INSECURE);
         }
     }
 
     @Test
-    public void testCompression()
-            throws Exception
-    {
+    public void testCompression() throws Exception {
         String message = Strings.padEnd("", 9, 'x') + "\n";
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -272,17 +266,17 @@ public class TestRollingFileMessageOutput
             BufferedHandler handler = createRollingFileHandler(
                     masterFile.toString(),
                     DataSize.of(message.length() * 5L, BYTE),
-                    DataSize.of(message.length() + message.length() * 5L + expectedCompressedSize, BYTE), // one message, one uncompressed file, one compressed file
+                    DataSize.of(
+                            message.length() + message.length() * 5L + expectedCompressedSize,
+                            BYTE), // one message, one uncompressed file, one compressed file
                     GZIP,
                     TEXT.createFormatter(ImmutableMap.of()),
                     new ErrorManager());
 
             // use a handler that prints the raw message
-            handler.setFormatter(new Formatter()
-            {
+            handler.setFormatter(new Formatter() {
                 @Override
-                public String format(LogRecord record)
-                {
+                public String format(LogRecord record) {
                     return record.getMessage();
                 }
             });
@@ -327,20 +321,23 @@ public class TestRollingFileMessageOutput
 
             handler.close();
             assertLogDirectory(masterFile);
-        }
-        finally {
+        } finally {
             deleteRecursively(tempDir, ALLOW_INSECURE);
         }
     }
 
     @Test
-    public void testClosedHandler()
-            throws Exception
-    {
+    public void testClosedHandler() throws Exception {
         Path tempDir = Files.createTempDirectory("logging-test");
         try {
             Path masterFile = tempDir.resolve("launcher.log");
-            BufferedHandler handler = createRollingFileHandler(masterFile.toString(), DataSize.of(1, MEGABYTE), DataSize.of(10, MEGABYTE), NONE, TEXT.createFormatter(TESTING_ANNOTATIONS), new ErrorManager());
+            BufferedHandler handler = createRollingFileHandler(
+                    masterFile.toString(),
+                    DataSize.of(1, MEGABYTE),
+                    DataSize.of(10, MEGABYTE),
+                    NONE,
+                    TEXT.createFormatter(TESTING_ANNOTATIONS),
+                    new ErrorManager());
 
             handler.publish(new LogRecord(Level.SEVERE, "apple"));
             handler.publish(new LogRecord(Level.SEVERE, "banana"));
@@ -358,20 +355,23 @@ public class TestRollingFileMessageOutput
             // these should not throw
             handler.flush();
             handler.close();
-        }
-        finally {
+        } finally {
             deleteRecursively(tempDir, ALLOW_INSECURE);
         }
     }
 
     @Test
-    public void testLoggingInExistingDirectory()
-            throws Exception
-    {
+    public void testLoggingInExistingDirectory() throws Exception {
         Path tempDir = Files.createTempDirectory("logging-test");
         try {
             Path masterFile = tempDir.resolve("launcher.log");
-            BufferedHandler handler = createRollingFileHandler(masterFile.toString(), DataSize.of(1, MEGABYTE), DataSize.of(10, MEGABYTE), NONE, TEXT.createFormatter(TESTING_ANNOTATIONS), new ErrorManager());
+            BufferedHandler handler = createRollingFileHandler(
+                    masterFile.toString(),
+                    DataSize.of(1, MEGABYTE),
+                    DataSize.of(10, MEGABYTE),
+                    NONE,
+                    TEXT.createFormatter(TESTING_ANNOTATIONS),
+                    new ErrorManager());
             assertLogDirectory(masterFile);
             Path firstLogFile = Files.readSymbolicLink(masterFile);
 
@@ -389,7 +389,13 @@ public class TestRollingFileMessageOutput
             assertLogDirectory(masterFile);
 
             // open new handler
-            handler = createRollingFileHandler(masterFile.toString(), DataSize.of(1, MEGABYTE), DataSize.of(10, MEGABYTE), NONE, TEXT.createFormatter(TESTING_ANNOTATIONS), new ErrorManager());
+            handler = createRollingFileHandler(
+                    masterFile.toString(),
+                    DataSize.of(1, MEGABYTE),
+                    DataSize.of(10, MEGABYTE),
+                    NONE,
+                    TEXT.createFormatter(TESTING_ANNOTATIONS),
+                    new ErrorManager());
 
             assertLogDirectory(masterFile);
             assertThat(Files.readSymbolicLink(masterFile)).isNotEqualTo(firstLogFile);
@@ -398,23 +404,18 @@ public class TestRollingFileMessageOutput
 
             lines = waitForExactLines(masterFile, 1);
             assertThat(lines).hasSize(1);
-            assertThat(lines)
-                    .filteredOn(line -> line.contains("cherry"))
-                    .hasSize(1);
+            assertThat(lines).filteredOn(line -> line.contains("cherry")).hasSize(1);
 
             assertLogDirectory(masterFile);
             handler.close();
             assertLogDirectory(masterFile);
-        }
-        finally {
+        } finally {
             deleteRecursively(tempDir, ALLOW_INSECURE);
         }
     }
 
     @Test
-    public void testLoggingInExistingLegacyDirectory()
-            throws Exception
-    {
+    public void testLoggingInExistingLegacyDirectory() throws Exception {
         // test file movement
         // test history visibility
         Path tempDir = Files.createTempDirectory("logging-test");
@@ -422,8 +423,16 @@ public class TestRollingFileMessageOutput
             // simulate legacy handler
             Path masterFile = tempDir.resolve("launcher.log");
 
-            Files.writeString(masterFile, new StaticFormatter().formatMessage(new LogRecord(Level.SEVERE, "apple")), CREATE, APPEND);
-            Files.writeString(masterFile, new StaticFormatter().formatMessage(new LogRecord(Level.SEVERE, "banana")), CREATE, APPEND);
+            Files.writeString(
+                    masterFile,
+                    new StaticFormatter().formatMessage(new LogRecord(Level.SEVERE, "apple")),
+                    CREATE,
+                    APPEND);
+            Files.writeString(
+                    masterFile,
+                    new StaticFormatter().formatMessage(new LogRecord(Level.SEVERE, "banana")),
+                    CREATE,
+                    APPEND);
 
             assertThat(masterFile).isRegularFile();
 
@@ -434,12 +443,21 @@ public class TestRollingFileMessageOutput
                     .hasSize(2);
 
             // open new handler
-            BufferedHandler newHandler = createRollingFileHandler(masterFile.toString(), DataSize.of(1, MEGABYTE), DataSize.of(10, MEGABYTE), NONE, TEXT.createFormatter(TESTING_ANNOTATIONS), new ErrorManager());
+            BufferedHandler newHandler = createRollingFileHandler(
+                    masterFile.toString(),
+                    DataSize.of(1, MEGABYTE),
+                    DataSize.of(10, MEGABYTE),
+                    NONE,
+                    TEXT.createFormatter(TESTING_ANNOTATIONS),
+                    new ErrorManager());
             assertLogDirectory(masterFile);
 
             assertThat(masterFile).isSymbolicLink();
             // should be tracking legacy file and new file
-            assertThat(((RollingFileMessageOutput) newHandler.getMessageOutput()).getFiles().size()).isEqualTo(2);
+            assertThat(((RollingFileMessageOutput) newHandler.getMessageOutput())
+                            .getFiles()
+                            .size())
+                    .isEqualTo(2);
 
             newHandler.publish(new LogRecord(Level.SEVERE, "cherry"));
             newHandler.publish(new LogRecord(Level.SEVERE, "date"));
@@ -453,26 +471,20 @@ public class TestRollingFileMessageOutput
             assertLogDirectory(masterFile);
             newHandler.close();
             assertLogDirectory(masterFile);
-        }
-        finally {
+        } finally {
             deleteRecursively(tempDir, ALLOW_INSECURE);
         }
     }
 
-    private static class GzippedByteSource
-            extends ByteSource
-    {
+    private static class GzippedByteSource extends ByteSource {
         private final ByteSource source;
 
-        public GzippedByteSource(ByteSource gzippedSource)
-        {
+        public GzippedByteSource(ByteSource gzippedSource) {
             source = gzippedSource;
         }
 
         @Override
-        public InputStream openStream()
-                throws IOException
-        {
+        public InputStream openStream() throws IOException {
             return new GZIPInputStream(source.openStream());
         }
     }
@@ -483,17 +495,15 @@ public class TestRollingFileMessageOutput
             DataSize maxTotalSize,
             RollingFileMessageOutput.CompressionType compressionType,
             Formatter formatter,
-            ErrorManager errorManager)
-    {
-        RollingFileMessageOutput output = new RollingFileMessageOutput(filename, maxFileSize, maxTotalSize, compressionType);
+            ErrorManager errorManager) {
+        RollingFileMessageOutput output =
+                new RollingFileMessageOutput(filename, maxFileSize, maxTotalSize, compressionType);
         BufferedHandler handler = new BufferedHandler(output, formatter, errorManager);
         handler.initialize();
         return handler;
     }
 
-    private static void assertLogDirectory(Path masterFile)
-            throws Exception
-    {
+    private static void assertLogDirectory(Path masterFile) throws Exception {
         assertThat(masterFile.getParent()).isDirectory();
         assertThat(masterFile).isSymbolicLink();
 
@@ -507,14 +517,24 @@ public class TestRollingFileMessageOutput
                 .collect(toImmutableList());
         for (Path logFile : logFiles) {
             assertThat(logFile).isRegularFile();
-            assertThat(parseHistoryLogFileName(masterFile.getFileName().toString(), logFile.getFileName().toString()).isPresent()).isTrue();
+            assertThat(parseHistoryLogFileName(
+                                    masterFile.getFileName().toString(),
+                                    logFile.getFileName().toString())
+                            .isPresent())
+                    .isTrue();
         }
     }
 
-    private static void assertCompression(Path masterFile, BufferedHandler handler, String message, int expectedFileCount, int expectedLineCount, int expectedCompressedSize)
-            throws Exception
-    {
-        Set<LogFileName> compressedFileNames = waitForCompression((RollingFileMessageOutput) handler.getMessageOutput(), expectedFileCount);
+    private static void assertCompression(
+            Path masterFile,
+            BufferedHandler handler,
+            String message,
+            int expectedFileCount,
+            int expectedLineCount,
+            int expectedCompressedSize)
+            throws Exception {
+        Set<LogFileName> compressedFileNames =
+                waitForCompression((RollingFileMessageOutput) handler.getMessageOutput(), expectedFileCount);
         assertThat(compressedFileNames).hasSize(expectedFileCount - 1);
 
         for (LogFileName compressedFileName : compressedFileNames) {
@@ -530,22 +550,20 @@ public class TestRollingFileMessageOutput
         }
     }
 
-    private static void assertLogSizes(Path masterFile, BufferedHandler handler, int expectedLines, int lineSize, int expectedFileCount)
-            throws Exception
-    {
-        Set<LogFileName> files = waitForExactFiles((RollingFileMessageOutput) handler.getMessageOutput(), expectedFileCount);
+    private static void assertLogSizes(
+            Path masterFile, BufferedHandler handler, int expectedLines, int lineSize, int expectedFileCount)
+            throws Exception {
+        Set<LogFileName> files =
+                waitForExactFiles((RollingFileMessageOutput) handler.getMessageOutput(), expectedFileCount);
         assertThat(files).hasSize(expectedFileCount);
 
         List<String> lines = waitForExactLines(masterFile, expectedLines);
-        assertThat(lines)
-                .hasSize(expectedLines);
-        assertThat(masterFile)
-                .hasSize((long) expectedLines * lineSize);
+        assertThat(lines).hasSize(expectedLines);
+        assertThat(masterFile).hasSize((long) expectedLines * lineSize);
     }
 
     private static List<String> waitForExactLines(Path masterFile, int exactCount)
-            throws IOException, InterruptedException
-    {
+            throws IOException, InterruptedException {
         while (true) {
             List<String> lines = Files.readAllLines(masterFile, UTF_8);
             if (lines.size() == exactCount) {
@@ -556,8 +574,7 @@ public class TestRollingFileMessageOutput
     }
 
     private static Set<LogFileName> waitForExactFiles(RollingFileMessageOutput fileHandler, int exactCount)
-            throws Exception
-    {
+            throws Exception {
         while (true) {
             Set<LogFileName> files = fileHandler.getFiles();
             if (files.size() == exactCount) {
@@ -568,14 +585,12 @@ public class TestRollingFileMessageOutput
     }
 
     private static Set<LogFileName> waitForCompression(RollingFileMessageOutput fileHandler, int exactCount)
-            throws Exception
-    {
+            throws Exception {
         while (true) {
             Set<LogFileName> files = fileHandler.getFiles();
             if (files.size() == exactCount) {
-                Set<LogFileName> compressedFiles = files.stream()
-                        .filter(LogFileName::isCompressed)
-                        .collect(toImmutableSet());
+                Set<LogFileName> compressedFiles =
+                        files.stream().filter(LogFileName::isCompressed).collect(toImmutableSet());
                 if (compressedFiles.size() == exactCount - 1) {
                     return compressedFiles;
                 }

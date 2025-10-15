@@ -1,5 +1,8 @@
 package io.airlift.mcp.reflection;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+import static io.airlift.mcp.reflection.ReflectionHelper.parseParameters;
+
 import io.airlift.mcp.McpDescription;
 import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.Content;
@@ -15,7 +18,6 @@ import io.airlift.mcp.reflection.MethodParameter.ObjectParameter;
 import io.airlift.mcp.reflection.MethodParameter.ReadResourceRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.SourceResourceParameter;
 import jakarta.servlet.http.HttpServletRequest;
-
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -28,14 +30,13 @@ import java.util.function.Predicate;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static com.google.common.collect.ImmutableList.toImmutableList;
-import static io.airlift.mcp.reflection.ReflectionHelper.parseParameters;
-
-public interface ReflectionHelper
-{
+public interface ReflectionHelper {
     @SuppressWarnings("SwitchStatementWithTooFewBranches")
-    static void validate(Method method, List<MethodParameter> methodParameters, Predicate<MethodParameter> parameterPredicateChain, Predicate<Method> methodPredicateChain)
-    {
+    static void validate(
+            Method method,
+            List<MethodParameter> methodParameters,
+            Predicate<MethodParameter> parameterPredicateChain,
+            Predicate<Method> methodPredicateChain) {
         Function<MethodParameter, String> methodDebug = parameter -> switch (parameter) {
             case ObjectParameter objectParameter -> objectParameter.name();
             default -> parameter.getClass().getSimpleName();
@@ -43,7 +44,8 @@ public interface ReflectionHelper
 
         methodParameters.forEach(methodParameter -> {
             if (!parameterPredicateChain.test(methodParameter)) {
-                throw new IllegalArgumentException("Parameter is invalid for method %s: %s.".formatted(method, methodDebug.apply(methodParameter)));
+                throw new IllegalArgumentException("Parameter is invalid for method %s: %s."
+                        .formatted(method, methodDebug.apply(methodParameter)));
             }
         });
 
@@ -52,8 +54,7 @@ public interface ReflectionHelper
         }
     }
 
-    static List<MethodParameter> parseParameters(Method method, Optional<? extends Class<?>> identityClass)
-    {
+    static List<MethodParameter> parseParameters(Method method, Optional<? extends Class<?>> identityClass) {
         return IntStream.range(0, method.getParameterCount())
                 .mapToObj(index -> {
                     Parameter parameter = method.getParameters()[index];
@@ -79,37 +80,45 @@ public interface ReflectionHelper
                         return ReadResourceRequestParameter.INSTANCE;
                     }
 
-                    if (identityClass.map(clazz -> clazz.isAssignableFrom(parameter.getType())).orElse(false)) {
+                    if (identityClass
+                            .map(clazz -> clazz.isAssignableFrom(parameter.getType()))
+                            .orElse(false)) {
                         return IdentityParameter.INSTANCE;
                     }
 
-                    Optional<String> description = Optional.ofNullable(parameter.getAnnotation(McpDescription.class)).map(McpDescription::value);
-                    return new ObjectParameter(parameter.getName(), parameter.getType(), genericType, description, Optional.class.isAssignableFrom(parameter.getType()));
+                    Optional<String> description = Optional.ofNullable(parameter.getAnnotation(McpDescription.class))
+                            .map(McpDescription::value);
+                    return new ObjectParameter(
+                            parameter.getName(),
+                            parameter.getType(),
+                            genericType,
+                            description,
+                            Optional.class.isAssignableFrom(parameter.getType()));
                 })
                 .collect(toImmutableList());
     }
 
-    interface InClassConsumer<A extends Annotation>
-    {
+    interface InClassConsumer<A extends Annotation> {
         void accept(A annotation, Method method, List<MethodParameter> parameters);
     }
 
-    static <A extends Annotation> void forAllInClass(Class<?> clazz, Class<A> annotationClass, Optional<? extends Class<?>> identityClass, InClassConsumer<A> consumer)
-    {
-        Stream.of(clazz.getMethods())
-                .forEach(method -> {
-                    A annotation = method.getAnnotation(annotationClass);
-                    if (annotation == null) {
-                        return;
-                    }
+    static <A extends Annotation> void forAllInClass(
+            Class<?> clazz,
+            Class<A> annotationClass,
+            Optional<? extends Class<?>> identityClass,
+            InClassConsumer<A> consumer) {
+        Stream.of(clazz.getMethods()).forEach(method -> {
+            A annotation = method.getAnnotation(annotationClass);
+            if (annotation == null) {
+                return;
+            }
 
-                    List<MethodParameter> parameters = parseParameters(method, identityClass);
-                    consumer.accept(annotation, method, parameters);
-                });
+            List<MethodParameter> parameters = parseParameters(method, identityClass);
+            consumer.accept(annotation, method, parameters);
+        });
     }
 
-    static Content mapToContent(Object result)
-    {
+    static Content mapToContent(Object result) {
         return switch (result) {
             case String str -> new TextContent(str);
             case Number number -> new TextContent(number.toString());
@@ -118,8 +127,7 @@ public interface ReflectionHelper
         };
     }
 
-    static Optional<Type> listArgument(Type type)
-    {
+    static Optional<Type> listArgument(Type type) {
         if (type instanceof ParameterizedType parameterizedType) {
             if (parameterizedType.getRawType().equals(List.class)) {
                 Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
@@ -132,8 +140,7 @@ public interface ReflectionHelper
         return Optional.empty();
     }
 
-    static Optional<Type> optionalArgument(Type type)
-    {
+    static Optional<Type> optionalArgument(Type type) {
         if (type instanceof ParameterizedType parameterizedType) {
             if (parameterizedType.getRawType().equals(Optional.class)) {
                 Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
@@ -146,8 +153,7 @@ public interface ReflectionHelper
         return Optional.empty();
     }
 
-    static Class<?> requiredArgument(Type type)
-    {
+    static Class<?> requiredArgument(Type type) {
         if (type instanceof ParameterizedType parameterizedType) {
             Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
             if ((actualTypeArguments.length == 1) && (actualTypeArguments[0] instanceof Class<?> clazz)) {

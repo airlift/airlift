@@ -15,42 +15,35 @@
  */
 package io.airlift.discovery.client;
 
-import com.google.common.collect.ImmutableList;
+import static java.util.Objects.requireNonNull;
 
+import com.google.common.collect.ImmutableList;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static java.util.Objects.requireNonNull;
-
-public class HttpServiceSelectorImpl
-        implements HttpServiceSelector
-{
+public class HttpServiceSelectorImpl implements HttpServiceSelector {
     private final ServiceSelector serviceSelector;
 
-    public HttpServiceSelectorImpl(ServiceSelector serviceSelector)
-    {
+    public HttpServiceSelectorImpl(ServiceSelector serviceSelector) {
         requireNonNull(serviceSelector, "serviceSelector is null");
         this.serviceSelector = serviceSelector;
     }
 
     @Override
-    public String getType()
-    {
+    public String getType() {
         return serviceSelector.getType();
     }
 
     @Override
-    public String getPool()
-    {
+    public String getPool() {
         return serviceSelector.getPool();
     }
 
     @Override
-    public List<URI> selectHttpService()
-    {
+    public List<URI> selectHttpService() {
         List<ServiceDescriptor> serviceDescriptors = new ArrayList<>(serviceSelector.selectAllServices());
         if (serviceDescriptors.isEmpty()) {
             return ImmutableList.of();
@@ -62,8 +55,7 @@ public class HttpServiceSelectorImpl
             if (serviceDescriptor.getProperties().get("https") instanceof String https) {
                 try {
                     httpsUri.add(new URI(https));
-                }
-                catch (URISyntaxException ignored) {
+                } catch (URISyntaxException ignored) {
                 }
             }
         }
@@ -72,8 +64,7 @@ public class HttpServiceSelectorImpl
             if (serviceDescriptor.getProperties().get("http") instanceof String http) {
                 try {
                     httpUri.add(new URI(http));
-                }
-                catch (URISyntaxException ignored) {
+                } catch (URISyntaxException ignored) {
                 }
             }
         }

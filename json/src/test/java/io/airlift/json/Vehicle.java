@@ -1,29 +1,24 @@
 package io.airlift.json;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-
 import java.io.ByteArrayInputStream;
 import java.io.InputStreamReader;
 import java.util.List;
 import java.util.Map;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.assertj.core.api.Assertions.assertThat;
-
-@JsonTypeInfo(
-        use = JsonTypeInfo.Id.NAME,
-        include = JsonTypeInfo.As.PROPERTY,
-        property = "@type")
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "@type")
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = Car.class, name = "car"),
-        @JsonSubTypes.Type(value = Truck.class, name = "truck")})
-public interface Vehicle
-{
-    static void validateVehicleJsonCodec(JsonCodec<Vehicle> jsonCodec)
-    {
+    @JsonSubTypes.Type(value = Car.class, name = "car"),
+    @JsonSubTypes.Type(value = Truck.class, name = "truck")
+})
+public interface Vehicle {
+    static void validateVehicleJsonCodec(JsonCodec<Vehicle> jsonCodec) {
         Vehicle expected = new Car("bmw");
 
         String json = jsonCodec.toJson(expected);
@@ -35,7 +30,8 @@ public interface Vehicle
 
         assertThat(jsonCodec.fromJson(new ByteArrayInputStream(bytes))).isEqualTo(expected);
 
-        assertThat(jsonCodec.fromJson(new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8))).isEqualTo(expected);
+        assertThat(jsonCodec.fromJson(new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8)))
+                .isEqualTo(expected);
 
         expected = new Truck("volvo");
 
@@ -48,14 +44,12 @@ public interface Vehicle
 
         assertThat(jsonCodec.fromJson(new ByteArrayInputStream(bytes))).isEqualTo(expected);
 
-        assertThat(jsonCodec.fromJson(new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8))).isEqualTo(expected);
+        assertThat(jsonCodec.fromJson(new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8)))
+                .isEqualTo(expected);
     }
 
-    static void validateVehicleListJsonCodec(JsonCodec<List<Vehicle>> jsonCodec)
-    {
-        ImmutableList<Vehicle> expected = ImmutableList.of(
-                new Car("bmw"),
-                new Truck("volvo"));
+    static void validateVehicleListJsonCodec(JsonCodec<List<Vehicle>> jsonCodec) {
+        ImmutableList<Vehicle> expected = ImmutableList.of(new Car("bmw"), new Truck("volvo"));
 
         String json = jsonCodec.toJson(expected);
         assertThat(jsonCodec.fromJson(json)).isEqualTo(expected);
@@ -65,11 +59,11 @@ public interface Vehicle
 
         assertThat(jsonCodec.fromJson(new ByteArrayInputStream(bytes))).isEqualTo(expected);
 
-        assertThat(jsonCodec.fromJson(new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8))).isEqualTo(expected);
+        assertThat(jsonCodec.fromJson(new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8)))
+                .isEqualTo(expected);
     }
 
-    static void validateVehicleMapJsonCodec(JsonCodec<Map<String, Vehicle>> jsonCodec)
-    {
+    static void validateVehicleMapJsonCodec(JsonCodec<Map<String, Vehicle>> jsonCodec) {
         ImmutableMap<String, Vehicle> expected = ImmutableMap.<String, Vehicle>builder()
                 .put("bmw", new Car("bmw"))
                 .put("volvo", new Truck("volvo"))
@@ -83,6 +77,7 @@ public interface Vehicle
 
         assertThat(jsonCodec.fromJson(new ByteArrayInputStream(bytes))).isEqualTo(expected);
 
-        assertThat(jsonCodec.fromJson(new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8))).isEqualTo(expected);
+        assertThat(jsonCodec.fromJson(new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8)))
+                .isEqualTo(expected);
     }
 }

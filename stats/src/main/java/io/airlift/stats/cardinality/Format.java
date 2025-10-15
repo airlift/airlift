@@ -13,8 +13,7 @@
  */
 package io.airlift.stats.cardinality;
 
-enum Format
-{
+enum Format {
     SPARSE_V1(0),
     DENSE_V1(1),
     SPARSE_V2(2),
@@ -22,13 +21,11 @@ enum Format
 
     private byte tag;
 
-    Format(int tag)
-    {
+    Format(int tag) {
         this.tag = (byte) tag;
     }
 
-    public byte getTag()
-    {
+    public byte getTag() {
         return tag;
     }
 }

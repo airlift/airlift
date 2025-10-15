@@ -15,6 +15,11 @@
  */
 package io.airlift.bootstrap;
 
+import static com.google.common.base.Throwables.throwIfUnchecked;
+import static com.google.inject.matcher.Matchers.any;
+import static java.util.Objects.requireNonNull;
+import static org.weakref.jmx.guice.ExportBinder.newExporter;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Binder;
 import com.google.inject.Module;
@@ -23,41 +28,30 @@ import com.google.inject.Singleton;
 import com.google.inject.spi.ProvisionListener.ProvisionInvocation;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.google.common.base.Throwables.throwIfUnchecked;
-import static com.google.inject.matcher.Matchers.any;
-import static java.util.Objects.requireNonNull;
-import static org.weakref.jmx.guice.ExportBinder.newExporter;
-
 /**
  * Guice module for binding the LifeCycle manager
  */
-public class LifeCycleModule
-        implements Module
-{
+public class LifeCycleModule implements Module {
     private final String name;
     private final List<Object> injectedInstances = new ArrayList<>();
     private final LifeCycleMethodsMap lifeCycleMethodsMap = new LifeCycleMethodsMap();
     private final AtomicReference<LifeCycleManager> lifeCycleManager = new AtomicReference<>(null);
 
     @VisibleForTesting
-    LifeCycleModule()
-    {
+    LifeCycleModule() {
         this("LifeCycleManager");
     }
 
-    public LifeCycleModule(String name)
-    {
+    public LifeCycleModule(String name) {
         this.name = requireNonNull(name, "name is null");
     }
 
     @Override
-    public void configure(Binder binder)
-    {
+    public void configure(Binder binder) {
         binder.disableCircularProxies();
 
         binder.bindListener(any(), this::provision);
@@ -65,8 +59,7 @@ public class LifeCycleModule
         newExporter(binder).export(LifeCycleManager.class).withGeneratedName();
     }
 
-    private <T> void provision(ProvisionInvocation<T> provision)
-    {
+    private <T> void provision(ProvisionInvocation<T> provision) {
         Object obj = provision.provision();
         if ((obj == null) || !isLifeCycleClass(obj.getClass())) {
             return;
@@ -76,28 +69,24 @@ public class LifeCycleModule
         if (manager != null) {
             try {
                 manager.addInstance(obj);
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 throwIfUnchecked(e);
                 throw new RuntimeException(e);
             }
-        }
-        else {
+        } else {
             injectedInstances.add(obj);
         }
     }
 
     @Provides
     @Singleton
-    public LifeCycleManager getLifeCycleManager()
-    {
+    public LifeCycleManager getLifeCycleManager() {
         LifeCycleManager lifeCycleManager = new LifeCycleManager(name, injectedInstances, lifeCycleMethodsMap);
         this.lifeCycleManager.set(lifeCycleManager);
         return lifeCycleManager;
     }
 
-    private boolean isLifeCycleClass(Class<?> clazz)
-    {
+    private boolean isLifeCycleClass(Class<?> clazz) {
         LifeCycleMethods methods = lifeCycleMethodsMap.get(clazz);
         return methods.hasFor(PostConstruct.class) || methods.hasFor(PreDestroy.class);
     }

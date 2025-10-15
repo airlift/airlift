@@ -1,5 +1,3 @@
 package io.airlift.mcp.model;
 
-public record ListChanged(boolean listChanged)
-{
-}
+public record ListChanged(boolean listChanged) {}

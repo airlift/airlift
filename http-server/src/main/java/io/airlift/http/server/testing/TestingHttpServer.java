@@ -28,24 +28,16 @@ import io.airlift.http.server.HttpsConfig;
 import io.airlift.node.NodeInfo;
 import jakarta.servlet.Filter;
 import jakarta.servlet.Servlet;
-
 import java.io.IOException;
 import java.net.URI;
 import java.util.Optional;
 import java.util.Set;
 
-public class TestingHttpServer
-        extends HttpServer
-{
+public class TestingHttpServer extends HttpServer {
     private final HttpServerInfo httpServerInfo;
 
-    public TestingHttpServer(
-            HttpServerInfo httpServerInfo,
-            NodeInfo nodeInfo,
-            HttpServerConfig config,
-            Servlet servlet)
-            throws IOException
-    {
+    public TestingHttpServer(HttpServerInfo httpServerInfo, NodeInfo nodeInfo, HttpServerConfig config, Servlet servlet)
+            throws IOException {
         this(httpServerInfo, nodeInfo, config, servlet, false, false, false);
     }
 
@@ -57,9 +49,9 @@ public class TestingHttpServer
             boolean enableVirtualThreads,
             boolean enableLegacyUriCompliance,
             boolean enableCaseSensitiveHeaderCache)
-            throws IOException
-    {
-        this(httpServerInfo,
+            throws IOException {
+        this(
+                httpServerInfo,
                 nodeInfo,
                 config,
                 Optional.empty(),
@@ -85,9 +77,9 @@ public class TestingHttpServer
             @EnableLegacyUriCompliance boolean enableLegacyUriCompliance,
             @EnableCaseSensitiveHeaderCache boolean enableCaseSensitiveHeaderCache,
             ClientCertificate clientCertificate)
-            throws IOException
-    {
-        super(httpServerInfo,
+            throws IOException {
+        super(
+                httpServerInfo,
                 nodeInfo,
                 config.setLogEnabled(false),
                 httpsConfig,
@@ -103,18 +95,15 @@ public class TestingHttpServer
         this.httpServerInfo = httpServerInfo;
     }
 
-    public URI getBaseUrl()
-    {
+    public URI getBaseUrl() {
         return httpServerInfo.getHttpUri();
     }
 
-    public int getPort()
-    {
+    public int getPort() {
         return httpServerInfo.getHttpUri().getPort();
     }
 
-    public HttpServerInfo getHttpServerInfo()
-    {
+    public HttpServerInfo getHttpServerInfo() {
         return httpServerInfo;
     }
 }

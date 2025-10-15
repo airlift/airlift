@@ -1,5 +1,18 @@
 package io.airlift.mcp.reflection;
 
+import static io.airlift.mcp.McpException.exception;
+import static io.airlift.mcp.model.JsonSchemaBuilder.isPrimitiveType;
+import static io.airlift.mcp.model.JsonSchemaBuilder.isSupportedType;
+import static io.airlift.mcp.reflection.Predicates.isCallToolRequest;
+import static io.airlift.mcp.reflection.Predicates.isHttpRequest;
+import static io.airlift.mcp.reflection.Predicates.isIdentity;
+import static io.airlift.mcp.reflection.Predicates.isObject;
+import static io.airlift.mcp.reflection.Predicates.returnsAnything;
+import static io.airlift.mcp.reflection.ReflectionHelper.mapToContent;
+import static io.airlift.mcp.reflection.ReflectionHelper.requiredArgument;
+import static io.airlift.mcp.reflection.ReflectionHelper.validate;
+import static java.util.Objects.requireNonNull;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
@@ -16,27 +29,11 @@ import io.airlift.mcp.model.JsonSchemaBuilder;
 import io.airlift.mcp.model.StructuredContent;
 import io.airlift.mcp.model.StructuredContentResult;
 import io.airlift.mcp.model.Tool;
-
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Optional;
 
-import static io.airlift.mcp.McpException.exception;
-import static io.airlift.mcp.model.JsonSchemaBuilder.isPrimitiveType;
-import static io.airlift.mcp.model.JsonSchemaBuilder.isSupportedType;
-import static io.airlift.mcp.reflection.Predicates.isCallToolRequest;
-import static io.airlift.mcp.reflection.Predicates.isHttpRequest;
-import static io.airlift.mcp.reflection.Predicates.isIdentity;
-import static io.airlift.mcp.reflection.Predicates.isObject;
-import static io.airlift.mcp.reflection.Predicates.returnsAnything;
-import static io.airlift.mcp.reflection.ReflectionHelper.mapToContent;
-import static io.airlift.mcp.reflection.ReflectionHelper.requiredArgument;
-import static io.airlift.mcp.reflection.ReflectionHelper.validate;
-import static java.util.Objects.requireNonNull;
-
-public class ToolHandlerProvider
-        implements Provider<ToolEntry>
-{
+public class ToolHandlerProvider implements Provider<ToolEntry> {
     private final Tool tool;
     private final Class<?> clazz;
     private final Method method;
@@ -45,8 +42,7 @@ public class ToolHandlerProvider
     private Injector injector;
     private ObjectMapper objectMapper;
 
-    public ToolHandlerProvider(McpTool mcpTool, Class<?> clazz, Method method, List<MethodParameter> parameters)
-    {
+    public ToolHandlerProvider(McpTool mcpTool, Class<?> clazz, Method method, List<MethodParameter> parameters) {
         this.clazz = requireNonNull(clazz, "clazz is null");
         this.method = requireNonNull(method, "method is null");
         this.parameters = ImmutableList.copyOf(parameters);
@@ -57,33 +53,28 @@ public class ToolHandlerProvider
 
         if (void.class.equals(method.getReturnType())) {
             returnType = ReturnType.VOID;
-        }
-        else if (CallToolResult.class.isAssignableFrom(method.getReturnType())) {
+        } else if (CallToolResult.class.isAssignableFrom(method.getReturnType())) {
             returnType = ReturnType.CALL_TOOL_RESULT;
-        }
-        else if (StructuredContentResult.class.isAssignableFrom(method.getReturnType())) {
+        } else if (StructuredContentResult.class.isAssignableFrom(method.getReturnType())) {
             returnType = ReturnType.STRUCTURED_RESULT;
-        }
-        else if (Content.class.isAssignableFrom(method.getReturnType()) || isPrimitiveType(method.getGenericReturnType())) {
+        } else if (Content.class.isAssignableFrom(method.getReturnType())
+                || isPrimitiveType(method.getGenericReturnType())) {
             returnType = ReturnType.CONTENT;
-        }
-        else if (isSupportedType(method.getGenericReturnType())) {
+        } else if (isSupportedType(method.getGenericReturnType())) {
             returnType = ReturnType.STRUCTURED;
-        }
-        else {
-            throw new IllegalArgumentException("Method %s has unsupported return type: %s".formatted(method.getName(), method.getGenericReturnType()));
+        } else {
+            throw new IllegalArgumentException("Method %s has unsupported return type: %s"
+                    .formatted(method.getName(), method.getGenericReturnType()));
         }
     }
 
     @Inject
-    public void setInjector(Injector injector)
-    {
+    public void setInjector(Injector injector) {
         this.injector = requireNonNull(injector, "injector is null");
     }
 
     @Inject
-    public void setObjectMapper(ObjectMapper objectMapper)
-    {
+    public void setObjectMapper(ObjectMapper objectMapper) {
         this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
     }
 
@@ -96,13 +87,13 @@ public class ToolHandlerProvider
     }
 
     @Override
-    public ToolEntry get()
-    {
+    public ToolEntry get() {
         Object instance = injector.getInstance(clazz);
         MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper);
 
         ToolHandler toolHandler = (request, toolRequest) -> {
-            Object result = methodInvoker.builder(request)
+            Object result = methodInvoker
+                    .builder(request)
                     .withArguments(toolRequest.arguments())
                     .withCallToolRequest(toolRequest)
                     .invoke();
@@ -113,7 +104,11 @@ public class ToolHandlerProvider
             return switch (returnType) {
                 case VOID -> new CallToolResult(ImmutableList.of());
                 case CONTENT -> new CallToolResult(mapToContent(result));
-                case STRUCTURED -> new CallToolResult(ImmutableList.of(mapToContent(result)), Optional.of(new StructuredContent<>(result)), false);
+                case STRUCTURED ->
+                    new CallToolResult(
+                            ImmutableList.of(mapToContent(result)),
+                            Optional.of(new StructuredContent<>(result)),
+                            false);
                 case CALL_TOOL_RESULT -> (CallToolResult) result;
                 case STRUCTURED_RESULT -> mapStructuredContentResult((StructuredContentResult<?>) result);
             };
@@ -122,14 +117,14 @@ public class ToolHandlerProvider
         return new ToolEntry(tool, toolHandler);
     }
 
-    private CallToolResult mapStructuredContentResult(StructuredContentResult<?> result)
-    {
-        return new CallToolResult(result.content(), result.structuredContent().map(StructuredContent::new), result.isError());
+    private CallToolResult mapStructuredContentResult(StructuredContentResult<?> result) {
+        return new CallToolResult(
+                result.content(), result.structuredContent().map(StructuredContent::new), result.isError());
     }
 
-    private static Tool buildTool(McpTool tool, Method method, List<MethodParameter> parameters)
-    {
-        Optional<String> description = tool.description().isEmpty() ? Optional.empty() : Optional.of(tool.description());
+    private static Tool buildTool(McpTool tool, Method method, List<MethodParameter> parameters) {
+        Optional<String> description =
+                tool.description().isEmpty() ? Optional.empty() : Optional.of(tool.description());
         Optional<String> title = tool.title().isEmpty() ? Optional.empty() : Optional.of(tool.title());
 
         Tool.ToolAnnotations toolAnnotations = new Tool.ToolAnnotations(
@@ -143,16 +138,14 @@ public class ToolHandlerProvider
         Optional<ObjectNode> outputSchema;
         if (CallToolResult.class.isAssignableFrom(method.getReturnType())) {
             outputSchema = Optional.empty();
-        }
-        else if (StructuredContentResult.class.isAssignableFrom(method.getReturnType())) {
+        } else if (StructuredContentResult.class.isAssignableFrom(method.getReturnType())) {
             JsonSchemaBuilder jsonSchemaBuilder = new JsonSchemaBuilder("Tool (return): " + tool.name());
-            outputSchema = Optional.of(jsonSchemaBuilder.build(description, requiredArgument(method.getGenericReturnType())));
-        }
-        else if (method.getReturnType().isRecord()) {
+            outputSchema =
+                    Optional.of(jsonSchemaBuilder.build(description, requiredArgument(method.getGenericReturnType())));
+        } else if (method.getReturnType().isRecord()) {
             JsonSchemaBuilder jsonSchemaBuilder = new JsonSchemaBuilder("Tool (return): " + tool.name());
             outputSchema = Optional.of(jsonSchemaBuilder.build(description, method.getReturnType()));
-        }
-        else {
+        } else {
             outputSchema = Optional.empty();
         }
 

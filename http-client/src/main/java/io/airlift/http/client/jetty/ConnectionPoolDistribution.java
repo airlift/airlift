@@ -1,22 +1,17 @@
 package io.airlift.http.client.jetty;
 
 import io.airlift.stats.Distribution;
+import java.util.Objects;
 import org.eclipse.jetty.client.AbstractConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpDestination;
 
-import java.util.Objects;
-
-class ConnectionPoolDistribution
-        extends CachedDistribution
-{
-    interface Processor
-    {
+class ConnectionPoolDistribution extends CachedDistribution {
+    interface Processor {
         void process(Distribution distribution, AbstractConnectionPool pool);
     }
 
-    public ConnectionPoolDistribution(HttpClient httpClient, Processor processor)
-    {
+    public ConnectionPoolDistribution(HttpClient httpClient, Processor processor) {
         super(() -> {
             Distribution distribution = new Distribution();
             httpClient.getDestinations().stream()

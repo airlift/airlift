@@ -13,46 +13,40 @@
  */
 package io.airlift.configuration;
 
-import com.google.common.collect.Iterators;
-import org.tomlj.Toml;
-import org.tomlj.TomlArray;
-import org.tomlj.TomlTable;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
 
-public class TomlConfiguration
-{
-    public static TomlConfiguration createTomlConfiguration(File file)
-    {
+import com.google.common.collect.Iterators;
+import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import org.tomlj.Toml;
+import org.tomlj.TomlArray;
+import org.tomlj.TomlTable;
+
+public class TomlConfiguration {
+    public static TomlConfiguration createTomlConfiguration(File file) {
         checkArgument(file.getName().endsWith(".toml"), "TOML files must end with '.toml'");
         try {
             return new TomlConfiguration(Toml.parse(file.toPath()));
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
 
     private final TomlTable tomlTable;
 
-    public TomlConfiguration(TomlTable tomlTable)
-    {
+    public TomlConfiguration(TomlTable tomlTable) {
         this.tomlTable = requireNonNull(tomlTable, "tomlTable is null");
     }
 
-    public Map<String, String> getParentConfiguration()
-    {
+    public Map<String, String> getParentConfiguration() {
         return this.tomlTable.entryPathSet().stream()
                 .filter(entry -> entry.getKey().size() == 1)
                 .collect(toImmutableMap(
@@ -60,23 +54,20 @@ public class TomlConfiguration
                         entry -> tomlValueToString(entry.getValue())));
     }
 
-    public Set<String> getNamespaces()
-    {
+    public Set<String> getNamespaces() {
         return this.tomlTable.entrySet().stream()
                 .filter(entry -> entry.getValue() instanceof TomlTable)
                 .map(Entry::getKey)
                 .collect(toImmutableSet());
     }
 
-    public Map<String, String> getNamespaceConfiguration(String namespace)
-    {
+    public Map<String, String> getNamespaceConfiguration(String namespace) {
         checkArgument(tomlTable.contains(namespace), "Namespace %s not found", namespace);
         return this.tomlTable.getTable(namespace).dottedEntrySet().stream()
                 .collect(toImmutableMap(Entry::getKey, entry -> tomlValueToString(entry.getValue())));
     }
 
-    private static String tomlValueToString(Object object)
-    {
+    private static String tomlValueToString(Object object) {
         if (object instanceof TomlArray tomlArray) {
             return tomlArray.toList().stream()
                     .map(TomlConfiguration::tomlValueToString)

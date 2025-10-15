@@ -1,5 +1,8 @@
 package io.airlift.jaxrs.tracing;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
+import static java.util.Objects.requireNonNull;
+
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.semconv.CodeAttributes;
 import io.opentelemetry.semconv.HttpAttributes;
@@ -8,28 +11,21 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import org.glassfish.jersey.server.ContainerRequest;
 
-import static com.google.common.base.Strings.isNullOrEmpty;
-import static java.util.Objects.requireNonNull;
-
 @Priority(0)
-public final class TracingFilter
-        implements ContainerRequestFilter
-{
+public final class TracingFilter implements ContainerRequestFilter {
     // Same as TracingServletFilter.REQUEST_SPAN
     static final String REQUEST_SPAN = "airlift.trace-span";
 
     private final String className;
     private final String methodName;
 
-    public TracingFilter(String className, String methodName)
-    {
+    public TracingFilter(String className, String methodName) {
         this.className = requireNonNull(className, "className is null");
         this.methodName = requireNonNull(methodName, "methodName is null");
     }
 
     @Override
-    public void filter(ContainerRequestContext requestContext)
-    {
+    public void filter(ContainerRequestContext requestContext) {
         ContainerRequest request = (ContainerRequest) requestContext.getRequest();
         if (request == null) {
             // Request was already recycled
@@ -49,8 +45,7 @@ public final class TracingFilter
         }
     }
 
-    private static String normalizePath(String path)
-    {
+    private static String normalizePath(String path) {
         if (isNullOrEmpty(path) || path.equals("/")) {
             return "";
         }

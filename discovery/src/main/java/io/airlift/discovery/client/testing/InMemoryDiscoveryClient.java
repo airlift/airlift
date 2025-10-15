@@ -15,6 +15,9 @@
  */
 package io.airlift.discovery.client.testing;
 
+import static com.google.common.util.concurrent.Futures.immediateFuture;
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MapMaker;
@@ -27,57 +30,47 @@ import io.airlift.discovery.client.ServiceDescriptor;
 import io.airlift.discovery.client.ServiceDescriptors;
 import io.airlift.node.NodeInfo;
 import io.airlift.units.Duration;
-
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.google.common.util.concurrent.Futures.immediateFuture;
-import static java.util.Objects.requireNonNull;
-
-public class InMemoryDiscoveryClient
-        implements DiscoveryAnnouncementClient, DiscoveryLookupClient
-{
-    private final AtomicReference<Set<ServiceDescriptor>> announcements = new AtomicReference<>(ImmutableSet.<ServiceDescriptor>of());
+public class InMemoryDiscoveryClient implements DiscoveryAnnouncementClient, DiscoveryLookupClient {
+    private final AtomicReference<Set<ServiceDescriptor>> announcements =
+            new AtomicReference<>(ImmutableSet.<ServiceDescriptor>of());
     private final ConcurrentMap<UUID, ServiceDescriptor> discovered = new MapMaker().makeMap();
 
     private final NodeInfo nodeInfo;
     private final Duration maxAge;
 
     @Inject
-    public InMemoryDiscoveryClient(NodeInfo nodeInfo)
-    {
+    public InMemoryDiscoveryClient(NodeInfo nodeInfo) {
         requireNonNull(nodeInfo, "nodeInfo is null");
         this.nodeInfo = nodeInfo;
         maxAge = DEFAULT_DELAY;
     }
 
-    public InMemoryDiscoveryClient(NodeInfo nodeInfo, Duration maxAge)
-    {
+    public InMemoryDiscoveryClient(NodeInfo nodeInfo, Duration maxAge) {
         requireNonNull(nodeInfo, "nodeInfo is null");
         requireNonNull(maxAge, "maxAge is null");
         this.nodeInfo = nodeInfo;
         this.maxAge = maxAge;
     }
 
-    public ServiceDescriptor addDiscoveredService(ServiceDescriptor serviceDescriptor)
-    {
+    public ServiceDescriptor addDiscoveredService(ServiceDescriptor serviceDescriptor) {
         requireNonNull(serviceDescriptor, "serviceDescriptor is null");
 
         return discovered.put(serviceDescriptor.getId(), serviceDescriptor);
     }
 
-    public ServiceDescriptor remove(UUID uuid)
-    {
+    public ServiceDescriptor remove(UUID uuid) {
         requireNonNull(uuid, "uuid is null");
 
         return discovered.remove(uuid);
     }
 
     @Override
-    public ListenableFuture<Duration> announce(Set<ServiceAnnouncement> services)
-    {
+    public ListenableFuture<Duration> announce(Set<ServiceAnnouncement> services) {
         requireNonNull(services, "services is null");
 
         ImmutableSet.Builder<ServiceDescriptor> builder = ImmutableSet.builder();
@@ -89,15 +82,13 @@ public class InMemoryDiscoveryClient
     }
 
     @Override
-    public ListenableFuture<Void> unannounce()
-    {
+    public ListenableFuture<Void> unannounce() {
         announcements.set(ImmutableSet.<ServiceDescriptor>of());
         return immediateFuture(null);
     }
 
     @Override
-    public ListenableFuture<ServiceDescriptors> getServices(String type)
-    {
+    public ListenableFuture<ServiceDescriptors> getServices(String type) {
         requireNonNull(type, "type is null");
 
         ImmutableList.Builder<ServiceDescriptor> builder = ImmutableList.builder();
@@ -111,32 +102,34 @@ public class InMemoryDiscoveryClient
                 builder.add(serviceDescriptor);
             }
         }
-        return immediateFuture(new ServiceDescriptors(type, null, builder.build(), maxAge, UUID.randomUUID().toString()));
+        return immediateFuture(new ServiceDescriptors(
+                type, null, builder.build(), maxAge, UUID.randomUUID().toString()));
     }
 
     @Override
-    public ListenableFuture<ServiceDescriptors> getServices(String type, String pool)
-    {
+    public ListenableFuture<ServiceDescriptors> getServices(String type, String pool) {
         requireNonNull(type, "type is null");
         requireNonNull(pool, "pool is null");
 
         ImmutableList.Builder<ServiceDescriptor> builder = ImmutableList.builder();
         for (ServiceDescriptor serviceDescriptor : this.announcements.get()) {
-            if (serviceDescriptor.getType().equals(type) && serviceDescriptor.getPool().equals(pool)) {
+            if (serviceDescriptor.getType().equals(type)
+                    && serviceDescriptor.getPool().equals(pool)) {
                 builder.add(serviceDescriptor);
             }
         }
         for (ServiceDescriptor serviceDescriptor : this.discovered.values()) {
-            if (serviceDescriptor.getType().equals(type) && serviceDescriptor.getPool().equals(pool)) {
+            if (serviceDescriptor.getType().equals(type)
+                    && serviceDescriptor.getPool().equals(pool)) {
                 builder.add(serviceDescriptor);
             }
         }
-        return immediateFuture(new ServiceDescriptors(type, pool, builder.build(), maxAge, UUID.randomUUID().toString()));
+        return immediateFuture(new ServiceDescriptors(
+                type, pool, builder.build(), maxAge, UUID.randomUUID().toString()));
     }
 
     @Override
-    public ListenableFuture<ServiceDescriptors> refreshServices(ServiceDescriptors serviceDescriptors)
-    {
+    public ListenableFuture<ServiceDescriptors> refreshServices(ServiceDescriptors serviceDescriptors) {
         requireNonNull(serviceDescriptors, "serviceDescriptors is null");
 
         return getServices(serviceDescriptors.getType(), serviceDescriptors.getPool());

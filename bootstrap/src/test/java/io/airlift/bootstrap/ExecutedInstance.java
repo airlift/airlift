@@ -15,54 +15,42 @@
  */
 package io.airlift.bootstrap;
 
+import static java.util.concurrent.Executors.newSingleThreadExecutor;
+
 import com.google.inject.Inject;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
-
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 
-import static java.util.concurrent.Executors.newSingleThreadExecutor;
-
-public class ExecutedInstance
-        implements Runnable
-{
+public class ExecutedInstance implements Runnable {
     private final ExecutorService executor = newSingleThreadExecutor();
     private final CountDownLatch startLatch = new CountDownLatch(1);
     private final CountDownLatch endLatch = new CountDownLatch(1);
 
     @Inject
-    public ExecutedInstance()
-    {
-    }
+    public ExecutedInstance() {}
 
     @PostConstruct
-    public void startExecution()
-    {
+    public void startExecution() {
         executor.submit(this);
     }
 
     @PreDestroy
-    public void stopExecution()
-    {
+    public void stopExecution() {
         executor.shutdownNow();
     }
 
-    public void waitForStart()
-            throws InterruptedException
-    {
+    public void waitForStart() throws InterruptedException {
         startLatch.await();
     }
 
-    public void waitForEnd()
-            throws InterruptedException
-    {
+    public void waitForEnd() throws InterruptedException {
         endLatch.await();
     }
 
     @Override
-    public void run()
-    {
+    public void run() {
         TestLifeCycleManager.note("Starting");
         startLatch.countDown();
 
@@ -70,13 +58,11 @@ public class ExecutedInstance
             if (!Thread.interrupted()) {
                 try {
                     Thread.sleep(Integer.MAX_VALUE);
-                }
-                catch (InterruptedException e) {
+                } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
             }
-        }
-        finally {
+        } finally {
             TestLifeCycleManager.note("Done");
             endLatch.countDown();
         }

@@ -13,55 +13,53 @@
  */
 package io.airlift.configuration;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.io.Resources;
-import org.junit.jupiter.api.Test;
-
-import java.io.File;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-final class TestTomlConfiguration
-{
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.io.Resources;
+import java.io.File;
+import org.junit.jupiter.api.Test;
+
+final class TestTomlConfiguration {
     @Test
-    void testTomlConfigurationWithInvalidExtension()
-    {
+    void testTomlConfigurationWithInvalidExtension() {
         assertThatThrownBy(() -> TomlConfiguration.createTomlConfiguration(new File("configuration.properties")));
         assertThatThrownBy(() -> TomlConfiguration.createTomlConfiguration(new File("configuration.tom")));
     }
 
     @Test
-    void testTomlParentConfiguration()
-    {
-        TomlConfiguration tomlConfiguration = TomlConfiguration.createTomlConfiguration(new File(Resources.getResource("configuration.toml").getPath()));
+    void testTomlParentConfiguration() {
+        TomlConfiguration tomlConfiguration = TomlConfiguration.createTomlConfiguration(
+                new File(Resources.getResource("configuration.toml").getPath()));
         assertThat(tomlConfiguration.getParentConfiguration()).isEqualTo(ImmutableMap.of("title", "TOML Example"));
     }
 
     @Test
-    void testTomlNamespace()
-    {
-        TomlConfiguration tomlConfiguration = TomlConfiguration.createTomlConfiguration(new File(Resources.getResource("configuration.toml").getPath()));
+    void testTomlNamespace() {
+        TomlConfiguration tomlConfiguration = TomlConfiguration.createTomlConfiguration(
+                new File(Resources.getResource("configuration.toml").getPath()));
         assertThat(tomlConfiguration.getNamespaces()).isEqualTo(ImmutableSet.of("owner", "database", "servers"));
     }
 
     @Test
-    void testTomlNamespaceConfiguration()
-    {
-        TomlConfiguration tomlConfiguration = TomlConfiguration.createTomlConfiguration(new File(Resources.getResource("configuration.toml").getPath()));
-        assertThat(tomlConfiguration.getNamespaceConfiguration("servers")).isEqualTo(ImmutableMap.of(
-                "alpha.ip", "10.0.0.1",
-                "alpha.role", "frontend",
-                "beta.ip", "10.0.0.2",
-                "beta.role", "backend",
-                "beta.secret", "${ENV:SECRET_VALUE}"));
+    void testTomlNamespaceConfiguration() {
+        TomlConfiguration tomlConfiguration = TomlConfiguration.createTomlConfiguration(
+                new File(Resources.getResource("configuration.toml").getPath()));
+        assertThat(tomlConfiguration.getNamespaceConfiguration("servers"))
+                .isEqualTo(ImmutableMap.of(
+                        "alpha.ip", "10.0.0.1",
+                        "alpha.role", "frontend",
+                        "beta.ip", "10.0.0.2",
+                        "beta.role", "backend",
+                        "beta.secret", "${ENV:SECRET_VALUE}"));
     }
 
     @Test
-    void testTomlWithInvalidNamespace()
-    {
-        TomlConfiguration tomlConfiguration = TomlConfiguration.createTomlConfiguration(new File(Resources.getResource("configuration.toml").getPath()));
+    void testTomlWithInvalidNamespace() {
+        TomlConfiguration tomlConfiguration = TomlConfiguration.createTomlConfiguration(
+                new File(Resources.getResource("configuration.toml").getPath()));
         assertThatThrownBy(() -> tomlConfiguration.getNamespaceConfiguration("invalid"))
                 .hasMessageContaining("Namespace invalid not found");
     }

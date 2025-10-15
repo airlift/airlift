@@ -1,5 +1,11 @@
 package io.airlift.mcp.reference;
 
+import static com.google.common.net.HttpHeaders.WWW_AUTHENTICATE;
+import static io.modelcontextprotocol.server.transport.HttpServletStatelessServerTransport.APPLICATION_JSON;
+import static jakarta.servlet.http.HttpServletResponse.SC_FORBIDDEN;
+import static jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED;
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import io.airlift.log.Logger;
@@ -21,20 +27,11 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
 import java.io.IOException;
 import java.util.Optional;
 import java.util.Set;
 
-import static com.google.common.net.HttpHeaders.WWW_AUTHENTICATE;
-import static io.modelcontextprotocol.server.transport.HttpServletStatelessServerTransport.APPLICATION_JSON;
-import static jakarta.servlet.http.HttpServletResponse.SC_FORBIDDEN;
-import static jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED;
-import static java.util.Objects.requireNonNull;
-
-public class ReferenceFilter
-        extends HttpFilter
-{
+public class ReferenceFilter extends HttpFilter {
     private static final String MCP_IDENTITY_ATTRIBUTE = "airlift.mcp.identity";
     private static final Set<String> ALLOWED_HTTP_METHODS = ImmutableSet.of("GET", "POST");
     private static final Logger log = Logger.get(ReferenceFilter.class);
@@ -44,8 +41,10 @@ public class ReferenceFilter
     private final Optional<McpIdentityMapper> identityMapper;
 
     @Inject
-    public ReferenceFilter(HttpServletStatelessServerTransport transport, McpMetadata metadata, Optional<McpIdentityMapper> identityMapper)
-    {
+    public ReferenceFilter(
+            HttpServletStatelessServerTransport transport,
+            McpMetadata metadata,
+            Optional<McpIdentityMapper> identityMapper) {
         this.transport = requireNonNull(transport, "transport is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
         this.identityMapper = requireNonNull(identityMapper, "identityMapper is null");
@@ -53,8 +52,7 @@ public class ReferenceFilter
 
     @Override
     protected void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
-            throws IOException, ServletException
-    {
+            throws IOException, ServletException {
         if (!isMcpRequest(request)) {
             chain.doFilter(request, response);
             return;
@@ -70,7 +68,8 @@ public class ReferenceFilter
                 case Unauthenticated unauthenticated -> {
                     response.setContentType(APPLICATION_JSON);
                     response.sendError(SC_UNAUTHORIZED, unauthenticated.message());
-                    unauthenticated.authenticateHeaders()
+                    unauthenticated
+                            .authenticateHeaders()
                             .forEach(header -> response.addHeader(WWW_AUTHENTICATE, header));
                 }
                 case Unauthorized unauthorized -> {
@@ -79,25 +78,26 @@ public class ReferenceFilter
                 }
                 case Error error -> {
                     log.error(error.cause(), "An error was thrown during MCP authentication");
-                    // this will improve if the MCP reference team accepts our PR: https://github.com/modelcontextprotocol/java-sdk/pull/465
+                    // this will improve if the MCP reference team accepts our PR:
+                    // https://github.com/modelcontextprotocol/java-sdk/pull/465
                     JsonRpcErrorDetail errorDetail = error.cause().errorDetail();
-                    throw new McpError(new McpSchema.JSONRPCResponse.JSONRPCError(errorDetail.code(), errorDetail.message(), errorDetail.data()));
+                    throw new McpError(new McpSchema.JSONRPCResponse.JSONRPCError(
+                            errorDetail.code(), errorDetail.message(), errorDetail.data()));
                 }
             }
         }
     }
 
-    public static Object retrieveIdentityValue(HttpServletRequest request)
-    {
+    public static Object retrieveIdentityValue(HttpServletRequest request) {
         Object identity = request.getAttribute(MCP_IDENTITY_ATTRIBUTE);
         if (identity == null) {
-            throw McpException.exception(JsonRpcErrorCode.INTERNAL_ERROR, "Error in request processing. MCP identity not found.");
+            throw McpException.exception(
+                    JsonRpcErrorCode.INTERNAL_ERROR, "Error in request processing. MCP identity not found.");
         }
         return identity;
     }
 
-    private boolean isMcpRequest(HttpServletRequest request)
-    {
+    private boolean isMcpRequest(HttpServletRequest request) {
         if (ALLOWED_HTTP_METHODS.contains(request.getMethod())) {
             return metadata.uriPath().equals(request.getRequestURI());
         }

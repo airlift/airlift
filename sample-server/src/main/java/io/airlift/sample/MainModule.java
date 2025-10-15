@@ -15,21 +15,18 @@
  */
 package io.airlift.sample;
 
-import com.google.inject.Binder;
-import com.google.inject.Module;
-import com.google.inject.Scopes;
-
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
-public class MainModule
-        implements Module
-{
+import com.google.inject.Binder;
+import com.google.inject.Module;
+import com.google.inject.Scopes;
+
+public class MainModule implements Module {
     @Override
-    public void configure(Binder binder)
-    {
+    public void configure(Binder binder) {
         binder.disableCircularProxies();
 
         binder.bind(PersonStore.class).in(Scopes.SINGLETON);

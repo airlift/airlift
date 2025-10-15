@@ -15,6 +15,22 @@
  */
 package io.airlift.http.server;
 
+import static com.google.common.io.MoreFiles.deleteRecursively;
+import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
+import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
+import static com.google.common.net.HttpHeaders.LOCATION;
+import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
+import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
+import static io.airlift.http.client.Request.Builder.prepareGet;
+import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
+import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
+import static io.airlift.http.server.HttpServerBinder.httpServerBinder;
+import static java.nio.file.Files.createTempDirectory;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
+import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.net.MediaType;
 import com.google.inject.Injector;
@@ -33,6 +49,10 @@ import io.airlift.tracing.TracingModule;
 import jakarta.servlet.Filter;
 import jakarta.servlet.Servlet;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,56 +60,28 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.parallel.Execution;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-import java.util.Map;
-
-import static com.google.common.io.MoreFiles.deleteRecursively;
-import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
-import static com.google.common.net.HttpHeaders.LOCATION;
-import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
-import static com.google.inject.multibindings.Multibinder.newSetBinder;
-import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
-import static io.airlift.http.client.Request.Builder.prepareGet;
-import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
-import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
-import static io.airlift.http.server.HttpServerBinder.httpServerBinder;
-import static java.nio.file.Files.createTempDirectory;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
-import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
-
 @TestInstance(PER_CLASS)
 @Execution(SAME_THREAD)
-public class TestHttpServerModule
-{
+public class TestHttpServerModule {
     private File tempDir;
 
     @BeforeAll
-    public void setupSuite()
-    {
+    public void setupSuite() {
         Logging.initialize();
     }
 
     @BeforeEach
-    public void setup()
-            throws IOException
-    {
+    public void setup() throws IOException {
         tempDir = createTempDirectory(null).toFile();
     }
 
     @AfterEach
-    public void tearDown()
-            throws IOException
-    {
+    public void tearDown() throws IOException {
         deleteRecursively(tempDir.toPath(), ALLOW_INSECURE);
     }
 
     @Test
-    public void testCanConstructServer()
-    {
+    public void testCanConstructServer() {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("http-server.http.port", "0")
                 .put("http-server.log.path", new File(tempDir, "http-request.log").getAbsolutePath())
@@ -101,8 +93,7 @@ public class TestHttpServerModule
                 new TracingModule("airlift.http-server", "1.0"),
                 binder -> binder.bind(Servlet.class).to(DummyServlet.class));
 
-        Injector injector = app
-                .setRequiredConfigurationProperties(properties)
+        Injector injector = app.setRequiredConfigurationProperties(properties)
                 .doNotInitializeLogging()
                 .initialize();
 
@@ -111,9 +102,7 @@ public class TestHttpServerModule
     }
 
     @Test
-    public void testHttpServerUri()
-            throws Exception
-    {
+    public void testHttpServerUri() throws Exception {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("http-server.http.port", "0")
                 .put("http-server.log.path", new File(tempDir, "http-request.log").getAbsolutePath())
@@ -125,8 +114,7 @@ public class TestHttpServerModule
                 new TracingModule("airlift.http-server", "1.0"),
                 binder -> binder.bind(Servlet.class).to(DummyServlet.class));
 
-        Injector injector = app
-                .setRequiredConfigurationProperties(properties)
+        Injector injector = app.setRequiredConfigurationProperties(properties)
                 .doNotInitializeLogging()
                 .initialize();
 
@@ -141,23 +129,18 @@ public class TestHttpServerModule
             assertThat(httpServerInfo.getHttpUri().getScheme()).isEqualTo("http");
             assertThat(httpServerInfo.getHttpUri().getHost()).isEqualTo(nodeInfo.getInternalAddress());
             assertThat(httpServerInfo.getHttpsUri()).isNull();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             server.stop();
         }
     }
 
     @Test
-    public void testServer()
-            throws Exception
-    {
+    public void testServer() throws Exception {
         doTestServerCompliance(true);
         doTestServerCompliance(false);
     }
 
-    public void doTestServerCompliance(boolean enableLegacyUriCompliance)
-            throws Exception
-    {
+    public void doTestServerCompliance(boolean enableLegacyUriCompliance) throws Exception {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("http-server.http.port", "0")
                 .put("http-server.log.path", new File(tempDir, "http-request.log").getAbsolutePath())
@@ -169,7 +152,10 @@ public class TestHttpServerModule
                 new TracingModule("airlift.http-server", "1.0"),
                 binder -> {
                     binder.bind(Servlet.class).to(DummyServlet.class);
-                    newSetBinder(binder, Filter.class).addBinding().to(DummyFilter.class).in(Scopes.SINGLETON);
+                    newSetBinder(binder, Filter.class)
+                            .addBinding()
+                            .to(DummyFilter.class)
+                            .in(Scopes.SINGLETON);
                     httpServerBinder(binder).bindResource("/", "webapp/user").withWelcomeFile("user-welcome.txt");
                     httpServerBinder(binder).bindResource("/", "webapp/user2");
                     httpServerBinder(binder).bindResource("path", "webapp/user").withWelcomeFile("user-welcome.txt");
@@ -179,8 +165,7 @@ public class TestHttpServerModule
                     }
                 });
 
-        Injector injector = app
-                .setRequiredConfigurationProperties(properties)
+        Injector injector = app.setRequiredConfigurationProperties(properties)
                 .doNotInitializeLogging()
                 .initialize();
 
@@ -192,17 +177,23 @@ public class TestHttpServerModule
         try (HttpClient client = new JettyHttpClient()) {
             // test servlet bound correctly
             URI httpUri = httpServerInfo.getHttpUri();
-            StatusResponse response = client.execute(prepareGet().setUri(httpUri).build(), createStatusResponseHandler());
+            StatusResponse response =
+                    client.execute(prepareGet().setUri(httpUri).build(), createStatusResponseHandler());
 
             assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_OK);
 
             // test filter bound correctly
-            response = client.execute(prepareGet().setUri(httpUri.resolve("/filter")).build(), createStatusResponseHandler());
+            response = client.execute(
+                    prepareGet().setUri(httpUri.resolve("/filter")).build(), createStatusResponseHandler());
             assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_PAYMENT_REQUIRED);
 
             if (enableLegacyUriCompliance) {
                 // test legacy URI code for encoded slashes
-                response = client.execute(prepareGet().setUri(httpUri.resolve("/slashtest/one/two%2fthree/four/%2f/five")).build(), createStatusResponseHandler());
+                response = client.execute(
+                        prepareGet()
+                                .setUri(httpUri.resolve("/slashtest/one/two%2fthree/four/%2f/five"))
+                                .build(),
+                        createStatusResponseHandler());
                 assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_OK);
             }
 
@@ -216,26 +207,26 @@ public class TestHttpServerModule
             assertResource(httpUri, client, "path/user-welcome.txt", "welcome user!");
             assertResource(httpUri, client, "path/user.txt", "user");
             assertResource(httpUri, client, "path/user2.txt", "user2");
-        }
-        finally {
+        } finally {
             server.stop();
         }
     }
 
-    private void assertResource(URI baseUri, HttpClient client, String path, String contents)
-    {
+    private void assertResource(URI baseUri, HttpClient client, String path, String contents) {
         HttpUriBuilder uriBuilder = uriBuilderFrom(baseUri);
-        StringResponse response = client.execute(prepareGet().setUri(uriBuilder.appendPath(path).build()).build(), createStringResponseHandler());
+        StringResponse response = client.execute(
+                prepareGet().setUri(uriBuilder.appendPath(path).build()).build(), createStringResponseHandler());
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK.code());
         String contentType = response.getHeader(CONTENT_TYPE);
         assertThat(contentType).as(CONTENT_TYPE + " header is absent").isNotNull();
         MediaType mediaType = MediaType.parse(contentType);
-        assertThat(PLAIN_TEXT_UTF_8.is(mediaType)).as("Expected text/plain but got " + mediaType).isTrue();
+        assertThat(PLAIN_TEXT_UTF_8.is(mediaType))
+                .as("Expected text/plain but got " + mediaType)
+                .isTrue();
         assertThat(response.getBody().trim()).isEqualTo(contents);
     }
 
-    private void assertRedirect(URI baseUri, HttpClient client, String path, String redirect)
-    {
+    private void assertRedirect(URI baseUri, HttpClient client, String path, String redirect) {
         HttpUriBuilder uriBuilder = uriBuilderFrom(baseUri);
         StringResponse response = client.execute(
                 prepareGet()
@@ -245,7 +236,9 @@ public class TestHttpServerModule
                 createStringResponseHandler());
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.TEMPORARY_REDIRECT.code());
         assertThat(response.getHeader(LOCATION)).isEqualTo(redirect);
-        assertThat(response.getHeader(CONTENT_TYPE)).as(CONTENT_TYPE + " header should be absent").isNull();
+        assertThat(response.getHeader(CONTENT_TYPE))
+                .as(CONTENT_TYPE + " header should be absent")
+                .isNull();
         assertThat(response.getBody()).as("Response body").isEqualTo("");
     }
 }

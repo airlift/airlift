@@ -1,19 +1,15 @@
 package io.airlift.jmx;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
+import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class TestJmxAgent
-{
+public class TestJmxAgent {
     @Test
-    public void testAgent()
-            throws Exception
-    {
+    public void testAgent() throws Exception {
         JmxAgent agent = new JmxAgent(new JmxConfig().setRmiRegistryPort(8012));
 
         JMXServiceURL url = agent.getUrl();

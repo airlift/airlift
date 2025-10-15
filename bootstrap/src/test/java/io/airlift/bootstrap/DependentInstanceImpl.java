@@ -17,23 +17,17 @@ package io.airlift.bootstrap;
 
 import com.google.inject.Inject;
 
-public class DependentInstanceImpl
-        implements DependentBoundInstance
-{
+public class DependentInstanceImpl implements DependentBoundInstance {
     @Inject
-    public DependentInstanceImpl()
-    {
-    }
+    public DependentInstanceImpl() {}
 
     @Override
-    public void postDependentBoundInstance()
-    {
+    public void postDependentBoundInstance() {
         TestLifeCycleManager.note("postDependentBoundInstance");
     }
 
     @Override
-    public void preDependentBoundInstance()
-    {
+    public void preDependentBoundInstance() {
         TestLifeCycleManager.note("preDependentBoundInstance");
     }
 }

@@ -1,18 +1,5 @@
 package io.airlift.concurrent;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
-
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import static com.google.common.util.concurrent.Uninterruptibles.awaitUninterruptibly;
 import static io.airlift.concurrent.Threads.virtualThreadsNamed;
 import static java.util.concurrent.Executors.newThreadPerTaskExecutor;
@@ -21,26 +8,34 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+
 @TestInstance(PER_CLASS)
-public class TestBoundedExecutor
-{
+public class TestBoundedExecutor {
     private ExecutorService executorService;
 
     @BeforeAll
-    public void setUp()
-    {
+    public void setUp() {
         executorService = newThreadPerTaskExecutor(virtualThreadsNamed("TestBoundedExecutor-%s"));
     }
 
     @AfterAll
-    public void tearDown()
-    {
+    public void tearDown() {
         executorService.shutdownNow();
     }
 
     @Test
-    public void testCounter()
-    {
+    public void testCounter() {
         int maxThreads = 1;
         BoundedExecutor boundedExecutor = new BoundedExecutor(executorService, maxThreads); // Enforce single thread
 
@@ -61,14 +56,14 @@ public class TestBoundedExecutor
                     // Intentional distinct read and write calls
                     int initialCount = counter.get();
                     counter.set(initialCount + 1);
-                }
-                finally {
+                } finally {
                     completeLatch.countDown();
                 }
             });
         }
 
-        assertThat(awaitUninterruptibly(initializeLatch, 1, TimeUnit.MINUTES)).isTrue(); // Wait for pre-load tasks to initialize
+        assertThat(awaitUninterruptibly(initializeLatch, 1, TimeUnit.MINUTES))
+                .isTrue(); // Wait for pre-load tasks to initialize
         startLatch.countDown(); // Signal go for stage1 threads
 
         // Concurrently submitted tasks
@@ -78,8 +73,7 @@ public class TestBoundedExecutor
                     // Intentional distinct read and write calls
                     int initialCount = counter.get();
                     counter.set(initialCount + 1);
-                }
-                finally {
+                } finally {
                     completeLatch.countDown();
                 }
             });
@@ -90,26 +84,22 @@ public class TestBoundedExecutor
     }
 
     @Test
-    public void testSingleThreadBound()
-    {
+    public void testSingleThreadBound() {
         testBound(1, 100_000);
     }
 
     @Test
-    public void testDoubleThreadBound()
-    {
+    public void testDoubleThreadBound() {
         testBound(2, 100_000);
     }
 
     @Test
-    public void testTripleThreadBound()
-    {
+    public void testTripleThreadBound() {
         testBound(3, 100_000);
     }
 
     @Test
-    public void testExecutorCorruptionDetection()
-    {
+    public void testExecutorCorruptionDetection() {
         AtomicBoolean reject = new AtomicBoolean();
         Executor executor = command -> {
             if (reject.get()) {
@@ -133,8 +123,7 @@ public class TestBoundedExecutor
     }
 
     @SuppressWarnings("SameParameterValue")
-    private void testBound(int maxThreads, int stageTasks)
-    {
+    private void testBound(int maxThreads, int stageTasks) {
         BoundedExecutor boundedExecutor = new BoundedExecutor(executorService, maxThreads);
 
         int totalTasks = stageTasks * 2;
@@ -155,14 +144,14 @@ public class TestBoundedExecutor
                         failed.set(true);
                     }
                     activeThreadCount.decrementAndGet();
-                }
-                finally {
+                } finally {
                     completeLatch.countDown();
                 }
             });
         }
 
-        assertThat(awaitUninterruptibly(initializeLatch, 1, TimeUnit.MINUTES)).isTrue(); // Wait for pre-load tasks to initialize
+        assertThat(awaitUninterruptibly(initializeLatch, 1, TimeUnit.MINUTES))
+                .isTrue(); // Wait for pre-load tasks to initialize
         startLatch.countDown(); // Signal go for stage1 threads
 
         // Concurrently submitted tasks
@@ -174,8 +163,7 @@ public class TestBoundedExecutor
                         failed.set(true);
                     }
                     activeThreadCount.decrementAndGet();
-                }
-                finally {
+                } finally {
                     completeLatch.countDown();
                 }
             });

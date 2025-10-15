@@ -15,40 +15,36 @@
  */
 package io.airlift.log;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
+import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.parallel.Execution;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
-import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
-import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
-
 @TestInstance(PER_CLASS)
 @Execution(SAME_THREAD)
-public class TestLoggingMBean
-{
+public class TestLoggingMBean {
     private final LoggingMBean logging = new LoggingMBean(Logging.initialize());
     private String rootLevel;
 
     @BeforeEach
-    public void setRootLevel()
-    {
+    public void setRootLevel() {
         rootLevel = logging.getRootLevel();
         logging.setRootLevel("INFO");
     }
 
     @AfterEach
-    public void restoreRootLevel()
-    {
+    public void restoreRootLevel() {
         logging.setRootLevel(rootLevel);
     }
 
     @Test
-    public void testGetAndSetRoot()
-    {
+    public void testGetAndSetRoot() {
         assertThat(logging.getRootLevel()).isEqualTo("INFO");
 
         logging.setRootLevel("WARN");
@@ -59,8 +55,7 @@ public class TestLoggingMBean
     }
 
     @Test
-    public void testGetAndSetNonExisting()
-    {
+    public void testGetAndSetNonExisting() {
         assertThat(logging.getRootLevel()).isEqualTo("INFO");
 
         String name = "this.logger.does.not.exist.yet.Bogus";
@@ -74,14 +69,12 @@ public class TestLoggingMBean
     }
 
     @Test
-    public void testSetInvalidLevel()
-    {
+    public void testSetInvalidLevel() {
         assertThat(logging.getRootLevel()).isEqualTo("INFO");
         try {
             logging.setRootLevel("FOO");
             fail("Expected IllegalArgumentException");
-        }
-        catch (IllegalArgumentException expected) {
+        } catch (IllegalArgumentException expected) {
         }
         assertThat(logging.getRootLevel()).isEqualTo("INFO");
     }

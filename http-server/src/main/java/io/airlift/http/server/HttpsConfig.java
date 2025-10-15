@@ -1,5 +1,9 @@
 package io.airlift.http.server;
 
+import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.MINUTES;
+
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import io.airlift.configuration.Config;
@@ -9,16 +13,10 @@ import io.airlift.units.Duration;
 import io.airlift.units.MinDuration;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Min;
+import java.util.List;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
-import java.util.List;
-
-import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.TimeUnit.HOURS;
-import static java.util.concurrent.TimeUnit.MINUTES;
-
-public class HttpsConfig
-{
+public class HttpsConfig {
     private int httpsPort = 8443;
     private String keystorePath;
     private String keystorePassword;
@@ -30,157 +28,133 @@ public class HttpsConfig
     private Duration sslContextRefreshTime = new Duration(1, MINUTES);
     private String automaticHttpsSharedSecret;
 
-    private List<String> excludedCipherSuites = ImmutableList.copyOf(new SslContextFactory.Server().getExcludeCipherSuites());
+    private List<String> excludedCipherSuites =
+            ImmutableList.copyOf(new SslContextFactory.Server().getExcludeCipherSuites());
 
     private Duration sslSessionTimeout = new Duration(4, HOURS);
     private int sslSessionCacheSize = 10_000;
 
-    public int getHttpsPort()
-    {
+    public int getHttpsPort() {
         return httpsPort;
     }
 
     @Config("http-server.https.port")
-    public HttpsConfig setHttpsPort(int httpsPort)
-    {
+    public HttpsConfig setHttpsPort(int httpsPort) {
         this.httpsPort = httpsPort;
         return this;
     }
 
     @MinDuration("1s")
-    public Duration getSslSessionTimeout()
-    {
+    public Duration getSslSessionTimeout() {
         return sslSessionTimeout;
     }
 
     @Config("http-server.https.ssl-session-timeout")
-    public HttpsConfig setSslSessionTimeout(Duration sslSessionTimeout)
-    {
+    public HttpsConfig setSslSessionTimeout(Duration sslSessionTimeout) {
         this.sslSessionTimeout = sslSessionTimeout;
         return this;
     }
 
     @Min(1)
-    public int getSslSessionCacheSize()
-    {
+    public int getSslSessionCacheSize() {
         return sslSessionCacheSize;
     }
 
     @Config("http-server.https.ssl-session-cache-size")
-    public HttpsConfig setSslSessionCacheSize(int sslSessionCacheSize)
-    {
+    public HttpsConfig setSslSessionCacheSize(int sslSessionCacheSize) {
         this.sslSessionCacheSize = sslSessionCacheSize;
         return this;
     }
 
-    public String getKeystorePath()
-    {
+    public String getKeystorePath() {
         return keystorePath;
     }
 
     @Config("http-server.https.keystore.path")
-    public HttpsConfig setKeystorePath(String keystorePath)
-    {
+    public HttpsConfig setKeystorePath(String keystorePath) {
         this.keystorePath = keystorePath;
         return this;
     }
 
-    public String getKeystorePassword()
-    {
+    public String getKeystorePassword() {
         return keystorePassword;
     }
 
     @Config("http-server.https.keystore.key")
     @ConfigSecuritySensitive
-    public HttpsConfig setKeystorePassword(String keystorePassword)
-    {
+    public HttpsConfig setKeystorePassword(String keystorePassword) {
         this.keystorePassword = keystorePassword;
         return this;
     }
 
     @AssertTrue(message = "Keystore path or automatic HTTPS shared secret must be provided when HTTPS is enabled")
-    public boolean isHttpsConfigurationValid()
-    {
+    public boolean isHttpsConfigurationValid() {
         return getKeystorePath() != null || getAutomaticHttpsSharedSecret() != null;
     }
 
-    public String getKeyManagerPassword()
-    {
+    public String getKeyManagerPassword() {
         return keyManagerPassword;
     }
 
     @Config("http-server.https.keymanager.password")
     @ConfigSecuritySensitive
-    public HttpsConfig setKeyManagerPassword(String keyManagerPassword)
-    {
+    public HttpsConfig setKeyManagerPassword(String keyManagerPassword) {
         this.keyManagerPassword = keyManagerPassword;
         return this;
     }
 
-    public String getTrustStorePath()
-    {
+    public String getTrustStorePath() {
         return trustStorePath;
     }
 
     @Config("http-server.https.truststore.path")
-    public HttpsConfig setTrustStorePath(String trustStorePath)
-    {
+    public HttpsConfig setTrustStorePath(String trustStorePath) {
         this.trustStorePath = trustStorePath;
         return this;
     }
 
-    public String getTrustStorePassword()
-    {
+    public String getTrustStorePassword() {
         return trustStorePassword;
     }
 
     @Config("http-server.https.truststore.key")
     @ConfigSecuritySensitive
-    public HttpsConfig setTrustStorePassword(String trustStorePassword)
-    {
+    public HttpsConfig setTrustStorePassword(String trustStorePassword) {
         this.trustStorePassword = trustStorePassword;
         return this;
     }
 
-    public String getSecureRandomAlgorithm()
-    {
+    public String getSecureRandomAlgorithm() {
         return secureRandomAlgorithm;
     }
 
     @Config("http-server.https.secure-random-algorithm")
-    public HttpsConfig setSecureRandomAlgorithm(String secureRandomAlgorithm)
-    {
+    public HttpsConfig setSecureRandomAlgorithm(String secureRandomAlgorithm) {
         this.secureRandomAlgorithm = secureRandomAlgorithm;
         return this;
     }
 
-    public List<String> getHttpsIncludedCipherSuites()
-    {
+    public List<String> getHttpsIncludedCipherSuites() {
         return includedCipherSuites;
     }
 
     @Config("http-server.https.included-cipher")
-    public HttpsConfig setHttpsIncludedCipherSuites(String includedCipherSuites)
-    {
-        this.includedCipherSuites = Splitter
-                .on(',')
+    public HttpsConfig setHttpsIncludedCipherSuites(String includedCipherSuites) {
+        this.includedCipherSuites = Splitter.on(',')
                 .trimResults()
                 .omitEmptyStrings()
                 .splitToList(requireNonNull(includedCipherSuites, "includedCipherSuites is null"));
         return this;
     }
 
-    public List<String> getHttpsExcludedCipherSuites()
-    {
+    public List<String> getHttpsExcludedCipherSuites() {
         return excludedCipherSuites;
     }
 
     @Config("http-server.https.excluded-cipher")
     @ConfigDescription("Setting this config property overwrites Jetty's default excluded cipher suites")
-    public HttpsConfig setHttpsExcludedCipherSuites(String excludedCipherSuites)
-    {
-        this.excludedCipherSuites = Splitter
-                .on(',')
+    public HttpsConfig setHttpsExcludedCipherSuites(String excludedCipherSuites) {
+        this.excludedCipherSuites = Splitter.on(',')
                 .trimResults()
                 .omitEmptyStrings()
                 .splitToList(requireNonNull(excludedCipherSuites, "excludedCipherSuites is null"));
@@ -188,27 +162,23 @@ public class HttpsConfig
     }
 
     @MinDuration("1s")
-    public Duration getSslContextRefreshTime()
-    {
+    public Duration getSslContextRefreshTime() {
         return sslContextRefreshTime;
     }
 
     @Config("http-server.https.ssl-context.refresh-time")
-    public HttpsConfig setSslContextRefreshTime(Duration sslContextRefreshTime)
-    {
+    public HttpsConfig setSslContextRefreshTime(Duration sslContextRefreshTime) {
         this.sslContextRefreshTime = sslContextRefreshTime;
         return this;
     }
 
-    public String getAutomaticHttpsSharedSecret()
-    {
+    public String getAutomaticHttpsSharedSecret() {
         return automaticHttpsSharedSecret;
     }
 
     @ConfigSecuritySensitive
     @Config("http-server.https.automatic-shared-secret")
-    public HttpsConfig setAutomaticHttpsSharedSecret(String automaticHttpsSharedSecret)
-    {
+    public HttpsConfig setAutomaticHttpsSharedSecret(String automaticHttpsSharedSecret) {
         this.automaticHttpsSharedSecret = automaticHttpsSharedSecret;
         return this;
     }

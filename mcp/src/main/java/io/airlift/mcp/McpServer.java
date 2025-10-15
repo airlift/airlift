@@ -7,8 +7,7 @@ import io.airlift.mcp.model.Prompt;
 import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.Tool;
 
-public interface McpServer
-{
+public interface McpServer {
     void stop();
 
     void addTool(Tool tool, ToolHandler toolHandler);

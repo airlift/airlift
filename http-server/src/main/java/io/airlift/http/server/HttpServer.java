@@ -15,6 +15,25 @@
  */
 package io.airlift.http.server;
 
+import static com.google.common.base.MoreObjects.firstNonNull;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.base.Throwables.throwIfUnchecked;
+import static com.google.common.collect.ImmutableList.toImmutableList;
+import static io.airlift.concurrent.Threads.daemonThreadsNamed;
+import static java.lang.Math.max;
+import static java.lang.Math.toIntExact;
+import static java.time.temporal.ChronoUnit.DAYS;
+import static java.util.Collections.list;
+import static java.util.Comparator.naturalOrder;
+import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.eclipse.jetty.http.MimeTypes.Type.TEXT_PLAIN;
+import static org.eclipse.jetty.http.UriCompliance.Violation.AMBIGUOUS_PATH_ENCODING;
+import static org.eclipse.jetty.http.UriCompliance.Violation.AMBIGUOUS_PATH_SEPARATOR;
+import static org.eclipse.jetty.http.UriCompliance.Violation.SUSPICIOUS_PATH_CHARACTERS;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -28,6 +47,23 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.servlet.Filter;
 import jakarta.servlet.Servlet;
+import java.io.IOException;
+import java.nio.channels.ServerSocketChannel;
+import java.security.KeyStore;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.util.EnumSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Optional;
+import java.util.OptionalLong;
+import java.util.ServiceLoader;
+import java.util.Set;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledExecutorService;
+import javax.management.MBeanServer;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.compression.Compression;
 import org.eclipse.jetty.compression.server.CompressionConfig;
@@ -64,49 +100,11 @@ import org.eclipse.jetty.util.thread.VirtualThreadPool;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
 
-import javax.management.MBeanServer;
-
-import java.io.IOException;
-import java.nio.channels.ServerSocketChannel;
-import java.security.KeyStore;
-import java.security.cert.Certificate;
-import java.security.cert.X509Certificate;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.util.EnumSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Optional;
-import java.util.OptionalLong;
-import java.util.ServiceLoader;
-import java.util.Set;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ScheduledExecutorService;
-
-import static com.google.common.base.MoreObjects.firstNonNull;
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.base.Throwables.throwIfUnchecked;
-import static com.google.common.collect.ImmutableList.toImmutableList;
-import static io.airlift.concurrent.Threads.daemonThreadsNamed;
-import static java.lang.Math.max;
-import static java.lang.Math.toIntExact;
-import static java.time.temporal.ChronoUnit.DAYS;
-import static java.util.Collections.list;
-import static java.util.Comparator.naturalOrder;
-import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.eclipse.jetty.http.MimeTypes.Type.TEXT_PLAIN;
-import static org.eclipse.jetty.http.UriCompliance.Violation.AMBIGUOUS_PATH_ENCODING;
-import static org.eclipse.jetty.http.UriCompliance.Violation.AMBIGUOUS_PATH_SEPARATOR;
-import static org.eclipse.jetty.http.UriCompliance.Violation.SUSPICIOUS_PATH_CHARACTERS;
-
-public class HttpServer
-{
-    public enum ClientCertificate
-    {
-        NONE, REQUESTED, REQUIRED
+public class HttpServer {
+    public enum ClientCertificate {
+        NONE,
+        REQUESTED,
+        REQUIRED
     }
 
     private static final Logger log = Logger.get(HttpServer.class);
@@ -132,8 +130,7 @@ public class HttpServer
             ClientCertificate clientCertificate,
             Optional<MBeanServer> mbeanServer,
             Optional<SslContextFactory.Server> maybeSslContextFactory)
-            throws IOException
-    {
+            throws IOException {
         requireNonNull(httpServerInfo, "httpServerInfo is null");
         requireNonNull(nodeInfo, "nodeInfo is null");
         requireNonNull(config, "config is null");
@@ -143,7 +140,9 @@ public class HttpServer
         requireNonNull(clientCertificate, "clientCertificate is null");
         requireNonNull(mbeanServer, "mbeanServer is null");
 
-        checkArgument(!config.isHttpsEnabled() || maybeHttpsConfig.isPresent(), "httpsConfig must be present when HTTPS is enabled");
+        checkArgument(
+                !config.isHttpsEnabled() || maybeHttpsConfig.isPresent(),
+                "httpsConfig must be present when HTTPS is enabled");
         MonitoredQueuedThreadPool threadPool = new MonitoredQueuedThreadPool(config.getMaxThreads());
         threadPool.setMinThreads(config.getMinThreads());
         threadPool.setIdleTimeout(toIntExact(config.getThreadMaxIdleTime().toMillis()));
@@ -158,9 +157,10 @@ public class HttpServer
             threadPool.setVirtualThreadsExecutor(virtualExecutor);
         }
 
-        int maxBufferSize = toIntExact(max(max(
-                toSafeBytes(config.getMaxRequestHeaderSize()).orElse(8192),
-                toSafeBytes(config.getMaxResponseHeaderSize()).orElse(8192)),
+        int maxBufferSize = toIntExact(max(
+                max(
+                        toSafeBytes(config.getMaxRequestHeaderSize()).orElse(8192),
+                        toSafeBytes(config.getMaxResponseHeaderSize()).orElse(8192)),
                 toSafeBytes(config.getOutputBufferSize()).orElse(32768)));
 
         server = new Server(threadPool, createScheduler("http-scheduler"), createByteBufferPool(maxBufferSize, config));
@@ -186,11 +186,12 @@ public class HttpServer
         baseHttpConfiguration.setSendXPoweredBy(false);
         baseHttpConfiguration.setNotifyRemoteAsyncErrors(config.isNotifyRemoteAsyncErrors());
 
-        baseHttpConfiguration.addCustomizer(switch (config.getProcessForwarded()) {
-            case REJECT -> new RejectForwardedRequestCustomizer();
-            case ACCEPT -> new ForwardedRequestCustomizer();
-            case IGNORE -> new IgnoreForwardedRequestCustomizer();
-        });
+        baseHttpConfiguration.addCustomizer(
+                switch (config.getProcessForwarded()) {
+                    case REJECT -> new RejectForwardedRequestCustomizer();
+                    case ACCEPT -> new ForwardedRequestCustomizer();
+                    case IGNORE -> new IgnoreForwardedRequestCustomizer();
+                });
 
         // Adds :authority pseudoheader on HTTP/2
         baseHttpConfiguration.addCustomizer(new AuthorityCustomizer());
@@ -199,13 +200,16 @@ public class HttpServer
         baseHttpConfiguration.addCustomizer(new HostHeaderCustomizer());
 
         if (config.getMaxRequestHeaderSize() != null) {
-            baseHttpConfiguration.setRequestHeaderSize(toIntExact(config.getMaxRequestHeaderSize().toBytes()));
+            baseHttpConfiguration.setRequestHeaderSize(
+                    toIntExact(config.getMaxRequestHeaderSize().toBytes()));
         }
         if (config.getMaxResponseHeaderSize() != null) {
-            baseHttpConfiguration.setResponseHeaderSize(toIntExact(config.getMaxResponseHeaderSize().toBytes()));
+            baseHttpConfiguration.setResponseHeaderSize(
+                    toIntExact(config.getMaxResponseHeaderSize().toBytes()));
         }
         if (config.getOutputBufferSize() != null) {
-            baseHttpConfiguration.setOutputBufferSize(toIntExact(config.getOutputBufferSize().toBytes()));
+            baseHttpConfiguration.setOutputBufferSize(
+                    toIntExact(config.getOutputBufferSize().toBytes()));
         }
 
         // see https://bugs.eclipse.org/bugs/show_bug.cgi?id=414449#c4
@@ -213,7 +217,8 @@ public class HttpServer
 
         if (enableLegacyUriCompliance) {
             // allow encoded slashes to occur in URI paths
-            UriCompliance uriCompliance = UriCompliance.from(EnumSet.of(AMBIGUOUS_PATH_SEPARATOR, AMBIGUOUS_PATH_ENCODING, SUSPICIOUS_PATH_CHARACTERS));
+            UriCompliance uriCompliance = UriCompliance.from(
+                    EnumSet.of(AMBIGUOUS_PATH_SEPARATOR, AMBIGUOUS_PATH_ENCODING, SUSPICIOUS_PATH_CHARACTERS));
             baseHttpConfiguration.setUriCompliance(uriCompliance);
         }
 
@@ -256,7 +261,8 @@ public class HttpServer
             setSecureRequestCustomizer(httpsConfiguration);
 
             HttpsConfig httpsConfig = maybeHttpsConfig.orElseThrow();
-            this.sslContextFactory = Optional.of(this.sslContextFactory.orElseGet(() -> createReloadingSslContextFactory(httpsConfig, clientCertificate, nodeInfo.getEnvironment())));
+            this.sslContextFactory = Optional.of(this.sslContextFactory.orElseGet(
+                    () -> createReloadingSslContextFactory(httpsConfig, clientCertificate, nodeInfo.getEnvironment())));
             Integer acceptors = config.getHttpsAcceptorThreads();
             Integer selectors = config.getHttpsSelectorThreads();
             httpsConnector = createServerConnector(
@@ -294,7 +300,8 @@ public class HttpServer
          */
         StatisticsHandler statsHandler = new StatisticsHandler();
 
-        ServletContextHandler servletContext = createServletContext(servlet, resources, filters, Set.of("http", "https"), showStackTrace, enableLegacyUriCompliance);
+        ServletContextHandler servletContext = createServletContext(
+                servlet, resources, filters, Set.of("http", "https"), showStackTrace, enableLegacyUriCompliance);
 
         if (enableCompression) {
             CompressionHandler compressionHandler = new CompressionHandler();
@@ -305,22 +312,19 @@ public class HttpServer
             while (loader.hasNext()) {
                 try {
                     compressionHandler.putCompression(loader.next());
-                }
-                catch (Throwable t) {
+                } catch (Throwable t) {
                     log.error(t, "Error loading http server compression");
                 }
             }
 
-            CompressionConfig compressionConfig = CompressionConfig.builder()
-                    .defaults()
-                    .build();
+            CompressionConfig compressionConfig =
+                    CompressionConfig.builder().defaults().build();
 
             compressionHandler.putConfiguration("/*", compressionConfig);
             compressionHandler.setHandler(servletContext);
 
             statsHandler.setHandler(compressionHandler);
-        }
-        else {
+        } else {
             statsHandler.setHandler(servletContext);
         }
 
@@ -341,35 +345,30 @@ public class HttpServer
         server.setErrorHandler(errorHandler);
     }
 
-    private ByteBufferPool createByteBufferPool(int maxBufferSize, HttpServerConfig config)
-    {
-        long maxHeapMemory = config.getMaxHeapMemory().map(DataSize::toBytes).orElse(0L); // Use default heuristics for max heap memory
-        long maxOffHeapMemory = config.getMaxDirectMemory().map(DataSize::toBytes).orElse(0L); // Use default heuristics for max off heap memory
+    private ByteBufferPool createByteBufferPool(int maxBufferSize, HttpServerConfig config) {
+        long maxHeapMemory = config.getMaxHeapMemory()
+                .map(DataSize::toBytes)
+                .orElse(0L); // Use default heuristics for max heap memory
+        long maxOffHeapMemory = config.getMaxDirectMemory()
+                .map(DataSize::toBytes)
+                .orElse(0L); // Use default heuristics for max off heap memory
 
-        ArrayByteBufferPool pool = config.isTrackMemoryAllocations() ?
-                new ArrayByteBufferPool.Tracking(
-                    0,
-                    maxBufferSize,
-                    Integer.MAX_VALUE,
-                    maxHeapMemory,
-                    maxOffHeapMemory) :
-                new ArrayByteBufferPool.Quadratic(
-                    0,
-                    maxBufferSize,
-                    Integer.MAX_VALUE,
-                    maxHeapMemory,
-                    maxOffHeapMemory);
+        ArrayByteBufferPool pool = config.isTrackMemoryAllocations()
+                ? new ArrayByteBufferPool.Tracking(0, maxBufferSize, Integer.MAX_VALUE, maxHeapMemory, maxOffHeapMemory)
+                : new ArrayByteBufferPool.Quadratic(
+                        0, maxBufferSize, Integer.MAX_VALUE, maxHeapMemory, maxOffHeapMemory);
 
         pool.setStatisticsEnabled(true);
         return pool;
     }
 
-    private ConnectionFactory[] insecureFactories(HttpServerConfig config, HttpConfiguration httpConfiguration)
-    {
+    private ConnectionFactory[] insecureFactories(HttpServerConfig config, HttpConfiguration httpConfiguration) {
         HttpConnectionFactory http1 = new HttpConnectionFactory(httpConfiguration);
         HTTP2CServerConnectionFactory http2c = new HTTP2CServerConnectionFactory(httpConfiguration);
-        http2c.setInitialSessionRecvWindow(toIntExact(config.getHttp2InitialSessionReceiveWindowSize().toBytes()));
-        http2c.setInitialStreamRecvWindow(toIntExact(config.getHttp2InitialStreamReceiveWindowSize().toBytes()));
+        http2c.setInitialSessionRecvWindow(
+                toIntExact(config.getHttp2InitialSessionReceiveWindowSize().toBytes()));
+        http2c.setInitialStreamRecvWindow(
+                toIntExact(config.getHttp2InitialStreamReceiveWindowSize().toBytes()));
         http2c.setMaxConcurrentStreams(config.getHttp2MaxConcurrentStreams());
         http2c.setInputBufferSize(toIntExact(config.getHttp2InputBufferSize().toBytes()));
         http2c.setStreamIdleTimeout(config.getHttp2StreamIdleTimeout().toMillis());
@@ -378,8 +377,8 @@ public class HttpServer
         return new ConnectionFactory[] {http1, http2c};
     }
 
-    private ConnectionFactory[] secureFactories(HttpServerConfig config, HttpConfiguration httpsConfiguration, SslContextFactory.Server server)
-    {
+    private ConnectionFactory[] secureFactories(
+            HttpServerConfig config, HttpConfiguration httpsConfiguration, SslContextFactory.Server server) {
         ConnectionFactory http1 = new HttpConnectionFactory(httpsConfiguration);
         ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
         alpn.setDefaultProtocol(http1.getProtocol());
@@ -387,8 +386,10 @@ public class HttpServer
         SslConnectionFactory tls = new SslConnectionFactory(server, alpn.getProtocol());
 
         HTTP2ServerConnectionFactory http2 = new HTTP2ServerConnectionFactory(httpsConfiguration);
-        http2.setInitialSessionRecvWindow(toIntExact(config.getHttp2InitialSessionReceiveWindowSize().toBytes()));
-        http2.setInitialStreamRecvWindow(toIntExact(config.getHttp2InitialStreamReceiveWindowSize().toBytes()));
+        http2.setInitialSessionRecvWindow(
+                toIntExact(config.getHttp2InitialSessionReceiveWindowSize().toBytes()));
+        http2.setInitialStreamRecvWindow(
+                toIntExact(config.getHttp2InitialStreamReceiveWindowSize().toBytes()));
         http2.setMaxConcurrentStreams(config.getHttp2MaxConcurrentStreams());
         http2.setInputBufferSize(toIntExact(config.getHttp2InputBufferSize().toBytes()));
         http2.setStreamIdleTimeout(config.getHttp2StreamIdleTimeout().toMillis());
@@ -397,21 +398,20 @@ public class HttpServer
         return new ConnectionFactory[] {tls, alpn, http2, http1};
     }
 
-    private static void setSecureRequestCustomizer(HttpConfiguration configuration)
-    {
+    private static void setSecureRequestCustomizer(HttpConfiguration configuration) {
         configuration.setCustomizers(ImmutableList.<HttpConfiguration.Customizer>builder()
                 .add(new SecureRequestCustomizer(false))
                 .addAll(configuration.getCustomizers())
                 .build());
     }
 
-    private static ServletContextHandler createServletContext(Servlet servlet,
+    private static ServletContextHandler createServletContext(
+            Servlet servlet,
             Set<HttpResourceBinding> resources,
             Set<Filter> filters,
             Set<String> connectorNames,
             boolean showStackTrace,
-            boolean enableLegacyUriCompliance)
-    {
+            boolean enableLegacyUriCompliance) {
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
         ErrorHandler handler = new ErrorHandler();
         handler.setShowStacks(showStackTrace);
@@ -429,9 +429,7 @@ public class HttpServer
         // -- static resources
         for (HttpResourceBinding resource : resources) {
             ClassPathResourceFilter filter = new ClassPathResourceFilter(
-                    resource.getBaseUri(),
-                    resource.getClassPathResourceBase(),
-                    resource.getWelcomeFiles());
+                    resource.getBaseUri(), resource.getClassPathResourceBase(), resource.getWelcomeFiles());
             context.addFilter(new FilterHolder(filter), filter.getBaseUri() + "/*", null);
         }
         // -- the servlet
@@ -449,8 +447,7 @@ public class HttpServer
     }
 
     @VisibleForTesting
-    Set<X509Certificate> getCertificates()
-    {
+    Set<X509Certificate> getCertificates() {
         ImmutableSet.Builder<X509Certificate> certificates = ImmutableSet.builder();
         this.sslContextFactory.ifPresent(factory -> {
             try {
@@ -461,8 +458,7 @@ public class HttpServer
                         certificates.add((X509Certificate) certificate);
                     }
                 }
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 log.error(e, "Error reading certificates");
             }
         });
@@ -471,8 +467,7 @@ public class HttpServer
     }
 
     @Managed
-    public Long getDaysUntilCertificateExpiration()
-    {
+    public Long getDaysUntilCertificateExpiration() {
         return getCertificates().stream()
                 .map(X509Certificate::getNotAfter)
                 .min(naturalOrder())
@@ -483,37 +478,30 @@ public class HttpServer
 
     @Managed
     @Nested
-    public ConnectionStats getHttpConnectionStats()
-    {
+    public ConnectionStats getHttpConnectionStats() {
         return httpConnectionStats;
     }
 
     @Managed
     @Nested
-    public ConnectionStats getHttpsConnectionStats()
-    {
+    public ConnectionStats getHttpsConnectionStats() {
         return httpsConnectionStats;
     }
 
     @Managed
     @Nested
-    public MonitoredQueuedThreadPoolMBean getServerThreadPool()
-    {
+    public MonitoredQueuedThreadPoolMBean getServerThreadPool() {
         return monitoredQueuedThreadPoolMBean;
     }
 
     @PostConstruct
-    public void start()
-            throws Exception
-    {
+    public void start() throws Exception {
         server.start();
         checkState(server.isStarted(), "server is not started");
     }
 
     @PreDestroy
-    public void stop()
-            throws Exception
-    {
+    public void stop() throws Exception {
         long activeRequests = server.getHandlers().stream()
                 .filter(GracefulHandler.class::isInstance)
                 .map(GracefulHandler.class::cast)
@@ -521,7 +509,9 @@ public class HttpServer
                 .map(GracefulHandler::getCurrentRequestCount)
                 .orElse(0L);
 
-        log.debug("Server %s stopping in %s, %d active requests to complete", Duration.succinctDuration(server.getStopTimeout(), MILLISECONDS), activeRequests);
+        log.debug(
+                "Server %s stopping in %s, %d active requests to complete",
+                Duration.succinctDuration(server.getStopTimeout(), MILLISECONDS), activeRequests);
         server.stop();
 
         if (scheduledExecutorService != null) {
@@ -532,19 +522,18 @@ public class HttpServer
     }
 
     @VisibleForTesting
-    void join()
-            throws InterruptedException
-    {
+    void join() throws InterruptedException {
         server.join();
     }
 
-    private SslContextFactory.Server createReloadingSslContextFactory(HttpsConfig config, ClientCertificate clientCertificate, String environment)
-    {
+    private SslContextFactory.Server createReloadingSslContextFactory(
+            HttpsConfig config, ClientCertificate clientCertificate, String environment) {
         if (scheduledExecutorService == null) {
             scheduledExecutorService = newSingleThreadScheduledExecutor(daemonThreadsNamed("HttpServerScheduler"));
         }
 
-        return new ReloadableSslContextFactoryProvider(config, scheduledExecutorService, clientCertificate, environment).getSslContextFactory();
+        return new ReloadableSslContextFactoryProvider(config, scheduledExecutorService, clientCertificate, environment)
+                .getSslContextFactory();
     }
 
     private static ServerConnector createServerConnector(
@@ -554,15 +543,13 @@ public class HttpServer
             int acceptors,
             int selectors,
             ConnectionFactory... factories)
-            throws IOException
-    {
+            throws IOException {
         ServerConnector connector = new ServerConnector(server, executor, null, null, acceptors, selectors, factories);
         connector.open(channel);
         return connector;
     }
 
-    private static OptionalLong toSafeBytes(DataSize dataSize)
-    {
+    private static OptionalLong toSafeBytes(DataSize dataSize) {
         if (dataSize == null) {
             return OptionalLong.empty();
         }
@@ -570,13 +557,11 @@ public class HttpServer
         return OptionalLong.of(dataSize.toBytes());
     }
 
-    private static Scheduler createScheduler(String name)
-    {
+    private static Scheduler createScheduler(String name) {
         Scheduler scheduler = new ScheduledExecutorScheduler(name, true);
         try {
             scheduler.start();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throwIfUnchecked(e);
             throw new RuntimeException(e);
         }

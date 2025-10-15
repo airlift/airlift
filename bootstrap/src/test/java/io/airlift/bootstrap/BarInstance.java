@@ -3,17 +3,14 @@ package io.airlift.bootstrap;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 
-public class BarInstance
-{
+public class BarInstance {
     @PostConstruct
-    public void postDependentInstance()
-    {
+    public void postDependentInstance() {
         TestLifeCycleManager.note("postBarInstance");
     }
 
     @PreDestroy
-    public void preDependentInstance()
-    {
+    public void preDependentInstance() {
         TestLifeCycleManager.note("preBarInstance");
     }
 }

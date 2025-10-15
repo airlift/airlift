@@ -1,11 +1,9 @@
 package io.airlift.http.client;
 
 import com.google.common.collect.ImmutableMap;
-
 import java.util.Map;
 
-public enum HttpStatus
-{
+public enum HttpStatus {
     CONTINUE(100, "Continue"),
     SWITCHING_PROTOCOLS(101, "Switching Protocols"),
     PROCESSING(102, "Processing"),
@@ -70,47 +68,45 @@ public enum HttpStatus
     NOT_EXTENDED(510, "Not Extended"),
     NETWORK_AUTHENTICATION_REQUIRED(511, "Network Authentication Required");
 
-    public enum Family
-    {
-        INFORMATIONAL, SUCCESSFUL, REDIRECTION, CLIENT_ERROR, SERVER_ERROR, OTHER
+    public enum Family {
+        INFORMATIONAL,
+        SUCCESSFUL,
+        REDIRECTION,
+        CLIENT_ERROR,
+        SERVER_ERROR,
+        OTHER
     }
 
     private final int code;
     private final String reason;
     private final Family family;
 
-    HttpStatus(int code, String reason)
-    {
+    HttpStatus(int code, String reason) {
         this.code = code;
         this.reason = reason;
         this.family = familyForStatusCode(code);
     }
 
-    public int code()
-    {
+    public int code() {
         return code;
     }
 
-    public String reason()
-    {
+    public String reason() {
         return toString();
     }
 
-    public Family family()
-    {
+    public Family family() {
         return family;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return reason;
     }
 
     private static final Map<Integer, HttpStatus> httpStatusCodes = buildStatusCodeMap();
 
-    private static Map<Integer, HttpStatus> buildStatusCodeMap()
-    {
+    private static Map<Integer, HttpStatus> buildStatusCodeMap() {
         ImmutableMap.Builder<Integer, HttpStatus> map = ImmutableMap.builder();
         for (HttpStatus status : values()) {
             map.put(status.code(), status);
@@ -118,13 +114,11 @@ public enum HttpStatus
         return map.build();
     }
 
-    public static HttpStatus fromStatusCode(int statusCode)
-    {
+    public static HttpStatus fromStatusCode(int statusCode) {
         return httpStatusCodes.get(statusCode);
     }
 
-    public static Family familyForStatusCode(int code)
-    {
+    public static Family familyForStatusCode(int code) {
         return switch (code / 100) {
             case 1 -> Family.INFORMATIONAL;
             case 2 -> Family.SUCCESSFUL;

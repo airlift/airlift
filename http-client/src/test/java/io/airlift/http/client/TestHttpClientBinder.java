@@ -15,6 +15,12 @@
  */
 package io.airlift.http.client;
 
+import static io.airlift.http.client.HttpClientBinder.httpClientBinder;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multiset;
@@ -26,26 +32,16 @@ import io.airlift.bootstrap.Bootstrap;
 import io.airlift.bootstrap.LifeCycleManager;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.units.Duration;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.junit.jupiter.api.Test;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.junit.jupiter.api.Test;
 
-import static io.airlift.http.client.HttpClientBinder.httpClientBinder;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
-public class TestHttpClientBinder
-{
+public class TestHttpClientBinder {
     @Test
-    public void testConfigDefaults()
-    {
-        Injector injector = new Bootstrap(
-                binder -> httpClientBinder(binder)
+    public void testConfigDefaults() {
+        Injector injector = new Bootstrap(binder -> httpClientBinder(binder)
                         .bindHttpClient("foo", FooClient.class)
                         .withConfigDefaults(config -> config.setRequestTimeout(new Duration(33, MINUTES))))
                 .quiet()
@@ -56,23 +52,23 @@ public class TestHttpClientBinder
     }
 
     @Test
-    public void testGlobalStatusListenerBinding()
-    {
+    public void testGlobalStatusListenerBinding() {
         HttpStatusListener globalListener1 = ignore -> {};
         HttpStatusListener globalListener2 = ignore -> {};
         HttpStatusListener listener1 = ignore -> {};
         HttpStatusListener listener2 = ignore -> {};
 
-        Injector injector = new Bootstrap(
-                binder -> {
+        Injector injector = new Bootstrap(binder -> {
+                    httpClientBinder(binder).addGlobalStatusListenerBinding().toInstance(globalListener1);
+                    httpClientBinder(binder).addGlobalStatusListenerBinding().toInstance(globalListener2);
                     httpClientBinder(binder)
-                            .addGlobalStatusListenerBinding().toInstance(globalListener1);
+                            .bindHttpClient("foo", FooClient.class)
+                            .addStatusListenerBinding()
+                            .toInstance(listener1);
                     httpClientBinder(binder)
-                            .addGlobalStatusListenerBinding().toInstance(globalListener2);
-                    httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
-                            .addStatusListenerBinding().toInstance(listener1);
-                    httpClientBinder(binder).bindHttpClient("bar", BarClient.class)
-                            .addStatusListenerBinding().toInstance(listener2);
+                            .bindHttpClient("bar", BarClient.class)
+                            .addStatusListenerBinding()
+                            .toInstance(listener2);
                 })
                 .quiet()
                 .initialize();
@@ -87,22 +83,22 @@ public class TestHttpClientBinder
     }
 
     @Test
-    public void testGlobalFilterBinding()
-    {
+    public void testGlobalFilterBinding() {
         HttpRequestFilter globalFilter1 = (r) -> r;
         HttpRequestFilter globalFilter2 = (r) -> r;
         HttpRequestFilter filter1 = (r) -> r;
         HttpRequestFilter filter2 = (r) -> r;
-        Injector injector = new Bootstrap(
-                binder -> {
+        Injector injector = new Bootstrap(binder -> {
+                    httpClientBinder(binder).addGlobalFilterBinding().toInstance(globalFilter1);
+                    httpClientBinder(binder).bindGlobalFilter(globalFilter2);
                     httpClientBinder(binder)
-                            .addGlobalFilterBinding().toInstance(globalFilter1);
+                            .bindHttpClient("foo", FooClient.class)
+                            .addFilterBinding()
+                            .toInstance(filter1);
                     httpClientBinder(binder)
-                            .bindGlobalFilter(globalFilter2);
-                    httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
-                            .addFilterBinding().toInstance(filter1);
-                    httpClientBinder(binder).bindHttpClient("bar", BarClient.class)
-                            .addFilterBinding().toInstance(filter2);
+                            .bindHttpClient("bar", BarClient.class)
+                            .addFilterBinding()
+                            .toInstance(filter2);
                 })
                 .quiet()
                 .initialize();
@@ -121,11 +117,11 @@ public class TestHttpClientBinder
     }
 
     @Test
-    public void testBindClientWithStatusListener()
-    {
-        Injector injector = new Bootstrap(
-                binder -> {
-                    httpClientBinder(binder).bindHttpClient("foo", FooClient.class).withStatusListener(TestingStatusListener.class);
+    public void testBindClientWithStatusListener() {
+        Injector injector = new Bootstrap(binder -> {
+                    httpClientBinder(binder)
+                            .bindHttpClient("foo", FooClient.class)
+                            .withStatusListener(TestingStatusListener.class);
                     binder.bind(new TypeLiteral<Multiset<Integer>>() {}).toInstance(HashMultiset.create());
                 })
                 .quiet()
@@ -136,17 +132,18 @@ public class TestHttpClientBinder
     }
 
     @Test
-    public void testBindingMultipleFiltersAndClients()
-    {
-        Injector injector = new Bootstrap(
-                binder -> {
-                    httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
+    public void testBindingMultipleFiltersAndClients() {
+        Injector injector = new Bootstrap(binder -> {
+                    httpClientBinder(binder)
+                            .bindHttpClient("foo", FooClient.class)
                             .withFilter(TestingRequestFilter.class)
                             .withFilter(AnotherHttpRequestFilter.class);
 
-                    httpClientBinder(binder).bindHttpClient("bar", BarClient.class)
+                    httpClientBinder(binder)
+                            .bindHttpClient("bar", BarClient.class)
                             .withFilter(TestingRequestFilter.class)
-                            .addFilterBinding().to(AnotherHttpRequestFilter.class);
+                            .addFilterBinding()
+                            .to(AnotherHttpRequestFilter.class);
                 })
                 .quiet()
                 .initialize();
@@ -156,10 +153,9 @@ public class TestHttpClientBinder
     }
 
     @Test
-    public void testBindClientWithFilter()
-    {
-        Injector injector = new Bootstrap(
-                binder -> httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
+    public void testBindClientWithFilter() {
+        Injector injector = new Bootstrap(binder -> httpClientBinder(binder)
+                        .bindHttpClient("foo", FooClient.class)
                         .withFilter(TestingRequestFilter.class)
                         .withFilter(AnotherHttpRequestFilter.class))
                 .quiet()
@@ -170,104 +166,102 @@ public class TestHttpClientBinder
     }
 
     @Test
-    public void testWithoutFilters()
-    {
-        Injector injector = new Bootstrap(
-                binder -> httpClientBinder(binder).bindHttpClient("foo", FooClient.class))
+    public void testWithoutFilters() {
+        Injector injector = new Bootstrap(binder -> httpClientBinder(binder).bindHttpClient("foo", FooClient.class))
                 .quiet()
                 .initialize();
 
-        assertThat(injector.getInstance(Key.get(HttpClient.class, FooClient.class))).isNotNull();
+        assertThat(injector.getInstance(Key.get(HttpClient.class, FooClient.class)))
+                .isNotNull();
     }
 
     @Test
-    public void testAliases()
-    {
-        Injector injector = new Bootstrap(
-                binder -> httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
+    public void testAliases() {
+        Injector injector = new Bootstrap(binder -> httpClientBinder(binder)
+                        .bindHttpClient("foo", FooClient.class)
                         .withAlias(FooAlias1.class)
                         .withAliases(ImmutableList.of(FooAlias2.class, FooAlias3.class)))
                 .quiet()
                 .initialize();
 
         HttpClient client = injector.getInstance(Key.get(HttpClient.class, FooClient.class));
-        assertThat(injector.getInstance(Key.get(HttpClient.class, FooAlias1.class))).isSameAs(client);
-        assertThat(injector.getInstance(Key.get(HttpClient.class, FooAlias2.class))).isSameAs(client);
-        assertThat(injector.getInstance(Key.get(HttpClient.class, FooAlias3.class))).isSameAs(client);
+        assertThat(injector.getInstance(Key.get(HttpClient.class, FooAlias1.class)))
+                .isSameAs(client);
+        assertThat(injector.getInstance(Key.get(HttpClient.class, FooAlias2.class)))
+                .isSameAs(client);
+        assertThat(injector.getInstance(Key.get(HttpClient.class, FooAlias3.class)))
+                .isSameAs(client);
     }
 
     @Test
-    public void testBindClientWithAliases()
-    {
-        Injector injector = new Bootstrap(
-                binder -> httpClientBinder(binder).bindHttpClient("foo", FooClient.class)
+    public void testBindClientWithAliases() {
+        Injector injector = new Bootstrap(binder -> httpClientBinder(binder)
+                        .bindHttpClient("foo", FooClient.class)
                         .withAlias(FooAlias1.class)
                         .withAlias(FooAlias2.class))
                 .quiet()
                 .initialize();
 
         HttpClient client = injector.getInstance(Key.get(HttpClient.class, FooClient.class));
-        assertThat(injector.getInstance(Key.get(HttpClient.class, FooAlias1.class))).isSameAs(client);
-        assertThat(injector.getInstance(Key.get(HttpClient.class, FooAlias2.class))).isSameAs(client);
+        assertThat(injector.getInstance(Key.get(HttpClient.class, FooAlias1.class)))
+                .isSameAs(client);
+        assertThat(injector.getInstance(Key.get(HttpClient.class, FooAlias2.class)))
+                .isSameAs(client);
     }
 
     @Test
-    public void testBindClientWithSslContext()
-    {
+    public void testBindClientWithSslContext() {
         SslContextFactory.Client passingFactory = new SslContextFactory.Client();
         SslContextFactory.Client failingFactory = new FailingSslContextFactory();
 
-        new Bootstrap(
-                binder -> {
+        new Bootstrap(binder -> {
                     binder.bind(SslContextFactory.Client.class).toInstance(passingFactory);
                     httpClientBinder(binder).bindHttpClient("foo", FooClient.class);
                 })
                 .quiet()
                 .initialize();
 
-        assertThatThrownBy(() -> new Bootstrap(
-                binder -> {
-                    binder.bind(SslContextFactory.Client.class).toInstance(failingFactory);
-                    httpClientBinder(binder).bindHttpClient("foo", FooClient.class);
-                })
-                .quiet()
-                .initialize())
+        assertThatThrownBy(() -> new Bootstrap(binder -> {
+                            binder.bind(SslContextFactory.Client.class).toInstance(failingFactory);
+                            httpClientBinder(binder).bindHttpClient("foo", FooClient.class);
+                        })
+                        .quiet()
+                        .initialize())
                 .hasMessageContaining("RuntimeException: fail");
     }
 
     @Test
-    public void testBindClientWithSslContextWithAnnotation()
-    {
+    public void testBindClientWithSslContextWithAnnotation() {
         SslContextFactory.Client passingFactory = new SslContextFactory.Client();
         SslContextFactory.Client failingFactory = new FailingSslContextFactory();
 
         // if failing instance is bound globally but overridden by normal instance, it should succeed
-        new Bootstrap(
-                binder -> {
+        new Bootstrap(binder -> {
                     binder.bind(SslContextFactory.Client.class).toInstance(failingFactory);
-                    binder.bind(SslContextFactory.Client.class).annotatedWith(FooClient.class).toInstance(passingFactory);
+                    binder.bind(SslContextFactory.Client.class)
+                            .annotatedWith(FooClient.class)
+                            .toInstance(passingFactory);
                     httpClientBinder(binder).bindHttpClient("foo", FooClient.class);
                 })
                 .quiet()
                 .initialize();
 
         // if normal instance is bound globally but overridden by failing instance, it should fail
-        assertThatThrownBy(() -> new Bootstrap(
-                binder -> {
-                    binder.bind(SslContextFactory.Client.class).toInstance(passingFactory);
-                    binder.bind(SslContextFactory.Client.class).annotatedWith(FooClient.class).toInstance(failingFactory);
-                    httpClientBinder(binder).bindHttpClient("foo", FooClient.class);
-                })
-                .quiet()
-                .initialize())
+        assertThatThrownBy(() -> new Bootstrap(binder -> {
+                            binder.bind(SslContextFactory.Client.class).toInstance(passingFactory);
+                            binder.bind(SslContextFactory.Client.class)
+                                    .annotatedWith(FooClient.class)
+                                    .toInstance(failingFactory);
+                            httpClientBinder(binder).bindHttpClient("foo", FooClient.class);
+                        })
+                        .quiet()
+                        .initialize())
                 .hasMessageContaining("RuntimeException: fail");
     }
 
     @Test
-    public void testMultipleClients()
-    {
-        Injector injector = new Bootstrap(
-                binder -> {
+    public void testMultipleClients() {
+        Injector injector = new Bootstrap(binder -> {
                     httpClientBinder(binder).bindHttpClient("foo", FooClient.class);
                     httpClientBinder(binder).bindHttpClient("bar", BarClient.class);
                 })
@@ -280,10 +274,8 @@ public class TestHttpClientBinder
     }
 
     @Test
-    public void testClientShutdown()
-    {
-        Injector injector = new Bootstrap(
-                binder -> {
+    public void testClientShutdown() {
+        Injector injector = new Bootstrap(binder -> {
                     httpClientBinder(binder).bindHttpClient("foo", FooClient.class);
                     httpClientBinder(binder).bindHttpClient("bar", BarClient.class);
                 })
@@ -302,70 +294,53 @@ public class TestHttpClientBinder
         assertThat(barClient.isClosed()).isTrue();
     }
 
-    private static void assertFilterCount(HttpClient httpClient, int filterCount)
-    {
+    private static void assertFilterCount(HttpClient httpClient, int filterCount) {
         assertThat(httpClient).isNotNull();
         assertThat(httpClient).isInstanceOf(JettyHttpClient.class);
         assertThat(((JettyHttpClient) httpClient).getRequestFilters().size()).isEqualTo(filterCount);
     }
 
-    private static void assertStatusListenerCount(HttpClient httpClient, int statusListenerCount)
-    {
-        assertThat(httpClient).isInstanceOfSatisfying(JettyHttpClient.class, jettyClient ->
-                assertThat(jettyClient.getStatusListeners().size()).isEqualTo(statusListenerCount));
+    private static void assertStatusListenerCount(HttpClient httpClient, int statusListenerCount) {
+        assertThat(httpClient).isInstanceOfSatisfying(JettyHttpClient.class, jettyClient -> assertThat(
+                        jettyClient.getStatusListeners().size())
+                .isEqualTo(statusListenerCount));
     }
 
     @Retention(RUNTIME)
     @Target(ElementType.PARAMETER)
     @BindingAnnotation
-    public @interface FooClient
-    {
-    }
+    public @interface FooClient {}
 
     @Retention(RUNTIME)
     @Target(ElementType.PARAMETER)
     @BindingAnnotation
-    public @interface FooAlias1
-    {
-    }
+    public @interface FooAlias1 {}
 
     @Retention(RUNTIME)
     @Target(ElementType.PARAMETER)
     @BindingAnnotation
-    public @interface FooAlias2
-    {
-    }
+    public @interface FooAlias2 {}
 
     @Retention(RUNTIME)
     @Target(ElementType.PARAMETER)
     @BindingAnnotation
-    public @interface FooAlias3
-    {
-    }
+    public @interface FooAlias3 {}
 
     @Retention(RUNTIME)
     @Target(ElementType.PARAMETER)
     @BindingAnnotation
-    public @interface BarClient
-    {
-    }
+    public @interface BarClient {}
 
-    public static class AnotherHttpRequestFilter
-            implements HttpRequestFilter
-    {
+    public static class AnotherHttpRequestFilter implements HttpRequestFilter {
         @Override
-        public Request filterRequest(Request request)
-        {
+        public Request filterRequest(Request request) {
             return request;
         }
     }
 
-    private static class FailingSslContextFactory
-            extends SslContextFactory.Client
-    {
+    private static class FailingSslContextFactory extends SslContextFactory.Client {
         @Override
-        protected void checkConfiguration()
-        {
+        protected void checkConfiguration() {
             throw new RuntimeException("fail");
         }
     }

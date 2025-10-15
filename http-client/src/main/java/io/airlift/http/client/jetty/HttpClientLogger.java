@@ -13,32 +13,33 @@
  */
 package io.airlift.http.client.jetty;
 
-import org.eclipse.jetty.client.Request;
-import org.eclipse.jetty.client.Response;
-
-import java.util.Optional;
-
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
 
-public interface HttpClientLogger
-{
+import java.util.Optional;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
+
+public interface HttpClientLogger {
     void log(RequestInfo requestInfo, ResponseInfo responseInfo);
 
     void close();
 
     int getQueueSize();
 
-    class RequestInfo
-    {
+    class RequestInfo {
         private final Request request;
         private final long requestTimestampMillis;
         private final long requestCreatedTimestamp;
         private final long requestBeginTimestamp;
         private final long requestEndTimestamp;
 
-        private RequestInfo(Request request, long requestTimestampMillis, long requestCreatedTimestamp, long requestBeginTimestamp, long requestEndTimestamp)
-        {
+        private RequestInfo(
+                Request request,
+                long requestTimestampMillis,
+                long requestCreatedTimestamp,
+                long requestBeginTimestamp,
+                long requestEndTimestamp) {
             this.request = requireNonNull(request, "request is null");
             this.requestTimestampMillis = requestTimestampMillis;
             this.requestCreatedTimestamp = requestCreatedTimestamp;
@@ -46,46 +47,48 @@ public interface HttpClientLogger
             this.requestEndTimestamp = requestEndTimestamp;
         }
 
-        public static RequestInfo from(Request request, long requestTimestampMillis)
-        {
+        public static RequestInfo from(Request request, long requestTimestampMillis) {
             requireNonNull(request, "request is null");
             return new RequestInfo(request, requestTimestampMillis, 0L, 0L, 0L);
         }
 
-        public static RequestInfo from(Request request, long requestTimestampMillis, long requestCreatedTimestamp, long requestBeginTimestamp, long requestEndTimestamp)
-        {
+        public static RequestInfo from(
+                Request request,
+                long requestTimestampMillis,
+                long requestCreatedTimestamp,
+                long requestBeginTimestamp,
+                long requestEndTimestamp) {
             requireNonNull(request, "request is null");
-            return new RequestInfo(request, requestTimestampMillis, requestCreatedTimestamp, requestBeginTimestamp, requestEndTimestamp);
+            return new RequestInfo(
+                    request,
+                    requestTimestampMillis,
+                    requestCreatedTimestamp,
+                    requestBeginTimestamp,
+                    requestEndTimestamp);
         }
 
-        public Request getRequest()
-        {
+        public Request getRequest() {
             return request;
         }
 
-        public long getRequestTimestampMillis()
-        {
+        public long getRequestTimestampMillis() {
             return requestTimestampMillis;
         }
 
-        public long getRequestBeginTimestamp()
-        {
+        public long getRequestBeginTimestamp() {
             return requestBeginTimestamp;
         }
 
-        public long getRequestEndTimestamp()
-        {
+        public long getRequestEndTimestamp() {
             return requestEndTimestamp;
         }
 
-        public long getRequestCreatedTimestamp()
-        {
+        public long getRequestCreatedTimestamp() {
             return requestCreatedTimestamp;
         }
     }
 
-    class ResponseInfo
-    {
+    class ResponseInfo {
         private final Optional<Response> response;
         private final Optional<Throwable> failureCause;
         private final long responseSize;
@@ -98,8 +101,7 @@ public interface HttpClientLogger
                 long responseSize,
                 long responseBeginTimestamp,
                 long responseCompleteTimestamp,
-                Optional<Throwable> failure)
-        {
+                Optional<Throwable> failure) {
             requireNonNull(response, "response is null");
             requireNonNull(failure, "failure is null");
             this.response = response;
@@ -109,54 +111,54 @@ public interface HttpClientLogger
             this.failureCause = failure;
         }
 
-        public static ResponseInfo from(Optional<Response> response, long responseSize, long responseBeginTimestamp, long responseCompleteTimestamp)
-        {
+        public static ResponseInfo from(
+                Optional<Response> response,
+                long responseSize,
+                long responseBeginTimestamp,
+                long responseCompleteTimestamp) {
             requireNonNull(response, "response is null");
             checkArgument(responseSize >= 0, "responseSize is negative");
-            return new ResponseInfo(response, responseSize, responseBeginTimestamp, responseCompleteTimestamp, Optional.empty());
+            return new ResponseInfo(
+                    response, responseSize, responseBeginTimestamp, responseCompleteTimestamp, Optional.empty());
         }
 
-        public static ResponseInfo failed(Optional<Response> response, Optional<Throwable> failureCause)
-        {
+        public static ResponseInfo failed(Optional<Response> response, Optional<Throwable> failureCause) {
             requireNonNull(response, "response is null");
             requireNonNull(failureCause, "failureCause is null");
             return new ResponseInfo(response, 0L, 0L, System.nanoTime(), failureCause);
         }
 
-        public static ResponseInfo failed(Optional<Response> response, Optional<Throwable> failureCause, long responseBeginTimestamp, long responseCompleteTimestamp)
-        {
+        public static ResponseInfo failed(
+                Optional<Response> response,
+                Optional<Throwable> failureCause,
+                long responseBeginTimestamp,
+                long responseCompleteTimestamp) {
             requireNonNull(response, "response is null");
             requireNonNull(failureCause, "failureCause is null");
             return new ResponseInfo(response, 0L, responseBeginTimestamp, responseCompleteTimestamp, failureCause);
         }
 
-        public Optional<Response> getResponse()
-        {
+        public Optional<Response> getResponse() {
             return response;
         }
 
-        public long getResponseSize()
-        {
+        public long getResponseSize() {
             return responseSize;
         }
 
-        public Optional<Throwable> getFailureCause()
-        {
+        public Optional<Throwable> getFailureCause() {
             return failureCause;
         }
 
-        public long getResponseTimestampMillis()
-        {
+        public long getResponseTimestampMillis() {
             return responseTimestampMillis;
         }
 
-        public long getResponseBeginTimestamp()
-        {
+        public long getResponseBeginTimestamp() {
             return responseBeginTimestamp;
         }
 
-        public long getResponseCompleteTimestamp()
-        {
+        public long getResponseCompleteTimestamp() {
             return responseCompleteTimestamp;
         }
     }

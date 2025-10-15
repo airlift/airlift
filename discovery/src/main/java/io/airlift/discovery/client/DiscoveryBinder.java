@@ -15,6 +15,14 @@
  */
 package io.airlift.discovery.client;
 
+import static com.google.inject.multibindings.MapBinder.newMapBinder;
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
+import static io.airlift.configuration.ConfigBinder.configBinder;
+import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
+import static io.airlift.discovery.client.ServiceTypes.serviceType;
+import static java.util.Objects.requireNonNull;
+import static java.util.UUID.randomUUID;
+
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.inject.Binder;
 import com.google.inject.Inject;
@@ -26,22 +34,11 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
 import io.airlift.discovery.client.ServiceAnnouncement.ServiceAnnouncementBuilder;
-
 import java.lang.annotation.Annotation;
 import java.util.Map;
 
-import static com.google.inject.multibindings.MapBinder.newMapBinder;
-import static com.google.inject.multibindings.Multibinder.newSetBinder;
-import static io.airlift.configuration.ConfigBinder.configBinder;
-import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
-import static io.airlift.discovery.client.ServiceTypes.serviceType;
-import static java.util.Objects.requireNonNull;
-import static java.util.UUID.randomUUID;
-
-public class DiscoveryBinder
-{
-    public static DiscoveryBinder discoveryBinder(Binder binder)
-    {
+public class DiscoveryBinder {
+    public static DiscoveryBinder discoveryBinder(Binder binder) {
         requireNonNull(binder, "binder is null");
         return new DiscoveryBinder(binder);
     }
@@ -50,82 +47,76 @@ public class DiscoveryBinder
     private final Multibinder<ServiceAnnouncement> serviceAnnouncementBinder;
     private final Binder binder;
 
-    protected DiscoveryBinder(Binder binder)
-    {
+    protected DiscoveryBinder(Binder binder) {
         requireNonNull(binder, "binder is null");
         this.binder = binder.skipSources(getClass());
         this.serviceSelectorBinder = newSetBinder(binder, ServiceSelector.class);
         this.serviceAnnouncementBinder = newSetBinder(binder, ServiceAnnouncement.class);
     }
 
-    public void bindSelector(String type)
-    {
+    public void bindSelector(String type) {
         requireNonNull(type, "type is null");
         bindSelector(serviceType(type));
     }
 
-    public void bindSelector(ServiceType serviceType)
-    {
+    public void bindSelector(ServiceType serviceType) {
         requireNonNull(serviceType, "serviceType is null");
 
         configBinder(binder).bindConfig(ServiceSelectorConfig.class, serviceType, "discovery." + serviceType.value());
 
         Key<ServiceSelector> key = Key.get(ServiceSelector.class, serviceType);
-        binder.bind(key).toProvider(new ServiceSelectorProvider(serviceType.value())).in(Scopes.SINGLETON);
+        binder.bind(key)
+                .toProvider(new ServiceSelectorProvider(serviceType.value()))
+                .in(Scopes.SINGLETON);
         serviceSelectorBinder.addBinding().to(key).in(Scopes.SINGLETON);
     }
 
-    public void bindServiceAnnouncement(ServiceAnnouncement announcement)
-    {
+    public void bindServiceAnnouncement(ServiceAnnouncement announcement) {
         requireNonNull(announcement, "announcement is null");
         serviceAnnouncementBinder.addBinding().toInstance(announcement);
     }
 
-    public void bindServiceAnnouncement(Provider<ServiceAnnouncement> announcementProvider)
-    {
+    public void bindServiceAnnouncement(Provider<ServiceAnnouncement> announcementProvider) {
         requireNonNull(announcementProvider, "announcementProvider is null");
         serviceAnnouncementBinder.addBinding().toProvider(announcementProvider);
     }
 
-    public <T extends ServiceAnnouncement> void bindServiceAnnouncement(Class<? extends Provider<T>> announcementProviderClass)
-    {
+    public <T extends ServiceAnnouncement> void bindServiceAnnouncement(
+            Class<? extends Provider<T>> announcementProviderClass) {
         requireNonNull(announcementProviderClass, "announcementProviderClass is null");
         serviceAnnouncementBinder.addBinding().toProvider(announcementProviderClass);
     }
 
-    public HttpAnnouncementBindingBuilder bindHttpAnnouncement(String type)
-    {
+    public HttpAnnouncementBindingBuilder bindHttpAnnouncement(String type) {
         HttpAnnouncement annotation = new HttpAnnouncementImpl(type + "." + randomUUID());
         MapBinder<String, String> propertiesBinder = newMapBinder(binder, String.class, String.class, annotation);
         bindServiceAnnouncement(new HttpAnnouncementProvider(type, annotation));
         return new HttpAnnouncementBindingBuilder(propertiesBinder);
     }
 
-    public void bindHttpSelector(String type)
-    {
+    public void bindHttpSelector(String type) {
         requireNonNull(type, "type is null");
         bindHttpSelector(serviceType(type));
     }
 
-    public void bindHttpSelector(ServiceType serviceType)
-    {
+    public void bindHttpSelector(ServiceType serviceType) {
         requireNonNull(serviceType, "serviceType is null");
         bindSelector(serviceType);
-        binder.bind(HttpServiceSelector.class).annotatedWith(serviceType).toProvider(new HttpServiceSelectorProvider(serviceType.value())).in(Scopes.SINGLETON);
+        binder.bind(HttpServiceSelector.class)
+                .annotatedWith(serviceType)
+                .toProvider(new HttpServiceSelectorProvider(serviceType.value()))
+                .in(Scopes.SINGLETON);
     }
 
-    public static class HttpAnnouncementBindingBuilder
-    {
+    public static class HttpAnnouncementBindingBuilder {
         private final MapBinder<String, String> propertiesBinder;
 
-        public HttpAnnouncementBindingBuilder(MapBinder<String, String> propertiesBinder)
-        {
+        public HttpAnnouncementBindingBuilder(MapBinder<String, String> propertiesBinder) {
             this.propertiesBinder = requireNonNull(propertiesBinder, "propertiesBinder is null");
         }
 
         @CanIgnoreReturnValue
-        public HttpAnnouncementBindingBuilder addProperty(String key, String value)
-        {
+        public HttpAnnouncementBindingBuilder addProperty(String key, String value) {
             requireNonNull(key, "key is null");
             requireNonNull(value, "value is null");
             propertiesBinder.addBinding(key).toInstance(value);
@@ -133,15 +124,13 @@ public class DiscoveryBinder
         }
 
         @CanIgnoreReturnValue
-        public HttpAnnouncementBindingBuilder addProperties(Map<String, String> properties)
-        {
+        public HttpAnnouncementBindingBuilder addProperties(Map<String, String> properties) {
             properties.forEach(this::addProperty);
             return this;
         }
 
         @CanIgnoreReturnValue
-        public HttpAnnouncementBindingBuilder bindPropertyProvider(String key, Provider<String> provider)
-        {
+        public HttpAnnouncementBindingBuilder bindPropertyProvider(String key, Provider<String> provider) {
             requireNonNull(key, "key is null");
             requireNonNull(provider, "provider is null");
             propertiesBinder.addBinding(key).toProvider(provider);
@@ -149,14 +138,14 @@ public class DiscoveryBinder
         }
 
         @CanIgnoreReturnValue
-        public HttpAnnouncementBindingBuilder bindPropertyProvider(String key, Class<? extends Provider<String>> providerType)
-        {
+        public HttpAnnouncementBindingBuilder bindPropertyProvider(
+                String key, Class<? extends Provider<String>> providerType) {
             return bindPropertyProvider(key, Key.get(providerType));
         }
 
         @CanIgnoreReturnValue
-        public HttpAnnouncementBindingBuilder bindPropertyProvider(String key, Key<? extends Provider<String>> providerKey)
-        {
+        public HttpAnnouncementBindingBuilder bindPropertyProvider(
+                String key, Key<? extends Provider<String>> providerKey) {
             requireNonNull(key, "key is null");
             requireNonNull(providerKey, "providerKey is null");
             propertiesBinder.addBinding(key).toProvider(providerKey);
@@ -164,45 +153,41 @@ public class DiscoveryBinder
         }
     }
 
-    static class HttpAnnouncementProvider
-            implements Provider<ServiceAnnouncement>
-    {
+    static class HttpAnnouncementProvider implements Provider<ServiceAnnouncement> {
         private final String type;
         private final Annotation annotation;
         private Injector injector;
         private AnnouncementHttpServerInfo httpServerInfo;
 
-        public HttpAnnouncementProvider(String type, Annotation annotation)
-        {
+        public HttpAnnouncementProvider(String type, Annotation annotation) {
             this.type = type;
             this.annotation = annotation;
         }
 
         @Inject
-        public void setInjector(Injector injector)
-        {
+        public void setInjector(Injector injector) {
             this.injector = injector;
         }
 
         @Inject
-        public void setAnnouncementHttpServerInfo(AnnouncementHttpServerInfo httpServerInfo)
-        {
+        public void setAnnouncementHttpServerInfo(AnnouncementHttpServerInfo httpServerInfo) {
             this.httpServerInfo = httpServerInfo;
         }
 
         @Override
-        public ServiceAnnouncement get()
-        {
+        public ServiceAnnouncement get() {
             ServiceAnnouncementBuilder builder = serviceAnnouncement(type);
             builder.addProperties(injector.getInstance(Key.get(new TypeLiteral<Map<String, String>>() {}, annotation)));
 
             if (httpServerInfo.getHttpUri() != null) {
                 builder.addProperty("http", httpServerInfo.getHttpUri().toString());
-                builder.addProperty("http-external", httpServerInfo.getHttpExternalUri().toString());
+                builder.addProperty(
+                        "http-external", httpServerInfo.getHttpExternalUri().toString());
             }
             if (httpServerInfo.getHttpsUri() != null) {
                 builder.addProperty("https", httpServerInfo.getHttpsUri().toString());
-                builder.addProperty("https-external", httpServerInfo.getHttpsExternalUri().toString());
+                builder.addProperty(
+                        "https-external", httpServerInfo.getHttpsExternalUri().toString());
             }
             return builder.build();
         }

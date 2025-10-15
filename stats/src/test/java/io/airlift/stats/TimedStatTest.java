@@ -15,7 +15,10 @@
  */
 package io.airlift.stats;
 
-import org.junit.jupiter.api.Test;
+import static java.lang.Math.min;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -23,20 +26,14 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
-
-import static java.lang.Math.min;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
+import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("deprecation")
-public class TimedStatTest
-{
+public class TimedStatTest {
     private static final int VALUES = 1000;
 
     @Test
-    public void testBasic()
-    {
+    public void testBasic() {
         TimedStat stat = new TimedStat();
         List<Double> values = new ArrayList<>(VALUES);
         for (int i = 0; i < VALUES; i++) {
@@ -63,8 +60,7 @@ public class TimedStatTest
     }
 
     @Test
-    public void testEmpty()
-    {
+    public void testEmpty() {
         TimedStat stat = new TimedStat();
         assertThat(Double.isNaN(stat.getMin())).isTrue();
         assertThat(Double.isNaN(stat.getMax())).isTrue();
@@ -77,9 +73,7 @@ public class TimedStatTest
     }
 
     @Test
-    public void time()
-            throws Exception
-    {
+    public void time() throws Exception {
         TimedStat stat = new TimedStat();
         stat.time((Callable<Void>) () -> {
             LockSupport.parkNanos(SECONDS.toNanos(10));
@@ -92,33 +86,28 @@ public class TimedStatTest
     }
 
     @Test
-    public void illegalParameters()
-    {
+    public void illegalParameters() {
         TimedStat stat = new TimedStat();
         try {
             stat.getPercentile(-1);
             fail("Expected IllegalArgumentException");
-        }
-        catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             // ok
         }
         try {
             stat.getPercentile(1.0001);
             fail("Expected IllegalArgumentException");
-        }
-        catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             // ok
         }
     }
 
-    private void assertPercentile(String name, double value, List<Double> values, double percentile)
-    {
+    private void assertPercentile(String name, double value, List<Double> values, double percentile) {
         int index = (int) (values.size() * percentile);
         assertBounded(name, value, values.get(index - 1), values.get(min(index + 1, values.size() - 1)));
     }
 
-    private void assertBounded(String name, double value, double minValue, double maxValue)
-    {
+    private void assertBounded(String name, double value, double minValue, double maxValue) {
         if (value >= minValue && value <= maxValue) {
             return;
         }

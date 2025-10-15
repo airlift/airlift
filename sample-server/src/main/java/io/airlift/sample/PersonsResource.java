@@ -15,6 +15,9 @@
  */
 package io.airlift.sample;
 
+import static io.airlift.sample.PersonRepresentation.from;
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.inject.Inject;
@@ -24,17 +27,12 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
-import static io.airlift.sample.PersonRepresentation.from;
-import static java.util.Objects.requireNonNull;
-
 @Path("/v1/person")
-public class PersonsResource
-{
+public class PersonsResource {
     private final PersonStore store;
 
     @Inject
-    public PersonsResource(PersonStore store)
-    {
+    public PersonsResource(PersonStore store) {
         requireNonNull(store, "store must not be null");
 
         this.store = store;
@@ -42,8 +40,7 @@ public class PersonsResource
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public Response listAll()
-    {
+    public Response listAll() {
         Builder<PersonRepresentation> builder = ImmutableList.builder();
         for (Person person : store.getAll()) {
             builder.add(from(person, null));

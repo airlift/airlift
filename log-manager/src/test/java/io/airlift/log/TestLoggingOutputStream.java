@@ -13,9 +13,9 @@
  */
 package io.airlift.log;
 
-import com.google.common.collect.ImmutableMap;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.collect.ImmutableMap;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,15 +23,13 @@ import java.util.Map;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
+import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class TestLoggingOutputStream
-{
+public class TestLoggingOutputStream {
     @Test
-    public void testStripTrailingNewline()
-    {
-        for (Map.Entry<String, String> testCase : testStripTrailingNewlineDataProvider().entrySet()) {
+    public void testStripTrailingNewline() {
+        for (Map.Entry<String, String> testCase :
+                testStripTrailingNewlineDataProvider().entrySet()) {
             String printed = testCase.getKey();
             String logged = testCase.getValue();
             MockHandler handler = new MockHandler();
@@ -49,8 +47,7 @@ public class TestLoggingOutputStream
         }
     }
 
-    public static Map<String, String> testStripTrailingNewlineDataProvider()
-    {
+    public static Map<String, String> testStripTrailingNewlineDataProvider() {
         return ImmutableMap.of(
                 "Greeting from Warsaw!", "Greeting from Warsaw!",
                 "many new lines:\n\n", "many new lines:",
@@ -58,26 +55,21 @@ public class TestLoggingOutputStream
                 "intra \t  n \n rn \r\n whitespace", "intra \t  n \n rn \r\n whitespace");
     }
 
-    private void assertLog(LogRecord record, Level level, String message)
-    {
+    private void assertLog(LogRecord record, Level level, String message) {
         assertThat(record.getLevel()).isEqualTo(level);
         assertThat(record.getMessage()).isEqualTo(message);
         assertThat(record.getThrown()).isNull();
     }
 
-    private static class MockHandler
-            extends Handler
-    {
+    private static class MockHandler extends Handler {
         private final List<LogRecord> records = new ArrayList<>();
 
-        private MockHandler()
-        {
+        private MockHandler() {
             setLevel(Level.ALL);
         }
 
         @Override
-        public void publish(LogRecord record)
-        {
+        public void publish(LogRecord record) {
             records.add(record);
         }
 
@@ -87,16 +79,12 @@ public class TestLoggingOutputStream
         @Override
         public void close() {}
 
-        public LogRecord takeRecord()
-        {
-            assertThat(records)
-                    .as("No messages logged")
-                    .isNotEmpty();
+        public LogRecord takeRecord() {
+            assertThat(records).as("No messages logged").isNotEmpty();
             return records.remove(0);
         }
 
-        public boolean isEmpty()
-        {
+        public boolean isEmpty() {
             return records.isEmpty();
         }
     }

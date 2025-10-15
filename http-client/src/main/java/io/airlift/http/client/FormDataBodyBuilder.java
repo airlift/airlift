@@ -4,12 +4,10 @@ import static com.google.common.net.UrlEscapers.urlFormParameterEscaper;
 import static io.airlift.http.client.StaticBodyGenerator.createStaticBodyGenerator;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-public class FormDataBodyBuilder
-{
+public class FormDataBodyBuilder {
     private final StringBuilder buffer = new StringBuilder();
 
-    public FormDataBodyBuilder addField(String name, String value)
-    {
+    public FormDataBodyBuilder addField(String name, String value) {
         if (buffer.length() > 0) {
             buffer.append("&");
         }
@@ -19,8 +17,7 @@ public class FormDataBodyBuilder
         return this;
     }
 
-    public StaticBodyGenerator build()
-    {
+    public StaticBodyGenerator build() {
         return createStaticBodyGenerator(buffer.toString(), UTF_8);
     }
 }

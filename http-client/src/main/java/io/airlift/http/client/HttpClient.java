@@ -16,14 +16,10 @@
 package io.airlift.http.client;
 
 import com.google.common.util.concurrent.ListenableFuture;
-
 import java.io.Closeable;
 
-public interface HttpClient
-        extends Closeable
-{
-    <T, E extends Exception> T execute(Request request, ResponseHandler<T, E> responseHandler)
-            throws E;
+public interface HttpClient extends Closeable {
+    <T, E extends Exception> T execute(Request request, ResponseHandler<T, E> responseHandler) throws E;
 
     <T, E extends Exception> HttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler);
 
@@ -36,9 +32,7 @@ public interface HttpClient
 
     boolean isClosed();
 
-    interface HttpResponseFuture<T>
-            extends ListenableFuture<T>
-    {
+    interface HttpResponseFuture<T> extends ListenableFuture<T> {
         /**
          * State for diagnostics.  Do not rely on values from this method.
          */

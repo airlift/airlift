@@ -13,30 +13,27 @@
  */
 package io.airlift.jaxrs;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static jakarta.ws.rs.core.Response.status;
+import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.airlift.units.Duration;
 import jakarta.ws.rs.container.AsyncResponse;
 import jakarta.ws.rs.core.Response;
-
 import java.lang.ref.WeakReference;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static jakarta.ws.rs.core.Response.status;
-import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
-public class AsyncResponseHandler
-{
+public class AsyncResponseHandler {
     private final AsyncResponse asyncResponse;
     private final WeakReference<Future<?>> futureResponseReference;
 
-    private AsyncResponseHandler(AsyncResponse asyncResponse, ListenableFuture<?> futureResponse)
-    {
+    private AsyncResponseHandler(AsyncResponse asyncResponse, ListenableFuture<?> futureResponse) {
         this.asyncResponse = requireNonNull(asyncResponse, "asyncResponse is null");
         // the jaxrs implementation can hold on to the async timeout for a long time, and
         // the future can reference large expensive objects.  Since we are only interested
@@ -44,27 +41,25 @@ public class AsyncResponseHandler
         this.futureResponseReference = new WeakReference<>(requireNonNull(futureResponse, "futureResponse is null"));
     }
 
-    public static AsyncResponseHandler bindAsyncResponse(AsyncResponse asyncResponse, ListenableFuture<?> futureResponse, Executor httpResponseExecutor)
-    {
+    public static AsyncResponseHandler bindAsyncResponse(
+            AsyncResponse asyncResponse, ListenableFuture<?> futureResponse, Executor httpResponseExecutor) {
         Futures.addCallback(futureResponse, toFutureCallback(asyncResponse), httpResponseExecutor);
         return new AsyncResponseHandler(asyncResponse, futureResponse);
     }
 
-    public AsyncResponseHandler withTimeout(Duration timeout)
-    {
-        return withTimeout(timeout,
+    public AsyncResponseHandler withTimeout(Duration timeout) {
+        return withTimeout(
+                timeout,
                 status(Response.Status.SERVICE_UNAVAILABLE)
                         .entity("Timed out after waiting for " + timeout.convertToMostSuccinctTimeUnit())
                         .build());
     }
 
-    public AsyncResponseHandler withTimeout(Duration timeout, Response timeoutResponse)
-    {
+    public AsyncResponseHandler withTimeout(Duration timeout, Response timeoutResponse) {
         return withTimeout(timeout, () -> timeoutResponse);
     }
 
-    public AsyncResponseHandler withTimeout(Duration timeout, Supplier<Response> timeoutResponse)
-    {
+    public AsyncResponseHandler withTimeout(Duration timeout, Supplier<Response> timeoutResponse) {
         asyncResponse.setTimeoutHandler(asyncResponse -> {
             asyncResponse.resume(timeoutResponse.get());
             cancelFuture();
@@ -73,8 +68,7 @@ public class AsyncResponseHandler
         return this;
     }
 
-    private void cancelFuture()
-    {
+    private void cancelFuture() {
         // Cancel the original future if it still exists
         Future<?> futureResponse = futureResponseReference.get();
         if (futureResponse != null) {
@@ -82,26 +76,23 @@ public class AsyncResponseHandler
                 // Do not interrupt the future if it is running. JAX-RS uses
                 // the calling thread to write the response to the wire.
                 futureResponse.cancel(false);
-            }
-            catch (Exception ignored) {
+            } catch (Exception ignored) {
             }
         }
     }
 
-    private static <T> FutureCallback<T> toFutureCallback(AsyncResponse asyncResponse)
-    {
-        return new FutureCallback<T>()
-        {
+    private static <T> FutureCallback<T> toFutureCallback(AsyncResponse asyncResponse) {
+        return new FutureCallback<T>() {
             @Override
-            public void onSuccess(T value)
-            {
-                checkArgument(!(value instanceof Response.ResponseBuilder), "Value is a ResponseBuilder. Did you forget to call build?");
+            public void onSuccess(T value) {
+                checkArgument(
+                        !(value instanceof Response.ResponseBuilder),
+                        "Value is a ResponseBuilder. Did you forget to call build?");
                 asyncResponse.resume(value);
             }
 
             @Override
-            public void onFailure(Throwable t)
-            {
+            public void onFailure(Throwable t) {
                 asyncResponse.resume(t);
             }
         };

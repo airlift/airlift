@@ -15,20 +15,18 @@
  */
 package io.airlift.json;
 
+import static io.airlift.json.JsonCodecBinder.jsonCodecBinder;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
 import org.junit.jupiter.api.Test;
 
-import static io.airlift.json.JsonCodecBinder.jsonCodecBinder;
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class TestJsonCodecBinder
-{
+public class TestJsonCodecBinder {
     @Test
-    public void ignoresRepeatedBinding()
-    {
+    public void ignoresRepeatedBinding() {
         Injector injector = Guice.createInjector(binder -> {
             jsonCodecBinder(binder).bindJsonCodec(Integer.class);
             jsonCodecBinder(binder).bindJsonCodec(Integer.class);
@@ -39,18 +37,15 @@ public class TestJsonCodecBinder
         assertThat(injector.getInstance(Dummy.class).getCodec()).isNotNull();
     }
 
-    private static class Dummy
-    {
+    private static class Dummy {
         private final JsonCodec<Integer> codec;
 
         @Inject
-        public Dummy(JsonCodec<Integer> codec)
-        {
+        public Dummy(JsonCodec<Integer> codec) {
             this.codec = codec;
         }
 
-        public JsonCodec<Integer> getCodec()
-        {
+        public JsonCodec<Integer> getCodec() {
             return codec;
         }
     }

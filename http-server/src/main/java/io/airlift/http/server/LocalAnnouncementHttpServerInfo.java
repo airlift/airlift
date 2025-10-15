@@ -17,41 +17,33 @@ package io.airlift.http.server;
 
 import com.google.inject.Inject;
 import io.airlift.discovery.client.AnnouncementHttpServerInfo;
-
 import java.net.URI;
 
-public class LocalAnnouncementHttpServerInfo
-        implements AnnouncementHttpServerInfo
-{
+public class LocalAnnouncementHttpServerInfo implements AnnouncementHttpServerInfo {
     private final HttpServerInfo httpServerInfo;
 
     @Inject
-    public LocalAnnouncementHttpServerInfo(HttpServerInfo httpServerInfo)
-    {
+    public LocalAnnouncementHttpServerInfo(HttpServerInfo httpServerInfo) {
         this.httpServerInfo = httpServerInfo;
     }
 
     @Override
-    public URI getHttpUri()
-    {
+    public URI getHttpUri() {
         return httpServerInfo.getHttpUri();
     }
 
     @Override
-    public URI getHttpExternalUri()
-    {
+    public URI getHttpExternalUri() {
         return httpServerInfo.getHttpExternalUri();
     }
 
     @Override
-    public URI getHttpsUri()
-    {
+    public URI getHttpsUri() {
         return httpServerInfo.getHttpsUri();
     }
 
     @Override
-    public URI getHttpsExternalUri()
-    {
+    public URI getHttpsExternalUri() {
         return httpServerInfo.getHttpsExternalUri();
     }
 }

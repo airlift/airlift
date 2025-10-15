@@ -1,38 +1,30 @@
 package io.airlift.http.client;
 
-import com.google.common.net.HostAndPort;
-import org.junit.jupiter.api.Test;
-
-import java.net.URI;
-
 import static io.airlift.http.client.HttpUriBuilder.uriBuilder;
 import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class TestHttpUriBuilder
-{
+import com.google.common.net.HostAndPort;
+import java.net.URI;
+import org.junit.jupiter.api.Test;
+
+public class TestHttpUriBuilder {
     @Test
-    public void testCreateFromUri()
-    {
+    public void testCreateFromUri() {
         URI original = URI.create("http://www.example.com:8081/a%20/%C3%A5?k=1&k=2&%C3%A5=3");
         assertThat(uriBuilderFrom(original).build()).isEqualTo(original);
     }
 
     @Test
-    public void testBasic()
-    {
-        URI uri = uriBuilder()
-                .scheme("http")
-                .host("www.example.com")
-                .build();
+    public void testBasic() {
+        URI uri = uriBuilder().scheme("http").host("www.example.com").build();
 
         assertThat(uri.toASCIIString()).isEqualTo("http://www.example.com");
     }
 
     @Test
-    public void testWithPath()
-    {
+    public void testWithPath() {
         URI uri = uriBuilder()
                 .scheme("http")
                 .host("www.example.com")
@@ -43,8 +35,7 @@ public class TestHttpUriBuilder
     }
 
     @Test
-    public void testReplacePathWithRelative()
-    {
+    public void testReplacePathWithRelative() {
         URI uri = uriBuilder()
                 .scheme("http")
                 .host("www.example.com")
@@ -55,8 +46,7 @@ public class TestHttpUriBuilder
     }
 
     @Test
-    public void testAppendToDefaultPath()
-    {
+    public void testAppendToDefaultPath() {
         URI uri = uriBuilder()
                 .scheme("http")
                 .host("www.example.com")
@@ -67,8 +57,7 @@ public class TestHttpUriBuilder
     }
 
     @Test
-    public void testAppendRelativePathToDefault()
-    {
+    public void testAppendRelativePathToDefault() {
         URI uri = uriBuilder()
                 .scheme("http")
                 .host("www.example.com")
@@ -79,8 +68,7 @@ public class TestHttpUriBuilder
     }
 
     @Test
-    public void testAppendAbsolutePath()
-    {
+    public void testAppendAbsolutePath() {
         URI uri = uriBuilder()
                 .scheme("http")
                 .host("www.example.com")
@@ -92,8 +80,7 @@ public class TestHttpUriBuilder
     }
 
     @Test
-    public void testAppendRelativePath()
-    {
+    public void testAppendRelativePath() {
         URI uri = uriBuilder()
                 .scheme("http")
                 .host("www.example.com")
@@ -105,8 +92,7 @@ public class TestHttpUriBuilder
     }
 
     @Test
-    public void testAppendPathElidesSlashes()
-    {
+    public void testAppendPathElidesSlashes() {
         URI uri = uriBuilder()
                 .scheme("http")
                 .host("www.example.com")
@@ -118,8 +104,7 @@ public class TestHttpUriBuilder
     }
 
     @Test
-    public void testDoesNotStripTrailingSlash()
-    {
+    public void testDoesNotStripTrailingSlash() {
         URI uri = uriBuilder()
                 .scheme("http")
                 .host("www.example.com")
@@ -130,8 +115,7 @@ public class TestHttpUriBuilder
     }
 
     @Test
-    public void testFull()
-    {
+    public void testFull() {
         URI uri = uriBuilder()
                 .scheme("http")
                 .host("www.example.com")
@@ -144,8 +128,7 @@ public class TestHttpUriBuilder
     }
 
     @Test
-    public void testAddParameter()
-    {
+    public void testAddParameter() {
         URI uri = uriBuilder()
                 .scheme("http")
                 .host("www.example.com")
@@ -160,8 +143,7 @@ public class TestHttpUriBuilder
     }
 
     @Test
-    public void testAddParameterMultivalued()
-    {
+    public void testAddParameterMultivalued() {
         URI uri = uriBuilder()
                 .scheme("http")
                 .host("www.example.com")
@@ -173,8 +155,7 @@ public class TestHttpUriBuilder
     }
 
     @Test
-    public void testAddEmptyParameter()
-    {
+    public void testAddEmptyParameter() {
         URI uri = uriBuilder()
                 .scheme("http")
                 .host("www.example.com")
@@ -185,8 +166,7 @@ public class TestHttpUriBuilder
     }
 
     @Test
-    public void testAddMultipleEmptyParameters()
-    {
+    public void testAddMultipleEmptyParameters() {
         URI uri = uriBuilder()
                 .scheme("http")
                 .host("www.example.com")
@@ -198,8 +178,7 @@ public class TestHttpUriBuilder
     }
 
     @Test
-    public void testAddMixedEmptyAndNonEmptyParameters()
-    {
+    public void testAddMixedEmptyAndNonEmptyParameters() {
         URI uri = uriBuilder()
                 .scheme("http")
                 .host("www.example.com")
@@ -212,8 +191,7 @@ public class TestHttpUriBuilder
     }
 
     @Test
-    public void testReplaceParameters()
-    {
+    public void testReplaceParameters() {
         URI uri = uriBuilderFrom(URI.create("http://www.example.com:8081/?k1=1&k1=2&k2=3"))
                 .replaceParameter("k1", "4")
                 .build();
@@ -222,8 +200,7 @@ public class TestHttpUriBuilder
     }
 
     @Test
-    public void testReplaceParameterMultivalued()
-    {
+    public void testReplaceParameterMultivalued() {
         URI uri = uriBuilderFrom(URI.create("http://www.example.com/?k1=1&k1=2&k2=3"))
                 .replaceParameter("k1", "a", "b", "c")
                 .build();
@@ -232,8 +209,7 @@ public class TestHttpUriBuilder
     }
 
     @Test
-    public void testReplacePort()
-    {
+    public void testReplacePort() {
         URI uri = uriBuilderFrom(URI.create("http://www.example.com:8081/"))
                 .port(801)
                 .build();
@@ -242,17 +218,14 @@ public class TestHttpUriBuilder
     }
 
     @Test
-    public void testDefaultPort()
-    {
+    public void testDefaultPort() {
         URI uri = uriBuilderFrom(URI.create("http://www.example.com:8081"))
                 .defaultPort()
                 .build();
 
         assertThat(uri.toASCIIString()).isEqualTo("http://www.example.com");
 
-        uri = uriBuilderFrom(URI.create("http://www.example.com:8081"))
-                .port(80)
-                .build();
+        uri = uriBuilderFrom(URI.create("http://www.example.com:8081")).port(80).build();
 
         assertThat(uri.toASCIIString()).isEqualTo("http://www.example.com");
 
@@ -264,8 +237,7 @@ public class TestHttpUriBuilder
     }
 
     @Test
-    public void testHostWithIpv6()
-    {
+    public void testHostWithIpv6() {
         URI uri = uriBuilder()
                 .scheme("http")
                 .host("FEDC:BA98:7654:3210:FEDC:BA98:7654:3210")
@@ -277,23 +249,21 @@ public class TestHttpUriBuilder
     }
 
     @Test
-    public void testHostWithBracketedIpv6()
-    {
+    public void testHostWithBracketedIpv6() {
         assertThatThrownBy(() -> uriBuilder()
-                .scheme("http")
-                .host("[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]")
-                .port(8081)
-                .replacePath("/a/b")
-                .build())
+                        .scheme("http")
+                        .host("[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]")
+                        .port(8081)
+                        .replacePath("/a/b")
+                        .build())
                 .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContaining("host starts with a bracket");
+                .hasMessageContaining("host starts with a bracket");
 
         // TODO: assertThat(uri.toASCIIString()).isEqualTo("http://[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]:8081/a/b");
     }
 
     @Test
-    public void testHostAndPortWithHostPort()
-    {
+    public void testHostAndPortWithHostPort() {
         URI uri = uriBuilder()
                 .scheme("http")
                 .port(8888)
@@ -304,8 +274,7 @@ public class TestHttpUriBuilder
     }
 
     @Test
-    public void testHostAndPortWithHostOnly()
-    {
+    public void testHostAndPortWithHostOnly() {
         URI uri = uriBuilder()
                 .scheme("http")
                 .port(8888)
@@ -316,8 +285,7 @@ public class TestHttpUriBuilder
     }
 
     @Test
-    public void testHostAndPortWithBracketedIpv6()
-    {
+    public void testHostAndPortWithBracketedIpv6() {
         URI uri = uriBuilder()
                 .scheme("http")
                 .port(8888)
@@ -328,8 +296,7 @@ public class TestHttpUriBuilder
     }
 
     @Test
-    public void testHostAndPortWithUnbracketedIpv6()
-    {
+    public void testHostAndPortWithUnbracketedIpv6() {
         URI uri = uriBuilder()
                 .scheme("http")
                 .port(8888)
@@ -340,8 +307,7 @@ public class TestHttpUriBuilder
     }
 
     @Test
-    public void testHostAndPortWithUnbracketedIpv6String()
-    {
+    public void testHostAndPortWithUnbracketedIpv6String() {
         URI uri = uriBuilder()
                 .scheme("http")
                 .port(8888)
@@ -352,20 +318,19 @@ public class TestHttpUriBuilder
     }
 
     @Test
-    public void testEncodesPath()
-    {
+    public void testEncodesPath() {
         URI uri = uriBuilder()
                 .scheme("http")
                 .host("www.example.com")
                 .replacePath("/`#%^{}|[]<>?áéíóú")
                 .build();
 
-        assertThat(uri.toASCIIString()).isEqualTo("http://www.example.com/%60%23%25%5E%7B%7D%7C%5B%5D%3C%3E%3F%C3%A1%C3%A9%C3%AD%C3%B3%C3%BA");
+        assertThat(uri.toASCIIString())
+                .isEqualTo("http://www.example.com/%60%23%25%5E%7B%7D%7C%5B%5D%3C%3E%3F%C3%A1%C3%A9%C3%AD%C3%B3%C3%BA");
     }
 
     @Test
-    public void testVerifyOnBuild()
-    {
+    public void testVerifyOnBuild() {
         assertThatThrownBy(() -> uriBuilder().build())
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("scheme has not been set");
@@ -376,8 +341,7 @@ public class TestHttpUriBuilder
     }
 
     @Test
-    public void testVerifyOnCreate()
-    {
+    public void testVerifyOnCreate() {
         assertThatThrownBy(() -> uriBuilderFrom(URI.create("./foo")))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("URI does not have a scheme: ./foo");
@@ -389,8 +353,7 @@ public class TestHttpUriBuilder
     }
 
     @Test
-    public void testQueryParametersNoPath()
-    {
+    public void testQueryParametersNoPath() {
         URI uri = uriBuilder()
                 .scheme("http")
                 .host("www.example.com")
@@ -401,8 +364,7 @@ public class TestHttpUriBuilder
     }
 
     @Test
-    public void testEncodesQueryParameters()
-    {
+    public void testEncodesQueryParameters() {
         URI uri = uriBuilder()
                 .scheme("http")
                 .host("www.example.com")
@@ -413,8 +375,7 @@ public class TestHttpUriBuilder
     }
 
     @Test
-    public void testAcceptsHttpAndHttpScheme()
-    {
+    public void testAcceptsHttpAndHttpScheme() {
         uriBuilderFrom(URI.create("http://example.com"));
         uriBuilderFrom(URI.create("https://example.com"));
         uriBuilderFrom(URI.create("HTTP://example.com"));

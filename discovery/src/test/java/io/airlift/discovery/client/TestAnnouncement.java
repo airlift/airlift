@@ -15,14 +15,6 @@
  */
 package io.airlift.discovery.client;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.io.Resources;
-import io.airlift.json.JsonCodec;
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-import java.util.Map;
-
 import static com.google.common.collect.MoreCollectors.onlyElement;
 import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
 import static io.airlift.json.JsonCodec.jsonCodec;
@@ -31,17 +23,25 @@ import static io.airlift.testing.EquivalenceTester.equivalenceTester;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TestAnnouncement
-{
+import com.google.common.collect.ImmutableSet;
+import com.google.common.io.Resources;
+import io.airlift.json.JsonCodec;
+import java.util.List;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+
+public class TestAnnouncement {
     private final JsonCodec<Announcement> announcementCodec = jsonCodec(Announcement.class);
     private final JsonCodec<Map<String, Object>> objectCodec = mapJsonCodec(String.class, Object.class);
 
     @Test
-    public void testJsonEncode()
-            throws Exception
-    {
-        Announcement announcement = new Announcement("environment", "node", "pool", "location", ImmutableSet.of(
-                serviceAnnouncement("foo")
+    public void testJsonEncode() throws Exception {
+        Announcement announcement = new Announcement(
+                "environment",
+                "node",
+                "pool",
+                "location",
+                ImmutableSet.of(serviceAnnouncement("foo")
                         .addProperty("http", "http://localhost:8080")
                         .addProperty("jmx", "jmx://localhost:1234")
                         .build()));
@@ -52,41 +52,97 @@ public class TestAnnouncement
 
         // set id in expected
         List<Map<String, Object>> services = toServices(expected.get("services"));
-        services.get(0).put("id", announcement.getServices().stream().collect(onlyElement()).getId().toString());
+        services.get(0)
+                .put(
+                        "id",
+                        announcement.getServices().stream()
+                                .collect(onlyElement())
+                                .getId()
+                                .toString());
 
         assertThat(actual).isEqualTo(expected);
     }
 
     @SuppressWarnings("unchecked")
-    private static List<Map<String, Object>> toServices(Object value)
-    {
+    private static List<Map<String, Object>> toServices(Object value) {
         return (List<Map<String, Object>>) value;
     }
 
     @Test
-    public void testToString()
-    {
-        assertThat(new Announcement("environment", "node", "pool", "location", ImmutableSet.of(
-                serviceAnnouncement("foo")
-                        .addProperty("http", "http://localhost:8080")
-                        .addProperty("jmx", "jmx://localhost:1234")
-                        .build()))).isNotNull();
+    public void testToString() {
+        assertThat(new Announcement(
+                        "environment",
+                        "node",
+                        "pool",
+                        "location",
+                        ImmutableSet.of(serviceAnnouncement("foo")
+                                .addProperty("http", "http://localhost:8080")
+                                .addProperty("jmx", "jmx://localhost:1234")
+                                .build())))
+                .isNotNull();
     }
 
     @Test
-    public void testEquivalence()
-    {
+    public void testEquivalence() {
         equivalenceTester()
                 .addEquivalentGroup(
-                        new Announcement("environment", "node-A", "pool", "location", ImmutableSet.<ServiceAnnouncement>of(serviceAnnouncement("foo").build())),
-                        new Announcement("ENVIRONMENT", "node-A", "pool", "location", ImmutableSet.<ServiceAnnouncement>of(serviceAnnouncement("foo").build())),
-                        new Announcement("environment", "node-A", "pool", "LOCATION", ImmutableSet.<ServiceAnnouncement>of(serviceAnnouncement("foo").build())),
-                        new Announcement("environment", "node-A", "pool", "location", ImmutableSet.<ServiceAnnouncement>of(serviceAnnouncement("FOO").build())))
+                        new Announcement(
+                                "environment",
+                                "node-A",
+                                "pool",
+                                "location",
+                                ImmutableSet.<ServiceAnnouncement>of(
+                                        serviceAnnouncement("foo").build())),
+                        new Announcement(
+                                "ENVIRONMENT",
+                                "node-A",
+                                "pool",
+                                "location",
+                                ImmutableSet.<ServiceAnnouncement>of(
+                                        serviceAnnouncement("foo").build())),
+                        new Announcement(
+                                "environment",
+                                "node-A",
+                                "pool",
+                                "LOCATION",
+                                ImmutableSet.<ServiceAnnouncement>of(
+                                        serviceAnnouncement("foo").build())),
+                        new Announcement(
+                                "environment",
+                                "node-A",
+                                "pool",
+                                "location",
+                                ImmutableSet.<ServiceAnnouncement>of(
+                                        serviceAnnouncement("FOO").build())))
                 .addEquivalentGroup(
-                        new Announcement("environment", "node-B", "pool", "location", ImmutableSet.<ServiceAnnouncement>of(serviceAnnouncement("foo").build())),
-                        new Announcement("environment-X", "node-B", "pool", "location", ImmutableSet.<ServiceAnnouncement>of(serviceAnnouncement("foo").build())),
-                        new Announcement("environment", "node-B", "pool", "location-X", ImmutableSet.<ServiceAnnouncement>of(serviceAnnouncement("foo").build())),
-                        new Announcement("environment", "node-B", "pool", "location", ImmutableSet.<ServiceAnnouncement>of(serviceAnnouncement("bar").build())))
+                        new Announcement(
+                                "environment",
+                                "node-B",
+                                "pool",
+                                "location",
+                                ImmutableSet.<ServiceAnnouncement>of(
+                                        serviceAnnouncement("foo").build())),
+                        new Announcement(
+                                "environment-X",
+                                "node-B",
+                                "pool",
+                                "location",
+                                ImmutableSet.<ServiceAnnouncement>of(
+                                        serviceAnnouncement("foo").build())),
+                        new Announcement(
+                                "environment",
+                                "node-B",
+                                "pool",
+                                "location-X",
+                                ImmutableSet.<ServiceAnnouncement>of(
+                                        serviceAnnouncement("foo").build())),
+                        new Announcement(
+                                "environment",
+                                "node-B",
+                                "pool",
+                                "location",
+                                ImmutableSet.<ServiceAnnouncement>of(
+                                        serviceAnnouncement("bar").build())))
                 .check();
     }
 }

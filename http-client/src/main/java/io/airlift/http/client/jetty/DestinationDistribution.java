@@ -4,16 +4,12 @@ import io.airlift.stats.Distribution;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.transport.HttpDestination;
 
-class DestinationDistribution
-        extends CachedDistribution
-{
-    interface Processor
-    {
+class DestinationDistribution extends CachedDistribution {
+    interface Processor {
         void process(Distribution distribution, HttpDestination destination);
     }
 
-    public DestinationDistribution(HttpClient httpClient, Processor processor)
-    {
+    public DestinationDistribution(HttpClient httpClient, Processor processor) {
         super(() -> {
             Distribution distribution = new Distribution();
             httpClient.getDestinations().stream()

@@ -15,6 +15,9 @@
  */
 package io.airlift.log;
 
+import static io.airlift.units.DataSize.Unit.GIGABYTE;
+import static io.airlift.units.DataSize.Unit.MEGABYTE;
+
 import io.airlift.configuration.Config;
 import io.airlift.configuration.ConfigDescription;
 import io.airlift.configuration.DefunctConfig;
@@ -24,16 +27,12 @@ import io.airlift.log.RollingFileMessageOutput.CompressionType;
 import io.airlift.units.DataSize;
 import jakarta.validation.constraints.NotNull;
 
-import static io.airlift.units.DataSize.Unit.GIGABYTE;
-import static io.airlift.units.DataSize.Unit.MEGABYTE;
-
 @DefunctConfig({
-        "log.legacy-implementation.enabled",
-        "log.max-history",
-        "log.max-size-in-bytes",
+    "log.legacy-implementation.enabled",
+    "log.max-history",
+    "log.max-size-in-bytes",
 })
-public class LoggingConfiguration
-{
+public class LoggingConfiguration {
     private boolean consoleEnabled = true;
     private String logPath;
     private DataSize maxSize = DataSize.of(100, MEGABYTE);
@@ -44,98 +43,83 @@ public class LoggingConfiguration
     private Format format = Format.TEXT;
     private Format consoleFormat = Format.TEXT;
 
-    public boolean isConsoleEnabled()
-    {
+    public boolean isConsoleEnabled() {
         return consoleEnabled;
     }
 
     @Config("log.enable-console")
-    public LoggingConfiguration setConsoleEnabled(boolean consoleEnabled)
-    {
+    public LoggingConfiguration setConsoleEnabled(boolean consoleEnabled) {
         this.consoleEnabled = consoleEnabled;
         return this;
     }
 
-    public String getLogPath()
-    {
+    public String getLogPath() {
         return logPath;
     }
 
     @LegacyConfig("log.output-file")
     @Config("log.path")
-    public LoggingConfiguration setLogPath(String logPath)
-    {
+    public LoggingConfiguration setLogPath(String logPath) {
         this.logPath = logPath;
         return this;
     }
 
-    public DataSize getMaxSize()
-    {
+    public DataSize getMaxSize() {
         return maxSize;
     }
 
     @Config("log.max-size")
     @ConfigDescription("Maximum size of each log file")
-    public LoggingConfiguration setMaxSize(DataSize maxSize)
-    {
+    public LoggingConfiguration setMaxSize(DataSize maxSize) {
         this.maxSize = maxSize;
         return this;
     }
 
-    public DataSize getMaxTotalSize()
-    {
+    public DataSize getMaxTotalSize() {
         return maxTotalSize;
     }
 
     @Config("log.max-total-size")
     @ConfigDescription("Maximum size of all log files")
-    public LoggingConfiguration setMaxTotalSize(DataSize maxTotalSize)
-    {
+    public LoggingConfiguration setMaxTotalSize(DataSize maxTotalSize) {
         this.maxTotalSize = maxTotalSize;
         return this;
     }
 
     @NotNull
-    public CompressionType getCompression()
-    {
+    public CompressionType getCompression() {
         return compression;
     }
 
     @Config("log.compression")
     @ConfigDescription("Compression type for log files")
-    public LoggingConfiguration setCompression(CompressionType compression)
-    {
+    public LoggingConfiguration setCompression(CompressionType compression) {
         this.compression = compression;
         return this;
     }
 
-    public String getLevelsFile()
-    {
+    public String getLevelsFile() {
         return levelsFile;
     }
 
     @Config("log.levels-file")
-    public LoggingConfiguration setLevelsFile(String levelsFile)
-    {
+    public LoggingConfiguration setLevelsFile(String levelsFile) {
         this.levelsFile = levelsFile;
         return this;
     }
 
-    public Format getFormat()
-    {
+    public Format getFormat() {
         return format;
     }
 
     @Config("log.format")
-    public LoggingConfiguration setFormat(Format format)
-    {
+    public LoggingConfiguration setFormat(Format format) {
         this.format = format;
         return this;
     }
 
     @FileExists
-    public String getLogAnnotationFile()
-    {
+    public String getLogAnnotationFile() {
         return logAnnotationFile;
     }
 
@@ -143,20 +127,17 @@ public class LoggingConfiguration
     // are not yet available when the Logging is being configured.
     @Config("node.annotation-file")
     @LegacyConfig("log.annotation-file")
-    public LoggingConfiguration setLogAnnotationFile(String logAnnotationFile)
-    {
+    public LoggingConfiguration setLogAnnotationFile(String logAnnotationFile) {
         this.logAnnotationFile = logAnnotationFile;
         return this;
     }
 
-    public Format getConsoleFormat()
-    {
+    public Format getConsoleFormat() {
         return consoleFormat;
     }
 
     @Config("log.console-format")
-    public LoggingConfiguration setConsoleFormat(Format format)
-    {
+    public LoggingConfiguration setConsoleFormat(Format format) {
         this.consoleFormat = format;
         return this;
     }

@@ -13,26 +13,23 @@
  */
 package io.airlift.bootstrap;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.inject.Injector;
-import io.airlift.configuration.Config;
-import org.junit.jupiter.api.Test;
-
-import java.io.BufferedWriter;
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
-
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static java.nio.file.Files.newBufferedWriter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-final class TestBootstrapWithSecretsProvider
-{
+import com.google.common.collect.ImmutableMap;
+import com.google.inject.Injector;
+import io.airlift.configuration.Config;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import org.junit.jupiter.api.Test;
+
+final class TestBootstrapWithSecretsProvider {
     @Test
-    void testBootstrapWithDefaultSecretsProvider()
-    {
+    void testBootstrapWithDefaultSecretsProvider() {
         Bootstrap bootstrap = new Bootstrap(binder -> configBinder(binder).bindConfig(FooConfig.class))
                 .setRequiredConfigurationProperties(ImmutableMap.of("foo.value", "${ENV:TEST_KEY}"));
 
@@ -42,12 +39,11 @@ final class TestBootstrapWithSecretsProvider
     }
 
     @Test
-    void testBootstrapWithEnvironmentSecretsProviderDisabled()
-            throws Exception
-    {
+    void testBootstrapWithEnvironmentSecretsProviderDisabled() throws Exception {
         Path configurationPluginDirectory = Files.createTempDirectory(null);
 
-        File configurationResolverFile = createConfigurationResolverFile("secrets-plugins-dir=\"%s\"".formatted(configurationPluginDirectory));
+        File configurationResolverFile =
+                createConfigurationResolverFile("secrets-plugins-dir=\"%s\"".formatted(configurationPluginDirectory));
 
         System.setProperty("secretsConfig", configurationResolverFile.getAbsolutePath());
 
@@ -55,19 +51,16 @@ final class TestBootstrapWithSecretsProvider
                 .loadSecretsPlugins()
                 .setRequiredConfigurationProperties(ImmutableMap.of("foo.value", "${ENV:TEST_KEY}"));
 
-        assertThatThrownBy(() -> bootstrap.initialize())
-                .hasMessageContaining("No secret provider for key 'env'");
+        assertThatThrownBy(() -> bootstrap.initialize()).hasMessageContaining("No secret provider for key 'env'");
     }
 
     @Test
-    void testBootstrapWithEnvironmentSecretsProviderEnabled()
-            throws Exception
-    {
+    void testBootstrapWithEnvironmentSecretsProviderEnabled() throws Exception {
         Path configurationPluginDirectory = Files.createTempDirectory(null);
 
         File configurationResolverFile = createConfigurationResolverFile("""
                 secrets-plugins-dir="%s
-                
+
                 [env]
                 secrets-provider.name="env"
                 """.formatted(configurationPluginDirectory));
@@ -84,14 +77,12 @@ final class TestBootstrapWithSecretsProvider
     }
 
     @Test
-    void testBootstrapWithEnvironmentSecretsProviderWithDifferentNamespace()
-            throws Exception
-    {
+    void testBootstrapWithEnvironmentSecretsProviderWithDifferentNamespace() throws Exception {
         Path configurationPluginDirectory = Files.createTempDirectory(null);
 
         File configurationResolverFile = createConfigurationResolverFile("""
                 secrets-plugins-dir="%s
-                
+
                 [multi]
                 secrets-provider.name="env"
                 """.formatted(configurationPluginDirectory));
@@ -107,9 +98,7 @@ final class TestBootstrapWithSecretsProvider
         assertThat(injector.getInstance(FooConfig.class).getValue()).isEqualTo("test_value");
     }
 
-    private File createConfigurationResolverFile(String configurationFile)
-            throws Exception
-    {
+    private File createConfigurationResolverFile(String configurationFile) throws Exception {
         File tomlFile = File.createTempFile("config_resolver", ".toml");
         tomlFile.deleteOnExit();
 
@@ -120,18 +109,15 @@ final class TestBootstrapWithSecretsProvider
         return tomlFile;
     }
 
-    public static class FooConfig
-    {
+    public static class FooConfig {
         private String value;
 
-        public String getValue()
-        {
+        public String getValue() {
             return value;
         }
 
         @Config("foo.value")
-        public FooConfig setValue(String value)
-        {
+        public FooConfig setValue(String value) {
             this.value = value;
             return this;
         }

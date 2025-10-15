@@ -15,44 +15,36 @@
  */
 package io.airlift.http.client;
 
-import com.google.common.collect.ImmutableListMultimap;
-import com.google.common.collect.ListMultimap;
-import com.google.common.net.MediaType;
-import io.airlift.http.client.StringResponseHandler.StringResponse;
-import jakarta.annotation.Nullable;
-
-import java.nio.charset.Charset;
-import java.util.List;
-import java.util.Optional;
-
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
 import static io.airlift.http.client.ResponseHandlerUtils.readResponseBytes;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-public class StringResponseHandler
-        implements ResponseHandler<StringResponse, RuntimeException>
-{
+import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.ListMultimap;
+import com.google.common.net.MediaType;
+import io.airlift.http.client.StringResponseHandler.StringResponse;
+import jakarta.annotation.Nullable;
+import java.nio.charset.Charset;
+import java.util.List;
+import java.util.Optional;
+
+public class StringResponseHandler implements ResponseHandler<StringResponse, RuntimeException> {
     private static final StringResponseHandler STRING_RESPONSE_HANDLER = new StringResponseHandler();
 
-    public static StringResponseHandler createStringResponseHandler()
-    {
+    public static StringResponseHandler createStringResponseHandler() {
         return STRING_RESPONSE_HANDLER;
     }
 
-    private StringResponseHandler()
-    {
-    }
+    private StringResponseHandler() {}
 
     @Override
-    public StringResponse handleException(Request request, Exception exception)
-    {
+    public StringResponse handleException(Request request, Exception exception) {
         throw propagate(request, exception);
     }
 
     @Override
-    public StringResponse handle(Request request, Response response)
-    {
+    public StringResponse handle(Request request, Response response) {
         byte[] bytes = readResponseBytes(request, response);
 
         Charset charset = Optional.ofNullable(response.getHeader(CONTENT_TYPE))
@@ -63,43 +55,36 @@ public class StringResponseHandler
         return new StringResponse(response.getStatusCode(), response.getHeaders(), new String(bytes, charset));
     }
 
-    public static class StringResponse
-    {
+    public static class StringResponse {
         private final int statusCode;
         private final ListMultimap<HeaderName, String> headers;
         private final String body;
 
-        public StringResponse(int statusCode, ListMultimap<HeaderName, String> headers, String body)
-        {
+        public StringResponse(int statusCode, ListMultimap<HeaderName, String> headers, String body) {
             this.statusCode = statusCode;
             this.headers = ImmutableListMultimap.copyOf(headers);
             this.body = body;
         }
 
-        public int getStatusCode()
-        {
+        public int getStatusCode() {
             return statusCode;
         }
 
-        public String getBody()
-        {
+        public String getBody() {
             return body;
         }
 
         @Nullable
-        public String getHeader(String name)
-        {
+        public String getHeader(String name) {
             List<String> values = getHeaders().get(HeaderName.of(name));
             return values.isEmpty() ? null : values.get(0);
         }
 
-        public List<String> getHeaders(String name)
-        {
+        public List<String> getHeaders(String name) {
             return headers.get(HeaderName.of(name));
         }
 
-        public ListMultimap<HeaderName, String> getHeaders()
-        {
+        public ListMultimap<HeaderName, String> getHeaders() {
             return headers;
         }
     }

@@ -15,27 +15,22 @@
  */
 package io.airlift.sample;
 
-import io.airlift.units.Duration;
-import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.TimeUnit;
-
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TestPersonStore
-{
+import io.airlift.units.Duration;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.Test;
+
+public class TestPersonStore {
     @Test
-    public void testStartsEmpty()
-    {
+    public void testStartsEmpty() {
         PersonStore store = new PersonStore(new StoreConfig());
         assertThat(store.getAll()).isEmpty();
     }
 
     @Test
-    public void testTtl()
-            throws InterruptedException
-    {
+    public void testTtl() throws InterruptedException {
         StoreConfig config = new StoreConfig();
         config.setTtl(new Duration(1, TimeUnit.MILLISECONDS));
 
@@ -46,8 +41,7 @@ public class TestPersonStore
     }
 
     @Test
-    public void testPut()
-    {
+    public void testPut() {
         PersonStore store = new PersonStore(new StoreConfig());
         store.put("foo", new Person("foo@example.com", "Mr Foo"));
 
@@ -56,8 +50,7 @@ public class TestPersonStore
     }
 
     @Test
-    public void testIdempotentPut()
-    {
+    public void testIdempotentPut() {
         PersonStore store = new PersonStore(new StoreConfig());
         store.put("foo", new Person("foo@example.com", "Mr Foo"));
         store.put("foo", new Person("foo@example.com", "Mr Bar"));
@@ -67,8 +60,7 @@ public class TestPersonStore
     }
 
     @Test
-    public void testDelete()
-    {
+    public void testDelete() {
         PersonStore store = new PersonStore(new StoreConfig());
         store.put("foo", new Person("foo@example.com", "Mr Foo"));
         store.delete("foo");
@@ -78,8 +70,7 @@ public class TestPersonStore
     }
 
     @Test
-    public void testIdempotentDelete()
-    {
+    public void testIdempotentDelete() {
         PersonStore store = new PersonStore(new StoreConfig());
         store.put("foo", new Person("foo@example.com", "Mr Foo"));
 
@@ -93,14 +84,14 @@ public class TestPersonStore
     }
 
     @Test
-    public void testGetAll()
-    {
+    public void testGetAll() {
         PersonStore store = new PersonStore(new StoreConfig());
 
         store.put("foo", new Person("foo@example.com", "Mr Foo"));
         store.put("bar", new Person("bar@example.com", "Mr Bar"));
 
         assertThat(store.getAll().size()).isEqualTo(2);
-        assertThat(store.getAll()).isEqualTo(asList(new Person("foo@example.com", "Mr Foo"), new Person("bar@example.com", "Mr Bar")));
+        assertThat(store.getAll())
+                .isEqualTo(asList(new Person("foo@example.com", "Mr Foo"), new Person("bar@example.com", "Mr Bar")));
     }
 }

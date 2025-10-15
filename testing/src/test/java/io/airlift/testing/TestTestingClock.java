@@ -13,19 +13,15 @@
  */
 package io.airlift.testing;
 
-import org.junit.jupiter.api.Test;
-
-import java.time.Instant;
-
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TestTestingClock
-{
+import java.time.Instant;
+import org.junit.jupiter.api.Test;
+
+public class TestTestingClock {
     @Test
-    public void test()
-            throws Exception
-    {
+    public void test() throws Exception {
         TestingClock clock = new TestingClock();
 
         Instant instant1 = clock.instant();

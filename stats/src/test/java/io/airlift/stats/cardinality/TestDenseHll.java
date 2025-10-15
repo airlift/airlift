@@ -13,21 +13,18 @@
  */
 package io.airlift.stats.cardinality;
 
-import io.airlift.slice.XxHash64;
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
 import static io.airlift.slice.testing.SliceAssertions.assertSlicesEqual;
 import static io.airlift.stats.cardinality.TestUtils.sequence;
 import static io.airlift.stats.cardinality.Utils.numberOfBuckets;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TestDenseHll
-{
+import io.airlift.slice.XxHash64;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+
+public class TestDenseHll {
     @Test
-    public void testMultipleMerges()
-    {
+    public void testMultipleMerges() {
         for (int prefixBitLength : prefixLengths()) {
             DenseHll single = new DenseHll(prefixBitLength);
             DenseHll merged = new DenseHll(prefixBitLength);
@@ -56,8 +53,7 @@ public class TestDenseHll
     }
 
     @Test
-    public void testHighCardinality()
-    {
+    public void testHighCardinality() {
         for (int prefixBitLength : prefixLengths()) {
             TestingHll testingHll = new TestingHll(prefixBitLength);
             DenseHll hll = new DenseHll(prefixBitLength);
@@ -73,8 +69,7 @@ public class TestDenseHll
     }
 
     @Test
-    public void testInsert()
-    {
+    public void testInsert() {
         for (int prefixBitLength : prefixLengths()) {
             TestingHll testingHll = new TestingHll(prefixBitLength);
             DenseHll hll = new DenseHll(prefixBitLength);
@@ -91,8 +86,7 @@ public class TestDenseHll
     }
 
     @Test
-    public void testMergeWithOverflows()
-    {
+    public void testMergeWithOverflows() {
         TestingHll testingHll = new TestingHll(12);
         DenseHll hll1 = new DenseHll(12);
         DenseHll hll2 = new DenseHll(12);
@@ -114,8 +108,7 @@ public class TestDenseHll
     }
 
     @Test
-    public void testMerge()
-    {
+    public void testMerge() {
         for (int prefixBitLength : prefixLengths()) {
             // small, non-overlapping
             verifyMerge(prefixBitLength, sequence(0, 100), sequence(100, 200));
@@ -141,8 +134,7 @@ public class TestDenseHll
         }
     }
 
-    private static void verifyMerge(int prefixBitLength, List<Long> one, List<Long> two)
-    {
+    private static void verifyMerge(int prefixBitLength, List<Long> one, List<Long> two) {
         DenseHll hll1 = new DenseHll(prefixBitLength);
         DenseHll hll2 = new DenseHll(prefixBitLength);
 
@@ -170,15 +162,13 @@ public class TestDenseHll
         assertSlicesEqual(hll1.serialize(), expected.serialize());
     }
 
-    private static void assertSameBuckets(TestingHll testingHll, DenseHll hll)
-    {
+    private static void assertSameBuckets(TestingHll testingHll, DenseHll hll) {
         for (int i = 0; i < testingHll.getBuckets().length; i++) {
             assertThat(hll.getValue(i)).isEqualTo(testingHll.getBuckets()[i]);
         }
     }
 
-    private int[] prefixLengths()
-    {
+    private int[] prefixLengths() {
         return new int[] {4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
     }
 }

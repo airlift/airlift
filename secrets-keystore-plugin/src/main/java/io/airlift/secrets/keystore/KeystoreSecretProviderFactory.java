@@ -13,36 +13,29 @@
  */
 package io.airlift.secrets.keystore;
 
+import static io.airlift.configuration.ConfigBinder.configBinder;
+
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.spi.secrets.SecretProvider;
 import io.airlift.spi.secrets.SecretProviderFactory;
-
 import java.util.Map;
 
-import static io.airlift.configuration.ConfigBinder.configBinder;
-
-public class KeystoreSecretProviderFactory
-        implements SecretProviderFactory
-{
+public class KeystoreSecretProviderFactory implements SecretProviderFactory {
     @Override
-    public String getName()
-    {
+    public String getName() {
         return "keystore";
     }
 
     @Override
-    public SecretProvider createSecretProvider(Map<String, String> config)
-    {
-        Bootstrap app = new Bootstrap(
-                binder -> {
-                    configBinder(binder).bindConfig(KeystoreSecretProviderConfig.class);
-                    binder.bind(SecretProvider.class).to(KeystoreSecretProvider.class).in(Scopes.SINGLETON);
-                });
+    public SecretProvider createSecretProvider(Map<String, String> config) {
+        Bootstrap app = new Bootstrap(binder -> {
+            configBinder(binder).bindConfig(KeystoreSecretProviderConfig.class);
+            binder.bind(SecretProvider.class).to(KeystoreSecretProvider.class).in(Scopes.SINGLETON);
+        });
 
-        Injector injector = app
-                .doNotInitializeLogging()
+        Injector injector = app.doNotInitializeLogging()
                 .setRequiredConfigurationProperties(config)
                 .initialize();
 

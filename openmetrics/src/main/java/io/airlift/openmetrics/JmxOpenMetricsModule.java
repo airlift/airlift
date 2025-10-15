@@ -13,18 +13,15 @@
  */
 package io.airlift.openmetrics;
 
-import com.google.inject.Binder;
-import com.google.inject.Module;
-
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
 
-public class JmxOpenMetricsModule
-        implements Module
-{
+import com.google.inject.Binder;
+import com.google.inject.Module;
+
+public class JmxOpenMetricsModule implements Module {
     @Override
-    public void configure(Binder binder)
-    {
+    public void configure(Binder binder) {
         binder.disableCircularProxies();
 
         configBinder(binder).bindConfig(MetricsConfig.class);

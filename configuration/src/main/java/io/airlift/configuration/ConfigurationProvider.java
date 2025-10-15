@@ -15,60 +15,50 @@
  */
 package io.airlift.configuration;
 
-import com.google.inject.Inject;
-import com.google.inject.Provider;
-
-import java.util.Objects;
-import java.util.Optional;
-
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static java.util.Objects.requireNonNull;
 
+import com.google.inject.Inject;
+import com.google.inject.Provider;
+import java.util.Objects;
+import java.util.Optional;
+
 // Note this class must implement com.google.inject.Provider for the Guice element inspection code to
-class ConfigurationProvider<T>
-        implements Provider<T>
-{
+class ConfigurationProvider<T> implements Provider<T> {
     private final ConfigurationBinding<T> configurationBinding;
     private ConfigurationFactory configurationFactory;
     private Optional<Object> bindingSource;
 
-    public ConfigurationProvider(ConfigurationBinding<T> configurationBinding)
-    {
+    public ConfigurationProvider(ConfigurationBinding<T> configurationBinding) {
         this.configurationBinding = requireNonNull(configurationBinding, "configurationBinding is null");
     }
 
     @Inject
-    public void setConfigurationFactory(ConfigurationFactory configurationFactory)
-    {
+    public void setConfigurationFactory(ConfigurationFactory configurationFactory) {
         this.configurationFactory = configurationFactory;
     }
 
-    public ConfigurationBinding<T> getConfigurationBinding()
-    {
+    public ConfigurationBinding<T> getConfigurationBinding() {
         return configurationBinding;
     }
 
-    public Optional<Object> getBindingSource()
-    {
+    public Optional<Object> getBindingSource() {
         return bindingSource;
     }
 
-    public void setBindingSource(Optional<Object> bindingSource)
-    {
+    public void setBindingSource(Optional<Object> bindingSource) {
         this.bindingSource = bindingSource;
     }
 
     @Override
-    public T get()
-    {
+    public T get() {
         requireNonNull(configurationFactory, "configurationFactory");
 
         return configurationFactory.build(this);
     }
 
     @Override
-    public boolean equals(Object o)
-    {
+    public boolean equals(Object o) {
         if (this == o) {
             return true;
         }
@@ -80,14 +70,12 @@ class ConfigurationProvider<T>
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return Objects.hash(configurationBinding);
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return toStringHelper(this)
                 .add("configurationBinding", configurationBinding)
                 .toString();

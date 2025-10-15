@@ -15,25 +15,23 @@
  */
 package io.airlift.discovery.client;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableSet;
-
-import java.util.Set;
-
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
 
-public class Announcement
-{
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableSet;
+import java.util.Set;
+
+public class Announcement {
     private final String environment;
     private final String nodeId;
     private final String location;
     private final String pool;
     private final Set<ServiceAnnouncement> services;
 
-    public Announcement(String environment, String nodeId, String pool, String location, Set<ServiceAnnouncement> services)
-    {
+    public Announcement(
+            String environment, String nodeId, String pool, String location, Set<ServiceAnnouncement> services) {
         requireNonNull(environment, "environment is null");
         requireNonNull(nodeId, "nodeId is null");
         requireNonNull(services, "services is null");
@@ -48,38 +46,32 @@ public class Announcement
     }
 
     @JsonProperty
-    public String getEnvironment()
-    {
+    public String getEnvironment() {
         return environment;
     }
 
     @JsonProperty
-    public String getNodeId()
-    {
+    public String getNodeId() {
         return nodeId;
     }
 
     @JsonProperty
-    public String getLocation()
-    {
+    public String getLocation() {
         return location;
     }
 
     @JsonProperty
-    public String getPool()
-    {
+    public String getPool() {
         return pool;
     }
 
     @JsonProperty
-    public Set<ServiceAnnouncement> getServices()
-    {
+    public Set<ServiceAnnouncement> getServices() {
         return services;
     }
 
     @Override
-    public boolean equals(Object o)
-    {
+    public boolean equals(Object o) {
         if (this == o) {
             return true;
         }
@@ -97,14 +89,12 @@ public class Announcement
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return nodeId.hashCode();
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return toStringHelper(this)
                 .add("environment", environment)
                 .add("nodeId", nodeId)

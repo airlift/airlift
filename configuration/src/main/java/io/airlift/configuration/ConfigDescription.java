@@ -25,7 +25,6 @@ import java.lang.annotation.Target;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.TYPE, ElementType.FIELD, ElementType.PARAMETER})
-public @interface ConfigDescription
-{
+public @interface ConfigDescription {
     String value();
 }

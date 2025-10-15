@@ -16,8 +16,7 @@ package io.airlift.stats.cardinality;
 import com.google.common.annotations.VisibleForTesting;
 import io.airlift.slice.Slice;
 
-interface HllInstance
-{
+interface HllInstance {
     void insertHash(long hash);
 
     long cardinality();

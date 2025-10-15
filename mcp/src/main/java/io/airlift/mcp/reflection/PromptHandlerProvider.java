@@ -1,5 +1,17 @@
 package io.airlift.mcp.reflection;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+import static io.airlift.mcp.McpException.exception;
+import static io.airlift.mcp.reflection.Predicates.isGetPromptRequest;
+import static io.airlift.mcp.reflection.Predicates.isHttpRequest;
+import static io.airlift.mcp.reflection.Predicates.isIdentity;
+import static io.airlift.mcp.reflection.Predicates.isString;
+import static io.airlift.mcp.reflection.Predicates.returnsGetPromptResult;
+import static io.airlift.mcp.reflection.Predicates.returnsString;
+import static io.airlift.mcp.reflection.ReflectionHelper.mapToContent;
+import static io.airlift.mcp.reflection.ReflectionHelper.validate;
+import static java.util.Objects.requireNonNull;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
@@ -15,27 +27,12 @@ import io.airlift.mcp.model.JsonRpcErrorCode;
 import io.airlift.mcp.model.Prompt;
 import io.airlift.mcp.model.Role;
 import io.airlift.mcp.reflection.MethodParameter.ObjectParameter;
-
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import static com.google.common.collect.ImmutableList.toImmutableList;
-import static io.airlift.mcp.McpException.exception;
-import static io.airlift.mcp.reflection.Predicates.isGetPromptRequest;
-import static io.airlift.mcp.reflection.Predicates.isHttpRequest;
-import static io.airlift.mcp.reflection.Predicates.isIdentity;
-import static io.airlift.mcp.reflection.Predicates.isString;
-import static io.airlift.mcp.reflection.Predicates.returnsGetPromptResult;
-import static io.airlift.mcp.reflection.Predicates.returnsString;
-import static io.airlift.mcp.reflection.ReflectionHelper.mapToContent;
-import static io.airlift.mcp.reflection.ReflectionHelper.validate;
-import static java.util.Objects.requireNonNull;
-
-public class PromptHandlerProvider
-        implements Provider<PromptEntry>
-{
+public class PromptHandlerProvider implements Provider<PromptEntry> {
     private final Prompt prompt;
     private final Class<?> clazz;
     private final Method method;
@@ -45,39 +42,40 @@ public class PromptHandlerProvider
     private Injector injector;
     private ObjectMapper objectMapper;
 
-    public PromptHandlerProvider(McpPrompt mcpPrompt, Class<?> clazz, Method method, List<MethodParameter> parameters)
-    {
+    public PromptHandlerProvider(McpPrompt mcpPrompt, Class<?> clazz, Method method, List<MethodParameter> parameters) {
         this.clazz = requireNonNull(clazz, "clazz is null");
         this.method = requireNonNull(method, "method is null");
         this.parameters = ImmutableList.copyOf(parameters);
         this.role = mcpPrompt.role();
 
-        validate(method, parameters, isHttpRequest.or(isIdentity).or(isString).or(isGetPromptRequest), returnsString.or(returnsGetPromptResult));
+        validate(
+                method,
+                parameters,
+                isHttpRequest.or(isIdentity).or(isString).or(isGetPromptRequest),
+                returnsString.or(returnsGetPromptResult));
 
         prompt = buildPrompt(mcpPrompt, parameters);
         isGetPromptResult = GetPromptResult.class.isAssignableFrom(method.getReturnType());
     }
 
     @Inject
-    public void setInjector(Injector injector)
-    {
+    public void setInjector(Injector injector) {
         this.injector = requireNonNull(injector, "injector is null");
     }
 
     @Inject
-    public void setObjectMapper(ObjectMapper objectMapper)
-    {
+    public void setObjectMapper(ObjectMapper objectMapper) {
         this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
     }
 
     @Override
-    public PromptEntry get()
-    {
+    public PromptEntry get() {
         Object instance = injector.getInstance(clazz);
         MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper);
 
         PromptHandler promptHandler = (request, promptRequest) -> {
-            Object result = methodInvoker.builder(request)
+            Object result = methodInvoker
+                    .builder(request)
                     .withArguments(promptRequest.arguments())
                     .withGetPromptRequest(promptRequest)
                     .invoke();
@@ -96,18 +94,19 @@ public class PromptHandlerProvider
         return new PromptEntry(prompt, promptHandler);
     }
 
-    private static Prompt buildPrompt(McpPrompt prompt, List<MethodParameter> parameters)
-    {
-        Optional<String> description = prompt.description().isEmpty() ? Optional.empty() : Optional.of(prompt.description());
+    private static Prompt buildPrompt(McpPrompt prompt, List<MethodParameter> parameters) {
+        Optional<String> description =
+                prompt.description().isEmpty() ? Optional.empty() : Optional.of(prompt.description());
         return new Prompt(prompt.name(), description, Optional.of(prompt.role()), toPromptArguments(parameters));
     }
 
-    private static List<Prompt.Argument> toPromptArguments(List<MethodParameter> parameters)
-    {
-        return parameters
-                .stream()
-                .flatMap(methodParameter -> (methodParameter instanceof ObjectParameter objectParameter) ? Stream.of(objectParameter) : Stream.empty())
-                .map(objectParameter -> new Prompt.Argument(objectParameter.name(), objectParameter.description(), objectParameter.required()))
+    private static List<Prompt.Argument> toPromptArguments(List<MethodParameter> parameters) {
+        return parameters.stream()
+                .flatMap(methodParameter -> (methodParameter instanceof ObjectParameter objectParameter)
+                        ? Stream.of(objectParameter)
+                        : Stream.empty())
+                .map(objectParameter -> new Prompt.Argument(
+                        objectParameter.name(), objectParameter.description(), objectParameter.required()))
                 .collect(toImmutableList());
     }
 }

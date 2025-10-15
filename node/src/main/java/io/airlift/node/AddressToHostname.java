@@ -14,40 +14,39 @@
 package io.airlift.node;
 
 import com.google.common.net.InetAddresses;
-
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Optional;
 
-public final class AddressToHostname
-{
+public final class AddressToHostname {
     private static final String IP_ENCODED_SUFFIX = ".ip";
 
     private AddressToHostname() {}
 
-    public static String encodeAddressAsHostname(InetAddress inetAddress)
-    {
-        String hostname = switch (inetAddress) {
-            case Inet4Address inet4Address -> InetAddresses
-                    .toAddrString(inet4Address)
-                    .replace('.', '-');
+    public static String encodeAddressAsHostname(InetAddress inetAddress) {
+        String hostname =
+                switch (inetAddress) {
+                    case Inet4Address inet4Address ->
+                        InetAddresses.toAddrString(inet4Address).replace('.', '-');
 
-            // v6 addresses contain `:` which isn't legal, also v6 can
-            // start with a `:` so we prefix with an `x`
-            case Inet6Address inet6Address -> 'x' + stripScopeId(InetAddresses.toAddrString(inet6Address))
-                    .replace(':', '-');
+                    // v6 addresses contain `:` which isn't legal, also v6 can
+                    // start with a `:` so we prefix with an `x`
+                    case Inet6Address inet6Address ->
+                        'x'
+                                + stripScopeId(InetAddresses.toAddrString(inet6Address))
+                                        .replace(':', '-');
 
-            default -> InetAddresses.toAddrString(inetAddress);
-        };
+                    default -> InetAddresses.toAddrString(inetAddress);
+                };
 
         return hostname + IP_ENCODED_SUFFIX;
     }
 
-    // Strips scope ID added to toAddrString representation in https://github.com/google/guava/commit/3f61870ac6e5b18dbb74ce6f6cb2930ad8750a43
-    private static String stripScopeId(String address)
-    {
+    // Strips scope ID added to toAddrString representation in
+    // https://github.com/google/guava/commit/3f61870ac6e5b18dbb74ce6f6cb2930ad8750a43
+    private static String stripScopeId(String address) {
         int index = address.indexOf('%');
         if (index == -1) {
             return address;
@@ -55,8 +54,7 @@ public final class AddressToHostname
         return address.substring(0, index);
     }
 
-    public static Optional<InetAddress> tryDecodeHostnameToAddress(String hostname)
-    {
+    public static Optional<InetAddress> tryDecodeHostnameToAddress(String hostname) {
         if (!hostname.endsWith(IP_ENCODED_SUFFIX)) {
             return Optional.empty();
         }
@@ -64,8 +62,7 @@ public final class AddressToHostname
         String ipString = hostname.substring(0, hostname.length() - IP_ENCODED_SUFFIX.length());
         if (ipString.startsWith("x")) {
             ipString = ipString.substring(1).replace('-', ':');
-        }
-        else {
+        } else {
             ipString = ipString.replace('-', '.');
         }
 
@@ -73,8 +70,7 @@ public final class AddressToHostname
 
         try {
             return Optional.of(InetAddress.getByAddress(hostname, address));
-        }
-        catch (UnknownHostException e) {
+        } catch (UnknownHostException e) {
             throw new IllegalArgumentException(e);
         }
     }

@@ -20,22 +20,17 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 
 @SuppressWarnings("MethodMayBeStatic")
-public class InstanceTwo
-{
+public class InstanceTwo {
     @Inject
-    public InstanceTwo(DependentBoundInstance dependentInstance)
-    {
-    }
+    public InstanceTwo(DependentBoundInstance dependentInstance) {}
 
     @PostConstruct
-    public void postMakeTwo()
-    {
+    public void postMakeTwo() {
         TestLifeCycleManager.note("postMakeTwo");
     }
 
     @PreDestroy
-    public void preDestroyTwo()
-    {
+    public void preDestroyTwo() {
         TestLifeCycleManager.note("preDestroyTwo");
     }
 }

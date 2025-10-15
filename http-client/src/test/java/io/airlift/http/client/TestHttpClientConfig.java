@@ -15,20 +15,6 @@
  */
 package io.airlift.http.client;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.net.HostAndPort;
-import com.google.inject.ConfigurationException;
-import io.airlift.configuration.testing.ConfigAssertions;
-import io.airlift.units.DataSize;
-import io.airlift.units.Duration;
-import jakarta.validation.constraints.NotNull;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.junit.jupiter.api.Test;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-
 import static io.airlift.http.client.HttpClientConfig.JAVAX_NET_SSL_KEY_STORE;
 import static io.airlift.http.client.HttpClientConfig.JAVAX_NET_SSL_KEY_STORE_PASSWORD;
 import static io.airlift.http.client.HttpClientConfig.JAVAX_NET_SSL_TRUST_STORE;
@@ -41,11 +27,22 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class TestHttpClientConfig
-{
+import com.google.common.collect.ImmutableMap;
+import com.google.common.net.HostAndPort;
+import com.google.inject.ConfigurationException;
+import io.airlift.configuration.testing.ConfigAssertions;
+import io.airlift.units.DataSize;
+import io.airlift.units.Duration;
+import jakarta.validation.constraints.NotNull;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.junit.jupiter.api.Test;
+
+public class TestHttpClientConfig {
     @Test
-    public void testDefaults()
-    {
+    public void testDefaults() {
         ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(HttpClientConfig.class)
                 .setVerifyHostname(true)
                 .setHttp2Enabled(false)
@@ -100,8 +97,7 @@ public class TestHttpClientConfig
     }
 
     @Test
-    public void testExplicitPropertyMappings()
-    {
+    public void testExplicitPropertyMappings() {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("http-client.https.hostname-verification", "false")
                 .put("http-client.http2.enabled", "true")
@@ -124,8 +120,12 @@ public class TestHttpClientConfig
                 .put("http-client.http-proxy.password", "pass")
                 .put("http-client.http-proxy.secure", "true")
                 .put("http-client.secure-random-algorithm", "NativePRNG")
-                .put("http-client.https.included-cipher", "TLS_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA")
-                .put("http-client.https.excluded-cipher", "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA")
+                .put(
+                        "http-client.https.included-cipher",
+                        "TLS_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA")
+                .put(
+                        "http-client.https.excluded-cipher",
+                        "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA")
                 .put("http-client.https.automatic-shared-secret", "automatic-secret")
                 .put("http-client.key-store-path", "key-store")
                 .put("http-client.key-store-password", "key-store-password")
@@ -182,7 +182,8 @@ public class TestHttpClientConfig
                 .setTrustStorePassword("trust-store-password")
                 .setSecureRandomAlgorithm("NativePRNG")
                 .setHttpsIncludedCipherSuites("TLS_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA")
-                .setHttpsExcludedCipherSuites("TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA")
+                .setHttpsExcludedCipherSuites(
+                        "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA")
                 .setAutomaticHttpsSharedSecret("automatic-secret")
                 .setHttp2InitialSessionReceiveWindowSize(DataSize.of(7, MEGABYTE))
                 .setHttp2InitialStreamReceiveWindowSize(DataSize.of(7, MEGABYTE))
@@ -211,8 +212,7 @@ public class TestHttpClientConfig
     }
 
     @Test
-    public void testDeprecatedProperties()
-    {
+    public void testDeprecatedProperties() {
         Map<String, String> currentProperties = new ImmutableMap.Builder<String, String>()
                 .put("http-client.idle-timeout", "111m")
                 .build();
@@ -225,16 +225,17 @@ public class TestHttpClientConfig
     }
 
     @Test
-    public void testValidations()
-    {
-        assertFailsValidation(new HttpClientConfig().setConnectTimeout(null), "connectTimeout", "must not be null", NotNull.class);
-        assertFailsValidation(new HttpClientConfig().setRequestTimeout(null), "requestTimeout", "must not be null", NotNull.class);
-        assertFailsValidation(new HttpClientConfig().setIdleTimeout(null), "idleTimeout", "must not be null", NotNull.class);
+    public void testValidations() {
+        assertFailsValidation(
+                new HttpClientConfig().setConnectTimeout(null), "connectTimeout", "must not be null", NotNull.class);
+        assertFailsValidation(
+                new HttpClientConfig().setRequestTimeout(null), "requestTimeout", "must not be null", NotNull.class);
+        assertFailsValidation(
+                new HttpClientConfig().setIdleTimeout(null), "idleTimeout", "must not be null", NotNull.class);
     }
 
     @Test
-    public void testInvalidProxyConfiguration()
-    {
+    public void testInvalidProxyConfiguration() {
         HttpClientConfig clientConfig = new HttpClientConfig()
                 .setSocksProxy(HostAndPort.fromParts("localhost", 1080))
                 .setHttpProxy(HostAndPort.fromParts("localhost", 8080));
@@ -244,16 +245,15 @@ public class TestHttpClientConfig
     }
 
     @Test
-    public void testInvalidHttpProxyConfiguration()
-    {
+    public void testInvalidHttpProxyConfiguration() {
         HttpClientConfig clientConfig = new HttpClientConfig().setSecureProxy(true);
         assertThatThrownBy(clientConfig::validate)
                 .isInstanceOf(ConfigurationException.class)
-                .hasMessageContaining("http-client.http-proxy.secure can be enabled only when http-client.http-proxy is set");
+                .hasMessageContaining(
+                        "http-client.http-proxy.secure can be enabled only when http-client.http-proxy is set");
     }
 
-    private List<String> getJettyDefaultExcludedCiphers()
-    {
+    private List<String> getJettyDefaultExcludedCiphers() {
         SslContextFactory sslContextFactory = new SslContextFactory.Client();
         return Arrays.asList(sslContextFactory.getExcludeCipherSuites());
     }

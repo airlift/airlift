@@ -15,6 +15,10 @@
  */
 package io.airlift.json;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
+import static java.util.Objects.requireNonNull;
+
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.KeyDeserializer;
@@ -25,64 +29,55 @@ import com.google.inject.binder.LinkedBindingBuilder;
 import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.inject.multibindings.Multibinder.newSetBinder;
-import static java.util.Objects.requireNonNull;
-
-public class JsonBinder
-{
+public class JsonBinder {
     private final MapBinder<Class<?>, JsonSerializer<?>> keySerializerMapBinder;
     private final MapBinder<Class<?>, KeyDeserializer> keyDeserializerMapBinder;
     private final MapBinder<Class<?>, JsonSerializer<?>> serializerMapBinder;
     private final MapBinder<Class<?>, JsonDeserializer<?>> deserializerMapBinder;
     private final Multibinder<Module> moduleBinder;
 
-    public static JsonBinder jsonBinder(Binder binder)
-    {
+    public static JsonBinder jsonBinder(Binder binder) {
         return new JsonBinder(binder);
     }
 
-    private JsonBinder(Binder binder)
-    {
+    private JsonBinder(Binder binder) {
         binder = requireNonNull(binder, "binder is null").skipSources(getClass());
-        keySerializerMapBinder = MapBinder.newMapBinder(binder, new TypeLiteral<Class<?>>() {}, new TypeLiteral<JsonSerializer<?>>() {}, JsonKeySerde.class);
-        keyDeserializerMapBinder = MapBinder.newMapBinder(binder, new TypeLiteral<Class<?>>() {}, new TypeLiteral<KeyDeserializer>() {}, JsonKeySerde.class);
-        serializerMapBinder = MapBinder.newMapBinder(binder, new TypeLiteral<Class<?>>() {}, new TypeLiteral<JsonSerializer<?>>() {});
-        deserializerMapBinder = MapBinder.newMapBinder(binder, new TypeLiteral<Class<?>>() {}, new TypeLiteral<JsonDeserializer<?>>() {});
+        keySerializerMapBinder = MapBinder.newMapBinder(
+                binder, new TypeLiteral<Class<?>>() {}, new TypeLiteral<JsonSerializer<?>>() {}, JsonKeySerde.class);
+        keyDeserializerMapBinder = MapBinder.newMapBinder(
+                binder, new TypeLiteral<Class<?>>() {}, new TypeLiteral<KeyDeserializer>() {}, JsonKeySerde.class);
+        serializerMapBinder =
+                MapBinder.newMapBinder(binder, new TypeLiteral<Class<?>>() {}, new TypeLiteral<JsonSerializer<?>>() {});
+        deserializerMapBinder = MapBinder.newMapBinder(
+                binder, new TypeLiteral<Class<?>>() {}, new TypeLiteral<JsonDeserializer<?>>() {});
         moduleBinder = newSetBinder(binder, Module.class);
     }
 
-    public LinkedBindingBuilder<JsonSerializer<?>> addKeySerializerBinding(Class<?> type)
-    {
+    public LinkedBindingBuilder<JsonSerializer<?>> addKeySerializerBinding(Class<?> type) {
         requireNonNull(type, "type is null");
         return keySerializerMapBinder.addBinding(type);
     }
 
-    public LinkedBindingBuilder<KeyDeserializer> addKeyDeserializerBinding(Class<?> type)
-    {
+    public LinkedBindingBuilder<KeyDeserializer> addKeyDeserializerBinding(Class<?> type) {
         requireNonNull(type, "type is null");
         return keyDeserializerMapBinder.addBinding(type);
     }
 
-    public LinkedBindingBuilder<JsonSerializer<?>> addSerializerBinding(Class<?> type)
-    {
+    public LinkedBindingBuilder<JsonSerializer<?>> addSerializerBinding(Class<?> type) {
         requireNonNull(type, "type is null");
         return serializerMapBinder.addBinding(type);
     }
 
-    public LinkedBindingBuilder<JsonDeserializer<?>> addDeserializerBinding(Class<?> type)
-    {
+    public LinkedBindingBuilder<JsonDeserializer<?>> addDeserializerBinding(Class<?> type) {
         requireNonNull(type, "type is null");
         return deserializerMapBinder.addBinding(type);
     }
 
-    public LinkedBindingBuilder<Module> addModuleBinding()
-    {
+    public LinkedBindingBuilder<Module> addModuleBinding() {
         return moduleBinder.addBinding();
     }
 
-    public <T> void bindSerializer(JsonSerializer<T> jsonSerializer)
-    {
+    public <T> void bindSerializer(JsonSerializer<T> jsonSerializer) {
         requireNonNull(jsonSerializer, "jsonSerializer is null");
 
         Class<?> type = jsonSerializer.handledType();

@@ -15,6 +15,8 @@
  */
 package io.airlift.http.client;
 
+import static io.airlift.http.client.HttpStatus.familyForStatusCode;
+
 import com.google.inject.Inject;
 import io.airlift.stats.CounterStat;
 import io.airlift.stats.DistributionStat;
@@ -23,10 +25,7 @@ import io.airlift.units.Duration;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
 
-import static io.airlift.http.client.HttpStatus.familyForStatusCode;
-
-public class RequestStats
-{
+public class RequestStats {
     private final CounterStat allResponse = new CounterStat();
     private final CounterStat informationalResponse = new CounterStat();
     private final CounterStat successfulResponse = new CounterStat();
@@ -43,17 +42,15 @@ public class RequestStats
     private final DistributionStat writtenBytes = new DistributionStat();
 
     @Inject
-    public RequestStats()
-    {
-    }
+    public RequestStats() {}
 
-    public void recordResponseReceived(String method,
+    public void recordResponseReceived(
+            String method,
             int responseCode,
             long requestSizeInBytes,
             long responseSizeInBytes,
             Duration requestProcessingTime,
-            Duration responseProcessingTime)
-    {
+            Duration responseProcessingTime) {
         requestTime.add(requestProcessingTime);
         responseTime.add(responseProcessingTime);
         readBytes.add(responseSizeInBytes);
@@ -79,97 +76,83 @@ public class RequestStats
         }
     }
 
-    public void recordRequestFailed()
-    {
+    public void recordRequestFailed() {
         requestFailed.update(1);
     }
 
-    public void recordRequestCanceled()
-    {
+    public void recordRequestCanceled() {
         requestCanceled.update(1);
     }
 
     @Managed
     @Nested
-    public CounterStat getAllResponse()
-    {
+    public CounterStat getAllResponse() {
         return allResponse;
     }
 
     @Managed
     @Nested
-    public CounterStat get1xxResponse()
-    {
+    public CounterStat get1xxResponse() {
         return informationalResponse;
     }
 
     @Managed
     @Nested
-    public CounterStat get2xxResponse()
-    {
+    public CounterStat get2xxResponse() {
         return successfulResponse;
     }
 
     @Managed
     @Nested
-    public CounterStat get3xxResponse()
-    {
+    public CounterStat get3xxResponse() {
         return redirectionResponse;
     }
 
     @Managed
     @Nested
-    public CounterStat get4xxResponse()
-    {
+    public CounterStat get4xxResponse() {
         return clientErrorResponse;
     }
 
     @Managed
     @Nested
-    public CounterStat get5xxResponse()
-    {
+    public CounterStat get5xxResponse() {
         return serverErrorResponse;
     }
 
     @Managed
     @Nested
-    public CounterStat getRequestFailed()
-    {
+    public CounterStat getRequestFailed() {
         return requestFailed;
     }
 
     @Managed
     @Nested
-    public CounterStat getRequestCanceled()
-    {
+    public CounterStat getRequestCanceled() {
         return requestCanceled;
     }
 
     @Managed
     @Nested
-    public TimeStat getRequestTime()
-    {
+    public TimeStat getRequestTime() {
         return requestTime;
     }
 
     @Managed
     @Nested
-    public TimeStat getResponseTime()
-    {
+    public TimeStat getResponseTime() {
         return responseTime;
     }
 
     @Managed
     @Nested
-    public DistributionStat getReadBytes()
-    {
+    public DistributionStat getReadBytes() {
         return readBytes;
     }
 
     @Managed
     @Nested
-    public DistributionStat getWrittenBytes()
-    {
+    public DistributionStat getWrittenBytes() {
         return writtenBytes;
     }
 }

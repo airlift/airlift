@@ -13,27 +13,24 @@
  */
 package io.airlift.log;
 
-import com.google.common.collect.ImmutableList;
-import org.junit.jupiter.api.Test;
-
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.LocalDateTime;
-import java.util.Optional;
-import java.util.OptionalInt;
-
 import static com.google.common.collect.Comparators.isInOrder;
 import static com.google.common.collect.Comparators.isInStrictOrder;
 import static java.util.Comparator.naturalOrder;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TestLogFileName
-{
+import com.google.common.collect.ImmutableList;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.util.Optional;
+import java.util.OptionalInt;
+import org.junit.jupiter.api.Test;
+
+public class TestLogFileName {
     private static final String BASE_NAME = "server.log";
 
     @Test
-    public void testNew()
-    {
+    public void testNew() {
         assertLogFile(
                 "20201122.010203",
                 LocalDateTime.of(2020, 11, 22, 1, 2, 3),
@@ -61,8 +58,7 @@ public class TestLogFileName
     }
 
     @Test
-    public void testLegacy()
-    {
+    public void testLegacy() {
         assertLogFile(
                 "2020-11-22.4.log",
                 LocalDateTime.of(2020, 11, 22, 0, 0),
@@ -78,8 +74,7 @@ public class TestLogFileName
     }
 
     @Test
-    public void testComparisonNew()
-    {
+    public void testComparisonNew() {
         // different time stamps
         assertOrdering(createLogFile("20201122.010203"), createLogFile("20201122.010204"));
 
@@ -97,8 +92,7 @@ public class TestLogFileName
     }
 
     @Test
-    public void testComparisonLegacy()
-    {
+    public void testComparisonLegacy() {
         // different time stamps
         assertOrdering(createLogFile("2020-11-22.0.log"), createLogFile("2020-11-23.0.log"));
 
@@ -110,8 +104,7 @@ public class TestLogFileName
     }
 
     @Test
-    public void testComparisonNewAndLegacy()
-    {
+    public void testComparisonNewAndLegacy() {
         // different timestamps
         assertOrdering(createLogFile("20201122.010203"), createLogFile("2020-11-23.0.log"));
         assertOrdering(createLogFile("2020-11-22.0.log"), createLogFile("20201122.010203"));
@@ -129,26 +122,29 @@ public class TestLogFileName
     }
 
     @Test
-    public void testGenerateNextLogFileName()
-    {
+    public void testGenerateNextLogFileName() {
         // note: no actual files are created here
         LogFileName logFileName = LogFileName.generateNextLogFileName(Paths.get(BASE_NAME), Optional.empty());
         assertThat(logFileName.getIndex()).isEqualTo(OptionalInt.of(0));
         assertThat(logFileName.getLegacyIndex()).isEqualTo(OptionalInt.empty());
 
         // verify the name round trips
-        assertEqualOrdering(LogFileName.parseHistoryLogFileName(BASE_NAME, logFileName.getFileName()).orElseThrow(AssertionError::new), logFileName);
+        assertEqualOrdering(
+                LogFileName.parseHistoryLogFileName(BASE_NAME, logFileName.getFileName())
+                        .orElseThrow(AssertionError::new),
+                logFileName);
     }
 
-    private static LogFileName createLogFile(String suffix)
-    {
-        return LogFileName.parseHistoryLogFileName(BASE_NAME, BASE_NAME + "-" + suffix).orElseThrow(AssertionError::new);
+    private static LogFileName createLogFile(String suffix) {
+        return LogFileName.parseHistoryLogFileName(BASE_NAME, BASE_NAME + "-" + suffix)
+                .orElseThrow(AssertionError::new);
     }
 
-    private static void assertLogFile(String suffix, LocalDateTime dateTime, OptionalInt index, OptionalInt legacyIndex, boolean compressed)
-    {
+    private static void assertLogFile(
+            String suffix, LocalDateTime dateTime, OptionalInt index, OptionalInt legacyIndex, boolean compressed) {
         Path path = Paths.get(BASE_NAME + "-" + suffix);
-        Optional<LogFileName> logFile = LogFileName.parseHistoryLogFileName(BASE_NAME, path.getFileName().toString());
+        Optional<LogFileName> logFile = LogFileName.parseHistoryLogFileName(
+                BASE_NAME, path.getFileName().toString());
         assertThat(logFile).isPresent();
         assertThat(logFile.get().getDateTime()).isEqualTo(dateTime);
         assertThat(logFile.get().getIndex()).isEqualTo(index);
@@ -157,14 +153,15 @@ public class TestLogFileName
         assertThat(logFile.get().isCompressed()).isEqualTo(compressed);
     }
 
-    private static void assertOrdering(LogFileName... logFileNames)
-    {
-        assertThat(isInStrictOrder(ImmutableList.copyOf(logFileNames), naturalOrder())).isTrue();
+    private static void assertOrdering(LogFileName... logFileNames) {
+        assertThat(isInStrictOrder(ImmutableList.copyOf(logFileNames), naturalOrder()))
+                .isTrue();
     }
 
-    private static void assertEqualOrdering(LogFileName... logFileNames)
-    {
-        assertThat(isInOrder(ImmutableList.copyOf(logFileNames), naturalOrder())).isTrue();
-        assertThat(isInStrictOrder(ImmutableList.copyOf(logFileNames), naturalOrder())).isFalse();
+    private static void assertEqualOrdering(LogFileName... logFileNames) {
+        assertThat(isInOrder(ImmutableList.copyOf(logFileNames), naturalOrder()))
+                .isTrue();
+        assertThat(isInStrictOrder(ImmutableList.copyOf(logFileNames), naturalOrder()))
+                .isFalse();
     }
 }

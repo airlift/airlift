@@ -15,17 +15,14 @@
  */
 package io.airlift.configuration;
 
-public class ValueClass
-{
+public class ValueClass {
     public final String value;
 
-    public ValueClass(String value)
-    {
+    public ValueClass(String value) {
         this.value = value;
     }
 
-    public String getValue()
-    {
+    public String getValue() {
         return value;
     }
 }

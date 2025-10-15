@@ -15,16 +15,6 @@
  */
 package io.airlift.http.server;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import io.airlift.units.Duration;
-import jakarta.validation.constraints.AssertTrue;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-import java.util.Map;
-
 import static io.airlift.configuration.testing.ConfigAssertions.assertFullMapping;
 import static io.airlift.configuration.testing.ConfigAssertions.assertRecordedDefaults;
 import static io.airlift.configuration.testing.ConfigAssertions.recordDefaults;
@@ -34,11 +24,18 @@ import static java.lang.String.join;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
-public class TestHttpsConfig
-{
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import io.airlift.units.Duration;
+import jakarta.validation.constraints.AssertTrue;
+import java.util.List;
+import java.util.Map;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.junit.jupiter.api.Test;
+
+public class TestHttpsConfig {
     @Test
-    public void testDefaults()
-    {
+    public void testDefaults() {
         assertRecordedDefaults(recordDefaults(HttpsConfig.class)
                 .setHttpsPort(8443)
                 .setSecureRandomAlgorithm(null)
@@ -57,8 +54,7 @@ public class TestHttpsConfig
     }
 
     @Test
-    public void testExplicitPropertyMappings()
-    {
+    public void testExplicitPropertyMappings() {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("http-server.https.port", "2")
                 .put("http-server.https.keystore.path", "/keystore")
@@ -67,8 +63,12 @@ public class TestHttpsConfig
                 .put("http-server.https.truststore.path", "/truststore")
                 .put("http-server.https.truststore.key", "truststore password")
                 .put("http-server.https.secure-random-algorithm", "NativePRNG")
-                .put("http-server.https.included-cipher", "TLS_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA")
-                .put("http-server.https.excluded-cipher", "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA")
+                .put(
+                        "http-server.https.included-cipher",
+                        "TLS_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA")
+                .put(
+                        "http-server.https.excluded-cipher",
+                        "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA")
                 .put("http-server.https.ssl-session-timeout", "7h")
                 .put("http-server.https.ssl-session-cache-size", "456")
                 .put("http-server.https.ssl-context.refresh-time", "10m")
@@ -78,7 +78,8 @@ public class TestHttpsConfig
         HttpsConfig expected = new HttpsConfig()
                 .setHttpsPort(2)
                 .setHttpsIncludedCipherSuites("TLS_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA")
-                .setHttpsExcludedCipherSuites("TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA")
+                .setHttpsExcludedCipherSuites(
+                        "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA")
                 .setSslSessionTimeout(new Duration(7, HOURS))
                 .setSslSessionCacheSize(456)
                 .setKeystorePath("/keystore")
@@ -94,11 +95,8 @@ public class TestHttpsConfig
     }
 
     @Test
-    public void testHttpsConfigurationValidation()
-    {
-        assertValidates(
-                new HttpsConfig()
-                        .setKeystorePath("/test/keystore"));
+    public void testHttpsConfigurationValidation() {
+        assertValidates(new HttpsConfig().setKeystorePath("/test/keystore"));
 
         assertFailsValidation(
                 new HttpsConfig(),
@@ -107,8 +105,7 @@ public class TestHttpsConfig
                 AssertTrue.class);
     }
 
-    private static List<String> getJettyDefaultExcludedCiphers()
-    {
+    private static List<String> getJettyDefaultExcludedCiphers() {
         return ImmutableList.copyOf(new SslContextFactory.Server().getExcludeCipherSuites());
     }
 }

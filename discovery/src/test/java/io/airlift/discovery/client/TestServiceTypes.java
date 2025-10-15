@@ -15,13 +15,12 @@
  */
 package io.airlift.discovery.client;
 
-import org.junit.jupiter.api.Test;
-
 import static io.airlift.testing.EquivalenceTester.equivalenceTester;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TestServiceTypes
-{
+import org.junit.jupiter.api.Test;
+
+public class TestServiceTypes {
     @ServiceType("apple")
     private final ServiceType appleServiceType;
 
@@ -31,34 +30,32 @@ public class TestServiceTypes
     @ServiceType("quot\"ation-and-\\backslash")
     private final ServiceType serviceTypeWithCharacters;
 
-    public TestServiceTypes()
-    {
+    public TestServiceTypes() {
         try {
-            this.appleServiceType = getClass().getDeclaredField("appleServiceType").getAnnotation(ServiceType.class);
-            this.bananaServiceType = getClass().getDeclaredField("bananaServiceType").getAnnotation(ServiceType.class);
-            this.serviceTypeWithCharacters = getClass().getDeclaredField("serviceTypeWithCharacters").getAnnotation(ServiceType.class);
-        }
-        catch (NoSuchFieldException e) {
+            this.appleServiceType =
+                    getClass().getDeclaredField("appleServiceType").getAnnotation(ServiceType.class);
+            this.bananaServiceType =
+                    getClass().getDeclaredField("bananaServiceType").getAnnotation(ServiceType.class);
+            this.serviceTypeWithCharacters =
+                    getClass().getDeclaredField("serviceTypeWithCharacters").getAnnotation(ServiceType.class);
+        } catch (NoSuchFieldException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Test
-    public void testValue()
-    {
+    public void testValue() {
         assertThat(ServiceTypes.serviceType("type").value()).isEqualTo("type");
     }
 
     @Test
-    public void testAnnotationType()
-    {
+    public void testAnnotationType() {
         assertThat(ServiceTypes.serviceType("apple").annotationType()).isEqualTo(ServiceType.class);
         assertThat(ServiceTypes.serviceType("apple").annotationType()).isEqualTo(appleServiceType.annotationType());
     }
 
     @Test
-    public void testEquivalence()
-    {
+    public void testEquivalence() {
         equivalenceTester()
                 .addEquivalentGroup(appleServiceType, ServiceTypes.serviceType("apple"))
                 .addEquivalentGroup(bananaServiceType, ServiceTypes.serviceType("banana"))

@@ -15,7 +15,6 @@ package io.airlift.spi.secrets;
 
 import java.util.List;
 
-public interface SecretsPlugin
-{
+public interface SecretsPlugin {
     List<SecretProviderFactory> getSecretProviderFactories();
 }

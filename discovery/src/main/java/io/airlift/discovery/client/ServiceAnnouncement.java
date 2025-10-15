@@ -15,25 +15,22 @@
  */
 package io.airlift.discovery.client;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableMap;
-import io.airlift.node.NodeInfo;
-
-import java.util.Map;
-import java.util.UUID;
-
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static io.airlift.discovery.client.ServiceDescriptor.serviceDescriptor;
 import static java.util.Objects.requireNonNull;
 
-public class ServiceAnnouncement
-{
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableMap;
+import io.airlift.node.NodeInfo;
+import java.util.Map;
+import java.util.UUID;
+
+public class ServiceAnnouncement {
     private final UUID id = UUID.randomUUID();
     private final String type;
     private final Map<String, String> properties;
 
-    private ServiceAnnouncement(String type, Map<String, String> properties)
-    {
+    private ServiceAnnouncement(String type, Map<String, String> properties) {
         requireNonNull(type, "type is null");
         requireNonNull(properties, "properties is null");
 
@@ -42,26 +39,22 @@ public class ServiceAnnouncement
     }
 
     @JsonProperty
-    public UUID getId()
-    {
+    public UUID getId() {
         return id;
     }
 
     @JsonProperty
-    public String getType()
-    {
+    public String getType() {
         return type;
     }
 
     @JsonProperty
-    public Map<String, String> getProperties()
-    {
+    public Map<String, String> getProperties() {
         return properties;
     }
 
     @Override
-    public boolean equals(Object o)
-    {
+    public boolean equals(Object o) {
         if (this == o) {
             return true;
         }
@@ -79,14 +72,12 @@ public class ServiceAnnouncement
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return id.hashCode();
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return toStringHelper(this)
                 .add("id", id)
                 .add("type", type)
@@ -94,8 +85,7 @@ public class ServiceAnnouncement
                 .toString();
     }
 
-    public ServiceDescriptor toServiceDescriptor(NodeInfo nodeInfo)
-    {
+    public ServiceDescriptor toServiceDescriptor(NodeInfo nodeInfo) {
         return serviceDescriptor(type)
                 .setId(id)
                 .setNodeInfo(nodeInfo)
@@ -105,38 +95,32 @@ public class ServiceAnnouncement
                 .build();
     }
 
-    public static ServiceAnnouncementBuilder serviceAnnouncement(String type)
-    {
+    public static ServiceAnnouncementBuilder serviceAnnouncement(String type) {
         return new ServiceAnnouncementBuilder(type);
     }
 
-    public static class ServiceAnnouncementBuilder
-    {
+    public static class ServiceAnnouncementBuilder {
         private final String type;
         private final ImmutableMap.Builder<String, String> properties = ImmutableMap.builder();
 
-        private ServiceAnnouncementBuilder(String type)
-        {
+        private ServiceAnnouncementBuilder(String type) {
             this.type = type;
         }
 
-        public ServiceAnnouncementBuilder addProperty(String key, String value)
-        {
+        public ServiceAnnouncementBuilder addProperty(String key, String value) {
             requireNonNull(key, "key is null");
             requireNonNull(value, "value is null");
             properties.put(key, value);
             return this;
         }
 
-        public ServiceAnnouncementBuilder addProperties(Map<String, String> properties)
-        {
+        public ServiceAnnouncementBuilder addProperties(Map<String, String> properties) {
             requireNonNull(properties, "properties is null");
             this.properties.putAll(properties);
             return this;
         }
 
-        public ServiceAnnouncement build()
-        {
+        public ServiceAnnouncement build() {
             return new ServiceAnnouncement(type, properties.build());
         }
     }

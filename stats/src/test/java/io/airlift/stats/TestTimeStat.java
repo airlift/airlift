@@ -15,18 +15,6 @@
  */
 package io.airlift.stats;
 
-import io.airlift.stats.TimeStat.BlockTimer;
-import io.airlift.testing.TestingTicker;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.parallel.Execution;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
 import static com.google.common.math.DoubleMath.fuzzyEquals;
 import static io.airlift.stats.TimeDistribution.MERGE_THRESHOLD_NANOS;
 import static java.lang.Math.min;
@@ -37,22 +25,30 @@ import static org.assertj.core.api.Assertions.within;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
 
+import io.airlift.stats.TimeStat.BlockTimer;
+import io.airlift.testing.TestingTicker;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.parallel.Execution;
+
 @TestInstance(PER_CLASS)
 @Execution(SAME_THREAD)
-public class TestTimeStat
-{
+public class TestTimeStat {
     private static final int VALUES = 1000;
     private TestingTicker ticker;
 
     @BeforeEach
-    public void setup()
-    {
+    public void setup() {
         ticker = new TestingTicker();
     }
 
     @Test
-    public void testBasic()
-    {
+    public void testBasic() {
         TimeStat stat = new TimeStat(ticker);
         List<Long> values = new ArrayList<>(VALUES);
         for (long i = 0; i < VALUES; i++) {
@@ -67,9 +63,11 @@ public class TestTimeStat
         ticker.increment(MERGE_THRESHOLD_NANOS, TimeUnit.NANOSECONDS); // force a merge
         TimeDistribution allTime = stat.getAllTime();
         assertThat(allTime.getCount()).isEqualTo(values.size());
-        assertThat(fuzzyEquals(allTime.getMax(), values.get(values.size() - 1) * 0.001, 0.000_000_000_1)).isTrue();
+        assertThat(fuzzyEquals(allTime.getMax(), values.get(values.size() - 1) * 0.001, 0.000_000_000_1))
+                .isTrue();
         assertThat(allTime.getMin()).isEqualTo(values.get(0) * 0.001);
-        assertThat(allTime.getAvg()).isCloseTo(values.stream().mapToDouble(x -> x).average().getAsDouble() * 0.001, within(0.001));
+        assertThat(allTime.getAvg())
+                .isCloseTo(values.stream().mapToDouble(x -> x).average().getAsDouble() * 0.001, within(0.001));
         assertThat(allTime.getUnit()).isEqualTo(TimeUnit.SECONDS);
 
         assertPercentile("tp50", allTime.getP50(), values, 0.50);
@@ -79,12 +77,10 @@ public class TestTimeStat
     }
 
     @Test
-    public void testAddIllegalDoubles()
-    {
+    public void testAddIllegalDoubles() {
         TimeStat stat = new TimeStat(ticker);
 
-        assertThatThrownBy(() -> stat.add(-1.0, TimeUnit.MILLISECONDS))
-                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> stat.add(-1.0, TimeUnit.MILLISECONDS)).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> stat.add(Double.NaN, TimeUnit.MILLISECONDS))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> stat.add(Double.POSITIVE_INFINITY, TimeUnit.MILLISECONDS))
@@ -102,8 +98,7 @@ public class TestTimeStat
     }
 
     @Test
-    public void testReset()
-    {
+    public void testReset() {
         TimeStat stat = new TimeStat(ticker);
         for (long value = 0; value < VALUES; value++) {
             stat.add(value, TimeUnit.MILLISECONDS);
@@ -134,8 +129,7 @@ public class TestTimeStat
     }
 
     @Test
-    public void testEmpty()
-    {
+    public void testEmpty() {
         TimeStat stat = new TimeStat(ticker);
         TimeDistribution allTime = stat.getAllTime();
         assertThat(allTime.getMin()).isNaN();
@@ -148,9 +142,7 @@ public class TestTimeStat
     }
 
     @Test
-    public void time()
-            throws Exception
-    {
+    public void time() throws Exception {
         TimeStat stat = new TimeStat(ticker);
         stat.time(() -> {
             ticker.increment(10, TimeUnit.MILLISECONDS);
@@ -163,8 +155,7 @@ public class TestTimeStat
                 throw new Exception("thrown by time");
             });
             fail("Exception should have been thrown");
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             assertThat(e.getMessage()).isEqualTo("thrown by time");
         }
 
@@ -176,8 +167,7 @@ public class TestTimeStat
     }
 
     @Test
-    public void timeTry()
-    {
+    public void timeTry() {
         TimeStat stat = new TimeStat(ticker);
         try (BlockTimer ignored = stat.time()) {
             ticker.increment(10, TimeUnit.MILLISECONDS);
@@ -191,8 +181,7 @@ public class TestTimeStat
     }
 
     @Test
-    public void testUnit()
-    {
+    public void testUnit() {
         TimeStat stat = new TimeStat(ticker, TimeUnit.MILLISECONDS);
         stat.add(1, TimeUnit.SECONDS);
 
@@ -203,8 +192,7 @@ public class TestTimeStat
     }
 
     @Test
-    public void testAddNanos()
-    {
+    public void testAddNanos() {
         TimeStat stat = new TimeStat(ticker, TimeUnit.NANOSECONDS);
         stat.add(1, TimeUnit.MILLISECONDS);
         stat.addNanos(1L);
@@ -215,18 +203,16 @@ public class TestTimeStat
         assertThat(allTime.getMax()).isEqualTo(1000000.0);
         assertThat(allTime.getCount()).isEqualTo(2.0);
 
-        assertThatThrownBy(() -> stat.addNanos(-1))
-                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> stat.addNanos(-1)).isInstanceOf(IllegalArgumentException.class);
     }
 
-    private static void assertPercentile(String name, double value, List<Long> values, double percentile)
-    {
+    private static void assertPercentile(String name, double value, List<Long> values, double percentile) {
         int index = (int) (values.size() * percentile);
-        assertBounded(name, value, values.get(index - 1) * 0.001, values.get(min(index + 1, values.size() - 1)) * 0.001);
+        assertBounded(
+                name, value, values.get(index - 1) * 0.001, values.get(min(index + 1, values.size() - 1)) * 0.001);
     }
 
-    private static void assertBounded(String name, double value, double minValue, double maxValue)
-    {
+    private static void assertBounded(String name, double value, double minValue, double maxValue) {
         if (value >= minValue && value <= maxValue) {
             return;
         }

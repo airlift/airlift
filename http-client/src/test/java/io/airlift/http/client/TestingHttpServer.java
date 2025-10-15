@@ -13,8 +13,14 @@
  */
 package io.airlift.http.client;
 
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.net.HostAndPort;
 import jakarta.servlet.Servlet;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Optional;
+import java.util.function.Consumer;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.compression.gzip.GzipCompression;
 import org.eclipse.jetty.compression.server.CompressionHandler;
@@ -33,29 +39,21 @@ import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Optional;
-import java.util.function.Consumer;
-
-import static java.util.Objects.requireNonNull;
-
-public class TestingHttpServer
-        implements AutoCloseable
-{
+public class TestingHttpServer implements AutoCloseable {
     private final String scheme;
     private final Server server;
     private final HostAndPort hostAndPort;
 
-    public TestingHttpServer(Optional<String> keystore, Servlet servlet)
-            throws Exception
-    {
+    public TestingHttpServer(Optional<String> keystore, Servlet servlet) throws Exception {
         this(keystore, servlet, httpConfiguration -> {}, Optional.empty());
     }
 
-    public TestingHttpServer(Optional<String> keystore, Servlet servlet, Consumer<HttpConfiguration> configurationDecorator, Optional<Handler.Wrapper> additionalHandle)
-            throws Exception
-    {
+    public TestingHttpServer(
+            Optional<String> keystore,
+            Servlet servlet,
+            Consumer<HttpConfiguration> configurationDecorator,
+            Optional<Handler.Wrapper> additionalHandle)
+            throws Exception {
         requireNonNull(keystore, "keyStore is null");
         requireNonNull(servlet, "servlet is null");
         this.scheme = keystore.isPresent() ? "https" : "http";
@@ -75,8 +73,7 @@ public class TestingHttpServer
             sslContextFactory.setKeyStorePath(keystore.get());
             sslContextFactory.setKeyStorePassword("changeit");
             connector = new ServerConnector(server, secureFactories(httpConfiguration, sslContextFactory));
-        }
-        else {
+        } else {
             connector = new ServerConnector(server, insecureFactories(httpConfiguration));
         }
 
@@ -101,8 +98,7 @@ public class TestingHttpServer
             Handler.Wrapper handler = additionalHandle.get();
             handler.setHandler(compressionHandler);
             server.setHandler(handler);
-        }
-        else {
+        } else {
             server.setHandler(compressionHandler);
         }
 
@@ -111,15 +107,13 @@ public class TestingHttpServer
         this.hostAndPort = HostAndPort.fromParts("localhost", connector.getLocalPort());
     }
 
-    private ConnectionFactory[] insecureFactories(HttpConfiguration httpConfiguration)
-    {
+    private ConnectionFactory[] insecureFactories(HttpConfiguration httpConfiguration) {
         HttpConnectionFactory http1 = new HttpConnectionFactory(httpConfiguration);
         HTTP2CServerConnectionFactory http2c = new HTTP2CServerConnectionFactory(httpConfiguration);
         return new ConnectionFactory[] {http1, http2c};
     }
 
-    private ConnectionFactory[] secureFactories(HttpConfiguration httpsConfiguration, SslContextFactory.Server server)
-    {
+    private ConnectionFactory[] secureFactories(HttpConfiguration httpsConfiguration, SslContextFactory.Server server) {
         ConnectionFactory http1 = new HttpConnectionFactory(httpsConfiguration);
         ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
         alpn.setDefaultProtocol(http1.getProtocol());
@@ -130,25 +124,20 @@ public class TestingHttpServer
         return new ConnectionFactory[] {tls, alpn, http2, http1};
     }
 
-    public HostAndPort getHostAndPort()
-    {
+    public HostAndPort getHostAndPort() {
         return hostAndPort;
     }
 
-    public URI baseURI()
-    {
+    public URI baseURI() {
         try {
             return new URI(scheme, null, hostAndPort.getHost(), hostAndPort.getPort(), null, null, null);
-        }
-        catch (URISyntaxException e) {
+        } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    public void close()
-            throws Exception
-    {
+    public void close() throws Exception {
         server.stop();
     }
 }

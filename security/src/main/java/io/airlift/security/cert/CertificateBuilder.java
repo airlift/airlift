@@ -13,26 +13,6 @@
  */
 package io.airlift.security.cert;
 
-import io.airlift.security.der.DerUtils;
-
-import javax.security.auth.x500.X500Principal;
-
-import java.io.ByteArrayInputStream;
-import java.net.InetAddress;
-import java.security.GeneralSecurityException;
-import java.security.KeyPair;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.Signature;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
-import java.security.interfaces.ECPrivateKey;
-import java.security.interfaces.ECPublicKey;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static io.airlift.security.der.DerUtils.encodeBooleanTrue;
@@ -48,8 +28,25 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.ZoneOffset.UTC;
 import static java.util.Objects.requireNonNull;
 
-public class CertificateBuilder
-{
+import io.airlift.security.der.DerUtils;
+import java.io.ByteArrayInputStream;
+import java.net.InetAddress;
+import java.security.GeneralSecurityException;
+import java.security.KeyPair;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.Signature;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import java.security.interfaces.ECPrivateKey;
+import java.security.interfaces.ECPublicKey;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import javax.security.auth.x500.X500Principal;
+
+public class CertificateBuilder {
     private static final byte[] SHA_256_WITH_ECDSA_ENCRYPTION_OID = encodeOid("1.2.840.10045.4.3.2");
     private static final byte[] SUBJECT_KEY_IDENTIFIER_OID = encodeOid("2.5.29.14");
     private static final byte[] AUTHORITY_KEY_IDENTIFIER_OID = encodeOid("2.5.29.35");
@@ -69,13 +66,11 @@ public class CertificateBuilder
 
     private CertificateBuilder() {}
 
-    public static CertificateBuilder certificateBuilder()
-    {
+    public static CertificateBuilder certificateBuilder() {
         return new CertificateBuilder();
     }
 
-    public CertificateBuilder setKeyPair(KeyPair keyPair)
-    {
+    public CertificateBuilder setKeyPair(KeyPair keyPair) {
         requireNonNull(keyPair, "keyPair is null");
         checkArgument(keyPair.getPublic() instanceof ECPublicKey, "not an EC key: %s", keyPair.getPublic());
         checkArgument(keyPair.getPrivate() instanceof ECPrivateKey, "not an EC key: %s", keyPair.getPrivate());
@@ -84,92 +79,77 @@ public class CertificateBuilder
         return this;
     }
 
-    public CertificateBuilder setPublicKey(ECPublicKey publicKey)
-    {
+    public CertificateBuilder setPublicKey(ECPublicKey publicKey) {
         this.publicKey = requireNonNull(publicKey, "publicKey is null");
         return this;
     }
 
-    public CertificateBuilder setPrivateKey(ECPrivateKey privateKey)
-    {
+    public CertificateBuilder setPrivateKey(ECPrivateKey privateKey) {
         this.privateKey = requireNonNull(privateKey, "privateKey is null");
         return this;
     }
 
-    public CertificateBuilder setSerialNumber(long serialNumber)
-    {
+    public CertificateBuilder setSerialNumber(long serialNumber) {
         checkArgument(serialNumber >= 0, "serialNumber is negative");
         this.serialNumber = serialNumber;
         return this;
     }
 
-    public CertificateBuilder setIssuer(X500Principal issuer)
-    {
+    public CertificateBuilder setIssuer(X500Principal issuer) {
         this.issuer = requireNonNull(issuer, "issuer is null");
         return this;
     }
 
-    public CertificateBuilder setNotBefore(Instant notBefore)
-    {
+    public CertificateBuilder setNotBefore(Instant notBefore) {
         this.notBefore = requireNonNull(notBefore, "notBefore is null");
         return this;
     }
 
-    public CertificateBuilder setNotBefore(LocalDate notBefore)
-    {
+    public CertificateBuilder setNotBefore(LocalDate notBefore) {
         requireNonNull(notBefore, "notBefore is null");
         this.notBefore = notBefore.atStartOfDay().toInstant(UTC);
         return this;
     }
 
-    public CertificateBuilder setNotAfter(Instant notAfter)
-    {
+    public CertificateBuilder setNotAfter(Instant notAfter) {
         this.notAfter = requireNonNull(notAfter, "notAfter is null");
         return this;
     }
 
-    public CertificateBuilder setNotAfter(LocalDate notAfter)
-    {
+    public CertificateBuilder setNotAfter(LocalDate notAfter) {
         requireNonNull(notAfter, "notAfter is null");
         this.notAfter = notAfter.atTime(23, 59, 59).toInstant(UTC);
         return this;
     }
 
-    public CertificateBuilder setSubject(X500Principal subject)
-    {
+    public CertificateBuilder setSubject(X500Principal subject) {
         this.subject = requireNonNull(subject, "subject is null");
         return this;
     }
 
-    public CertificateBuilder addSanIpAddress(InetAddress address)
-    {
+    public CertificateBuilder addSanIpAddress(InetAddress address) {
         this.sanIpAddresses.add(requireNonNull(address, "address is null"));
         return this;
     }
 
-    public CertificateBuilder addSanIpAddresses(List<InetAddress> addresses)
-    {
+    public CertificateBuilder addSanIpAddresses(List<InetAddress> addresses) {
         requireNonNull(addresses, "addresses is null");
         addresses.forEach(this::addSanIpAddress);
         return this;
     }
 
-    public CertificateBuilder addSanDnsName(String dnsName)
-    {
+    public CertificateBuilder addSanDnsName(String dnsName) {
         this.sanDnsNames.add(requireNonNull(dnsName, "dnsName is null"));
         return this;
     }
 
-    public CertificateBuilder addSanDnsNames(List<String> dnsNames)
-    {
+    public CertificateBuilder addSanDnsNames(List<String> dnsNames) {
         requireNonNull(dnsNames, "dnsNames is null");
         dnsNames.forEach(this::addSanDnsName);
         return this;
     }
 
-    public X509Certificate buildSelfSigned()
-            throws GeneralSecurityException
-    {
+    public X509Certificate buildSelfSigned() throws GeneralSecurityException {
         checkState(publicKey != null, "publicKey is not set");
         checkState(privateKey != null, "privateKey is not set");
         checkState(issuer != null, "issuer is not set");
@@ -195,9 +175,7 @@ public class CertificateBuilder
                 // serialNumber
                 encodeInteger(serialNumber),
                 // signature kind
-                encodeSequence(
-                        SHA_256_WITH_ECDSA_ENCRYPTION_OID,
-                        encodeNull()),
+                encodeSequence(SHA_256_WITH_ECDSA_ENCRYPTION_OID, encodeNull()),
                 // issuer
                 issuer.getEncoded(),
                 // validity
@@ -211,30 +189,29 @@ public class CertificateBuilder
                 // public key
                 publicKey.getEncoded(),
                 // extensions
-                encodeContextSpecificSequence(3, encodeSequence(
+                encodeContextSpecificSequence(
+                        3,
                         encodeSequence(
-                                SUBJECT_KEY_IDENTIFIER_OID,
-                                encodeOctetString(encodeOctetString(publicKeyHash))),
-                        encodeSequence(
-                                AUTHORITY_KEY_IDENTIFIER_OID,
-                                encodeOctetString(encodeSequence(encodeContextSpecificTag(0, publicKeyHash)))),
-                        encodeSequence(
-                                BASIC_CONSTRAINTS_OID,
-                                encodeBooleanTrue(),
-                                encodeOctetString(encodeSequence(encodeBooleanTrue()))),
-                        encodeSequence(
-                                SUBJECT_ALT_NAME_OID,
-                                encodeOctetString(
-                                        encodeSequence(sans.toArray(new byte[0][])))))));
+                                encodeSequence(
+                                        SUBJECT_KEY_IDENTIFIER_OID,
+                                        encodeOctetString(encodeOctetString(publicKeyHash))),
+                                encodeSequence(
+                                        AUTHORITY_KEY_IDENTIFIER_OID,
+                                        encodeOctetString(encodeSequence(encodeContextSpecificTag(0, publicKeyHash)))),
+                                encodeSequence(
+                                        BASIC_CONSTRAINTS_OID,
+                                        encodeBooleanTrue(),
+                                        encodeOctetString(encodeSequence(encodeBooleanTrue()))),
+                                encodeSequence(
+                                        SUBJECT_ALT_NAME_OID,
+                                        encodeOctetString(encodeSequence(sans.toArray(new byte[0][])))))));
 
         byte[] signature = signCertificate(rawCertificate);
 
         byte[] encodedCertificate = encodeSequence(
                 rawCertificate,
                 // signature kind
-                encodeSequence(
-                        SHA_256_WITH_ECDSA_ENCRYPTION_OID,
-                        encodeNull()),
+                encodeSequence(SHA_256_WITH_ECDSA_ENCRYPTION_OID, encodeNull()),
                 // signature
                 DerUtils.encodeBitString(0, signature));
 
@@ -242,18 +219,14 @@ public class CertificateBuilder
         return (X509Certificate) certificateFactory.generateCertificate(new ByteArrayInputStream(encodedCertificate));
     }
 
-    private byte[] signCertificate(byte[] rawCertificate)
-            throws GeneralSecurityException
-    {
+    private byte[] signCertificate(byte[] rawCertificate) throws GeneralSecurityException {
         Signature signature = Signature.getInstance("SHA256withECDSA");
         signature.initSign(privateKey);
         signature.update(rawCertificate);
         return signature.sign();
     }
 
-    private byte[] hashPublicKey()
-            throws NoSuchAlgorithmException
-    {
+    private byte[] hashPublicKey() throws NoSuchAlgorithmException {
         byte[] rawKey = encodeSequence(
                 encodeInteger(publicKey.getW().getAffineX()),
                 encodeInteger(publicKey.getW().getAffineY()));

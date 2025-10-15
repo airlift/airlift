@@ -16,11 +16,9 @@
 package io.airlift.discovery.client;
 
 import com.google.common.util.concurrent.ListenableFuture;
-
 import java.util.List;
 
-public interface ServiceSelector
-{
+public interface ServiceSelector {
     String getType();
 
     String getPool();

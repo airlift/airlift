@@ -13,6 +13,14 @@
  */
 package io.airlift.security.csr;
 
+import static com.google.common.io.BaseEncoding.base16;
+import static io.airlift.security.csr.SignatureAlgorithmIdentifier.findSignatureAlgorithmIdentifier;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.spec.ECGenParameterSpec;
+import javax.security.auth.x500.X500Principal;
 import org.bouncycastle.asn1.DERBitString;
 import org.bouncycastle.asn1.DERSet;
 import org.bouncycastle.asn1.x500.X500Name;
@@ -21,45 +29,41 @@ import org.bouncycastle.operator.DefaultSignatureAlgorithmIdentifierFinder;
 import org.bouncycastle.pkcs.PKCS10CertificationRequest;
 import org.junit.jupiter.api.Test;
 
-import javax.security.auth.x500.X500Principal;
-
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.spec.ECGenParameterSpec;
-
-import static com.google.common.io.BaseEncoding.base16;
-import static io.airlift.security.csr.SignatureAlgorithmIdentifier.findSignatureAlgorithmIdentifier;
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class TestCertificationRequest
-{
+public class TestCertificationRequest {
     @Test
-    public void test()
-            throws Exception
-    {
-        // test only with state because BC encodes every other value using UTF8String instead of PrintableString used by the JDK
+    public void test() throws Exception {
+        // test only with state because BC encodes every other value using UTF8String instead of PrintableString used by
+        // the JDK
         String name = "C=country";
 
         KeyPairGenerator generator = KeyPairGenerator.getInstance("EC");
         generator.initialize(new ECGenParameterSpec("secp256r1"));
         KeyPair keyPair = generator.generateKeyPair();
 
-        CertificationRequestInfo certificationRequestInfo = new CertificationRequestInfo(new X500Principal(name), keyPair.getPublic());
+        CertificationRequestInfo certificationRequestInfo =
+                new CertificationRequestInfo(new X500Principal(name), keyPair.getPublic());
         SignatureAlgorithmIdentifier signatureAlgorithmIdentifier = findSignatureAlgorithmIdentifier("SHA256withECDSA");
         byte[] signature = certificationRequestInfo.sign(signatureAlgorithmIdentifier, keyPair.getPrivate());
 
-        CertificationRequest certificationRequest = new CertificationRequest(certificationRequestInfo, signatureAlgorithmIdentifier, signature);
+        CertificationRequest certificationRequest =
+                new CertificationRequest(certificationRequestInfo, signatureAlgorithmIdentifier, signature);
         assertThat(certificationRequest.getCertificationRequestInfo()).isEqualTo(certificationRequestInfo);
         assertThat(certificationRequest.getSignatureAlgorithmIdentifier()).isEqualTo(signatureAlgorithmIdentifier);
         assertThat(base16().encode(certificationRequest.getSignature())).isEqualTo(base16().encode(signature));
         assertThat(certificationRequest).isEqualTo(certificationRequest);
         assertThat(certificationRequest.hashCode()).isEqualTo(certificationRequest.hashCode());
 
-        PKCS10CertificationRequest expectedCertificationRequest = new PKCS10CertificationRequest(new org.bouncycastle.asn1.pkcs.CertificationRequest(
-                new org.bouncycastle.asn1.pkcs.CertificationRequestInfo(new X500Name(name), SubjectPublicKeyInfo.getInstance(keyPair.getPublic().getEncoded()), new DERSet()),
-                new DefaultSignatureAlgorithmIdentifierFinder().find("SHA256withECDSA"),
-                new DERBitString(signature)));
+        PKCS10CertificationRequest expectedCertificationRequest =
+                new PKCS10CertificationRequest(new org.bouncycastle.asn1.pkcs.CertificationRequest(
+                        new org.bouncycastle.asn1.pkcs.CertificationRequestInfo(
+                                new X500Name(name),
+                                SubjectPublicKeyInfo.getInstance(
+                                        keyPair.getPublic().getEncoded()),
+                                new DERSet()),
+                        new DefaultSignatureAlgorithmIdentifierFinder().find("SHA256withECDSA"),
+                        new DERBitString(signature)));
 
-        assertThat(base16().encode(certificationRequest.getEncoded())).isEqualTo(base16().encode(expectedCertificationRequest.getEncoded()));
+        assertThat(base16().encode(certificationRequest.getEncoded()))
+                .isEqualTo(base16().encode(expectedCertificationRequest.getEncoded()));
     }
 }

@@ -19,28 +19,20 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 
 @SuppressWarnings("MethodMayBeStatic")
-public class SimpleBaseImpl
-        implements SimpleBase
-{
+public class SimpleBaseImpl implements SimpleBase {
     @Override
-    public void foo()
-    {
-    }
+    public void foo() {}
 
     @Override
-    public void bar()
-    {
-    }
+    public void bar() {}
 
     @PostConstruct
-    public void postSimpleBaseImpl()
-    {
+    public void postSimpleBaseImpl() {
         TestLifeCycleManager.note("postSimpleBaseImpl");
     }
 
     @PreDestroy
-    public void preSimpleBaseImpl()
-    {
+    public void preSimpleBaseImpl() {
         TestLifeCycleManager.note("preSimpleBaseImpl");
     }
 }

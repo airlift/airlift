@@ -15,6 +15,9 @@
  */
 package io.airlift.http.server;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.HttpHeaders;
 import jakarta.annotation.Nullable;
@@ -23,25 +26,19 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.MimeTypes;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.List;
-
-import static com.google.common.base.Preconditions.checkArgument;
-import static java.util.Objects.requireNonNull;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.MimeTypes;
 
 /**
  * Serves files from a given folder on the classpath through jetty.
  * Intended to serve a couple of static files e.g. for javascript or HTML.
  */
 // Forked from https://github.com/NessComputing/components-ness-httpserver/
-public class ClassPathResourceFilter
-        extends HttpFilter
-{
+public class ClassPathResourceFilter extends HttpFilter {
     private static final MimeTypes.Mutable MIME_TYPES;
 
     static {
@@ -53,12 +50,12 @@ public class ClassPathResourceFilter
     private final String classPathResourceBase;
     private final List<String> welcomeFiles;
 
-    public ClassPathResourceFilter(String baseUri, String classPathResourceBase, List<String> welcomeFiles)
-    {
+    public ClassPathResourceFilter(String baseUri, String classPathResourceBase, List<String> welcomeFiles) {
         requireNonNull(baseUri, "baseUri is null");
         requireNonNull(classPathResourceBase, "classPathResourceBase is null");
         requireNonNull(welcomeFiles, "welcomeFiles is null");
-        checkArgument(baseUri.equals("/") || !baseUri.endsWith("/"), "baseUri should not end with a slash: %s", baseUri);
+        checkArgument(
+                baseUri.equals("/") || !baseUri.endsWith("/"), "baseUri should not end with a slash: %s", baseUri);
 
         baseUri = baseUri.startsWith("/") ? baseUri : '/' + baseUri;
         baseUri = baseUri.equals("/") ? "" : baseUri;
@@ -76,15 +73,13 @@ public class ClassPathResourceFilter
         this.welcomeFiles = files.build();
     }
 
-    public String getBaseUri()
-    {
+    public String getBaseUri() {
         return baseUri;
     }
 
     @Override
     public void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
-            throws IOException, ServletException
-    {
+            throws IOException, ServletException {
         String resourcePath = getResourcePath(request);
         if (resourcePath == null) {
             chain.doFilter(request, response);
@@ -108,8 +103,7 @@ public class ClassPathResourceFilter
         if (!HttpMethod.GET.is(method)) {
             if (HttpMethod.HEAD.is(method)) {
                 skipContent = true;
-            }
-            else {
+            } else {
                 response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
                 return;
             }
@@ -128,15 +122,13 @@ public class ClassPathResourceFilter
             }
 
             resourceStream.transferTo(response.getOutputStream());
-        }
-        finally {
+        } finally {
             closeQuietly(resourceStream);
         }
     }
 
     @Nullable
-    private String getResourcePath(HttpServletRequest request)
-    {
+    private String getResourcePath(HttpServletRequest request) {
         String pathInfo = request.getPathInfo();
 
         // Only serve the content if the request matches the base path.
@@ -156,8 +148,7 @@ public class ClassPathResourceFilter
         return pathInfo;
     }
 
-    private URL getResource(String resourcePath)
-    {
+    private URL getResource(String resourcePath) {
         checkArgument(resourcePath.startsWith("/"), "resourcePath does not start with a slash: %s", resourcePath);
 
         if (!"/".equals(resourcePath)) {
@@ -174,13 +165,11 @@ public class ClassPathResourceFilter
         return null;
     }
 
-    private static void closeQuietly(@Nullable InputStream in)
-    {
+    private static void closeQuietly(@Nullable InputStream in) {
         if (in != null) {
             try {
                 in.close();
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 // ignored
             }
         }

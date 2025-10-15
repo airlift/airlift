@@ -1,5 +1,7 @@
 package io.airlift.tracing;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.airlift.json.JsonCodec;
 import io.airlift.json.JsonCodecFactory;
 import io.airlift.json.ObjectMapperProvider;
@@ -12,17 +14,12 @@ import io.opentelemetry.api.trace.TraceFlags;
 import io.opentelemetry.api.trace.TraceState;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.propagation.ContextPropagators;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class TestSpanSerialization
-{
+public class TestSpanSerialization {
     @Test
-    public void testSerialization()
-    {
+    public void testSerialization() {
         JsonCodec<Span> codec = createSpanJsonCodec();
 
         String traceId = "414e5e5043a0436f80ad0891b7c2d2da";
@@ -52,14 +49,13 @@ public class TestSpanSerialization
         assertThat(decoded.getTraceState()).isEqualTo(traceState);
     }
 
-    private static JsonCodec<Span> createSpanJsonCodec()
-    {
-        OpenTelemetry openTelemetry = OpenTelemetry.propagating(
-                ContextPropagators.create(W3CTraceContextPropagator.getInstance()));
+    private static JsonCodec<Span> createSpanJsonCodec() {
+        OpenTelemetry openTelemetry =
+                OpenTelemetry.propagating(ContextPropagators.create(W3CTraceContextPropagator.getInstance()));
 
         return new JsonCodecFactory(new ObjectMapperProvider()
-                .withJsonSerializers(Map.of(Span.class, new SpanSerializer(openTelemetry)))
-                .withJsonDeserializers(Map.of(Span.class, new SpanDeserializer(openTelemetry))))
+                        .withJsonSerializers(Map.of(Span.class, new SpanSerializer(openTelemetry)))
+                        .withJsonDeserializers(Map.of(Span.class, new SpanDeserializer(openTelemetry))))
                 .prettyPrint()
                 .jsonCodec(Span.class);
     }

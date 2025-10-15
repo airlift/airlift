@@ -15,36 +15,30 @@
  */
 package io.airlift.discovery.client.testing;
 
-import com.google.common.collect.ImmutableList;
-import io.airlift.discovery.client.HttpServiceSelector;
-
-import java.net.URI;
-import java.util.List;
-
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static io.airlift.discovery.client.ServiceSelectorConfig.DEFAULT_POOL;
 import static java.util.Objects.requireNonNull;
 
-public class StaticHttpServiceSelector
-        implements HttpServiceSelector
-{
+import com.google.common.collect.ImmutableList;
+import io.airlift.discovery.client.HttpServiceSelector;
+import java.net.URI;
+import java.util.List;
+
+public class StaticHttpServiceSelector implements HttpServiceSelector {
     private static final String UNKNOWN_TYPE = "unknown";
     private final String type;
     private final String pool;
     private final List<URI> uris;
 
-    public StaticHttpServiceSelector(URI uri, URI... uris)
-    {
+    public StaticHttpServiceSelector(URI uri, URI... uris) {
         this(UNKNOWN_TYPE, DEFAULT_POOL, uri, uris);
     }
 
-    public StaticHttpServiceSelector(String type, URI uri, URI... uris)
-    {
+    public StaticHttpServiceSelector(String type, URI uri, URI... uris) {
         this(type, DEFAULT_POOL, uri, uris);
     }
 
-    public StaticHttpServiceSelector(String type, String pool, URI uri, URI... uris)
-    {
+    public StaticHttpServiceSelector(String type, String pool, URI uri, URI... uris) {
         requireNonNull(type, "type is null");
         requireNonNull(pool, "pool is null");
         requireNonNull(uri, "uri is null");
@@ -55,18 +49,15 @@ public class StaticHttpServiceSelector
         this.uris = ImmutableList.<URI>builder().add(uri).add(uris).build();
     }
 
-    public StaticHttpServiceSelector(Iterable<URI> uris)
-    {
+    public StaticHttpServiceSelector(Iterable<URI> uris) {
         this(UNKNOWN_TYPE, DEFAULT_POOL, uris);
     }
 
-    public StaticHttpServiceSelector(String type, Iterable<URI> uris)
-    {
+    public StaticHttpServiceSelector(String type, Iterable<URI> uris) {
         this(type, DEFAULT_POOL, uris);
     }
 
-    public StaticHttpServiceSelector(String type, String pool, Iterable<URI> uris)
-    {
+    public StaticHttpServiceSelector(String type, String pool, Iterable<URI> uris) {
         requireNonNull(type, "type is null");
         requireNonNull(pool, "pool is null");
         requireNonNull(uris, "uris is null");
@@ -75,25 +66,21 @@ public class StaticHttpServiceSelector
         this.uris = ImmutableList.copyOf(uris);
     }
 
-    public String getType()
-    {
+    public String getType() {
         return type;
     }
 
-    public String getPool()
-    {
+    public String getPool() {
         return pool;
     }
 
     @Override
-    public List<URI> selectHttpService()
-    {
+    public List<URI> selectHttpService() {
         return uris;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return toStringHelper(this)
                 .add("type", type)
                 .add("pool", pool)

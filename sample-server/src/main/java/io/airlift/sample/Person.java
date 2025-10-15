@@ -15,18 +15,16 @@
  */
 package io.airlift.sample;
 
-import com.google.errorprone.annotations.Immutable;
-
 import static java.util.Objects.requireNonNull;
 
+import com.google.errorprone.annotations.Immutable;
+
 @Immutable
-public class Person
-{
+public class Person {
     private final String email;
     private final String name;
 
-    public Person(String email, String name)
-    {
+    public Person(String email, String name) {
         requireNonNull(email, "email is null");
         requireNonNull(name, "name is null");
 
@@ -34,19 +32,16 @@ public class Person
         this.name = name;
     }
 
-    public String getEmail()
-    {
+    public String getEmail() {
         return email;
     }
 
-    public String getName()
-    {
+    public String getName() {
         return name;
     }
 
     @Override
-    public boolean equals(Object o)
-    {
+    public boolean equals(Object o) {
         if (this == o) {
             return true;
         }
@@ -67,19 +62,14 @@ public class Person
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         int result = email != null ? email.hashCode() : 0;
         result = 31 * result + (name != null ? name.hashCode() : 0);
         return result;
     }
 
     @Override
-    public String toString()
-    {
-        return "Person{" +
-                "email='" + email + '\'' +
-                ", name='" + name + '\'' +
-                '}';
+    public String toString() {
+        return "Person{" + "email='" + email + '\'' + ", name='" + name + '\'' + '}';
     }
 }

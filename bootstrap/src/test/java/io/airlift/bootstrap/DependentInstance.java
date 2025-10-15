@@ -20,20 +20,17 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 
 @SuppressWarnings("MethodMayBeStatic")
-public class DependentInstance
-{
+public class DependentInstance {
     @Inject
     public DependentInstance() {}
 
     @PostConstruct
-    public void postDependentInstance()
-    {
+    public void postDependentInstance() {
         TestLifeCycleManager.note("postDependentInstance");
     }
 
     @PreDestroy
-    public void preDependentInstance()
-    {
+    public void preDependentInstance() {
         TestLifeCycleManager.note("preDependentInstance");
     }
 }

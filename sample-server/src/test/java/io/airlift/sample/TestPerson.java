@@ -15,15 +15,13 @@
  */
 package io.airlift.sample;
 
-import org.junit.jupiter.api.Test;
-
 import static io.airlift.testing.EquivalenceTester.equivalenceTester;
 
-public class TestPerson
-{
+import org.junit.jupiter.api.Test;
+
+public class TestPerson {
     @Test
-    public void testEquivalence()
-    {
+    public void testEquivalence() {
         equivalenceTester()
                 .addEquivalentGroup(new Person("foo@example.com", "Mr Foo"), new Person("foo@example.com", "Mr Foo"))
                 .addEquivalentGroup(new Person("bar@example.com", "Mr Bar"), new Person("bar@example.com", "Mr Bar"))

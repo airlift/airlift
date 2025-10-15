@@ -15,7 +15,6 @@
  */
 package io.airlift.configuration;
 
-public interface WarningsMonitor
-{
+public interface WarningsMonitor {
     void onWarning(String message);
 }

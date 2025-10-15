@@ -1,5 +1,10 @@
 package io.airlift.http.client.jetty;
 
+import static com.google.common.base.MoreObjects.toStringHelper;
+import static io.airlift.http.client.jetty.JettyHttpClient.EXCEPTION_ESCAPED;
+import static io.airlift.http.client.jetty.JettyHttpClient.getHttpVersion;
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.util.concurrent.AbstractFuture;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.Request;
@@ -11,26 +16,17 @@ import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.semconv.HttpAttributes;
 import io.opentelemetry.semconv.NetworkAttributes;
 import io.opentelemetry.semconv.incubating.HttpIncubatingAttributes;
-import org.eclipse.jetty.client.Response;
-
 import java.io.InputStream;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongSupplier;
+import org.eclipse.jetty.client.Response;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
-import static io.airlift.http.client.jetty.JettyHttpClient.EXCEPTION_ESCAPED;
-import static io.airlift.http.client.jetty.JettyHttpClient.getHttpVersion;
-import static java.util.Objects.requireNonNull;
-
-class JettyResponseFuture<T, E extends Exception>
-        extends AbstractFuture<T>
-        implements HttpClient.HttpResponseFuture<T>
-{
+class JettyResponseFuture<T, E extends Exception> extends AbstractFuture<T>
+        implements HttpClient.HttpResponseFuture<T> {
     private static final Throwable CANCELLATION_CAUSE = new Throwable("Request was cancelled");
 
-    private enum JettyAsyncHttpState
-    {
+    private enum JettyAsyncHttpState {
         WAITING_FOR_CONNECTION,
         PROCESSING_RESPONSE,
         DONE,
@@ -39,7 +35,8 @@ class JettyResponseFuture<T, E extends Exception>
     }
 
     private final long requestStart = System.nanoTime();
-    private final AtomicReference<JettyAsyncHttpState> state = new AtomicReference<>(JettyAsyncHttpState.WAITING_FOR_CONNECTION);
+    private final AtomicReference<JettyAsyncHttpState> state =
+            new AtomicReference<>(JettyAsyncHttpState.WAITING_FOR_CONNECTION);
     private final Request request;
     private final org.eclipse.jetty.client.Request jettyRequest;
     private final LongSupplier requestSize;
@@ -55,8 +52,7 @@ class JettyResponseFuture<T, E extends Exception>
             ResponseHandler<T, E> responseHandler,
             Span span,
             RequestStats stats,
-            boolean recordRequestComplete)
-    {
+            boolean recordRequestComplete) {
         this.request = requireNonNull(request, "request is null");
         this.jettyRequest = requireNonNull(jettyRequest, "jettyRequest is null");
         this.requestSize = requireNonNull(requestSize, "requestSize is null");
@@ -67,32 +63,27 @@ class JettyResponseFuture<T, E extends Exception>
     }
 
     @Override
-    public String getState()
-    {
+    public String getState() {
         return state.get().toString();
     }
 
     @Override
-    public boolean cancel(boolean mayInterruptIfRunning)
-    {
+    public boolean cancel(boolean mayInterruptIfRunning) {
         try {
             span.setStatus(StatusCode.ERROR, "cancelled");
             stats.recordRequestCanceled();
             state.set(JettyAsyncHttpState.CANCELED);
             jettyRequest.abort(CANCELLATION_CAUSE);
             return super.cancel(mayInterruptIfRunning);
-        }
-        catch (Throwable e) {
+        } catch (Throwable e) {
             setException(e);
             return true;
-        }
-        finally {
+        } finally {
             span.end();
         }
     }
 
-    void completed(Response response, InputStream content)
-    {
+    void completed(Response response, InputStream content) {
         if (state.get() == JettyAsyncHttpState.CANCELED) {
             return;
         }
@@ -109,8 +100,7 @@ class JettyResponseFuture<T, E extends Exception>
         T value;
         try {
             value = processResponse(response, content);
-        }
-        catch (Throwable e) {
+        } catch (Throwable e) {
             // this will be an instance of E from the response handler or an Error
             storeException(e);
             return;
@@ -122,9 +112,7 @@ class JettyResponseFuture<T, E extends Exception>
         span.end();
     }
 
-    private T processResponse(Response response, InputStream content)
-            throws E
-    {
+    private T processResponse(Response response, InputStream content) throws E {
         // this time will not include the data fetching portion of the response,
         // since the response is fully cached in memory at this point
         long responseStart = System.nanoTime();
@@ -135,20 +123,19 @@ class JettyResponseFuture<T, E extends Exception>
         try {
             jettyResponse = new JettyResponse(response, content);
             value = responseHandler.handle(request, jettyResponse);
-        }
-        finally {
+        } finally {
             if (jettyResponse != null) {
                 span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, jettyResponse.getBytesRead());
             }
             if (recordRequestComplete) {
-                JettyHttpClient.recordRequestComplete(stats, request, requestSize.getAsLong(), requestStart, jettyResponse, responseStart);
+                JettyHttpClient.recordRequestComplete(
+                        stats, request, requestSize.getAsLong(), requestStart, jettyResponse, responseStart);
             }
         }
         return value;
     }
 
-    void failed(Throwable throwable)
-    {
+    void failed(Throwable throwable) {
         if (state.get() == JettyAsyncHttpState.CANCELED) {
             return;
         }
@@ -163,8 +150,7 @@ class JettyResponseFuture<T, E extends Exception>
                 state.set(JettyAsyncHttpState.DONE);
                 set(value);
                 return;
-            }
-            catch (Throwable newThrowable) {
+            } catch (Throwable newThrowable) {
                 throwable = newThrowable;
             }
         }
@@ -174,12 +160,10 @@ class JettyResponseFuture<T, E extends Exception>
         storeException(throwable);
     }
 
-    private void storeException(Throwable throwable)
-    {
+    private void storeException(Throwable throwable) {
         if (throwable instanceof CancellationException) {
             state.set(JettyAsyncHttpState.CANCELED);
-        }
-        else {
+        } else {
             state.set(JettyAsyncHttpState.FAILED);
         }
 
@@ -194,8 +178,7 @@ class JettyResponseFuture<T, E extends Exception>
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return toStringHelper(this)
                 .add("requestStart", requestStart)
                 .add("state", state)

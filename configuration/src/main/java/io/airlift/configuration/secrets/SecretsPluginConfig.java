@@ -15,22 +15,18 @@ package io.airlift.configuration.secrets;
 
 import io.airlift.configuration.Config;
 import io.airlift.configuration.validation.FileExists;
-
 import java.io.File;
 
-public class SecretsPluginConfig
-{
+public class SecretsPluginConfig {
     private File secretsPluginsDir = new File("secrets-plugin");
 
     @FileExists
-    public File getSecretsPluginsDir()
-    {
+    public File getSecretsPluginsDir() {
         return secretsPluginsDir;
     }
 
     @Config("secrets-plugins-dir")
-    public SecretsPluginConfig setSecretsPluginsDir(File secretsPluginsDir)
-    {
+    public SecretsPluginConfig setSecretsPluginsDir(File secretsPluginsDir) {
         this.secretsPluginsDir = secretsPluginsDir;
         return this;
     }

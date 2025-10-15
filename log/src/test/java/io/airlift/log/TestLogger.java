@@ -15,34 +15,31 @@
  */
 package io.airlift.log;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
+import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
+
 import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.parallel.Execution;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.logging.Handler;
-import java.util.logging.Level;
-import java.util.logging.LogRecord;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
-import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
-
 @TestInstance(PER_CLASS)
 @Execution(SAME_THREAD)
-public class TestLogger
-{
+public class TestLogger {
     private MockHandler handler;
     private Logger logger;
     private java.util.logging.Logger inner;
 
     @BeforeEach
-    public void setUp()
-    {
+    public void setUp() {
         handler = new MockHandler();
 
         inner = java.util.logging.Logger.getAnonymousLogger();
@@ -54,16 +51,14 @@ public class TestLogger
     }
 
     @AfterEach
-    public void teardown()
-    {
+    public void teardown() {
         assertThat(handler.isEmpty())
                 .as("Some log messages were not verified by test")
                 .isTrue();
     }
 
     @Test
-    public void testIsDebugEnabled()
-    {
+    public void testIsDebugEnabled() {
         inner.setLevel(Level.FINE);
         assertThat(logger.isDebugEnabled()).isTrue();
 
@@ -78,8 +73,7 @@ public class TestLogger
     }
 
     @Test
-    public void testDebugFormat()
-    {
+    public void testDebugFormat() {
         inner.setLevel(Level.FINE);
         logger.debug("hello, %s", "you");
 
@@ -87,8 +81,7 @@ public class TestLogger
     }
 
     @Test
-    public void testInfoFormat()
-    {
+    public void testInfoFormat() {
         inner.setLevel(Level.INFO);
         logger.info("hello, %s", "you");
 
@@ -96,8 +89,7 @@ public class TestLogger
     }
 
     @Test
-    public void testWarnFormat()
-    {
+    public void testWarnFormat() {
         inner.setLevel(Level.WARNING);
 
         // message-only version
@@ -112,8 +104,7 @@ public class TestLogger
     }
 
     @Test
-    public void testErrorFormat()
-    {
+    public void testErrorFormat() {
         // message-only version
         logger.error("hello, %s", "you");
         assertLog(Level.SEVERE, "hello, you");
@@ -133,32 +124,28 @@ public class TestLogger
     }
 
     @Test
-    public void testDebugShortCircuit()
-    {
+    public void testDebugShortCircuit() {
         inner.setLevel(Level.OFF);
         logger.debug("hello");
         assertThat(handler.isEmpty()).isTrue();
     }
 
     @Test
-    public void testInfoShortCircuit()
-    {
+    public void testInfoShortCircuit() {
         inner.setLevel(Level.OFF);
         logger.info("hello");
         assertThat(handler.isEmpty()).isTrue();
     }
 
     @Test
-    public void testWarnShortCircuit()
-    {
+    public void testWarnShortCircuit() {
         inner.setLevel(Level.OFF);
         logger.warn("hello");
         assertThat(handler.isEmpty()).isTrue();
     }
 
     @Test
-    public void testWarnWithThrowableShortCircuit()
-    {
+    public void testWarnWithThrowableShortCircuit() {
         inner.setLevel(Level.OFF);
 
         @SuppressWarnings("ThrowableInstanceNeverThrown")
@@ -169,16 +156,14 @@ public class TestLogger
     }
 
     @Test
-    public void testErrorShortCircuit()
-    {
+    public void testErrorShortCircuit() {
         inner.setLevel(Level.OFF);
         logger.error("hello");
         assertThat(handler.isEmpty()).isTrue();
     }
 
     @Test
-    public void testErrorWithThrowableShortCircuit()
-    {
+    public void testErrorWithThrowableShortCircuit() {
         inner.setLevel(Level.OFF);
 
         @SuppressWarnings("ThrowableInstanceNeverThrown")
@@ -189,8 +174,7 @@ public class TestLogger
     }
 
     @Test
-    public void testErrorWithThrowableNoMessageShortCircuit()
-    {
+    public void testErrorWithThrowableNoMessageShortCircuit() {
         inner.setLevel(Level.OFF);
 
         @SuppressWarnings("ThrowableInstanceNeverThrown")
@@ -201,99 +185,108 @@ public class TestLogger
     }
 
     @Test
-    public void testInsufficientArgsLogsErrorForDebug()
-    {
+    public void testInsufficientArgsLogsErrorForDebug() {
         String format = "some message: %s, %d";
         String param = "blah";
         logger.debug(format, param);
 
-        assertLogLike(Level.SEVERE, ImmutableList.of("Invalid format", "DEBUG", format, param), IllegalArgumentException.class);
+        assertLogLike(
+                Level.SEVERE,
+                ImmutableList.of("Invalid format", "DEBUG", format, param),
+                IllegalArgumentException.class);
         assertLog(Level.FINE, String.format("'%s' [%s]", format, param));
     }
 
     @Test
-    public void testInsufficientArgsLogsErrorForInfo()
-    {
+    public void testInsufficientArgsLogsErrorForInfo() {
         String format = "some message: %s, %d";
         String param = "blah";
         logger.info(format, param);
 
-        assertLogLike(Level.SEVERE, ImmutableList.of("Invalid format", "INFO", format, param), IllegalArgumentException.class);
+        assertLogLike(
+                Level.SEVERE,
+                ImmutableList.of("Invalid format", "INFO", format, param),
+                IllegalArgumentException.class);
         assertLog(Level.INFO, String.format("'%s' [%s]", format, param));
     }
 
     @Test
-    public void testInsufficientArgsLogsErrorForWarn()
-    {
+    public void testInsufficientArgsLogsErrorForWarn() {
         String format = "some message: %s, %d";
         String param = "blah";
         logger.warn(format, param);
 
-        assertLogLike(Level.SEVERE, ImmutableList.of("Invalid format", "WARN", format, param), IllegalArgumentException.class);
+        assertLogLike(
+                Level.SEVERE,
+                ImmutableList.of("Invalid format", "WARN", format, param),
+                IllegalArgumentException.class);
         assertLog(Level.WARNING, String.format("'%s' [%s]", format, param));
     }
 
     @Test
-    public void testInsufficientArgsLogsErrorForError()
-    {
+    public void testInsufficientArgsLogsErrorForError() {
         String format = "some message: %s, %d";
         String param = "blah";
         logger.error(format, param);
 
-        assertLogLike(Level.SEVERE, ImmutableList.of("Invalid format", "ERROR", format, param), IllegalArgumentException.class);
+        assertLogLike(
+                Level.SEVERE,
+                ImmutableList.of("Invalid format", "ERROR", format, param),
+                IllegalArgumentException.class);
         assertLog(Level.SEVERE, String.format("'%s' [%s]", format, param));
     }
 
     @Test
-    public void testInsufficientArgsLogsOriginalExceptionForWarn()
-    {
+    public void testInsufficientArgsLogsOriginalExceptionForWarn() {
         Throwable exception = new Throwable("foo");
         String format = "some message: %s, %d";
         String param = "blah";
         logger.warn(exception, format, param);
 
-        assertLogLike(Level.SEVERE, ImmutableList.of("Invalid format", "WARN", format, param), IllegalArgumentException.class);
+        assertLogLike(
+                Level.SEVERE,
+                ImmutableList.of("Invalid format", "WARN", format, param),
+                IllegalArgumentException.class);
         assertLog(Level.WARNING, String.format("'%s' [%s]", format, param), exception);
     }
 
     @Test
-    public void testInsufficientArgsLogsOriginalExceptionForError()
-    {
+    public void testInsufficientArgsLogsOriginalExceptionForError() {
         Throwable exception = new Throwable("foo");
         String format = "some message: %s, %d";
         String param = "blah";
         logger.error(exception, format, param);
 
-        assertLogLike(Level.SEVERE, ImmutableList.of("Invalid format", "ERROR", format, param), IllegalArgumentException.class);
+        assertLogLike(
+                Level.SEVERE,
+                ImmutableList.of("Invalid format", "ERROR", format, param),
+                IllegalArgumentException.class);
         assertLog(Level.SEVERE, String.format("'%s' [%s]", format, param), exception);
     }
 
-    private void assertLog(Level level, String message, Throwable exception)
-    {
+    private void assertLog(Level level, String message, Throwable exception) {
         LogRecord record = handler.takeRecord();
         assertThat(record.getLevel()).isEqualTo(level);
         assertThat(record.getMessage()).isEqualTo(message);
         assertThat(record.getThrown()).isEqualTo(exception);
     }
 
-    private void assertLog(Level level, String message)
-    {
+    private void assertLog(Level level, String message) {
         LogRecord record = handler.takeRecord();
         assertThat(record.getLevel()).isEqualTo(level);
         assertThat(record.getMessage()).isEqualTo(message);
         assertThat(record.getThrown()).isNull();
     }
 
-    private void assertLogLike(Level level, List<String> substrings, Class<? extends Throwable> exceptionClass)
-    {
+    private void assertLogLike(Level level, List<String> substrings, Class<? extends Throwable> exceptionClass) {
         LogRecord record = handler.takeRecord();
         assertThat(record.getLevel()).isEqualTo(level);
         assertThat(stringContains(record.getMessage(), substrings)).isTrue();
-        assertThat(exceptionClass.isAssignableFrom(record.getThrown().getClass())).isTrue();
+        assertThat(exceptionClass.isAssignableFrom(record.getThrown().getClass()))
+                .isTrue();
     }
 
-    private boolean stringContains(String value, List<String> substrings)
-    {
+    private boolean stringContains(String value, List<String> substrings) {
         for (String str : substrings) {
             if (!value.contains(str)) {
                 return false;
@@ -303,41 +296,30 @@ public class TestLogger
         return true;
     }
 
-    private static class MockHandler
-            extends Handler
-    {
+    private static class MockHandler extends Handler {
         private final List<LogRecord> records = new ArrayList<>();
 
-        private MockHandler()
-        {
+        private MockHandler() {
             setLevel(Level.ALL);
         }
 
         @Override
-        public void publish(LogRecord record)
-        {
+        public void publish(LogRecord record) {
             records.add(record);
         }
 
         @Override
-        public void flush()
-        {
-        }
+        public void flush() {}
 
         @Override
-        public void close()
-                throws SecurityException
-        {
-        }
+        public void close() throws SecurityException {}
 
-        public LogRecord takeRecord()
-        {
+        public LogRecord takeRecord() {
             assertThat(!records.isEmpty()).as("No messages logged").isTrue();
             return records.remove(0);
         }
 
-        public boolean isEmpty()
-        {
+        public boolean isEmpty() {
             return records.isEmpty();
         }
     }

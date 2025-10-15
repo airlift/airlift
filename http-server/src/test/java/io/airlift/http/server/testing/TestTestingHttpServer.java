@@ -15,11 +15,8 @@
  */
 package io.airlift.http.server.testing;
 
-public class TestTestingHttpServer
-        extends AbstractTestTestingHttpServer
-{
-    TestTestingHttpServer()
-    {
+public class TestTestingHttpServer extends AbstractTestTestingHttpServer {
+    TestTestingHttpServer() {
         super(false, false, false);
     }
 }

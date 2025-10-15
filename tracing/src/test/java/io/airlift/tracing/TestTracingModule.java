@@ -1,5 +1,11 @@
 package io.airlift.tracing;
 
+import static com.google.common.collect.MoreCollectors.onlyElement;
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
+import static io.opentelemetry.api.common.AttributeKey.stringKey;
+import static java.util.Map.entry;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.inject.Injector;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.node.NodeInfo;
@@ -14,20 +20,10 @@ import io.opentelemetry.semconv.ServiceAttributes;
 import io.opentelemetry.semconv.incubating.DeploymentIncubatingAttributes;
 import org.junit.jupiter.api.Test;
 
-import static com.google.common.collect.MoreCollectors.onlyElement;
-import static com.google.inject.multibindings.Multibinder.newSetBinder;
-import static io.opentelemetry.api.common.AttributeKey.stringKey;
-import static java.util.Map.entry;
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class TestTracingModule
-{
+public class TestTracingModule {
     @Test
-    void testNoopTracing()
-    {
-        Injector injector = new Bootstrap(
-                new TestingNodeModule(),
-                new TracingModule("testService", "testVersion"))
+    void testNoopTracing() {
+        Injector injector = new Bootstrap(new TestingNodeModule(), new TracingModule("testService", "testVersion"))
                 .quiet()
                 .initialize();
 
@@ -40,11 +36,8 @@ public class TestTracingModule
     }
 
     @Test
-    void testTracingEnabled()
-    {
-        Injector injector = new Bootstrap(
-                new TestingNodeModule(),
-                new TracingModule("testService", "testVersion"))
+    void testTracingEnabled() {
+        Injector injector = new Bootstrap(new TestingNodeModule(), new TracingModule("testService", "testVersion"))
                 .setRequiredConfigurationProperty("tracing.enabled", "true")
                 .quiet()
                 .initialize();
@@ -58,16 +51,16 @@ public class TestTracingModule
     }
 
     @Test
-    void testCustomSpanProcessor()
-    {
+    void testCustomSpanProcessor() {
         @SuppressWarnings("resource")
         InMemorySpanExporter exporter = InMemorySpanExporter.create();
 
         Injector injector = new Bootstrap(
-                new TestingNodeModule(),
-                new TracingModule("testService", "testVersion"),
-                binder -> newSetBinder(binder, SpanProcessor.class).addBinding()
-                        .toInstance(SimpleSpanProcessor.create(exporter)))
+                        new TestingNodeModule(),
+                        new TracingModule("testService", "testVersion"),
+                        binder -> newSetBinder(binder, SpanProcessor.class)
+                                .addBinding()
+                                .toInstance(SimpleSpanProcessor.create(exporter)))
                 .quiet()
                 .initialize();
 
@@ -76,20 +69,24 @@ public class TestTracingModule
 
         tracer.spanBuilder("my-span")
                 .setAttribute("my-attribute", "my-value")
-                .startSpan().end();
+                .startSpan()
+                .end();
 
         assertThat(exporter.getFinishedSpanItems()).hasSize(1);
         SpanData span = exporter.getFinishedSpanItems().stream().collect(onlyElement());
 
         assertThat(span.getName()).isEqualTo("my-span");
 
-        assertThat(span.getAttributes().asMap()).isEqualTo(Attributes.builder()
-                .put(stringKey("my-attribute"), "my-value")
-                .build().asMap());
+        assertThat(span.getAttributes().asMap())
+                .isEqualTo(Attributes.builder()
+                        .put(stringKey("my-attribute"), "my-value")
+                        .build()
+                        .asMap());
 
-        assertThat(span.getResource().getAttributes().asMap()).contains(
-                entry(ServiceAttributes.SERVICE_NAME, "testService"),
-                entry(ServiceAttributes.SERVICE_VERSION, "testVersion"),
-                entry(DeploymentIncubatingAttributes.DEPLOYMENT_ENVIRONMENT_NAME, environment));
+        assertThat(span.getResource().getAttributes().asMap())
+                .contains(
+                        entry(ServiceAttributes.SERVICE_NAME, "testService"),
+                        entry(ServiceAttributes.SERVICE_VERSION, "testVersion"),
+                        entry(DeploymentIncubatingAttributes.DEPLOYMENT_ENVIRONMENT_NAME, environment));
     }
 }

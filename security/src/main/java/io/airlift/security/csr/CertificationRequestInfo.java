@@ -13,20 +13,18 @@
  */
 package io.airlift.security.csr;
 
-import javax.security.auth.x500.X500Principal;
+import static com.google.common.base.MoreObjects.toStringHelper;
+import static io.airlift.security.der.DerUtils.encodeSequence;
+import static java.util.Objects.requireNonNull;
 
 import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.util.Objects;
+import javax.security.auth.x500.X500Principal;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
-import static io.airlift.security.der.DerUtils.encodeSequence;
-import static java.util.Objects.requireNonNull;
-
-public class CertificationRequestInfo
-{
+public class CertificationRequestInfo {
     private static final byte[] VERSION_0_ENCODED = new byte[] {2, 1, 0};
     private static final byte[] EMPTY_ATTRIBUTES_ENCODED = new byte[] {(byte) 0xA0, 0};
 
@@ -34,31 +32,27 @@ public class CertificationRequestInfo
     private final PublicKey publicKey;
     private final byte[] encoded;
 
-    public CertificationRequestInfo(X500Principal subject, PublicKey publicKey)
-    {
+    public CertificationRequestInfo(X500Principal subject, PublicKey publicKey) {
         this.subject = requireNonNull(subject, "subject is null");
         this.publicKey = requireNonNull(publicKey, "publicKey is null");
-        this.encoded = encodeSequence(VERSION_0_ENCODED, subject.getEncoded(), publicKey.getEncoded(), EMPTY_ATTRIBUTES_ENCODED);
+        this.encoded = encodeSequence(
+                VERSION_0_ENCODED, subject.getEncoded(), publicKey.getEncoded(), EMPTY_ATTRIBUTES_ENCODED);
     }
 
-    public X500Principal getSubject()
-    {
+    public X500Principal getSubject() {
         return subject;
     }
 
-    public PublicKey getPublicKey()
-    {
+    public PublicKey getPublicKey() {
         return publicKey;
     }
 
-    public byte[] getEncoded()
-    {
+    public byte[] getEncoded() {
         return encoded.clone();
     }
 
     public byte[] sign(SignatureAlgorithmIdentifier signatureAlgorithmIdentifier, PrivateKey privateKey)
-            throws GeneralSecurityException
-    {
+            throws GeneralSecurityException {
         Signature signature = Signature.getInstance(signatureAlgorithmIdentifier.getName());
         signature.initSign(privateKey);
         signature.update(getEncoded());
@@ -66,8 +60,7 @@ public class CertificationRequestInfo
     }
 
     @Override
-    public boolean equals(Object o)
-    {
+    public boolean equals(Object o) {
         if (this == o) {
             return true;
         }
@@ -75,19 +68,16 @@ public class CertificationRequestInfo
             return false;
         }
         CertificationRequestInfo that = (CertificationRequestInfo) o;
-        return Objects.equals(subject, that.subject) &&
-                Objects.equals(publicKey, that.publicKey);
+        return Objects.equals(subject, that.subject) && Objects.equals(publicKey, that.publicKey);
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return Objects.hash(subject, publicKey);
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return toStringHelper(this)
                 .add("subject", subject)
                 .add("publicKey", publicKey)

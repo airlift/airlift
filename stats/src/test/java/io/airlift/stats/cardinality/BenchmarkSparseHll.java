@@ -13,6 +13,8 @@
  */
 package io.airlift.stats.cardinality;
 
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Level;
@@ -28,19 +30,14 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.VerboseMode;
 
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
-
 @State(Scope.Thread)
 @OutputTimeUnit(TimeUnit.SECONDS)
 @Fork(5)
 @Warmup(iterations = 5, time = 500, timeUnit = TimeUnit.MILLISECONDS)
 @Measurement(iterations = 10, time = 500, timeUnit = TimeUnit.MILLISECONDS)
-public class BenchmarkSparseHll
-{
+public class BenchmarkSparseHll {
     @Benchmark
-    public SparseHll benchmarkInsert(Data data)
-    {
+    public SparseHll benchmarkInsert(Data data) {
         for (long hash : data.hashes) {
             data.instance.insertHash(hash);
         }
@@ -49,23 +46,19 @@ public class BenchmarkSparseHll
     }
 
     @State(Scope.Thread)
-    public static class Data
-    {
+    public static class Data {
         public SparseHll instance = new SparseHll(11);
         public long[] hashes = new long[500];
 
         @Setup(Level.Iteration)
-        public void initialize()
-        {
+        public void initialize() {
             for (int i = 0; i < hashes.length; i++) {
                 hashes[i] = ThreadLocalRandom.current().nextLong();
             }
         }
     }
 
-    public static void main(String[] args)
-            throws RunnerException
-    {
+    public static void main(String[] args) throws RunnerException {
         Options options = new OptionsBuilder()
                 .verbosity(VerboseMode.NORMAL)
                 .include(".*" + BenchmarkSparseHll.class.getSimpleName() + ".*")

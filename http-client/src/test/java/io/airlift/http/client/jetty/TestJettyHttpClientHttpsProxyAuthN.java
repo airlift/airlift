@@ -13,21 +13,17 @@
  */
 package io.airlift.http.client.jetty;
 
-import io.airlift.http.client.HttpClientConfig;
-
 import static com.google.common.io.Resources.getResource;
 
-public class TestJettyHttpClientHttpsProxyAuthN
-        extends AbstractHttpClientTestHttpProxyAuthN
-{
-    TestJettyHttpClientHttpsProxyAuthN()
-    {
+import io.airlift.http.client.HttpClientConfig;
+
+public class TestJettyHttpClientHttpsProxyAuthN extends AbstractHttpClientTestHttpProxyAuthN {
+    TestJettyHttpClientHttpsProxyAuthN() {
         super(getResource("localhost.keystore").toString());
     }
 
     @Override
-    public HttpClientConfig createClientConfig()
-    {
+    public HttpClientConfig createClientConfig() {
         return super.createClientConfig()
                 .setSecureProxy(true)
                 .setKeyStorePath(getResource("localhost.keystore").getPath())

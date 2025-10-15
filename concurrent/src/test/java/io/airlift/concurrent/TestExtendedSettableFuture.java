@@ -1,19 +1,15 @@
 package io.airlift.concurrent;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class TestExtendedSettableFuture
-{
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
+import org.junit.jupiter.api.Test;
+
+public class TestExtendedSettableFuture {
     @Test
-    public void testSet()
-            throws Exception
-    {
+    public void testSet() throws Exception {
         ExtendedSettableFuture<String> future = ExtendedSettableFuture.create();
         future.set("abc");
         assertThat(future).isDone();
@@ -23,45 +19,37 @@ public class TestExtendedSettableFuture
     }
 
     @Test
-    public void testSetException()
-    {
+    public void testSetException() {
         ExtendedSettableFuture<String> future = ExtendedSettableFuture.create();
         future.setException(new Exception(""));
         assertThat(future).isDone();
         assertThat(future).isNotCancelled();
         assertThat(future.checkWasInterrupted()).isFalse();
-        assertThatThrownBy(future::get)
-                .isInstanceOf(ExecutionException.class);
+        assertThatThrownBy(future::get).isInstanceOf(ExecutionException.class);
     }
 
     @Test
-    public void testCancelWithoutInterrupt()
-    {
+    public void testCancelWithoutInterrupt() {
         ExtendedSettableFuture<String> future = ExtendedSettableFuture.create();
         future.cancel(false);
         assertThat(future).isDone();
         assertThat(future).isCancelled();
         assertThat(future.checkWasInterrupted()).isFalse();
-        assertThatThrownBy(future::get)
-                .isInstanceOf(CancellationException.class);
+        assertThatThrownBy(future::get).isInstanceOf(CancellationException.class);
     }
 
     @Test
-    public void testCancelWithInterrupt()
-    {
+    public void testCancelWithInterrupt() {
         ExtendedSettableFuture<String> future = ExtendedSettableFuture.create();
         future.cancel(true);
         assertThat(future).isDone();
         assertThat(future).isCancelled();
         assertThat(future.checkWasInterrupted()).isTrue();
-        assertThatThrownBy(future::get)
-                .isInstanceOf(CancellationException.class);
+        assertThatThrownBy(future::get).isInstanceOf(CancellationException.class);
     }
 
     @Test
-    public void testSetAsync()
-            throws Exception
-    {
+    public void testSetAsync() throws Exception {
         // Test return value
         ExtendedSettableFuture<String> fromFuture = ExtendedSettableFuture.create();
         ExtendedSettableFuture<String> toFuture = ExtendedSettableFuture.create();
@@ -74,8 +62,7 @@ public class TestExtendedSettableFuture
         toFuture = ExtendedSettableFuture.create();
         toFuture.setAsync(fromFuture);
         fromFuture.setException(new RuntimeException());
-        assertThatThrownBy(toFuture::get)
-                .isInstanceOf(ExecutionException.class);
+        assertThatThrownBy(toFuture::get).isInstanceOf(ExecutionException.class);
 
         // Test cancellation without interrupt
         fromFuture = ExtendedSettableFuture.create();

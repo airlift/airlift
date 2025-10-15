@@ -14,6 +14,8 @@
 
 package io.airlift.jaxrs.testing;
 
+import static com.google.common.collect.MoreCollectors.onlyElement;
+
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableSet;
 import io.airlift.http.client.ByteBufferBodyGenerator;
@@ -33,12 +35,6 @@ import jakarta.ws.rs.client.Invocation;
 import jakarta.ws.rs.core.Application;
 import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
-import org.glassfish.jersey.client.ClientConfig;
-import org.glassfish.jersey.client.JerseyClientBuilder;
-import org.glassfish.jersey.test.DeploymentContext;
-import org.glassfish.jersey.test.inmemory.InMemoryTestContainerFactory;
-import org.glassfish.jersey.test.spi.TestContainer;
-
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.net.URI;
@@ -47,68 +43,65 @@ import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.glassfish.jersey.client.ClientConfig;
+import org.glassfish.jersey.client.JerseyClientBuilder;
+import org.glassfish.jersey.test.DeploymentContext;
+import org.glassfish.jersey.test.inmemory.InMemoryTestContainerFactory;
+import org.glassfish.jersey.test.spi.TestContainer;
 
-import static com.google.common.collect.MoreCollectors.onlyElement;
-
-public class JaxrsTestingHttpProcessor
-        implements TestingHttpClient.Processor
-{
+public class JaxrsTestingHttpProcessor implements TestingHttpClient.Processor {
     private static final Logger log = Logger.get(JaxrsTestingHttpProcessor.class);
 
     private final Client client;
 
     private boolean trace;
 
-    public JaxrsTestingHttpProcessor(URI baseUri, Object... jaxRsSingletons)
-    {
+    public JaxrsTestingHttpProcessor(URI baseUri, Object... jaxRsSingletons) {
         Set<Object> jaxRsSingletonsSet = ImmutableSet.copyOf(jaxRsSingletons);
-        Application application = new Application()
-        {
+        Application application = new Application() {
             @Override
             @SuppressWarnings("deprecation")
-            public Set<Object> getSingletons()
-            {
+            public Set<Object> getSingletons() {
                 return jaxRsSingletonsSet;
             }
         };
-        TestContainer testContainer = new InMemoryTestContainerFactory()
-                .create(baseUri, DeploymentContext.newInstance(application));
+        TestContainer testContainer =
+                new InMemoryTestContainerFactory().create(baseUri, DeploymentContext.newInstance(application));
         ClientConfig clientConfig = testContainer.getClientConfig();
         this.client = JerseyClientBuilder.createClient(clientConfig);
     }
 
-    public JaxrsTestingHttpProcessor setTrace(boolean enabled)
-    {
+    public JaxrsTestingHttpProcessor setTrace(boolean enabled) {
         this.trace = enabled;
         return this;
     }
 
     @Override
-    public Response handle(Request request)
-            throws Exception
-    {
+    public Response handle(Request request) throws Exception {
         // prepare request to jax-rs resource
         MultivaluedMap<String, Object> requestHeaders = new MultivaluedHashMap<>();
         for (Map.Entry<String, String> entry : request.getHeaders().entries()) {
             requestHeaders.add(entry.getKey(), entry.getValue());
         }
-        Invocation.Builder invocationBuilder = client.target(request.getUri()).request().headers(requestHeaders);
+        Invocation.Builder invocationBuilder =
+                client.target(request.getUri()).request().headers(requestHeaders);
         Invocation invocation;
         if (request.getBodyGenerator() == null) {
             invocation = invocationBuilder.build(request.getMethod());
-        }
-        else {
-            byte[] bytes = switch (request.getBodyGenerator()) {
-                case StaticBodyGenerator generator -> generator.getBody();
-                case ByteBufferBodyGenerator generator -> getBytes(generator.getByteBuffers());
-                case FileBodyGenerator generator -> Files.readAllBytes(generator.getPath());
-                case StreamingBodyGenerator generator -> {
-                    try (InputStream stream = generator.source()) {
-                        yield stream.readAllBytes();
-                    }
-                }
-            };
-            Entity<byte[]> entity = Entity.entity(bytes, (String) requestHeaders.get("Content-Type").stream().collect(onlyElement()));
+        } else {
+            byte[] bytes =
+                    switch (request.getBodyGenerator()) {
+                        case StaticBodyGenerator generator -> generator.getBody();
+                        case ByteBufferBodyGenerator generator -> getBytes(generator.getByteBuffers());
+                        case FileBodyGenerator generator -> Files.readAllBytes(generator.getPath());
+                        case StreamingBodyGenerator generator -> {
+                            try (InputStream stream = generator.source()) {
+                                yield stream.readAllBytes();
+                            }
+                        }
+                    };
+            Entity<byte[]> entity = Entity.entity(
+                    bytes, (String) requestHeaders.get("Content-Type").stream().collect(onlyElement()));
             invocation = invocationBuilder.build(request.getMethod(), entity);
         }
 
@@ -116,8 +109,7 @@ public class JaxrsTestingHttpProcessor
         jakarta.ws.rs.core.Response result;
         try {
             result = invocation.invoke(jakarta.ws.rs.core.Response.class);
-        }
-        catch (ProcessingException exception) {
+        } catch (ProcessingException exception) {
             if (trace) {
                 log.warn(exception.getCause(), "%-8s %s -> Exception", request.getMethod(), request.getUri());
             }
@@ -127,8 +119,7 @@ public class JaxrsTestingHttpProcessor
                 throw (Exception) exception.getCause();
             }
             throw exception;
-        }
-        catch (Throwable throwable) {
+        } catch (Throwable throwable) {
             if (trace) {
                 log.warn(throwable, "%-8s %s -> Fail", request.getMethod(), request.getUri());
             }
@@ -137,7 +128,8 @@ public class JaxrsTestingHttpProcessor
 
         // process response from jax-rs resource
         ImmutableListMultimap.Builder<String, String> responseHeaders = ImmutableListMultimap.builder();
-        for (Map.Entry<String, List<String>> headerEntry : result.getStringHeaders().entrySet()) {
+        for (Map.Entry<String, List<String>> headerEntry :
+                result.getStringHeaders().entrySet()) {
             for (String value : headerEntry.getValue()) {
                 responseHeaders.put(headerEntry.getKey(), value);
             }
@@ -146,12 +138,13 @@ public class JaxrsTestingHttpProcessor
         if (trace) {
             log.warn("%-8s %s -> OK", request.getMethod(), request.getUri());
         }
-        return new TestingResponse(HttpStatus.fromStatusCode(result.getStatus()), responseHeaders.build(), result.readEntity(byte[].class));
+        return new TestingResponse(
+                HttpStatus.fromStatusCode(result.getStatus()),
+                responseHeaders.build(),
+                result.readEntity(byte[].class));
     }
 
-    private static byte[] getBytes(ByteBuffer[] byteBuffers)
-            throws Exception
-    {
+    private static byte[] getBytes(ByteBuffer[] byteBuffers) throws Exception {
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             for (ByteBuffer byteBuffer : byteBuffers) {
                 int savedPosition = byteBuffer.position();

@@ -1,5 +1,14 @@
 package io.airlift.http.server.tracing;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
+import static com.google.common.base.Strings.nullToEmpty;
+import static com.google.common.net.HttpHeaders.CONTENT_LENGTH;
+import static com.google.common.net.HttpHeaders.USER_AGENT;
+import static java.util.Locale.ENGLISH;
+import static java.util.Objects.requireNonNull;
+import static org.eclipse.jetty.ee11.servlet.ServletContextRequest.SSL_CIPHER_SUITE;
+import static org.eclipse.jetty.ee11.servlet.ServletContextRequest.SSL_SESSION_ID;
+
 import com.google.inject.Inject;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
@@ -29,21 +38,9 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
-
 import java.io.IOException;
 
-import static com.google.common.base.Strings.isNullOrEmpty;
-import static com.google.common.base.Strings.nullToEmpty;
-import static com.google.common.net.HttpHeaders.CONTENT_LENGTH;
-import static com.google.common.net.HttpHeaders.USER_AGENT;
-import static java.util.Locale.ENGLISH;
-import static java.util.Objects.requireNonNull;
-import static org.eclipse.jetty.ee11.servlet.ServletContextRequest.SSL_CIPHER_SUITE;
-import static org.eclipse.jetty.ee11.servlet.ServletContextRequest.SSL_SESSION_ID;
-
-public final class TracingServletFilter
-        implements Filter
-{
+public final class TracingServletFilter implements Filter {
     // This attribute will be deprecated in OTEL soon
     static final AttributeKey<Boolean> EXCEPTION_ESCAPED = AttributeKey.booleanKey("exception.escaped");
     static final String REQUEST_SPAN = "airlift.trace-span";
@@ -52,17 +49,16 @@ public final class TracingServletFilter
     private final Tracer tracer;
 
     @Inject
-    public TracingServletFilter(OpenTelemetry openTelemetry, Tracer tracer)
-    {
+    public TracingServletFilter(OpenTelemetry openTelemetry, Tracer tracer) {
         this.propagator = openTelemetry.getPropagators().getTextMapPropagator();
         this.tracer = requireNonNull(tracer, "tracer is null");
     }
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-            throws IOException, ServletException
-    {
-        if (!(request instanceof HttpServletRequest httpRequest) || !(response instanceof HttpServletResponse httpResponse)) {
+            throws IOException, ServletException {
+        if (!(request instanceof HttpServletRequest httpRequest)
+                || !(response instanceof HttpServletResponse httpResponse)) {
             chain.doFilter(request, response);
             return;
         }
@@ -83,13 +79,13 @@ public final class TracingServletFilter
         String sessionId = (String) request.getAttribute(SSL_SESSION_ID);
         if (sessionId != null) {
             spanBuilder.setAttribute(TlsIncubatingAttributes.TLS_ESTABLISHED, true);
-            spanBuilder.setAttribute(TlsIncubatingAttributes.TLS_CIPHER, (String) request.getAttribute(SSL_CIPHER_SUITE));
+            spanBuilder.setAttribute(
+                    TlsIncubatingAttributes.TLS_CIPHER, (String) request.getAttribute(SSL_CIPHER_SUITE));
         }
 
         if (request.getProtocol().equalsIgnoreCase("HTTP/1.1")) {
             spanBuilder.setAttribute(NetworkAttributes.NETWORK_PROTOCOL_VERSION, "1.1");
-        }
-        else if (request.getProtocol().equalsIgnoreCase("HTTP/2.0")) {
+        } else if (request.getProtocol().equalsIgnoreCase("HTTP/2.0")) {
             spanBuilder.setAttribute(NetworkAttributes.NETWORK_PROTOCOL_VERSION, "2.0");
         }
 
@@ -113,37 +109,30 @@ public final class TracingServletFilter
 
         try (Scope ignored = span.makeCurrent()) {
             chain.doFilter(request, new TracingHttpServletResponse(httpResponse, span));
-        }
-        catch (Throwable t) {
+        } catch (Throwable t) {
             span.setStatus(StatusCode.ERROR, t.getMessage());
             span.recordException(t, Attributes.of(EXCEPTION_ESCAPED, true));
             throw t;
-        }
-        finally {
+        } finally {
             span.end();
         }
     }
 
-    private static class ServletTextMapGetter
-            implements TextMapGetter<HttpServletRequest>
-    {
+    private static class ServletTextMapGetter implements TextMapGetter<HttpServletRequest> {
         public static final ServletTextMapGetter INSTANCE = new ServletTextMapGetter();
 
         @Override
-        public Iterable<String> keys(HttpServletRequest request)
-        {
+        public Iterable<String> keys(HttpServletRequest request) {
             return request.getHeaderNames()::asIterator;
         }
 
         @Override
-        public String get(HttpServletRequest request, String key)
-        {
+        public String get(HttpServletRequest request, String key) {
             return requireNonNull(request).getHeader(key);
         }
     }
 
-    private static String getTarget(HttpServletRequest request)
-    {
+    private static String getTarget(HttpServletRequest request) {
         String target = nullToEmpty(request.getRequestURI());
         if (request.getQueryString() != null) {
             target += "?" + request.getQueryString();
@@ -151,8 +140,7 @@ public final class TracingServletFilter
         return target;
     }
 
-    private static long getPort(HttpServletRequest request)
-    {
+    private static long getPort(HttpServletRequest request) {
         int port = request.getServerPort();
         if (port > 0) {
             return port;
@@ -164,45 +152,36 @@ public final class TracingServletFilter
         };
     }
 
-    private static class TracingHttpServletResponse
-            extends HttpServletResponseWrapper
-    {
+    private static class TracingHttpServletResponse extends HttpServletResponseWrapper {
         private final Span span;
 
-        public TracingHttpServletResponse(HttpServletResponse delegate, Span span)
-        {
+        public TracingHttpServletResponse(HttpServletResponse delegate, Span span) {
             super(delegate);
             this.span = requireNonNull(span, "span is null");
         }
 
         @Override
-        public void sendError(int statusCode, String msg)
-                throws IOException
-        {
+        public void sendError(int statusCode, String msg) throws IOException {
             span.setAttribute(HttpAttributes.HTTP_RESPONSE_STATUS_CODE, statusCode);
             span.setStatus(StatusCode.ERROR, msg);
             super.sendError(statusCode, msg);
         }
 
         @Override
-        public void sendError(int statusCode)
-                throws IOException
-        {
+        public void sendError(int statusCode) throws IOException {
             span.setAttribute(HttpAttributes.HTTP_RESPONSE_STATUS_CODE, statusCode);
             span.setStatus(StatusCode.ERROR);
             super.sendError(statusCode);
         }
 
         @Override
-        public void setStatus(int statusCode)
-        {
+        public void setStatus(int statusCode) {
             span.setAttribute(HttpAttributes.HTTP_RESPONSE_STATUS_CODE, statusCode);
             super.setStatus(statusCode);
         }
 
         @Override
-        public void setHeader(String name, String value)
-        {
+        public void setHeader(String name, String value) {
             if (name.equalsIgnoreCase(CONTENT_LENGTH)) {
                 span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, Long.parseLong(value));
             }
@@ -210,8 +189,7 @@ public final class TracingServletFilter
         }
 
         @Override
-        public void addHeader(String name, String value)
-        {
+        public void addHeader(String name, String value) {
             if (name.equalsIgnoreCase(CONTENT_LENGTH)) {
                 span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, Long.parseLong(value));
             }
@@ -219,8 +197,7 @@ public final class TracingServletFilter
         }
 
         @Override
-        public void setIntHeader(String name, int value)
-        {
+        public void setIntHeader(String name, int value) {
             if (name.equalsIgnoreCase(CONTENT_LENGTH)) {
                 span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, value);
             }
@@ -228,8 +205,7 @@ public final class TracingServletFilter
         }
 
         @Override
-        public void addIntHeader(String name, int value)
-        {
+        public void addIntHeader(String name, int value) {
             if (name.equalsIgnoreCase(CONTENT_LENGTH)) {
                 span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, value);
             }
@@ -237,15 +213,13 @@ public final class TracingServletFilter
         }
 
         @Override
-        public void setContentLength(int length)
-        {
+        public void setContentLength(int length) {
             span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, length);
             super.setContentLength(length);
         }
 
         @Override
-        public void setContentLengthLong(long length)
-        {
+        public void setContentLengthLong(long length) {
             span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, length);
             super.setContentLengthLong(length);
         }

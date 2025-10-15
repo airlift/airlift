@@ -13,57 +13,48 @@
  */
 package io.airlift.testing;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static java.util.Objects.requireNonNull;
+
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.concurrent.TimeUnit;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static java.util.Objects.requireNonNull;
-
-public final class TestingClock
-        extends Clock
-{
+public final class TestingClock extends Clock {
     private final ZoneId zone;
     private Instant instant;
 
-    public TestingClock()
-    {
+    public TestingClock() {
         this(ZoneOffset.UTC);
     }
 
-    public TestingClock(ZoneId zone)
-    {
+    public TestingClock(ZoneId zone) {
         this(zone, Instant.ofEpochMilli(1575000618963L));
     }
 
-    private TestingClock(ZoneId zone, Instant instant)
-    {
+    private TestingClock(ZoneId zone, Instant instant) {
         this.zone = requireNonNull(zone, "zone is null");
         this.instant = requireNonNull(instant, "instant is null");
     }
 
     @Override
-    public ZoneId getZone()
-    {
+    public ZoneId getZone() {
         return zone;
     }
 
     @Override
-    public Clock withZone(ZoneId zone)
-    {
+    public Clock withZone(ZoneId zone) {
         return new TestingClock(zone, instant);
     }
 
     @Override
-    public Instant instant()
-    {
+    public Instant instant() {
         return instant;
     }
 
-    public void increment(long delta, TimeUnit unit)
-    {
+    public void increment(long delta, TimeUnit unit) {
         checkArgument(delta >= 0, "delta is negative");
         instant = instant.plusNanos(unit.toNanos(delta));
     }

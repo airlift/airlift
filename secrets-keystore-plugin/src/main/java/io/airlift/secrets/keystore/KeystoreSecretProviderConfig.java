@@ -18,49 +18,42 @@ import io.airlift.configuration.ConfigSecuritySensitive;
 import io.airlift.configuration.validation.FileExists;
 import jakarta.validation.constraints.NotNull;
 
-public class KeystoreSecretProviderConfig
-{
+public class KeystoreSecretProviderConfig {
     private String keyStoreFilePath;
     private String keyStoreType;
     private String keyStorePassword;
 
     @Config("keystore-file-path")
-    public KeystoreSecretProviderConfig setKeyStoreFilePath(String keyStoreFilePath)
-    {
+    public KeystoreSecretProviderConfig setKeyStoreFilePath(String keyStoreFilePath) {
         this.keyStoreFilePath = keyStoreFilePath;
         return this;
     }
 
     @NotNull
     @FileExists
-    public String getKeyStoreFilePath()
-    {
+    public String getKeyStoreFilePath() {
         return keyStoreFilePath;
     }
 
     @Config("keystore-type")
-    public KeystoreSecretProviderConfig setKeyStoreType(String keyStoreType)
-    {
+    public KeystoreSecretProviderConfig setKeyStoreType(String keyStoreType) {
         this.keyStoreType = keyStoreType;
         return this;
     }
 
     @NotNull
-    public String getKeyStoreType()
-    {
+    public String getKeyStoreType() {
         return keyStoreType;
     }
 
     @Config("keystore-password")
     @ConfigSecuritySensitive
-    public KeystoreSecretProviderConfig setKeyStorePassword(String keyStorePassword)
-    {
+    public KeystoreSecretProviderConfig setKeyStorePassword(String keyStorePassword) {
         this.keyStorePassword = keyStorePassword;
         return this;
     }
 
-    public String getKeyStorePassword()
-    {
+    public String getKeyStorePassword() {
         return keyStorePassword;
     }
 }

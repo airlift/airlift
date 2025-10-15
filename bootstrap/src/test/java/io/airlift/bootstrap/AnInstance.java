@@ -17,8 +17,7 @@ package io.airlift.bootstrap;
 
 import com.google.inject.Inject;
 
-public class AnInstance
-{
+public class AnInstance {
     @Inject
     public AnInstance(DependentInstance dependentInstance) {}
 }

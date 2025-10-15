@@ -13,25 +13,22 @@
  */
 package io.airlift.log;
 
+import static io.airlift.units.DataSize.Unit.KILOBYTE;
+
 import com.google.common.collect.ImmutableMap;
 import io.airlift.configuration.testing.ConfigAssertions;
 import io.airlift.log.RollingFileMessageOutput.CompressionType;
 import io.airlift.units.DataSize;
 import io.airlift.units.DataSize.Unit;
+import java.io.File;
+import java.util.Map;
 import org.assertj.core.util.Files;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
-import java.util.Map;
-
-import static io.airlift.units.DataSize.Unit.KILOBYTE;
-
 @SuppressWarnings("deprecation")
-public class TestLoggingConfiguration
-{
+public class TestLoggingConfiguration {
     @Test
-    public void testDefaults()
-    {
+    public void testDefaults() {
         ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(LoggingConfiguration.class)
                 .setConsoleEnabled(true)
                 .setLogPath(null)
@@ -45,8 +42,7 @@ public class TestLoggingConfiguration
     }
 
     @Test
-    public void testExplicitPropertyMappings()
-    {
+    public void testExplicitPropertyMappings() {
         File annotationFile = Files.newTemporaryFile();
 
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()

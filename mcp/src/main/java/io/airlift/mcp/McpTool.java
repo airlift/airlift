@@ -1,18 +1,16 @@
 package io.airlift.mcp;
 
-import io.airlift.mcp.model.OptionalBoolean;
-
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-
 import static io.airlift.mcp.model.OptionalBoolean.UNDEFINED;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+import io.airlift.mcp.model.OptionalBoolean;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+
 @Retention(RUNTIME)
 @Target(METHOD)
-public @interface McpTool
-{
+public @interface McpTool {
     String name();
 
     String description() default "";

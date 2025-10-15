@@ -1,14 +1,12 @@
 package io.airlift.bootstrap;
 
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TestConcurrentWeakIdentitySet
-{
+import org.junit.jupiter.api.Test;
+
+public class TestConcurrentWeakIdentitySet {
     @Test
-    public void testClearedReferences()
-    {
+    public void testClearedReferences() {
         int iterations = 100000;
 
         ConcurrentWeakIdentitySet weakIdentitySet = new ConcurrentWeakIdentitySet();
@@ -23,8 +21,7 @@ public class TestConcurrentWeakIdentitySet
     }
 
     @Test
-    public void testIdentity()
-    {
+    public void testIdentity() {
         record Tester(String id) {}
 
         ConcurrentWeakIdentitySet weakIdentitySet = new ConcurrentWeakIdentitySet();

@@ -15,33 +15,30 @@
  */
 package io.airlift.discovery.client;
 
-import com.google.inject.Inject;
-
-import java.util.concurrent.ScheduledExecutorService;
-
 import static java.util.Objects.requireNonNull;
 
-public class CachingServiceSelectorFactory
-        implements ServiceSelectorFactory
-{
+import com.google.inject.Inject;
+import java.util.concurrent.ScheduledExecutorService;
+
+public class CachingServiceSelectorFactory implements ServiceSelectorFactory {
     private final DiscoveryLookupClient lookupClient;
     private final ScheduledExecutorService executor;
 
     @Inject
-    public CachingServiceSelectorFactory(DiscoveryLookupClient lookupClient, @ForDiscoveryClient ScheduledExecutorService executor)
-    {
+    public CachingServiceSelectorFactory(
+            DiscoveryLookupClient lookupClient, @ForDiscoveryClient ScheduledExecutorService executor) {
         requireNonNull(lookupClient, "client is null");
         requireNonNull(executor, "executor is null");
         this.lookupClient = lookupClient;
         this.executor = executor;
     }
 
-    public ServiceSelector createServiceSelector(String type, ServiceSelectorConfig selectorConfig)
-    {
+    public ServiceSelector createServiceSelector(String type, ServiceSelectorConfig selectorConfig) {
         requireNonNull(type, "type is null");
         requireNonNull(selectorConfig, "selectorConfig is null");
 
-        CachingServiceSelector serviceSelector = new CachingServiceSelector(type, selectorConfig, lookupClient, executor);
+        CachingServiceSelector serviceSelector =
+                new CachingServiceSelector(type, selectorConfig, lookupClient, executor);
         serviceSelector.start();
 
         return serviceSelector;

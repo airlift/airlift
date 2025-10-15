@@ -15,55 +15,49 @@
  */
 package io.airlift.discovery.client;
 
+import static io.airlift.discovery.client.ServiceTypes.serviceType;
+import static java.util.Objects.requireNonNull;
+
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Provider;
 
-import static io.airlift.discovery.client.ServiceTypes.serviceType;
-import static java.util.Objects.requireNonNull;
-
-public class ServiceSelectorProvider
-        implements Provider<ServiceSelector>
-{
+public class ServiceSelectorProvider implements Provider<ServiceSelector> {
     private final String type;
     private ServiceSelectorFactory serviceSelectorFactory;
     private Injector injector;
 
-    public ServiceSelectorProvider(String type)
-    {
+    public ServiceSelectorProvider(String type) {
         requireNonNull(type, "type is null");
         this.type = type;
     }
 
     @Inject
-    public void setInjector(Injector injector)
-    {
+    public void setInjector(Injector injector) {
         requireNonNull(injector, "injector is null");
         this.injector = injector;
     }
 
     @Inject
-    public void setServiceSelectorFactory(ServiceSelectorFactory serviceSelectorFactory)
-    {
+    public void setServiceSelectorFactory(ServiceSelectorFactory serviceSelectorFactory) {
         requireNonNull(serviceSelectorFactory, "serviceSelectorFactory is null");
         this.serviceSelectorFactory = serviceSelectorFactory;
     }
 
-    public ServiceSelector get()
-    {
+    public ServiceSelector get() {
         requireNonNull(serviceSelectorFactory, "serviceSelectorFactory is null");
         requireNonNull(injector, "injector is null");
 
-        ServiceSelectorConfig selectorConfig = injector.getInstance(Key.get(ServiceSelectorConfig.class, serviceType(type)));
+        ServiceSelectorConfig selectorConfig =
+                injector.getInstance(Key.get(ServiceSelectorConfig.class, serviceType(type)));
 
         ServiceSelector serviceSelector = serviceSelectorFactory.createServiceSelector(type, selectorConfig);
         return serviceSelector;
     }
 
     @Override
-    public boolean equals(Object o)
-    {
+    public boolean equals(Object o) {
         if (this == o) {
             return true;
         }
@@ -81,8 +75,7 @@ public class ServiceSelectorProvider
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return type.hashCode();
     }
 }

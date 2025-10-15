@@ -1,5 +1,11 @@
 package io.airlift.http.client;
 
+import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
+import static com.google.common.util.concurrent.MoreExecutors.listeningDecorator;
+import static io.airlift.concurrent.Threads.threadsNamed;
+import static java.util.concurrent.Executors.newCachedThreadPool;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
@@ -8,7 +14,6 @@ import com.google.common.net.InetAddresses;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
-
 import java.io.Closeable;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -22,15 +27,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
-import static com.google.common.util.concurrent.MoreExecutors.listeningDecorator;
-import static io.airlift.concurrent.Threads.threadsNamed;
-import static java.util.concurrent.Executors.newCachedThreadPool;
-
-public class TestingSocksProxy
-        implements Closeable
-{
+public class TestingSocksProxy implements Closeable {
     private static final int SOCKS_4_SUCCESS = 0x5a;
     private static final int SOCKS_4_FAILED = 0x5b;
 
@@ -47,45 +44,40 @@ public class TestingSocksProxy
     private ListeningExecutorService executorService;
     private ServerSocket serverSocket;
 
-    public TestingSocksProxy()
-    {
+    public TestingSocksProxy() {
         this(0);
     }
 
-    public TestingSocksProxy(int bindPort)
-    {
+    public TestingSocksProxy(int bindPort) {
         this.bindPort = bindPort;
     }
 
-    public synchronized HostAndPort getHostAndPort()
-    {
+    public synchronized HostAndPort getHostAndPort() {
         checkState(hostAndPort != null, "%s is not running", getClass().getName());
         return hostAndPort;
     }
 
-    public synchronized TestingSocksProxy start()
-            throws IOException
-    {
+    public synchronized TestingSocksProxy start() throws IOException {
         checkState(serverSocket == null, "%s already started", getClass().getName());
 
         try {
             serverSocket = new ServerSocket(bindPort, 50, InetAddress.getByName("127.0.0.1"));
-            hostAndPort = HostAndPort.fromParts(serverSocket.getInetAddress().getHostAddress(), serverSocket.getLocalPort());
-            executorService = listeningDecorator(newCachedThreadPool(threadsNamed("socks-proxy-" + serverSocket.getLocalPort() + "-%s")));
+            hostAndPort =
+                    HostAndPort.fromParts(serverSocket.getInetAddress().getHostAddress(), serverSocket.getLocalPort());
+            executorService = listeningDecorator(
+                    newCachedThreadPool(threadsNamed("socks-proxy-" + serverSocket.getLocalPort() + "-%s")));
 
             executorService.execute(new SocksProxyAcceptor(serverSocket, executorService));
 
             return this;
-        }
-        catch (Throwable e) {
+        } catch (Throwable e) {
             close();
             throw e;
         }
     }
 
     @Override
-    public synchronized void close()
-    {
+    public synchronized void close() {
         hostAndPort = null;
         if (serverSocket != null) {
             closeIgnoreException(serverSocket);
@@ -97,28 +89,25 @@ public class TestingSocksProxy
         }
     }
 
-    private static class SocksProxyAcceptor
-            implements Runnable
-    {
+    private static class SocksProxyAcceptor implements Runnable {
         private final ServerSocket serverSocket;
         private final ListeningExecutorService executorService;
         private final AtomicBoolean closed = new AtomicBoolean();
 
-        private SocksProxyAcceptor(ServerSocket serverSocket, ListeningExecutorService executorService)
-        {
+        private SocksProxyAcceptor(ServerSocket serverSocket, ListeningExecutorService executorService) {
             this.serverSocket = serverSocket;
             this.executorService = executorService;
         }
 
         @Override
-        public void run()
-        {
-            while (!closed.get() && !serverSocket.isClosed() && !Thread.currentThread().isInterrupted()) {
+        public void run() {
+            while (!closed.get()
+                    && !serverSocket.isClosed()
+                    && !Thread.currentThread().isInterrupted()) {
                 try {
                     Socket socket = serverSocket.accept();
                     executorService.execute(new SocksProxyWorker(socket, executorService));
-                }
-                catch (IOException ignored) {
+                } catch (IOException ignored) {
                     // doesn't really matter
                 }
             }
@@ -126,37 +115,29 @@ public class TestingSocksProxy
         }
     }
 
-    private static class SocksProxyWorker
-            implements Runnable
-    {
+    private static class SocksProxyWorker implements Runnable {
         private final Socket socket;
         private final ListeningExecutorService executor;
 
-        private SocksProxyWorker(Socket socket, ListeningExecutorService executor)
-        {
+        private SocksProxyWorker(Socket socket, ListeningExecutorService executor) {
             this.socket = socket;
             this.executor = executor;
         }
 
         @Override
-        public void run()
-        {
+        public void run() {
             try {
                 connect();
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 // ignored nothing we can do about this
                 closeIgnoreException(socket);
-            }
-            catch (Throwable e) {
+            } catch (Throwable e) {
                 closeIgnoreException(socket);
                 throw e;
             }
         }
 
-        private void connect()
-                throws IOException
-        {
+        private void connect() throws IOException {
             DataInputStream sourceInput = new DataInputStream(socket.getInputStream());
             DataOutputStream sourceOutput = new DataOutputStream(socket.getOutputStream());
 
@@ -164,17 +145,14 @@ public class TestingSocksProxy
             int version = sourceInput.read();
             if (version == 4) {
                 socks4(sourceInput, sourceOutput);
-            }
-            else if (version == 5) {
+            } else if (version == 5) {
                 socks5(sourceInput, sourceOutput);
             }
 
             // unsupported version, just close the socket
         }
 
-        private void socks4(DataInputStream sourceInput, DataOutputStream sourceOutput)
-                throws IOException
-        {
+        private void socks4(DataInputStream sourceInput, DataOutputStream sourceOutput) throws IOException {
             // field 2: command code, 1 byte: 0x01 = connect, 0x02 = bind
             int command = sourceInput.read();
 
@@ -198,7 +176,8 @@ public class TestingSocksProxy
             // Socks 4a: if address is 0x0000_00xx where xx is not 0, we have a domain name
             String domainName = null;
             if (address != 0 && (address & 0xFFFF_FF00) == 0) {
-                // field 6: the domain name of the host we want to contact, variable length, terminated with a null (0x00)
+                // field 6: the domain name of the host we want to contact, variable length, terminated with a null
+                // (0x00)
                 StringBuilder domainNameBuilder = new StringBuilder(64);
                 for (int value = sourceInput.read(); value != 0; value = sourceInput.read()) {
                     domainNameBuilder.append((char) value);
@@ -210,12 +189,10 @@ public class TestingSocksProxy
             try {
                 if (domainName != null) {
                     targetSocket = new Socket(domainName, port);
-                }
-                else {
+                } else {
                     targetSocket = new Socket(InetAddresses.fromInteger(address), port);
                 }
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 // could not resolve name or open socket
                 responseSocks4(sourceOutput, SOCKS_4_FAILED, 0, 0);
                 return;
@@ -225,13 +202,13 @@ public class TestingSocksProxy
             OutputStream targetOutput = targetSocket.getOutputStream();
 
             // send success message
-            responseSocks4(sourceOutput, SOCKS_4_SUCCESS, port, InetAddresses.coerceToInteger(targetSocket.getInetAddress()));
+            responseSocks4(
+                    sourceOutput, SOCKS_4_SUCCESS, port, InetAddresses.coerceToInteger(targetSocket.getInetAddress()));
             proxyData(sourceInput, sourceOutput, targetInput, targetOutput);
         }
 
         private static void responseSocks4(DataOutputStream output, int status, int port, int address)
-                throws IOException
-        {
+                throws IOException {
             ByteArrayDataOutput sourceOutput = ByteStreams.newDataOutput();
 
             // field 1: null byte
@@ -251,9 +228,7 @@ public class TestingSocksProxy
             output.write(sourceOutput.toByteArray());
         }
 
-        private void socks5(DataInputStream sourceInput, DataOutputStream sourceOutput)
-                throws IOException
-        {
+        private void socks5(DataInputStream sourceInput, DataOutputStream sourceOutput) throws IOException {
             // field 2: number of authentication methods supported, 1 byte
             int authMethods = sourceInput.read();
 
@@ -336,8 +311,7 @@ public class TestingSocksProxy
                     default:
                         return;
                 }
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 // could not resolve name or open socket
                 responseSocks5(sourceOutput, SOCKS_5_STATUS_FAILED, port, addressType, address);
                 return;
@@ -351,9 +325,8 @@ public class TestingSocksProxy
             proxyData(sourceInput, sourceOutput, targetInput, targetOutput);
         }
 
-        private static void responseSocks5(DataOutputStream output, int status, int port, int addressType, byte[] address)
-                throws IOException
-        {
+        private static void responseSocks5(
+                DataOutputStream output, int status, int port, int addressType, byte[] address) throws IOException {
             ByteArrayDataOutput sourceOutput = ByteStreams.newDataOutput();
 
             // field 1: SOCKS protocol version, 1 byte (0x05 for this version)
@@ -379,8 +352,11 @@ public class TestingSocksProxy
             output.write(sourceOutput.toByteArray());
         }
 
-        private void proxyData(InputStream sourceInput, OutputStream sourceOutput, InputStream targetInput, OutputStream targetOutput)
-        {
+        private void proxyData(
+                InputStream sourceInput,
+                OutputStream sourceOutput,
+                InputStream targetInput,
+                OutputStream targetOutput) {
             // pipe in to out and out to in
             List<ListenableFuture<?>> jobs = ImmutableList.of(
                     executor.submit(new Pipe(sourceInput, targetOutput)),
@@ -391,43 +367,35 @@ public class TestingSocksProxy
         }
     }
 
-    private static class Pipe
-            implements Runnable
-    {
+    private static class Pipe implements Runnable {
         private final InputStream in;
         private final OutputStream out;
 
-        private Pipe(InputStream in, OutputStream out)
-        {
+        private Pipe(InputStream in, OutputStream out) {
             this.in = in;
             this.out = out;
         }
 
         @Override
-        public void run()
-        {
+        public void run() {
             try {
                 in.transferTo(out);
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 // ignored nothing we can do about this
-            }
-            finally {
+            } finally {
                 closeIgnoreException(in);
                 closeIgnoreException(out);
             }
         }
     }
 
-    private static void closeIgnoreException(Closeable closeable)
-    {
+    private static void closeIgnoreException(Closeable closeable) {
         if (closeable == null) {
             return;
         }
         try {
             closeable.close();
-        }
-        catch (IOException ignored) {
+        } catch (IOException ignored) {
             // nothing we can do about this
         }
     }

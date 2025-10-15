@@ -15,29 +15,25 @@
  */
 package io.airlift.discovery.client.testing;
 
+import static java.util.Objects.requireNonNull;
+
 import com.google.inject.Inject;
 import io.airlift.discovery.client.DiscoveryLookupClient;
 import io.airlift.discovery.client.ServiceSelector;
 import io.airlift.discovery.client.ServiceSelectorConfig;
 import io.airlift.discovery.client.ServiceSelectorFactory;
 
-import static java.util.Objects.requireNonNull;
-
-public class SimpleServiceSelectorFactory
-        implements ServiceSelectorFactory
-{
+public class SimpleServiceSelectorFactory implements ServiceSelectorFactory {
     private final DiscoveryLookupClient lookupClient;
 
     @Inject
-    public SimpleServiceSelectorFactory(DiscoveryLookupClient lookupClient)
-    {
+    public SimpleServiceSelectorFactory(DiscoveryLookupClient lookupClient) {
         requireNonNull(lookupClient, "client is null");
         this.lookupClient = lookupClient;
     }
 
     @Override
-    public ServiceSelector createServiceSelector(String type, ServiceSelectorConfig selectorConfig)
-    {
+    public ServiceSelector createServiceSelector(String type, ServiceSelectorConfig selectorConfig) {
         requireNonNull(type, "type is null");
         requireNonNull(selectorConfig, "selectorConfig is null");
 

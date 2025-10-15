@@ -1,18 +1,14 @@
-
 package io.airlift.stats;
-
-import io.airlift.units.Duration;
-import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TestTestingGcMonitor
-{
+import io.airlift.units.Duration;
+import org.junit.jupiter.api.Test;
+
+public class TestTestingGcMonitor {
     @Test
-    public void test()
-            throws Exception
-    {
+    public void test() throws Exception {
         TestingGcMonitor gcMonitor = new TestingGcMonitor();
 
         assertThat(gcMonitor.getMajorGcCount()).isEqualTo(0);

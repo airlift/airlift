@@ -15,41 +15,36 @@
  */
 package io.airlift.discovery.client.testing;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import io.airlift.discovery.client.ServiceDescriptor;
-import io.airlift.discovery.client.ServiceSelector;
-
-import java.util.List;
-
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.Streams.stream;
 import static io.airlift.discovery.client.ServiceSelectorConfig.DEFAULT_POOL;
 import static java.util.Objects.requireNonNull;
 
-public class StaticServiceSelector
-        implements ServiceSelector
-{
+import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import io.airlift.discovery.client.ServiceDescriptor;
+import io.airlift.discovery.client.ServiceSelector;
+import java.util.List;
+
+public class StaticServiceSelector implements ServiceSelector {
     private final String type;
     private final String pool;
     private final List<ServiceDescriptor> serviceDescriptors;
 
-    public StaticServiceSelector(ServiceDescriptor... serviceDescriptors)
-    {
+    public StaticServiceSelector(ServiceDescriptor... serviceDescriptors) {
         this(ImmutableList.copyOf(serviceDescriptors));
     }
 
-    public StaticServiceSelector(Iterable<ServiceDescriptor> serviceDescriptors)
-    {
+    public StaticServiceSelector(Iterable<ServiceDescriptor> serviceDescriptors) {
         requireNonNull(serviceDescriptors, "serviceDescriptors is null");
 
-        ServiceDescriptor serviceDescriptor = stream(serviceDescriptors).findFirst().orElse(null);
+        ServiceDescriptor serviceDescriptor =
+                stream(serviceDescriptors).findFirst().orElse(null);
         if (serviceDescriptor != null) {
             this.type = serviceDescriptor.getType();
             this.pool = serviceDescriptor.getPool();
-        }
-        else {
+        } else {
             this.type = "unknown";
             this.pool = DEFAULT_POOL;
         }
@@ -62,26 +57,22 @@ public class StaticServiceSelector
     }
 
     @Override
-    public String getType()
-    {
+    public String getType() {
         return type;
     }
 
     @Override
-    public String getPool()
-    {
+    public String getPool() {
         return pool;
     }
 
     @Override
-    public List<ServiceDescriptor> selectAllServices()
-    {
+    public List<ServiceDescriptor> selectAllServices() {
         return serviceDescriptors;
     }
 
     @Override
-    public ListenableFuture<List<ServiceDescriptor>> refresh()
-    {
+    public ListenableFuture<List<ServiceDescriptor>> refresh() {
         return Futures.immediateFuture(serviceDescriptors);
     }
 }

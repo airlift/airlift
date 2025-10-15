@@ -15,14 +15,15 @@
  */
 package io.airlift.configuration.testing;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import io.airlift.configuration.Config;
 import io.airlift.configuration.LegacyConfig;
 import io.airlift.configuration.testing.ConfigAssertions.$$RecordedConfigData;
-import org.junit.jupiter.api.Test;
-
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -31,15 +32,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
-
-public class TestConfigAssertions
-{
+public class TestConfigAssertions {
     @Test
-    public void testDefaults()
-    {
+    public void testDefaults() {
         Map<String, Object> expectedAttributeValues = new HashMap<>();
         expectedAttributeValues.put("Name", "Dain");
         expectedAttributeValues.put("Email", "dain@proofpoint.com");
@@ -49,8 +46,7 @@ public class TestConfigAssertions
     }
 
     @Test
-    public void testDefaultsFailNotDefault()
-    {
+    public void testDefaultsFailNotDefault() {
         boolean pass = true;
         try {
             Map<String, Object> expectedAttributeValues = new HashMap<>();
@@ -59,8 +55,7 @@ public class TestConfigAssertions
             expectedAttributeValues.put("Phone", "42");
             expectedAttributeValues.put("HomePage", URI.create("http://iq80.com"));
             ConfigAssertions.assertDefaults(expectedAttributeValues, PersonConfig.class);
-        }
-        catch (AssertionError e) {
+        } catch (AssertionError e) {
             // expected
             pass = false;
             assertThat(e.getMessage()).contains("Phone");
@@ -72,8 +67,7 @@ public class TestConfigAssertions
     }
 
     @Test
-    public void testDefaultsFailNotDefaultWithNullAttribute()
-    {
+    public void testDefaultsFailNotDefaultWithNullAttribute() {
         boolean pass = true;
         try {
             Map<String, Object> expectedAttributeValues = new HashMap<>();
@@ -82,8 +76,7 @@ public class TestConfigAssertions
             expectedAttributeValues.put("Phone", null);
             expectedAttributeValues.put("HomePage", URI.create("http://example.com"));
             ConfigAssertions.assertDefaults(expectedAttributeValues, PersonConfig.class);
-        }
-        catch (AssertionError e) {
+        } catch (AssertionError e) {
             // expected
             pass = false;
             assertThat(e.getMessage()).contains("HomePage");
@@ -95,8 +88,7 @@ public class TestConfigAssertions
     }
 
     @Test
-    public void testDefaultsFailUnsupportedAttribute()
-    {
+    public void testDefaultsFailUnsupportedAttribute() {
         boolean pass = true;
         try {
             Map<String, Object> expectedAttributeValues = new HashMap<>();
@@ -106,8 +98,7 @@ public class TestConfigAssertions
             expectedAttributeValues.put("HomePage", URI.create("http://iq80.com"));
             expectedAttributeValues.put("UnsupportedAttribute", "value");
             ConfigAssertions.assertDefaults(expectedAttributeValues, PersonConfig.class);
-        }
-        catch (AssertionError e) {
+        } catch (AssertionError e) {
             // expected
             pass = false;
             assertThat(e.getMessage()).contains("UnsupportedAttribute");
@@ -119,8 +110,7 @@ public class TestConfigAssertions
     }
 
     @Test
-    public void testDefaultsFailUntestedAttribute()
-    {
+    public void testDefaultsFailUntestedAttribute() {
         boolean pass = true;
         try {
             Map<String, Object> expectedAttributeValues = new HashMap<>();
@@ -128,8 +118,7 @@ public class TestConfigAssertions
             expectedAttributeValues.put("Email", "dain@proofpoint.com");
             expectedAttributeValues.put("Phone", null);
             ConfigAssertions.assertDefaults(expectedAttributeValues, PersonConfig.class);
-        }
-        catch (AssertionError e) {
+        } catch (AssertionError e) {
             // expected
             pass = false;
             assertThat(e.getMessage()).contains("HomePage");
@@ -141,8 +130,7 @@ public class TestConfigAssertions
     }
 
     @Test
-    public void testDefaultsFailDeprecatedAttribute()
-    {
+    public void testDefaultsFailDeprecatedAttribute() {
         boolean pass = true;
         try {
             Map<String, Object> expectedAttributeValues = new HashMap<>();
@@ -151,8 +139,7 @@ public class TestConfigAssertions
             expectedAttributeValues.put("Phone", null);
             expectedAttributeValues.put("HomePageUrl", URI.create("http://iq80.com"));
             ConfigAssertions.assertDefaults(expectedAttributeValues, PersonConfig.class);
-        }
-        catch (AssertionError e) {
+        } catch (AssertionError e) {
             // expected
             pass = false;
             assertThat(e.getMessage()).contains("HomePageUrl");
@@ -164,8 +151,7 @@ public class TestConfigAssertions
     }
 
     @Test
-    public void testExplicitPropertyMappings()
-    {
+    public void testExplicitPropertyMappings() {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("name", "Jenny")
                 .put("email", "jenny@compuserve.com")
@@ -183,8 +169,7 @@ public class TestConfigAssertions
     }
 
     @Test
-    public void testExplicitPropertyMappingsWithSkipped()
-    {
+    public void testExplicitPropertyMappingsWithSkipped() {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("name", "Jenny")
                 .put("email", "jenny@compuserve.com")
@@ -200,8 +185,7 @@ public class TestConfigAssertions
     }
 
     @Test
-    public void testExplicitPropertyMappingsFailUnsupportedProperty()
-    {
+    public void testExplicitPropertyMappingsFailUnsupportedProperty() {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("name", "Jenny")
                 .put("email", "jenny@compuserve.com")
@@ -219,8 +203,7 @@ public class TestConfigAssertions
         boolean pass = true;
         try {
             ConfigAssertions.assertFullMapping(properties, expected);
-        }
-        catch (AssertionError e) {
+        } catch (AssertionError e) {
             // expected
             pass = false;
             assertThat(e.getMessage()).contains("unsupported-property");
@@ -232,8 +215,7 @@ public class TestConfigAssertions
     }
 
     @Test
-    public void testExplicitPropertyMappingsFailUntestedProperty()
-    {
+    public void testExplicitPropertyMappingsFailUntestedProperty() {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("name", "Jenny")
                 .put("email", "jenny@compuserve.com")
@@ -248,8 +230,7 @@ public class TestConfigAssertions
         boolean pass = true;
         try {
             ConfigAssertions.assertFullMapping(properties, expected);
-        }
-        catch (AssertionError e) {
+        } catch (AssertionError e) {
             // expected
             pass = false;
             assertThat(e.getMessage()).contains("home-page");
@@ -261,8 +242,7 @@ public class TestConfigAssertions
     }
 
     @Test
-    public void testExplicitPropertyMappingsFailHasDefaultProperty()
-    {
+    public void testExplicitPropertyMappingsFailHasDefaultProperty() {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("name", "Dain")
                 .put("email", "jenny@compuserve.com")
@@ -279,8 +259,7 @@ public class TestConfigAssertions
         boolean pass = true;
         try {
             ConfigAssertions.assertFullMapping(properties, expected);
-        }
-        catch (AssertionError e) {
+        } catch (AssertionError e) {
             // expected
             pass = false;
             assertThat(e.getMessage()).contains("Name");
@@ -292,8 +271,7 @@ public class TestConfigAssertions
     }
 
     @Test
-    public void testExplicitPropertyMappingsFailNotEquivalent()
-    {
+    public void testExplicitPropertyMappingsFailNotEquivalent() {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("name", "Jenny")
                 .put("email", "jenny@compuserve.com")
@@ -310,8 +288,7 @@ public class TestConfigAssertions
         boolean pass = true;
         try {
             ConfigAssertions.assertFullMapping(properties, expected);
-        }
-        catch (AssertionError e) {
+        } catch (AssertionError e) {
             // expected
             pass = false;
             assertThat(e.getMessage()).contains("HomePage");
@@ -323,8 +300,7 @@ public class TestConfigAssertions
     }
 
     @Test
-    public void testNoDeprecatedProperties()
-    {
+    public void testNoDeprecatedProperties() {
         Map<String, String> currentProperties = new ImmutableMap.Builder<String, String>()
                 .put("email", "alice@example.com")
                 .put("home-page", "http://example.com")
@@ -334,8 +310,7 @@ public class TestConfigAssertions
     }
 
     @Test
-    public void testDeprecatedProperties()
-    {
+    public void testDeprecatedProperties() {
         Map<String, String> currentProperties = new ImmutableMap.Builder<String, String>()
                 .put("email", "alice@example.com")
                 .put("home-page", "http://example.com")
@@ -351,12 +326,12 @@ public class TestConfigAssertions
                 .put("home-page-url", "http://example.com")
                 .build();
 
-        ConfigAssertions.assertDeprecatedEquivalence(PersonConfig.class, currentProperties, oldProperties, olderProperties);
+        ConfigAssertions.assertDeprecatedEquivalence(
+                PersonConfig.class, currentProperties, oldProperties, olderProperties);
     }
 
     @Test
-    public void testDeprecatedPropertiesFailUnsupportedProperties()
-    {
+    public void testDeprecatedPropertiesFailUnsupportedProperties() {
         Map<String, String> currentProperties = new ImmutableMap.Builder<String, String>()
                 .put("email", "alice@example.com")
                 .put("unsupported-property", "value")
@@ -372,9 +347,9 @@ public class TestConfigAssertions
 
         boolean pass = true;
         try {
-            ConfigAssertions.assertDeprecatedEquivalence(PersonConfig.class, currentProperties, oldProperties, olderProperties);
-        }
-        catch (AssertionError e) {
+            ConfigAssertions.assertDeprecatedEquivalence(
+                    PersonConfig.class, currentProperties, oldProperties, olderProperties);
+        } catch (AssertionError e) {
             // expected
             pass = false;
             assertThat(e.getMessage()).contains("unsupported-property");
@@ -386,8 +361,7 @@ public class TestConfigAssertions
     }
 
     @Test
-    public void testDeprecatedPropertiesFailUntestedProperties()
-    {
+    public void testDeprecatedPropertiesFailUntestedProperties() {
         Map<String, String> currentProperties = new ImmutableMap.Builder<String, String>()
                 .put("email", "alice@example.com")
                 .build();
@@ -399,8 +373,7 @@ public class TestConfigAssertions
         boolean pass = true;
         try {
             ConfigAssertions.assertDeprecatedEquivalence(PersonConfig.class, currentProperties, oldProperties);
-        }
-        catch (AssertionError e) {
+        } catch (AssertionError e) {
             // expected
             pass = false;
             assertThat(e.getMessage()).contains("notes-id");
@@ -412,8 +385,7 @@ public class TestConfigAssertions
     }
 
     @Test
-    public void testDeprecatedPropertiesFailDeprecatedCurrentProperties()
-    {
+    public void testDeprecatedPropertiesFailDeprecatedCurrentProperties() {
         Map<String, String> currentProperties = new ImmutableMap.Builder<String, String>()
                 .put("notes-id", "alice@example.com")
                 .build();
@@ -428,9 +400,9 @@ public class TestConfigAssertions
 
         boolean pass = true;
         try {
-            ConfigAssertions.assertDeprecatedEquivalence(PersonConfig.class, currentProperties, oldProperties, olderProperties);
-        }
-        catch (AssertionError e) {
+            ConfigAssertions.assertDeprecatedEquivalence(
+                    PersonConfig.class, currentProperties, oldProperties, olderProperties);
+        } catch (AssertionError e) {
             // expected
             pass = false;
             assertThat(e.getMessage()).contains("notes-id");
@@ -442,9 +414,7 @@ public class TestConfigAssertions
     }
 
     @Test
-    public void testRecordDefaults()
-            throws Exception
-    {
+    public void testRecordDefaults() throws Exception {
         PersonConfig config = ConfigAssertions.recordDefaults(PersonConfig.class)
                 .setName("Alice Apple")
                 .setEmail("alice@example.com")
@@ -456,11 +426,12 @@ public class TestConfigAssertions
         PersonConfig instance = data.instance();
         assertThat(instance).isNotSameAs(config);
 
-        assertThat(data.invokedMethods()).isEqualTo(ImmutableSet.of(
-                PersonConfig.class.getMethod("setName", String.class),
-                PersonConfig.class.getMethod("setEmail", String.class),
-                PersonConfig.class.getMethod("setPhone", String.class),
-                PersonConfig.class.getMethod("setHomePage", URI.class)));
+        assertThat(data.invokedMethods())
+                .isEqualTo(ImmutableSet.of(
+                        PersonConfig.class.getMethod("setName", String.class),
+                        PersonConfig.class.getMethod("setEmail", String.class),
+                        PersonConfig.class.getMethod("setPhone", String.class),
+                        PersonConfig.class.getMethod("setHomePage", URI.class)));
 
         assertThat(instance.getName()).isEqualTo("Alice Apple");
         assertThat(instance.getEmail()).isEqualTo("alice@example.com");
@@ -474,8 +445,7 @@ public class TestConfigAssertions
     }
 
     @Test
-    public void testRecordedDefaults()
-    {
+    public void testRecordedDefaults() {
         ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(PersonConfig.class)
                 .setName("Dain")
                 .setEmail("dain@proofpoint.com")
@@ -484,8 +454,7 @@ public class TestConfigAssertions
     }
 
     @Test
-    public void testRecordedDefaultsOneOfEverything()
-    {
+    public void testRecordedDefaultsOneOfEverything() {
         ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(Config1.class)
                 .setBooleanOption(false)
                 .setBoxedBooleanOption(null)
@@ -515,9 +484,7 @@ public class TestConfigAssertions
     }
 
     @Test
-    public void testRecordedDefaultsFailInvokedDeprecatedSetter()
-            throws MalformedURLException
-    {
+    public void testRecordedDefaultsFailInvokedDeprecatedSetter() throws MalformedURLException {
         boolean pass = true;
         try {
             ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(PersonConfig.class)
@@ -525,8 +492,7 @@ public class TestConfigAssertions
                     .setEmail("dain@proofpoint.com")
                     .setPhone(null)
                     .setHomePageUrl(URI.create("http://iq80.com").toURL()));
-        }
-        catch (AssertionError e) {
+        } catch (AssertionError e) {
             // expected
             pass = false;
             assertThat(e.getMessage()).contains("HomePageUrl");
@@ -538,8 +504,7 @@ public class TestConfigAssertions
     }
 
     @Test
-    public void testRecordedDefaultsFailInvokedExtraMethod()
-    {
+    public void testRecordedDefaultsFailInvokedExtraMethod() {
         boolean pass = true;
         try {
             PersonConfig config = ConfigAssertions.recordDefaults(PersonConfig.class)
@@ -552,8 +517,7 @@ public class TestConfigAssertions
             config.hashCode();
 
             ConfigAssertions.assertRecordedDefaults(config);
-        }
-        catch (AssertionError e) {
+        } catch (AssertionError e) {
             // expected
             pass = false;
             assertThat(e.getMessage()).contains("hashCode()");
@@ -565,38 +529,32 @@ public class TestConfigAssertions
     }
 
     @Test
-    public void testArrayDefaults()
-    {
+    public void testArrayDefaults() {
         Map<String, Object> expectedAttributeValues = new HashMap<>();
         expectedAttributeValues.put("Fields", null);
         ConfigAssertions.assertDefaults(expectedAttributeValues, PersonFieldsConfig.class);
     }
 
     @Test
-    public void testExplicitArrayPropertyMappings()
-    {
+    public void testExplicitArrayPropertyMappings() {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("fields", "name,email,phone,homePage")
                 .build();
 
-        PersonFieldsConfig expected = new PersonFieldsConfig()
-                .setFields("name,email,phone,homePage");
+        PersonFieldsConfig expected = new PersonFieldsConfig().setFields("name,email,phone,homePage");
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }
 
-    public static class PersonFieldsConfig
-    {
+    public static class PersonFieldsConfig {
         private String[] fields;
 
-        public String[] getFields()
-        {
+        public String[] getFields() {
             return fields;
         }
 
         @Config("fields")
-        public PersonFieldsConfig setFields(String fields)
-        {
+        public PersonFieldsConfig setFields(String fields) {
             if (Objects.nonNull(fields)) {
                 this.fields = fields.split(",");
             }
@@ -604,126 +562,106 @@ public class TestConfigAssertions
         }
     }
 
-    public static class PersonConfig
-    {
+    public static class PersonConfig {
         private String name = "Dain";
         private String email = "dain@proofpoint.com";
         private String phone;
         private URI homePage = URI.create("http://iq80.com");
 
-        public String getName()
-        {
+        public String getName() {
             return name;
         }
 
         @Config("name")
-        public PersonConfig setName(String name)
-        {
+        public PersonConfig setName(String name) {
             this.name = name;
             return this;
         }
 
-        public String getEmail()
-        {
+        public String getEmail() {
             return email;
         }
 
         @Config("email")
         @LegacyConfig({"exchange-id", "notes-id"})
-        public PersonConfig setEmail(String email)
-        {
+        public PersonConfig setEmail(String email) {
             this.email = email;
             return this;
         }
 
-        public String getPhone()
-        {
+        public String getPhone() {
             return phone;
         }
 
         @Config("phone")
-        public PersonConfig setPhone(String phone)
-        {
+        public PersonConfig setPhone(String phone) {
             this.phone = phone;
             return this;
         }
 
-        public URI getHomePage()
-        {
+        public URI getHomePage() {
             return homePage;
         }
 
         @Config("home-page")
-        public PersonConfig setHomePage(URI homePage)
-        {
+        public PersonConfig setHomePage(URI homePage) {
             this.homePage = homePage;
             return this;
         }
 
         @LegacyConfig(value = "home-page-url", replacedBy = "home-page")
-        public PersonConfig setHomePageUrl(URL homePage)
-        {
+        public PersonConfig setHomePageUrl(URL homePage) {
             try {
                 this.homePage = homePage.toURI();
                 return this;
-            }
-            catch (URISyntaxException e) {
+            } catch (URISyntaxException e) {
                 throw new IllegalArgumentException(e);
             }
         }
     }
 
-    public static class NoDeprecatedConfig
-    {
+    public static class NoDeprecatedConfig {
         private String name = "Dain";
         private String email = "dain@proofpoint.com";
         private String phone;
         private URI homePage = URI.create("http://iq80.com");
 
-        public String getName()
-        {
+        public String getName() {
             return name;
         }
 
         @Config("name")
-        public NoDeprecatedConfig setName(String name)
-        {
+        public NoDeprecatedConfig setName(String name) {
             this.name = name;
             return this;
         }
 
-        public String getEmail()
-        {
+        public String getEmail() {
             return email;
         }
 
         @Config("email")
-        public NoDeprecatedConfig setEmail(String email)
-        {
+        public NoDeprecatedConfig setEmail(String email) {
             this.email = email;
             return this;
         }
 
-        public String getPhone()
-        {
+        public String getPhone() {
             return phone;
         }
 
         @Config("phone")
-        public NoDeprecatedConfig setPhone(String phone)
-        {
+        public NoDeprecatedConfig setPhone(String phone) {
             this.phone = phone;
             return this;
         }
 
-        public URI getHomePage()
-        {
+        public URI getHomePage() {
             return homePage;
         }
 
         @Config("home-page")
-        public NoDeprecatedConfig setHomePage(URI homePage)
-        {
+        public NoDeprecatedConfig setHomePage(URI homePage) {
             this.homePage = homePage;
             return this;
         }

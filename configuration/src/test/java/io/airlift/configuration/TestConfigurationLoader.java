@@ -15,18 +15,6 @@
  */
 package io.airlift.configuration;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.util.Map;
-import java.util.function.Consumer;
-
 import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
 import static io.airlift.configuration.ConfigurationLoader.loadProperties;
@@ -34,29 +22,33 @@ import static java.nio.file.Files.createTempDirectory;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.util.Map;
+import java.util.function.Consumer;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+
 @TestInstance(PER_CLASS)
-public class TestConfigurationLoader
-{
+public class TestConfigurationLoader {
     private File tempDir;
 
     @BeforeAll
-    public void setup()
-            throws IOException
-    {
+    public void setup() throws IOException {
         tempDir = createTempDirectory(null).toFile();
     }
 
     @AfterAll
-    public void teardown()
-            throws IOException
-    {
+    public void teardown() throws IOException {
         deleteRecursively(tempDir.toPath(), ALLOW_INSECURE);
     }
 
     @Test
-    public void testLoadsFromSystemProperties()
-            throws IOException
-    {
+    public void testLoadsFromSystemProperties() throws IOException {
         System.setProperty("test", "foo");
 
         Map<String, String> properties = loadProperties();
@@ -67,9 +59,7 @@ public class TestConfigurationLoader
     }
 
     @Test
-    public void testLoadsFromFile()
-            throws IOException
-    {
+    public void testLoadsFromFile() throws IOException {
         File file = createConfigFile(out -> out.print("test: foo"));
         System.setProperty("config", file.getAbsolutePath());
 
@@ -82,9 +72,7 @@ public class TestConfigurationLoader
     }
 
     @Test
-    public void testTrimWhitespaceFromFile()
-            throws IOException
-    {
+    public void testTrimWhitespaceFromFile() throws IOException {
         File file = createConfigFile(out -> {
             out.println(" \t trim-whitespace-key1 \t =  \t key1-value \t ");
             out.println(" \t trim-whitespace-key2 \t =  \t key2-value \t ");
@@ -105,9 +93,7 @@ public class TestConfigurationLoader
     }
 
     @Test
-    public void testSystemOverridesFile()
-            throws IOException
-    {
+    public void testSystemOverridesFile() throws IOException {
         File file = createConfigFile(out -> {
             out.println("key1: original");
             out.println("key2: original");
@@ -125,9 +111,7 @@ public class TestConfigurationLoader
         System.clearProperty("config");
     }
 
-    private File createConfigFile(Consumer<PrintStream> contentProvider)
-            throws IOException
-    {
+    private File createConfigFile(Consumer<PrintStream> contentProvider) throws IOException {
         File file = File.createTempFile("config", ".properties", tempDir);
         try (PrintStream out = new PrintStream(new FileOutputStream(file))) {
             contentProvider.accept(out);

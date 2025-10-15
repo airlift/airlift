@@ -1,19 +1,16 @@
 package io.airlift.stats;
 
-import io.airlift.testing.TestingTicker;
-import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.TimeUnit;
-
 import static io.airlift.stats.TimeDistribution.MERGE_THRESHOLD_NANOS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
-class TestTimeDistribution
-{
+import io.airlift.testing.TestingTicker;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.Test;
+
+class TestTimeDistribution {
     @Test
-    public void testPartialMerging()
-    {
+    public void testPartialMerging() {
         TestingTicker ticker = new TestingTicker();
         TimeDistribution distribution = new TimeDistribution(ticker);
         distribution.add(SECONDS.toNanos(1));

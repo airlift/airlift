@@ -15,6 +15,15 @@
  */
 package io.airlift.bootstrap;
 
+import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
+import static io.airlift.bootstrap.FuzzyMatcher.findSimilar;
+import static io.airlift.configuration.ConfigurationLoader.getSystemProperties;
+import static io.airlift.configuration.ConfigurationLoader.loadPropertiesFrom;
+import static io.airlift.configuration.TomlConfiguration.createTomlConfiguration;
+import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableMap;
@@ -38,7 +47,6 @@ import io.airlift.configuration.secrets.env.EnvironmentVariableSecretProvider;
 import io.airlift.log.Logger;
 import io.airlift.log.Logging;
 import io.airlift.log.LoggingConfiguration;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -49,15 +57,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-
-import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.collect.ImmutableSet.toImmutableSet;
-import static io.airlift.bootstrap.FuzzyMatcher.findSimilar;
-import static io.airlift.configuration.ConfigurationLoader.getSystemProperties;
-import static io.airlift.configuration.ConfigurationLoader.loadPropertiesFrom;
-import static io.airlift.configuration.TomlConfiguration.createTomlConfiguration;
-import static java.lang.String.format;
-import static java.util.Objects.requireNonNull;
 
 /**
  * Entry point for an application built using the platform codebase.
@@ -70,12 +69,15 @@ import static java.util.Objects.requireNonNull;
  * <li>create an Guice injector</li>
  * </ul>
  */
-public class Bootstrap
-{
+public class Bootstrap {
     private final String name;
     private final Logger log;
 
-    private enum State { UNINITIALIZED, CONFIGURED, INITIALIZED }
+    private enum State {
+        UNINITIALIZED,
+        CONFIGURED,
+        INITIALIZED
+    }
 
     private final List<Module> modules;
 
@@ -91,30 +93,25 @@ public class Bootstrap
     private ConfigurationFactory configurationFactory;
     private SecretsResolver secretsResolver;
 
-    public Bootstrap(String name, Module... modules)
-    {
+    public Bootstrap(String name, Module... modules) {
         this(name, ImmutableList.copyOf(modules));
     }
 
-    public Bootstrap(Iterable<? extends Module> modules)
-    {
+    public Bootstrap(Iterable<? extends Module> modules) {
         this("Bootstrap", modules);
     }
 
-    public Bootstrap(Module... modules)
-    {
+    public Bootstrap(Module... modules) {
         this(ImmutableList.copyOf(modules));
     }
 
-    public Bootstrap(String name, Iterable<? extends Module> modules)
-    {
+    public Bootstrap(String name, Iterable<? extends Module> modules) {
         this.name = requireNonNull(name, "name is null");
         this.modules = ImmutableList.copyOf(modules);
         this.log = Logger.get(name);
     }
 
-    public Bootstrap setRequiredConfigurationProperty(String key, String value)
-    {
+    public Bootstrap setRequiredConfigurationProperty(String key, String value) {
         if (this.requiredConfigurationProperties == null) {
             this.requiredConfigurationProperties = new TreeMap<>();
         }
@@ -122,8 +119,7 @@ public class Bootstrap
         return this;
     }
 
-    public Bootstrap setRequiredConfigurationProperties(Map<String, String> requiredConfigurationProperties)
-    {
+    public Bootstrap setRequiredConfigurationProperties(Map<String, String> requiredConfigurationProperties) {
         if (this.requiredConfigurationProperties == null) {
             this.requiredConfigurationProperties = new TreeMap<>();
         }
@@ -131,8 +127,7 @@ public class Bootstrap
         return this;
     }
 
-    public Bootstrap setOptionalConfigurationProperty(String key, String value)
-    {
+    public Bootstrap setOptionalConfigurationProperty(String key, String value) {
         if (this.optionalConfigurationProperties == null) {
             this.optionalConfigurationProperties = new TreeMap<>();
         }
@@ -140,8 +135,7 @@ public class Bootstrap
         return this;
     }
 
-    public Bootstrap setOptionalConfigurationProperties(Map<String, String> optionalConfigurationProperties)
-    {
+    public Bootstrap setOptionalConfigurationProperties(Map<String, String> optionalConfigurationProperties) {
         if (this.optionalConfigurationProperties == null) {
             this.optionalConfigurationProperties = new TreeMap<>();
         }
@@ -149,57 +143,47 @@ public class Bootstrap
         return this;
     }
 
-    public Bootstrap doNotInitializeLogging()
-    {
+    public Bootstrap doNotInitializeLogging() {
         return withInitializeLogging(false);
     }
 
-    public Bootstrap disableEnvInterpolation()
-    {
+    public Bootstrap disableEnvInterpolation() {
         return withEnvInterpolation(false);
     }
 
-    public Bootstrap quiet()
-    {
+    public Bootstrap quiet() {
         return withQuiet(true);
     }
 
-    public Bootstrap loadSecretsPlugins()
-    {
+    public Bootstrap loadSecretsPlugins() {
         return withLoadSecretsPlugins(true);
     }
 
-    public Bootstrap skipErrorReporting()
-    {
+    public Bootstrap skipErrorReporting() {
         return withSkipErrorReporting(true);
     }
 
-    public Bootstrap withInitializeLogging(boolean initializeLogging)
-    {
+    public Bootstrap withInitializeLogging(boolean initializeLogging) {
         this.initializeLogging = initializeLogging;
         return this;
     }
 
-    public Bootstrap withQuiet(boolean quiet)
-    {
+    public Bootstrap withQuiet(boolean quiet) {
         this.quiet = quiet;
         return this;
     }
 
-    public Bootstrap withLoadSecretsPlugins(boolean load)
-    {
+    public Bootstrap withLoadSecretsPlugins(boolean load) {
         this.loadSecretsPlugins = load;
         return this;
     }
 
-    public Bootstrap withSkipErrorReporting(boolean skip)
-    {
+    public Bootstrap withSkipErrorReporting(boolean skip) {
         this.skipErrorReporting = skip;
         return this;
     }
 
-    public Bootstrap withEnvInterpolation(boolean interpolate)
-    {
+    public Bootstrap withEnvInterpolation(boolean interpolate) {
         this.envInterpolation = interpolate;
         return this;
     }
@@ -207,8 +191,7 @@ public class Bootstrap
     /**
      * Validate configuration and return used properties.
      */
-    public Set<ConfigPropertyMetadata> configure()
-    {
+    public Set<ConfigPropertyMetadata> configure() {
         checkState(state == State.UNINITIALIZED, "Already configured");
         state = State.CONFIGURED;
 
@@ -217,15 +200,16 @@ public class Bootstrap
             logging = Logging.initialize();
         }
 
-        this.secretsResolver = envInterpolation ?
-                new SecretsResolver(ImmutableMap.of("env", new EnvironmentVariableSecretProvider())) :
-                new SecretsResolver(ImmutableMap.of());
+        this.secretsResolver = envInterpolation
+                ? new SecretsResolver(ImmutableMap.of("env", new EnvironmentVariableSecretProvider()))
+                : new SecretsResolver(ImmutableMap.of());
 
         if (loadSecretsPlugins) {
             log.info("Loading secrets plugins");
             String secretsConfigFile = System.getProperty("secretsConfig");
             if (secretsConfigFile != null) {
-                SecretsPluginManager secretsPluginManager = new SecretsPluginManager(createTomlConfiguration(new File(secretsConfigFile)));
+                SecretsPluginManager secretsPluginManager =
+                        new SecretsPluginManager(createTomlConfiguration(new File(secretsConfigFile)));
                 secretsPluginManager.installPlugins();
                 secretsPluginManager.load();
                 this.secretsResolver = secretsPluginManager.getSecretsResolver();
@@ -242,13 +226,11 @@ public class Bootstrap
             if (configFile != null) {
                 try {
                     requiredProperties = loadPropertiesFrom(configFile);
-                }
-                catch (IOException e) {
+                } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }
             }
-        }
-        else {
+        } else {
             requiredProperties = requiredConfigurationProperties;
         }
         Map<String, String> unusedProperties = new TreeMap<>(requiredProperties);
@@ -294,7 +276,10 @@ public class Bootstrap
         unusedProperties.keySet().removeAll(usedProperties);
 
         for (String key : unusedProperties.keySet()) {
-            errors.add(new Message(format("Configuration property '%s' was not used" + suggest(key, configurationFactory.getAllSeenProperties()), key)));
+            errors.add(new Message(format(
+                    "Configuration property '%s' was not used"
+                            + suggest(key, configurationFactory.getAllSeenProperties()),
+                    key)));
         }
 
         // If there are configuration errors, fail-fast to keep output clean
@@ -324,8 +309,7 @@ public class Bootstrap
         return configurationFactory.getUsedProperties();
     }
 
-    public Injector initialize()
-    {
+    public Injector initialize() {
         checkState(state != State.INITIALIZED, "Already initialized");
         if (state == State.UNINITIALIZED) {
             configure();
@@ -354,8 +338,7 @@ public class Bootstrap
         return injector;
     }
 
-    private void logConfiguration(ConfigurationFactory configurationFactory)
-    {
+    private void logConfiguration(ConfigurationFactory configurationFactory) {
         if (!log.isInfoEnabled()) {
             return;
         }
@@ -366,12 +349,10 @@ public class Bootstrap
         }
     }
 
-    private static ColumnPrinter makePrinterForConfiguration(ConfigurationFactory configurationFactory)
-    {
+    private static ColumnPrinter makePrinterForConfiguration(ConfigurationFactory configurationFactory) {
         ConfigurationInspector configurationInspector = new ConfigurationInspector();
 
-        ColumnPrinter columnPrinter = new ColumnPrinter(
-                "PROPERTY", "DEFAULT", "RUNTIME", "DESCRIPTION");
+        ColumnPrinter columnPrinter = new ColumnPrinter("PROPERTY", "DEFAULT", "RUNTIME", "DESCRIPTION");
 
         for (ConfigRecord<?> record : configurationInspector.inspect(configurationFactory)) {
             for (ConfigAttribute attribute : record.getAttributes()) {
@@ -385,17 +366,18 @@ public class Bootstrap
         return columnPrinter;
     }
 
-    private static String suggest(String key, Set<String> knownProperties)
-    {
+    private static String suggest(String key, Set<String> knownProperties) {
         List<String> suggestions = findSimilar(key, knownProperties, 3);
         if (suggestions.isEmpty()) {
             return "";
         }
 
-        return ". Did you mean to use " + switch (suggestions.size()) {
-            case 3 -> "'" + suggestions.get(0) + "', '" + suggestions.get(1) + "' or '" + suggestions.get(2) + "'?";
-            case 2 -> "'" + suggestions.get(0) + "' or '" + suggestions.get(1) + "'?";
-            default -> "'" + suggestions.get(0) + "'?";
-        };
+        return ". Did you mean to use "
+                + switch (suggestions.size()) {
+                    case 3 ->
+                        "'" + suggestions.get(0) + "', '" + suggestions.get(1) + "' or '" + suggestions.get(2) + "'?";
+                    case 2 -> "'" + suggestions.get(0) + "' or '" + suggestions.get(1) + "'?";
+                    default -> "'" + suggestions.get(0) + "'?";
+                };
     }
 }

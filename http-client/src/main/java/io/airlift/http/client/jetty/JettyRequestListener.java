@@ -1,19 +1,19 @@
 package io.airlift.http.client.jetty;
 
+import java.net.URI;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.client.Result;
 
-import java.net.URI;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-
-class JettyRequestListener
-        implements Request.Listener, Response.Listener
-{
-    enum State
-    {
-        CREATED, SENDING_REQUEST, AWAITING_RESPONSE, READING_RESPONSE, FINISHED
+class JettyRequestListener implements Request.Listener, Response.Listener {
+    enum State {
+        CREATED,
+        SENDING_REQUEST,
+        AWAITING_RESPONSE,
+        READING_RESPONSE,
+        FINISHED
     }
 
     private final AtomicReference<State> state = new AtomicReference<>(State.CREATED);
@@ -25,49 +25,40 @@ class JettyRequestListener
     private final AtomicLong responseStarted = new AtomicLong();
     private final AtomicLong responseFinished = new AtomicLong();
 
-    public JettyRequestListener(URI uri)
-    {
+    public JettyRequestListener(URI uri) {
         this.uri = uri;
     }
 
-    public URI getUri()
-    {
+    public URI getUri() {
         return uri;
     }
 
-    public State getState()
-    {
+    public State getState() {
         return state.get();
     }
 
-    public long getCreated()
-    {
+    public long getCreated() {
         return created;
     }
 
-    public long getRequestStarted()
-    {
+    public long getRequestStarted() {
         return requestStarted.get();
     }
 
-    public long getRequestFinished()
-    {
+    public long getRequestFinished() {
         return requestFinished.get();
     }
 
-    public long getResponseStarted()
-    {
+    public long getResponseStarted() {
         return responseStarted.get();
     }
 
-    public long getResponseFinished()
-    {
+    public long getResponseFinished() {
         return responseFinished.get();
     }
 
     @Override
-    public void onBegin(Request request)
-    {
+    public void onBegin(Request request) {
         changeState(State.SENDING_REQUEST);
 
         long now = System.nanoTime();
@@ -75,8 +66,7 @@ class JettyRequestListener
     }
 
     @Override
-    public void onSuccess(Request request)
-    {
+    public void onSuccess(Request request) {
         changeState(State.AWAITING_RESPONSE);
 
         long now = System.nanoTime();
@@ -85,8 +75,7 @@ class JettyRequestListener
     }
 
     @Override
-    public void onBegin(Response response)
-    {
+    public void onBegin(Response response) {
         changeState(State.READING_RESPONSE);
 
         long now = System.nanoTime();
@@ -96,8 +85,7 @@ class JettyRequestListener
     }
 
     @Override
-    public void onComplete(Result result)
-    {
+    public void onComplete(Result result) {
         changeState(State.FINISHED);
 
         long now = System.nanoTime();
@@ -107,8 +95,7 @@ class JettyRequestListener
         responseFinished.compareAndSet(0, now);
     }
 
-    private synchronized void changeState(State newState)
-    {
+    private synchronized void changeState(State newState) {
         if (state.get().ordinal() < newState.ordinal()) {
             state.set(newState);
         }

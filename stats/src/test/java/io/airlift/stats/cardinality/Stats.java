@@ -13,14 +13,12 @@
  */
 package io.airlift.stats.cardinality;
 
-public class Stats
-{
+public class Stats {
     private int count;
     private double mean;
     private double accumulator;
 
-    public void add(double value)
-    {
+    public void add(double value) {
         count++;
 
         double delta = value - mean;
@@ -28,23 +26,19 @@ public class Stats
         accumulator += delta * (value - mean);
     }
 
-    public int count()
-    {
+    public int count() {
         return count;
     }
 
-    public double mean()
-    {
+    public double mean() {
         return mean;
     }
 
-    public double stdev()
-    {
+    public double stdev() {
         return Math.sqrt(accumulator / count);
     }
 
-    public static Stats[] array(int size)
-    {
+    public static Stats[] array(int size) {
         Stats[] result = new Stats[size];
         for (int i = 0; i < size; i++) {
             result[i] = new Stats();

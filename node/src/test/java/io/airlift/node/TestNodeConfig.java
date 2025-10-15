@@ -15,30 +15,27 @@
  */
 package io.airlift.node;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.net.InetAddresses;
-import io.airlift.configuration.testing.ConfigAssertions;
-import jakarta.validation.constraints.AssertTrue;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
-import org.junit.jupiter.api.Test;
-
-import java.io.File;
-import java.net.URISyntaxException;
-import java.util.Set;
-import java.util.UUID;
-
 import static com.google.common.io.Resources.getResource;
 import static io.airlift.node.NodeConfig.AddressSource.HOSTNAME;
 import static io.airlift.node.NodeConfig.AddressSource.IP;
 import static io.airlift.testing.ValidationAssertions.assertFailsValidation;
 import static io.airlift.testing.ValidationAssertions.assertValidates;
 
-public class TestNodeConfig
-{
+import com.google.common.collect.ImmutableMap;
+import com.google.common.net.InetAddresses;
+import io.airlift.configuration.testing.ConfigAssertions;
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import java.io.File;
+import java.net.URISyntaxException;
+import java.util.Set;
+import java.util.UUID;
+import org.junit.jupiter.api.Test;
+
+public class TestNodeConfig {
     @Test
-    public void testDefaults()
-    {
+    public void testDefaults() {
         ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(NodeConfig.class)
                 .setEnvironment(null)
                 .setPool("general")
@@ -56,9 +53,7 @@ public class TestNodeConfig
     }
 
     @Test
-    public void testExplicitPropertyMappings()
-            throws URISyntaxException
-    {
+    public void testExplicitPropertyMappings() throws URISyntaxException {
         File annotationFile = new File(getResource("annotations.properties").toURI());
 
         ConfigAssertions.assertFullMapping(
@@ -123,24 +118,30 @@ public class TestNodeConfig
     }
 
     @Test
-    public void testValidations()
-            throws URISyntaxException
-    {
+    public void testValidations() throws URISyntaxException {
         assertValidates(new NodeConfig()
                 .setEnvironment("test")
                 .setNodeId(UUID.randomUUID().toString()));
 
-        assertFailsValidation(new NodeConfig().setNodeId("abc/123"), "nodeId", "should match [A-Za-z0-9][_A-Za-z0-9-]*", Pattern.class);
+        assertFailsValidation(
+                new NodeConfig().setNodeId("abc/123"),
+                "nodeId",
+                "should match [A-Za-z0-9][_A-Za-z0-9-]*",
+                Pattern.class);
 
         assertFailsValidation(new NodeConfig(), "environment", "must not be null", NotNull.class);
-        assertFailsValidation(new NodeConfig().setEnvironment("FOO"), "environment", "should match [a-z0-9][_a-z0-9]*", Pattern.class);
+        assertFailsValidation(
+                new NodeConfig().setEnvironment("FOO"),
+                "environment",
+                "should match [a-z0-9][_a-z0-9]*",
+                Pattern.class);
 
-        assertFailsValidation(new NodeConfig().setPool("FOO"), "pool", "should match [a-z0-9][_a-z0-9]*", Pattern.class);
+        assertFailsValidation(
+                new NodeConfig().setPool("FOO"), "pool", "should match [a-z0-9][_a-z0-9]*", Pattern.class);
 
         File annotationFile = new File(getResource("annotations.properties").toURI());
-        assertFailsValidation(new NodeConfig()
-                        .setAnnotations("team=a,region=b")
-                        .setAnnotationFile(annotationFile.getAbsolutePath()),
+        assertFailsValidation(
+                new NodeConfig().setAnnotations("team=a,region=b").setAnnotationFile(annotationFile.getAbsolutePath()),
                 "configurationValid",
                 "only one of node.annotations or node.annotation-file can be set",
                 AssertTrue.class);

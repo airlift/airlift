@@ -15,13 +15,16 @@
  */
 package io.airlift.configuration;
 
+import static com.google.common.base.MoreObjects.toStringHelper;
+import static com.google.common.base.Preconditions.checkArgument;
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Multimap;
 import com.google.inject.ConfigurationException;
 import jakarta.validation.Constraint;
-
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -35,22 +38,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
-import static com.google.common.base.Preconditions.checkArgument;
-import static java.util.Objects.requireNonNull;
-
-public class ConfigurationMetadata<T>
-{
+public class ConfigurationMetadata<T> {
     public static <T> ConfigurationMetadata<T> getValidConfigurationMetadata(Class<T> configClass)
-            throws ConfigurationException
-    {
+            throws ConfigurationException {
         ConfigurationMetadata<T> metadata = getConfigurationMetadata(configClass);
         metadata.getProblems().throwIfHasErrors();
         return metadata;
     }
 
-    public static <T> ConfigurationMetadata<T> getConfigurationMetadata(Class<T> configClass)
-    {
+    public static <T> ConfigurationMetadata<T> getConfigurationMetadata(Class<T> configClass) {
         return new ConfigurationMetadata<>(configClass);
     }
 
@@ -60,8 +56,7 @@ public class ConfigurationMetadata<T>
     private final Set<String> defunctConfig;
     private final Problems problems = new Problems();
 
-    private ConfigurationMetadata(Class<T> configClass)
-    {
+    private ConfigurationMetadata(Class<T> configClass) {
         if (configClass == null) {
             throw new NullPointerException("configClass is null");
         }
@@ -82,10 +77,12 @@ public class ConfigurationMetadata<T>
             }
             for (String defunct : configClass.getAnnotation(DefunctConfig.class).value()) {
                 if (defunct.isEmpty()) {
-                    problems.addError("@DefunctConfig annotation on class [%s] contains empty values", configClass.getName());
-                }
-                else if (!this.defunctConfig.add(defunct)) {
-                    problems.addError("Defunct property '%s' is listed more than once in @DefunctConfig for class [%s]", defunct, configClass.getName());
+                    problems.addError(
+                            "@DefunctConfig annotation on class [%s] contains empty values", configClass.getName());
+                } else if (!this.defunctConfig.add(defunct)) {
+                    problems.addError(
+                            "Defunct property '%s' is listed more than once in @DefunctConfig for class [%s]",
+                            defunct, configClass.getName());
                 }
             }
         }
@@ -97,9 +94,9 @@ public class ConfigurationMetadata<T>
             if (!Modifier.isPublic(constructor.getModifiers())) {
                 problems.addError("Constructor [%s] is not public", constructor.toGenericString());
             }
-        }
-        catch (Exception e) {
-            problems.addError("Configuration class [%s] does not have a public no-arg constructor", configClass.getName());
+        } catch (Exception e) {
+            problems.addError(
+                    "Configuration class [%s] does not have a public no-arg constructor", configClass.getName());
         }
         this.constructor = constructor;
 
@@ -123,28 +120,23 @@ public class ConfigurationMetadata<T>
         }
     }
 
-    public Class<T> getConfigClass()
-    {
+    public Class<T> getConfigClass() {
         return configClass;
     }
 
-    public Constructor<T> getConstructor()
-    {
+    public Constructor<T> getConstructor() {
         return constructor;
     }
 
-    public Map<String, AttributeMetadata> getAttributes()
-    {
+    public Map<String, AttributeMetadata> getAttributes() {
         return attributes;
     }
 
-    Problems getProblems()
-    {
+    Problems getProblems() {
         return problems;
     }
 
-    private boolean validateAnnotations(Method configMethod)
-    {
+    private boolean validateAnnotations(Method configMethod) {
         Config config = configMethod.getAnnotation(Config.class);
         LegacyConfig legacyConfig = configMethod.getAnnotation(LegacyConfig.class);
 
@@ -162,31 +154,37 @@ public class ConfigurationMetadata<T>
 
         for (Annotation annotation : configMethod.getDeclaredAnnotations()) {
             if (annotation.annotationType().isAnnotationPresent(Constraint.class)) {
-                problems.addError("@Config method [%s] annotation %s should be placed on a getter", configMethod.toGenericString(), annotation);
+                problems.addError(
+                        "@Config method [%s] annotation %s should be placed on a getter",
+                        configMethod.toGenericString(), annotation);
                 isValid = false;
             }
         }
 
         if (legacyConfig != null) {
             if (legacyConfig.value().length == 0) {
-                problems.addError("@LegacyConfig method [%s] annotation has an empty list", configMethod.toGenericString());
+                problems.addError(
+                        "@LegacyConfig method [%s] annotation has an empty list", configMethod.toGenericString());
                 isValid = false;
             }
 
             if (!legacyConfig.replacedBy().isEmpty()) {
-                problems.addError("@Config method [%s] has annotation claiming to be replaced by another property ('%s')",
-                        configMethod.toGenericString(),
-                        legacyConfig.replacedBy());
+                problems.addError(
+                        "@Config method [%s] has annotation claiming to be replaced by another property ('%s')",
+                        configMethod.toGenericString(), legacyConfig.replacedBy());
                 isValid = false;
             }
 
             for (String arrayEntry : legacyConfig.value()) {
                 if (arrayEntry == null || arrayEntry.isEmpty()) {
-                    problems.addError("@LegacyConfig method [%s] annotation contains null or empty value", configMethod.toGenericString());
+                    problems.addError(
+                            "@LegacyConfig method [%s] annotation contains null or empty value",
+                            configMethod.toGenericString());
                     isValid = false;
-                }
-                else if (arrayEntry.equals(config.value())) {
-                    problems.addError("@Config property name '%s' appears in @LegacyConfig annotation for method [%s]", config.value(), configMethod.toGenericString());
+                } else if (arrayEntry.equals(config.value())) {
+                    problems.addError(
+                            "@Config property name '%s' appears in @LegacyConfig annotation for method [%s]",
+                            config.value(), configMethod.toGenericString());
                     isValid = false;
                 }
             }
@@ -195,30 +193,34 @@ public class ConfigurationMetadata<T>
         return isValid;
     }
 
-    private boolean validateSetter(Method method)
-    {
+    private boolean validateSetter(Method method) {
         if (!method.getName().startsWith("set")) {
-            problems.addError("Method [%s] is not a valid setter (e.g. setFoo) for configuration annotation", method.toGenericString());
+            problems.addError(
+                    "Method [%s] is not a valid setter (e.g. setFoo) for configuration annotation",
+                    method.toGenericString());
             return false;
         }
 
         if (method.getParameterTypes().length != 1) {
-            problems.addError("Configuration setter method [%s] does not have exactly one parameter", method.toGenericString());
+            problems.addError(
+                    "Configuration setter method [%s] does not have exactly one parameter", method.toGenericString());
             return false;
         }
 
         return true;
     }
 
-    private Map<String, AttributeMetadata> buildAttributeMetadata(Class<T> configClass, Multimap<String, Method> methods)
-    {
+    private Map<String, AttributeMetadata> buildAttributeMetadata(
+            Class<T> configClass, Multimap<String, Method> methods) {
         Map<String, AttributeMetadata> attributes = new HashMap<>();
         for (Method configMethod : findConfigMethods(configClass, methods)) {
             AttributeMetadata attribute = buildAttributeMetadata(configClass, methods, configMethod);
 
             if (attribute != null) {
                 if (attributes.containsKey(attribute.getName())) {
-                    problems.addError("Configuration class [%s] Multiple methods are annotated for @Config attribute [%s]", configClass.getName(), attribute.getName());
+                    problems.addError(
+                            "Configuration class [%s] Multiple methods are annotated for @Config attribute [%s]",
+                            configClass.getName(), attribute.getName());
                 }
                 attributes.put(attribute.getName(), attribute);
             }
@@ -235,7 +237,9 @@ public class ConfigurationMetadata<T>
         for (Method method : legacyMethods) {
             if (!method.isAnnotationPresent(Config.class)) {
                 validateSetter(method);
-                problems.addError("@LegacyConfig method [%s] is not associated with any valid @Config attribute.", method.toGenericString());
+                problems.addError(
+                        "@LegacyConfig method [%s] is not associated with any valid @Config attribute.",
+                        method.toGenericString());
             }
         }
 
@@ -243,7 +247,9 @@ public class ConfigurationMetadata<T>
         Collection<Method> sensitiveMethods = findSensitiveConfigMethods(configClass, methods);
         for (Method method : sensitiveMethods) {
             if (!method.isAnnotationPresent(Config.class)) {
-                problems.addError("@ConfigSecuritySensitive method [%s] is not annotated with @Config.", method.toGenericString());
+                problems.addError(
+                        "@ConfigSecuritySensitive method [%s] is not annotated with @Config.",
+                        method.toGenericString());
             }
         }
 
@@ -258,8 +264,8 @@ public class ConfigurationMetadata<T>
         return attributes;
     }
 
-    private AttributeMetadata buildAttributeMetadata(Class<T> configClass, Multimap<String, Method> methods, Method configMethod)
-    {
+    private AttributeMetadata buildAttributeMetadata(
+            Class<T> configClass, Multimap<String, Method> methods, Method configMethod) {
         if (!validateAnnotations(configMethod)) {
             return null;
         }
@@ -276,10 +282,12 @@ public class ConfigurationMetadata<T>
         // determine the attribute name
         String attributeName = configMethod.getName().substring(3);
 
-        AttributeMetaDataBuilder builder = new AttributeMetaDataBuilder(configClass, attributeName, securitySensitive, hidden);
+        AttributeMetaDataBuilder builder =
+                new AttributeMetaDataBuilder(configClass, attributeName, securitySensitive, hidden);
 
         if (configMethod.isAnnotationPresent(ConfigDescription.class)) {
-            builder.setDescription(configMethod.getAnnotation(ConfigDescription.class).value());
+            builder.setDescription(
+                    configMethod.getAnnotation(ConfigDescription.class).value());
         }
 
         // find the getter
@@ -293,7 +301,9 @@ public class ConfigurationMetadata<T>
         }
 
         if (defunctConfig.contains(propertyName)) {
-            problems.addError("@Config property '%s' on method [%s] is defunct on class [%s]", propertyName, configMethod, configClass);
+            problems.addError(
+                    "@Config property '%s' on method [%s] is defunct on class [%s]",
+                    propertyName, configMethod, configClass);
         }
 
         // Add the injection point for the current setter/property
@@ -301,8 +311,11 @@ public class ConfigurationMetadata<T>
 
         // Add injection points for legacy setters/properties
         for (InjectionPointMetaData injectionPoint : findLegacySetters(methods, propertyName, attributeName)) {
-            if (!injectionPoint.getSetter().isAnnotationPresent(Config.class) && !injectionPoint.getSetter().isAnnotationPresent(Deprecated.class)) {
-                problems.addWarning("Replaced @LegacyConfig method [%s] should be @Deprecated", injectionPoint.getSetter().toGenericString());
+            if (!injectionPoint.getSetter().isAnnotationPresent(Config.class)
+                    && !injectionPoint.getSetter().isAnnotationPresent(Deprecated.class)) {
+                problems.addWarning(
+                        "Replaced @LegacyConfig method [%s] should be @Deprecated",
+                        injectionPoint.getSetter().toGenericString());
             }
 
             builder.addInjectionPoint(injectionPoint);
@@ -312,8 +325,7 @@ public class ConfigurationMetadata<T>
     }
 
     @Override
-    public boolean equals(Object o)
-    {
+    public boolean equals(Object o) {
         if (this == o) {
             return true;
         }
@@ -331,38 +343,30 @@ public class ConfigurationMetadata<T>
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return configClass.hashCode();
     }
 
     @Override
-    public String toString()
-    {
-        return toStringHelper(this)
-                .add("configClass", configClass)
-                .toString();
+    public String toString() {
+        return toStringHelper(this).add("configClass", configClass).toString();
     }
 
-    public static class InjectionPointMetaData
-    {
+    public static class InjectionPointMetaData {
         private final Class<?> configClass;
         private final String property;
         private final Method setter;
         private final boolean current;
 
-        public static InjectionPointMetaData newCurrent(Class<?> configClass, String property, Method setter)
-        {
+        public static InjectionPointMetaData newCurrent(Class<?> configClass, String property, Method setter) {
             return new InjectionPointMetaData(configClass, property, setter, true);
         }
 
-        public static InjectionPointMetaData newLegacy(Class<?> configClass, String property, Method setter)
-        {
+        public static InjectionPointMetaData newLegacy(Class<?> configClass, String property, Method setter) {
             return new InjectionPointMetaData(configClass, property, setter, false);
         }
 
-        private InjectionPointMetaData(Class<?> configClass, String property, Method setter, boolean current)
-        {
+        private InjectionPointMetaData(Class<?> configClass, String property, Method setter, boolean current) {
             requireNonNull(configClass);
             requireNonNull(property);
             requireNonNull(setter);
@@ -374,29 +378,24 @@ public class ConfigurationMetadata<T>
             this.current = current;
         }
 
-        public Class<?> getConfigClass()
-        {
+        public Class<?> getConfigClass() {
             return this.configClass;
         }
 
-        public String getProperty()
-        {
+        public String getProperty() {
             return this.property;
         }
 
-        public Method getSetter()
-        {
+        public Method getSetter() {
             return this.setter;
         }
 
-        public boolean isLegacy()
-        {
+        public boolean isLegacy() {
             return !this.current;
         }
 
         @Override
-        public boolean equals(Object o)
-        {
+        public boolean equals(Object o) {
             if (this == o) {
                 return true;
             }
@@ -417,16 +416,14 @@ public class ConfigurationMetadata<T>
         }
 
         @Override
-        public int hashCode()
-        {
+        public int hashCode() {
             int result = configClass.hashCode();
             result = 31 * result + property.hashCode();
             return result;
         }
     }
 
-    public static class AttributeMetadata
-    {
+    public static class AttributeMetadata {
         private final Class<?> configClass;
         private final String name;
         private final String description;
@@ -437,9 +434,15 @@ public class ConfigurationMetadata<T>
         private final InjectionPointMetaData injectionPoint;
         private final Set<InjectionPointMetaData> legacyInjectionPoints;
 
-        public AttributeMetadata(Class<?> configClass, String name, String description, boolean securitySensitive, boolean hidden, Method getter,
-                InjectionPointMetaData injectionPoint, Set<InjectionPointMetaData> legacyInjectionPoints)
-        {
+        public AttributeMetadata(
+                Class<?> configClass,
+                String name,
+                String description,
+                boolean securitySensitive,
+                boolean hidden,
+                Method getter,
+                InjectionPointMetaData injectionPoint,
+                Set<InjectionPointMetaData> legacyInjectionPoints) {
             requireNonNull(configClass);
             requireNonNull(name);
             requireNonNull(getter);
@@ -457,49 +460,40 @@ public class ConfigurationMetadata<T>
             this.legacyInjectionPoints = ImmutableSet.copyOf(legacyInjectionPoints);
         }
 
-        public Class<?> getConfigClass()
-        {
+        public Class<?> getConfigClass() {
             return configClass;
         }
 
-        public String getName()
-        {
+        public String getName() {
             return name;
         }
 
-        public String getDescription()
-        {
+        public String getDescription() {
             return description;
         }
 
-        public boolean isSecuritySensitive()
-        {
+        public boolean isSecuritySensitive() {
             return securitySensitive;
         }
 
-        public boolean isHidden()
-        {
+        public boolean isHidden() {
             return hidden;
         }
 
-        public Method getGetter()
-        {
+        public Method getGetter() {
             return getter;
         }
 
-        public InjectionPointMetaData getInjectionPoint()
-        {
+        public InjectionPointMetaData getInjectionPoint() {
             return this.injectionPoint;
         }
 
-        public Set<InjectionPointMetaData> getLegacyInjectionPoints()
-        {
+        public Set<InjectionPointMetaData> getLegacyInjectionPoints() {
             return this.legacyInjectionPoints;
         }
 
         @Override
-        public boolean equals(Object o)
-        {
+        public boolean equals(Object o) {
             if (this == o) {
                 return true;
             }
@@ -520,24 +514,19 @@ public class ConfigurationMetadata<T>
         }
 
         @Override
-        public int hashCode()
-        {
+        public int hashCode() {
             int result = configClass.hashCode();
             result = 31 * result + name.hashCode();
             return result;
         }
 
         @Override
-        public String toString()
-        {
-            return toStringHelper(this)
-                    .add("name", name)
-                    .toString();
+        public String toString() {
+            return toStringHelper(this).add("name", name).toString();
         }
     }
 
-    public static class AttributeMetaDataBuilder
-    {
+    public static class AttributeMetaDataBuilder {
         private final Class<?> configClass;
         private final String name;
 
@@ -548,8 +537,7 @@ public class ConfigurationMetadata<T>
         private final boolean securitySensitive;
         private final boolean hidden;
 
-        public AttributeMetaDataBuilder(Class<?> configClass, String name, boolean securitySensitive, boolean hidden)
-        {
+        public AttributeMetaDataBuilder(Class<?> configClass, String name, boolean securitySensitive, boolean hidden) {
             requireNonNull(configClass);
             requireNonNull(name);
             checkArgument(!name.isEmpty());
@@ -560,22 +548,19 @@ public class ConfigurationMetadata<T>
             this.hidden = hidden;
         }
 
-        public void setDescription(String description)
-        {
+        public void setDescription(String description) {
             requireNonNull(description);
 
             this.description = description;
         }
 
-        public void setGetter(Method getter)
-        {
+        public void setGetter(Method getter) {
             requireNonNull(getter);
 
             this.getter = getter;
         }
 
-        public void addInjectionPoint(InjectionPointMetaData injectionPointMetaData)
-        {
+        public void addInjectionPoint(InjectionPointMetaData injectionPointMetaData) {
             requireNonNull(injectionPointMetaData);
 
             if (injectionPointMetaData.isLegacy()) {
@@ -584,42 +569,49 @@ public class ConfigurationMetadata<T>
             }
 
             if (this.injectionPoint != null) {
-                throw Problems.exceptionFor("Trying to set current property twice: '%s' on method [%s] and '%s' on method [%s]",
-                        this.injectionPoint.getProperty(), this.injectionPoint.getSetter().toGenericString(),
-                        injectionPointMetaData.getProperty(), injectionPointMetaData.getSetter().toGenericString());
+                throw Problems.exceptionFor(
+                        "Trying to set current property twice: '%s' on method [%s] and '%s' on method [%s]",
+                        this.injectionPoint.getProperty(),
+                        this.injectionPoint.getSetter().toGenericString(),
+                        injectionPointMetaData.getProperty(),
+                        injectionPointMetaData.getSetter().toGenericString());
             }
 
             this.injectionPoint = injectionPointMetaData;
         }
 
-        public AttributeMetadata build()
-        {
+        public AttributeMetadata build() {
             // todo fix validation
             if (getter == null) {
                 return null;
             }
 
-            return new AttributeMetadata(configClass, name, description, securitySensitive, hidden, getter, injectionPoint, legacyInjectionPoints);
+            return new AttributeMetadata(
+                    configClass,
+                    name,
+                    description,
+                    securitySensitive,
+                    hidden,
+                    getter,
+                    injectionPoint,
+                    legacyInjectionPoints);
         }
     }
 
-    private static Collection<Method> findConfigMethods(Class<?> configClass, Multimap<String, Method> methods)
-    {
+    private static Collection<Method> findConfigMethods(Class<?> configClass, Multimap<String, Method> methods) {
         return findAnnotatedMethods(configClass, methods, Config.class);
     }
 
-    private static Collection<Method> findLegacyConfigMethods(Class<?> configClass, Multimap<String, Method> methods)
-    {
+    private static Collection<Method> findLegacyConfigMethods(Class<?> configClass, Multimap<String, Method> methods) {
         return findAnnotatedMethods(configClass, methods, LegacyConfig.class);
     }
 
-    private static Collection<Method> findSensitiveConfigMethods(Class<?> configClass, Multimap<String, Method> methods)
-    {
+    private static Collection<Method> findSensitiveConfigMethods(
+            Class<?> configClass, Multimap<String, Method> methods) {
         return findAnnotatedMethods(configClass, methods, ConfigSecuritySensitive.class);
     }
 
-    private static Collection<Method> findHiddenConfigMethods(Class<?> configClass, Multimap<String, Method> methods)
-    {
+    private static Collection<Method> findHiddenConfigMethods(Class<?> configClass, Multimap<String, Method> methods) {
         return findAnnotatedMethods(configClass, methods, ConfigHidden.class);
     }
 
@@ -630,8 +622,10 @@ public class ConfigurationMetadata<T>
      * @return a map that associates a concrete method to the actual method tagged
      * (which may belong to a different class in class hierarchy)
      */
-    private static Collection<Method> findAnnotatedMethods(Class<?> configClass, Multimap<String, Method> methods, Class<? extends java.lang.annotation.Annotation> annotation)
-    {
+    private static Collection<Method> findAnnotatedMethods(
+            Class<?> configClass,
+            Multimap<String, Method> methods,
+            Class<? extends java.lang.annotation.Annotation> annotation) {
         List<Method> result = new ArrayList<>();
         // gather all publicly available methods
         // this returns everything, even if it's declared in a parent
@@ -642,7 +636,8 @@ public class ConfigurationMetadata<T>
             }
 
             // look for annotations recursively in super-classes or interfaces
-            Method managedMethod = findAnnotatedMethod(methods, annotation, method.getName(), method.getParameterTypes());
+            Method managedMethod =
+                    findAnnotatedMethod(methods, annotation, method.getName(), method.getParameterTypes());
             if (managedMethod != null) {
                 result.add(managedMethod);
             }
@@ -651,8 +646,11 @@ public class ConfigurationMetadata<T>
         return result;
     }
 
-    public static Method findAnnotatedMethod(Multimap<String, Method> methods, Class<? extends java.lang.annotation.Annotation> annotation, String methodName, Class<?>... paramTypes)
-    {
+    public static Method findAnnotatedMethod(
+            Multimap<String, Method> methods,
+            Class<? extends java.lang.annotation.Annotation> annotation,
+            String methodName,
+            Class<?>... paramTypes) {
         for (Method method : methods.get(methodName)) {
             if (Arrays.equals(method.getParameterTypes(), paramTypes) && method.isAnnotationPresent(annotation)) {
                 return method;
@@ -661,8 +659,7 @@ public class ConfigurationMetadata<T>
         return null;
     }
 
-    private static Multimap<String, Method> collectDeclaredMethods(Class<?> configClass)
-    {
+    private static Multimap<String, Method> collectDeclaredMethods(Class<?> configClass) {
         if (configClass.equals(Object.class)) {
             return ArrayListMultimap.create();
         }
@@ -684,8 +681,8 @@ public class ConfigurationMetadata<T>
         return result;
     }
 
-    private Set<InjectionPointMetaData> findLegacySetters(Multimap<String, Method> methods, String propertyName, String attributeName)
-    {
+    private Set<InjectionPointMetaData> findLegacySetters(
+            Multimap<String, Method> methods, String propertyName, String attributeName) {
         Set<InjectionPointMetaData> setters = new HashSet<>();
         String setterName = "set" + attributeName;
 
@@ -694,7 +691,9 @@ public class ConfigurationMetadata<T>
                 continue;
             }
 
-            if (method.getName().equals(setterName) && method.isAnnotationPresent(LegacyConfig.class) && validateSetter(method)) {
+            if (method.getName().equals(setterName)
+                    && method.isAnnotationPresent(LegacyConfig.class)
+                    && validateSetter(method)) {
                 setters.addAll(validateLegacyConfig(method, propertyName, setterName));
             }
 
@@ -706,29 +705,29 @@ public class ConfigurationMetadata<T>
         return setters;
     }
 
-    private Set<InjectionPointMetaData> validateLegacyConfig(Method method, String propertyName, String setterName)
-    {
+    private Set<InjectionPointMetaData> validateLegacyConfig(Method method, String propertyName, String setterName) {
         Set<InjectionPointMetaData> setters = new HashSet<>();
 
         // Found @LegacyConfig setter linked by replacedBy() property
         for (String property : method.getAnnotation(LegacyConfig.class).value()) {
             if (defunctConfig.contains(property)) {
-                problems.addError("@LegacyConfig property '%s' on method [%s] is defunct on class [%s]", property, method, configClass);
+                problems.addError(
+                        "@LegacyConfig property '%s' on method [%s] is defunct on class [%s]",
+                        property, method, configClass);
             }
 
             if (!property.equals(propertyName)) {
                 setters.add(InjectionPointMetaData.newLegacy(configClass, property, method));
-            }
-            else {
-                problems.addError("@LegacyConfig property '%s' on method [%s] is replaced by @Config property of same name on method [%s]",
+            } else {
+                problems.addError(
+                        "@LegacyConfig property '%s' on method [%s] is replaced by @Config property of same name on method [%s]",
                         property, method.toGenericString(), setterName);
             }
         }
         return setters;
     }
 
-    private Method findGetter(Multimap<String, Method> methods, Method configMethod, String attributeName)
-    {
+    private Method findGetter(Multimap<String, Method> methods, Method configMethod, String attributeName) {
         List<Method> getters = new ArrayList<>();
         List<Method> unusableGetters = new ArrayList<>();
 
@@ -738,8 +737,7 @@ public class ConfigurationMetadata<T>
             }
             if (validateGetter(method, attributeName)) {
                 getters.add(method);
-            }
-            else {
+            } else {
                 unusableGetters.add(method);
             }
         }
@@ -768,8 +766,7 @@ public class ConfigurationMetadata<T>
         return null;
     }
 
-    private static boolean validateGetter(Method method, String attributeName)
-    {
+    private static boolean validateGetter(Method method, String attributeName) {
         // find the getter or is function
         if (!(method.getName().equals("get" + attributeName) || method.getName().equals("is" + attributeName))) {
             return false;
@@ -781,8 +778,10 @@ public class ConfigurationMetadata<T>
         return isUsableMethod(method);
     }
 
-    private static boolean isUsableMethod(Method method)
-    {
-        return !method.isSynthetic() && !method.isBridge() && !Modifier.isStatic(method.getModifiers()) && Modifier.isPublic(method.getModifiers());
+    private static boolean isUsableMethod(Method method) {
+        return !method.isSynthetic()
+                && !method.isBridge()
+                && !Modifier.isStatic(method.getModifiers())
+                && Modifier.isPublic(method.getModifiers());
     }
 }

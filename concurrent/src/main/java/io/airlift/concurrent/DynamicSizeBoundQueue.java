@@ -13,6 +13,12 @@
  */
 package io.airlift.concurrent;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Verify.verify;
+import static java.util.Objects.requireNonNull;
+import static java.util.Objects.requireNonNullElseGet;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ticker;
 import com.google.common.util.concurrent.Futures;
@@ -20,7 +26,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.errorprone.annotations.ThreadSafe;
 import jakarta.annotation.Nullable;
-
 import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -31,12 +36,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.ToLongFunction;
-
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Verify.verify;
-import static java.util.Objects.requireNonNull;
-import static java.util.Objects.requireNonNullElseGet;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
  * Size constrained queue that utilizes a dynamic element size function. To prevent
@@ -49,8 +48,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  * to closely mirror the method signatures of {@link java.util.concurrent.BlockingQueue}.
  */
 @ThreadSafe
-public class DynamicSizeBoundQueue<T>
-{
+public class DynamicSizeBoundQueue<T> {
     private final AtomicLong size = new AtomicLong();
     private final Queue<ElementAndSize<T>> queue = new ConcurrentLinkedQueue<>();
     private final AtomicReference<SettableFuture<Void>> enqueueFuture = new AtomicReference<>();
@@ -60,21 +58,18 @@ public class DynamicSizeBoundQueue<T>
     private final ToLongFunction<T> elementSizeFunction;
     private final Ticker ticker;
 
-    public DynamicSizeBoundQueue(long maxSize, ToLongFunction<T> elementSizeFunction)
-    {
+    public DynamicSizeBoundQueue(long maxSize, ToLongFunction<T> elementSizeFunction) {
         this(maxSize, elementSizeFunction, Ticker.systemTicker());
     }
 
-    public DynamicSizeBoundQueue(long maxSize, ToLongFunction<T> elementSizeFunction, Ticker ticker)
-    {
+    public DynamicSizeBoundQueue(long maxSize, ToLongFunction<T> elementSizeFunction, Ticker ticker) {
         checkArgument(maxSize > 0, "maxSize must be positive");
         this.maxSize = maxSize;
         this.elementSizeFunction = requireNonNull(elementSizeFunction, "elementSizeFunction is null");
         this.ticker = requireNonNull(ticker, "ticker is null");
     }
 
-    public long getMaxSize()
-    {
+    public long getMaxSize() {
         return maxSize;
     }
 
@@ -82,19 +77,16 @@ public class DynamicSizeBoundQueue<T>
      * Gets the current size of the queue. The size is guaranteed to be no larger than max size plus
      * the size of one element if {@link DynamicSizeBoundQueue#forcePut(Object)} is not used.
      */
-    public long getSize()
-    {
+    public long getSize() {
         return size.get();
     }
 
-    public boolean offer(T element)
-    {
+    public boolean offer(T element) {
         long elementSize = elementSizeFunction.applyAsLong(element);
         return offer(element, elementSize);
     }
 
-    private boolean offer(T element, long elementSize)
-    {
+    private boolean offer(T element, long elementSize) {
         requireNonNull(element, "element is null");
         checkArgument(elementSize > 0, "element size must be positive");
         if (!tryAcquireSizeReservation(elementSize)) {
@@ -105,8 +97,7 @@ public class DynamicSizeBoundQueue<T>
         return true;
     }
 
-    private boolean tryAcquireSizeReservation(long elementSize)
-    {
+    private boolean tryAcquireSizeReservation(long elementSize) {
         // Add the element as long as there is any space available
         if (size.get() >= maxSize) {
             return false;
@@ -115,8 +106,7 @@ public class DynamicSizeBoundQueue<T>
         long newSize;
         try {
             newSize = getAndAddOverflowChecked(size, elementSize);
-        }
-        catch (ArithmeticException e) { // Numeric overflow
+        } catch (ArithmeticException e) { // Numeric overflow
             // While numeric overflow is extremely unlikely given typical numerical sizes,
             // even the largest possible element of size Long.MAX_VALUE can eventually fit
             // without numeric overflow as long as the queue can be emptied.
@@ -136,14 +126,11 @@ public class DynamicSizeBoundQueue<T>
      * support). If this ever becomes a performance bottleneck, it is possible to use the original getAndAdd if
      * the caller can guarantee no risk of numeric overflow.
      */
-    private static long getAndAddOverflowChecked(AtomicLong atomicLong, long delta)
-    {
+    private static long getAndAddOverflowChecked(AtomicLong atomicLong, long delta) {
         return atomicLong.getAndAccumulate(delta, Math::addExact);
     }
 
-    public boolean offer(T element, long timeout, TimeUnit unit)
-            throws InterruptedException
-    {
+    public boolean offer(T element, long timeout, TimeUnit unit) throws InterruptedException {
         long elementSize = elementSizeFunction.applyAsLong(element);
         long remainingTimeoutNs = unit.toNanos(timeout);
         while (!offer(element, elementSize)) {
@@ -162,9 +149,7 @@ public class DynamicSizeBoundQueue<T>
         return true;
     }
 
-    public void put(T element)
-            throws InterruptedException
-    {
+    public void put(T element) throws InterruptedException {
         long elementSize = elementSizeFunction.applyAsLong(element);
         while (!offer(element, elementSize)) {
             ListenableFuture<Void> future = getOrCreateFuture(dequeueFuture);
@@ -180,8 +165,7 @@ public class DynamicSizeBoundQueue<T>
      * Enqueue the element if there is space, otherwise returns a ListenableFuture that will complete
      * when space becomes available for the element. If a future is returned, the element was not inserted.
      */
-    public Optional<ListenableFuture<Void>> offerWithBackoff(T element)
-    {
+    public Optional<ListenableFuture<Void>> offerWithBackoff(T element) {
         long elementSize = elementSizeFunction.applyAsLong(element);
         if (offer(element, elementSize)) {
             return Optional.empty();
@@ -199,14 +183,12 @@ public class DynamicSizeBoundQueue<T>
      * {@link IllegalStateException} if the forced element triggers a numeric overflow, in which case
      * the element is not inserted.
      */
-    public void forcePut(T element)
-    {
+    public void forcePut(T element) {
         long elementSize = elementSizeFunction.applyAsLong(element);
         checkArgument(elementSize > 0, "element size must be positive");
         try {
             getAndAddOverflowChecked(size, elementSize);
-        }
-        catch (ArithmeticException e) { // Numeric overflow
+        } catch (ArithmeticException e) { // Numeric overflow
             throw new IllegalStateException("Forced element triggered queue size numeric overflow");
         }
         queue.add(new ElementAndSize<>(element, elementSize));
@@ -214,8 +196,7 @@ public class DynamicSizeBoundQueue<T>
     }
 
     @Nullable
-    public T poll()
-    {
+    public T poll() {
         ElementAndSize<T> elementAndSize = queue.poll();
         if (elementAndSize == null) {
             return null;
@@ -226,9 +207,7 @@ public class DynamicSizeBoundQueue<T>
         return elementAndSize.element();
     }
 
-    public T poll(long timeout, TimeUnit unit)
-            throws InterruptedException
-    {
+    public T poll(long timeout, TimeUnit unit) throws InterruptedException {
         long remainingTimeoutNs = unit.toNanos(timeout);
         while (true) {
             T element = poll();
@@ -252,9 +231,7 @@ public class DynamicSizeBoundQueue<T>
         }
     }
 
-    public T take()
-            throws InterruptedException
-    {
+    public T take() throws InterruptedException {
         while (true) {
             T element = poll();
             if (element != null) {
@@ -272,13 +249,11 @@ public class DynamicSizeBoundQueue<T>
         }
     }
 
-    private static ListenableFuture<Void> getOrCreateFuture(AtomicReference<SettableFuture<Void>> reference)
-    {
+    private static ListenableFuture<Void> getOrCreateFuture(AtomicReference<SettableFuture<Void>> reference) {
         return reference.updateAndGet(current -> requireNonNullElseGet(current, SettableFuture::create));
     }
 
-    private static void notifyIfNecessary(AtomicReference<SettableFuture<Void>> reference)
-    {
+    private static void notifyIfNecessary(AtomicReference<SettableFuture<Void>> reference) {
         SettableFuture<?> future = reference.getAndSet(null);
         if (future != null) {
             future.set(null);
@@ -291,64 +266,48 @@ public class DynamicSizeBoundQueue<T>
     @VisibleForTesting
     void preDequeueAwaitHook() {}
 
-    private void awaitDequeueFuture(Future<?> future)
-            throws InterruptedException
-    {
+    private void awaitDequeueFuture(Future<?> future) throws InterruptedException {
         preDequeueAwaitHook();
         awaitFutureUnchecked(future);
     }
 
-    private boolean awaitDequeueFuture(Future<?> future, long timeout, TimeUnit timeUnit)
-            throws InterruptedException
-    {
+    private boolean awaitDequeueFuture(Future<?> future, long timeout, TimeUnit timeUnit) throws InterruptedException {
         preDequeueAwaitHook();
         return awaitFutureUnchecked(future, timeout, timeUnit);
     }
 
-    private void awaitEnqueueFuture(Future<?> future)
-            throws InterruptedException
-    {
+    private void awaitEnqueueFuture(Future<?> future) throws InterruptedException {
         preEnqueueAwaitHook();
         awaitFutureUnchecked(future);
     }
 
-    private boolean awaitEnqueueFuture(Future<?> future, long timeout, TimeUnit timeUnit)
-            throws InterruptedException
-    {
+    private boolean awaitEnqueueFuture(Future<?> future, long timeout, TimeUnit timeUnit) throws InterruptedException {
         preEnqueueAwaitHook();
         return awaitFutureUnchecked(future, timeout, timeUnit);
     }
 
-    private static void awaitFutureUnchecked(Future<?> future)
-            throws InterruptedException
-    {
+    private static void awaitFutureUnchecked(Future<?> future) throws InterruptedException {
         try {
             future.get();
-        }
-        catch (ExecutionException e) {
+        } catch (ExecutionException e) {
             throw new RuntimeException(e);
         }
     }
 
     private static boolean awaitFutureUnchecked(Future<?> future, long timeout, TimeUnit timeUnit)
-            throws InterruptedException
-    {
+            throws InterruptedException {
         try {
             future.get(timeout, timeUnit);
             return true;
-        }
-        catch (ExecutionException e) {
+        } catch (ExecutionException e) {
             throw new RuntimeException(e);
-        }
-        catch (TimeoutException e) {
+        } catch (TimeoutException e) {
             return false;
         }
     }
 
-    private record ElementAndSize<T>(T element, long size)
-    {
-        private ElementAndSize
-        {
+    private record ElementAndSize<T>(T element, long size) {
+        private ElementAndSize {
             requireNonNull(element, "element is null");
             checkArgument(size > 0, "size must be positive");
         }

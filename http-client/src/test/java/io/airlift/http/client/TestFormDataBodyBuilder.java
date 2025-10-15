@@ -1,15 +1,13 @@
 package io.airlift.http.client;
 
-import org.junit.jupiter.api.Test;
-
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TestFormDataBodyBuilder
-{
+import org.junit.jupiter.api.Test;
+
+public class TestFormDataBodyBuilder {
     @Test
-    public void test()
-    {
+    public void test() {
         byte[] body = new FormDataBodyBuilder()
                 .addField("a", "apple")
                 .addField("b", "banana split")

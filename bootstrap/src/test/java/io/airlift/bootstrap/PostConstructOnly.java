@@ -18,11 +18,9 @@ package io.airlift.bootstrap;
 import jakarta.annotation.PostConstruct;
 
 @SuppressWarnings("MethodMayBeStatic")
-public class PostConstructOnly
-{
+public class PostConstructOnly {
     @PostConstruct
-    public void makeMe()
-    {
+    public void makeMe() {
         TestLifeCycleManager.note("makeMe");
     }
 }

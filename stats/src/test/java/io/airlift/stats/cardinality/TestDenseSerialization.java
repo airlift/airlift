@@ -13,23 +13,21 @@
  */
 package io.airlift.stats.cardinality;
 
+import static io.airlift.slice.testing.SliceAssertions.assertSlicesEqual;
+import static io.airlift.stats.cardinality.Utils.numberOfBuckets;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.airlift.slice.DynamicSliceOutput;
 import io.airlift.slice.Murmur3Hash128;
 import io.airlift.slice.Slice;
 import io.airlift.slice.SliceOutput;
 import org.junit.jupiter.api.Test;
 
-import static io.airlift.slice.testing.SliceAssertions.assertSlicesEqual;
-import static io.airlift.stats.cardinality.Utils.numberOfBuckets;
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class TestDenseSerialization
-{
+public class TestDenseSerialization {
     @Test
-    public void testEmpty()
-    {
+    public void testEmpty() {
         SliceOutput expected = new DynamicSliceOutput(1)
-                .appendByte(3)  // format tag
+                .appendByte(3) // format tag
                 .appendByte(12) // p
                 .appendByte(0); // baseline
 
@@ -38,22 +36,20 @@ public class TestDenseSerialization
         }
 
         // overflows
-        expected.appendByte(0)
-                .appendByte(0);
+        expected.appendByte(0).appendByte(0);
 
         assertSlicesEqual(makeHll(12).serialize(), expected.slice());
     }
 
     @Test
-    public void testSingleNoOverflow()
-    {
+    public void testSingleNoOverflow() {
         byte[] buckets = new byte[1 << (12 - 1)];
         buckets[326] = 0b0000_0001;
 
         Slice expected = new DynamicSliceOutput(1)
-                .appendByte(3)  // format tag
+                .appendByte(3) // format tag
                 .appendByte(12) // p
-                .appendByte(0)  // baseline
+                .appendByte(0) // baseline
                 .appendBytes(buckets) // buckets
                 // overflows
                 .appendByte(0)
@@ -64,15 +60,14 @@ public class TestDenseSerialization
     }
 
     @Test
-    public void testSingleWithOverflow()
-    {
+    public void testSingleWithOverflow() {
         byte[] buckets = new byte[1 << (12 - 1)];
         buckets[1353] = (byte) 0b1111_0000;
 
         Slice expected = new DynamicSliceOutput(1)
-                .appendByte(3)  // format tag
+                .appendByte(3) // format tag
                 .appendByte(12) // p
-                .appendByte(0)  // baseline
+                .appendByte(0) // baseline
                 .appendBytes(buckets) // buckets
                 // overflows
                 .appendByte(1)
@@ -88,16 +83,15 @@ public class TestDenseSerialization
     }
 
     @Test
-    public void testMultipleOverflow()
-    {
+    public void testMultipleOverflow() {
         byte[] buckets = new byte[1 << (12 - 1)];
         buckets[1353] = (byte) 0b1111_0000;
         buckets[2024] = (byte) 0b1111_0000;
 
         Slice expected = new DynamicSliceOutput(1)
-                .appendByte(3)  // format tag
+                .appendByte(3) // format tag
                 .appendByte(12) // p
-                .appendByte(0)  // baseline
+                .appendByte(0) // baseline
                 .appendBytes(buckets) // buckets
                 // overflows
                 .appendByte(2)
@@ -119,23 +113,17 @@ public class TestDenseSerialization
     }
 
     @Test
-    public void testMergeWithOverflows()
-    {
+    public void testMergeWithOverflows() {
         DenseHll expected = makeHll(4, 37227, 93351);
 
-        assertSlicesEqual(
-                makeHll(4, 37227).mergeWith(makeHll(4, 93351)).serialize(),
-                expected.serialize());
+        assertSlicesEqual(makeHll(4, 37227).mergeWith(makeHll(4, 93351)).serialize(), expected.serialize());
 
         // test commutativity
-        assertSlicesEqual(
-                makeHll(4, 93351).mergeWith(makeHll(4, 37227)).serialize(),
-                expected.serialize());
+        assertSlicesEqual(makeHll(4, 93351).mergeWith(makeHll(4, 37227)).serialize(), expected.serialize());
     }
 
     @Test
-    public void testBaselineAdjusment()
-    {
+    public void testBaselineAdjusment() {
         byte[] buckets = new byte[] {0x45, 0x23, 0x01, 0x31, 0x22, 0x05, 0x04, 0x01};
 
         Slice expected = new DynamicSliceOutput(1)
@@ -158,8 +146,7 @@ public class TestDenseSerialization
     }
 
     @Test
-    public void testOverflowAfterBaselineIncrement()
-    {
+    public void testOverflowAfterBaselineIncrement() {
         byte[] buckets = new byte[] {0x45, 0x23, 0x01, 0x31, 0x22, 0x05, 0x04, (byte) 0xF1};
 
         Slice expected = new DynamicSliceOutput(1)
@@ -188,8 +175,7 @@ public class TestDenseSerialization
     }
 
     @Test
-    public void testBaselineAdjustmentAfterOverflow()
-    {
+    public void testBaselineAdjustmentAfterOverflow() {
         byte[] buckets = new byte[] {0x45, 0x23, 0x01, 0x31, 0x22, 0x05, 0x04, (byte) 0xF1};
 
         Slice expected = new DynamicSliceOutput(1)
@@ -218,8 +204,7 @@ public class TestDenseSerialization
     }
 
     @Test
-    public void testRoundtrip()
-    {
+    public void testRoundtrip() {
         DenseHll hll = new DenseHll(4);
 
         for (int i = 0; i < 1000; i++) {
@@ -233,8 +218,7 @@ public class TestDenseSerialization
     }
 
     @Test
-    public void testDeserializeDenseV1NoOverflows()
-    {
+    public void testDeserializeDenseV1NoOverflows() {
         int indexBitLength = 4;
         int numberOfBuckets = numberOfBuckets(indexBitLength);
         Slice serialized = new DynamicSliceOutput(1)
@@ -257,8 +241,7 @@ public class TestDenseSerialization
     }
 
     @Test
-    public void testDeserializeDenseV1EmptyOverflow()
-    {
+    public void testDeserializeDenseV1EmptyOverflow() {
         // bucket 1 has a value of 17 (i.e., baseline = 2, delta == 15 and overflow is present with a value of 0)
 
         int indexBitLength = 4;
@@ -279,8 +262,7 @@ public class TestDenseSerialization
         for (int i = 0; i < numberOfBuckets; i++) {
             if (i == 1) {
                 assertThat(deserialized.getValue(i)).isEqualTo(17);
-            }
-            else {
+            } else {
                 assertThat(deserialized.getValue(i)).isEqualTo(2);
             }
         }
@@ -288,8 +270,7 @@ public class TestDenseSerialization
     }
 
     @Test
-    public void testDeserializeDenseV1Overflow()
-    {
+    public void testDeserializeDenseV1Overflow() {
         // bucket 1 has a value of 20 (i.e., baseline = 2, delta == 15, overflow == 3)
 
         int indexBitLength = 4;
@@ -310,16 +291,14 @@ public class TestDenseSerialization
         for (int i = 0; i < numberOfBuckets; i++) {
             if (i == 1) {
                 assertThat(deserialized.getValue(i)).isEqualTo(20);
-            }
-            else {
+            } else {
                 assertThat(deserialized.getValue(i)).isEqualTo(2);
             }
         }
         deserialized.verify();
     }
 
-    private static DenseHll makeHll(int indexBits, long... values)
-    {
+    private static DenseHll makeHll(int indexBits, long... values) {
         DenseHll result = new DenseHll(indexBits);
         for (long value : values) {
             result.insertHash(Murmur3Hash128.hash64(value));

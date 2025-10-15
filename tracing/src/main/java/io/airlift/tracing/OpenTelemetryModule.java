@@ -1,5 +1,20 @@
 package io.airlift.tracing;
 
+import static com.google.common.base.StandardSystemProperty.JAVA_VM_NAME;
+import static com.google.common.base.StandardSystemProperty.JAVA_VM_VENDOR;
+import static com.google.common.base.StandardSystemProperty.JAVA_VM_VERSION;
+import static com.google.common.base.StandardSystemProperty.OS_ARCH;
+import static com.google.common.base.StandardSystemProperty.OS_NAME;
+import static com.google.common.base.StandardSystemProperty.OS_VERSION;
+import static com.google.common.base.Strings.nullToEmpty;
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
+import static io.airlift.configuration.ConfigBinder.configBinder;
+import static io.airlift.tracing.Tracing.noopTracer;
+import static io.opentelemetry.sdk.trace.samplers.Sampler.parentBased;
+import static io.opentelemetry.sdk.trace.samplers.Sampler.traceIdRatioBased;
+import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
+
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Provides;
@@ -21,48 +36,27 @@ import io.opentelemetry.semconv.incubating.HostIncubatingAttributes;
 import io.opentelemetry.semconv.incubating.OsIncubatingAttributes;
 import io.opentelemetry.semconv.incubating.ProcessIncubatingAttributes;
 import io.opentelemetry.semconv.incubating.ServiceIncubatingAttributes;
-
 import java.util.Set;
 
-import static com.google.common.base.StandardSystemProperty.JAVA_VM_NAME;
-import static com.google.common.base.StandardSystemProperty.JAVA_VM_VENDOR;
-import static com.google.common.base.StandardSystemProperty.JAVA_VM_VERSION;
-import static com.google.common.base.StandardSystemProperty.OS_ARCH;
-import static com.google.common.base.StandardSystemProperty.OS_NAME;
-import static com.google.common.base.StandardSystemProperty.OS_VERSION;
-import static com.google.common.base.Strings.nullToEmpty;
-import static com.google.inject.multibindings.Multibinder.newSetBinder;
-import static io.airlift.configuration.ConfigBinder.configBinder;
-import static io.airlift.tracing.Tracing.noopTracer;
-import static io.opentelemetry.sdk.trace.samplers.Sampler.parentBased;
-import static io.opentelemetry.sdk.trace.samplers.Sampler.traceIdRatioBased;
-import static java.lang.String.format;
-import static java.util.Objects.requireNonNull;
-
-public class OpenTelemetryModule
-        implements Module
-{
+public class OpenTelemetryModule implements Module {
     private static final String NODE_ANNOTATION_PREFIX = "io.airlift.node";
     private final String serviceName;
     private final String serviceVersion;
 
-    public OpenTelemetryModule(String serviceName, String serviceVersion)
-    {
+    public OpenTelemetryModule(String serviceName, String serviceVersion) {
         this.serviceName = requireNonNull(serviceName, "serviceName is null");
         this.serviceVersion = requireNonNull(serviceVersion, "serviceVersion is null");
     }
 
     @Override
-    public void configure(Binder binder)
-    {
+    public void configure(Binder binder) {
         newSetBinder(binder, SpanProcessor.class);
         configBinder(binder).bindConfig(OpenTelemetryConfig.class);
     }
 
     @Provides
     @Singleton
-    public OpenTelemetry createOpenTelemetry(Set<SpanProcessor> spanProcessors, SdkTracerProvider tracerProvider)
-    {
+    public OpenTelemetry createOpenTelemetry(Set<SpanProcessor> spanProcessors, SdkTracerProvider tracerProvider) {
         if (spanProcessors.isEmpty()) {
             return OpenTelemetry.noop();
         }
@@ -75,8 +69,8 @@ public class OpenTelemetryModule
 
     @Provides
     @Singleton
-    public SdkTracerProvider createTracerProvider(NodeInfo nodeInfo, Set<SpanProcessor> spanProcessors, OpenTelemetryConfig config)
-    {
+    public SdkTracerProvider createTracerProvider(
+            NodeInfo nodeInfo, Set<SpanProcessor> spanProcessors, OpenTelemetryConfig config) {
         AttributesBuilder attributes = Attributes.builder()
                 .put(ServiceAttributes.SERVICE_NAME, serviceName)
                 .put(ServiceAttributes.SERVICE_VERSION, serviceVersion)
@@ -89,7 +83,8 @@ public class OpenTelemetryModule
                 .put(OsIncubatingAttributes.OS_NAME, OS_NAME.value())
                 .put(OsIncubatingAttributes.OS_VERSION, OS_VERSION.value())
                 .put(HostIncubatingAttributes.HOST_ARCH, hostArch());
-        nodeInfo.getAnnotations().forEach((key, value) -> attributes.put(format("%s.%s", NODE_ANNOTATION_PREFIX, key), value));
+        nodeInfo.getAnnotations()
+                .forEach((key, value) -> attributes.put(format("%s.%s", NODE_ANNOTATION_PREFIX, key), value));
 
         Resource resource = Resource.getDefault().merge(Resource.create(attributes.build()));
 
@@ -102,16 +97,14 @@ public class OpenTelemetryModule
 
     @Provides
     @Singleton
-    public Tracer createTracer(Set<SpanProcessor> spanProcessors, SdkTracerProvider tracerProvider)
-    {
+    public Tracer createTracer(Set<SpanProcessor> spanProcessors, SdkTracerProvider tracerProvider) {
         if (spanProcessors.isEmpty()) {
             return noopTracer();
         }
         return tracerProvider.get(serviceName);
     }
 
-    private static String processRuntime()
-    {
+    private static String processRuntime() {
         String vendor = JAVA_VM_VENDOR.value();
         String name = JAVA_VM_NAME.value();
         String version = JAVA_VM_VERSION.value();
@@ -121,8 +114,7 @@ public class OpenTelemetryModule
         return "%s %s %s".formatted(vendor, name, version);
     }
 
-    private static String osType()
-    {
+    private static String osType() {
         return switch (nullToEmpty(OS_NAME.value())) {
             case "Linux" -> "linux";
             case "Mac OS X" -> "darwin";
@@ -130,8 +122,7 @@ public class OpenTelemetryModule
         };
     }
 
-    private static String hostArch()
-    {
+    private static String hostArch() {
         return switch (nullToEmpty(OS_ARCH.value())) {
             case "amd64", "x86_64" -> "amd64";
             case "aarch64" -> "arm64";

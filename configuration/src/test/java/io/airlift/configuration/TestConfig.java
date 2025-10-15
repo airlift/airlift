@@ -15,30 +15,6 @@
  */
 package io.airlift.configuration;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMap.Builder;
-import com.google.common.collect.ImmutableSet;
-import com.google.inject.Binder;
-import com.google.inject.BindingAnnotation;
-import com.google.inject.CreationException;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.Key;
-import com.google.inject.Module;
-import com.google.inject.spi.Message;
-import org.junit.jupiter.api.Test;
-
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Optional;
-
 import static com.google.inject.name.Names.named;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.configuration.MyEnum.BAR;
@@ -53,14 +29,34 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.within;
 
-public class TestConfig
-{
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMap.Builder;
+import com.google.common.collect.ImmutableSet;
+import com.google.inject.Binder;
+import com.google.inject.BindingAnnotation;
+import com.google.inject.CreationException;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+import com.google.inject.Key;
+import com.google.inject.Module;
+import com.google.inject.spi.Message;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
+
+public class TestConfig {
     @Retention(RUNTIME)
     @Target({FIELD, PARAMETER, METHOD})
     @BindingAnnotation
-    public @interface MyAnnotation
-    {
-    }
+    public @interface MyAnnotation {}
 
     private final Map<String, String> properties = ImmutableMap.<String, String>builder()
             .put("stringOption", "a string")
@@ -91,97 +87,101 @@ public class TestConfig
             .build();
 
     @Test
-    public void testConfig()
-    {
+    public void testConfig() {
         Injector injector = createInjector(properties, createModule(Key.get(Config1.class), Config1.class, null));
         verifyConfig(injector.getInstance(Config1.class));
     }
 
     @Test
-    public void testConfigWithAnnotationType()
-    {
-        Injector injector = createInjector(properties, createModule(Key.get(Config1.class, MyAnnotation.class), Config1.class, null));
+    public void testConfigWithAnnotationType() {
+        Injector injector = createInjector(
+                properties, createModule(Key.get(Config1.class, MyAnnotation.class), Config1.class, null));
         verifyConfig(injector.getInstance(Key.get(Config1.class, MyAnnotation.class)));
     }
 
     @Test
-    public void testConfigWithAnnotationObject()
-    {
-        Injector injector = createInjector(properties, createModule(Key.get(Config1.class, named("boo")), Config1.class, null));
+    public void testConfigWithAnnotationObject() {
+        Injector injector =
+                createInjector(properties, createModule(Key.get(Config1.class, named("boo")), Config1.class, null));
         verifyConfig(injector.getInstance(Key.get(Config1.class, named("boo"))));
     }
 
     @Test
-    public void testPrefixConfigTypes()
-    {
-        Injector injector = createInjector(prefix("prefix", properties), createModule(Key.get(Config1.class), Config1.class, "prefix"));
+    public void testPrefixConfigTypes() {
+        Injector injector = createInjector(
+                prefix("prefix", properties), createModule(Key.get(Config1.class), Config1.class, "prefix"));
         verifyConfig(injector.getInstance(Config1.class));
     }
 
     @Test
-    public void testConfigDefaults()
-    {
-        Injector injector = createInjector(ImmutableMap.of(), createModule(
-                Key.get(Config1.class), Config1.class,
-                null,
-                new StringOptionDefaults("default string")));
+    public void testConfigDefaults() {
+        Injector injector = createInjector(
+                ImmutableMap.of(),
+                createModule(Key.get(Config1.class), Config1.class, null, new StringOptionDefaults("default string")));
 
         Config1 config = injector.getInstance(Config1.class);
         assertThat("default string").isEqualTo(config.getStringOption());
     }
 
     @Test
-    public void testConfigDefaultsWithAnnotationType()
-    {
-        Injector injector = createInjector(ImmutableMap.of(), createModule(
-                Key.get(Config1.class, MyAnnotation.class), Config1.class,
-                null,
-                new StringOptionDefaults("default string")));
+    public void testConfigDefaultsWithAnnotationType() {
+        Injector injector = createInjector(
+                ImmutableMap.of(),
+                createModule(
+                        Key.get(Config1.class, MyAnnotation.class),
+                        Config1.class,
+                        null,
+                        new StringOptionDefaults("default string")));
 
         Config1 config = injector.getInstance(Key.get(Config1.class, MyAnnotation.class));
         assertThat("default string").isEqualTo(config.getStringOption());
     }
 
     @Test
-    public void testConfigDefaultsWithAnnotationObject()
-    {
-        Injector injector = createInjector(ImmutableMap.of(), createModule(
-                Key.get(Config1.class, named("boo")), Config1.class,
-                null,
-                new StringOptionDefaults("default string")));
+    public void testConfigDefaultsWithAnnotationObject() {
+        Injector injector = createInjector(
+                ImmutableMap.of(),
+                createModule(
+                        Key.get(Config1.class, named("boo")),
+                        Config1.class,
+                        null,
+                        new StringOptionDefaults("default string")));
 
         Config1 config = injector.getInstance(Key.get(Config1.class, named("boo")));
         assertThat("default string").isEqualTo(config.getStringOption());
     }
 
     @Test
-    public void testConfigDefaultsOverride()
-    {
-        Injector injector = createInjector(ImmutableMap.of(), createModule(
-                Key.get(Config1.class), Config1.class,
-                null,
-                new StringOptionDefaults("default string"),
-                new StringOptionDefaults("another default string"),
-                new StringOptionDefaults("final default string")));
+    public void testConfigDefaultsOverride() {
+        Injector injector = createInjector(
+                ImmutableMap.of(),
+                createModule(
+                        Key.get(Config1.class),
+                        Config1.class,
+                        null,
+                        new StringOptionDefaults("default string"),
+                        new StringOptionDefaults("another default string"),
+                        new StringOptionDefaults("final default string")));
 
         Config1 config = injector.getInstance(Config1.class);
         assertThat("final default string").isEqualTo(config.getStringOption());
     }
 
     @Test
-    public void testPropertiesOverrideDefaults()
-    {
-        Injector injector = createInjector(properties, createModule(
-                Key.get(Config1.class), Config1.class,
-                null,
-                new StringOptionDefaults("default string"),
-                new StringOptionDefaults("another default string"),
-                new StringOptionDefaults("final default string")));
+    public void testPropertiesOverrideDefaults() {
+        Injector injector = createInjector(
+                properties,
+                createModule(
+                        Key.get(Config1.class),
+                        Config1.class,
+                        null,
+                        new StringOptionDefaults("default string"),
+                        new StringOptionDefaults("another default string"),
+                        new StringOptionDefaults("final default string")));
         verifyConfig(injector.getInstance(Config1.class));
     }
 
-    private static void verifyConfig(Config1 config)
-    {
+    private static void verifyConfig(Config1 config) {
         assertThat("a string").isEqualTo(config.getStringOption());
         assertThat(true).isEqualTo(config.getBooleanOption());
         assertThat(Boolean.TRUE).isEqualTo(config.getBoxedBooleanOption());
@@ -207,28 +207,25 @@ public class TestConfig
         assertThat(config.getMyPathList()).isEqualTo(ImmutableList.of(Paths.get("/dev/null"), Paths.get("/proc/self")));
         assertThat(config.getOptionalValueClassOption())
                 .isPresent()
-                .hasValueSatisfying(value -> assertThat(value.getValue())
-                        .isEqualTo("a value class"));
-        assertThat(config.getOptionalPathOption())
-                .contains(Paths.get("/dev/null"));
+                .hasValueSatisfying(value -> assertThat(value.getValue()).isEqualTo("a value class"));
+        assertThat(config.getOptionalPathOption()).contains(Paths.get("/dev/null"));
     }
 
     @Test
-    public void testDetectsNoConfigAnnotations()
-    {
+    public void testDetectsNoConfigAnnotations() {
         try {
-            Injector injector = createInjector(Collections.<String, String>emptyMap(), createModule(Key.get(ConfigWithNoAnnotations.class), ConfigWithNoAnnotations.class, null));
+            Injector injector = createInjector(
+                    Collections.<String, String>emptyMap(),
+                    createModule(Key.get(ConfigWithNoAnnotations.class), ConfigWithNoAnnotations.class, null));
             injector.getInstance(ConfigWithNoAnnotations.class);
             fail("Expected exception due to missing @Config annotations");
-        }
-        catch (CreationException e) {
+        } catch (CreationException e) {
             // do nothing
         }
     }
 
     @Test
-    public void testConfigGlobalDefaults()
-    {
+    public void testConfigGlobalDefaults() {
         byte globalDefaultValue = 1;
         int defaultValue = 2;
         int customValue = 3;
@@ -255,8 +252,7 @@ public class TestConfig
     }
 
     @Test
-    public void testConfigurationBindingListener()
-    {
+    public void testConfigurationBindingListener() {
         List<ConfigurationBinding<?>> seenBindings = new ArrayList<>();
         Module module = binder -> {
             ConfigBinder configBinder = configBinder(binder);
@@ -274,50 +270,48 @@ public class TestConfig
         verifyConfig(injector.getInstance(Key.get(Config1.class, MyAnnotation.class)));
 
         assertThat(seenBindings).hasSize(3);
-        assertThat(ImmutableSet.copyOf(seenBindings)).isEqualTo(ImmutableSet.of(
-                new ConfigurationBinding<>(Key.get(Config1.class), Config1.class, Optional.empty()),
-                new ConfigurationBinding<>(Key.get(Config1.class, MyAnnotation.class), Config1.class, Optional.empty()),
-                new ConfigurationBinding<>(Key.get(AnotherConfig.class), AnotherConfig.class, Optional.empty())));
+        assertThat(ImmutableSet.copyOf(seenBindings))
+                .isEqualTo(ImmutableSet.of(
+                        new ConfigurationBinding<>(Key.get(Config1.class), Config1.class, Optional.empty()),
+                        new ConfigurationBinding<>(
+                                Key.get(Config1.class, MyAnnotation.class), Config1.class, Optional.empty()),
+                        new ConfigurationBinding<>(
+                                Key.get(AnotherConfig.class), AnotherConfig.class, Optional.empty())));
     }
 
     @Test
-    public void testSwitchModule()
-    {
+    public void testSwitchModule() {
         Module a = binder -> binder.bind(String.class).toInstance("used value a");
         Module b = binder -> binder.bind(String.class).toInstance("used value b");
 
-        Module module = new AbstractConfigurationAwareModule()
-        {
+        Module module = new AbstractConfigurationAwareModule() {
             @Override
-            protected void setup(Binder binder)
-            {
+            protected void setup(Binder binder) {
                 ConfigBinder configBinder = configBinder(binder);
                 configBinder.bindConfig(SwitchConfig.class);
 
-                install(switchModule(
-                        SwitchConfig.class,
-                        SwitchConfig::getValue,
-                        value -> {
-                            switch (value) {
-                                case A:
-                                    return a;
-                                case B:
-                                    return b;
-                                default:
-                                    throw new RuntimeException("Not supported value: " + value);
-                            }
-                        }));
+                install(switchModule(SwitchConfig.class, SwitchConfig::getValue, value -> {
+                    switch (value) {
+                        case A:
+                            return a;
+                        case B:
+                            return b;
+                        default:
+                            throw new RuntimeException("Not supported value: " + value);
+                    }
+                }));
             }
         };
 
-        assertThat(createInjector(ImmutableMap.of("value", "a"), module).getInstance(String.class)).isEqualTo("used value a");
-        assertThat(createInjector(ImmutableMap.of("value", "b"), module).getInstance(String.class)).isEqualTo("used value b");
+        assertThat(createInjector(ImmutableMap.of("value", "a"), module).getInstance(String.class))
+                .isEqualTo("used value a");
+        assertThat(createInjector(ImmutableMap.of("value", "b"), module).getInstance(String.class))
+                .isEqualTo("used value b");
         assertThatThrownBy(() -> createInjector(ImmutableMap.of("value", "c"), module))
                 .hasStackTraceContaining("Not supported value: C");
     }
 
-    private static Injector createInjector(Map<String, String> properties, Module module)
-    {
+    private static Injector createInjector(Map<String, String> properties, Module module) {
         ConfigurationFactory configurationFactory = new ConfigurationFactory(properties);
         configurationFactory.registerConfigurationClasses(ImmutableList.of(module));
         List<Message> messages = configurationFactory.validateRegisteredConfigurationProvider();
@@ -329,8 +323,8 @@ public class TestConfig
     }
 
     @SafeVarargs
-    private static <T> Module createModule(Key<T> key, Class<T> configClass, String prefix, ConfigDefaults<T>... configDefaults)
-    {
+    private static <T> Module createModule(
+            Key<T> key, Class<T> configClass, String prefix, ConfigDefaults<T>... configDefaults) {
         Module module = binder -> {
             ConfigBinder configBinder = configBinder(binder);
 
@@ -344,8 +338,7 @@ public class TestConfig
         return module;
     }
 
-    private static Map<String, String> prefix(String prefix, Map<String, String> properties)
-    {
+    private static Map<String, String> prefix(String prefix, Map<String, String> properties) {
         Builder<String, String> builder = ImmutableMap.builder();
         for (Entry<String, String> entry : properties.entrySet()) {
             builder.put(prefix + "." + entry.getKey(), entry.getValue());
@@ -353,64 +346,53 @@ public class TestConfig
         return builder.build();
     }
 
-    private static class StringOptionDefaults
-            implements ConfigDefaults<Config1>
-    {
+    private static class StringOptionDefaults implements ConfigDefaults<Config1> {
         private final String stringOptionDefault;
 
-        private StringOptionDefaults(String stringOptionDefault)
-        {
+        private StringOptionDefaults(String stringOptionDefault) {
             this.stringOptionDefault = stringOptionDefault;
         }
 
         @Override
-        public void setDefaults(Config1 config)
-        {
+        public void setDefaults(Config1 config) {
             config.setStringOption(stringOptionDefault);
         }
     }
 
-    public static class AnotherConfig
-    {
+    public static class AnotherConfig {
         private String stringOption;
 
-        public String getStringOption()
-        {
+        public String getStringOption() {
             return stringOption;
         }
 
         @Config("stringOption")
-        public AnotherConfig setStringOption(String stringOption)
-        {
+        public AnotherConfig setStringOption(String stringOption) {
             this.stringOption = stringOption;
             return this;
         }
     }
 
-    public static class SwitchConfig
-            implements SwitchInterface
-    {
+    public static class SwitchConfig implements SwitchInterface {
         SwitchValue value;
 
-        public SwitchValue getValue()
-        {
+        public SwitchValue getValue() {
             return value;
         }
 
         @Config("value")
-        public void setValue(SwitchValue value)
-        {
+        public void setValue(SwitchValue value) {
             this.value = value;
         }
     }
 
-    public interface SwitchInterface
-    {
+    public interface SwitchInterface {
         SwitchValue getValue();
     }
 
-    public enum SwitchValue
-    {
-        A, B, C
+    public enum SwitchValue {
+        A,
+        B,
+        C
     }
 }

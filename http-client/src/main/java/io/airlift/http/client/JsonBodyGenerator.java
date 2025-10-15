@@ -17,16 +17,12 @@ package io.airlift.http.client;
 
 import io.airlift.json.JsonCodec;
 
-public final class JsonBodyGenerator<T>
-        extends StaticBodyGenerator
-{
-    public static <T> JsonBodyGenerator<T> jsonBodyGenerator(JsonCodec<T> jsonCodec, T instance)
-    {
+public final class JsonBodyGenerator<T> extends StaticBodyGenerator {
+    public static <T> JsonBodyGenerator<T> jsonBodyGenerator(JsonCodec<T> jsonCodec, T instance) {
         return new JsonBodyGenerator<>(jsonCodec, instance);
     }
 
-    private JsonBodyGenerator(JsonCodec<T> jsonCodec, T instance)
-    {
+    private JsonBodyGenerator(JsonCodec<T> jsonCodec, T instance) {
         super(jsonCodec.toJsonBytes(instance));
     }
 }

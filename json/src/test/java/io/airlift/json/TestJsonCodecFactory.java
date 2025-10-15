@@ -15,25 +15,22 @@
  */
 package io.airlift.json;
 
+import static com.google.common.base.MoreObjects.toStringHelper;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.reflect.TypeToken;
-import org.junit.jupiter.api.Test;
-
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.Test;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class TestJsonCodecFactory
-{
+public class TestJsonCodecFactory {
     private JsonCodecFactory jsonCodecFactory = new JsonCodecFactory();
 
     @Test
-    public void testJsonCodec()
-    {
+    public void testJsonCodec() {
         JsonCodec<Person> jsonCodec = jsonCodecFactory.jsonCodec(Person.class);
 
         Person expected = new Person().setName("dain").setRocks(true);
@@ -43,31 +40,27 @@ public class TestJsonCodecFactory
     }
 
     @Test
-    public void testListJsonCodec()
-    {
+    public void testListJsonCodec() {
         JsonCodec<List<Person>> jsonCodec = jsonCodecFactory.listJsonCodec(Person.class);
 
         validateListCodec(jsonCodec);
     }
 
     @Test
-    public void testListJsonCodecFromJsonCodec()
-    {
+    public void testListJsonCodecFromJsonCodec() {
         JsonCodec<List<Person>> jsonCodec = jsonCodecFactory.listJsonCodec(jsonCodecFactory.jsonCodec(Person.class));
 
         validateListCodec(jsonCodec);
     }
 
     @Test
-    public void testTypeLiteralList()
-    {
+    public void testTypeLiteralList() {
         JsonCodec<List<Person>> jsonCodec = jsonCodecFactory.jsonCodec(new TypeToken<List<Person>>() {});
 
         validateListCodec(jsonCodec);
     }
 
-    private void validateListCodec(JsonCodec<List<Person>> jsonCodec)
-    {
+    private void validateListCodec(JsonCodec<List<Person>> jsonCodec) {
         ImmutableList<Person> expected = ImmutableList.of(
                 new Person().setName("dain").setRocks(true),
                 new Person().setName("martin").setRocks(true),
@@ -79,31 +72,28 @@ public class TestJsonCodecFactory
     }
 
     @Test
-    public void testMapJsonCodec()
-    {
+    public void testMapJsonCodec() {
         JsonCodec<Map<String, Person>> jsonCodec = jsonCodecFactory.mapJsonCodec(String.class, Person.class);
 
         validateMapCodec(jsonCodec);
     }
 
     @Test
-    public void testMapJsonCodecFromJsonCodec()
-    {
-        JsonCodec<Map<String, Person>> jsonCodec = jsonCodecFactory.mapJsonCodec(String.class, jsonCodecFactory.jsonCodec(Person.class));
+    public void testMapJsonCodecFromJsonCodec() {
+        JsonCodec<Map<String, Person>> jsonCodec =
+                jsonCodecFactory.mapJsonCodec(String.class, jsonCodecFactory.jsonCodec(Person.class));
 
         validateMapCodec(jsonCodec);
     }
 
     @Test
-    public void testTypeLiteralMap()
-    {
+    public void testTypeLiteralMap() {
         JsonCodec<Map<String, Person>> jsonCodec = jsonCodecFactory.jsonCodec(new TypeToken<Map<String, Person>>() {});
 
         validateMapCodec(jsonCodec);
     }
 
-    private void validateMapCodec(JsonCodec<Map<String, Person>> jsonCodec)
-    {
+    private void validateMapCodec(JsonCodec<Map<String, Person>> jsonCodec) {
         ImmutableMap<String, Person> expected = ImmutableMap.<String, Person>builder()
                 .put("dain", new Person().setName("dain").setRocks(true))
                 .put("martin", new Person().setName("martin").setRocks(true))
@@ -115,40 +105,34 @@ public class TestJsonCodecFactory
         assertThat(actual).isEqualTo(expected);
     }
 
-    public static class Person
-    {
+    public static class Person {
         private String name;
         private boolean rocks;
 
         @JsonProperty
-        public String getName()
-        {
+        public String getName() {
             return name;
         }
 
         @JsonProperty
-        public Person setName(String name)
-        {
+        public Person setName(String name) {
             this.name = name;
             return this;
         }
 
         @JsonProperty
-        public boolean isRocks()
-        {
+        public boolean isRocks() {
             return rocks;
         }
 
         @JsonProperty
-        public Person setRocks(boolean rocks)
-        {
+        public Person setRocks(boolean rocks) {
             this.rocks = rocks;
             return this;
         }
 
         @Override
-        public boolean equals(Object o)
-        {
+        public boolean equals(Object o) {
             if (this == o) {
                 return true;
             }
@@ -169,20 +153,15 @@ public class TestJsonCodecFactory
         }
 
         @Override
-        public int hashCode()
-        {
+        public int hashCode() {
             int result = name != null ? name.hashCode() : 0;
             result = 31 * result + (rocks ? 1 : 0);
             return result;
         }
 
         @Override
-        public String toString()
-        {
-            return toStringHelper(this)
-                    .add("name", name)
-                    .add("rocks", rocks)
-                    .toString();
+        public String toString() {
+            return toStringHelper(this).add("name", name).add("rocks", rocks).toString();
         }
     }
 }

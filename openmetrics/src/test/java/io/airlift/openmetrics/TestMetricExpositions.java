@@ -13,6 +13,8 @@
  */
 package io.airlift.openmetrics;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.common.collect.ImmutableMap;
 import io.airlift.openmetrics.types.BigCounter;
 import io.airlift.openmetrics.types.CompositeMetric;
@@ -20,8 +22,9 @@ import io.airlift.openmetrics.types.Counter;
 import io.airlift.openmetrics.types.Gauge;
 import io.airlift.openmetrics.types.Info;
 import io.airlift.openmetrics.types.Summary;
-import org.junit.jupiter.api.Test;
-
+import java.math.BigInteger;
+import java.util.HashMap;
+import java.util.Map;
 import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.CompositeDataSupport;
 import javax.management.openmbean.CompositeType;
@@ -30,18 +33,11 @@ import javax.management.openmbean.SimpleType;
 import javax.management.openmbean.TabularData;
 import javax.management.openmbean.TabularDataSupport;
 import javax.management.openmbean.TabularType;
+import org.junit.jupiter.api.Test;
 
-import java.math.BigInteger;
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class TestMetricExpositions
-{
+public class TestMetricExpositions {
     @Test
-    public void testCounterExposition()
-    {
+    public void testCounterExposition() {
         String expected = """
                 # TYPE metric_name counter
                 # HELP metric_name metric_help
@@ -55,8 +51,7 @@ public class TestMetricExpositions
     }
 
     @Test
-    public void testCounterExpositionLabels()
-    {
+    public void testCounterExpositionLabels() {
         String expected = """
                 # TYPE metric_name counter
                 # HELP metric_name metric_help
@@ -64,62 +59,64 @@ public class TestMetricExpositions
                 """;
 
         Counter counter = new Counter("metric_name", 0, ImmutableMap.of("type", "cavendish"), "metric_help");
-        BigCounter bigCounter = new BigCounter("metric_name", BigInteger.ZERO, ImmutableMap.of("type", "cavendish"), "metric_help");
+        BigCounter bigCounter =
+                new BigCounter("metric_name", BigInteger.ZERO, ImmutableMap.of("type", "cavendish"), "metric_help");
         assertThat(counter.getMetricExposition()).isEqualTo(bigCounter.getMetricExposition());
         assertThat(counter.getMetricExposition()).isEqualTo(expected);
     }
 
     @Test
-    public void testGaugeExposition()
-    {
+    public void testGaugeExposition() {
         String expected = """
                 # TYPE metric_name gauge
                 # HELP metric_name metric_help
                 metric_name 0.0
                 """;
 
-        assertThat(new Gauge("metric_name", 0.0, ImmutableMap.of(), "metric_help").getMetricExposition()).isEqualTo(expected);
+        assertThat(new Gauge("metric_name", 0.0, ImmutableMap.of(), "metric_help").getMetricExposition())
+                .isEqualTo(expected);
     }
 
     @Test
-    public void testGaugeExpositionLabels()
-    {
+    public void testGaugeExpositionLabels() {
         String expected = """
                 # TYPE metric_name gauge
                 # HELP metric_name metric_help
                 metric_name{type="cavendish"} 0.0
                 """;
 
-        assertThat(new Gauge("metric_name", 0.0, ImmutableMap.of("type", "cavendish"), "metric_help").getMetricExposition()).isEqualTo(expected);
+        assertThat(new Gauge("metric_name", 0.0, ImmutableMap.of("type", "cavendish"), "metric_help")
+                        .getMetricExposition())
+                .isEqualTo(expected);
     }
 
     @Test
-    public void testInfoExposition()
-    {
+    public void testInfoExposition() {
         String expected = """
                 # TYPE metric_name info
                 # HELP metric_name metric_help
                 metric_name banana
                 """;
 
-        assertThat(new Info("metric_name", "banana", ImmutableMap.of(), "metric_help").getMetricExposition()).isEqualTo(expected);
+        assertThat(new Info("metric_name", "banana", ImmutableMap.of(), "metric_help").getMetricExposition())
+                .isEqualTo(expected);
     }
 
     @Test
-    public void testInfoExpositionLabels()
-    {
+    public void testInfoExpositionLabels() {
         String expected = """
                 # TYPE metric_name info
                 # HELP metric_name metric_help
                 metric_name{type="cavendish"} banana
                 """;
 
-        assertThat(new Info("metric_name", "banana", ImmutableMap.of("type", "cavendish"), "metric_help").getMetricExposition()).isEqualTo(expected);
+        assertThat(new Info("metric_name", "banana", ImmutableMap.of("type", "cavendish"), "metric_help")
+                        .getMetricExposition())
+                .isEqualTo(expected);
     }
 
     @Test
-    public void testSummaryExposition()
-    {
+    public void testSummaryExposition() {
         String expected = """
                 # TYPE metric_name summary
                 # HELP metric_name metric_help
@@ -129,12 +126,20 @@ public class TestMetricExpositions
                 metric_name{quantile="0.5"} 0.25
                 """;
 
-        assertThat(new Summary("metric_name", 10L, 2.0, 3.0, ImmutableMap.of(0.5, 0.25), ImmutableMap.of(), "metric_help").getMetricExposition()).isEqualTo(expected);
+        assertThat(new Summary(
+                                "metric_name",
+                                10L,
+                                2.0,
+                                3.0,
+                                ImmutableMap.of(0.5, 0.25),
+                                ImmutableMap.of(),
+                                "metric_help")
+                        .getMetricExposition())
+                .isEqualTo(expected);
     }
 
     @Test
-    public void testSummaryExpositionLabels()
-    {
+    public void testSummaryExpositionLabels() {
         String expected = """
                 # TYPE metric_name summary
                 # HELP metric_name metric_help
@@ -144,12 +149,20 @@ public class TestMetricExpositions
                 metric_name{fruit="apple",quantile="0.5"} 0.25
                 """;
 
-        assertThat(new Summary("metric_name", 10L, 2.0, 3.0, ImmutableMap.of(0.5, 0.25), ImmutableMap.of("fruit", "apple"), "metric_help").getMetricExposition()).isEqualTo(expected);
+        assertThat(new Summary(
+                                "metric_name",
+                                10L,
+                                2.0,
+                                3.0,
+                                ImmutableMap.of(0.5, 0.25),
+                                ImmutableMap.of("fruit", "apple"),
+                                "metric_help")
+                        .getMetricExposition())
+                .isEqualTo(expected);
     }
 
     @Test
-    public void testCompositeMetricExposition()
-    {
+    public void testCompositeMetricExposition() {
         String expected = """
                 # TYPE metric_name_committed gauge
                 # HELP metric_name_committed metric_help
@@ -163,13 +176,13 @@ public class TestMetricExpositions
                 """;
 
         CompositeData compositeData = createMemoryUsageCompositeData(100L, 200L, 1000L);
-        CompositeMetric compositeMetric = CompositeMetric.from("metric_name", compositeData, ImmutableMap.of(), "metric_help");
+        CompositeMetric compositeMetric =
+                CompositeMetric.from("metric_name", compositeData, ImmutableMap.of(), "metric_help");
         assertThat(compositeMetric.getMetricExposition()).isEqualTo(expected);
     }
 
     @Test
-    public void testCompositeMetricExpositionLabels()
-    {
+    public void testCompositeMetricExpositionLabels() {
         String expected = """
                 # TYPE metric_name_committed gauge
                 # HELP metric_name_committed metric_help
@@ -183,16 +196,17 @@ public class TestMetricExpositions
                 """;
 
         CompositeData compositeData = createMemoryUsageCompositeData(100L, 200L, 1000L);
-        CompositeMetric compositeMetric = CompositeMetric.from("metric_name", compositeData, ImmutableMap.of("type", "cavendish"), "metric_help");
+        CompositeMetric compositeMetric =
+                CompositeMetric.from("metric_name", compositeData, ImmutableMap.of("type", "cavendish"), "metric_help");
         assertThat(compositeMetric.getMetricExposition()).isEqualTo(expected);
     }
 
-    private CompositeData createMemoryUsageCompositeData(long used, long committed, long max)
-    {
+    private CompositeData createMemoryUsageCompositeData(long used, long committed, long max) {
         try {
             String[] itemNames = {"used", "committed", "max"};
             OpenType<?>[] itemTypes = {SimpleType.LONG, SimpleType.LONG, SimpleType.LONG};
-            CompositeType compositeType = new CompositeType("MemoryUsage", "Memory Usage", itemNames, itemNames, itemTypes);
+            CompositeType compositeType =
+                    new CompositeType("MemoryUsage", "Memory Usage", itemNames, itemNames, itemTypes);
 
             Map<String, Object> values = new HashMap<>();
             values.put("used", used);
@@ -200,15 +214,13 @@ public class TestMetricExpositions
             values.put("max", max);
 
             return new CompositeDataSupport(compositeType, values);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
     @Test
-    public void testTabularDataExposition()
-    {
+    public void testTabularDataExposition() {
         String expected = """
                 # TYPE metric_name_value gauge
                 # HELP metric_name_value metric_help
@@ -217,13 +229,13 @@ public class TestMetricExpositions
                 """;
 
         TabularData tabularData = createTestTabularData();
-        CompositeMetric compositeMetric = CompositeMetric.from("metric_name", tabularData, ImmutableMap.of(), "metric_help");
+        CompositeMetric compositeMetric =
+                CompositeMetric.from("metric_name", tabularData, ImmutableMap.of(), "metric_help");
         assertThat(compositeMetric.getMetricExposition()).isEqualTo(expected);
     }
 
     @Test
-    public void testTabularDataExpositionLabels()
-    {
+    public void testTabularDataExpositionLabels() {
         String expected = """
                 # TYPE metric_name_value gauge
                 # HELP metric_name_value metric_help
@@ -232,12 +244,12 @@ public class TestMetricExpositions
                 """;
 
         TabularData tabularData = createTestTabularData();
-        CompositeMetric compositeMetric = CompositeMetric.from("metric_name", tabularData, ImmutableMap.of("type", "cavendish"), "metric_help");
+        CompositeMetric compositeMetric =
+                CompositeMetric.from("metric_name", tabularData, ImmutableMap.of("type", "cavendish"), "metric_help");
         assertThat(compositeMetric.getMetricExposition()).isEqualTo(expected);
     }
 
-    private TabularData createTestTabularData()
-    {
+    private TabularData createTestTabularData() {
         try {
             String[] itemNames = {"region", "zone", "value"};
             OpenType<?>[] itemTypes = {SimpleType.STRING, SimpleType.STRING, SimpleType.LONG};
@@ -261,8 +273,7 @@ public class TestMetricExpositions
             tabularData.put(new CompositeDataSupport(compositeType, row2));
 
             return tabularData;
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }

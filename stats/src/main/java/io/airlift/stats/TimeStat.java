@@ -15,42 +15,36 @@
  */
 package io.airlift.stats;
 
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.base.Ticker;
 import io.airlift.stats.TimeDistribution.TimeDistributionSnapshot;
 import io.airlift.units.Duration;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
 
-import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
-
-import static java.util.Objects.requireNonNull;
-
-public class TimeStat
-{
+public class TimeStat {
     private final TimeDistribution oneMinute;
     private final TimeDistribution fiveMinutes;
     private final TimeDistribution fifteenMinutes;
     private final TimeDistribution allTime;
     private final Ticker ticker;
 
-    public TimeStat()
-    {
+    public TimeStat() {
         this(Ticker.systemTicker(), TimeUnit.SECONDS);
     }
 
-    public TimeStat(Ticker ticker)
-    {
+    public TimeStat(Ticker ticker) {
         this(ticker, TimeUnit.SECONDS);
     }
 
-    public TimeStat(TimeUnit unit)
-    {
+    public TimeStat(TimeUnit unit) {
         this(Ticker.systemTicker(), unit);
     }
 
-    public TimeStat(Ticker ticker, TimeUnit unit)
-    {
+    public TimeStat(Ticker ticker, TimeUnit unit) {
         this.ticker = ticker;
         oneMinute = new TimeDistribution(ticker, ExponentialDecay.oneMinute(), unit);
         fiveMinutes = new TimeDistribution(ticker, ExponentialDecay.fiveMinutes(), unit);
@@ -58,8 +52,7 @@ public class TimeStat
         allTime = new TimeDistribution(ticker, ExponentialDecay.all(), unit);
     }
 
-    public void add(double value, TimeUnit timeUnit)
-    {
+    public void add(double value, TimeUnit timeUnit) {
         requireNonNull(timeUnit, "timeUnit is null");
         if (!Double.isFinite(value)) {
             throw new IllegalArgumentException("value is not finite: " + value);
@@ -70,13 +63,11 @@ public class TimeStat
         addNanos((long) Math.floor((value * timeUnit.toNanos(1)) + 0.5d));
     }
 
-    public void add(Duration duration)
-    {
+    public void add(Duration duration) {
         addNanos((long) duration.getValue(TimeUnit.NANOSECONDS));
     }
 
-    public void addNanos(long nanos)
-    {
+    public void addNanos(long nanos) {
         if (nanos < 0) {
             throw new IllegalArgumentException("value is negative: " + nanos);
         }
@@ -86,65 +77,53 @@ public class TimeStat
         allTime.add(nanos);
     }
 
-    public <T> T time(Callable<T> callable)
-            throws Exception
-    {
+    public <T> T time(Callable<T> callable) throws Exception {
         long start = ticker.read();
         try {
             return callable.call();
-        }
-        finally {
+        } finally {
             addNanos(ticker.read() - start);
         }
     }
 
-    public BlockTimer time()
-    {
+    public BlockTimer time() {
         return new BlockTimer();
     }
 
-    public class BlockTimer
-            implements AutoCloseable
-    {
+    public class BlockTimer implements AutoCloseable {
         private final long start = ticker.read();
 
         @Override
-        public void close()
-        {
+        public void close() {
             addNanos(ticker.read() - start);
         }
     }
 
     @Managed
     @Nested
-    public TimeDistribution getOneMinute()
-    {
+    public TimeDistribution getOneMinute() {
         return oneMinute;
     }
 
     @Managed
     @Nested
-    public TimeDistribution getFiveMinutes()
-    {
+    public TimeDistribution getFiveMinutes() {
         return fiveMinutes;
     }
 
     @Managed
     @Nested
-    public TimeDistribution getFifteenMinutes()
-    {
+    public TimeDistribution getFifteenMinutes() {
         return fifteenMinutes;
     }
 
     @Managed
     @Nested
-    public TimeDistribution getAllTime()
-    {
+    public TimeDistribution getAllTime() {
         return allTime;
     }
 
-    public TimeDistributionStatSnapshot snapshot()
-    {
+    public TimeDistributionStatSnapshot snapshot() {
         return new TimeDistributionStatSnapshot(
                 getOneMinute().snapshot(),
                 getFiveMinutes().snapshot(),
@@ -153,8 +132,7 @@ public class TimeStat
     }
 
     @Managed
-    public void reset()
-    {
+    public void reset() {
         oneMinute.reset();
         fiveMinutes.reset();
         fifteenMinutes.reset();
@@ -165,10 +143,8 @@ public class TimeStat
             TimeDistributionSnapshot oneMinute,
             TimeDistributionSnapshot fiveMinute,
             TimeDistributionSnapshot fifteenMinute,
-            TimeDistributionSnapshot allTime)
-    {
-        public TimeDistributionStatSnapshot
-        {
+            TimeDistributionSnapshot allTime) {
+        public TimeDistributionStatSnapshot {
             requireNonNull(oneMinute, "oneMinute is null");
             requireNonNull(fiveMinute, "fiveMinute is null");
             requireNonNull(fifteenMinute, "fifteenMinute is null");

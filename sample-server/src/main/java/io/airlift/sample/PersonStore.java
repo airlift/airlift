@@ -15,24 +15,21 @@
  */
 package io.airlift.sample;
 
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
-
 import java.util.Collection;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
-import static java.util.Objects.requireNonNull;
-
-public class PersonStore
-{
+public class PersonStore {
     private final ConcurrentMap<String, Person> persons;
 
     @Inject
-    public PersonStore(StoreConfig config)
-    {
+    public PersonStore(StoreConfig config) {
         requireNonNull(config, "config must not be null");
 
         Cache<String, Person> personCache = CacheBuilder.newBuilder()
@@ -41,8 +38,7 @@ public class PersonStore
         persons = personCache.asMap();
     }
 
-    public Person get(String id)
-    {
+    public Person get(String id) {
         requireNonNull(id, "id must not be null");
 
         return persons.get(id);
@@ -51,8 +47,7 @@ public class PersonStore
     /**
      * @return true if the entry was created for the first time
      */
-    public boolean put(String id, Person person)
-    {
+    public boolean put(String id, Person person) {
         requireNonNull(id, "id must not be null");
         requireNonNull(person, "person must not be null");
 
@@ -62,14 +57,12 @@ public class PersonStore
     /**
      * @return true if the entry was removed
      */
-    public boolean delete(String id)
-    {
+    public boolean delete(String id) {
         requireNonNull(id, "id must not be null");
         return persons.remove(id) != null;
     }
 
-    public Collection<Person> getAll()
-    {
+    public Collection<Person> getAll() {
         return ImmutableList.copyOf(persons.values());
     }
 }

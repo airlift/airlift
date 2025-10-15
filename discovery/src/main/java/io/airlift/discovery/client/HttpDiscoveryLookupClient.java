@@ -15,6 +15,15 @@
  */
 package io.airlift.discovery.client;
 
+import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
+import static io.airlift.discovery.client.DiscoveryAnnouncementClient.DEFAULT_DELAY;
+import static io.airlift.http.client.HttpStatus.NOT_MODIFIED;
+import static io.airlift.http.client.HttpStatus.OK;
+import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
+import static io.airlift.http.client.Request.Builder.prepareGet;
+import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.net.HttpHeaders;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -30,9 +39,6 @@ import io.airlift.http.client.ResponseHandler;
 import io.airlift.json.JsonCodec;
 import io.airlift.node.NodeInfo;
 import io.airlift.units.Duration;
-import org.weakref.jmx.Flatten;
-import org.weakref.jmx.Managed;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -40,19 +46,10 @@ import java.util.Optional;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import org.weakref.jmx.Flatten;
+import org.weakref.jmx.Managed;
 
-import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
-import static io.airlift.discovery.client.DiscoveryAnnouncementClient.DEFAULT_DELAY;
-import static io.airlift.http.client.HttpStatus.NOT_MODIFIED;
-import static io.airlift.http.client.HttpStatus.OK;
-import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
-import static io.airlift.http.client.Request.Builder.prepareGet;
-import static java.lang.String.format;
-import static java.util.Objects.requireNonNull;
-
-public class HttpDiscoveryLookupClient
-        implements DiscoveryLookupClient
-{
+public class HttpDiscoveryLookupClient implements DiscoveryLookupClient {
     private final String environment;
     private final Supplier<URI> discoveryServiceURI;
     private final NodeInfo nodeInfo;
@@ -64,8 +61,7 @@ public class HttpDiscoveryLookupClient
             @ForDiscoveryClient Supplier<URI> discoveryServiceURI,
             NodeInfo nodeInfo,
             JsonCodec<ServiceDescriptorsRepresentation> serviceDescriptorsCodec,
-            @ForDiscoveryClient HttpClient httpClient)
-    {
+            @ForDiscoveryClient HttpClient httpClient) {
         requireNonNull(discoveryServiceURI, "discoveryServiceURI is null");
         requireNonNull(nodeInfo, "nodeInfo is null");
         requireNonNull(serviceDescriptorsCodec, "serviceDescriptorsCodec is null");
@@ -80,35 +76,31 @@ public class HttpDiscoveryLookupClient
 
     @Flatten
     @Managed
-    public RequestStats getStats()
-    {
+    public RequestStats getStats() {
         return httpClient.getStats();
     }
 
     @Override
-    public ListenableFuture<ServiceDescriptors> getServices(String type)
-    {
+    public ListenableFuture<ServiceDescriptors> getServices(String type) {
         requireNonNull(type, "type is null");
         return lookup(type, null, null);
     }
 
     @Override
-    public ListenableFuture<ServiceDescriptors> getServices(String type, String pool)
-    {
+    public ListenableFuture<ServiceDescriptors> getServices(String type, String pool) {
         requireNonNull(type, "type is null");
         requireNonNull(pool, "pool is null");
         return lookup(type, pool, null);
     }
 
     @Override
-    public ListenableFuture<ServiceDescriptors> refreshServices(ServiceDescriptors serviceDescriptors)
-    {
+    public ListenableFuture<ServiceDescriptors> refreshServices(ServiceDescriptors serviceDescriptors) {
         requireNonNull(serviceDescriptors, "serviceDescriptors is null");
         return lookup(serviceDescriptors.getType(), serviceDescriptors.getPool(), serviceDescriptors);
     }
 
-    private ListenableFuture<ServiceDescriptors> lookup(final String type, final String pool, final ServiceDescriptors serviceDescriptors)
-    {
+    private ListenableFuture<ServiceDescriptors> lookup(
+            final String type, final String pool, final ServiceDescriptors serviceDescriptors) {
         requireNonNull(type, "type is null");
 
         URI uri = discoveryServiceURI.get();
@@ -122,46 +114,43 @@ public class HttpDiscoveryLookupClient
         if (serviceDescriptors != null && serviceDescriptors.getETag() != null) {
             requestBuilder.setHeader(HttpHeaders.ETAG, serviceDescriptors.getETag());
         }
-        return httpClient.executeAsync(requestBuilder.build(), new DiscoveryResponseHandler<ServiceDescriptors>(format("Lookup of %s", type), uri)
-        {
-            @Override
-            public ServiceDescriptors handle(Request request, Response response)
-            {
-                Duration maxAge = extractMaxAge(response);
-                String eTag = response.getHeader(HttpHeaders.ETAG);
+        return httpClient.executeAsync(
+                requestBuilder.build(),
+                new DiscoveryResponseHandler<ServiceDescriptors>(format("Lookup of %s", type), uri) {
+                    @Override
+                    public ServiceDescriptors handle(Request request, Response response) {
+                        Duration maxAge = extractMaxAge(response);
+                        String eTag = response.getHeader(HttpHeaders.ETAG);
 
-                if (NOT_MODIFIED.code() == response.getStatusCode() && serviceDescriptors != null) {
-                    return new ServiceDescriptors(serviceDescriptors, maxAge, eTag);
-                }
+                        if (NOT_MODIFIED.code() == response.getStatusCode() && serviceDescriptors != null) {
+                            return new ServiceDescriptors(serviceDescriptors, maxAge, eTag);
+                        }
 
-                if (OK.code() != response.getStatusCode()) {
-                    throw new DiscoveryException(format("Lookup of %s failed with status code %s", type, response.getStatusCode()));
-                }
+                        if (OK.code() != response.getStatusCode()) {
+                            throw new DiscoveryException(
+                                    format("Lookup of %s failed with status code %s", type, response.getStatusCode()));
+                        }
 
-                ServiceDescriptorsRepresentation serviceDescriptorsRepresentation;
-                try (InputStream stream = response.getInputStream()) {
-                    serviceDescriptorsRepresentation = serviceDescriptorsCodec.fromJson(stream);
-                }
-                catch (IOException e) {
-                    throw new DiscoveryException(format("Lookup of %s failed", type), e);
-                }
+                        ServiceDescriptorsRepresentation serviceDescriptorsRepresentation;
+                        try (InputStream stream = response.getInputStream()) {
+                            serviceDescriptorsRepresentation = serviceDescriptorsCodec.fromJson(stream);
+                        } catch (IOException e) {
+                            throw new DiscoveryException(format("Lookup of %s failed", type), e);
+                        }
 
-                if (!environment.equals(serviceDescriptorsRepresentation.getEnvironment())) {
-                    throw new DiscoveryException(format("Expected environment to be %s, but was %s", environment, serviceDescriptorsRepresentation.getEnvironment()));
-                }
+                        if (!environment.equals(serviceDescriptorsRepresentation.getEnvironment())) {
+                            throw new DiscoveryException(format(
+                                    "Expected environment to be %s, but was %s",
+                                    environment, serviceDescriptorsRepresentation.getEnvironment()));
+                        }
 
-                return new ServiceDescriptors(
-                        type,
-                        pool,
-                        serviceDescriptorsRepresentation.getServiceDescriptors(),
-                        maxAge,
-                        eTag);
-            }
-        });
+                        return new ServiceDescriptors(
+                                type, pool, serviceDescriptorsRepresentation.getServiceDescriptors(), maxAge, eTag);
+                    }
+                });
     }
 
-    private Duration extractMaxAge(Response response)
-    {
+    private Duration extractMaxAge(Response response) {
         String header = response.getHeader(HttpHeaders.CACHE_CONTROL);
         if (header != null) {
             CacheControl cacheControl = CacheControl.valueOf(header);
@@ -173,36 +162,29 @@ public class HttpDiscoveryLookupClient
     }
 
     @VisibleForTesting
-    static URI createServiceLocation(URI baseUri, String type, Optional<String> pool)
-    {
-        HttpUriBuilder builder = uriBuilderFrom(baseUri)
-                .appendPath("/v1/service")
-                .appendPath(type);
+    static URI createServiceLocation(URI baseUri, String type, Optional<String> pool) {
+        HttpUriBuilder builder =
+                uriBuilderFrom(baseUri).appendPath("/v1/service").appendPath(type);
         pool.ifPresent(builder::appendPath);
         return builder.build();
     }
 
-    private class DiscoveryResponseHandler<T>
-            implements ResponseHandler<T, DiscoveryException>
-    {
+    private class DiscoveryResponseHandler<T> implements ResponseHandler<T, DiscoveryException> {
         private final String name;
         private final URI uri;
 
-        protected DiscoveryResponseHandler(String name, URI uri)
-        {
+        protected DiscoveryResponseHandler(String name, URI uri) {
             this.name = name;
             this.uri = uri;
         }
 
         @Override
-        public T handle(Request request, Response response)
-        {
+        public T handle(Request request, Response response) {
             return null;
         }
 
         @Override
-        public final T handleException(Request request, Exception exception)
-        {
+        public final T handleException(Request request, Exception exception) {
             if (exception instanceof InterruptedException) {
                 throw new DiscoveryException(name + " was interrupted for " + uri);
             }

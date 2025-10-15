@@ -15,11 +15,8 @@ package io.airlift.json.subtype;
 
 import java.util.List;
 
-public sealed interface Part
-{
-    record Item(String name)
-            implements Part {}
+public sealed interface Part {
+    record Item(String name) implements Part {}
 
-    record Container(List<Part> parts)
-            implements Part {}
+    record Container(List<Part> parts) implements Part {}
 }

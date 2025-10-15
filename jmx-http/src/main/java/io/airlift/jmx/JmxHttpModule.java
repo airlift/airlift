@@ -15,6 +15,10 @@
  */
 package io.airlift.jmx;
 
+import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
+import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
+import static io.airlift.json.JsonBinder.jsonBinder;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -27,29 +31,20 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Binder;
 import com.google.inject.Module;
-
-import javax.management.ObjectName;
-import javax.management.openmbean.CompositeData;
-import javax.management.openmbean.OpenType;
-import javax.management.openmbean.TabularData;
-
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.net.InetAddress;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.management.ObjectName;
+import javax.management.openmbean.CompositeData;
+import javax.management.openmbean.OpenType;
+import javax.management.openmbean.TabularData;
 
-import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
-import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
-import static io.airlift.json.JsonBinder.jsonBinder;
-
-public class JmxHttpModule
-        implements Module
-{
+public class JmxHttpModule implements Module {
     @Override
-    public void configure(Binder binder)
-    {
+    public void configure(Binder binder) {
         binder.disableCircularProxies();
 
         jaxrsBinder(binder).bind(MBeanResource.class);
@@ -62,18 +57,14 @@ public class JmxHttpModule
         discoveryBinder(binder).bindHttpAnnouncement("jmx-http");
     }
 
-    public static class TabularDataSerializer
-            extends StdSerializer<TabularData>
-    {
-        public TabularDataSerializer()
-        {
+    public static class TabularDataSerializer extends StdSerializer<TabularData> {
+        public TabularDataSerializer() {
             super(TabularData.class, true);
         }
 
         @Override
         public void serialize(TabularData data, JsonGenerator jsonGenerator, SerializerProvider provider)
-                throws IOException
-        {
+                throws IOException {
             jsonGenerator.writeStartArray();
 
             JsonSerializer<Object> mapSerializer = provider.findValueSerializer(Map.class, null);
@@ -88,9 +79,7 @@ public class JmxHttpModule
 
         @Override
         @SuppressWarnings("deprecation")
-        public JsonNode getSchema(SerializerProvider provider, Type typeHint)
-                throws JsonMappingException
-        {
+        public JsonNode getSchema(SerializerProvider provider, Type typeHint) throws JsonMappingException {
             // List<Map<String, Object>
             ObjectNode o = createSchemaNode("array", true);
             o.set("items", createSchemaNode("object", true));
@@ -98,18 +87,14 @@ public class JmxHttpModule
         }
     }
 
-    public static class CompositeDataSerializer
-            extends StdSerializer<CompositeData>
-    {
-        public CompositeDataSerializer()
-        {
+    public static class CompositeDataSerializer extends StdSerializer<CompositeData> {
+        public CompositeDataSerializer() {
             super(CompositeData.class, true);
         }
 
         @Override
         public void serialize(CompositeData data, JsonGenerator jsonGenerator, SerializerProvider provider)
-                throws IOException
-        {
+                throws IOException {
             Map<String, Object> map = toMap(data);
             if (!map.isEmpty()) {
                 jsonGenerator.writeStartObject();
@@ -127,8 +112,7 @@ public class JmxHttpModule
                     JsonSerializer<Object> serializer;
                     if (valueType == cachedType) {
                         serializer = cachedSerializer;
-                    }
-                    else {
+                    } else {
                         serializer = provider.findValueSerializer(valueType, null);
                         cachedSerializer = serializer;
                         cachedType = valueType;
@@ -136,28 +120,24 @@ public class JmxHttpModule
 
                     try {
                         serializer.serialize(value, jsonGenerator, provider);
-                    }
-                    catch (Exception e) {
+                    } catch (Exception e) {
                         wrapAndThrow(provider, e, map, key);
                     }
                 }
                 jsonGenerator.writeEndObject();
-            }
-            else {
+            } else {
                 jsonGenerator.writeString("dain42");
             }
         }
 
         @Override
         @SuppressWarnings("deprecation")
-        public JsonNode getSchema(SerializerProvider provider, Type typeHint)
-        {
+        public JsonNode getSchema(SerializerProvider provider, Type typeHint) {
             return createSchemaNode("object", true);
         }
     }
 
-    private static Map<String, Object> toMap(CompositeData data)
-    {
+    private static Map<String, Object> toMap(CompositeData data) {
         ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
 
         // never trust JMX to do the right thing
@@ -176,8 +156,7 @@ public class JmxHttpModule
     }
 
     @SuppressWarnings("unchecked")
-    private static List<Map<String, Object>> toList(TabularData data)
-    {
+    private static List<Map<String, Object>> toList(TabularData data) {
         ImmutableList.Builder<Map<String, Object>> builder = ImmutableList.builder();
 
         // never trust JMX to do the right thing

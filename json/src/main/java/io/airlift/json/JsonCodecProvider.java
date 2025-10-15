@@ -17,35 +17,28 @@ package io.airlift.json;
 
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-
 import java.lang.reflect.Type;
 
-class JsonCodecProvider
-        implements Provider<JsonCodec<?>>
-{
+class JsonCodecProvider implements Provider<JsonCodec<?>> {
     private final Type type;
     private JsonCodecFactory jsonCodecFactory;
 
-    public JsonCodecProvider(Type type)
-    {
+    public JsonCodecProvider(Type type) {
         this.type = type;
     }
 
     @Inject
-    public void setJsonCodecFactory(JsonCodecFactory jsonCodecFactory)
-    {
+    public void setJsonCodecFactory(JsonCodecFactory jsonCodecFactory) {
         this.jsonCodecFactory = jsonCodecFactory;
     }
 
     @Override
-    public JsonCodec<?> get()
-    {
+    public JsonCodec<?> get() {
         return jsonCodecFactory.jsonCodec(type);
     }
 
     @Override
-    public boolean equals(Object o)
-    {
+    public boolean equals(Object o) {
         if (this == o) {
             return true;
         }
@@ -63,8 +56,7 @@ class JsonCodecProvider
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return type.hashCode();
     }
 }

@@ -15,12 +15,9 @@ package io.airlift.configuration.secrets.env;
 
 import io.airlift.spi.secrets.SecretProvider;
 
-public class EnvironmentVariableSecretProvider
-        implements SecretProvider
-{
+public class EnvironmentVariableSecretProvider implements SecretProvider {
     @Override
-    public String resolveSecretValue(String key)
-    {
+    public String resolveSecretValue(String key) {
         String envValue = System.getenv().get(key);
         if (envValue == null) {
             throw new RuntimeException("Environment variable is not set: " + key);

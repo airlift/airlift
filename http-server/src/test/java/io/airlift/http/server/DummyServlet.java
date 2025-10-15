@@ -15,29 +15,25 @@
  */
 package io.airlift.http.server;
 
+import static com.google.common.util.concurrent.Futures.nonCancellationPropagating;
+import static jakarta.servlet.http.HttpServletResponse.SC_OK;
+
 import com.google.common.util.concurrent.SettableFuture;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
 import java.io.IOException;
 import java.util.concurrent.Future;
 
-import static com.google.common.util.concurrent.Futures.nonCancellationPropagating;
-import static jakarta.servlet.http.HttpServletResponse.SC_OK;
-
-class DummyServlet
-        extends HttpServlet
-{
+class DummyServlet extends HttpServlet {
     private final SettableFuture<?> sleeping = SettableFuture.create();
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws IOException
-    {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         response.setStatus(SC_OK);
         if (request.getUserPrincipal() != null) {
-            response.getOutputStream().write(request.getUserPrincipal().getName().getBytes());
+            response.getOutputStream()
+                    .write(request.getUserPrincipal().getName().getBytes());
         }
         response.setHeader("X-Protocol", request.getProtocol());
 
@@ -46,14 +42,12 @@ class DummyServlet
                 sleeping.set(null);
                 Thread.sleep(Long.parseLong(request.getParameter("sleep")));
             }
-        }
-        catch (InterruptedException e) {
+        } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
     }
 
-    public Future<?> getSleeping()
-    {
+    public Future<?> getSleeping() {
         return nonCancellationPropagating(sleeping);
     }
 }

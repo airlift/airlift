@@ -15,56 +15,60 @@
  */
 package io.airlift.http.client;
 
+import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.net.MediaType;
 import com.google.common.primitives.Ints;
 import io.airlift.json.JsonCodec;
-
 import java.io.InputStream;
 import java.util.Set;
 
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
-
-public class DefaultingJsonResponseHandler<T>
-        implements ResponseHandler<T, RuntimeException>
-{
+public class DefaultingJsonResponseHandler<T> implements ResponseHandler<T, RuntimeException> {
     private static final MediaType MEDIA_TYPE_JSON = MediaType.create("application", "json");
 
-    public static <T> DefaultingJsonResponseHandler<T> createDefaultingJsonResponseHandler(JsonCodec<T> jsonCodec, T defaultValue)
-    {
+    public static <T> DefaultingJsonResponseHandler<T> createDefaultingJsonResponseHandler(
+            JsonCodec<T> jsonCodec, T defaultValue) {
         return new DefaultingJsonResponseHandler<>(jsonCodec, defaultValue);
     }
 
-    public static <T> DefaultingJsonResponseHandler<T> createDefaultingJsonResponseHandler(JsonCodec<T> jsonCodec, T defaultValue, int firstSuccessfulResponseCode, int... otherSuccessfulResponseCodes)
-    {
-        return new DefaultingJsonResponseHandler<>(jsonCodec, defaultValue, firstSuccessfulResponseCode, otherSuccessfulResponseCodes);
+    public static <T> DefaultingJsonResponseHandler<T> createDefaultingJsonResponseHandler(
+            JsonCodec<T> jsonCodec,
+            T defaultValue,
+            int firstSuccessfulResponseCode,
+            int... otherSuccessfulResponseCodes) {
+        return new DefaultingJsonResponseHandler<>(
+                jsonCodec, defaultValue, firstSuccessfulResponseCode, otherSuccessfulResponseCodes);
     }
 
     private final JsonCodec<T> jsonCodec;
     private final T defaultValue;
     private final Set<Integer> successfulResponseCodes;
 
-    private DefaultingJsonResponseHandler(JsonCodec<T> jsonCodec, T defaultValue)
-    {
+    private DefaultingJsonResponseHandler(JsonCodec<T> jsonCodec, T defaultValue) {
         this(jsonCodec, defaultValue, 200, 201, 202, 203, 204, 205, 206);
     }
 
-    private DefaultingJsonResponseHandler(JsonCodec<T> jsonCodec, T defaultValue, int firstSuccessfulResponseCode, int... otherSuccessfulResponseCodes)
-    {
+    private DefaultingJsonResponseHandler(
+            JsonCodec<T> jsonCodec,
+            T defaultValue,
+            int firstSuccessfulResponseCode,
+            int... otherSuccessfulResponseCodes) {
         this.jsonCodec = jsonCodec;
         this.defaultValue = defaultValue;
-        this.successfulResponseCodes = ImmutableSet.<Integer>builder().add(firstSuccessfulResponseCode).addAll(Ints.asList(otherSuccessfulResponseCodes)).build();
+        this.successfulResponseCodes = ImmutableSet.<Integer>builder()
+                .add(firstSuccessfulResponseCode)
+                .addAll(Ints.asList(otherSuccessfulResponseCodes))
+                .build();
     }
 
     @Override
-    public T handleException(Request request, Exception exception)
-    {
+    public T handleException(Request request, Exception exception) {
         return defaultValue;
     }
 
     @Override
-    public T handle(Request request, Response response)
-    {
+    public T handle(Request request, Response response) {
         if (!successfulResponseCodes.contains(response.getStatusCode())) {
             return defaultValue;
         }
@@ -74,8 +78,7 @@ public class DefaultingJsonResponseHandler<T>
         }
         try (InputStream inputStream = response.getInputStream()) {
             return jsonCodec.fromJson(inputStream);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             return defaultValue;
         }
     }

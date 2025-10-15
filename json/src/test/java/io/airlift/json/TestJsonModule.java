@@ -15,6 +15,13 @@
  */
 package io.airlift.json;
 
+import static com.google.common.base.MoreObjects.toStringHelper;
+import static io.airlift.json.JsonBinder.jsonBinder;
+import static java.util.Objects.requireNonNull;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.joda.time.DateTimeZone.UTC;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
@@ -32,27 +39,18 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.joda.time.DateTime;
 import org.joda.time.format.ISODateTimeFormat;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static com.google.common.base.MoreObjects.toStringHelper;
-import static io.airlift.json.JsonBinder.jsonBinder;
-import static java.util.Objects.requireNonNull;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.joda.time.DateTimeZone.UTC;
-import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
-
 @TestInstance(PER_CLASS)
-public class TestJsonModule
-{
+public class TestJsonModule {
     public static final Car CAR = new Car()
             .setMake("BMW")
             .setModel("M3")
@@ -64,19 +62,18 @@ public class TestJsonModule
     private ObjectMapper objectMapper;
 
     @BeforeAll
-    public void setUp()
-    {
-        Injector injector = Guice.createInjector(new JsonModule(),
-                binder -> {
-                    jsonBinder(binder).addSerializerBinding(SuperDuperNameList.class).toInstance(ToStringSerializer.instance);
-                    jsonBinder(binder).addDeserializerBinding(SuperDuperNameList.class).to(SuperDuperNameListDeserializer.class);
-                });
+    public void setUp() {
+        Injector injector = Guice.createInjector(new JsonModule(), binder -> {
+            jsonBinder(binder).addSerializerBinding(SuperDuperNameList.class).toInstance(ToStringSerializer.instance);
+            jsonBinder(binder)
+                    .addDeserializerBinding(SuperDuperNameList.class)
+                    .to(SuperDuperNameListDeserializer.class);
+        });
         objectMapper = injector.getInstance(ObjectMapper.class);
     }
 
     @Test
-    public void testJsonCodecFactoryBinding()
-    {
+    public void testJsonCodecFactoryBinding() {
         Injector injector = Guice.createInjector(new JsonModule());
         JsonCodecFactory codecFactory = injector.getInstance(JsonCodecFactory.class);
 
@@ -86,9 +83,7 @@ public class TestJsonModule
     }
 
     @Test
-    public void testSetup()
-            throws Exception
-    {
+    public void testSetup() throws Exception {
         assertThat(CAR).isEqualTo(CAR);
         String json = objectMapper.writeValueAsString(CAR);
         Car actual = objectMapper.readValue(json, Car.class);
@@ -96,9 +91,7 @@ public class TestJsonModule
     }
 
     @Test
-    public void testFieldDetection()
-            throws Exception
-    {
+    public void testFieldDetection() throws Exception {
         Map<String, Object> actual = createCarMap();
 
         // notes is not annotated so should not be included
@@ -107,18 +100,15 @@ public class TestJsonModule
     }
 
     @Test
-    public void testDateTimeRendered()
-            throws Exception
-    {
+    public void testDateTimeRendered() throws Exception {
         Map<String, Object> actual = createCarMap();
 
-        assertThat(actual.get("purchased")).isEqualTo(ISODateTimeFormat.dateTime().print(CAR.getPurchased()));
+        assertThat(actual.get("purchased"))
+                .isEqualTo(ISODateTimeFormat.dateTime().print(CAR.getPurchased()));
     }
 
     @Test
-    public void testGuavaRoundTrip()
-            throws Exception
-    {
+    public void testGuavaRoundTrip() throws Exception {
         ImmutableList<Integer> list = ImmutableList.of(3, 5, 8);
 
         String json = objectMapper.writeValueAsString(list);
@@ -128,45 +118,40 @@ public class TestJsonModule
     }
 
     @Test
-    public void testIgnoreUnknownFields()
-            throws Exception
-    {
+    public void testIgnoreUnknownFields() throws Exception {
         Map<String, Object> data = new HashMap<>(createCarMap());
 
         // add an unknown field
         data.put("unknown", "bogus");
 
         // Jackson should deserialize the object correctly with the extra unknown data
-        assertThat(objectMapper.readValue(objectMapper.writeValueAsString(data), Car.class)).isEqualTo(CAR);
+        assertThat(objectMapper.readValue(objectMapper.writeValueAsString(data), Car.class))
+                .isEqualTo(CAR);
     }
 
     @Test
-    public void testPropertyNamesFromParameterNames()
-            throws Exception
-    {
+    public void testPropertyNamesFromParameterNames() throws Exception {
         NoJsonPropertiesInJsonCreator value = new NoJsonPropertiesInJsonCreator("first value", "second value");
-        NoJsonPropertiesInJsonCreator mapped = objectMapper.readValue(objectMapper.writeValueAsString(value), NoJsonPropertiesInJsonCreator.class);
+        NoJsonPropertiesInJsonCreator mapped =
+                objectMapper.readValue(objectMapper.writeValueAsString(value), NoJsonPropertiesInJsonCreator.class);
         assertThat(mapped.getFirst()).isEqualTo("first value");
         assertThat(mapped.getSecond()).isEqualTo("second value");
     }
 
     @Test
-    public void testJsonValueAndStaticFactoryMethod()
-            throws Exception
-    {
+    public void testJsonValueAndStaticFactoryMethod() throws Exception {
         JsonValueAndStaticFactoryMethod value = JsonValueAndStaticFactoryMethod.valueOf("some value");
-        JsonValueAndStaticFactoryMethod mapped = objectMapper.readValue(objectMapper.writeValueAsString(value), JsonValueAndStaticFactoryMethod.class);
+        JsonValueAndStaticFactoryMethod mapped =
+                objectMapper.readValue(objectMapper.writeValueAsString(value), JsonValueAndStaticFactoryMethod.class);
         assertThat(mapped.getValue()).isEqualTo("some value");
     }
 
-    private Map<String, Object> createCarMap()
-            throws IOException
-    {
-        return objectMapper.readValue(objectMapper.writeValueAsString(CAR), new TypeReference<Map<String, Object>>() {});
+    private Map<String, Object> createCarMap() throws IOException {
+        return objectMapper.readValue(
+                objectMapper.writeValueAsString(CAR), new TypeReference<Map<String, Object>>() {});
     }
 
-    public static class Car
-    {
+    public static class Car {
         // These fields are public to make sure that Jackson is ignoring them
         public String make;
         public String model;
@@ -183,99 +168,84 @@ public class TestJsonModule
         public SuperDuperNameList nameList;
 
         @JsonProperty
-        public String getMake()
-        {
+        public String getMake() {
             return make;
         }
 
         @JsonProperty
-        public Car setMake(String make)
-        {
+        public Car setMake(String make) {
             this.make = make;
             return this;
         }
 
         @JsonProperty
-        public String getModel()
-        {
+        public String getModel() {
             return model;
         }
 
         @JsonProperty
-        public Car setModel(String model)
-        {
+        public Car setModel(String model) {
             this.model = model;
             return this;
         }
 
         @JsonProperty
-        public int getYear()
-        {
+        public int getYear() {
             return year;
         }
 
         @JsonProperty
-        public Car setYear(int year)
-        {
+        public Car setYear(int year) {
             this.year = year;
             return this;
         }
 
         @JsonProperty
-        public DateTime getPurchased()
-        {
+        public DateTime getPurchased() {
             return purchased;
         }
 
         @JsonProperty
-        public Car setPurchased(DateTime purchased)
-        {
+        public Car setPurchased(DateTime purchased) {
             this.purchased = purchased;
             return this;
         }
 
         @JsonProperty
-        public String getColor()
-        {
+        public String getColor() {
             return color;
         }
 
         @JsonProperty
-        public Car setColor(String color)
-        {
+        public Car setColor(String color) {
             this.color = color;
             return this;
         }
 
         @JsonProperty
-        public SuperDuperNameList getNameList()
-        {
+        public SuperDuperNameList getNameList() {
             return nameList;
         }
 
         @JsonProperty
-        public Car setNameList(SuperDuperNameList nameList)
-        {
+        public Car setNameList(SuperDuperNameList nameList) {
             this.nameList = nameList;
             return this;
         }
 
         // this field should not be written
 
-        public String getNotes()
-        {
+        public String getNotes() {
             return notes;
         }
 
-        public Car setNotes(String notes)
-        {
+        public Car setNotes(String notes) {
             this.notes = notes;
             return this;
         }
 
         @Override
-        public boolean equals(Object o)
-        {
+        public boolean equals(Object o) {
             if (this == o) {
                 return true;
             }
@@ -308,8 +278,7 @@ public class TestJsonModule
         }
 
         @Override
-        public int hashCode()
-        {
+        public int hashCode() {
             int result = make != null ? make.hashCode() : 0;
             result = 31 * result + (model != null ? model.hashCode() : 0);
             result = 31 * result + year;
@@ -320,8 +289,7 @@ public class TestJsonModule
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return toStringHelper(this)
                     .add("make", make)
                     .add("model", model)
@@ -334,81 +302,67 @@ public class TestJsonModule
         }
     }
 
-    public static class NoJsonPropertiesInJsonCreator
-    {
+    public static class NoJsonPropertiesInJsonCreator {
         private final String first;
         private final String second;
 
         @JsonCreator
-        public NoJsonPropertiesInJsonCreator(/* no @JsonProperty here*/ String first, String second)
-        {
+        public NoJsonPropertiesInJsonCreator(/* no @JsonProperty here*/ String first, String second) {
             this.first = first;
             this.second = second;
         }
 
         @JsonProperty
-        public String getFirst()
-        {
+        public String getFirst() {
             return first;
         }
 
         @JsonProperty
-        public String getSecond()
-        {
+        public String getSecond() {
             return second;
         }
     }
 
-    public static class JsonValueAndStaticFactoryMethod
-    {
+    public static class JsonValueAndStaticFactoryMethod {
         private final String value;
 
         @JsonCreator
-        public static JsonValueAndStaticFactoryMethod valueOf(String value)
-        {
+        public static JsonValueAndStaticFactoryMethod valueOf(String value) {
             return new JsonValueAndStaticFactoryMethod(value);
         }
 
-        private JsonValueAndStaticFactoryMethod(String value)
-        {
+        private JsonValueAndStaticFactoryMethod(String value) {
             this.value = requireNonNull(value, "value is null");
         }
 
         @JsonValue
-        public String getValue()
-        {
+        public String getValue() {
             return value;
         }
     }
 
-    public static class SuperDuperNameList
-    {
+    public static class SuperDuperNameList {
         private List<String> name;
 
-        private SuperDuperNameList(String superDuperNameList)
-        {
+        private SuperDuperNameList(String superDuperNameList) {
             this(superDuperNameList, null);
         }
 
-        private SuperDuperNameList(String superDuperNameList, Object stopJacksonFromUsingStringConstructor)
-        {
+        private SuperDuperNameList(String superDuperNameList, Object stopJacksonFromUsingStringConstructor) {
             this.name = ImmutableList.copyOf(Splitter.on('*').split(superDuperNameList));
         }
 
-        public List<String> getName()
-        {
+        public List<String> getName() {
             return name;
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return Joiner.on("*").join(name);
         }
 
         @Override
-        public boolean equals(Object o)
-        {
+        public boolean equals(Object o) {
             if (this == o) {
                 return true;
             }
@@ -426,24 +380,18 @@ public class TestJsonModule
         }
 
         @Override
-        public int hashCode()
-        {
+        public int hashCode() {
             return name.hashCode();
         }
     }
 
-    public static final class SuperDuperNameListDeserializer
-            extends StdScalarDeserializer<SuperDuperNameList>
-    {
-        public SuperDuperNameListDeserializer()
-        {
+    public static final class SuperDuperNameListDeserializer extends StdScalarDeserializer<SuperDuperNameList> {
+        public SuperDuperNameListDeserializer() {
             super(SuperDuperNameList.class);
         }
 
         @Override
-        public SuperDuperNameList deserialize(JsonParser jp, DeserializationContext context)
-                throws IOException
-        {
+        public SuperDuperNameList deserialize(JsonParser jp, DeserializationContext context) throws IOException {
             JsonToken token = jp.getCurrentToken();
             if (token == JsonToken.VALUE_STRING) {
                 return new SuperDuperNameList(jp.getText(), null);
@@ -453,8 +401,7 @@ public class TestJsonModule
         }
     }
 
-    public static SuperDuperNameList superDuper(String superDuperNameList)
-    {
+    public static SuperDuperNameList superDuper(String superDuperNameList) {
         return new SuperDuperNameList(superDuperNameList, null);
     }
 }

@@ -1,7 +1,6 @@
 package io.airlift.log;
 
-public enum Level
-{
+public enum Level {
     OFF(java.util.logging.Level.OFF),
     TRACE(java.util.logging.Level.FINEST),
     DEBUG(java.util.logging.Level.FINE),
@@ -11,18 +10,15 @@ public enum Level
 
     private final java.util.logging.Level julLevel;
 
-    Level(java.util.logging.Level julLevel)
-    {
+    Level(java.util.logging.Level julLevel) {
         this.julLevel = julLevel;
     }
 
-    java.util.logging.Level toJulLevel()
-    {
+    java.util.logging.Level toJulLevel() {
         return julLevel;
     }
 
-    static Level fromJulLevel(java.util.logging.Level level)
-    {
+    static Level fromJulLevel(java.util.logging.Level level) {
         // Convert any implementation of Level based on the int value
         int levelValue = level.intValue();
         if (levelValue == java.util.logging.Level.OFF.intValue()) {

@@ -15,16 +15,6 @@
  */
 package io.airlift.log;
 
-import com.google.common.io.Files;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.parallel.Execution;
-
-import java.io.File;
-import java.io.IOException;
-
 import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
 import static java.nio.file.Files.createTempDirectory;
@@ -32,30 +22,32 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
 
+import com.google.common.io.Files;
+import java.io.File;
+import java.io.IOException;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.parallel.Execution;
+
 @TestInstance(PER_CLASS)
 @Execution(SAME_THREAD)
-public class TestLogging
-{
+public class TestLogging {
     private File tempDir;
 
     @BeforeEach
-    public void setup()
-            throws IOException
-    {
+    public void setup() throws IOException {
         tempDir = createTempDirectory(null).toFile();
     }
 
     @AfterEach
-    public void tearDown()
-            throws IOException
-    {
+    public void tearDown() throws IOException {
         deleteRecursively(tempDir.toPath(), ALLOW_INSECURE);
     }
 
     @Test
-    public void testRecoverTempFiles()
-            throws IOException
-    {
+    public void testRecoverTempFiles() throws IOException {
         LoggingConfiguration configuration = new LoggingConfiguration();
         configuration.setLogPath(new File(tempDir, "launcher.log").getPath());
 
@@ -81,8 +73,7 @@ public class TestLogging
     }
 
     @Test
-    public void testPropagatesLevels()
-    {
+    public void testPropagatesLevels() {
         Logging logging = Logging.initialize();
         Logger logger = Logger.get("testPropagatesLevels");
 
@@ -104,8 +95,7 @@ public class TestLogging
     }
 
     @Test
-    public void testPropagatesLevelsHierarchical()
-    {
+    public void testPropagatesLevelsHierarchical() {
         Logging logging = Logging.initialize();
         Logger logger = Logger.get("testPropagatesLevelsHierarchical.child");
 
@@ -127,8 +117,7 @@ public class TestLogging
     }
 
     @Test
-    public void testChildLevelOverridesParent()
-    {
+    public void testChildLevelOverridesParent() {
         Logging logging = Logging.initialize();
         Logger logger = Logger.get("testChildLevelOverridesParent.child");
 
@@ -139,8 +128,7 @@ public class TestLogging
     }
 
     @Test
-    public void testClearLevel()
-    {
+    public void testClearLevel() {
         Logging logging = Logging.initialize();
         Logger logger = Logger.get("testClearLevel");
 

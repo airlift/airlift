@@ -15,33 +15,6 @@
  */
 package io.airlift.sample;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.io.Resources;
-import com.google.inject.Injector;
-import io.airlift.bootstrap.Bootstrap;
-import io.airlift.bootstrap.LifeCycleManager;
-import io.airlift.http.client.HttpClient;
-import io.airlift.http.client.Request;
-import io.airlift.http.client.StatusResponseHandler.StatusResponse;
-import io.airlift.http.client.StringResponseHandler.StringResponse;
-import io.airlift.http.client.jetty.JettyHttpClient;
-import io.airlift.http.server.testing.TestingHttpServer;
-import io.airlift.http.server.testing.TestingHttpServerModule;
-import io.airlift.jaxrs.JaxrsModule;
-import io.airlift.json.JsonCodec;
-import io.airlift.json.JsonModule;
-import io.airlift.node.testing.TestingNodeModule;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.parallel.Execution;
-
-import java.io.IOException;
-import java.net.URI;
-import java.util.List;
-import java.util.Map;
-
 import static io.airlift.http.client.JsonResponseHandler.createJsonResponseHandler;
 import static io.airlift.http.client.Request.Builder.prepareDelete;
 import static io.airlift.http.client.Request.Builder.prepareGet;
@@ -64,10 +37,35 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.io.Resources;
+import com.google.inject.Injector;
+import io.airlift.bootstrap.Bootstrap;
+import io.airlift.bootstrap.LifeCycleManager;
+import io.airlift.http.client.HttpClient;
+import io.airlift.http.client.Request;
+import io.airlift.http.client.StatusResponseHandler.StatusResponse;
+import io.airlift.http.client.StringResponseHandler.StringResponse;
+import io.airlift.http.client.jetty.JettyHttpClient;
+import io.airlift.http.server.testing.TestingHttpServer;
+import io.airlift.http.server.testing.TestingHttpServerModule;
+import io.airlift.jaxrs.JaxrsModule;
+import io.airlift.json.JsonCodec;
+import io.airlift.json.JsonModule;
+import io.airlift.node.testing.TestingNodeModule;
+import java.io.IOException;
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.parallel.Execution;
+
 @TestInstance(PER_CLASS)
 @Execution(SAME_THREAD)
-public class TestServer
-{
+public class TestServer {
     private HttpClient client;
     private TestingHttpServer server;
 
@@ -78,8 +76,7 @@ public class TestServer
     private LifeCycleManager lifeCycleManager;
 
     @BeforeEach
-    public void setup()
-    {
+    public void setup() {
         Bootstrap app = new Bootstrap(
                 new TestingNodeModule(),
                 new TestingHttpServerModule(),
@@ -87,9 +84,7 @@ public class TestServer
                 new JaxrsModule(),
                 new MainModule());
 
-        Injector injector = app
-                .doNotInitializeLogging()
-                .initialize();
+        Injector injector = app.doNotInitializeLogging().initialize();
 
         lifeCycleManager = injector.getInstance(LifeCycleManager.class);
 
@@ -100,66 +95,55 @@ public class TestServer
     }
 
     @AfterEach
-    public void teardown()
-    {
+    public void teardown() {
         try {
             if (lifeCycleManager != null) {
                 lifeCycleManager.stop();
             }
-        }
-        finally {
+        } finally {
             client.close();
         }
     }
 
     @Test
-    public void testEmpty()
-    {
-        List<Object> response = client.execute(
-                prepareGet().setUri(uriFor("/v1/person")).build(),
-                createJsonResponseHandler(listCodec));
+    public void testEmpty() {
+        List<Object> response =
+                client.execute(prepareGet().setUri(uriFor("/v1/person")).build(), createJsonResponseHandler(listCodec));
 
         assertThat(response).isEqualTo(ImmutableList.of());
     }
 
     @Test
-    public void testGetAll()
-            throws IOException
-    {
+    public void testGetAll() throws IOException {
         store.put("bar", new Person("bar@example.com", "Mr Bar"));
         store.put("foo", new Person("foo@example.com", "Mr Foo"));
 
         List<Object> expected = listCodec.fromJson(Resources.toString(Resources.getResource("list.json"), UTF_8));
 
-        List<Object> actual = client.execute(
-                prepareGet().setUri(uriFor("/v1/person")).build(),
-                createJsonResponseHandler(listCodec));
+        List<Object> actual =
+                client.execute(prepareGet().setUri(uriFor("/v1/person")).build(), createJsonResponseHandler(listCodec));
 
         assertThat(expected).containsExactlyInAnyOrderElementsOf(actual);
     }
 
     @Test
-    public void testGetSingle()
-            throws IOException
-    {
+    public void testGetSingle() throws IOException {
         store.put("foo", new Person("foo@example.com", "Mr Foo"));
 
         URI requestUri = uriFor("/v1/person/foo");
 
-        Map<String, Object> expected = mapCodec.fromJson(Resources.toString(Resources.getResource("single.json"), UTF_8));
+        Map<String, Object> expected =
+                mapCodec.fromJson(Resources.toString(Resources.getResource("single.json"), UTF_8));
         expected.put("self", requestUri.toString());
 
-        Map<String, Object> actual = client.execute(
-                prepareGet().setUri(requestUri).build(),
-                createJsonResponseHandler(mapCodec));
+        Map<String, Object> actual =
+                client.execute(prepareGet().setUri(requestUri).build(), createJsonResponseHandler(mapCodec));
 
         assertThat(actual).isEqualTo(expected);
     }
 
     @Test
-    public void testPut()
-            throws IOException
-    {
+    public void testPut() throws IOException {
         String json = Resources.toString(Resources.getResource("single.json"), UTF_8);
 
         StatusResponse response = client.execute(
@@ -176,8 +160,7 @@ public class TestServer
     }
 
     @Test
-    public void testDelete()
-    {
+    public void testDelete() {
         store.put("foo", new Person("foo@example.com", "Mr Foo"));
 
         StatusResponse response = client.execute(
@@ -193,8 +176,7 @@ public class TestServer
     }
 
     @Test
-    public void testDeleteMissing()
-    {
+    public void testDeleteMissing() {
         StatusResponse response = client.execute(
                 prepareDelete()
                         .setUri(uriFor("/v1/person/foo"))
@@ -206,9 +188,7 @@ public class TestServer
     }
 
     @Test
-    public void testPostNotAllowed()
-            throws IOException
-    {
+    public void testPostNotAllowed() throws IOException {
         String json = Resources.toString(Resources.getResource("single.json"), UTF_8);
 
         StatusResponse response = client.execute(
@@ -225,8 +205,7 @@ public class TestServer
     }
 
     @Test
-    public void testOptions()
-    {
+    public void testOptions() {
         StringResponse response = client.execute(
                 new Request.Builder()
                         .setMethod("OPTIONS")
@@ -239,8 +218,7 @@ public class TestServer
         assertThat(response.getBody()).startsWith("<?xml ").contains("<application ");
     }
 
-    private URI uriFor(String path)
-    {
+    private URI uriFor(String path) {
         return server.getBaseUrl().resolve(path);
     }
 }

@@ -13,21 +13,15 @@
  */
 package io.airlift.configuration;
 
-import com.google.inject.Binder;
-import com.google.inject.Module;
-
-import java.util.function.Function;
-
 import static java.util.Objects.requireNonNull;
 
-public class SwitchModule<T>
-        extends AbstractConfigurationAwareModule
-{
+import com.google.inject.Binder;
+import com.google.inject.Module;
+import java.util.function.Function;
+
+public class SwitchModule<T> extends AbstractConfigurationAwareModule {
     public static <C, V> Module switchModule(
-            Class<C> config,
-            Function<C, V> valueProvider,
-            Function<V, Module> moduleProvider)
-    {
+            Class<C> config, Function<C, V> valueProvider, Function<V, Module> moduleProvider) {
         requireNonNull(valueProvider, "valueProvider is null");
         moduleProvider = requireNonNull(moduleProvider, "moduleProvider is null");
         return new SwitchModule<>(config, valueProvider.andThen(moduleProvider));
@@ -36,15 +30,13 @@ public class SwitchModule<T>
     private final Class<T> config;
     private final Function<T, Module> moduleProvider;
 
-    private SwitchModule(Class<T> config, Function<T, Module> moduleProvider)
-    {
+    private SwitchModule(Class<T> config, Function<T, Module> moduleProvider) {
         this.config = requireNonNull(config, "config is null");
         this.moduleProvider = requireNonNull(moduleProvider, "moduleProvider is null");
     }
 
     @Override
-    protected void setup(Binder binder)
-    {
+    protected void setup(Binder binder) {
         T configuration = buildConfigObject(config);
         install(moduleProvider.apply(configuration));
     }

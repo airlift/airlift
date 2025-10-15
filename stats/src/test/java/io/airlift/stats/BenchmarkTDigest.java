@@ -1,6 +1,12 @@
 package io.airlift.stats;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
 import io.airlift.slice.Slice;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Measurement;
@@ -19,36 +25,25 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.VerboseMode;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
-
-import static com.google.common.collect.ImmutableList.toImmutableList;
-
 @OutputTimeUnit(TimeUnit.SECONDS)
 @Fork(3)
 @Warmup(iterations = 10)
 @Measurement(iterations = 10)
-public class BenchmarkTDigest
-{
+public class BenchmarkTDigest {
     private static final int NUMBER_OF_ENTRIES = 100_000;
 
     @State(Scope.Thread)
-    public static class Data
-    {
+    public static class Data {
         private long[] values1;
         private long[] values2;
 
         @Setup
-        public void setup()
-        {
+        public void setup() {
             values1 = makeValues(NUMBER_OF_ENTRIES);
             values2 = makeValues(NUMBER_OF_ENTRIES);
         }
 
-        private long[] makeValues(int size)
-        {
+        private long[] makeValues(int size) {
             long[] values = new long[size];
             for (int i = 0; i < size; i++) {
                 // generate values from a large domain but not many distinct values
@@ -61,29 +56,27 @@ public class BenchmarkTDigest
     }
 
     @State(Scope.Benchmark)
-    public static class Digest
-    {
+    public static class Digest {
         private TDigest digest1;
         private TDigest digest2;
         private Slice serializedDigest;
+
         @Param("100")
         private int quantileCount;
+
         private double[] quantilesArray;
         private List<Double> quantilesList;
 
         @Setup
-        public void setup(Data data)
-        {
+        public void setup(Data data) {
             digest1 = makeDigest(data.values1);
             digest2 = makeDigest(data.values2);
             serializedDigest = digest1.serialize();
             quantilesArray = makeQuantiles(quantileCount);
-            quantilesList = Arrays.stream(quantilesArray).boxed()
-                    .collect(toImmutableList());
+            quantilesList = Arrays.stream(quantilesArray).boxed().collect(toImmutableList());
         }
 
-        private TDigest makeDigest(long[] values)
-        {
+        private TDigest makeDigest(long[] values) {
             TDigest result = new TDigest();
             for (long value : values) {
                 result.add(value);
@@ -91,8 +84,7 @@ public class BenchmarkTDigest
             return result;
         }
 
-        private static double[] makeQuantiles(int quantileCount)
-        {
+        private static double[] makeQuantiles(int quantileCount) {
             double[] quantiles = new double[quantileCount];
             double increment = quantileCount == 1 ? 0.5 : 1.0 / quantileCount;
             for (int i = 0; i < quantileCount; i++) {
@@ -104,8 +96,7 @@ public class BenchmarkTDigest
 
     @Benchmark
     @OperationsPerInvocation(NUMBER_OF_ENTRIES)
-    public TDigest benchmarkInserts(Data data)
-    {
+    public TDigest benchmarkInserts(Data data) {
         TDigest digest = new TDigest();
 
         for (long value : data.values1) {
@@ -116,34 +107,29 @@ public class BenchmarkTDigest
     }
 
     @Benchmark
-    public TDigest benchmarkCopy(Digest data)
-    {
+    public TDigest benchmarkCopy(Digest data) {
         return TDigest.copyOf(data.digest1);
     }
 
     @Benchmark
-    public TDigest benchmarkMerge(Digest data)
-    {
+    public TDigest benchmarkMerge(Digest data) {
         TDigest merged = TDigest.copyOf(data.digest1);
         merged.mergeWith(data.digest2);
         return merged;
     }
 
     @Benchmark
-    public TDigest benchmarkDeserialize(Digest data)
-    {
+    public TDigest benchmarkDeserialize(Digest data) {
         return TDigest.deserialize(data.serializedDigest);
     }
 
     @Benchmark
-    public Slice benchmarkSerialize(Digest data)
-    {
+    public Slice benchmarkSerialize(Digest data) {
         return data.digest1.serialize();
     }
 
     @Benchmark
-    public void benchmarkValueAt(Digest data, Blackhole blackhole)
-    {
+    public void benchmarkValueAt(Digest data, Blackhole blackhole) {
         blackhole.consume(data.digest1.valueAt(0.25));
         blackhole.consume(data.digest1.valueAt(0.5));
         blackhole.consume(data.digest1.valueAt(0.75));
@@ -153,20 +139,16 @@ public class BenchmarkTDigest
     }
 
     @Benchmark
-    public double[] benchmarkValuesAtArray(Digest data)
-    {
+    public double[] benchmarkValuesAtArray(Digest data) {
         return data.digest1.valuesAt(data.quantilesArray);
     }
 
     @Benchmark
-    public List<Double> benchmarkValuesAtList(Digest data)
-    {
+    public List<Double> benchmarkValuesAtList(Digest data) {
         return data.digest1.valuesAt(data.quantilesList);
     }
 
-    public static void main(String[] args)
-            throws RunnerException
-    {
+    public static void main(String[] args) throws RunnerException {
         Options options = new OptionsBuilder()
                 .verbosity(VerboseMode.NORMAL)
                 .include(".*\\." + BenchmarkTDigest.class.getSimpleName() + "\\..*")

@@ -1,5 +1,18 @@
 package io.airlift.log;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
+import static com.google.common.collect.Multisets.filter;
+import static com.google.common.util.concurrent.MoreExecutors.shutdownAndAwaitTermination;
+import static com.google.common.util.concurrent.Uninterruptibles.sleepUninterruptibly;
+import static io.airlift.concurrent.Threads.daemonThreadsNamed;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Objects.requireNonNull;
+import static java.util.logging.Level.INFO;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.common.base.Joiner;
 import com.google.common.base.Predicate;
 import com.google.common.base.Splitter;
@@ -10,8 +23,6 @@ import com.google.common.collect.Multiset;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.RateLimiter;
 import jakarta.annotation.Nullable;
-import org.junit.jupiter.api.Test;
-
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -32,26 +43,11 @@ import java.util.function.IntFunction;
 import java.util.logging.ErrorManager;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
+import org.junit.jupiter.api.Test;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.common.collect.ImmutableMap.toImmutableMap;
-import static com.google.common.collect.Multisets.filter;
-import static com.google.common.util.concurrent.MoreExecutors.shutdownAndAwaitTermination;
-import static com.google.common.util.concurrent.Uninterruptibles.sleepUninterruptibly;
-import static io.airlift.concurrent.Threads.daemonThreadsNamed;
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Objects.requireNonNull;
-import static java.util.logging.Level.INFO;
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class TestBufferedHandler
-{
+public class TestBufferedHandler {
     @Test
-    public void testIdleFlush()
-            throws Exception
-    {
+    public void testIdleFlush() throws Exception {
         TestingMessageOutput testingMessageOutput = new TestingMessageOutput();
         BufferedHandler bufferedHandler = new BufferedHandler(
                 testingMessageOutput,
@@ -75,8 +71,7 @@ public class TestBufferedHandler
     }
 
     @Test
-    public void testLoggingSequence()
-    {
+    public void testLoggingSequence() {
         int maxBufferSize = 100;
 
         TestingMessageOutput testingMessageOutput = new TestingMessageOutput();
@@ -108,8 +103,7 @@ public class TestBufferedHandler
     }
 
     @Test
-    public void testLoggingOverloadSingleThread()
-    {
+    public void testLoggingOverloadSingleThread() {
         TestingMessageOutput testingMessageOutput = new TestingMessageOutput();
         BufferedHandler bufferedHandler = new BufferedHandler(
                 testingMessageOutput,
@@ -132,14 +126,14 @@ public class TestBufferedHandler
                 .as("Test control check to make sure that it is dropping some messages")
                 .isGreaterThan(0);
 
-        int actualDropCount = assertLogStreamContents(testingMessageOutput.getFlushedMessages(), "TestLogger", 1000, String::valueOf);
+        int actualDropCount =
+                assertLogStreamContents(testingMessageOutput.getFlushedMessages(), "TestLogger", 1000, String::valueOf);
 
         assertThat(actualDropCount).isEqualTo(bufferedHandler.getDroppedMessages());
     }
 
     @Test
-    public void testLoggingOverloadMultiThread()
-    {
+    public void testLoggingOverloadMultiThread() {
         TestingMessageOutput testingMessageOutput = new TestingMessageOutput();
         BufferedHandler bufferedHandler = new BufferedHandler(
                 testingMessageOutput,
@@ -174,19 +168,18 @@ public class TestBufferedHandler
                 .as("Test control check to make sure that it is dropping some messages")
                 .isGreaterThan(0);
 
-        int actualDropCount = assertLogStreamContents(testingMessageOutput.getFlushedMessages(), "A-TestLogger", 1000, String::valueOf);
-        actualDropCount += assertLogStreamContents(testingMessageOutput.getFlushedMessages(), "B-TestLogger", 1000, String::valueOf);
+        int actualDropCount = assertLogStreamContents(
+                testingMessageOutput.getFlushedMessages(), "A-TestLogger", 1000, String::valueOf);
+        actualDropCount += assertLogStreamContents(
+                testingMessageOutput.getFlushedMessages(), "B-TestLogger", 1000, String::valueOf);
 
         assertThat(actualDropCount).isEqualTo(bufferedHandler.getDroppedMessages());
     }
 
     @Test
-    public void testMultiThreadErrorRetry()
-            throws InterruptedException, TimeoutException
-    {
-        TestingMessageOutput testingMessageOutput = new TestingMessageOutput()
-                .setThrowOnWrite(true)
-                .setThrowOnFlush(true);
+    public void testMultiThreadErrorRetry() throws InterruptedException, TimeoutException {
+        TestingMessageOutput testingMessageOutput =
+                new TestingMessageOutput().setThrowOnWrite(true).setThrowOnFlush(true);
         BufferedHandler bufferedHandler = new BufferedHandler(
                 testingMessageOutput,
                 testingFormatter(),
@@ -220,18 +213,17 @@ public class TestBufferedHandler
 
         bufferedHandler.close();
 
-        int actualDropCount = assertLogStreamContents(testingMessageOutput.getFlushedMessages(), "A-TestLogger", 1000, String::valueOf);
-        actualDropCount += assertLogStreamContents(testingMessageOutput.getFlushedMessages(), "B-TestLogger", 1000, String::valueOf);
+        int actualDropCount = assertLogStreamContents(
+                testingMessageOutput.getFlushedMessages(), "A-TestLogger", 1000, String::valueOf);
+        actualDropCount += assertLogStreamContents(
+                testingMessageOutput.getFlushedMessages(), "B-TestLogger", 1000, String::valueOf);
 
         assertThat(actualDropCount).isEqualTo(bufferedHandler.getDroppedMessages());
     }
 
     @Test
-    public void testCapacityErrorRetryDuringClose()
-            throws InterruptedException, TimeoutException, ExecutionException
-    {
-        TestingMessageOutput testingMessageOutput = new TestingMessageOutput()
-                .setThrowOnWrite(true);
+    public void testCapacityErrorRetryDuringClose() throws InterruptedException, TimeoutException, ExecutionException {
+        TestingMessageOutput testingMessageOutput = new TestingMessageOutput().setThrowOnWrite(true);
         BufferedHandler bufferedHandler = new BufferedHandler(
                 testingMessageOutput,
                 testingFormatter(),
@@ -242,7 +234,8 @@ public class TestBufferedHandler
                 10,
                 1);
 
-        // Publish 2 records before initializing the handler (capacity=1) to force the existence of a drop summary at start
+        // Publish 2 records before initializing the handler (capacity=1) to force the existence of a drop summary at
+        // start
         bufferedHandler.publish(logRecord(INFO, "A-TestLogger", "1"));
         bufferedHandler.publish(logRecord(INFO, "B-TestLogger", "1"));
 
@@ -265,11 +258,13 @@ public class TestBufferedHandler
         // Submit the close asynchronously
         Future<?> closeFuture = executor.submit(bufferedHandler::close);
 
-        // Wait for the buffered handler terminal message to be processed, and then for a subsequent write attempt, before allowing writes to proceed
+        // Wait for the buffered handler terminal message to be processed, and then for a subsequent write attempt,
+        // before allowing writes to proceed
         while (!bufferedHandler.isTerminalMessageDequeued()) {
             sleepUninterruptibly(20, TimeUnit.MILLISECONDS);
         }
-        // Wait for the next 2 write attempts to ensure there was at least one attempt with the terminal message signal established
+        // Wait for the next 2 write attempts to ensure there was at least one attempt with the terminal message signal
+        // established
         testingMessageOutput.getNextWriteAttemptLatch().await(5, TimeUnit.SECONDS);
         testingMessageOutput.getNextWriteAttemptLatch().await(5, TimeUnit.SECONDS);
         testingMessageOutput.setThrowOnWrite(false);
@@ -285,8 +280,7 @@ public class TestBufferedHandler
     }
 
     @Test
-    public void testIgnoreWriteAfterClose()
-    {
+    public void testIgnoreWriteAfterClose() {
         TestingMessageOutput testingMessageOutput = new TestingMessageOutput();
         BufferedHandler bufferedHandler = new BufferedHandler(
                 testingMessageOutput,
@@ -310,12 +304,12 @@ public class TestBufferedHandler
                 .as("Messages after close are ignored and not counted as dropped")
                 .isZero();
 
-        assertThat(testingMessageOutput.getFlushedMessages()).containsExactly(testingFormatter().format(record));
+        assertThat(testingMessageOutput.getFlushedMessages())
+                .containsExactly(testingFormatter().format(record));
     }
 
     @Test
-    public void testFullFlushSucceeds()
-    {
+    public void testFullFlushSucceeds() {
         TestingMessageOutput testingMessageOutput = new TestingMessageOutput();
         BufferedHandler bufferedHandler = new BufferedHandler(
                 testingMessageOutput,
@@ -338,8 +332,7 @@ public class TestBufferedHandler
     }
 
     @Test
-    public void testFullFlushAfterClose()
-    {
+    public void testFullFlushAfterClose() {
         TestingMessageOutput testingMessageOutput = new TestingMessageOutput();
         BufferedHandler bufferedHandler = new BufferedHandler(
                 testingMessageOutput,
@@ -357,9 +350,7 @@ public class TestBufferedHandler
     }
 
     @Test
-    public void testFullFlushOnEmptyQueue()
-            throws InterruptedException
-    {
+    public void testFullFlushOnEmptyQueue() throws InterruptedException {
         TestingMessageOutput testingMessageOutput = new TestingMessageOutput();
         BufferedHandler bufferedHandler = new BufferedHandler(
                 testingMessageOutput,
@@ -379,36 +370,34 @@ public class TestBufferedHandler
         bufferedHandler.close();
     }
 
-    private static Formatter testingFormatter()
-    {
-        return new Formatter()
-        {
+    private static Formatter testingFormatter() {
+        return new Formatter() {
             @Override
-            public String format(LogRecord record)
-            {
+            public String format(LogRecord record) {
                 return new LogEntry(record.getLoggerName(), record.getMessage()).serialize();
             }
         };
     }
 
-    private static LogRecord logRecord(java.util.logging.Level level, String loggerName, String message)
-    {
+    private static LogRecord logRecord(java.util.logging.Level level, String loggerName, String message) {
         LogRecord record = new LogRecord(level, message);
         record.setLoggerName(loggerName);
         return record;
     }
 
-    private static int assertLogStreamContents(List<String> actualMessages, String targetLoggerName, int expectedMessageCount, IntFunction<String> indexToExpectedMessage)
-    {
+    private static int assertLogStreamContents(
+            List<String> actualMessages,
+            String targetLoggerName,
+            int expectedMessageCount,
+            IntFunction<String> indexToExpectedMessage) {
         int actualDropCount = 0;
 
-        Iterator<EntryOrDropSummary> iterator = deserializeMessages(actualMessages, targetLoggerName::equals).iterator();
+        Iterator<EntryOrDropSummary> iterator =
+                deserializeMessages(actualMessages, targetLoggerName::equals).iterator();
         Multiset<String> currentDropSummary = HashMultiset.create();
         for (int i = 0; i < expectedMessageCount; i++) {
             if (currentDropSummary.isEmpty()) {
-                assertThat(iterator)
-                        .as("More entries expected in the result")
-                        .hasNext();
+                assertThat(iterator).as("More entries expected in the result").hasNext();
                 EntryOrDropSummary entryOrDropSummary = iterator.next();
                 if (entryOrDropSummary.entry() != null) {
                     assertThat(entryOrDropSummary.entry().message())
@@ -430,19 +419,16 @@ public class TestBufferedHandler
         return actualDropCount;
     }
 
-    private static <T> Map<T, Integer> toMap(Multiset<T> multiset)
-    {
+    private static <T> Map<T, Integer> toMap(Multiset<T> multiset) {
         return multiset.entrySet().stream()
                 .collect(toImmutableMap(Multiset.Entry::getElement, Multiset.Entry::getCount));
     }
 
-    private static String serializeMultiset(Multiset<String> multiset)
-    {
+    private static String serializeMultiset(Multiset<String> multiset) {
         return Joiner.on('\n').withKeyValueSeparator('=').join(toMap(multiset));
     }
 
-    private static Multiset<String> deserializeMultiset(String serializedMultimap)
-    {
+    private static Multiset<String> deserializeMultiset(String serializedMultimap) {
         Map<String, String> split = Splitter.on('\n').withKeyValueSeparator('=').split(serializedMultimap);
         ImmutableMultiset.Builder<String> builder = ImmutableMultiset.builder();
         for (Map.Entry<String, String> entry : split.entrySet()) {
@@ -451,62 +437,57 @@ public class TestBufferedHandler
         return builder.build();
     }
 
-    private static List<EntryOrDropSummary> deserializeMessages(List<String> messages, Predicate<String> loggerNameFilter)
-    {
+    private static List<EntryOrDropSummary> deserializeMessages(
+            List<String> messages, Predicate<String> loggerNameFilter) {
         return messages.stream()
                 .map(logEntryString -> {
                     LogEntry logEntry = LogEntry.deserialize(logEntryString);
                     return logEntry.loggerName().equals(BufferedHandler.class.getName())
-                            ? EntryOrDropSummary.forDropSummary(filter(deserializeMultiset(logEntry.message()), loggerNameFilter))
+                            ? EntryOrDropSummary.forDropSummary(
+                                    filter(deserializeMultiset(logEntry.message()), loggerNameFilter))
                             : EntryOrDropSummary.forEntry(logEntry);
                 })
-                .filter(entry -> entry.entry() != null || !entry.dropSummary().isEmpty()) // Filter out empty summaries (due to applied loggerNameFilter)
-                .filter(entry -> entry.dropSummary() != null || loggerNameFilter.apply(entry.entry().loggerName())) // Apply loggerNameFilter to LogEntries
+                .filter(entry -> entry.entry() != null
+                        || !entry.dropSummary()
+                                .isEmpty()) // Filter out empty summaries (due to applied loggerNameFilter)
+                .filter(entry -> entry.dropSummary() != null
+                        || loggerNameFilter.apply(entry.entry().loggerName())) // Apply loggerNameFilter to LogEntries
                 .collect(toImmutableList());
     }
 
-    private record LogEntry(String loggerName, String message)
-    {
-        private LogEntry
-        {
+    private record LogEntry(String loggerName, String message) {
+        private LogEntry {
             requireNonNull(loggerName, "loggerName is null");
             requireNonNull(message, "message is null");
         }
 
-        public String serialize()
-        {
+        public String serialize() {
             return Joiner.on(':').join(loggerName, message);
         }
 
-        public static LogEntry deserialize(String serialized)
-        {
+        public static LogEntry deserialize(String serialized) {
             List<String> splits = Splitter.on(':').splitToList(serialized);
             return new LogEntry(splits.get(0), splits.get(1));
         }
     }
 
-    private record EntryOrDropSummary(@Nullable LogEntry entry, @Nullable Multiset<String> dropSummary)
-    {
-        private EntryOrDropSummary
-        {
+    private record EntryOrDropSummary(
+            @Nullable LogEntry entry, @Nullable Multiset<String> dropSummary) {
+        private EntryOrDropSummary {
             checkArgument((entry == null) != (dropSummary == null), "Exactly one of the values must be non-null");
             dropSummary = dropSummary == null ? null : ImmutableMultiset.copyOf(dropSummary);
         }
 
-        public static EntryOrDropSummary forEntry(LogEntry entry)
-        {
+        public static EntryOrDropSummary forEntry(LogEntry entry) {
             return new EntryOrDropSummary(entry, null);
         }
 
-        public static EntryOrDropSummary forDropSummary(Multiset<String> dropSummary)
-        {
+        public static EntryOrDropSummary forDropSummary(Multiset<String> dropSummary) {
             return new EntryOrDropSummary(null, dropSummary);
         }
     }
 
-    private static class TestingMessageOutput
-            implements MessageOutput
-    {
+    private static class TestingMessageOutput implements MessageOutput {
         private final AtomicBoolean closed = new AtomicBoolean();
         private final Queue<String> writeMessages = new LinkedBlockingQueue<>();
         private final Queue<String> flushedMessages = new LinkedBlockingQueue<>();
@@ -516,56 +497,48 @@ public class TestBufferedHandler
         private final AtomicBoolean throwOnWrite = new AtomicBoolean();
         private final AtomicBoolean throwOnFlush = new AtomicBoolean();
 
-        public TestingMessageOutput setThrowOnWrite(boolean shouldThrow)
-        {
+        public TestingMessageOutput setThrowOnWrite(boolean shouldThrow) {
             throwOnWrite.set(shouldThrow);
             return this;
         }
 
-        public TestingMessageOutput setThrowOnFlush(boolean shouldThrow)
-        {
+        public TestingMessageOutput setThrowOnFlush(boolean shouldThrow) {
             throwOnFlush.set(shouldThrow);
             return this;
         }
 
-        public CountDownLatch getNextWriteAttemptLatch()
-        {
+        public CountDownLatch getNextWriteAttemptLatch() {
             CountDownLatch latch = new CountDownLatch(1);
             nextWriteAttemptLatches.add(latch);
             return latch;
         }
 
         public void awaitFirstWriteAttempt(long timeout, TimeUnit timeUnit)
-                throws InterruptedException, TimeoutException
-        {
+                throws InterruptedException, TimeoutException {
             if (!firstWriteAttemptLatch.await(timeout, timeUnit)) {
                 throw new TimeoutException();
             }
         }
 
         public void awaitFirstFlushAttempt(long timeout, TimeUnit timeUnit)
-                throws InterruptedException, TimeoutException
-        {
+                throws InterruptedException, TimeoutException {
             if (!firstFlushAttemptLatch.await(timeout, timeUnit)) {
                 throw new TimeoutException();
             }
         }
 
-        public List<String> getFlushedMessages()
-        {
+        public List<String> getFlushedMessages() {
             return ImmutableList.copyOf(flushedMessages);
         }
 
-        private static void signal(BlockingQueue<CountDownLatch> latches)
-        {
+        private static void signal(BlockingQueue<CountDownLatch> latches) {
             List<CountDownLatch> drained = new ArrayList<>();
             latches.drainTo(drained);
             drained.forEach(CountDownLatch::countDown);
         }
 
         @Override
-        public void writeMessage(byte[] message)
-        {
+        public void writeMessage(byte[] message) {
             try {
                 checkState(!closed.get(), "Already closed");
 
@@ -574,16 +547,14 @@ public class TestBufferedHandler
                 }
 
                 writeMessages.offer(new String(message, UTF_8));
-            }
-            finally {
+            } finally {
                 firstWriteAttemptLatch.countDown();
                 signal(nextWriteAttemptLatches);
             }
         }
 
         @Override
-        public void flush()
-        {
+        public void flush() {
             try {
                 checkState(!closed.get(), "Already closed");
 
@@ -592,23 +563,20 @@ public class TestBufferedHandler
                 }
 
                 flushInternal();
-            }
-            finally {
+            } finally {
                 firstFlushAttemptLatch.countDown();
             }
         }
 
         @Override
-        public void close()
-        {
+        public void close() {
             if (!closed.compareAndSet(false, true)) {
                 return;
             }
             flushInternal();
         }
 
-        private void flushInternal()
-        {
+        private void flushInternal() {
             String message;
             while ((message = writeMessages.poll()) != null) {
                 flushedMessages.add(message);

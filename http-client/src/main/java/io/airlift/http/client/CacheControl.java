@@ -20,7 +20,6 @@ package io.airlift.http.client;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -31,8 +30,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 // This code was forked from Apache CXF CacheControl and CacheControlHeaderProvider
-public class CacheControl
-{
+public class CacheControl {
     private static final String SEPARATOR = ",";
 
     private static final String COMPLEX_HEADER_EXPRESSION = "(([\\w-]+=\"[^\"]*\")|([\\w-]+=[\\w]+)|([\\w-]+))";
@@ -60,116 +58,94 @@ public class CacheControl
     private List<String> noCacheFields;
     private List<String> privateFields;
 
-    public CacheControl()
-    {
-    }
+    public CacheControl() {}
 
-    public Map<String, String> getCacheExtension()
-    {
+    public Map<String, String> getCacheExtension() {
         if (cacheExtensions == null) {
             cacheExtensions = new HashMap<>();
         }
         return cacheExtensions;
     }
 
-    public int getMaxAge()
-    {
+    public int getMaxAge() {
         return maxAge;
     }
 
-    public List<String> getNoCacheFields()
-    {
+    public List<String> getNoCacheFields() {
         if (noCacheFields == null) {
             noCacheFields = new ArrayList<>();
         }
         return noCacheFields;
     }
 
-    public List<String> getPrivateFields()
-    {
+    public List<String> getPrivateFields() {
         if (privateFields == null) {
             privateFields = new ArrayList<>();
         }
         return privateFields;
     }
 
-    public int getSMaxAge()
-    {
+    public int getSMaxAge() {
         return sMaxAge;
     }
 
-    public boolean isMustRevalidate()
-    {
+    public boolean isMustRevalidate() {
         return mustRevalidate;
     }
 
-    public boolean isNoCache()
-    {
+    public boolean isNoCache() {
         return noCache;
     }
 
-    public boolean isNoStore()
-    {
+    public boolean isNoStore() {
         return noStore;
     }
 
-    public boolean isNoTransform()
-    {
+    public boolean isNoTransform() {
         return noTransform;
     }
 
-    public boolean isPrivate()
-    {
+    public boolean isPrivate() {
         return isPrivate;
     }
 
-    public boolean isProxyRevalidate()
-    {
+    public boolean isProxyRevalidate() {
         return proxyRevalidate;
     }
 
-    public void setMaxAge(int maxAge)
-    {
+    public void setMaxAge(int maxAge) {
         this.maxAge = maxAge;
     }
 
-    public void setMustRevalidate(boolean mustRevalidate)
-    {
+    public void setMustRevalidate(boolean mustRevalidate) {
         this.mustRevalidate = mustRevalidate;
     }
 
-    public void setNoCache(boolean noCache)
-    {
+    public void setNoCache(boolean noCache) {
         this.noCache = noCache;
     }
 
-    public void setNoStore(boolean noStore)
-    {
+    public void setNoStore(boolean noStore) {
         this.noStore = noStore;
     }
 
-    public void setNoTransform(boolean noTransform)
-    {
+    public void setNoTransform(boolean noTransform) {
         this.noTransform = noTransform;
     }
 
-    public void setPrivate(boolean isPrivate)
-    {
+    public void setPrivate(boolean isPrivate) {
         this.isPrivate = isPrivate;
     }
 
-    public void setProxyRevalidate(boolean proxyRevalidate)
-    {
+    public void setProxyRevalidate(boolean proxyRevalidate) {
         this.proxyRevalidate = proxyRevalidate;
     }
 
-    public void setSMaxAge(int sMaxAge)
-    {
+    public void setSMaxAge(int sMaxAge) {
         this.sMaxAge = sMaxAge;
     }
 
-    public static CacheControl valueOf(String string)
-    {
+    public static CacheControl valueOf(String string) {
         CacheControl cacheControl = new CacheControl();
 
         // for some reason the default in cache control is true
@@ -180,39 +156,30 @@ public class CacheControl
             String token = rawToken.trim();
             if (token.startsWith(MAX_AGE)) {
                 cacheControl.setMaxAge(Integer.parseInt(token.substring(MAX_AGE.length() + 1)));
-            }
-            else if (token.startsWith(SMAX_AGE)) {
+            } else if (token.startsWith(SMAX_AGE)) {
                 cacheControl.setSMaxAge(Integer.parseInt(token.substring(SMAX_AGE.length() + 1)));
-            }
-            else if (token.startsWith(PUBLIC)) {
+            } else if (token.startsWith(PUBLIC)) {
                 // ignore
-            }
-            else if (token.startsWith(NO_STORE)) {
+            } else if (token.startsWith(NO_STORE)) {
                 cacheControl.setNoStore(true);
-            }
-            else if (token.startsWith(NO_TRANSFORM)) {
+            } else if (token.startsWith(NO_TRANSFORM)) {
                 cacheControl.setNoTransform(true);
-            }
-            else if (token.startsWith(MUST_REVALIDATE)) {
+            } else if (token.startsWith(MUST_REVALIDATE)) {
                 cacheControl.setMustRevalidate(true);
-            }
-            else if (token.startsWith(PROXY_REVALIDATE)) {
+            } else if (token.startsWith(PROXY_REVALIDATE)) {
                 cacheControl.setProxyRevalidate(true);
-            }
-            else if (token.startsWith(PRIVATE)) {
+            } else if (token.startsWith(PRIVATE)) {
                 cacheControl.setPrivate(true);
                 addFields(cacheControl.getPrivateFields(), token);
-            }
-            else if (token.startsWith(NO_CACHE)) {
+            } else if (token.startsWith(NO_CACHE)) {
                 cacheControl.setNoCache(true);
                 addFields(cacheControl.getNoCacheFields(), token);
-            }
-            else {
-                List<String> pair = ImmutableList.copyOf(Splitter.on("=").limit(2).split(token));
+            } else {
+                List<String> pair =
+                        ImmutableList.copyOf(Splitter.on("=").limit(2).split(token));
                 if (pair.size() == 2) {
                     cacheControl.getCacheExtension().put(pair.get(0), pair.get(1));
-                }
-                else {
+                } else {
                     cacheControl.getCacheExtension().put(pair.get(0), "");
                 }
             }
@@ -221,8 +188,7 @@ public class CacheControl
         return cacheControl;
     }
 
-    public String toString()
-    {
+    public String toString() {
         StringBuilder buffer = new StringBuilder();
         if (isPrivate()) {
             buffer.append(PRIVATE);
@@ -261,8 +227,7 @@ public class CacheControl
                 buffer.append("=");
                 if (value.indexOf(' ') != -1) {
                     buffer.append('\"').append(value).append('\"');
-                }
-                else {
+                } else {
                     buffer.append(value);
                 }
             }
@@ -276,8 +241,7 @@ public class CacheControl
         return string;
     }
 
-    private static void handleFields(List<String> fields, StringBuilder buffer)
-    {
+    private static void handleFields(List<String> fields, StringBuilder buffer) {
         if (fields.isEmpty()) {
             return;
         }
@@ -292,8 +256,7 @@ public class CacheControl
         buffer.append('\"');
     }
 
-    private static List<String> getTokens(String string)
-    {
+    private static List<String> getTokens(String string) {
         if (string.contains("\"")) {
             List<String> values = new ArrayList<>(4);
             Matcher m = COMPLEX_HEADER_PATTERN.matcher(string);
@@ -304,14 +267,12 @@ public class CacheControl
                 }
             }
             return ImmutableList.copyOf(values);
-        }
-        else {
+        } else {
             return ImmutableList.copyOf(Splitter.on(SEPARATOR).split(string));
         }
     }
 
-    private static void addFields(List<String> fields, String token)
-    {
+    private static void addFields(List<String> fields, String token) {
         int i = token.indexOf('=');
         if (i != -1) {
             String f = i == token.length() + 1 ? "" : token.substring(i + 1);
@@ -328,9 +289,9 @@ public class CacheControl
     }
 
     @Override
-    public int hashCode()
-    {
-        return Objects.hash(maxAge,
+    public int hashCode() {
+        return Objects.hash(
+                maxAge,
                 sMaxAge,
                 isPrivate,
                 noCache,
@@ -344,8 +305,7 @@ public class CacheControl
     }
 
     @Override
-    public boolean equals(Object obj)
-    {
+    public boolean equals(Object obj) {
         if (this == obj) {
             return true;
         }
@@ -354,16 +314,16 @@ public class CacheControl
         }
 
         CacheControl other = (CacheControl) obj;
-        return Objects.equals(this.maxAge, other.maxAge) &&
-                Objects.equals(this.sMaxAge, other.sMaxAge) &&
-                Objects.equals(this.isPrivate, other.isPrivate) &&
-                Objects.equals(this.noCache, other.noCache) &&
-                Objects.equals(this.noStore, other.noStore) &&
-                Objects.equals(this.noTransform, other.noTransform) &&
-                Objects.equals(this.mustRevalidate, other.mustRevalidate) &&
-                Objects.equals(this.proxyRevalidate, other.proxyRevalidate) &&
-                Objects.equals(this.cacheExtensions, other.cacheExtensions) &&
-                Objects.equals(this.noCacheFields, other.noCacheFields) &&
-                Objects.equals(this.privateFields, other.privateFields);
+        return Objects.equals(this.maxAge, other.maxAge)
+                && Objects.equals(this.sMaxAge, other.sMaxAge)
+                && Objects.equals(this.isPrivate, other.isPrivate)
+                && Objects.equals(this.noCache, other.noCache)
+                && Objects.equals(this.noStore, other.noStore)
+                && Objects.equals(this.noTransform, other.noTransform)
+                && Objects.equals(this.mustRevalidate, other.mustRevalidate)
+                && Objects.equals(this.proxyRevalidate, other.proxyRevalidate)
+                && Objects.equals(this.cacheExtensions, other.cacheExtensions)
+                && Objects.equals(this.noCacheFields, other.noCacheFields)
+                && Objects.equals(this.privateFields, other.privateFields);
     }
 }

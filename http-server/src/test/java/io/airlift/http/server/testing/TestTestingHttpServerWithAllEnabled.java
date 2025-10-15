@@ -1,10 +1,7 @@
 package io.airlift.http.server.testing;
 
-public class TestTestingHttpServerWithAllEnabled
-        extends AbstractTestTestingHttpServer
-{
-    TestTestingHttpServerWithAllEnabled()
-    {
+public class TestTestingHttpServerWithAllEnabled extends AbstractTestTestingHttpServer {
+    TestTestingHttpServerWithAllEnabled() {
         super(true, true, true);
     }
 }

@@ -1,20 +1,17 @@
 package io.airlift.configuration;
 
-import com.google.common.collect.ImmutableMap;
-import org.junit.jupiter.api.Test;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import static io.airlift.configuration.ConfigurationUtils.replaceEnvironmentVariables;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TestConfigurationUtils
-{
+import com.google.common.collect.ImmutableMap;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+
+public class TestConfigurationUtils {
     @Test
-    public void testEnvironmentVariableReplacement()
-    {
+    public void testEnvironmentVariableReplacement() {
         Map<String, String> original = ImmutableMap.<String, String>builder()
                 .put("apple", "apple-value")
                 .put("grape", "${ENV:GRAPE}")
@@ -44,7 +41,8 @@ public class TestConfigurationUtils
                 .build();
 
         List<String> errors = new ArrayList<>();
-        Map<String, String> actual = replaceEnvironmentVariables(original, environment, (key, error) -> errors.add(error));
+        Map<String, String> actual =
+                replaceEnvironmentVariables(original, environment, (key, error) -> errors.add(error));
 
         Map<String, String> expected = ImmutableMap.<String, String>builder()
                 .put("apple", "apple-value")
@@ -60,9 +58,10 @@ public class TestConfigurationUtils
 
         assertThat(actual).isEqualTo(expected);
 
-        assertThat(errors).containsExactly(
-                "Configuration property 'peach' references unset environment variable 'PEACH'",
-                "Configuration property 'pear' references unset environment variable 'X_PEAR'",
-                "Configuration property 'blueberry' references unset environment variable 'BLUE'");
+        assertThat(errors)
+                .containsExactly(
+                        "Configuration property 'peach' references unset environment variable 'PEACH'",
+                        "Configuration property 'pear' references unset environment variable 'X_PEAR'",
+                        "Configuration property 'blueberry' references unset environment variable 'BLUE'");
     }
 }

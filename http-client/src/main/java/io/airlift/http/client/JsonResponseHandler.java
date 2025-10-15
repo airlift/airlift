@@ -15,59 +15,57 @@
  */
 package io.airlift.http.client;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.net.MediaType;
-import com.google.common.primitives.Ints;
-import io.airlift.json.JsonCodec;
-
-import java.util.Set;
-
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
 import static io.airlift.http.client.ResponseHandlerUtils.readResponseBytes;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-public class JsonResponseHandler<T>
-        implements ResponseHandler<T, RuntimeException>
-{
+import com.google.common.collect.ImmutableSet;
+import com.google.common.net.MediaType;
+import com.google.common.primitives.Ints;
+import io.airlift.json.JsonCodec;
+import java.util.Set;
+
+public class JsonResponseHandler<T> implements ResponseHandler<T, RuntimeException> {
     private static final MediaType MEDIA_TYPE_JSON = MediaType.create("application", "json");
 
-    public static <T> JsonResponseHandler<T> createJsonResponseHandler(JsonCodec<T> jsonCodec)
-    {
+    public static <T> JsonResponseHandler<T> createJsonResponseHandler(JsonCodec<T> jsonCodec) {
         return new JsonResponseHandler<>(jsonCodec);
     }
 
-    public static <T> JsonResponseHandler<T> createJsonResponseHandler(JsonCodec<T> jsonCodec, int firstSuccessfulResponseCode, int... otherSuccessfulResponseCodes)
-    {
+    public static <T> JsonResponseHandler<T> createJsonResponseHandler(
+            JsonCodec<T> jsonCodec, int firstSuccessfulResponseCode, int... otherSuccessfulResponseCodes) {
         return new JsonResponseHandler<>(jsonCodec, firstSuccessfulResponseCode, otherSuccessfulResponseCodes);
     }
 
     private final JsonCodec<T> jsonCodec;
     private final Set<Integer> successfulResponseCodes;
 
-    private JsonResponseHandler(JsonCodec<T> jsonCodec)
-    {
+    private JsonResponseHandler(JsonCodec<T> jsonCodec) {
         this(jsonCodec, 200, 201, 202, 203, 204, 205, 206);
     }
 
-    private JsonResponseHandler(JsonCodec<T> jsonCodec, int firstSuccessfulResponseCode, int... otherSuccessfulResponseCodes)
-    {
+    private JsonResponseHandler(
+            JsonCodec<T> jsonCodec, int firstSuccessfulResponseCode, int... otherSuccessfulResponseCodes) {
         this.jsonCodec = jsonCodec;
-        this.successfulResponseCodes = ImmutableSet.<Integer>builder().add(firstSuccessfulResponseCode).addAll(Ints.asList(otherSuccessfulResponseCodes)).build();
+        this.successfulResponseCodes = ImmutableSet.<Integer>builder()
+                .add(firstSuccessfulResponseCode)
+                .addAll(Ints.asList(otherSuccessfulResponseCodes))
+                .build();
     }
 
     @Override
-    public T handleException(Request request, Exception exception)
-    {
+    public T handleException(Request request, Exception exception) {
         throw propagate(request, exception);
     }
 
     @Override
-    public T handle(Request request, Response response)
-    {
+    public T handle(Request request, Response response) {
         if (!successfulResponseCodes.contains(response.getStatusCode())) {
             throw new UnexpectedResponseException(
-                    String.format("Expected response code to be %s, but was %d", successfulResponseCodes, response.getStatusCode()),
+                    String.format(
+                            "Expected response code to be %s, but was %d",
+                            successfulResponseCodes, response.getStatusCode()),
                     request,
                     response);
         }
@@ -77,17 +75,18 @@ public class JsonResponseHandler<T>
             throw new UnexpectedResponseException("Content-Type is not set for response", request, response);
         }
         if (!MediaType.parse(contentType).is(MEDIA_TYPE_JSON)) {
-            throw new UnexpectedResponseException("Expected application/json response from server but got " + contentType, request, response);
+            throw new UnexpectedResponseException(
+                    "Expected application/json response from server but got " + contentType, request, response);
         }
 
         byte[] bytes = readResponseBytes(request, response);
 
         try {
             return jsonCodec.fromJson(bytes);
-        }
-        catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             String json = new String(bytes, UTF_8);
-            throw new IllegalArgumentException(String.format("Unable to create %s from JSON response: <%s>", jsonCodec.getType(), json), e);
+            throw new IllegalArgumentException(
+                    String.format("Unable to create %s from JSON response: <%s>", jsonCodec.getType(), json), e);
         }
     }
 }

@@ -1,20 +1,17 @@
 package io.airlift.stats;
 
-import io.airlift.testing.TestingTicker;
-import org.assertj.core.data.Offset;
-import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.TimeUnit;
-
 import static io.airlift.stats.DecayTDigest.RESCALE_THRESHOLD_SECONDS;
 import static io.airlift.stats.DecayTDigest.ZERO_WEIGHT_THRESHOLD;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TestDecayTDigest
-{
+import io.airlift.testing.TestingTicker;
+import java.util.concurrent.TimeUnit;
+import org.assertj.core.data.Offset;
+import org.junit.jupiter.api.Test;
+
+public class TestDecayTDigest {
     @Test
-    public void testRescaleMinMax()
-    {
+    public void testRescaleMinMax() {
         TestingTicker ticker = new TestingTicker();
         DecayTDigest digest = new DecayTDigest(100, 0.001, ticker);
 
@@ -31,8 +28,7 @@ public class TestDecayTDigest
     }
 
     @Test
-    public void testDecayBelowThreshold()
-    {
+    public void testDecayBelowThreshold() {
         TestingTicker ticker = new TestingTicker();
 
         double decayFactor = 0.1;
@@ -47,8 +43,7 @@ public class TestDecayTDigest
     }
 
     @Test
-    public void testDecayBeyondRescaleThreshold()
-    {
+    public void testDecayBeyondRescaleThreshold() {
         TestingTicker ticker = new TestingTicker();
 
         double decayFactor = 0.1;
@@ -60,12 +55,10 @@ public class TestDecayTDigest
         // advancing the time by this amount will trigger a rescale
         ticker.increment(RESCALE_THRESHOLD_SECONDS, TimeUnit.SECONDS);
 
-        assertThat(digest.getCount())
-                .isCloseTo(1.0, Offset.offset(ZERO_WEIGHT_THRESHOLD));
+        assertThat(digest.getCount()).isCloseTo(1.0, Offset.offset(ZERO_WEIGHT_THRESHOLD));
 
         digest.add(2);
 
-        assertThat(digest.getCount())
-                .isCloseTo(2.0, Offset.offset(ZERO_WEIGHT_THRESHOLD));
+        assertThat(digest.getCount()).isCloseTo(2.0, Offset.offset(ZERO_WEIGHT_THRESHOLD));
     }
 }

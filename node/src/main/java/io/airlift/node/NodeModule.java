@@ -15,19 +15,16 @@
  */
 package io.airlift.node;
 
+import static io.airlift.configuration.ConfigBinder.configBinder;
+import static org.weakref.jmx.guice.ExportBinder.newExporter;
+
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 
-import static io.airlift.configuration.ConfigBinder.configBinder;
-import static org.weakref.jmx.guice.ExportBinder.newExporter;
-
-public class NodeModule
-        implements Module
-{
+public class NodeModule implements Module {
     @Override
-    public void configure(Binder binder)
-    {
+    public void configure(Binder binder) {
         binder.disableCircularProxies();
 
         binder.bind(NodeInfo.class).in(Scopes.SINGLETON);

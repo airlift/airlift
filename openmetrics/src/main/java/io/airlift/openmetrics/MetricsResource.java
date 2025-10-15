@@ -13,6 +13,8 @@
  */
 package io.airlift.openmetrics;
 
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.CharMatcher;
 import com.google.common.collect.ImmutableList;
@@ -30,9 +32,12 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
-import org.weakref.jmx.MBeanExporter;
-import org.weakref.jmx.ManagedClass;
-
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import javax.management.InstanceNotFoundException;
 import javax.management.IntrospectionException;
 import javax.management.JMException;
@@ -43,27 +48,18 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.management.ReflectionException;
 import javax.management.openmbean.CompositeData;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.regex.Pattern;
-import java.util.stream.Stream;
-
-import static java.util.Objects.requireNonNull;
+import org.weakref.jmx.MBeanExporter;
+import org.weakref.jmx.ManagedClass;
 
 @Path("/metrics")
-public class MetricsResource
-{
+public class MetricsResource {
     private static final Logger log = Logger.get(MetricsResource.class);
     private static final String OPENMETRICS_CONTENT_TYPE = "application/openmetrics-text; version=1.0.0; charset=utf-8";
     private static final String ATTRIBUTE_SEPARATOR = "_ATTRIBUTE_";
     private static final String TYPE_SEPARATOR = "_TYPE_";
     private static final String NAME_SEPARATOR = "_NAME_";
     private static final Pattern METRIC_NAME_PATTERN = Pattern.compile("[[a-zA-Z]][\\w_]*");
-    private static final CharMatcher NON_ALLOWED_LABEL_CHARACTERS = CharMatcher
-            .inRange('a', 'z')
+    private static final CharMatcher NON_ALLOWED_LABEL_CHARACTERS = CharMatcher.inRange('a', 'z')
             .or(CharMatcher.inRange('A', 'Z'))
             .or(CharMatcher.inRange('0', '9'))
             .or(CharMatcher.anyOf("_"))
@@ -77,8 +73,8 @@ public class MetricsResource
     private final Map<String, String> labels;
 
     @Inject
-    public MetricsResource(MBeanServer mbeanServer, MBeanExporter mbeanExporter, MetricsConfig metricsConfig, NodeInfo nodeInfo)
-    {
+    public MetricsResource(
+            MBeanServer mbeanServer, MBeanExporter mbeanExporter, MetricsConfig metricsConfig, NodeInfo nodeInfo) {
         this.mbeanServer = requireNonNull(mbeanServer, "mbeanServer is null");
         this.mbeanExporter = requireNonNull(mbeanExporter, "mbeanExporter is null");
         this.allMetricsObjectNames = metricsConfig.getJmxObjectNames();
@@ -87,15 +83,13 @@ public class MetricsResource
 
     @GET
     @Produces(OPENMETRICS_CONTENT_TYPE)
-    public String getMetrics(@QueryParam("name[]") List<String> filter)
-    {
+    public String getMetrics(@QueryParam("name[]") List<String> filter) {
         StringBuilder body = new StringBuilder();
         if (filter != null && !filter.isEmpty()) {
             for (String metricName : filter) {
                 toMetricExposition(metricName).ifPresent(body::append);
             }
-        }
-        else {
+        } else {
             body.append(managedMetricExpositions());
             for (ObjectName metricObjectNames : allMetricsObjectNames) {
                 body.append(jmxMetricExpositions(metricObjectNames));
@@ -105,9 +99,7 @@ public class MetricsResource
         return body.toString();
     }
 
-    private Set<ObjectName> objectNamesFromMetricName(String metricName)
-            throws MalformedObjectNameException
-    {
+    private Set<ObjectName> objectNamesFromMetricName(String metricName) throws MalformedObjectNameException {
         int nameStart = metricName.indexOf(NAME_SEPARATOR);
         int typeStart = metricName.indexOf(TYPE_SEPARATOR);
         int attributeStart = metricName.indexOf(ATTRIBUTE_SEPARATOR);
@@ -116,61 +108,65 @@ public class MetricsResource
 
         if (nameStart != -1) {
             domain = metricName.substring(0, nameStart).replace("_", ".");
-        }
-        else if (typeStart != -1) {
+        } else if (typeStart != -1) {
             domain = metricName.substring(0, typeStart).replace("_", ".");
-        }
-        else {
+        } else {
             domain = metricName.substring(0, attributeStart).replace("_", ".");
         }
 
         StringBuilder objectNameBuilder = new StringBuilder(domain).append(":");
 
         if (nameStart != -1) {
-            objectNameBuilder.append("name=")
-                    .append(metricName, nameStart + NAME_SEPARATOR.length(), typeStart == -1 ? attributeStart : typeStart)
+            objectNameBuilder
+                    .append("name=")
+                    .append(
+                            metricName,
+                            nameStart + NAME_SEPARATOR.length(),
+                            typeStart == -1 ? attributeStart : typeStart)
                     .append(",");
         }
         if (typeStart != -1) {
-            objectNameBuilder.append("type=")
-                    .append(metricName.substring(typeStart + TYPE_SEPARATOR.length(), attributeStart).replace("_", "$"))
+            objectNameBuilder
+                    .append("type=")
+                    .append(metricName
+                            .substring(typeStart + TYPE_SEPARATOR.length(), attributeStart)
+                            .replace("_", "$"))
                     .append(",");
         }
 
-        return mbeanServer.queryNames(ObjectName.getInstance(objectNameBuilder.append("*").toString()), null);
+        return mbeanServer.queryNames(
+                ObjectName.getInstance(objectNameBuilder.append("*").toString()), null);
     }
 
-    private String attributeNameFromMetricName(String metricName)
-    {
+    private String attributeNameFromMetricName(String metricName) {
         int attributeNameStart = metricName.indexOf(ATTRIBUTE_SEPARATOR);
         if (attributeNameStart == -1) {
             throw new RuntimeException("Metric name invalid, no attribute separator %s".formatted(metricName));
         }
-        return metricName.substring(attributeNameStart + ATTRIBUTE_SEPARATOR.length()).replace("_", ".");
+        return metricName
+                .substring(attributeNameStart + ATTRIBUTE_SEPARATOR.length())
+                .replace("_", ".");
     }
 
-    private String mBeanNameToMetricName(ObjectName objectName, String attributeName)
-    {
+    private String mBeanNameToMetricName(ObjectName objectName, String attributeName) {
         if (objectName.getDomain().contains("_")) {
-            log.warn("Unable to expose JMX metric with domain name %s, package names with underscores are unsupported.", objectName.getDomain());
+            log.warn(
+                    "Unable to expose JMX metric with domain name %s, package names with underscores are unsupported.",
+                    objectName.getDomain());
             throw new RuntimeException("Bad domain name %s".formatted(objectName.getDomain()));
         }
 
-        StringBuilder metricNameBuilder = new StringBuilder("JMX_")
-                .append(objectName.getDomain());
+        StringBuilder metricNameBuilder = new StringBuilder("JMX_").append(objectName.getDomain());
 
         if (objectName.getKeyProperty("name") != null) {
-            metricNameBuilder.append(NAME_SEPARATOR)
-                    .append(objectName.getKeyProperty("name"));
+            metricNameBuilder.append(NAME_SEPARATOR).append(objectName.getKeyProperty("name"));
         }
 
         if (objectName.getKeyProperty("type") != null) {
-            metricNameBuilder.append(TYPE_SEPARATOR)
-                    .append(objectName.getKeyProperty("type"));
+            metricNameBuilder.append(TYPE_SEPARATOR).append(objectName.getKeyProperty("type"));
         }
 
-        metricNameBuilder.append(ATTRIBUTE_SEPARATOR)
-                .append(attributeName);
+        metricNameBuilder.append(ATTRIBUTE_SEPARATOR).append(attributeName);
 
         String metricName = sanitizeMetricName(metricNameBuilder.toString());
 
@@ -180,8 +176,7 @@ public class MetricsResource
         return metricName;
     }
 
-    private Optional<String> toMetricExposition(String metricName)
-    {
+    private Optional<String> toMetricExposition(String metricName) {
         if (metricName.startsWith("JMX_")) {
             final String jmxMetricName = metricName.substring(4);
             try {
@@ -191,13 +186,11 @@ public class MetricsResource
                         .flatMap(Optional::stream)
                         .map(Metric::getMetricExposition)
                         .findFirst();
-            }
-            catch (MalformedObjectNameException e) {
+            } catch (MalformedObjectNameException e) {
                 log.warn(e, "Unable to retrieve metric %s.", metricName);
                 return Optional.empty();
             }
-        }
-        else {
+        } else {
             Stream<Metric> metricStream = getManagedMetricsStream();
             return metricStream
                     .filter(metric -> metric.metricName().equals(metricName))
@@ -206,24 +199,27 @@ public class MetricsResource
         }
     }
 
-    private Optional<Metric> getMetric(ObjectName objectName, String attributeName, String metricName, String description)
-    {
+    private Optional<Metric> getMetric(
+            ObjectName objectName, String attributeName, String metricName, String description) {
         try {
             Object attributeValue = mbeanServer.getAttribute(objectName, attributeName);
             return switch (attributeValue) {
                 case Number number -> Optional.of(Gauge.from(metricName, number, labels, description));
-                case CompositeData compositeData -> Optional.of(CompositeMetric.from(metricName, compositeData, labels, description));
+                case CompositeData compositeData ->
+                    Optional.of(CompositeMetric.from(metricName, compositeData, labels, description));
                 case null, default -> Optional.empty();
             };
-        }
-        catch (JMException ex) {
-            log.debug(ex, "Unable to get metric for ObjectName %s and Attribute %s.", objectName.getCanonicalName(), attributeName);
+        } catch (JMException ex) {
+            log.debug(
+                    ex,
+                    "Unable to get metric for ObjectName %s and Attribute %s.",
+                    objectName.getCanonicalName(),
+                    attributeName);
             return Optional.empty();
         }
     }
 
-    private String inferAttributesForObjectName(ObjectName objectName)
-    {
+    private String inferAttributesForObjectName(ObjectName objectName) {
         StringBuilder expositions = new StringBuilder();
         try {
             MBeanInfo mbeanInfo = mbeanServer.getMBeanInfo(objectName);
@@ -233,58 +229,59 @@ public class MetricsResource
                 try {
                     getMetric(objectName, attributeName, mBeanNameToMetricName(objectName, attributeName), description)
                             .ifPresent(value -> expositions.append(value.getMetricExposition()));
-                }
-                catch (RuntimeException e) {
-                    log.debug(e, "Unable to get Metric for ObjectName %s and Attribute %s, skipping", objectName.getCanonicalName(), attributeName);
+                } catch (RuntimeException e) {
+                    log.debug(
+                            e,
+                            "Unable to get Metric for ObjectName %s and Attribute %s, skipping",
+                            objectName.getCanonicalName(),
+                            attributeName);
                 }
             }
-        }
-        catch (InstanceNotFoundException | IntrospectionException | ReflectionException e) {
+        } catch (InstanceNotFoundException | IntrospectionException | ReflectionException e) {
             log.debug(e, "Unable to get MBeanInfo for object %s, skipping", objectName.getCanonicalName());
         }
         return expositions.toString();
     }
 
     @VisibleForTesting
-    static String sanitizeMetricName(String name)
-    {
+    static String sanitizeMetricName(String name) {
         return NON_ALLOWED_LABEL_CHARACTERS.collapseFrom(name, '_');
     }
 
-    private List<Metric> getMetricsRecursively(String prefix, ManagedClass managedClass)
-    {
+    private List<Metric> getMetricsRecursively(String prefix, ManagedClass managedClass) {
         String metricName = sanitizeMetricName(prefix);
 
         ImmutableList.Builder<Metric> metrics = ImmutableList.builder();
 
         for (String attributeName : managedClass.getAttributeNames()) {
             try {
-                String metricAndAttribute = managedClass.isAttributeFlatten(attributeName) ? metricName : metricName + "_" + attributeName;
+                String metricAndAttribute =
+                        managedClass.isAttributeFlatten(attributeName) ? metricName : metricName + "_" + attributeName;
                 String attributeDescription = managedClass.getAttributeDescription(attributeName);
 
                 if (managedClass.getChildren().get(attributeName) instanceof ManagedClass child) {
                     // The managed class is directly translatable to an openmetrics type, don't recurse any further
-                    Optional<Metric> metricFromTarget = getMetricFromTarget(child, metricAndAttribute, attributeDescription);
+                    Optional<Metric> metricFromTarget =
+                            getMetricFromTarget(child, metricAndAttribute, attributeDescription);
                     if (metricFromTarget.isPresent()) {
                         metrics.add(metricFromTarget.get());
-                    }
-                    else {
+                    } else {
                         // Recurse this nested child
                         metrics.addAll(getMetricsRecursively(metricAndAttribute, child));
                     }
-                }
-                else {
+                } else {
                     // Attempt to infer a numeric gauge
                     Object attributeValue = managedClass.invokeAttribute(attributeName);
                     if (attributeValue instanceof Number) {
-                        metrics.add(Gauge.from(metricAndAttribute, (Number) attributeValue, labels, attributeDescription));
+                        metrics.add(
+                                Gauge.from(metricAndAttribute, (Number) attributeValue, labels, attributeDescription));
                     }
                     if (attributeValue instanceof Boolean) {
-                        metrics.add(Gauge.from(metricAndAttribute, (Boolean) attributeValue ? 1 : 0, labels, attributeDescription));
+                        metrics.add(Gauge.from(
+                                metricAndAttribute, (Boolean) attributeValue ? 1 : 0, labels, attributeDescription));
                     }
                 }
-            }
-            catch (ReflectiveOperationException e) {
+            } catch (ReflectiveOperationException e) {
                 log.debug("Unable to invoke getter for managed attribute : " + attributeName);
             }
         }
@@ -292,13 +289,11 @@ public class MetricsResource
         return metrics.build();
     }
 
-    private Optional<Metric> getMetricFromTarget(ManagedClass managedClass, String metricName, String description)
-    {
+    private Optional<Metric> getMetricFromTarget(ManagedClass managedClass, String metricName, String description) {
         Object target;
         try {
             target = managedClass.getTarget();
-        }
-        catch (IllegalStateException ignored) {
+        } catch (IllegalStateException ignored) {
             return Optional.empty();
         }
 
@@ -313,17 +308,17 @@ public class MetricsResource
         return Optional.empty();
     }
 
-    private String jmxMetricExpositions(ObjectName initialObjectName)
-    {
+    private String jmxMetricExpositions(ObjectName initialObjectName) {
         StringBuilder stringBuilder = new StringBuilder();
 
-        mbeanServer.queryNames(initialObjectName, null).forEach(objectName -> stringBuilder.append(inferAttributesForObjectName(objectName)));
+        mbeanServer
+                .queryNames(initialObjectName, null)
+                .forEach(objectName -> stringBuilder.append(inferAttributesForObjectName(objectName)));
 
         return stringBuilder.toString();
     }
 
-    private Stream<Metric> getManagedMetricsStream()
-    {
+    private Stream<Metric> getManagedMetricsStream() {
         Map<String, ManagedClass> managedClasses = this.mbeanExporter.getManagedClasses();
 
         return managedClasses.keySet().stream()
@@ -331,8 +326,7 @@ public class MetricsResource
                 .flatMap(List::stream);
     }
 
-    private String managedMetricExpositions()
-    {
+    private String managedMetricExpositions() {
         StringBuilder builder = new StringBuilder();
 
         getManagedMetricsStream().forEach(metric -> builder.append(metric.getMetricExposition()));

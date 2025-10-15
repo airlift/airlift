@@ -13,40 +13,34 @@
  */
 package io.airlift.configuration.secrets;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.configuration.TomlConfiguration;
 import io.airlift.spi.secrets.SecretProvider;
 import io.airlift.spi.secrets.SecretProviderFactory;
-import org.junit.jupiter.api.Test;
-import org.tomlj.Toml;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+import org.junit.jupiter.api.Test;
+import org.tomlj.Toml;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
-final class TestSecretsPluginManager
-{
+final class TestSecretsPluginManager {
     @Test
-    void testInvalidSecretProviderName()
-            throws Exception
-    {
+    void testInvalidSecretProviderName() throws Exception {
         assertInvalidSecretProviderFactory("$invalid");
         assertInvalidSecretProviderFactory("1invalid");
         assertInvalidSecretProviderFactory("invAlid");
     }
 
     @Test
-    void testLoadingWithUnknownConfigurationResolverName()
-            throws Exception
-    {
+    void testLoadingWithUnknownConfigurationResolverName() throws Exception {
         Path configPluginDirectory = Files.createTempDirectory("config-plugins");
         SecretsPluginManager configurationPluginManager = new SecretsPluginManager(
                 new TomlConfiguration(Toml.parse("""
                 secrets-plugins-dir="%s"
-                
+
                 [resolver-1]
                 secrets-provider.name="unknown"
                 """.formatted(configPluginDirectory.toAbsolutePath()))));
@@ -56,9 +50,7 @@ final class TestSecretsPluginManager
     }
 
     @Test
-    void testConfigurationResolutionWithoutEnvironmentVariableResolverConfigured()
-            throws Exception
-    {
+    void testConfigurationResolutionWithoutEnvironmentVariableResolverConfigured() throws Exception {
         Path configPluginDirectory = Files.createTempDirectory("config-plugins");
         SecretsPluginManager configurationPluginManager = new SecretsPluginManager(
                 new TomlConfiguration(Toml.parse("""
@@ -68,34 +60,35 @@ final class TestSecretsPluginManager
         configurationPluginManager.installPlugins();
         configurationPluginManager.load();
 
-        assertThatThrownBy(() -> configurationPluginManager.getSecretsResolver().getResolvedConfiguration(ImmutableMap.of("key", "${ENV:test}")))
+        assertThatThrownBy(() -> configurationPluginManager
+                        .getSecretsResolver()
+                        .getResolvedConfiguration(ImmutableMap.of("key", "${ENV:test}")))
                 .hasMessageContaining("No secret provider for key 'env'");
     }
 
-    private void assertInvalidSecretProviderFactory(String secretProviderName)
-            throws Exception
-    {
+    private void assertInvalidSecretProviderFactory(String secretProviderName) throws Exception {
         Path configPluginDirectory = Files.createTempDirectory("config-plugins");
-        SecretsPluginManager configurationPluginManager = new SecretsPluginManager(
-                new TomlConfiguration(Toml.parse("""
+        SecretsPluginManager configurationPluginManager = new SecretsPluginManager(new TomlConfiguration(
+                Toml.parse("""
                 secrets-plugins-dir="%s"
-                
+
                 [resolver-1]
                 secrets-provider.name="%s"
                 """.formatted(configPluginDirectory.toAbsolutePath(), secretProviderName))));
 
-        assertThatThrownBy(() -> configurationPluginManager.installSecretsPlugin(() -> ImmutableList.of(new SecretProviderFactory() {
-            @Override
-            public String getName()
-            {
-                return secretProviderName;
-            }
+        assertThatThrownBy(() -> configurationPluginManager.installSecretsPlugin(
+                        () -> ImmutableList.of(new SecretProviderFactory() {
+                            @Override
+                            public String getName() {
+                                return secretProviderName;
+                            }
 
-            @Override
-            public SecretProvider createSecretProvider(Map<String, String> config)
-            {
-                return key -> key;
-            }
-        }))).hasMessageContaining("Secret provider name '%s' doesn't match pattern '[a-z][a-z0-9_-]*'".formatted(secretProviderName));
+                            @Override
+                            public SecretProvider createSecretProvider(Map<String, String> config) {
+                                return key -> key;
+                            }
+                        })))
+                .hasMessageContaining("Secret provider name '%s' doesn't match pattern '[a-z][a-z0-9_-]*'"
+                        .formatted(secretProviderName));
     }
 }

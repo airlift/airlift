@@ -15,11 +15,8 @@
  */
 package io.airlift.http.client;
 
-public interface ResponseHandler<T, E extends Exception>
-{
-    T handleException(Request request, Exception exception)
-            throws E;
+public interface ResponseHandler<T, E extends Exception> {
+    T handleException(Request request, Exception exception) throws E;
 
-    T handle(Request request, Response response)
-            throws E;
+    T handle(Request request, Response response) throws E;
 }

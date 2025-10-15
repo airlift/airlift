@@ -17,26 +17,22 @@ package io.airlift.http.client;
 
 import com.google.common.collect.ListMultimap;
 import jakarta.annotation.Nullable;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
-public interface Response
-{
+public interface Response {
     HttpVersion getHttpVersion();
 
     int getStatusCode();
 
     @Nullable
-    default String getHeader(String name)
-    {
+    default String getHeader(String name) {
         List<String> values = getHeaders(name);
         return values.isEmpty() ? null : values.get(0);
     }
 
-    default List<String> getHeaders(String name)
-    {
+    default List<String> getHeaders(String name) {
         return getHeaders().get(HeaderName.of(name));
     }
 
@@ -44,6 +40,5 @@ public interface Response
 
     long getBytesRead();
 
-    InputStream getInputStream()
-            throws IOException;
+    InputStream getInputStream() throws IOException;
 }

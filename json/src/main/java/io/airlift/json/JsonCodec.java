@@ -15,6 +15,11 @@
  */
 package io.airlift.json;
 
+import static com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT;
+import static com.google.common.base.Preconditions.checkArgument;
+import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
+
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,7 +27,6 @@ import com.google.common.base.Suppliers;
 import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
 import io.airlift.json.LengthLimitedWriter.LengthLimitExceededException;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
@@ -33,72 +37,56 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import static com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT;
-import static com.google.common.base.Preconditions.checkArgument;
-import static java.lang.String.format;
-import static java.util.Objects.requireNonNull;
+public class JsonCodec<T> {
+    private static final Supplier<ObjectMapper> OBJECT_MAPPER_SUPPLIER =
+            Suppliers.memoize(() -> new ObjectMapperProvider().get().enable(INDENT_OUTPUT));
 
-public class JsonCodec<T>
-{
-    private static final Supplier<ObjectMapper> OBJECT_MAPPER_SUPPLIER = Suppliers.memoize(
-            () -> new ObjectMapperProvider().get().enable(INDENT_OUTPUT));
-
-    public static <T> JsonCodec<T> jsonCodec(Class<T> type)
-    {
+    public static <T> JsonCodec<T> jsonCodec(Class<T> type) {
         requireNonNull(type, "type is null");
 
         return new JsonCodec<>(OBJECT_MAPPER_SUPPLIER.get(), type);
     }
 
-    public static <T> JsonCodec<T> jsonCodec(TypeToken<T> type)
-    {
+    public static <T> JsonCodec<T> jsonCodec(TypeToken<T> type) {
         requireNonNull(type, "type is null");
 
         return new JsonCodec<>(OBJECT_MAPPER_SUPPLIER.get(), type.getType());
     }
 
-    public static <T> JsonCodec<List<T>> listJsonCodec(Class<T> type)
-    {
+    public static <T> JsonCodec<List<T>> listJsonCodec(Class<T> type) {
         requireNonNull(type, "type is null");
 
-        Type listType = new TypeToken<List<T>>() {}
-                .where(new TypeParameter<T>() {}, type)
+        Type listType = new TypeToken<List<T>>() {}.where(new TypeParameter<T>() {}, type)
                 .getType();
 
         return new JsonCodec<>(OBJECT_MAPPER_SUPPLIER.get(), listType);
     }
 
-    public static <T> JsonCodec<List<T>> listJsonCodec(JsonCodec<T> type)
-    {
+    public static <T> JsonCodec<List<T>> listJsonCodec(JsonCodec<T> type) {
         requireNonNull(type, "type is null");
 
-        Type listType = new TypeToken<List<T>>() {}
-                .where(new TypeParameter<T>() {}, type.getTypeToken())
+        Type listType = new TypeToken<List<T>>() {}.where(new TypeParameter<T>() {}, type.getTypeToken())
                 .getType();
 
         return new JsonCodec<>(OBJECT_MAPPER_SUPPLIER.get(), listType);
     }
 
-    public static <K, V> JsonCodec<Map<K, V>> mapJsonCodec(Class<K> keyType, Class<V> valueType)
-    {
+    public static <K, V> JsonCodec<Map<K, V>> mapJsonCodec(Class<K> keyType, Class<V> valueType) {
         requireNonNull(keyType, "keyType is null");
         requireNonNull(valueType, "valueType is null");
 
-        Type mapType = new TypeToken<Map<K, V>>() {}
-                .where(new TypeParameter<K>() {}, keyType)
+        Type mapType = new TypeToken<Map<K, V>>() {}.where(new TypeParameter<K>() {}, keyType)
                 .where(new TypeParameter<V>() {}, valueType)
                 .getType();
 
         return new JsonCodec<>(OBJECT_MAPPER_SUPPLIER.get(), mapType);
     }
 
-    public static <K, V> JsonCodec<Map<K, V>> mapJsonCodec(Class<K> keyType, JsonCodec<V> valueType)
-    {
+    public static <K, V> JsonCodec<Map<K, V>> mapJsonCodec(Class<K> keyType, JsonCodec<V> valueType) {
         requireNonNull(keyType, "keyType is null");
         requireNonNull(valueType, "valueType is null");
 
-        Type mapType = new TypeToken<Map<K, V>>() {}
-                .where(new TypeParameter<K>() {}, keyType)
+        Type mapType = new TypeToken<Map<K, V>>() {}.where(new TypeParameter<K>() {}, keyType)
                 .where(new TypeParameter<V>() {}, valueType.getTypeToken())
                 .getType();
 
@@ -109,8 +97,7 @@ public class JsonCodec<T>
     private final Type type;
     private final JavaType javaType;
 
-    JsonCodec(ObjectMapper mapper, Type type)
-    {
+    JsonCodec(ObjectMapper mapper, Type type) {
         this.mapper = mapper;
         this.type = type;
         this.javaType = mapper.getTypeFactory().constructType(type);
@@ -119,8 +106,7 @@ public class JsonCodec<T>
     /**
      * Gets the type this codec supports.
      */
-    public Type getType()
-    {
+    public Type getType() {
         return type;
     }
 
@@ -131,15 +117,12 @@ public class JsonCodec<T>
      * @return parsed response; never null
      * @throws IllegalArgumentException if the json string can not be converted to the type T
      */
-    public T fromJson(String json)
-            throws IllegalArgumentException
-    {
+    public T fromJson(String json) throws IllegalArgumentException {
         try (JsonParser parser = mapper.createParser(json)) {
             T value = mapper.readerFor(javaType).readValue(parser);
             checkArgument(parser.nextToken() == null, "Found characters after the expected end of input");
             return value;
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new IllegalArgumentException(format("Invalid JSON string for %s", javaType), e);
         }
     }
@@ -151,14 +134,15 @@ public class JsonCodec<T>
      * @return json string
      * @throws IllegalArgumentException if the specified instance can not be converted to json
      */
-    public String toJson(T instance)
-            throws IllegalArgumentException
-    {
+    public String toJson(T instance) throws IllegalArgumentException {
         try {
             return mapper.writerFor(javaType).writeValueAsString(instance);
-        }
-        catch (IOException e) {
-            throw new IllegalArgumentException(format("%s could not be converted to JSON", instance.getClass().getName()), e);
+        } catch (IOException e) {
+            throw new IllegalArgumentException(
+                    format(
+                            "%s could not be converted to JSON",
+                            instance.getClass().getName()),
+                    e);
         }
     }
 
@@ -170,18 +154,19 @@ public class JsonCodec<T>
      * @return json string
      * @throws IllegalArgumentException if the specified instance can not be converted to json
      */
-    public Optional<String> toJsonWithLengthLimit(T instance, int lengthLimit)
-    {
+    public Optional<String> toJsonWithLengthLimit(T instance, int lengthLimit) {
         try (StringWriter stringWriter = new StringWriter();
                 LengthLimitedWriter lengthLimitedWriter = new LengthLimitedWriter(stringWriter, lengthLimit)) {
             mapper.writeValue(lengthLimitedWriter, instance);
             return Optional.of(stringWriter.getBuffer().toString());
-        }
-        catch (LengthLimitExceededException e) {
+        } catch (LengthLimitExceededException e) {
             return Optional.empty();
-        }
-        catch (IOException e) {
-            throw new IllegalArgumentException(format("%s could not be converted to JSON", instance.getClass().getName()), e);
+        } catch (IOException e) {
+            throw new IllegalArgumentException(
+                    format(
+                            "%s could not be converted to JSON",
+                            instance.getClass().getName()),
+                    e);
         }
     }
 
@@ -192,15 +177,12 @@ public class JsonCodec<T>
      * @return parsed response; never null
      * @throws IllegalArgumentException if the json bytes can not be converted to the type T
      */
-    public T fromJson(byte[] json)
-            throws IllegalArgumentException
-    {
+    public T fromJson(byte[] json) throws IllegalArgumentException {
         try (JsonParser parser = mapper.createParser(json)) {
             T value = mapper.readerFor(javaType).readValue(parser);
             checkArgument(parser.nextToken() == null, "Found characters after the expected end of input");
             return value;
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new IllegalArgumentException(format("Invalid JSON bytes for %s", javaType), e);
         }
     }
@@ -212,14 +194,15 @@ public class JsonCodec<T>
      * @return json bytes (UTF-8)
      * @throws IllegalArgumentException if the specified instance can not be converted to json
      */
-    public byte[] toJsonBytes(T instance)
-            throws IllegalArgumentException
-    {
+    public byte[] toJsonBytes(T instance) throws IllegalArgumentException {
         try {
             return mapper.writerFor(javaType).writeValueAsBytes(instance);
-        }
-        catch (IOException e) {
-            throw new IllegalArgumentException(format("%s could not be converted to JSON", instance.getClass().getName()), e);
+        } catch (IOException e) {
+            throw new IllegalArgumentException(
+                    format(
+                            "%s could not be converted to JSON",
+                            instance.getClass().getName()),
+                    e);
         }
     }
 
@@ -230,15 +213,12 @@ public class JsonCodec<T>
      * @return parsed response; never null
      * @throws IllegalArgumentException if the json bytes can not be converted to the type T
      */
-    public T fromJson(InputStream json)
-            throws IllegalArgumentException
-    {
+    public T fromJson(InputStream json) throws IllegalArgumentException {
         try (JsonParser parser = mapper.createParser(json)) {
             T value = mapper.readerFor(javaType).readValue(parser);
             checkArgument(parser.nextToken() == null, "Found characters after the expected end of input");
             return value;
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new IllegalArgumentException(format("Invalid JSON bytes for %s", javaType), e);
         }
     }
@@ -250,22 +230,18 @@ public class JsonCodec<T>
      * @return parsed response; never null
      * @throws IllegalArgumentException if the json characters can not be converted to the type T
      */
-    public T fromJson(Reader json)
-            throws IllegalArgumentException
-    {
+    public T fromJson(Reader json) throws IllegalArgumentException {
         try (JsonParser parser = mapper.createParser(json)) {
             T value = mapper.readerFor(javaType).readValue(parser);
             checkArgument(parser.nextToken() == null, "Found characters after the expected end of input");
             return value;
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new IllegalArgumentException(format("Invalid JSON characters for %s", javaType), e);
         }
     }
 
     @SuppressWarnings("unchecked")
-    TypeToken<T> getTypeToken()
-    {
+    TypeToken<T> getTypeToken() {
         return (TypeToken<T>) TypeToken.of(type);
     }
 }

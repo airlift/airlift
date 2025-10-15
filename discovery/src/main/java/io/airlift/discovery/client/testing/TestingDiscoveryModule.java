@@ -15,6 +15,8 @@
  */
 package io.airlift.discovery.client.testing;
 
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
+
 import com.google.inject.Binder;
 import com.google.inject.Key;
 import com.google.inject.Module;
@@ -31,18 +33,17 @@ import io.airlift.discovery.client.ServiceSelectorFactory;
 import io.airlift.discovery.client.ServiceSelectorManager;
 import io.airlift.node.NodeInfo;
 
-import static com.google.inject.multibindings.Multibinder.newSetBinder;
-
-public class TestingDiscoveryModule
-        implements Module
-{
+public class TestingDiscoveryModule implements Module {
     @Override
-    public void configure(Binder binder)
-    {
+    public void configure(Binder binder) {
         // bind discovery client and dependencies
         binder.bind(InMemoryDiscoveryClient.class).in(Scopes.SINGLETON);
-        binder.bind(DiscoveryAnnouncementClient.class).to(Key.get(InMemoryDiscoveryClient.class)).in(Scopes.SINGLETON);
-        binder.bind(DiscoveryLookupClient.class).to(Key.get(InMemoryDiscoveryClient.class)).in(Scopes.SINGLETON);
+        binder.bind(DiscoveryAnnouncementClient.class)
+                .to(Key.get(InMemoryDiscoveryClient.class))
+                .in(Scopes.SINGLETON);
+        binder.bind(DiscoveryLookupClient.class)
+                .to(Key.get(InMemoryDiscoveryClient.class))
+                .in(Scopes.SINGLETON);
 
         // bind announcer
         binder.bind(Announcer.class).in(Scopes.SINGLETON);
@@ -51,7 +52,9 @@ public class TestingDiscoveryModule
         newSetBinder(binder, ServiceAnnouncement.class);
 
         binder.bind(SimpleServiceSelectorFactory.class).in(Scopes.SINGLETON);
-        binder.bind(ServiceSelectorFactory.class).to(MergingServiceSelectorFactory.class).in(Scopes.SINGLETON);
+        binder.bind(ServiceSelectorFactory.class)
+                .to(MergingServiceSelectorFactory.class)
+                .in(Scopes.SINGLETON);
 
         // bind selector manager with initial empty multibinder
         newSetBinder(binder, ServiceSelector.class);
@@ -61,10 +64,7 @@ public class TestingDiscoveryModule
     @Provides
     @Singleton
     public MergingServiceSelectorFactory createMergingServiceSelectorFactory(
-            SimpleServiceSelectorFactory factory,
-            Announcer announcer,
-            NodeInfo nodeInfo)
-    {
+            SimpleServiceSelectorFactory factory, Announcer announcer, NodeInfo nodeInfo) {
         return new MergingServiceSelectorFactory(factory, announcer, nodeInfo);
     }
 }

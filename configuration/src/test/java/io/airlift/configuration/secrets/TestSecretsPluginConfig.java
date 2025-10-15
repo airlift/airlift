@@ -13,37 +13,31 @@
  */
 package io.airlift.configuration.secrets;
 
-import com.google.common.collect.ImmutableMap;
-import org.junit.jupiter.api.Test;
-
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Map;
-
 import static io.airlift.configuration.secrets.ConfigAssertions.assertFullMapping;
 import static io.airlift.configuration.secrets.ConfigAssertions.assertRecordedDefaults;
 import static io.airlift.configuration.secrets.ConfigAssertions.recordDefaults;
 
-final class TestSecretsPluginConfig
-{
+import com.google.common.collect.ImmutableMap;
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+
+final class TestSecretsPluginConfig {
     @Test
-    void testDefaults()
-    {
-        assertRecordedDefaults(recordDefaults(SecretsPluginConfig.class)
-                .setSecretsPluginsDir(new File("secrets-plugin")));
+    void testDefaults() {
+        assertRecordedDefaults(
+                recordDefaults(SecretsPluginConfig.class).setSecretsPluginsDir(new File("secrets-plugin")));
     }
 
     @Test
-    void testExplicitPropertyMappings()
-            throws Exception
-    {
+    void testExplicitPropertyMappings() throws Exception {
         Path configPluginDirectory = Files.createTempFile(null, null);
 
         Map<String, String> properties = ImmutableMap.of("secrets-plugins-dir", configPluginDirectory.toString());
 
-        SecretsPluginConfig expected = new SecretsPluginConfig()
-                .setSecretsPluginsDir(configPluginDirectory.toFile());
+        SecretsPluginConfig expected = new SecretsPluginConfig().setSecretsPluginsDir(configPluginDirectory.toFile());
 
         assertFullMapping(properties, expected);
     }

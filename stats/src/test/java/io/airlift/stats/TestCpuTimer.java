@@ -1,29 +1,28 @@
 package io.airlift.stats;
 
-import io.airlift.testing.TestingTicker;
-import org.junit.jupiter.api.Test;
-
 import static io.airlift.units.Duration.succinctDuration;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
-public class TestCpuTimer
-{
+import io.airlift.testing.TestingTicker;
+import org.junit.jupiter.api.Test;
+
+public class TestCpuTimer {
     @Test
-    public void testCpuTimerWithUserTimeEnabled()
-    {
+    public void testCpuTimerWithUserTimeEnabled() {
         CpuTimer timer = new CpuTimer();
         assertThat(timer.elapsedTime().hasUser()).isTrue();
         assertThat(timer.startNewInterval().hasUser()).isTrue();
         assertThat(timer.elapsedIntervalTime().hasUser()).isTrue();
-        assertThat(timer.elapsedTime().add(new CpuTimer.CpuDuration()).hasUser()).isTrue();
-        assertThat(timer.elapsedTime().subtract(new CpuTimer.CpuDuration()).hasUser()).isTrue();
+        assertThat(timer.elapsedTime().add(new CpuTimer.CpuDuration()).hasUser())
+                .isTrue();
+        assertThat(timer.elapsedTime().subtract(new CpuTimer.CpuDuration()).hasUser())
+                .isTrue();
     }
 
     @Test
-    public void testCpuTimerWithoutUserTimeEnabled()
-    {
+    public void testCpuTimerWithoutUserTimeEnabled() {
         CpuTimer timer = new CpuTimer(false);
         assertThat(timer.elapsedTime().hasUser()).isFalse();
         assertThat(timer.startNewInterval().hasUser()).isFalse();
@@ -43,16 +42,14 @@ public class TestCpuTimer
     }
 
     @Test
-    public void testNullTicker()
-    {
+    public void testNullTicker() {
         assertThatExceptionOfType(NullPointerException.class)
                 .isThrownBy(() -> new CpuTimer(null, true))
                 .withMessage("ticker is null");
     }
 
     @Test
-    public void testCustomTicker()
-    {
+    public void testCustomTicker() {
         TestingTicker ticker = new TestingTicker();
         CpuTimer timer = new CpuTimer(ticker, true);
         ticker.increment(1, SECONDS);

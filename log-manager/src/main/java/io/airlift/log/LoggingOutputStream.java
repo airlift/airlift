@@ -21,13 +21,10 @@ import java.io.IOException;
 /**
  * An OutputStream that writes contents to a Logger upon each call to flush()
  */
-class LoggingOutputStream
-        extends ByteArrayOutputStream
-{
+class LoggingOutputStream extends ByteArrayOutputStream {
     private final Logger logger;
 
-    public LoggingOutputStream(Logger logger)
-    {
+    public LoggingOutputStream(Logger logger) {
         this.logger = logger;
     }
 
@@ -35,9 +32,7 @@ class LoggingOutputStream
      * write the current buffer contents to the underlying logger.
      */
     @Override
-    public synchronized void flush()
-            throws IOException
-    {
+    public synchronized void flush() throws IOException {
         super.flush();
         String record = this.toString();
         reset();

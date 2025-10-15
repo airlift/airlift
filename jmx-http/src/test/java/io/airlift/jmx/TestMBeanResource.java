@@ -1,5 +1,17 @@
 package io.airlift.jmx;
 
+import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
+import static com.google.common.net.MediaType.HTML_UTF_8;
+import static com.google.common.net.MediaType.JSON_UTF_8;
+import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
+import static io.airlift.http.client.Request.Builder.prepareGet;
+import static io.airlift.http.client.StringResponseHandler.StringResponse;
+import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
+import static java.lang.management.ManagementFactory.MEMORY_MXBEAN_NAME;
+import static java.lang.management.ManagementFactory.RUNTIME_MXBEAN_NAME;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.MediaType;
@@ -15,43 +27,27 @@ import io.airlift.jaxrs.JaxrsModule;
 import io.airlift.json.JsonModule;
 import io.airlift.json.ObjectMapperProvider;
 import io.airlift.node.testing.TestingNodeModule;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
-
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
-
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
-import static com.google.common.net.MediaType.HTML_UTF_8;
-import static com.google.common.net.MediaType.JSON_UTF_8;
-import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
-import static io.airlift.http.client.Request.Builder.prepareGet;
-import static io.airlift.http.client.StringResponseHandler.StringResponse;
-import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
-import static java.lang.management.ManagementFactory.MEMORY_MXBEAN_NAME;
-import static java.lang.management.ManagementFactory.RUNTIME_MXBEAN_NAME;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 
 @TestInstance(PER_CLASS)
-public class TestMBeanResource
-{
+public class TestMBeanResource {
     private final MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
     private LifeCycleManager lifeCycleManager;
     private TestingHttpServer server;
     private HttpClient client;
 
     @BeforeAll
-    public void setup()
-    {
+    public void setup() {
         Bootstrap app = new Bootstrap(
                 new TestingNodeModule(),
                 new TestingHttpServerModule(),
@@ -60,9 +56,7 @@ public class TestMBeanResource
                 new JmxHttpModule(),
                 binder -> binder.bind(MBeanServer.class).toInstance(mbeanServer));
 
-        Injector injector = app
-                .quiet()
-                .initialize();
+        Injector injector = app.quiet().initialize();
 
         lifeCycleManager = injector.getInstance(LifeCycleManager.class);
         server = injector.getInstance(TestingHttpServer.class);
@@ -70,8 +64,7 @@ public class TestMBeanResource
     }
 
     @AfterAll
-    public void teardown()
-    {
+    public void teardown() {
         try (HttpClient ignored = client) {
             if (lifeCycleManager != null) {
                 lifeCycleManager.stop();
@@ -80,11 +73,9 @@ public class TestMBeanResource
     }
 
     @Test
-    public void testGetHtmlPage()
-    {
-        StringResponse response = client.execute(
-                prepareGet().setUri(uriFor("/v1/jmx")).build(),
-                createStringResponseHandler());
+    public void testGetHtmlPage() {
+        StringResponse response =
+                client.execute(prepareGet().setUri(uriFor("/v1/jmx")).build(), createStringResponseHandler());
 
         assertThat(response.getStatusCode()).isEqualTo(200);
         assertContentType(response, HTML_UTF_8);
@@ -92,14 +83,11 @@ public class TestMBeanResource
     }
 
     @Test
-    public void testGetMBeans()
-            throws Exception
-    {
+    public void testGetMBeans() throws Exception {
         assertMBeansResponse(jsonRequest(uriFor("/v1/jmx/mbean")));
     }
 
-    private void assertMBeansResponse(JsonNode mbeans)
-    {
+    private void assertMBeansResponse(JsonNode mbeans) {
         List<String> names = new ArrayList<>();
         for (JsonNode mbean : mbeans) {
             JsonNode name = mbean.get("objectName");
@@ -113,9 +101,7 @@ public class TestMBeanResource
     }
 
     @Test
-    public void testGetMBean()
-            throws Exception
-    {
+    public void testGetMBean() throws Exception {
         for (String mbeanName : getMBeanNames()) {
             URI uri = uriBuilderFrom(uriFor("/v1/jmx/mbean"))
                     .appendPath(mbeanName)
@@ -128,9 +114,7 @@ public class TestMBeanResource
         }
     }
 
-    private JsonNode jsonRequest(URI uri)
-            throws IOException
-    {
+    private JsonNode jsonRequest(URI uri) throws IOException {
         Request request = prepareGet().setUri(uri).build();
         StringResponse response = client.execute(request, createStringResponseHandler());
 
@@ -140,13 +124,11 @@ public class TestMBeanResource
         return new ObjectMapperProvider().get().readTree(response.getBody());
     }
 
-    private URI uriFor(String path)
-    {
+    private URI uriFor(String path) {
         return server.getBaseUrl().resolve(path);
     }
 
-    private List<String> getMBeanNames()
-    {
+    private List<String> getMBeanNames() {
         ImmutableList.Builder<String> list = ImmutableList.builder();
         for (ObjectName objectName : mbeanServer.queryNames(ObjectName.WILDCARD, null)) {
             list.add(objectName.toString());
@@ -154,9 +136,10 @@ public class TestMBeanResource
         return list.build();
     }
 
-    private static void assertContentType(StringResponse response, MediaType type)
-    {
+    private static void assertContentType(StringResponse response, MediaType type) {
         String contentType = response.getHeader(CONTENT_TYPE);
-        assertThat(MediaType.parse(contentType).is(type.withoutParameters())).as(contentType).isTrue();
+        assertThat(MediaType.parse(contentType).is(type.withoutParameters()))
+                .as(contentType)
+                .isTrue();
     }
 }

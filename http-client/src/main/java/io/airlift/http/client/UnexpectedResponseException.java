@@ -15,41 +15,34 @@
  */
 package io.airlift.http.client;
 
+import static com.google.common.base.MoreObjects.toStringHelper;
+
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 import jakarta.annotation.Nullable;
-
 import java.net.URI;
 import java.util.List;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
-
-public class UnexpectedResponseException
-        extends RuntimeException
-{
+public class UnexpectedResponseException extends RuntimeException {
     private final URI requestUri;
     private final String requestMethod;
     private final int statusCode;
     private final ListMultimap<HeaderName, String> headers;
 
-    public UnexpectedResponseException(Request request, Response response)
-    {
-        this("HTTP " + response.getStatusCode(),
+    public UnexpectedResponseException(Request request, Response response) {
+        this(
+                "HTTP " + response.getStatusCode(),
                 request,
                 response.getStatusCode(),
                 ImmutableListMultimap.copyOf(response.getHeaders()));
     }
 
-    public UnexpectedResponseException(String message, Request request, Response response)
-    {
-        this(message,
-                request,
-                response.getStatusCode(),
-                ImmutableListMultimap.copyOf(response.getHeaders()));
+    public UnexpectedResponseException(String message, Request request, Response response) {
+        this(message, request, response.getStatusCode(), ImmutableListMultimap.copyOf(response.getHeaders()));
     }
 
-    public UnexpectedResponseException(String message, Request request, int statusCode, ListMultimap<HeaderName, String> headers)
-    {
+    public UnexpectedResponseException(
+            String message, Request request, int statusCode, ListMultimap<HeaderName, String> headers) {
         super(message);
         this.requestUri = request != null ? request.getUri() : null;
         this.requestMethod = request != null ? request.getMethod() : null;
@@ -57,31 +50,26 @@ public class UnexpectedResponseException
         this.headers = ImmutableListMultimap.copyOf(headers);
     }
 
-    public int getStatusCode()
-    {
+    public int getStatusCode() {
         return statusCode;
     }
 
     @Nullable
-    public String getHeader(String name)
-    {
+    public String getHeader(String name) {
         List<String> values = getHeaders().get(HeaderName.of(name));
         return values.isEmpty() ? null : values.get(0);
     }
 
-    public List<String> getHeaders(String name)
-    {
+    public List<String> getHeaders(String name) {
         return headers.get(HeaderName.of(name));
     }
 
-    public ListMultimap<HeaderName, String> getHeaders()
-    {
+    public ListMultimap<HeaderName, String> getHeaders() {
         return headers;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return toStringHelper(this)
                 .add("message", getLocalizedMessage())
                 .add("request", requestMethod + " " + requestUri)

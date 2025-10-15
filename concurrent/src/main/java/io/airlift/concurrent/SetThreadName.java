@@ -13,17 +13,14 @@
  */
 package io.airlift.concurrent;
 
-import java.io.Closeable;
-
 import static java.util.Objects.requireNonNull;
 
-public class SetThreadName
-        implements Closeable
-{
+import java.io.Closeable;
+
+public class SetThreadName implements Closeable {
     private final String originalThreadName;
 
-    public SetThreadName(String threadNamePrefix)
-    {
+    public SetThreadName(String threadNamePrefix) {
         requireNonNull(threadNamePrefix, "threadNamePrefix is null");
         Thread currentThread = Thread.currentThread();
         originalThreadName = currentThread.getName();
@@ -31,8 +28,7 @@ public class SetThreadName
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         Thread.currentThread().setName(originalThreadName);
     }
 }
