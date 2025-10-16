@@ -132,7 +132,7 @@ public class ConfigBinder
     {
         requireNonNull(configClass, "configClass is null");
 
-        bindConfig(Key.get(configClass), configClass, Optional.empty());
+        bindConfig(Key.get(configClass), configClass, null);
     }
 
     public <T> void bindConfig(Class<T> configClass, Annotation annotation)
@@ -140,7 +140,7 @@ public class ConfigBinder
         requireNonNull(configClass, "configClass is null");
         requireNonNull(annotation, "annotation is null");
 
-        bindConfig(Key.get(configClass, annotation), configClass, Optional.empty());
+        bindConfig(Key.get(configClass, annotation), configClass, null);
     }
 
     public <T> void bindConfig(Class<T> configClass, Class<? extends Annotation> annotation)
@@ -148,7 +148,7 @@ public class ConfigBinder
         requireNonNull(configClass, "configClass is null");
         requireNonNull(annotation, "annotation is null");
 
-        bindConfig(Key.get(configClass, annotation), configClass, Optional.empty());
+        bindConfig(Key.get(configClass, annotation), configClass, null);
     }
 
     public <T> void bindConfig(Class<T> configClass, String prefix)
@@ -177,11 +177,6 @@ public class ConfigBinder
     public <T> void bindConfig(Key<T> key, Class<T> configClass, String prefix)
     {
         binder.bind(new ConfigurationBinding<>(key, configClass, Optional.ofNullable(prefix)));
-    }
-
-    public <T> void bindConfig(Key<T> key, Class<T> configClass, Optional<String> prefix)
-    {
-        binder.bind(new ConfigurationBinding<>(key, configClass, prefix));
     }
 
     public <T> void bindConfigDefaults(Class<T> configClass, ConfigDefaults<T> configDefaults)

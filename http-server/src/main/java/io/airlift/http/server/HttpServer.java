@@ -136,6 +136,7 @@ public class HttpServer
             Optional<SslContextFactory.Server> maybeSslContextFactory)
             throws IOException
     {
+        requireNonNull(name, "name is null");
         requireNonNull(httpServerInfo, "httpServerInfo is null");
         requireNonNull(nodeInfo, "nodeInfo is null");
         requireNonNull(config, "config is null");

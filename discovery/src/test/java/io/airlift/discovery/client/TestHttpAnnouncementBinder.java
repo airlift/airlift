@@ -227,7 +227,7 @@ public class TestHttpAnnouncementBinder
     private void assertAnnouncements(Set<ServiceAnnouncement> actual, Set<ServiceAnnouncement> expected)
     {
         assertThat(actual).isNotNull();
-        assertThat(actual.size()).isEqualTo(expected.size());
+        assertThat(actual).hasSameSizeAs(expected);
 
         for (ServiceAnnouncement announcement : actual) {
             ServiceAnnouncement match = expected.stream()

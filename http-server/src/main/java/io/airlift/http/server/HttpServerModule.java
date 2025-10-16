@@ -22,12 +22,14 @@ import io.airlift.discovery.client.AnnouncementHttpServerInfo;
 import io.airlift.http.server.HttpServer.ClientCertificate;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.http.server.tracing.TracingServletFilter;
+import jakarta.annotation.Nullable;
 import jakarta.servlet.Filter;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import java.lang.annotation.Annotation;
 import java.util.Optional;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.inject.Scopes.SINGLETON;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
@@ -62,27 +64,27 @@ public class HttpServerModule
 {
     private final String name;
     private final Optional<Class<? extends Annotation>> qualifier;
-    private final Optional<String> configPrefix;
+    private final @Nullable String configPrefix;
 
-    public HttpServerModule(String name, Optional<Class<? extends Annotation>> qualifier, Optional<String> configPrefix)
+    public HttpServerModule(String name, Optional<Class<? extends Annotation>> qualifier, @Nullable String configPrefix)
     {
         this.name = requireNonNull(name, "name is null");
         this.qualifier = requireNonNull(qualifier, "qualifier is null");
-        this.configPrefix = requireNonNull(configPrefix, "config prefix is null");
+        this.configPrefix = configPrefix;
 
-        if (this.configPrefix.isPresent() != this.qualifier.isPresent()) {
-            throw new IllegalArgumentException("configPrefix and qualifier must both be present or both be absent");
+        if (this.qualifier.isPresent()) {
+            checkArgument(this.configPrefix != null, "qualifier is present but configPrefix is null");
         }
     }
 
-    public HttpServerModule(String name, Class<? extends Annotation> qualifier, String configPrefix)
+    public HttpServerModule(String name, Class<? extends Annotation> qualifier, @Nullable String configPrefix)
     {
-        this(name, Optional.of(requireNonNull(qualifier, "qualifier is null")), Optional.of(requireNonNull(configPrefix, "config prefix is null")));
+        this(name, Optional.of(requireNonNull(qualifier, "qualifier is null")), configPrefix);
     }
 
     public HttpServerModule()
     {
-        this("http-server", Optional.empty(), Optional.empty());
+        this("http-server", Optional.empty(), null);
     }
 
     @Override

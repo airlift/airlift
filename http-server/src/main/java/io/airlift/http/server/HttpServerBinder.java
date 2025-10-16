@@ -2,10 +2,8 @@ package io.airlift.http.server;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Binder;
-import com.google.inject.Key;
 import com.google.inject.multibindings.Multibinder;
 import jakarta.annotation.Nullable;
-import org.eclipse.jetty.util.VirtualThreads;
 
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
@@ -14,6 +12,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
+import static io.airlift.http.server.BinderUtils.qualifiedKey;
 import static io.airlift.http.server.ServerFeature.CASE_SENSITIVE_HEADER_CACHE;
 import static io.airlift.http.server.ServerFeature.LEGACY_URI_COMPLIANCE;
 import static io.airlift.http.server.ServerFeature.VIRTUAL_THREADS;
@@ -30,7 +29,7 @@ public class HttpServerBinder
         requireNonNull(binder, "binder is null");
         this.binder = binder.skipSources(getClass());
         this.qualifier = Optional.ofNullable(qualifier);
-        this.features = newSetBinder(binder, BinderUtils.qualifiedKey(this.qualifier, ServerFeature.class));
+        this.features = newSetBinder(binder, qualifiedKey(this.qualifier, ServerFeature.class));
     }
 
     public static HttpServerBinder httpServerBinder(Binder binder)
@@ -64,9 +63,6 @@ public class HttpServerBinder
 
     public HttpServerBinder withFeature(ServerFeature serverFeature)
     {
-        if (serverFeature == VIRTUAL_THREADS && !VirtualThreads.areSupported()) {
-            binder.addError("Virtual threads are not supported");
-        }
         features.addBinding().toInstance(serverFeature);
         return this;
     }
@@ -80,7 +76,7 @@ public class HttpServerBinder
     public HttpResourceBinding bindResource(String baseUri, String classPathResourceBase)
     {
         HttpResourceBinding httpResourceBinding = new HttpResourceBinding(baseUri, classPathResourceBase);
-        newSetBinder(binder, qualifiedKey(HttpResourceBinding.class)).addBinding().toInstance(httpResourceBinding);
+        newSetBinder(binder, qualifiedKey(qualifier, HttpResourceBinding.class)).addBinding().toInstance(httpResourceBinding);
         return httpResourceBinding;
     }
 
@@ -116,10 +112,5 @@ public class HttpServerBinder
             welcomeFiles.add(welcomeFile);
             return this;
         }
-    }
-
-    private <T> Key<T> qualifiedKey(Class<T> type)
-    {
-        return BinderUtils.qualifiedKey(qualifier, type);
     }
 }
