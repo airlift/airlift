@@ -19,17 +19,14 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 
 @SuppressWarnings("MethodMayBeStatic")
-public class IllegalInstance
-{
+public class IllegalInstance {
     @PostConstruct
-    public void createWithArgs(String foo)
-    {
+    public void createWithArgs(String foo) {
         TestLifeCycleManager.note("createWithArgs");
     }
 
     @PreDestroy
-    public void destroyWithArgs(String foo)
-    {
+    public void destroyWithArgs(String foo) {
         TestLifeCycleManager.note("destroyWithArgs");
     }
 }

@@ -18,11 +18,9 @@ package io.airlift.bootstrap;
 import jakarta.annotation.PreDestroy;
 
 @SuppressWarnings("MethodMayBeStatic")
-public class PreDestroyOnly
-{
+public class PreDestroyOnly {
     @PreDestroy
-    public void unmakeMe()
-    {
+    public void unmakeMe() {
         TestLifeCycleManager.note("unmakeMe");
     }
 }

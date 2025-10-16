@@ -1,14 +1,5 @@
 package io.airlift.stats;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Ticker;
-import com.google.errorprone.annotations.concurrent.GuardedBy;
-import org.weakref.jmx.Managed;
-
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
 import static com.google.common.base.Ticker.systemTicker;
 import static com.google.common.base.Verify.verify;
 import static java.lang.Math.floorMod;
@@ -16,10 +7,18 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class TimeDistribution
-{
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Ticker;
+import com.google.errorprone.annotations.concurrent.GuardedBy;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import org.weakref.jmx.Managed;
+
+public class TimeDistribution {
     @VisibleForTesting
     static final long MERGE_THRESHOLD_NANOS = MILLISECONDS.toNanos(100);
+
     private static final double[] SNAPSHOT_QUANTILES = new double[] {0.5, 0.75, 0.9, 0.95, 0.99};
     private static final double[] PERCENTILES;
     private static final int STRIPES = 16;
@@ -34,38 +33,37 @@ public class TimeDistribution
     private final Ticker ticker;
     private final double alpha;
     private final Object[] locks = new Object[STRIPES];
+
     @GuardedBy("locks")
     private final DecayTDigest[] partials = new DecayTDigest[STRIPES];
+
     @GuardedBy("this")
     private DecayTDigest merged;
+
     @GuardedBy("this")
     private long lastMerge;
+
     private final DecayCounter total;
     private final DecayCounter partialTotal;
     private final TimeUnit unit;
 
-    public TimeDistribution()
-    {
+    public TimeDistribution() {
         this(SECONDS);
     }
 
-    public TimeDistribution(TimeUnit unit)
-    {
+    public TimeDistribution(TimeUnit unit) {
         this(systemTicker(), 0, unit);
     }
 
-    public TimeDistribution(Ticker ticker)
-    {
+    public TimeDistribution(Ticker ticker) {
         this(ticker, 0, SECONDS);
     }
 
-    public TimeDistribution(double alpha)
-    {
+    public TimeDistribution(double alpha) {
         this(systemTicker(), alpha, SECONDS);
     }
 
-    public TimeDistribution(Ticker ticker, double alpha, TimeUnit unit)
-    {
+    public TimeDistribution(Ticker ticker, double alpha, TimeUnit unit) {
         requireNonNull(ticker, "ticker is null");
         requireNonNull(unit, "unit is null");
         this.alpha = alpha;
@@ -81,8 +79,7 @@ public class TimeDistribution
         this.lastMerge = ticker.read(); // do not merge immediately
     }
 
-    public void add(long value)
-    {
+    public void add(long value) {
         int segment = floorMod(Thread.currentThread().threadId(), STRIPES);
         synchronized (locks[segment]) {
             partials[segment].add(value);
@@ -91,71 +88,59 @@ public class TimeDistribution
     }
 
     @Managed
-    public double getCount()
-    {
+    public double getCount() {
         return mergeAndGetIfNeeded().getCount();
     }
 
     @Managed
-    public double getP50()
-    {
+    public double getP50() {
         return convertToUnit(mergeAndGetIfNeeded().valueAt(0.5));
     }
 
     @Managed
-    public double getP75()
-    {
+    public double getP75() {
         return convertToUnit(mergeAndGetIfNeeded().valueAt(0.75));
     }
 
     @Managed
-    public double getP90()
-    {
+    public double getP90() {
         return convertToUnit(mergeAndGetIfNeeded().valueAt(0.90));
     }
 
     @Managed
-    public double getP95()
-    {
+    public double getP95() {
         return convertToUnit(mergeAndGetIfNeeded().valueAt(0.95));
     }
 
     @Managed
-    public double getP99()
-    {
+    public double getP99() {
         return convertToUnit(mergeAndGetIfNeeded().valueAt(0.99));
     }
 
     @Managed
-    public double getMin()
-    {
+    public double getMin() {
         return convertToUnit(mergeAndGetIfNeeded().getMin());
     }
 
     @Managed
-    public double getMax()
-    {
+    public double getMax() {
         return convertToUnit(mergeAndGetIfNeeded().getMax());
     }
 
     @Managed
-    public synchronized double getAvg()
-    {
+    public synchronized double getAvg() {
         double digestCount = mergeAndGetIfNeeded().getCount();
         return convertToUnit(total.getCount()) / digestCount;
     }
 
     @Managed
-    public TimeUnit getUnit()
-    {
+    public TimeUnit getUnit() {
         return unit;
     }
 
     @Managed
-    public Map<Double, Double> getPercentiles()
-    {
-        double[] values = mergeAndGetIfNeeded(true)
-                .valuesAt(PERCENTILES);
+    public Map<Double, Double> getPercentiles() {
+        double[] values = mergeAndGetIfNeeded(true).valuesAt(PERCENTILES);
 
         verify(values.length == PERCENTILES.length, "values length mismatch");
 
@@ -167,13 +152,11 @@ public class TimeDistribution
         return result;
     }
 
-    private DecayTDigest mergeAndGetIfNeeded()
-    {
+    private DecayTDigest mergeAndGetIfNeeded() {
         return mergeAndGetIfNeeded(false);
     }
 
-    private DecayTDigest mergeAndGetIfNeeded(boolean forceMerge)
-    {
+    private DecayTDigest mergeAndGetIfNeeded(boolean forceMerge) {
         synchronized (this) {
             if (forceMerge || ticker.read() - lastMerge >= MERGE_THRESHOLD_NANOS) {
                 for (int i = 0; i < STRIPES; i++) {
@@ -192,18 +175,15 @@ public class TimeDistribution
         return merged;
     }
 
-    private double convertToUnit(double nanos)
-    {
+    private double convertToUnit(double nanos) {
         return convertToUnit(nanos, (double) unit.toNanos(1));
     }
 
-    private static double convertToUnit(double nanos, double unitNanos)
-    {
+    private static double convertToUnit(double nanos, double unitNanos) {
         return nanos / unitNanos;
     }
 
-    public TimeDistributionSnapshot snapshot()
-    {
+    public TimeDistributionSnapshot snapshot() {
         double totalCount;
         double digestCount;
         double min;
@@ -233,8 +213,7 @@ public class TimeDistribution
     }
 
     @Managed
-    public synchronized void reset()
-    {
+    public synchronized void reset() {
         total.reset();
         partialTotal.reset();
         merged = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
@@ -256,10 +235,8 @@ public class TimeDistribution
             double min,
             double max,
             double avg,
-            TimeUnit unit)
-    {
-        public TimeDistributionSnapshot
-        {
+            TimeUnit unit) {
+        public TimeDistributionSnapshot {
             requireNonNull(unit, "unit is null");
         }
     }

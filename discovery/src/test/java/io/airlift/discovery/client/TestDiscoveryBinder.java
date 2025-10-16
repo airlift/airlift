@@ -15,6 +15,10 @@
  */
 package io.airlift.discovery.client;
 
+import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
+import static io.airlift.discovery.client.ServiceTypes.serviceType;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Binder;
@@ -28,73 +32,59 @@ import io.airlift.configuration.ConfigurationFactory;
 import io.airlift.configuration.ConfigurationModule;
 import io.airlift.discovery.client.testing.TestingDiscoveryModule;
 import io.airlift.node.testing.TestingNodeModule;
-import org.junit.jupiter.api.Test;
-
 import java.util.Map;
 import java.util.Set;
+import org.junit.jupiter.api.Test;
 
-import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
-import static io.airlift.discovery.client.ServiceTypes.serviceType;
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class TestDiscoveryBinder
-{
+public class TestDiscoveryBinder {
     @Test
-    public void testBindSelector()
-    {
-        Injector injector = Guice.createInjector(
-                new TestModule(),
-                binder -> discoveryBinder(binder).bindServiceAnnouncement(new ServiceAnnouncementProvider().get()));
+    public void testBindSelector() {
+        Injector injector = Guice.createInjector(new TestModule(), binder -> discoveryBinder(binder)
+                .bindServiceAnnouncement(new ServiceAnnouncementProvider().get()));
 
-        Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() {}));
+        Set<ServiceAnnouncement> announcements =
+                injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() {}));
         assertThat(announcements).isEqualTo(ImmutableSet.of(ANNOUNCEMENT));
     }
 
     @Test
-    public void testBindSelectorProviderClass()
-    {
-        Injector injector = Guice.createInjector(
-                new TestModule(),
-                binder -> discoveryBinder(binder).bindServiceAnnouncement(ServiceAnnouncementProvider.class));
+    public void testBindSelectorProviderClass() {
+        Injector injector = Guice.createInjector(new TestModule(), binder -> discoveryBinder(binder)
+                .bindServiceAnnouncement(ServiceAnnouncementProvider.class));
 
-        Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() {}));
+        Set<ServiceAnnouncement> announcements =
+                injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() {}));
         assertThat(announcements).isEqualTo(ImmutableSet.of(ANNOUNCEMENT));
     }
 
     @Test
-    public void testBindSelectorProviderInstance()
-    {
-        Injector injector = Guice.createInjector(
-                new TestModule(),
-                binder -> discoveryBinder(binder).bindServiceAnnouncement(new ServiceAnnouncementProvider()));
+    public void testBindSelectorProviderInstance() {
+        Injector injector = Guice.createInjector(new TestModule(), binder -> discoveryBinder(binder)
+                .bindServiceAnnouncement(new ServiceAnnouncementProvider()));
 
-        Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() {}));
+        Set<ServiceAnnouncement> announcements =
+                injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() {}));
         assertThat(announcements).isEqualTo(ImmutableSet.of(ANNOUNCEMENT));
     }
 
     @Test
-    public void testBindSelectorString()
-    {
+    public void testBindSelectorString() {
         Injector injector = Guice.createInjector(
-                new TestModule(),
-                binder -> discoveryBinder(binder).bindSelector("apple"));
+                new TestModule(), binder -> discoveryBinder(binder).bindSelector("apple"));
 
         assertCanCreateServiceSelector(injector, "apple", ServiceSelectorConfig.DEFAULT_POOL);
     }
 
     @Test
-    public void testBindSelectorAnnotation()
-    {
+    public void testBindSelectorAnnotation() {
         Injector injector = Guice.createInjector(
-                new TestModule(),
-                binder -> discoveryBinder(binder).bindSelector(serviceType("apple")));
+                new TestModule(), binder -> discoveryBinder(binder).bindSelector(serviceType("apple")));
 
         assertCanCreateServiceSelector(injector, "apple", ServiceSelectorConfig.DEFAULT_POOL);
     }
 
     @Test
-    public void testBindSelectorStringWithPool()
-    {
+    public void testBindSelectorStringWithPool() {
         Injector injector = Guice.createInjector(
                 new TestModule(ImmutableMap.of("discovery.apple.pool", "apple-pool")),
                 binder -> discoveryBinder(binder).bindSelector("apple"));
@@ -103,8 +93,7 @@ public class TestDiscoveryBinder
     }
 
     @Test
-    public void testBindSelectorAnnotationWithPool()
-    {
+    public void testBindSelectorAnnotationWithPool() {
         Injector injector = Guice.createInjector(
                 new TestModule(ImmutableMap.of("discovery.apple.pool", "apple-pool")),
                 binder -> discoveryBinder(binder).bindSelector(serviceType("apple")));
@@ -112,46 +101,40 @@ public class TestDiscoveryBinder
         assertCanCreateServiceSelector(injector, "apple", "apple-pool");
     }
 
-    private void assertCanCreateServiceSelector(Injector injector, String expectedType, String expectedPool)
-    {
-        ServiceSelector actualServiceSelector = injector.getInstance(Key.get(ServiceSelector.class, serviceType(expectedType)));
+    private void assertCanCreateServiceSelector(Injector injector, String expectedType, String expectedPool) {
+        ServiceSelector actualServiceSelector =
+                injector.getInstance(Key.get(ServiceSelector.class, serviceType(expectedType)));
         assertThat(actualServiceSelector).isNotNull();
         assertThat(actualServiceSelector.getType()).isEqualTo(expectedType);
         assertThat(actualServiceSelector.getPool()).isEqualTo(expectedPool);
     }
 
-    private static class TestModule
-            implements Module
-    {
+    private static class TestModule implements Module {
         private Map<String, String> configProperties;
 
-        private TestModule()
-        {
+        private TestModule() {
             configProperties = ImmutableMap.of();
         }
 
-        private TestModule(Map<String, String> configProperties)
-        {
+        private TestModule(Map<String, String> configProperties) {
             this.configProperties = ImmutableMap.copyOf(configProperties);
         }
 
         @Override
-        public void configure(Binder binder)
-        {
+        public void configure(Binder binder) {
             binder.install(new ConfigurationModule(new ConfigurationFactory(configProperties)));
             binder.install(new TestingNodeModule());
             binder.install(new TestingDiscoveryModule());
         }
     }
 
-    private static final ServiceAnnouncement ANNOUNCEMENT = ServiceAnnouncement.serviceAnnouncement("apple").addProperty("a", "apple").build();
+    private static final ServiceAnnouncement ANNOUNCEMENT = ServiceAnnouncement.serviceAnnouncement("apple")
+            .addProperty("a", "apple")
+            .build();
 
-    private static class ServiceAnnouncementProvider
-            implements Provider<ServiceAnnouncement>
-    {
+    private static class ServiceAnnouncementProvider implements Provider<ServiceAnnouncement> {
         @Override
-        public ServiceAnnouncement get()
-        {
+        public ServiceAnnouncement get() {
             return ANNOUNCEMENT;
         }
     }

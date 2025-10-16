@@ -15,16 +15,15 @@
  */
 package io.airlift.stats;
 
+import static java.util.Objects.requireNonNull;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.errorprone.annotations.ThreadSafe;
 import io.airlift.stats.DecayCounter.DecayCounterSnapshot;
+import java.util.concurrent.atomic.AtomicLong;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
-
-import java.util.concurrent.atomic.AtomicLong;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * Event statistics.
@@ -34,23 +33,20 @@ import static java.util.Objects.requireNonNull;
  * with {@link #update} or {@link #merge}.
  */
 @ThreadSafe
-public final class CounterStat
-{
+public final class CounterStat {
     private final AtomicLong count = new AtomicLong(0);
     private final DecayCounter oneMinute = new DecayCounter(ExponentialDecay.oneMinute());
     private final DecayCounter fiveMinute = new DecayCounter(ExponentialDecay.fiveMinutes());
     private final DecayCounter fifteenMinute = new DecayCounter(ExponentialDecay.fifteenMinutes());
 
-    public void update(long count)
-    {
+    public void update(long count) {
         oneMinute.add(count);
         fiveMinute.add(count);
         fifteenMinute.add(count);
         this.count.addAndGet(count);
     }
 
-    public void merge(CounterStat counterStat)
-    {
+    public void merge(CounterStat counterStat) {
         requireNonNull(counterStat, "counterStat is null");
         oneMinute.merge(counterStat.getOneMinute());
         fiveMinute.merge(counterStat.getFiveMinute());
@@ -66,8 +62,7 @@ public final class CounterStat
      * indeterminate.
      */
     @Managed
-    public void reset()
-    {
+    public void reset() {
         oneMinute.reset();
         fiveMinute.reset();
         fifteenMinute.reset();
@@ -78,8 +73,7 @@ public final class CounterStat
      * This is a hack to work around limitations in Jmxutils.
      */
     @Deprecated
-    public void resetTo(CounterStat counterStat)
-    {
+    public void resetTo(CounterStat counterStat) {
         oneMinute.resetTo(counterStat.getOneMinute());
         fiveMinute.resetTo(counterStat.getFiveMinute());
         fifteenMinute.resetTo(counterStat.getFifteenMinute());
@@ -87,50 +81,48 @@ public final class CounterStat
     }
 
     @Managed
-    public long getTotalCount()
-    {
+    public long getTotalCount() {
         return count.get();
     }
 
     @Managed
     @Nested
-    public DecayCounter getOneMinute()
-    {
+    public DecayCounter getOneMinute() {
         return oneMinute;
     }
 
     @Managed
     @Nested
-    public DecayCounter getFiveMinute()
-    {
+    public DecayCounter getFiveMinute() {
         return fiveMinute;
     }
 
     @Managed
     @Nested
-    public DecayCounter getFifteenMinute()
-    {
+    public DecayCounter getFifteenMinute() {
         return fifteenMinute;
     }
 
-    public CounterStatSnapshot snapshot()
-    {
-        return new CounterStatSnapshot(getTotalCount(), getOneMinute().snapshot(), getFiveMinute().snapshot(), getFifteenMinute().snapshot());
+    public CounterStatSnapshot snapshot() {
+        return new CounterStatSnapshot(
+                getTotalCount(),
+                getOneMinute().snapshot(),
+                getFiveMinute().snapshot(),
+                getFifteenMinute().snapshot());
     }
 
-    public static class CounterStatSnapshot
-    {
+    public static class CounterStatSnapshot {
         private final long totalCount;
         private final DecayCounterSnapshot oneMinute;
         private final DecayCounterSnapshot fiveMinute;
         private final DecayCounterSnapshot fifteenMinute;
 
         @JsonCreator
-        public CounterStatSnapshot(@JsonProperty("totalCount") long totalCount,
+        public CounterStatSnapshot(
+                @JsonProperty("totalCount") long totalCount,
                 @JsonProperty("oneMinute") DecayCounterSnapshot oneMinute,
                 @JsonProperty("fiveMinute") DecayCounterSnapshot fiveMinute,
-                @JsonProperty("fifteenMinute") DecayCounterSnapshot fifteenMinute)
-        {
+                @JsonProperty("fifteenMinute") DecayCounterSnapshot fifteenMinute) {
             this.totalCount = totalCount;
             this.oneMinute = oneMinute;
             this.fiveMinute = fiveMinute;
@@ -138,26 +130,22 @@ public final class CounterStat
         }
 
         @JsonProperty
-        public long getTotalCount()
-        {
+        public long getTotalCount() {
             return totalCount;
         }
 
         @JsonProperty
-        public DecayCounterSnapshot getOneMinute()
-        {
+        public DecayCounterSnapshot getOneMinute() {
             return oneMinute;
         }
 
         @JsonProperty
-        public DecayCounterSnapshot getFiveMinute()
-        {
+        public DecayCounterSnapshot getFiveMinute() {
             return fiveMinute;
         }
 
         @JsonProperty
-        public DecayCounterSnapshot getFifteenMinute()
-        {
+        public DecayCounterSnapshot getFifteenMinute() {
             return fifteenMinute;
         }
     }

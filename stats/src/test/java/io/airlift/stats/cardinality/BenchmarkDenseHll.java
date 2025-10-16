@@ -13,6 +13,8 @@
  */
 package io.airlift.stats.cardinality;
 
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -30,23 +32,18 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.VerboseMode;
 
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
-
 @State(Scope.Thread)
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
 @BenchmarkMode(Mode.AverageTime)
 @Fork(5)
 @Warmup(iterations = 5, time = 500, timeUnit = TimeUnit.MILLISECONDS)
 @Measurement(iterations = 10, time = 500, timeUnit = TimeUnit.MILLISECONDS)
-public class BenchmarkDenseHll
-{
+public class BenchmarkDenseHll {
     private static final int LARGE_CARDINALITY = 1_000_000;
     private static final int SMALL_CARDINALITY = 100;
 
     @Benchmark
-    public DenseHll benchmarkInsert(InsertData data)
-    {
+    public DenseHll benchmarkInsert(InsertData data) {
         for (long hash : data.hashes) {
             data.instance.insertHash(hash);
         }
@@ -55,26 +52,22 @@ public class BenchmarkDenseHll
     }
 
     @Benchmark
-    public DenseHll benchmarkMergeWithDense(MergeWithDenseData data)
-    {
+    public DenseHll benchmarkMergeWithDense(MergeWithDenseData data) {
         return data.base.mergeWith(data.toMerge);
     }
 
     @Benchmark
-    public DenseHll benchmarkMergeWithSparse(MergeWithSparseData data)
-    {
+    public DenseHll benchmarkMergeWithSparse(MergeWithSparseData data) {
         return data.base.mergeWith(data.toMerge);
     }
 
     @State(Scope.Thread)
-    public static class InsertData
-    {
+    public static class InsertData {
         public final DenseHll instance = new DenseHll(12);
         public final long[] hashes = new long[500];
 
         @Setup(Level.Iteration)
-        public void initialize()
-        {
+        public void initialize() {
             for (int i = 0; i < hashes.length; i++) {
                 hashes[i] = ThreadLocalRandom.current().nextLong();
             }
@@ -82,14 +75,12 @@ public class BenchmarkDenseHll
     }
 
     @State(Scope.Thread)
-    public static class MergeWithDenseData
-    {
+    public static class MergeWithDenseData {
         public DenseHll base;
         public DenseHll toMerge;
 
         @Setup(Level.Iteration)
-        public void initialize()
-        {
+        public void initialize() {
             base = new DenseHll(12);
             for (int i = 0; i < LARGE_CARDINALITY; i++) {
                 base.insertHash(ThreadLocalRandom.current().nextLong());
@@ -106,14 +97,12 @@ public class BenchmarkDenseHll
     }
 
     @State(Scope.Thread)
-    public static class MergeWithSparseData
-    {
+    public static class MergeWithSparseData {
         public DenseHll base;
         public SparseHll toMerge;
 
         @Setup(Level.Iteration)
-        public void initialize()
-        {
+        public void initialize() {
             base = new DenseHll(12);
             for (int i = 0; i < LARGE_CARDINALITY; i++) {
                 base.insertHash(ThreadLocalRandom.current().nextLong());
@@ -126,9 +115,7 @@ public class BenchmarkDenseHll
         }
     }
 
-    public static void main(String[] args)
-            throws RunnerException
-    {
+    public static void main(String[] args) throws RunnerException {
         Options options = new OptionsBuilder()
                 .verbosity(VerboseMode.NORMAL)
                 .include(".*" + BenchmarkDenseHll.class.getSimpleName() + ".*")

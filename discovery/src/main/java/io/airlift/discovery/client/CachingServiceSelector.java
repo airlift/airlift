@@ -15,6 +15,13 @@
  */
 package io.airlift.discovery.client;
 
+import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
+import static io.airlift.discovery.client.DiscoveryAnnouncementClient.DEFAULT_DELAY;
+import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -23,7 +30,6 @@ import com.google.common.util.concurrent.SettableFuture;
 import io.airlift.log.Logger;
 import io.airlift.units.Duration;
 import jakarta.annotation.PostConstruct;
-
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
@@ -31,16 +37,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
-import static io.airlift.discovery.client.DiscoveryAnnouncementClient.DEFAULT_DELAY;
-import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
-public class CachingServiceSelector
-        implements ServiceSelector
-{
+public class CachingServiceSelector implements ServiceSelector {
     private static final Logger log = Logger.get(CachingServiceSelector.class);
 
     private final String type;
@@ -53,8 +50,11 @@ public class CachingServiceSelector
 
     private final AtomicBoolean started = new AtomicBoolean(false);
 
-    public CachingServiceSelector(String type, ServiceSelectorConfig selectorConfig, DiscoveryLookupClient lookupClient, ScheduledExecutorService executor)
-    {
+    public CachingServiceSelector(
+            String type,
+            ServiceSelectorConfig selectorConfig,
+            DiscoveryLookupClient lookupClient,
+            ScheduledExecutorService executor) {
         requireNonNull(type, "type is null");
         requireNonNull(selectorConfig, "selectorConfig is null");
         requireNonNull(lookupClient, "client is null");
@@ -73,35 +73,30 @@ public class CachingServiceSelector
     }
 
     @PostConstruct
-    public void start()
-    {
+    public void start() {
         if (started.compareAndSet(false, true)) {
             checkState(!executor.isShutdown(), "CachingServiceSelector has been destroyed");
 
             // if discovery is available, get the initial set of servers before starting
             try {
                 refresh().get(1, TimeUnit.SECONDS);
-            }
-            catch (Exception ignored) {
+            } catch (Exception ignored) {
             }
         }
     }
 
     @Override
-    public String getType()
-    {
+    public String getType() {
         return type;
     }
 
     @Override
-    public String getPool()
-    {
+    public String getPool() {
         return pool;
     }
 
     @Override
-    public List<ServiceDescriptor> selectAllServices()
-    {
+    public List<ServiceDescriptor> selectAllServices() {
         ServiceDescriptors serviceDescriptors = this.serviceDescriptors.get();
         if (serviceDescriptors == null) {
             return ImmutableList.of();
@@ -110,46 +105,43 @@ public class CachingServiceSelector
     }
 
     @Override
-    public ListenableFuture<List<ServiceDescriptor>> refresh()
-    {
+    public ListenableFuture<List<ServiceDescriptor>> refresh() {
         ServiceDescriptors oldDescriptors = this.serviceDescriptors.get();
 
         ListenableFuture<ServiceDescriptors> future;
         if (oldDescriptors == null) {
             future = lookupClient.getServices(type, pool);
-        }
-        else {
+        } else {
             future = lookupClient.refreshServices(oldDescriptors);
         }
 
-        future = chainedCallback(future, new FutureCallback<ServiceDescriptors>()
-        {
-            @Override
-            public void onSuccess(ServiceDescriptors newDescriptors)
-            {
-                serviceDescriptors.set(newDescriptors);
-                errorBackOff.success();
+        future = chainedCallback(
+                future,
+                new FutureCallback<ServiceDescriptors>() {
+                    @Override
+                    public void onSuccess(ServiceDescriptors newDescriptors) {
+                        serviceDescriptors.set(newDescriptors);
+                        errorBackOff.success();
 
-                Duration delay = newDescriptors.getMaxAge();
-                if (delay == null) {
-                    delay = DEFAULT_DELAY;
-                }
-                scheduleRefresh(delay);
-            }
+                        Duration delay = newDescriptors.getMaxAge();
+                        if (delay == null) {
+                            delay = DEFAULT_DELAY;
+                        }
+                        scheduleRefresh(delay);
+                    }
 
-            @Override
-            public void onFailure(Throwable t)
-            {
-                Duration duration = errorBackOff.failed(t);
-                scheduleRefresh(duration);
-            }
-        }, executor);
+                    @Override
+                    public void onFailure(Throwable t) {
+                        Duration duration = errorBackOff.failed(t);
+                        scheduleRefresh(duration);
+                    }
+                },
+                executor);
 
         return Futures.transform(future, ServiceDescriptors::getServiceDescriptors, directExecutor());
     }
 
-    private void scheduleRefresh(Duration delay)
-    {
+    private void scheduleRefresh(Duration delay) {
         // already stopped?  avoids rejection exception
         if (executor.isShutdown()) {
             return;
@@ -158,35 +150,30 @@ public class CachingServiceSelector
     }
 
     private static <V> ListenableFuture<V> chainedCallback(
-            ListenableFuture<V> future,
-            final FutureCallback<? super V> callback,
-            Executor executor)
-    {
+            ListenableFuture<V> future, final FutureCallback<? super V> callback, Executor executor) {
         final SettableFuture<V> done = SettableFuture.create();
-        Futures.addCallback(future, new FutureCallback<V>()
-        {
-            @Override
-            public void onSuccess(V result)
-            {
-                try {
-                    callback.onSuccess(result);
-                }
-                finally {
-                    done.set(result);
-                }
-            }
+        Futures.addCallback(
+                future,
+                new FutureCallback<V>() {
+                    @Override
+                    public void onSuccess(V result) {
+                        try {
+                            callback.onSuccess(result);
+                        } finally {
+                            done.set(result);
+                        }
+                    }
 
-            @Override
-            public void onFailure(Throwable t)
-            {
-                try {
-                    callback.onFailure(t);
-                }
-                finally {
-                    done.setException(t);
-                }
-            }
-        }, executor);
+                    @Override
+                    public void onFailure(Throwable t) {
+                        try {
+                            callback.onFailure(t);
+                        } finally {
+                            done.setException(t);
+                        }
+                    }
+                },
+                executor);
         return done;
     }
 }

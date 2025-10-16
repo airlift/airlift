@@ -15,36 +15,29 @@
  */
 package io.airlift.configuration;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Binder;
 import com.google.inject.Module;
-
 import java.util.List;
 
-import static com.google.common.base.Preconditions.checkArgument;
-
-public interface ConfigurationAwareModule
-        extends Module
-{
+public interface ConfigurationAwareModule extends Module {
     void setConfigurationFactory(ConfigurationFactory configurationFactory);
 
-    static Module combine(Module... modules)
-    {
+    static Module combine(Module... modules) {
         return combine(ImmutableList.copyOf(modules));
     }
 
-    static Module combine(Iterable<Module> modulesIterable)
-    {
+    static Module combine(Iterable<Module> modulesIterable) {
         List<Module> modules = ImmutableList.copyOf(modulesIterable);
         checkArgument(!modules.isEmpty(), "no modules provided");
         if (modules.size() == 1) {
             return modules.get(0);
         }
-        return new AbstractConfigurationAwareModule()
-        {
+        return new AbstractConfigurationAwareModule() {
             @Override
-            protected void setup(Binder binder)
-            {
+            protected void setup(Binder binder) {
                 for (Module module : modules) {
                     install(module);
                 }

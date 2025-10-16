@@ -15,6 +15,10 @@
  */
 package io.airlift.discovery.client.testing;
 
+import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
+import static io.airlift.concurrent.MoreFutures.getFutureValue;
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.FluentFuture;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -25,24 +29,17 @@ import io.airlift.discovery.client.ServiceDescriptors;
 import io.airlift.discovery.client.ServiceSelector;
 import io.airlift.discovery.client.ServiceSelectorConfig;
 import io.airlift.log.Logger;
-
 import java.util.List;
 
-import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
-import static io.airlift.concurrent.MoreFutures.getFutureValue;
-import static java.util.Objects.requireNonNull;
-
-public class SimpleServiceSelector
-        implements ServiceSelector
-{
+public class SimpleServiceSelector implements ServiceSelector {
     private static final Logger log = Logger.get(SimpleServiceSelector.class);
 
     private final String type;
     private final String pool;
     private final DiscoveryLookupClient lookupClient;
 
-    public SimpleServiceSelector(String type, ServiceSelectorConfig selectorConfig, DiscoveryLookupClient lookupClient)
-    {
+    public SimpleServiceSelector(
+            String type, ServiceSelectorConfig selectorConfig, DiscoveryLookupClient lookupClient) {
         requireNonNull(type, "type is null");
         requireNonNull(selectorConfig, "selectorConfig is null");
         requireNonNull(lookupClient, "client is null");
@@ -53,34 +50,29 @@ public class SimpleServiceSelector
     }
 
     @Override
-    public String getType()
-    {
+    public String getType() {
         return type;
     }
 
     @Override
-    public String getPool()
-    {
+    public String getPool() {
         return pool;
     }
 
     @Override
-    public List<ServiceDescriptor> selectAllServices()
-    {
+    public List<ServiceDescriptor> selectAllServices() {
         try {
             ListenableFuture<ServiceDescriptors> future = lookupClient.getServices(type, pool);
             ServiceDescriptors serviceDescriptors = getFutureValue(future, DiscoveryException.class);
             return serviceDescriptors.getServiceDescriptors();
-        }
-        catch (DiscoveryException e) {
+        } catch (DiscoveryException e) {
             log.error(e);
             return ImmutableList.of();
         }
     }
 
     @Override
-    public ListenableFuture<List<ServiceDescriptor>> refresh()
-    {
+    public ListenableFuture<List<ServiceDescriptor>> refresh() {
         return FluentFuture.from(lookupClient.getServices(type, pool))
                 .transform(ServiceDescriptors::getServiceDescriptors, directExecutor());
     }

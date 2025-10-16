@@ -13,27 +13,23 @@
  */
 package io.airlift.json;
 
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
+
 import com.google.inject.Binder;
 import com.google.inject.multibindings.Multibinder;
 
-import static com.google.inject.multibindings.Multibinder.newSetBinder;
-
-public class JsonSubTypeBinder
-{
+public class JsonSubTypeBinder {
     private final Multibinder<JsonSubType> subTypeBinder;
 
-    public static JsonSubTypeBinder jsonSubTypeBinder(Binder binder)
-    {
+    public static JsonSubTypeBinder jsonSubTypeBinder(Binder binder) {
         return new JsonSubTypeBinder(binder);
     }
 
-    public void bindJsonSubType(JsonSubType jsonSubType)
-    {
+    public void bindJsonSubType(JsonSubType jsonSubType) {
         subTypeBinder.addBinding().toInstance(jsonSubType);
     }
 
-    private JsonSubTypeBinder(Binder binder)
-    {
+    private JsonSubTypeBinder(Binder binder) {
         subTypeBinder = newSetBinder(binder, JsonSubType.class);
     }
 }

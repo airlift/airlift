@@ -13,6 +13,10 @@
  */
 package io.airlift.http.client.jetty;
 
+import static io.airlift.http.client.HttpStatus.BAD_GATEWAY;
+import static io.airlift.http.client.HttpStatus.BAD_REQUEST;
+import static java.util.Objects.requireNonNull;
+
 import io.airlift.http.client.AbstractHttpClientTest;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.Request;
@@ -20,38 +24,27 @@ import io.airlift.http.client.Response;
 import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.StreamingResponse;
 import io.airlift.http.client.TestingHttpProxy;
+import java.io.IOException;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
-import java.io.IOException;
-import java.util.Optional;
-
-import static io.airlift.http.client.HttpStatus.BAD_GATEWAY;
-import static io.airlift.http.client.HttpStatus.BAD_REQUEST;
-import static java.util.Objects.requireNonNull;
-
-public abstract class AbstractHttpClientTestHttpProxy
-        extends AbstractHttpClientTest
-{
+public abstract class AbstractHttpClientTestHttpProxy extends AbstractHttpClientTest {
     protected AbstractHttpClientTestHttpProxy() {}
 
-    protected AbstractHttpClientTestHttpProxy(String keystore)
-    {
+    protected AbstractHttpClientTestHttpProxy(String keystore) {
         super(keystore);
     }
 
     @Override
-    public HttpClientConfig createClientConfig()
-    {
+    public HttpClientConfig createClientConfig() {
         return new HttpClientConfig();
     }
 
     @Override
     @Test
     @Timeout(5)
-    public void testConnectTimeout()
-            throws Exception
-    {
+    public void testConnectTimeout() throws Exception {
         // When using a proxy, the connect timeout is for the connection to the proxy server,
         // not the ultimate destination server. For this test, the connection to the proxy
         // succeeds immediately, but the proxy's connection to the destination server will
@@ -61,64 +54,58 @@ public abstract class AbstractHttpClientTestHttpProxy
 
     @Override
     public Optional<StreamingResponse> executeRequest(CloseableTestHttpServer server, Request request)
-            throws Exception
-    {
+            throws Exception {
         HttpClientConfig config = createClientConfig();
         TestingHttpProxy testingHttpProxy = new TestingHttpProxy(keystore);
         JettyHttpClient client = server.createClient(config.setHttpProxy(testingHttpProxy.getHostAndPort()));
 
-        TestingStreamingResponse streamingResponse = new TestingStreamingResponse(() -> client.executeStreaming(request), testingHttpProxy, client);
-        if ((streamingResponse.getStatusCode() == BAD_GATEWAY.code()) || (streamingResponse.getStatusCode() == BAD_REQUEST.code())) {
+        TestingStreamingResponse streamingResponse =
+                new TestingStreamingResponse(() -> client.executeStreaming(request), testingHttpProxy, client);
+        if ((streamingResponse.getStatusCode() == BAD_GATEWAY.code())
+                || (streamingResponse.getStatusCode() == BAD_REQUEST.code())) {
             throw new IOException();
         }
         return Optional.of(streamingResponse);
     }
 
     @Override
-    public <T, E extends Exception> T executeRequest(CloseableTestHttpServer server, Request request, ResponseHandler<T, E> responseHandler)
-            throws Exception
-    {
+    public <T, E extends Exception> T executeRequest(
+            CloseableTestHttpServer server, Request request, ResponseHandler<T, E> responseHandler) throws Exception {
         return executeRequest(server, createClientConfig(), request, responseHandler);
     }
 
     @Override
-    public <T, E extends Exception> T executeRequest(CloseableTestHttpServer server, HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
-            throws Exception
-    {
-        try (TestingHttpProxy testingHttpProxy = createTestingHttpProxy(); JettyHttpClient client = server.createClient(config.setHttpProxy(testingHttpProxy.getHostAndPort()))) {
+    public <T, E extends Exception> T executeRequest(
+            CloseableTestHttpServer server,
+            HttpClientConfig config,
+            Request request,
+            ResponseHandler<T, E> responseHandler)
+            throws Exception {
+        try (TestingHttpProxy testingHttpProxy = createTestingHttpProxy();
+                JettyHttpClient client = server.createClient(config.setHttpProxy(testingHttpProxy.getHostAndPort()))) {
             return client.execute(request, new ProxyResponseHandler<>(responseHandler));
         }
     }
 
-    protected TestingHttpProxy createTestingHttpProxy()
-            throws Exception
-    {
+    protected TestingHttpProxy createTestingHttpProxy() throws Exception {
         return new TestingHttpProxy(keystore);
     }
 
-    public static class ProxyResponseHandler<T, E extends Exception>
-            implements ResponseHandler<T, E>
-    {
+    public static class ProxyResponseHandler<T, E extends Exception> implements ResponseHandler<T, E> {
         private final ResponseHandler<T, E> delegate;
 
-        public ProxyResponseHandler(ResponseHandler<T, E> delegate)
-        {
+        public ProxyResponseHandler(ResponseHandler<T, E> delegate) {
             this.delegate = requireNonNull(delegate, "delegate is null");
         }
 
         @Override
-        public T handleException(Request request, Exception exception)
-                throws E
-        {
+        public T handleException(Request request, Exception exception) throws E {
             return delegate.handleException(request, exception);
         }
 
         @Override
-        public T handle(Request request, Response response)
-                throws E
-        {
-            if ((response.getStatusCode() == BAD_GATEWAY.code()) ||
-                    (response.getStatusCode() == BAD_REQUEST.code())) {
+        public T handle(Request request, Response response) throws E {
+            if ((response.getStatusCode() == BAD_GATEWAY.code()) || (response.getStatusCode() == BAD_REQUEST.code())) {
                 return delegate.handleException(request, new IOException());
             }
 

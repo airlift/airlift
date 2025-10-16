@@ -15,6 +15,9 @@
  */
 package io.airlift.log;
 
+import static java.util.Objects.requireNonNull;
+import static org.weakref.jmx.guice.ExportBinder.newExporter;
+
 import com.google.inject.Binder;
 import com.google.inject.Inject;
 import com.google.inject.Module;
@@ -24,15 +27,9 @@ import com.google.inject.Singleton;
 import jakarta.annotation.PreDestroy;
 import org.weakref.jmx.MBeanExporter;
 
-import static java.util.Objects.requireNonNull;
-import static org.weakref.jmx.guice.ExportBinder.newExporter;
-
-public class LogJmxModule
-        implements Module
-{
+public class LogJmxModule implements Module {
     @Override
-    public void configure(Binder binder)
-    {
+    public void configure(Binder binder) {
         binder.disableCircularProxies();
 
         binder.bind(LoggingMBean.class).in(Scopes.SINGLETON);
@@ -42,25 +39,21 @@ public class LogJmxModule
 
     @Provides
     @Singleton
-    public Logging getLogging()
-    {
+    public Logging getLogging() {
         return Logging.initialize();
     }
 
-    public static class LogExporter
-    {
+    public static class LogExporter {
         private final Logging logging;
 
         @Inject
-        public LogExporter(Logging logging, MBeanExporter exporter)
-        {
+        public LogExporter(Logging logging, MBeanExporter exporter) {
             this.logging = requireNonNull(logging, "logging is null");
             logging.exportMBeans(requireNonNull(exporter, "exporter is null"));
         }
 
         @PreDestroy
-        public void destroy()
-        {
+        public void destroy() {
             logging.unexportMBeans();
         }
     }

@@ -1,13 +1,11 @@
 package io.airlift.concurrent;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-
-import java.util.concurrent.ThreadFactory;
-
 import static java.util.concurrent.Executors.defaultThreadFactory;
 
-public final class Threads
-{
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import java.util.concurrent.ThreadFactory;
+
+public final class Threads {
     private Threads() {}
 
     /**
@@ -21,11 +19,11 @@ public final class Threads
      * ThreadFactory and will be assigned sequentially.
      * @return the created ThreadFactory
      */
-    public static ThreadFactory threadsNamed(String nameFormat)
-    {
+    public static ThreadFactory threadsNamed(String nameFormat) {
         return new ThreadFactoryBuilder()
                 .setNameFormat(nameFormat)
-                .setThreadFactory(new ContextClassLoaderThreadFactory(Thread.currentThread().getContextClassLoader(), defaultThreadFactory()))
+                .setThreadFactory(new ContextClassLoaderThreadFactory(
+                        Thread.currentThread().getContextClassLoader(), defaultThreadFactory()))
                 .build();
     }
 
@@ -37,12 +35,12 @@ public final class Threads
      * @param nameFormat see {@link #threadsNamed(String)}
      * @return the created ThreadFactory
      */
-    public static ThreadFactory daemonThreadsNamed(String nameFormat)
-    {
+    public static ThreadFactory daemonThreadsNamed(String nameFormat) {
         return new ThreadFactoryBuilder()
                 .setNameFormat(nameFormat)
                 .setDaemon(true)
-                .setThreadFactory(new ContextClassLoaderThreadFactory(Thread.currentThread().getContextClassLoader(), defaultThreadFactory()))
+                .setThreadFactory(new ContextClassLoaderThreadFactory(
+                        Thread.currentThread().getContextClassLoader(), defaultThreadFactory()))
                 .build();
     }
 
@@ -54,29 +52,26 @@ public final class Threads
      * @param nameFormat see {@link #threadsNamed(String)}
      * @return the created ThreadFactory
      */
-    public static ThreadFactory virtualThreadsNamed(String nameFormat)
-    {
+    public static ThreadFactory virtualThreadsNamed(String nameFormat) {
         return new ThreadFactoryBuilder()
                 .setNameFormat(nameFormat)
-                .setThreadFactory(new ContextClassLoaderThreadFactory(Thread.currentThread().getContextClassLoader(), Thread.ofVirtual().factory()))
+                .setThreadFactory(new ContextClassLoaderThreadFactory(
+                        Thread.currentThread().getContextClassLoader(),
+                        Thread.ofVirtual().factory()))
                 .build();
     }
 
-    private static class ContextClassLoaderThreadFactory
-            implements ThreadFactory
-    {
+    private static class ContextClassLoaderThreadFactory implements ThreadFactory {
         private final ClassLoader classLoader;
         private final ThreadFactory delegate;
 
-        public ContextClassLoaderThreadFactory(ClassLoader classLoader, ThreadFactory delegate)
-        {
+        public ContextClassLoaderThreadFactory(ClassLoader classLoader, ThreadFactory delegate) {
             this.classLoader = classLoader;
             this.delegate = delegate;
         }
 
         @Override
-        public Thread newThread(Runnable runnable)
-        {
+        public Thread newThread(Runnable runnable) {
             Thread thread = delegate.newThread(runnable);
             thread.setContextClassLoader(classLoader);
             return thread;

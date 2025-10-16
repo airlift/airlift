@@ -13,8 +13,14 @@
  */
 package io.airlift.concurrent;
 
+import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
+import static io.airlift.concurrent.MoreFutures.whenAnyCompleteCancelOthers;
+
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
+import java.util.ArrayList;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -31,21 +37,13 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.VerboseMode;
 
-import java.util.ArrayList;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-
-import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
-import static io.airlift.concurrent.MoreFutures.whenAnyCompleteCancelOthers;
-
 @State(Scope.Thread)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @Fork(2)
 @Warmup(iterations = 5, time = 500, timeUnit = TimeUnit.MILLISECONDS)
 @Measurement(iterations = 10, time = 500, timeUnit = TimeUnit.MILLISECONDS)
 @BenchmarkMode(Mode.AverageTime)
-public class BenchmarkWhenAnyCompleteCancelOthers
-{
+public class BenchmarkWhenAnyCompleteCancelOthers {
     //        with optimization in ExtendedSettableFuture.setAsync    without
     // 300                    32.7 +/- 1.7 us                     810.6 +/- 31 us
     // 1000                  106.2 +/- 3.0 us                    2813.5 +/- 121 us
@@ -54,9 +52,7 @@ public class BenchmarkWhenAnyCompleteCancelOthers
     private int futureCount;
 
     @Benchmark
-    public void benchmark()
-            throws Exception
-    {
+    public void benchmark() throws Exception {
         Semaphore semaphore = new Semaphore(futureCount);
 
         ArrayList<SettableFuture<?>> futures = new ArrayList<>();
@@ -71,9 +67,7 @@ public class BenchmarkWhenAnyCompleteCancelOthers
         anyComplete.get();
     }
 
-    public static void main(String[] args)
-            throws RunnerException
-    {
+    public static void main(String[] args) throws RunnerException {
         Options options = new OptionsBuilder()
                 .verbosity(VerboseMode.NORMAL)
                 .include(".*" + BenchmarkWhenAnyCompleteCancelOthers.class.getSimpleName() + ".*")

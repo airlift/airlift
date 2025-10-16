@@ -15,29 +15,26 @@
  */
 package io.airlift.json;
 
+import static com.google.common.base.MoreObjects.toStringHelper;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-
 import java.io.ByteArrayInputStream;
 import java.io.InputStreamReader;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class ImmutablePerson
-{
+public class ImmutablePerson {
     private final String name;
     private final boolean rocks;
     private final String notWritable = null;
 
-    public static void validatePersonJsonCodec(JsonCodec<ImmutablePerson> jsonCodec)
-    {
+    public static void validatePersonJsonCodec(JsonCodec<ImmutablePerson> jsonCodec) {
         ImmutablePerson expected = new ImmutablePerson("dain", true);
 
         String json = jsonCodec.toJson(expected);
@@ -48,11 +45,11 @@ public class ImmutablePerson
 
         assertThat(jsonCodec.fromJson(new ByteArrayInputStream(bytes))).isEqualTo(expected);
 
-        assertThat(jsonCodec.fromJson(new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8))).isEqualTo(expected);
+        assertThat(jsonCodec.fromJson(new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8)))
+                .isEqualTo(expected);
     }
 
-    public static void validatePersonListJsonCodec(JsonCodec<List<ImmutablePerson>> jsonCodec)
-    {
+    public static void validatePersonListJsonCodec(JsonCodec<List<ImmutablePerson>> jsonCodec) {
         ImmutableList<ImmutablePerson> expected = ImmutableList.of(
                 new ImmutablePerson("dain", true),
                 new ImmutablePerson("martin", true),
@@ -66,11 +63,11 @@ public class ImmutablePerson
 
         assertThat(jsonCodec.fromJson(new ByteArrayInputStream(bytes))).isEqualTo(expected);
 
-        assertThat(jsonCodec.fromJson(new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8))).isEqualTo(expected);
+        assertThat(jsonCodec.fromJson(new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8)))
+                .isEqualTo(expected);
     }
 
-    public static void validatePersonMapJsonCodec(JsonCodec<Map<String, ImmutablePerson>> jsonCodec)
-    {
+    public static void validatePersonMapJsonCodec(JsonCodec<Map<String, ImmutablePerson>> jsonCodec) {
         ImmutableMap<String, ImmutablePerson> expected = ImmutableMap.<String, ImmutablePerson>builder()
                 .put("dain", new ImmutablePerson("dain", true))
                 .put("martin", new ImmutablePerson("martin", true))
@@ -85,39 +82,33 @@ public class ImmutablePerson
 
         assertThat(jsonCodec.fromJson(new ByteArrayInputStream(bytes))).isEqualTo(expected);
 
-        assertThat(jsonCodec.fromJson(new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8))).isEqualTo(expected);
+        assertThat(jsonCodec.fromJson(new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8)))
+                .isEqualTo(expected);
     }
 
     @JsonCreator
-    public ImmutablePerson(
-            @JsonProperty("name") String name,
-            @JsonProperty("rocks") boolean rocks)
-    {
+    public ImmutablePerson(@JsonProperty("name") String name, @JsonProperty("rocks") boolean rocks) {
         this.name = name;
         this.rocks = rocks;
     }
 
     @JsonProperty
-    public String getName()
-    {
+    public String getName() {
         return name;
     }
 
     @JsonProperty
-    public boolean isRocks()
-    {
+    public boolean isRocks() {
         return rocks;
     }
 
     @JsonProperty
-    public String getNotWritable()
-    {
+    public String getNotWritable() {
         return notWritable;
     }
 
     @Override
-    public boolean equals(Object obj)
-    {
+    public boolean equals(Object obj) {
         if (this == obj) {
             return true;
         }
@@ -125,23 +116,18 @@ public class ImmutablePerson
             return false;
         }
         ImmutablePerson o = (ImmutablePerson) obj;
-        return Objects.equals(this.name, o.name) &&
-                Objects.equals(this.rocks, o.rocks) &&
-                Objects.equals(this.notWritable, o.notWritable);
+        return Objects.equals(this.name, o.name)
+                && Objects.equals(this.rocks, o.rocks)
+                && Objects.equals(this.notWritable, o.notWritable);
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return Objects.hash(name, rocks, notWritable);
     }
 
     @Override
-    public String toString()
-    {
-        return toStringHelper(this)
-                .add("name", name)
-                .add("rocks", rocks)
-                .toString();
+    public String toString() {
+        return toStringHelper(this).add("name", name).add("rocks", rocks).toString();
     }
 }

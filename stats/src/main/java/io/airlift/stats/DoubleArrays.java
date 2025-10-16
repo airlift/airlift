@@ -29,8 +29,7 @@
 package io.airlift.stats;
 
 // Note: this code was forked from fastutil (http://fastutil.di.unimi.it/)
-final class DoubleArrays
-{
+final class DoubleArrays {
     private DoubleArrays() {}
 
     private static final int QUICKSORT_NO_REC = 16;
@@ -61,8 +60,7 @@ final class DoubleArrays
      * @param to the index of the last element (exclusive) to be sorted.
      */
     @SuppressWarnings("checkstyle:InnerAssignment")
-    public static void quickSortIndirect(final int[] perm, final double[] x, final int from, final int to)
-    {
+    public static void quickSortIndirect(final int[] perm, final double[] x, final int from, final int to) {
         final int len = to - from;
         // Selection sort on smallest arrays
         if (len < QUICKSORT_NO_REC) {
@@ -120,8 +118,7 @@ final class DoubleArrays
         }
     }
 
-    private static void insertionSortIndirect(final int[] perm, final double[] a, final int from, final int to)
-    {
+    private static void insertionSortIndirect(final int[] perm, final double[] a, final int from, final int to) {
         for (int i = from; ++i < to; ) {
             int t = perm[i];
             int j = i;
@@ -136,8 +133,7 @@ final class DoubleArrays
         }
     }
 
-    private static int med3Indirect(final int[] perm, final double[] x, final int a, final int b, final int c)
-    {
+    private static int med3Indirect(final int[] perm, final double[] x, final int a, final int b, final int c) {
         final double aa = x[perm[a]];
         final double bb = x[perm[b]];
         final double cc = x[perm[c]];
@@ -147,15 +143,13 @@ final class DoubleArrays
         return (ab < 0 ? (bc < 0 ? b : ac < 0 ? c : a) : (bc > 0 ? b : ac > 0 ? c : a));
     }
 
-    private static void swap(final int[] x, final int a, final int b)
-    {
+    private static void swap(final int[] x, final int a, final int b) {
         final int t = x[a];
         x[a] = x[b];
         x[b] = t;
     }
 
-    private static void swap(final int[] x, int a, int b, final int n)
-    {
+    private static void swap(final int[] x, int a, int b, final int n) {
         for (int i = 0; i < n; i++, a++, b++) {
             swap(x, a, b);
         }

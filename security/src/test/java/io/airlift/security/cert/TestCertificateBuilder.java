@@ -13,12 +13,10 @@
  */
 package io.airlift.security.cert;
 
-import org.junit.jupiter.api.Test;
-
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
-import javax.net.ssl.X509TrustManager;
-import javax.security.auth.x500.X500Principal;
+import static io.airlift.security.cert.CertificateBuilder.certificateBuilder;
+import static java.time.ZoneOffset.UTC;
+import static java.time.temporal.ChronoUnit.YEARS;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigInteger;
 import java.security.KeyPair;
@@ -27,18 +25,15 @@ import java.security.KeyStore;
 import java.security.cert.X509Certificate;
 import java.security.spec.ECGenParameterSpec;
 import java.time.LocalDate;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
+import javax.security.auth.x500.X500Principal;
+import org.junit.jupiter.api.Test;
 
-import static io.airlift.security.cert.CertificateBuilder.certificateBuilder;
-import static java.time.ZoneOffset.UTC;
-import static java.time.temporal.ChronoUnit.YEARS;
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class TestCertificateBuilder
-{
+public class TestCertificateBuilder {
     @Test
-    public void test()
-            throws Exception
-    {
+    public void test() throws Exception {
         KeyPairGenerator generator = KeyPairGenerator.getInstance("EC");
         generator.initialize(new ECGenParameterSpec("secp256r1"));
         KeyPair keyPair = generator.generateKeyPair();
@@ -58,8 +53,10 @@ public class TestCertificateBuilder
 
         assertThat(certificate.getSerialNumber()).isEqualTo(BigInteger.valueOf(12345));
         assertThat(certificate.getIssuerX500Principal()).isEqualTo(issuer);
-        assertThat(certificate.getNotBefore().toInstant()).isEqualTo(notBefore.atStartOfDay().toInstant(UTC));
-        assertThat(certificate.getNotAfter().toInstant()).isEqualTo(notAfter.atTime(23, 59, 59).toInstant(UTC));
+        assertThat(certificate.getNotBefore().toInstant())
+                .isEqualTo(notBefore.atStartOfDay().toInstant(UTC));
+        assertThat(certificate.getNotAfter().toInstant())
+                .isEqualTo(notAfter.atTime(23, 59, 59).toInstant(UTC));
         assertThat(certificate.getSubjectX500Principal()).isEqualTo(subject);
         assertThat(certificate.getPublicKey()).isEqualTo(keyPair.getPublic());
 
@@ -67,7 +64,8 @@ public class TestCertificateBuilder
         KeyStore keyStore = KeyStore.getInstance("JKS");
         keyStore.load(null, new char[0]);
         keyStore.setCertificateEntry("test", certificate);
-        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        TrustManagerFactory trustManagerFactory =
+                TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustManagerFactory.init(keyStore);
 
         for (TrustManager trustManager : trustManagerFactory.getTrustManagers()) {

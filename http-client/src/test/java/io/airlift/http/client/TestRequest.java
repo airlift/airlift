@@ -15,12 +15,6 @@
  */
 package io.airlift.http.client;
 
-import com.google.common.collect.ImmutableListMultimap;
-import com.google.common.collect.ListMultimap;
-import org.junit.jupiter.api.Test;
-
-import java.net.URI;
-
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.Request.Builder.preparePut;
 import static io.airlift.http.client.StaticBodyGenerator.createStaticBodyGenerator;
@@ -28,79 +22,130 @@ import static io.airlift.testing.EquivalenceTester.equivalenceTester;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class TestRequest
-{
+import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.ListMultimap;
+import java.net.URI;
+import org.junit.jupiter.api.Test;
+
+public class TestRequest {
     @Test
-    public void testEquivalence()
-    {
+    public void testEquivalence() {
         BodyGenerator bodyGenerator = createBodyGenerator();
 
         equivalenceTester()
                 .addEquivalentGroup(
-                        prepareGet().setUri(createUriA()).addHeaders(createHeadersA()).build(),
-                        prepareGet().setUri(createUriA()).addHeaders(createHeadersA()).build(),
-                        prepareGet().setUri(createUriA()).addHeaders(createHeadersA()).setFollowRedirects(true).build())
+                        prepareGet()
+                                .setUri(createUriA())
+                                .addHeaders(createHeadersA())
+                                .build(),
+                        prepareGet()
+                                .setUri(createUriA())
+                                .addHeaders(createHeadersA())
+                                .build(),
+                        prepareGet()
+                                .setUri(createUriA())
+                                .addHeaders(createHeadersA())
+                                .setFollowRedirects(true)
+                                .build())
+                .addEquivalentGroup(preparePut()
+                        .setUri(createUriA())
+                        .addHeaders(createHeadersA())
+                        .setFollowRedirects(false)
+                        .build())
                 .addEquivalentGroup(
-                        preparePut().setUri(createUriA()).addHeaders(createHeadersA()).setFollowRedirects(false).build())
+                        prepareGet()
+                                .setUri(createUriA())
+                                .addHeaders(createHeadersA())
+                                .setBodyGenerator(bodyGenerator)
+                                .build(),
+                        prepareGet()
+                                .setUri(createUriA())
+                                .addHeaders(createHeadersA())
+                                .setBodyGenerator(bodyGenerator)
+                                .build())
+                .addEquivalentGroup(prepareGet()
+                        .setUri(createUriA())
+                        .addHeaders(createHeadersB())
+                        .setBodyGenerator(bodyGenerator)
+                        .build())
+                .addEquivalentGroup(prepareGet()
+                        .setUri(createUriB())
+                        .addHeaders(createHeadersA())
+                        .setBodyGenerator(bodyGenerator)
+                        .build())
                 .addEquivalentGroup(
-                        prepareGet().setUri(createUriA()).addHeaders(createHeadersA()).setBodyGenerator(bodyGenerator).build(),
-                        prepareGet().setUri(createUriA()).addHeaders(createHeadersA()).setBodyGenerator(bodyGenerator).build())
+                        preparePut()
+                                .setUri(createUriA())
+                                .addHeaders(createHeadersA())
+                                .build(),
+                        preparePut()
+                                .setUri(createUriA())
+                                .addHeaders(createHeadersA())
+                                .build())
+                .addEquivalentGroup(preparePut()
+                        .setUri(createUriB())
+                        .addHeaders(createHeadersA())
+                        .build())
+                .addEquivalentGroup(preparePut()
+                        .setUri(createUriA())
+                        .addHeaders(createHeadersB())
+                        .build())
                 .addEquivalentGroup(
-                        prepareGet().setUri(createUriA()).addHeaders(createHeadersB()).setBodyGenerator(bodyGenerator).build())
-                .addEquivalentGroup(
-                        prepareGet().setUri(createUriB()).addHeaders(createHeadersA()).setBodyGenerator(bodyGenerator).build())
-                .addEquivalentGroup(
-                        preparePut().setUri(createUriA()).addHeaders(createHeadersA()).build(),
-                        preparePut().setUri(createUriA()).addHeaders(createHeadersA()).build())
-                .addEquivalentGroup(
-                        preparePut().setUri(createUriB()).addHeaders(createHeadersA()).build())
-                .addEquivalentGroup(
-                        preparePut().setUri(createUriA()).addHeaders(createHeadersB()).build())
-                .addEquivalentGroup(
-                        preparePut().setUri(createUriA()).addHeaders(createHeadersA()).setBodyGenerator(bodyGenerator).build(),
-                        preparePut().setUri(createUriA()).addHeaders(createHeadersA()).setBodyGenerator(bodyGenerator).build())
-                .addEquivalentGroup(
-                        prepareGet().setUri(createUriA()).addHeaders(createHeadersA()).setBodyGenerator(createBodyGenerator()).build())
-                .addEquivalentGroup(
-                        preparePut().setUri(createUriA()).addHeaders(createHeadersA()).setBodyGenerator(createBodyGenerator()).build())
+                        preparePut()
+                                .setUri(createUriA())
+                                .addHeaders(createHeadersA())
+                                .setBodyGenerator(bodyGenerator)
+                                .build(),
+                        preparePut()
+                                .setUri(createUriA())
+                                .addHeaders(createHeadersA())
+                                .setBodyGenerator(bodyGenerator)
+                                .build())
+                .addEquivalentGroup(prepareGet()
+                        .setUri(createUriA())
+                        .addHeaders(createHeadersA())
+                        .setBodyGenerator(createBodyGenerator())
+                        .build())
+                .addEquivalentGroup(preparePut()
+                        .setUri(createUriA())
+                        .addHeaders(createHeadersA())
+                        .setBodyGenerator(createBodyGenerator())
+                        .build())
                 .check();
     }
 
     @Test
-    public void testCannotMakeRequestToIllegalPort()
-    {
-        assertThatThrownBy(() -> prepareGet().setUri(URI.create("http://example.com:0/")).build())
+    public void testCannotMakeRequestToIllegalPort() {
+        assertThatThrownBy(() ->
+                        prepareGet().setUri(URI.create("http://example.com:0/")).build())
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Cannot make requests to HTTP port 0");
     }
 
     @Test
-    public void testInvalidUriMissingHost()
-    {
+    public void testInvalidUriMissingHost() {
         assertThatThrownBy(() -> prepareGet().setUri(URI.create("http:///foo")).build())
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("uri does not have a host: http:///foo");
     }
 
     @Test
-    public void testInvalidUriMissingScheme()
-    {
+    public void testInvalidUriMissingScheme() {
         assertThatThrownBy(() -> prepareGet().setUri(URI.create("//foo")).build())
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("uri does not have a scheme: //foo");
     }
 
     @Test
-    public void testInvalidUriScheme()
-    {
-        assertThatThrownBy(() -> prepareGet().setUri(URI.create("gopher://example.com")).build())
+    public void testInvalidUriScheme() {
+        assertThatThrownBy(() ->
+                        prepareGet().setUri(URI.create("gopher://example.com")).build())
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("uri scheme must be http or https: gopher://example.com");
     }
 
     @Test
-    public void testHeaderCaseSensitiveness()
-    {
+    public void testHeaderCaseSensitiveness() {
         Request request = Request.builder()
                 .setMethod("GET")
                 .setUri(URI.create("http://example.com"))
@@ -122,26 +167,22 @@ public class TestRequest
         assertThat(request.getHeader("AllUppercase")).contains("upper");
     }
 
-    private static URI createUriA()
-    {
+    private static URI createUriA() {
         return URI.create("http://example.com");
     }
 
-    private static URI createUriB()
-    {
+    private static URI createUriB() {
         return URI.create("http://example.net");
     }
 
-    private static ListMultimap<String, String> createHeadersA()
-    {
+    private static ListMultimap<String, String> createHeadersA() {
         return ImmutableListMultimap.<String, String>builder()
                 .put("foo", "bar")
                 .put("abc", "xyz")
                 .build();
     }
 
-    private static ListMultimap<String, String> createHeadersB()
-    {
+    private static ListMultimap<String, String> createHeadersB() {
         return ImmutableListMultimap.<String, String>builder()
                 .put("foo", "bar")
                 .put("abc", "xyz")
@@ -150,8 +191,7 @@ public class TestRequest
                 .build();
     }
 
-    public static BodyGenerator createBodyGenerator()
-    {
+    public static BodyGenerator createBodyGenerator() {
         return createStaticBodyGenerator(new byte[0]);
     }
 }

@@ -13,8 +13,7 @@
  */
 package io.airlift.spi.secrets;
 
-public interface SecretProvider
-{
+public interface SecretProvider {
     /**
      * Resolves and returns the secret value for the given key.
      *

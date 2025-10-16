@@ -13,10 +13,14 @@
  */
 package io.airlift.log;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
+import static io.airlift.log.LogFileName.parseHistoryLogFileName;
+import static java.util.Objects.requireNonNull;
+
 import com.google.errorprone.annotations.ThreadSafe;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import io.airlift.units.DataSize;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -28,24 +32,18 @@ import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.collect.ImmutableSet.toImmutableSet;
-import static io.airlift.log.LogFileName.parseHistoryLogFileName;
-import static java.util.Objects.requireNonNull;
-
 @ThreadSafe
-final class LogHistoryManager
-{
+final class LogHistoryManager {
     private final Path masterLogFile;
     private final long maxTotalSize;
 
     @GuardedBy("this")
     private long totalSize;
+
     @GuardedBy("this")
     private final PriorityQueue<LogFile> files = new PriorityQueue<>();
 
-    public LogHistoryManager(Path masterLogFile, DataSize maxTotalSize)
-    {
+    public LogHistoryManager(Path masterLogFile, DataSize maxTotalSize) {
         requireNonNull(masterLogFile, "masterLogFile is null");
         requireNonNull(maxTotalSize, "maxTotalSize is null");
 
@@ -58,30 +56,22 @@ final class LogHistoryManager
                     .filter(Optional::isPresent)
                     .map(Optional::get)
                     .forEach(files::add);
-            totalSize = files.stream()
-                    .mapToLong(LogFile::getSize)
-                    .sum();
-        }
-        catch (IOException e) {
+            totalSize = files.stream().mapToLong(LogFile::getSize).sum();
+        } catch (IOException e) {
             throw new UncheckedIOException("Unable to list existing history log files for " + masterLogFile, e);
         }
         pruneLogFilesIfNecessary(0);
     }
 
-    public synchronized long getTotalSize()
-    {
+    public synchronized long getTotalSize() {
         return totalSize;
     }
 
-    public synchronized Set<LogFileName> getFiles()
-    {
-        return files.stream()
-                .map(LogFile::getLogFileName)
-                .collect(toImmutableSet());
+    public synchronized Set<LogFileName> getFiles() {
+        return files.stream().map(LogFile::getLogFileName).collect(toImmutableSet());
     }
 
-    public synchronized void pruneLogFilesIfNecessary(long otherDataSize)
-    {
+    public synchronized void pruneLogFilesIfNecessary(long otherDataSize) {
         while (totalSize + otherDataSize > maxTotalSize) {
             LogFile logFile = files.poll();
             if (logFile == null) {
@@ -95,15 +85,14 @@ final class LogHistoryManager
             // failure is ok as this is a best effort system
             try {
                 Files.deleteIfExists(logFile.getPath());
-            }
-            catch (IOException ignored) {
+            } catch (IOException ignored) {
             }
         }
     }
 
-    private Optional<LogFile> createLogFile(Path path)
-    {
-        Optional<LogFileName> logFileName = parseHistoryLogFileName(masterLogFile.getFileName().toString(), path.getFileName().toString());
+    private Optional<LogFile> createLogFile(Path path) {
+        Optional<LogFileName> logFileName = parseHistoryLogFileName(
+                masterLogFile.getFileName().toString(), path.getFileName().toString());
         if (!logFileName.isPresent()) {
             return Optional.empty();
         }
@@ -111,22 +100,19 @@ final class LogHistoryManager
         BasicFileAttributes fileAttributes;
         try {
             fileAttributes = Files.readAttributes(path, BasicFileAttributes.class);
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             return Optional.empty();
         }
 
         return Optional.of(new LogFile(path, logFileName.get(), fileAttributes.size()));
     }
 
-    public synchronized void addFile(Path file, LogFileName fileName, long size)
-    {
+    public synchronized void addFile(Path file, LogFileName fileName, long size) {
         files.add(new LogFile(file, fileName, size));
         totalSize += size;
     }
 
-    public synchronized boolean removeFile(Path path)
-    {
+    public synchronized boolean removeFile(Path path) {
         return files.stream()
                 .filter(file -> file.getPath().equals(path))
                 .findFirst()
@@ -134,8 +120,7 @@ final class LogHistoryManager
                 .orElse(false);
     }
 
-    private synchronized boolean removeFile(LogFile file)
-    {
+    private synchronized boolean removeFile(LogFile file) {
         if (!files.remove(file)) {
             return false;
         }
@@ -143,39 +128,32 @@ final class LogHistoryManager
         return true;
     }
 
-    private static class LogFile
-            implements Comparable<LogFile>
-    {
+    private static class LogFile implements Comparable<LogFile> {
         private final Path path;
         private final LogFileName logFileName;
         private final long size;
 
-        public LogFile(Path path, LogFileName logFileName, long size)
-        {
+        public LogFile(Path path, LogFileName logFileName, long size) {
             this.path = requireNonNull(path, "path is null");
             this.logFileName = requireNonNull(logFileName, "logFileName is null");
             checkArgument(size >= 0, "size is negative");
             this.size = size;
         }
 
-        public Path getPath()
-        {
+        public Path getPath() {
             return path;
         }
 
-        public LogFileName getLogFileName()
-        {
+        public LogFileName getLogFileName() {
             return logFileName;
         }
 
-        public long getSize()
-        {
+        public long getSize() {
             return size;
         }
 
         @Override
-        public boolean equals(Object o)
-        {
+        public boolean equals(Object o) {
             if (this == o) {
                 return true;
             }
@@ -187,20 +165,17 @@ final class LogHistoryManager
         }
 
         @Override
-        public int hashCode()
-        {
+        public int hashCode() {
             return Objects.hash(logFileName);
         }
 
         @Override
-        public int compareTo(LogFile o)
-        {
+        public int compareTo(LogFile o) {
             return logFileName.compareTo(o.logFileName);
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return logFileName.toString();
         }
     }

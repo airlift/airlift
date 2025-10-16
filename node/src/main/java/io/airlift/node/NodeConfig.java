@@ -24,23 +24,20 @@ import io.airlift.configuration.validation.FileExists;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
-
 import java.net.InetAddress;
 import java.util.Map;
 import java.util.Optional;
 
 @DefunctConfig({"http-server.ip", "jetty.ip"})
-public class NodeConfig
-{
+public class NodeConfig {
     public static final String ID_REGEXP = "[A-Za-z0-9][_A-Za-z0-9-]*";
     public static final String ID_REGEXP_ERROR = "should match " + ID_REGEXP;
     public static final String ENV_REGEXP = "[a-z0-9][_a-z0-9]*";
     public static final String ENV_REGEXP_ERROR = "should match " + ENV_REGEXP;
     public static final String POOL_REGEXP = "[a-z0-9][_a-z0-9]*";
     public static final String POOL_REGEXP_ERROR = "should match " + POOL_REGEXP;
-    public static final Splitter.MapSplitter ANNOTATION_SPLITTER = Splitter.on(",")
-            .omitEmptyStrings()
-            .withKeyValueSeparator("=");
+    public static final Splitter.MapSplitter ANNOTATION_SPLITTER =
+            Splitter.on(",").omitEmptyStrings().withKeyValueSeparator("=");
 
     private String environment;
     private String pool = "general";
@@ -58,140 +55,118 @@ public class NodeConfig
 
     @NotNull
     @Pattern(regexp = ENV_REGEXP, message = ENV_REGEXP_ERROR)
-    public String getEnvironment()
-    {
+    public String getEnvironment() {
         return environment;
     }
 
     @Config("node.environment")
-    public NodeConfig setEnvironment(String environment)
-    {
+    public NodeConfig setEnvironment(String environment) {
         this.environment = environment;
         return this;
     }
 
     @NotNull
     @Pattern(regexp = POOL_REGEXP, message = POOL_REGEXP_ERROR)
-    public String getPool()
-    {
+    public String getPool() {
         return pool;
     }
 
     @Config("node.pool")
-    public NodeConfig setPool(String pool)
-    {
+    public NodeConfig setPool(String pool) {
         this.pool = pool;
         return this;
     }
 
     @Pattern(regexp = ID_REGEXP, message = ID_REGEXP_ERROR)
-    public String getNodeId()
-    {
+    public String getNodeId() {
         return nodeId;
     }
 
     @Config("node.id")
-    public NodeConfig setNodeId(String nodeId)
-    {
+    public NodeConfig setNodeId(String nodeId) {
         this.nodeId = nodeId;
         return this;
     }
 
-    public String getLocation()
-    {
+    public String getLocation() {
         return location;
     }
 
     @Config("node.location")
-    public NodeConfig setLocation(String location)
-    {
+    public NodeConfig setLocation(String location) {
         this.location = location;
         return this;
     }
 
-    public String getNodeInternalAddress()
-    {
+    public String getNodeInternalAddress() {
         return nodeInternalAddress;
     }
 
     @Config("node.internal-address")
     @LegacyConfig("node.ip")
-    public NodeConfig setNodeInternalAddress(String nodeInternalAddress)
-    {
+    public NodeConfig setNodeInternalAddress(String nodeInternalAddress) {
         this.nodeInternalAddress = nodeInternalAddress;
         return this;
     }
 
-    public String getNodeExternalAddress()
-    {
+    public String getNodeExternalAddress() {
         return nodeExternalAddress;
     }
 
     @Config("node.external-address")
-    public NodeConfig setNodeExternalAddress(String nodeExternalAddress)
-    {
+    public NodeConfig setNodeExternalAddress(String nodeExternalAddress) {
         this.nodeExternalAddress = nodeExternalAddress;
         return this;
     }
 
-    public InetAddress getNodeBindIp()
-    {
+    public InetAddress getNodeBindIp() {
         return nodeBindIp;
     }
 
-    public NodeConfig setNodeBindIp(InetAddress nodeBindIp)
-    {
+    public NodeConfig setNodeBindIp(InetAddress nodeBindIp) {
         this.nodeBindIp = nodeBindIp;
         return this;
     }
 
     @Config("node.bind-ip")
-    public NodeConfig setNodeBindIp(String nodeBindIp)
-    {
+    public NodeConfig setNodeBindIp(String nodeBindIp) {
         if (nodeBindIp != null) {
             this.nodeBindIp = InetAddresses.forString(nodeBindIp);
         }
         return this;
     }
 
-    public String getBinarySpec()
-    {
+    public String getBinarySpec() {
         return binarySpec;
     }
 
     @Config("node.binary-spec")
-    public NodeConfig setBinarySpec(String binarySpec)
-    {
+    public NodeConfig setBinarySpec(String binarySpec) {
         this.binarySpec = binarySpec;
         return this;
     }
 
-    public String getConfigSpec()
-    {
+    public String getConfigSpec() {
         return configSpec;
     }
 
     @Config("node.config-spec")
-    public NodeConfig setConfigSpec(String configSpec)
-    {
+    public NodeConfig setConfigSpec(String configSpec) {
         this.configSpec = configSpec;
         return this;
     }
 
-    public AddressSource getInternalAddressSource()
-    {
+    public AddressSource getInternalAddressSource() {
         return internalAddressSource;
     }
 
     @Config("node.internal-address-source")
-    public NodeConfig setInternalAddressSource(AddressSource internalAddressSource)
-    {
+    public NodeConfig setInternalAddressSource(AddressSource internalAddressSource) {
         this.internalAddressSource = internalAddressSource;
         return this;
     }
 
-    public enum AddressSource
-    {
+    public enum AddressSource {
         HOSTNAME,
         FQDN,
         IP,
@@ -199,53 +174,44 @@ public class NodeConfig
     }
 
     @FileExists
-    public String getAnnotationFile()
-    {
+    public String getAnnotationFile() {
         return annotationFile;
     }
 
     @Config("node.annotation-file")
-    public NodeConfig setAnnotationFile(String annotationFile)
-    {
+    public NodeConfig setAnnotationFile(String annotationFile) {
         this.annotationFile = annotationFile;
         return this;
     }
 
     @Config("node.prefer-ipv6-address")
-    public NodeConfig setPreferIpv6Address(boolean preferIpv6Address)
-    {
+    public NodeConfig setPreferIpv6Address(boolean preferIpv6Address) {
         this.preferIpv6Address = preferIpv6Address;
         return this;
     }
 
-    public boolean getPreferIpv6Address()
-    {
+    public boolean getPreferIpv6Address() {
         return this.preferIpv6Address;
     }
 
-    public Map<String, String> getAnnotations()
-    {
+    public Map<String, String> getAnnotations() {
         return annotations;
     }
 
     @Config("node.annotations")
-    public NodeConfig setAnnotations(String annotations)
-    {
-        this.annotations = Optional.ofNullable(annotations)
-                .map(ANNOTATION_SPLITTER::split)
-                .orElse(null);
+    public NodeConfig setAnnotations(String annotations) {
+        this.annotations =
+                Optional.ofNullable(annotations).map(ANNOTATION_SPLITTER::split).orElse(null);
         return this;
     }
 
-    public NodeConfig setAnnotations(Map<String, String> annotations)
-    {
+    public NodeConfig setAnnotations(Map<String, String> annotations) {
         this.annotations = annotations;
         return this;
     }
 
     @AssertTrue(message = "only one of node.annotations or node.annotation-file can be set")
-    public boolean isConfigurationValid()
-    {
+    public boolean isConfigurationValid() {
         return annotationFile == null || annotations == null;
     }
 }

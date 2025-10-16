@@ -13,6 +13,13 @@
  */
 package io.airlift.stats;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
+import static io.airlift.slice.SizeOf.instanceSize;
+import static java.lang.Double.isInfinite;
+import static java.lang.Double.isNaN;
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Ints;
@@ -21,23 +28,14 @@ import io.airlift.slice.Slice;
 import io.airlift.slice.SliceInput;
 import io.airlift.slice.SliceOutput;
 import io.airlift.slice.Slices;
-
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkState;
-import static io.airlift.slice.SizeOf.instanceSize;
-import static java.lang.Double.isInfinite;
-import static java.lang.Double.isNaN;
-import static java.util.Objects.requireNonNull;
-
 /**
  * This class is NOT thread safe.
  */
-public class TDigest
-{
+public class TDigest {
     public static final double DEFAULT_COMPRESSION = 100;
 
     private static final int FORMAT_TAG = 0;
@@ -63,13 +61,11 @@ public class TDigest
     private double[] tempMeans;
     private double[] tempWeights;
 
-    public TDigest()
-    {
+    public TDigest() {
         this(DEFAULT_COMPRESSION);
     }
 
-    public TDigest(double compression)
-    {
+    public TDigest(double compression) {
         this(
                 compression,
                 Double.POSITIVE_INFINITY,
@@ -91,12 +87,13 @@ public class TDigest
             double[] means,
             double[] weights,
             boolean needsMerge,
-            boolean backwards)
-    {
+            boolean backwards) {
         checkArgument(compression >= 10, "compression factor too small (< 10)");
 
         this.compression = compression;
-        this.maxSize = (int) (6 * (internalCompressionFactor(compression) + FUDGE_FACTOR)); // 5 * size + size (for centroids + new values)
+        this.maxSize = (int) (6
+                * (internalCompressionFactor(compression)
+                        + FUDGE_FACTOR)); // 5 * size + size (for centroids + new values)
         this.totalWeight = totalWeight;
         this.min = min;
         this.max = max;
@@ -107,8 +104,7 @@ public class TDigest
         this.backwards = backwards;
     }
 
-    public static TDigest copyOf(TDigest other)
-    {
+    public static TDigest copyOf(TDigest other) {
         return new TDigest(
                 other.compression,
                 other.min,
@@ -121,8 +117,7 @@ public class TDigest
                 other.backwards);
     }
 
-    public static TDigest deserialize(Slice serialized)
-    {
+    public static TDigest deserialize(Slice serialized) {
         SliceInput input = serialized.getInput();
 
         byte format = input.readByte();
@@ -144,46 +139,32 @@ public class TDigest
             weights[i] = input.readDouble();
         }
 
-        return new TDigest(
-                compression,
-                min,
-                max,
-                totalWeight,
-                centroidCount,
-                means,
-                weights,
-                false,
-                false);
+        return new TDigest(compression, min, max, totalWeight, centroidCount, means, weights, false, false);
     }
 
-    public double getMin()
-    {
+    public double getMin() {
         if (totalWeight == 0) {
             return Double.NaN;
         }
         return min;
     }
 
-    public double getMax()
-    {
+    public double getMax() {
         if (totalWeight == 0) {
             return Double.NaN;
         }
         return max;
     }
 
-    public double getCount()
-    {
+    public double getCount() {
         return totalWeight;
     }
 
-    public void add(double value)
-    {
+    public void add(double value) {
         add(value, 1);
     }
 
-    public void add(double value, double weight)
-    {
+    public void add(double value, double weight) {
         checkArgument(!isNaN(value), "value is NaN");
         checkArgument(!isNaN(weight), "weight is NaN");
         checkArgument(!isInfinite(value), "value must be finite");
@@ -192,11 +173,12 @@ public class TDigest
         if (centroidCount == means.length) {
             if (means.length < maxSize) {
                 ensureCapacity(Math.min(Math.max(means.length * 2, INITIAL_CAPACITY), maxSize));
-            }
-            else {
+            } else {
                 merge(internalCompressionFactor(compression));
                 if (centroidCount >= means.length) {
-                    throw new AssertionError("Invalid size estimation for T-Digest: " + Base64.getEncoder().encodeToString(serializeInternal().getBytes()));
+                    throw new AssertionError("Invalid size estimation for T-Digest: "
+                            + Base64.getEncoder()
+                                    .encodeToString(serializeInternal().getBytes()));
                 }
             }
         }
@@ -212,8 +194,7 @@ public class TDigest
         needsMerge = true;
     }
 
-    public void mergeWith(TDigest other)
-    {
+    public void mergeWith(TDigest other) {
         if (centroidCount + other.centroidCount > means.length) {
             // first, try to compact the digests to make room
             merge(internalCompressionFactor(compression));
@@ -235,18 +216,15 @@ public class TDigest
         needsMerge = true;
     }
 
-    public double valueAt(double quantile)
-    {
+    public double valueAt(double quantile) {
         return valuesAt(quantile)[0];
     }
 
-    public List<Double> valuesAt(List<Double> quantiles)
-    {
+    public List<Double> valuesAt(List<Double> quantiles) {
         return Doubles.asList(valuesAt(Doubles.toArray(quantiles)));
     }
 
-    public double[] valuesAt(double... quantiles)
-    {
+    public double[] valuesAt(double... quantiles) {
         if (quantiles.length == 0) {
             return new double[0];
         }
@@ -284,9 +262,18 @@ public class TDigest
             index++;
         }
         // between last centroid and top, but not the greatest value
-        while (index < result.length && result[index] <= totalWeight - 1 && totalWeight - result[index] <= weights[centroidCount - 1] / 2 && weights[centroidCount - 1] / 2 > 1) {
+        while (index < result.length
+                && result[index] <= totalWeight - 1
+                && totalWeight - result[index] <= weights[centroidCount - 1] / 2
+                && weights[centroidCount - 1] / 2 > 1) {
             // we interpolate back from the end, so the value is negative
-            result[index] = (max + interpolate(totalWeight - result[index], 1, max, weights[centroidCount - 1] / 2, means[centroidCount - 1]));
+            result[index] = (max
+                    + interpolate(
+                            totalWeight - result[index],
+                            1,
+                            max,
+                            weights[centroidCount - 1] / 2,
+                            means[centroidCount - 1]));
             index++;
         }
         // greatest value
@@ -309,9 +296,17 @@ public class TDigest
             // past the last centroid
             if (currentCentroid == centroidCount - 1) {
                 // between last centroid and top, but not the greatest value
-                while (index < result.length && result[index] <= totalWeight - 1 && weights[centroidCount - 1] / 2 > 1) {
+                while (index < result.length
+                        && result[index] <= totalWeight - 1
+                        && weights[centroidCount - 1] / 2 > 1) {
                     // we interpolate back from the end, so the value is negative
-                    result[index] = (max + interpolate(totalWeight - result[index], 1, max, weights[centroidCount - 1] / 2, means[centroidCount - 1]));
+                    result[index] = (max
+                            + interpolate(
+                                    totalWeight - result[index],
+                                    1,
+                                    max,
+                                    weights[centroidCount - 1] / 2,
+                                    means[centroidCount - 1]));
                     index++;
                 }
                 // greatest value
@@ -319,28 +314,34 @@ public class TDigest
                     Arrays.fill(result, index, result.length, max);
                 }
                 return result;
-            }
-            else {
+            } else {
                 // single-sample cluster on the left (current centroid) and the quantile falls within that cluster
                 if (weights[currentCentroid] == 1 && result[index] - weightSoFar < weights[currentCentroid] / 2) {
                     result[index] = means[currentCentroid];
                 }
                 // single-sample cluster on the right (next centroid) and the quantile falls within that cluster
-                else if (weights[currentCentroid + 1] == 1 && result[index] - weightSoFar >= weights[currentCentroid] / 2) {
+                else if (weights[currentCentroid + 1] == 1
+                        && result[index] - weightSoFar >= weights[currentCentroid] / 2) {
                     result[index] = means[currentCentroid + 1];
                 }
-                // the quantile falls within a multi-sample cluster. If the other cluster is single-sample, we can exclude it from interpolation
+                // the quantile falls within a multi-sample cluster. If the other cluster is single-sample, we can
+                // exclude it from interpolation
                 else {
                     double interpolationOffset = result[index] - weightSoFar;
                     double interpolationSectionLength = delta;
                     if (weights[currentCentroid] == 1) {
                         interpolationOffset -= weights[currentCentroid] / 2;
                         interpolationSectionLength = weights[currentCentroid + 1] / 2;
-                    }
-                    else if (weights[currentCentroid + 1] == 1) {
+                    } else if (weights[currentCentroid + 1] == 1) {
                         interpolationSectionLength = weights[currentCentroid] / 2;
                     }
-                    result[index] = (means[currentCentroid] + interpolate(interpolationOffset, 0, means[currentCentroid], interpolationSectionLength, means[currentCentroid + 1]));
+                    result[index] = (means[currentCentroid]
+                            + interpolate(
+                                    interpolationOffset,
+                                    0,
+                                    means[currentCentroid],
+                                    interpolationSectionLength,
+                                    means[currentCentroid + 1]));
                 }
                 index++;
             }
@@ -349,27 +350,23 @@ public class TDigest
         return result;
     }
 
-    private static void validateQuantilesArgument(double[] quantiles)
-    {
+    private static void validateQuantilesArgument(double[] quantiles) {
         for (int i = 0; i < quantiles.length; i++) {
             double quantile = quantiles[i];
             if (i > 0 && quantile < quantiles[i - 1]) {
                 throw new IllegalArgumentException("quantiles must be sorted in increasing order");
-            }
-            else if (quantile < 0 || quantile > 1) {
+            } else if (quantile < 0 || quantile > 1) {
                 throw new IllegalArgumentException("quantiles should be in [0, 1] range");
             }
         }
     }
 
-    public Slice serialize()
-    {
+    public Slice serialize() {
         merge(compression);
         return serializeInternal();
     }
 
-    private Slice serializeInternal()
-    {
+    private Slice serializeInternal() {
         Slice result = Slices.allocate(serializedSizeInBytes());
         SliceOutput output = result.getOutput();
 
@@ -391,30 +388,34 @@ public class TDigest
         return result;
     }
 
-    public int serializedSizeInBytes()
-    {
-        return SizeOf.SIZE_OF_BYTE + // format
-                SizeOf.SIZE_OF_DOUBLE + // min
-                SizeOf.SIZE_OF_DOUBLE + // max
-                SizeOf.SIZE_OF_DOUBLE + // compression
-                SizeOf.SIZE_OF_DOUBLE + // totalWeight
-                SizeOf.SIZE_OF_INT + // centroid count
-                SizeOf.SIZE_OF_DOUBLE * centroidCount + // means
+    public int serializedSizeInBytes() {
+        return SizeOf.SIZE_OF_BYTE
+                + // format
+                SizeOf.SIZE_OF_DOUBLE
+                + // min
+                SizeOf.SIZE_OF_DOUBLE
+                + // max
+                SizeOf.SIZE_OF_DOUBLE
+                + // compression
+                SizeOf.SIZE_OF_DOUBLE
+                + // totalWeight
+                SizeOf.SIZE_OF_INT
+                + // centroid count
+                SizeOf.SIZE_OF_DOUBLE * centroidCount
+                + // means
                 SizeOf.SIZE_OF_DOUBLE * centroidCount; // weights
     }
 
-    public int estimatedInMemorySizeInBytes()
-    {
-        return (int) (T_DIGEST_SIZE +
-                SizeOf.sizeOf(means) +
-                SizeOf.sizeOf(weights) +
-                SizeOf.sizeOf(tempMeans) +
-                SizeOf.sizeOf(tempWeights) +
-                SizeOf.sizeOf(indexes));
+    public int estimatedInMemorySizeInBytes() {
+        return (int) (T_DIGEST_SIZE
+                + SizeOf.sizeOf(means)
+                + SizeOf.sizeOf(weights)
+                + SizeOf.sizeOf(tempMeans)
+                + SizeOf.sizeOf(tempWeights)
+                + SizeOf.sizeOf(indexes));
     }
 
-    private void merge(double compression)
-    {
+    private void merge(double compression) {
         if (centroidCount == 0) {
             return;
         }
@@ -451,13 +452,13 @@ public class TDigest
             double tentativeWeight = centroidWeight + entryWeight;
             double tentativeQuantile = Math.min((weightSoFar + tentativeWeight) / totalWeight, 1);
 
-            double maxClusterWeight = totalWeight * Math.min(currentQuantileMaxClusterSize, maxRelativeClusterSize(tentativeQuantile, normalizer));
+            double maxClusterWeight = totalWeight
+                    * Math.min(currentQuantileMaxClusterSize, maxRelativeClusterSize(tentativeQuantile, normalizer));
             if (tentativeWeight <= maxClusterWeight) {
                 // weighted average of the two centroids
                 centroidMean = centroidMean + (entryMean - centroidMean) * entryWeight / tentativeWeight;
                 centroidWeight = tentativeWeight;
-            }
-            else {
+            } else {
                 lastCentroid++;
 
                 weightSoFar += centroidWeight;
@@ -486,35 +487,30 @@ public class TDigest
     }
 
     @VisibleForTesting
-    void forceMerge()
-    {
+    void forceMerge() {
         merge(internalCompressionFactor(compression));
     }
 
     @VisibleForTesting
-    int getCentroidCount()
-    {
+    int getCentroidCount() {
         return centroidCount;
     }
 
-    private void mergeIfNeeded(double compression)
-    {
+    private void mergeIfNeeded(double compression) {
         if (needsMerge) {
             merge(compression);
             needsMerge = false;
         }
     }
 
-    private void ensureCapacity(int newSize)
-    {
+    private void ensureCapacity(int newSize) {
         if (means.length < newSize) {
             means = Arrays.copyOf(means, newSize);
             weights = Arrays.copyOf(weights, newSize);
         }
     }
 
-    private void ensureTempCapacity(int capacity)
-    {
+    private void ensureTempCapacity(int capacity) {
         if (tempMeans.length <= capacity) {
             int newSize = capacity + (int) Math.ceil(capacity * 0.5);
             tempMeans = Arrays.copyOf(tempMeans, newSize);
@@ -522,8 +518,7 @@ public class TDigest
         }
     }
 
-    private void initializeIndexes()
-    {
+    private void initializeIndexes() {
         if (indexes == null || indexes.length != means.length) {
             indexes = new int[means.length];
         }
@@ -532,23 +527,19 @@ public class TDigest
         }
     }
 
-    private static double interpolate(double x, double x0, double y0, double x1, double y1)
-    {
+    private static double interpolate(double x, double x0, double y0, double x1, double y1) {
         return (x - x0) / (x1 - x0) * (y1 - y0);
     }
 
-    private static double maxRelativeClusterSize(double quantile, double normalizer)
-    {
+    private static double maxRelativeClusterSize(double quantile, double normalizer) {
         return quantile * (1 - quantile) / normalizer;
     }
 
-    private static double normalizer(double compression, double weight)
-    {
+    private static double normalizer(double compression, double weight) {
         return compression / (4 * Math.log(weight / compression) + 24);
     }
 
-    private static double internalCompressionFactor(double compression)
-    {
+    private static double internalCompressionFactor(double compression) {
         return 2 * compression;
     }
 }

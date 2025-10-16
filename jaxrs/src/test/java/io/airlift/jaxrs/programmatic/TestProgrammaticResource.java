@@ -15,6 +15,16 @@
  */
 package io.airlift.jaxrs.programmatic;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+import static io.airlift.http.client.Request.Builder.preparePost;
+import static io.airlift.http.client.StaticBodyGenerator.createStaticBodyGenerator;
+import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
+import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
+import static jakarta.ws.rs.core.HttpHeaders.CONTENT_TYPE;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.inject.Injector;
 import com.google.inject.Module;
@@ -31,6 +41,9 @@ import io.airlift.jaxrs.JaxrsModule;
 import io.airlift.jaxrs.JsonError;
 import io.airlift.json.JsonModule;
 import io.airlift.node.testing.TestingNodeModule;
+import java.lang.reflect.Method;
+import java.net.URI;
+import java.util.List;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.model.Resource;
 import org.glassfish.jersey.server.model.ResourceMethod;
@@ -38,31 +51,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.lang.reflect.Method;
-import java.net.URI;
-import java.util.List;
-
-import static com.google.common.collect.ImmutableList.toImmutableList;
-import static io.airlift.http.client.Request.Builder.preparePost;
-import static io.airlift.http.client.StaticBodyGenerator.createStaticBodyGenerator;
-import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
-import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
-import static jakarta.ws.rs.core.HttpHeaders.CONTENT_TYPE;
-import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class TestProgrammaticResource
-{
-    public String getResult()
-    {
+public class TestProgrammaticResource {
+    public String getResult() {
         return "dummy";
     }
 
     @Test
-    public void testProgrammaticResourceBinding()
-            throws NoSuchMethodException
-    {
+    public void testProgrammaticResourceBinding() throws NoSuchMethodException {
         Resource.Builder builder = Resource.builder();
         ResourceMethod.Builder method = builder.path("/foo/bar").addMethod("GET");
         Method getResultMethod = getClass().getMethod("getResult");
@@ -70,7 +65,9 @@ public class TestProgrammaticResource
         Resource resource = builder.build();
 
         Module module = binder -> jaxrsBinder(binder).bindInstance(resource);
-        Injector injector = new Bootstrap(module, new JaxrsModule(), new JsonModule()).quiet().initialize();
+        Injector injector = new Bootstrap(module, new JaxrsModule(), new JsonModule())
+                .quiet()
+                .initialize();
         ResourceConfig resourceConfig = injector.getInstance(ResourceConfig.class);
 
         List<ResourceMethod> foundMethods = resourceConfig.getResources().stream()
@@ -85,28 +82,27 @@ public class TestProgrammaticResource
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    public void testJsonParsingExceptionMapper(boolean useMapper)
-            throws JsonProcessingException
-    {
+    public void testJsonParsingExceptionMapper(boolean useMapper) throws JsonProcessingException {
         Injector injector = new Bootstrap(
-                binder -> {
-                    JaxrsBinder jaxrsBinder = jaxrsBinder(binder);
-                    if (!useMapper) {
-                        jaxrsBinder.disableJsonExceptionMapper();
-                    }
-                    jaxrsBinder.bind(ResourceWithBadJson.class);
-                },
-                new TestingNodeModule(),
-                new JaxrsModule(),
-                new JsonModule(),
-                new TestingHttpServerModule())
+                        binder -> {
+                            JaxrsBinder jaxrsBinder = jaxrsBinder(binder);
+                            if (!useMapper) {
+                                jaxrsBinder.disableJsonExceptionMapper();
+                            }
+                            jaxrsBinder.bind(ResourceWithBadJson.class);
+                        },
+                        new TestingNodeModule(),
+                        new JaxrsModule(),
+                        new JsonModule(),
+                        new TestingHttpServerModule())
                 .quiet()
                 .doNotInitializeLogging()
                 .initialize();
 
         URI baseUri = injector.getInstance(TestingHttpServer.class).getBaseUrl();
         try (JettyHttpClient client = new JettyHttpClient(new HttpClientConfig())) {
-            Request request = preparePost().setUri(baseUri)
+            Request request = preparePost()
+                    .setUri(baseUri)
                     .setHeader("Content-Type", "application/json")
                     .setBodyGenerator(createStaticBodyGenerator("this ain't json", UTF_8))
                     .build();
@@ -119,8 +115,7 @@ public class TestProgrammaticResource
                 JsonError error = JsonError.codec().fromJson(response.getBody());
                 assertThat(error.message()).startsWith("Unrecognized token 'this'");
                 assertThat(error.code()).isEqualTo("JSON_PARSING_ERROR");
-            }
-            else {
+            } else {
                 assertThat(response.getStatusCode()).isEqualTo(500);
             }
         }

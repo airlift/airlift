@@ -36,6 +36,11 @@ Copied from https://github.com/codahale/metrics
 
 package io.airlift.stats;
 
+import static java.lang.Math.exp;
+import static java.lang.Math.floor;
+import static java.lang.Math.min;
+import static java.lang.Math.random;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -44,11 +49,6 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import static java.lang.Math.exp;
-import static java.lang.Math.floor;
-import static java.lang.Math.min;
-import static java.lang.Math.random;
 
 /**
  * An exponentially-decaying random sample of {@code long}s. Uses Cormode et
@@ -61,8 +61,7 @@ import static java.lang.Math.random;
  * Systems. ICDE '09: Proceedings of the 2009 IEEE International Conference on
  * Data Engineering (2009)</a>
  */
-final class ExponentiallyDecayingSample
-{
+final class ExponentiallyDecayingSample {
     private static final long RESCALE_THRESHOLD = TimeUnit.HOURS.toNanos(1);
     private final ConcurrentSkipListMap<Double, Long> values;
     private final ReentrantReadWriteLock lock;
@@ -79,8 +78,7 @@ final class ExponentiallyDecayingSample
      * @param alpha the exponential decay factor; the higher this is, the more
      * biased the sample will be towards newer values
      */
-    public ExponentiallyDecayingSample(int reservoirSize, double alpha)
-    {
+    public ExponentiallyDecayingSample(int reservoirSize, double alpha) {
         this.values = new ConcurrentSkipListMap<>();
         this.lock = new ReentrantReadWriteLock();
         this.alpha = alpha;
@@ -88,21 +86,18 @@ final class ExponentiallyDecayingSample
         clear();
     }
 
-    public void clear()
-    {
+    public void clear() {
         values.clear();
         count.set(0);
         this.startTime = tick();
         nextScaleTime.set(System.nanoTime() + RESCALE_THRESHOLD);
     }
 
-    public int size()
-    {
+    public int size() {
         return (int) min(reservoirSize, count.get());
     }
 
-    public void update(long value)
-    {
+    public void update(long value) {
         update(value, tick());
     }
 
@@ -112,16 +107,14 @@ final class ExponentiallyDecayingSample
      * @param value the value to be added
      * @param timestamp the epoch timestamp of {@code value} in seconds
      */
-    public void update(long value, long timestamp)
-    {
+    public void update(long value, long timestamp) {
         lockForRegularUsage();
         try {
             final double priority = weight(timestamp - startTime) / random();
             final long newCount = count.incrementAndGet();
             if (newCount <= reservoirSize) {
                 values.put(priority, value);
-            }
-            else {
+            } else {
                 Double first = values.firstKey();
                 if (first < priority) {
                     if (values.putIfAbsent(priority, value) == null) {
@@ -132,8 +125,7 @@ final class ExponentiallyDecayingSample
                     }
                 }
             }
-        }
-        finally {
+        } finally {
             unlockForRegularUsage();
         }
 
@@ -144,24 +136,20 @@ final class ExponentiallyDecayingSample
         }
     }
 
-    public List<Long> values()
-    {
+    public List<Long> values() {
         lockForRegularUsage();
         try {
             return new ArrayList<>(values.values());
-        }
-        finally {
+        } finally {
             unlockForRegularUsage();
         }
     }
 
-    private static long tick()
-    {
+    private static long tick() {
         return TimeUnit.NANOSECONDS.toSeconds(System.nanoTime());
     }
 
-    private double weight(long t)
-    {
+    private double weight(long t) {
         return exp(alpha * t);
     }
 
@@ -183,8 +171,7 @@ final class ExponentiallyDecayingSample
      * landmark L′ (and then use this new L′ at query time). This can be done with
      * a linear pass over whatever data structure is being used."
      */
-    private void rescale(long now, long next)
-    {
+    private void rescale(long now, long next) {
         if (nextScaleTime.compareAndSet(next, now + RESCALE_THRESHOLD)) {
             lockForRescale();
             try {
@@ -195,35 +182,29 @@ final class ExponentiallyDecayingSample
                     final Long value = values.remove(key);
                     values.put(key * exp(-alpha * (startTime - oldStartTime)), value);
                 }
-            }
-            finally {
+            } finally {
                 unlockForRescale();
             }
         }
     }
 
-    private void unlockForRescale()
-    {
+    private void unlockForRescale() {
         lock.writeLock().unlock();
     }
 
-    private void lockForRescale()
-    {
+    private void lockForRescale() {
         lock.writeLock().lock();
     }
 
-    private void lockForRegularUsage()
-    {
+    private void lockForRegularUsage() {
         lock.readLock().lock();
     }
 
-    private void unlockForRegularUsage()
-    {
+    private void unlockForRegularUsage() {
         lock.readLock().unlock();
     }
 
-    public double[] percentiles(double... percentiles)
-    {
+    public double[] percentiles(double... percentiles) {
         final double[] scores = new double[percentiles.length];
         Arrays.fill(scores, Double.NaN);
 
@@ -236,11 +217,9 @@ final class ExponentiallyDecayingSample
                 final double pos = p * (values.size() + 1);
                 if (pos < 1) {
                     scores[i] = values.get(0);
-                }
-                else if (pos >= values.size()) {
+                } else if (pos >= values.size()) {
                     scores[i] = values.get(values.size() - 1);
-                }
-                else {
+                } else {
                     final double lower = values.get((int) pos - 1);
                     final double upper = values.get((int) pos);
                     scores[i] = lower + (pos - floor(pos)) * (upper - lower);

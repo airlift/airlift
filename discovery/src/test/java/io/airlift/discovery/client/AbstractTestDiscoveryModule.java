@@ -15,6 +15,12 @@
  */
 package io.airlift.discovery.client;
 
+import static com.google.common.collect.MoreCollectors.onlyElement;
+import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
+import static io.airlift.discovery.client.ServiceTypes.serviceType;
+import static java.util.Objects.requireNonNull;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -24,29 +30,19 @@ import io.airlift.configuration.ConfigurationFactory;
 import io.airlift.configuration.ConfigurationModule;
 import io.airlift.json.JsonModule;
 import io.airlift.node.testing.TestingNodeModule;
-import org.junit.jupiter.api.Test;
-
 import java.net.URI;
 import java.util.Map;
+import org.junit.jupiter.api.Test;
 
-import static com.google.common.collect.MoreCollectors.onlyElement;
-import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
-import static io.airlift.discovery.client.ServiceTypes.serviceType;
-import static java.util.Objects.requireNonNull;
-import static org.assertj.core.api.Assertions.assertThat;
-
-public abstract class AbstractTestDiscoveryModule
-{
+public abstract class AbstractTestDiscoveryModule {
     private final Module discoveryModule;
 
-    protected AbstractTestDiscoveryModule(Module discoveryModule)
-    {
+    protected AbstractTestDiscoveryModule(Module discoveryModule) {
         this.discoveryModule = requireNonNull(discoveryModule, "discoveryModule is null");
     }
 
     @Test
-    public void testBinding()
-    {
+    public void testBinding() {
         Injector injector = Guice.createInjector(
                 new ConfigurationModule(new ConfigurationFactory(ImmutableMap.of("discovery.uri", "fake://server"))),
                 new JsonModule(),
@@ -63,13 +59,9 @@ public abstract class AbstractTestDiscoveryModule
     }
 
     @Test
-    public void testMerging()
-    {
+    public void testMerging() {
         StaticAnnouncementHttpServerInfoImpl httpServerInfo = new StaticAnnouncementHttpServerInfoImpl(
-                URI.create("http://127.0.0.1:4444"),
-                URI.create("http://example.com:4444"),
-                null,
-                null);
+                URI.create("http://127.0.0.1:4444"), URI.create("http://example.com:4444"), null, null);
 
         Map<String, String> config = ImmutableMap.<String, String>builder()
                 .put("discovery.uri", "fake://server")
@@ -93,10 +85,12 @@ public abstract class AbstractTestDiscoveryModule
                 });
 
         HttpServiceSelector selector = injector.getInstance(Key.get(HttpServiceSelector.class, serviceType("apple")));
-        assertThat(selector.selectHttpService().stream().collect(onlyElement())).isEqualTo(URI.create("http://127.0.0.1:4444"));
+        assertThat(selector.selectHttpService().stream().collect(onlyElement()))
+                .isEqualTo(URI.create("http://127.0.0.1:4444"));
 
         selector = injector.getInstance(Key.get(HttpServiceSelector.class, serviceType("banana")));
-        assertThat(selector.selectHttpService().stream().collect(onlyElement())).isEqualTo(URI.create("http://127.0.0.1:4444"));
+        assertThat(selector.selectHttpService().stream().collect(onlyElement()))
+                .isEqualTo(URI.create("http://127.0.0.1:4444"));
 
         selector = injector.getInstance(Key.get(HttpServiceSelector.class, serviceType("carrot")));
         assertThat(selector.selectHttpService()).isEmpty();

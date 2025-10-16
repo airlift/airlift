@@ -13,6 +13,9 @@
  */
 package io.airlift.http.client.jetty;
 
+import static io.airlift.http.client.jetty.HttpRequestEvent.createHttpRequestEvent;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+
 import ch.qos.logback.core.AsyncAppenderBase;
 import ch.qos.logback.core.ContextBase;
 import ch.qos.logback.core.rolling.RollingFileAppender;
@@ -24,18 +27,12 @@ import com.google.common.math.LongMath;
 import io.airlift.log.Logger;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static io.airlift.http.client.jetty.HttpRequestEvent.createHttpRequestEvent;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
-
-class DefaultHttpClientLogger
-        implements HttpClientLogger
-{
+class DefaultHttpClientLogger implements HttpClientLogger {
     private static final Logger LOG = Logger.get(DefaultHttpClientLogger.class);
     private static final String TEMP_FILE_EXTENSION = ".tmp";
     private static final String LOG_FILE_EXTENSION = ".log";
@@ -49,15 +46,15 @@ class DefaultHttpClientLogger
             DataSize bufferSize,
             Duration flushInterval,
             long maxFileSizeInBytes,
-            boolean compressionEnabled)
-    {
+            boolean compressionEnabled) {
         ContextBase context = new ContextBase();
         HttpClientLogLayout httpLogLayout = new HttpClientLogLayout();
 
         recoverTempFiles(filename);
 
         FlushingFileAppender<HttpRequestEvent> fileAppender = new FlushingFileAppender<>(flushInterval);
-        SizeAndTimeBasedFileNamingAndTriggeringPolicy<HttpRequestEvent> triggeringPolicy = new SizeAndTimeBasedFileNamingAndTriggeringPolicy<>();
+        SizeAndTimeBasedFileNamingAndTriggeringPolicy<HttpRequestEvent> triggeringPolicy =
+                new SizeAndTimeBasedFileNamingAndTriggeringPolicy<>();
         TimeBasedRollingPolicy<HttpRequestEvent> rollingPolicy = new TimeBasedRollingPolicy<>();
 
         rollingPolicy.setContext(context);
@@ -97,25 +94,21 @@ class DefaultHttpClientLogger
     }
 
     @Override
-    public void log(RequestInfo requestInfo, ResponseInfo responseInfo)
-    {
+    public void log(RequestInfo requestInfo, ResponseInfo responseInfo) {
         asyncAppender.doAppend(createHttpRequestEvent(requestInfo, responseInfo));
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         asyncAppender.stop();
     }
 
     @Override
-    public int getQueueSize()
-    {
+    public int getQueueSize() {
         return asyncAppender.getNumberOfElementsInQueue();
     }
 
-    private static void recoverTempFiles(String logPath)
-    {
+    private static void recoverTempFiles(String logPath) {
         // logback has a tendency to leave around temp files if it is interrupted
         // these .tmp files are log files that are about to be compressed.
         // This method recovers them so that they aren't orphaned
@@ -125,32 +118,29 @@ class DefaultHttpClientLogger
 
         if (tempFiles != null) {
             for (File tempFile : tempFiles) {
-                String newName = tempFile.getName().substring(0, tempFile.getName().length() - TEMP_FILE_EXTENSION.length());
-                File newFile = Paths.get(tempFile.getParent(), newName + LOG_FILE_EXTENSION).toFile();
+                String newName =
+                        tempFile.getName().substring(0, tempFile.getName().length() - TEMP_FILE_EXTENSION.length());
+                File newFile = Paths.get(tempFile.getParent(), newName + LOG_FILE_EXTENSION)
+                        .toFile();
                 if (tempFile.renameTo(newFile)) {
                     LOG.info("Recovered temp file: %s", tempFile);
-                }
-                else {
+                } else {
                     LOG.warn("Could not rename temp file [%s] to [%s]", tempFile, newFile);
                 }
             }
         }
     }
 
-    private static class FlushingFileAppender<T>
-            extends RollingFileAppender<T>
-    {
+    private static class FlushingFileAppender<T> extends RollingFileAppender<T> {
         private final AtomicLong lastFlushed = new AtomicLong(System.nanoTime());
         private final long flushIntervalNanos;
 
-        private FlushingFileAppender(Duration flushInterval)
-        {
+        private FlushingFileAppender(Duration flushInterval) {
             this.flushIntervalNanos = flushInterval.roundTo(NANOSECONDS);
         }
 
         @Override
-        protected void subAppend(T event)
-        {
+        protected void subAppend(T event) {
             super.subAppend(event);
 
             long now = System.nanoTime();
@@ -161,18 +151,15 @@ class DefaultHttpClientLogger
         }
 
         @SuppressWarnings("Duplicates")
-        private void flush()
-        {
+        private void flush() {
             try {
                 streamWriteLock.lock();
                 try {
                     getOutputStream().flush();
-                }
-                finally {
+                } finally {
                     streamWriteLock.unlock();
                 }
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 started = false;
                 addStatus(new ErrorStatus("IO failure in appender", this, e));
             }

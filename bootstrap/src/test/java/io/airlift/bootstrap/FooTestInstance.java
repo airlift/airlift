@@ -15,12 +15,9 @@
  */
 package io.airlift.bootstrap;
 
-public class FooTestInstance
-        implements BaseOneWithFooMethod, BaseTwoWithFooMethod
-{
+public class FooTestInstance implements BaseOneWithFooMethod, BaseTwoWithFooMethod {
     @Override
-    public void foo()
-    {
+    public void foo() {
         TestLifeCycleManager.note("foo");
     }
 }

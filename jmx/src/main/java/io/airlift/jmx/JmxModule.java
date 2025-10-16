@@ -15,29 +15,24 @@
  */
 package io.airlift.jmx;
 
-import com.google.inject.Binder;
-import com.google.inject.Inject;
-import com.google.inject.Provider;
-import com.google.inject.Scopes;
-import io.airlift.configuration.AbstractConfigurationAwareModule;
-import io.airlift.discovery.client.ServiceAnnouncement;
-
-import javax.management.MBeanServer;
-
-import java.lang.management.ManagementFactory;
-
 import static com.google.common.base.Preconditions.checkState;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
-public class JmxModule
-        extends AbstractConfigurationAwareModule
-{
+import com.google.inject.Binder;
+import com.google.inject.Inject;
+import com.google.inject.Provider;
+import com.google.inject.Scopes;
+import io.airlift.configuration.AbstractConfigurationAwareModule;
+import io.airlift.discovery.client.ServiceAnnouncement;
+import java.lang.management.ManagementFactory;
+import javax.management.MBeanServer;
+
+public class JmxModule extends AbstractConfigurationAwareModule {
     @Override
-    protected void setup(Binder binder)
-    {
+    protected void setup(Binder binder) {
         binder.disableCircularProxies();
 
         binder.bind(MBeanServer.class).toInstance(ManagementFactory.getPlatformMBeanServer());
@@ -52,28 +47,25 @@ public class JmxModule
             // Do not export JmxAgent by default for security reasons.
             // Also, exporting it at randomly picked port was proven to be unreliable in certain environments.
 
-            checkState(jmxConfig.getRmiServerPort() == null, "RMI registry port must be configured when RMI server port is configured");
-        }
-        else {
+            checkState(
+                    jmxConfig.getRmiServerPort() == null,
+                    "RMI registry port must be configured when RMI server port is configured");
+        } else {
             discoveryBinder(binder).bindServiceAnnouncement(JmxAnnouncementProvider.class);
             binder.bind(JmxAgent.class).in(Scopes.SINGLETON);
         }
     }
 
-    static class JmxAnnouncementProvider
-            implements Provider<ServiceAnnouncement>
-    {
+    static class JmxAnnouncementProvider implements Provider<ServiceAnnouncement> {
         private JmxAgent jmxAgent;
 
         @Inject
-        public void setJmxAgent(JmxAgent jmxAgent)
-        {
+        public void setJmxAgent(JmxAgent jmxAgent) {
             this.jmxAgent = jmxAgent;
         }
 
         @Override
-        public ServiceAnnouncement get()
-        {
+        public ServiceAnnouncement get() {
             return serviceAnnouncement("jmx")
                     .addProperty("jmx", jmxAgent.getUrl().toString())
                     .build();

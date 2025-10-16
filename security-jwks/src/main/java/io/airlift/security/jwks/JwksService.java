@@ -13,6 +13,13 @@
  */
 package io.airlift.security.jwks;
 
+import static io.airlift.concurrent.Threads.daemonThreadsNamed;
+import static io.airlift.http.client.Request.Builder.prepareGet;
+import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
+import static io.airlift.security.jwks.JwksDecoder.decodeKeys;
+import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
+
 import com.google.common.io.Closer;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.Request;
@@ -21,7 +28,6 @@ import io.airlift.log.Logger;
 import io.airlift.units.Duration;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
@@ -33,15 +39,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static io.airlift.concurrent.Threads.daemonThreadsNamed;
-import static io.airlift.http.client.Request.Builder.prepareGet;
-import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
-import static io.airlift.security.jwks.JwksDecoder.decodeKeys;
-import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
-
-public final class JwksService
-{
+public final class JwksService {
     private static final Logger log = Logger.get(JwksService.class);
 
     private final URI address;
@@ -51,8 +49,7 @@ public final class JwksService
 
     private Closer closer;
 
-    public JwksService(URI address, HttpClient httpClient, Duration refreshDelay)
-    {
+    public JwksService(URI address, HttpClient httpClient, Duration refreshDelay) {
         this.address = requireNonNull(address, "address is null");
         this.httpClient = requireNonNull(httpClient, "httpClient is null");
         this.refreshDelay = requireNonNull(refreshDelay, "refreshDelay is null");
@@ -61,8 +58,7 @@ public final class JwksService
     }
 
     @PostConstruct
-    public synchronized void start()
-    {
+    public synchronized void start() {
         if (closer != null) {
             return;
         }
@@ -75,8 +71,7 @@ public final class JwksService
                 () -> {
                     try {
                         refreshKeys();
-                    }
-                    catch (Throwable e) {
+                    } catch (Throwable e) {
                         log.error(e, "Error fetching JWKS keys");
                     }
                 },
@@ -87,54 +82,46 @@ public final class JwksService
     }
 
     @PreDestroy
-    public synchronized void stop()
-    {
+    public synchronized void stop() {
         if (closer == null) {
             return;
         }
         try {
             closer.close();
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new UncheckedIOException("Error stopping JWKS service", e);
-        }
-        finally {
+        } finally {
             closer = null;
         }
     }
 
-    public Map<String, PublicKey> getKeys()
-    {
+    public Map<String, PublicKey> getKeys() {
         return keys.get();
     }
 
-    public Optional<PublicKey> getKey(String keyId)
-    {
+    public Optional<PublicKey> getKey(String keyId) {
         return Optional.ofNullable(keys.get().get(keyId));
     }
 
-    public void refreshKeys()
-    {
+    public void refreshKeys() {
         keys.set(fetchKeys());
     }
 
-    private Map<String, PublicKey> fetchKeys()
-    {
+    private Map<String, PublicKey> fetchKeys() {
         Request request = prepareGet().setUri(address).build();
         StringResponse response;
         try {
             response = httpClient.execute(request, createStringResponseHandler());
-        }
-        catch (RuntimeException e) {
+        } catch (RuntimeException e) {
             throw new RuntimeException("Error reading JWKS keys from " + address, e);
         }
         if (response.getStatusCode() != 200) {
-            throw new RuntimeException("Unexpected response code " + response.getStatusCode() + " from JWKS service at " + address);
+            throw new RuntimeException(
+                    "Unexpected response code " + response.getStatusCode() + " from JWKS service at " + address);
         }
         try {
             return decodeKeys(response.getBody());
-        }
-        catch (RuntimeException e) {
+        } catch (RuntimeException e) {
             throw new RuntimeException("Unable to decode JWKS response from " + address, e);
         }
     }

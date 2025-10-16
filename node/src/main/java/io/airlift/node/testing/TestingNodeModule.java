@@ -15,63 +15,55 @@
  */
 package io.airlift.node.testing;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Strings.isNullOrEmpty;
+import static java.util.Objects.requireNonNull;
+import static org.weakref.jmx.guice.ExportBinder.newExporter;
+
 import com.google.common.net.InetAddresses;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 import io.airlift.node.NodeConfig;
 import io.airlift.node.NodeInfo;
-
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Strings.isNullOrEmpty;
-import static java.util.Objects.requireNonNull;
-import static org.weakref.jmx.guice.ExportBinder.newExporter;
-
-public class TestingNodeModule
-        implements Module
-{
+public class TestingNodeModule implements Module {
     // avoid having an accidental dependency on the environment name
-    private static final AtomicLong nextId = new AtomicLong(ThreadLocalRandom.current().nextInt(1000000));
+    private static final AtomicLong nextId =
+            new AtomicLong(ThreadLocalRandom.current().nextInt(1000000));
 
     private final String environment;
     private final Optional<String> pool;
 
-    public TestingNodeModule()
-    {
+    public TestingNodeModule() {
         this(Optional.empty());
     }
 
-    public TestingNodeModule(Optional<String> environment)
-    {
+    public TestingNodeModule(Optional<String> environment) {
         this(environment.orElse("test" + nextId.getAndIncrement()));
     }
 
-    public TestingNodeModule(String environment)
-    {
+    public TestingNodeModule(String environment) {
         this(environment, Optional.empty());
     }
 
-    public TestingNodeModule(String environment, Optional<String> pool)
-    {
+    public TestingNodeModule(String environment, Optional<String> pool) {
         checkArgument(!isNullOrEmpty(environment), "environment is null or empty");
         this.environment = environment;
         this.pool = requireNonNull(pool, "pool is null");
     }
 
-    public TestingNodeModule(String environment, String pool)
-    {
+    public TestingNodeModule(String environment, String pool) {
         this(environment, Optional.of(requireNonNull(pool, "pool is null")));
     }
 
     @Override
-    public void configure(Binder binder)
-    {
+    public void configure(Binder binder) {
         binder.bind(NodeInfo.class).in(Scopes.SINGLETON);
         NodeConfig nodeConfig = new NodeConfig()
                 .setEnvironment(environment)
@@ -88,12 +80,10 @@ public class TestingNodeModule
     }
 
     @SuppressWarnings("ImplicitNumericConversion")
-    private static InetAddress getV4Localhost()
-    {
+    private static InetAddress getV4Localhost() {
         try {
             return InetAddress.getByAddress("localhost", new byte[] {127, 0, 0, 1});
-        }
-        catch (UnknownHostException e) {
+        } catch (UnknownHostException e) {
             throw new AssertionError("Could not create localhost address");
         }
     }

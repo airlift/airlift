@@ -1,5 +1,8 @@
 package io.airlift.configuration;
 
+import static io.airlift.configuration.ConditionalModule.conditionalModule;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Binder;
@@ -7,31 +10,28 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.spi.Message;
-import org.junit.jupiter.api.Test;
-
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.Test;
 
-import static io.airlift.configuration.ConditionalModule.conditionalModule;
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class TestConditionalModule
-{
+public class TestConditionalModule {
     @Test
-    public void testConditionalModule()
-    {
-        Module moduleX = conditionalModule(SomeConfig.class, config -> config.getSomeOption().equals("x"), binder -> binder.bind(String.class).toInstance("X"));
-        Module moduleY = conditionalModule(SomeConfig.class, config -> config.getSomeOption().equals("y"), binder -> binder.bind(String.class).toInstance("Y"));
-        AbstractConfigurationAwareModule moduleXY = new AbstractConfigurationAwareModule()
-        {
+    public void testConditionalModule() {
+        Module moduleX = conditionalModule(
+                SomeConfig.class, config -> config.getSomeOption().equals("x"), binder -> binder.bind(String.class)
+                        .toInstance("X"));
+        Module moduleY = conditionalModule(
+                SomeConfig.class, config -> config.getSomeOption().equals("y"), binder -> binder.bind(String.class)
+                        .toInstance("Y"));
+        AbstractConfigurationAwareModule moduleXY = new AbstractConfigurationAwareModule() {
             @Override
-            protected void setup(Binder binder)
-            {
+            protected void setup(Binder binder) {
                 install(moduleX);
                 install(moduleY);
             }
         };
-        Module moduleXElseZ = conditionalModule(SomeConfig.class,
+        Module moduleXElseZ = conditionalModule(
+                SomeConfig.class,
                 config -> config.getSomeOption().equals("x"),
                 binder -> binder.bind(String.class).toInstance("X"),
                 binder -> binder.bind(String.class).toInstance("Z"));
@@ -51,20 +51,24 @@ public class TestConditionalModule
     }
 
     @Test
-    public void testConditionalModuleWithPrefix()
-    {
-        Module moduleX = conditionalModule(SomeConfig.class, "prefix", config -> config.getSomeOption().equals("x"), binder -> binder.bind(String.class).toInstance("X"));
-        Module moduleY = conditionalModule(SomeConfig.class, "prefix", config -> config.getSomeOption().equals("y"), binder -> binder.bind(String.class).toInstance("Y"));
-        AbstractConfigurationAwareModule moduleXY = new AbstractConfigurationAwareModule()
-        {
+    public void testConditionalModuleWithPrefix() {
+        Module moduleX = conditionalModule(
+                SomeConfig.class, "prefix", config -> config.getSomeOption().equals("x"), binder -> binder.bind(
+                                String.class)
+                        .toInstance("X"));
+        Module moduleY = conditionalModule(
+                SomeConfig.class, "prefix", config -> config.getSomeOption().equals("y"), binder -> binder.bind(
+                                String.class)
+                        .toInstance("Y"));
+        AbstractConfigurationAwareModule moduleXY = new AbstractConfigurationAwareModule() {
             @Override
-            protected void setup(Binder binder)
-            {
+            protected void setup(Binder binder) {
                 install(moduleX);
                 install(moduleY);
             }
         };
-        Module moduleXElseZ = conditionalModule(SomeConfig.class,
+        Module moduleXElseZ = conditionalModule(
+                SomeConfig.class,
                 "prefix",
                 config -> config.getSomeOption().equals("x"),
                 binder -> binder.bind(String.class).toInstance("X"),
@@ -84,8 +88,7 @@ public class TestConditionalModule
         assertThat(injector.getInstance(String.class)).isEqualTo("Z");
     }
 
-    private static Injector createInjector(Map<String, String> properties, Module module)
-    {
+    private static Injector createInjector(Map<String, String> properties, Module module) {
         ConfigurationFactory configurationFactory = new ConfigurationFactory(properties);
         configurationFactory.registerConfigurationClasses(ImmutableList.of(module));
         List<Message> messages = configurationFactory.validateRegisteredConfigurationProvider();
@@ -96,18 +99,15 @@ public class TestConditionalModule
                 Binder::requireExplicitBindings);
     }
 
-    public static class SomeConfig
-    {
+    public static class SomeConfig {
         private String someOption;
 
-        public String getSomeOption()
-        {
+        public String getSomeOption() {
             return someOption;
         }
 
         @Config("someOption")
-        public SomeConfig setSomeOption(String someOption)
-        {
+        public SomeConfig setSomeOption(String someOption) {
             this.someOption = someOption;
             return this;
         }

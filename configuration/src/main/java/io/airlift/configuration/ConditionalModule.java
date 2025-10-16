@@ -13,24 +13,20 @@
  */
 package io.airlift.configuration;
 
-import com.google.inject.Binder;
-import com.google.inject.Module;
-
-import java.util.Optional;
-import java.util.function.Predicate;
-
 import static io.airlift.configuration.ConfigurationAwareModule.combine;
 import static java.util.Objects.requireNonNull;
 
-public class ConditionalModule<T>
-        extends AbstractConfigurationAwareModule
-{
+import com.google.inject.Binder;
+import com.google.inject.Module;
+import java.util.Optional;
+import java.util.function.Predicate;
+
+public class ConditionalModule<T> extends AbstractConfigurationAwareModule {
     /**
      * @deprecated Use {@link #conditionalModule} instead
      */
     @Deprecated
-    public static <T> Module installModuleIf(Class<T> config, Predicate<T> predicate, Module module, Module otherwise)
-    {
+    public static <T> Module installModuleIf(Class<T> config, Predicate<T> predicate, Module module, Module otherwise) {
         return conditionalModule(config, predicate, module, otherwise);
     }
 
@@ -38,32 +34,28 @@ public class ConditionalModule<T>
      * @deprecated Use {@link #conditionalModule} instead
      */
     @Deprecated
-    public static <T> Module installModuleIf(Class<T> config, Predicate<T> predicate, Module module)
-    {
+    public static <T> Module installModuleIf(Class<T> config, Predicate<T> predicate, Module module) {
         return conditionalModule(config, predicate, module);
     }
 
-    public static <T> Module conditionalModule(Class<T> config, Predicate<T> predicate, Module module, Module otherwise)
-    {
+    public static <T> Module conditionalModule(
+            Class<T> config, Predicate<T> predicate, Module module, Module otherwise) {
         return combine(
-                conditionalModule(config, predicate, module),
-                conditionalModule(config, predicate.negate(), otherwise));
+                conditionalModule(config, predicate, module), conditionalModule(config, predicate.negate(), otherwise));
     }
 
-    public static <T> Module conditionalModule(Class<T> config, String prefix, Predicate<T> predicate, Module module, Module otherwise)
-    {
+    public static <T> Module conditionalModule(
+            Class<T> config, String prefix, Predicate<T> predicate, Module module, Module otherwise) {
         return combine(
                 conditionalModule(config, prefix, predicate, module),
                 conditionalModule(config, prefix, predicate.negate(), otherwise));
     }
 
-    public static <T> Module conditionalModule(Class<T> config, Predicate<T> predicate, Module module)
-    {
+    public static <T> Module conditionalModule(Class<T> config, Predicate<T> predicate, Module module) {
         return new ConditionalModule<>(config, Optional.empty(), predicate, module);
     }
 
-    public static <T> Module conditionalModule(Class<T> config, String prefix, Predicate<T> predicate, Module module)
-    {
+    public static <T> Module conditionalModule(Class<T> config, String prefix, Predicate<T> predicate, Module module) {
         return new ConditionalModule<>(config, Optional.of(prefix), predicate, module);
     }
 
@@ -72,8 +64,7 @@ public class ConditionalModule<T>
     private final Predicate<T> predicate;
     private final Module module;
 
-    private ConditionalModule(Class<T> config, Optional<String> prefix, Predicate<T> predicate, Module module)
-    {
+    private ConditionalModule(Class<T> config, Optional<String> prefix, Predicate<T> predicate, Module module) {
         this.config = requireNonNull(config, "config is null");
         this.prefix = requireNonNull(prefix, "prefix is null");
         this.predicate = requireNonNull(predicate, "predicate is null");
@@ -81,11 +72,9 @@ public class ConditionalModule<T>
     }
 
     @Override
-    protected void setup(Binder binder)
-    {
-        T configuration = prefix
-                .map(value -> buildConfigObject(config, value))
-                .orElseGet(() -> buildConfigObject(config));
+    protected void setup(Binder binder) {
+        T configuration =
+                prefix.map(value -> buildConfigObject(config, value)).orElseGet(() -> buildConfigObject(config));
         if (predicate.test(configuration)) {
             install(module);
         }

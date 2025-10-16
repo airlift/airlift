@@ -15,24 +15,21 @@
  */
 package io.airlift.configuration;
 
+import static com.google.common.base.MoreObjects.toStringHelper;
+import static io.airlift.configuration.ConfigurationMetadata.getConfigurationMetadata;
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Ordering;
 import com.google.inject.Key;
 import io.airlift.configuration.ConfigurationMetadata.AttributeMetadata;
-
 import java.lang.reflect.Method;
 import java.util.Optional;
 import java.util.SortedSet;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
-import static io.airlift.configuration.ConfigurationMetadata.getConfigurationMetadata;
-import static java.util.Objects.requireNonNull;
-
-public class ConfigurationInspector
-{
-    public SortedSet<ConfigRecord<?>> inspect(ConfigurationFactory configurationFactory)
-    {
+public class ConfigurationInspector {
+    public SortedSet<ConfigRecord<?>> inspect(ConfigurationFactory configurationFactory) {
         ImmutableSortedSet.Builder<ConfigRecord<?>> builder = ImmutableSortedSet.naturalOrder();
         for (ConfigurationProvider<?> configurationProvider : configurationFactory.getConfigurationProviders()) {
             ConfigRecord<?> result = new ConfigRecord<>(configurationFactory, configurationProvider);
@@ -42,8 +39,7 @@ public class ConfigurationInspector
         return builder.build();
     }
 
-    private static String getValue(Method getter, Object instance, String defaultValue)
-    {
+    private static String getValue(Method getter, Object instance, String defaultValue) {
         if (getter == null || instance == null) {
             return defaultValue;
         }
@@ -57,22 +53,19 @@ public class ConfigurationInspector
                 return ((Optional<?>) value).map(Object::toString).orElse("----");
             }
             return value.toString();
-        }
-        catch (Throwable e) {
+        } catch (Throwable e) {
             return "-- ERROR --";
         }
     }
 
-    public static class ConfigRecord<T>
-            implements Comparable<ConfigRecord<?>>
-    {
+    public static class ConfigRecord<T> implements Comparable<ConfigRecord<?>> {
         private final Key<T> key;
         private final Class<T> configClass;
         private final String prefix;
         private final SortedSet<ConfigAttribute> attributes;
 
-        private ConfigRecord(ConfigurationFactory configurationFactory, ConfigurationProvider<T> configurationProvider)
-        {
+        private ConfigRecord(
+                ConfigurationFactory configurationFactory, ConfigurationProvider<T> configurationProvider) {
             requireNonNull(configurationProvider, "configurationProvider");
 
             ConfigurationBinding<T> configurationBinding = configurationProvider.getConfigurationBinding();
@@ -87,15 +80,13 @@ public class ConfigurationInspector
             T instance = null;
             try {
                 instance = configurationProvider.get();
-            }
-            catch (Throwable ignored) {
+            } catch (Throwable ignored) {
                 // provider could blow up for any reason, which is fine for this code
                 // this is catch throwable because we may get an AssertionError
             }
 
-            String prefix = configurationBinding.prefix()
-                    .map(value -> value + ".")
-                    .orElse("");
+            String prefix =
+                    configurationBinding.prefix().map(value -> value + ".").orElse("");
 
             ImmutableSortedSet.Builder<ConfigAttribute> builder = ImmutableSortedSet.naturalOrder();
             for (AttributeMetadata attribute : metadata.getAttributes().values()) {
@@ -113,34 +104,35 @@ public class ConfigurationInspector
                     continue;
                 }
 
-                builder.add(new ConfigAttribute(attribute.getName(), propertyName, defaultValue, currentValue, description, attribute.isSecuritySensitive()));
+                builder.add(new ConfigAttribute(
+                        attribute.getName(),
+                        propertyName,
+                        defaultValue,
+                        currentValue,
+                        description,
+                        attribute.isSecuritySensitive()));
             }
             attributes = builder.build();
         }
 
-        public Key<T> getKey()
-        {
+        public Key<T> getKey() {
             return key;
         }
 
-        public Class<T> getConfigClass()
-        {
+        public Class<T> getConfigClass() {
             return configClass;
         }
 
-        public String getPrefix()
-        {
+        public String getPrefix() {
             return prefix;
         }
 
-        public SortedSet<ConfigAttribute> getAttributes()
-        {
+        public SortedSet<ConfigAttribute> getAttributes() {
             return attributes;
         }
 
         @Override
-        public boolean equals(Object o)
-        {
+        public boolean equals(Object o) {
             if (this == o) {
                 return true;
             }
@@ -153,25 +145,23 @@ public class ConfigurationInspector
         }
 
         @Override
-        public int hashCode()
-        {
+        public int hashCode() {
             return key.hashCode();
         }
 
         @Override
-        public int compareTo(ConfigRecord<?> that)
-        {
+        public int compareTo(ConfigRecord<?> that) {
             return ComparisonChain.start()
-                    .compare(String.valueOf(this.key.getTypeLiteral().getType()), String.valueOf(that.key.getTypeLiteral().getType()))
+                    .compare(
+                            String.valueOf(this.key.getTypeLiteral().getType()),
+                            String.valueOf(that.key.getTypeLiteral().getType()))
                     .compare(String.valueOf(this.key.getAnnotationType()), String.valueOf(that.key.getAnnotationType()))
                     .compare(this.key, that.key, Ordering.arbitrary())
                     .result();
         }
     }
 
-    public static class ConfigAttribute
-            implements Comparable<ConfigAttribute>
-    {
+    public static class ConfigAttribute implements Comparable<ConfigAttribute> {
         private final String attributeName;
         private final String propertyName;
         private final String defaultValue;
@@ -180,8 +170,13 @@ public class ConfigurationInspector
 
         // todo this class needs to be updated to include the concept of deprecated property names
 
-        private ConfigAttribute(String attributeName, String propertyName, String defaultValue, String currentValue, String description, boolean securitySensitive)
-        {
+        private ConfigAttribute(
+                String attributeName,
+                String propertyName,
+                String defaultValue,
+                String currentValue,
+                String description,
+                boolean securitySensitive) {
             requireNonNull(attributeName, "attributeName");
             requireNonNull(propertyName, "propertyName");
             requireNonNull(defaultValue, "defaultValue");
@@ -192,47 +187,39 @@ public class ConfigurationInspector
             this.propertyName = propertyName;
             if (securitySensitive && defaultValue != null) {
                 this.defaultValue = "[REDACTED]";
-            }
-            else {
+            } else {
                 this.defaultValue = defaultValue;
             }
             if (securitySensitive && currentValue != null) {
                 this.currentValue = "[REDACTED]";
-            }
-            else {
+            } else {
                 this.currentValue = currentValue;
             }
             this.description = description;
         }
 
-        public String getAttributeName()
-        {
+        public String getAttributeName() {
             return attributeName;
         }
 
-        public String getPropertyName()
-        {
+        public String getPropertyName() {
             return propertyName;
         }
 
-        public String getDefaultValue()
-        {
+        public String getDefaultValue() {
             return defaultValue;
         }
 
-        public String getCurrentValue()
-        {
+        public String getCurrentValue() {
             return currentValue;
         }
 
-        public String getDescription()
-        {
+        public String getDescription() {
             return description;
         }
 
         @Override
-        public boolean equals(Object o)
-        {
+        public boolean equals(Object o) {
             if (this == o) {
                 return true;
             }
@@ -246,20 +233,17 @@ public class ConfigurationInspector
         }
 
         @Override
-        public int hashCode()
-        {
+        public int hashCode() {
             return attributeName.hashCode();
         }
 
         @Override
-        public int compareTo(ConfigAttribute that)
-        {
+        public int compareTo(ConfigAttribute that) {
             return this.attributeName.compareTo(that.attributeName);
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return toStringHelper(this)
                     .add("attributeName", attributeName)
                     .add("propertyName", propertyName)

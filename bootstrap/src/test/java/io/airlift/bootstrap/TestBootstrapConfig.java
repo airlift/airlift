@@ -13,33 +13,27 @@
  */
 package io.airlift.bootstrap;
 
-import com.google.common.collect.ImmutableMap;
-import org.junit.jupiter.api.Test;
-
-import java.util.Map;
-
 import static io.airlift.configuration.testing.ConfigAssertions.assertFullMapping;
 import static io.airlift.configuration.testing.ConfigAssertions.assertRecordedDefaults;
 import static io.airlift.configuration.testing.ConfigAssertions.recordDefaults;
 
-public class TestBootstrapConfig
-{
+import com.google.common.collect.ImmutableMap;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+
+public class TestBootstrapConfig {
     @Test
-    public void testDefaults()
-    {
-        assertRecordedDefaults(recordDefaults(BootstrapConfig.class)
-                .setQuiet(null));
+    public void testDefaults() {
+        assertRecordedDefaults(recordDefaults(BootstrapConfig.class).setQuiet(null));
     }
 
     @Test
-    public void testExplicitPropertyMappings()
-    {
+    public void testExplicitPropertyMappings() {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("bootstrap.quiet", "false")
                 .build();
 
-        BootstrapConfig expected = new BootstrapConfig()
-                .setQuiet(false);
+        BootstrapConfig expected = new BootstrapConfig().setQuiet(false);
 
         assertFullMapping(properties, expected);
     }

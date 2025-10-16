@@ -13,6 +13,10 @@
  */
 package io.airlift.bootstrap;
 
+import static com.google.inject.name.Names.named;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import com.google.inject.Binder;
 import com.google.inject.Injector;
 import com.google.inject.Key;
@@ -22,15 +26,9 @@ import io.airlift.configuration.Config;
 import io.airlift.configuration.ConfigurationAwareModule;
 import org.junit.jupiter.api.Test;
 
-import static com.google.inject.name.Names.named;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
-public class TestConfigurationAwareModule
-{
+public class TestConfigurationAwareModule {
     @Test
-    public void testConfigAvailable()
-    {
+    public void testConfigAvailable() {
         Injector injector = new Bootstrap(new FooModule())
                 .doNotInitializeLogging()
                 .setRequiredConfigurationProperty("foo.enabled", "true")
@@ -43,10 +41,8 @@ public class TestConfigurationAwareModule
     }
 
     @Test
-    public void testInvalidInstall()
-    {
-        Bootstrap bootstrap = new Bootstrap(new BrokenInstallModule())
-                .doNotInitializeLogging();
+    public void testInvalidInstall() {
+        Bootstrap bootstrap = new Bootstrap(new BrokenInstallModule()).doNotInitializeLogging();
 
         assertThatThrownBy(bootstrap::initialize)
                 .isInstanceOf(ApplicationConfigurationException.class)
@@ -54,23 +50,18 @@ public class TestConfigurationAwareModule
     }
 
     @Test
-    public void testCombine()
-    {
+    public void testCombine() {
         Module combined = ConfigurationAwareModule.combine(
-                new AbstractConfigurationAwareModule()
-                {
+                new AbstractConfigurationAwareModule() {
                     @Override
-                    protected void setup(Binder binder)
-                    {
+                    protected void setup(Binder binder) {
                         assertThat(buildConfigObject(FooConfig.class).isFoo()).isTrue();
                         binder.bind(String.class).annotatedWith(named("foo")).toInstance("fooInstance");
                     }
                 },
-                new AbstractConfigurationAwareModule()
-                {
+                new AbstractConfigurationAwareModule() {
                     @Override
-                    protected void setup(Binder binder)
-                    {
+                    protected void setup(Binder binder) {
                         assertThat(buildConfigObject(BarConfig.class).isBar()).isTrue();
                         binder.bind(String.class).annotatedWith(named("bar")).toInstance("barInstance");
                     }
@@ -86,12 +77,9 @@ public class TestConfigurationAwareModule
         assertThat(injector.getInstance(Key.get(String.class, named("bar")))).isEqualTo("barInstance");
     }
 
-    public static class FooModule
-            extends AbstractConfigurationAwareModule
-    {
+    public static class FooModule extends AbstractConfigurationAwareModule {
         @Override
-        protected void setup(Binder binder)
-        {
+        protected void setup(Binder binder) {
             assertThat(buildConfigObject(FooConfig.class).isFoo()).isTrue();
             install(new BarModule());
             binder.bind(String.class).annotatedWith(named("foo")).toInstance("fooInstance");
@@ -99,66 +87,51 @@ public class TestConfigurationAwareModule
         }
     }
 
-    public static class BarModule
-            extends AbstractConfigurationAwareModule
-    {
+    public static class BarModule extends AbstractConfigurationAwareModule {
         @Override
-        protected void setup(Binder binder)
-        {
+        protected void setup(Binder binder) {
             assertThat(buildConfigObject(BarConfig.class).isBar()).isTrue();
             binder.bind(String.class).annotatedWith(named("bar")).toInstance("barInstance");
         }
     }
 
-    public static class AbcModule
-            implements Module
-    {
+    public static class AbcModule implements Module {
         @Override
-        public void configure(Binder binder)
-        {
+        public void configure(Binder binder) {
             binder.bind(String.class).annotatedWith(named("abc")).toInstance("abcInstance");
         }
     }
 
-    public static class BrokenInstallModule
-            extends AbstractConfigurationAwareModule
-    {
+    public static class BrokenInstallModule extends AbstractConfigurationAwareModule {
         @Override
-        protected void setup(Binder binder)
-        {
+        protected void setup(Binder binder) {
             binder.install(new FooModule());
         }
     }
 
-    public static class FooConfig
-    {
+    public static class FooConfig {
         private boolean foo;
 
-        public boolean isFoo()
-        {
+        public boolean isFoo() {
             return foo;
         }
 
         @Config("foo.enabled")
-        public FooConfig setFoo(boolean foo)
-        {
+        public FooConfig setFoo(boolean foo) {
             this.foo = foo;
             return this;
         }
     }
 
-    public static class BarConfig
-    {
+    public static class BarConfig {
         private boolean bar;
 
-        public boolean isBar()
-        {
+        public boolean isBar() {
             return bar;
         }
 
         @Config("bar.enabled")
-        public BarConfig setBar(boolean bar)
-        {
+        public BarConfig setBar(boolean bar) {
             this.bar = bar;
             return this;
         }

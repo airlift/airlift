@@ -13,25 +13,22 @@
  */
 package io.airlift.stats.cardinality;
 
-import io.airlift.slice.Slice;
-import org.junit.jupiter.api.Test;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
-
 import static io.airlift.slice.SizeOf.instanceSize;
 import static io.airlift.slice.testing.SliceAssertions.assertSlicesEqual;
 import static io.airlift.stats.cardinality.TestUtils.sequence;
 import static java.lang.Math.toIntExact;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TestHyperLogLog
-{
+import io.airlift.slice.Slice;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
+import org.junit.jupiter.api.Test;
+
+public class TestHyperLogLog {
     @Test
-    public void testEstimates()
-    {
+    public void testEstimates() {
         int trials = 1000;
         for (int indexBits = 4; indexBits <= 13; indexBits++) {
             Map<Integer, Stats> errors = new HashMap<>();
@@ -63,24 +60,26 @@ public class TestHyperLogLog
 
             for (Map.Entry<Integer, Stats> entry : errors.entrySet()) {
                 // Give an extra error margin. This is mostly a sanity check to catch egregious errors
-                assertThat(entry.getValue().stdev() <= expectedStandardError * 1.1).as(String.format("Failed at p = %s, cardinality = %s. Expected std error = %s, actual = %s",
-                        indexBits,
-                        entry.getKey(),
-                        expectedStandardError,
-                        entry.getValue().stdev())).isTrue();
+                assertThat(entry.getValue().stdev() <= expectedStandardError * 1.1)
+                        .as(String.format(
+                                "Failed at p = %s, cardinality = %s. Expected std error = %s, actual = %s",
+                                indexBits,
+                                entry.getKey(),
+                                expectedStandardError,
+                                entry.getValue().stdev()))
+                        .isTrue();
             }
         }
     }
 
     @Test
-    public void testRetainedSize()
-    {
-        assertThat(HyperLogLog.newInstance(8).estimatedInMemorySize()).isEqualTo(toIntExact(instanceSize(HyperLogLog.class) + (new SparseHll(10)).estimatedInMemorySize()));
+    public void testRetainedSize() {
+        assertThat(HyperLogLog.newInstance(8).estimatedInMemorySize())
+                .isEqualTo(toIntExact(instanceSize(HyperLogLog.class) + (new SparseHll(10)).estimatedInMemorySize()));
     }
 
     @Test
-    public void testMerge()
-    {
+    public void testMerge() {
         // small vs small
         verifyMerge(sequence(0, 100), sequence(50, 150));
 
@@ -94,8 +93,7 @@ public class TestHyperLogLog
         verifyMerge(sequence(0, 5000), sequence(3000, 8000));
     }
 
-    private void verifyMerge(List<Long> one, List<Long> two)
-    {
+    private void verifyMerge(List<Long> one, List<Long> two) {
         HyperLogLog hll1 = HyperLogLog.newInstance(2048);
         HyperLogLog hll2 = HyperLogLog.newInstance(2048);
 
@@ -122,8 +120,7 @@ public class TestHyperLogLog
     }
 
     @Test
-    public void testRoundtrip()
-    {
+    public void testRoundtrip() {
         // small
         verifyRoundtrip(sequence(0, 100));
 
@@ -131,8 +128,7 @@ public class TestHyperLogLog
         verifyRoundtrip(sequence(0, 20000));
     }
 
-    private void verifyRoundtrip(List<Long> sequence)
-    {
+    private void verifyRoundtrip(List<Long> sequence) {
         HyperLogLog hll = HyperLogLog.newInstance(2048);
 
         for (Long value : sequence) {

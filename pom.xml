@@ -360,6 +360,20 @@
         <pluginManagement>
             <plugins>
                 <plugin>
+                    <groupId>com.diffplug.spotless</groupId>
+                    <artifactId>spotless-maven-plugin</artifactId>
+                    <version>3.0.0</version>
+                    <configuration>
+                        <java>
+                            <palantirJavaFormat>
+                                <version>2.80.0</version>
+                                <style>PALANTIR</style>
+                                <formatJavadoc>false</formatJavadoc>
+                            </palantirJavaFormat>
+                        </java>
+                    </configuration>
+                </plugin>
+                <plugin>
                     <groupId>org.gaul</groupId>
                     <artifactId>modernizer-maven-plugin</artifactId>
                     <configuration>

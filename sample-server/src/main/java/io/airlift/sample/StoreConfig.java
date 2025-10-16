@@ -15,30 +15,26 @@
  */
 package io.airlift.sample;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static java.util.Objects.requireNonNull;
+
 import io.airlift.configuration.Config;
 import io.airlift.configuration.LegacyConfig;
 import io.airlift.units.Duration;
 import jakarta.validation.constraints.NotNull;
-
 import java.util.concurrent.TimeUnit;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static java.util.Objects.requireNonNull;
-
-public class StoreConfig
-{
+public class StoreConfig {
     private Duration ttl = new Duration(1, TimeUnit.HOURS);
 
     @Deprecated
     @LegacyConfig(value = "store.ttl-in-ms", replacedBy = "store.ttl")
-    public StoreConfig setTtlInMs(int duration)
-    {
+    public StoreConfig setTtlInMs(int duration) {
         return setTtl(new Duration(duration, TimeUnit.MILLISECONDS));
     }
 
     @Config("store.ttl")
-    public StoreConfig setTtl(Duration ttl)
-    {
+    public StoreConfig setTtl(Duration ttl) {
         requireNonNull(ttl, "ttl must not be null");
         checkArgument(ttl.toMillis() > 0, "ttl must be > 0");
 
@@ -47,8 +43,7 @@ public class StoreConfig
     }
 
     @NotNull
-    public Duration getTtl()
-    {
+    public Duration getTtl() {
         return ttl;
     }
 }

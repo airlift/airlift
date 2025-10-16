@@ -13,20 +13,17 @@
  */
 package io.airlift.node;
 
-import com.google.common.net.InetAddresses;
-import org.junit.jupiter.api.Test;
-
-import java.util.Optional;
-
 import static io.airlift.node.AddressToHostname.encodeAddressAsHostname;
 import static io.airlift.node.AddressToHostname.tryDecodeHostnameToAddress;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TestAddressSource
-{
+import com.google.common.net.InetAddresses;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
+
+public class TestAddressSource {
     @Test
-    public void testIpEncoding()
-    {
+    public void testIpEncoding() {
         verifyEncoding("127.0.0.1", "127-0-0-1.ip");
         verifyEncoding("1.2.3.4", "1-2-3-4.ip");
         verifyEncoding("2001:db8:85a3::8a2e:370:7334", "x2001-db8-85a3--8a2e-370-7334.ip");
@@ -34,9 +31,10 @@ public class TestAddressSource
         verifyEncoding("::1", "x--1.ip");
     }
 
-    private static void verifyEncoding(String addressString, String encodedHostname)
-    {
-        assertThat(encodeAddressAsHostname(InetAddresses.forString(addressString))).isEqualTo(encodedHostname);
-        assertThat(tryDecodeHostnameToAddress(encodedHostname)).isEqualTo(Optional.of(InetAddresses.forString(addressString)));
+    private static void verifyEncoding(String addressString, String encodedHostname) {
+        assertThat(encodeAddressAsHostname(InetAddresses.forString(addressString)))
+                .isEqualTo(encodedHostname);
+        assertThat(tryDecodeHostnameToAddress(encodedHostname))
+                .isEqualTo(Optional.of(InetAddresses.forString(addressString)));
     }
 }

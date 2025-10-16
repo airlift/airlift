@@ -6,42 +6,42 @@ import io.airlift.http.client.Request;
 import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.StreamingResponse;
 import io.airlift.http.client.TestingSocksProxy;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
-import java.util.Optional;
-
-public class TestJettyHttpClientSocksProxy
-        extends AbstractHttpClientTest
-{
+public class TestJettyHttpClientSocksProxy extends AbstractHttpClientTest {
     @Override
-    protected HttpClientConfig createClientConfig()
-    {
-        return new HttpClientConfig()
-                .setHttp2Enabled(false);
+    protected HttpClientConfig createClientConfig() {
+        return new HttpClientConfig().setHttp2Enabled(false);
     }
 
     @Override
     public Optional<StreamingResponse> executeRequest(CloseableTestHttpServer server, Request request)
-            throws Exception
-    {
+            throws Exception {
         TestingSocksProxy testingSocksProxy = new TestingSocksProxy().start();
-        JettyHttpClient client = server.createClient(createClientConfig().setSocksProxy(testingSocksProxy.getHostAndPort()));
-        return Optional.of(new TestingStreamingResponse(() -> client.executeStreaming(request), testingSocksProxy, client));
+        JettyHttpClient client =
+                server.createClient(createClientConfig().setSocksProxy(testingSocksProxy.getHostAndPort()));
+        return Optional.of(
+                new TestingStreamingResponse(() -> client.executeStreaming(request), testingSocksProxy, client));
     }
 
     @Override
-    public <T, E extends Exception> T executeRequest(CloseableTestHttpServer server, Request request, ResponseHandler<T, E> responseHandler)
-            throws Exception
-    {
+    public <T, E extends Exception> T executeRequest(
+            CloseableTestHttpServer server, Request request, ResponseHandler<T, E> responseHandler) throws Exception {
         return executeRequest(server, createClientConfig(), request, responseHandler);
     }
 
     @Override
-    public <T, E extends Exception> T executeRequest(CloseableTestHttpServer server, HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
-            throws Exception
-    {
-        try (TestingSocksProxy testingSocksProxy = new TestingSocksProxy().start(); JettyHttpClient client = server.createClient(config.setSocksProxy(testingSocksProxy.getHostAndPort()))) {
+    public <T, E extends Exception> T executeRequest(
+            CloseableTestHttpServer server,
+            HttpClientConfig config,
+            Request request,
+            ResponseHandler<T, E> responseHandler)
+            throws Exception {
+        try (TestingSocksProxy testingSocksProxy = new TestingSocksProxy().start();
+                JettyHttpClient client =
+                        server.createClient(config.setSocksProxy(testingSocksProxy.getHostAndPort()))) {
             return client.execute(request, responseHandler);
         }
     }
@@ -49,9 +49,7 @@ public class TestJettyHttpClientSocksProxy
     @Override
     @Test
     @Timeout(5)
-    public void testConnectTimeout()
-            throws Exception
-    {
+    public void testConnectTimeout() throws Exception {
         // When using a proxy, the connect timeout is for the connection to the proxy server,
         // not the ultimate destination server. For this test, the connection to the proxy
         // succeeds immediately, but the proxy's connection to the destination server will

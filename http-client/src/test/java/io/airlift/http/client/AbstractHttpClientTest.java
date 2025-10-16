@@ -1,54 +1,5 @@
 package io.airlift.http.client;
 
-import com.google.common.collect.HashMultiset;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Multiset;
-import io.airlift.http.client.HttpClient.HttpResponseFuture;
-import io.airlift.http.client.StatusResponseHandler.StatusResponse;
-import io.airlift.http.client.StringResponseHandler.StringResponse;
-import io.airlift.http.client.jetty.JettyHttpClient;
-import io.airlift.units.Duration;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.client.HttpResponseException;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
-import org.junit.jupiter.api.parallel.Execution;
-
-import java.io.ByteArrayInputStream;
-import java.io.Closeable;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
-import java.net.ConnectException;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.SocketAddress;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.UnknownHostException;
-import java.nio.channels.ClosedChannelException;
-import java.nio.channels.UnresolvedAddressException;
-import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
 import static com.google.common.base.Throwables.getStackTraceAsString;
 import static com.google.common.base.Throwables.throwIfInstanceOf;
 import static com.google.common.base.Throwables.throwIfUnchecked;
@@ -79,22 +30,69 @@ import static org.assertj.core.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.abort;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 
+import com.google.common.collect.HashMultiset;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Multiset;
+import io.airlift.http.client.HttpClient.HttpResponseFuture;
+import io.airlift.http.client.StatusResponseHandler.StatusResponse;
+import io.airlift.http.client.StringResponseHandler.StringResponse;
+import io.airlift.http.client.jetty.JettyHttpClient;
+import io.airlift.units.Duration;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.ByteArrayInputStream;
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.net.ConnectException;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketAddress;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.UnknownHostException;
+import java.nio.channels.ClosedChannelException;
+import java.nio.channels.UnresolvedAddressException;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import org.eclipse.jetty.client.HttpResponseException;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.parallel.Execution;
+
 @Execution(CONCURRENT)
-public abstract class AbstractHttpClientTest
-{
-    private static final int DEFAULT_MIN_GZIP_SIZE = 32; // org.eclipse.jetty.compression.gzip.GzipCompression.DEFAULT_MIN_GZIP_SIZE
+public abstract class AbstractHttpClientTest {
+    private static final int DEFAULT_MIN_GZIP_SIZE =
+            32; // org.eclipse.jetty.compression.gzip.GzipCompression.DEFAULT_MIN_GZIP_SIZE
     private static final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
 
-    public static final String LARGE_CONTENT = IntStream.range(0, 10_000_000).mapToObj(ignore -> "hello").collect(Collectors.joining());
+    public static final String LARGE_CONTENT =
+            IntStream.range(0, 10_000_000).mapToObj(ignore -> "hello").collect(Collectors.joining());
     protected final Optional<String> keystore;
 
-    protected AbstractHttpClientTest()
-    {
+    protected AbstractHttpClientTest() {
         this.keystore = Optional.empty();
     }
 
-    protected AbstractHttpClientTest(String keystore)
-    {
+    protected AbstractHttpClientTest(String keystore) {
         this.keystore = Optional.ofNullable(keystore);
     }
 
@@ -103,24 +101,23 @@ public abstract class AbstractHttpClientTest
     public abstract Optional<StreamingResponse> executeRequest(CloseableTestHttpServer server, Request request)
             throws Exception;
 
-    public abstract <T, E extends Exception> T executeRequest(CloseableTestHttpServer server, Request request, ResponseHandler<T, E> responseHandler)
+    public abstract <T, E extends Exception> T executeRequest(
+            CloseableTestHttpServer server, Request request, ResponseHandler<T, E> responseHandler) throws Exception;
+
+    public abstract <T, E extends Exception> T executeRequest(
+            CloseableTestHttpServer server,
+            HttpClientConfig config,
+            Request request,
+            ResponseHandler<T, E> responseHandler)
             throws Exception;
 
-    public abstract <T, E extends Exception> T executeRequest(CloseableTestHttpServer server, HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
-            throws Exception;
-
-    protected static Request upgradeRequest(Request request, HttpVersion version)
-    {
-        return fromRequest(request)
-                .setVersion(version)
-                .build();
+    protected static Request upgradeRequest(Request request, HttpVersion version) {
+        return fromRequest(request).setVersion(version).build();
     }
 
     @Disabled("This takes over a minute to run")
     @Test
-    public void test100kGets()
-            throws Exception
-    {
+    public void test100kGets() throws Exception {
         try (CloseableTestHttpServer server = newServer()) {
             URI uri = server.baseURI().resolve("/road/to/nowhere?query");
             Request request = prepareGet()
@@ -132,10 +129,10 @@ public abstract class AbstractHttpClientTest
 
             for (int i = 0; i < 100_000; i++) {
                 try {
-                    int statusCode = executeRequest(server, request, createStatusResponseHandler()).getStatusCode();
+                    int statusCode = executeRequest(server, request, createStatusResponseHandler())
+                            .getStatusCode();
                     assertThat(statusCode).isEqualTo(200);
-                }
-                catch (Exception e) {
+                } catch (Exception e) {
                     throw new Exception("Error on request " + i, e);
                 }
             }
@@ -144,15 +141,11 @@ public abstract class AbstractHttpClientTest
 
     @Test
     @Timeout(5)
-    public void testConnectTimeout()
-            throws Exception
-    {
+    public void testConnectTimeout() throws Exception {
         doTestConnectTimeout(false);
     }
 
-    protected void doTestConnectTimeout(boolean useIdleTimeout)
-            throws Exception
-    {
+    protected void doTestConnectTimeout(boolean useIdleTimeout) throws Exception {
         try (BackloggedServer server = new BackloggedServer()) {
             HttpClientConfig config = createClientConfig();
             config.setConnectTimeout(new Duration(5, MILLISECONDS));
@@ -166,10 +159,11 @@ public abstract class AbstractHttpClientTest
             try (JettyHttpClient client = new JettyHttpClient(config)) {
                 client.execute(request, new CaptureExceptionResponseHandler());
                 fail("expected exception");
-            }
-            catch (CapturedException e) {
+            } catch (CapturedException e) {
                 Throwable t = e.getCause();
-                if (!(isConnectTimeout(t) || (t instanceof ClosedChannelException) || (t instanceof TimeoutException))) {
+                if (!(isConnectTimeout(t)
+                        || (t instanceof ClosedChannelException)
+                        || (t instanceof TimeoutException))) {
                     fail(format("unexpected exception: [%s]", getStackTraceAsString(t)));
                 }
                 Duration maxDuration = useIdleTimeout ? config.getIdleTimeout() : config.getConnectTimeout();
@@ -180,9 +174,7 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
-    public void testConnectionRefused()
-            throws Exception
-    {
+    public void testConnectionRefused() throws Exception {
         int port = findUnusedPort();
 
         HttpClientConfig config = createClientConfig();
@@ -197,9 +189,7 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
-    public void testConnectionRefusedWithDefaultingResponseExceptionHandler()
-            throws Exception
-    {
+    public void testConnectionRefusedWithDefaultingResponseExceptionHandler() throws Exception {
         int port = findUnusedPort();
 
         HttpClientConfig config = createClientConfig();
@@ -212,32 +202,29 @@ public abstract class AbstractHttpClientTest
         Object expected = new Object();
 
         try (JettyHttpClient client = new JettyHttpClient("test", config)) {
-            assertThat(client.execute(request, new DefaultOnExceptionResponseHandler(expected))).isEqualTo(expected);
+            assertThat(client.execute(request, new DefaultOnExceptionResponseHandler(expected)))
+                    .isEqualTo(expected);
         }
     }
 
     @Test
     @Timeout(10)
-    public void testUnresolvableHost()
-    {
+    public void testUnresolvableHost() {
         String invalidHost = "nonexistent.invalid";
         assertUnknownHost(invalidHost);
 
         HttpClientConfig config = createClientConfig();
         config.setConnectTimeout(new Duration(5, SECONDS));
 
-        Request request = prepareGet()
-                .setUri(URI.create("http://" + invalidHost))
-                .build();
+        Request request =
+                prepareGet().setUri(URI.create("http://" + invalidHost)).build();
 
         assertThatThrownBy(() -> executeExceptionRequest(config, request))
                 .isInstanceOfAny(UnknownHostException.class, UnresolvedAddressException.class, IOException.class);
     }
 
     @Test
-    public void testBadPort()
-            throws Exception
-    {
+    public void testBadPort() throws Exception {
         HttpClientConfig config = createClientConfig();
 
         Request request = prepareGet()
@@ -250,9 +237,7 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
-    public void testDeleteMethod()
-            throws Exception
-    {
+    public void testDeleteMethod() throws Exception {
         try (CloseableTestHttpServer server = newServer()) {
             URI uri = server.baseURI().resolve("/road/to/nowhere");
             Request request = prepareDelete()
@@ -262,28 +247,26 @@ public abstract class AbstractHttpClientTest
                     .addHeader("dupe", "second")
                     .build();
 
-            int statusCode = executeRequest(server, request, createStatusResponseHandler()).getStatusCode();
+            int statusCode = executeRequest(server, request, createStatusResponseHandler())
+                    .getStatusCode();
             assertThat(statusCode).isEqualTo(200);
             assertThat(server.servlet().getRequestMethod()).isEqualTo("DELETE");
             assertThat(server.servlet().getRequestUri()).isEqualTo(uri);
             assertThat(server.servlet().getRequestHeaders("foo")).isEqualTo(ImmutableList.of("bar"));
             assertThat(server.servlet().getRequestHeaders("dupe")).isEqualTo(ImmutableList.of("first", "second"));
-            assertThat(server.servlet().getRequestHeaders("x-custom-filter")).isEqualTo(ImmutableList.of("custom value"));
+            assertThat(server.servlet().getRequestHeaders("x-custom-filter"))
+                    .isEqualTo(ImmutableList.of("custom value"));
             assertThat(server.statusCounts().count(200)).isEqualTo(1);
         }
     }
 
     @Test
-    public void testErrorResponseBody()
-            throws Exception
-    {
+    public void testErrorResponseBody() throws Exception {
         try (CloseableTestHttpServer server = newServer()) {
             server.servlet().setResponseStatusCode(500);
             server.servlet().setResponseBody("body text");
 
-            Request request = prepareGet()
-                    .setUri(server.baseURI())
-                    .build();
+            Request request = prepareGet().setUri(server.baseURI()).build();
 
             StringResponse response = executeRequest(server, request, createStringResponseHandler());
             assertThat(response.getStatusCode()).isEqualTo(500);
@@ -292,9 +275,7 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
-    public void testGetMethod()
-            throws Exception
-    {
+    public void testGetMethod() throws Exception {
         try (CloseableTestHttpServer server = newServer()) {
             URI uri = server.baseURI().resolve("/road/to/nowhere?query");
             Request request = prepareGet()
@@ -304,32 +285,29 @@ public abstract class AbstractHttpClientTest
                     .addHeader("dupe", "second")
                     .build();
 
-            int statusCode = executeRequest(server, request, createStatusResponseHandler()).getStatusCode();
+            int statusCode = executeRequest(server, request, createStatusResponseHandler())
+                    .getStatusCode();
             assertThat(statusCode).isEqualTo(200);
             assertThat(server.servlet().getRequestMethod()).isEqualTo("GET");
             if (server.servlet().getRequestUri().toString().endsWith("=")) {
                 // todo jetty client rewrites the uri string for some reason
                 assertThat(server.servlet().getRequestUri()).isEqualTo(new URI(uri + "="));
-            }
-            else {
+            } else {
                 assertThat(server.servlet().getRequestUri()).isEqualTo(uri);
             }
             assertThat(server.servlet().getRequestHeaders("foo")).isEqualTo(ImmutableList.of("bar"));
             assertThat(server.servlet().getRequestHeaders("dupe")).isEqualTo(ImmutableList.of("first", "second"));
-            assertThat(server.servlet().getRequestHeaders("x-custom-filter")).isEqualTo(ImmutableList.of("custom value"));
+            assertThat(server.servlet().getRequestHeaders("x-custom-filter"))
+                    .isEqualTo(ImmutableList.of("custom value"));
             assertThat(server.statusCounts().count(200)).isEqualTo(1);
         }
     }
 
     @Test
-    public void testResponseHeadersCaseInsensitive()
-            throws Exception
-    {
+    public void testResponseHeadersCaseInsensitive() throws Exception {
         try (CloseableTestHttpServer server = newServer()) {
             URI uri = server.baseURI().resolve("/road/to/nowhere");
-            Request request = prepareGet()
-                    .setUri(uri)
-                    .build();
+            Request request = prepareGet().setUri(uri).build();
 
             Response response = executeRequest(server, request, new PassThroughResponseHandler());
 
@@ -342,16 +320,13 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
-    public void testQuotedSpace()
-            throws Exception
-    {
+    public void testQuotedSpace() throws Exception {
         try (CloseableTestHttpServer server = newServer()) {
             URI uri = server.baseURI().resolve("/road/to/nowhere?query=ab%20cd");
-            Request request = prepareGet()
-                    .setUri(uri)
-                    .build();
+            Request request = prepareGet().setUri(uri).build();
 
-            int statusCode = executeRequest(server, request, createStatusResponseHandler()).getStatusCode();
+            int statusCode = executeRequest(server, request, createStatusResponseHandler())
+                    .getStatusCode();
             assertThat(statusCode).isEqualTo(200);
             assertThat(server.servlet().getRequestMethod()).isEqualTo("GET");
             assertThat(server.servlet().getRequestUri()).isEqualTo(uri);
@@ -359,14 +334,11 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
-    public void testKeepAlive()
-            throws Exception
-    {
-        try (CloseableTestHttpServer server = newServer(); JettyHttpClient client = server.createClient(createClientConfig())) {
+    public void testKeepAlive() throws Exception {
+        try (CloseableTestHttpServer server = newServer();
+                JettyHttpClient client = server.createClient(createClientConfig())) {
             URI uri = URI.create(server.baseURI().toASCIIString() + "/?remotePort=");
-            Request request = prepareGet()
-                    .setUri(uri)
-                    .build();
+            Request request = prepareGet().setUri(uri).build();
 
             StatusResponse response1 = client.execute(request, createStatusResponseHandler());
             Thread.sleep(1000);
@@ -389,9 +361,7 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
-    public void testPostMethod()
-            throws Exception
-    {
+    public void testPostMethod() throws Exception {
         try (CloseableTestHttpServer server = newServer()) {
             URI uri = server.baseURI().resolve("/road/to/nowhere");
             Request request = preparePost()
@@ -401,21 +371,21 @@ public abstract class AbstractHttpClientTest
                     .addHeader("dupe", "second")
                     .build();
 
-            int statusCode = executeRequest(server, request, createStatusResponseHandler()).getStatusCode();
+            int statusCode = executeRequest(server, request, createStatusResponseHandler())
+                    .getStatusCode();
             assertThat(statusCode).isEqualTo(200);
             assertThat(server.servlet().getRequestMethod()).isEqualTo("POST");
             assertThat(server.servlet().getRequestUri()).isEqualTo(uri);
             assertThat(server.servlet().getRequestHeaders("foo")).isEqualTo(ImmutableList.of("bar"));
             assertThat(server.servlet().getRequestHeaders("dupe")).isEqualTo(ImmutableList.of("first", "second"));
-            assertThat(server.servlet().getRequestHeaders("x-custom-filter")).isEqualTo(ImmutableList.of("custom value"));
+            assertThat(server.servlet().getRequestHeaders("x-custom-filter"))
+                    .isEqualTo(ImmutableList.of("custom value"));
             assertThat(server.statusCounts().count(200)).isEqualTo(1);
         }
     }
 
     @Test
-    public void testPutMethod()
-            throws Exception
-    {
+    public void testPutMethod() throws Exception {
         try (CloseableTestHttpServer server = newServer()) {
             URI uri = server.baseURI().resolve("/road/to/nowhere");
             Request request = preparePut()
@@ -425,21 +395,21 @@ public abstract class AbstractHttpClientTest
                     .addHeader("dupe", "second")
                     .build();
 
-            int statusCode = executeRequest(server, request, createStatusResponseHandler()).getStatusCode();
+            int statusCode = executeRequest(server, request, createStatusResponseHandler())
+                    .getStatusCode();
             assertThat(statusCode).isEqualTo(200);
             assertThat(server.servlet().getRequestMethod()).isEqualTo("PUT");
             assertThat(server.servlet().getRequestUri()).isEqualTo(uri);
             assertThat(server.servlet().getRequestHeaders("foo")).isEqualTo(ImmutableList.of("bar"));
             assertThat(server.servlet().getRequestHeaders("dupe")).isEqualTo(ImmutableList.of("first", "second"));
-            assertThat(server.servlet().getRequestHeaders("x-custom-filter")).isEqualTo(ImmutableList.of("custom value"));
+            assertThat(server.servlet().getRequestHeaders("x-custom-filter"))
+                    .isEqualTo(ImmutableList.of("custom value"));
             assertThat(server.statusCounts().count(200)).isEqualTo(1);
         }
     }
 
     @Test
-    public void testPutMethodWithStaticBodyGenerator()
-            throws Exception
-    {
+    public void testPutMethodWithStaticBodyGenerator() throws Exception {
         try (CloseableTestHttpServer server = newServer()) {
             URI uri = server.baseURI().resolve("/road/to/nowhere");
             byte[] body = {1, 2, 5};
@@ -451,22 +421,22 @@ public abstract class AbstractHttpClientTest
                     .setBodyGenerator(StaticBodyGenerator.createStaticBodyGenerator(body))
                     .build();
 
-            int statusCode = executeRequest(server, request, createStatusResponseHandler()).getStatusCode();
+            int statusCode = executeRequest(server, request, createStatusResponseHandler())
+                    .getStatusCode();
             assertThat(statusCode).isEqualTo(200);
             assertThat(server.servlet().getRequestMethod()).isEqualTo("PUT");
             assertThat(server.servlet().getRequestUri()).isEqualTo(uri);
             assertThat(server.servlet().getRequestHeaders("foo")).isEqualTo(ImmutableList.of("bar"));
             assertThat(server.servlet().getRequestHeaders("dupe")).isEqualTo(ImmutableList.of("first", "second"));
-            assertThat(server.servlet().getRequestHeaders("x-custom-filter")).isEqualTo(ImmutableList.of("custom value"));
+            assertThat(server.servlet().getRequestHeaders("x-custom-filter"))
+                    .isEqualTo(ImmutableList.of("custom value"));
             assertThat(server.servlet().getRequestBytes()).isEqualTo(body);
             assertThat(server.statusCounts().count(200)).isEqualTo(1);
         }
     }
 
     @Test
-    public void testPutMethodWithFileBodyGenerator()
-            throws Exception
-    {
+    public void testPutMethodWithFileBodyGenerator() throws Exception {
         byte[] contents = "hello world".getBytes(UTF_8);
         File testFile = File.createTempFile("test", null);
         Files.write(testFile.toPath(), contents);
@@ -479,12 +449,14 @@ public abstract class AbstractHttpClientTest
                     .setBodyGenerator(new FileBodyGenerator(testFile.toPath()))
                     .build();
 
-            int statusCode = executeRequest(server, request, createStatusResponseHandler()).getStatusCode();
+            int statusCode = executeRequest(server, request, createStatusResponseHandler())
+                    .getStatusCode();
             assertThat(statusCode).isEqualTo(200);
             assertThat(server.servlet().getRequestMethod()).isEqualTo("PUT");
             assertThat(server.servlet().getRequestUri()).isEqualTo(uri);
             assertThat(server.servlet().getRequestHeaders(CONTENT_TYPE)).isEqualTo(ImmutableList.of("x-test"));
-            assertThat(server.servlet().getRequestHeaders(CONTENT_LENGTH)).isEqualTo(ImmutableList.of(String.valueOf(contents.length)));
+            assertThat(server.servlet().getRequestHeaders(CONTENT_LENGTH))
+                    .isEqualTo(ImmutableList.of(String.valueOf(contents.length)));
             assertThat(server.servlet().getRequestBytes()).isEqualTo(contents);
         }
 
@@ -492,17 +464,12 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
-    public void testReadTimeout()
-            throws Exception
-    {
-        HttpClientConfig config = createClientConfig()
-                .setIdleTimeout(new Duration(500, MILLISECONDS));
+    public void testReadTimeout() throws Exception {
+        HttpClientConfig config = createClientConfig().setIdleTimeout(new Duration(500, MILLISECONDS));
 
         try (CloseableTestHttpServer server = newServer()) {
             URI uri = URI.create(server.baseURI().toASCIIString() + "/?sleep=1000");
-            Request request = prepareGet()
-                    .setUri(uri)
-                    .build();
+            Request request = prepareGet().setUri(uri).build();
 
             assertThatThrownBy(() -> executeRequest(server, config, request, new ExceptionResponseHandler()))
                     .isInstanceOfAny(IOException.class, TimeoutException.class);
@@ -510,9 +477,7 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
-    public void testReadRequestTimeout()
-            throws Exception
-    {
+    public void testReadRequestTimeout() throws Exception {
         try (CloseableTestHttpServer server = newServer()) {
             URI uri = URI.create(server.baseURI().toASCIIString() + "/?sleep=1000");
             Request request = prepareGet()
@@ -537,15 +502,11 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
-    public void testResponseBody()
-            throws Exception
-    {
+    public void testResponseBody() throws Exception {
         try (CloseableTestHttpServer server = newServer()) {
             server.servlet().setResponseBody("body text");
 
-            Request request = prepareGet()
-                    .setUri(server.baseURI())
-                    .build();
+            Request request = prepareGet().setUri(server.baseURI()).build();
 
             StringResponse response = executeRequest(server, request, createStringResponseHandler());
             assertThat(response.getStatusCode()).isEqualTo(200);
@@ -554,31 +515,24 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
-    public void testResponseBodyEmpty()
-            throws Exception
-    {
+    public void testResponseBodyEmpty() throws Exception {
         try (CloseableTestHttpServer server = newServer()) {
-            Request request = prepareGet()
-                    .setUri(server.baseURI())
-                    .build();
+            Request request = prepareGet().setUri(server.baseURI()).build();
 
-            String body = executeRequest(server, request, createStringResponseHandler()).getBody();
+            String body = executeRequest(server, request, createStringResponseHandler())
+                    .getBody();
             assertThat(body).isEqualTo("");
         }
     }
 
     @Test
-    public void testResponseHeader()
-            throws Exception
-    {
+    public void testResponseHeader() throws Exception {
         try (CloseableTestHttpServer server = newServer()) {
             server.servlet().addResponseHeader("foo", "bar");
             server.servlet().addResponseHeader("dupe", "first");
             server.servlet().addResponseHeader("dupe", "second");
 
-            Request request = prepareGet()
-                    .setUri(server.baseURI())
-                    .build();
+            Request request = prepareGet().setUri(server.baseURI()).build();
 
             StatusResponse response = executeRequest(server, request, createStatusResponseHandler());
 
@@ -588,37 +542,30 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
-    public void testResponseStatusCode()
-            throws Exception
-    {
+    public void testResponseStatusCode() throws Exception {
         try (CloseableTestHttpServer server = newServer()) {
             server.servlet().setResponseStatusCode(543);
-            Request request = prepareGet()
-                    .setUri(server.baseURI())
-                    .build();
+            Request request = prepareGet().setUri(server.baseURI()).build();
 
-            int statusCode = executeRequest(server, request, createStatusResponseHandler()).getStatusCode();
+            int statusCode = executeRequest(server, request, createStatusResponseHandler())
+                    .getStatusCode();
             assertThat(statusCode).isEqualTo(543);
         }
     }
 
     @Test
-    public void testExecuteStreaming()
-            throws Exception
-    {
+    public void testExecuteStreaming() throws Exception {
         try (CloseableTestHttpServer server = newServer()) {
             server.servlet().setResponseBody(LARGE_CONTENT);
 
-            Request request = prepareGet()
-                    .setUri(server.baseURI())
-                    .build();
+            Request request = prepareGet().setUri(server.baseURI()).build();
 
             executeRequest(server, request).ifPresent(streamingResponse -> {
                 try (streamingResponse) {
-                    String responseString = new String(streamingResponse.getInputStream().readAllBytes(), UTF_8);
+                    String responseString =
+                            new String(streamingResponse.getInputStream().readAllBytes(), UTF_8);
                     assertThat(responseString).isEqualTo(LARGE_CONTENT);
-                }
-                catch (IOException e) {
+                } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }
             });
@@ -626,9 +573,7 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
-    public void testRequestHeaders()
-            throws Exception
-    {
+    public void testRequestHeaders() throws Exception {
         String basic = "Basic dGVzdDphYmM=";
         String bearer = "Bearer testxyz";
 
@@ -651,9 +596,7 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
-    public void testFollowRedirects()
-            throws Exception
-    {
+    public void testFollowRedirects() throws Exception {
         try (CloseableTestHttpServer server = newServer()) {
             Request request = prepareGet()
                     .setUri(URI.create(server.baseURI().toASCIIString() + "/test?redirect=/redirect"))
@@ -662,7 +605,8 @@ public abstract class AbstractHttpClientTest
             StatusResponse response = executeRequest(server, request, createStatusResponseHandler());
             assertThat(response.getStatusCode()).isEqualTo(200);
             assertThat(response.getHeader(LOCATION)).isNull();
-            assertThat(server.servlet().getRequestUri()).isEqualTo(URI.create(server.baseURI().toASCIIString() + "/redirect"));
+            assertThat(server.servlet().getRequestUri())
+                    .isEqualTo(URI.create(server.baseURI().toASCIIString() + "/redirect"));
 
             request = Request.Builder.fromRequest(request)
                     .setFollowRedirects(false)
@@ -676,14 +620,10 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
-    public void testThrowsUnexpectedResponseException()
-            throws Exception
-    {
+    public void testThrowsUnexpectedResponseException() throws Exception {
         try (CloseableTestHttpServer server = newServer()) {
             server.servlet().setResponseStatusCode(543);
-            Request request = prepareGet()
-                    .setUri(server.baseURI())
-                    .build();
+            Request request = prepareGet().setUri(server.baseURI()).build();
 
             assertThatThrownBy(() -> executeRequest(server, request, new UnexpectedResponseStatusCodeHandler(200)))
                     .isInstanceOf(UnexpectedResponseException.class);
@@ -691,17 +631,15 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
-    public void testCompressionIsDisabled()
-            throws Exception
-    {
+    public void testCompressionIsDisabled() throws Exception {
         try (CloseableTestHttpServer server = newServer()) {
-            Request request = prepareGet()
-                    .setUri(server.baseURI())
-                    .build();
+            Request request = prepareGet().setUri(server.baseURI()).build();
 
-            String body = executeRequest(server, request, createStringResponseHandler()).getBody();
+            String body = executeRequest(server, request, createStringResponseHandler())
+                    .getBody();
             assertThat(body).isEqualTo("");
-            assertThat(server.servlet().getRequestHeaders().containsKey(HeaderName.of(ACCEPT_ENCODING))).isFalse();
+            assertThat(server.servlet().getRequestHeaders().containsKey(HeaderName.of(ACCEPT_ENCODING)))
+                    .isFalse();
 
             String json = "{\"fuite\":\"apple\",\"hello\":\"world\"}";
             assertThat(json.length()).isGreaterThanOrEqualTo(DEFAULT_MIN_GZIP_SIZE);
@@ -716,9 +654,7 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
-    public void testConnectNoRead()
-            throws Exception
-    {
+    public void testConnectNoRead() throws Exception {
         try (FakeServer fakeServer = new FakeServer(getScheme(), "localhost", 0, null, false)) {
             HttpClientConfig config = createClientConfig();
             config.setConnectTimeout(new Duration(5, SECONDS));
@@ -730,9 +666,7 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
-    public void testConnectNoReadClose()
-            throws Exception
-    {
+    public void testConnectNoReadClose() throws Exception {
         try (FakeServer fakeServer = new FakeServer(getScheme(), "localhost", 0, null, true)) {
             HttpClientConfig config = createClientConfig();
             config.setConnectTimeout(new Duration(5, SECONDS));
@@ -744,9 +678,7 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
-    public void testConnectReadIncomplete()
-            throws Exception
-    {
+    public void testConnectReadIncomplete() throws Exception {
         try (FakeServer fakeServer = new FakeServer(getScheme(), "localhost", 10, null, false)) {
             HttpClientConfig config = createClientConfig();
             config.setConnectTimeout(new Duration(5, SECONDS));
@@ -758,9 +690,7 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
-    public void testConnectReadIncompleteClose()
-            throws Exception
-    {
+    public void testConnectReadIncompleteClose() throws Exception {
         try (FakeServer fakeServer = new FakeServer(getScheme(), "localhost", 10, null, true)) {
             HttpClientConfig config = createClientConfig();
             config.setConnectTimeout(new Duration(500, MILLISECONDS));
@@ -772,9 +702,7 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
-    public void testConnectReadRequestClose()
-            throws Exception
-    {
+    public void testConnectReadRequestClose() throws Exception {
         try (FakeServer fakeServer = new FakeServer(getScheme(), "localhost", Long.MAX_VALUE, null, true)) {
             HttpClientConfig config = createClientConfig();
             config.setConnectTimeout(new Duration(5, SECONDS));
@@ -786,27 +714,21 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
-    public void testConnectReadRequestWriteJunkHangup()
-            throws Exception
-    {
-        try (FakeServer fakeServer = new FakeServer(getScheme(), "localhost", 10, "THIS\nIS\nJUNK\n\n".getBytes(), false)) {
+    public void testConnectReadRequestWriteJunkHangup() throws Exception {
+        try (FakeServer fakeServer =
+                new FakeServer(getScheme(), "localhost", 10, "THIS\nIS\nJUNK\n\n".getBytes(), false)) {
             HttpClientConfig config = createClientConfig();
             config.setConnectTimeout(new Duration(5, SECONDS));
             config.setIdleTimeout(new Duration(5, SECONDS));
 
-            assertThatThrownBy(() -> executeRequest(fakeServer, config))
-                    .isInstanceOfAny(Exception.class);
+            assertThatThrownBy(() -> executeRequest(fakeServer, config)).isInstanceOfAny(Exception.class);
         }
     }
 
     @Test
-    public void testHandlesUndeclaredThrowable()
-            throws Exception
-    {
+    public void testHandlesUndeclaredThrowable() throws Exception {
         try (CloseableTestHttpServer server = newServer()) {
-            Request request = prepareGet()
-                    .setUri(server.baseURI())
-                    .build();
+            Request request = prepareGet().setUri(server.baseURI()).build();
 
             assertThatThrownBy(() -> executeRequest(server, request, new ThrowErrorResponseHandler()))
                     .isInstanceOfAny(CustomError.class);
@@ -814,15 +736,11 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
-    public void testHttpStatusListenerException()
-            throws Exception
-    {
+    public void testHttpStatusListenerException() throws Exception {
         try (CloseableTestHttpServer server = newServer()) {
             server.servlet().setResponseStatusCode(TestingStatusListener.EXCEPTION_STATUS);
 
-            Request request = prepareGet()
-                    .setUri(server.baseURI())
-                    .build();
+            Request request = prepareGet().setUri(server.baseURI()).build();
 
             assertThatThrownBy(() -> executeRequest(server, request, createStatusResponseHandler()))
                     .isInstanceOfAny(UncheckedIOException.class);
@@ -830,77 +748,61 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
-    public void testHttpProtocolUsed()
-            throws Exception
-    {
+    public void testHttpProtocolUsed() throws Exception {
         try (CloseableTestHttpServer server = newServer()) {
             server.servlet().setResponseBody("Hello world ;)");
-            Request request = prepareGet()
-                    .setUri(server.baseURI())
-                    .build();
+            Request request = prepareGet().setUri(server.baseURI()).build();
             HttpVersion version = executeRequest(server, request, new HttpVersionResponseHandler());
             if (createClientConfig().isHttp2Enabled()) {
                 assertThat(version).isEqualTo(HttpVersion.HTTP_2);
-            }
-            else {
+            } else {
                 assertThat(version).isEqualTo(HttpVersion.HTTP_1);
             }
         }
     }
 
     @Test
-    public void testDowngradedHttpProtocolUsed()
-            throws Exception
-    {
+    public void testDowngradedHttpProtocolUsed() throws Exception {
         try (CloseableTestHttpServer server = newServer()) {
             server.servlet().setResponseBody("Hello world ;)");
-            Request request = prepareGet()
-                    .setUri(server.baseURI())
-                    .build();
-            HttpVersion version = executeRequest(server, upgradeRequest(request, HttpVersion.HTTP_1), new HttpVersionResponseHandler());
+            Request request = prepareGet().setUri(server.baseURI()).build();
+            HttpVersion version = executeRequest(
+                    server, upgradeRequest(request, HttpVersion.HTTP_1), new HttpVersionResponseHandler());
             assertThat(version).isEqualTo(HttpVersion.HTTP_1);
         }
     }
 
     @Test
     @Timeout(value = 5, unit = SECONDS)
-    public void testPipedLargeContent()
-            throws Exception
-    {
+    public void testPipedLargeContent() throws Exception {
         testPiped(true);
     }
 
     @Test
     @Timeout(value = 5, unit = SECONDS)
-    public void testPipedSmallContent()
-            throws Exception
-    {
+    public void testPipedSmallContent() throws Exception {
         testPiped(false);
     }
 
-    protected void testPiped(boolean largeContent)
-            throws Exception
-    {
+    protected void testPiped(boolean largeContent) throws Exception {
         String content = largeContent ? LARGE_CONTENT : "hello".repeat(1000);
 
-        var locals = new Object()
-        {
+        var locals = new Object() {
             String putContent;
             CloseableTestHttpServer server;
         };
 
         try (JettyHttpClient httpClient = new JettyHttpClient("streaming-test", createClientConfig())) {
-            HttpServlet pipeServlet = new HttpServlet()
-            {
+            HttpServlet pipeServlet = new HttpServlet() {
                 @Override
-                protected void service(HttpServletRequest request, HttpServletResponse response)
-                {
+                protected void service(HttpServletRequest request, HttpServletResponse response) {
                     try {
                         switch (request.getPathInfo()) {
                             case "/get" -> {
                                 response.setIntHeader("Content-Length", content.length());
                                 response.setStatus(200);
-                                new ByteArrayInputStream(content.getBytes(UTF_8)).transferTo(response.getOutputStream());
+                                new ByteArrayInputStream(content.getBytes(UTF_8))
+                                        .transferTo(response.getOutputStream());
                             }
 
                             case "/pipe" -> {
@@ -913,7 +815,8 @@ public abstract class AbstractHttpClientTest
                                 try (StreamingResponse streamingResponse = httpClient.executeStreaming(pipeRequest)) {
                                     Request putRequest = preparePut()
                                             .setUri(locals.server.baseURI().resolve("put"))
-                                            .setBodyGenerator(streamingBodyGenerator(streamingResponse.getInputStream()))
+                                            .setBodyGenerator(
+                                                    streamingBodyGenerator(streamingResponse.getInputStream()))
                                             .build();
                                     executeRequest(locals.server, putRequest, createStatusResponseHandler());
                                     response.setStatus(204);
@@ -930,17 +833,22 @@ public abstract class AbstractHttpClientTest
 
                             default -> response.setStatus(500);
                         }
-                    }
-                    catch (Exception e) {
+                    } catch (Exception e) {
                         fail(e);
                     }
                 }
             };
 
-            try (CloseableTestHttpServer server = new CloseableTestHttpServer(getScheme(), new TestingHttpServer(keystore, pipeServlet), HashMultiset.create(), new EchoServlet())) {
+            try (CloseableTestHttpServer server = new CloseableTestHttpServer(
+                    getScheme(),
+                    new TestingHttpServer(keystore, pipeServlet),
+                    HashMultiset.create(),
+                    new EchoServlet())) {
                 locals.server = server;
 
-                Request request = preparePut().setUri(locals.server.baseURI().resolve("pipe")).build();
+                Request request = preparePut()
+                        .setUri(locals.server.baseURI().resolve("pipe"))
+                        .build();
                 executeRequest(server, request, createStatusResponseHandler());
 
                 assertThat(locals.putContent).isEqualTo(content);
@@ -948,44 +856,36 @@ public abstract class AbstractHttpClientTest
         }
     }
 
-    private void executeExceptionRequest(HttpClientConfig config, Request request)
-            throws Exception
-    {
+    private void executeExceptionRequest(HttpClientConfig config, Request request) throws Exception {
         try (JettyHttpClient client = new JettyHttpClient("test", config)) {
             client.execute(request, new CaptureExceptionResponseHandler());
             fail("expected exception");
-        }
-        catch (CapturedException e) {
+        } catch (CapturedException e) {
             throwIfInstanceOf(e.getCause(), Exception.class);
             throwIfUnchecked(e.getCause());
             throw new RuntimeException(e.getCause());
         }
     }
 
-    private void executeRequest(FakeServer fakeServer, HttpClientConfig config)
-            throws Exception
-    {
+    private void executeRequest(FakeServer fakeServer, HttpClientConfig config) throws Exception {
         // kick the fake server
         executor.execute(fakeServer);
 
         // timing based check to assure we don't hang
         long start = System.nanoTime();
         try {
-            Request request = prepareGet()
-                    .setUri(fakeServer.getUri())
-                    .build();
+            Request request = prepareGet().setUri(fakeServer.getUri()).build();
             try (JettyHttpClient client = new JettyHttpClient("test", config)) {
                 client.execute(request, new ExceptionResponseHandler());
             }
-        }
-        finally {
-            assertThat(nanosSince(start)).as("Expected request to finish quickly").isLessThan(new Duration(1, SECONDS));
+        } finally {
+            assertThat(nanosSince(start))
+                    .as("Expected request to finish quickly")
+                    .isLessThan(new Duration(1, SECONDS));
         }
     }
 
-    private static class FakeServer
-            implements Closeable, Runnable
-    {
+    private static class FakeServer implements Closeable, Runnable {
         private final ServerSocket serverSocket;
         private final long readBytes;
         private final byte[] writeBuffer;
@@ -994,9 +894,9 @@ public abstract class AbstractHttpClientTest
         private final String scheme;
         private final String host;
 
-        private FakeServer(String scheme, String host, long readBytes, byte[] writeBuffer, boolean closeConnectionImmediately)
-                throws Exception
-        {
+        private FakeServer(
+                String scheme, String host, long readBytes, byte[] writeBuffer, boolean closeConnectionImmediately)
+                throws Exception {
             this.scheme = scheme;
             this.host = host;
             this.writeBuffer = writeBuffer;
@@ -1005,19 +905,16 @@ public abstract class AbstractHttpClientTest
             this.closeConnectionImmediately = closeConnectionImmediately;
         }
 
-        public URI getUri()
-        {
+        public URI getUri() {
             try {
                 return new URI(scheme, null, host, serverSocket.getLocalPort(), "/", null, null);
-            }
-            catch (URISyntaxException e) {
+            } catch (URISyntaxException e) {
                 throw new IllegalStateException(e);
             }
         }
 
         @Override
-        public void run()
-        {
+        public void run() {
             try {
                 Socket connectionSocket = serverSocket.accept();
                 this.connectionSocket.set(connectionSocket);
@@ -1030,19 +927,16 @@ public abstract class AbstractHttpClientTest
                             inputStream.read();
                             bytesRead++;
                         }
-                    }
-                    catch (SocketTimeoutException ignored) {
+                    } catch (SocketTimeoutException ignored) {
                     }
                 }
                 if (writeBuffer != null) {
                     connectionSocket.getOutputStream().write(writeBuffer);
                 }
                 // todo sleep here maybe
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 throw new UncheckedIOException(e);
-            }
-            finally {
+            } finally {
                 if (closeConnectionImmediately) {
                     closeQuietly(connectionSocket.get());
                 }
@@ -1050,67 +944,50 @@ public abstract class AbstractHttpClientTest
         }
 
         @Override
-        public void close()
-                throws IOException
-        {
+        public void close() throws IOException {
             closeQuietly(connectionSocket.get());
             serverSocket.close();
         }
     }
 
-    public static class ExceptionResponseHandler
-            implements ResponseHandler<Void, Exception>
-    {
+    public static class ExceptionResponseHandler implements ResponseHandler<Void, Exception> {
         @Override
-        public Void handleException(Request request, Exception exception)
-                throws Exception
-        {
+        public Void handleException(Request request, Exception exception) throws Exception {
             throw exception;
         }
 
         @Override
-        public Void handle(Request request, Response response)
-        {
+        public Void handle(Request request, Response response) {
             throw new UnsupportedOperationException();
         }
     }
 
-    private static class PassThroughResponseHandler
-            implements ResponseHandler<Response, RuntimeException>
-    {
+    private static class PassThroughResponseHandler implements ResponseHandler<Response, RuntimeException> {
         @Override
-        public Response handleException(Request request, Exception exception)
-        {
+        public Response handleException(Request request, Exception exception) {
             throw ResponseHandlerUtils.propagate(request, exception);
         }
 
         @Override
-        public Response handle(Request request, Response response)
-        {
+        public Response handle(Request request, Response response) {
             return response;
         }
     }
 
-    private static class UnexpectedResponseStatusCodeHandler
-            implements ResponseHandler<Integer, RuntimeException>
-    {
+    private static class UnexpectedResponseStatusCodeHandler implements ResponseHandler<Integer, RuntimeException> {
         private final int expectedStatusCode;
 
-        UnexpectedResponseStatusCodeHandler(int expectedStatusCode)
-        {
+        UnexpectedResponseStatusCodeHandler(int expectedStatusCode) {
             this.expectedStatusCode = expectedStatusCode;
         }
 
         @Override
-        public Integer handleException(Request request, Exception exception)
-        {
+        public Integer handleException(Request request, Exception exception) {
             throw ResponseHandlerUtils.propagate(request, exception);
         }
 
         @Override
-        public Integer handle(Request request, Response response)
-                throws RuntimeException
-        {
+        public Integer handle(Request request, Response response) throws RuntimeException {
             if (response.getStatusCode() != expectedStatusCode) {
                 throw new UnexpectedResponseException(request, response);
             }
@@ -1118,115 +995,81 @@ public abstract class AbstractHttpClientTest
         }
     }
 
-    public static class CaptureExceptionResponseHandler
-            implements ResponseHandler<String, CapturedException>
-    {
+    public static class CaptureExceptionResponseHandler implements ResponseHandler<String, CapturedException> {
         @Override
-        public String handleException(Request request, Exception exception)
-                throws CapturedException
-        {
+        public String handleException(Request request, Exception exception) throws CapturedException {
             throw new CapturedException(exception);
         }
 
         @Override
-        public String handle(Request request, Response response)
-        {
+        public String handle(Request request, Response response) {
             return null;
         }
     }
 
-    public static class ThrowErrorResponseHandler
-            implements ResponseHandler<String, Exception>
-    {
+    public static class ThrowErrorResponseHandler implements ResponseHandler<String, Exception> {
         @Override
-        public String handleException(Request request, Exception exception)
-        {
+        public String handleException(Request request, Exception exception) {
             throw new UnsupportedOperationException("not yet implemented", exception);
         }
 
         @Override
-        public String handle(Request request, Response response)
-        {
+        public String handle(Request request, Response response) {
             throw new CustomError();
         }
     }
 
-    private static class CustomError
-            extends Error
-    {
-    }
+    private static class CustomError extends Error {}
 
-    public static class CapturedException
-            extends Exception
-    {
-        public CapturedException(Exception exception)
-        {
+    public static class CapturedException extends Exception {
+        public CapturedException(Exception exception) {
             super(exception);
         }
     }
 
-    private class DefaultOnExceptionResponseHandler
-            implements ResponseHandler<Object, RuntimeException>
-    {
+    private class DefaultOnExceptionResponseHandler implements ResponseHandler<Object, RuntimeException> {
         private final Object defaultObject;
 
-        public DefaultOnExceptionResponseHandler(Object defaultObject)
-        {
+        public DefaultOnExceptionResponseHandler(Object defaultObject) {
             this.defaultObject = defaultObject;
         }
 
         @Override
-        public Object handleException(Request request, Exception exception)
-                throws RuntimeException
-        {
+        public Object handleException(Request request, Exception exception) throws RuntimeException {
             return defaultObject;
         }
 
         @Override
-        public Object handle(Request request, Response response)
-                throws RuntimeException
-        {
+        public Object handle(Request request, Response response) throws RuntimeException {
             throw new UnsupportedOperationException();
         }
     }
 
-    protected static class HttpVersionResponseHandler
-            implements ResponseHandler<HttpVersion, RuntimeException>
-    {
+    protected static class HttpVersionResponseHandler implements ResponseHandler<HttpVersion, RuntimeException> {
         @Override
-        public HttpVersion handleException(Request request, Exception exception)
-                throws RuntimeException
-        {
+        public HttpVersion handleException(Request request, Exception exception) throws RuntimeException {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public HttpVersion handle(Request request, Response response)
-                throws RuntimeException
-        {
+        public HttpVersion handle(Request request, Response response) throws RuntimeException {
             return response.getHttpVersion();
         }
     }
 
-    private static int findUnusedPort()
-            throws IOException
-    {
+    private static int findUnusedPort() throws IOException {
         try (ServerSocket socket = new ServerSocket(0)) {
             return socket.getLocalPort();
         }
     }
 
     @SuppressWarnings("SocketOpenedButNotSafelyClosed")
-    private static class BackloggedServer
-            implements Closeable
-    {
+    private static class BackloggedServer implements Closeable {
         private final List<Socket> clientSockets = new ArrayList<>();
         private final ServerSocket serverSocket;
         private final SocketAddress localSocketAddress;
 
-        private BackloggedServer()
-                throws IOException
-        {
+        private BackloggedServer() throws IOException {
             this.serverSocket = new ServerSocket(0, 1, InetAddress.getByName("127.0.0.1"));
             localSocketAddress = serverSocket.getLocalSocketAddress();
 
@@ -1242,30 +1085,25 @@ public abstract class AbstractHttpClientTest
         }
 
         @Override
-        public void close()
-        {
+        public void close() {
             for (Socket socket : clientSockets) {
                 closeQuietly(socket);
             }
             closeQuietly(serverSocket);
         }
 
-        private int getPort()
-        {
+        private int getPort() {
             return serverSocket.getLocalPort();
         }
 
-        private boolean connect()
-                throws IOException
-        {
+        private boolean connect() throws IOException {
             Socket socket = new Socket();
             clientSockets.add(socket);
 
             try {
                 socket.connect(localSocketAddress, 5);
                 return true;
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 if (isConnectTimeout(e)) {
                     return false;
                 }
@@ -1275,42 +1113,35 @@ public abstract class AbstractHttpClientTest
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
-    private static void assertUnknownHost(String host)
-    {
+    private static void assertUnknownHost(String host) {
         try {
             InetAddress.getByName(host);
             fail("Expected UnknownHostException for host " + host);
-        }
-        catch (UnknownHostException e) {
+        } catch (UnknownHostException e) {
             // expected
         }
     }
 
-    private static boolean isConnectTimeout(Throwable t)
-    {
+    private static boolean isConnectTimeout(Throwable t) {
         // Linux refuses connections immediately rather than queuing them
         return (t instanceof SocketTimeoutException) || (t instanceof SocketException);
     }
 
-    public static <T, E extends Exception> T executeAsync(JettyHttpClient client, Request request, ResponseHandler<T, E> responseHandler)
-            throws E
-    {
+    public static <T, E extends Exception> T executeAsync(
+            JettyHttpClient client, Request request, ResponseHandler<T, E> responseHandler) throws E {
         HttpResponseFuture<T> future = null;
         try {
             future = client.executeAsync(request, responseHandler);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             fail("Unexpected exception", e);
         }
 
         try {
             return future.get();
-        }
-        catch (InterruptedException e) {
+        } catch (InterruptedException e) {
             currentThread().interrupt();
             throw new RuntimeException(e);
-        }
-        catch (ExecutionException e) {
+        } catch (ExecutionException e) {
             throwIfUnchecked(e.getCause());
 
             if (e.getCause() instanceof Exception) {
@@ -1324,63 +1155,57 @@ public abstract class AbstractHttpClientTest
     }
 
     @SuppressWarnings("unchecked")
-    private static <E extends Exception> E castThrowable(Throwable t)
-    {
+    private static <E extends Exception> E castThrowable(Throwable t) {
         return (E) t;
     }
 
-    private String getScheme()
-    {
+    private String getScheme() {
         return keystore.isPresent() ? "https" : "http";
     }
 
-    public record CloseableTestHttpServer(String scheme, TestingHttpServer server, Multiset<Integer> statusCounts, EchoServlet servlet)
-            implements AutoCloseable
-    {
-        public CloseableTestHttpServer
-        {
+    public record CloseableTestHttpServer(
+            String scheme, TestingHttpServer server, Multiset<Integer> statusCounts, EchoServlet servlet)
+            implements AutoCloseable {
+        public CloseableTestHttpServer {
             requireNonNull(scheme, "scheme is null");
             requireNonNull(server, "server is null");
             requireNonNull(servlet, "servlet is null");
         }
 
-        public URI baseURI()
-        {
+        public URI baseURI() {
             return server.baseURI();
         }
 
         @Override
-        public void close()
-                throws Exception
-        {
+        public void close() throws Exception {
             server.close();
         }
 
-        public JettyHttpClient createClient(HttpClientConfig config)
-        {
-            return new JettyHttpClient(UUID.randomUUID().toString(), config, ImmutableList.of(new TestingRequestFilter()), ImmutableSet.of(new TestingStatusListener(statusCounts)));
+        public JettyHttpClient createClient(HttpClientConfig config) {
+            return new JettyHttpClient(
+                    UUID.randomUUID().toString(),
+                    config,
+                    ImmutableList.of(new TestingRequestFilter()),
+                    ImmutableSet.of(new TestingStatusListener(statusCounts)));
         }
     }
 
-    protected CloseableTestHttpServer newServer()
-    {
+    protected CloseableTestHttpServer newServer() {
         try {
             EchoServlet servlet = new EchoServlet();
-            return new CloseableTestHttpServer(getScheme(), new TestingHttpServer(keystore, servlet), HashMultiset.create(), servlet);
-        }
-        catch (Exception e) {
+            return new CloseableTestHttpServer(
+                    getScheme(), new TestingHttpServer(keystore, servlet), HashMultiset.create(), servlet);
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    protected static void closeQuietly(Closeable closeable)
-    {
+    protected static void closeQuietly(Closeable closeable) {
         try {
             if (closeable != null) {
                 closeable.close();
             }
-        }
-        catch (IOException | RuntimeException ignored) {
+        } catch (IOException | RuntimeException ignored) {
         }
     }
 }

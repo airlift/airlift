@@ -15,36 +15,31 @@
  */
 package io.airlift.testing;
 
-import jakarta.validation.constraints.NotNull;
-import org.junit.jupiter.api.Test;
-
-import java.lang.annotation.Annotation;
-
 import static io.airlift.testing.ValidationAssertions.assertFailsValidation;
 import static io.airlift.testing.ValidationAssertions.assertValidates;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TestValidationAssertions
-{
+import jakarta.validation.constraints.NotNull;
+import java.lang.annotation.Annotation;
+import org.junit.jupiter.api.Test;
+
+public class TestValidationAssertions {
     private static final String MESSAGE = "@message@";
     private static final Bean VALID_OBJECT = new Bean(new Object());
     private static final Bean INVALID_OBJECT = new Bean(null);
 
     @Test
-    public void testAssertValidates()
-    {
+    public void testAssertValidates() {
         assertValidates(VALID_OBJECT);
         assertValidates(VALID_OBJECT, MESSAGE);
     }
 
     @Test
-    public void testAssertValidatesThrowsWithInvalidObject()
-    {
+    public void testAssertValidatesThrowsWithInvalidObject() {
         boolean ok = false;
         try {
             ValidationAssertions.assertValidates(INVALID_OBJECT);
-        }
-        catch (AssertionError e) {
+        } catch (AssertionError e) {
             ok = true;
             verifyExceptionMessage(e, null, INVALID_OBJECT, null, null);
         }
@@ -52,13 +47,11 @@ public class TestValidationAssertions
     }
 
     @Test
-    public void testAssertValidatesThrowsWithInvalidObjectWithMessage()
-    {
+    public void testAssertValidatesThrowsWithInvalidObjectWithMessage() {
         boolean ok = false;
         try {
             assertValidates(INVALID_OBJECT, MESSAGE);
-        }
-        catch (AssertionError e) {
+        } catch (AssertionError e) {
             ok = true;
             // success
             verifyExceptionMessage(e, MESSAGE, INVALID_OBJECT, null, null);
@@ -67,25 +60,21 @@ public class TestValidationAssertions
     }
 
     @Test
-    public void testTheAssertFailsValidationMethodSucceedsWithInvalidObject()
-    {
+    public void testTheAssertFailsValidationMethodSucceedsWithInvalidObject() {
         assertFailsValidation(INVALID_OBJECT, "value", "must not be null", NotNull.class);
     }
 
     @Test
-    public void testTheAssertFailsValidationWithMessageMethodSucceedsWithInvalidObject()
-    {
+    public void testTheAssertFailsValidationWithMessageMethodSucceedsWithInvalidObject() {
         assertFailsValidation(INVALID_OBJECT, "value", "must not be null", NotNull.class, MESSAGE);
     }
 
     @Test
-    public void testTheAssertFailsValidationMethodThrowsWithValidObject()
-    {
+    public void testTheAssertFailsValidationMethodThrowsWithValidObject() {
         boolean ok = false;
         try {
             assertFailsValidation(VALID_OBJECT, "value", "must not be null", NotNull.class);
-        }
-        catch (AssertionError e) {
+        } catch (AssertionError e) {
             ok = true;
             verifyExceptionMessage(e, null, VALID_OBJECT, "value", NotNull.class);
         }
@@ -94,13 +83,11 @@ public class TestValidationAssertions
     }
 
     @Test
-    public void testTheAssertFailsValidationWithMessageMethodThrowsWithValidObject()
-    {
+    public void testTheAssertFailsValidationWithMessageMethodThrowsWithValidObject() {
         boolean ok = false;
         try {
             assertFailsValidation(VALID_OBJECT, "value", "must not be null", NotNull.class, MESSAGE);
-        }
-        catch (AssertionError e) {
+        } catch (AssertionError e) {
             ok = true;
             // success
             verifyExceptionMessage(e, MESSAGE, VALID_OBJECT, "value", NotNull.class);
@@ -108,15 +95,14 @@ public class TestValidationAssertions
         assertThat(ok).as("Expected AssertionError").isTrue();
     }
 
-    private void verifyExceptionMessage(AssertionError e, String message, Object value, String property, Class<? extends Annotation> annotation)
-    {
+    private void verifyExceptionMessage(
+            AssertionError e, String message, Object value, String property, Class<? extends Annotation> annotation) {
         assertThat(e).isNotNull();
         String actualMessage = e.getMessage();
         assertThat(actualMessage).isNotNull();
         if (message != null) {
             assertThat(actualMessage.startsWith(message + " ")).isTrue();
-        }
-        else {
+        } else {
             assertThat(actualMessage).doesNotStartWith(" ");
         }
 
@@ -131,18 +117,15 @@ public class TestValidationAssertions
         }
     }
 
-    public static class Bean
-    {
+    public static class Bean {
         private Object value;
 
-        private Bean(Object value)
-        {
+        private Bean(Object value) {
             this.value = value;
         }
 
         @NotNull
-        public Object getValue()
-        {
+        public Object getValue() {
             return value;
         }
     }

@@ -15,14 +15,20 @@
  */
 package io.airlift.node;
 
+import static com.google.common.base.MoreObjects.toStringHelper;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Verify.verify;
+import static io.airlift.configuration.ConfigurationLoader.loadPropertiesFrom;
+import static io.airlift.configuration.ConfigurationUtils.replaceEnvironmentVariables;
+import static io.airlift.node.AddressToHostname.encodeAddressAsHostname;
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.net.InetAddresses;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.airlift.node.NodeConfig.AddressSource;
-import org.weakref.jmx.Managed;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.Inet4Address;
@@ -38,18 +44,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
-
-import static com.google.common.base.MoreObjects.toStringHelper;
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Verify.verify;
-import static io.airlift.configuration.ConfigurationLoader.loadPropertiesFrom;
-import static io.airlift.configuration.ConfigurationUtils.replaceEnvironmentVariables;
-import static io.airlift.node.AddressToHostname.encodeAddressAsHostname;
-import static java.util.Objects.requireNonNull;
+import org.weakref.jmx.Managed;
 
 @Singleton
-public class NodeInfo
-{
+public class NodeInfo {
     private final String environment;
     private final String pool;
     private final String nodeId;
@@ -64,15 +62,14 @@ public class NodeInfo
     private final Map<String, String> annotations;
     private final boolean preferIpv6Address;
 
-    public NodeInfo(String environment)
-    {
+    public NodeInfo(String environment) {
         this(new NodeConfig().setEnvironment(environment));
     }
 
     @Inject
-    public NodeInfo(NodeConfig config)
-    {
-        this(config.getEnvironment(),
+    public NodeInfo(NodeConfig config) {
+        this(
+                config.getEnvironment(),
                 config.getPool(),
                 config.getNodeId(),
                 config.getNodeInternalAddress(),
@@ -87,7 +84,8 @@ public class NodeInfo
                 config.getPreferIpv6Address());
     }
 
-    public NodeInfo(String environment,
+    public NodeInfo(
+            String environment,
             String pool,
             String nodeId,
             String internalAddress,
@@ -99,12 +97,15 @@ public class NodeInfo
             AddressSource internalAddressSource,
             String annotationFile,
             Map<String, String> annotations,
-            boolean preferIpv6Address)
-    {
+            boolean preferIpv6Address) {
         requireNonNull(environment, "environment is null");
         requireNonNull(pool, "pool is null");
         requireNonNull(internalAddressSource, "internalAddressSource is null");
-        checkArgument(environment.matches(NodeConfig.ENV_REGEXP), "environment '%s' %s", environment, NodeConfig.ENV_REGEXP_ERROR);
+        checkArgument(
+                environment.matches(NodeConfig.ENV_REGEXP),
+                "environment '%s' %s",
+                environment,
+                NodeConfig.ENV_REGEXP_ERROR);
         checkArgument(pool.matches(NodeConfig.POOL_REGEXP), "pool '%s' %s", pool, NodeConfig.POOL_REGEXP_ERROR);
 
         this.environment = environment;
@@ -114,15 +115,13 @@ public class NodeInfo
         if (nodeId != null) {
             checkArgument(nodeId.matches(NodeConfig.ID_REGEXP), "nodeId '%s' %s", nodeId, NodeConfig.ID_REGEXP_ERROR);
             this.nodeId = nodeId;
-        }
-        else {
+        } else {
             this.nodeId = UUID.randomUUID().toString();
         }
 
         if (location != null) {
             this.location = location;
-        }
-        else {
+        } else {
             this.location = "/" + this.nodeId;
         }
 
@@ -131,38 +130,34 @@ public class NodeInfo
 
         if (internalAddress != null) {
             this.internalAddress = internalAddress;
-        }
-        else {
+        } else {
             this.internalAddress = findInternalAddress(internalAddressSource);
         }
 
         if (bindIp != null) {
             this.bindIp = bindIp;
-        }
-        else {
+        } else {
             this.bindIp = InetAddresses.fromInteger(0);
         }
 
         if (externalAddress != null) {
             this.externalAddress = externalAddress;
-        }
-        else {
+        } else {
             this.externalAddress = this.internalAddress;
         }
 
-        verify(annotationFile == null || annotations == null, "Only one of annotationFile or annotations should be set, but not both");
+        verify(
+                annotationFile == null || annotations == null,
+                "Only one of annotationFile or annotations should be set, but not both");
         if (annotationFile != null) {
             try {
                 this.annotations = ImmutableMap.copyOf(replaceEnvironmentVariables(loadPropertiesFrom(annotationFile)));
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
-        }
-        else if (annotations != null) {
+        } else if (annotations != null) {
             this.annotations = ImmutableMap.copyOf(annotations);
-        }
-        else {
+        } else {
             this.annotations = ImmutableMap.of();
         }
     }
@@ -171,8 +166,7 @@ public class NodeInfo
      * The environment in which this server is running.
      */
     @Managed
-    public String getEnvironment()
-    {
+    public String getEnvironment() {
         return environment;
     }
 
@@ -180,8 +174,7 @@ public class NodeInfo
      * The pool of which this server is a member.
      */
     @Managed
-    public String getPool()
-    {
+    public String getPool() {
         return pool;
     }
 
@@ -190,8 +183,7 @@ public class NodeInfo
      * represent the physical deployment location and should not change.
      */
     @Managed
-    public String getNodeId()
-    {
+    public String getNodeId() {
         return nodeId;
     }
 
@@ -199,8 +191,7 @@ public class NodeInfo
      * Location of this JavaVM.
      */
     @Managed
-    public String getLocation()
-    {
+    public String getLocation() {
         return location;
     }
 
@@ -208,8 +199,7 @@ public class NodeInfo
      * Binary this JavaVM is running.
      */
     @Managed
-    public String getBinarySpec()
-    {
+    public String getBinarySpec() {
         return binarySpec;
     }
 
@@ -217,8 +207,7 @@ public class NodeInfo
      * Configuration this JavaVM is running.
      */
     @Managed
-    public String getConfigSpec()
-    {
+    public String getConfigSpec() {
         return configSpec;
     }
 
@@ -226,8 +215,7 @@ public class NodeInfo
      * The unique id of this Java VM instance.  This id will change every time the VM is restarted.
      */
     @Managed
-    public String getInstanceId()
-    {
+    public String getInstanceId() {
         return instanceId;
     }
 
@@ -245,8 +233,7 @@ public class NodeInfo
      * An address is considered good if it is not a loopback address, a multicast address, or an any-local-address address.
      */
     @Managed
-    public String getInternalAddress()
-    {
+    public String getInternalAddress() {
         return internalAddress;
     }
 
@@ -257,8 +244,7 @@ public class NodeInfo
      * If this is not set, the internal address is used.
      */
     @Managed
-    public String getExternalAddress()
-    {
+    public String getExternalAddress() {
         return externalAddress;
     }
 
@@ -268,8 +254,7 @@ public class NodeInfo
      * If this is not set, this will be the IPv4 any local address (e.g., 0.0.0.0).
      */
     @Managed
-    public InetAddress getBindIp()
-    {
+    public InetAddress getBindIp() {
         return bindIp;
     }
 
@@ -277,22 +262,19 @@ public class NodeInfo
      * The time this server was started.
      */
     @Managed
-    public long getStartTime()
-    {
+    public long getStartTime() {
         return startTime;
     }
 
     /**
      * Annotations describing this server and/or the environment in which it is running.
      */
-    public Map<String, String> getAnnotations()
-    {
+    public Map<String, String> getAnnotations() {
         return annotations;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return toStringHelper(this)
                 .add("nodeId", nodeId)
                 .add("instanceId", instanceId)
@@ -304,8 +286,7 @@ public class NodeInfo
                 .toString();
     }
 
-    private String findInternalAddress(AddressSource addressSource)
-    {
+    private String findInternalAddress(AddressSource addressSource) {
         return switch (addressSource) {
             case IP -> InetAddresses.toAddrString(findInternalIp());
             case IP_ENCODED_AS_HOSTNAME -> encodeAddressAsHostname(findInternalIp());
@@ -314,15 +295,13 @@ public class NodeInfo
         };
     }
 
-    private InetAddress findInternalIp()
-    {
+    private InetAddress findInternalIp() {
         List<Function<List<InetAddress>, Optional<InetAddress>>> searchOrder = new ArrayList<>(3);
         if (this.preferIpv6Address) {
             searchOrder.add(NodeInfo::findIpv6address);
             searchOrder.add(NodeInfo::findLocalAddress);
             searchOrder.add(NodeInfo::findIpv4address);
-        }
-        else {
+        } else {
             searchOrder.add(NodeInfo::findLocalAddress);
             searchOrder.add(NodeInfo::findIpv4address);
             searchOrder.add(NodeInfo::findIpv6address);
@@ -330,15 +309,14 @@ public class NodeInfo
 
         List<InetAddress> goodAddresses = getGoodAddresses();
         return searchOrder.stream()
-            .map(source -> source.apply(goodAddresses))
-            .filter(Optional::isPresent)                        // select only valid results
-            .findFirst()
-            .orElse(Optional.empty())                     // we could not find any source
-            .orElse(null);                                // it is most likely that this is a disconnected developer machine
+                .map(source -> source.apply(goodAddresses))
+                .filter(Optional::isPresent) // select only valid results
+                .findFirst()
+                .orElse(Optional.empty()) // we could not find any source
+                .orElse(null); // it is most likely that this is a disconnected developer machine
     }
 
-    private static Optional<InetAddress> findIpv4address(List<InetAddress> candidates)
-    {
+    private static Optional<InetAddress> findIpv4address(List<InetAddress> candidates) {
         // check all up network interfaces for a good v4 address
         for (InetAddress address : candidates) {
             if (isV4Address(address)) {
@@ -348,8 +326,7 @@ public class NodeInfo
         return Optional.empty();
     }
 
-    private static Optional<InetAddress> findIpv6address(List<InetAddress> candidates)
-    {
+    private static Optional<InetAddress> findIpv6address(List<InetAddress> candidates) {
         // check all up network interfaces for a good v6 address
         for (InetAddress address : candidates) {
             if (isV6Address(address)) {
@@ -359,8 +336,7 @@ public class NodeInfo
         return Optional.empty();
     }
 
-    private static Optional<InetAddress> findLocalAddress(List<InetAddress> candidates)
-    {
+    private static Optional<InetAddress> findLocalAddress(List<InetAddress> candidates) {
         // Check if local host address is a good v4 address
         InetAddress localAddress = null;
         try {
@@ -368,22 +344,19 @@ public class NodeInfo
             if (isV4Address(localAddress) && getGoodAddresses().contains(localAddress)) {
                 return Optional.of(localAddress);
             }
-        }
-        catch (UnknownHostException ignored) {
+        } catch (UnknownHostException ignored) {
         }
         if (localAddress == null) {
             try {
                 localAddress = InetAddress.getByAddress(new byte[] {127, 0, 0, 1});
-            }
-            catch (UnknownHostException e) {
+            } catch (UnknownHostException e) {
                 throw new AssertionError("Could not get local ip address");
             }
         }
         return Optional.ofNullable(localAddress);
     }
 
-    private static List<InetAddress> getGoodAddresses()
-    {
+    private static List<InetAddress> getGoodAddresses() {
         ImmutableList.Builder<InetAddress> list = ImmutableList.builder();
         for (NetworkInterface networkInterface : getGoodNetworkInterfaces()) {
             for (InetAddress address : Collections.list(networkInterface.getInetAddresses())) {
@@ -395,8 +368,7 @@ public class NodeInfo
         return list.build();
     }
 
-    private static List<NetworkInterface> getGoodNetworkInterfaces()
-    {
+    private static List<NetworkInterface> getGoodNetworkInterfaces() {
         ImmutableList.Builder<NetworkInterface> builder = ImmutableList.builder();
         try {
             for (NetworkInterface networkInterface : Collections.list(NetworkInterface.getNetworkInterfaces())) {
@@ -404,40 +376,33 @@ public class NodeInfo
                     if (!networkInterface.isLoopback() && networkInterface.isUp()) {
                         builder.add(networkInterface);
                     }
-                }
-                catch (Exception ignored) {
+                } catch (Exception ignored) {
                 }
             }
-        }
-        catch (SocketException ignored) {
+        } catch (SocketException ignored) {
         }
         return builder.build();
     }
 
-    private static boolean isV4Address(InetAddress address)
-    {
+    private static boolean isV4Address(InetAddress address) {
         return address instanceof Inet4Address;
     }
 
-    private static boolean isV6Address(InetAddress address)
-    {
+    private static boolean isV6Address(InetAddress address) {
         return address instanceof Inet6Address;
     }
 
-    private static boolean isGoodAddress(InetAddress address)
-    {
-        return !address.isAnyLocalAddress() &&
-                !address.isLinkLocalAddress() &&
-                !address.isLoopbackAddress() &&
-                !address.isMulticastAddress();
+    private static boolean isGoodAddress(InetAddress address) {
+        return !address.isAnyLocalAddress()
+                && !address.isLinkLocalAddress()
+                && !address.isLoopbackAddress()
+                && !address.isMulticastAddress();
     }
 
-    private static InetAddress getLocalHost()
-    {
+    private static InetAddress getLocalHost() {
         try {
             return InetAddress.getLocalHost();
-        }
-        catch (UnknownHostException e) {
+        } catch (UnknownHostException e) {
             throw new UncheckedIOException(e);
         }
     }

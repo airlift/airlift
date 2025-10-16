@@ -1,6 +1,5 @@
 package io.airlift.configuration;
 
-public interface ConfigurationBindingListener
-{
+public interface ConfigurationBindingListener {
     void configurationBound(ConfigurationBinding<?> configurationBinding, ConfigBinder configBinder);
 }

@@ -14,7 +14,6 @@
 package io.airlift.stats;
 
 import io.airlift.log.Logging;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -35,8 +34,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * </ul>
  * Verifying stopped time in GC log to the stopped time from GCMonitor.
  */
-public final class GcMonitorTester
-{
+public final class GcMonitorTester {
     private static final List<byte[]> VALUES = new ArrayList<>();
     private static final int VALUE_SIZE = 100 * 1024;
     private static final long MAX_MEMORY_SIZE = (long) (0.87 * 1024 * 1024 * 1024);
@@ -44,9 +42,7 @@ public final class GcMonitorTester
 
     private GcMonitorTester() {}
 
-    public static void main(String[] args)
-            throws InterruptedException
-    {
+    public static void main(String[] args) throws InterruptedException {
         Logging.initialize();
         JmxGcMonitor gcMonitor = new JmxGcMonitor();
         gcMonitor.start();
@@ -55,8 +51,7 @@ public final class GcMonitorTester
             byte[] value = new byte[VALUE_SIZE];
             if (memorySize > MAX_MEMORY_SIZE) {
                 VALUES.set(ThreadLocalRandom.current().nextInt(VALUES.size()), value);
-            }
-            else {
+            } else {
                 VALUES.add(value);
                 memorySize += VALUE_SIZE;
             }

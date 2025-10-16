@@ -18,36 +18,30 @@ package io.airlift.sample;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.configuration.testing.ConfigAssertions;
 import io.airlift.units.Duration;
-import org.junit.jupiter.api.Test;
-
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.Test;
 
-public class TestStoreConfig
-{
+public class TestStoreConfig {
     @Test
-    public void testDefaults()
-    {
-        ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(StoreConfig.class)
-                .setTtl(new Duration(1, TimeUnit.HOURS)));
+    public void testDefaults() {
+        ConfigAssertions.assertRecordedDefaults(
+                ConfigAssertions.recordDefaults(StoreConfig.class).setTtl(new Duration(1, TimeUnit.HOURS)));
     }
 
     @Test
-    public void testExplicitPropertyMappings()
-    {
+    public void testExplicitPropertyMappings() {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("store.ttl", "2h")
                 .build();
 
-        StoreConfig expected = new StoreConfig()
-                .setTtl(new Duration(2, TimeUnit.HOURS));
+        StoreConfig expected = new StoreConfig().setTtl(new Duration(2, TimeUnit.HOURS));
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }
 
     @Test
-    public void testDeprecatedProperties()
-    {
+    public void testDeprecatedProperties() {
         Map<String, String> currentProperties = new ImmutableMap.Builder<String, String>()
                 .put("store.ttl", "1h")
                 .build();

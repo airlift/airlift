@@ -13,22 +13,18 @@
  */
 package io.airlift.http.client;
 
-import java.nio.ByteBuffer;
-
 import static java.util.Objects.requireNonNull;
 
-public final class ByteBufferBodyGenerator
-        implements BodyGenerator
-{
+import java.nio.ByteBuffer;
+
+public final class ByteBufferBodyGenerator implements BodyGenerator {
     private final ByteBuffer[] byteBuffers;
 
-    public ByteBufferBodyGenerator(ByteBuffer... byteBuffers)
-    {
+    public ByteBufferBodyGenerator(ByteBuffer... byteBuffers) {
         this.byteBuffers = requireNonNull(byteBuffers, "byteBuffers is null");
     }
 
-    public ByteBuffer[] getByteBuffers()
-    {
+    public ByteBuffer[] getByteBuffers() {
         return byteBuffers;
     }
 }

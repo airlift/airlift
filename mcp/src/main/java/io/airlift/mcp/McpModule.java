@@ -1,5 +1,14 @@
 package io.airlift.mcp;
 
+import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
+import static com.google.inject.Scopes.SINGLETON;
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
+import static io.airlift.json.JsonBinder.jsonBinder;
+import static io.airlift.json.JsonSubTypeBinder.jsonSubTypeBinder;
+import static io.airlift.mcp.reflection.ReflectionHelper.forAllInClass;
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Binder;
 import com.google.inject.Module;
@@ -28,25 +37,13 @@ import io.airlift.mcp.reflection.ResourceHandlerProvider;
 import io.airlift.mcp.reflection.ToolHandlerProvider;
 import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema;
-
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.collect.ImmutableSet.toImmutableSet;
-import static com.google.inject.Scopes.SINGLETON;
-import static com.google.inject.multibindings.Multibinder.newSetBinder;
-import static io.airlift.json.JsonBinder.jsonBinder;
-import static io.airlift.json.JsonSubTypeBinder.jsonSubTypeBinder;
-import static io.airlift.mcp.reflection.ReflectionHelper.forAllInClass;
-import static java.util.Objects.requireNonNull;
-
-public class McpModule
-        implements Module
-{
+public class McpModule implements Module {
     private final Mode mode;
     private final McpMetadata metadata;
     private final Optional<IdentityMapperBinding> identityMapperBinding;
@@ -55,13 +52,18 @@ public class McpModule
     private final Set<PromptHandlerProvider> prompts;
     private final Set<ResourceHandlerProvider> resources;
 
-    public static Builder builder()
-    {
+    public static Builder builder() {
         return new Builder();
     }
 
-    private McpModule(Mode mode, McpMetadata metadata, Optional<IdentityMapperBinding> identityMapperBinding, Set<Class<?>> classes, Set<ToolHandlerProvider> tools, Set<PromptHandlerProvider> prompts, Set<ResourceHandlerProvider> resources)
-    {
+    private McpModule(
+            Mode mode,
+            McpMetadata metadata,
+            Optional<IdentityMapperBinding> identityMapperBinding,
+            Set<Class<?>> classes,
+            Set<ToolHandlerProvider> tools,
+            Set<PromptHandlerProvider> prompts,
+            Set<ResourceHandlerProvider> resources) {
         this.mode = requireNonNull(mode, "mode is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
         this.identityMapperBinding = requireNonNull(identityMapperBinding, "identityMapperBinding is null");
@@ -73,59 +75,50 @@ public class McpModule
         validateRoles();
     }
 
-    public enum Mode
-    {
+    public enum Mode {
         REFERENCE_SDK,
         UNBOUND_IMPLEMENTATION,
     }
 
-    record IdentityMapperBinding(Class<?> identityType, Consumer<? extends LinkedBindingBuilder<?>> identityMapperBinding)
-    {
-        IdentityMapperBinding
-        {
+    record IdentityMapperBinding(
+            Class<?> identityType, Consumer<? extends LinkedBindingBuilder<?>> identityMapperBinding) {
+        IdentityMapperBinding {
             requireNonNull(identityType, "identityType is null");
             requireNonNull(identityMapperBinding, "identityMapperBinding is null");
         }
     }
 
-    public static class Builder
-    {
+    public static class Builder {
         private final ImmutableSet.Builder<Class<?>> classes = ImmutableSet.builder();
         private Optional<IdentityMapperBinding> identityMapperBinding = Optional.empty();
         private McpMetadata metadata = new McpMetadata("/mcp");
         private Mode mode = Mode.REFERENCE_SDK;
 
-        private Builder()
-        {
-        }
+        private Builder() {}
 
-        public Builder withMetadata(McpMetadata metadata)
-        {
+        public Builder withMetadata(McpMetadata metadata) {
             this.metadata = requireNonNull(metadata, "metadata is null");
             return this;
         }
 
-        public Builder withAllInClass(Class<?> clazz)
-        {
+        public Builder withAllInClass(Class<?> clazz) {
             classes.add(clazz);
 
             return this;
         }
 
-        public Builder withMode(Mode mode)
-        {
+        public Builder withMode(Mode mode) {
             this.mode = requireNonNull(mode, "mode is null");
             return this;
         }
 
-        public <T> Builder withIdentityMapper(Class<T> identityType, Consumer<LinkedBindingBuilder<McpIdentityMapper>> identityMapperBinding)
-        {
+        public <T> Builder withIdentityMapper(
+                Class<T> identityType, Consumer<LinkedBindingBuilder<McpIdentityMapper>> identityMapperBinding) {
             this.identityMapperBinding = Optional.of(new IdentityMapperBinding(identityType, identityMapperBinding));
             return this;
         }
 
-        public Module build()
-        {
+        public Module build() {
             Set<Class<?>> classesSet = classes.build();
 
             ImmutableSet.Builder<ToolHandlerProvider> tools = ImmutableSet.builder();
@@ -133,16 +126,29 @@ public class McpModule
             ImmutableSet.Builder<ResourceHandlerProvider> resources = ImmutableSet.builder();
 
             classesSet.forEach(clazz -> {
-                Optional<? extends Class<?>> identityClass = identityMapperBinding.map(IdentityMapperBinding::identityType);
+                Optional<? extends Class<?>> identityClass =
+                        identityMapperBinding.map(IdentityMapperBinding::identityType);
 
-                forAllInClass(clazz, McpTool.class, identityClass, (mcpTool, method, parameters) ->
-                        tools.add(new ToolHandlerProvider(mcpTool, clazz, method, parameters)));
+                forAllInClass(
+                        clazz,
+                        McpTool.class,
+                        identityClass,
+                        (mcpTool, method, parameters) ->
+                                tools.add(new ToolHandlerProvider(mcpTool, clazz, method, parameters)));
 
-                forAllInClass(clazz, McpPrompt.class, identityClass, (mcpPrompt, method, parameters) ->
-                        prompts.add(new PromptHandlerProvider(mcpPrompt, clazz, method, parameters)));
+                forAllInClass(
+                        clazz,
+                        McpPrompt.class,
+                        identityClass,
+                        (mcpPrompt, method, parameters) ->
+                                prompts.add(new PromptHandlerProvider(mcpPrompt, clazz, method, parameters)));
 
-                forAllInClass(clazz, McpResource.class, identityClass, (mcpResource, method, parameters) ->
-                        resources.add(new ResourceHandlerProvider(mcpResource, clazz, method, parameters)));
+                forAllInClass(
+                        clazz,
+                        McpResource.class,
+                        identityClass,
+                        (mcpResource, method, parameters) ->
+                                resources.add(new ResourceHandlerProvider(mcpResource, clazz, method, parameters)));
             });
 
             Set<ToolHandlerProvider> localTools = tools.build();
@@ -159,13 +165,13 @@ public class McpModule
                 metadata = metadata.withResources(true);
             }
 
-            return new McpModule(mode, metadata, identityMapperBinding, classesSet, localTools, localPrompts, localResources);
+            return new McpModule(
+                    mode, metadata, identityMapperBinding, classesSet, localTools, localPrompts, localResources);
         }
     }
 
     @Override
-    public void configure(Binder binder)
-    {
+    public void configure(Binder binder) {
         binder.bind(McpMetadata.class).toInstance(metadata);
 
         bindClasses(binder);
@@ -182,9 +188,9 @@ public class McpModule
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private void bindIdentityMapper(Binder binder)
-    {
-        OptionalBinder<? extends McpIdentityMapper> identityBinder = OptionalBinder.newOptionalBinder(binder, new TypeLiteral<>() {});
+    private void bindIdentityMapper(Binder binder) {
+        OptionalBinder<? extends McpIdentityMapper> identityBinder =
+                OptionalBinder.newOptionalBinder(binder, new TypeLiteral<>() {});
 
         identityMapperBinding.ifPresent(binding -> {
             Consumer rawConsumer = binding.identityMapperBinding;
@@ -193,31 +199,27 @@ public class McpModule
         });
     }
 
-    private void bindClasses(Binder binder)
-    {
+    private void bindClasses(Binder binder) {
         classes.forEach(clazz -> binder.bind(clazz).in(SINGLETON));
     }
 
-    private void bindResources(Binder binder)
-    {
+    private void bindResources(Binder binder) {
         Multibinder<ResourceEntry> resourcesBinder = newSetBinder(binder, ResourceEntry.class);
-        resources.forEach(resource -> resourcesBinder.addBinding().toProvider(resource).in(SINGLETON));
+        resources.forEach(
+                resource -> resourcesBinder.addBinding().toProvider(resource).in(SINGLETON));
     }
 
-    private void bindPrompts(Binder binder)
-    {
+    private void bindPrompts(Binder binder) {
         Multibinder<PromptEntry> promptsBinder = newSetBinder(binder, PromptEntry.class);
         prompts.forEach(prompt -> promptsBinder.addBinding().toProvider(prompt).in(SINGLETON));
     }
 
-    private void bindTools(Binder binder)
-    {
+    private void bindTools(Binder binder) {
         Multibinder<ToolEntry> toolsBinder = newSetBinder(binder, ToolEntry.class);
         tools.forEach(tool -> toolsBinder.addBinding().toProvider(tool).in(SINGLETON));
     }
 
-    private void bindJsonSubTypes(Binder binder)
-    {
+    private void bindJsonSubTypes(Binder binder) {
         JsonSubTypeBinder jsonSubTypeBinder = jsonSubTypeBinder(binder);
 
         JsonSubType contentJsonSubType = JsonSubType.builder()
@@ -231,17 +233,26 @@ public class McpModule
         jsonSubTypeBinder.bindJsonSubType(contentJsonSubType);
     }
 
-    private void bindCustomErrorTypes(Binder binder)
-    {
+    private void bindCustomErrorTypes(Binder binder) {
         JsonBinder jsonBinder = jsonBinder(binder);
-        jsonBinder.addSerializerBinding(McpError.class).to(McpErrorSerializer.class).in(SINGLETON);
+        jsonBinder
+                .addSerializerBinding(McpError.class)
+                .to(McpErrorSerializer.class)
+                .in(SINGLETON);
     }
 
-    private void validateRoles()
-    {
-        Set<String> ourRoles = Stream.of(Role.values()).map(role -> role.name().toUpperCase(Locale.ROOT)).collect(toImmutableSet());
-        Set<String> theirRoles = Stream.of(McpSchema.Role.values()).map(role -> role.name().toUpperCase(Locale.ROOT)).collect(toImmutableSet());
+    private void validateRoles() {
+        Set<String> ourRoles = Stream.of(Role.values())
+                .map(role -> role.name().toUpperCase(Locale.ROOT))
+                .collect(toImmutableSet());
+        Set<String> theirRoles = Stream.of(McpSchema.Role.values())
+                .map(role -> role.name().toUpperCase(Locale.ROOT))
+                .collect(toImmutableSet());
 
-        checkState(ourRoles.equals(theirRoles), "Roles in McpModule do not match the roles defined in McpSchema: Ours: %s, Theirs: %s: ", ourRoles, theirRoles);
+        checkState(
+                ourRoles.equals(theirRoles),
+                "Roles in McpModule do not match the roles defined in McpSchema: Ours: %s, Theirs: %s: ",
+                ourRoles,
+                theirRoles);
     }
 }

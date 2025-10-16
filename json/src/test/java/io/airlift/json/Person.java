@@ -15,10 +15,13 @@
  */
 package io.airlift.json;
 
+import static com.google.common.base.MoreObjects.toStringHelper;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-
 import java.io.ByteArrayInputStream;
 import java.io.InputStreamReader;
 import java.util.List;
@@ -26,18 +29,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class Person
-{
+public class Person {
     private String name;
     private boolean rocks;
     private Optional<String> lastName;
 
-    public static void validatePersonJsonCodec(JsonCodec<Person> jsonCodec)
-    {
+    public static void validatePersonJsonCodec(JsonCodec<Person> jsonCodec) {
         // create object with null lastName
         Person expected = new Person().setName("dain").setRocks(true);
 
@@ -50,7 +47,8 @@ public class Person
 
         assertThat(jsonCodec.fromJson(new ByteArrayInputStream(bytes))).isEqualTo(expected);
 
-        assertThat(jsonCodec.fromJson(new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8))).isEqualTo(expected);
+        assertThat(jsonCodec.fromJson(new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8)))
+                .isEqualTo(expected);
 
         // create object with missing lastName
         expected.setLastName(Optional.empty());
@@ -64,7 +62,8 @@ public class Person
 
         assertThat(jsonCodec.fromJson(new ByteArrayInputStream(bytes))).isEqualTo(expected);
 
-        assertThat(jsonCodec.fromJson(new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8))).isEqualTo(expected);
+        assertThat(jsonCodec.fromJson(new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8)))
+                .isEqualTo(expected);
 
         // create object with present lastName
         expected.setLastName(Optional.of("Awesome"));
@@ -78,11 +77,11 @@ public class Person
 
         assertThat(jsonCodec.fromJson(new ByteArrayInputStream(bytes))).isEqualTo(expected);
 
-        assertThat(jsonCodec.fromJson(new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8))).isEqualTo(expected);
+        assertThat(jsonCodec.fromJson(new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8)))
+                .isEqualTo(expected);
     }
 
-    public static void validatePersonListJsonCodec(JsonCodec<List<Person>> jsonCodec)
-    {
+    public static void validatePersonListJsonCodec(JsonCodec<List<Person>> jsonCodec) {
         ImmutableList<Person> expected = ImmutableList.of(
                 new Person().setName("dain").setRocks(true),
                 new Person().setName("martin").setRocks(true),
@@ -96,11 +95,11 @@ public class Person
 
         assertThat(jsonCodec.fromJson(new ByteArrayInputStream(bytes))).isEqualTo(expected);
 
-        assertThat(jsonCodec.fromJson(new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8))).isEqualTo(expected);
+        assertThat(jsonCodec.fromJson(new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8)))
+                .isEqualTo(expected);
     }
 
-    public static void validatePersonMapJsonCodec(JsonCodec<Map<String, Person>> jsonCodec)
-    {
+    public static void validatePersonMapJsonCodec(JsonCodec<Map<String, Person>> jsonCodec) {
         ImmutableMap<String, Person> expected = ImmutableMap.<String, Person>builder()
                 .put("dain", new Person().setName("dain").setRocks(true))
                 .put("martin", new Person().setName("martin").setRocks(true))
@@ -115,50 +114,44 @@ public class Person
 
         assertThat(jsonCodec.fromJson(new ByteArrayInputStream(bytes))).isEqualTo(expected);
 
-        assertThat(jsonCodec.fromJson(new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8))).isEqualTo(expected);
+        assertThat(jsonCodec.fromJson(new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8)))
+                .isEqualTo(expected);
     }
 
     @JsonProperty
-    public String getName()
-    {
+    public String getName() {
         return name;
     }
 
     @JsonProperty
-    public Person setName(String name)
-    {
+    public Person setName(String name) {
         this.name = name;
         return this;
     }
 
     @JsonProperty
-    public boolean isRocks()
-    {
+    public boolean isRocks() {
         return rocks;
     }
 
     @JsonProperty
-    public Person setRocks(boolean rocks)
-    {
+    public Person setRocks(boolean rocks) {
         this.rocks = rocks;
         return this;
     }
 
     @JsonProperty
-    public Optional<String> getLastName()
-    {
+    public Optional<String> getLastName() {
         return lastName;
     }
 
     @JsonProperty
-    public void setLastName(Optional<String> lastName)
-    {
+    public void setLastName(Optional<String> lastName) {
         this.lastName = lastName;
     }
 
     @Override
-    public boolean equals(Object obj)
-    {
+    public boolean equals(Object obj) {
         if (this == obj) {
             return true;
         }
@@ -166,19 +159,16 @@ public class Person
             return false;
         }
         Person o = (Person) obj;
-        return Objects.equals(this.name, o.name) &&
-                Objects.equals(this.rocks, o.rocks);
+        return Objects.equals(this.name, o.name) && Objects.equals(this.rocks, o.rocks);
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return Objects.hash(name, rocks);
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return toStringHelper(this)
                 .add("name", name)
                 .add("rocks", rocks)

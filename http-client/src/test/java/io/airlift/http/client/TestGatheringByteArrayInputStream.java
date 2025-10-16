@@ -1,32 +1,25 @@
 package io.airlift.http.client;
 
-import com.google.common.collect.ImmutableList;
-import org.junit.jupiter.api.Test;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
-
 import static java.lang.Math.min;
 import static java.lang.System.arraycopy;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TestGatheringByteArrayInputStream
-{
+import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
+import org.junit.jupiter.api.Test;
+
+public class TestGatheringByteArrayInputStream {
     @Test
-    public void testNormal()
-    {
+    public void testNormal() {
         byte[] lastStringArray = "client".getBytes();
         byte[] lastArray = Arrays.copyOf(lastStringArray, lastStringArray.length + 32);
         arraycopy(lastStringArray, 0, lastArray, 0, lastStringArray.length);
 
         List<byte[]> buffers = ImmutableList.of(
-                "hello ".getBytes(),
-                "this ".getBytes(),
-                "is ".getBytes(),
-                "http ".getBytes(),
-                lastArray);
+                "hello ".getBytes(), "this ".getBytes(), "is ".getBytes(), "http ".getBytes(), lastArray);
         byte[] expectedAll = "hello this is http client".getBytes();
         byte[] expectedPartial = "hello this".getBytes();
 
@@ -40,7 +33,8 @@ public class TestGatheringByteArrayInputStream
             assertByteArrayEquals(buffer, 0, expectedPartial, 0, expectedPartial.length);
 
             // read the remaining part
-            assertThat(in.read(buffer, expectedPartial.length, buffer.length - expectedPartial.length)).isEqualTo(expectedAll.length - expectedPartial.length);
+            assertThat(in.read(buffer, expectedPartial.length, buffer.length - expectedPartial.length))
+                    .isEqualTo(expectedAll.length - expectedPartial.length);
 
             // verify the whole string
             assertByteArrayEquals(buffer, 0, expectedAll, 0, expectedAll.length);
@@ -51,8 +45,7 @@ public class TestGatheringByteArrayInputStream
     }
 
     @Test
-    public void testSingleByteRead()
-    {
+    public void testSingleByteRead() {
         byte[] expected = "This is a test for single byte read".getBytes();
         List<byte[]> buffers = ImmutableList.of(
                 "This ".getBytes(),
@@ -72,20 +65,20 @@ public class TestGatheringByteArrayInputStream
     }
 
     @Test
-    public void testNegativeSingleByteRead()
-    {
+    public void testNegativeSingleByteRead() {
         byte[] expected = new byte[1];
         expected[0] = -100;
-        try (GatheringByteArrayInputStream in = new GatheringByteArrayInputStream(ImmutableList.of(expected), expected.length)) {
+        try (GatheringByteArrayInputStream in =
+                new GatheringByteArrayInputStream(ImmutableList.of(expected), expected.length)) {
             assertThat(in.read()).isEqualTo(expected[0] & 0x000000ff);
             assertThat(in.read()).isEqualTo(-1);
         }
     }
 
     @Test
-    public void testSkip()
-    {
-        byte[] allDataBytes = "Hello, this is http client package, and I am just a test for GatheringByteArrayInputStream".getBytes();
+    public void testSkip() {
+        byte[] allDataBytes =
+                "Hello, this is http client package, and I am just a test for GatheringByteArrayInputStream".getBytes();
         int length = allDataBytes.length;
         try (GatheringByteArrayInputStream in = new GatheringByteArrayInputStream(
                 ImmutableList.of(
@@ -115,8 +108,7 @@ public class TestGatheringByteArrayInputStream
     }
 
     @Test
-    public void testLargeData()
-    {
+    public void testLargeData() {
         int length = 123456789;
         Random random = new Random(0);
         byte[] expected = new byte[length];
@@ -145,12 +137,7 @@ public class TestGatheringByteArrayInputStream
     }
 
     private static void assertByteArrayEquals(
-            byte[] actual,
-            int actualStart,
-            byte[] expected,
-            int expectedStart,
-            int length)
-    {
+            byte[] actual, int actualStart, byte[] expected, int expectedStart, int length) {
         for (int i = 0; i < length; i++) {
             assertThat(actual[i + actualStart]).isEqualTo(expected[i + expectedStart]);
         }

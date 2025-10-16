@@ -13,7 +13,6 @@
  */
 package io.airlift.stats.cardinality;
 
-public interface BucketListener
-{
+public interface BucketListener {
     void visit(int bucket, int value);
 }

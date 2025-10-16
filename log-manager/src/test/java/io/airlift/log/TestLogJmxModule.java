@@ -5,13 +5,9 @@ import com.google.inject.Stage;
 import org.junit.jupiter.api.Test;
 import org.weakref.jmx.testing.TestingMBeanModule;
 
-public class TestLogJmxModule
-{
+public class TestLogJmxModule {
     @Test
-    public void testModule()
-    {
-        Guice.createInjector(Stage.PRODUCTION,
-                new TestingMBeanModule(),
-                new LogJmxModule());
+    public void testModule() {
+        Guice.createInjector(Stage.PRODUCTION, new TestingMBeanModule(), new LogJmxModule());
     }
 }

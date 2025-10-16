@@ -15,11 +15,13 @@
  */
 package io.airlift.bootstrap;
 
+import static com.google.common.base.Preconditions.checkState;
+import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
+
 import io.airlift.log.Logger;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
-import org.weakref.jmx.Managed;
-
 import java.io.Closeable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -30,16 +32,12 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-
-import static com.google.common.base.Preconditions.checkState;
-import static java.lang.String.format;
-import static java.util.Objects.requireNonNull;
+import org.weakref.jmx.Managed;
 
 /**
  * Manages PostConstruct and PreDestroy life cycles
  */
-public final class LifeCycleManager
-{
+public final class LifeCycleManager {
     private final String name;
     private final Logger log;
     private final AtomicReference<State> state = new AtomicReference<>(State.LATENT);
@@ -53,13 +51,11 @@ public final class LifeCycleManager
      * whatever way makes the most sense. Implementations should not raise exceptions of
      * their own
      */
-    private interface LifeCycleStopFailureHandler
-    {
+    private interface LifeCycleStopFailureHandler {
         void handlePreDestroyException(Class<?> klass, Method method, Exception exception);
     }
 
-    private enum State
-    {
+    private enum State {
         LATENT,
         STARTING,
         STARTED,
@@ -73,8 +69,7 @@ public final class LifeCycleManager
      * @throws LifeCycleStartException exceptions starting instances (depending on mode)
      */
     public LifeCycleManager(String name, List<Object> managedInstances, LifeCycleMethodsMap methodsMap)
-            throws LifeCycleStartException
-    {
+            throws LifeCycleStartException {
         // Lifecycle gets its name from the bootstrap which makes both log to same logger
         this.name = requireNonNull(name, "name is null");
         this.log = Logger.get(name);
@@ -85,8 +80,7 @@ public final class LifeCycleManager
     }
 
     @Managed
-    public long getManagedInstanceCount()
-    {
+    public long getManagedInstanceCount() {
         return managedInstances.size();
     }
 
@@ -95,17 +89,14 @@ public final class LifeCycleManager
      *
      * @return qty
      */
-    public int size()
-    {
+    public int size() {
         return managedInstances.size();
     }
 
     /**
      * Start the life cycle - all instances will have their {@link PostConstruct} method(s) called
      */
-    public void start()
-            throws LifeCycleStartException
-    {
+    public void start() throws LifeCycleStartException {
         if (!state.compareAndSet(State.LATENT, State.STARTING)) {
             throw new LifeCycleStartException("Lifecycle '%s' already starting".formatted(name));
         }
@@ -113,18 +104,19 @@ public final class LifeCycleManager
         for (Object obj : managedInstances) {
             LifeCycleMethods methods = methodsMap.get(obj.getClass());
             if (!methods.hasFor(PreDestroy.class)) {
-                managedInstances.remove(obj);   // remove reference to instances that aren't needed anymore
+                managedInstances.remove(obj); // remove reference to instances that aren't needed anymore
             }
         }
 
-        Thread thread = new Thread(() -> {
-            try {
-                stop();
-            }
-            catch (Exception e) {
-                log.error(e, "Failed while stopping lifecycle");
-            }
-        }, "cleanup");
+        Thread thread = new Thread(
+                () -> {
+                    try {
+                        stop();
+                    } catch (Exception e) {
+                        log.error(e, "Failed while stopping lifecycle");
+                    }
+                },
+                "cleanup");
         shutdownHook.set(thread);
         Runtime.getRuntime().addShutdownHook(thread);
 
@@ -144,9 +136,7 @@ public final class LifeCycleManager
      * @throws LifeCycleStopException If any failure occurs during the clean up process
      */
     @Managed
-    public void stopWithoutFailureLogging()
-            throws LifeCycleStopException
-    {
+    public void stopWithoutFailureLogging() throws LifeCycleStopException {
         List<Exception> failures = new ArrayList<>();
         stop((klass, method, exception) -> failures.add(exception));
         if (!failures.isEmpty()) {
@@ -167,9 +157,7 @@ public final class LifeCycleManager
      * @throws LifeCycleStopException If any failure occurs during the clean up process
      */
     @Managed
-    public void stop()
-            throws LifeCycleStopException
-    {
+    public void stop() throws LifeCycleStopException {
         AtomicBoolean failure = new AtomicBoolean(false);
         stop((klass, method, exception) -> {
             failure.set(true);
@@ -185,8 +173,7 @@ public final class LifeCycleManager
      * Stop the life cycle - all instances will have their {@link PreDestroy} method(s) called and any
      * exceptions raised will be passed to the provided {@link LifeCycleStopFailureHandler} to collect.
      */
-    private void stop(LifeCycleStopFailureHandler handler)
-    {
+    private void stop(LifeCycleStopFailureHandler handler) {
         if (!state.compareAndSet(State.STARTED, State.STOPPING)) {
             return;
         }
@@ -195,8 +182,7 @@ public final class LifeCycleManager
         if (thread != null) {
             try {
                 Runtime.getRuntime().removeShutdownHook(thread);
-            }
-            catch (IllegalStateException ignored) {
+            } catch (IllegalStateException ignored) {
             }
         }
 
@@ -222,32 +208,28 @@ public final class LifeCycleManager
      * @throws LifeCycleStartException errors during {@link PostConstruct} method invocation
      * @throws IllegalStateException if the life cycle has been stopped
      */
-    public void addInstance(Object instance)
-            throws LifeCycleStartException
-    {
+    public void addInstance(Object instance) throws LifeCycleStartException {
         State currentState = state.get();
-        checkState((currentState != State.STOPPING) && (currentState != State.STOPPED), "Lifecycle '%s' is stopped", name);
+        checkState(
+                (currentState != State.STOPPING) && (currentState != State.STOPPED), "Lifecycle '%s' is stopped", name);
         startInstance(instance);
     }
 
-    private void stopInstance(Object obj, LifeCycleStopFailureHandler handler)
-    {
+    private void stopInstance(Object obj, LifeCycleStopFailureHandler handler) {
         log.debug("Stopping %s", obj.getClass().getName());
         LifeCycleMethods methods = methodsMap.get(obj.getClass());
         for (Method preDestroy : methods.methodsFor(PreDestroy.class)) {
             log.debug("- invoke %s::%s()", preDestroy.getDeclaringClass().getName(), preDestroy.getName());
-            try (ThreadContextClassLoader _ = new ThreadContextClassLoader(obj.getClass().getClassLoader())) {
+            try (ThreadContextClassLoader _ =
+                    new ThreadContextClassLoader(obj.getClass().getClassLoader())) {
                 preDestroy.invoke(obj);
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 handler.handlePreDestroyException(obj.getClass(), preDestroy, unwrapInvocationTargetException(e));
             }
         }
     }
 
-    private void startInstance(Object obj)
-            throws LifeCycleStartException
-    {
+    private void startInstance(Object obj) throws LifeCycleStartException {
         log.debug("Starting %s", obj.getClass().getName());
         LifeCycleMethods methods = methodsMap.get(obj.getClass());
 
@@ -270,13 +252,16 @@ public final class LifeCycleManager
             log.debug("- invoke %s::%s()", postConstruct.getDeclaringClass().getName(), postConstruct.getName());
             try {
                 postConstruct.invoke(obj);
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 LifeCycleStartException failure = new LifeCycleStartException(
-                        format("Exception in PostConstruct method %s::%s()", obj.getClass().getName(), postConstruct.getName()),
+                        format(
+                                "Exception in PostConstruct method %s::%s()",
+                                obj.getClass().getName(), postConstruct.getName()),
                         unwrapInvocationTargetException(e));
                 stopInstance(obj, (Class<?> klass, Method method, Exception exception) -> {
-                    String message = format("Exception in PreDestroy method %1$s::%2$s() after PostConstruct failure in %1$s::%3$s()", klass.getName(), method.getName(), postConstruct.getName());
+                    String message = format(
+                            "Exception in PreDestroy method %1$s::%2$s() after PostConstruct failure in %1$s::%3$s()",
+                            klass.getName(), method.getName(), postConstruct.getName());
                     failure.addSuppressed(new RuntimeException(message, exception));
                 });
                 throw failure;
@@ -287,25 +272,20 @@ public final class LifeCycleManager
     /**
      * Unwraps {@link InvocationTargetException} instances to their underlying cause, otherwise returns the provided Exception
      */
-    private static Exception unwrapInvocationTargetException(Exception e)
-    {
+    private static Exception unwrapInvocationTargetException(Exception e) {
         return (e instanceof InvocationTargetException && e.getCause() instanceof Exception exception) ? exception : e;
     }
 
-    class ThreadContextClassLoader
-            implements Closeable
-    {
+    class ThreadContextClassLoader implements Closeable {
         private final ClassLoader originalThreadContextClassLoader;
 
-        public ThreadContextClassLoader(ClassLoader newThreadContextClassLoader)
-        {
+        public ThreadContextClassLoader(ClassLoader newThreadContextClassLoader) {
             this.originalThreadContextClassLoader = Thread.currentThread().getContextClassLoader();
             Thread.currentThread().setContextClassLoader(newThreadContextClassLoader);
         }
 
         @Override
-        public void close()
-        {
+        public void close() {
             Thread.currentThread().setContextClassLoader(originalThreadContextClassLoader);
         }
     }

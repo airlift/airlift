@@ -15,116 +15,94 @@
  */
 package io.airlift.jaxrs.testing;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static java.util.Objects.requireNonNull;
+
 import jakarta.ws.rs.core.EntityTag;
 import jakarta.ws.rs.core.Request;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.ResponseBuilder;
 import jakarta.ws.rs.core.Variant;
-
 import java.util.Date;
 import java.util.List;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static java.util.Objects.requireNonNull;
-
-public class MockRequest
-        implements Request
-{
-    public static ConditionalRequestBuilder head()
-    {
+public class MockRequest implements Request {
+    public static ConditionalRequestBuilder head() {
         return new ConditionalRequestBuilder("HEAD");
     }
 
-    public static ConditionalRequestBuilder head(Variant selectVariant)
-    {
+    public static ConditionalRequestBuilder head(Variant selectVariant) {
         return new ConditionalRequestBuilder("HEAD", selectVariant);
     }
 
-    public static ConditionalRequestBuilder get()
-    {
+    public static ConditionalRequestBuilder get() {
         return new ConditionalRequestBuilder("GET");
     }
 
-    public static ConditionalRequestBuilder get(Variant selectVariant)
-    {
+    public static ConditionalRequestBuilder get(Variant selectVariant) {
         return new ConditionalRequestBuilder("GET", selectVariant);
     }
 
-    public static ConditionalRequestBuilder post()
-    {
+    public static ConditionalRequestBuilder post() {
         return new ConditionalRequestBuilder("POST");
     }
 
-    public static ConditionalRequestBuilder post(Variant selectVariant)
-    {
+    public static ConditionalRequestBuilder post(Variant selectVariant) {
         return new ConditionalRequestBuilder("POST", selectVariant);
     }
 
-    public static ConditionalRequestBuilder put()
-    {
+    public static ConditionalRequestBuilder put() {
         return new ConditionalRequestBuilder("PUT");
     }
 
-    public static ConditionalRequestBuilder put(Variant selectVariant)
-    {
+    public static ConditionalRequestBuilder put(Variant selectVariant) {
         return new ConditionalRequestBuilder("PUT", selectVariant);
     }
 
-    public static ConditionalRequestBuilder delete()
-    {
+    public static ConditionalRequestBuilder delete() {
         return new ConditionalRequestBuilder("DELETE");
     }
 
-    public static ConditionalRequestBuilder delete(Variant selectVariant)
-    {
+    public static ConditionalRequestBuilder delete(Variant selectVariant) {
         return new ConditionalRequestBuilder("DELETE", selectVariant);
     }
 
-    public static class ConditionalRequestBuilder
-    {
+    public static class ConditionalRequestBuilder {
         private final String method;
         private final Variant selectVariant;
 
-        private ConditionalRequestBuilder(String method)
-        {
+        private ConditionalRequestBuilder(String method) {
             this.method = method;
             this.selectVariant = null;
         }
 
-        private ConditionalRequestBuilder(String method, Variant selectVariant)
-        {
+        private ConditionalRequestBuilder(String method, Variant selectVariant) {
             this.method = method;
             this.selectVariant = selectVariant;
         }
 
-        public MockRequest ifMatch(EntityTag ifMatch)
-        {
+        public MockRequest ifMatch(EntityTag ifMatch) {
             return new MockRequest(method, selectVariant, ifMatch, null, null, null);
         }
 
-        public MockRequest ifNoneMatch(EntityTag ifNoneMatch)
-        {
+        public MockRequest ifNoneMatch(EntityTag ifNoneMatch) {
             return new MockRequest(method, selectVariant, null, ifNoneMatch, null, null);
         }
 
-        public MockRequest ifModifiedSince(Date ifModifiedSince)
-        {
+        public MockRequest ifModifiedSince(Date ifModifiedSince) {
             return new MockRequest(method, selectVariant, null, null, ifModifiedSince, null);
         }
 
-        public MockRequest ifUnmodifiedSince(Date ifUnmodifiedSince)
-        {
+        public MockRequest ifUnmodifiedSince(Date ifUnmodifiedSince) {
             return new MockRequest(method, selectVariant, null, null, null, ifUnmodifiedSince);
         }
 
-        public MockRequest unconditionally()
-        {
+        public MockRequest unconditionally() {
             return new MockRequest(method, selectVariant, null, null, null, null);
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             final StringBuilder sb = new StringBuilder();
             sb.append(method);
             if (selectVariant != null) {
@@ -141,8 +119,13 @@ public class MockRequest
     private final Date ifModifiedSince;
     private final Date ifUnmodifiedSince;
 
-    private MockRequest(String method, Variant selectVariant, EntityTag ifMatch, EntityTag ifNoneMatch, Date ifModifiedSince, Date ifUnmodifiedSince)
-    {
+    private MockRequest(
+            String method,
+            Variant selectVariant,
+            EntityTag ifMatch,
+            EntityTag ifNoneMatch,
+            Date ifModifiedSince,
+            Date ifUnmodifiedSince) {
         this.method = method;
         this.selectVariant = selectVariant;
         this.ifMatch = ifMatch;
@@ -152,15 +135,12 @@ public class MockRequest
     }
 
     @Override
-    public String getMethod()
-    {
+    public String getMethod() {
         return method;
     }
 
     @Override
-    public Variant selectVariant(List<Variant> variants)
-            throws IllegalArgumentException
-    {
+    public Variant selectVariant(List<Variant> variants) throws IllegalArgumentException {
         requireNonNull(variants, "variants is null");
         checkArgument(!variants.isEmpty(), "variants is empty");
 
@@ -171,8 +151,7 @@ public class MockRequest
     // see C007
     // http://jcp.org/aboutJava/communityprocess/maintenance/jsr311/311ChangeLog.html
     @Override
-    public ResponseBuilder evaluatePreconditions()
-    {
+    public ResponseBuilder evaluatePreconditions() {
         // the resource does not exist yet so any If-Match header would result
         // in a precondition failed
         if (ifMatch != null) {
@@ -188,32 +167,28 @@ public class MockRequest
     }
 
     @Override
-    public ResponseBuilder evaluatePreconditions(EntityTag eTag)
-    {
+    public ResponseBuilder evaluatePreconditions(EntityTag eTag) {
         requireNonNull(eTag, "eTag is null");
 
         return firstNonNull(evaluateIfMatch(eTag), evaluateIfNoneMatch(eTag));
     }
 
     @Override
-    public ResponseBuilder evaluatePreconditions(Date lastModified)
-    {
+    public ResponseBuilder evaluatePreconditions(Date lastModified) {
         requireNonNull(lastModified, "lastModified is null");
 
         return firstNonNull(evaluateIfModifiedSince(lastModified), evaluateIfUnmodifiedSince(lastModified));
     }
 
     @Override
-    public ResponseBuilder evaluatePreconditions(Date lastModified, EntityTag eTag)
-    {
+    public ResponseBuilder evaluatePreconditions(Date lastModified, EntityTag eTag) {
         requireNonNull(eTag, "eTag is null");
         requireNonNull(lastModified, "lastModified is null");
 
         return firstNonNull(evaluatePreconditions(lastModified), evaluatePreconditions(eTag));
     }
 
-    private ResponseBuilder evaluateIfMatch(EntityTag eTag)
-    {
+    private ResponseBuilder evaluateIfMatch(EntityTag eTag) {
         // if request ifMatch is not set, process the request
         if (ifMatch == null) {
             return null;
@@ -232,8 +207,7 @@ public class MockRequest
         return Response.status(Response.Status.PRECONDITION_FAILED).tag(eTag);
     }
 
-    private ResponseBuilder evaluateIfNoneMatch(EntityTag tag)
-    {
+    private ResponseBuilder evaluateIfNoneMatch(EntityTag tag) {
         // if request ifNoneMatch is not set, process the request
         if (ifNoneMatch == null) {
             return null;
@@ -247,14 +221,12 @@ public class MockRequest
         // if this is a GET or HEAD, return not modified otherwise return precondition failed
         if ("GET".equalsIgnoreCase(getMethod()) || "HEAD".equalsIgnoreCase(getMethod())) {
             return Response.notModified(tag);
-        }
-        else {
+        } else {
             return Response.status(Response.Status.PRECONDITION_FAILED).tag(tag);
         }
     }
 
-    private ResponseBuilder evaluateIfModifiedSince(Date lastModified)
-    {
+    private ResponseBuilder evaluateIfModifiedSince(Date lastModified) {
         // if request ifModifiedSince is not set, process the request
         if (ifModifiedSince == null) {
             return null;
@@ -272,8 +244,7 @@ public class MockRequest
         return Response.notModified();
     }
 
-    private ResponseBuilder evaluateIfUnmodifiedSince(Date lastModified)
-    {
+    private ResponseBuilder evaluateIfUnmodifiedSince(Date lastModified) {
         // if request ifUnmodifiedSince is not set, process the request
         if (ifUnmodifiedSince == null) {
             return null;
@@ -288,8 +259,7 @@ public class MockRequest
     }
 
     // Guava's version does not allow second to be null
-    private static <T> T firstNonNull(T first, T second)
-    {
+    private static <T> T firstNonNull(T first, T second) {
         return (first != null) ? first : second;
     }
 }

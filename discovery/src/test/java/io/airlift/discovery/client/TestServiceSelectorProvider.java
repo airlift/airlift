@@ -15,15 +15,13 @@
  */
 package io.airlift.discovery.client;
 
-import org.junit.jupiter.api.Test;
-
 import static io.airlift.testing.EquivalenceTester.equivalenceTester;
 
-public class TestServiceSelectorProvider
-{
+import org.junit.jupiter.api.Test;
+
+public class TestServiceSelectorProvider {
     @Test
-    public void testEquivalence()
-    {
+    public void testEquivalence() {
         ServiceSelectorProvider fooWithClient = new ServiceSelectorProvider("foo");
 
         equivalenceTester()

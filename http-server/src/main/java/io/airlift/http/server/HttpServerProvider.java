@@ -15,6 +15,9 @@
  */
 package io.airlift.http.server;
 
+import static com.google.common.base.Throwables.throwIfUnchecked;
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
@@ -23,23 +26,16 @@ import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.node.NodeInfo;
 import jakarta.servlet.Filter;
 import jakarta.servlet.Servlet;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
-
-import javax.management.MBeanServer;
-
 import java.util.Optional;
 import java.util.Set;
-
-import static com.google.common.base.Throwables.throwIfUnchecked;
-import static java.util.Objects.requireNonNull;
+import javax.management.MBeanServer;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /**
  * Provides an instance of a Jetty server ready to be configured with
  * com.google.inject.servlet.ServletModule
  */
-public class HttpServerProvider
-        implements Provider<HttpServer>
-{
+public class HttpServerProvider implements Provider<HttpServer> {
     private final HttpServerInfo httpServerInfo;
     private final NodeInfo nodeInfo;
     private final HttpServerConfig config;
@@ -55,19 +51,19 @@ public class HttpServerProvider
     private final Optional<SslContextFactory.Server> sslContextFactory;
 
     @Inject
-    public HttpServerProvider(HttpServerInfo httpServerInfo,
-                  NodeInfo nodeInfo,
-                  HttpServerConfig config,
-                  Optional<HttpsConfig> httpsConfig,
-                  Servlet servlet,
-                  Set<Filter> filters,
-                  Set<HttpResourceBinding> resources,
-                  @EnableVirtualThreads boolean enableVirtualThreads,
-                  @EnableLegacyUriCompliance boolean enableLegacyUriCompliance,
-                  @EnableCaseSensitiveHeaderCache boolean enableCaseSensitiveHeaderCache,
-                  ClientCertificate clientCertificate,
-                  Optional<SslContextFactory.Server> sslContextFactory)
-    {
+    public HttpServerProvider(
+            HttpServerInfo httpServerInfo,
+            NodeInfo nodeInfo,
+            HttpServerConfig config,
+            Optional<HttpsConfig> httpsConfig,
+            Servlet servlet,
+            Set<Filter> filters,
+            Set<HttpResourceBinding> resources,
+            @EnableVirtualThreads boolean enableVirtualThreads,
+            @EnableLegacyUriCompliance boolean enableLegacyUriCompliance,
+            @EnableCaseSensitiveHeaderCache boolean enableCaseSensitiveHeaderCache,
+            ClientCertificate clientCertificate,
+            Optional<SslContextFactory.Server> sslContextFactory) {
         requireNonNull(httpServerInfo, "httpServerInfo is null");
         requireNonNull(nodeInfo, "nodeInfo is null");
         requireNonNull(config, "config is null");
@@ -93,14 +89,12 @@ public class HttpServerProvider
     }
 
     @Inject(optional = true)
-    public void setMBeanServer(MBeanServer server)
-    {
+    public void setMBeanServer(MBeanServer server) {
         mbeanServer = Optional.of(server);
     }
 
     @Override
-    public HttpServer get()
-    {
+    public HttpServer get() {
         try {
             HttpServer httpServer = new HttpServer(
                     httpServerInfo,
@@ -118,8 +112,7 @@ public class HttpServerProvider
                     sslContextFactory);
             httpServer.start();
             return httpServer;
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throwIfUnchecked(e);
             throw new RuntimeException(e);
         }

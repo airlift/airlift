@@ -21,13 +21,6 @@ package io.airlift.testing;
  * Licensed under Apache License, Version 2.0
  */
 
-import com.google.common.collect.ComparisonChain;
-import io.airlift.testing.EquivalenceTester.ElementCheckFailure;
-import io.airlift.testing.EquivalenceTester.PairCheckFailure;
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
 import static com.google.common.collect.Lists.newArrayList;
 import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_CLASS_CAST_EXCEPTION;
 import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.COMPARE_EQUAL;
@@ -50,164 +43,141 @@ import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
-public class TestEquivalenceTester
-{
+import com.google.common.collect.ComparisonChain;
+import io.airlift.testing.EquivalenceTester.ElementCheckFailure;
+import io.airlift.testing.EquivalenceTester.PairCheckFailure;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+
+public class TestEquivalenceTester {
     @Test
-    public void testCheckFailure()
-    {
+    public void testCheckFailure() {
         Object o1 = new Object();
         Object o2 = new Object();
         assertThat(new ElementCheckFailure(EQUAL, 0, 0, o1)).isEqualTo(new ElementCheckFailure(EQUAL, 0, 0, o1));
-        assertThat(new PairCheckFailure(EQUAL, 0, 0, o1, 1, 0, o2)).isEqualTo(new PairCheckFailure(EQUAL, 0, 0, o1, 1, 0, o2));
+        assertThat(new PairCheckFailure(EQUAL, 0, 0, o1, 1, 0, o2))
+                .isEqualTo(new PairCheckFailure(EQUAL, 0, 0, o1, 1, 0, o2));
     }
 
     @Test
-    public void notEqual()
-    {
+    public void notEqual() {
         try {
             equivalenceTester()
                     .addEquivalentGroup("foo")
                     .addEquivalentGroup("foo")
                     .check();
             fail("Expected EquivalenceAssertionError");
-        }
-        catch (EquivalenceAssertionError e) {
-            assertThat(e.getFailures()).containsExactlyInAnyOrder(
-                    new PairCheckFailure(EQUAL, 0, 0, "foo", 1, 0, "foo"),
-                    new PairCheckFailure(EQUAL, 1, 0, "foo", 0, 0, "foo"),
-                    new PairCheckFailure(COMPARE_EQUAL, 0, 0, "foo", 1, 0, "foo"),
-                    new PairCheckFailure(COMPARE_EQUAL, 1, 0, "foo", 0, 0, "foo"));
+        } catch (EquivalenceAssertionError e) {
+            assertThat(e.getFailures())
+                    .containsExactlyInAnyOrder(
+                            new PairCheckFailure(EQUAL, 0, 0, "foo", 1, 0, "foo"),
+                            new PairCheckFailure(EQUAL, 1, 0, "foo", 0, 0, "foo"),
+                            new PairCheckFailure(COMPARE_EQUAL, 0, 0, "foo", 1, 0, "foo"),
+                            new PairCheckFailure(COMPARE_EQUAL, 1, 0, "foo", 0, 0, "foo"));
         }
     }
 
     @Test
-    public void notReflexive()
-    {
+    public void notReflexive() {
         NotReflexive notReflexive = new NotReflexive();
         try {
-            equivalenceTester()
-                    .addEquivalentGroup(notReflexive)
-                    .check();
+            equivalenceTester().addEquivalentGroup(notReflexive).check();
             fail("Expected EquivalenceAssertionError");
-        }
-        catch (EquivalenceAssertionError e) {
+        } catch (EquivalenceAssertionError e) {
             assertExpectedFailures(e, new ElementCheckFailure(NOT_REFLEXIVE, 0, 0, notReflexive));
         }
     }
 
     @SuppressWarnings({"EqualsAndHashcode", "checkstyle:EqualsHashCode"})
-    static class NotReflexive
-    {
+    static class NotReflexive {
         @SuppressWarnings("override")
-        public boolean equals(Object that)
-        {
+        public boolean equals(Object that) {
             return (that instanceof NotReflexive) && (this != that);
         }
     }
 
     @Test
-    public void comparableNotReflexive()
-    {
+    public void comparableNotReflexive() {
         ComparableNotReflexive comparableNotReflexive = new ComparableNotReflexive();
         try {
-            equivalenceTester()
-                    .addEquivalentGroup(comparableNotReflexive)
-                    .check();
+            equivalenceTester().addEquivalentGroup(comparableNotReflexive).check();
             fail("Expected EquivalenceAssertionError");
-        }
-        catch (EquivalenceAssertionError e) {
+        } catch (EquivalenceAssertionError e) {
             assertExpectedFailures(e, new ElementCheckFailure(COMPARE_NOT_REFLEXIVE, 0, 0, comparableNotReflexive));
         }
     }
 
     @SuppressWarnings("ComparableImplementedButEqualsNotOverridden")
-    static class ComparableNotReflexive
-            implements Comparable<ComparableNotReflexive>
-    {
+    static class ComparableNotReflexive implements Comparable<ComparableNotReflexive> {
         @SuppressWarnings("ObjectEquality")
         @Override
-        public int compareTo(ComparableNotReflexive that)
-        {
+        public int compareTo(ComparableNotReflexive that) {
             requireNonNull(that, "that is null");
             return this == that ? 1 : -1;
         }
     }
 
     @Test
-    public void notSymmetric()
-    {
+    public void notSymmetric() {
         NotSymmetric o1 = new NotSymmetric(1);
         NotSymmetric o2 = new NotSymmetric(2);
         NotSymmetric o3 = new NotSymmetric(3);
         try {
-            equivalenceTester()
-                    .addEquivalentGroup(o1, o3, o2)
-                    .check();
+            equivalenceTester().addEquivalentGroup(o1, o3, o2).check();
             fail("Expected EquivalenceAssertionError");
-        }
-        catch (EquivalenceAssertionError e) {
-            assertExpectedFailures(e,
+        } catch (EquivalenceAssertionError e) {
+            assertExpectedFailures(
+                    e,
                     new PairCheckFailure(NOT_EQUAL, 0, 0, o1, 0, 1, o3),
                     new PairCheckFailure(NOT_EQUAL, 0, 0, o1, 0, 2, o2),
                     new PairCheckFailure(NOT_EQUAL, 0, 2, o2, 0, 1, o3));
         }
     }
 
-    static class NotSymmetric
-    {
+    static class NotSymmetric {
         private final int id;
 
-        NotSymmetric(int id)
-        {
+        NotSymmetric(int id) {
             this.id = id;
         }
 
         @Override
-        public boolean equals(Object that)
-        {
+        public boolean equals(Object that) {
             return (that instanceof NotSymmetric) && (id >= ((NotSymmetric) that).id);
         }
 
         @Override
-        public int hashCode()
-        {
+        public int hashCode() {
             return 0;
         }
     }
 
     @Test
-    public void comparableNotSymmetric()
-    {
+    public void comparableNotSymmetric() {
         ComparableNotSymmetric o1 = new ComparableNotSymmetric(1);
         ComparableNotSymmetric o2 = new ComparableNotSymmetric(2);
         ComparableNotSymmetric o3 = new ComparableNotSymmetric(3);
         try {
-            equivalenceTester()
-                    .addEquivalentGroup(o1, o3, o2)
-                    .check();
+            equivalenceTester().addEquivalentGroup(o1, o3, o2).check();
             fail("Expected EquivalenceAssertionError");
-        }
-        catch (EquivalenceAssertionError e) {
-            assertExpectedFailures(e,
+        } catch (EquivalenceAssertionError e) {
+            assertExpectedFailures(
+                    e,
                     new PairCheckFailure(COMPARE_NOT_EQUAL, 0, 0, o1, 0, 1, o3),
                     new PairCheckFailure(COMPARE_NOT_EQUAL, 0, 0, o1, 0, 2, o2),
                     new PairCheckFailure(COMPARE_NOT_EQUAL, 0, 2, o2, 0, 1, o3));
         }
     }
 
-    static class ComparableNotSymmetric
-            implements Comparable<ComparableNotSymmetric>
-    {
+    static class ComparableNotSymmetric implements Comparable<ComparableNotSymmetric> {
         private final int id;
 
-        ComparableNotSymmetric(int id)
-        {
+        ComparableNotSymmetric(int id) {
             this.id = id;
         }
 
         @Override
-        public int compareTo(ComparableNotSymmetric that)
-        {
+        public int compareTo(ComparableNotSymmetric that) {
             requireNonNull(that, "that is null");
             if (id >= that.id) {
                 return 0;
@@ -216,134 +186,110 @@ public class TestEquivalenceTester
         }
 
         @Override
-        public boolean equals(Object that)
-        {
+        public boolean equals(Object that) {
             return that instanceof ComparableNotSymmetric;
         }
 
         @Override
-        public int hashCode()
-        {
+        public int hashCode() {
             return 0;
         }
     }
 
     @Test
-    public void equalsNull()
-    {
+    public void equalsNull() {
         EqualsNull equalsNull = new EqualsNull();
         try {
-            equivalenceTester()
-                    .addEquivalentGroup(equalsNull)
-                    .check();
+            equivalenceTester().addEquivalentGroup(equalsNull).check();
             fail("Expected EquivalenceAssertionError");
-        }
-        catch (EquivalenceAssertionError e) {
+        } catch (EquivalenceAssertionError e) {
             assertExpectedFailures(e, new ElementCheckFailure(EQUAL_TO_NULL, 0, 0, equalsNull));
         }
     }
 
     @SuppressWarnings({"EqualsAndHashcode", "checkstyle:EqualsHashCode"})
-    static class EqualsNull
-    {
+    static class EqualsNull {
         @Override
         @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
-        public boolean equals(Object that)
-        {
+        public boolean equals(Object that) {
             return that == null || this == that;
         }
     }
 
     @Test
-    public void equalsNullThrowsException()
-    {
+    public void equalsNullThrowsException() {
         EqualsNullThrowsException equalsNullThrowsException = new EqualsNullThrowsException();
         try {
-            equivalenceTester()
-                    .addEquivalentGroup(equalsNullThrowsException)
-                    .check();
+            equivalenceTester().addEquivalentGroup(equalsNullThrowsException).check();
             fail("Expected EquivalenceAssertionError");
-        }
-        catch (EquivalenceAssertionError e) {
+        } catch (EquivalenceAssertionError e) {
             assertExpectedFailures(e, new ElementCheckFailure(EQUAL_NULL_EXCEPTION, 0, 0, equalsNullThrowsException));
         }
     }
 
     @SuppressWarnings({"EqualsAndHashcode", "checkstyle:EqualsHashCode"})
-    static class EqualsNullThrowsException
-    {
+    static class EqualsNullThrowsException {
         @Override
         @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
-        public boolean equals(Object that)
-        {
+        public boolean equals(Object that) {
             return this.hashCode() == that.hashCode();
         }
     }
 
     @Test
-    public void equalsUnrelatedClass()
-    {
+    public void equalsUnrelatedClass() {
         EqualsUnrelatedClass equalsUnrelatedClass = new EqualsUnrelatedClass();
         try {
-            equivalenceTester()
-                    .addEquivalentGroup(equalsUnrelatedClass)
-                    .check();
+            equivalenceTester().addEquivalentGroup(equalsUnrelatedClass).check();
             fail("Expected EquivalenceAssertionError");
-        }
-        catch (EquivalenceAssertionError e) {
+        } catch (EquivalenceAssertionError e) {
             assertExpectedFailures(e, new ElementCheckFailure(EQUAL_TO_UNRELATED_CLASS, 0, 0, equalsUnrelatedClass));
         }
     }
 
     @SuppressWarnings({"EqualsAndHashcode", "checkstyle:EqualsHashCode"})
-    static class EqualsUnrelatedClass
-    {
+    static class EqualsUnrelatedClass {
         @Override
         @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
-        public boolean equals(Object that)
-        {
+        public boolean equals(Object that) {
             return that != null;
         }
     }
 
     @Test
-    public void equalsUnrelatedClassThrowsException()
-    {
+    public void equalsUnrelatedClassThrowsException() {
         EqualsOtherClassThrowsException equalsOtherClassThrowsException = new EqualsOtherClassThrowsException();
         try {
             equivalenceTester()
                     .addEquivalentGroup(equalsOtherClassThrowsException)
                     .check();
             fail("Expected EquivalenceAssertionError");
-        }
-        catch (EquivalenceAssertionError e) {
-            assertExpectedFailures(e, new ElementCheckFailure(EQUAL_TO_UNRELATED_CLASS_CLASS_CAST_EXCEPTION, 0, 0, equalsOtherClassThrowsException));
+        } catch (EquivalenceAssertionError e) {
+            assertExpectedFailures(
+                    e,
+                    new ElementCheckFailure(
+                            EQUAL_TO_UNRELATED_CLASS_CLASS_CAST_EXCEPTION, 0, 0, equalsOtherClassThrowsException));
         }
     }
 
     @SuppressWarnings({"EqualsAndHashcode", "checkstyle:EqualsHashCode"})
-    static class EqualsOtherClassThrowsException
-    {
+    static class EqualsOtherClassThrowsException {
         @Override
         @SuppressWarnings({"EqualsWhichDoesntCheckParameterClass", "RedundantCast"})
-        public boolean equals(Object that)
-        {
+        public boolean equals(Object that) {
             return that != null && ((EqualsOtherClassThrowsException) that).hashCode() == this.hashCode();
         }
     }
 
     @Test
-    public void comparableAndNotComparable()
-    {
+    public void comparableAndNotComparable() {
         NotComparable notComparable = new NotComparable();
         try {
-            equivalenceTester()
-                    .addEquivalentGroup(notComparable, "Hello")
-                    .check();
+            equivalenceTester().addEquivalentGroup(notComparable, "Hello").check();
             fail("Expected EquivalenceAssertionError");
-        }
-        catch (EquivalenceAssertionError e) {
-            assertExpectedFailures(e,
+        } catch (EquivalenceAssertionError e) {
+            assertExpectedFailures(
+                    e,
                     new PairCheckFailure(COMPARE_CLASS_CAST_EXCEPTION, 0, 1, "Hello", 0, 0, notComparable),
                     new PairCheckFailure(NOT_EQUAL, 0, 0, notComparable, 0, 1, "Hello"),
                     new PairCheckFailure(NOT_EQUAL, 0, 1, "Hello", 0, 0, notComparable),
@@ -351,13 +297,11 @@ public class TestEquivalenceTester
         }
 
         try {
-            equivalenceTester()
-                    .addEquivalentGroup("Hello", notComparable)
-                    .check();
+            equivalenceTester().addEquivalentGroup("Hello", notComparable).check();
             fail("Expected EquivalenceAssertionError");
-        }
-        catch (EquivalenceAssertionError e) {
-            assertExpectedFailures(e,
+        } catch (EquivalenceAssertionError e) {
+            assertExpectedFailures(
+                    e,
                     new PairCheckFailure(COMPARE_CLASS_CAST_EXCEPTION, 0, 0, "Hello", 0, 1, notComparable),
                     new PairCheckFailure(NOT_EQUAL, 0, 0, "Hello", 0, 1, notComparable),
                     new PairCheckFailure(NOT_EQUAL, 0, 1, notComparable, 0, 0, "Hello"),
@@ -370,10 +314,9 @@ public class TestEquivalenceTester
                     .addEquivalentGroup("Hello")
                     .check();
             fail("EquivalenceTester should have throw an EquivalenceAssertionError");
-        }
-        catch (EquivalenceAssertionError e) {
-            assertExpectedFailures(e,
-                    new PairCheckFailure(COMPARE_CLASS_CAST_EXCEPTION, 1, 0, "Hello", 0, 0, notComparable));
+        } catch (EquivalenceAssertionError e) {
+            assertExpectedFailures(
+                    e, new PairCheckFailure(COMPARE_CLASS_CAST_EXCEPTION, 1, 0, "Hello", 0, 0, notComparable));
         }
 
         try {
@@ -382,36 +325,30 @@ public class TestEquivalenceTester
                     .addEquivalentGroup(notComparable)
                     .check();
             fail("EquivalenceTester should have throw an EquivalenceAssertionError");
-        }
-        catch (EquivalenceAssertionError e) {
-            assertExpectedFailures(e,
-                    new PairCheckFailure(COMPARE_CLASS_CAST_EXCEPTION, 0, 0, "Hello", 1, 0, notComparable));
+        } catch (EquivalenceAssertionError e) {
+            assertExpectedFailures(
+                    e, new PairCheckFailure(COMPARE_CLASS_CAST_EXCEPTION, 0, 0, "Hello", 1, 0, notComparable));
         }
     }
 
-    static class NotComparable
-    {
-    }
+    static class NotComparable {}
 
     @Test
-    public void compareToAgainstNull()
-    {
+    public void compareToAgainstNull() {
         ComparableThatDoesNotThrowNPE comparableThatDoesNotThrowNPE = new ComparableThatDoesNotThrowNPE(1);
         try {
             equivalenceTester()
                     .addEquivalentGroup(comparableThatDoesNotThrowNPE)
                     .check();
             fail("Expected EquivalenceAssertionError");
-        }
-        catch (EquivalenceAssertionError e) {
-            assertExpectedFailures(e,
-                    new ElementCheckFailure(COMPARE_EQUAL_TO_NULL, 0, 0, comparableThatDoesNotThrowNPE));
+        } catch (EquivalenceAssertionError e) {
+            assertExpectedFailures(
+                    e, new ElementCheckFailure(COMPARE_EQUAL_TO_NULL, 0, 0, comparableThatDoesNotThrowNPE));
         }
     }
 
     @Test
-    public void testCheckCompare()
-    {
+    public void testCheckCompare() {
         comparisonTester()
                 .addLesserGroup(-1)
                 .addGreaterGroup(0)
@@ -438,41 +375,31 @@ public class TestEquivalenceTester
     }
 
     @Test
-    public void testComparisonOrder()
-    {
+    public void testComparisonOrder() {
         try {
-            comparisonTester()
-                    .addLesserGroup(1)
-                    .addGreaterGroup(0)
-                    .check();
+            comparisonTester().addLesserGroup(1).addGreaterGroup(0).check();
             fail("Expected EquivalenceAssertionError");
-        }
-        catch (EquivalenceAssertionError e) {
-            assertExpectedFailures(e,
+        } catch (EquivalenceAssertionError e) {
+            assertExpectedFailures(
+                    e,
                     new PairCheckFailure(NOT_LESS_THAN, 0, 0, 1, 1, 0, 0),
                     new PairCheckFailure(NOT_GREATER_THAN, 1, 0, 0, 0, 0, 1));
         }
         try {
-            comparisonTester()
-                    .addLesserGroup("bob")
-                    .addGreaterGroup("alice")
-                    .check();
+            comparisonTester().addLesserGroup("bob").addGreaterGroup("alice").check();
             fail("Expected EquivalenceAssertionError");
-        }
-        catch (EquivalenceAssertionError e) {
-            assertExpectedFailures(e,
+        } catch (EquivalenceAssertionError e) {
+            assertExpectedFailures(
+                    e,
                     new PairCheckFailure(NOT_LESS_THAN, 0, 0, "bob", 1, 0, "alice"),
                     new PairCheckFailure(NOT_GREATER_THAN, 1, 0, "alice", 0, 0, "bob"));
         }
         try {
-            comparisonTester()
-                    .addLesserGroup(1)
-                    .addGreaterGroup(0, 0)
-                    .check();
+            comparisonTester().addLesserGroup(1).addGreaterGroup(0, 0).check();
             fail("Expected EquivalenceAssertionError");
-        }
-        catch (EquivalenceAssertionError e) {
-            assertExpectedFailures(e,
+        } catch (EquivalenceAssertionError e) {
+            assertExpectedFailures(
+                    e,
                     new PairCheckFailure(NOT_LESS_THAN, 0, 0, 1, 1, 0, 0),
                     new PairCheckFailure(NOT_GREATER_THAN, 1, 0, 0, 0, 0, 1),
                     new PairCheckFailure(NOT_LESS_THAN, 0, 0, 1, 1, 1, 0),
@@ -484,9 +411,9 @@ public class TestEquivalenceTester
                     .addGreaterGroup("alice", "alice")
                     .check();
             fail("Expected EquivalenceAssertionError");
-        }
-        catch (EquivalenceAssertionError e) {
-            assertExpectedFailures(e,
+        } catch (EquivalenceAssertionError e) {
+            assertExpectedFailures(
+                    e,
                     new PairCheckFailure(NOT_LESS_THAN, 0, 0, "bob", 1, 0, "alice"),
                     new PairCheckFailure(NOT_GREATER_THAN, 1, 0, "alice", 0, 0, "bob"),
                     new PairCheckFailure(NOT_LESS_THAN, 0, 0, "bob", 1, 1, "alice"),
@@ -495,17 +422,13 @@ public class TestEquivalenceTester
     }
 
     @Test
-    public void testComparisonNotEquals()
-    {
+    public void testComparisonNotEquals() {
         try {
-            comparisonTester()
-                    .addLesserGroup(0)
-                    .addGreaterGroup(1, 2)
-                    .check();
+            comparisonTester().addLesserGroup(0).addGreaterGroup(1, 2).check();
             fail("Expected EquivalenceAssertionError");
-        }
-        catch (EquivalenceAssertionError e) {
-            assertExpectedFailures(e,
+        } catch (EquivalenceAssertionError e) {
+            assertExpectedFailures(
+                    e,
                     new PairCheckFailure(NOT_EQUAL, 1, 0, 1, 1, 1, 2),
                     new PairCheckFailure(NOT_EQUAL, 1, 1, 2, 1, 0, 1),
                     new PairCheckFailure(COMPARE_NOT_EQUAL, 1, 0, 1, 1, 1, 2),
@@ -518,9 +441,9 @@ public class TestEquivalenceTester
                     .addGreaterGroup("bob", "charlie")
                     .check();
             fail("Expected EquivalenceAssertionError");
-        }
-        catch (EquivalenceAssertionError e) {
-            assertExpectedFailures(e,
+        } catch (EquivalenceAssertionError e) {
+            assertExpectedFailures(
+                    e,
                     new PairCheckFailure(NOT_EQUAL, 1, 0, "bob", 1, 1, "charlie"),
                     new PairCheckFailure(NOT_EQUAL, 1, 1, "charlie", 1, 0, "bob"),
                     new PairCheckFailure(COMPARE_NOT_EQUAL, 1, 0, "bob", 1, 1, "charlie"),
@@ -531,35 +454,31 @@ public class TestEquivalenceTester
 
     @Test
     @SuppressWarnings({"unchecked", "rawtypes", "OverlyStrongTypeCast"})
-    public void testNotComparableComparison()
-    {
+    public void testNotComparableComparison() {
         try {
             comparisonTester()
-                    .addLesserGroup((List) newArrayList(5)) // cast to List in order to remove type safety of returned generic
+                    .addLesserGroup(
+                            (List) newArrayList(5)) // cast to List in order to remove type safety of returned generic
                     .addGreaterGroup("string")
                     .check();
             fail("Expected EquivalenceAssertionError");
-        }
-        catch (EquivalenceAssertionError e) {
-            assertExpectedFailures(e,
+        } catch (EquivalenceAssertionError e) {
+            assertExpectedFailures(
+                    e,
                     new PairCheckFailure(COMPARE_CLASS_CAST_EXCEPTION, 0, 0, 5, 1, 0, "string"),
                     new PairCheckFailure(COMPARE_CLASS_CAST_EXCEPTION, 1, 0, "string", 0, 0, 5));
         }
     }
 
-    static class ComparableThatDoesNotThrowNPE
-            implements Comparable<ComparableThatDoesNotThrowNPE>
-    {
+    static class ComparableThatDoesNotThrowNPE implements Comparable<ComparableThatDoesNotThrowNPE> {
         private final int value;
 
-        public ComparableThatDoesNotThrowNPE(int value)
-        {
+        public ComparableThatDoesNotThrowNPE(int value) {
             this.value = value;
         }
 
         @Override
-        public int compareTo(ComparableThatDoesNotThrowNPE o)
-        {
+        public int compareTo(ComparableThatDoesNotThrowNPE o) {
             if (o == null) {
                 return 1;
             }
@@ -569,21 +488,18 @@ public class TestEquivalenceTester
 
         @Override
         @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
-        public boolean equals(Object that)
-        {
-            return (that instanceof ComparableThatDoesNotThrowNPE) &&
-                    (value == ((ComparableThatDoesNotThrowNPE) that).value);
+        public boolean equals(Object that) {
+            return (that instanceof ComparableThatDoesNotThrowNPE)
+                    && (value == ((ComparableThatDoesNotThrowNPE) that).value);
         }
 
         @Override
-        public int hashCode()
-        {
+        public int hashCode() {
             return value;
         }
     }
 
-    private static void assertExpectedFailures(EquivalenceAssertionError e, ElementCheckFailure... expected)
-    {
+    private static void assertExpectedFailures(EquivalenceAssertionError e, ElementCheckFailure... expected) {
         assertThat(e.getFailures()).containsExactlyInAnyOrder(expected);
     }
 }

@@ -13,51 +13,43 @@
  */
 package io.airlift.http.server;
 
+import static jakarta.servlet.http.HttpServletResponse.SC_OK;
+
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import static jakarta.servlet.http.HttpServletResponse.SC_OK;
-
-class ForwardedServlet
-        extends HttpServlet
-{
+class ForwardedServlet extends HttpServlet {
     private volatile String scheme;
     private volatile Boolean isSecure;
     private volatile String requestUrl;
     private volatile String remoteAddress;
 
-    public void reset()
-    {
+    public void reset() {
         scheme = null;
         isSecure = null;
         requestUrl = null;
         remoteAddress = null;
     }
 
-    public String getScheme()
-    {
+    public String getScheme() {
         return scheme;
     }
 
-    public Boolean getIsSecure()
-    {
+    public Boolean getIsSecure() {
         return isSecure;
     }
 
-    public String getRequestUrl()
-    {
+    public String getRequestUrl() {
         return requestUrl;
     }
 
-    public String getRemoteAddress()
-    {
+    public String getRemoteAddress() {
         return remoteAddress;
     }
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-    {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) {
         scheme = request.getScheme();
         isSecure = request.isSecure();
         requestUrl = request.getRequestURL().toString();

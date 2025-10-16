@@ -1,14 +1,12 @@
 package io.airlift.stats;
 
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TestDistribution
-{
+import org.junit.jupiter.api.Test;
+
+public class TestDistribution {
     @Test
-    public void testReset()
-    {
+    public void testReset() {
         Distribution distribution = new Distribution(0.1);
 
         distribution.add(10);
@@ -22,8 +20,7 @@ public class TestDistribution
     }
 
     @Test
-    public void testDuplicate()
-    {
+    public void testDuplicate() {
         Distribution distribution = new Distribution(0.1);
 
         distribution.add(100);

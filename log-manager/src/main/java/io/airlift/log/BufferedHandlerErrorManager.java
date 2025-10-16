@@ -2,25 +2,20 @@ package io.airlift.log;
 
 import com.google.common.base.Throwables;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
-
 import java.io.PrintStream;
 import java.util.logging.ErrorManager;
 
-public class BufferedHandlerErrorManager
-        extends ErrorManager
-{
+public class BufferedHandlerErrorManager extends ErrorManager {
     @GuardedBy("this")
     private boolean reported;
 
     private final PrintStream stdErr;
 
-    public BufferedHandlerErrorManager(PrintStream stdErr)
-    {
+    public BufferedHandlerErrorManager(PrintStream stdErr) {
         this.stdErr = stdErr;
     }
 
-    public synchronized void error(String msg, Exception exception, int code)
-    {
+    public synchronized void error(String msg, Exception exception, int code) {
         if (!reported) {
             return;
         }
@@ -31,8 +26,7 @@ public class BufferedHandlerErrorManager
         }
         if (exception != null) {
             stdErr.println(text + "\n" + Throwables.getStackTraceAsString(exception));
-        }
-        else {
+        } else {
             stdErr.println(text);
         }
     }

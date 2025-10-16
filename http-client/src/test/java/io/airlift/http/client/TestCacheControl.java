@@ -1,18 +1,15 @@
 package io.airlift.http.client;
 
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
 
 // This code was forked from Apache CXF CacheControlHeaderProviderTest
-public class TestCacheControl
-{
+public class TestCacheControl {
     @Test
-    public void testFromSimpleString()
-    {
+    public void testFromSimpleString() {
         CacheControl c = CacheControl.valueOf("public,must-revalidate");
         assertThat(c.isPrivate()).isFalse();
         assertThat(c.isNoStore()).isFalse();
@@ -25,9 +22,9 @@ public class TestCacheControl
     }
 
     @Test
-    public void testFromComplexString()
-    {
-        CacheControl c = CacheControl.valueOf("private=\"foo\",no-cache=\"bar\",no-store,no-transform,must-revalidate,proxy-revalidate,max-age=2,s-maxage=3");
+    public void testFromComplexString() {
+        CacheControl c = CacheControl.valueOf(
+                "private=\"foo\",no-cache=\"bar\",no-store,no-transform,must-revalidate,proxy-revalidate,max-age=2,s-maxage=3");
         assertThat(c.isPrivate()).isTrue();
         assertThat(c.isNoStore()).isTrue();
         assertThat(c.isMustRevalidate()).isTrue();
@@ -41,32 +38,29 @@ public class TestCacheControl
     }
 
     @Test
-    public void testToString()
-    {
-        String expected = "private=\"foo\",no-cache=\"bar\",no-store,no-transform,must-revalidate,proxy-revalidate,max-age=2,s-maxage=3";
+    public void testToString() {
+        String expected =
+                "private=\"foo\",no-cache=\"bar\",no-store,no-transform,must-revalidate,proxy-revalidate,max-age=2,s-maxage=3";
         String parsed = CacheControl.valueOf(expected).toString();
         assertThat(parsed).isEqualTo(expected);
     }
 
     @Test
-    public void testNoCacheEnabled()
-    {
+    public void testNoCacheEnabled() {
         CacheControl cc = new CacheControl();
         cc.setNoCache(true);
         assertThat(cc.toString()).isEqualTo("no-cache,no-transform");
     }
 
     @Test
-    public void testNoCacheDisabled()
-    {
+    public void testNoCacheDisabled() {
         CacheControl cc = new CacheControl();
         cc.setNoCache(false);
         assertThat(cc.toString()).isEqualTo("no-transform");
     }
 
     @Test
-    public void testMultiplePrivateFields()
-    {
+    public void testMultiplePrivateFields() {
         CacheControl cc = new CacheControl();
         cc.setPrivate(true);
         cc.getPrivateFields().add("a");
@@ -75,8 +69,7 @@ public class TestCacheControl
     }
 
     @Test
-    public void testMultipleNoCacheFields()
-    {
+    public void testMultipleNoCacheFields() {
         CacheControl cc = new CacheControl();
         cc.setNoCache(true);
         cc.getNoCacheFields().add("c");
@@ -85,9 +78,9 @@ public class TestCacheControl
     }
 
     @Test
-    public void testReadMultiplePrivateAndNoCacheFields()
-    {
-        String s = "private=\"foo1,foo2\",no-store,no-transform,must-revalidate,proxy-revalidate,max-age=2,s-maxage=3,no-cache=\"bar1,bar2\",ext=1";
+    public void testReadMultiplePrivateAndNoCacheFields() {
+        String s =
+                "private=\"foo1,foo2\",no-store,no-transform,must-revalidate,proxy-revalidate,max-age=2,s-maxage=3,no-cache=\"bar1,bar2\",ext=1";
         CacheControl cacheControl = CacheControl.valueOf(s);
 
         assertThat(cacheControl.isPrivate()).isTrue();
@@ -114,16 +107,13 @@ public class TestCacheControl
     }
 
     @Test
-    public void testCacheExtensionToString()
-    {
+    public void testCacheExtensionToString() {
         CacheControl cc = new CacheControl();
         cc.getCacheExtension().put("ext1", null);
         cc.getCacheExtension().put("ext2", "value2");
         cc.getCacheExtension().put("ext3", "value 3");
         String value = cc.toString();
-        assertThat(value)
-                .contains("ext1")
-                .doesNotContain("ext1=");
+        assertThat(value).contains("ext1").doesNotContain("ext1=");
         assertThat(value).contains("ext2=value2");
         assertThat(value).contains("ext3=\"value 3\"");
     }

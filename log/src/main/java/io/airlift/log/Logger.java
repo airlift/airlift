@@ -15,10 +15,6 @@
  */
 package io.airlift.log;
 
-import com.google.errorprone.annotations.FormatMethod;
-
-import java.util.IllegalFormatException;
-
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
@@ -27,12 +23,13 @@ import static java.util.logging.Level.INFO;
 import static java.util.logging.Level.SEVERE;
 import static java.util.logging.Level.WARNING;
 
-public class Logger
-{
+import com.google.errorprone.annotations.FormatMethod;
+import java.util.IllegalFormatException;
+
+public class Logger {
     private final java.util.logging.Logger logger;
 
-    Logger(java.util.logging.Logger logger)
-    {
+    Logger(java.util.logging.Logger logger) {
         this.logger = requireNonNull(logger, "logger is null");
     }
 
@@ -42,8 +39,7 @@ public class Logger
      * @param clazz the class
      * @return the named logger
      */
-    public static Logger get(Class<?> clazz)
-    {
+    public static Logger get(Class<?> clazz) {
         return get(clazz.getName());
     }
 
@@ -53,8 +49,7 @@ public class Logger
      * @param name the name of the logger
      * @return the named logger
      */
-    public static Logger get(String name)
-    {
+    public static Logger get(String name) {
         return new Logger(java.util.logging.Logger.getLogger(name));
     }
 
@@ -64,8 +59,7 @@ public class Logger
      * @param exception an exception associated with the debug message being logged
      * @param message a literal message to log
      */
-    public void debug(Throwable exception, String message)
-    {
+    public void debug(Throwable exception, String message) {
         logger.log(FINE, message, exception);
     }
 
@@ -74,8 +68,7 @@ public class Logger
      *
      * @param message a literal message to log
      */
-    public void debug(String message)
-    {
+    public void debug(String message) {
         logger.log(FINE, message);
     }
 
@@ -93,8 +86,7 @@ public class Logger
      * @param args arguments for the format string
      */
     @FormatMethod
-    public void debug(String format, Object... args)
-    {
+    public void debug(String format, Object... args) {
         debug(null, format, args);
     }
 
@@ -113,8 +105,7 @@ public class Logger
      * @param args arguments for the format string
      */
     @FormatMethod
-    public void debug(Throwable exception, String format, Object... args)
-    {
+    public void debug(Throwable exception, String format, Object... args) {
         if (logger.isLoggable(FINE)) {
             logger.log(FINE, formatMessage(format, "DEBUG", args), exception);
         }
@@ -125,8 +116,7 @@ public class Logger
      *
      * @param message a literal message to log
      */
-    public void info(String message)
-    {
+    public void info(String message) {
         logger.log(INFO, message);
     }
 
@@ -144,8 +134,7 @@ public class Logger
      * @param args arguments for the format string
      */
     @FormatMethod
-    public void info(String format, Object... args)
-    {
+    public void info(String format, Object... args) {
         if (logger.isLoggable(INFO)) {
             logger.log(INFO, formatMessage(format, "INFO", args));
         }
@@ -157,8 +146,7 @@ public class Logger
      * @param exception an exception associated with the warning being logged
      * @param message a literal message to log
      */
-    public void warn(Throwable exception, String message)
-    {
+    public void warn(Throwable exception, String message) {
         logger.log(WARNING, message, exception);
     }
 
@@ -167,8 +155,7 @@ public class Logger
      *
      * @param message a literal message to log
      */
-    public void warn(String message)
-    {
+    public void warn(String message) {
         logger.log(WARNING, message);
     }
 
@@ -187,8 +174,7 @@ public class Logger
      * @param args arguments for the format string
      */
     @FormatMethod
-    public void warn(Throwable exception, String format, Object... args)
-    {
+    public void warn(Throwable exception, String format, Object... args) {
         if (logger.isLoggable(WARNING)) {
             logger.log(WARNING, formatMessage(format, "WARN", args), exception);
         }
@@ -208,8 +194,7 @@ public class Logger
      * @param args arguments for the format string
      */
     @FormatMethod
-    public void warn(String format, Object... args)
-    {
+    public void warn(String format, Object... args) {
         warn(null, format, args);
     }
 
@@ -219,8 +204,7 @@ public class Logger
      * @param exception an exception associated with the error being logged
      * @param message a literal message to log
      */
-    public void error(Throwable exception, String message)
-    {
+    public void error(Throwable exception, String message) {
         logger.log(SEVERE, message, exception);
     }
 
@@ -229,8 +213,7 @@ public class Logger
      *
      * @param message a literal message to log
      */
-    public void error(String message)
-    {
+    public void error(String message) {
         logger.severe(message);
     }
 
@@ -249,8 +232,7 @@ public class Logger
      * @param args arguments for the format string
      */
     @FormatMethod
-    public void error(Throwable exception, String format, Object... args)
-    {
+    public void error(Throwable exception, String format, Object... args) {
         if (logger.isLoggable(SEVERE)) {
             logger.log(SEVERE, formatMessage(format, "ERROR", args), exception);
         }
@@ -266,8 +248,7 @@ public class Logger
      *
      * @param exception an exception associated with the error being logged
      */
-    public void error(Throwable exception)
-    {
+    public void error(Throwable exception) {
         if (logger.isLoggable(SEVERE)) {
             logger.log(SEVERE, exception.getMessage(), exception);
         }
@@ -287,29 +268,27 @@ public class Logger
      * @param args arguments for the format string
      */
     @FormatMethod
-    public void error(String format, Object... args)
-    {
+    public void error(String format, Object... args) {
         error(null, format, args);
     }
 
-    public boolean isDebugEnabled()
-    {
+    public boolean isDebugEnabled() {
         return logger.isLoggable(FINE);
     }
 
-    public boolean isInfoEnabled()
-    {
+    public boolean isInfoEnabled() {
         return logger.isLoggable(INFO);
     }
 
-    private String formatMessage(String format, String level, Object[] args)
-    {
+    private String formatMessage(String format, String level, Object[] args) {
         String message;
         try {
             message = format(format, args);
-        }
-        catch (IllegalFormatException e) {
-            logger.log(SEVERE, format("Invalid format string while trying to log: %s '%s' %s", level, format, asList(args)), e);
+        } catch (IllegalFormatException e) {
+            logger.log(
+                    SEVERE,
+                    format("Invalid format string while trying to log: %s '%s' %s", level, format, asList(args)),
+                    e);
             message = format("'%s' %s", format, asList(args));
         }
         return message;

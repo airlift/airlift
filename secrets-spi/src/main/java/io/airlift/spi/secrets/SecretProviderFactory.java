@@ -15,8 +15,7 @@ package io.airlift.spi.secrets;
 
 import java.util.Map;
 
-public interface SecretProviderFactory
-{
+public interface SecretProviderFactory {
     String getName();
 
     SecretProvider createSecretProvider(Map<String, String> config);

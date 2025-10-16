@@ -15,77 +15,92 @@
  */
 package io.airlift.discovery.client;
 
+import static io.airlift.concurrent.Threads.daemonThreadsNamed;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.discovery.client.testing.InMemoryDiscoveryClient;
 import io.airlift.node.NodeInfo;
+import java.util.UUID;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
-import java.util.UUID;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-
-import static io.airlift.concurrent.Threads.daemonThreadsNamed;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
-
 @TestInstance(PER_CLASS)
-public class TestCachingServiceSelector
-{
-    private static final ServiceDescriptor APPLE_1_SERVICE = new ServiceDescriptor(UUID.randomUUID(), "node-A", "apple", "pool", "location", ServiceState.RUNNING, ImmutableMap.of("a", "apple"));
-    private static final ServiceDescriptor APPLE_2_SERVICE = new ServiceDescriptor(UUID.randomUUID(), "node-B", "apple", "pool", "location", ServiceState.RUNNING, ImmutableMap.of("a", "apple"));
-    private static final ServiceDescriptor DIFFERENT_TYPE = new ServiceDescriptor(UUID.randomUUID(), "node-A", "banana", "pool", "location", ServiceState.RUNNING, ImmutableMap.of("b", "banana"));
-    private static final ServiceDescriptor DIFFERENT_POOL = new ServiceDescriptor(UUID.randomUUID(), "node-B", "apple", "fool", "location", ServiceState.RUNNING, ImmutableMap.of("a", "apple"));
+public class TestCachingServiceSelector {
+    private static final ServiceDescriptor APPLE_1_SERVICE = new ServiceDescriptor(
+            UUID.randomUUID(),
+            "node-A",
+            "apple",
+            "pool",
+            "location",
+            ServiceState.RUNNING,
+            ImmutableMap.of("a", "apple"));
+    private static final ServiceDescriptor APPLE_2_SERVICE = new ServiceDescriptor(
+            UUID.randomUUID(),
+            "node-B",
+            "apple",
+            "pool",
+            "location",
+            ServiceState.RUNNING,
+            ImmutableMap.of("a", "apple"));
+    private static final ServiceDescriptor DIFFERENT_TYPE = new ServiceDescriptor(
+            UUID.randomUUID(),
+            "node-A",
+            "banana",
+            "pool",
+            "location",
+            ServiceState.RUNNING,
+            ImmutableMap.of("b", "banana"));
+    private static final ServiceDescriptor DIFFERENT_POOL = new ServiceDescriptor(
+            UUID.randomUUID(),
+            "node-B",
+            "apple",
+            "fool",
+            "location",
+            ServiceState.RUNNING,
+            ImmutableMap.of("a", "apple"));
 
     private ScheduledExecutorService executor;
     private NodeInfo nodeInfo;
 
     @BeforeAll
-    protected void setUp()
-    {
+    protected void setUp() {
         executor = new ScheduledThreadPoolExecutor(10, daemonThreadsNamed("Discovery-%s"));
         nodeInfo = new NodeInfo("environment");
     }
 
     @AfterAll
-    public void tearDown()
-    {
+    public void tearDown() {
         executor.shutdownNow();
     }
 
     @Test
-    public void testBasics()
-    {
-        CachingServiceSelector serviceSelector = new CachingServiceSelector("type",
-                new ServiceSelectorConfig().setPool("pool"),
-                new InMemoryDiscoveryClient(nodeInfo),
-                executor);
+    public void testBasics() {
+        CachingServiceSelector serviceSelector = new CachingServiceSelector(
+                "type", new ServiceSelectorConfig().setPool("pool"), new InMemoryDiscoveryClient(nodeInfo), executor);
 
         assertThat(serviceSelector.getType()).isEqualTo("type");
         assertThat(serviceSelector.getPool()).isEqualTo("pool");
     }
 
     @Test
-    public void testNotStartedEmpty()
-    {
-        CachingServiceSelector serviceSelector = new CachingServiceSelector("type",
-                new ServiceSelectorConfig().setPool("pool"),
-                new InMemoryDiscoveryClient(nodeInfo),
-                executor);
+    public void testNotStartedEmpty() {
+        CachingServiceSelector serviceSelector = new CachingServiceSelector(
+                "type", new ServiceSelectorConfig().setPool("pool"), new InMemoryDiscoveryClient(nodeInfo), executor);
 
         assertThat(serviceSelector.selectAllServices()).isEqualTo(ImmutableList.of());
     }
 
     @Test
-    public void testStartedEmpty()
-    {
-        CachingServiceSelector serviceSelector = new CachingServiceSelector("type",
-                new ServiceSelectorConfig().setPool("pool"),
-                new InMemoryDiscoveryClient(nodeInfo),
-                executor);
+    public void testStartedEmpty() {
+        CachingServiceSelector serviceSelector = new CachingServiceSelector(
+                "type", new ServiceSelectorConfig().setPool("pool"), new InMemoryDiscoveryClient(nodeInfo), executor);
 
         serviceSelector.start();
 
@@ -93,36 +108,29 @@ public class TestCachingServiceSelector
     }
 
     @Test
-    public void testNotStartedWithServices()
-    {
+    public void testNotStartedWithServices() {
         InMemoryDiscoveryClient discoveryClient = new InMemoryDiscoveryClient(nodeInfo);
         discoveryClient.addDiscoveredService(APPLE_1_SERVICE);
         discoveryClient.addDiscoveredService(APPLE_2_SERVICE);
         discoveryClient.addDiscoveredService(DIFFERENT_TYPE);
         discoveryClient.addDiscoveredService(DIFFERENT_POOL);
 
-        CachingServiceSelector serviceSelector = new CachingServiceSelector("apple",
-                new ServiceSelectorConfig().setPool("pool"),
-                discoveryClient,
-                executor);
+        CachingServiceSelector serviceSelector = new CachingServiceSelector(
+                "apple", new ServiceSelectorConfig().setPool("pool"), discoveryClient, executor);
 
         assertThat(serviceSelector.selectAllServices()).isEqualTo(ImmutableList.of());
     }
 
     @Test
-    public void testStartedWithServices()
-            throws Exception
-    {
+    public void testStartedWithServices() throws Exception {
         InMemoryDiscoveryClient discoveryClient = new InMemoryDiscoveryClient(nodeInfo);
         discoveryClient.addDiscoveredService(APPLE_1_SERVICE);
         discoveryClient.addDiscoveredService(APPLE_2_SERVICE);
         discoveryClient.addDiscoveredService(DIFFERENT_TYPE);
         discoveryClient.addDiscoveredService(DIFFERENT_POOL);
 
-        CachingServiceSelector serviceSelector = new CachingServiceSelector("apple",
-                new ServiceSelectorConfig().setPool("pool"),
-                discoveryClient,
-                executor);
+        CachingServiceSelector serviceSelector = new CachingServiceSelector(
+                "apple", new ServiceSelectorConfig().setPool("pool"), discoveryClient, executor);
 
         serviceSelector.start();
 

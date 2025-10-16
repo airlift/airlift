@@ -5,23 +5,16 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.google.common.collect.ImmutableMap;
 import io.modelcontextprotocol.spec.McpError;
-
 import java.io.IOException;
 
-public final class McpErrorSerializer
-        extends JsonSerializer<McpError>
-{
+public final class McpErrorSerializer extends JsonSerializer<McpError> {
     @Override
-    public void serialize(McpError value, JsonGenerator gen, SerializerProvider serializers)
-            throws IOException
-    {
+    public void serialize(McpError value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
         if (value == null) {
             gen.writeNull();
-        }
-        else if (value.getJsonRpcError() != null) {
+        } else if (value.getJsonRpcError() != null) {
             gen.writeObject(value.getJsonRpcError());
-        }
-        else {
+        } else {
             gen.writeObject(ImmutableMap.of("message", value.getMessage()));
         }
     }

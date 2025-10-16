@@ -13,42 +13,43 @@
  */
 package io.airlift.security.csr;
 
-import org.bouncycastle.asn1.DERSet;
-import org.bouncycastle.asn1.x500.X500Name;
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
-import org.junit.jupiter.api.Test;
-
-import javax.security.auth.x500.X500Principal;
+import static com.google.common.io.BaseEncoding.base16;
+import static io.airlift.security.csr.SignatureAlgorithmIdentifier.findSignatureAlgorithmIdentifier;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.Signature;
 import java.security.spec.ECGenParameterSpec;
+import javax.security.auth.x500.X500Principal;
+import org.bouncycastle.asn1.DERSet;
+import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.junit.jupiter.api.Test;
 
-import static com.google.common.io.BaseEncoding.base16;
-import static io.airlift.security.csr.SignatureAlgorithmIdentifier.findSignatureAlgorithmIdentifier;
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class TestCertificationRequestInfo
-{
+public class TestCertificationRequestInfo {
     @Test
-    public void test()
-            throws Exception
-    {
-        // test only with state because BC encodes every other value using UTF8String instead of PrintableString used by the JDK
+    public void test() throws Exception {
+        // test only with state because BC encodes every other value using UTF8String instead of PrintableString used by
+        // the JDK
         String name = "C=country";
 
         KeyPairGenerator generator = KeyPairGenerator.getInstance("EC");
         generator.initialize(new ECGenParameterSpec("secp256r1"));
         KeyPair keyPair = generator.generateKeyPair();
 
-        CertificationRequestInfo actualInfo = new CertificationRequestInfo(new X500Principal(name), keyPair.getPublic());
+        CertificationRequestInfo actualInfo =
+                new CertificationRequestInfo(new X500Principal(name), keyPair.getPublic());
         assertThat(actualInfo.getPublicKey()).isEqualTo(keyPair.getPublic());
         assertThat(actualInfo.getSubject().getName()).isEqualTo(name);
         assertThat(actualInfo).isEqualTo(actualInfo);
         assertThat(actualInfo.hashCode()).isEqualTo(actualInfo.hashCode());
 
-        org.bouncycastle.asn1.pkcs.CertificationRequestInfo expectedInfo = new org.bouncycastle.asn1.pkcs.CertificationRequestInfo(new X500Name(name), SubjectPublicKeyInfo.getInstance(keyPair.getPublic().getEncoded()), new DERSet());
+        org.bouncycastle.asn1.pkcs.CertificationRequestInfo expectedInfo =
+                new org.bouncycastle.asn1.pkcs.CertificationRequestInfo(
+                        new X500Name(name),
+                        SubjectPublicKeyInfo.getInstance(keyPair.getPublic().getEncoded()),
+                        new DERSet());
 
         assertThat(base16().encode(actualInfo.getEncoded())).isEqualTo(base16().encode(expectedInfo.getEncoded("DER")));
 

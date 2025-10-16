@@ -15,12 +15,16 @@
  */
 package io.airlift.jmx;
 
+import static java.io.OutputStream.nullOutputStream;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import javax.management.Attribute;
 import javax.management.Descriptor;
 import javax.management.JMException;
@@ -31,15 +35,8 @@ import javax.management.MBeanParameterInfo;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
-import static java.io.OutputStream.nullOutputStream;
-
 @JsonPropertyOrder({"objectName", "className", "description", "descriptor", "attributes", "operations"})
-public class MBeanRepresentation
-{
+public class MBeanRepresentation {
     private final ObjectName objectName;
     private final String className;
     private final String description;
@@ -48,8 +45,7 @@ public class MBeanRepresentation
     private final List<OperationRepresentation> operations;
 
     public MBeanRepresentation(MBeanServer mbeanServer, ObjectName objectName, ObjectMapper objectMapper)
-            throws JMException
-    {
+            throws JMException {
         this.objectName = objectName;
 
         MBeanInfo mbeanInfo = mbeanServer.getMBeanInfo(objectName);
@@ -68,7 +64,8 @@ public class MBeanRepresentation
 
         String[] attributeNames = attributeInfos.keySet().toArray(new String[0]);
         ImmutableList.Builder<AttributeRepresentation> attributes = ImmutableList.builder();
-        for (Attribute attribute : mbeanServer.getAttributes(objectName, attributeNames).asList()) {
+        for (Attribute attribute :
+                mbeanServer.getAttributes(objectName, attributeNames).asList()) {
             String attributeName = attribute.getName();
 
             // use remove so we only include one value for each attribute
@@ -79,7 +76,8 @@ public class MBeanRepresentation
             }
 
             Object attributeValue = attribute.getValue();
-            AttributeRepresentation attributeRepresentation = new AttributeRepresentation(attributeInfo, attributeValue, objectMapper);
+            AttributeRepresentation attributeRepresentation =
+                    new AttributeRepresentation(attributeInfo, attributeValue, objectMapper);
             attributes.add(attributeRepresentation);
         }
         this.attributes = attributes.build();
@@ -95,44 +93,37 @@ public class MBeanRepresentation
     }
 
     @JsonProperty
-    public ObjectName getObjectName()
-    {
+    public ObjectName getObjectName() {
         return objectName;
     }
 
     @JsonProperty
-    public String getClassName()
-    {
+    public String getClassName() {
         return className;
     }
 
     @JsonProperty
-    public String getDescription()
-    {
+    public String getDescription() {
         return description;
     }
 
     @JsonProperty
-    public Map<String, Object> getDescriptor()
-    {
+    public Map<String, Object> getDescriptor() {
         return descriptor;
     }
 
     @JsonProperty
-    public List<AttributeRepresentation> getAttributes()
-    {
+    public List<AttributeRepresentation> getAttributes() {
         return attributes;
     }
 
     @JsonProperty
-    public List<OperationRepresentation> getOperations()
-    {
+    public List<OperationRepresentation> getOperations() {
         return operations;
     }
 
     @JsonPropertyOrder({"name", "type", "description", "readable", "writable", "descriptor", "value"})
-    public static class AttributeRepresentation
-    {
+    public static class AttributeRepresentation {
         private final String name;
         private final String type;
         private final String description;
@@ -141,14 +132,12 @@ public class MBeanRepresentation
         private final Map<String, Object> descriptor;
         private final Object value;
 
-        private AttributeRepresentation(MBeanAttributeInfo attributeInfo, Object value, ObjectMapper objectMapper)
-        {
+        private AttributeRepresentation(MBeanAttributeInfo attributeInfo, Object value, ObjectMapper objectMapper) {
             if (canSerialize(value, objectMapper)) {
                 this.value = value;
                 readable = attributeInfo.isReadable();
                 writable = attributeInfo.isWritable();
-            }
-            else {
+            } else {
                 this.value = null;
                 readable = false;
                 writable = false;
@@ -161,8 +150,7 @@ public class MBeanRepresentation
             descriptor = toMap(attributeInfo.getDescriptor());
         }
 
-        private static boolean canSerialize(Object value, ObjectMapper objectMapper)
-        {
+        private static boolean canSerialize(Object value, ObjectMapper objectMapper) {
             if (value == null) {
                 return true;
             }
@@ -173,66 +161,56 @@ public class MBeanRepresentation
             try {
                 objectMapper.writeValue(nullOutputStream(), value);
                 return true;
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 return false;
             }
         }
 
         @JsonProperty
-        public String getName()
-        {
+        public String getName() {
             return name;
         }
 
         @JsonProperty
-        public String getType()
-        {
+        public String getType() {
             return type;
         }
 
         @JsonProperty
-        public String getDescription()
-        {
+        public String getDescription() {
             return description;
         }
 
         @JsonProperty
-        public boolean isReadable()
-        {
+        public boolean isReadable() {
             return readable;
         }
 
         @JsonProperty
-        public boolean isWritable()
-        {
+        public boolean isWritable() {
             return writable;
         }
 
         @JsonProperty
-        public Map<String, Object> getDescriptor()
-        {
+        public Map<String, Object> getDescriptor() {
             return descriptor;
         }
 
         @JsonProperty
-        public Object getValue()
-        {
+        public Object getValue() {
             return value;
         }
     }
 
     @JsonPropertyOrder({"name", "impact", "returnType", "descriptor", "parameters"})
-    public static class OperationRepresentation
-    {
+    public static class OperationRepresentation {
         private final String name;
         private final int impact;
         private final String returnType;
         private final List<ParameterRepresentation> parameters;
         private final Map<String, Object> descriptor;
 
-        private OperationRepresentation(MBeanOperationInfo operationInfo)
-        {
+        private OperationRepresentation(MBeanOperationInfo operationInfo) {
             name = operationInfo.getName();
             impact = operationInfo.getImpact();
             returnType = operationInfo.getReturnType();
@@ -246,46 +224,39 @@ public class MBeanRepresentation
         }
 
         @JsonProperty
-        public String getName()
-        {
+        public String getName() {
             return name;
         }
 
         @JsonProperty
-        public int getImpact()
-        {
+        public int getImpact() {
             return impact;
         }
 
         @JsonProperty
-        public String getReturnType()
-        {
+        public String getReturnType() {
             return returnType;
         }
 
         @JsonProperty
-        public List<ParameterRepresentation> getParameters()
-        {
+        public List<ParameterRepresentation> getParameters() {
             return parameters;
         }
 
         @JsonProperty
-        public Map<String, Object> getDescriptor()
-        {
+        public Map<String, Object> getDescriptor() {
             return descriptor;
         }
     }
 
     @JsonPropertyOrder({"name", "type", "description", "descriptor"})
-    public static class ParameterRepresentation
-    {
+    public static class ParameterRepresentation {
         private final String name;
         private final String description;
         private final String type;
         private final Map<String, Object> descriptor;
 
-        public ParameterRepresentation(MBeanParameterInfo parameterInfo)
-        {
+        public ParameterRepresentation(MBeanParameterInfo parameterInfo) {
             name = parameterInfo.getName();
             description = parameterInfo.getDescription();
             type = parameterInfo.getType();
@@ -293,32 +264,27 @@ public class MBeanRepresentation
         }
 
         @JsonProperty
-        public String getName()
-        {
+        public String getName() {
             return name;
         }
 
         @JsonProperty
-        public String getDescription()
-        {
+        public String getDescription() {
             return description;
         }
 
         @JsonProperty
-        public String getType()
-        {
+        public String getType() {
             return type;
         }
 
         @JsonProperty
-        public Map<String, Object> getDescriptor()
-        {
+        public Map<String, Object> getDescriptor() {
             return descriptor;
         }
     }
 
-    private static Map<String, Object> toMap(Descriptor descriptor)
-    {
+    private static Map<String, Object> toMap(Descriptor descriptor) {
         ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
         for (String fieldName : descriptor.getFieldNames()) {
             Object fieldValue = descriptor.getFieldValue(fieldName);
@@ -332,8 +298,7 @@ public class MBeanRepresentation
         ImmutableMap<String, Object> map = builder.build();
         if (!map.isEmpty()) {
             return map;
-        }
-        else {
+        } else {
             return null;
         }
     }

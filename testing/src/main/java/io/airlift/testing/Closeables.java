@@ -1,17 +1,14 @@
 package io.airlift.testing;
 
-import java.io.Closeable;
-import java.io.IOException;
-
 import static com.google.common.base.Throwables.throwIfInstanceOf;
 import static com.google.common.base.Throwables.throwIfUnchecked;
 import static java.util.Objects.requireNonNull;
 
-public final class Closeables
-{
-    private Closeables()
-    {
-    }
+import java.io.Closeable;
+import java.io.IOException;
+
+public final class Closeables {
+    private Closeables() {}
 
     /**
      * @deprecated Usage of this method is discouraged, as it may hide real problems.
@@ -19,8 +16,7 @@ public final class Closeables
      * explicitly.
      */
     @Deprecated
-    public static void closeQuietly(Closeable... closeables)
-    {
+    public static void closeQuietly(Closeable... closeables) {
         if (closeables == null) {
             return;
         }
@@ -29,19 +25,15 @@ public final class Closeables
                 if (closeable != null) {
                     closeable.close();
                 }
-            }
-            catch (IOException | RuntimeException ignored) {
+            } catch (IOException | RuntimeException ignored) {
             }
         }
     }
 
-    public static void closeAll(Closeable... closeables)
-            throws IOException
-    {
+    public static void closeAll(Closeable... closeables) throws IOException {
         try {
             closeAll((AutoCloseable[]) closeables);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throwIfInstanceOf(e, IOException.class);
             throwIfUnchecked(e);
             // Unreachable
@@ -49,9 +41,7 @@ public final class Closeables
         }
     }
 
-    public static void closeAll(AutoCloseable... closeables)
-            throws Exception
-    {
+    public static void closeAll(AutoCloseable... closeables) throws Exception {
         if (closeables == null) {
             return;
         }
@@ -61,12 +51,10 @@ public final class Closeables
                 if (closeable != null) {
                     closeable.close();
                 }
-            }
-            catch (Throwable e) {
+            } catch (Throwable e) {
                 if (rootCause == null) {
                     rootCause = e;
-                }
-                else if (rootCause != e) {
+                } else if (rootCause != e) {
                     // Self-suppression not permitted
                     rootCause.addSuppressed(e);
                 }
@@ -79,8 +67,7 @@ public final class Closeables
         }
     }
 
-    public static void closeAllRuntimeException(Closeable... closeables)
-    {
+    public static void closeAllRuntimeException(Closeable... closeables) {
         if (closeables == null) {
             return;
         }
@@ -90,12 +77,10 @@ public final class Closeables
                 if (closeable != null) {
                     closeable.close();
                 }
-            }
-            catch (Throwable e) {
+            } catch (Throwable e) {
                 if (rootCause == null) {
                     rootCause = new RuntimeException(e);
-                }
-                else if (rootCause != e) {
+                } else if (rootCause != e) {
                     // Self-suppression not permitted
                     rootCause.addSuppressed(e);
                 }
@@ -106,8 +91,7 @@ public final class Closeables
         }
     }
 
-    public static <T extends Throwable> T closeAllSuppress(T rootCause, AutoCloseable... closeables)
-    {
+    public static <T extends Throwable> T closeAllSuppress(T rootCause, AutoCloseable... closeables) {
         requireNonNull(rootCause, "rootCause is null");
         if (closeables == null) {
             return rootCause;
@@ -117,8 +101,7 @@ public final class Closeables
                 if (closeable != null) {
                     closeable.close();
                 }
-            }
-            catch (Throwable e) {
+            } catch (Throwable e) {
                 // Self-suppression not permitted
                 if (rootCause != e) {
                     rootCause.addSuppressed(e);

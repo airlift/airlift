@@ -1,88 +1,80 @@
 package io.airlift.http.server;
 
-import com.google.common.collect.ImmutableList;
-import com.google.inject.Binder;
-import com.google.inject.Key;
-import org.eclipse.jetty.util.VirtualThreads;
-
-import java.util.ArrayList;
-import java.util.List;
-
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
 import static java.util.Objects.requireNonNull;
 
-public class HttpServerBinder
-{
+import com.google.common.collect.ImmutableList;
+import com.google.inject.Binder;
+import com.google.inject.Key;
+import java.util.ArrayList;
+import java.util.List;
+import org.eclipse.jetty.util.VirtualThreads;
+
+public class HttpServerBinder {
     private final Binder binder;
 
-    private HttpServerBinder(Binder binder)
-    {
+    private HttpServerBinder(Binder binder) {
         this.binder = requireNonNull(binder, "binder is null").skipSources(getClass());
     }
 
-    public static HttpServerBinder httpServerBinder(Binder binder)
-    {
+    public static HttpServerBinder httpServerBinder(Binder binder) {
         return new HttpServerBinder(binder);
     }
 
-    public HttpServerBinder enableVirtualThreads()
-    {
+    public HttpServerBinder enableVirtualThreads() {
         if (!VirtualThreads.areSupported()) {
             binder.addError("Virtual threads are not supported");
         }
-        newOptionalBinder(binder, Key.get(Boolean.class, EnableVirtualThreads.class)).setBinding().toInstance(true);
+        newOptionalBinder(binder, Key.get(Boolean.class, EnableVirtualThreads.class))
+                .setBinding()
+                .toInstance(true);
         return this;
     }
 
-    public HttpServerBinder enableCaseSensitiveHeaderCache()
-    {
-        newOptionalBinder(binder, Key.get(Boolean.class, EnableCaseSensitiveHeaderCache.class)).setBinding().toInstance(true);
+    public HttpServerBinder enableCaseSensitiveHeaderCache() {
+        newOptionalBinder(binder, Key.get(Boolean.class, EnableCaseSensitiveHeaderCache.class))
+                .setBinding()
+                .toInstance(true);
         return this;
     }
 
-    public HttpServerBinder enableLegacyUriCompliance()
-    {
-        newOptionalBinder(binder, Key.get(Boolean.class, EnableLegacyUriCompliance.class)).setBinding().toInstance(true);
+    public HttpServerBinder enableLegacyUriCompliance() {
+        newOptionalBinder(binder, Key.get(Boolean.class, EnableLegacyUriCompliance.class))
+                .setBinding()
+                .toInstance(true);
         return this;
     }
 
-    public HttpResourceBinding bindResource(String baseUri, String classPathResourceBase)
-    {
+    public HttpResourceBinding bindResource(String baseUri, String classPathResourceBase) {
         HttpResourceBinding httpResourceBinding = new HttpResourceBinding(baseUri, classPathResourceBase);
         newSetBinder(binder, HttpResourceBinding.class).addBinding().toInstance(httpResourceBinding);
         return httpResourceBinding;
     }
 
-    public static class HttpResourceBinding
-    {
+    public static class HttpResourceBinding {
         private final String baseUri;
         private final String classPathResourceBase;
         private final List<String> welcomeFiles = new ArrayList<>();
 
-        public HttpResourceBinding(String baseUri, String classPathResourceBase)
-        {
+        public HttpResourceBinding(String baseUri, String classPathResourceBase) {
             this.baseUri = baseUri;
             this.classPathResourceBase = classPathResourceBase;
         }
 
-        public String getBaseUri()
-        {
+        public String getBaseUri() {
             return baseUri;
         }
 
-        public String getClassPathResourceBase()
-        {
+        public String getClassPathResourceBase() {
             return classPathResourceBase;
         }
 
-        public List<String> getWelcomeFiles()
-        {
+        public List<String> getWelcomeFiles() {
             return ImmutableList.copyOf(welcomeFiles);
         }
 
-        public HttpResourceBinding withWelcomeFile(String welcomeFile)
-        {
+        public HttpResourceBinding withWelcomeFile(String welcomeFile) {
             welcomeFiles.add(welcomeFile);
             return this;
         }

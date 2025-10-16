@@ -1,22 +1,18 @@
 package io.airlift.node.testing;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import io.airlift.node.NodeInfo;
-import org.junit.jupiter.api.Test;
-
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Optional;
+import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class TestTestingNodeModule
-{
+public class TestTestingNodeModule {
     @Test
-    public void testTestingNode()
-            throws UnknownHostException
-    {
+    public void testTestingNode() throws UnknownHostException {
         long testStartTime = System.currentTimeMillis();
 
         Injector injector = Guice.createInjector(new TestingNodeModule());
@@ -44,8 +40,7 @@ public class TestTestingNodeModule
     }
 
     @Test
-    public void testTestingNodeExplicitEnvironment()
-    {
+    public void testTestingNodeExplicitEnvironment() {
         Injector injector = Guice.createInjector(new TestingNodeModule("foo"));
         NodeInfo nodeInfo = injector.getInstance(NodeInfo.class);
 
@@ -54,8 +49,7 @@ public class TestTestingNodeModule
     }
 
     @Test
-    public void testTestingNodePresentEnvironment()
-    {
+    public void testTestingNodePresentEnvironment() {
         Injector injector = Guice.createInjector(new TestingNodeModule(Optional.of("foo")));
         NodeInfo nodeInfo = injector.getInstance(NodeInfo.class);
 
@@ -64,8 +58,7 @@ public class TestTestingNodeModule
     }
 
     @Test
-    public void testTestingNodeAbsentEnvironment()
-    {
+    public void testTestingNodeAbsentEnvironment() {
         Injector injector = Guice.createInjector(new TestingNodeModule(Optional.empty()));
         NodeInfo nodeInfo = injector.getInstance(NodeInfo.class);
 

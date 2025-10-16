@@ -13,36 +13,36 @@
  */
 package io.airlift.security.csr;
 
+import static com.google.common.io.BaseEncoding.base16;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.Map.Entry;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.operator.DefaultSignatureAlgorithmIdentifierFinder;
 import org.junit.jupiter.api.Test;
 
-import java.util.Map.Entry;
-
-import static com.google.common.io.BaseEncoding.base16;
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class TestSignatureAlgorithmIdentifier
-{
+public class TestSignatureAlgorithmIdentifier {
     @Test
-    public void test()
-            throws Exception
-    {
+    public void test() throws Exception {
         int verifiedCount = 0;
-        for (Entry<String, SignatureAlgorithmIdentifier> entry : SignatureAlgorithmIdentifier.getAllSignatureAlgorithmIdentifiers().entrySet()) {
+        for (Entry<String, SignatureAlgorithmIdentifier> entry :
+                SignatureAlgorithmIdentifier.getAllSignatureAlgorithmIdentifiers()
+                        .entrySet()) {
             SignatureAlgorithmIdentifier signatureAlgorithmIdentifier = entry.getValue();
             assertThat(signatureAlgorithmIdentifier.getName()).isEqualTo(entry.getKey());
 
             AlgorithmIdentifier algorithmIdentifier;
             try {
                 algorithmIdentifier = new DefaultSignatureAlgorithmIdentifierFinder().find(entry.getKey());
-            }
-            catch (IllegalArgumentException e) {
+            } catch (IllegalArgumentException e) {
                 // Bouncy is missing some algorithms the JVM supports
                 continue;
             }
-            assertThat(signatureAlgorithmIdentifier.getOid()).isEqualTo(algorithmIdentifier.getAlgorithm().getId());
-            assertThat(base16().encode(signatureAlgorithmIdentifier.getEncoded())).isEqualTo(base16().encode(algorithmIdentifier.getAlgorithm().getEncoded("DER")));
+            assertThat(signatureAlgorithmIdentifier.getOid())
+                    .isEqualTo(algorithmIdentifier.getAlgorithm().getId());
+            assertThat(base16().encode(signatureAlgorithmIdentifier.getEncoded()))
+                    .isEqualTo(
+                            base16().encode(algorithmIdentifier.getAlgorithm().getEncoded("DER")));
             assertThat(algorithmIdentifier).isEqualTo(algorithmIdentifier);
             assertThat(algorithmIdentifier.hashCode()).isEqualTo(algorithmIdentifier.hashCode());
             verifiedCount++;

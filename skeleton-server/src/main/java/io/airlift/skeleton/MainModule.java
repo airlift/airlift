@@ -15,16 +15,13 @@
  */
 package io.airlift.skeleton;
 
+import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
+
 import com.google.inject.Binder;
 import com.google.inject.Module;
 
-import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
-
-public class MainModule
-        implements Module
-{
-    public void configure(Binder binder)
-    {
+public class MainModule implements Module {
+    public void configure(Binder binder) {
         binder.requireExplicitBindings();
         binder.disableCircularProxies();
 

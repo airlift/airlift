@@ -13,21 +13,19 @@
  */
 package io.airlift.stats.cardinality;
 
+import static io.airlift.slice.testing.SliceAssertions.assertSlicesEqual;
+
 import io.airlift.slice.DynamicSliceOutput;
 import io.airlift.slice.Murmur3Hash128;
 import io.airlift.slice.Slice;
 import io.airlift.slice.Slices;
 import org.junit.jupiter.api.Test;
 
-import static io.airlift.slice.testing.SliceAssertions.assertSlicesEqual;
-
-public class TestSparseSerialization
-{
+public class TestSparseSerialization {
     @Test
-    public void testEmpty()
-    {
+    public void testEmpty() {
         Slice expected = new DynamicSliceOutput(1)
-                .appendByte(2)  // format tag
+                .appendByte(2) // format tag
                 .appendByte(12) // p
                 // number of entries
                 .appendByte(0)
@@ -40,10 +38,9 @@ public class TestSparseSerialization
     }
 
     @Test
-    public void testSingle()
-    {
+    public void testSingle() {
         Slice expected = new DynamicSliceOutput(1)
-                .appendByte(2)  // format tag
+                .appendByte(2) // format tag
                 .appendByte(12) // p
                 // number of entries
                 .appendByte(1)
@@ -63,8 +60,7 @@ public class TestSparseSerialization
     }
 
     @Test
-    public void testRoundtrip()
-    {
+    public void testRoundtrip() {
         SparseHll hll = new SparseHll(4);
 
         for (int i = 0; i < 1000; i++) {

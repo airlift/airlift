@@ -15,8 +15,7 @@
  */
 package io.airlift.discovery.client;
 
-public enum ServiceState
-{
+public enum ServiceState {
     STOPPED,
     RUNNING
 }

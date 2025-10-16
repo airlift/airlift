@@ -15,6 +15,11 @@
  */
 package io.airlift.http.client;
 
+import static com.google.common.base.MoreObjects.toStringHelper;
+import static com.google.common.base.Preconditions.checkArgument;
+import static java.lang.String.CASE_INSENSITIVE_ORDER;
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimap;
@@ -22,26 +27,17 @@ import com.google.common.collect.MultimapBuilder;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 import io.opentelemetry.api.trace.SpanBuilder;
-
 import java.net.URI;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
-import static com.google.common.base.Preconditions.checkArgument;
-import static java.lang.String.CASE_INSENSITIVE_ORDER;
-import static java.util.Objects.requireNonNull;
-
-public final class Request
-{
+public final class Request {
     private final Optional<HttpVersion> httpVersion;
     private final URI uri;
     private final String method;
-    private final ListMultimap<String, String> headers = MultimapBuilder
-            .treeKeys(CASE_INSENSITIVE_ORDER)
-            .arrayListValues()
-            .build();
+    private final ListMultimap<String, String> headers =
+            MultimapBuilder.treeKeys(CASE_INSENSITIVE_ORDER).arrayListValues().build();
     private final Optional<Duration> requestTimeout;
     private final Optional<Duration> idleTimeout;
     private final BodyGenerator bodyGenerator;
@@ -59,8 +55,7 @@ public final class Request
             BodyGenerator bodyGenerator,
             Optional<DataSize> maxContentLength,
             Optional<SpanBuilder> spanBuilder,
-            boolean followRedirects)
-    {
+            boolean followRedirects) {
         requireNonNull(uri, "uri is null");
         checkArgument(uri.getHost() != null, "uri does not have a host: %s", uri);
         checkArgument(uri.getScheme() != null, "uri does not have a scheme: %s", uri);
@@ -80,28 +75,23 @@ public final class Request
         this.followRedirects = followRedirects;
     }
 
-    public static Request.Builder builder()
-    {
+    public static Request.Builder builder() {
         return new Builder();
     }
 
-    public Optional<HttpVersion> getHttpVersion()
-    {
+    public Optional<HttpVersion> getHttpVersion() {
         return httpVersion;
     }
 
-    public URI getUri()
-    {
+    public URI getUri() {
         return uri;
     }
 
-    public String getMethod()
-    {
+    public String getMethod() {
         return method;
     }
 
-    public String getHeader(String name)
-    {
+    public String getHeader(String name) {
         List<String> values = headers.get(name);
         if (!values.isEmpty()) {
             return values.getFirst();
@@ -109,44 +99,36 @@ public final class Request
         return null;
     }
 
-    public ListMultimap<String, String> getHeaders()
-    {
+    public ListMultimap<String, String> getHeaders() {
         return headers;
     }
 
-    public Optional<Duration> getRequestTimeout()
-    {
+    public Optional<Duration> getRequestTimeout() {
         return requestTimeout;
     }
 
-    public Optional<Duration> getIdleTimeout()
-    {
+    public Optional<Duration> getIdleTimeout() {
         return idleTimeout;
     }
 
-    public Optional<DataSize> getMaxContentLength()
-    {
+    public Optional<DataSize> getMaxContentLength() {
         return maxContentLength;
     }
 
-    public BodyGenerator getBodyGenerator()
-    {
+    public BodyGenerator getBodyGenerator() {
         return bodyGenerator;
     }
 
-    public Optional<SpanBuilder> getSpanBuilder()
-    {
+    public Optional<SpanBuilder> getSpanBuilder() {
         return spanBuilder;
     }
 
-    public boolean isFollowRedirects()
-    {
+    public boolean isFollowRedirects() {
         return followRedirects;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return toStringHelper(this)
                 .add("version", httpVersion.map(HttpVersion::name).orElse("unspecified"))
                 .add("uri", uri)
@@ -162,26 +144,24 @@ public final class Request
     }
 
     @Override
-    public boolean equals(Object o)
-    {
+    public boolean equals(Object o) {
         if (!(o instanceof Request r)) {
             return false;
         }
-        return Objects.equals(httpVersion, r.httpVersion) &&
-                Objects.equals(uri, r.uri) &&
-                Objects.equals(method, r.method) &&
-                Objects.equals(headers, r.headers) &&
-                Objects.equals(requestTimeout, r.requestTimeout) &&
-                Objects.equals(idleTimeout, r.idleTimeout) &&
-                Objects.equals(maxContentLength, r.maxContentLength) &&
-                Objects.equals(bodyGenerator, r.bodyGenerator) &&
-                Objects.equals(spanBuilder, r.spanBuilder) &&
-                Objects.equals(followRedirects, r.followRedirects);
+        return Objects.equals(httpVersion, r.httpVersion)
+                && Objects.equals(uri, r.uri)
+                && Objects.equals(method, r.method)
+                && Objects.equals(headers, r.headers)
+                && Objects.equals(requestTimeout, r.requestTimeout)
+                && Objects.equals(idleTimeout, r.idleTimeout)
+                && Objects.equals(maxContentLength, r.maxContentLength)
+                && Objects.equals(bodyGenerator, r.bodyGenerator)
+                && Objects.equals(spanBuilder, r.spanBuilder)
+                && Objects.equals(followRedirects, r.followRedirects);
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return Objects.hash(
                 httpVersion,
                 uri,
@@ -195,40 +175,32 @@ public final class Request
                 followRedirects);
     }
 
-    public static final class Builder
-    {
-        public static Builder prepareHead()
-        {
+    public static final class Builder {
+        public static Builder prepareHead() {
             return new Builder().setMethod("HEAD");
         }
 
-        public static Builder prepareGet()
-        {
+        public static Builder prepareGet() {
             return new Builder().setMethod("GET");
         }
 
-        public static Builder preparePost()
-        {
+        public static Builder preparePost() {
             return new Builder().setMethod("POST");
         }
 
-        public static Builder preparePut()
-        {
+        public static Builder preparePut() {
             return new Builder().setMethod("PUT");
         }
 
-        public static Builder prepareDelete()
-        {
+        public static Builder prepareDelete() {
             return new Builder().setMethod("DELETE");
         }
 
-        public static Builder preparePatch()
-        {
+        public static Builder preparePatch() {
             return new Builder().setMethod("PATCH");
         }
 
-        public static Builder fromRequest(Request request)
-        {
+        public static Builder fromRequest(Request request) {
             Builder builder = new Builder()
                     .setUri(request.getUri())
                     .setMethod(request.getMethod())
@@ -257,81 +229,68 @@ public final class Request
         private Optional<Duration> idleTimeout = Optional.empty();
         private Optional<DataSize> maxContentLength = Optional.empty();
 
-        public Builder setUri(URI uri)
-        {
+        public Builder setUri(URI uri) {
             this.uri = validateUri(uri);
             return this;
         }
 
-        public Builder setMethod(String method)
-        {
+        public Builder setMethod(String method) {
             this.method = method;
             return this;
         }
 
-        public Builder setHeader(String name, String value)
-        {
+        public Builder setHeader(String name, String value) {
             this.headers.removeAll(name);
             this.headers.put(name, value);
             return this;
         }
 
-        public Builder addHeader(String name, String value)
-        {
+        public Builder addHeader(String name, String value) {
             this.headers.put(name, value);
             return this;
         }
 
-        public Builder addHeaders(Multimap<String, String> headers)
-        {
+        public Builder addHeaders(Multimap<String, String> headers) {
             this.headers.putAll(headers);
             return this;
         }
 
-        public Builder setBodyGenerator(BodyGenerator bodyGenerator)
-        {
+        public Builder setBodyGenerator(BodyGenerator bodyGenerator) {
             this.bodyGenerator = bodyGenerator;
             return this;
         }
 
-        public Builder setSpanBuilder(SpanBuilder spanBuilder)
-        {
+        public Builder setSpanBuilder(SpanBuilder spanBuilder) {
             this.spanBuilder = spanBuilder;
             return this;
         }
 
-        public Builder setFollowRedirects(boolean followRedirects)
-        {
+        public Builder setFollowRedirects(boolean followRedirects) {
             this.followRedirects = followRedirects;
             return this;
         }
 
-        public Builder setVersion(HttpVersion version)
-        {
+        public Builder setVersion(HttpVersion version) {
             this.version = Optional.ofNullable(version);
             return this;
         }
 
-        public Builder setRequestTimeout(Duration timeout)
-        {
+        public Builder setRequestTimeout(Duration timeout) {
             this.requestTimeout = Optional.ofNullable(timeout);
             return this;
         }
 
-        public Builder setIdleTimeout(Duration timeout)
-        {
+        public Builder setIdleTimeout(Duration timeout) {
             this.idleTimeout = Optional.ofNullable(timeout);
             return this;
         }
 
-        public Builder setMaxContentLength(DataSize maxContentLength)
-        {
+        public Builder setMaxContentLength(DataSize maxContentLength) {
             this.maxContentLength = Optional.ofNullable(maxContentLength);
             return this;
         }
 
-        public Request build()
-        {
+        public Request build() {
             return new Request(
                     version,
                     uri,
@@ -346,8 +305,7 @@ public final class Request
         }
     }
 
-    private static URI validateUri(URI uri)
-    {
+    private static URI validateUri(URI uri) {
         checkArgument(uri.getPort() != 0, "Cannot make requests to HTTP port 0");
         return uri;
     }

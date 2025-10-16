@@ -17,8 +17,7 @@ package io.airlift.bootstrap;
 
 import jakarta.annotation.PostConstruct;
 
-public interface BaseTwoWithFooMethod
-{
+public interface BaseTwoWithFooMethod {
     @PostConstruct
     void foo();
 }

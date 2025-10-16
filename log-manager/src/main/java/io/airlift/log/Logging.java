@@ -15,6 +15,15 @@
  */
 package io.airlift.log;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.util.concurrent.Futures.addCallback;
+import static com.google.common.util.concurrent.Futures.transform;
+import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
+import static io.airlift.configuration.ConfigurationLoader.loadPropertiesFrom;
+import static io.airlift.configuration.ConfigurationUtils.replaceEnvironmentVariables;
+import static io.airlift.log.Format.TEXT;
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.base.VerifyException;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedMap;
@@ -24,9 +33,6 @@ import com.google.common.util.concurrent.SettableFuture;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import io.airlift.log.RollingFileMessageOutput.CompressionType;
 import io.airlift.units.DataSize;
-import org.weakref.jmx.MBeanExport;
-import org.weakref.jmx.MBeanExporter;
-
 import java.io.FileDescriptor;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -41,15 +47,8 @@ import java.util.Map;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
 import java.util.logging.LogManager;
-
-import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.common.util.concurrent.Futures.addCallback;
-import static com.google.common.util.concurrent.Futures.transform;
-import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
-import static io.airlift.configuration.ConfigurationLoader.loadPropertiesFrom;
-import static io.airlift.configuration.ConfigurationUtils.replaceEnvironmentVariables;
-import static io.airlift.log.Format.TEXT;
-import static java.util.Objects.requireNonNull;
+import org.weakref.jmx.MBeanExport;
+import org.weakref.jmx.MBeanExporter;
 
 /**
  * Initializes the logging subsystem.
@@ -58,8 +57,7 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * System.out and System.err are assigned to loggers named "stdout" and "stderr", respectively.
  */
-public class Logging
-{
+public class Logging {
     private static final Logger log = Logger.get(Logging.class);
     private static final String ROOT_LOGGER_NAME = "";
     private static final java.util.logging.Logger ROOT = java.util.logging.Logger.getLogger("");
@@ -88,8 +86,7 @@ public class Logging
      *
      * @return the logging system singleton
      */
-    public static synchronized Logging initialize()
-    {
+    public static synchronized Logging initialize() {
         if (instance == null) {
             instance = new Logging();
         }
@@ -97,8 +94,7 @@ public class Logging
         return instance;
     }
 
-    private Logging()
-    {
+    private Logging() {
         ROOT.setLevel(Level.INFO.toJulLevel());
         for (Handler handler : ROOT.getHandlers()) {
             ROOT.removeHandler(handler);
@@ -110,67 +106,63 @@ public class Logging
         redirectStdStreams();
     }
 
-    public void exportMBeans(MBeanExporter exporter)
-    {
+    public void exportMBeans(MBeanExporter exporter) {
         // Logging can be initialized before MBean export, so the export process must be lazy
         mBeanExporterAvailableFuture.set(exporter);
     }
 
-    public void unexportMBeans()
-    {
+    public void unexportMBeans() {
         addCallback(
                 mBeanExportsFuture,
-                new FutureCallback<>()
-                {
+                new FutureCallback<>() {
                     @Override
-                    public void onSuccess(List<MBeanExport> exports)
-                    {
+                    public void onSuccess(List<MBeanExport> exports) {
                         exports.forEach(MBeanExport::unexport);
                     }
 
                     @Override
-                    public void onFailure(Throwable t)
-                    {
+                    public void onFailure(Throwable t) {
                         throw new VerifyException("Unexpected code path! Should not fail here", t);
                     }
                 },
                 directExecutor());
     }
 
-    private static void resetStdStreams()
-    {
+    private static void resetStdStreams() {
         System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out), true));
         System.setErr(new PrintStream(new FileOutputStream(FileDescriptor.err), true));
     }
 
-    private static void redirectStdStreams()
-    {
+    private static void redirectStdStreams() {
         System.setOut(new PrintStream(new LoggingOutputStream(Logger.get("stdout")), true));
         System.setErr(new PrintStream(new LoggingOutputStream(Logger.get("stderr")), true));
     }
 
-    private synchronized void enableConsole()
-    {
+    private synchronized void enableConsole() {
         enableConsole(TEXT.createFormatter(Map.of(), true));
     }
 
-    private synchronized void enableConsole(Formatter formatter)
-    {
+    private synchronized void enableConsole(Formatter formatter) {
         consoleHandler = new OutputStreamHandler(System.err, formatter);
         ROOT.addHandler(consoleHandler);
     }
 
-    public synchronized void disableConsole()
-    {
+    public synchronized void disableConsole() {
         log.info("Disabling stderr output");
         ROOT.removeHandler(consoleHandler);
         consoleHandler = null;
     }
 
-    private void logToFile(String logPath, DataSize maxFileSize, DataSize maxTotalSize, CompressionType compressionType, Formatter formatter, List<LogMBeanExport> mBeanExportCollector)
-    {
+    private void logToFile(
+            String logPath,
+            DataSize maxFileSize,
+            DataSize maxTotalSize,
+            CompressionType compressionType,
+            Formatter formatter,
+            List<LogMBeanExport> mBeanExportCollector) {
         log.info("Logging to %s", logPath);
-        RollingFileMessageOutput output = new RollingFileMessageOutput(logPath, maxFileSize, maxTotalSize, compressionType);
+        RollingFileMessageOutput output =
+                new RollingFileMessageOutput(logPath, maxFileSize, maxTotalSize, compressionType);
         BufferedHandler handler = new BufferedHandler(output, formatter, new BufferedHandlerErrorManager(stdErr));
         handler.initialize();
         mBeanExportCollector.add(new LogMBeanExport(handler, BufferedHandler.class, "RollingFileMessageOutput"));
@@ -178,10 +170,10 @@ public class Logging
         ROOT.addHandler(handler);
     }
 
-    private void logToSocket(String logPath, Formatter formatter, List<LogMBeanExport> mBeanExportCollector)
-    {
+    private void logToSocket(String logPath, Formatter formatter, List<LogMBeanExport> mBeanExportCollector) {
         if (!logPath.startsWith("tcp://") || logPath.lastIndexOf("/") > 6) {
-            throw new IllegalArgumentException("LogPath for sockets must begin with tcp:// and not contain any path component.");
+            throw new IllegalArgumentException(
+                    "LogPath for sockets must begin with tcp:// and not contain any path component.");
         }
         HostAndPort hostAndPort = HostAndPort.fromString(logPath.replace("tcp://", ""));
         SocketMessageOutput output = new SocketMessageOutput(hostAndPort);
@@ -192,30 +184,24 @@ public class Logging
         ROOT.addHandler(handler);
     }
 
-    public Level getRootLevel()
-    {
+    public Level getRootLevel() {
         return getLevel(ROOT_LOGGER_NAME);
     }
 
-    public void setRootLevel(Level newLevel)
-    {
+    public void setRootLevel(Level newLevel) {
         setLevel(ROOT_LOGGER_NAME, newLevel);
     }
 
-    public void setLevels(String file)
-            throws IOException
-    {
-        loadPropertiesFrom(file).forEach((loggerName, value) ->
-                setLevel(loggerName, Level.valueOf(value.toUpperCase(Locale.US))));
+    public void setLevels(String file) throws IOException {
+        loadPropertiesFrom(file)
+                .forEach((loggerName, value) -> setLevel(loggerName, Level.valueOf(value.toUpperCase(Locale.US))));
     }
 
-    public Level getLevel(String loggerName)
-    {
+    public Level getLevel(String loggerName) {
         return getEffectiveLevel(java.util.logging.Logger.getLogger(loggerName));
     }
 
-    private static Level getEffectiveLevel(java.util.logging.Logger logger)
-    {
+    private static Level getEffectiveLevel(java.util.logging.Logger logger) {
         java.util.logging.Level level = logger.getLevel();
         if (level == null) {
             java.util.logging.Logger parent = logger.getParent();
@@ -229,25 +215,22 @@ public class Logging
         return Level.fromJulLevel(level);
     }
 
-    public synchronized void clearLevel(String loggerName)
-    {
+    public synchronized void clearLevel(String loggerName) {
         java.util.logging.Logger logger = loggers.remove(loggerName);
         if (logger != null) {
             logger.setLevel(null);
         }
     }
 
-    public synchronized void setLevel(String loggerName, Level level)
-    {
-        loggers.computeIfAbsent(loggerName, java.util.logging.Logger::getLogger)
-                .setLevel(level.toJulLevel());
+    public synchronized void setLevel(String loggerName, Level level) {
+        loggers.computeIfAbsent(loggerName, java.util.logging.Logger::getLogger).setLevel(level.toJulLevel());
     }
 
-    public Map<String, Level> getAllLevels()
-    {
+    public Map<String, Level> getAllLevels() {
         ImmutableSortedMap.Builder<String, Level> levels = ImmutableSortedMap.naturalOrder();
         for (String loggerName : Collections.list(LogManager.getLogManager().getLoggerNames())) {
-            java.util.logging.Level level = java.util.logging.Logger.getLogger(loggerName).getLevel();
+            java.util.logging.Level level =
+                    java.util.logging.Logger.getLogger(loggerName).getLevel();
             if (level != null) {
                 levels.put(loggerName, Level.fromJulLevel(level));
             }
@@ -255,8 +238,7 @@ public class Logging
         return levels.build();
     }
 
-    public synchronized void configure(LoggingConfiguration config)
-    {
+    public synchronized void configure(LoggingConfiguration config) {
         if (configured) {
             log.warn("Logging already configured; ignoring new configuration.");
             return;
@@ -269,17 +251,18 @@ public class Logging
         if (config.getLogAnnotationFile() != null) {
             try {
                 logAnnotations = replaceEnvironmentVariables(loadPropertiesFrom(config.getLogAnnotationFile()));
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
         }
 
         if (config.getLogPath() != null) {
             if (config.getLogPath().startsWith("tcp://")) {
-                logToSocket(config.getLogPath(), config.getFormat().createFormatter(logAnnotations, false), mBeanExportCollector);
-            }
-            else {
+                logToSocket(
+                        config.getLogPath(),
+                        config.getFormat().createFormatter(logAnnotations, false),
+                        mBeanExportCollector);
+            } else {
                 logToFile(
                         config.getLogPath(),
                         config.getMaxSize(),
@@ -292,8 +275,7 @@ public class Logging
 
         if (!config.isConsoleEnabled()) {
             disableConsole();
-        }
-        else {
+        } else {
             // reinitialize console handler with provided configs and redirect standard streams to a reconfigured logger
             resetStdStreams();
             disableConsole();
@@ -304,8 +286,7 @@ public class Logging
         if (config.getLevelsFile() != null) {
             try {
                 setLevels(config.getLevelsFile());
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
         }
@@ -319,10 +300,8 @@ public class Logging
                 directExecutor()));
     }
 
-    private record LogMBeanExport(Object object, Class<?> type, String name)
-    {
-        private LogMBeanExport
-        {
+    private record LogMBeanExport(Object object, Class<?> type, String name) {
+        private LogMBeanExport {
             requireNonNull(object, "object is null");
             requireNonNull(type, "type is null");
             requireNonNull(name, "name is null");

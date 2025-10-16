@@ -17,26 +17,21 @@ package io.airlift.http.client;
 
 import com.google.common.collect.Multiset;
 import com.google.inject.Inject;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
-public class TestingStatusListener
-        implements HttpStatusListener
-{
+public class TestingStatusListener implements HttpStatusListener {
     public static final int EXCEPTION_STATUS = 654;
 
     private final Multiset<Integer> statusCounter;
 
     @Inject
-    public TestingStatusListener(Multiset<Integer> statusCounter)
-    {
+    public TestingStatusListener(Multiset<Integer> statusCounter) {
         this.statusCounter = statusCounter;
     }
 
     @Override
-    public void statusReceived(int statusCode)
-    {
+    public void statusReceived(int statusCode) {
         statusCounter.add(statusCode);
         if (statusCode == EXCEPTION_STATUS) {
             throw new UncheckedIOException(new IOException("Fake exception"));

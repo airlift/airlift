@@ -1,17 +1,14 @@
 package io.airlift.stats;
 
-import io.airlift.testing.TestingTicker;
-import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.TimeUnit;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TestDecayCounter
-{
+import io.airlift.testing.TestingTicker;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.Test;
+
+public class TestDecayCounter {
     @Test
-    public void testCountDecays()
-    {
+    public void testCountDecays() {
         TestingTicker ticker = new TestingTicker();
 
         DecayCounter counter = new DecayCounter(ExponentialDecay.oneMinute(), ticker);
@@ -22,8 +19,7 @@ public class TestDecayCounter
     }
 
     @Test
-    public void testAddAfterRescale()
-    {
+    public void testAddAfterRescale() {
         TestingTicker ticker = new TestingTicker();
 
         DecayCounter counter = new DecayCounter(ExponentialDecay.oneMinute(), ticker);
@@ -36,8 +32,7 @@ public class TestDecayCounter
     }
 
     @Test
-    public void testDuplicate()
-    {
+    public void testDuplicate() {
         TestingTicker ticker = new TestingTicker();
 
         DecayCounter counter = new DecayCounter(ExponentialDecay.oneMinute(), ticker);

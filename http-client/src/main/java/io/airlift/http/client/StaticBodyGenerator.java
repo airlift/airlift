@@ -17,29 +17,22 @@ package io.airlift.http.client;
 
 import java.nio.charset.Charset;
 
-public sealed class StaticBodyGenerator
-        implements BodyGenerator
-        permits JsonBodyGenerator
-{
-    public static StaticBodyGenerator createStaticBodyGenerator(String body, Charset charset)
-    {
+public sealed class StaticBodyGenerator implements BodyGenerator permits JsonBodyGenerator {
+    public static StaticBodyGenerator createStaticBodyGenerator(String body, Charset charset) {
         return new StaticBodyGenerator(body.getBytes(charset));
     }
 
-    public static StaticBodyGenerator createStaticBodyGenerator(byte[] body)
-    {
+    public static StaticBodyGenerator createStaticBodyGenerator(byte[] body) {
         return new StaticBodyGenerator(body);
     }
 
     private final byte[] body;
 
-    protected StaticBodyGenerator(byte[] body)
-    {
+    protected StaticBodyGenerator(byte[] body) {
         this.body = body;
     }
 
-    public byte[] getBody()
-    {
+    public byte[] getBody() {
         return body;
     }
 }

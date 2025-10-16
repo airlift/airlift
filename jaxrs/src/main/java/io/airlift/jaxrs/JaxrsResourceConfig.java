@@ -16,34 +16,28 @@
 package io.airlift.jaxrs;
 
 import com.google.common.collect.ImmutableMap;
+import java.util.Map;
+import java.util.Set;
 import org.glassfish.jersey.internal.inject.AbstractBinder;
 import org.glassfish.jersey.internal.inject.Binder;
 import org.glassfish.jersey.internal.inject.Providers;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.model.Resource;
 
-import java.util.Map;
-import java.util.Set;
-
-public class JaxrsResourceConfig
-        extends ResourceConfig
-{
-    public JaxrsResourceConfig(Set<Object> singletons)
-    {
+public class JaxrsResourceConfig extends ResourceConfig {
+    public JaxrsResourceConfig(Set<Object> singletons) {
         ImmutableMap.Builder<Class<?>, Object> builder = ImmutableMap.builder();
         for (Object singleton : singletons) {
             Class<?> clazz = singleton.getClass();
             if (singleton instanceof Class<?> clazzInstance) {
                 register(clazzInstance);
-            }
-            else if (Providers.isProvider(clazz) || Binder.class.isAssignableFrom(clazz)) {
-                // If Jersey supports this component's class (including Binders), register directly, so we can get @Context injections
+            } else if (Providers.isProvider(clazz) || Binder.class.isAssignableFrom(clazz)) {
+                // If Jersey supports this component's class (including Binders), register directly, so we can get
+                // @Context injections
                 register(singleton);
-            }
-            else if (singleton instanceof Resource resource) {
+            } else if (singleton instanceof Resource resource) {
                 registerResources(resource);
-            }
-            else {
+            } else {
                 builder.put(clazz, singleton);
             }
         }
@@ -54,19 +48,15 @@ public class JaxrsResourceConfig
     }
 
     // Allows HK2 to retrieve instances of registered singleton resources that we got from Guice
-    private static class SingletonsBinderBridge
-            extends AbstractBinder
-    {
+    private static class SingletonsBinderBridge extends AbstractBinder {
         private final Map<Class<?>, Object> singletons;
 
-        public SingletonsBinderBridge(Map<Class<?>, Object> singletons)
-        {
+        public SingletonsBinderBridge(Map<Class<?>, Object> singletons) {
             this.singletons = ImmutableMap.copyOf(singletons);
         }
 
         @Override
-        public void configure()
-        {
+        public void configure() {
             for (Map.Entry<Class<?>, Object> singleton : singletons.entrySet()) {
                 bind(singleton.getValue()).to(singleton.getKey());
             }

@@ -13,43 +13,6 @@
  */
 package io.airlift.http.client.jetty;
 
-import com.google.common.io.Files;
-import io.airlift.http.client.jetty.HttpClientLogger.RequestInfo;
-import io.airlift.http.client.jetty.HttpClientLogger.ResponseInfo;
-import io.airlift.units.DataSize;
-import io.airlift.units.Duration;
-import jakarta.annotation.Nullable;
-import org.eclipse.jetty.client.ContentResponse;
-import org.eclipse.jetty.client.Request;
-import org.eclipse.jetty.client.Response;
-import org.eclipse.jetty.http.HttpCookie;
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.util.Fields;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.parallel.Execution;
-
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-import java.nio.file.Path;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-
 import static io.airlift.http.client.jetty.HttpRequestEvent.NO_RESPONSE;
 import static io.airlift.http.client.jetty.HttpRequestEvent.getFailureReason;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
@@ -66,34 +29,63 @@ import static org.eclipse.jetty.http.HttpVersion.HTTP_2;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
 
+import com.google.common.io.Files;
+import io.airlift.http.client.jetty.HttpClientLogger.RequestInfo;
+import io.airlift.http.client.jetty.HttpClientLogger.ResponseInfo;
+import io.airlift.units.DataSize;
+import io.airlift.units.Duration;
+import jakarta.annotation.Nullable;
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Path;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+import org.eclipse.jetty.client.ContentResponse;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.util.Fields;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.parallel.Execution;
+
 @TestInstance(PER_CLASS)
 @Execution(SAME_THREAD)
-public class TestHttpClientLogger
-{
+public class TestHttpClientLogger {
     private static final DateTimeFormatter ISO_FORMATTER = ISO_OFFSET_DATE_TIME.withZone(ZoneId.systemDefault());
 
     private File file;
 
     @BeforeEach
-    public void setup()
-            throws IOException
-    {
+    public void setup() throws IOException {
         file = File.createTempFile(getClass().getName(), ".log");
     }
 
     @AfterEach
-    public void tearDown()
-            throws IOException
-    {
+    public void tearDown() throws IOException {
         if (file.exists() && !file.delete()) {
             throw new IOException("Error deleting " + file.getAbsolutePath());
         }
     }
 
     @Test
-    public void testClientLog()
-            throws Exception
-    {
+    public void testClientLog() throws Exception {
         String method = "GET";
         URI uri = new URI("http://www.google.com");
         int status = 200;
@@ -119,7 +111,8 @@ public class TestHttpClientLogger
         long responseComplete = requestCreate + MILLISECONDS.toNanos(7);
         long requestTotalTime = queueTime + (responseComplete - requestBegin);
         RequestInfo requestInfo = RequestInfo.from(request, requestTimestamp, requestCreate, requestBegin, requestEnd);
-        ResponseInfo responseInfo = ResponseInfo.from(Optional.of(response), responseSize, responseBegin, responseComplete);
+        ResponseInfo responseInfo =
+                ResponseInfo.from(Optional.of(response), responseSize, responseBegin, responseComplete);
         logger.log(requestInfo, responseInfo);
         logger.close();
 
@@ -140,9 +133,7 @@ public class TestHttpClientLogger
     }
 
     @Test
-    public void testClientLogNoResponse()
-            throws Exception
-    {
+    public void testClientLogNoResponse() throws Exception {
         String method = "GET";
         URI uri = new URI("http://www.google.com");
         long requestTimestamp = System.currentTimeMillis();
@@ -178,9 +169,7 @@ public class TestHttpClientLogger
     }
 
     @Test
-    public void testClientLogPeriodicFlush()
-            throws Exception
-    {
+    public void testClientLogPeriodicFlush() throws Exception {
         long now = System.currentTimeMillis();
 
         Request request = new TestRequest(HTTP_1_1, "GET", new URI("http://www.google.com"), HttpFields.from());
@@ -217,17 +206,15 @@ public class TestHttpClientLogger
     }
 
     @SuppressWarnings("deprecation")
-    private static class TestRequest
-            implements Request
-    {
+    private static class TestRequest implements Request {
         private final HttpVersion protocolVersion;
         private final String method;
         private final URI uri;
+
         @Nullable
         private final HttpFields headers;
 
-        TestRequest(HttpVersion protocolVersion, String method, URI uri, HttpFields headers)
-        {
+        TestRequest(HttpVersion protocolVersion, String method, URI uri, HttpFields headers) {
             this.protocolVersion = requireNonNull(protocolVersion, "protocolVersion is null");
             this.method = requireNonNull(method, "method is null");
             this.uri = requireNonNull(uri, "uri is null");
@@ -235,409 +222,340 @@ public class TestHttpClientLogger
         }
 
         @Override
-        public String getScheme()
-        {
+        public String getScheme() {
             return null;
         }
 
         @Override
-        public Request scheme(String scheme)
-        {
+        public Request scheme(String scheme) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public String getHost()
-        {
+        public String getHost() {
             return null;
         }
 
         @Override
-        public int getPort()
-        {
+        public int getPort() {
             return 0;
         }
 
         @Override
-        public String getMethod()
-        {
+        public String getMethod() {
             return method;
         }
 
         @Override
-        public Request method(HttpMethod method)
-        {
+        public Request method(HttpMethod method) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Request method(String method)
-        {
+        public Request method(String method) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public String getPath()
-        {
+        public String getPath() {
             return null;
         }
 
         @Override
-        public Request path(String path)
-        {
+        public Request path(String path) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public String getQuery()
-        {
+        public String getQuery() {
             return null;
         }
 
         @Override
-        public URI getURI()
-        {
+        public URI getURI() {
             return uri;
         }
 
         @Override
-        public HttpVersion getVersion()
-        {
+        public HttpVersion getVersion() {
             return protocolVersion;
         }
 
         @Override
-        public Request version(HttpVersion version)
-        {
+        public Request version(HttpVersion version) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Fields getParams()
-        {
+        public Fields getParams() {
             return null;
         }
 
         @Override
-        public Request param(String name, String value)
-        {
+        public Request param(String name, String value) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public HttpFields getHeaders()
-        {
+        public HttpFields getHeaders() {
             return headers;
         }
 
         @Override
-        public Request headers(Consumer<HttpFields.Mutable> consumer)
-        {
+        public Request headers(Consumer<HttpFields.Mutable> consumer) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Supplier<HttpFields> getTrailersSupplier()
-        {
+        public Supplier<HttpFields> getTrailersSupplier() {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Request trailersSupplier(Supplier<HttpFields> supplier)
-        {
+        public Request trailersSupplier(Supplier<HttpFields> supplier) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public List<HttpCookie> getCookies()
-        {
+        public List<HttpCookie> getCookies() {
             return null;
         }
 
         @Override
-        public Request cookie(HttpCookie httpCookie)
-        {
+        public Request cookie(HttpCookie httpCookie) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Request tag(Object tag)
-        {
+        public Request tag(Object tag) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Object getTag()
-        {
+        public Object getTag() {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Request attribute(String name, Object value)
-        {
+        public Request attribute(String name, Object value) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Map<String, Object> getAttributes()
-        {
+        public Map<String, Object> getAttributes() {
             return null;
         }
 
         @Override
-        public Content getBody()
-        {
+        public Content getBody() {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Request body(Content content)
-        {
+        public Request body(Content content) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Request file(Path file)
-        {
+        public Request file(Path file) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Request file(Path file, String contentType)
-        {
+        public Request file(Path file, String contentType) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public String getAgent()
-        {
+        public String getAgent() {
             return null;
         }
 
         @Override
-        public Request agent(String agent)
-        {
+        public Request agent(String agent) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Request accept(String... accepts)
-        {
+        public Request accept(String... accepts) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public long getIdleTimeout()
-        {
+        public long getIdleTimeout() {
             return 0;
         }
 
         @Override
-        public Request idleTimeout(long timeout, TimeUnit unit)
-        {
+        public Request idleTimeout(long timeout, TimeUnit unit) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public long getTimeout()
-        {
+        public long getTimeout() {
             return 0;
         }
 
         @Override
-        public Request timeout(long timeout, TimeUnit unit)
-        {
+        public Request timeout(long timeout, TimeUnit unit) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public boolean isFollowRedirects()
-        {
+        public boolean isFollowRedirects() {
             return false;
         }
 
         @Override
-        public Request followRedirects(boolean follow)
-        {
+        public Request followRedirects(boolean follow) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Request onRequestQueued(QueuedListener listener)
-        {
+        public Request onRequestQueued(QueuedListener listener) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Request onRequestBegin(BeginListener listener)
-        {
+        public Request onRequestBegin(BeginListener listener) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Request onRequestHeaders(HeadersListener listener)
-        {
+        public Request onRequestHeaders(HeadersListener listener) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Request onRequestCommit(CommitListener listener)
-        {
+        public Request onRequestCommit(CommitListener listener) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Request onRequestContent(ContentListener listener)
-        {
+        public Request onRequestContent(ContentListener listener) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Request onRequestSuccess(SuccessListener listener)
-        {
+        public Request onRequestSuccess(SuccessListener listener) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Request onRequestFailure(FailureListener listener)
-        {
+        public Request onRequestFailure(FailureListener listener) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Request onResponseBegin(Response.BeginListener listener)
-        {
+        public Request onResponseBegin(Response.BeginListener listener) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Request onResponseHeader(Response.HeaderListener listener)
-        {
+        public Request onResponseHeader(Response.HeaderListener listener) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Request onResponseHeaders(Response.HeadersListener listener)
-        {
+        public Request onResponseHeaders(Response.HeadersListener listener) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Request onResponseContent(Response.ContentListener listener)
-        {
+        public Request onResponseContent(Response.ContentListener listener) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Request onResponseContentAsync(Response.AsyncContentListener listener)
-        {
+        public Request onResponseContentAsync(Response.AsyncContentListener listener) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Request onResponseContentSource(Response.ContentSourceListener contentSourceListener)
-        {
+        public Request onResponseContentSource(Response.ContentSourceListener contentSourceListener) {
             return null;
         }
 
         @Override
-        public Request onResponseSuccess(Response.SuccessListener listener)
-        {
+        public Request onResponseSuccess(Response.SuccessListener listener) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Request onResponseFailure(Response.FailureListener listener)
-        {
+        public Request onResponseFailure(Response.FailureListener listener) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Request onPush(BiFunction<Request, Request, Response.CompleteListener> biFunction)
-        {
+        public Request onPush(BiFunction<Request, Request, Response.CompleteListener> biFunction) {
             return null;
         }
 
         @Override
-        public Request onComplete(Response.CompleteListener listener)
-        {
+        public Request onComplete(Response.CompleteListener listener) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public ContentResponse send()
-        {
+        public ContentResponse send() {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public void send(Response.CompleteListener listener)
-        {
+        public void send(Response.CompleteListener listener) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public CompletableFuture<Boolean> abort(Throwable cause)
-        {
+        public CompletableFuture<Boolean> abort(Throwable cause) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Throwable getAbortCause()
-        {
+        public Throwable getAbortCause() {
             return null;
         }
     }
 
-    private class TestResponse
-            implements Response
-    {
+    private class TestResponse implements Response {
         private final int status;
 
-        TestResponse(int status)
-        {
+        TestResponse(int status) {
             this.status = status;
         }
 
         @Override
-        public Request getRequest()
-        {
+        public Request getRequest() {
             return null;
         }
 
         @Override
-        public HttpVersion getVersion()
-        {
+        public HttpVersion getVersion() {
             return null;
         }
 
         @Override
-        public int getStatus()
-        {
+        public int getStatus() {
             return status;
         }
 
         @Override
-        public String getReason()
-        {
+        public String getReason() {
             return null;
         }
 
         @Override
-        public HttpFields getHeaders()
-        {
+        public HttpFields getHeaders() {
             return null;
         }
 
         @Override
-        public HttpFields getTrailers()
-        {
+        public HttpFields getTrailers() {
             return null;
         }
 
         @Override
-        public CompletableFuture<Boolean> abort(Throwable cause)
-        {
+        public CompletableFuture<Boolean> abort(Throwable cause) {
             throw new UnsupportedOperationException();
         }
     }

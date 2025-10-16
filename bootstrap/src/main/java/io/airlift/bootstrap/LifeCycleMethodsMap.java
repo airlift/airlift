@@ -18,12 +18,10 @@ package io.airlift.bootstrap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-class LifeCycleMethodsMap
-{
+class LifeCycleMethodsMap {
     private final Map<Class<?>, LifeCycleMethods> map = new ConcurrentHashMap<>();
 
-    public LifeCycleMethods get(Class<?> clazz)
-    {
+    public LifeCycleMethods get(Class<?> clazz) {
         return map.computeIfAbsent(clazz, LifeCycleMethods::new);
     }
 }

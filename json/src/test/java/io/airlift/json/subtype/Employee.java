@@ -15,11 +15,8 @@ package io.airlift.json.subtype;
 
 import java.util.List;
 
-public sealed interface Employee
-{
-    record Programmer(String name)
-            implements Employee {}
+public sealed interface Employee {
+    record Programmer(String name) implements Employee {}
 
-    record Manager(String name, List<Employee> reports)
-            implements Employee {}
+    record Manager(String name, List<Employee> reports) implements Employee {}
 }

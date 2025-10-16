@@ -15,8 +15,7 @@ package io.airlift.stats;
 
 import io.airlift.units.Duration;
 
-public interface GcMonitor
-{
+public interface GcMonitor {
     long getMajorGcCount();
 
     Duration getMajorGcTime();

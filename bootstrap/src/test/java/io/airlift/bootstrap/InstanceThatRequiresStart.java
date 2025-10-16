@@ -17,18 +17,15 @@ package io.airlift.bootstrap;
 
 import jakarta.annotation.PostConstruct;
 
-public class InstanceThatRequiresStart
-{
+public class InstanceThatRequiresStart {
     private boolean hasStarted;
 
     @PostConstruct
-    public void start()
-    {
+    public void start() {
         hasStarted = true;
     }
 
-    public void doSomething()
-    {
+    public void doSomething() {
         if (!hasStarted) {
             throw new IllegalStateException();
         }

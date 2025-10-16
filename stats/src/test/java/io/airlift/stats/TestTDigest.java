@@ -13,33 +13,30 @@
  */
 package io.airlift.stats;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.common.io.Resources;
-import com.google.common.primitives.Doubles;
-import io.airlift.slice.Slices;
-import org.assertj.core.data.Offset;
-import org.junit.jupiter.api.RepeatedTest;
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.IntStream;
-
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
 
-public class TestTDigest
-{
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.io.Resources;
+import com.google.common.primitives.Doubles;
+import io.airlift.slice.Slices;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.IntStream;
+import org.assertj.core.data.Offset;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
+
+public class TestTDigest {
     @Test
-    public void testEmpty()
-    {
+    public void testEmpty() {
         TDigest digest = new TDigest();
         assertThat(digest.valueAt(0.5)).isNaN();
         assertThat(digest.getMin()).isNaN();
@@ -52,8 +49,7 @@ public class TestTDigest
     }
 
     @Test
-    public void testMonotonicity()
-    {
+    public void testMonotonicity() {
         TDigest digest = new TDigest();
         for (int i = 0; i < 100000; i++) {
             digest.add(ThreadLocalRandom.current().nextDouble());
@@ -68,8 +64,7 @@ public class TestTDigest
     }
 
     @Test
-    public void testBigJump()
-    {
+    public void testBigJump() {
         TDigest digest = new TDigest(100);
         for (int i = 1; i < 20; i++) {
             digest.add(i);
@@ -80,12 +75,12 @@ public class TestTDigest
         assertThat(digest.valueAt(0.9)).isEqualTo(19.0);
         assertThat(digest.valueAt(0.949999999)).isEqualTo(19.0);
         assertThat(digest.valueAt(0.95)).isEqualTo(1_000_000.0);
-        assertThat(digest.valuesAt(0.89999999, 0.9, 0.949999999, 0.95)).isEqualTo(new double[] {18.0, 19.0, 19.0, 1_000_000.0});
+        assertThat(digest.valuesAt(0.89999999, 0.9, 0.949999999, 0.95))
+                .isEqualTo(new double[] {18.0, 19.0, 19.0, 1_000_000.0});
     }
 
     @Test
-    public void testBigJumpWithMerge()
-    {
+    public void testBigJumpWithMerge() {
         TDigest digest = new TDigest(100);
         for (int i = 1; i < 1000; i++) {
             digest.add(i);
@@ -98,8 +93,7 @@ public class TestTDigest
     }
 
     @Test
-    public void testSmallCountQuantile()
-    {
+    public void testSmallCountQuantile() {
         TDigest digest = new TDigest(200);
         addAll(digest, Lists.newArrayList(15, 20, 32, 60));
 
@@ -117,8 +111,7 @@ public class TestTDigest
     }
 
     @Test
-    public void testSingletonQuantiles()
-    {
+    public void testSingletonQuantiles() {
         double[] values = new double[20];
         TDigest digest = new TDigest(100);
         for (int i = 0; i < 20; i++) {
@@ -126,24 +119,20 @@ public class TestTDigest
             values[i] = i;
         }
 
-        List<Double> quantiles = IntStream.range(0, 1000)
-                .mapToDouble(i -> i * 1e-3)
-                .boxed()
-                .collect(toImmutableList());
+        List<Double> quantiles =
+                IntStream.range(0, 1000).mapToDouble(i -> i * 1e-3).boxed().collect(toImmutableList());
         List<Double> expectedValues = quantiles.stream()
                 .map(quantile -> values[(int) Math.floor(quantile * values.length)])
                 .collect(toImmutableList());
-        List<Double> valuesAtQuantilesSingle = quantiles.stream()
-                .map(digest::valueAt)
-                .collect(toImmutableList());
+        List<Double> valuesAtQuantilesSingle =
+                quantiles.stream().map(digest::valueAt).collect(toImmutableList());
         List<Double> valuesAtQuantilesMultiple = digest.valuesAt(quantiles);
         assertThat(expectedValues).isEqualTo(valuesAtQuantilesSingle);
         assertThat(expectedValues).isEqualTo(valuesAtQuantilesMultiple);
     }
 
     @Test
-    public void testSingleValue()
-    {
+    public void testSingleValue() {
         TDigest digest = new TDigest();
         double value = ThreadLocalRandom.current().nextDouble() * 1000;
         digest.add(value);
@@ -151,12 +140,12 @@ public class TestTDigest
         assertThat(digest.valueAt(0)).isCloseTo(value, within(0.001));
         assertThat(digest.valueAt(0.5)).isCloseTo(value, within(0.001));
         assertThat(digest.valueAt(1)).isCloseTo(value, within(0.001));
-        assertThat(digest.valuesAt(0d, 0.5d, 1d)).isEqualTo(new double[] {digest.valueAt(0), digest.valueAt(0.5), digest.valueAt(1)});
+        assertThat(digest.valuesAt(0d, 0.5d, 1d))
+                .isEqualTo(new double[] {digest.valueAt(0), digest.valueAt(0.5), digest.valueAt(1)});
     }
 
     @Test
-    public void testWeight()
-    {
+    public void testWeight() {
         TDigest digest = new TDigest();
         digest.add(1, 80);
         digest.add(2, 20);
@@ -169,8 +158,7 @@ public class TestTDigest
     }
 
     @Test
-    public void testFirstInnerAndLastCentroid()
-    {
+    public void testFirstInnerAndLastCentroid() {
         TDigest digest = new TDigest();
         digest.add(1);
         digest.add(2);
@@ -181,8 +169,7 @@ public class TestTDigest
     }
 
     @Test
-    public void testSerializationEmpty()
-    {
+    public void testSerializationEmpty() {
         TDigest digest = new TDigest();
         TDigest deserialized = TDigest.deserialize(digest.serialize());
 
@@ -195,8 +182,7 @@ public class TestTDigest
     }
 
     @Test
-    public void testSerializationSingle()
-    {
+    public void testSerializationSingle() {
         TDigest digest = new TDigest();
         digest.add(1);
 
@@ -208,8 +194,7 @@ public class TestTDigest
     }
 
     @Test
-    public void testSerializationComplex()
-    {
+    public void testSerializationComplex() {
         TDigest digest = new TDigest();
         addAll(digest, asList(0, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 5, 6, 7));
 
@@ -223,8 +208,7 @@ public class TestTDigest
     }
 
     @RepeatedTest(1000)
-    public void testSerializationRandom()
-    {
+    public void testSerializationRandom() {
         TDigest digest = new TDigest();
 
         List<Integer> values = new ArrayList<>();
@@ -244,19 +228,15 @@ public class TestTDigest
     }
 
     @Test
-    public void testAddNaN()
-    {
+    public void testAddNaN() {
         TDigest digest = new TDigest();
 
-        assertThatThrownBy(() -> digest.add(1, Double.NaN))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> digest.add(Double.NaN, 1))
-                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> digest.add(1, Double.NaN)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> digest.add(Double.NaN, 1)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
-    public void testCopy()
-    {
+    public void testCopy() {
         TDigest digest = new TDigest();
         digest.add(1);
         digest.add(2);
@@ -271,8 +251,7 @@ public class TestTDigest
     }
 
     @Test
-    public void testCopyEmpty()
-    {
+    public void testCopyEmpty() {
         TDigest digest = new TDigest();
         TDigest copy = TDigest.copyOf(digest);
         assertSimilar(copy, digest);
@@ -284,8 +263,7 @@ public class TestTDigest
     }
 
     @Test
-    public void testMerge()
-    {
+    public void testMerge() {
         TDigest first = new TDigest();
         addAll(first, Arrays.asList(1, 2, 3, 4, 5));
 
@@ -305,27 +283,28 @@ public class TestTDigest
     }
 
     @Test
-    public void testUnmergeable()
-            throws IOException
-    {
-        // Tests an edge case where centroids cannot be merged and an attempting to add another value fails because of lack of room in the buffer
+    public void testUnmergeable() throws IOException {
+        // Tests an edge case where centroids cannot be merged and an attempting to add another value fails because of
+        // lack of room in the buffer
         byte[] serialized = Resources.toByteArray(Resources.getResource("io/airlift/stats/unmergeable-tdigest"));
         TDigest digest = TDigest.deserialize(Slices.wrappedBuffer(serialized));
 
         // validate the assumption
         int centroids = digest.getCentroidCount();
         digest.forceMerge();
-        assertThat(digest.getCentroidCount()).as("Assumption that digest is not mergeable no longer holds").isEqualTo(centroids);
+        assertThat(digest.getCentroidCount())
+                .as("Assumption that digest is not mergeable no longer holds")
+                .isEqualTo(centroids);
 
         for (int i = 0; i < 1000; i++) {
             // add some values somewhere in the middle of the distribution
-            digest.add(interpolate(ThreadLocalRandom.current().nextGaussian(), -1, digest.getMin(), 1, digest.getMax()));
+            digest.add(
+                    interpolate(ThreadLocalRandom.current().nextGaussian(), -1, digest.getMin(), 1, digest.getMax()));
         }
     }
 
     @Test
-    public void testTwoValueTDigest()
-    {
+    public void testTwoValueTDigest() {
         TDigest digest = new TDigest();
         digest.add(10, 99999.999999999);
         digest.add(10, 99999.999999999);
@@ -338,8 +317,7 @@ public class TestTDigest
     }
 
     @Test
-    public void testValuesAtSimpleCases()
-    {
+    public void testValuesAtSimpleCases() {
         TDigest digest = new TDigest();
 
         // empty quantiles list
@@ -360,18 +338,20 @@ public class TestTDigest
 
         // single centroid
         digest.add(10);
-        assertThat(ImmutableList.of(10.0, 10.0, 10.0, 10.0)).isEqualTo(digest.valuesAt(ImmutableList.of(0.0, 0.5, 0.75, 1.0)));
+        assertThat(ImmutableList.of(10.0, 10.0, 10.0, 10.0))
+                .isEqualTo(digest.valuesAt(ImmutableList.of(0.0, 0.5, 0.75, 1.0)));
     }
 
     @Test
-    public void testValuesAt()
-    {
+    public void testValuesAt() {
         TDigest digest = new TDigest();
         addAll(digest, ImmutableList.of(10, 20, 30, 40));
         // quantiles at centroid borders
-        assertThat(ImmutableList.of(10.0, 20.0, 30.0, 40.0, 40.0)).isEqualTo(digest.valuesAt(ImmutableList.of(0.0, 0.25, 0.5, 0.75, 1.0)));
+        assertThat(ImmutableList.of(10.0, 20.0, 30.0, 40.0, 40.0))
+                .isEqualTo(digest.valuesAt(ImmutableList.of(0.0, 0.25, 0.5, 0.75, 1.0)));
         // quantiles inside centroids
-        assertThat(ImmutableList.of(10.0, 10.0, 20.0, 20.0, 30.0, 30.0, 40.0, 40.0)).isEqualTo(digest.valuesAt(ImmutableList.of(0.001, 0.249, 0.251, 0.499, 0.501, 0.749, 0.751, 0.999)));
+        assertThat(ImmutableList.of(10.0, 10.0, 20.0, 20.0, 30.0, 30.0, 40.0, 40.0))
+                .isEqualTo(digest.valuesAt(ImmutableList.of(0.001, 0.249, 0.251, 0.499, 0.501, 0.749, 0.751, 0.999)));
 
         digest = new TDigest();
         digest.add(10, 2);
@@ -399,25 +379,23 @@ public class TestTDigest
         digest.add(40, 2);
         digest.add(50, 2);
         // single-element vs multi-element clusters
-        assertThat(ImmutableList.of(19.5, 20.0, 20.0, 30.0, 30.0, 30.999999999999996, 44.5, 45.50000000000001)).isEqualTo(digest.valuesAt(ImmutableList.of(0.39, 0.41, 0.49, 0.51, 0.59, 0.61, 0.79, 0.81)));
+        assertThat(ImmutableList.of(19.5, 20.0, 20.0, 30.0, 30.0, 30.999999999999996, 44.5, 45.50000000000001))
+                .isEqualTo(digest.valuesAt(ImmutableList.of(0.39, 0.41, 0.49, 0.51, 0.59, 0.61, 0.79, 0.81)));
     }
 
-    private void addAll(TDigest digest, List<Integer> values)
-    {
+    private void addAll(TDigest digest, List<Integer> values) {
         for (int value : values) {
             digest.add(value);
         }
     }
 
-    private void assertSimilar(TDigest actual, TDigest expected)
-    {
+    private void assertSimilar(TDigest actual, TDigest expected) {
         assertThat(actual.getMin()).isEqualTo(expected.getMin(), Offset.offset(0.0));
         assertThat(actual.getMax()).isEqualTo(expected.getMax(), Offset.offset(0.0));
         assertThat(actual.getCount()).isEqualTo(expected.getCount(), Offset.offset(0.0));
     }
 
-    private static double interpolate(double x, double x0, double y0, double x1, double y1)
-    {
+    private static double interpolate(double x, double x0, double y0, double x1, double y1) {
         return y0 + (x - x0) / (x1 - x0) * (y1 - y0);
     }
 }

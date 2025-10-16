@@ -13,13 +13,16 @@
  */
 package io.airlift.security.jwks;
 
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
+import static java.util.Base64.getUrlDecoder;
+import static java.util.Objects.requireNonNull;
+
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import io.airlift.json.JsonCodec;
 import io.airlift.log.Logger;
-
 import java.math.BigInteger;
 import java.security.PublicKey;
 import java.security.spec.ECParameterSpec;
@@ -30,19 +33,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
-import static com.google.common.collect.ImmutableMap.toImmutableMap;
-import static java.util.Base64.getUrlDecoder;
-import static java.util.Objects.requireNonNull;
-
-public final class JwksDecoder
-{
+public final class JwksDecoder {
     private static final Logger log = Logger.get(JwksDecoder.class);
     private static final JsonCodec<JsonKeys> KEYS_CODEC = JsonCodec.jsonCodec(JsonKeys.class);
 
     private JwksDecoder() {}
 
-    public static Map<String, PublicKey> decodeKeys(String jwksJson)
-    {
+    public static Map<String, PublicKey> decodeKeys(String jwksJson) {
         JsonKeys keys = KEYS_CODEC.fromJson(jwksJson);
         return keys.getKeys().stream()
                 .map(JwksDecoder::tryDecodeJwkKey)
@@ -51,8 +48,7 @@ public final class JwksDecoder
                 .collect(toImmutableMap(JwkPublicKey::getKeyId, Function.identity()));
     }
 
-    public static Optional<? extends JwkPublicKey> tryDecodeJwkKey(JsonKey key)
-    {
+    public static Optional<? extends JwkPublicKey> tryDecodeJwkKey(JsonKey key) {
         // key id is required to index the key
         if (key.getKid().isEmpty() || key.getKid().get().isEmpty()) {
             return Optional.empty();
@@ -66,11 +62,11 @@ public final class JwksDecoder
         };
     }
 
-    public static Optional<JwkRsaPublicKey> tryDecodeRsaKey(String keyId, JsonKey key)
-    {
+    public static Optional<JwkRsaPublicKey> tryDecodeRsaKey(String keyId, JsonKey key) {
         // alg field is optional so not verified
         // use field is optional so not verified
-        Optional<BigInteger> modulus = key.getStringProperty("n").flatMap(encodedModulus -> decodeBigint(keyId, "modulus", encodedModulus));
+        Optional<BigInteger> modulus =
+                key.getStringProperty("n").flatMap(encodedModulus -> decodeBigint(keyId, "modulus", encodedModulus));
         if (modulus.isEmpty()) {
             return Optional.empty();
         }
@@ -80,8 +76,7 @@ public final class JwksDecoder
                 .map(exponent -> new JwkRsaPublicKey(keyId, exponent, modulus.get()));
     }
 
-    public static Optional<JwkEcPublicKey> tryDecodeEcKey(String keyId, JsonKey key)
-    {
+    public static Optional<JwkEcPublicKey> tryDecodeEcKey(String keyId, JsonKey key) {
         // alg field is optional so not verified
         // use field is optional so not verified
         Optional<String> curveName = key.getStringProperty("crv");
@@ -103,60 +98,48 @@ public final class JwksDecoder
         return Optional.of(new JwkEcPublicKey(keyId, curve.get(), w));
     }
 
-    private static Optional<BigInteger> decodeBigint(String keyId, String fieldName, String encodedNumber)
-    {
+    private static Optional<BigInteger> decodeBigint(String keyId, String fieldName, String encodedNumber) {
         try {
             return Optional.of(new BigInteger(1, getUrlDecoder().decode(encodedNumber)));
-        }
-        catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             log.error(e, "JWK %s %s is not a valid number", keyId, fieldName);
             return Optional.empty();
         }
     }
 
-    public static class JsonKeys
-    {
+    public static class JsonKeys {
         private final List<JsonKey> keys;
 
         @JsonCreator
-        public JsonKeys(@JsonProperty("keys") List<JsonKey> keys)
-        {
+        public JsonKeys(@JsonProperty("keys") List<JsonKey> keys) {
             this.keys = ImmutableList.copyOf(requireNonNull(keys, "keys is null"));
         }
 
-        public List<JsonKey> getKeys()
-        {
+        public List<JsonKey> getKeys() {
             return keys;
         }
     }
 
-    public static class JsonKey
-    {
+    public static class JsonKey {
         private final String kty;
         private final Optional<String> kid;
         private final Map<String, Object> other = new HashMap<>();
 
         @JsonCreator
-        public JsonKey(
-                @JsonProperty("kty") String kty,
-                @JsonProperty("kid") Optional<String> kid)
-        {
+        public JsonKey(@JsonProperty("kty") String kty, @JsonProperty("kid") Optional<String> kid) {
             this.kty = requireNonNull(kty, "kty is null");
             this.kid = requireNonNull(kid, "kid is null");
         }
 
-        public String getKty()
-        {
+        public String getKty() {
             return kty;
         }
 
-        public Optional<String> getKid()
-        {
+        public Optional<String> getKid() {
             return kid;
         }
 
-        public Optional<String> getStringProperty(String name)
-        {
+        public Optional<String> getStringProperty(String name) {
             Object value = other.get(name);
             if (value instanceof String && !((String) value).isEmpty()) {
                 return Optional.of((String) value);
@@ -165,8 +148,7 @@ public final class JwksDecoder
         }
 
         @JsonAnySetter
-        public void set(String name, Object value)
-        {
+        public void set(String name, Object value) {
             other.put(name, value);
         }
     }

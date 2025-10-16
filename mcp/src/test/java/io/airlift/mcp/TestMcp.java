@@ -9,6 +9,21 @@
  */
 package io.airlift.mcp;
 
+import static com.google.inject.Scopes.SINGLETON;
+import static io.airlift.http.client.FullJsonResponseHandler.createFullJsonResponseHandler;
+import static io.airlift.http.client.HttpClientBinder.httpClientBinder;
+import static io.airlift.http.client.Request.Builder.prepareGet;
+import static io.airlift.http.client.Request.Builder.preparePost;
+import static io.airlift.json.JsonCodec.jsonCodec;
+import static io.airlift.mcp.TestingIdentityMapper.ERRORED_IDENTITY;
+import static io.airlift.mcp.TestingIdentityMapper.EXPECTED_IDENTITY;
+import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
+import static jakarta.servlet.http.HttpServletResponse.SC_METHOD_NOT_ALLOWED;
+import static jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.InstanceOfAssertFactories.type;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -49,34 +64,17 @@ import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.StructuredContent;
 import io.airlift.mcp.model.Tool;
 import io.airlift.node.NodeModule;
+import java.net.URI;
+import java.util.Optional;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.net.URI;
-import java.util.Optional;
-import java.util.stream.Stream;
-
-import static com.google.inject.Scopes.SINGLETON;
-import static io.airlift.http.client.FullJsonResponseHandler.createFullJsonResponseHandler;
-import static io.airlift.http.client.HttpClientBinder.httpClientBinder;
-import static io.airlift.http.client.Request.Builder.prepareGet;
-import static io.airlift.http.client.Request.Builder.preparePost;
-import static io.airlift.json.JsonCodec.jsonCodec;
-import static io.airlift.mcp.TestingIdentityMapper.ERRORED_IDENTITY;
-import static io.airlift.mcp.TestingIdentityMapper.EXPECTED_IDENTITY;
-import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
-import static jakarta.servlet.http.HttpServletResponse.SC_METHOD_NOT_ALLOWED;
-import static jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.InstanceOfAssertFactories.type;
-import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
-
 @TestInstance(PER_CLASS)
-public class TestMcp
-{
+public class TestMcp {
     public static final String IDENTITY_HEADER = "X-Testing-Identity";
 
     private final HttpClient httpClient;
@@ -84,11 +82,11 @@ public class TestMcp
     private final URI baseUri;
     private final ObjectMapper objectMapper;
 
-    public TestMcp()
-    {
+    public TestMcp() {
         Module mcpModule = McpModule.builder()
                 .withAllInClass(TestingEndpoints.class)
-                .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
+                .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class)
+                        .in(SINGLETON))
                 .build();
 
         ImmutableList.Builder<Module> modules = ImmutableList.<Module>builder()
@@ -99,11 +97,12 @@ public class TestMcp
                 .add(new JaxrsModule())
                 .add(new JsonModule());
 
-        ImmutableMap.Builder<String, String> serverProperties = ImmutableMap.<String, String>builder()
-                .put("node.environment", "testing");
+        ImmutableMap.Builder<String, String> serverProperties =
+                ImmutableMap.<String, String>builder().put("node.environment", "testing");
 
         Bootstrap app = new Bootstrap(modules.build());
-        injector = app.setRequiredConfigurationProperties(serverProperties.build()).initialize();
+        injector =
+                app.setRequiredConfigurationProperties(serverProperties.build()).initialize();
 
         httpClient = injector.getInstance(Key.get(HttpClient.class, ForTest.class));
         baseUri = injector.getInstance(HttpServerInfo.class).getHttpUri().resolve("/mcp");
@@ -111,26 +110,25 @@ public class TestMcp
     }
 
     @AfterAll
-    public void shutdown()
-    {
+    public void shutdown() {
         injector.getInstance(LifeCycleManager.class).stop();
     }
 
-    static Stream<JsonRpcRequest<?>> authRpcRequests()
-    {
+    static Stream<JsonRpcRequest<?>> authRpcRequests() {
         return Stream.of(
                 JsonRpcRequest.buildRequest(1, "tools/list"),
-                JsonRpcRequest.buildRequest(1, "tools/call", new CallToolRequest("add", ImmutableMap.of("a", 1, "b", 2))),
+                JsonRpcRequest.buildRequest(
+                        1, "tools/call", new CallToolRequest("add", ImmutableMap.of("a", 1, "b", 2))),
                 JsonRpcRequest.buildRequest(1, "prompts/list", 1),
-                JsonRpcRequest.buildRequest(1, "prompts/get", new GetPromptRequest("greeting", ImmutableMap.of("name", "Galt"))),
+                JsonRpcRequest.buildRequest(
+                        1, "prompts/get", new GetPromptRequest("greeting", ImmutableMap.of("name", "Galt"))),
                 JsonRpcRequest.buildRequest(1, "resources/list"),
                 JsonRpcRequest.buildRequest(1, "resources/read", new ReadResourceRequest("file://example1.txt")));
     }
 
     @ParameterizedTest
     @MethodSource("authRpcRequests")
-    public void testAuth(JsonRpcRequest<?> request)
-    {
+    public void testAuth(JsonRpcRequest<?> request) {
         // No identity header
         JsonResponse<JsonRpcResponse<?>> response = rpcCall("", request);
         assertThat(response.getStatusCode()).isEqualTo(401);
@@ -154,43 +152,46 @@ public class TestMcp
     }
 
     @Test
-    public void testInvalidRpcRequests()
-    {
+    public void testInvalidRpcRequests() {
         CallToolRequest callToolRequest = new CallToolRequest("add", ImmutableMap.of("a", 1, "b", 2));
         JsonRpcRequest<?> jsonrpcRequest = JsonRpcRequest.buildRequest(1, "tools/call", callToolRequest);
 
         // missing proper Accept header
-        Request request = preparePost().setUri(baseUri)
+        Request request = preparePost()
+                .setUri(baseUri)
                 .addHeader("Content-Type", "application/json")
                 .addHeader(IDENTITY_HEADER, "Mr. Tester")
-                .setBodyGenerator(JsonBodyGenerator.jsonBodyGenerator(jsonCodec(new TypeToken<JsonRpcRequest<?>>() {}), jsonrpcRequest))
+                .setBodyGenerator(JsonBodyGenerator.jsonBodyGenerator(
+                        jsonCodec(new TypeToken<JsonRpcRequest<?>>() {}), jsonrpcRequest))
                 .build();
 
-        FullJsonResponseHandler.JsonResponse<Object> response = httpClient.execute(request, createFullJsonResponseHandler(jsonCodec(new TypeToken<>() {})));
+        FullJsonResponseHandler.JsonResponse<Object> response =
+                httpClient.execute(request, createFullJsonResponseHandler(jsonCodec(new TypeToken<>() {})));
         assertThat(response.getStatusCode()).isEqualTo(400);
         assertThat(response.getResponseBody())
                 .isEqualTo("{\"message\":\"Both application/json and text/event-stream required in Accept header\"}");
 
         // nonsensical object in body
-        request = preparePost().setUri(baseUri)
+        request = preparePost()
+                .setUri(baseUri)
                 .addHeader("Content-Type", "application/json")
                 .addHeader("Accept", "application/json, text/event-stream")
                 .addHeader(IDENTITY_HEADER, "Mr. Tester")
-                .setBodyGenerator(JsonBodyGenerator.jsonBodyGenerator(jsonCodec(new TypeToken<>() {}), new ListToolsResult(ImmutableList.of())))
+                .setBodyGenerator(JsonBodyGenerator.jsonBodyGenerator(
+                        jsonCodec(new TypeToken<>() {}), new ListToolsResult(ImmutableList.of())))
                 .build();
         response = httpClient.execute(request, createFullJsonResponseHandler(jsonCodec(new TypeToken<>() {})));
         assertThat(response.getStatusCode()).isEqualTo(400);
-        assertThat(response.getResponseBody())
-                .isEqualTo("{\"message\":\"Invalid message format\"}");
+        assertThat(response.getResponseBody()).isEqualTo("{\"message\":\"Invalid message format\"}");
     }
 
     @Test
-    public void testToolPrimitiveStructuredContent()
-    {
+    public void testToolPrimitiveStructuredContent() {
         JsonRpcRequest<?> listToolsRpcRequest = JsonRpcRequest.buildRequest(1, "tools/list");
 
         JsonRpcResponse<?> listToolsResponse = rpcCall(listToolsRpcRequest);
-        ListToolsResult listToolsResult = objectMapper.convertValue(listToolsResponse.result().orElseThrow(), ListToolsResult.class);
+        ListToolsResult listToolsResult =
+                objectMapper.convertValue(listToolsResponse.result().orElseThrow(), ListToolsResult.class);
         assertThat(listToolsResult.tools())
                 .filteredOn(tool -> tool.name().equals("addThree"))
                 .hasSize(1)
@@ -201,9 +202,9 @@ public class TestMcp
         CallToolRequest callToolRequest = new CallToolRequest("addThree", ImmutableMap.of("a", 1, "b", 2, "c", 3));
         JsonRpcRequest<?> jsonrpcRequest = JsonRpcRequest.buildRequest(1, "tools/call", callToolRequest);
         JsonRpcResponse<?> response = rpcCall(jsonrpcRequest);
-        CallToolResult callToolResult = objectMapper.convertValue(response.result().orElseThrow(), new TypeReference<>() {});
-        assertThat(callToolResult.structuredContent())
-                .isEmpty();
+        CallToolResult callToolResult =
+                objectMapper.convertValue(response.result().orElseThrow(), new TypeReference<>() {});
+        assertThat(callToolResult.structuredContent()).isEmpty();
         assertThat(callToolResult.content())
                 .hasSize(1)
                 .first()
@@ -213,12 +214,12 @@ public class TestMcp
     }
 
     @Test
-    public void testToolEmbeddedStructuredContent()
-    {
+    public void testToolEmbeddedStructuredContent() {
         JsonRpcRequest<?> listToolsRpcRequest = JsonRpcRequest.buildRequest(1, "tools/list");
 
         JsonRpcResponse<?> listToolsResponse = rpcCall(listToolsRpcRequest);
-        ListToolsResult listToolsResult = objectMapper.convertValue(listToolsResponse.result().orElseThrow(), ListToolsResult.class);
+        ListToolsResult listToolsResult =
+                objectMapper.convertValue(listToolsResponse.result().orElseThrow(), ListToolsResult.class);
         assertThat(listToolsResult.tools())
                 .filteredOn(tool -> tool.name().equals("addFirstTwoAndAllThree"))
                 .hasSize(1)
@@ -241,10 +242,12 @@ public class TestMcp
                     assertThat(properties.get("allThree").get("type").asText()).isEqualTo("integer");
                 });
 
-        CallToolRequest callToolRequest = new CallToolRequest("addFirstTwoAndAllThree", ImmutableMap.of("a", 1, "b", 2, "c", 3));
+        CallToolRequest callToolRequest =
+                new CallToolRequest("addFirstTwoAndAllThree", ImmutableMap.of("a", 1, "b", 2, "c", 3));
         JsonRpcRequest<?> jsonrpcRequest = JsonRpcRequest.buildRequest(1, "tools/call", callToolRequest);
         JsonRpcResponse<?> response = rpcCall(jsonrpcRequest);
-        CallToolResult twoAndThreeCallToolResult = objectMapper.convertValue(response.result().orElseThrow(), new TypeReference<>() {});
+        CallToolResult twoAndThreeCallToolResult =
+                objectMapper.convertValue(response.result().orElseThrow(), new TypeReference<>() {});
         assertThat(twoAndThreeCallToolResult.isError()).isFalse();
         assertThat(twoAndThreeCallToolResult.structuredContent())
                 .isPresent()
@@ -256,7 +259,8 @@ public class TestMcp
         callToolRequest = new CallToolRequest("addFirstTwoAndAllThree", ImmutableMap.of("a", -1, "b", -2, "c", -3));
         jsonrpcRequest = JsonRpcRequest.buildRequest(1, "tools/call", callToolRequest);
         response = rpcCall(jsonrpcRequest);
-        twoAndThreeCallToolResult = objectMapper.convertValue(response.result().orElseThrow(), new TypeReference<>() {});
+        twoAndThreeCallToolResult =
+                objectMapper.convertValue(response.result().orElseThrow(), new TypeReference<>() {});
         assertThat(twoAndThreeCallToolResult.isError()).isTrue();
         assertThat(twoAndThreeCallToolResult.structuredContent()).isEmpty();
         assertThat(twoAndThreeCallToolResult.content())
@@ -268,12 +272,12 @@ public class TestMcp
     }
 
     @Test
-    public void testTools()
-    {
+    public void testTools() {
         JsonRpcRequest<?> jsonrpcRequest = JsonRpcRequest.buildRequest(1, "tools/list");
 
         JsonRpcResponse<?> response = rpcCall(jsonrpcRequest);
-        ListToolsResult listToolsResult = objectMapper.convertValue(response.result().orElseThrow(), ListToolsResult.class);
+        ListToolsResult listToolsResult =
+                objectMapper.convertValue(response.result().orElseThrow(), ListToolsResult.class);
         assertThat(listToolsResult.tools())
                 .extracting(Tool::name)
                 .containsExactlyInAnyOrder("add", "throws", "addThree", "addFirstTwoAndAllThree");
@@ -281,7 +285,8 @@ public class TestMcp
         CallToolRequest callToolRequest = new CallToolRequest("add", ImmutableMap.of("a", 1, "b", 2));
         jsonrpcRequest = JsonRpcRequest.buildRequest(1, "tools/call", callToolRequest);
         response = rpcCall(jsonrpcRequest);
-        CallToolResult callToolResult = objectMapper.convertValue(response.result().orElseThrow(), CallToolResult.class);
+        CallToolResult callToolResult =
+                objectMapper.convertValue(response.result().orElseThrow(), CallToolResult.class);
         assertThat(callToolResult.content())
                 .hasSize(1)
                 .first()
@@ -291,31 +296,28 @@ public class TestMcp
     }
 
     @Test
-    public void testExceptionWrapping()
-    {
+    public void testExceptionWrapping() {
         CallToolRequest callToolRequest = new CallToolRequest("throws", ImmutableMap.of());
         JsonRpcRequest<?> jsonrpcRequest = JsonRpcRequest.buildRequest(1, "tools/call", callToolRequest);
         JsonRpcResponse<?> response = rpcCall(jsonrpcRequest);
 
-        assertThat(response.error())
-                .contains(new JsonRpcErrorDetail(INVALID_REQUEST, "this ain't good"));
+        assertThat(response.error()).contains(new JsonRpcErrorDetail(INVALID_REQUEST, "this ain't good"));
     }
 
     @Test
-    public void testPrompts()
-    {
+    public void testPrompts() {
         JsonRpcRequest<?> jsonrpcRequest = JsonRpcRequest.buildRequest(1, "prompts/list", 1);
 
         JsonRpcResponse<?> response = rpcCall(jsonrpcRequest);
-        ListPromptsResult listPromptsResult = objectMapper.convertValue(response.result().orElseThrow(), ListPromptsResult.class);
-        assertThat(listPromptsResult.prompts())
-                .extracting(Prompt::name)
-                .containsExactlyInAnyOrder("greeting");
+        ListPromptsResult listPromptsResult =
+                objectMapper.convertValue(response.result().orElseThrow(), ListPromptsResult.class);
+        assertThat(listPromptsResult.prompts()).extracting(Prompt::name).containsExactlyInAnyOrder("greeting");
 
         GetPromptRequest getPromptRequest = new GetPromptRequest("greeting", ImmutableMap.of("name", "Galt"));
         jsonrpcRequest = JsonRpcRequest.buildRequest(1, "prompts/get", getPromptRequest);
         response = rpcCall(jsonrpcRequest);
-        GetPromptResult getPromptResult = objectMapper.convertValue(response.result().orElseThrow(), GetPromptResult.class);
+        GetPromptResult getPromptResult =
+                objectMapper.convertValue(response.result().orElseThrow(), GetPromptResult.class);
         assertThat(getPromptResult.messages())
                 .hasSize(1)
                 .first()
@@ -326,12 +328,12 @@ public class TestMcp
     }
 
     @Test
-    public void testResources()
-    {
+    public void testResources() {
         JsonRpcRequest<?> jsonrpcRequest = JsonRpcRequest.buildRequest(1, "resources/list");
 
         JsonRpcResponse<?> response = rpcCall(jsonrpcRequest);
-        ListResourcesResult listResourcesResult = objectMapper.convertValue(response.result().orElseThrow(), ListResourcesResult.class);
+        ListResourcesResult listResourcesResult =
+                objectMapper.convertValue(response.result().orElseThrow(), ListResourcesResult.class);
         assertThat(listResourcesResult.resources())
                 .extracting(Resource::name)
                 .containsExactlyInAnyOrder("example1", "example2");
@@ -339,7 +341,8 @@ public class TestMcp
         ReadResourceRequest readResourceRequest = new ReadResourceRequest("file://example2.txt");
         jsonrpcRequest = JsonRpcRequest.buildRequest(1, "resources/read", readResourceRequest);
         response = rpcCall(jsonrpcRequest);
-        ReadResourceResult readResourceResult = objectMapper.convertValue(response.result().orElseThrow(), ReadResourceResult.class);
+        ReadResourceResult readResourceResult =
+                objectMapper.convertValue(response.result().orElseThrow(), ReadResourceResult.class);
         assertThat(readResourceResult.contents())
                 .hasSize(1)
                 .first()
@@ -348,8 +351,7 @@ public class TestMcp
     }
 
     @Test
-    public void testGetMcpReturns405()
-    {
+    public void testGetMcpReturns405() {
         Request request = prepareGet()
                 .setUri(baseUri)
                 .addHeader("Accept", "application/json,text/event-stream")
@@ -368,18 +370,18 @@ public class TestMcp
         assertThat(response.getStatusCode()).isEqualTo(SC_METHOD_NOT_ALLOWED);
     }
 
-    private JsonRpcResponse<?> rpcCall(JsonRpcRequest<?> jsonrpcRequest)
-    {
+    private JsonRpcResponse<?> rpcCall(JsonRpcRequest<?> jsonrpcRequest) {
         return rpcCall("Mr. Tester", jsonrpcRequest).getValue();
     }
 
-    private JsonResponse<JsonRpcResponse<?>> rpcCall(String identityHeader, JsonRpcRequest<?> jsonrpcRequest)
-    {
-        Request request = preparePost().setUri(baseUri)
+    private JsonResponse<JsonRpcResponse<?>> rpcCall(String identityHeader, JsonRpcRequest<?> jsonrpcRequest) {
+        Request request = preparePost()
+                .setUri(baseUri)
                 .addHeader("Content-Type", "application/json")
                 .addHeader("Accept", "application/json,text/event-stream")
                 .addHeader(IDENTITY_HEADER, identityHeader)
-                .setBodyGenerator(JsonBodyGenerator.jsonBodyGenerator(jsonCodec(new TypeToken<JsonRpcRequest<?>>() {}), jsonrpcRequest))
+                .setBodyGenerator(JsonBodyGenerator.jsonBodyGenerator(
+                        jsonCodec(new TypeToken<JsonRpcRequest<?>>() {}), jsonrpcRequest))
                 .build();
 
         return httpClient.execute(request, createFullJsonResponseHandler(jsonCodec(new TypeToken<>() {})));

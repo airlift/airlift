@@ -13,64 +13,51 @@
  */
 package io.airlift.http.client.jetty;
 
-import io.airlift.http.client.HttpClientConfig;
-import io.airlift.http.client.TestingHttpProxy;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee11.proxy.ProxyServlet;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-
 import static io.airlift.http.client.HttpStatus.PROXY_AUTHENTIATION_REQUIRED;
 import static jakarta.servlet.http.HttpServletResponse.SC_FORBIDDEN;
 import static org.eclipse.jetty.http.HttpHeader.PROXY_AUTHENTICATE;
 import static org.eclipse.jetty.http.HttpHeader.PROXY_AUTHORIZATION;
 
-public abstract class AbstractHttpClientTestHttpProxyAuthN
-        extends AbstractHttpClientTestHttpProxy
-{
+import io.airlift.http.client.HttpClientConfig;
+import io.airlift.http.client.TestingHttpProxy;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import org.eclipse.jetty.ee11.proxy.ProxyServlet;
+
+public abstract class AbstractHttpClientTestHttpProxyAuthN extends AbstractHttpClientTestHttpProxy {
     private final String proxyUser = "proxy_user";
     private final String proxyPass = "proxy_pass";
 
     protected AbstractHttpClientTestHttpProxyAuthN() {}
 
-    protected AbstractHttpClientTestHttpProxyAuthN(String keystore)
-    {
+    protected AbstractHttpClientTestHttpProxyAuthN(String keystore) {
         super(keystore);
     }
 
     @Override
-    public HttpClientConfig createClientConfig()
-    {
-        return new HttpClientConfig()
-                .setHttpProxyUser(proxyUser)
-                .setHttpProxyPassword(proxyPass);
+    public HttpClientConfig createClientConfig() {
+        return new HttpClientConfig().setHttpProxyUser(proxyUser).setHttpProxyPassword(proxyPass);
     }
 
     @Override
-    protected TestingHttpProxy createTestingHttpProxy()
-            throws Exception
-    {
+    protected TestingHttpProxy createTestingHttpProxy() throws Exception {
         return new TestingHttpProxy(keystore, new ProxyAuthNServlet(proxyUser, proxyPass));
     }
 
-    static class ProxyAuthNServlet
-            extends ProxyServlet
-    {
+    static class ProxyAuthNServlet extends ProxyServlet {
         private final String credentials;
 
-        public ProxyAuthNServlet(String user, String password)
-        {
-            this.credentials = Base64.getEncoder().encodeToString((user + ":" + password).getBytes(StandardCharsets.ISO_8859_1));
+        public ProxyAuthNServlet(String user, String password) {
+            this.credentials =
+                    Base64.getEncoder().encodeToString((user + ":" + password).getBytes(StandardCharsets.ISO_8859_1));
         }
 
         @Override
-        protected void service(HttpServletRequest req, HttpServletResponse resp)
-                throws ServletException, IOException
-        {
+        protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
             String authorization = req.getHeader(PROXY_AUTHORIZATION.asString());
             if (authorization == null) {
                 resp.setStatus(PROXY_AUTHENTIATION_REQUIRED.code());
@@ -83,8 +70,7 @@ public abstract class AbstractHttpClientTestHttpProxyAuthN
                 String attempt = authorization.substring(prefix.length());
                 if (credentials.equals(attempt)) {
                     super.service(req, resp);
-                }
-                else {
+                } else {
                     resp.setStatus(SC_FORBIDDEN);
                 }
             }

@@ -15,13 +15,6 @@
  */
 package io.airlift.http.server;
 
-import com.google.common.collect.ImmutableMap;
-import io.airlift.units.DataSize;
-import io.airlift.units.Duration;
-import org.junit.jupiter.api.Test;
-
-import java.util.Map;
-
 import static io.airlift.configuration.testing.ConfigAssertions.assertFullMapping;
 import static io.airlift.configuration.testing.ConfigAssertions.assertRecordedDefaults;
 import static io.airlift.configuration.testing.ConfigAssertions.recordDefaults;
@@ -33,11 +26,15 @@ import static io.airlift.units.DataSize.Unit.MEGABYTE;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class TestHttpServerConfig
-{
+import com.google.common.collect.ImmutableMap;
+import io.airlift.units.DataSize;
+import io.airlift.units.Duration;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+
+public class TestHttpServerConfig {
     @Test
-    public void testDefaults()
-    {
+    public void testDefaults() {
         assertRecordedDefaults(recordDefaults(HttpServerConfig.class)
                 .setHttpEnabled(true)
                 .setHttpPort(8080)
@@ -77,8 +74,7 @@ public class TestHttpServerConfig
     }
 
     @Test
-    public void testExplicitPropertyMappings()
-    {
+    public void testExplicitPropertyMappings() {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("http-server.http.enabled", "false")
                 .put("http-server.http.port", "1")

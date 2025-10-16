@@ -15,13 +15,12 @@
  */
 package io.airlift.discovery.client;
 
-import org.junit.jupiter.api.Test;
-
 import static io.airlift.testing.EquivalenceTester.equivalenceTester;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TestHttpAnnouncementImpl
-{
+import org.junit.jupiter.api.Test;
+
+public class TestHttpAnnouncementImpl {
     @HttpAnnouncement(announcementId = "apple")
     private final HttpAnnouncement appleHttpAnnouncement;
 
@@ -31,34 +30,34 @@ public class TestHttpAnnouncementImpl
     @HttpAnnouncement(announcementId = "quot\"ation-and-\\backslash")
     private final HttpAnnouncement httpAnnouncementWithCharacters;
 
-    public TestHttpAnnouncementImpl()
-    {
+    public TestHttpAnnouncementImpl() {
         try {
-            this.appleHttpAnnouncement = getClass().getDeclaredField("appleHttpAnnouncement").getAnnotation(HttpAnnouncement.class);
-            this.bananaHttpAnnouncement = getClass().getDeclaredField("bananaHttpAnnouncement").getAnnotation(HttpAnnouncement.class);
-            this.httpAnnouncementWithCharacters = getClass().getDeclaredField("httpAnnouncementWithCharacters").getAnnotation(HttpAnnouncement.class);
-        }
-        catch (NoSuchFieldException e) {
+            this.appleHttpAnnouncement =
+                    getClass().getDeclaredField("appleHttpAnnouncement").getAnnotation(HttpAnnouncement.class);
+            this.bananaHttpAnnouncement =
+                    getClass().getDeclaredField("bananaHttpAnnouncement").getAnnotation(HttpAnnouncement.class);
+            this.httpAnnouncementWithCharacters = getClass()
+                    .getDeclaredField("httpAnnouncementWithCharacters")
+                    .getAnnotation(HttpAnnouncement.class);
+        } catch (NoSuchFieldException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Test
-    public void testAnnouncementId()
-    {
+    public void testAnnouncementId() {
         assertThat(new HttpAnnouncementImpl("type A").announcementId()).isEqualTo("type A");
     }
 
     @Test
-    public void testAnnotationType()
-    {
+    public void testAnnotationType() {
         assertThat(new HttpAnnouncementImpl("apple").annotationType()).isEqualTo(HttpAnnouncement.class);
-        assertThat(new HttpAnnouncementImpl("apple").annotationType()).isEqualTo(appleHttpAnnouncement.annotationType());
+        assertThat(new HttpAnnouncementImpl("apple").annotationType())
+                .isEqualTo(appleHttpAnnouncement.annotationType());
     }
 
     @Test
-    public void testEquivalence()
-    {
+    public void testEquivalence() {
         equivalenceTester()
                 .addEquivalentGroup(appleHttpAnnouncement, new HttpAnnouncementImpl("apple"))
                 .addEquivalentGroup(bananaHttpAnnouncement, new HttpAnnouncementImpl("banana"))

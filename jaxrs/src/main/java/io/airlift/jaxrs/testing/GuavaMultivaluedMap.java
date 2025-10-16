@@ -7,72 +7,57 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import jakarta.ws.rs.core.MultivaluedMap;
-
 import java.util.List;
 import java.util.Map;
 
-public class GuavaMultivaluedMap<K, V>
-        extends ForwardingMap<K, List<V>>
-        implements MultivaluedMap<K, V>
-{
+public class GuavaMultivaluedMap<K, V> extends ForwardingMap<K, List<V>> implements MultivaluedMap<K, V> {
     private final ListMultimap<K, V> multimap = ArrayListMultimap.create();
 
-    public GuavaMultivaluedMap()
-    {
-    }
+    public GuavaMultivaluedMap() {}
 
-    public GuavaMultivaluedMap(Multimap<K, V> multimap)
-    {
+    public GuavaMultivaluedMap(Multimap<K, V> multimap) {
         this.multimap.putAll(multimap);
     }
 
     @Override
-    public void putSingle(K key, V value)
-    {
+    public void putSingle(K key, V value) {
         multimap.removeAll(key);
         multimap.put(key, value);
     }
 
     @Override
-    protected Map<K, List<V>> delegate()
-    {
+    protected Map<K, List<V>> delegate() {
         return Multimaps.asMap(multimap);
     }
 
     @Override
-    public void add(K key, V value)
-    {
+    public void add(K key, V value) {
         multimap.put(key, value);
     }
 
     @SafeVarargs
     @Override
-    public final void addAll(K key, V... newValues)
-    {
+    public final void addAll(K key, V... newValues) {
         multimap.putAll(key, ImmutableList.copyOf(newValues));
     }
 
     @Override
-    public void addAll(K key, List<V> valueList)
-    {
+    public void addAll(K key, List<V> valueList) {
         multimap.putAll(key, valueList);
     }
 
     @Override
-    public V getFirst(K key)
-    {
+    public V getFirst(K key) {
         return multimap.get(key).stream().findFirst().orElse(null);
     }
 
     @Override
-    public void addFirst(K key, V value)
-    {
+    public void addFirst(K key, V value) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean equalsIgnoreValueOrder(MultivaluedMap<K, V> otherMap)
-    {
+    public boolean equalsIgnoreValueOrder(MultivaluedMap<K, V> otherMap) {
         throw new UnsupportedOperationException();
     }
 }

@@ -20,16 +20,14 @@ import io.airlift.log.Logger;
 import io.airlift.units.Duration;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.HistogramIterationValue;
 import org.weakref.jmx.Managed;
 
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.concurrent.TimeUnit;
-
-public class PauseMeter
-{
+public class PauseMeter {
     private static final Logger LOG = Logger.get(PauseMeter.class);
 
     private final long sleepNanos;
@@ -40,46 +38,41 @@ public class PauseMeter
     @GuardedBy("histogram")
     private long totalPauseNanos;
 
-    private final Supplier<Histogram> snapshot = Suppliers.memoizeWithExpiration(this::makeSnapshot, 1, TimeUnit.SECONDS);
+    private final Supplier<Histogram> snapshot =
+            Suppliers.memoizeWithExpiration(this::makeSnapshot, 1, TimeUnit.SECONDS);
 
     private final Thread thread;
 
     // public to make it less likely for the VM to optimize it out
     public volatile Object allocatedObject;
 
-    public PauseMeter()
-    {
+    public PauseMeter() {
         this(new Duration(10, TimeUnit.MILLISECONDS));
     }
 
-    public PauseMeter(Duration sleepTime)
-    {
+    public PauseMeter(Duration sleepTime) {
         this.sleepNanos = sleepTime.roundTo(TimeUnit.NANOSECONDS);
         thread = new Thread(this::run, "VM Pause Meter");
         thread.setDaemon(true);
     }
 
     @PostConstruct
-    public void start()
-    {
+    public void start() {
         thread.start();
     }
 
     @PreDestroy
-    public void stop()
-    {
+    public void stop() {
         thread.interrupt();
     }
 
-    private Histogram makeSnapshot()
-    {
+    private Histogram makeSnapshot() {
         synchronized (histogram) {
             return histogram.copy();
         }
     }
 
-    private void run()
-    {
+    private void run() {
         long shortestObservableInterval = Long.MAX_VALUE;
         while (!Thread.currentThread().isInterrupted()) {
             try {
@@ -100,80 +93,77 @@ public class PauseMeter
                     histogram.recordValue(pauseNanos);
                     totalPauseNanos += pauseNanos;
                 }
-            }
-            catch (InterruptedException e) {
+            } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-            }
-            catch (Throwable e) {
+            } catch (Throwable e) {
                 LOG.warn(e, "Unexpected error");
             }
         }
     }
 
     @Managed(description = "< 10ms")
-    public long getLessThan10msPauses()
-    {
+    public long getLessThan10msPauses() {
         return snapshot.get().getCountBetweenValues(0, TimeUnit.MILLISECONDS.toNanos(10));
     }
 
     @Managed(description = "10ms to 50ms")
-    public long get10msTo50msPauses()
-    {
-        return snapshot.get().getCountBetweenValues(TimeUnit.MILLISECONDS.toNanos(10), TimeUnit.MILLISECONDS.toNanos(50));
+    public long get10msTo50msPauses() {
+        return snapshot.get()
+                .getCountBetweenValues(TimeUnit.MILLISECONDS.toNanos(10), TimeUnit.MILLISECONDS.toNanos(50));
     }
 
     @Managed(description = "50ms to 500ms")
-    public long get50msTo500msPauses()
-    {
-        return snapshot.get().getCountBetweenValues(TimeUnit.MILLISECONDS.toNanos(50), TimeUnit.MILLISECONDS.toNanos(500));
+    public long get50msTo500msPauses() {
+        return snapshot.get()
+                .getCountBetweenValues(TimeUnit.MILLISECONDS.toNanos(50), TimeUnit.MILLISECONDS.toNanos(500));
     }
 
     @Managed(description = "500ms to 1s")
-    public long get500msTo1sPauses()
-    {
+    public long get500msTo1sPauses() {
         return snapshot.get().getCountBetweenValues(TimeUnit.MILLISECONDS.toNanos(500), TimeUnit.SECONDS.toNanos(1));
     }
 
     @Managed(description = "1s to 10s")
-    public long get1sTo10sPauses()
-    {
+    public long get1sTo10sPauses() {
         return snapshot.get().getCountBetweenValues(TimeUnit.SECONDS.toNanos(1), TimeUnit.SECONDS.toNanos(10));
     }
 
     @Managed(description = "10s to 1m")
-    public long get10sTo1mPauses()
-    {
+    public long get10sTo1mPauses() {
         return snapshot.get().getCountBetweenValues(TimeUnit.SECONDS.toNanos(10), TimeUnit.MINUTES.toNanos(1));
     }
 
     @Managed(description = "> 1m")
-    public long getGreaterThan1mPauses()
-    {
+    public long getGreaterThan1mPauses() {
         return snapshot.get().getCountBetweenValues(TimeUnit.MINUTES.toNanos(1), Long.MAX_VALUE);
     }
 
     @Managed(description = "Per-bucket counts")
-    public Map<Double, Long> getCounts()
-    {
+    public Map<Double, Long> getCounts() {
         Map<Double, Long> result = new TreeMap<>();
-        for (HistogramIterationValue entry : snapshot.get().logarithmicBucketValues(TimeUnit.MILLISECONDS.toNanos(1), 2)) {
+        for (HistogramIterationValue entry :
+                snapshot.get().logarithmicBucketValues(TimeUnit.MILLISECONDS.toNanos(1), 2)) {
             double median = (entry.getValueIteratedTo() + entry.getValueIteratedFrom()) / 2.0;
-            result.put(round(median / (double) TimeUnit.MILLISECONDS.toNanos(1), 2), entry.getCountAddedInThisIterationStep());
+            result.put(
+                    round(median / (double) TimeUnit.MILLISECONDS.toNanos(1), 2),
+                    entry.getCountAddedInThisIterationStep());
         }
 
         return result;
     }
 
     @Managed(description = "Per-bucket total pause time in s")
-    public Map<Double, Double> getSums()
-    {
+    public Map<Double, Double> getSums() {
         long previous = 0;
         Map<Double, Double> result = new TreeMap<>();
-        for (HistogramIterationValue entry : snapshot.get().logarithmicBucketValues(TimeUnit.MILLISECONDS.toNanos(1), 2)) {
+        for (HistogramIterationValue entry :
+                snapshot.get().logarithmicBucketValues(TimeUnit.MILLISECONDS.toNanos(1), 2)) {
             double median = (entry.getValueIteratedTo() + entry.getValueIteratedFrom()) / 2.0;
             long current = entry.getTotalValueToThisValue();
 
-            result.put(round(median / TimeUnit.MILLISECONDS.toNanos(1), 2), round((current - previous) * 1.0 / TimeUnit.SECONDS.toNanos(1), 2));
+            result.put(
+                    round(median / TimeUnit.MILLISECONDS.toNanos(1), 2),
+                    round((current - previous) * 1.0 / TimeUnit.SECONDS.toNanos(1), 2));
             previous = current;
         }
 
@@ -181,15 +171,13 @@ public class PauseMeter
     }
 
     @Managed
-    public double getTotalPauseSeconds()
-    {
+    public double getTotalPauseSeconds() {
         synchronized (histogram) {
             return totalPauseNanos * 1.0 / TimeUnit.SECONDS.toNanos(1);
         }
     }
 
-    private static double round(double value, int digits)
-    {
+    private static double round(double value, int digits) {
         double scale = Math.pow(10, digits);
         return Math.round(value * scale) / scale;
     }

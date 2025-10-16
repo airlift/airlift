@@ -23,21 +23,15 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
 import java.io.IOException;
 
-class DummyFilter
-        implements Filter
-{
+class DummyFilter implements Filter {
     @Override
-    public void init(FilterConfig filterConfig)
-    {
-    }
+    public void init(FilterConfig filterConfig) {}
 
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain chain)
-            throws IOException, ServletException
-    {
+            throws IOException, ServletException {
         HttpServletRequest request = (HttpServletRequest) servletRequest;
         HttpServletResponse response = (HttpServletResponse) servletResponse;
 
@@ -50,7 +44,5 @@ class DummyFilter
     }
 
     @Override
-    public void destroy()
-    {
-    }
+    public void destroy() {}
 }

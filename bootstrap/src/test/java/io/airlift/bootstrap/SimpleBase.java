@@ -15,8 +15,7 @@
  */
 package io.airlift.bootstrap;
 
-public interface SimpleBase
-{
+public interface SimpleBase {
     void foo();
 
     void bar();

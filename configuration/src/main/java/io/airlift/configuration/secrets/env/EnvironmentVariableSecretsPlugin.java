@@ -16,15 +16,11 @@ package io.airlift.configuration.secrets.env;
 import com.google.common.collect.ImmutableList;
 import io.airlift.spi.secrets.SecretProviderFactory;
 import io.airlift.spi.secrets.SecretsPlugin;
-
 import java.util.List;
 
-public class EnvironmentVariableSecretsPlugin
-        implements SecretsPlugin
-{
+public class EnvironmentVariableSecretsPlugin implements SecretsPlugin {
     @Override
-    public List<SecretProviderFactory> getSecretProviderFactories()
-    {
+    public List<SecretProviderFactory> getSecretProviderFactories() {
         return ImmutableList.of(new EnvironmentVariableSecretProviderFactory());
     }
 }

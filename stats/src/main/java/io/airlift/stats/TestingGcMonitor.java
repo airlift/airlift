@@ -13,35 +13,30 @@
  */
 package io.airlift.stats;
 
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import io.airlift.units.Duration;
 
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
-
-public class TestingGcMonitor
-        implements GcMonitor
-{
+public class TestingGcMonitor implements GcMonitor {
     @GuardedBy("this")
     private long majorGcCount;
 
     @GuardedBy("this")
     private long majorGcTimeNanos;
 
-    public synchronized void recordMajorGc(Duration duration)
-    {
+    public synchronized void recordMajorGc(Duration duration) {
         majorGcCount++;
         majorGcTimeNanos += duration.roundTo(NANOSECONDS);
     }
 
     @Override
-    public synchronized long getMajorGcCount()
-    {
+    public synchronized long getMajorGcCount() {
         return majorGcCount;
     }
 
     @Override
-    public synchronized Duration getMajorGcTime()
-    {
+    public synchronized Duration getMajorGcTime() {
         return new Duration(majorGcTimeNanos, NANOSECONDS);
     }
 }

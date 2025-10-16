@@ -15,14 +15,10 @@ package io.airlift.stats.cardinality;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-final class Utils
-{
-    private Utils()
-    {
-    }
+final class Utils {
+    private Utils() {}
 
-    public static double alpha(int indexBitLength)
-    {
+    public static double alpha(int indexBitLength) {
         return switch (indexBitLength) {
             case 4 -> 0.673;
             case 5 -> 0.697;
@@ -31,42 +27,39 @@ final class Utils
         };
     }
 
-    public static boolean isPowerOf2(long value)
-    {
+    public static boolean isPowerOf2(long value) {
         checkArgument(value > 0, "value must be positive");
         return (value & (value - 1)) == 0;
     }
 
-    public static int indexBitLength(int numberOfBuckets)
-    {
+    public static int indexBitLength(int numberOfBuckets) {
         checkArgument(isPowerOf2(numberOfBuckets), "numberOfBuckets must be a power of 2, actual: %s", numberOfBuckets);
         // 2**N has N trailing zeros, and we've asserted numberOfBuckets == 2**N
         return Integer.numberOfTrailingZeros(numberOfBuckets);
     }
 
-    public static int numberOfBuckets(int indexBitLength)
-    {
+    public static int numberOfBuckets(int indexBitLength) {
         return 1 << indexBitLength;
     }
 
-    public static int computeIndex(long hash, int indexBitLength)
-    {
+    public static int computeIndex(long hash, int indexBitLength) {
         return (int) (hash >>> (Long.SIZE - indexBitLength));
     }
 
-    public static int numberOfLeadingZeros(long hash, int indexBitLength)
-    {
-        long value = (hash << indexBitLength) | (1L << (indexBitLength - 1)); // place a 1 in the LSB to preserve the original number of leading zeros if the hash happens to be 0
+    public static int numberOfLeadingZeros(long hash, int indexBitLength) {
+        long value = (hash << indexBitLength)
+                | (1L
+                        << (indexBitLength
+                                - 1)); // place a 1 in the LSB to preserve the original number of leading zeros if the
+        // hash happens to be 0
         return Long.numberOfLeadingZeros(value);
     }
 
-    public static int computeValue(long hash, int indexBitLength)
-    {
+    public static int computeValue(long hash, int indexBitLength) {
         return numberOfLeadingZeros(hash, indexBitLength) + 1;
     }
 
-    public static double linearCounting(int zeroBuckets, int totalBuckets)
-    {
+    public static double linearCounting(int zeroBuckets, int totalBuckets) {
         return totalBuckets * Math.log(totalBuckets * 1.0 / zeroBuckets);
     }
 }

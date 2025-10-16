@@ -13,53 +13,50 @@
  */
 package io.airlift.stats.cardinality;
 
-import com.google.common.annotations.VisibleForTesting;
-import io.airlift.slice.Murmur3Hash128;
-import io.airlift.slice.Slice;
-
 import static com.google.common.base.Preconditions.checkArgument;
 import static io.airlift.slice.SizeOf.instanceSize;
 import static io.airlift.stats.cardinality.Utils.indexBitLength;
 
-public class HyperLogLog
-{
+import com.google.common.annotations.VisibleForTesting;
+import io.airlift.slice.Murmur3Hash128;
+import io.airlift.slice.Slice;
+
+public class HyperLogLog {
     private static final int INSTANCE_SIZE = instanceSize(HyperLogLog.class);
     private static final int MAX_NUMBER_OF_BUCKETS = 65536;
     private HllInstance instance;
 
-    private HyperLogLog(HllInstance instance)
-    {
+    private HyperLogLog(HllInstance instance) {
         this.instance = instance;
     }
 
-    public static HyperLogLog newInstance(int numberOfBuckets)
-    {
-        checkArgument(numberOfBuckets <= MAX_NUMBER_OF_BUCKETS, "numberOfBuckets must be <= %s, actual: %s", MAX_NUMBER_OF_BUCKETS, numberOfBuckets);
+    public static HyperLogLog newInstance(int numberOfBuckets) {
+        checkArgument(
+                numberOfBuckets <= MAX_NUMBER_OF_BUCKETS,
+                "numberOfBuckets must be <= %s, actual: %s",
+                MAX_NUMBER_OF_BUCKETS,
+                numberOfBuckets);
 
         return new HyperLogLog(new SparseHll(indexBitLength(numberOfBuckets)));
     }
 
-    public static HyperLogLog newInstance(Slice serialized)
-    {
+    public static HyperLogLog newInstance(Slice serialized) {
         checkArgument(serialized.getByte(0) != Format.SPARSE_V1.getTag(), "Sparse v1 encoding no longer supported");
 
         if (SparseHll.canDeserialize(serialized)) {
             return new HyperLogLog(new SparseHll(serialized));
-        }
-        else if (DenseHll.canDeserialize(serialized)) {
+        } else if (DenseHll.canDeserialize(serialized)) {
             return new HyperLogLog(new DenseHll(serialized));
         }
 
         throw new IllegalArgumentException("Cannot deserialize HyperLogLog");
     }
 
-    public void add(long value)
-    {
+    public void add(long value) {
         addHash(Murmur3Hash128.hash64(value));
     }
 
-    public void add(Slice value)
-    {
+    public void add(Slice value) {
         addHash(Murmur3Hash128.hash64(value));
     }
 
@@ -69,8 +66,7 @@ public class HyperLogLog
      * @param hash The hash should be the 64 least significant bits of the murmur3_128 hash of the value.
      * For example: io.airlift.slice.Murmur3.hash64(value).
      */
-    public void addHash(long hash)
-    {
+    public void addHash(long hash) {
         instance.insertHash(hash);
 
         if (instance instanceof SparseHll) {
@@ -78,16 +74,13 @@ public class HyperLogLog
         }
     }
 
-    public void mergeWith(HyperLogLog other)
-    {
+    public void mergeWith(HyperLogLog other) {
         if (instance instanceof SparseHll && other.instance instanceof SparseHll) {
             ((SparseHll) instance).mergeWith((SparseHll) other.instance);
             instance = makeDenseIfNecessary((SparseHll) instance);
-        }
-        else if (instance instanceof DenseHll && other.instance instanceof SparseHll) {
+        } else if (instance instanceof DenseHll && other.instance instanceof SparseHll) {
             ((DenseHll) instance).mergeWith((SparseHll) other.instance);
-        }
-        else {
+        } else {
             DenseHll dense = instance.toDense();
             dense.mergeWith(other.instance.toDense());
 
@@ -95,39 +88,32 @@ public class HyperLogLog
         }
     }
 
-    public long cardinality()
-    {
+    public long cardinality() {
         return instance.cardinality();
     }
 
-    public int estimatedInMemorySize()
-    {
+    public int estimatedInMemorySize() {
         return instance.estimatedInMemorySize() + INSTANCE_SIZE;
     }
 
-    public int estimatedSerializedSize()
-    {
+    public int estimatedSerializedSize() {
         return instance.estimatedSerializedSize();
     }
 
-    public Slice serialize()
-    {
+    public Slice serialize() {
         return instance.serialize();
     }
 
-    public void makeDense()
-    {
+    public void makeDense() {
         instance = instance.toDense();
     }
 
     @VisibleForTesting
-    void verify()
-    {
+    void verify() {
         instance.verify();
     }
 
-    private static HllInstance makeDenseIfNecessary(SparseHll instance)
-    {
+    private static HllInstance makeDenseIfNecessary(SparseHll instance) {
         if (instance.estimatedInMemorySize() > DenseHll.estimatedInMemorySize(instance.getIndexBitLength())) {
             return instance.toDense();
         }

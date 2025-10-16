@@ -24,8 +24,7 @@ import java.lang.annotation.Target;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-public @interface LegacyConfig
-{
+public @interface LegacyConfig {
     String[] value();
 
     String replacedBy() default "";

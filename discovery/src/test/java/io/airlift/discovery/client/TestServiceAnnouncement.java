@@ -15,13 +15,6 @@
  */
 package io.airlift.discovery.client;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.io.Resources;
-import io.airlift.json.JsonCodec;
-import org.junit.jupiter.api.Test;
-
-import java.util.Map;
-
 import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
 import static io.airlift.json.JsonCodec.jsonCodec;
 import static io.airlift.json.JsonCodec.mapJsonCodec;
@@ -29,43 +22,45 @@ import static io.airlift.testing.EquivalenceTester.equivalenceTester;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TestServiceAnnouncement
-{
+import com.google.common.collect.ImmutableMap;
+import com.google.common.io.Resources;
+import io.airlift.json.JsonCodec;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+
+public class TestServiceAnnouncement {
     private final JsonCodec<ServiceAnnouncement> serviceAnnouncementCodec = jsonCodec(ServiceAnnouncement.class);
     private final JsonCodec<Map<String, Object>> objectCodec = mapJsonCodec(String.class, Object.class);
 
     @Test
-    public void testBuilder()
-    {
+    public void testBuilder() {
         assertAnnouncement(serviceAnnouncement("foo").build(), "foo", ImmutableMap.<String, String>of());
         assertAnnouncement(serviceAnnouncement("foo").build(), "foo", ImmutableMap.<String, String>of());
 
-        assertAnnouncement(serviceAnnouncement("foo").addProperty("a", "apple").build(),
-                "foo",
-                ImmutableMap.of("a", "apple"));
+        assertAnnouncement(
+                serviceAnnouncement("foo").addProperty("a", "apple").build(), "foo", ImmutableMap.of("a", "apple"));
 
-        assertAnnouncement(serviceAnnouncement("foo").addProperties(ImmutableMap.of("a", "apple", "b", "banana")).build(),
+        assertAnnouncement(
+                serviceAnnouncement("foo")
+                        .addProperties(ImmutableMap.of("a", "apple", "b", "banana"))
+                        .build(),
                 "foo",
                 ImmutableMap.of("a", "apple", "b", "banana"));
     }
 
-    private void assertAnnouncement(ServiceAnnouncement announcement, String type, Map<String, String> properties)
-    {
+    private void assertAnnouncement(ServiceAnnouncement announcement, String type, Map<String, String> properties) {
         assertThat(announcement.getId()).isNotNull();
         assertThat(announcement.getType()).isEqualTo(type);
         assertThat(announcement.getProperties()).isEqualTo(properties);
     }
 
     @Test
-    public void testToString()
-    {
+    public void testToString() {
         assertThat(serviceAnnouncement("foo").build()).isNotNull();
     }
 
     @Test
-    public void testJsonEncode()
-            throws Exception
-    {
+    public void testJsonEncode() throws Exception {
         ServiceAnnouncement serviceAnnouncement = serviceAnnouncement("foo")
                 .addProperty("http", "http://localhost:8080")
                 .addProperty("jmx", "jmx://localhost:1234")
@@ -82,8 +77,7 @@ public class TestServiceAnnouncement
     }
 
     @Test
-    public void testEquivalence()
-    {
+    public void testEquivalence() {
         equivalenceTester()
                 .addEquivalentGroup(serviceAnnouncement("foo")
                         .addProperty("http", "http://localhost:8080")

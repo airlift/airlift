@@ -13,14 +13,6 @@
  */
 package io.airlift.security.csr;
 
-import javax.security.auth.x500.X500Principal;
-
-import java.security.GeneralSecurityException;
-import java.security.KeyPair;
-import java.security.PrivateKey;
-import java.util.Arrays;
-import java.util.Objects;
-
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.io.BaseEncoding.base16;
 import static io.airlift.security.csr.SignatureAlgorithmIdentifier.findSignatureAlgorithmIdentifier;
@@ -29,29 +21,45 @@ import static io.airlift.security.der.DerUtils.encodeSequence;
 import static java.util.Base64.getMimeEncoder;
 import static java.util.Objects.requireNonNull;
 
-public class CertificationRequest
-{
+import java.security.GeneralSecurityException;
+import java.security.KeyPair;
+import java.security.PrivateKey;
+import java.util.Arrays;
+import java.util.Objects;
+import javax.security.auth.x500.X500Principal;
+
+public class CertificationRequest {
     private final CertificationRequestInfo certificationRequestInfo;
     private final SignatureAlgorithmIdentifier signatureAlgorithmIdentifier;
     private final byte[] signature;
     private final byte[] encoded;
 
     public CertificationRequest(String x500Name, String signatureAlgorithm, KeyPair keyPair)
-            throws GeneralSecurityException
-    {
-        this(new CertificationRequestInfo(new X500Principal(x500Name), keyPair.getPublic()), findSignatureAlgorithmIdentifier(signatureAlgorithm), keyPair.getPrivate());
+            throws GeneralSecurityException {
+        this(
+                new CertificationRequestInfo(new X500Principal(x500Name), keyPair.getPublic()),
+                findSignatureAlgorithmIdentifier(signatureAlgorithm),
+                keyPair.getPrivate());
     }
 
-    public CertificationRequest(CertificationRequestInfo certificationRequestInfo, SignatureAlgorithmIdentifier signatureAlgorithmIdentifier, PrivateKey privateKey)
-            throws GeneralSecurityException
-    {
-        this(certificationRequestInfo, signatureAlgorithmIdentifier, certificationRequestInfo.sign(signatureAlgorithmIdentifier, privateKey));
+    public CertificationRequest(
+            CertificationRequestInfo certificationRequestInfo,
+            SignatureAlgorithmIdentifier signatureAlgorithmIdentifier,
+            PrivateKey privateKey)
+            throws GeneralSecurityException {
+        this(
+                certificationRequestInfo,
+                signatureAlgorithmIdentifier,
+                certificationRequestInfo.sign(signatureAlgorithmIdentifier, privateKey));
     }
 
-    public CertificationRequest(CertificationRequestInfo certificationRequestInfo, SignatureAlgorithmIdentifier signatureAlgorithmIdentifier, byte[] signature)
-    {
+    public CertificationRequest(
+            CertificationRequestInfo certificationRequestInfo,
+            SignatureAlgorithmIdentifier signatureAlgorithmIdentifier,
+            byte[] signature) {
         this.certificationRequestInfo = requireNonNull(certificationRequestInfo, "certificationRequestInfo is null");
-        this.signatureAlgorithmIdentifier = requireNonNull(signatureAlgorithmIdentifier, "signatureAlgorithmIdentifier is null");
+        this.signatureAlgorithmIdentifier =
+                requireNonNull(signatureAlgorithmIdentifier, "signatureAlgorithmIdentifier is null");
         this.signature = requireNonNull(signature, "signature is null").clone();
 
         this.encoded = encodeSequence(
@@ -60,36 +68,30 @@ public class CertificationRequest
                 encodeBitString(0, signature));
     }
 
-    public CertificationRequestInfo getCertificationRequestInfo()
-    {
+    public CertificationRequestInfo getCertificationRequestInfo() {
         return certificationRequestInfo;
     }
 
-    public SignatureAlgorithmIdentifier getSignatureAlgorithmIdentifier()
-    {
+    public SignatureAlgorithmIdentifier getSignatureAlgorithmIdentifier() {
         return signatureAlgorithmIdentifier;
     }
 
-    public byte[] getSignature()
-    {
+    public byte[] getSignature() {
         return signature.clone();
     }
 
-    public byte[] getEncoded()
-    {
+    public byte[] getEncoded() {
         return encoded.clone();
     }
 
-    public String getPemEncoded()
-    {
-        return "-----BEGIN CERTIFICATE REQUEST-----\n" +
-                getMimeEncoder(64, new byte[] {'\n'}).encodeToString(encoded) + '\n' +
-                "-----END CERTIFICATE REQUEST-----\n";
+    public String getPemEncoded() {
+        return "-----BEGIN CERTIFICATE REQUEST-----\n"
+                + getMimeEncoder(64, new byte[] {'\n'}).encodeToString(encoded)
+                + '\n' + "-----END CERTIFICATE REQUEST-----\n";
     }
 
     @Override
-    public boolean equals(Object o)
-    {
+    public boolean equals(Object o) {
         if (this == o) {
             return true;
         }
@@ -97,20 +99,18 @@ public class CertificationRequest
             return false;
         }
         CertificationRequest that = (CertificationRequest) o;
-        return Objects.equals(certificationRequestInfo, that.certificationRequestInfo) &&
-                Objects.equals(signatureAlgorithmIdentifier, that.signatureAlgorithmIdentifier) &&
-                Arrays.equals(signature, that.signature);
+        return Objects.equals(certificationRequestInfo, that.certificationRequestInfo)
+                && Objects.equals(signatureAlgorithmIdentifier, that.signatureAlgorithmIdentifier)
+                && Arrays.equals(signature, that.signature);
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return Objects.hash(certificationRequestInfo, signatureAlgorithmIdentifier, signature);
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return toStringHelper(this)
                 .add("certificationRequestInfo", certificationRequestInfo)
                 .add("signatureAlgorithmIdentifier", signatureAlgorithmIdentifier)

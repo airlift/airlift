@@ -1,5 +1,9 @@
 package io.airlift.mcp.reference;
 
+import static com.google.inject.Scopes.SINGLETON;
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
+import static io.airlift.mcp.McpMetadata.CONTEXT_REQUEST_KEY;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Binder;
@@ -17,24 +21,19 @@ import io.modelcontextprotocol.server.transport.HttpServletStatelessServerTransp
 import io.modelcontextprotocol.spec.McpSchema;
 import jakarta.servlet.Filter;
 
-import static com.google.inject.Scopes.SINGLETON;
-import static com.google.inject.multibindings.Multibinder.newSetBinder;
-import static io.airlift.mcp.McpMetadata.CONTEXT_REQUEST_KEY;
-
-public class ReferenceModule
-        implements Module
-{
+public class ReferenceModule implements Module {
     @Override
-    public void configure(Binder binder)
-    {
+    public void configure(Binder binder) {
         binder.bind(ReferenceServer.class).asEagerSingleton();
-        newSetBinder(binder, Filter.class).addBinding().to(ReferenceFilter.class).in(SINGLETON);
+        newSetBinder(binder, Filter.class)
+                .addBinding()
+                .to(ReferenceFilter.class)
+                .in(SINGLETON);
     }
 
     @Singleton
     @Provides
-    public HttpServletStatelessServerTransport mcpTransport(McpMetadata metadata, McpJsonMapper objectMapper)
-    {
+    public HttpServletStatelessServerTransport mcpTransport(McpMetadata metadata, McpJsonMapper objectMapper) {
         return HttpServletStatelessServerTransport.builder()
                 .messageEndpoint(metadata.uriPath())
                 .jsonMapper(objectMapper)
@@ -44,8 +43,8 @@ public class ReferenceModule
 
     @Singleton
     @Provides
-    public McpStatelessSyncServer buildServer(HttpServletStatelessServerTransport transport, McpMetadata metadata, McpJsonMapper objectMapper)
-    {
+    public McpStatelessSyncServer buildServer(
+            HttpServletStatelessServerTransport transport, McpMetadata metadata, McpJsonMapper objectMapper) {
         McpSchema.ServerCapabilities serverCapabilities = new McpSchema.ServerCapabilities(
                 null,
                 null,
@@ -57,7 +56,9 @@ public class ReferenceModule
         StatelessSyncSpecification builder = McpServer.sync(transport)
                 .jsonMapper(objectMapper)
                 .capabilities(serverCapabilities)
-                .serverInfo(metadata.implementation().name(), metadata.implementation().version());
+                .serverInfo(
+                        metadata.implementation().name(),
+                        metadata.implementation().version());
 
         metadata.instructions().map(builder::instructions);
 
@@ -66,8 +67,7 @@ public class ReferenceModule
 
     @Singleton
     @Provides
-    public McpJsonMapper mcpJsonMapper(ObjectMapper objectMapper)
-    {
+    public McpJsonMapper mcpJsonMapper(ObjectMapper objectMapper) {
         return new JacksonMcpJsonMapper(objectMapper);
     }
 }

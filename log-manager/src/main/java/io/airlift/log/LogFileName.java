@@ -13,9 +13,13 @@
  */
 package io.airlift.log;
 
+import static com.google.common.base.CharMatcher.anyOf;
+import static java.lang.Integer.parseInt;
+import static java.util.Objects.requireNonNull;
+import static java.util.UUID.randomUUID;
+
 import com.google.common.base.Splitter;
 import com.google.common.collect.ComparisonChain;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.DateTimeException;
@@ -26,14 +30,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 
-import static com.google.common.base.CharMatcher.anyOf;
-import static java.lang.Integer.parseInt;
-import static java.util.Objects.requireNonNull;
-import static java.util.UUID.randomUUID;
-
-final class LogFileName
-        implements Comparable<LogFileName>
-{
+final class LogFileName implements Comparable<LogFileName> {
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("-yyyyMMdd.HHmmss");
     private static final int MAX_GENERATED_INDEX = 1000;
 
@@ -54,8 +51,7 @@ final class LogFileName
      * @param historyFileName the history file name to parse
      * @return a present value if the file name is part of the history set
      */
-    public static Optional<LogFileName> parseHistoryLogFileName(String masterLogFileName, String historyFileName)
-    {
+    public static Optional<LogFileName> parseHistoryLogFileName(String masterLogFileName, String historyFileName) {
         requireNonNull(masterLogFileName, "masterLogFileName is null");
         requireNonNull(historyFileName, "historyFileName is null");
         if (!historyFileName.startsWith(masterLogFileName + "-")) {
@@ -80,8 +76,7 @@ final class LogFileName
         return parseNewLogName(historyFileName, remainder, compressed);
     }
 
-    private static Optional<LogFileName> parseNewLogName(String historyFileName, String remainder, boolean compressed)
-    {
+    private static Optional<LogFileName> parseNewLogName(String historyFileName, String remainder, boolean compressed) {
         // yyyyMMdd.HHmmss-counter
         List<String> parts = Splitter.on(anyOf(".-")).limit(3).splitToList(remainder);
         if (parts.size() < 2) {
@@ -103,8 +98,7 @@ final class LogFileName
                     parseInt(time.substring(0, 2)),
                     parseInt(time.substring(2, 4)),
                     parseInt(time.substring(4, 6)));
-        }
-        catch (NumberFormatException | DateTimeException e) {
+        } catch (NumberFormatException | DateTimeException e) {
             return Optional.empty();
         }
 
@@ -113,16 +107,16 @@ final class LogFileName
         if (parts.size() == 3) {
             try {
                 index = parseInt(parts.get(2));
-            }
-            catch (NumberFormatException ignored) {
+            } catch (NumberFormatException ignored) {
                 slug = Optional.of(parts.get(2));
             }
         }
-        return Optional.of(new LogFileName(historyFileName, dateTime, OptionalInt.of(index), OptionalInt.empty(), slug, compressed));
+        return Optional.of(new LogFileName(
+                historyFileName, dateTime, OptionalInt.of(index), OptionalInt.empty(), slug, compressed));
     }
 
-    private static Optional<LogFileName> parseLegacyLogName(String historyFileName, String remainder, boolean compressed)
-    {
+    private static Optional<LogFileName> parseLegacyLogName(
+            String historyFileName, String remainder, boolean compressed) {
         // %d{yyyy-MM-dd}.%i.log
         remainder = remainder.substring(0, remainder.length() - ".log".length());
 
@@ -134,8 +128,7 @@ final class LogFileName
         LocalDateTime dateTime;
         try {
             dateTime = LocalDateTime.of(parseInt(parts.get(0)), parseInt(parts.get(1)), parseInt(parts.get(2)), 0, 0);
-        }
-        catch (NumberFormatException | DateTimeException e) {
+        } catch (NumberFormatException | DateTimeException e) {
             return Optional.empty();
         }
 
@@ -143,42 +136,47 @@ final class LogFileName
         Optional<String> slug = Optional.empty();
         try {
             legacyIndex = parseInt(parts.get(3));
-        }
-        catch (NumberFormatException ignored) {
+        } catch (NumberFormatException ignored) {
             slug = Optional.of(parts.get(3));
         }
 
-        return Optional.of(new LogFileName(historyFileName, dateTime, OptionalInt.empty(), OptionalInt.of(legacyIndex), slug, compressed));
+        return Optional.of(new LogFileName(
+                historyFileName, dateTime, OptionalInt.empty(), OptionalInt.of(legacyIndex), slug, compressed));
     }
 
-    public static LogFileName generateNextLogFileName(Path masterLogFile, Optional<String> compressionExtension)
-    {
+    public static LogFileName generateNextLogFileName(Path masterLogFile, Optional<String> compressionExtension) {
         LocalDateTime dateTime = LocalDateTime.now().withNano(0);
         String suffix = DATE_TIME_FORMATTER.format(dateTime);
         for (int index = 0; index < MAX_GENERATED_INDEX; index++) {
             String newFileName = masterLogFile.getFileName() + suffix + (index > 0 ? "-" + index : "");
             Path newFile = masterLogFile.resolveSibling(newFileName);
             if (!fileAlreadyExists(newFile, compressionExtension)) {
-                return new LogFileName(newFileName, dateTime, OptionalInt.of(index), OptionalInt.empty(), Optional.empty(), false);
+                return new LogFileName(
+                        newFileName, dateTime, OptionalInt.of(index), OptionalInt.empty(), Optional.empty(), false);
             }
         }
         // something strange is happening, just use a random UUID, so we continue logging
         String slug = randomUUID().toString();
         String randomFileName = masterLogFile.getFileName() + suffix + "--" + slug;
-        return new LogFileName(randomFileName, dateTime, OptionalInt.of(0), OptionalInt.empty(), Optional.of(slug), false);
+        return new LogFileName(
+                randomFileName, dateTime, OptionalInt.of(0), OptionalInt.empty(), Optional.of(slug), false);
     }
 
-    private static boolean fileAlreadyExists(Path newFile, Optional<String> compressionExtension)
-    {
-        return Files.exists(newFile) ||
-                compressionExtension
+    private static boolean fileAlreadyExists(Path newFile, Optional<String> compressionExtension) {
+        return Files.exists(newFile)
+                || compressionExtension
                         .map(extension -> newFile.resolveSibling(newFile.getFileName() + extension))
                         .map(Files::exists)
                         .orElse(false);
     }
 
-    private LogFileName(String fileName, LocalDateTime dateTime, OptionalInt index, OptionalInt legacyIndex, Optional<String> slug, boolean compressed)
-    {
+    private LogFileName(
+            String fileName,
+            LocalDateTime dateTime,
+            OptionalInt index,
+            OptionalInt legacyIndex,
+            Optional<String> slug,
+            boolean compressed) {
         this.fileName = requireNonNull(fileName, "fileName is null");
         this.dateTime = requireNonNull(dateTime, "dateTime is null");
         this.index = requireNonNull(index, "index is null");
@@ -187,39 +185,32 @@ final class LogFileName
         this.compressed = compressed;
     }
 
-    public String getFileName()
-    {
+    public String getFileName() {
         return fileName;
     }
 
-    public LocalDateTime getDateTime()
-    {
+    public LocalDateTime getDateTime() {
         return dateTime;
     }
 
-    public OptionalInt getIndex()
-    {
+    public OptionalInt getIndex() {
         return index;
     }
 
-    public OptionalInt getLegacyIndex()
-    {
+    public OptionalInt getLegacyIndex() {
         return legacyIndex;
     }
 
-    public Optional<String> getSlug()
-    {
+    public Optional<String> getSlug() {
         return slug;
     }
 
-    public boolean isCompressed()
-    {
+    public boolean isCompressed() {
         return compressed;
     }
 
     @Override
-    public boolean equals(Object o)
-    {
+    public boolean equals(Object o) {
         if (this == o) {
             return true;
         }
@@ -227,21 +218,19 @@ final class LogFileName
             return false;
         }
         LogFileName that = (LogFileName) o;
-        return dateTime.equals(that.dateTime) &&
-                index.equals(that.index) &&
-                legacyIndex.equals(that.legacyIndex) &&
-                slug.equals(that.slug);
+        return dateTime.equals(that.dateTime)
+                && index.equals(that.index)
+                && legacyIndex.equals(that.legacyIndex)
+                && slug.equals(that.slug);
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return Objects.hash(dateTime, index, legacyIndex, slug);
     }
 
     @Override
-    public int compareTo(LogFileName o)
-    {
+    public int compareTo(LogFileName o) {
         return ComparisonChain.start()
                 .compare(dateTime, o.dateTime)
                 .compareTrueFirst(index.isPresent(), o.index.isPresent())
@@ -254,13 +243,11 @@ final class LogFileName
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return fileName;
     }
 
-    public LogFileName withCompression(Path compressedFile)
-    {
+    public LogFileName withCompression(Path compressedFile) {
         return new LogFileName(compressedFile.getFileName().toString(), dateTime, index, legacyIndex, slug, true);
     }
 }

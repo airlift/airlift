@@ -1,20 +1,17 @@
 package io.airlift.log;
 
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.net.HostAndPort;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
-import org.weakref.jmx.Managed;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.concurrent.atomic.AtomicLong;
+import org.weakref.jmx.Managed;
 
-import static java.util.Objects.requireNonNull;
-
-public class SocketMessageOutput
-        implements MessageOutput
-{
+public class SocketMessageOutput implements MessageOutput {
     private static final int CONNECTION_TIMEOUT_MILLIS = 100;
     private static final int MAX_WRITE_ATTEMPTS_PER_MESSAGE = 5;
 
@@ -23,19 +20,17 @@ public class SocketMessageOutput
 
     @GuardedBy("this")
     private Socket socket;
+
     @GuardedBy("this")
     private OutputStream currentOutputStream;
 
-    SocketMessageOutput(HostAndPort hostAndPort)
-    {
+    SocketMessageOutput(HostAndPort hostAndPort) {
         requireNonNull(hostAndPort, "hostAndPort is null");
         this.socketAddress = new InetSocketAddress(hostAndPort.getHost(), hostAndPort.getPort());
     }
 
     @Override
-    public synchronized void writeMessage(byte[] message)
-            throws IOException
-    {
+    public synchronized void writeMessage(byte[] message) throws IOException {
         IOException lastException = null;
         boolean success = false;
         int connectionFailures = 0;
@@ -45,8 +40,7 @@ public class SocketMessageOutput
                     socket = new Socket();
                     socket.connect(socketAddress, CONNECTION_TIMEOUT_MILLIS);
                     currentOutputStream = socket.getOutputStream();
-                }
-                catch (IOException e) {
+                } catch (IOException e) {
                     socket.close();
                     socket = null;
                     currentOutputStream = null;
@@ -60,8 +54,7 @@ public class SocketMessageOutput
                 currentOutputStream.write(message);
                 success = true;
                 break;
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 socket.close();
                 socket = null;
                 currentOutputStream = null;
@@ -74,41 +67,33 @@ public class SocketMessageOutput
             failedConnections.addAndGet(connectionFailures);
             if (!success) {
                 throw new IOException(
-                        "Exception caught connecting via socket to %s:%s. There were %s failures attempting to write the log message.".formatted(
-                                socketAddress.getHostName(),
-                                socketAddress.getPort(),
-                                connectionFailures),
+                        "Exception caught connecting via socket to %s:%s. There were %s failures attempting to write the log message."
+                                .formatted(socketAddress.getHostName(), socketAddress.getPort(), connectionFailures),
                         lastException);
             }
         }
     }
 
     @Override
-    public synchronized void flush()
-            throws IOException
-    {
+    public synchronized void flush() throws IOException {
         if (currentOutputStream != null) {
             currentOutputStream.flush();
         }
     }
 
     @Override
-    public synchronized void close()
-            throws IOException
-    {
+    public synchronized void close() throws IOException {
         IOException exception = new IOException("Exception thrown attempting to close the output stream and socket.");
 
         if (currentOutputStream != null) {
             try {
                 currentOutputStream.flush();
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 exception.addSuppressed(e);
             }
             try {
                 currentOutputStream.close();
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 exception.addSuppressed(e);
             }
         }
@@ -118,8 +103,7 @@ public class SocketMessageOutput
         if (socket != null) {
             try {
                 socket.close();
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 exception.addSuppressed(e);
             }
         }
@@ -132,8 +116,7 @@ public class SocketMessageOutput
     }
 
     @Managed
-    public long getFailedConnections()
-    {
+    public long getFailedConnections() {
         return failedConnections.get();
     }
 }

@@ -15,15 +15,14 @@
  */
 package io.airlift.configuration.testing;
 
+import static com.google.common.collect.Sets.newConcurrentHashSet;
+import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.collect.ImmutableSet;
 import io.airlift.configuration.ConfigurationFactory;
 import io.airlift.configuration.ConfigurationMetadata;
 import io.airlift.configuration.ConfigurationMetadata.AttributeMetadata;
-import net.bytebuddy.ByteBuddy;
-import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
-import net.bytebuddy.implementation.InvocationHandlerAdapter;
-import net.bytebuddy.matcher.ElementMatchers;
-
 import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.Map;
@@ -31,28 +30,25 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import net.bytebuddy.ByteBuddy;
+import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
+import net.bytebuddy.implementation.InvocationHandlerAdapter;
+import net.bytebuddy.matcher.ElementMatchers;
 
-import static com.google.common.collect.Sets.newConcurrentHashSet;
-import static java.lang.String.format;
-import static java.util.Objects.requireNonNull;
-
-public final class ConfigAssertions
-{
+public final class ConfigAssertions {
     private static final Method GET_RECORDING_CONFIG_METHOD;
 
     static {
         try {
             GET_RECORDING_CONFIG_METHOD = $$RecordingConfigProxy.class.getMethod("$$getRecordedConfig");
-        }
-        catch (NoSuchMethodException e) {
+        } catch (NoSuchMethodException e) {
             throw new RuntimeException(e);
         }
     }
 
     private ConfigAssertions() {}
 
-    public static <T> void assertDefaults(Map<String, Object> expectedAttributeValues, Class<T> configClass)
-    {
+    public static <T> void assertDefaults(Map<String, Object> expectedAttributeValues, Class<T> configClass) {
         ConfigurationMetadata<?> metadata = ConfigurationMetadata.getValidConfigurationMetadata(configClass);
 
         // verify all supplied attributes are supported
@@ -100,13 +96,11 @@ public final class ConfigAssertions
         }
     }
 
-    public static <T> void assertFullMapping(Map<String, String> properties, T expected)
-    {
+    public static <T> void assertFullMapping(Map<String, String> properties, T expected) {
         assertFullMapping(properties, expected, ImmutableSet.of());
     }
 
-    public static <T> void assertFullMapping(Map<String, String> properties, T expected, Set<String> skipped)
-    {
+    public static <T> void assertFullMapping(Map<String, String> properties, T expected, Set<String> skipped) {
         requireNonNull(properties, "properties");
         requireNonNull(expected, "expected");
 
@@ -141,8 +135,8 @@ public final class ConfigAssertions
     }
 
     @SafeVarargs
-    public static <T> void assertDeprecatedEquivalence(Class<T> configClass, Map<String, String> currentProperties, Map<String, String>... oldPropertiesList)
-    {
+    public static <T> void assertDeprecatedEquivalence(
+            Class<T> configClass, Map<String, String> currentProperties, Map<String, String>... oldPropertiesList) {
         requireNonNull(configClass, "configClass");
         requireNonNull(currentProperties, "currentProperties");
         requireNonNull(oldPropertiesList, "oldPropertiesList");
@@ -182,8 +176,8 @@ public final class ConfigAssertions
         }
     }
 
-    private static void assertPropertiesSupported(ConfigurationMetadata<?> metadata, Set<String> propertyNames, boolean allowDeprecatedProperties)
-    {
+    private static void assertPropertiesSupported(
+            ConfigurationMetadata<?> metadata, Set<String> propertyNames, boolean allowDeprecatedProperties) {
         Set<String> supportedProperties = new TreeSet<>();
         Set<String> nonDeprecatedProperties = new TreeSet<>();
         for (AttributeMetadata attribute : metadata.getAttributes().values()) {
@@ -209,8 +203,7 @@ public final class ConfigAssertions
         }
     }
 
-    private static <T> void assertAttributesEqual(ConfigurationMetadata<T> metadata, T actual, T expected)
-    {
+    private static <T> void assertAttributesEqual(ConfigurationMetadata<T> metadata, T actual, T expected) {
         for (AttributeMetadata attribute : metadata.getAttributes().values()) {
             Method getter = attribute.getGetter();
             if (getter == null) {
@@ -224,8 +217,8 @@ public final class ConfigAssertions
         }
     }
 
-    private static <T> void assertAttributesNotEqual(ConfigurationMetadata<T> metadata, T actual, T expected, Set<String> skipped)
-    {
+    private static <T> void assertAttributesNotEqual(
+            ConfigurationMetadata<T> metadata, T actual, T expected, Set<String> skipped) {
         for (AttributeMetadata attribute : metadata.getAttributes().values()) {
             Method getter = attribute.getGetter();
             if (getter == null) {
@@ -244,8 +237,7 @@ public final class ConfigAssertions
         }
     }
 
-    public static <T> void assertRecordedDefaults(T recordedConfig)
-    {
+    public static <T> void assertRecordedDefaults(T recordedConfig) {
         $$RecordedConfigData<T> recordedConfigData = getRecordedConfig(recordedConfig);
         Set<Method> invokedMethods = recordedConfigData.invokedMethods();
 
@@ -267,8 +259,7 @@ public final class ConfigAssertions
                 if (attribute.getInjectionPoint().getProperty() != null) {
                     Object value = invoke(config, attribute.getGetter());
                     attributeValues.put(attribute.getName(), value);
-                }
-                else {
+                } else {
                     setDeprecatedAttributes.add(attribute.getName());
                 }
             }
@@ -288,8 +279,7 @@ public final class ConfigAssertions
         assertDefaults(attributeValues, configClass);
     }
 
-    public static <T> T recordDefaults(Class<T> type)
-    {
+    public static <T> T recordDefaults(Class<T> type) {
         Class<? extends T> loaded = new ByteBuddy()
                 .subclass(type)
                 .implement($$RecordingConfigProxy.class)
@@ -301,15 +291,13 @@ public final class ConfigAssertions
 
         try {
             return loaded.getConstructor().newInstance();
-        }
-        catch (ReflectiveOperationException e) {
+        } catch (ReflectiveOperationException e) {
             throw new AssertionError("Failed to instantiate proxy class for " + type.getName(), e);
         }
     }
 
     @SuppressWarnings("ObjectEquality")
-    private static <T> InvocationHandlerAdapter createInvocationHandler(Class<T> type)
-    {
+    private static <T> InvocationHandlerAdapter createInvocationHandler(Class<T> type) {
         T instance = newDefaultInstance(type);
         Set<Method> invokedMethods = newConcurrentHashSet();
 
@@ -329,8 +317,7 @@ public final class ConfigAssertions
     }
 
     @SuppressWarnings("unchecked")
-    static <T> $$RecordedConfigData<T> getRecordedConfig(T config)
-    {
+    static <T> $$RecordedConfigData<T> getRecordedConfig(T config) {
         if (!(config instanceof $$RecordingConfigProxy)) {
             throw new IllegalArgumentException("Configuration was not created with the recordDefaults method");
         }
@@ -338,55 +325,45 @@ public final class ConfigAssertions
     }
 
     @SuppressWarnings("checkstyle:TypeName")
-    public record $$RecordedConfigData<T>(T instance, Set<Method> invokedMethods)
-    {
-        public $$RecordedConfigData
-        {
+    public record $$RecordedConfigData<T>(T instance, Set<Method> invokedMethods) {
+        public $$RecordedConfigData {
             requireNonNull(instance, "instance is null");
             invokedMethods = ImmutableSet.copyOf(invokedMethods);
         }
     }
 
     @SuppressWarnings({"checkstyle:TypeName", "checkstyle:MethodName"})
-    public interface $$RecordingConfigProxy<T>
-    {
+    public interface $$RecordingConfigProxy<T> {
         $$RecordedConfigData<T> $$getRecordedConfig();
     }
 
     @SuppressWarnings("unchecked")
-    private static <T> Class<T> getClass(T object)
-    {
+    private static <T> Class<T> getClass(T object) {
         return (Class<T>) object.getClass();
     }
 
-    private static <T> T newInstance(Class<T> configClass, Map<String, String> properties)
-    {
+    private static <T> T newInstance(Class<T> configClass, Map<String, String> properties) {
         ConfigurationFactory configurationFactory = new ConfigurationFactory(properties);
         return configurationFactory.build(configClass);
     }
 
-    private static <T> T newDefaultInstance(Class<T> configClass)
-    {
+    private static <T> T newDefaultInstance(Class<T> configClass) {
         try {
             return configClass.getConstructor().newInstance();
-        }
-        catch (ReflectiveOperationException e) {
+        } catch (ReflectiveOperationException e) {
             throw new AssertionError("Exception creating default instance of " + configClass.getName(), e);
         }
     }
 
-    private static <T> Object invoke(T actual, Method getter)
-    {
+    private static <T> Object invoke(T actual, Method getter) {
         try {
             return getter.invoke(actual);
-        }
-        catch (ReflectiveOperationException e) {
+        } catch (ReflectiveOperationException e) {
             throw new AssertionError("Exception invoking " + getter.toGenericString(), e);
         }
     }
 
-    private static String notEquals(String message, Object actual, Object expected)
-    {
+    private static String notEquals(String message, Object actual, Object expected) {
         return format("%s expected [%s] but found [%s]", message, expected, actual);
     }
 }

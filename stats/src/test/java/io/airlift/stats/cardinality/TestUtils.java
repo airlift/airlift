@@ -14,15 +14,12 @@
 package io.airlift.stats.cardinality;
 
 import com.google.common.collect.ImmutableList;
-
 import java.util.List;
 
-public final class TestUtils
-{
+public final class TestUtils {
     private TestUtils() {}
 
-    public static List<Long> sequence(int start, int end)
-    {
+    public static List<Long> sequence(int start, int end) {
         ImmutableList.Builder<Long> builder = ImmutableList.builder();
 
         for (long i = start; i < end; i++) {

@@ -19,27 +19,23 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
-
 import java.net.URI;
 
-public class PersonRepresentation
-{
+public class PersonRepresentation {
     private final Person person;
     private final URI self;
 
-    public static PersonRepresentation from(Person person, URI self)
-    {
+    public static PersonRepresentation from(Person person, URI self) {
         return new PersonRepresentation(person, self);
     }
 
     @JsonCreator
-    public PersonRepresentation(@JsonProperty("email") String email, @JsonProperty("name") String name, @JsonProperty("self") URI self)
-    {
+    public PersonRepresentation(
+            @JsonProperty("email") String email, @JsonProperty("name") String name, @JsonProperty("self") URI self) {
         this(new Person(email, name), self);
     }
 
-    private PersonRepresentation(Person person, URI self)
-    {
+    private PersonRepresentation(Person person, URI self) {
         this.person = person;
         this.self = self;
     }
@@ -47,32 +43,27 @@ public class PersonRepresentation
     @JsonProperty
     @NotNull(message = "is missing")
     @Pattern(regexp = "[^@]+@[^@]+", message = "is malformed")
-    public String getEmail()
-    {
+    public String getEmail() {
         return person.getEmail();
     }
 
     @JsonProperty
     @NotNull(message = "is missing")
-    public String getName()
-    {
+    public String getName() {
         return person.getName();
     }
 
     @JsonProperty
-    public URI getSelf()
-    {
+    public URI getSelf() {
         return self;
     }
 
-    public Person toPerson()
-    {
+    public Person toPerson() {
         return person;
     }
 
     @Override
-    public boolean equals(Object o)
-    {
+    public boolean equals(Object o) {
         if (this == o) {
             return true;
         }
@@ -93,8 +84,7 @@ public class PersonRepresentation
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         int result = person != null ? person.hashCode() : 0;
         result = 31 * result + (self != null ? self.hashCode() : 0);
         return result;

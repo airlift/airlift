@@ -15,37 +15,33 @@
  */
 package io.airlift.sample;
 
-import jakarta.ws.rs.core.Response;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.parallel.Execution;
-
-import java.util.ArrayList;
-import java.util.Collection;
-
 import static com.google.common.collect.Lists.newArrayList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
 
+import jakarta.ws.rs.core.Response;
+import java.util.ArrayList;
+import java.util.Collection;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.parallel.Execution;
+
 @TestInstance(PER_CLASS)
 @Execution(SAME_THREAD)
-public class TestPersonsResource
-{
+public class TestPersonsResource {
     private PersonsResource resource;
     private PersonStore store;
 
     @BeforeEach
-    public void setup()
-    {
+    public void setup() {
         store = new PersonStore(new StoreConfig());
         resource = new PersonsResource(store);
     }
 
     @Test
-    public void testEmpty()
-    {
+    public void testEmpty() {
         Response response = resource.listAll();
         assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
         assertThat(response.getEntity()).isInstanceOf(Collection.class);
@@ -53,16 +49,16 @@ public class TestPersonsResource
     }
 
     @Test
-    public void testListAll()
-    {
+    public void testListAll() {
         store.put("foo", new Person("foo@example.com", "Mr Foo"));
         store.put("bar", new Person("bar@example.com", "Mr Bar"));
 
         Response response = resource.listAll();
         assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
         assertThat(response.getEntity()).isInstanceOf(Collection.class);
-        assertThat((Collection<?>) response.getEntity()).isEqualTo(newArrayList(
-                new PersonRepresentation("foo@example.com", "Mr Foo", null),
-                new PersonRepresentation("bar@example.com", "Mr Bar", null)));
+        assertThat((Collection<?>) response.getEntity())
+                .isEqualTo(newArrayList(
+                        new PersonRepresentation("foo@example.com", "Mr Foo", null),
+                        new PersonRepresentation("bar@example.com", "Mr Bar", null)));
     }
 }

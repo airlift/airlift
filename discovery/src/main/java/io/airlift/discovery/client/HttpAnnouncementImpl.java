@@ -15,34 +15,28 @@
  */
 package io.airlift.discovery.client;
 
-import java.lang.annotation.Annotation;
-
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
-class HttpAnnouncementImpl
-        implements HttpAnnouncement
-{
+import java.lang.annotation.Annotation;
+
+class HttpAnnouncementImpl implements HttpAnnouncement {
     private final String announcementId;
 
-    public HttpAnnouncementImpl(String announcementId)
-    {
+    public HttpAnnouncementImpl(String announcementId) {
         this.announcementId = requireNonNull(announcementId, "announcementId is null");
     }
 
-    public String announcementId()
-    {
+    public String announcementId() {
         return announcementId;
     }
 
-    public String toString()
-    {
+    public String toString() {
         return format("@%s(announcementId=\"%s\")", annotationType().getName(), announcementId.replace("\"", "\\\""));
     }
 
     @Override
-    public boolean equals(Object o)
-    {
+    public boolean equals(Object o) {
         if (!(o instanceof HttpAnnouncement that)) {
             return false;
         }
@@ -50,16 +44,14 @@ class HttpAnnouncementImpl
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         // see Annotation.hashCode()
         int result = 0;
         result += ((127 * "announcementId".hashCode()) ^ announcementId.hashCode());
         return result;
     }
 
-    public Class<? extends Annotation> annotationType()
-    {
+    public Class<? extends Annotation> annotationType() {
         return HttpAnnouncement.class;
     }
 }

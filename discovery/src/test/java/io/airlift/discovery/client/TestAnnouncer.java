@@ -15,24 +15,6 @@
  */
 package io.airlift.discovery.client;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import io.airlift.discovery.client.testing.InMemoryDiscoveryClient;
-import io.airlift.node.NodeConfig;
-import io.airlift.node.NodeInfo;
-import io.airlift.units.Duration;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.parallel.Execution;
-
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-
 import static io.airlift.concurrent.MoreFutures.getFutureValue;
 import static io.airlift.discovery.client.ServiceTypes.serviceType;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,10 +22,26 @@ import static org.assertj.core.api.Assertions.fail;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import io.airlift.discovery.client.testing.InMemoryDiscoveryClient;
+import io.airlift.node.NodeConfig;
+import io.airlift.node.NodeInfo;
+import io.airlift.units.Duration;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.parallel.Execution;
+
 @TestInstance(PER_CLASS)
 @Execution(SAME_THREAD)
-public class TestAnnouncer
-{
+public class TestAnnouncer {
     public static final Duration MAX_AGE = new Duration(1, TimeUnit.MILLISECONDS);
     private final ServiceType serviceType = serviceType("foo");
     private Announcer announcer;
@@ -52,24 +50,23 @@ public class TestAnnouncer
     private NodeInfo nodeInfo;
 
     @BeforeEach
-    protected void setUp()
-    {
+    protected void setUp() {
         nodeInfo = new NodeInfo(new NodeConfig().setEnvironment("test").setPool("pool"));
         discoveryClient = new InMemoryDiscoveryClient(nodeInfo, MAX_AGE);
-        serviceAnnouncement = ServiceAnnouncement.serviceAnnouncement(serviceType.value()).addProperty("a", "apple").build();
+        serviceAnnouncement = ServiceAnnouncement.serviceAnnouncement(serviceType.value())
+                .addProperty("a", "apple")
+                .build();
         announcer = new Announcer(discoveryClient, ImmutableSet.of(serviceAnnouncement));
     }
 
     @AfterEach
-    public void tearDown()
-    {
+    public void tearDown() {
         announcer.destroy();
         assertAnnounced();
     }
 
     @Test
-    public void testBasic()
-    {
+    public void testBasic() {
         assertAnnounced();
 
         announcer.start();
@@ -78,30 +75,26 @@ public class TestAnnouncer
     }
 
     @Test
-    public void startAfterDestroy()
-    {
+    public void startAfterDestroy() {
         announcer.start();
         announcer.destroy();
 
         try {
             announcer.start();
             fail("Expected IllegalStateException");
+        } catch (IllegalStateException expected) {
         }
-        catch (IllegalStateException expected) {
-        }
     }
 
     @Test
-    public void idempotentStart()
-    {
+    public void idempotentStart() {
         announcer.start();
         announcer.start();
         announcer.start();
     }
 
     @Test
-    public void idempotentDestroy()
-    {
+    public void idempotentDestroy() {
         announcer.start();
         announcer.destroy();
         announcer.destroy();
@@ -109,20 +102,19 @@ public class TestAnnouncer
     }
 
     @Test
-    public void destroyNoStart()
-    {
+    public void destroyNoStart() {
         announcer.destroy();
     }
 
     @Test
-    public void addAnnouncementAfterStart()
-            throws Exception
-    {
+    public void addAnnouncementAfterStart() throws Exception {
         assertAnnounced();
 
         announcer.start();
 
-        ServiceAnnouncement newAnnouncement = ServiceAnnouncement.serviceAnnouncement(serviceType.value()).addProperty("a", "apple").build();
+        ServiceAnnouncement newAnnouncement = ServiceAnnouncement.serviceAnnouncement(serviceType.value())
+                .addProperty("a", "apple")
+                .build();
         announcer.addServiceAnnouncement(newAnnouncement);
 
         Thread.sleep(100);
@@ -130,9 +122,7 @@ public class TestAnnouncer
     }
 
     @Test
-    public void removeAnnouncementAfterStart()
-            throws Exception
-    {
+    public void removeAnnouncementAfterStart() throws Exception {
         assertAnnounced();
 
         announcer.start();
@@ -143,8 +133,7 @@ public class TestAnnouncer
         assertAnnounced();
     }
 
-    private void assertAnnounced(ServiceAnnouncement... serviceAnnouncements)
-    {
+    private void assertAnnounced(ServiceAnnouncement... serviceAnnouncements) {
         Future<ServiceDescriptors> future = discoveryClient.getServices(serviceType.value(), "pool");
         ServiceDescriptors serviceDescriptors = getFutureValue(future, DiscoveryException.class);
 
@@ -164,7 +153,9 @@ public class TestAnnouncer
 
         for (ServiceAnnouncement serviceAnnouncement : serviceAnnouncements) {
             ServiceDescriptor serviceDescriptor = descriptorMap.get(serviceAnnouncement.getId());
-            assertThat(serviceDescriptor).as("No descriptor for announcement " + serviceAnnouncement.getId()).isNotNull();
+            assertThat(serviceDescriptor)
+                    .as("No descriptor for announcement " + serviceAnnouncement.getId())
+                    .isNotNull();
             assertThat(serviceDescriptor.getType()).isEqualTo(serviceType.value());
             assertThat(serviceDescriptor.getPool()).isEqualTo("pool");
             assertThat(serviceDescriptor.getId()).isEqualTo(serviceAnnouncement.getId());

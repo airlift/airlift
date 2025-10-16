@@ -13,77 +13,65 @@
  */
 package io.airlift.http.server;
 
+import static java.util.Objects.requireNonNull;
+
 import org.eclipse.jetty.io.ConnectionStatistics;
 import org.weakref.jmx.Managed;
 
-import static java.util.Objects.requireNonNull;
-
-public class ConnectionStats
-{
+public class ConnectionStats {
     private final ConnectionStatistics connectionStats;
 
-    public ConnectionStats(ConnectionStatistics connectionStats)
-    {
+    public ConnectionStats(ConnectionStatistics connectionStats) {
         this.connectionStats = requireNonNull(connectionStats, "connectionStats is null");
     }
 
     @Managed(description = "total number of bytes received by all connections")
-    public long getReceivedBytes()
-    {
+    public long getReceivedBytes() {
         return connectionStats.getReceivedBytes();
     }
 
     @Managed(description = "total number of bytes sent by all connections")
-    public long getSentBytes()
-    {
+    public long getSentBytes() {
         return connectionStats.getSentBytes();
     }
 
     @Managed(description = "max connection duration (ms)")
-    public long getMaxConnectionDuration()
-    {
+    public long getMaxConnectionDuration() {
         return connectionStats.getConnectionDurationMax();
     }
 
     @Managed(description = "mean connection duration (ms)")
-    public double getMeanConnectionDuration()
-    {
+    public double getMeanConnectionDuration() {
         return connectionStats.getConnectionDurationMean();
     }
 
     @Managed(description = "standard deviation of connection duration")
-    public double getConnectionDurationStdDev()
-    {
+    public double getConnectionDurationStdDev() {
         return connectionStats.getConnectionDurationStdDev();
     }
 
     @Managed(description = "total number of connections opened")
-    public long getTotalConnectionCount()
-    {
+    public long getTotalConnectionCount() {
         return connectionStats.getConnectionsTotal();
     }
 
     @Managed(description = "number of open connections")
-    public long getOpenConnectionCount()
-    {
+    public long getOpenConnectionCount() {
         return connectionStats.getConnections();
     }
 
     @Managed(description = "max number of open connections")
-    public long getMaxOpenConnections()
-    {
+    public long getMaxOpenConnections() {
         return connectionStats.getConnectionsMax();
     }
 
     @Managed(description = "total number of messages received")
-    public long getReceivedMessageCount()
-    {
+    public long getReceivedMessageCount() {
         return connectionStats.getReceivedMessages();
     }
 
     @Managed(description = "total number of messages sent")
-    public long getSentMessageCount()
-    {
+    public long getSentMessageCount() {
         return connectionStats.getSentMessages();
     }
 }

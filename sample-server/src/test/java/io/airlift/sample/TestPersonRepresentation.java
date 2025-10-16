@@ -15,23 +15,21 @@
  */
 package io.airlift.sample;
 
-import com.google.common.io.Resources;
-import io.airlift.json.JsonCodec;
-import org.junit.jupiter.api.Test;
-
 import static io.airlift.json.JsonCodec.jsonCodec;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TestPersonRepresentation
-{
+import com.google.common.io.Resources;
+import io.airlift.json.JsonCodec;
+import org.junit.jupiter.api.Test;
+
+public class TestPersonRepresentation {
     private final JsonCodec<PersonRepresentation> codec = jsonCodec(PersonRepresentation.class);
 
     // TODO: add equivalence test
 
     @Test
-    public void testJsonRoundTrip()
-    {
+    public void testJsonRoundTrip() {
         PersonRepresentation expected = new PersonRepresentation("alice@example.com", "Alice", null);
         String json = codec.toJson(expected);
         PersonRepresentation actual = codec.fromJson(json);
@@ -39,9 +37,7 @@ public class TestPersonRepresentation
     }
 
     @Test
-    public void testJsonDecode()
-            throws Exception
-    {
+    public void testJsonDecode() throws Exception {
         PersonRepresentation expected = new PersonRepresentation("foo@example.com", "Mr Foo", null);
 
         String json = Resources.toString(Resources.getResource("single.json"), UTF_8);

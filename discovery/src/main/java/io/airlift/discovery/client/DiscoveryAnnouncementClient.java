@@ -17,12 +17,10 @@ package io.airlift.discovery.client;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import io.airlift.units.Duration;
-
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-public interface DiscoveryAnnouncementClient
-{
+public interface DiscoveryAnnouncementClient {
     Duration DEFAULT_DELAY = new Duration(10, TimeUnit.SECONDS);
 
     ListenableFuture<Duration> announce(Set<ServiceAnnouncement> services);

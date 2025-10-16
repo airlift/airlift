@@ -15,21 +15,6 @@
  */
 package io.airlift.json;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.google.common.base.Strings;
-import com.google.common.reflect.TypeToken;
-import org.junit.jupiter.api.Test;
-
-import java.io.ByteArrayInputStream;
-import java.io.InputStreamReader;
-import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import static com.fasterxml.jackson.core.StreamReadConstraints.DEFAULT_MAX_STRING_LEN;
 import static io.airlift.json.JsonCodec.jsonCodec;
 import static io.airlift.json.JsonCodec.listJsonCodec;
@@ -38,11 +23,23 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class TestJsonCodec
-{
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.google.common.base.Strings;
+import com.google.common.reflect.TypeToken;
+import java.io.ByteArrayInputStream;
+import java.io.InputStreamReader;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+
+public class TestJsonCodec {
     @Test
-    public void testJsonCodec()
-    {
+    public void testJsonCodec() {
         JsonCodec<Person> jsonCodec = jsonCodec(Person.class);
 
         Person.validatePersonJsonCodec(jsonCodec);
@@ -53,8 +50,7 @@ public class TestJsonCodec
     }
 
     @Test
-    public void testListJsonCodec()
-    {
+    public void testListJsonCodec() {
         JsonCodec<List<Person>> jsonCodec = listJsonCodec(Person.class);
 
         Person.validatePersonListJsonCodec(jsonCodec);
@@ -65,8 +61,7 @@ public class TestJsonCodec
     }
 
     @Test
-    public void testListJsonCodecFromJsonCodec()
-    {
+    public void testListJsonCodecFromJsonCodec() {
         JsonCodec<List<Person>> jsonCodec = listJsonCodec(jsonCodec(Person.class));
 
         Person.validatePersonListJsonCodec(jsonCodec);
@@ -77,8 +72,7 @@ public class TestJsonCodec
     }
 
     @Test
-    public void testTypeTokenList()
-    {
+    public void testTypeTokenList() {
         JsonCodec<List<Person>> jsonCodec = jsonCodec(new TypeToken<List<Person>>() {});
 
         Person.validatePersonListJsonCodec(jsonCodec);
@@ -89,8 +83,7 @@ public class TestJsonCodec
     }
 
     @Test
-    public void testListNullValues()
-    {
+    public void testListNullValues() {
         JsonCodec<List<String>> jsonCodec = listJsonCodec(String.class);
 
         List<String> list = new ArrayList<>();
@@ -101,8 +94,7 @@ public class TestJsonCodec
     }
 
     @Test
-    public void testMapJsonCodec()
-    {
+    public void testMapJsonCodec() {
         JsonCodec<Map<String, Person>> jsonCodec = mapJsonCodec(String.class, Person.class);
 
         Person.validatePersonMapJsonCodec(jsonCodec);
@@ -113,8 +105,7 @@ public class TestJsonCodec
     }
 
     @Test
-    public void testMapJsonCodecFromJsonCodec()
-    {
+    public void testMapJsonCodecFromJsonCodec() {
         JsonCodec<Map<String, Person>> jsonCodec = mapJsonCodec(String.class, jsonCodec(Person.class));
 
         Person.validatePersonMapJsonCodec(jsonCodec);
@@ -125,8 +116,7 @@ public class TestJsonCodec
     }
 
     @Test
-    public void testTypeLiteralMap()
-    {
+    public void testTypeLiteralMap() {
         JsonCodec<Map<String, Person>> jsonCodec = jsonCodec(new TypeToken<Map<String, Person>>() {});
 
         Person.validatePersonMapJsonCodec(jsonCodec);
@@ -137,8 +127,7 @@ public class TestJsonCodec
     }
 
     @Test
-    public void testMapNullValues()
-    {
+    public void testMapNullValues() {
         JsonCodec<Map<String, String>> jsonCodec = mapJsonCodec(String.class, String.class);
 
         Map<String, String> map = new HashMap<>();
@@ -149,72 +138,64 @@ public class TestJsonCodec
     }
 
     @Test
-    public void testImmutableJsonCodec()
-    {
+    public void testImmutableJsonCodec() {
         JsonCodec<ImmutablePerson> jsonCodec = jsonCodec(ImmutablePerson.class);
 
         ImmutablePerson.validatePersonJsonCodec(jsonCodec);
     }
 
     @Test
-    public void testAsymmetricJsonCodec()
-    {
+    public void testAsymmetricJsonCodec() {
         JsonCodec<ImmutablePerson> jsonCodec = jsonCodec(ImmutablePerson.class);
         ImmutablePerson immutablePerson = jsonCodec.fromJson("{ \"notWritable\": \"foo\" }");
         assertThat(immutablePerson.getNotWritable()).isNull();
     }
 
     @Test
-    public void testImmutableListJsonCodec()
-    {
+    public void testImmutableListJsonCodec() {
         JsonCodec<List<ImmutablePerson>> jsonCodec = listJsonCodec(ImmutablePerson.class);
 
         ImmutablePerson.validatePersonListJsonCodec(jsonCodec);
     }
 
     @Test
-    public void testImmutableListJsonCodecFromJsonCodec()
-    {
+    public void testImmutableListJsonCodecFromJsonCodec() {
         JsonCodec<List<ImmutablePerson>> jsonCodec = listJsonCodec(jsonCodec(ImmutablePerson.class));
 
         ImmutablePerson.validatePersonListJsonCodec(jsonCodec);
     }
 
     @Test
-    public void testImmutableTypeTokenList()
-    {
+    public void testImmutableTypeTokenList() {
         JsonCodec<List<ImmutablePerson>> jsonCodec = jsonCodec(new TypeToken<List<ImmutablePerson>>() {});
 
         ImmutablePerson.validatePersonListJsonCodec(jsonCodec);
     }
 
     @Test
-    public void testImmutableMapJsonCodec()
-    {
+    public void testImmutableMapJsonCodec() {
         JsonCodec<Map<String, ImmutablePerson>> jsonCodec = mapJsonCodec(String.class, ImmutablePerson.class);
 
         ImmutablePerson.validatePersonMapJsonCodec(jsonCodec);
     }
 
     @Test
-    public void testImmutableMapJsonCodecFromJsonCodec()
-    {
-        JsonCodec<Map<String, ImmutablePerson>> jsonCodec = mapJsonCodec(String.class, jsonCodec(ImmutablePerson.class));
+    public void testImmutableMapJsonCodecFromJsonCodec() {
+        JsonCodec<Map<String, ImmutablePerson>> jsonCodec =
+                mapJsonCodec(String.class, jsonCodec(ImmutablePerson.class));
 
         ImmutablePerson.validatePersonMapJsonCodec(jsonCodec);
     }
 
     @Test
-    public void testImmutableTypeTokenMap()
-    {
+    public void testImmutableTypeTokenMap() {
         JsonCodec<Map<String, ImmutablePerson>> jsonCodec = jsonCodec(new TypeToken<Map<String, ImmutablePerson>>() {});
 
         ImmutablePerson.validatePersonMapJsonCodec(jsonCodec);
     }
 
     @Test
-    public void testToJsonWithLengthLimitSimple()
-    {
+    public void testToJsonWithLengthLimitSimple() {
         JsonCodec<ImmutablePerson> jsonCodec = jsonCodec(ImmutablePerson.class);
         ImmutablePerson person = new ImmutablePerson(Strings.repeat("a", 1000), false);
 
@@ -225,8 +206,7 @@ public class TestJsonCodec
     }
 
     @Test
-    public void testToJsonExceedingDefaultStringLimit()
-    {
+    public void testToJsonExceedingDefaultStringLimit() {
         JsonCodec<ImmutablePerson> jsonCodec = jsonCodec(ImmutablePerson.class);
         ImmutablePerson person = new ImmutablePerson(Strings.repeat("a", DEFAULT_MAX_STRING_LEN + 1), false);
 
@@ -238,12 +218,12 @@ public class TestJsonCodec
 
         assertThat(jsonCodec.fromJson(new ByteArrayInputStream(bytes))).isEqualTo(person);
 
-        assertThat(jsonCodec.fromJson(new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8))).isEqualTo(person);
+        assertThat(jsonCodec.fromJson(new InputStreamReader(new ByteArrayInputStream(bytes), UTF_8)))
+                .isEqualTo(person);
     }
 
     @Test
-    public void testToJsonWithLengthLimitNonAscii()
-    {
+    public void testToJsonWithLengthLimitNonAscii() {
         JsonCodec<ImmutablePerson> jsonCodec = jsonCodec(ImmutablePerson.class);
         ImmutablePerson person = new ImmutablePerson(Strings.repeat("\u0158", 1000), false);
 
@@ -254,8 +234,7 @@ public class TestJsonCodec
     }
 
     @Test
-    public void testToJsonWithLengthLimitComplex()
-    {
+    public void testToJsonWithLengthLimitComplex() {
         JsonCodec<List<ImmutablePerson>> jsonCodec = listJsonCodec(jsonCodec(ImmutablePerson.class));
         ImmutablePerson person = new ImmutablePerson(Strings.repeat("a", 1000), false);
         List<ImmutablePerson> people = Collections.nCopies(10, person);
@@ -267,8 +246,7 @@ public class TestJsonCodec
     }
 
     @Test
-    public void testTrailingContent()
-    {
+    public void testTrailingContent() {
         JsonCodec<ImmutablePerson> codec = jsonCodec(ImmutablePerson.class);
 
         String json = "{\"name\":\"Me\",\"rocks\":true}";
@@ -278,22 +256,26 @@ public class TestJsonCodec
         assertThatThrownBy(() -> codec.fromJson(jsonWithTrailingContent))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Invalid JSON string for [simple type, class io.airlift.json.ImmutablePerson]")
-                .hasStackTraceContaining("Unrecognized token 'trailer': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')");
+                .hasStackTraceContaining(
+                        "Unrecognized token 'trailer': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')");
 
         assertThatThrownBy(() -> codec.fromJson(jsonWithTrailingContent.getBytes(UTF_8)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Invalid JSON bytes for [simple type, class io.airlift.json.ImmutablePerson]")
-                .hasStackTraceContaining("Unrecognized token 'trailer': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')");
+                .hasStackTraceContaining(
+                        "Unrecognized token 'trailer': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')");
 
         assertThatThrownBy(() -> codec.fromJson(new ByteArrayInputStream(jsonWithTrailingContent.getBytes(UTF_8))))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Invalid JSON bytes for [simple type, class io.airlift.json.ImmutablePerson]")
-                .hasStackTraceContaining("Unrecognized token 'trailer': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')");
+                .hasStackTraceContaining(
+                        "Unrecognized token 'trailer': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')");
 
         assertThatThrownBy(() -> codec.fromJson(new StringReader(jsonWithTrailingContent)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Invalid JSON characters for [simple type, class io.airlift.json.ImmutablePerson]")
-                .hasStackTraceContaining("Unrecognized token 'trailer': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')");
+                .hasStackTraceContaining(
+                        "Unrecognized token 'trailer': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')");
 
         String jsonWithTrailingJsonContent = json + " \"valid json value\"";
         assertThatThrownBy(() -> codec.fromJson(jsonWithTrailingJsonContent))
@@ -314,21 +296,15 @@ public class TestJsonCodec
     }
 
     @Test
-    public void testRecordSerialization()
-    {
-        assertSerializationRoundTrip(
-                jsonCodec(MyRecord.class),
-                new MyRecord("my value"),
-                """
+    public void testRecordSerialization() {
+        assertSerializationRoundTrip(jsonCodec(MyRecord.class), new MyRecord("my value"), """
                 {
                   "foo" : "my value"
                 }\
                 """);
 
         assertSerializationRoundTrip(
-                JsonCodec.jsonCodec(MyRecordWithBeanLikeGetter.class),
-                new MyRecordWithBeanLikeGetter("my value"),
-                """
+                JsonCodec.jsonCodec(MyRecordWithBeanLikeGetter.class), new MyRecordWithBeanLikeGetter("my value"), """
                 {
                   "foo" : "my value"
                 }\
@@ -346,7 +322,9 @@ public class TestJsonCodec
                 }\
                 """);
 
-        assertThat(JsonCodec.jsonCodec(LegacyRecordAdditionalGetter.class).toJson(new LegacyRecordAdditionalGetter("my value"))).isEqualTo("""
+        assertThat(JsonCodec.jsonCodec(LegacyRecordAdditionalGetter.class)
+                        .toJson(new LegacyRecordAdditionalGetter("my value")))
+                .isEqualTo("""
                 {
                   "foo" : "not really a foo value",
                   "bar" : "there is no bar field in the record",
@@ -355,18 +333,15 @@ public class TestJsonCodec
                 """);
     }
 
-    private static <T> void assertSerializationRoundTrip(JsonCodec<T> codec, T object, String expected)
-    {
+    private static <T> void assertSerializationRoundTrip(JsonCodec<T> codec, T object, String expected) {
         assertThat(codec.toJson(object)).isEqualTo(expected);
         assertThat(codec.fromJson(expected)).isEqualTo(object);
     }
 
     public record MyRecord(String foo) {}
 
-    public record MyRecordWithBeanLikeGetter(String foo)
-    {
-        public String getFoo()
-        {
+    public record MyRecordWithBeanLikeGetter(String foo) {
+        public String getFoo() {
             return foo();
         }
     }
@@ -378,42 +353,35 @@ public class TestJsonCodec
             // a boolean property that has additional getter and is-getter
             boolean condition,
             // a boolean property named as an is-getter
-            boolean isCool)
-    {
+            boolean isCool) {
         // Might shadow actual getter for foo -- the foo() method
-        public String getFoo()
-        {
+        public String getFoo() {
             throw new UnsupportedOperationException("this method should not be called during serialization");
         }
 
         // Looks like a getter for "bar" property, there is no such record component
-        public String getBar()
-        {
+        public String getBar() {
             return "there is no bar field in the record";
         }
 
         // Not a record component, but explicitly requested to be included in serialization
         @JsonProperty
-        public String getAdditionalProperty()
-        {
+        public String getAdditionalProperty() {
             return "additional property value";
         }
 
         // Looks like record-style getter for "baz" property, there is no such record component
-        public String baz()
-        {
+        public String baz() {
             throw new UnsupportedOperationException("this method should not be called during serialization");
         }
 
         // Might shadow actual getter for condition -- the condition() method
-        public boolean isCondition()
-        {
+        public boolean isCondition() {
             throw new UnsupportedOperationException("this method should not be called during serialization");
         }
 
         // Might shadow actual getter for condition -- the condition() method
-        public boolean getCondition()
-        {
+        public boolean getCondition() {
             throw new UnsupportedOperationException("this method should not be called during serialization");
         }
     }
@@ -421,23 +389,19 @@ public class TestJsonCodec
     @SuppressWarnings("removal")
     @JsonPropertyOrder(alphabetic = true)
     @RecordAutoDetectModule.LegacyRecordIntrospection
-    public record LegacyRecordAdditionalGetter(String foo)
-    {
+    public record LegacyRecordAdditionalGetter(String foo) {
         // Not the canonical accessor for the foo record component, but takes precedence when serializing to JSON
-        public String getFoo()
-        {
+        public String getFoo() {
             return "not really a foo value";
         }
 
         // Not a record component, but gets serialized to JSON
-        public String getBar()
-        {
+        public String getBar() {
             return "there is no bar field in the record";
         }
 
         // Not a record component, but gets serialized to JSON
-        public boolean isSafe()
-        {
+        public boolean isSafe() {
             return false;
         }
     }

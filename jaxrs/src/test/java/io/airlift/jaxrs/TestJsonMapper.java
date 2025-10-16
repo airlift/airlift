@@ -15,6 +15,11 @@
  */
 package io.airlift.jaxrs;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.fail;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
 import com.google.common.net.HttpHeaders;
@@ -23,28 +28,19 @@ import io.airlift.jaxrs.testing.GuavaMultivaluedMap;
 import io.airlift.json.JsonCodec;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MultivaluedMap;
-import org.junit.jupiter.api.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.zip.ZipException;
+import org.junit.jupiter.api.Test;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.fail;
-
-public class TestJsonMapper
-{
+public class TestJsonMapper {
     private static final JsonMapper jsonMapper = new JsonMapper(new ObjectMapper());
 
     @Test
-    public void testSuccess()
-            throws IOException
-    {
+    public void testSuccess() throws IOException {
         assertRoundTrip("value");
         assertRoundTrip("<");
         assertRoundTrip(">");
@@ -52,9 +48,7 @@ public class TestJsonMapper
         assertRoundTrip("<>'&");
     }
 
-    private static void assertRoundTrip(String value)
-            throws IOException
-    {
+    private static void assertRoundTrip(String value) throws IOException {
         JsonCodec<String> jsonCodec = JsonCodec.jsonCodec(String.class);
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
@@ -66,87 +60,80 @@ public class TestJsonMapper
     }
 
     @Test
-    public void testJsonEofExceptionMapping()
-            throws IOException
-    {
+    public void testJsonEofExceptionMapping() throws IOException {
         try {
-            jsonMapper.readFrom(Object.class, Object.class, null, null, null, new ByteArrayInputStream("{".getBytes(UTF_8)));
+            jsonMapper.readFrom(
+                    Object.class, Object.class, null, null, null, new ByteArrayInputStream("{".getBytes(UTF_8)));
             fail("Should have thrown an Exception");
-        }
-        catch (JsonParsingException e) {
+        } catch (JsonParsingException e) {
             // intended
         }
     }
 
     @Test
-    public void testJsonBindingExceptionMapping()
-            throws IOException
-    {
+    public void testJsonBindingExceptionMapping() throws IOException {
         try {
-            jsonMapper.readFrom(Object.class, ExamplePojo.class, null, null, null, new ByteArrayInputStream("{\"notAField\": null}".getBytes(UTF_8)));
+            jsonMapper.readFrom(
+                    Object.class,
+                    ExamplePojo.class,
+                    null,
+                    null,
+                    null,
+                    new ByteArrayInputStream("{\"notAField\": null}".getBytes(UTF_8)));
             fail("Should have thrown an Exception");
-        }
-        catch (JsonParsingException e) {
+        } catch (JsonParsingException e) {
             // intended
         }
     }
 
     @Test
-    public void testJsonWriteExceptionMapping()
-            throws IOException
-    {
+    public void testJsonWriteExceptionMapping() throws IOException {
         try {
             ByteArrayOutputStream stream = new ByteArrayOutputStream(1);
-            jsonMapper.writeTo(new OtherExamplePojo("nah", "bro"), List.class, new TypeToken<List<String>>() {}.getType(), null, null, new GuavaMultivaluedMap<>(), stream);
+            jsonMapper.writeTo(
+                    new OtherExamplePojo("nah", "bro"),
+                    List.class,
+                    new TypeToken<List<String>>() {}.getType(),
+                    null,
+                    null,
+                    new GuavaMultivaluedMap<>(),
+                    stream);
             System.out.println("stream: " + stream.toString());
             fail("Should have thrown an Exception");
-        }
-        catch (JsonParsingException e) {
+        } catch (JsonParsingException e) {
             fail("jsonMapper.writeTo() should not throw JsonParsingException");
-        }
-        catch (InvalidDefinitionException e) {
+        } catch (InvalidDefinitionException e) {
             // intended
         }
     }
 
     @Test
-    public void testOtherIOExceptionThrowsIOException()
-    {
+    public void testOtherIOExceptionThrowsIOException() {
         try {
-            assertThatThrownBy(() -> jsonMapper.readFrom(Object.class, Object.class, null, null, null, new InputStream()
-            {
-                @Override
-                public int read()
-                        throws IOException
-                {
-                    throw new ZipException("forced ZipException");
-                }
+            assertThatThrownBy(
+                            () -> jsonMapper.readFrom(Object.class, Object.class, null, null, null, new InputStream() {
+                                @Override
+                                public int read() throws IOException {
+                                    throw new ZipException("forced ZipException");
+                                }
 
-                @Override
-                public int read(byte[] b)
-                        throws IOException
-                {
-                    throw new ZipException("forced ZipException");
-                }
+                                @Override
+                                public int read(byte[] b) throws IOException {
+                                    throw new ZipException("forced ZipException");
+                                }
 
-                @Override
-                public int read(byte[] b, int off, int len)
-                        throws IOException
-                {
-                    throw new ZipException("forced ZipException");
-                }
-            })).isInstanceOf(ZipException.class);
-        }
-        catch (WebApplicationException e) {
+                                @Override
+                                public int read(byte[] b, int off, int len) throws IOException {
+                                    throw new ZipException("forced ZipException");
+                                }
+                            }))
+                    .isInstanceOf(ZipException.class);
+        } catch (WebApplicationException e) {
             fail("Should not have received a WebApplicationException", e);
         }
     }
 
-    private record ExamplePojo(String value)
-    {
-    }
+    private record ExamplePojo(String value) {}
 
-    private record OtherExamplePojo(String value, String value2)
-    {
-    }
+    private record OtherExamplePojo(String value, String value2) {}
 }

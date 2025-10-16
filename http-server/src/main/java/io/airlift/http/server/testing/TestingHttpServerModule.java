@@ -13,6 +13,12 @@
  */
 package io.airlift.http.server.testing;
 
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
+import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
+import static io.airlift.configuration.ConditionalModule.conditionalModule;
+import static io.airlift.configuration.ConfigBinder.configBinder;
+import static io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
+
 import com.google.inject.Binder;
 import com.google.inject.Key;
 import com.google.inject.Scopes;
@@ -29,30 +35,19 @@ import io.airlift.http.server.HttpsConfig;
 import io.airlift.http.server.LocalAnnouncementHttpServerInfo;
 import jakarta.servlet.Filter;
 
-import static com.google.inject.multibindings.Multibinder.newSetBinder;
-import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
-import static io.airlift.configuration.ConditionalModule.conditionalModule;
-import static io.airlift.configuration.ConfigBinder.configBinder;
-import static io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
-
-public class TestingHttpServerModule
-        extends AbstractConfigurationAwareModule
-{
+public class TestingHttpServerModule extends AbstractConfigurationAwareModule {
     private final int httpPort;
 
-    public TestingHttpServerModule()
-    {
+    public TestingHttpServerModule() {
         this(0);
     }
 
-    public TestingHttpServerModule(int httpPort)
-    {
+    public TestingHttpServerModule(int httpPort) {
         this.httpPort = httpPort;
     }
 
     @Override
-    protected void setup(Binder binder)
-    {
+    protected void setup(Binder binder) {
         binder.disableCircularProxies();
 
         configBinder(binder).bindConfig(HttpServerConfig.class);
@@ -63,13 +58,19 @@ public class TestingHttpServerModule
         newOptionalBinder(binder, ClientCertificate.class).setDefault().toInstance(ClientCertificate.NONE);
         binder.bind(HttpServer.class).to(Key.get(TestingHttpServer.class));
         // override with HttpServerBinder.enableVirtualThreads()
-        newOptionalBinder(binder, Key.get(Boolean.class, EnableVirtualThreads.class)).setDefault().toInstance(false);
+        newOptionalBinder(binder, Key.get(Boolean.class, EnableVirtualThreads.class))
+                .setDefault()
+                .toInstance(false);
         // override with HttpServerBinder.enableLegacyUriCompliance()
-        newOptionalBinder(binder, Key.get(Boolean.class, EnableLegacyUriCompliance.class)).setDefault().toInstance(false);
+        newOptionalBinder(binder, Key.get(Boolean.class, EnableLegacyUriCompliance.class))
+                .setDefault()
+                .toInstance(false);
         newSetBinder(binder, Filter.class);
         newSetBinder(binder, HttpResourceBinding.class);
         binder.bind(AnnouncementHttpServerInfo.class).to(LocalAnnouncementHttpServerInfo.class);
-        newOptionalBinder(binder, Key.get(Boolean.class, EnableCaseSensitiveHeaderCache.class)).setDefault().toInstance(false);
+        newOptionalBinder(binder, Key.get(Boolean.class, EnableCaseSensitiveHeaderCache.class))
+                .setDefault()
+                .toInstance(false);
 
         newOptionalBinder(binder, HttpsConfig.class);
         install(conditionalModule(HttpServerConfig.class, HttpServerConfig::isHttpsEnabled, moduleBinder -> {

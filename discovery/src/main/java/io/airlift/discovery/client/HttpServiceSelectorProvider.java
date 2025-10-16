@@ -15,34 +15,29 @@
  */
 package io.airlift.discovery.client;
 
+import static io.airlift.discovery.client.ServiceTypes.serviceType;
+import static java.util.Objects.requireNonNull;
+
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Provider;
 
-import static io.airlift.discovery.client.ServiceTypes.serviceType;
-import static java.util.Objects.requireNonNull;
-
-class HttpServiceSelectorProvider
-        implements Provider<HttpServiceSelector>
-{
+class HttpServiceSelectorProvider implements Provider<HttpServiceSelector> {
     private final String type;
     private Injector injector;
 
-    public HttpServiceSelectorProvider(String type)
-    {
+    public HttpServiceSelectorProvider(String type) {
         requireNonNull(type);
         this.type = type;
     }
 
     @Inject
-    public void setInjector(Injector injector)
-    {
+    public void setInjector(Injector injector) {
         this.injector = injector;
     }
 
-    public HttpServiceSelector get()
-    {
+    public HttpServiceSelector get() {
         requireNonNull(injector, "injector is null");
 
         ServiceSelector serviceSelector = injector.getInstance(Key.get(ServiceSelector.class, serviceType(type)));
@@ -52,8 +47,7 @@ class HttpServiceSelectorProvider
     }
 
     @Override
-    public boolean equals(Object o)
-    {
+    public boolean equals(Object o) {
         if (this == o) {
             return true;
         }
@@ -71,8 +65,7 @@ class HttpServiceSelectorProvider
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return type.hashCode();
     }
 }

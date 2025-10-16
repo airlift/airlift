@@ -13,16 +13,16 @@
  */
 package io.airlift.concurrent;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.fail;
+
 import com.google.common.collect.ConcurrentHashMultiset;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.Uninterruptibles;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -32,31 +32,25 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.fail;
-
-public class TestDynamicSizeBoundQueue
-{
+public class TestDynamicSizeBoundQueue {
     private ListeningExecutorService executorService;
 
     @BeforeEach
-    public void setUp()
-    {
+    public void setUp() {
         executorService = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool());
     }
 
     @AfterEach
-    public void tearDown()
-    {
+    public void tearDown() {
         executorService.shutdownNow();
     }
 
     @Test
-    public void testBasicOfferPoll()
-            throws InterruptedException
-    {
+    public void testBasicOfferPoll() throws InterruptedException {
         DynamicSizeBoundQueue<String> queue = new DynamicSizeBoundQueue<>(3, String::length);
 
         // Empty queue
@@ -72,123 +66,92 @@ public class TestDynamicSizeBoundQueue
         assertThat(queue.getMaxSize()).isEqualTo(3);
         assertThat(queue.getSize()).isEqualTo(1);
         assertThat(queue.poll()).isEqualTo("a");
-        assertThat(queue.poll())
-                .as("No more elements")
-                .isNull();
+        assertThat(queue.poll()).as("No more elements").isNull();
         assertThat(queue.getSize()).isZero();
 
         // Insert 2 elements that fill up the queue exactly to capacity
         assertThat(queue.offer("a")).isTrue();
         assertThat(queue.offer("bb")).isTrue();
-        assertThat(queue.offer("c"))
-                .as("Queue already full")
-                .isFalse();
+        assertThat(queue.offer("c")).as("Queue already full").isFalse();
         assertThat(queue.getMaxSize()).isEqualTo(3);
         assertThat(queue.getSize()).isEqualTo(3);
         assertThat(queue.poll()).isEqualTo("a");
         assertThat(queue.poll()).isEqualTo("bb");
-        assertThat(queue.poll())
-                .as("No more elements")
-                .isNull();
+        assertThat(queue.poll()).as("No more elements").isNull();
         assertThat(queue.getSize()).isZero();
 
         // Overfill queue
         assertThat(queue.offer("aa")).isTrue();
         assertThat(queue.offer("bbb")).isTrue();
-        assertThat(queue.offer("c"))
-                .as("Queue already over capacity")
-                .isFalse();
+        assertThat(queue.offer("c")).as("Queue already over capacity").isFalse();
         assertThat(queue.getMaxSize()).isEqualTo(3);
         assertThat(queue.getSize()).isEqualTo(5);
         assertThat(queue.poll()).isEqualTo("aa");
         assertThat(queue.poll()).isEqualTo("bbb");
-        assertThat(queue.poll())
-                .as("No more elements")
-                .isNull();
+        assertThat(queue.poll()).as("No more elements").isNull();
         assertThat(queue.getSize()).isZero();
     }
 
     @Test
-    public void testOversizeElement()
-    {
+    public void testOversizeElement() {
         DynamicSizeBoundQueue<String> queue = new DynamicSizeBoundQueue<>(3, String::length);
 
         assertThat(queue.offer("aaaaa"))
                 .as("Queue always allows the insertion of an element as long as any space is available")
                 .isTrue();
-        assertThat(queue.offer("b"))
-                .as("Queue already over capacity")
-                .isFalse();
+        assertThat(queue.offer("b")).as("Queue already over capacity").isFalse();
         assertThat(queue.getSize()).isEqualTo(5);
 
         assertThat(queue.poll()).isEqualTo("aaaaa");
-        assertThat(queue.poll())
-                .as("No more elements")
-                .isNull();
+        assertThat(queue.poll()).as("No more elements").isNull();
         assertThat(queue.getSize()).isZero();
     }
 
     @Test
-    public void testOfferSizeOverflow()
-    {
+    public void testOfferSizeOverflow() {
         DynamicSizeBoundQueue<Long> queue = new DynamicSizeBoundQueue<>(Long.MAX_VALUE, element -> element);
 
-        assertThat(queue.offer(Long.MAX_VALUE - 1))
-                .isTrue();
+        assertThat(queue.offer(Long.MAX_VALUE - 1)).isTrue();
 
         assertThat(queue.offer(2L))
                 .as("Element of size 2 should be rejected due to size numeric overflow")
                 .isFalse();
-        assertThat(queue.getSize())
-                .as("Size should remain unchanged")
-                .isEqualTo(Long.MAX_VALUE - 1);
+        assertThat(queue.getSize()).as("Size should remain unchanged").isEqualTo(Long.MAX_VALUE - 1);
 
         assertThat(queue.offer(Long.MAX_VALUE))
                 .as("Element of size Long.MAX_VALUE should be rejected due to size numeric overflow")
                 .isFalse();
-        assertThat(queue.getSize())
-                .as("Size should remain unchanged")
-                .isEqualTo(Long.MAX_VALUE - 1);
+        assertThat(queue.getSize()).as("Size should remain unchanged").isEqualTo(Long.MAX_VALUE - 1);
 
         assertThat(queue.offer(1L))
                 .as("Should be able to fill capacity up to Long.MAX_VALUE")
                 .isTrue();
-        assertThat(queue.getSize())
-                .as("Size should be at capacity")
-                .isEqualTo(Long.MAX_VALUE);
+        assertThat(queue.getSize()).as("Size should be at capacity").isEqualTo(Long.MAX_VALUE);
 
         // Empty the queue
-        assertThat(queue.poll())
-                .isEqualTo(Long.MAX_VALUE - 1);
-        assertThat(queue.poll())
-                .isEqualTo(1L);
+        assertThat(queue.poll()).isEqualTo(Long.MAX_VALUE - 1);
+        assertThat(queue.poll()).isEqualTo(1L);
 
         assertThat(queue.offer(Long.MAX_VALUE))
                 .as("Element of size Long.MAX_VALUE should be accepted for an empty queue")
                 .isTrue();
-        assertThat(queue.getSize())
-                .isEqualTo(Long.MAX_VALUE);
+        assertThat(queue.getSize()).isEqualTo(Long.MAX_VALUE);
     }
 
     @Test
-    public void testForcePutSizeOverflow()
-    {
+    public void testForcePutSizeOverflow() {
         DynamicSizeBoundQueue<Long> queue = new DynamicSizeBoundQueue<>(Long.MAX_VALUE, element -> element);
 
-        assertThat(queue.offer(Long.MAX_VALUE - 1))
-                .isTrue();
+        assertThat(queue.offer(Long.MAX_VALUE - 1)).isTrue();
 
         assertThatThrownBy(() -> queue.forcePut(2L))
                 .as("Element of size 2 should be rejected due to size numeric overflow")
                 .isInstanceOf(IllegalStateException.class);
-        assertThat(queue.getSize())
-                .as("Size should remain unchanged")
-                .isEqualTo(Long.MAX_VALUE - 1);
+        assertThat(queue.getSize()).as("Size should remain unchanged").isEqualTo(Long.MAX_VALUE - 1);
     }
 
     @Test
-    public void testZeroSizeElement()
-    {
+    public void testZeroSizeElement() {
         DynamicSizeBoundQueue<String> queue = new DynamicSizeBoundQueue<>(1, String::length);
 
         // All forms of insertion should fail if the element size is zero
@@ -202,8 +165,7 @@ public class TestDynamicSizeBoundQueue
     }
 
     @Test
-    public void testNegativeElementSizes()
-    {
+    public void testNegativeElementSizes() {
         DynamicSizeBoundQueue<String> queue = new DynamicSizeBoundQueue<>(1, ignored -> -1L);
 
         // All forms of insertion should fail if the element size is negative
@@ -217,8 +179,7 @@ public class TestDynamicSizeBoundQueue
     }
 
     @Test
-    public void testUnstableElementSize()
-    {
+    public void testUnstableElementSize() {
         AtomicLong elementSizeToReport = new AtomicLong();
         DynamicSizeBoundQueue<String> queue = new DynamicSizeBoundQueue<>(3, ignored -> elementSizeToReport.get());
 
@@ -249,13 +210,13 @@ public class TestDynamicSizeBoundQueue
         elementSizeToReport.set(-1);
         assertThat(queue.poll()).isEqualTo("c");
         assertThat(queue.getSize())
-                .as("Even though the element size reported a new negative value, the original element size is respected")
+                .as(
+                        "Even though the element size reported a new negative value, the original element size is respected")
                 .isZero();
     }
 
     @Test
-    public void testNullElement()
-    {
+    public void testNullElement() {
         DynamicSizeBoundQueue<String> queue = new DynamicSizeBoundQueue<>(1, value -> 1);
         assertThatThrownBy(() -> queue.offer(null))
                 .as("Queue does not permit null elements, even if the element size function does")
@@ -267,22 +228,16 @@ public class TestDynamicSizeBoundQueue
     }
 
     @Test
-    public void testBlockingOffer()
-            throws ExecutionException, InterruptedException, TimeoutException
-    {
+    public void testBlockingOffer() throws ExecutionException, InterruptedException, TimeoutException {
         CountDownLatch awaitDequeueLatch = new CountDownLatch(1);
-        DynamicSizeBoundQueue<String> queue = new DynamicSizeBoundQueue<>(3, String::length)
-        {
+        DynamicSizeBoundQueue<String> queue = new DynamicSizeBoundQueue<>(3, String::length) {
             @Override
-            void preDequeueAwaitHook()
-            {
+            void preDequeueAwaitHook() {
                 awaitDequeueLatch.countDown();
             }
         };
 
-        assertThat(queue.offer("aaa"))
-                .as("Fill the queue")
-                .isTrue();
+        assertThat(queue.offer("aaa")).as("Fill the queue").isTrue();
 
         ListenableFuture<Boolean> offerFuture = executorService.submit(() -> queue.offer("b", 10, TimeUnit.SECONDS));
 
@@ -290,9 +245,7 @@ public class TestDynamicSizeBoundQueue
         Uninterruptibles.awaitUninterruptibly(awaitDequeueLatch, 10, TimeUnit.SECONDS);
         assertThat(offerFuture.isDone()).isFalse();
 
-        assertThat(queue.poll())
-                .as("Create space in the queue")
-                .isEqualTo("aaa");
+        assertThat(queue.poll()).as("Create space in the queue").isEqualTo("aaa");
 
         assertThat(offerFuture.get(10, TimeUnit.SECONDS))
                 .as("Offer should complete quickly once space becomes available")
@@ -303,48 +256,36 @@ public class TestDynamicSizeBoundQueue
     }
 
     @Test
-    public void testBlockingOfferTimeout()
-            throws ExecutionException, InterruptedException, TimeoutException
-    {
+    public void testBlockingOfferTimeout() throws ExecutionException, InterruptedException, TimeoutException {
         DynamicSizeBoundQueue<String> queue = new DynamicSizeBoundQueue<>(3, String::length);
 
-        assertThat(queue.offer("aaa"))
-                .as("Fill the queue")
-                .isTrue();
+        assertThat(queue.offer("aaa")).as("Fill the queue").isTrue();
 
-        ListenableFuture<Boolean> offerFuture = executorService.submit(() -> queue.offer("b", 10, TimeUnit.MILLISECONDS));
+        ListenableFuture<Boolean> offerFuture =
+                executorService.submit(() -> queue.offer("b", 10, TimeUnit.MILLISECONDS));
 
         assertThat(offerFuture.get(10, TimeUnit.SECONDS))
                 .as("Offer should timeout")
                 .isFalse();
-        assertThat(queue.getSize())
-                .as("Queue size should remain the same")
-                .isEqualTo(3);
+        assertThat(queue.getSize()).as("Queue size should remain the same").isEqualTo(3);
     }
 
     @Test
-    public void testPut()
-            throws ExecutionException, InterruptedException, TimeoutException
-    {
+    public void testPut() throws ExecutionException, InterruptedException, TimeoutException {
         CountDownLatch awaitDequeueLatch = new CountDownLatch(1);
-        DynamicSizeBoundQueue<String> queue = new DynamicSizeBoundQueue<>(3, String::length)
-        {
+        DynamicSizeBoundQueue<String> queue = new DynamicSizeBoundQueue<>(3, String::length) {
             @Override
-            void preDequeueAwaitHook()
-            {
+            void preDequeueAwaitHook() {
                 awaitDequeueLatch.countDown();
             }
         };
 
-        assertThat(queue.offer("aaa"))
-                .as("Fill the queue")
-                .isTrue();
+        assertThat(queue.offer("aaa")).as("Fill the queue").isTrue();
 
         ListenableFuture<?> putFuture = executorService.submit(() -> {
             try {
                 queue.put("b");
-            }
-            catch (InterruptedException e) {
+            } catch (InterruptedException e) {
                 fail("Interrupted");
             }
         });
@@ -353,9 +294,7 @@ public class TestDynamicSizeBoundQueue
         Uninterruptibles.awaitUninterruptibly(awaitDequeueLatch, 10, TimeUnit.SECONDS);
         assertThat(putFuture.isDone()).isFalse();
 
-        assertThat(queue.poll())
-                .as("Create space in the queue")
-                .isEqualTo("aaa");
+        assertThat(queue.poll()).as("Create space in the queue").isEqualTo("aaa");
 
         // Put should complete quickly once space becomes available
         putFuture.get(10, TimeUnit.SECONDS);
@@ -365,8 +304,7 @@ public class TestDynamicSizeBoundQueue
     }
 
     @Test
-    public void testOfferWithBackoff()
-    {
+    public void testOfferWithBackoff() {
         DynamicSizeBoundQueue<String> queue = new DynamicSizeBoundQueue<>(3, String::length);
 
         for (int i = 0; i < 3; i++) {
@@ -374,9 +312,7 @@ public class TestDynamicSizeBoundQueue
                     .as("No backoff returned while space exists")
                     .isEmpty();
         }
-        assertThat(queue.getSize())
-                .as("Queue is at capacity")
-                .isEqualTo(queue.getMaxSize());
+        assertThat(queue.getSize()).as("Queue is at capacity").isEqualTo(queue.getMaxSize());
 
         Optional<ListenableFuture<Void>> backoffResult1 = queue.offerWithBackoff("b");
         assertThat(backoffResult1)
@@ -390,12 +326,8 @@ public class TestDynamicSizeBoundQueue
                 .isPresent();
         assertThat(backoffResult2.get()).isNotDone();
 
-        assertThat(queue.poll())
-                .as("Dequeue an element to make some space")
-                .isEqualTo("a");
-        assertThat(queue.getSize())
-                .as("Space is now available")
-                .isLessThan(queue.getMaxSize());
+        assertThat(queue.poll()).as("Dequeue an element to make some space").isEqualTo("a");
+        assertThat(queue.getSize()).as("Space is now available").isLessThan(queue.getMaxSize());
 
         // Both backoff futures should complete when any space is made available
         assertThat(backoffResult1.get()).isDone();
@@ -403,15 +335,11 @@ public class TestDynamicSizeBoundQueue
     }
 
     @Test
-    public void testBlockingPoll()
-            throws ExecutionException, InterruptedException, TimeoutException
-    {
+    public void testBlockingPoll() throws ExecutionException, InterruptedException, TimeoutException {
         CountDownLatch awaitEnqueueLatch = new CountDownLatch(1);
-        DynamicSizeBoundQueue<String> queue = new DynamicSizeBoundQueue<>(3, String::length)
-        {
+        DynamicSizeBoundQueue<String> queue = new DynamicSizeBoundQueue<>(3, String::length) {
             @Override
-            void preEnqueueAwaitHook()
-            {
+            void preEnqueueAwaitHook() {
                 awaitEnqueueLatch.countDown();
             }
         };
@@ -429,9 +357,7 @@ public class TestDynamicSizeBoundQueue
     }
 
     @Test
-    public void testBlockingPollTimeout()
-            throws ExecutionException, InterruptedException, TimeoutException
-    {
+    public void testBlockingPollTimeout() throws ExecutionException, InterruptedException, TimeoutException {
         DynamicSizeBoundQueue<String> queue = new DynamicSizeBoundQueue<>(3, String::length);
 
         ListenableFuture<String> pollFuture = executorService.submit(() -> queue.poll(10, TimeUnit.MILLISECONDS));
@@ -442,15 +368,11 @@ public class TestDynamicSizeBoundQueue
     }
 
     @Test
-    public void testTake()
-            throws ExecutionException, InterruptedException, TimeoutException
-    {
+    public void testTake() throws ExecutionException, InterruptedException, TimeoutException {
         CountDownLatch awaitEnqueueLatch = new CountDownLatch(1);
-        DynamicSizeBoundQueue<String> queue = new DynamicSizeBoundQueue<>(3, String::length)
-        {
+        DynamicSizeBoundQueue<String> queue = new DynamicSizeBoundQueue<>(3, String::length) {
             @Override
-            void preEnqueueAwaitHook()
-            {
+            void preEnqueueAwaitHook() {
                 awaitEnqueueLatch.countDown();
             }
         };
@@ -458,8 +380,7 @@ public class TestDynamicSizeBoundQueue
         ListenableFuture<String> takeFuture = executorService.submit(() -> {
             try {
                 return queue.take();
-            }
-            catch (InterruptedException e) {
+            } catch (InterruptedException e) {
                 throw new AssertionError(e);
             }
         });
@@ -468,9 +389,7 @@ public class TestDynamicSizeBoundQueue
         Uninterruptibles.awaitUninterruptibly(awaitEnqueueLatch, 10, TimeUnit.SECONDS);
         assertThat(takeFuture.isDone()).isFalse();
 
-        assertThat(queue.offer("a"))
-                .as("Insert new element")
-                .isTrue();
+        assertThat(queue.offer("a")).as("Insert new element").isTrue();
 
         assertThat(takeFuture.get(10, TimeUnit.SECONDS))
                 .as("Take should return quickly once a new element becomes available")
@@ -478,9 +397,7 @@ public class TestDynamicSizeBoundQueue
     }
 
     @Test
-    public void testConcurrency()
-            throws ExecutionException, InterruptedException, TimeoutException
-    {
+    public void testConcurrency() throws ExecutionException, InterruptedException, TimeoutException {
         DynamicSizeBoundQueue<String> queue = new DynamicSizeBoundQueue<>(3, String::length);
 
         // Concurrent spin loop submissions
@@ -506,8 +423,7 @@ public class TestDynamicSizeBoundQueue
                             offered++;
                         }
                     }
-                }
-                catch (InterruptedException e) {
+                } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     fail("Interrupted");
                 }
@@ -521,8 +437,7 @@ public class TestDynamicSizeBoundQueue
                 for (int j = 0; j < 200; j++) {
                     try {
                         queue.put("ccc");
-                    }
-                    catch (InterruptedException e) {
+                    } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                         fail("Interrupted");
                     }
@@ -555,7 +470,11 @@ public class TestDynamicSizeBoundQueue
         }
         int backoffFutureSubmissions = 10 * 200;
 
-        int totalSubmissions = spinLoopSubmissions + blockingOfferSubmissions + blockingPutSubmissions + forcePutSubmissions + backoffFutureSubmissions;
+        int totalSubmissions = spinLoopSubmissions
+                + blockingOfferSubmissions
+                + blockingPutSubmissions
+                + forcePutSubmissions
+                + backoffFutureSubmissions;
 
         // Concurrent element pollers
         List<ListenableFuture<?>> pollFutures = new ArrayList<>();
@@ -567,8 +486,7 @@ public class TestDynamicSizeBoundQueue
                         Optional.ofNullable(queue.poll(1, TimeUnit.MILLISECONDS))
                                 .ifPresent(dequeued::add);
                     }
-                }
-                catch (InterruptedException e) {
+                } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     fail("Interrupted");
                 }

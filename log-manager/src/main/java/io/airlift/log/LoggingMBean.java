@@ -18,48 +18,40 @@ package io.airlift.log;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Maps;
 import com.google.inject.Inject;
-import org.weakref.jmx.Managed;
-
 import java.util.Locale;
 import java.util.Map;
+import org.weakref.jmx.Managed;
 
-public class LoggingMBean
-{
+public class LoggingMBean {
     private final Logging logging;
 
     @Inject
-    public LoggingMBean(Logging logging)
-    {
+    public LoggingMBean(Logging logging) {
         this.logging = logging;
     }
 
     @Managed
-    public String getLevel(String loggerName)
-    {
+    public String getLevel(String loggerName) {
         return logging.getLevel(loggerName).toString();
     }
 
     @Managed
-    public void setLevel(String loggerName, String newLevel)
-    {
+    public void setLevel(String loggerName, String newLevel) {
         logging.setLevel(loggerName, Level.valueOf(newLevel.toUpperCase(Locale.US)));
     }
 
     @Managed
-    public String getRootLevel()
-    {
+    public String getRootLevel() {
         return logging.getRootLevel().toString();
     }
 
     @Managed
-    public void setRootLevel(String newLevel)
-    {
+    public void setRootLevel(String newLevel) {
         logging.setRootLevel(Level.valueOf(newLevel.toUpperCase(Locale.US)));
     }
 
     @Managed
-    public Map<String, String> getAllLevels()
-    {
+    public Map<String, String> getAllLevels() {
         return ImmutableSortedMap.copyOf(Maps.transformValues(logging.getAllLevels(), Object::toString));
     }
 }

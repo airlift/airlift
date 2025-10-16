@@ -17,15 +17,11 @@ import com.google.common.collect.ImmutableList;
 import io.airlift.secrets.keystore.KeystoreSecretProviderFactory;
 import io.airlift.spi.secrets.SecretProviderFactory;
 import io.airlift.spi.secrets.SecretsPlugin;
-
 import java.util.List;
 
-public class AirliftSecretsPlugin
-        implements SecretsPlugin
-{
+public class AirliftSecretsPlugin implements SecretsPlugin {
     @Override
-    public List<SecretProviderFactory> getSecretProviderFactories()
-    {
+    public List<SecretProviderFactory> getSecretProviderFactories() {
         return ImmutableList.of(new KeystoreSecretProviderFactory());
     }
 }

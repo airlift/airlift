@@ -15,6 +15,15 @@
  */
 package io.airlift.discovery.client;
 
+import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
+import static com.google.common.util.concurrent.Futures.immediateFuture;
+import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
+import static io.airlift.http.client.JsonBodyGenerator.jsonBodyGenerator;
+import static io.airlift.http.client.Request.Builder.prepareDelete;
+import static io.airlift.http.client.Request.Builder.preparePut;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.io.CharStreams;
 import com.google.common.net.HttpHeaders;
@@ -30,7 +39,6 @@ import io.airlift.json.JsonCodec;
 import io.airlift.log.Logger;
 import io.airlift.node.NodeInfo;
 import io.airlift.units.Duration;
-
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
@@ -42,18 +50,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
-import static com.google.common.util.concurrent.Futures.immediateFuture;
-import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
-import static io.airlift.http.client.JsonBodyGenerator.jsonBodyGenerator;
-import static io.airlift.http.client.Request.Builder.prepareDelete;
-import static io.airlift.http.client.Request.Builder.preparePut;
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Objects.requireNonNull;
-
-public class HttpDiscoveryAnnouncementClient
-        implements DiscoveryAnnouncementClient
-{
+public class HttpDiscoveryAnnouncementClient implements DiscoveryAnnouncementClient {
     private static final MediaType MEDIA_TYPE_JSON = MediaType.create("application", "json");
     private static final Logger log = Logger.get(HttpDiscoveryAnnouncementClient.class);
 
@@ -69,8 +66,7 @@ public class HttpDiscoveryAnnouncementClient
             @ForDiscoveryClient Supplier<URI> discoveryServiceURI,
             NodeInfo nodeInfo,
             JsonCodec<Announcement> announcementCodec,
-            @ForDiscoveryClient HttpClient httpClient)
-    {
+            @ForDiscoveryClient HttpClient httpClient) {
         requireNonNull(discoveryServiceURI, "discoveryServiceURI is null");
         requireNonNull(nodeInfo, "nodeInfo is null");
         requireNonNull(announcementCodec, "announcementCodec is null");
@@ -83,8 +79,7 @@ public class HttpDiscoveryAnnouncementClient
     }
 
     @Override
-    public ListenableFuture<Duration> announce(Set<ServiceAnnouncement> services)
-    {
+    public ListenableFuture<Duration> announce(Set<ServiceAnnouncement> services) {
         requireNonNull(services, "services is null");
 
         URI uri = discoveryServiceURI.get();
@@ -92,29 +87,29 @@ public class HttpDiscoveryAnnouncementClient
             return immediateFailedFuture(new DiscoveryException("No discovery servers are available"));
         }
 
-        reportChangedAddressResolution(uri, lastReportedDiscoveryServiceAddress, priorResolutionSucceeded).ifPresentOrElse(
-                inetAddr -> {
-                    lastReportedDiscoveryServiceAddress = Optional.of(inetAddr);
-                    priorResolutionSucceeded = true;
-                },
-                () -> priorResolutionSucceeded = false);
+        reportChangedAddressResolution(uri, lastReportedDiscoveryServiceAddress, priorResolutionSucceeded)
+                .ifPresentOrElse(
+                        inetAddr -> {
+                            lastReportedDiscoveryServiceAddress = Optional.of(inetAddr);
+                            priorResolutionSucceeded = true;
+                        },
+                        () -> priorResolutionSucceeded = false);
 
-        Announcement announcement = new Announcement(nodeInfo.getEnvironment(), nodeInfo.getNodeId(), nodeInfo.getPool(), nodeInfo.getLocation(), services);
+        Announcement announcement = new Announcement(
+                nodeInfo.getEnvironment(), nodeInfo.getNodeId(), nodeInfo.getPool(), nodeInfo.getLocation(), services);
         Request request = preparePut()
                 .setUri(createAnnouncementLocation(uri, nodeInfo.getNodeId()))
                 .setHeader("User-Agent", nodeInfo.getNodeId())
                 .setHeader("Content-Type", MEDIA_TYPE_JSON.toString())
                 .setBodyGenerator(jsonBodyGenerator(announcementCodec, announcement))
                 .build();
-        return httpClient.executeAsync(request, new DiscoveryResponseHandler<Duration>("Announcement", uri)
-        {
+        return httpClient.executeAsync(request, new DiscoveryResponseHandler<Duration>("Announcement", uri) {
             @Override
-            public Duration handle(Request request, Response response)
-                    throws DiscoveryException
-            {
+            public Duration handle(Request request, Response response) throws DiscoveryException {
                 int statusCode = response.getStatusCode();
                 if (!isSuccess(statusCode)) {
-                    throw new DiscoveryException(String.format("Announcement failed with status code %s: %s", statusCode, getBodyForError(response)));
+                    throw new DiscoveryException(String.format(
+                            "Announcement failed with status code %s: %s", statusCode, getBodyForError(response)));
                 }
 
                 Duration maxAge = extractMaxAge(response);
@@ -123,24 +118,20 @@ public class HttpDiscoveryAnnouncementClient
         });
     }
 
-    private static boolean isSuccess(int statusCode)
-    {
+    private static boolean isSuccess(int statusCode) {
         return statusCode / 100 == 2;
     }
 
-    private static String getBodyForError(Response response)
-    {
+    private static String getBodyForError(Response response) {
         try {
             return CharStreams.toString(new InputStreamReader(response.getInputStream(), UTF_8));
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             return "(error getting body)";
         }
     }
 
     @Override
-    public ListenableFuture<Void> unannounce()
-    {
+    public ListenableFuture<Void> unannounce() {
         URI uri = discoveryServiceURI.get();
         if (uri == null) {
             return immediateFuture(null);
@@ -154,8 +145,7 @@ public class HttpDiscoveryAnnouncementClient
     }
 
     @VisibleForTesting
-    static URI createAnnouncementLocation(URI baseUri, String nodeId)
-    {
+    static URI createAnnouncementLocation(URI baseUri, String nodeId) {
         return uriBuilderFrom(baseUri)
                 .appendPath("/v1/announcement")
                 .appendPath(nodeId)
@@ -166,18 +156,17 @@ public class HttpDiscoveryAnnouncementClient
     static Optional<InetAddress> reportChangedAddressResolution(
             URI discoveryServiceURI,
             Optional<InetAddress> lastReportedDiscoveryServiceAddress,
-            boolean priorResolutionSucceeded)
-    {
+            boolean priorResolutionSucceeded) {
         try {
             InetAddress resolvedDiscoveryServiceAddress = InetAddress.getByName(discoveryServiceURI.getHost());
             lastReportedDiscoveryServiceAddress.ifPresent(last -> {
                 if (!last.equals(resolvedDiscoveryServiceAddress)) {
-                    log.warn("Discovery service address changed from " + last + " to " + resolvedDiscoveryServiceAddress);
+                    log.warn("Discovery service address changed from " + last + " to "
+                            + resolvedDiscoveryServiceAddress);
                 }
             });
             return Optional.of(resolvedDiscoveryServiceAddress);
-        }
-        catch (UnknownHostException e) {
+        } catch (UnknownHostException e) {
             // Avoid spamming the log
             if (priorResolutionSucceeded) {
                 log.error(e, "Discovery Service location URI resolution failed");
@@ -186,8 +175,7 @@ public class HttpDiscoveryAnnouncementClient
         return Optional.empty();
     }
 
-    private static Duration extractMaxAge(Response response)
-    {
+    private static Duration extractMaxAge(Response response) {
         String header = response.getHeader(HttpHeaders.CACHE_CONTROL);
         if (header != null) {
             CacheControl cacheControl = CacheControl.valueOf(header);
@@ -198,27 +186,22 @@ public class HttpDiscoveryAnnouncementClient
         return DEFAULT_DELAY;
     }
 
-    private class DiscoveryResponseHandler<T>
-            implements ResponseHandler<T, DiscoveryException>
-    {
+    private class DiscoveryResponseHandler<T> implements ResponseHandler<T, DiscoveryException> {
         private final String name;
         private final URI uri;
 
-        protected DiscoveryResponseHandler(String name, URI uri)
-        {
+        protected DiscoveryResponseHandler(String name, URI uri) {
             this.name = name;
             this.uri = uri;
         }
 
         @Override
-        public T handle(Request request, Response response)
-        {
+        public T handle(Request request, Response response) {
             return null;
         }
 
         @Override
-        public final T handleException(Request request, Exception exception)
-        {
+        public final T handleException(Request request, Exception exception) {
             if (exception instanceof InterruptedException) {
                 throw new DiscoveryException(name + " was interrupted for " + uri);
             }

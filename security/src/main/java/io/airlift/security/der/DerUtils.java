@@ -13,10 +13,15 @@
  */
 package io.airlift.security.der;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.io.ByteStreams.newDataOutput;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.ByteArrayDataOutput;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -27,20 +32,13 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.common.io.ByteStreams.newDataOutput;
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Objects.requireNonNull;
-
 /**
  * ASN.1 DER encoder methods necessary to process PEM files and to write a certificate signing request.
  * NOTE: this API is only present for the two mentioned use cases, and is subject to change without warning.
  */
-public final class DerUtils
-{
-    private static final DateTimeFormatter UTC_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyMMddHHmmssX")
-            .withZone(ZoneOffset.UTC);
+public final class DerUtils {
+    private static final DateTimeFormatter UTC_TIME_FORMATTER =
+            DateTimeFormatter.ofPattern("yyMMddHHmmssX").withZone(ZoneOffset.UTC);
 
     public static final int SEQUENCE_TAG = 0x30;
     public static final int BOOLEAN_TAG = 0x01;
@@ -56,16 +54,14 @@ public final class DerUtils
     /**
      * Encodes a sequence of encoded values.
      */
-    public static byte[] encodeSequence(byte[]... encodedValues)
-    {
+    public static byte[] encodeSequence(byte[]... encodedValues) {
         return encodeConstructed(SEQUENCE_TAG, encodedValues);
     }
 
     /**
      * Decodes a sequence of encoded values.
      */
-    public static List<byte[]> decodeSequence(byte[] sequence)
-    {
+    public static List<byte[]> decodeSequence(byte[] sequence) {
         int index = 0;
 
         // check tag
@@ -99,8 +95,7 @@ public final class DerUtils
     /**
      * Decodes a optional element of a sequence.
      */
-    public static byte[] decodeSequenceOptionalElement(byte[] element)
-    {
+    public static byte[] decodeSequenceOptionalElement(byte[] element) {
         int index = 0;
 
         // check tag
@@ -119,8 +114,7 @@ public final class DerUtils
      * Encodes a bit string padded with the specified number of bits.
      * The encoding is a byte containing the padBits followed by the value bytes.
      */
-    public static byte[] encodeBitString(int padBits, byte[] value)
-    {
+    public static byte[] encodeBitString(int padBits, byte[] value) {
         checkArgument(padBits >= 0 && padBits < 8, "Invalid pad bits");
 
         byte[] lengthEncoded = encodeLength(value.length + 1);
@@ -135,48 +129,42 @@ public final class DerUtils
     /**
      * Encodes an integer.
      */
-    public static byte[] encodeBooleanTrue()
-    {
+    public static byte[] encodeBooleanTrue() {
         return new byte[] {BOOLEAN_TAG, 0x01, (byte) 0xFF};
     }
 
     /**
      * Encodes an integer.
      */
-    public static byte[] encodeInteger(long value)
-    {
+    public static byte[] encodeInteger(long value) {
         return encodeInteger(BigInteger.valueOf(value));
     }
 
     /**
      * Encodes an integer.
      */
-    public static byte[] encodeInteger(BigInteger value)
-    {
+    public static byte[] encodeInteger(BigInteger value) {
         return encodeTag(INTEGER_TAG, value.toByteArray());
     }
 
     /**
      * Encodes an octet string.
      */
-    public static byte[] encodeOctetString(byte[] value)
-    {
+    public static byte[] encodeOctetString(byte[] value) {
         return encodeTag(OCTET_STRING_TAG, value);
     }
 
     /**
      * Encodes an octet string.
      */
-    public static byte[] encodeUtcTime(String value)
-    {
+    public static byte[] encodeUtcTime(String value) {
         return encodeTag(UTC_TIME_TAG, value.getBytes(UTF_8));
     }
 
     /**
      * Encodes an octet string.
      */
-    public static byte[] encodeUtcTime(Instant value)
-    {
+    public static byte[] encodeUtcTime(Instant value) {
         String utcTime = UTC_TIME_FORMATTER.format(value);
         return encodeTag(UTC_TIME_TAG, utcTime.getBytes(UTF_8));
     }
@@ -186,8 +174,7 @@ public final class DerUtils
      * are encoded as a lead byte with the high bit set and containing the number of value bytes.  Then the following bytes
      * encode the length using the least number of bytes possible.
      */
-    public static byte[] encodeLength(int length)
-    {
+    public static byte[] encodeLength(int length) {
         if (length < 128) {
             return new byte[] {(byte) length};
         }
@@ -203,8 +190,7 @@ public final class DerUtils
         return encoded;
     }
 
-    private static int encodedLengthSize(int length)
-    {
+    private static int encodedLengthSize(int length) {
         if (length < 128) {
             return 1;
         }
@@ -213,8 +199,7 @@ public final class DerUtils
         return numberOfBytes + 1;
     }
 
-    static int decodeLength(byte[] buffer, int offset)
-    {
+    static int decodeLength(byte[] buffer, int offset) {
         int firstByte = buffer[offset] & 0xFF;
         checkArgument(firstByte != 0x80, "Indefinite lengths not supported in DER");
         checkArgument(firstByte != 0xFF, "Invalid length first byte 0xFF");
@@ -232,8 +217,7 @@ public final class DerUtils
         return length;
     }
 
-    public static byte[] encodeOid(String oid)
-    {
+    public static byte[] encodeOid(String oid) {
         requireNonNull(oid, "oid is null");
 
         List<Integer> parts = Splitter.on('.').splitToList(oid).stream()
@@ -254,8 +238,7 @@ public final class DerUtils
             out.write(length);
             body.writeTo(out);
             return out.toByteArray();
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             // this won't happen with byte array output streams
             throw new UncheckedIOException(e);
         }
@@ -264,8 +247,7 @@ public final class DerUtils
     /**
      * Encode an OID number part.  The encoding is a big endian varint.
      */
-    private static void writeOidPart(ByteArrayOutputStream out, final int number)
-    {
+    private static void writeOidPart(ByteArrayOutputStream out, final int number) {
         if (number < 128) {
             out.write((byte) number);
             return;
@@ -282,28 +264,24 @@ public final class DerUtils
         out.write(number & 0x7f);
     }
 
-    public static byte[] encodeNull()
-    {
+    public static byte[] encodeNull() {
         return new byte[] {NULL_TAG, 0x00};
     }
 
-    public static byte[] encodeTag(int tag, byte[] body)
-    {
+    public static byte[] encodeTag(int tag, byte[] body) {
         checkArgument(tag >= 0 && tag < 32, "Invalid tag: %s", tag);
         requireNonNull(body, "body is null");
         return encodeTagInternal(tag, body);
     }
 
-    public static byte[] encodeContextSpecificTag(int tag, byte[] body)
-    {
+    public static byte[] encodeContextSpecificTag(int tag, byte[] body) {
         checkArgument(tag >= 0 && tag < 32, "Invalid tag: %s", tag);
         requireNonNull(body, "body is null");
         int privateTag = tag | 0x80;
         return encodeTagInternal(privateTag, body);
     }
 
-    private static byte[] encodeTagInternal(int tag, byte[] body)
-    {
+    private static byte[] encodeTagInternal(int tag, byte[] body) {
         checkArgument(tag >= 0 && tag < 256, "Invalid tag: %s", tag);
         byte[] lengthEncoded = encodeLength(body.length);
         ByteArrayDataOutput out = newDataOutput(1 + lengthEncoded.length + body.length);
@@ -313,8 +291,7 @@ public final class DerUtils
         return out.toByteArray();
     }
 
-    public static byte[] encodeContextSpecificSequence(int tag, byte[]... encodedValues)
-    {
+    public static byte[] encodeContextSpecificSequence(int tag, byte[]... encodedValues) {
         checkArgument(tag >= 0 && tag < 32, "Invalid tag: %s", tag);
         requireNonNull(encodedValues, "body is null");
         int privateTag = tag | 0xA0;
@@ -322,8 +299,7 @@ public final class DerUtils
         return encodeConstructed(privateTag, encodedValues);
     }
 
-    private static byte[] encodeConstructed(int privateTag, byte[]... encodedValues)
-    {
+    private static byte[] encodeConstructed(int privateTag, byte[]... encodedValues) {
         int length = 0;
         for (byte[] encodedValue : encodedValues) {
             length += encodedValue.length;

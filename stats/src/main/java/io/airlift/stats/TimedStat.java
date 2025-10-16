@@ -16,39 +16,34 @@
 package io.airlift.stats;
 
 import io.airlift.units.Duration;
-import org.weakref.jmx.Managed;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import org.weakref.jmx.Managed;
 
 /**
  * @deprecated Replaced by {@link TimeStat}
  */
 @Deprecated
-public class TimedStat
-{
+public class TimedStat {
     private final AtomicLong sum = new AtomicLong(0);
     private final AtomicLong count = new AtomicLong(0);
     private final ExponentiallyDecayingSample sample = new ExponentiallyDecayingSample(1028, 0.015);
 
     @Managed
-    public long getCount()
-    {
+    public long getCount() {
         return count.get();
     }
 
     @Managed
-    public double getSum()
-    {
+    public double getSum() {
         return sum.get();
     }
 
     @Managed
-    public double getMin()
-    {
+    public double getMin() {
         List<Long> values = sample.values();
         if (!values.isEmpty()) {
             return Collections.min(values);
@@ -58,8 +53,7 @@ public class TimedStat
     }
 
     @Managed
-    public double getMax()
-    {
+    public double getMax() {
         List<Long> values = sample.values();
         if (!values.isEmpty()) {
             return Collections.max(values);
@@ -69,8 +63,7 @@ public class TimedStat
     }
 
     @Managed
-    public double getMean()
-    {
+    public double getMean() {
         List<Long> values = sample.values();
 
         if (!values.isEmpty()) {
@@ -86,8 +79,7 @@ public class TimedStat
     }
 
     @Managed
-    public double getPercentile(double percentile)
-    {
+    public double getPercentile(double percentile) {
         if (percentile < 0 || percentile > 1) {
             throw new IllegalArgumentException("percentile must be between 0 and 1");
         }
@@ -95,44 +87,36 @@ public class TimedStat
     }
 
     @Managed(description = "50th Percentile Measurement")
-    public double getTP50()
-    {
+    public double getTP50() {
         return sample.percentiles(0.5)[0];
     }
 
     @Managed(description = "90th Percentile Measurement")
-    public double getTP90()
-    {
+    public double getTP90() {
         return sample.percentiles(0.9)[0];
     }
 
     @Managed(description = "99th Percentile Measurement")
-    public double getTP99()
-    {
+    public double getTP99() {
         return sample.percentiles(0.99)[0];
     }
 
     @Managed(description = "99.9th Percentile Measurement")
-    public double getTP999()
-    {
+    public double getTP999() {
         return sample.percentiles(0.999)[0];
     }
 
-    public void addValue(double value, TimeUnit timeUnit)
-    {
+    public void addValue(double value, TimeUnit timeUnit) {
         addValue(new Duration(value, timeUnit));
     }
 
-    public void addValue(Duration duration)
-    {
+    public void addValue(Duration duration) {
         sample.update(duration.toMillis());
         sum.addAndGet(duration.toMillis());
         count.incrementAndGet();
     }
 
-    public <T> T time(Callable<T> callable)
-            throws Exception
-    {
+    public <T> T time(Callable<T> callable) throws Exception {
         long start = System.nanoTime();
         T result = callable.call();
         addValue(Duration.nanosSince(start));

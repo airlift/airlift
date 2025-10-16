@@ -17,28 +17,23 @@ package io.airlift.discovery.client;
 
 import com.google.common.collect.ImmutableMap;
 import io.airlift.configuration.testing.ConfigAssertions;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
-import java.util.Map;
-
-public class TestServiceSelectorConfig
-{
+public class TestServiceSelectorConfig {
     @Test
-    public void testDefaults()
-    {
+    public void testDefaults() {
         ConfigAssertions.assertRecordedDefaults(ConfigAssertions.recordDefaults(ServiceSelectorConfig.class)
                 .setPool(ServiceSelectorConfig.DEFAULT_POOL));
     }
 
     @Test
-    public void testExplicitPropertyMappings()
-    {
+    public void testExplicitPropertyMappings() {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("pool", "test-pool")
                 .build();
 
-        ServiceSelectorConfig expected = new ServiceSelectorConfig()
-                .setPool("test-pool");
+        ServiceSelectorConfig expected = new ServiceSelectorConfig().setPool("test-pool");
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }

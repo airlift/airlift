@@ -15,6 +15,8 @@
  */
 package io.airlift.http.client;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
@@ -22,7 +24,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -30,11 +31,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
-public final class EchoServlet
-        extends HttpServlet
-{
+public final class EchoServlet extends HttpServlet {
     private String requestMethod;
     private URI requestUri;
     private final ListMultimap<HeaderName, String> requestHeaders = ArrayListMultimap.create();
@@ -46,8 +43,7 @@ public final class EchoServlet
 
     @Override
     protected void service(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException
-    {
+            throws ServletException, IOException {
         requestMethod = request.getMethod();
         requestUri = URI.create(request.getRequestURL().toString());
         if (request.getQueryString() != null) {
@@ -73,8 +69,7 @@ public final class EchoServlet
             if (request.getParameter("sleep") != null) {
                 Thread.sleep(Long.parseLong(request.getParameter("sleep")));
             }
-        }
-        catch (InterruptedException e) {
+        } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return;
         }
@@ -92,43 +87,35 @@ public final class EchoServlet
         }
     }
 
-    public String getRequestMethod()
-    {
+    public String getRequestMethod() {
         return requestMethod;
     }
 
-    public URI getRequestUri()
-    {
+    public URI getRequestUri() {
         return requestUri;
     }
 
-    public ListMultimap<HeaderName, String> getRequestHeaders()
-    {
+    public ListMultimap<HeaderName, String> getRequestHeaders() {
         return ImmutableListMultimap.copyOf(requestHeaders);
     }
 
-    public List<String> getRequestHeaders(String name)
-    {
+    public List<String> getRequestHeaders(String name) {
         return requestHeaders.get(HeaderName.of(name));
     }
 
-    public byte[] getRequestBytes()
-    {
+    public byte[] getRequestBytes() {
         return requestBytes.clone();
     }
 
-    public void setResponseStatusCode(int responseStatusCode)
-    {
+    public void setResponseStatusCode(int responseStatusCode) {
         this.responseStatusCode = responseStatusCode;
     }
 
-    public void addResponseHeader(String name, String value)
-    {
+    public void addResponseHeader(String name, String value) {
         this.responseHeaders.put(name, value);
     }
 
-    public void setResponseBody(String responseBody)
-    {
+    public void setResponseBody(String responseBody) {
         this.responseBody = responseBody;
     }
 }

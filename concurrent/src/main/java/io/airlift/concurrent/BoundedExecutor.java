@@ -1,17 +1,16 @@
 package io.airlift.concurrent;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static java.util.Objects.requireNonNull;
+
 import com.google.errorprone.annotations.ThreadSafe;
 import io.airlift.log.Logger;
-
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static com.google.common.base.Preconditions.checkArgument;
-import static java.util.Objects.requireNonNull;
 
 /**
  * Guarantees that no more than maxThreads will be used to execute tasks submitted
@@ -28,9 +27,7 @@ import static java.util.Objects.requireNonNull;
  * </ul>
  */
 @ThreadSafe
-public class BoundedExecutor
-        implements Executor
-{
+public class BoundedExecutor implements Executor {
     private static final Logger log = Logger.get(BoundedExecutor.class);
 
     private final Queue<Runnable> queue = new ConcurrentLinkedQueue<>();
@@ -40,8 +37,7 @@ public class BoundedExecutor
     private final Executor coreExecutor;
     private final int maxThreads;
 
-    public BoundedExecutor(Executor coreExecutor, int maxThreads)
-    {
+    public BoundedExecutor(Executor coreExecutor, int maxThreads) {
         requireNonNull(coreExecutor, "coreExecutor is null");
         checkArgument(maxThreads > 0, "maxThreads must be greater than zero");
         this.coreExecutor = coreExecutor;
@@ -49,8 +45,7 @@ public class BoundedExecutor
     }
 
     @Override
-    public void execute(Runnable task)
-    {
+    public void execute(Runnable task) {
         if (failed.get()) {
             throw new RejectedExecutionException("BoundedExecutor is in a failed state");
         }
@@ -62,8 +57,7 @@ public class BoundedExecutor
             // If able to grab a permit, then we are short exactly one draining thread
             try {
                 coreExecutor.execute(this::drainQueue);
-            }
-            catch (Throwable e) {
+            } catch (Throwable e) {
                 failed.set(true);
                 log.error("BoundedExecutor state corrupted due to underlying executor failure");
                 throw e;
@@ -71,17 +65,14 @@ public class BoundedExecutor
         }
     }
 
-    private void drainQueue()
-    {
+    private void drainQueue() {
         // INVARIANT: queue has at least one task available when this method is called
         do {
             try {
                 queue.poll().run();
-            }
-            catch (Throwable e) {
+            } catch (Throwable e) {
                 log.error(e, "Task failed");
             }
-        }
-        while (queueSize.getAndDecrement() > maxThreads);
+        } while (queueSize.getAndDecrement() > maxThreads);
     }
 }

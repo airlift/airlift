@@ -13,23 +13,20 @@
  */
 package io.airlift.secrets.keystore;
 
-import com.google.common.collect.ImmutableMap;
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Map;
-
 import static io.airlift.configuration.testing.ConfigAssertions.assertFullMapping;
 import static io.airlift.configuration.testing.ConfigAssertions.assertRecordedDefaults;
 import static io.airlift.configuration.testing.ConfigAssertions.recordDefaults;
 
-final class TestKeystoreSecretProviderConfig
-{
+import com.google.common.collect.ImmutableMap;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+
+final class TestKeystoreSecretProviderConfig {
     @Test
-    void testDefaults()
-    {
+    void testDefaults() {
         assertRecordedDefaults(recordDefaults(KeystoreSecretProviderConfig.class)
                 .setKeyStoreFilePath(null)
                 .setKeyStoreType(null)
@@ -37,9 +34,7 @@ final class TestKeystoreSecretProviderConfig
     }
 
     @Test
-    void testExplicitPropertyMappings()
-            throws IOException
-    {
+    void testExplicitPropertyMappings() throws IOException {
         Path keystoreFile = Files.createTempFile(null, null);
 
         Map<String, String> properties = ImmutableMap.<String, String>builder()

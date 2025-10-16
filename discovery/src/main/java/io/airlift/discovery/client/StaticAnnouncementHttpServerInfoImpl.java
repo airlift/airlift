@@ -15,29 +15,24 @@
  */
 package io.airlift.discovery.client;
 
-import java.net.URI;
-
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 
-public class StaticAnnouncementHttpServerInfoImpl
-        implements AnnouncementHttpServerInfo
-{
+import java.net.URI;
+
+public class StaticAnnouncementHttpServerInfoImpl implements AnnouncementHttpServerInfo {
     private final URI httpUri;
     private final URI httpExternalUri;
 
     private final URI httpsUri;
     private final URI httpsExternalUri;
 
-    public StaticAnnouncementHttpServerInfoImpl(URI httpUri, URI httpExternalUri, URI httpsUri, URI httpsExternalUri)
-    {
+    public StaticAnnouncementHttpServerInfoImpl(URI httpUri, URI httpExternalUri, URI httpsUri, URI httpsExternalUri) {
         checkArgument(
-                (httpUri == null && httpExternalUri == null) ||
-                        (httpUri != null && httpExternalUri != null),
+                (httpUri == null && httpExternalUri == null) || (httpUri != null && httpExternalUri != null),
                 "httpUri and httpExternalUri must both be null or both non-null");
         checkArgument(
-                (httpsUri == null && httpsExternalUri == null) ||
-                        (httpsUri != null && httpsExternalUri != null),
+                (httpsUri == null && httpsExternalUri == null) || (httpsUri != null && httpsExternalUri != null),
                 "httpsUri and httpsExternalUri must both be null or both non-null");
 
         this.httpUri = httpUri;
@@ -47,32 +42,27 @@ public class StaticAnnouncementHttpServerInfoImpl
     }
 
     @Override
-    public URI getHttpUri()
-    {
+    public URI getHttpUri() {
         return httpUri;
     }
 
     @Override
-    public URI getHttpExternalUri()
-    {
+    public URI getHttpExternalUri() {
         return httpExternalUri;
     }
 
     @Override
-    public URI getHttpsUri()
-    {
+    public URI getHttpsUri() {
         return httpsUri;
     }
 
     @Override
-    public URI getHttpsExternalUri()
-    {
+    public URI getHttpsExternalUri() {
         return httpsExternalUri;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return toStringHelper(this)
                 .add("httpUri", httpUri)
                 .add("httpExternalUri", httpExternalUri)

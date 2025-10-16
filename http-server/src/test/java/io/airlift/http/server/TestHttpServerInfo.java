@@ -15,23 +15,19 @@
  */
 package io.airlift.http.server;
 
-import io.airlift.node.NodeConfig;
-import io.airlift.node.NodeInfo;
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.net.URI;
-import java.util.Optional;
-
 import static io.airlift.testing.Closeables.closeAll;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TestHttpServerInfo
-{
+import io.airlift.node.NodeConfig;
+import io.airlift.node.NodeInfo;
+import java.io.IOException;
+import java.net.URI;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
+
+public class TestHttpServerInfo {
     @Test
-    public void testIPv6Url()
-            throws Exception
-    {
+    public void testIPv6Url() throws Exception {
         NodeConfig nodeConfig = new NodeConfig();
         nodeConfig.setEnvironment("test");
         nodeConfig.setNodeInternalAddress("::1");
@@ -44,8 +40,7 @@ public class TestHttpServerInfo
         serverConfig.setHttpPort(0);
         serverConfig.setHttpsEnabled(true);
 
-        HttpsConfig httpsConfig = new HttpsConfig()
-                .setHttpsPort(0);
+        HttpsConfig httpsConfig = new HttpsConfig().setHttpsPort(0);
 
         HttpServerInfo httpServerInfo = new HttpServerInfo(serverConfig, Optional.ofNullable(httpsConfig), nodeInfo);
 
@@ -60,9 +55,7 @@ public class TestHttpServerInfo
         closeChannels(httpServerInfo);
     }
 
-    static void closeChannels(HttpServerInfo info)
-            throws IOException
-    {
+    static void closeChannels(HttpServerInfo info) throws IOException {
         closeAll(info.getHttpChannel(), info.getHttpsChannel());
     }
 }

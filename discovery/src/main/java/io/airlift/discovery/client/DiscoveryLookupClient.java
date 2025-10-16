@@ -17,8 +17,7 @@ package io.airlift.discovery.client;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
-public interface DiscoveryLookupClient
-{
+public interface DiscoveryLookupClient {
     ListenableFuture<ServiceDescriptors> getServices(String type);
 
     ListenableFuture<ServiceDescriptors> getServices(String type, String pool);

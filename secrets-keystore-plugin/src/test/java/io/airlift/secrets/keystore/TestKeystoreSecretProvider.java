@@ -13,33 +13,28 @@
  */
 package io.airlift.secrets.keystore;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
+
 import io.airlift.testing.TempFile;
+import java.io.FileOutputStream;
+import java.security.KeyStore;
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
-import javax.crypto.SecretKeyFactory;
-import javax.crypto.spec.PBEKeySpec;
-
-import java.io.FileOutputStream;
-import java.security.KeyStore;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
-
 @TestInstance(PER_CLASS)
-final class TestKeystoreSecretProvider
-{
+final class TestKeystoreSecretProvider {
     private TempFile keystoreFile;
 
     private KeystoreSecretProvider secretProvider;
 
     @BeforeAll
-    public void setup()
-            throws Exception
-    {
+    public void setup() throws Exception {
         keystoreFile = new TempFile();
 
         char[] password = "password".toCharArray();
@@ -64,34 +59,29 @@ final class TestKeystoreSecretProvider
     }
 
     @AfterAll
-    public void teardown()
-    {
+    public void teardown() {
         if (keystoreFile != null) {
             keystoreFile.close();
         }
     }
 
     @Test
-    public void testConfigurationResolver()
-    {
+    public void testConfigurationResolver() {
         assertThat(secretProvider.resolveSecretValue("key")).isEqualTo("value");
     }
 
     @Test
-    public void testConfigurationResolverWithInvalidKey()
-    {
+    public void testConfigurationResolverWithInvalidKey() {
         assertThatThrownBy(() -> secretProvider.resolveSecretValue("invalid_key"))
                 .hasMessageContaining("Key not found in keystore: invalid_key");
     }
 
     @Test
-    public void testKeystoreWithInvalidPassword()
-    {
-        assertThatThrownBy(() ->
-                new KeystoreSecretProvider(new KeystoreSecretProviderConfig()
-                        .setKeyStoreType("jks")
-                        .setKeyStoreFilePath(keystoreFile.file().getAbsolutePath())
-                        .setKeyStorePassword("invalid_password"))
+    public void testKeystoreWithInvalidPassword() {
+        assertThatThrownBy(() -> new KeystoreSecretProvider(new KeystoreSecretProviderConfig()
+                                .setKeyStoreType("jks")
+                                .setKeyStoreFilePath(keystoreFile.file().getAbsolutePath())
+                                .setKeyStorePassword("invalid_password"))
                         .resolveSecretValue("key"))
                 .hasMessageContaining("Failed PKCS12 integrity checking");
     }

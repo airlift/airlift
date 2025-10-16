@@ -15,65 +15,6 @@
  */
 package io.airlift.http.server;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.net.HostAndPort;
-import io.airlift.http.client.HttpClient;
-import io.airlift.http.client.HttpClient.HttpResponseFuture;
-import io.airlift.http.client.HttpClientConfig;
-import io.airlift.http.client.HttpUriBuilder;
-import io.airlift.http.client.Request;
-import io.airlift.http.client.Request.Builder;
-import io.airlift.http.client.StatusResponseHandler.StatusResponse;
-import io.airlift.http.client.StringResponseHandler.StringResponse;
-import io.airlift.http.client.jetty.JettyHttpClient;
-import io.airlift.http.server.HttpServer.ClientCertificate;
-import io.airlift.log.Logging;
-import io.airlift.node.NodeConfig;
-import io.airlift.node.NodeInfo;
-import io.airlift.testing.TempFile;
-import io.airlift.units.Duration;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.bouncycastle.cert.X509CertificateHolder;
-import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
-import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
-import org.bouncycastle.operator.ContentSigner;
-import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.Timeout;
-import org.junit.jupiter.api.parallel.Execution;
-
-import javax.security.auth.x500.X500Principal;
-
-import java.io.EOFException;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.UncheckedIOException;
-import java.math.BigInteger;
-import java.net.URI;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.KeyStore;
-import java.security.PrivateKey;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.Certificate;
-import java.security.cert.X509Certificate;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.Date;
-import java.util.Optional;
-import java.util.concurrent.ExecutionException;
-
 import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
 import static com.google.common.io.Resources.getResource;
@@ -96,10 +37,66 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.net.HostAndPort;
+import io.airlift.http.client.HttpClient;
+import io.airlift.http.client.HttpClient.HttpResponseFuture;
+import io.airlift.http.client.HttpClientConfig;
+import io.airlift.http.client.HttpUriBuilder;
+import io.airlift.http.client.Request;
+import io.airlift.http.client.Request.Builder;
+import io.airlift.http.client.StatusResponseHandler.StatusResponse;
+import io.airlift.http.client.StringResponseHandler.StringResponse;
+import io.airlift.http.client.jetty.JettyHttpClient;
+import io.airlift.http.server.HttpServer.ClientCertificate;
+import io.airlift.log.Logging;
+import io.airlift.node.NodeConfig;
+import io.airlift.node.NodeInfo;
+import io.airlift.testing.TempFile;
+import io.airlift.units.Duration;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.EOFException;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
+import java.math.BigInteger;
+import java.net.URI;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.KeyStore;
+import java.security.PrivateKey;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
+import java.util.Optional;
+import java.util.concurrent.ExecutionException;
+import javax.security.auth.x500.X500Principal;
+import org.bouncycastle.cert.X509CertificateHolder;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
+import org.bouncycastle.operator.ContentSigner;
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.parallel.Execution;
+
 @TestInstance(PER_CLASS)
 @Execution(SAME_THREAD)
-public class TestHttpServerProvider
-{
+public class TestHttpServerProvider {
     private HttpServer server;
     private File tempDir;
     private File logFile;
@@ -110,47 +107,39 @@ public class TestHttpServerProvider
     private HttpServerInfo httpServerInfo;
 
     @BeforeAll
-    public void setupSuite()
-    {
+    public void setupSuite() {
         Logging.initialize();
     }
 
     @BeforeEach
-    public void setup()
-            throws IOException
-    {
+    public void setup() throws IOException {
         tempDir = createTempDirectory(getClass().getSimpleName()).toFile();
         logFile = new File(tempDir, "http-request.log");
-        config = new HttpServerConfig()
-                .setHttpPort(0)
-                .setLogPath(logFile.getAbsolutePath());
-        httpsConfig = new HttpsConfig()
-                .setHttpsPort(0);
+        config = new HttpServerConfig().setHttpPort(0).setLogPath(logFile.getAbsolutePath());
+        httpsConfig = new HttpsConfig().setHttpsPort(0);
         clientCertificate = ClientCertificate.NONE;
-        nodeInfo = new NodeInfo(new NodeConfig()
-                .setEnvironment("test")
-                .setNodeInternalAddress("localhost"));
+        nodeInfo = new NodeInfo(new NodeConfig().setEnvironment("test").setNodeInternalAddress("localhost"));
         httpServerInfo = createHttpServerInfo();
     }
 
     @AfterEach
-    public void teardown()
-            throws Exception
-    {
-        closeAll((server != null) ? (AutoCloseable) server::stop : null,
+    public void teardown() throws Exception {
+        closeAll(
+                (server != null) ? (AutoCloseable) server::stop : null,
                 () -> closeChannels(httpServerInfo),
                 () -> deleteRecursively(tempDir.toPath(), ALLOW_INSECURE));
     }
 
     @Test
-    public void testConnectorDefaults()
-    {
+    public void testConnectorDefaults() {
         assertThat(config.isHttpEnabled()).isTrue();
         assertThat(httpServerInfo.getHttpUri()).isNotNull();
         assertThat(httpServerInfo.getHttpExternalUri()).isNotNull();
         assertThat(httpServerInfo.getHttpChannel()).isNotNull();
-        assertThat(httpServerInfo.getHttpUri().getScheme()).isEqualTo(httpServerInfo.getHttpExternalUri().getScheme());
-        assertThat(httpServerInfo.getHttpUri().getPort()).isEqualTo(httpServerInfo.getHttpExternalUri().getPort());
+        assertThat(httpServerInfo.getHttpUri().getScheme())
+                .isEqualTo(httpServerInfo.getHttpExternalUri().getScheme());
+        assertThat(httpServerInfo.getHttpUri().getPort())
+                .isEqualTo(httpServerInfo.getHttpExternalUri().getPort());
         assertThat(httpServerInfo.getHttpUri().getScheme()).isEqualTo("http");
 
         assertThat(config.isHttpsEnabled()).isFalse();
@@ -160,8 +149,7 @@ public class TestHttpServerProvider
     }
 
     @Test
-    public void testHttpDisabled()
-    {
+    public void testHttpDisabled() {
         config.setHttpEnabled(false);
         httpServerInfo = createHttpServerInfo();
 
@@ -175,44 +163,48 @@ public class TestHttpServerProvider
     }
 
     @Test
-    public void testHttpsEnabled()
-    {
+    public void testHttpsEnabled() {
         config.setHttpsEnabled(true);
         httpServerInfo = createHttpServerInfo();
 
         assertThat(httpServerInfo.getHttpUri()).isNotNull();
         assertThat(httpServerInfo.getHttpExternalUri()).isNotNull();
         assertThat(httpServerInfo.getHttpChannel()).isNotNull();
-        assertThat(httpServerInfo.getHttpUri().getScheme()).isEqualTo(httpServerInfo.getHttpExternalUri().getScheme());
-        assertThat(httpServerInfo.getHttpUri().getPort()).isEqualTo(httpServerInfo.getHttpExternalUri().getPort());
+        assertThat(httpServerInfo.getHttpUri().getScheme())
+                .isEqualTo(httpServerInfo.getHttpExternalUri().getScheme());
+        assertThat(httpServerInfo.getHttpUri().getPort())
+                .isEqualTo(httpServerInfo.getHttpExternalUri().getPort());
         assertThat(httpServerInfo.getHttpUri().getScheme()).isEqualTo("http");
 
         assertThat(httpServerInfo.getHttpsUri()).isNotNull();
         assertThat(httpServerInfo.getHttpsExternalUri()).isNotNull();
         assertThat(httpServerInfo.getHttpsChannel()).isNotNull();
-        assertThat(httpServerInfo.getHttpsUri().getScheme()).isEqualTo(httpServerInfo.getHttpsExternalUri().getScheme());
-        assertThat(httpServerInfo.getHttpsUri().getPort()).isEqualTo(httpServerInfo.getHttpsExternalUri().getPort());
+        assertThat(httpServerInfo.getHttpsUri().getScheme())
+                .isEqualTo(httpServerInfo.getHttpsExternalUri().getScheme());
+        assertThat(httpServerInfo.getHttpsUri().getPort())
+                .isEqualTo(httpServerInfo.getHttpsExternalUri().getPort());
         assertThat(httpServerInfo.getHttpsUri().getScheme()).isEqualTo("https");
 
-        assertThat(httpServerInfo.getHttpUri().getPort()).isNotEqualTo(httpServerInfo.getHttpsUri().getPort());
+        assertThat(httpServerInfo.getHttpUri().getPort())
+                .isNotEqualTo(httpServerInfo.getHttpsUri().getPort());
     }
 
     @Test
-    public void testHttp()
-            throws Exception
-    {
+    public void testHttp() throws Exception {
         createServer();
         server.start();
 
         try (JettyHttpClient httpClient = new JettyHttpClient(new HttpClientConfig().setHttp2Enabled(false))) {
-            StatusResponse response = httpClient.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStatusResponseHandler());
+            StatusResponse response = httpClient.execute(
+                    prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStatusResponseHandler());
 
             assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_OK);
             assertThat(response.getHeader("X-Protocol")).isEqualTo("HTTP/1.1");
         }
 
         try (JettyHttpClient httpClient = new JettyHttpClient(new HttpClientConfig().setHttp2Enabled(true))) {
-            StatusResponse response = httpClient.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStatusResponseHandler());
+            StatusResponse response = httpClient.execute(
+                    prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStatusResponseHandler());
 
             assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_OK);
             assertThat(response.getHeader("X-Protocol")).isEqualTo("HTTP/2.0");
@@ -220,11 +212,8 @@ public class TestHttpServerProvider
     }
 
     @Test
-    public void testHttps()
-            throws Exception
-    {
-        config.setHttpEnabled(false)
-                .setHttpsEnabled(true);
+    public void testHttps() throws Exception {
+        config.setHttpEnabled(false).setHttpsEnabled(true);
         httpsConfig
                 .setKeystorePath(getResource("test.keystore.with.two.passwords").getPath())
                 .setKeystorePassword("airlift")
@@ -246,9 +235,9 @@ public class TestHttpServerProvider
         }
     }
 
-    private void verifyHttps(JettyHttpClient httpClient, String name)
-    {
-        URI uri = URI.create(format("https://%s:%s", name, httpServerInfo.getHttpsUri().getPort()));
+    private void verifyHttps(JettyHttpClient httpClient, String name) {
+        URI uri = URI.create(
+                format("https://%s:%s", name, httpServerInfo.getHttpsUri().getPort()));
         StatusResponse response = httpClient.execute(prepareGet().setUri(uri).build(), createStatusResponseHandler());
 
         assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_OK);
@@ -256,23 +245,23 @@ public class TestHttpServerProvider
     }
 
     @Test
-    public void testFilter()
-            throws Exception
-    {
+    public void testFilter() throws Exception {
         createServer();
         server.start();
 
         try (JettyHttpClient client = new JettyHttpClient()) {
-            StatusResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri().resolve("/filter")).build(), createStatusResponseHandler());
+            StatusResponse response = client.execute(
+                    prepareGet()
+                            .setUri(httpServerInfo.getHttpUri().resolve("/filter"))
+                            .build(),
+                    createStatusResponseHandler());
 
             assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_PAYMENT_REQUIRED);
         }
     }
 
     @Test
-    public void testForwardedAccepted()
-            throws Exception
-    {
+    public void testForwardedAccepted() throws Exception {
         config.setProcessForwarded(ACCEPT);
         ForwardedServlet servlet = new ForwardedServlet();
         createServer(servlet);
@@ -285,43 +274,39 @@ public class TestHttpServerProvider
 
         assertForward(servlet, Optional.empty(), Optional.empty(), Optional.of("remote.example.com"));
 
-        assertForward(servlet, Optional.of("unknown"), Optional.of("example.com:1234"), Optional.of("remote.example.com"));
-        assertForward(servlet, Optional.of("https"), Optional.of("example.com:1234"), Optional.of("remote.example.com"));
+        assertForward(
+                servlet, Optional.of("unknown"), Optional.of("example.com:1234"), Optional.of("remote.example.com"));
+        assertForward(
+                servlet, Optional.of("https"), Optional.of("example.com:1234"), Optional.of("remote.example.com"));
     }
 
     @Test
-    public void testForwardedRejecting()
-            throws Exception
-    {
+    public void testForwardedRejecting() throws Exception {
         config.setProcessForwarded(REJECT);
         ForwardedServlet servlet = new ForwardedServlet();
         createServer(servlet);
         server.start();
 
-        HttpUriBuilder uriBuilder = HttpUriBuilder.uriBuilderFrom(httpServerInfo.getHttpUri()).replacePath("/some/path");
+        HttpUriBuilder uriBuilder =
+                HttpUriBuilder.uriBuilderFrom(httpServerInfo.getHttpUri()).replacePath("/some/path");
         try (HttpClient client = new JettyHttpClient()) {
-            Builder builder = prepareGet()
-                    .setHeader(X_FORWARDED_PROTO, "https")
-                    .setUri(uriBuilder.build());
+            Builder builder = prepareGet().setHeader(X_FORWARDED_PROTO, "https").setUri(uriBuilder.build());
             StringResponse response = client.execute(builder.build(), createStringResponseHandler());
             assertThat(response.getStatusCode()).isEqualTo(406);
         }
     }
 
     @Test
-    public void testForwardedDropped()
-            throws Exception
-    {
+    public void testForwardedDropped() throws Exception {
         config.setProcessForwarded(IGNORE);
         ForwardedServlet servlet = new ForwardedServlet();
         createServer(servlet);
         server.start();
 
-        HttpUriBuilder uriBuilder = HttpUriBuilder.uriBuilderFrom(httpServerInfo.getHttpUri()).replacePath("/some/path");
+        HttpUriBuilder uriBuilder =
+                HttpUriBuilder.uriBuilderFrom(httpServerInfo.getHttpUri()).replacePath("/some/path");
         try (HttpClient client = new JettyHttpClient()) {
-            Builder builder = prepareGet()
-                    .setHeader(X_FORWARDED_PROTO, "https")
-                    .setUri(uriBuilder.build());
+            Builder builder = prepareGet().setHeader(X_FORWARDED_PROTO, "https").setUri(uriBuilder.build());
             StringResponse response = client.execute(builder.build(), createStringResponseHandler());
             assertThat(response.getStatusCode()).isEqualTo(200);
         }
@@ -329,14 +314,14 @@ public class TestHttpServerProvider
         assertThat(servlet.getIsSecure()).isEqualTo(false);
     }
 
-    private void assertForward(ForwardedServlet servlet, Optional<String> proto, Optional<String> host, Optional<String> remoteHost)
-    {
+    private void assertForward(
+            ForwardedServlet servlet, Optional<String> proto, Optional<String> host, Optional<String> remoteHost) {
         servlet.reset();
 
-        HttpUriBuilder uriBuilder = HttpUriBuilder.uriBuilderFrom(httpServerInfo.getHttpUri()).replacePath("/some/path");
+        HttpUriBuilder uriBuilder =
+                HttpUriBuilder.uriBuilderFrom(httpServerInfo.getHttpUri()).replacePath("/some/path");
         try (HttpClient client = new JettyHttpClient()) {
-            Builder builder = prepareGet()
-                    .setUri(uriBuilder.build());
+            Builder builder = prepareGet().setUri(uriBuilder.build());
             proto.ifPresent(value -> builder.addHeader(X_FORWARDED_PROTO, value));
             host.ifPresent(value -> builder.addHeader(X_FORWARDED_HOST, value));
             remoteHost.ifPresent(value -> builder.addHeader(X_FORWARDED_FOR, value));
@@ -349,18 +334,17 @@ public class TestHttpServerProvider
         URI forwardedUri = uriBuilder.build();
         assertThat(servlet.getRequestUrl()).isEqualTo(forwardedUri.toString());
         assertThat(servlet.getScheme()).isEqualTo(forwardedUri.getScheme());
-        assertThat(servlet.getIsSecure()).isEqualTo((Boolean) forwardedUri.getScheme().equals("https"));
+        assertThat(servlet.getIsSecure())
+                .isEqualTo((Boolean) forwardedUri.getScheme().equals("https"));
 
         remoteHost.ifPresent(value -> assertThat(servlet.getRemoteAddress()).isEqualTo(value));
     }
 
     @Test
-    public void testClientCertificateJava()
-            throws Exception
-    {
-        config.setHttpEnabled(false)
-                .setHttpsEnabled(true);
-        httpsConfig.setKeystorePath(getResource("clientcert-java/server.keystore").getPath())
+    public void testClientCertificateJava() throws Exception {
+        config.setHttpEnabled(false).setHttpsEnabled(true);
+        httpsConfig
+                .setKeystorePath(getResource("clientcert-java/server.keystore").getPath())
                 .setKeystorePassword("airlift")
                 .setAutomaticHttpsSharedSecret("shared-secret");
         clientCertificate = ClientCertificate.REQUIRED;
@@ -370,7 +354,8 @@ public class TestHttpServerProvider
         HttpClientConfig clientConfig = new HttpClientConfig()
                 .setKeyStorePath(getResource("clientcert-java/client.keystore").getPath())
                 .setKeyStorePassword("airlift")
-                .setTrustStorePath(getResource("clientcert-java/client.truststore").getPath())
+                .setTrustStorePath(
+                        getResource("clientcert-java/client.truststore").getPath())
                 .setTrustStorePassword("airlift")
                 .setAutomaticHttpsSharedSecret("shared-secret");
 
@@ -380,11 +365,8 @@ public class TestHttpServerProvider
     }
 
     @Test
-    public void testClientCertificatePem()
-            throws Exception
-    {
-        config.setHttpEnabled(false)
-                .setHttpsEnabled(true);
+    public void testClientCertificatePem() throws Exception {
+        config.setHttpEnabled(false).setHttpsEnabled(true);
         httpsConfig
                 .setKeystorePath(getResource("clientcert-pem/server.pem").getPath())
                 .setKeystorePassword("airlift")
@@ -401,26 +383,24 @@ public class TestHttpServerProvider
         assertClientCertificateRequest(clientConfig, "localhost");
     }
 
-    private void assertClientCertificateRequest(HttpClientConfig clientConfig, String name)
-    {
+    private void assertClientCertificateRequest(HttpClientConfig clientConfig, String name) {
         try (JettyHttpClient httpClient = createJettyClient(clientConfig)) {
-            URI uri = URI.create(format("https://%s:%s", name, httpServerInfo.getHttpsUri().getPort()));
-            StringResponse response = httpClient.execute(prepareGet().setUri(uri).build(), createStringResponseHandler());
+            URI uri = URI.create(
+                    format("https://%s:%s", name, httpServerInfo.getHttpsUri().getPort()));
+            StringResponse response =
+                    httpClient.execute(prepareGet().setUri(uri).build(), createStringResponseHandler());
 
             assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_OK);
             assertThat(response.getBody()).isEqualTo("CN=testing,OU=Client,O=Airlift,L=Palo Alto,ST=CA,C=US");
         }
     }
 
-    private static HttpServlet createCertTestServlet()
-    {
-        return new HttpServlet()
-        {
+    private static HttpServlet createCertTestServlet() {
+        return new HttpServlet() {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response)
-                    throws IOException
-            {
-                X509Certificate[] certs = (X509Certificate[]) request.getAttribute("jakarta.servlet.request.X509Certificate");
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
+                X509Certificate[] certs =
+                        (X509Certificate[]) request.getAttribute("jakarta.servlet.request.X509Certificate");
                 if ((certs == null) || (certs.length == 0)) {
                     throw new RuntimeException("No client certificate");
                 }
@@ -435,38 +415,34 @@ public class TestHttpServerProvider
     }
 
     @Test
-    public void testShowStackTraceEnabled()
-            throws Exception
-    {
+    public void testShowStackTraceEnabled() throws Exception {
         createServer(new ErrorServlet());
         server.start();
 
         try (HttpClient client = new JettyHttpClient()) {
-            StringResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStringResponseHandler());
+            StringResponse response = client.execute(
+                    prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStringResponseHandler());
             assertThat(response.getStatusCode()).isEqualTo(500);
             assertThat(response.getBody()).contains("ErrorServlet.java");
         }
     }
 
     @Test
-    public void testShowStackTraceDisabled()
-            throws Exception
-    {
+    public void testShowStackTraceDisabled() throws Exception {
         config.setShowStackTrace(false);
         createServer(new ErrorServlet());
         server.start();
 
         try (HttpClient client = new JettyHttpClient()) {
-            StringResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStringResponseHandler());
+            StringResponse response = client.execute(
+                    prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStringResponseHandler());
             assertThat(response.getStatusCode()).isEqualTo(500);
             assertThat(response.getBody()).doesNotContain("ErrorServlet.java");
         }
     }
 
     @Test
-    public void testRequestLogging()
-            throws Exception
-    {
+    public void testRequestLogging() throws Exception {
         config.setLogQueueSize(1);
         config.setLogImmediateFlush(true);
         config.setShowStackTrace(false); // changes the body size to 391
@@ -475,7 +451,8 @@ public class TestHttpServerProvider
         server.start();
 
         try (HttpClient client = new JettyHttpClient()) {
-            StringResponse response = client.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStringResponseHandler());
+            StringResponse response = client.execute(
+                    prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStringResponseHandler());
             assertThat(response.getStatusCode()).isEqualTo(500);
         }
 
@@ -488,9 +465,7 @@ public class TestHttpServerProvider
 
     @Test
     @Timeout(30)
-    public void testStop()
-            throws Exception
-    {
+    public void testStop() throws Exception {
         DummyServlet servlet = new DummyServlet();
         createAndStartServer(servlet);
 
@@ -517,33 +492,23 @@ public class TestHttpServerProvider
     }
 
     @Test
-    public void testInsufficientThreadsHttp()
-    {
+    public void testInsufficientThreadsHttp() {
         config.setMaxThreads(1);
 
-        assertThatThrownBy(this::createAndStartServer)
-                .hasMessageStartingWith("Insufficient configured threads: ");
+        assertThatThrownBy(this::createAndStartServer).hasMessageStartingWith("Insufficient configured threads: ");
     }
 
     @Test
-    public void testInsufficientThreadsHttps()
-    {
-        config.setHttpEnabled(false)
-                .setHttpsEnabled(true)
-                .setMaxThreads(1);
-        httpsConfig
-                .setKeystorePath(getResource("test.keystore").getPath())
-                .setKeystorePassword("airlift");
+    public void testInsufficientThreadsHttps() {
+        config.setHttpEnabled(false).setHttpsEnabled(true).setMaxThreads(1);
+        httpsConfig.setKeystorePath(getResource("test.keystore").getPath()).setKeystorePassword("airlift");
 
-        assertThatThrownBy(this::createAndStartServer)
-                .hasMessageStartingWith("Insufficient configured threads: ");
+        assertThatThrownBy(this::createAndStartServer).hasMessageStartingWith("Insufficient configured threads: ");
     }
 
     @Test
-    public void testInsufficientPasswordToAccessKeystore()
-    {
-        config.setHttpEnabled(false)
-                .setHttpsEnabled(true);
+    public void testInsufficientPasswordToAccessKeystore() {
+        config.setHttpEnabled(false).setHttpsEnabled(true);
         httpsConfig
                 .setKeystorePath(getResource("test.keystore.with.two.passwords").getPath())
                 .setKeystorePassword("airlift");
@@ -554,11 +519,8 @@ public class TestHttpServerProvider
     }
 
     @Test
-    public void testHttpsDaysUntilCertificateExpiration()
-            throws Exception
-    {
-        config.setHttpEnabled(false)
-                .setHttpsEnabled(true);
+    public void testHttpsDaysUntilCertificateExpiration() throws Exception {
+        config.setHttpEnabled(false).setHttpsEnabled(true);
         httpsConfig
                 .setKeystorePath(new File(getResource("test.keystore").toURI()).getAbsolutePath())
                 .setKeystorePassword("airlift");
@@ -570,9 +532,7 @@ public class TestHttpServerProvider
     }
 
     @Test
-    public void testNoHttpsDaysUntilCertificateExpiration()
-            throws Exception
-    {
+    public void testNoHttpsDaysUntilCertificateExpiration() throws Exception {
         config.setHttpEnabled(true);
 
         createAndStartServer();
@@ -581,13 +541,10 @@ public class TestHttpServerProvider
     }
 
     @Test
-    public void testKeystoreReloading()
-            throws Exception
-    {
+    public void testKeystoreReloading() throws Exception {
         try (TempFile tempFile = new TempFile()) {
             appendCertificate(tempFile.file(), "certificate-1");
-            config.setHttpsEnabled(true)
-                    .setHttpEnabled(false);
+            config.setHttpsEnabled(true).setHttpEnabled(false);
             httpsConfig
                     .setSslContextRefreshTime(new Duration(5, SECONDS))
                     .setKeystorePath(tempFile.file().getAbsolutePath())
@@ -599,66 +556,56 @@ public class TestHttpServerProvider
         }
     }
 
-    private JettyHttpClient createJettyClient(HttpClientConfig config)
-    {
-        return new JettyHttpClient("test", config, ImmutableList.of(), Optional.of(nodeInfo.getEnvironment()), Optional.empty());
+    private JettyHttpClient createJettyClient(HttpClientConfig config) {
+        return new JettyHttpClient(
+                "test", config, ImmutableList.of(), Optional.of(nodeInfo.getEnvironment()), Optional.empty());
     }
 
-    private void createAndStartServer()
-            throws Exception
-    {
+    private void createAndStartServer() throws Exception {
         createAndStartServer(new DummyServlet());
     }
 
-    private void createAndStartServer(HttpServlet servlet)
-            throws Exception
-    {
+    private void createAndStartServer(HttpServlet servlet) throws Exception {
         httpServerInfo = createHttpServerInfo();
         createServer(servlet);
         server.start();
     }
 
-    private void createServer()
-    {
+    private void createServer() {
         createServer(new DummyServlet());
     }
 
-    private void createServer(HttpServlet servlet)
-    {
+    private void createServer(HttpServlet servlet) {
         server = new HttpServerProvider(
-                httpServerInfo,
-                nodeInfo,
-                config,
-                optionalHttpsConfig(),
-                servlet,
-                ImmutableSet.of(new DummyFilter()),
-                ImmutableSet.of(),
-                false,
-                false,
-                false,
-                clientCertificate,
-                Optional.empty()).get();
+                        httpServerInfo,
+                        nodeInfo,
+                        config,
+                        optionalHttpsConfig(),
+                        servlet,
+                        ImmutableSet.of(new DummyFilter()),
+                        ImmutableSet.of(),
+                        false,
+                        false,
+                        false,
+                        clientCertificate,
+                        Optional.empty())
+                .get();
     }
 
-    private HttpServerInfo createHttpServerInfo()
-    {
+    private HttpServerInfo createHttpServerInfo() {
         return new HttpServerInfo(config, optionalHttpsConfig(), nodeInfo);
     }
 
-    private Optional<HttpsConfig> optionalHttpsConfig()
-    {
+    private Optional<HttpsConfig> optionalHttpsConfig() {
         return config.isHttpsEnabled() ? Optional.of(this.httpsConfig) : Optional.empty();
     }
 
-    private static void appendCertificate(File keyStoreFile, String alias)
-            throws Exception
-    {
+    private static void appendCertificate(File keyStoreFile, String alias) throws Exception {
         KeyStore keyStore = KeyStore.getInstance("JKS");
         char[] password = "airlift".toCharArray();
         try (InputStream inStream = new FileInputStream(keyStoreFile)) {
             keyStore.load(inStream, password);
-        }
-        catch (EOFException ignored) { // reading an empty file produces EOFException
+        } catch (EOFException ignored) { // reading an empty file produces EOFException
             keyStore.load(null, password);
         }
 
@@ -685,16 +632,14 @@ public class TestHttpServerProvider
         }
     }
 
-    private static void assertEventually(Runnable assertion)
-    {
+    private static void assertEventually(Runnable assertion) {
         long start = System.nanoTime();
         Duration timeout = new Duration(30, SECONDS);
         while (!Thread.currentThread().isInterrupted()) {
             try {
                 assertion.run();
                 return;
-            }
-            catch (Exception | AssertionError e) {
+            } catch (Exception | AssertionError e) {
                 if (Duration.nanosSince(start).compareTo(timeout) > 0) {
                     throw e;
                 }
@@ -702,8 +647,7 @@ public class TestHttpServerProvider
             try {
                 //noinspection BusyWait
                 Thread.sleep(50);
-            }
-            catch (InterruptedException e) {
+            } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new RuntimeException(e);
             }

@@ -15,50 +15,44 @@
  */
 package io.airlift.http.client;
 
-import com.google.common.collect.ImmutableListMultimap;
-import org.junit.jupiter.api.Test;
-
-import java.net.URI;
-
 import static io.airlift.http.client.Request.Builder.fromRequest;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StaticBodyGenerator.createStaticBodyGenerator;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class TestRequestBuilder
-{
+import com.google.common.collect.ImmutableListMultimap;
+import java.net.URI;
+import org.junit.jupiter.api.Test;
+
+public class TestRequestBuilder {
     public static final BodyGenerator NULL_BODY_GENERATOR = createStaticBodyGenerator(new byte[0]);
 
     @Test
-    public void testRequestBuilder()
-    {
+    public void testRequestBuilder() {
         Request request = createRequest();
         assertThat(request.getMethod()).isEqualTo("GET");
         assertThat(request.getBodyGenerator()).isEqualTo(NULL_BODY_GENERATOR);
         assertThat(request.getUri()).isEqualTo(URI.create("http://example.com"));
-        assertThat(request.getHeaders()).isEqualTo(ImmutableListMultimap.of(
-                "newheader", "withvalue", "anotherheader", "anothervalue"));
+        assertThat(request.getHeaders())
+                .isEqualTo(ImmutableListMultimap.of("newheader", "withvalue", "anotherheader", "anothervalue"));
         assertThat(request.isFollowRedirects()).isFalse();
     }
 
     @Test
-    public void testCannotBuildRequestToIllegalPort()
-    {
+    public void testCannotBuildRequestToIllegalPort() {
         assertThatThrownBy(() -> prepareGet().setUri(URI.create("http://example.com:0/")))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Cannot make requests to HTTP port 0");
     }
 
     @Test
-    public void testBuilderFromRequest()
-    {
+    public void testBuilderFromRequest() {
         Request request = createRequest();
         assertThat(fromRequest(request).build()).isEqualTo(request);
     }
 
-    private static Request createRequest()
-    {
+    private static Request createRequest() {
         return prepareGet()
                 .setUri(URI.create("http://example.com"))
                 .addHeader("newheader", "withvalue")

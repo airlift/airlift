@@ -15,6 +15,10 @@
  */
 package io.airlift.jmx;
 
+import static com.google.common.io.Resources.getResource;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Objects.requireNonNull;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
@@ -24,44 +28,32 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
-
+import java.util.List;
 import javax.management.JMException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
-import java.util.List;
-
-import static com.google.common.io.Resources.getResource;
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Objects.requireNonNull;
-
 @Path("/v1/jmx")
-public class MBeanResource
-{
+public class MBeanResource {
     private final MBeanServer mbeanServer;
     private final ObjectMapper objectMapper;
 
     @Inject
-    public MBeanResource(MBeanServer mbeanServer, ObjectMapper objectMapper)
-    {
+    public MBeanResource(MBeanServer mbeanServer, ObjectMapper objectMapper) {
         this.mbeanServer = mbeanServer;
         this.objectMapper = objectMapper;
     }
 
     @GET
     @Produces(MediaType.TEXT_HTML)
-    public String getMBeansUi()
-            throws Exception
-    {
+    public String getMBeansUi() throws Exception {
         return Resources.toString(getResource(getClass(), "mbeans.html"), UTF_8);
     }
 
     @GET
     @Path("mbean")
     @Produces(MediaType.APPLICATION_JSON)
-    public List<MBeanRepresentation> getMBeans()
-            throws JMException
-    {
+    public List<MBeanRepresentation> getMBeans() throws JMException {
         ImmutableList.Builder<MBeanRepresentation> mbeans = ImmutableList.builder();
         for (ObjectName objectName : mbeanServer.queryNames(ObjectName.WILDCARD, null)) {
             mbeans.add(new MBeanRepresentation(mbeanServer, objectName, objectMapper));
@@ -73,9 +65,7 @@ public class MBeanResource
     @GET
     @Path("mbean/{objectName}")
     @Produces(MediaType.APPLICATION_JSON)
-    public MBeanRepresentation getMBean(@PathParam("objectName") ObjectName objectName)
-            throws JMException
-    {
+    public MBeanRepresentation getMBean(@PathParam("objectName") ObjectName objectName) throws JMException {
         requireNonNull(objectName, "objectName is null");
         return new MBeanRepresentation(mbeanServer, objectName, objectMapper);
     }
@@ -83,9 +73,9 @@ public class MBeanResource
     @GET
     @Path("mbean/{objectName}/{attributeName}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Object getMBean(@PathParam("objectName") ObjectName objectName, @PathParam("attributeName") String attributeName)
-            throws JMException
-    {
+    public Object getMBean(
+            @PathParam("objectName") ObjectName objectName, @PathParam("attributeName") String attributeName)
+            throws JMException {
         requireNonNull(objectName, "objectName is null");
         return mbeanServer.getAttribute(objectName, attributeName);
     }

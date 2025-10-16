@@ -15,6 +15,12 @@
  */
 package io.airlift.discovery.client;
 
+import static com.google.common.collect.MoreCollectors.onlyElement;
+import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
+import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
+import static io.airlift.discovery.client.ServiceTypes.serviceType;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -26,21 +32,12 @@ import io.airlift.configuration.ConfigurationModule;
 import io.airlift.discovery.client.testing.InMemoryDiscoveryClient;
 import io.airlift.discovery.client.testing.TestingDiscoveryModule;
 import io.airlift.node.testing.TestingNodeModule;
+import java.net.URI;
 import org.junit.jupiter.api.Test;
 
-import java.net.URI;
-
-import static com.google.common.collect.MoreCollectors.onlyElement;
-import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
-import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
-import static io.airlift.discovery.client.ServiceTypes.serviceType;
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class TestHttpServiceSelectorBinder
-{
+public class TestHttpServiceSelectorBinder {
     @Test
-    public void testHttpSelectorString()
-    {
+    public void testHttpSelectorString() {
         Injector injector = Guice.createInjector(
                 new ConfigurationModule(new ConfigurationFactory(ImmutableMap.<String, String>of())),
                 new TestingNodeModule(),
@@ -48,15 +45,17 @@ public class TestHttpServiceSelectorBinder
                 binder -> discoveryBinder(binder).bindHttpSelector("apple"));
 
         InMemoryDiscoveryClient discoveryClient = injector.getInstance(InMemoryDiscoveryClient.class);
-        discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple").addProperty("http", "fake://server-http").build()));
+        discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple")
+                .addProperty("http", "fake://server-http")
+                .build()));
 
         HttpServiceSelector selector = injector.getInstance(Key.get(HttpServiceSelector.class, serviceType("apple")));
-        assertThat(selector.selectHttpService().stream().collect(onlyElement())).isEqualTo(URI.create("fake://server-http"));
+        assertThat(selector.selectHttpService().stream().collect(onlyElement()))
+                .isEqualTo(URI.create("fake://server-http"));
     }
 
     @Test
-    public void testHttpSelectorAnnotation()
-    {
+    public void testHttpSelectorAnnotation() {
         Injector injector = Guice.createInjector(
                 new ConfigurationModule(new ConfigurationFactory(ImmutableMap.<String, String>of())),
                 new TestingNodeModule(),
@@ -64,10 +63,13 @@ public class TestHttpServiceSelectorBinder
                 binder -> discoveryBinder(binder).bindHttpSelector(serviceType("apple")));
 
         InMemoryDiscoveryClient discoveryClient = injector.getInstance(InMemoryDiscoveryClient.class);
-        discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple").addProperty("http", "fake://server-http").build()));
+        discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple")
+                .addProperty("http", "fake://server-http")
+                .build()));
 
         HttpServiceSelector selector = injector.getInstance(Key.get(HttpServiceSelector.class, serviceType("apple")));
-        assertThat(selector.selectHttpService().stream().collect(onlyElement())).isEqualTo(URI.create("fake://server-http"));
+        assertThat(selector.selectHttpService().stream().collect(onlyElement()))
+                .isEqualTo(URI.create("fake://server-http"));
 
         ServiceSelectorManager manager = injector.getInstance(ServiceSelectorManager.class);
         assertThat(manager.getServiceSelectors().size()).isEqualTo(1);
@@ -76,8 +78,7 @@ public class TestHttpServiceSelectorBinder
     }
 
     @Test
-    public void testHttpsSelector()
-    {
+    public void testHttpsSelector() {
         Injector injector = Guice.createInjector(
                 new ConfigurationModule(new ConfigurationFactory(ImmutableMap.<String, String>of())),
                 new TestingNodeModule(),
@@ -85,15 +86,17 @@ public class TestHttpServiceSelectorBinder
                 binder -> discoveryBinder(binder).bindHttpSelector("apple"));
 
         InMemoryDiscoveryClient discoveryClient = injector.getInstance(InMemoryDiscoveryClient.class);
-        discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple").addProperty("https", "fake://server-https").build()));
+        discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple")
+                .addProperty("https", "fake://server-https")
+                .build()));
 
         HttpServiceSelector selector = injector.getInstance(Key.get(HttpServiceSelector.class, serviceType("apple")));
-        assertThat(selector.selectHttpService().stream().collect(onlyElement())).isEqualTo(URI.create("fake://server-https"));
+        assertThat(selector.selectHttpService().stream().collect(onlyElement()))
+                .isEqualTo(URI.create("fake://server-https"));
     }
 
     @Test
-    public void testFavorHttpsOverHttpSelector()
-    {
+    public void testFavorHttpsOverHttpSelector() {
         Injector injector = Guice.createInjector(
                 new ConfigurationModule(new ConfigurationFactory(ImmutableMap.<String, String>of())),
                 new TestingNodeModule(),
@@ -101,16 +104,21 @@ public class TestHttpServiceSelectorBinder
                 binder -> discoveryBinder(binder).bindHttpSelector("apple"));
 
         InMemoryDiscoveryClient discoveryClient = injector.getInstance(InMemoryDiscoveryClient.class);
-        discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple").addProperty("http", "fake://server-http").build(),
-                serviceAnnouncement("apple").addProperty("https", "fake://server-https").build()));
+        discoveryClient.announce(ImmutableSet.of(
+                serviceAnnouncement("apple")
+                        .addProperty("http", "fake://server-http")
+                        .build(),
+                serviceAnnouncement("apple")
+                        .addProperty("https", "fake://server-https")
+                        .build()));
 
         HttpServiceSelector selector = injector.getInstance(Key.get(HttpServiceSelector.class, serviceType("apple")));
-        assertThat(selector.selectHttpService()).isEqualTo(ImmutableList.of(URI.create("fake://server-https"), URI.create("fake://server-http")));
+        assertThat(selector.selectHttpService())
+                .isEqualTo(ImmutableList.of(URI.create("fake://server-https"), URI.create("fake://server-http")));
     }
 
     @Test
-    public void testNoHttpServices()
-    {
+    public void testNoHttpServices() {
         Injector injector = Guice.createInjector(
                 new ConfigurationModule(new ConfigurationFactory(ImmutableMap.<String, String>of())),
                 new TestingNodeModule(),
@@ -118,15 +126,16 @@ public class TestHttpServiceSelectorBinder
                 binder -> discoveryBinder(binder).bindHttpSelector("apple"));
 
         InMemoryDiscoveryClient discoveryClient = injector.getInstance(InMemoryDiscoveryClient.class);
-        discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple").addProperty("foo", "fake://server-https").build()));
+        discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple")
+                .addProperty("foo", "fake://server-https")
+                .build()));
 
         HttpServiceSelector selector = injector.getInstance(Key.get(HttpServiceSelector.class, serviceType("apple")));
         assertThat(selector.selectHttpService()).isEqualTo(ImmutableList.of());
     }
 
     @Test
-    public void testInvalidUris()
-    {
+    public void testInvalidUris() {
         Injector injector = Guice.createInjector(
                 new ConfigurationModule(new ConfigurationFactory(ImmutableMap.<String, String>of())),
                 new TestingNodeModule(),
@@ -134,8 +143,12 @@ public class TestHttpServiceSelectorBinder
                 binder -> discoveryBinder(binder).bindHttpSelector("apple"));
 
         InMemoryDiscoveryClient discoveryClient = injector.getInstance(InMemoryDiscoveryClient.class);
-        discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple").addProperty("http", ":::INVALID:::").build()));
-        discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple").addProperty("https", ":::INVALID:::").build()));
+        discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple")
+                .addProperty("http", ":::INVALID:::")
+                .build()));
+        discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple")
+                .addProperty("https", ":::INVALID:::")
+                .build()));
 
         HttpServiceSelector selector = injector.getInstance(Key.get(HttpServiceSelector.class, serviceType("apple")));
         assertThat(selector.selectHttpService()).isEqualTo(ImmutableList.of());

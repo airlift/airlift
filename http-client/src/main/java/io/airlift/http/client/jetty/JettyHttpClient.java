@@ -1,5 +1,28 @@
 package io.airlift.http.client.jetty;
 
+import static com.google.common.base.MoreObjects.firstNonNull;
+import static com.google.common.base.MoreObjects.toStringHelper;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Throwables.throwIfUnchecked;
+import static com.google.common.base.Verify.verify;
+import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.net.InetAddresses.isInetAddress;
+import static io.airlift.http.client.ResponseHandlerUtils.propagate;
+import static io.airlift.node.AddressToHostname.tryDecodeHostnameToAddress;
+import static io.airlift.security.mtls.AutomaticMtls.addClientTrust;
+import static io.opentelemetry.api.common.AttributeKey.stringKey;
+import static java.lang.Math.max;
+import static java.lang.Math.toIntExact;
+import static java.lang.String.format;
+import static java.util.Locale.ENGLISH;
+import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.eclipse.jetty.client.ConnectionPoolAccessor.getActiveConnections;
+import static org.eclipse.jetty.client.HttpClient.normalizePort;
+import static org.eclipse.jetty.http.HttpHeader.PROXY_AUTHORIZATION;
+
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
@@ -39,6 +62,34 @@ import io.opentelemetry.semconv.ServerAttributes;
 import io.opentelemetry.semconv.UrlAttributes;
 import io.opentelemetry.semconv.incubating.HttpIncubatingAttributes;
 import jakarta.annotation.PreDestroy;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.StandardSocketOptions;
+import java.net.URI;
+import java.nio.ByteBuffer;
+import java.nio.channels.NetworkChannel;
+import java.nio.channels.SelectableChannel;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Queue;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
+import javax.net.ssl.SNIHostName;
+import javax.net.ssl.SNIServerName;
+import javax.net.ssl.SSLEngine;
 import jdk.net.ExtendedSocketOptions;
 import org.eclipse.jetty.client.AbstractConnectionPool;
 import org.eclipse.jetty.client.BasicAuthentication.BasicResult;
@@ -81,62 +132,7 @@ import org.weakref.jmx.Flatten;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
 
-import javax.net.ssl.SNIHostName;
-import javax.net.ssl.SNIServerName;
-import javax.net.ssl.SSLEngine;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.StandardSocketOptions;
-import java.net.URI;
-import java.nio.ByteBuffer;
-import java.nio.channels.NetworkChannel;
-import java.nio.channels.SelectableChannel;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.security.GeneralSecurityException;
-import java.security.KeyStore;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Queue;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
-
-import static com.google.common.base.MoreObjects.firstNonNull;
-import static com.google.common.base.MoreObjects.toStringHelper;
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Throwables.throwIfUnchecked;
-import static com.google.common.base.Verify.verify;
-import static com.google.common.collect.ImmutableList.toImmutableList;
-import static com.google.common.net.InetAddresses.isInetAddress;
-import static io.airlift.http.client.ResponseHandlerUtils.propagate;
-import static io.airlift.node.AddressToHostname.tryDecodeHostnameToAddress;
-import static io.airlift.security.mtls.AutomaticMtls.addClientTrust;
-import static io.opentelemetry.api.common.AttributeKey.stringKey;
-import static java.lang.Math.max;
-import static java.lang.Math.toIntExact;
-import static java.lang.String.format;
-import static java.util.Locale.ENGLISH;
-import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.eclipse.jetty.client.ConnectionPoolAccessor.getActiveConnections;
-import static org.eclipse.jetty.client.HttpClient.normalizePort;
-import static org.eclipse.jetty.http.HttpHeader.PROXY_AUTHORIZATION;
-
-public class JettyHttpClient
-        implements io.airlift.http.client.HttpClient
-{
+public class JettyHttpClient implements io.airlift.http.client.HttpClient {
     // This attribute will be deprecated in OTEL soon
     static final AttributeKey<Boolean> EXCEPTION_ESCAPED = AttributeKey.booleanKey("exception.escaped");
 
@@ -177,26 +173,19 @@ public class JettyHttpClient
     private final HttpClientLogger requestLogger;
     private final JettyClientDiagnostics clientDiagnostics;
 
-    public JettyHttpClient()
-    {
+    public JettyHttpClient() {
         this(new HttpClientConfig());
     }
 
-    public JettyHttpClient(HttpClientConfig config)
-    {
+    public JettyHttpClient(HttpClientConfig config) {
         this(uniqueName(), config);
     }
 
-    public JettyHttpClient(String name, HttpClientConfig config)
-    {
+    public JettyHttpClient(String name, HttpClientConfig config) {
         this(name, config, ImmutableList.of());
     }
 
-    public JettyHttpClient(
-            String name,
-            HttpClientConfig config,
-            Iterable<? extends HttpRequestFilter> requestFilters)
-    {
+    public JettyHttpClient(String name, HttpClientConfig config, Iterable<? extends HttpRequestFilter> requestFilters) {
         this(name, config, requestFilters, Optional.empty(), Optional.empty());
     }
 
@@ -204,9 +193,16 @@ public class JettyHttpClient
             String name,
             HttpClientConfig config,
             Iterable<? extends HttpRequestFilter> requestFilters,
-            Iterable<? extends HttpStatusListener> httpStatusListeners)
-    {
-        this(name, config, requestFilters, NOOP_OPEN_TELEMETRY, NOOP_TRACER, Optional.empty(), Optional.empty(), httpStatusListeners);
+            Iterable<? extends HttpStatusListener> httpStatusListeners) {
+        this(
+                name,
+                config,
+                requestFilters,
+                NOOP_OPEN_TELEMETRY,
+                NOOP_TRACER,
+                Optional.empty(),
+                Optional.empty(),
+                httpStatusListeners);
     }
 
     public JettyHttpClient(
@@ -214,8 +210,7 @@ public class JettyHttpClient
             HttpClientConfig config,
             Iterable<? extends HttpRequestFilter> requestFilters,
             Optional<String> environment,
-            Optional<SslContextFactory.Client> maybeSslContextFactory)
-    {
+            Optional<SslContextFactory.Client> maybeSslContextFactory) {
         this(name, config, requestFilters, NOOP_OPEN_TELEMETRY, NOOP_TRACER, environment, maybeSslContextFactory);
     }
 
@@ -226,9 +221,16 @@ public class JettyHttpClient
             OpenTelemetry openTelemetry,
             Tracer tracer,
             Optional<String> environment,
-            Optional<SslContextFactory.Client> maybeSslContextFactory)
-    {
-        this(name, config, requestFilters, openTelemetry, tracer, environment, maybeSslContextFactory, ImmutableList.of());
+            Optional<SslContextFactory.Client> maybeSslContextFactory) {
+        this(
+                name,
+                config,
+                requestFilters,
+                openTelemetry,
+                tracer,
+                environment,
+                maybeSslContextFactory,
+                ImmutableList.of());
     }
 
     public JettyHttpClient(
@@ -239,8 +241,7 @@ public class JettyHttpClient
             Tracer tracer,
             Optional<String> environment,
             Optional<SslContextFactory.Client> maybeSslContextFactory,
-            Iterable<? extends HttpStatusListener> httpStatusListeners)
-    {
+            Iterable<? extends HttpStatusListener> httpStatusListeners) {
         this.name = requireNonNull(name, "name is null");
         this.propagator = openTelemetry.getPropagators().getTextMapPropagator();
         this.tracer = requireNonNull(tracer, "tracer is null");
@@ -254,14 +255,12 @@ public class JettyHttpClient
         idleTimeout = config.getIdleTimeout();
         recordRequestComplete = config.getRecordRequestComplete();
 
-        SslContextFactory.Client sslContextFactory = maybeSslContextFactory.orElseGet(() -> getSslContextFactory(config, environment));
+        SslContextFactory.Client sslContextFactory =
+                maybeSslContextFactory.orElseGet(() -> getSslContextFactory(config, environment));
 
-        ClientConnector connector = new ClientConnector()
-        {
+        ClientConnector connector = new ClientConnector() {
             @Override
-            protected void configure(SelectableChannel selectable)
-                    throws IOException
-            {
+            protected void configure(SelectableChannel selectable) throws IOException {
                 super.configure(selectable);
                 if (config.getTcpKeepAliveIdleTime().isPresent()) {
                     setKeepAlive(selectable, config.getTcpKeepAliveIdleTime().get());
@@ -277,9 +276,12 @@ public class JettyHttpClient
 
         // request and response buffer size
         httpClient.setRequestBufferSize(toIntExact(config.getRequestBufferSize().toBytes()));
-        httpClient.setResponseBufferSize(toIntExact(config.getResponseBufferSize().toBytes()));
-        httpClient.setMaxRequestHeadersSize(toIntExact(config.getMaxRequestHeaderSize().toBytes()));
-        httpClient.setMaxResponseHeadersSize(toIntExact(config.getMaxResponseHeaderSize().toBytes()));
+        httpClient.setResponseBufferSize(
+                toIntExact(config.getResponseBufferSize().toBytes()));
+        httpClient.setMaxRequestHeadersSize(
+                toIntExact(config.getMaxRequestHeaderSize().toBytes()));
+        httpClient.setMaxResponseHeadersSize(
+                toIntExact(config.getMaxResponseHeaderSize().toBytes()));
 
         httpClient.setMaxConnectionsPerDestination(config.getMaxConnectionsPerServer());
         httpClient.setMaxRequestsQueuedPerDestination(config.getMaxRequestsQueuedPerDestination());
@@ -300,22 +302,35 @@ public class JettyHttpClient
 
         HostAndPort socksProxy = config.getSocksProxy();
         if (socksProxy != null) {
-            httpClient.getProxyConfiguration().addProxy(new Socks4Proxy(socksProxy.getHost(), socksProxy.getPortOrDefault(1080)));
+            httpClient
+                    .getProxyConfiguration()
+                    .addProxy(new Socks4Proxy(socksProxy.getHost(), socksProxy.getPortOrDefault(1080)));
         }
         HostAndPort httpProxy = config.getHttpProxy();
         if (httpProxy != null) {
             Address proxyAddress = new Address(httpProxy.getHost(), httpProxy.getPortOrDefault(8080));
             HttpProxy proxy = new HttpProxy(proxyAddress, config.isSecureProxy());
             httpClient.getProxyConfiguration().addProxy(proxy);
-            if (config.getHttpProxyUser().isPresent() && config.getHttpProxyPassword().isPresent()) {
-                httpClient.getAuthenticationStore().addAuthenticationResult(
-                        new BasicResult(proxy.getURI(), PROXY_AUTHORIZATION, config.getHttpProxyUser().get(), config.getHttpProxyPassword().get()));
+            if (config.getHttpProxyUser().isPresent()
+                    && config.getHttpProxyPassword().isPresent()) {
+                httpClient
+                        .getAuthenticationStore()
+                        .addAuthenticationResult(new BasicResult(
+                                proxy.getURI(),
+                                PROXY_AUTHORIZATION,
+                                config.getHttpProxyUser().get(),
+                                config.getHttpProxyPassword().get()));
             }
         }
 
-        int maxBufferSize = toIntExact(max(max(config.getMaxContentLength().toBytes(), config.getRequestBufferSize().toBytes()), config.getResponseBufferSize().toBytes()));
+        int maxBufferSize = toIntExact(max(
+                max(
+                        config.getMaxContentLength().toBytes(),
+                        config.getRequestBufferSize().toBytes()),
+                config.getResponseBufferSize().toBytes()));
         httpClient.setByteBufferPool(createByteBufferPool(maxBufferSize, config));
-        httpClient.setExecutor(createExecutor(name, config.getMinThreads(), config.getMaxThreads(), config.isUseVirtualThreads()));
+        httpClient.setExecutor(
+                createExecutor(name, config.getMinThreads(), config.getMaxThreads(), config.isUseVirtualThreads()));
         httpClient.setScheduler(createScheduler(name, config.getTimeoutConcurrency(), config.getTimeoutThreads()));
         httpClient.setStrictEventOrdering(config.isStrictEventOrdering());
 
@@ -340,7 +355,9 @@ public class JettyHttpClient
         // configure logging
         this.logEnabled = config.isLogEnabled();
         if (logEnabled) {
-            String logFilePath = Paths.get(config.getLogPath(), format("%s-http-client.log", name)).toAbsolutePath().toString();
+            String logFilePath = Paths.get(config.getLogPath(), format("%s-http-client.log", name))
+                    .toAbsolutePath()
+                    .toString();
             requestLogger = new DefaultHttpClientLogger(
                     logFilePath,
                     config.getLogHistory(),
@@ -349,8 +366,7 @@ public class JettyHttpClient
                     config.getLogFlushInterval(),
                     config.getLogMaxFileSize().toBytes(),
                     config.isLogCompressionEnabled());
-        }
-        else {
+        } else {
             requestLogger = new NoopLogger();
         }
 
@@ -360,8 +376,7 @@ public class JettyHttpClient
             // remove the GZIP encoding from the client
             // TODO: there should be a better way to to do this
             httpClient.getContentDecoderFactories().clear();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             if (e instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
             }
@@ -374,16 +389,21 @@ public class JettyHttpClient
         this.requestFilters = ImmutableList.copyOf(requestFilters);
         this.httpStatusListeners = new HttpStatusListeners(ImmutableList.copyOf(httpStatusListeners));
 
-        this.monitoredQueuedThreadPoolMBean = new MonitoredQueuedThreadPoolMBean((MonitoredQueuedThreadPool) httpClient.getExecutor());
+        this.monitoredQueuedThreadPoolMBean =
+                new MonitoredQueuedThreadPoolMBean((MonitoredQueuedThreadPool) httpClient.getExecutor());
 
-        this.activeConnectionsPerDestination = new ConnectionPoolDistribution(httpClient,
+        this.activeConnectionsPerDestination = new ConnectionPoolDistribution(
+                httpClient,
                 (distribution, connectionPool) -> distribution.add(connectionPool.getActiveConnectionCount()));
 
-        this.idleConnectionsPerDestination = new ConnectionPoolDistribution(httpClient,
+        this.idleConnectionsPerDestination = new ConnectionPoolDistribution(
+                httpClient,
                 (distribution, connectionPool) -> distribution.add(connectionPool.getIdleConnectionCount()));
 
-        this.queuedRequestsPerDestination = new DestinationDistribution(httpClient,
-                (distribution, destination) -> distribution.add(destination.getHttpExchanges().size()));
+        this.queuedRequestsPerDestination = new DestinationDistribution(
+                httpClient,
+                (distribution, destination) ->
+                        distribution.add(destination.getHttpExchanges().size()));
 
         this.currentQueuedTime = new RequestDistribution(httpClient, (distribution, listener, now) -> {
             long started = listener.getRequestStarted();
@@ -442,36 +462,32 @@ public class JettyHttpClient
         });
     }
 
-    private ByteBufferPool createByteBufferPool(int maxBufferSize, HttpClientConfig config)
-    {
-        long maxHeapMemory = config.getMaxHeapMemory().map(DataSize::toBytes).orElse(0L); // Use default heuristics for max heap memory
-        long maxOffHeapMemory = config.getMaxDirectMemory().map(DataSize::toBytes).orElse(0L); // Use default heuristics for max off heap memory
+    private ByteBufferPool createByteBufferPool(int maxBufferSize, HttpClientConfig config) {
+        long maxHeapMemory = config.getMaxHeapMemory()
+                .map(DataSize::toBytes)
+                .orElse(0L); // Use default heuristics for max heap memory
+        long maxOffHeapMemory = config.getMaxDirectMemory()
+                .map(DataSize::toBytes)
+                .orElse(0L); // Use default heuristics for max off heap memory
 
-        ArrayByteBufferPool pool = config.isTrackMemoryAllocations() ?
-                new ArrayByteBufferPool.Tracking(
-                    0,
-                    maxBufferSize,
-                    Integer.MAX_VALUE,
-                    maxHeapMemory,
-                    maxOffHeapMemory) :
-                new ArrayByteBufferPool.Quadratic(
-                    0,
-                    maxBufferSize,
-                    Integer.MAX_VALUE,
-                    maxHeapMemory,
-                    maxOffHeapMemory);
+        ArrayByteBufferPool pool = config.isTrackMemoryAllocations()
+                ? new ArrayByteBufferPool.Tracking(0, maxBufferSize, Integer.MAX_VALUE, maxHeapMemory, maxOffHeapMemory)
+                : new ArrayByteBufferPool.Quadratic(
+                        0, maxBufferSize, Integer.MAX_VALUE, maxHeapMemory, maxOffHeapMemory);
         pool.setStatisticsEnabled(true);
         return pool;
     }
 
-    private HttpClientTransport getClientTransport(ClientConnector connector, HttpClientConfig config)
-    {
+    private HttpClientTransport getClientTransport(ClientConnector connector, HttpClientConfig config) {
         ImmutableList.Builder<ClientConnectionFactory.Info> protocols = ImmutableList.builder();
         if (config.isHttp2Enabled()) {
             HTTP2Client client = new HTTP2Client(connector);
-            client.setInitialSessionRecvWindow(toIntExact(config.getHttp2InitialSessionReceiveWindowSize().toBytes()));
-            client.setInitialStreamRecvWindow(toIntExact(config.getHttp2InitialStreamReceiveWindowSize().toBytes()));
-            client.setInputBufferSize(toIntExact(config.getHttp2InputBufferSize().toBytes()));
+            client.setInitialSessionRecvWindow(
+                    toIntExact(config.getHttp2InitialSessionReceiveWindowSize().toBytes()));
+            client.setInitialStreamRecvWindow(
+                    toIntExact(config.getHttp2InitialStreamReceiveWindowSize().toBytes()));
+            client.setInputBufferSize(
+                    toIntExact(config.getHttp2InputBufferSize().toBytes()));
             client.setStreamIdleTimeout(idleTimeout.toMillis());
             client.setSelectors(config.getSelectorCount());
             protocols.add(new ClientConnectionFactoryOverHTTP2.HTTP2(client));
@@ -482,23 +498,22 @@ public class JettyHttpClient
         // The order of the protocols indicates the client's preference.
         // The first is the most preferred, the last is the least preferred, but
         // the protocol version to use can be explicitly specified in the request.
-        return new HttpClientTransportDynamic(connector, protocols.build().toArray(new ClientConnectionFactory.Info[0]));
+        return new HttpClientTransportDynamic(
+                connector, protocols.build().toArray(new ClientConnectionFactory.Info[0]));
     }
 
-    private static void setKeepAlive(SelectableChannel selectable, Duration tcpKeepAliveIdleTime)
-            throws IOException
-    {
+    private static void setKeepAlive(SelectableChannel selectable, Duration tcpKeepAliveIdleTime) throws IOException {
         if (selectable instanceof NetworkChannel channel) {
             channel.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
             channel.setOption(ExtendedSocketOptions.TCP_KEEPIDLE, toIntExact(tcpKeepAliveIdleTime.roundTo(SECONDS)));
-        }
-        else {
-            throw new IOException("Not a NetworkChannel. Cannot enable keep alive for %s".formatted(selectable.getClass()));
+        } else {
+            throw new IOException(
+                    "Not a NetworkChannel. Cannot enable keep alive for %s".formatted(selectable.getClass()));
         }
     }
 
-    private static SslContextFactory.Client getSslContextFactory(HttpClientConfig config, Optional<String> environment)
-    {
+    private static SslContextFactory.Client getSslContextFactory(
+            HttpClientConfig config, Optional<String> environment) {
         SslContextFactory.Client sslContextFactory = new SslContextFactory.Client();
         sslContextFactory.setSNIProvider(JettyHttpClient::getSniServerNames);
         sslContextFactory.setEndpointIdentificationAlgorithm(config.isVerifyHostname() ? "HTTPS" : null);
@@ -514,13 +529,15 @@ public class JettyHttpClient
         if (config.getTrustStorePath() != null || config.getAutomaticHttpsSharedSecret() != null) {
             KeyStore trustStore = loadTrustStore(config.getTrustStorePath(), config.getTrustStorePassword());
             if (config.getAutomaticHttpsSharedSecret() != null) {
-                addClientTrust(config.getAutomaticHttpsSharedSecret(), trustStore, environment
-                        .orElseThrow(() -> new IllegalArgumentException("Environment must be provided when automatic HTTPS is enabled")));
+                addClientTrust(
+                        config.getAutomaticHttpsSharedSecret(),
+                        trustStore,
+                        environment.orElseThrow(() -> new IllegalArgumentException(
+                                "Environment must be provided when automatic HTTPS is enabled")));
             }
             sslContextFactory.setTrustStore(trustStore);
             sslContextFactory.setTrustStorePassword("");
-        }
-        else if (keyStore != null) {
+        } else if (keyStore != null) {
             // Backwards compatibility for with Jetty's internal behavior
             sslContextFactory.setTrustStore(keyStore);
             sslContextFactory.setTrustStorePassword(keyStorePassword);
@@ -535,32 +552,28 @@ public class JettyHttpClient
         return sslContextFactory;
     }
 
-    private static List<SNIServerName> getSniServerNames(SSLEngine sslEngine, List<SNIServerName> serverNames)
-    {
+    private static List<SNIServerName> getSniServerNames(SSLEngine sslEngine, List<SNIServerName> serverNames) {
         // work around the JDK TLS implementation not allowing single label domains
         if (serverNames.isEmpty()) {
             String host = sslEngine.getPeerHost();
             if (host != null && !isInetAddress(host) && !host.contains(".")) {
                 try {
                     return List.of(new SNIHostName(host));
-                }
-                catch (IllegalArgumentException ignored) {
+                } catch (IllegalArgumentException ignored) {
                 }
             }
         }
         return serverNames;
     }
 
-    private static KeyStore loadKeyStore(String keystorePath, String keystorePassword)
-    {
+    private static KeyStore loadKeyStore(String keystorePath, String keystorePassword) {
         requireNonNull(keystorePath, "keystorePath is null");
         try {
             File keyStoreFile = new File(keystorePath);
             if (PemReader.isPem(keyStoreFile)) {
                 return PemReader.loadKeyStore(keyStoreFile, keyStoreFile, Optional.ofNullable(keystorePassword), true);
             }
-        }
-        catch (IOException | GeneralSecurityException e) {
+        } catch (IOException | GeneralSecurityException e) {
             throw new IllegalArgumentException("Error loading PEM key store: " + keystorePath, e);
         }
 
@@ -568,21 +581,18 @@ public class JettyHttpClient
             KeyStore keyStore = KeyStore.getInstance("JKS");
             keyStore.load(in, keystorePassword.toCharArray());
             return keyStore;
-        }
-        catch (IOException | GeneralSecurityException e) {
+        } catch (IOException | GeneralSecurityException e) {
             throw new IllegalArgumentException("Error loading Java key store: " + keystorePath, e);
         }
     }
 
-    private static KeyStore loadTrustStore(String truststorePath, String truststorePassword)
-    {
+    private static KeyStore loadTrustStore(String truststorePath, String truststorePassword) {
         if (truststorePath == null) {
             try {
                 KeyStore keyStore = KeyStore.getInstance("JKS");
                 keyStore.load(null, new char[0]);
                 return keyStore;
-            }
-            catch (GeneralSecurityException | IOException e) {
+            } catch (GeneralSecurityException | IOException e) {
                 throw new RuntimeException(e);
             }
         }
@@ -592,8 +602,7 @@ public class JettyHttpClient
             if (PemReader.isPem(keyStoreFile)) {
                 return PemReader.loadTrustStore(keyStoreFile);
             }
-        }
-        catch (IOException | GeneralSecurityException e) {
+        } catch (IOException | GeneralSecurityException e) {
             throw new IllegalArgumentException("Error loading PEM trust store: " + truststorePath, e);
         }
 
@@ -601,14 +610,13 @@ public class JettyHttpClient
             KeyStore keyStore = KeyStore.getInstance("JKS");
             keyStore.load(in, truststorePassword == null ? null : truststorePassword.toCharArray());
             return keyStore;
-        }
-        catch (IOException | GeneralSecurityException e) {
+        } catch (IOException | GeneralSecurityException e) {
             throw new IllegalArgumentException("Error loading Java trust store: " + truststorePath, e);
         }
     }
 
-    private static MonitoredQueuedThreadPool createExecutor(String name, int minThreads, int maxThreads, boolean useVirtualThreads)
-    {
+    private static MonitoredQueuedThreadPool createExecutor(
+            String name, int minThreads, int maxThreads, boolean useVirtualThreads) {
         try {
             MonitoredQueuedThreadPool pool = new MonitoredQueuedThreadPool(maxThreads, minThreads, 60000, null);
             pool.setName("http-client-" + name);
@@ -625,21 +633,18 @@ public class JettyHttpClient
                 pool.setVirtualThreadsExecutor(virtualExecutor);
             }
             return pool;
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throwIfUnchecked(e);
             throw new RuntimeException(e);
         }
     }
 
-    private static Scheduler createScheduler(String name, int timeoutConcurrency, int timeoutThreads)
-    {
+    private static Scheduler createScheduler(String name, int timeoutConcurrency, int timeoutThreads) {
         Scheduler scheduler;
         String threadName = "http-client-" + name + "-scheduler";
         if ((timeoutConcurrency == 1) && (timeoutThreads == 1)) {
             scheduler = new ScheduledExecutorScheduler(threadName, true);
-        }
-        else {
+        } else {
             checkArgument(timeoutConcurrency >= 1, "timeoutConcurrency must be at least one");
             int threads = max(1, timeoutThreads / timeoutConcurrency);
             scheduler = new ConcurrentScheduler(timeoutConcurrency, threads, threadName);
@@ -647,8 +652,7 @@ public class JettyHttpClient
 
         try {
             scheduler.start();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throwIfUnchecked(e);
             throw new RuntimeException(e);
         }
@@ -657,9 +661,7 @@ public class JettyHttpClient
     }
 
     @Override
-    public <T, E extends Exception> T execute(Request request, ResponseHandler<T, E> responseHandler)
-            throws E
-    {
+    public <T, E extends Exception> T execute(Request request, ResponseHandler<T, E> responseHandler) throws E {
         request = applyRequestFilters(request);
 
         Span span = startSpan(request);
@@ -667,20 +669,17 @@ public class JettyHttpClient
 
         try {
             return doExecute(request, responseHandler, span);
-        }
-        catch (Throwable t) {
+        } catch (Throwable t) {
             span.setStatus(StatusCode.ERROR, t.getMessage());
             span.recordException(t, Attributes.of(EXCEPTION_ESCAPED, true));
             throw t;
-        }
-        finally {
+        } finally {
             span.end();
         }
     }
 
     @Override
-    public StreamingResponse executeStreaming(Request request)
-    {
+    public StreamingResponse executeStreaming(Request request) {
         request = applyRequestFilters(request);
 
         Span span = startSpan(request);
@@ -692,70 +691,60 @@ public class JettyHttpClient
                 span.recordException(exception, Attributes.of(EXCEPTION_ESCAPED, true));
 
                 throw propagate(r, exception);
-            }
-            finally {
+            } finally {
                 span.end();
             }
         };
 
         return switch (internalExecute(request, exceptionHandler, span)) {
             case InternalExceptionResponse<StreamingResponse> response -> response.exceptionResponse;
-            case InternalStandardResponse<StreamingResponse> response -> new StreamingResponse()
-            {
-                @Override
-                public io.airlift.http.client.HttpVersion getHttpVersion()
-                {
-                    return response.jettyResponse.getHttpVersion();
-                }
-
-                @Override
-                public int getStatusCode()
-                {
-                    return response.jettyResponse.getStatusCode();
-                }
-
-                @Override
-                public ListMultimap<HeaderName, String> getHeaders()
-                {
-                    return response.jettyResponse.getHeaders();
-                }
-
-                @Override
-                public long getBytesRead()
-                {
-                    return response.jettyResponse.getBytesRead();
-                }
-
-                @Override
-                public InputStream getInputStream()
-                {
-                    return response.jettyResponse.getInputStream();
-                }
-
-                @Override
-                public void close()
-                {
-                    try {
-                        response.completionHandler.run();
+            case InternalStandardResponse<StreamingResponse> response ->
+                new StreamingResponse() {
+                    @Override
+                    public io.airlift.http.client.HttpVersion getHttpVersion() {
+                        return response.jettyResponse.getHttpVersion();
                     }
-                    finally {
-                        span.end();
+
+                    @Override
+                    public int getStatusCode() {
+                        return response.jettyResponse.getStatusCode();
                     }
-                }
-            };
+
+                    @Override
+                    public ListMultimap<HeaderName, String> getHeaders() {
+                        return response.jettyResponse.getHeaders();
+                    }
+
+                    @Override
+                    public long getBytesRead() {
+                        return response.jettyResponse.getBytesRead();
+                    }
+
+                    @Override
+                    public InputStream getInputStream() {
+                        return response.jettyResponse.getInputStream();
+                    }
+
+                    @Override
+                    public void close() {
+                        try {
+                            response.completionHandler.run();
+                        } finally {
+                            span.end();
+                        }
+                    }
+                };
         };
     }
 
     public <T, E extends Exception> T doExecute(Request request, ResponseHandler<T, E> responseHandler, Span span)
-            throws E
-    {
+            throws E {
         return switch (internalExecute(request, responseHandler::handleException, span)) {
             case InternalExceptionResponse<T> response -> response.exceptionResponse;
             case InternalStandardResponse<T> response -> {
                 try {
                     yield responseHandler.handle(request, response.jettyResponse);
-                }
-                finally {
+                } finally {
                     response.completionHandler.run();
                 }
             }
@@ -763,37 +752,29 @@ public class JettyHttpClient
     }
 
     @FunctionalInterface
-    private interface ExceptionHandler<T, E extends Exception>
-    {
-        T handleException(Request request, Exception exception)
-                throws E;
+    private interface ExceptionHandler<T, E extends Exception> {
+        T handleException(Request request, Exception exception) throws E;
     }
 
     @SuppressWarnings("unused")
     private sealed interface InternalResponse<T> {}
 
-    private record InternalExceptionResponse<T>(T exceptionResponse)
-            implements InternalResponse<T>
-    {
-        private InternalExceptionResponse
-        {
+    private record InternalExceptionResponse<T>(T exceptionResponse) implements InternalResponse<T> {
+        private InternalExceptionResponse {
             requireNonNull(exceptionResponse, "exceptionResponse is null");
         }
     }
 
     private record InternalStandardResponse<T>(JettyResponse jettyResponse, Runnable completionHandler)
-            implements InternalResponse<T>
-    {
-        private InternalStandardResponse
-        {
+            implements InternalResponse<T> {
+        private InternalStandardResponse {
             requireNonNull(jettyResponse, "jettyResponse is null");
             requireNonNull(completionHandler, "completionHandler is null");
         }
     }
 
-    private <T, E extends Exception> InternalResponse<T> internalExecute(Request request, ExceptionHandler<T, E> exceptionHandler, Span span)
-            throws E
-    {
+    private <T, E extends Exception> InternalResponse<T> internalExecute(
+            Request request, ExceptionHandler<T, E> exceptionHandler, Span span) throws E {
         long requestStart = System.nanoTime();
 
         // create jetty request and response listener
@@ -807,23 +788,20 @@ public class JettyHttpClient
         Response response;
         try {
             response = listener.get(httpClient.getIdleTimeout(), MILLISECONDS);
-        }
-        catch (InterruptedException e) {
+        } catch (InterruptedException e) {
             stats.recordRequestFailed();
             requestLogger.log(context.info(), ResponseInfo.failed(Optional.empty(), Optional.of(e)));
             context.request().abort(e);
             IO.close(listener);
             Thread.currentThread().interrupt();
             return new InternalExceptionResponse<>(exceptionHandler.handleException(request, e));
-        }
-        catch (TimeoutException e) {
+        } catch (TimeoutException e) {
             stats.recordRequestFailed();
             requestLogger.log(context.info(), ResponseInfo.failed(Optional.empty(), Optional.of(e)));
             context.request().abort(e);
             IO.close(listener);
             return new InternalExceptionResponse<>(exceptionHandler.handleException(request, e));
-        }
-        catch (ExecutionException e) {
+        } catch (ExecutionException e) {
             stats.recordRequestFailed();
             requestLogger.log(context.info(), ResponseInfo.failed(Optional.empty(), Optional.of(e)));
             IO.close(listener);
@@ -831,7 +809,8 @@ public class JettyHttpClient
             if (cause instanceof Exception) {
                 return new InternalExceptionResponse<>(exceptionHandler.handleException(request, (Exception) cause));
             }
-            return new InternalExceptionResponse<>(exceptionHandler.handleException(request, new RuntimeException(cause)));
+            return new InternalExceptionResponse<>(
+                    exceptionHandler.handleException(request, new RuntimeException(cause)));
         }
 
         // record attributes
@@ -842,7 +821,9 @@ public class JettyHttpClient
         span.setAttribute(NetworkAttributes.NETWORK_PROTOCOL_VERSION, getHttpVersion(response.getVersion()));
 
         if (request.getBodyGenerator() != null) {
-            span.setAttribute(HttpIncubatingAttributes.HTTP_REQUEST_BODY_SIZE, context.sizeListener().getBytes());
+            span.setAttribute(
+                    HttpIncubatingAttributes.HTTP_REQUEST_BODY_SIZE,
+                    context.sizeListener().getBytes());
         }
 
         // process response
@@ -850,41 +831,46 @@ public class JettyHttpClient
 
         try {
             JettyResponse jettyResponse = new JettyResponse(response, listener.getInputStream());
-            Runnable completionHandler = buildCompletionHandler(request, listener, span, jettyResponse, context.sizeListener(), requestStart, responseStart);
+            Runnable completionHandler = buildCompletionHandler(
+                    request, listener, span, jettyResponse, context.sizeListener(), requestStart, responseStart);
             return new InternalStandardResponse<>(jettyResponse, completionHandler);
-        }
-        catch (Throwable e) {
-            Runnable completionHandler = buildCompletionHandler(request, listener, span, null, context.sizeListener(), requestStart, responseStart);
+        } catch (Throwable e) {
+            Runnable completionHandler = buildCompletionHandler(
+                    request, listener, span, null, context.sizeListener(), requestStart, responseStart);
             try {
                 throw propagate(request, e);
-            }
-            finally {
+            } finally {
                 completionHandler.run();
             }
         }
     }
 
-    private Runnable buildCompletionHandler(Request request, InputStreamResponseListener listener, Span span, JettyResponse jettyResponse, RequestSizeListener requestSize, long requestStart, long responseStart)
-    {
+    private Runnable buildCompletionHandler(
+            Request request,
+            InputStreamResponseListener listener,
+            Span span,
+            JettyResponse jettyResponse,
+            RequestSizeListener requestSize,
+            long requestStart,
+            long responseStart) {
         return () -> {
             IO.close(listener);
             if (jettyResponse != null) {
                 try {
                     jettyResponse.getInputStream().close();
-                }
-                catch (IOException ignored) {
+                } catch (IOException ignored) {
                     // ignore errors closing the stream
                 }
                 span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, jettyResponse.getBytesRead());
             }
             if (recordRequestComplete) {
-                recordRequestComplete(stats, request, requestSize.getBytes(), requestStart, jettyResponse, responseStart);
+                recordRequestComplete(
+                        stats, request, requestSize.getBytes(), requestStart, jettyResponse, responseStart);
             }
         };
     }
 
-    static String getHttpVersion(HttpVersion version)
-    {
+    static String getHttpVersion(HttpVersion version) {
         // According to the RFCs:
         return switch (version) {
             case HTTP_0_9 -> "0.9"; // https://datatracker.ietf.org/doc/html/rfc1945
@@ -896,15 +882,14 @@ public class JettyHttpClient
     }
 
     @Override
-    public <T, E extends Exception> HttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
-    {
+    public <T, E extends Exception> HttpResponseFuture<T> executeAsync(
+            Request request, ResponseHandler<T, E> responseHandler) {
         requireNonNull(request, "request is null");
         requireNonNull(responseHandler, "responseHandler is null");
 
         try {
             request = applyRequestFilters(request);
-        }
-        catch (RuntimeException e) {
+        } catch (RuntimeException e) {
             startSpan(request)
                     .setStatus(StatusCode.ERROR, e.getMessage())
                     .recordException(e, Attributes.of(EXCEPTION_ESCAPED, true))
@@ -918,15 +903,27 @@ public class JettyHttpClient
         RequestContext jettyRequest = buildRequestContext(request);
 
         request.getMaxContentLength()
-                .ifPresent(maxRequestContentLength -> verify(maxRequestContentLength.compareTo(maxContentLength) <= 0, "maxRequestContentLength must be less than or equal to maxContentLength"));
+                .ifPresent(maxRequestContentLength -> verify(
+                        maxRequestContentLength.compareTo(maxContentLength) <= 0,
+                        "maxRequestContentLength must be less than or equal to maxContentLength"));
 
-        JettyResponseFuture<T, E> future = new JettyResponseFuture<>(request, jettyRequest.request(), jettyRequest.sizeListener()::getBytes, responseHandler, span, stats, recordRequestComplete);
-        JettyResponseListener<T, E> listener = new JettyResponseListener<>(jettyRequest.request(), future, Ints.saturatedCast(request.getMaxContentLength().orElse(maxContentLength).toBytes()));
+        JettyResponseFuture<T, E> future = new JettyResponseFuture<>(
+                request,
+                jettyRequest.request(),
+                jettyRequest.sizeListener()::getBytes,
+                responseHandler,
+                span,
+                stats,
+                recordRequestComplete);
+        JettyResponseListener<T, E> listener = new JettyResponseListener<>(
+                jettyRequest.request(),
+                future,
+                Ints.saturatedCast(
+                        request.getMaxContentLength().orElse(maxContentLength).toBytes()));
 
         try {
             return listener.send();
-        }
-        catch (RuntimeException e) {
+        } catch (RuntimeException e) {
             if (!(e instanceof RejectedExecutionException)) {
                 e = new RejectedExecutionException(e);
             }
@@ -937,16 +934,14 @@ public class JettyHttpClient
         }
     }
 
-    private Request applyRequestFilters(Request request)
-    {
+    private Request applyRequestFilters(Request request) {
         for (HttpRequestFilter requestFilter : requestFilters) {
             request = requestFilter.filterRequest(request);
         }
         return request;
     }
 
-    private Span startSpan(Request request)
-    {
+    private Span startSpan(Request request) {
         String method = request.getMethod().toUpperCase(ENGLISH);
         int port = normalizePort(request.getUri().getScheme(), request.getUri().getPort());
         return request.getSpanBuilder()
@@ -961,16 +956,14 @@ public class JettyHttpClient
     }
 
     @SuppressWarnings("DataFlowIssue")
-    private Request injectTracing(Request request, Span span)
-    {
+    private Request injectTracing(Request request, Span span) {
         Context context = Context.current().with(span);
         Request.Builder builder = Request.Builder.fromRequest(request);
         propagator.inject(context, builder, Request.Builder::addHeader);
         return builder.build();
     }
 
-    private RequestContext buildRequestContext(Request finalRequest)
-    {
+    private RequestContext buildRequestContext(Request finalRequest) {
         long requestTime = System.currentTimeMillis();
         HttpRequest jettyRequest = (HttpRequest) httpClient.newRequest(finalRequest.getUri());
         finalRequest.getHttpVersion().ifPresent(version -> {
@@ -987,17 +980,24 @@ public class JettyHttpClient
         if (bodyGenerator != null) {
             switch (bodyGenerator) {
                 case StaticBodyGenerator generator -> jettyRequest.body(new BytesRequestContent(generator.getBody()));
-                case ByteBufferBodyGenerator generator -> jettyRequest.body(new ByteBufferRequestContent(generator.getByteBuffers()));
+                case ByteBufferBodyGenerator generator ->
+                    jettyRequest.body(new ByteBufferRequestContent(generator.getByteBuffers()));
                 case FileBodyGenerator generator -> jettyRequest.body(fileContent(generator.getPath()));
-                case StreamingBodyGenerator generator -> jettyRequest.body(new InputStreamRequestContent(generator.contentType(), generator.source(), new ByteBufferPool.Sized(httpClient.getByteBufferPool())));
+                case StreamingBodyGenerator generator ->
+                    jettyRequest.body(new InputStreamRequestContent(
+                            generator.contentType(),
+                            generator.source(),
+                            new ByteBufferPool.Sized(httpClient.getByteBufferPool())));
             }
         }
 
         jettyRequest.followRedirects(finalRequest.isFollowRedirects());
 
         // timeouts
-        jettyRequest.timeout(finalRequest.getRequestTimeout().orElse(requestTimeout).toMillis(), MILLISECONDS);
-        jettyRequest.idleTimeout(finalRequest.getIdleTimeout().orElse(idleTimeout).toMillis(), MILLISECONDS);
+        jettyRequest.timeout(
+                finalRequest.getRequestTimeout().orElse(requestTimeout).toMillis(), MILLISECONDS);
+        jettyRequest.idleTimeout(
+                finalRequest.getIdleTimeout().orElse(idleTimeout).toMillis(), MILLISECONDS);
 
         // Add stats collecting listener
         JettyRequestListener requestListener = new JettyRequestListener(finalRequest.getUri());
@@ -1013,7 +1013,8 @@ public class JettyHttpClient
 
         // Add log listener
         if (logEnabled) {
-            HttpClientLoggingListener httpClientLoggingListener = new HttpClientLoggingListener(jettyRequest, requestTime, requestLogger);
+            HttpClientLoggingListener httpClientLoggingListener =
+                    new HttpClientLoggingListener(jettyRequest, requestTime, requestLogger);
             jettyRequest.onRequestListener(httpClientLoggingListener);
             jettyRequest.onResponseListener(httpClientLoggingListener);
         }
@@ -1022,167 +1023,147 @@ public class JettyHttpClient
         RequestSizeListener requestSizeListener = new RequestSizeListener();
         jettyRequest.onRequestContent(requestSizeListener);
 
-        return new RequestContext(jettyRequest, RequestInfo.from(jettyRequest, requestTime), requestSizeListener, requestTime);
+        return new RequestContext(
+                jettyRequest, RequestInfo.from(jettyRequest, requestTime), requestSizeListener, requestTime);
     }
 
-    private record RequestContext(HttpRequest request, RequestInfo info, RequestSizeListener sizeListener, long timestamp) {}
+    private record RequestContext(
+            HttpRequest request, RequestInfo info, RequestSizeListener sizeListener, long timestamp) {}
 
-    private boolean shouldBeDiagnosed(Result result)
-    {
+    private boolean shouldBeDiagnosed(Result result) {
         return Throwables.getCausalChain(result.getFailure()).stream()
-                .anyMatch(e ->
-                        e instanceof TimeoutException ||
-                        e instanceof RejectedExecutionException ||
-                        e instanceof InterruptedException ||
-                        e instanceof IllegalArgumentException ||
-                        e instanceof IllegalStateException);
+                .anyMatch(e -> e instanceof TimeoutException
+                        || e instanceof RejectedExecutionException
+                        || e instanceof InterruptedException
+                        || e instanceof IllegalArgumentException
+                        || e instanceof IllegalStateException);
     }
 
-    private static PathRequestContent fileContent(Path path)
-    {
+    private static PathRequestContent fileContent(Path path) {
         try {
             return new PathRequestContent(path);
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
 
-    public List<HttpRequestFilter> getRequestFilters()
-    {
+    public List<HttpRequestFilter> getRequestFilters() {
         return requestFilters;
     }
 
-    public List<HttpStatusListener> getStatusListeners()
-    {
+    public List<HttpStatusListener> getStatusListeners() {
         return httpStatusListeners.httpStatusListeners();
     }
 
-    public long getRequestTimeoutMillis()
-    {
+    public long getRequestTimeoutMillis() {
         return requestTimeout.toMillis();
     }
 
     @Override
     @Managed
     @Flatten
-    public RequestStats getStats()
-    {
+    public RequestStats getStats() {
         return stats;
     }
 
     @Managed
     @Nested
-    public MonitoredQueuedThreadPoolMBean getThreadPool()
-    {
+    public MonitoredQueuedThreadPoolMBean getThreadPool() {
         return monitoredQueuedThreadPoolMBean;
     }
 
     @Managed
     @Nested
-    public ConnectionStats getConnectionStats()
-    {
+    public ConnectionStats getConnectionStats() {
         return connectionStats;
     }
 
     @Managed
     @Nested
-    public CachedDistribution getActiveConnectionsPerDestination()
-    {
+    public CachedDistribution getActiveConnectionsPerDestination() {
         return activeConnectionsPerDestination;
     }
 
     @Managed
     @Nested
-    public CachedDistribution getIdleConnectionsPerDestination()
-    {
+    public CachedDistribution getIdleConnectionsPerDestination() {
         return idleConnectionsPerDestination;
     }
 
     @Managed
     @Nested
-    public CachedDistribution getQueuedRequestsPerDestination()
-    {
+    public CachedDistribution getQueuedRequestsPerDestination() {
         return queuedRequestsPerDestination;
     }
 
     @Managed
     @Nested
-    public CachedDistribution getCurrentQueuedTime()
-    {
+    public CachedDistribution getCurrentQueuedTime() {
         return currentQueuedTime;
     }
 
     @Managed
     @Nested
-    public CachedDistribution getCurrentRequestTime()
-    {
+    public CachedDistribution getCurrentRequestTime() {
         return currentRequestTime;
     }
 
     @Managed
     @Nested
-    public CachedDistribution getCurrentRequestSendTime()
-    {
+    public CachedDistribution getCurrentRequestSendTime() {
         return currentRequestSendTime;
     }
 
     @Managed
     @Nested
-    public CachedDistribution getCurrentResponseWaitTime()
-    {
+    public CachedDistribution getCurrentResponseWaitTime() {
         return currentResponseWaitTime;
     }
 
     @Managed
     @Nested
-    public CachedDistribution getCurrentResponseProcessTime()
-    {
+    public CachedDistribution getCurrentResponseProcessTime() {
         return currentResponseProcessTime;
     }
 
     @Managed
-    public String dump()
-    {
+    public String dump() {
         return httpClient.dump();
     }
 
     @Managed
-    public void dumpStdErr()
-    {
+    public void dumpStdErr() {
         httpClient.dumpStdErr();
     }
 
     @Managed
-    public String dumpAllDestinations()
-    {
-        return format("%s\t%s\t%s\t%s\t%s\n", "URI", "queued", "request", "wait", "response") +
-                httpClient.getDestinations().stream()
+    public String dumpAllDestinations() {
+        return format("%s\t%s\t%s\t%s\t%s\n", "URI", "queued", "request", "wait", "response")
+                + httpClient.getDestinations().stream()
                         .map(JettyHttpClient::dumpDestination)
                         .collect(Collectors.joining("\n"));
     }
 
     @Managed
-    public int getLoggerQueueSize()
-    {
+    public int getLoggerQueueSize() {
         return requestLogger.getQueueSize();
     }
 
-    // todo this should be @Managed but operations with parameters are broken in jmx utils https://github.com/martint/jmxutils/issues/27
+    // todo this should be @Managed but operations with parameters are broken in jmx utils
+    // https://github.com/martint/jmxutils/issues/27
     @SuppressWarnings("UnusedDeclaration")
-    public String dumpDestination(URI uri)
-    {
+    public String dumpDestination(URI uri) {
         return httpClient.getDestinations().stream()
                 .filter(destination -> Objects.equals(destination.getOrigin().getScheme(), uri.getScheme()))
-                .filter(destination -> Objects.equals(destination.getOrigin().getAddress().getHost(), uri.getHost()))
+                .filter(destination ->
+                        Objects.equals(destination.getOrigin().getAddress().getHost(), uri.getHost()))
                 .filter(destination -> destination.getOrigin().getAddress().getPort() == uri.getPort())
                 .findFirst()
                 .map(JettyHttpClient::dumpDestination)
                 .orElse(null);
     }
 
-    private static String dumpDestination(Destination destination)
-    {
+    private static String dumpDestination(Destination destination) {
         long now = System.nanoTime();
         return getRequestListenersForDestination(destination).stream()
                 .map(listener -> dumpRequest(now, listener))
@@ -1190,8 +1171,7 @@ public class JettyHttpClient
                 .collect(Collectors.joining("\n"));
     }
 
-    static List<JettyRequestListener> getRequestListenersForDestination(Destination destination)
-    {
+    static List<JettyRequestListener> getRequestListenersForDestination(Destination destination) {
         return getRequestForDestination(destination).stream()
                 .map(request -> request.getAttributes().get(STATS_KEY))
                 .map(JettyRequestListener.class::cast)
@@ -1199,14 +1179,12 @@ public class JettyHttpClient
                 .collect(Collectors.toList());
     }
 
-    private static List<org.eclipse.jetty.client.Request> getRequestForDestination(Destination destination)
-    {
+    private static List<org.eclipse.jetty.client.Request> getRequestForDestination(Destination destination) {
         HttpDestination httpDestination = (HttpDestination) destination;
         Queue<HttpExchange> httpExchanges = httpDestination.getHttpExchanges();
 
-        List<org.eclipse.jetty.client.Request> requests = httpExchanges.stream()
-                .map(HttpExchange::getRequest)
-                .collect(Collectors.toList());
+        List<org.eclipse.jetty.client.Request> requests =
+                httpExchanges.stream().map(HttpExchange::getRequest).collect(Collectors.toList());
 
         getActiveConnections((AbstractConnectionPool) httpDestination.getConnectionPool()).stream()
                 .filter(HttpConnectionOverHTTP.class::isInstance)
@@ -1215,13 +1193,10 @@ public class JettyHttpClient
                 .filter(Objects::nonNull)
                 .forEach(exchange -> requests.add(exchange.getRequest()));
 
-        return requests.stream()
-                .filter(Objects::nonNull)
-                .collect(toImmutableList());
+        return requests.stream().filter(Objects::nonNull).collect(toImmutableList());
     }
 
-    private static String dumpRequest(long now, JettyRequestListener listener)
-    {
+    private static String dumpRequest(long now, JettyRequestListener listener) {
         long created = listener.getCreated();
         long requestStarted = listener.getRequestStarted();
         if (requestStarted == 0) {
@@ -1239,7 +1214,8 @@ public class JettyHttpClient
         if (finished == 0) {
             finished = now;
         }
-        return format("%s\t%.1f\t%.1f\t%.1f\t%.1f",
+        return format(
+                "%s\t%.1f\t%.1f\t%.1f\t%.1f",
                 listener.getUri(),
                 nanosToMillis(requestStarted - created),
                 nanosToMillis(requestFinished - requestStarted),
@@ -1247,15 +1223,13 @@ public class JettyHttpClient
                 nanosToMillis(finished - responseStarted));
     }
 
-    private static double nanosToMillis(long nanos)
-    {
+    private static double nanosToMillis(long nanos) {
         return new Duration(nanos, NANOSECONDS).getValue(MILLISECONDS);
     }
 
     @PreDestroy
     @Override
-    public void close()
-    {
+    public void close() {
         // client must be destroyed before the pools or
         // you will create a several second busy wait loop
         closeQuietly(httpClient);
@@ -1265,40 +1239,37 @@ public class JettyHttpClient
     }
 
     @Override
-    public boolean isClosed()
-    {
+    public boolean isClosed() {
         return !httpClient.isRunning();
     }
 
     @Override
-    public String toString()
-    {
-        return toStringHelper(this)
-                .addValue(name)
-                .toString();
+    public String toString() {
+        return toStringHelper(this).addValue(name).toString();
     }
 
-    private static void closeQuietly(LifeCycle service)
-    {
+    private static void closeQuietly(LifeCycle service) {
         try {
             if (service != null) {
                 service.stop();
             }
-        }
-        catch (InterruptedException e) {
+        } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-        }
-        catch (Exception ignored) {
+        } catch (Exception ignored) {
         }
     }
 
-    private static String uniqueName()
-    {
+    private static String uniqueName() {
         return "anonymous" + NAME_COUNTER.incrementAndGet();
     }
 
-    static void recordRequestComplete(RequestStats requestStats, Request request, long requestBytes, long requestStart, JettyResponse response, long responseStart)
-    {
+    static void recordRequestComplete(
+            RequestStats requestStats,
+            Request request,
+            long requestBytes,
+            long requestStart,
+            JettyResponse response,
+            long responseStart) {
         if (response == null) {
             return;
         }
@@ -1306,7 +1277,8 @@ public class JettyHttpClient
         Duration responseProcessingTime = Duration.nanosSince(responseStart);
         Duration requestProcessingTime = new Duration(responseStart - requestStart, NANOSECONDS);
 
-        requestStats.recordResponseReceived(request.getMethod(),
+        requestStats.recordResponseReceived(
+                request.getMethod(),
                 response.getStatusCode(),
                 requestBytes,
                 response.getBytesRead(),
@@ -1314,51 +1286,39 @@ public class JettyHttpClient
                 responseProcessingTime);
     }
 
-    private static class RequestSizeListener
-            implements org.eclipse.jetty.client.Request.ContentListener
-    {
+    private static class RequestSizeListener implements org.eclipse.jetty.client.Request.ContentListener {
         private long bytes;
 
         @Override
-        public void onContent(org.eclipse.jetty.client.Request request, ByteBuffer content)
-        {
+        public void onContent(org.eclipse.jetty.client.Request request, ByteBuffer content) {
             bytes += content.remaining();
         }
 
-        public long getBytes()
-        {
+        public long getBytes() {
             return bytes;
         }
     }
 
-    private record HttpStatusListeners(List<HttpStatusListener> httpStatusListeners)
-            implements Response.BeginListener
-    {
-        private HttpStatusListeners
-        {
+    private record HttpStatusListeners(List<HttpStatusListener> httpStatusListeners) implements Response.BeginListener {
+        private HttpStatusListeners {
             httpStatusListeners = ImmutableList.copyOf(httpStatusListeners);
         }
 
         @Override
-        public void onBegin(Response response)
-        {
+        public void onBegin(Response response) {
             httpStatusListeners.forEach(listener -> {
                 try {
                     listener.statusReceived(response.getStatus());
-                }
-                catch (Exception e) {
+                } catch (Exception e) {
                     response.abort(e);
                 }
             });
         }
     }
 
-    private class DiagnosticListener
-            implements Response.CompleteListener
-    {
+    private class DiagnosticListener implements Response.CompleteListener {
         @Override
-        public void onComplete(Result result)
-        {
+        public void onComplete(Result result) {
             if (result.isFailed() && shouldBeDiagnosed(result)) {
                 clientDiagnostics.logDiagnosticsInfo(httpClient);
             }

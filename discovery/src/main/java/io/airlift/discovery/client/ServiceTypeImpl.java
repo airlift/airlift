@@ -15,34 +15,28 @@
  */
 package io.airlift.discovery.client;
 
-import java.lang.annotation.Annotation;
-
 import static java.util.Objects.requireNonNull;
 
-class ServiceTypeImpl
-        implements ServiceType
-{
+import java.lang.annotation.Annotation;
+
+class ServiceTypeImpl implements ServiceType {
     private final String value;
 
-    public ServiceTypeImpl(String value)
-    {
+    public ServiceTypeImpl(String value) {
         requireNonNull(value, "value is null");
         this.value = value;
     }
 
-    public String value()
-    {
+    public String value() {
         return value;
     }
 
-    public String toString()
-    {
+    public String toString() {
         return String.format("@%s(value=\"%s\")", ServiceType.class.getName(), value.replace("\"", "\\\""));
     }
 
     @Override
-    public boolean equals(Object o)
-    {
+    public boolean equals(Object o) {
         if (this == o) {
             return true;
         }
@@ -58,16 +52,14 @@ class ServiceTypeImpl
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         // see Annotation.hashCode()
         int result = 0;
         result += ((127 * "value".hashCode()) ^ value.hashCode());
         return result;
     }
 
-    public Class<? extends Annotation> annotationType()
-    {
+    public Class<? extends Annotation> annotationType() {
         return ServiceType.class;
     }
 }

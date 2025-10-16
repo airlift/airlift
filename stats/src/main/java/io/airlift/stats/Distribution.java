@@ -1,19 +1,18 @@
 package io.airlift.stats;
 
-import com.google.errorprone.annotations.ThreadSafe;
-import com.google.errorprone.annotations.concurrent.GuardedBy;
-import org.weakref.jmx.Managed;
-
-import java.util.LinkedHashMap;
-import java.util.Map;
-
 import static com.google.common.base.Verify.verify;
 import static java.util.Objects.requireNonNull;
 
+import com.google.errorprone.annotations.ThreadSafe;
+import com.google.errorprone.annotations.concurrent.GuardedBy;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import org.weakref.jmx.Managed;
+
 @ThreadSafe
-public class Distribution
-{
-    private static final double[] SNAPSHOT_QUANTILES = new double[] {0.01, 0.05, 0.10, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99};
+public class Distribution {
+    private static final double[] SNAPSHOT_QUANTILES =
+            new double[] {0.01, 0.05, 0.10, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99};
     private static final double[] PERCENTILES;
 
     static {
@@ -24,139 +23,118 @@ public class Distribution
     }
 
     private final double alpha;
+
     @GuardedBy("this")
     private DecayTDigest digest;
 
     private final DecayCounter total;
 
-    public Distribution()
-    {
+    public Distribution() {
         this(0);
     }
 
-    public Distribution(double alpha)
-    {
+    public Distribution(double alpha) {
         this(alpha, new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha), new DecayCounter(alpha));
     }
 
-    private Distribution(double alpha, DecayTDigest digest, DecayCounter total)
-    {
+    private Distribution(double alpha, DecayTDigest digest, DecayCounter total) {
         this.alpha = alpha;
         this.digest = requireNonNull(digest, "digest is null");
         this.total = requireNonNull(total, "total is null");
     }
 
-    public synchronized void add(long value)
-    {
+    public synchronized void add(long value) {
         digest.add(value);
         total.add(value);
     }
 
-    public synchronized void add(long value, long count)
-    {
+    public synchronized void add(long value, long count) {
         digest.add(value, count);
         total.add(value * count);
     }
 
-    public synchronized Distribution duplicate()
-    {
+    public synchronized Distribution duplicate() {
         return new Distribution(alpha, digest.duplicate(), total.duplicate());
     }
 
     @Managed
-    public synchronized void reset()
-    {
+    public synchronized void reset() {
         total.reset();
         digest = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
     }
 
     @Managed
-    public synchronized double getCount()
-    {
+    public synchronized double getCount() {
         return digest.getCount();
     }
 
     @Managed
-    public synchronized double getTotal()
-    {
+    public synchronized double getTotal() {
         return total.getCount();
     }
 
     @Managed
-    public synchronized double getP01()
-    {
+    public synchronized double getP01() {
         return digest.valueAt(0.01);
     }
 
     @Managed
-    public synchronized double getP05()
-    {
+    public synchronized double getP05() {
         return digest.valueAt(0.05);
     }
 
     @Managed
-    public synchronized double getP10()
-    {
+    public synchronized double getP10() {
         return digest.valueAt(0.10);
     }
 
     @Managed
-    public synchronized double getP25()
-    {
+    public synchronized double getP25() {
         return digest.valueAt(0.25);
     }
 
     @Managed
-    public synchronized double getP50()
-    {
+    public synchronized double getP50() {
         return digest.valueAt(0.5);
     }
 
     @Managed
-    public synchronized double getP75()
-    {
+    public synchronized double getP75() {
         return digest.valueAt(0.75);
     }
 
     @Managed
-    public synchronized double getP90()
-    {
+    public synchronized double getP90() {
         return digest.valueAt(0.90);
     }
 
     @Managed
-    public synchronized double getP95()
-    {
+    public synchronized double getP95() {
         return digest.valueAt(0.95);
     }
 
     @Managed
-    public synchronized double getP99()
-    {
+    public synchronized double getP99() {
         return digest.valueAt(0.99);
     }
 
     @Managed
-    public synchronized double getMin()
-    {
+    public synchronized double getMin() {
         return digest.getMin();
     }
 
     @Managed
-    public synchronized double getMax()
-    {
+    public synchronized double getMax() {
         return digest.getMax();
     }
 
     @Managed
-    public synchronized double getAvg()
-    {
+    public synchronized double getAvg() {
         return getTotal() / getCount();
     }
 
     @Managed
-    public Map<Double, Double> getPercentiles()
-    {
+    public Map<Double, Double> getPercentiles() {
         double[] values;
         synchronized (this) {
             values = digest.valuesAt(PERCENTILES);
@@ -172,8 +150,7 @@ public class Distribution
         return result;
     }
 
-    public DistributionSnapshot snapshot()
-    {
+    public DistributionSnapshot snapshot() {
         double totalCount;
         double digestCount;
         double min;
@@ -218,7 +195,5 @@ public class Distribution
             double p99,
             double min,
             double max,
-            double avg)
-    {
-    }
+            double avg) {}
 }

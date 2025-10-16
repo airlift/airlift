@@ -15,6 +15,18 @@
  */
 package io.airlift.http.server.testing;
 
+import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
+import static com.google.inject.multibindings.Multibinder.newSetBinder;
+import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
+import static io.airlift.http.client.Request.Builder.prepareGet;
+import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
+import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
+import static io.airlift.http.server.HttpServerBinder.httpServerBinder;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.abort;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
@@ -47,207 +59,174 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.net.URI;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.jetty.util.VirtualThreads;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
-import java.io.IOException;
-import java.net.URI;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
-import static com.google.inject.multibindings.Multibinder.newSetBinder;
-import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
-import static io.airlift.http.client.Request.Builder.prepareGet;
-import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
-import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
-import static io.airlift.http.server.HttpServerBinder.httpServerBinder;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assumptions.abort;
-import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
-
 @TestInstance(PER_CLASS)
-public abstract class AbstractTestTestingHttpServer
-{
+public abstract class AbstractTestTestingHttpServer {
     private final boolean enableVirtualThreads;
     private final boolean enableLegacyUriCompliance;
     private final boolean enableCaseSensitiveHeaderCache;
 
-    AbstractTestTestingHttpServer(boolean enableVirtualThreads, boolean enableLegacyUriCompliance, boolean enableCaseSensitiveHeaderCache)
-    {
+    AbstractTestTestingHttpServer(
+            boolean enableVirtualThreads, boolean enableLegacyUriCompliance, boolean enableCaseSensitiveHeaderCache) {
         this.enableVirtualThreads = enableVirtualThreads;
         this.enableLegacyUriCompliance = enableLegacyUriCompliance;
         this.enableCaseSensitiveHeaderCache = enableCaseSensitiveHeaderCache;
     }
 
     @BeforeAll
-    public void setupSuite()
-    {
+    public void setupSuite() {
         Logging.initialize();
     }
 
     @Test
-    public void testInitialization()
-            throws Exception
-    {
+    public void testInitialization() throws Exception {
         skipUnlessJdkHasVirtualThreads();
         DummyServlet servlet = new DummyServlet();
-        TestingHttpServer server = createTestingHttpServer(enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache, servlet);
+        TestingHttpServer server = createTestingHttpServer(
+                enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache, servlet);
 
         try {
             server.start();
             assertThat(server.getPort()).isGreaterThan(0);
-        }
-        finally {
+        } finally {
             server.stop();
         }
     }
 
     @Test
-    public void testRequest()
-            throws Exception
-    {
+    public void testRequest() throws Exception {
         skipUnlessJdkHasVirtualThreads();
         DummyServlet servlet = new DummyServlet();
-        TestingHttpServer server = createTestingHttpServer(enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache, servlet);
+        TestingHttpServer server = createTestingHttpServer(
+                enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache, servlet);
 
         try {
             server.start();
 
-            try (HttpClient client = new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
-                StatusResponse response = client.execute(prepareGet().setUri(server.getBaseUrl()).build(), createStatusResponseHandler());
+            try (HttpClient client =
+                    new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
+                StatusResponse response =
+                        client.execute(prepareGet().setUri(server.getBaseUrl()).build(), createStatusResponseHandler());
 
                 assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_OK);
                 assertThat(servlet.getCallCount()).isEqualTo(1);
             }
-        }
-        finally {
+        } finally {
             server.stop();
         }
     }
 
     @Test
-    public void testFilteredRequest()
-            throws Exception
-    {
+    public void testFilteredRequest() throws Exception {
         skipUnlessJdkHasVirtualThreads();
         DummyServlet servlet = new DummyServlet();
         DummyFilter filter = new DummyFilter();
-        TestingHttpServer server = createTestingHttpServerWithFilter(enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache, servlet, filter);
+        TestingHttpServer server = createTestingHttpServerWithFilter(
+                enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache, servlet, filter);
 
         try {
             server.start();
 
-            try (HttpClient client = new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
-                StatusResponse response = client.execute(prepareGet().setUri(server.getBaseUrl()).build(), createStatusResponseHandler());
+            try (HttpClient client =
+                    new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
+                StatusResponse response =
+                        client.execute(prepareGet().setUri(server.getBaseUrl()).build(), createStatusResponseHandler());
 
                 assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_OK);
                 assertThat(servlet.getCallCount()).isEqualTo(1);
                 assertThat(filter.getCallCount()).isEqualTo(1);
             }
-        }
-        finally {
+        } finally {
             server.stop();
         }
     }
 
     @Test
-    public void testGuiceInjectionWithoutFilters()
-    {
+    public void testGuiceInjectionWithoutFilters() {
         skipUnlessJdkHasVirtualThreads();
         DummyServlet servlet = new DummyServlet();
 
-        Bootstrap app = new Bootstrap(
-                new TestingNodeModule(),
-                new TestingHttpServerModule(),
-                binder -> {
-                    binder.bind(Servlet.class).toInstance(servlet);
-                });
+        Bootstrap app = new Bootstrap(new TestingNodeModule(), new TestingHttpServerModule(), binder -> {
+            binder.bind(Servlet.class).toInstance(servlet);
+        });
 
-        Injector injector = app
-                .doNotInitializeLogging()
-                .initialize();
+        Injector injector = app.doNotInitializeLogging().initialize();
 
         LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
         TestingHttpServer server = injector.getInstance(TestingHttpServer.class);
 
-        try (HttpClient client = new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
-            StatusResponse response = client.execute(prepareGet().setUri(server.getBaseUrl()).build(), createStatusResponseHandler());
+        try (HttpClient client =
+                new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
+            StatusResponse response =
+                    client.execute(prepareGet().setUri(server.getBaseUrl()).build(), createStatusResponseHandler());
 
             assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_OK);
             assertThat(servlet.getCallCount()).isEqualTo(1);
-        }
-        finally {
+        } finally {
             lifeCycleManager.stop();
         }
     }
 
     @Test
-    public void testGuiceInjectionWithFilters()
-    {
+    public void testGuiceInjectionWithFilters() {
         skipUnlessJdkHasVirtualThreads();
         DummyServlet servlet = new DummyServlet();
         DummyFilter filter = new DummyFilter();
 
-        Bootstrap app = new Bootstrap(
-                new TestingNodeModule(),
-                new TestingHttpServerModule(),
-                binder -> {
-                    binder.bind(Servlet.class).toInstance(servlet);
-                    newSetBinder(binder, Filter.class).addBinding().toInstance(filter);
-                });
+        Bootstrap app = new Bootstrap(new TestingNodeModule(), new TestingHttpServerModule(), binder -> {
+            binder.bind(Servlet.class).toInstance(servlet);
+            newSetBinder(binder, Filter.class).addBinding().toInstance(filter);
+        });
 
-        Injector injector = app
-                .doNotInitializeLogging()
-                .initialize();
+        Injector injector = app.doNotInitializeLogging().initialize();
 
         LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
         TestingHttpServer server = injector.getInstance(TestingHttpServer.class);
 
-        try (HttpClient client = new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
-            StatusResponse response = client.execute(prepareGet().setUri(server.getBaseUrl()).build(), createStatusResponseHandler());
+        try (HttpClient client =
+                new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
+            StatusResponse response =
+                    client.execute(prepareGet().setUri(server.getBaseUrl()).build(), createStatusResponseHandler());
 
             assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_OK);
             assertThat(servlet.getCallCount()).isEqualTo(1);
             assertThat(filter.getCallCount()).isEqualTo(1);
-        }
-
-        finally {
+        } finally {
             lifeCycleManager.stop();
         }
     }
 
     @Test
-    public void testGuiceInjectionWithResources()
-    {
+    public void testGuiceInjectionWithResources() {
         skipUnlessJdkHasVirtualThreads();
         DummyServlet servlet = new DummyServlet();
 
-        Bootstrap app = new Bootstrap(
-                new TestingNodeModule(),
-                new TestingHttpServerModule(0),
-                binder -> {
-                    binder.bind(Servlet.class).toInstance(servlet);
-                    httpServerBinder(binder).bindResource("/", "webapp/user").withWelcomeFile("user-welcome.txt");
-                    httpServerBinder(binder).bindResource("/", "webapp/user2");
-                    httpServerBinder(binder).bindResource("path", "webapp/user").withWelcomeFile("user-welcome.txt");
-                    httpServerBinder(binder).bindResource("path", "webapp/user2");
-                    if (enableVirtualThreads) {
-                        httpServerBinder(binder).enableVirtualThreads();
-                    }
-                });
+        Bootstrap app = new Bootstrap(new TestingNodeModule(), new TestingHttpServerModule(0), binder -> {
+            binder.bind(Servlet.class).toInstance(servlet);
+            httpServerBinder(binder).bindResource("/", "webapp/user").withWelcomeFile("user-welcome.txt");
+            httpServerBinder(binder).bindResource("/", "webapp/user2");
+            httpServerBinder(binder).bindResource("path", "webapp/user").withWelcomeFile("user-welcome.txt");
+            httpServerBinder(binder).bindResource("path", "webapp/user2");
+            if (enableVirtualThreads) {
+                httpServerBinder(binder).enableVirtualThreads();
+            }
+        });
 
-        Injector injector = app
-                .doNotInitializeLogging()
-                .initialize();
+        Injector injector = app.doNotInitializeLogging().initialize();
 
         LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
         TestingHttpServer server = injector.getInstance(TestingHttpServer.class);
 
-        try (HttpClient client = new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
+        try (HttpClient client =
+                new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
             // test http resources
             URI uri = server.getBaseUrl();
             assertResource(uri, client, "", "welcome user!");
@@ -262,19 +241,17 @@ public abstract class AbstractTestTestingHttpServer
 
             // verify that servlet did not receive resource requests
             assertThat(servlet.getCallCount()).isEqualTo(0);
-        }
-        finally {
+        } finally {
             lifeCycleManager.stop();
         }
     }
 
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     @Test
-    public void testHeaderCaseSensitivity()
-            throws Exception
-    {
+    public void testHeaderCaseSensitivity() throws Exception {
         DummyServlet servlet = new DummyServlet();
-        TestingHttpServer server = createTestingHttpServer(enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache, servlet);
+        TestingHttpServer server = createTestingHttpServer(
+                enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache, servlet);
 
         try {
             server.start();
@@ -282,7 +259,8 @@ public abstract class AbstractTestTestingHttpServer
             String contentType = "text/plain; charset=UTF-8";
             String finalContentType = "text/plain; charset=utf-8";
 
-            try (HttpClient client = new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
+            try (HttpClient client =
+                    new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
                 // run a few times to prime the Jetty cache
                 for (int i = 0; i < 3; ++i) {
                     Request request = prepareGet()
@@ -299,26 +277,24 @@ public abstract class AbstractTestTestingHttpServer
             }
             if (enableCaseSensitiveHeaderCache) {
                 assertThat(contentTypeHeader).isEqualTo(finalContentType);
-            }
-            else {
+            } else {
                 assertThat(contentTypeHeader).isEqualTo(finalContentType);
             }
-        }
-        finally {
+        } finally {
             server.stop();
         }
     }
 
     @Test
-    public void testForwardedHeaderIsRejected()
-            throws Exception
-    {
+    public void testForwardedHeaderIsRejected() throws Exception {
         DummyServlet servlet = new DummyServlet();
-        TestingHttpServer server = createTestingHttpServer(enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache, servlet);
+        TestingHttpServer server = createTestingHttpServer(
+                enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache, servlet);
 
         try {
             server.start();
-            try (HttpClient client = new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
+            try (HttpClient client =
+                    new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
                 Request request = prepareGet()
                         .setUri(server.getBaseUrl())
                         .setHeader(HttpHeaders.X_FORWARDED_FOR, "129.0.0.1")
@@ -327,82 +303,100 @@ public abstract class AbstractTestTestingHttpServer
                 StringResponseHandler.StringResponse execute = client.execute(request, createStringResponseHandler());
                 assertThat(execute.getStatusCode()).isEqualTo(406);
                 assertThat(execute.getBody())
-                        .containsAnyOf("Server configuration does not allow processing of the X-Forwarded-For", "Server configuration does not allow processing of the X-Forwarded-Host");
+                        .containsAnyOf(
+                                "Server configuration does not allow processing of the X-Forwarded-For",
+                                "Server configuration does not allow processing of the X-Forwarded-Host");
             }
-        }
-        finally {
+        } finally {
             server.stop();
         }
     }
 
-    private void skipUnlessJdkHasVirtualThreads()
-    {
+    private void skipUnlessJdkHasVirtualThreads() {
         if (enableVirtualThreads && !VirtualThreads.areSupported()) {
             abort("Virtual threads are not supported");
         }
     }
 
-    private static void assertResource(URI baseUri, HttpClient client, String path, String contents)
-    {
+    private static void assertResource(URI baseUri, HttpClient client, String path, String contents) {
         HttpUriBuilder uriBuilder = uriBuilderFrom(baseUri);
-        StringResponseHandler.StringResponse data = client.execute(prepareGet().setUri(uriBuilder.appendPath(path).build()).build(), createStringResponseHandler());
+        StringResponseHandler.StringResponse data = client.execute(
+                prepareGet().setUri(uriBuilder.appendPath(path).build()).build(), createStringResponseHandler());
         assertThat(data.getStatusCode()).isEqualTo(HttpStatus.OK.code());
         MediaType contentType = MediaType.parse(data.getHeader(HttpHeaders.CONTENT_TYPE));
-        assertThat(PLAIN_TEXT_UTF_8.is(contentType)).as("Expected text/plain but got " + contentType).isTrue();
+        assertThat(PLAIN_TEXT_UTF_8.is(contentType))
+                .as("Expected text/plain but got " + contentType)
+                .isTrue();
         assertThat(data.getBody().trim()).isEqualTo(contents);
     }
 
-    private static TestingHttpServer createTestingHttpServer(boolean enableVirtualThreads, boolean enableLegacyUriCompliance, boolean enableCaseSensitiveHeaderCache, DummyServlet servlet)
-            throws IOException
-    {
+    private static TestingHttpServer createTestingHttpServer(
+            boolean enableVirtualThreads,
+            boolean enableLegacyUriCompliance,
+            boolean enableCaseSensitiveHeaderCache,
+            DummyServlet servlet)
+            throws IOException {
         NodeInfo nodeInfo = new NodeInfo("test");
         HttpServerConfig config = new HttpServerConfig().setHttpPort(0);
         HttpServerInfo httpServerInfo = new HttpServerInfo(config, nodeInfo);
-        return new TestingHttpServer(httpServerInfo, nodeInfo, config, servlet, enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache);
+        return new TestingHttpServer(
+                httpServerInfo,
+                nodeInfo,
+                config,
+                servlet,
+                enableVirtualThreads,
+                enableLegacyUriCompliance,
+                enableCaseSensitiveHeaderCache);
     }
 
-    private static TestingHttpServer createTestingHttpServerWithFilter(boolean enableVirtualThreads, boolean enableLegacyUriCompliance, boolean enableCaseSensitiveHeaderCache, DummyServlet servlet, DummyFilter filter)
-            throws IOException
-    {
+    private static TestingHttpServer createTestingHttpServerWithFilter(
+            boolean enableVirtualThreads,
+            boolean enableLegacyUriCompliance,
+            boolean enableCaseSensitiveHeaderCache,
+            DummyServlet servlet,
+            DummyFilter filter)
+            throws IOException {
         NodeInfo nodeInfo = new NodeInfo("test");
         HttpServerConfig config = new HttpServerConfig().setHttpPort(0);
         HttpServerInfo httpServerInfo = new HttpServerInfo(config, nodeInfo);
-        return new TestingHttpServer(httpServerInfo, nodeInfo, config, Optional.empty(), servlet, ImmutableSet.of(filter), ImmutableSet.of(), enableVirtualThreads, enableLegacyUriCompliance, enableCaseSensitiveHeaderCache, ClientCertificate.NONE);
+        return new TestingHttpServer(
+                httpServerInfo,
+                nodeInfo,
+                config,
+                Optional.empty(),
+                servlet,
+                ImmutableSet.of(filter),
+                ImmutableSet.of(),
+                enableVirtualThreads,
+                enableLegacyUriCompliance,
+                enableCaseSensitiveHeaderCache,
+                ClientCertificate.NONE);
     }
 
-    static class DummyServlet
-            extends HttpServlet
-    {
+    static class DummyServlet extends HttpServlet {
         private String sampleInitParam;
         private int callCount;
         private String contentTypeHeader;
 
         @Override
-        public synchronized void init(ServletConfig config)
-        {
-        }
+        public synchronized void init(ServletConfig config) {}
 
-        public synchronized int getCallCount()
-        {
+        public synchronized int getCallCount() {
             return callCount;
         }
 
         @Override
-        protected synchronized void doGet(HttpServletRequest req, HttpServletResponse resp)
-        {
+        protected synchronized void doGet(HttpServletRequest req, HttpServletResponse resp) {
             ++callCount;
             resp.setStatus(HttpServletResponse.SC_OK);
             contentTypeHeader = req.getHeader(HttpHeaders.CONTENT_TYPE);
         }
     }
 
-    static class DummyFilter
-            implements Filter
-    {
+    static class DummyFilter implements Filter {
         private final AtomicInteger callCount = new AtomicInteger();
 
-        public int getCallCount()
-        {
+        public int getCallCount() {
             return callCount.get();
         }
 
@@ -411,15 +405,12 @@ public abstract class AbstractTestTestingHttpServer
 
         @Override
         public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain)
-                throws IOException, ServletException
-        {
+                throws IOException, ServletException {
             callCount.incrementAndGet();
             filterChain.doFilter(servletRequest, servletResponse);
         }
 
         @Override
-        public void destroy()
-        {
-        }
+        public void destroy() {}
     }
 }

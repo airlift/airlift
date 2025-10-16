@@ -15,21 +15,16 @@ package io.airlift.configuration.secrets.env;
 
 import io.airlift.spi.secrets.SecretProvider;
 import io.airlift.spi.secrets.SecretProviderFactory;
-
 import java.util.Map;
 
-public class EnvironmentVariableSecretProviderFactory
-        implements SecretProviderFactory
-{
+public class EnvironmentVariableSecretProviderFactory implements SecretProviderFactory {
     @Override
-    public String getName()
-    {
+    public String getName() {
         return "env";
     }
 
     @Override
-    public SecretProvider createSecretProvider(Map<String, String> config)
-    {
+    public SecretProvider createSecretProvider(Map<String, String> config) {
         return new EnvironmentVariableSecretProvider();
     }
 }

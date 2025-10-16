@@ -13,7 +13,4 @@
  */
 package io.airlift.http.client.jetty;
 
-public class TestJettyHttpClientHttpProxy
-        extends AbstractHttpClientTestHttpProxy
-{
-}
+public class TestJettyHttpClientHttpProxy extends AbstractHttpClientTestHttpProxy {}

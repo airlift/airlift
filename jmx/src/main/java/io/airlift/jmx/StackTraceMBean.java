@@ -16,22 +16,17 @@
 package io.airlift.jmx;
 
 import com.google.inject.Inject;
-import org.weakref.jmx.Managed;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.weakref.jmx.Managed;
 
-public class StackTraceMBean
-{
+public class StackTraceMBean {
     @Inject
-    public StackTraceMBean()
-    {
-    }
+    public StackTraceMBean() {}
 
     @Managed
-    public List<String> getStackTrace()
-    {
+    public List<String> getStackTrace() {
         List<String> output = new ArrayList<>();
         Map<Thread, StackTraceElement[]> stackTraces = Thread.getAllStackTraces();
         for (Map.Entry<Thread, StackTraceElement[]> entry : stackTraces.entrySet()) {

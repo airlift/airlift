@@ -17,8 +17,7 @@ package io.airlift.discovery.client;
 
 import java.net.URI;
 
-public interface AnnouncementHttpServerInfo
-{
+public interface AnnouncementHttpServerInfo {
     URI getHttpUri();
 
     URI getHttpExternalUri();

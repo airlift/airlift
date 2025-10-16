@@ -19,31 +19,26 @@ import io.airlift.configuration.Config;
 import io.airlift.configuration.DefunctConfig;
 
 @DefunctConfig("jmx.rmiserver.hostname")
-public class JmxConfig
-{
+public class JmxConfig {
     private Integer rmiRegistryPort;
     private Integer rmiServerPort;
 
-    public Integer getRmiRegistryPort()
-    {
+    public Integer getRmiRegistryPort() {
         return rmiRegistryPort;
     }
 
     @Config("jmx.rmiregistry.port")
-    public JmxConfig setRmiRegistryPort(Integer rmiRegistryPort)
-    {
+    public JmxConfig setRmiRegistryPort(Integer rmiRegistryPort) {
         this.rmiRegistryPort = rmiRegistryPort;
         return this;
     }
 
-    public Integer getRmiServerPort()
-    {
+    public Integer getRmiServerPort() {
         return rmiServerPort;
     }
 
     @Config("jmx.rmiserver.port")
-    public JmxConfig setRmiServerPort(Integer rmiServerPort)
-    {
+    public JmxConfig setRmiServerPort(Integer rmiServerPort) {
         this.rmiServerPort = rmiServerPort;
         return this;
     }

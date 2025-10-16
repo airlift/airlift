@@ -13,24 +13,22 @@
  */
 package io.airlift.http.client.jetty;
 
-import com.google.common.annotations.VisibleForTesting;
-import io.airlift.http.client.jetty.HttpClientLogger.RequestInfo;
-import io.airlift.http.client.jetty.HttpClientLogger.ResponseInfo;
-import jakarta.annotation.Nullable;
-import org.eclipse.jetty.client.Request;
-import org.eclipse.jetty.client.Response;
-import org.eclipse.jetty.http.HttpFields;
-
-import java.time.Instant;
-import java.util.Locale;
-import java.util.Optional;
-
 import static java.lang.Math.max;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
-class HttpRequestEvent
-{
+import com.google.common.annotations.VisibleForTesting;
+import io.airlift.http.client.jetty.HttpClientLogger.RequestInfo;
+import io.airlift.http.client.jetty.HttpClientLogger.ResponseInfo;
+import jakarta.annotation.Nullable;
+import java.time.Instant;
+import java.util.Locale;
+import java.util.Optional;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.http.HttpFields;
+
+class HttpRequestEvent {
     static final int NO_RESPONSE = -1;
 
     private final Instant timeStamp;
@@ -63,8 +61,7 @@ class HttpRequestEvent
             long requestEndToResponseBegin,
             long responseBeginToResponseEnd,
             long timeToLastByte,
-            Optional<String> failureReason)
-    {
+            Optional<String> failureReason) {
         this.timeStamp = requireNonNull(timeStamp, "timeStamp is null");
         this.protocolVersion = requireNonNull(protocolVersion, "protocolVersion is null");
         this.method = requireNonNull(method, "method is null");
@@ -80,68 +77,55 @@ class HttpRequestEvent
         this.failureReason = requireNonNull(failureReason, "failureReason is null");
     }
 
-    public Instant getTimeStamp()
-    {
+    public Instant getTimeStamp() {
         return timeStamp;
     }
 
-    public String getProtocolVersion()
-    {
+    public String getProtocolVersion() {
         return protocolVersion;
     }
 
-    public String getMethod()
-    {
+    public String getMethod() {
         return method;
     }
 
-    public String getRequestUri()
-    {
+    public String getRequestUri() {
         return requestUri;
     }
 
-    public long getResponseSize()
-    {
+    public long getResponseSize() {
         return responseSize;
     }
 
-    public String getResponseCode()
-    {
+    public String getResponseCode() {
         return failureReason.orElseGet(() -> Integer.toString(responseCode));
     }
 
-    public long getRequestTotalTime()
-    {
+    public long getRequestTotalTime() {
         return requestTotalTime;
     }
 
-    public long getRequestQueueTime()
-    {
+    public long getRequestQueueTime() {
         return requestQueueTime;
     }
 
-    public long getRequestBeginToRequestEnd()
-    {
+    public long getRequestBeginToRequestEnd() {
         return requestBeginToRequestEnd;
     }
 
-    public long getRequestEndToResponseBegin()
-    {
+    public long getRequestEndToResponseBegin() {
         return requestEndToResponseBegin;
     }
 
-    public long getResponseBeginToResponseEnd()
-    {
+    public long getResponseBeginToResponseEnd() {
         return responseBeginToResponseEnd;
     }
 
-    public long getTimeToLastByte()
-    {
+    public long getTimeToLastByte() {
         return timeToLastByte;
     }
 
-    static HttpRequestEvent createHttpRequestEvent(RequestInfo requestInfo, ResponseInfo responseInfo)
-    {
+    static HttpRequestEvent createHttpRequestEvent(RequestInfo requestInfo, ResponseInfo responseInfo) {
         requireNonNull(requestInfo, "requestInfo is null");
         requireNonNull(responseInfo, "responseInfo is null");
         Request request = requestInfo.getRequest();
@@ -164,8 +148,10 @@ class HttpRequestEvent
             responseCode = response.get().getStatus();
         }
 
-        long requestTotalTimeNanos = responseInfo.getResponseCompleteTimestamp() - requestInfo.getRequestCreatedTimestamp();
-        long requestBeginToRequestEndNanos = requestInfo.getRequestEndTimestamp() - requestInfo.getRequestBeginTimestamp();
+        long requestTotalTimeNanos =
+                responseInfo.getResponseCompleteTimestamp() - requestInfo.getRequestCreatedTimestamp();
+        long requestBeginToRequestEndNanos =
+                requestInfo.getRequestEndTimestamp() - requestInfo.getRequestBeginTimestamp();
         long responseBeginTimeStamp = responseInfo.getResponseBeginTimestamp();
         long requestEndToResponseBeginNanos = 0;
         long responseBeginToResponseEndNanos = 0;
@@ -174,7 +160,8 @@ class HttpRequestEvent
             requestEndToResponseBeginNanos = responseBeginTimeStamp - requestInfo.getRequestEndTimestamp();
             responseBeginToResponseEndNanos = responseInfo.getResponseCompleteTimestamp() - responseBeginTimeStamp;
         }
-        long timeToLastByte = max(responseInfo.getResponseTimestampMillis() - requestInfo.getRequestTimestampMillis(), 0L);
+        long timeToLastByte =
+                max(responseInfo.getResponseTimestampMillis() - requestInfo.getRequestTimestampMillis(), 0L);
 
         return new HttpRequestEvent(
                 Instant.ofEpochMilli(requestInfo.getRequestTimestampMillis()),
@@ -193,8 +180,7 @@ class HttpRequestEvent
     }
 
     @VisibleForTesting
-    static Optional<String> getFailureReason(ResponseInfo responseInfo)
-    {
+    static Optional<String> getFailureReason(ResponseInfo responseInfo) {
         Optional<Throwable> failure = responseInfo.getFailureCause();
 
         if (!failure.isPresent()) {
@@ -211,8 +197,7 @@ class HttpRequestEvent
     }
 
     @Nullable
-    private static String getHeader(Request request, String header)
-    {
+    private static String getHeader(Request request, String header) {
         requireNonNull(header, "header is null");
         HttpFields headers = request.getHeaders();
         if (headers != null) {

@@ -13,10 +13,15 @@
  */
 package io.airlift.security.csr;
 
+import static com.google.common.base.MoreObjects.toStringHelper;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.collect.ImmutableList.toImmutableList;
+import static io.airlift.security.der.DerUtils.encodeLength;
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -28,14 +33,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.collect.ImmutableList.toImmutableList;
-import static io.airlift.security.der.DerUtils.encodeLength;
-import static java.util.Objects.requireNonNull;
-
-public final class SignatureAlgorithmIdentifier
-{
+public final class SignatureAlgorithmIdentifier {
     private static final int OBJECT_IDENTIFIER_TAG = 0x06;
     private static final Map<String, SignatureAlgorithmIdentifier> ALGORITHMS;
 
@@ -47,7 +45,8 @@ public final class SignatureAlgorithmIdentifier
             for (Entry<String, String> entry : Maps.fromProperties(provider).entrySet()) {
                 if (entry.getKey().startsWith(SIGNATURE_OID_PREFIX)) {
                     String oid = entry.getKey().substring(SIGNATURE_OID_PREFIX.length());
-                    SignatureAlgorithmIdentifier algorithmIdentifier = new SignatureAlgorithmIdentifier(entry.getValue(), oid);
+                    SignatureAlgorithmIdentifier algorithmIdentifier =
+                            new SignatureAlgorithmIdentifier(entry.getValue(), oid);
                     algorithms.putIfAbsent(entry.getValue(), algorithmIdentifier);
                 }
             }
@@ -55,13 +54,11 @@ public final class SignatureAlgorithmIdentifier
         ALGORITHMS = ImmutableMap.copyOf(algorithms);
     }
 
-    public static Map<String, SignatureAlgorithmIdentifier> getAllSignatureAlgorithmIdentifiers()
-    {
+    public static Map<String, SignatureAlgorithmIdentifier> getAllSignatureAlgorithmIdentifiers() {
         return ALGORITHMS;
     }
 
-    public static SignatureAlgorithmIdentifier findSignatureAlgorithmIdentifier(String algorithmName)
-    {
+    public static SignatureAlgorithmIdentifier findSignatureAlgorithmIdentifier(String algorithmName) {
         SignatureAlgorithmIdentifier identifier = ALGORITHMS.get(algorithmName);
         checkArgument(identifier != null, "Unknown signature algorithm '%s'", algorithmName);
         return identifier;
@@ -71,8 +68,7 @@ public final class SignatureAlgorithmIdentifier
     private final String oid;
     private final byte[] encoded;
 
-    public SignatureAlgorithmIdentifier(String name, String oid)
-    {
+    public SignatureAlgorithmIdentifier(String name, String oid) {
         this.name = requireNonNull(name, "name is null");
         this.oid = requireNonNull(oid, "oid is null");
 
@@ -94,31 +90,26 @@ public final class SignatureAlgorithmIdentifier
             out.write(length);
             body.writeTo(out);
             encoded = out.toByteArray();
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             // byte array output stream does not throw exceptions
             throw new RuntimeException(e);
         }
     }
 
-    public String getName()
-    {
+    public String getName() {
         return name;
     }
 
-    public String getOid()
-    {
+    public String getOid() {
         return oid;
     }
 
-    public byte[] getEncoded()
-    {
+    public byte[] getEncoded() {
         return encoded.clone();
     }
 
     @Override
-    public boolean equals(Object o)
-    {
+    public boolean equals(Object o) {
         if (this == o) {
             return true;
         }
@@ -130,26 +121,19 @@ public final class SignatureAlgorithmIdentifier
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return Objects.hash(oid);
     }
 
     @Override
-    public String toString()
-    {
-        return toStringHelper(this)
-                .add("name", name)
-                .add("oid", oid)
-                .toString();
+    public String toString() {
+        return toStringHelper(this).add("name", name).add("oid", oid).toString();
     }
 
     /**
      * Encode an OID number part.  The encoding is a big endian varint.
      */
-    private static void writePart(OutputStream out, final int number)
-            throws IOException
-    {
+    private static void writePart(OutputStream out, final int number) throws IOException {
         if (number < 128) {
             out.write((byte) number);
             return;

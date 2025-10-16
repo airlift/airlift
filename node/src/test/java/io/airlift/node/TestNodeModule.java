@@ -15,32 +15,29 @@
  */
 package io.airlift.node;
 
+import static com.google.common.io.Resources.getResource;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.net.InetAddresses;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import io.airlift.configuration.ConfigurationFactory;
 import io.airlift.configuration.ConfigurationModule;
-import org.junit.jupiter.api.Test;
-
 import java.io.File;
 import java.net.InetAddress;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.util.Map;
+import org.junit.jupiter.api.Test;
 
-import static com.google.common.io.Resources.getResource;
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class TestNodeModule
-{
+public class TestNodeModule {
     @Test
-    public void testDefaultConfig()
-            throws UnknownHostException
-    {
+    public void testDefaultConfig() throws UnknownHostException {
         long testStartTime = System.currentTimeMillis();
 
-        ConfigurationFactory configFactory = new ConfigurationFactory(ImmutableMap.<String, String>of("node.environment", "environment"));
+        ConfigurationFactory configFactory =
+                new ConfigurationFactory(ImmutableMap.<String, String>of("node.environment", "environment"));
         Injector injector = Guice.createInjector(new NodeModule(), new ConfigurationModule(configFactory));
         NodeInfo nodeInfo = injector.getInstance(NodeInfo.class);
         assertThat(nodeInfo).isNotNull();
@@ -55,7 +52,8 @@ public class TestNodeModule
         assertThat(nodeInfo.getNodeId()).isNotEqualTo(nodeInfo.getInstanceId());
 
         assertThat(nodeInfo.getInternalAddress()).isNotNull();
-        assertThat(InetAddress.getByName(nodeInfo.getInternalAddress()).isAnyLocalAddress()).isFalse();
+        assertThat(InetAddress.getByName(nodeInfo.getInternalAddress()).isAnyLocalAddress())
+                .isFalse();
         assertThat(nodeInfo.getBindIp()).isNotNull();
         assertThat(nodeInfo.getBindIp().isAnyLocalAddress()).isTrue();
         assertThat(nodeInfo.getStartTime()).isGreaterThanOrEqualTo(testStartTime);
@@ -66,9 +64,7 @@ public class TestNodeModule
     }
 
     @Test
-    public void testFullConfig()
-            throws URISyntaxException
-    {
+    public void testFullConfig() throws URISyntaxException {
         long testStartTime = System.currentTimeMillis();
 
         String environment = "environment";

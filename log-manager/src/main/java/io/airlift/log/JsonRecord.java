@@ -1,5 +1,9 @@
 package io.airlift.log;
 
+import static com.google.common.base.MoreObjects.firstNonNull;
+import static com.google.common.base.MoreObjects.toStringHelper;
+import static java.util.Objects.requireNonNull;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Throwables;
@@ -8,7 +12,6 @@ import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.api.trace.TraceFlags;
 import io.opentelemetry.context.Context;
 import jakarta.annotation.Nullable;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -16,12 +19,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
-import static com.google.common.base.MoreObjects.toStringHelper;
-import static java.util.Objects.requireNonNull;
-
-public class JsonRecord
-{
+public class JsonRecord {
     private static final Object[] EMPTY_ARRAY = new Object[0];
 
     private final Instant timestamp;
@@ -43,8 +41,7 @@ public class JsonRecord
             Object[] parameters,
             Throwable throwable,
             Context context,
-            Map<String, String> logAnnotations)
-    {
+            Map<String, String> logAnnotations) {
         this(
                 timestamp,
                 level,
@@ -69,8 +66,7 @@ public class JsonRecord
             @JsonProperty("parameters") List<String> parameters,
             Throwable throwable,
             Context context,
-            Map<String, String> logAnnotations)
-    {
+            Map<String, String> logAnnotations) {
         this.timestamp = requireNonNull(timestamp);
         this.level = requireNonNull(level);
         this.thread = thread;
@@ -90,45 +86,38 @@ public class JsonRecord
     }
 
     @JsonProperty
-    public Instant getTimestamp()
-    {
+    public Instant getTimestamp() {
         return timestamp;
     }
 
     @JsonProperty
-    public Level getLevel()
-    {
+    public Level getLevel() {
         return level;
     }
 
     @JsonProperty
-    public String getThread()
-    {
+    public String getThread() {
         return thread;
     }
 
     @JsonProperty("logger")
-    public String getLoggerName()
-    {
+    public String getLoggerName() {
         return loggerName;
     }
 
     @JsonProperty
-    public String getMessage()
-    {
+    public String getMessage() {
         return message;
     }
 
     @Nullable
     @JsonProperty
-    public List<String> getParameters()
-    {
+    public List<String> getParameters() {
         return parameters;
     }
 
     @JsonProperty
-    public String getThrowableClass()
-    {
+    public String getThrowableClass() {
         if (throwable == null) {
             return null;
         }
@@ -136,8 +125,7 @@ public class JsonRecord
     }
 
     @JsonProperty
-    public String getThrowableMessage()
-    {
+    public String getThrowableMessage() {
         if (throwable == null) {
             return null;
         }
@@ -145,8 +133,7 @@ public class JsonRecord
     }
 
     @JsonProperty
-    public String getStackTrace()
-    {
+    public String getStackTrace() {
         if (throwable == null) {
             return null;
         }
@@ -154,32 +141,27 @@ public class JsonRecord
     }
 
     @JsonProperty
-    public Optional<String> getTraceId()
-    {
+    public Optional<String> getTraceId() {
         return spanContext.map(SpanContext::getTraceId);
     }
 
     @JsonProperty
-    public Optional<String> getSpanId()
-    {
+    public Optional<String> getSpanId() {
         return spanContext.map(SpanContext::getSpanId);
     }
 
     @JsonProperty
-    public Optional<String> getTraceFlags()
-    {
+    public Optional<String> getTraceFlags() {
         return spanContext.map(SpanContext::getTraceFlags).map(TraceFlags::asHex);
     }
 
     @JsonProperty("annotations")
-    public Map<String, String> getLogAnnotations()
-    {
+    public Map<String, String> getLogAnnotations() {
         return logAnnotations;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return toStringHelper(this)
                 .add("timestamp", timestamp)
                 .add("level", level)
@@ -191,8 +173,7 @@ public class JsonRecord
     }
 
     @Override
-    public boolean equals(Object o)
-    {
+    public boolean equals(Object o) {
         if (this == o) {
             return true;
         }
@@ -209,8 +190,7 @@ public class JsonRecord
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return Objects.hash(timestamp, level, thread, loggerName, message, throwable);
     }
 }

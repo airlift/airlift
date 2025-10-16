@@ -13,25 +13,22 @@
  */
 package io.airlift.stats.cardinality;
 
-import com.google.common.collect.ImmutableList;
-import io.airlift.slice.Murmur3Hash128;
-import org.junit.jupiter.api.Test;
-
-import java.util.List;
-
 import static io.airlift.slice.SizeOf.instanceSize;
 import static io.airlift.slice.SizeOf.sizeOf;
 import static io.airlift.slice.testing.SliceAssertions.assertSlicesEqual;
 import static io.airlift.stats.cardinality.TestUtils.sequence;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TestSparseHll
-{
+import com.google.common.collect.ImmutableList;
+import io.airlift.slice.Murmur3Hash128;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+
+public class TestSparseHll {
     private static final int SPARSE_HLL_INSTANCE_SIZE = instanceSize(SparseHll.class);
 
     @Test
-    public void testNumberOfZeros()
-    {
+    public void testNumberOfZeros() {
         for (int indexBitLength : prefixLengths()) {
             for (int i = 0; i < 64 - indexBitLength; i++) {
                 long hash = 1L << i;
@@ -48,8 +45,7 @@ public class TestSparseHll
     }
 
     @Test
-    public void testMerge()
-    {
+    public void testMerge() {
         for (int prefixBitLength : prefixLengths()) {
             // with overlap
             verifyMerge(prefixBitLength, sequence(0, 100), sequence(50, 150));
@@ -69,8 +65,7 @@ public class TestSparseHll
     }
 
     @Test
-    public void testToDense()
-    {
+    public void testToDense() {
         for (int prefixBitLength : prefixLengths()) {
             verifyToDense(prefixBitLength, sequence(0, 10000));
 
@@ -81,8 +76,7 @@ public class TestSparseHll
     }
 
     @Test
-    public void testRetainedSize()
-    {
+    public void testRetainedSize() {
         SparseHll sparseHll = new SparseHll(10);
         // use an empty array to mock the entries in SparseHll
         int[] entries = new int[1];
@@ -98,8 +92,7 @@ public class TestSparseHll
         }
     }
 
-    private static void verifyMerge(int prefixBitLength, List<Long> one, List<Long> two)
-    {
+    private static void verifyMerge(int prefixBitLength, List<Long> one, List<Long> two) {
         SparseHll hll1 = new SparseHll(prefixBitLength);
         SparseHll hll2 = new SparseHll(prefixBitLength);
 
@@ -127,8 +120,7 @@ public class TestSparseHll
         assertSlicesEqual(hll1.serialize(), expected.serialize());
     }
 
-    private static void verifyToDense(int prefixBitLength, List<Long> values)
-    {
+    private static void verifyToDense(int prefixBitLength, List<Long> values) {
         DenseHll expected = new DenseHll(prefixBitLength);
         SparseHll sparse = new SparseHll(prefixBitLength);
 
@@ -144,8 +136,7 @@ public class TestSparseHll
         assertSlicesEqual(sparse.toDense().serialize(), expected.serialize());
     }
 
-    private int[] prefixLengths()
-    {
+    private int[] prefixLengths() {
         return new int[] {4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
     }
 }

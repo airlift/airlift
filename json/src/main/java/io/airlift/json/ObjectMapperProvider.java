@@ -15,6 +15,8 @@
  */
 package io.airlift.json;
 
+import static java.util.Objects.requireNonNull;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonFactoryBuilder;
@@ -42,17 +44,12 @@ import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
-
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import static java.util.Objects.requireNonNull;
-
-public class ObjectMapperProvider
-        implements Provider<ObjectMapper>
-{
+public class ObjectMapperProvider implements Provider<ObjectMapper> {
     private final JsonFactory jsonFactory;
 
     private Map<Class<?>, JsonSerializer<?>> keySerializers;
@@ -65,29 +62,24 @@ public class ObjectMapperProvider
     private final Set<Module> modules = new HashSet<>();
 
     @Inject
-    public ObjectMapperProvider()
-    {
+    public ObjectMapperProvider() {
         this(new JsonFactoryBuilder());
     }
 
-    public ObjectMapperProvider(JsonFactory jsonFactory)
-    {
+    public ObjectMapperProvider(JsonFactory jsonFactory) {
         this(new JsonFactoryBuilder(requireNonNull(jsonFactory, "jsonFactory is null")));
     }
 
-    private ObjectMapperProvider(JsonFactoryBuilder jsonFactoryBuilder)
-    {
+    private ObjectMapperProvider(JsonFactoryBuilder jsonFactoryBuilder) {
         // Disable the length limit, caller will be responsible for validating the input length
-        jsonFactoryBuilder.streamReadConstraints(StreamReadConstraints
-                .builder()
+        jsonFactoryBuilder.streamReadConstraints(StreamReadConstraints.builder()
                 .maxStringLength(Integer.MAX_VALUE)
                 .maxNestingDepth(Integer.MAX_VALUE)
                 .maxNameLength(Integer.MAX_VALUE)
                 .maxDocumentLength(Long.MAX_VALUE)
                 .build());
 
-        jsonFactoryBuilder.streamWriteConstraints(StreamWriteConstraints
-                .builder()
+        jsonFactoryBuilder.streamWriteConstraints(StreamWriteConstraints.builder()
                 .maxNestingDepth(Integer.MAX_VALUE)
                 .build());
 
@@ -108,86 +100,72 @@ public class ObjectMapperProvider
         try {
             getClass().getClassLoader().loadClass("org.joda.time.DateTime");
             modules.add(new JodaModule());
-        }
-        catch (ClassNotFoundException ignored) {
+        } catch (ClassNotFoundException ignored) {
         }
     }
 
     @Inject(optional = true)
-    public void setJsonSerializers(Map<Class<?>, JsonSerializer<?>> jsonSerializers)
-    {
+    public void setJsonSerializers(Map<Class<?>, JsonSerializer<?>> jsonSerializers) {
         this.jsonSerializers = ImmutableMap.copyOf(jsonSerializers);
     }
 
-    public ObjectMapperProvider withJsonSerializers(Map<Class<?>, JsonSerializer<?>> jsonSerializers)
-    {
+    public ObjectMapperProvider withJsonSerializers(Map<Class<?>, JsonSerializer<?>> jsonSerializers) {
         setJsonSerializers(jsonSerializers);
         return this;
     }
 
     @Inject(optional = true)
-    public void setJsonDeserializers(Map<Class<?>, JsonDeserializer<?>> jsonDeserializers)
-    {
+    public void setJsonDeserializers(Map<Class<?>, JsonDeserializer<?>> jsonDeserializers) {
         this.jsonDeserializers = ImmutableMap.copyOf(jsonDeserializers);
     }
 
-    public ObjectMapperProvider withJsonDeserializers(Map<Class<?>, JsonDeserializer<?>> jsonDeserializers)
-    {
+    public ObjectMapperProvider withJsonDeserializers(Map<Class<?>, JsonDeserializer<?>> jsonDeserializers) {
         setJsonDeserializers(jsonDeserializers);
         return this;
     }
 
     @Inject(optional = true)
-    public void setKeySerializers(@JsonKeySerde Map<Class<?>, JsonSerializer<?>> keySerializers)
-    {
+    public void setKeySerializers(@JsonKeySerde Map<Class<?>, JsonSerializer<?>> keySerializers) {
         this.keySerializers = keySerializers;
     }
 
-    public ObjectMapperProvider withKeySerializers(@JsonKeySerde Map<Class<?>, JsonSerializer<?>> keySerializers)
-    {
+    public ObjectMapperProvider withKeySerializers(@JsonKeySerde Map<Class<?>, JsonSerializer<?>> keySerializers) {
         setKeySerializers(keySerializers);
         return this;
     }
 
     @Inject(optional = true)
-    public void setKeyDeserializers(@JsonKeySerde Map<Class<?>, KeyDeserializer> keyDeserializers)
-    {
+    public void setKeyDeserializers(@JsonKeySerde Map<Class<?>, KeyDeserializer> keyDeserializers) {
         this.keyDeserializers = keyDeserializers;
     }
 
-    public ObjectMapperProvider withKeyDeserializers(@JsonKeySerde Map<Class<?>, KeyDeserializer> keyDeserializers)
-    {
+    public ObjectMapperProvider withKeyDeserializers(@JsonKeySerde Map<Class<?>, KeyDeserializer> keyDeserializers) {
         setKeyDeserializers(keyDeserializers);
         return this;
     }
 
     @Inject(optional = true)
-    public void setModules(Set<Module> modules)
-    {
+    public void setModules(Set<Module> modules) {
         this.modules.addAll(modules);
     }
 
-    public ObjectMapperProvider withModules(Set<Module> modules)
-    {
+    public ObjectMapperProvider withModules(Set<Module> modules) {
         setModules(modules);
         return this;
     }
 
     @Inject(optional = true)
-    public void setJsonSubTypes(Set<JsonSubType> jsonSubTypes)
-    {
+    public void setJsonSubTypes(Set<JsonSubType> jsonSubTypes) {
         this.jsonSubTypes.addAll(jsonSubTypes);
     }
 
-    public ObjectMapperProvider withJsonSubTypes(Set<JsonSubType> jsonSubTypes)
-    {
+    public ObjectMapperProvider withJsonSubTypes(Set<JsonSubType> jsonSubTypes) {
         setJsonSubTypes(jsonSubTypes);
         return this;
     }
 
     @Override
-    public ObjectMapper get()
-    {
+    public ObjectMapper get() {
         JsonMapper.Builder objectMapper = JsonMapper.builder(jsonFactory);
 
         // ignore unknown fields (for backwards compatibility)
@@ -201,7 +179,8 @@ public class ObjectMapperProvider
 
         // Skip fields that are null or absent (Optional) when serializing objects.
         // This only applies to mapped object fields, not containers like Map or List.
-        objectMapper.defaultPropertyInclusion(JsonInclude.Value.construct(JsonInclude.Include.NON_ABSENT, JsonInclude.Include.ALWAYS));
+        objectMapper.defaultPropertyInclusion(
+                JsonInclude.Value.construct(JsonInclude.Include.NON_ABSENT, JsonInclude.Include.ALWAYS));
 
         // disable auto detection of json properties... all properties must be explicit
         objectMapper.disable(MapperFeature.AUTO_DETECT_CREATORS);
@@ -214,7 +193,10 @@ public class ObjectMapperProvider
         objectMapper.disable(MapperFeature.INFER_PROPERTY_MUTATORS);
         objectMapper.disable(MapperFeature.ALLOW_FINAL_FIELDS_AS_MUTATORS);
 
-        if (jsonSerializers != null || jsonDeserializers != null || keySerializers != null || keyDeserializers != null) {
+        if (jsonSerializers != null
+                || jsonDeserializers != null
+                || keySerializers != null
+                || keyDeserializers != null) {
             SimpleModule module = new SimpleModule(getClass().getName(), new Version(1, 0, 0, null, null, null));
             if (jsonSerializers != null) {
                 for (Entry<Class<?>, JsonSerializer<?>> entry : jsonSerializers.entrySet()) {
@@ -256,20 +238,17 @@ public class ObjectMapperProvider
     //
 
     @SuppressWarnings("unchecked")
-    private <T> void addSerializer(SimpleModule module, Class<?> type, JsonSerializer<?> jsonSerializer)
-    {
+    private <T> void addSerializer(SimpleModule module, Class<?> type, JsonSerializer<?> jsonSerializer) {
         module.addSerializer((Class<? extends T>) type, (JsonSerializer<T>) jsonSerializer);
     }
 
     @SuppressWarnings("unchecked")
-    public <T> void addDeserializer(SimpleModule module, Class<?> type, JsonDeserializer<?> jsonDeserializer)
-    {
+    public <T> void addDeserializer(SimpleModule module, Class<?> type, JsonDeserializer<?> jsonDeserializer) {
         module.addDeserializer((Class<T>) type, (JsonDeserializer<? extends T>) jsonDeserializer);
     }
 
     @SuppressWarnings("unchecked")
-    private <T> void addKeySerializer(SimpleModule module, Class<?> type, JsonSerializer<?> keySerializer)
-    {
+    private <T> void addKeySerializer(SimpleModule module, Class<?> type, JsonSerializer<?> keySerializer) {
         module.addKeySerializer((Class<? extends T>) type, (JsonSerializer<T>) keySerializer);
     }
 }

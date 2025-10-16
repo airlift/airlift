@@ -1,10 +1,5 @@
 package io.airlift.http.client;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import io.airlift.json.JsonCodec;
-import org.junit.jupiter.api.Test;
-
 import static com.google.common.net.MediaType.JSON_UTF_8;
 import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
 import static io.airlift.http.client.DefaultingJsonResponseHandler.createDefaultingJsonResponseHandler;
@@ -13,15 +8,19 @@ import static io.airlift.http.client.HttpStatus.OK;
 import static io.airlift.http.client.testing.TestingResponse.mockResponse;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TestDefaultingJsonResponseHandler
-{
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.airlift.json.JsonCodec;
+import org.junit.jupiter.api.Test;
+
+public class TestDefaultingJsonResponseHandler {
     private static final User DEFAULT_VALUE = new User("defaultUser", 998);
     private final JsonCodec<User> codec = JsonCodec.jsonCodec(User.class);
-    private final DefaultingJsonResponseHandler<User> handler = createDefaultingJsonResponseHandler(codec, DEFAULT_VALUE);
+    private final DefaultingJsonResponseHandler<User> handler =
+            createDefaultingJsonResponseHandler(codec, DEFAULT_VALUE);
 
     @Test
-    public void testValidJson()
-    {
+    public void testValidJson() {
         User user = new User("Joe", 25);
         String json = codec.toJson(user);
         User response = handler.handle(null, mockResponse(OK, JSON_UTF_8, json));
@@ -31,8 +30,7 @@ public class TestDefaultingJsonResponseHandler
     }
 
     @Test
-    public void testInvalidJson()
-    {
+    public void testInvalidJson() {
         String json = "{\"age\": \"foo\"}";
         User response = handler.handle(null, mockResponse(OK, JSON_UTF_8, json));
 
@@ -40,51 +38,44 @@ public class TestDefaultingJsonResponseHandler
     }
 
     @Test
-    public void testException()
-    {
+    public void testException() {
         User response = handler.handleException(null, null);
 
         assertThat(response).isSameAs(DEFAULT_VALUE);
     }
 
     @Test
-    public void testNonJsonResponse()
-    {
+    public void testNonJsonResponse() {
         User response = handler.handle(null, mockResponse(OK, PLAIN_TEXT_UTF_8, "hello"));
 
         assertThat(response).isSameAs(DEFAULT_VALUE);
     }
 
     @Test
-    public void testJsonErrorResponse()
-    {
+    public void testJsonErrorResponse() {
         String json = "{\"error\": true}";
         User response = handler.handle(null, mockResponse(INTERNAL_SERVER_ERROR, JSON_UTF_8, json));
 
         assertThat(response).isSameAs(DEFAULT_VALUE);
     }
 
-    public static class User
-    {
+    public static class User {
         private final String name;
         private final int age;
 
         @JsonCreator
-        public User(@JsonProperty("name") String name, @JsonProperty("age") int age)
-        {
+        public User(@JsonProperty("name") String name, @JsonProperty("age") int age) {
             this.name = name;
             this.age = age;
         }
 
         @JsonProperty
-        public String getName()
-        {
+        public String getName() {
             return name;
         }
 
         @JsonProperty
-        public int getAge()
-        {
+        public int getAge() {
             return age;
         }
     }

@@ -15,7 +15,6 @@
  */
 package io.airlift.http.client;
 
-public interface HttpRequestFilter
-{
+public interface HttpRequestFilter {
     Request filterRequest(Request request);
 }

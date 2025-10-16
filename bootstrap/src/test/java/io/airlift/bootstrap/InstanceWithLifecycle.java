@@ -1,6 +1,5 @@
 package io.airlift.bootstrap;
 
-public interface InstanceWithLifecycle
-{
+public interface InstanceWithLifecycle {
     boolean isStarted();
 }

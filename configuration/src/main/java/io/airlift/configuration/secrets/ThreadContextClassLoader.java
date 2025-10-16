@@ -15,20 +15,16 @@ package io.airlift.configuration.secrets;
 
 import java.io.Closeable;
 
-class ThreadContextClassLoader
-        implements Closeable
-{
+class ThreadContextClassLoader implements Closeable {
     private final ClassLoader originalThreadContextClassLoader;
 
-    public ThreadContextClassLoader(ClassLoader newThreadContextClassLoader)
-    {
+    public ThreadContextClassLoader(ClassLoader newThreadContextClassLoader) {
         this.originalThreadContextClassLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(newThreadContextClassLoader);
     }
 
     @Override
-    public void close()
-    {
+    public void close() {
         Thread.currentThread().setContextClassLoader(originalThreadContextClassLoader);
     }
 }

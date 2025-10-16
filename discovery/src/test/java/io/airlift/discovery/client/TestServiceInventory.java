@@ -15,6 +15,9 @@
  */
 package io.airlift.discovery.client;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.common.collect.Iterables;
 import com.google.common.io.Resources;
 import io.airlift.http.client.jetty.JettyHttpClient;
@@ -23,6 +26,7 @@ import io.airlift.node.NodeInfo;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee11.servlet.ServletHolder;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -32,18 +36,12 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class TestServiceInventory
-{
+public class TestServiceInventory {
     @Test
-    public void testNullServiceInventory()
-    {
+    public void testNullServiceInventory() {
         try (JettyHttpClient httpClient = new JettyHttpClient()) {
-            ServiceInventory serviceInventory = new ServiceInventory(new ServiceInventoryConfig(),
+            ServiceInventory serviceInventory = new ServiceInventory(
+                    new ServiceInventoryConfig(),
                     new NodeInfo("test"),
                     JsonCodec.jsonCodec(ServiceDescriptorsRepresentation.class),
                     httpClient);
@@ -55,32 +53,34 @@ public class TestServiceInventory
     }
 
     @Test
-    public void testFileServiceInventory()
-            throws Exception
-    {
+    public void testFileServiceInventory() throws Exception {
         try (JettyHttpClient httpClient = new JettyHttpClient()) {
             ServiceInventoryConfig serviceInventoryConfig = new ServiceInventoryConfig()
-                    .setServiceInventoryUri(Resources.getResource("service-inventory.json").toURI());
+                    .setServiceInventoryUri(
+                            Resources.getResource("service-inventory.json").toURI());
 
-            ServiceInventory serviceInventory = new ServiceInventory(serviceInventoryConfig,
+            ServiceInventory serviceInventory = new ServiceInventory(
+                    serviceInventoryConfig,
                     new NodeInfo("test"),
                     JsonCodec.jsonCodec(ServiceDescriptorsRepresentation.class),
                     httpClient);
 
             assertThat(Iterables.size(serviceInventory.getServiceDescriptors())).isEqualTo(2);
-            assertThat(Iterables.size(serviceInventory.getServiceDescriptors("discovery"))).isEqualTo(2);
-            assertThat(Iterables.size(serviceInventory.getServiceDescriptors("discovery", "general"))).isEqualTo(2);
+            assertThat(Iterables.size(serviceInventory.getServiceDescriptors("discovery")))
+                    .isEqualTo(2);
+            assertThat(Iterables.size(serviceInventory.getServiceDescriptors("discovery", "general")))
+                    .isEqualTo(2);
             serviceInventory.updateServiceInventory();
             assertThat(Iterables.size(serviceInventory.getServiceDescriptors())).isEqualTo(2);
-            assertThat(Iterables.size(serviceInventory.getServiceDescriptors("discovery"))).isEqualTo(2);
-            assertThat(Iterables.size(serviceInventory.getServiceDescriptors("discovery", "general"))).isEqualTo(2);
+            assertThat(Iterables.size(serviceInventory.getServiceDescriptors("discovery")))
+                    .isEqualTo(2);
+            assertThat(Iterables.size(serviceInventory.getServiceDescriptors("discovery", "general")))
+                    .isEqualTo(2);
         }
     }
 
     @Test
-    public void testHttpServiceInventory()
-            throws Exception
-    {
+    public void testHttpServiceInventory() throws Exception {
         String serviceInventoryJson = Resources.toString(Resources.getResource("service-inventory.json"), UTF_8);
 
         Server server = null;
@@ -106,43 +106,42 @@ public class TestServiceInventory
             server.start();
 
             // test
-            ServiceInventoryConfig serviceInventoryConfig = new ServiceInventoryConfig()
-                    .setServiceInventoryUri(server.getURI());
+            ServiceInventoryConfig serviceInventoryConfig =
+                    new ServiceInventoryConfig().setServiceInventoryUri(server.getURI());
 
-            ServiceInventory serviceInventory = new ServiceInventory(serviceInventoryConfig,
+            ServiceInventory serviceInventory = new ServiceInventory(
+                    serviceInventoryConfig,
                     new NodeInfo("test"),
                     JsonCodec.jsonCodec(ServiceDescriptorsRepresentation.class),
                     httpClient);
 
             assertThat(Iterables.size(serviceInventory.getServiceDescriptors())).isEqualTo(2);
-            assertThat(Iterables.size(serviceInventory.getServiceDescriptors("discovery"))).isEqualTo(2);
-            assertThat(Iterables.size(serviceInventory.getServiceDescriptors("discovery", "general"))).isEqualTo(2);
+            assertThat(Iterables.size(serviceInventory.getServiceDescriptors("discovery")))
+                    .isEqualTo(2);
+            assertThat(Iterables.size(serviceInventory.getServiceDescriptors("discovery", "general")))
+                    .isEqualTo(2);
             serviceInventory.updateServiceInventory();
             assertThat(Iterables.size(serviceInventory.getServiceDescriptors())).isEqualTo(2);
-            assertThat(Iterables.size(serviceInventory.getServiceDescriptors("discovery"))).isEqualTo(2);
-            assertThat(Iterables.size(serviceInventory.getServiceDescriptors("discovery", "general"))).isEqualTo(2);
-        }
-        finally {
+            assertThat(Iterables.size(serviceInventory.getServiceDescriptors("discovery")))
+                    .isEqualTo(2);
+            assertThat(Iterables.size(serviceInventory.getServiceDescriptors("discovery", "general")))
+                    .isEqualTo(2);
+        } finally {
             if (server != null) {
                 server.stop();
             }
         }
     }
 
-    private class ServiceInventoryServlet
-            extends HttpServlet
-    {
+    private class ServiceInventoryServlet extends HttpServlet {
         private final byte[] serviceInventory;
 
-        private ServiceInventoryServlet(String serviceInventory)
-        {
+        private ServiceInventoryServlet(String serviceInventory) {
             this.serviceInventory = serviceInventory.getBytes(UTF_8);
         }
 
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response)
-                throws IOException
-        {
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
             response.setHeader("Content-Type", "application/json");
             response.setStatus(200);
             response.getOutputStream().write(serviceInventory);

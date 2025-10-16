@@ -20,12 +20,9 @@ import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 
-public class JsonModule
-        implements Module
-{
+public class JsonModule implements Module {
     @Override
-    public void configure(Binder binder)
-    {
+    public void configure(Binder binder) {
         binder.disableCircularProxies();
 
         // NOTE: this MUST NOT be a singleton because ObjectMappers are mutable.  This means
