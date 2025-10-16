@@ -41,6 +41,7 @@ public class TestingNodeModule
 
     private final String environment;
     private final Optional<String> pool;
+    private final boolean bindAll;
 
     public TestingNodeModule()
     {
@@ -49,7 +50,17 @@ public class TestingNodeModule
 
     public TestingNodeModule(Optional<String> environment)
     {
-        this(environment.orElse("test" + nextId.getAndIncrement()));
+        this(environment, false);
+    }
+
+    public TestingNodeModule(Optional<String> environment, boolean bindAll)
+    {
+        this(environment.orElse("test" + nextId.getAndIncrement()), bindAll);
+    }
+
+    public TestingNodeModule(String environment, boolean bindAll)
+    {
+        this(environment, Optional.empty(), bindAll);
     }
 
     public TestingNodeModule(String environment)
@@ -59,9 +70,15 @@ public class TestingNodeModule
 
     public TestingNodeModule(String environment, Optional<String> pool)
     {
+        this(environment, pool, false);
+    }
+
+    public TestingNodeModule(String environment, Optional<String> pool, boolean bindAll)
+    {
         checkArgument(!isNullOrEmpty(environment), "environment is null or empty");
         this.environment = environment;
         this.pool = requireNonNull(pool, "pool is null");
+        this.bindAll = bindAll;
     }
 
     public TestingNodeModule(String environment, String pool)
@@ -75,8 +92,9 @@ public class TestingNodeModule
         binder.bind(NodeInfo.class).in(Scopes.SINGLETON);
         NodeConfig nodeConfig = new NodeConfig()
                 .setEnvironment(environment)
-                .setNodeInternalAddress(InetAddresses.toAddrString(getV4Localhost()))
-                .setNodeBindIp(getV4Localhost());
+                // We don't want to expose 0.0.0.0 as internal address
+                .setNodeInternalAddress(InetAddresses.toAddrString(getLocalhostBindIp(false)))
+                .setNodeBindIp(getLocalhostBindIp(bindAll));
 
         if (pool.isPresent()) {
             nodeConfig.setPool(pool.get());
@@ -88,9 +106,13 @@ public class TestingNodeModule
     }
 
     @SuppressWarnings("ImplicitNumericConversion")
-    private static InetAddress getV4Localhost()
+    private static InetAddress getLocalhostBindIp(boolean bindAll)
     {
         try {
+            if (bindAll) {
+                return InetAddress.getByName("0.0.0.0");
+            }
+
             return InetAddress.getByAddress("localhost", new byte[] {127, 0, 0, 1});
         }
         catch (UnknownHostException e) {
