@@ -14,9 +14,10 @@
 package io.airlift.configuration;
 
 import com.google.inject.Binder;
+import com.google.inject.Key;
 import com.google.inject.Module;
+import jakarta.annotation.Nullable;
 
-import java.util.Optional;
 import java.util.function.Predicate;
 
 import static io.airlift.configuration.ConfigurationAwareModule.combine;
@@ -59,23 +60,30 @@ public class ConditionalModule<T>
 
     public static <T> Module conditionalModule(Class<T> config, Predicate<T> predicate, Module module)
     {
-        return new ConditionalModule<>(config, Optional.empty(), predicate, module);
+        return conditionalModule(config, null, predicate, module);
     }
 
     public static <T> Module conditionalModule(Class<T> config, String prefix, Predicate<T> predicate, Module module)
     {
-        return new ConditionalModule<>(config, Optional.of(prefix), predicate, module);
+        return new ConditionalModule<>(Key.get(config), config, prefix, predicate, module);
     }
 
+    public static <T> Module conditionalModule(Key<T> key, Class<T> config, String prefix, Predicate<T> predicate, Module module)
+    {
+        return new ConditionalModule<>(key, config, prefix, predicate, module);
+    }
+
+    private final Key<T> key;
     private final Class<T> config;
-    private final Optional<String> prefix;
+    private final @Nullable String prefix;
     private final Predicate<T> predicate;
     private final Module module;
 
-    private ConditionalModule(Class<T> config, Optional<String> prefix, Predicate<T> predicate, Module module)
+    private ConditionalModule(Key<T> key, Class<T> config, String prefix, Predicate<T> predicate, Module module)
     {
+        this.key = requireNonNull(key, "key is null");
         this.config = requireNonNull(config, "config is null");
-        this.prefix = requireNonNull(prefix, "prefix is null");
+        this.prefix = prefix;
         this.predicate = requireNonNull(predicate, "predicate is null");
         this.module = requireNonNull(module, "module is null");
     }
@@ -83,10 +91,7 @@ public class ConditionalModule<T>
     @Override
     protected void setup(Binder binder)
     {
-        T configuration = prefix
-                .map(value -> buildConfigObject(config, value))
-                .orElseGet(() -> buildConfigObject(config));
-        if (predicate.test(configuration)) {
+        if (predicate.test(buildConfigObject(key, config, prefix))) {
             install(module);
         }
     }
