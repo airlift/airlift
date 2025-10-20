@@ -5,7 +5,13 @@ import io.airlift.bootstrap.Bootstrap;
 import io.airlift.node.NodeInfo;
 import io.airlift.node.testing.TestingNodeModule;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.sdk.metrics.data.LongPointData;
+import io.opentelemetry.sdk.metrics.data.MetricData;
+import io.opentelemetry.sdk.metrics.export.MetricReader;
+import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
+import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporter;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.opentelemetry.sdk.trace.SpanProcessor;
 import io.opentelemetry.sdk.trace.data.SpanData;
@@ -32,11 +38,15 @@ public class TestOpenTelemetryModule
                 .initialize();
 
         Tracer tracer = injector.getInstance(Tracer.class);
+        Meter meter = injector.getInstance(Meter.class);
 
         assertThat(tracer.getClass().getName())
                 .isEqualTo("io.opentelemetry.api.trace.DefaultTracer");
+        assertThat(meter.getClass().getName())
+                .isEqualTo("io.opentelemetry.api.metrics.DefaultMeter");
 
         tracer.spanBuilder("my-span").startSpan().end();
+        meter.counterBuilder("my-counter").build().add(123);
     }
 
     @Test
@@ -50,11 +60,15 @@ public class TestOpenTelemetryModule
                 .initialize();
 
         Tracer tracer = injector.getInstance(Tracer.class);
+        Meter meter = injector.getInstance(Meter.class);
 
         assertThat(tracer.getClass().getName())
                 .isEqualTo("io.opentelemetry.sdk.trace.SdkTracer");
+        assertThat(meter.getClass().getName())
+                .isEqualTo("io.opentelemetry.sdk.metrics.SdkMeter");
 
         tracer.spanBuilder("my-span").startSpan().end();
+        meter.counterBuilder("my-counter").build().add(123);
     }
 
     @Test
@@ -88,6 +102,42 @@ public class TestOpenTelemetryModule
                 .build().asMap());
 
         assertThat(span.getResource().getAttributes().asMap()).contains(
+                entry(ServiceAttributes.SERVICE_NAME, "testService"),
+                entry(ServiceAttributes.SERVICE_VERSION, "testVersion"),
+                entry(DeploymentIncubatingAttributes.DEPLOYMENT_ENVIRONMENT_NAME, environment));
+    }
+
+    @Test
+    void testCustomMetricReader()
+    {
+        @SuppressWarnings("resource")
+        InMemoryMetricExporter exporter = InMemoryMetricExporter.create();
+        PeriodicMetricReader reader = PeriodicMetricReader.create(exporter);
+
+        Injector injector = new Bootstrap(
+                new TestingNodeModule(),
+                new OpenTelemetryModule("testService", "testVersion"),
+                binder -> newSetBinder(binder, MetricReader.class).addBinding()
+                        .toInstance(reader))
+                .quiet()
+                .initialize();
+
+        Meter meter = injector.getInstance(Meter.class);
+        String environment = injector.getInstance(NodeInfo.class).getEnvironment();
+
+        meter.counterBuilder("my-counter")
+                .build()
+                .add(123);
+        reader.forceFlush();
+
+        assertThat(exporter.getFinishedMetricItems()).hasSize(1);
+        MetricData metric = exporter.getFinishedMetricItems().stream().collect(onlyElement());
+
+        assertThat(metric.getName()).isEqualTo("my-counter");
+
+        assertThat(metric.getLongSumData().getPoints()).singleElement().extracting(LongPointData::getValue).isEqualTo(123L);
+
+        assertThat(metric.getResource().getAttributes().asMap()).contains(
                 entry(ServiceAttributes.SERVICE_NAME, "testService"),
                 entry(ServiceAttributes.SERVICE_VERSION, "testVersion"),
                 entry(DeploymentIncubatingAttributes.DEPLOYMENT_ENVIRONMENT_NAME, environment));

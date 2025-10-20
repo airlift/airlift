@@ -8,11 +8,16 @@ import io.airlift.node.NodeInfo;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
+import io.opentelemetry.api.metrics.Meter;
+import io.opentelemetry.api.metrics.MeterProvider;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
+import io.opentelemetry.sdk.metrics.SdkMeterProvider;
+import io.opentelemetry.sdk.metrics.SdkMeterProviderBuilder;
+import io.opentelemetry.sdk.metrics.export.MetricReader;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.SpanProcessor;
@@ -56,19 +61,21 @@ public class OpenTelemetryModule
     public void configure(Binder binder)
     {
         newSetBinder(binder, SpanProcessor.class);
+        newSetBinder(binder, MetricReader.class);
         configBinder(binder).bindConfig(OpenTelemetryConfig.class);
     }
 
     @Provides
     @Singleton
-    public OpenTelemetry createOpenTelemetry(Set<SpanProcessor> spanProcessors, SdkTracerProvider tracerProvider)
+    public OpenTelemetry createOpenTelemetry(Set<SpanProcessor> spanProcessors, Set<MetricReader> metricReaders, SdkTracerProvider tracerProvider, SdkMeterProvider meterProvider)
     {
-        if (spanProcessors.isEmpty()) {
+        if (spanProcessors.isEmpty() && metricReaders.isEmpty()) {
             return OpenTelemetry.noop();
         }
 
         return OpenTelemetrySdk.builder()
                 .setTracerProvider(tracerProvider)
+                .setMeterProvider(meterProvider)
                 .setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
                 .build();
     }
@@ -113,6 +120,26 @@ public class OpenTelemetryModule
             return TracerProvider.noop().get("noop");
         }
         return tracerProvider.get(serviceName);
+    }
+
+    @Provides
+    @Singleton
+    public SdkMeterProvider createMeterProvider(Resource resource, Set<MetricReader> metricReaders)
+    {
+        SdkMeterProviderBuilder builder = SdkMeterProvider.builder()
+                .setResource(resource);
+        metricReaders.forEach(builder::registerMetricReader);
+        return builder.build();
+    }
+
+    @Provides
+    @Singleton
+    public Meter createMeter(Set<MetricReader> metricReaders, SdkMeterProvider meterProvider)
+    {
+        if (metricReaders.isEmpty()) {
+            return MeterProvider.noop().get("noop");
+        }
+        return meterProvider.get(serviceName);
     }
 
     private static String processRuntime()
