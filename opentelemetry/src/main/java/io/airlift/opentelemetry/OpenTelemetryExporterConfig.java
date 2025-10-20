@@ -1,6 +1,7 @@
-package io.airlift.tracing;
+package io.airlift.opentelemetry;
 
 import io.airlift.configuration.Config;
+import io.airlift.configuration.LegacyConfig;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 
@@ -16,7 +17,8 @@ public class OpenTelemetryExporterConfig
         return endpoint;
     }
 
-    @Config("tracing.exporter.endpoint")
+    @Config("otel.exporter.endpoint")
+    @LegacyConfig("tracing.exporter.endpoint")
     public OpenTelemetryExporterConfig setEndpoint(String endpoint)
     {
         this.endpoint = endpoint;
@@ -29,7 +31,8 @@ public class OpenTelemetryExporterConfig
         return protocol;
     }
 
-    @Config("tracing.exporter.protocol")
+    @Config("otel.exporter.protocol")
+    @LegacyConfig("tracing.exporter.protocol")
     public OpenTelemetryExporterConfig setProtocol(Protocol protocol)
     {
         this.protocol = protocol;

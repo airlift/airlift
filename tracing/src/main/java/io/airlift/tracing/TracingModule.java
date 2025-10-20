@@ -2,6 +2,8 @@ package io.airlift.tracing;
 
 import com.google.inject.Binder;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
+import io.airlift.opentelemetry.OpenTelemetryExporterModule;
+import io.airlift.opentelemetry.OpenTelemetryModule;
 import io.airlift.tracing.SpanSerialization.SpanDeserializer;
 import io.airlift.tracing.SpanSerialization.SpanSerializer;
 import io.opentelemetry.api.trace.Span;

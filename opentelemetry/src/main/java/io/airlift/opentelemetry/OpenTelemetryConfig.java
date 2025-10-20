@@ -1,6 +1,7 @@
-package io.airlift.tracing;
+package io.airlift.opentelemetry;
 
 import io.airlift.configuration.Config;
+import io.airlift.configuration.LegacyConfig;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 
@@ -15,7 +16,8 @@ public class OpenTelemetryConfig
         return samplingRatio;
     }
 
-    @Config("tracing.sampling-ratio")
+    @Config("otel.tracing.sampling-ratio")
+    @LegacyConfig("tracing.sampling-ratio")
     public OpenTelemetryConfig setSamplingRatio(Double ratio)
     {
         this.samplingRatio = ratio;

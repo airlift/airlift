@@ -1,4 +1,4 @@
-package io.airlift.tracing;
+package io.airlift.opentelemetry;
 
 import com.google.common.collect.ImmutableMap;
 import org.junit.jupiter.api.Test;
@@ -22,7 +22,7 @@ public class TestOpenTelemetryConfig
     public void testExplicitPropertyMappings()
     {
         Map<String, String> properties = ImmutableMap.<String, String>builder()
-                .put("tracing.sampling-ratio", "0.2")
+                .put("otel.tracing.sampling-ratio", "0.2")
                 .buildOrThrow();
 
         OpenTelemetryConfig expected = new OpenTelemetryConfig()
