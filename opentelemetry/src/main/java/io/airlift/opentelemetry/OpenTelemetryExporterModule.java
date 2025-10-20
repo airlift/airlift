@@ -1,4 +1,4 @@
-package io.airlift.tracing;
+package io.airlift.opentelemetry;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;

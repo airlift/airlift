@@ -56,6 +56,7 @@
         <module>mcp</module>
         <module>node</module>
         <module>openmetrics</module>
+        <module>opentelemetry</module>
         <module>packaging</module>
         <module>sample-server</module>
         <module>secrets-keystore-plugin</module>
@@ -230,6 +231,12 @@
             <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>openmetrics</artifactId>
+                <version>${dep.airlift.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>opentelemetry</artifactId>
                 <version>${dep.airlift.version}</version>
             </dependency>
 

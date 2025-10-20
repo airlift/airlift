@@ -1,4 +1,4 @@
-package io.airlift.tracing;
+package io.airlift.opentelemetry;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
@@ -9,6 +9,7 @@ import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
@@ -33,7 +34,6 @@ import static com.google.common.base.StandardSystemProperty.OS_VERSION;
 import static com.google.common.base.Strings.nullToEmpty;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static io.airlift.configuration.ConfigBinder.configBinder;
-import static io.airlift.tracing.Tracing.noopTracer;
 import static io.opentelemetry.sdk.trace.samplers.Sampler.parentBased;
 import static io.opentelemetry.sdk.trace.samplers.Sampler.traceIdRatioBased;
 import static java.lang.String.format;
@@ -75,7 +75,7 @@ public class OpenTelemetryModule
 
     @Provides
     @Singleton
-    public SdkTracerProvider createTracerProvider(NodeInfo nodeInfo, Set<SpanProcessor> spanProcessors, OpenTelemetryConfig config)
+    public Resource createResource(NodeInfo nodeInfo)
     {
         AttributesBuilder attributes = Attributes.builder()
                 .put(ServiceAttributes.SERVICE_NAME, serviceName)
@@ -91,8 +91,13 @@ public class OpenTelemetryModule
                 .put(HostIncubatingAttributes.HOST_ARCH, hostArch());
         nodeInfo.getAnnotations().forEach((key, value) -> attributes.put(format("%s.%s", NODE_ANNOTATION_PREFIX, key), value));
 
-        Resource resource = Resource.getDefault().merge(Resource.create(attributes.build()));
+        return Resource.getDefault().merge(Resource.create(attributes.build()));
+    }
 
+    @Provides
+    @Singleton
+    public SdkTracerProvider createTracerProvider(Resource resource, Set<SpanProcessor> spanProcessors, OpenTelemetryConfig config)
+    {
         return SdkTracerProvider.builder()
                 .setSampler(parentBased(traceIdRatioBased(config.getSamplingRatio())))
                 .addSpanProcessor(SpanProcessor.composite(spanProcessors))
@@ -105,7 +110,7 @@ public class OpenTelemetryModule
     public Tracer createTracer(Set<SpanProcessor> spanProcessors, SdkTracerProvider tracerProvider)
     {
         if (spanProcessors.isEmpty()) {
-            return noopTracer();
+            return TracerProvider.noop().get("noop");
         }
         return tracerProvider.get(serviceName);
     }

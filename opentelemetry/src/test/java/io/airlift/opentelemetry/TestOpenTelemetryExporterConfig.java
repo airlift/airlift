@@ -1,4 +1,4 @@
-package io.airlift.tracing;
+package io.airlift.opentelemetry;
 
 import com.google.common.collect.ImmutableMap;
 import org.junit.jupiter.api.Test;
@@ -8,8 +8,8 @@ import java.util.Map;
 import static io.airlift.configuration.testing.ConfigAssertions.assertFullMapping;
 import static io.airlift.configuration.testing.ConfigAssertions.assertRecordedDefaults;
 import static io.airlift.configuration.testing.ConfigAssertions.recordDefaults;
-import static io.airlift.tracing.OpenTelemetryExporterConfig.Protocol.GRPC;
-import static io.airlift.tracing.OpenTelemetryExporterConfig.Protocol.HTTP_PROTOBUF;
+import static io.airlift.opentelemetry.OpenTelemetryExporterConfig.Protocol.GRPC;
+import static io.airlift.opentelemetry.OpenTelemetryExporterConfig.Protocol.HTTP_PROTOBUF;
 
 public class TestOpenTelemetryExporterConfig
 {
@@ -25,8 +25,8 @@ public class TestOpenTelemetryExporterConfig
     public void testExplicitPropertyMappings()
     {
         Map<String, String> properties = ImmutableMap.<String, String>builder()
-                .put("tracing.exporter.endpoint", "http://example.com:1234")
-                .put("tracing.exporter.protocol", "http/protobuf")
+                .put("otel.exporter.endpoint", "http://example.com:1234")
+                .put("otel.exporter.protocol", "http/protobuf")
                 .buildOrThrow();
 
         OpenTelemetryExporterConfig expected = new OpenTelemetryExporterConfig()
