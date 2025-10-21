@@ -9,8 +9,6 @@ jobs:
     permissions:
       contents: write
       packages: write
-    env:
-      STAGED_REPOSITORY: target/checkout/target/staging-deploy
 
     steps:
       - name: Check if release is running from master
