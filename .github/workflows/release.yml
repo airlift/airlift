@@ -96,3 +96,11 @@ jobs:
         id: release-unlock
         with:
           mode: 'unlock'
+      - name: Create release notes
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        run: |
+          gh release create "${VERSION}" \
+              --repo="$GITHUB_REPOSITORY" \
+              --title="${GITHUB_REPOSITORY#*/} ${VERSION}" \
+              --generate-notes
