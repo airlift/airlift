@@ -22,7 +22,7 @@ import io.airlift.stats.DecayCounter.DecayCounterSnapshot;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
 
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 
 import static java.util.Objects.requireNonNull;
 
@@ -36,7 +36,7 @@ import static java.util.Objects.requireNonNull;
 @ThreadSafe
 public final class CounterStat
 {
-    private final AtomicLong count = new AtomicLong(0);
+    private final LongAdder count = new LongAdder();
     private final DecayCounter oneMinute = new DecayCounter(ExponentialDecay.oneMinute());
     private final DecayCounter fiveMinute = new DecayCounter(ExponentialDecay.fiveMinutes());
     private final DecayCounter fifteenMinute = new DecayCounter(ExponentialDecay.fifteenMinutes());
@@ -46,7 +46,7 @@ public final class CounterStat
         oneMinute.add(count);
         fiveMinute.add(count);
         fifteenMinute.add(count);
-        this.count.addAndGet(count);
+        this.count.add(count);
     }
 
     public void merge(CounterStat counterStat)
@@ -55,7 +55,7 @@ public final class CounterStat
         oneMinute.merge(counterStat.getOneMinute());
         fiveMinute.merge(counterStat.getFiveMinute());
         fifteenMinute.merge(counterStat.getFifteenMinute());
-        count.addAndGet(counterStat.getTotalCount());
+        count.add(counterStat.getTotalCount());
     }
 
     /**
@@ -71,7 +71,7 @@ public final class CounterStat
         oneMinute.reset();
         fiveMinute.reset();
         fifteenMinute.reset();
-        count.set(0);
+        count.reset();
     }
 
     /**
@@ -83,13 +83,17 @@ public final class CounterStat
         oneMinute.resetTo(counterStat.getOneMinute());
         fiveMinute.resetTo(counterStat.getFiveMinute());
         fifteenMinute.resetTo(counterStat.getFifteenMinute());
-        count.set(counterStat.getTotalCount());
+
+        synchronized (count) {
+            count.reset();
+            count.add(counterStat.getTotalCount());
+        }
     }
 
     @Managed
     public long getTotalCount()
     {
-        return count.get();
+        return count.sum();
     }
 
     @Managed
