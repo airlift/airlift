@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static java.lang.Math.exp;
@@ -68,7 +69,7 @@ final class ExponentiallyDecayingSample
     private final ReentrantReadWriteLock lock;
     private final double alpha;
     private final int reservoirSize;
-    private final AtomicLong count = new AtomicLong(0);
+    private final LongAdder count = new LongAdder();
     private volatile long startTime;
     private final AtomicLong nextScaleTime = new AtomicLong(0);
 
@@ -91,14 +92,14 @@ final class ExponentiallyDecayingSample
     public void clear()
     {
         values.clear();
-        count.set(0);
+        count.reset();
         this.startTime = tick();
         nextScaleTime.set(System.nanoTime() + RESCALE_THRESHOLD);
     }
 
     public int size()
     {
-        return (int) min(reservoirSize, count.get());
+        return (int) min(reservoirSize, count.sum());
     }
 
     public void update(long value)
@@ -117,7 +118,8 @@ final class ExponentiallyDecayingSample
         lockForRegularUsage();
         try {
             final double priority = weight(timestamp - startTime) / random();
-            final long newCount = count.incrementAndGet();
+            count.increment();
+            final long newCount = count.sum();
             if (newCount <= reservoirSize) {
                 values.put(priority, value);
             }
