@@ -82,7 +82,7 @@ jobs:
           MAVENCENTRAL_USERNAME: ${{ secrets.JRELEASER_NEXUS2_MAVEN_CENTRAL_USERNAME }}
           MAVENCENTRAL_PASSWORD: ${{ secrets.JRELEASER_NEXUS2_MAVEN_CENTRAL_TOKEN }}
         run:
-          ./mvnw njord:publish -Poss-release,oss-stage -Ddetails -Dfull
+          ./mvnw njord:publish -Poss-release,oss-stage
 
       - name: Push git changes
         run: |
