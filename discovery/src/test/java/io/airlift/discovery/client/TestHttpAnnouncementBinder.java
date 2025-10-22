@@ -15,6 +15,8 @@
  */
 package io.airlift.discovery.client;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.inject.BindingAnnotation;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
@@ -24,6 +26,7 @@ import com.google.inject.TypeLiteral;
 import io.airlift.discovery.client.testing.TestingDiscoveryModule;
 import org.junit.jupiter.api.Test;
 
+import java.lang.annotation.Retention;
 import java.net.URI;
 import java.util.Set;
 import java.util.UUID;
@@ -31,6 +34,7 @@ import java.util.UUID;
 import static com.google.common.collect.MoreCollectors.onlyElement;
 import static io.airlift.discovery.client.DiscoveryBinder.discoveryBinder;
 import static io.airlift.discovery.client.ServiceAnnouncement.serviceAnnouncement;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestHttpAnnouncementBinder
@@ -59,6 +63,45 @@ public class TestHttpAnnouncementBinder
         Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() {}));
 
         assertAnnouncement(announcements, announcement);
+    }
+
+    @Test
+    public void testMultipleHttpAnnouncements()
+    {
+        StaticAnnouncementHttpServerInfoImpl primaryServerInfo = new StaticAnnouncementHttpServerInfoImpl(
+                URI.create("http://127.0.0.1:4444"),
+                URI.create("http://example.com:4444"),
+                null,
+                null);
+
+        StaticAnnouncementHttpServerInfoImpl secondaryServerInfo = new StaticAnnouncementHttpServerInfoImpl(
+                URI.create("http://127.0.0.1:5555"),
+                URI.create("http://example.com:5555"),
+                null,
+                null);
+
+        Injector injector = Guice.createInjector(
+                new TestingDiscoveryModule(),
+                binder -> {
+                    binder.bind(AnnouncementHttpServerInfo.class).toInstance(primaryServerInfo);
+                    discoveryBinder(binder).bindHttpAnnouncement("apple");
+                    binder.bind(Key.get(AnnouncementHttpServerInfo.class, Secondary.class)).toInstance(secondaryServerInfo);
+                    discoveryBinder(binder).bindHttpAnnouncement("orange", Secondary.class);
+                });
+
+        ServiceAnnouncement primaryAnnouncement = serviceAnnouncement("apple")
+                .addProperty("http", primaryServerInfo.getHttpUri().toASCIIString())
+                .addProperty("http-external", primaryServerInfo.getHttpExternalUri().toASCIIString())
+                .build();
+
+        ServiceAnnouncement secondaryAnnouncement = serviceAnnouncement("orange")
+                .addProperty("http", secondaryServerInfo.getHttpUri().toASCIIString())
+                .addProperty("http-external", secondaryServerInfo.getHttpExternalUri().toASCIIString())
+                .build();
+
+        Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() {}));
+
+        assertAnnouncements(announcements, ImmutableSet.of(primaryAnnouncement, secondaryAnnouncement));
     }
 
     @Test
@@ -178,11 +221,20 @@ public class TestHttpAnnouncementBinder
 
     private void assertAnnouncement(Set<ServiceAnnouncement> actualAnnouncements, ServiceAnnouncement expected)
     {
-        assertThat(actualAnnouncements).isNotNull();
-        assertThat(actualAnnouncements.size()).isEqualTo(1);
-        ServiceAnnouncement announcement = actualAnnouncements.stream().collect(onlyElement());
-        assertThat(announcement.getType()).isEqualTo(expected.getType());
-        assertThat(announcement.getProperties()).isEqualTo(expected.getProperties());
+        assertAnnouncements(actualAnnouncements, ImmutableSet.of(expected));
+    }
+
+    private void assertAnnouncements(Set<ServiceAnnouncement> actual, Set<ServiceAnnouncement> expected)
+    {
+        assertThat(actual).isNotNull();
+        assertThat(actual).hasSameSizeAs(expected);
+
+        for (ServiceAnnouncement announcement : actual) {
+            ServiceAnnouncement match = expected.stream()
+                    .filter(needle -> needle.getType().equals(announcement.getType()))
+                    .collect(onlyElement());
+            assertThat(announcement.getProperties()).isEqualTo(match.getProperties());
+        }
     }
 
     public static class StringPropertyProvider
@@ -202,4 +254,8 @@ public class TestHttpAnnouncementBinder
             return "concatenated: %s %s".formatted(httpServerInfo.getHttpUri(), httpServerInfo.getHttpsUri());
         }
     }
+
+    @BindingAnnotation
+    @Retention(RUNTIME)
+    @interface Secondary {}
 }
