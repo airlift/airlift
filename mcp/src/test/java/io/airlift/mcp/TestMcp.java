@@ -9,9 +9,6 @@
  */
 package io.airlift.mcp;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.reflect.TypeToken;
@@ -54,6 +51,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.net.URI;
 import java.util.Optional;
@@ -82,7 +82,7 @@ public class TestMcp
     private final HttpClient httpClient;
     private final Injector injector;
     private final URI baseUri;
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
 
     public TestMcp()
     {
@@ -107,7 +107,7 @@ public class TestMcp
 
         httpClient = injector.getInstance(Key.get(HttpClient.class, ForTest.class));
         baseUri = injector.getInstance(HttpServerInfo.class).getHttpUri().resolve("/mcp");
-        objectMapper = injector.getInstance(ObjectMapper.class);
+        jsonMapper = injector.getInstance(JsonMapper.class);
     }
 
     @AfterAll
@@ -190,7 +190,7 @@ public class TestMcp
         JsonRpcRequest<?> listToolsRpcRequest = JsonRpcRequest.buildRequest(1, "tools/list");
 
         JsonRpcResponse<?> listToolsResponse = rpcCall(listToolsRpcRequest);
-        ListToolsResult listToolsResult = objectMapper.convertValue(listToolsResponse.result().orElseThrow(), ListToolsResult.class);
+        ListToolsResult listToolsResult = jsonMapper.convertValue(listToolsResponse.result().orElseThrow(), ListToolsResult.class);
         assertThat(listToolsResult.tools())
                 .filteredOn(tool -> tool.name().equals("addThree"))
                 .hasSize(1)
@@ -201,7 +201,7 @@ public class TestMcp
         CallToolRequest callToolRequest = new CallToolRequest("addThree", ImmutableMap.of("a", 1, "b", 2, "c", 3));
         JsonRpcRequest<?> jsonrpcRequest = JsonRpcRequest.buildRequest(1, "tools/call", callToolRequest);
         JsonRpcResponse<?> response = rpcCall(jsonrpcRequest);
-        CallToolResult callToolResult = objectMapper.convertValue(response.result().orElseThrow(), new TypeReference<>() {});
+        CallToolResult callToolResult = jsonMapper.convertValue(response.result().orElseThrow(), new TypeReference<>() {});
         assertThat(callToolResult.structuredContent())
                 .isEmpty();
         assertThat(callToolResult.content())
@@ -218,7 +218,7 @@ public class TestMcp
         JsonRpcRequest<?> listToolsRpcRequest = JsonRpcRequest.buildRequest(1, "tools/list");
 
         JsonRpcResponse<?> listToolsResponse = rpcCall(listToolsRpcRequest);
-        ListToolsResult listToolsResult = objectMapper.convertValue(listToolsResponse.result().orElseThrow(), ListToolsResult.class);
+        ListToolsResult listToolsResult = jsonMapper.convertValue(listToolsResponse.result().orElseThrow(), ListToolsResult.class);
         assertThat(listToolsResult.tools())
                 .filteredOn(tool -> tool.name().equals("addFirstTwoAndAllThree"))
                 .hasSize(1)
@@ -226,25 +226,25 @@ public class TestMcp
                 .extracting(Tool::outputSchema)
                 .extracting(Optional::get)
                 .satisfies(node -> {
-                    assertThat(node.get("type").asText()).isEqualTo("object");
+                    assertThat(node.get("type").asString()).isEqualTo("object");
 
                     assertThat(node.get("required"))
                             .isNotNull()
-                            .extracting(JsonNode::asText)
+                            .extracting(JsonNode::asString)
                             .containsExactlyInAnyOrder("firstTwo", "allThree");
 
                     assertThat(node.get("properties")).isNotNull();
                     JsonNode properties = node.get("properties");
-                    assertThat(properties.fieldNames()).toIterable().containsExactlyInAnyOrder("firstTwo", "allThree");
+                    assertThat(properties.propertyNames()).containsExactlyInAnyOrder("firstTwo", "allThree");
 
-                    assertThat(properties.get("firstTwo").get("type").asText()).isEqualTo("integer");
-                    assertThat(properties.get("allThree").get("type").asText()).isEqualTo("integer");
+                    assertThat(properties.get("firstTwo").get("type").asString()).isEqualTo("integer");
+                    assertThat(properties.get("allThree").get("type").asString()).isEqualTo("integer");
                 });
 
         CallToolRequest callToolRequest = new CallToolRequest("addFirstTwoAndAllThree", ImmutableMap.of("a", 1, "b", 2, "c", 3));
         JsonRpcRequest<?> jsonrpcRequest = JsonRpcRequest.buildRequest(1, "tools/call", callToolRequest);
         JsonRpcResponse<?> response = rpcCall(jsonrpcRequest);
-        CallToolResult twoAndThreeCallToolResult = objectMapper.convertValue(response.result().orElseThrow(), new TypeReference<>() {});
+        CallToolResult twoAndThreeCallToolResult = jsonMapper.convertValue(response.result().orElseThrow(), new TypeReference<>() {});
         assertThat(twoAndThreeCallToolResult.isError()).isFalse();
         assertThat(twoAndThreeCallToolResult.structuredContent())
                 .isPresent()
@@ -256,7 +256,7 @@ public class TestMcp
         callToolRequest = new CallToolRequest("addFirstTwoAndAllThree", ImmutableMap.of("a", -1, "b", -2, "c", -3));
         jsonrpcRequest = JsonRpcRequest.buildRequest(1, "tools/call", callToolRequest);
         response = rpcCall(jsonrpcRequest);
-        twoAndThreeCallToolResult = objectMapper.convertValue(response.result().orElseThrow(), new TypeReference<>() {});
+        twoAndThreeCallToolResult = jsonMapper.convertValue(response.result().orElseThrow(), new TypeReference<>() {});
         assertThat(twoAndThreeCallToolResult.isError()).isTrue();
         assertThat(twoAndThreeCallToolResult.structuredContent()).isEmpty();
         assertThat(twoAndThreeCallToolResult.content())
@@ -273,7 +273,7 @@ public class TestMcp
         JsonRpcRequest<?> jsonrpcRequest = JsonRpcRequest.buildRequest(1, "tools/list");
 
         JsonRpcResponse<?> response = rpcCall(jsonrpcRequest);
-        ListToolsResult listToolsResult = objectMapper.convertValue(response.result().orElseThrow(), ListToolsResult.class);
+        ListToolsResult listToolsResult = jsonMapper.convertValue(response.result().orElseThrow(), ListToolsResult.class);
         assertThat(listToolsResult.tools())
                 .extracting(Tool::name)
                 .containsExactlyInAnyOrder("add", "throws", "addThree", "addFirstTwoAndAllThree");
@@ -281,7 +281,7 @@ public class TestMcp
         CallToolRequest callToolRequest = new CallToolRequest("add", ImmutableMap.of("a", 1, "b", 2));
         jsonrpcRequest = JsonRpcRequest.buildRequest(1, "tools/call", callToolRequest);
         response = rpcCall(jsonrpcRequest);
-        CallToolResult callToolResult = objectMapper.convertValue(response.result().orElseThrow(), CallToolResult.class);
+        CallToolResult callToolResult = jsonMapper.convertValue(response.result().orElseThrow(), CallToolResult.class);
         assertThat(callToolResult.content())
                 .hasSize(1)
                 .first()
@@ -307,7 +307,7 @@ public class TestMcp
         JsonRpcRequest<?> jsonrpcRequest = JsonRpcRequest.buildRequest(1, "prompts/list", 1);
 
         JsonRpcResponse<?> response = rpcCall(jsonrpcRequest);
-        ListPromptsResult listPromptsResult = objectMapper.convertValue(response.result().orElseThrow(), ListPromptsResult.class);
+        ListPromptsResult listPromptsResult = jsonMapper.convertValue(response.result().orElseThrow(), ListPromptsResult.class);
         assertThat(listPromptsResult.prompts())
                 .extracting(Prompt::name)
                 .containsExactlyInAnyOrder("greeting");
@@ -315,7 +315,7 @@ public class TestMcp
         GetPromptRequest getPromptRequest = new GetPromptRequest("greeting", ImmutableMap.of("name", "Galt"));
         jsonrpcRequest = JsonRpcRequest.buildRequest(1, "prompts/get", getPromptRequest);
         response = rpcCall(jsonrpcRequest);
-        GetPromptResult getPromptResult = objectMapper.convertValue(response.result().orElseThrow(), GetPromptResult.class);
+        GetPromptResult getPromptResult = jsonMapper.convertValue(response.result().orElseThrow(), GetPromptResult.class);
         assertThat(getPromptResult.messages())
                 .hasSize(1)
                 .first()
@@ -331,7 +331,7 @@ public class TestMcp
         JsonRpcRequest<?> jsonrpcRequest = JsonRpcRequest.buildRequest(1, "resources/list");
 
         JsonRpcResponse<?> response = rpcCall(jsonrpcRequest);
-        ListResourcesResult listResourcesResult = objectMapper.convertValue(response.result().orElseThrow(), ListResourcesResult.class);
+        ListResourcesResult listResourcesResult = jsonMapper.convertValue(response.result().orElseThrow(), ListResourcesResult.class);
         assertThat(listResourcesResult.resources())
                 .extracting(Resource::name)
                 .containsExactlyInAnyOrder("example1", "example2");
@@ -339,7 +339,7 @@ public class TestMcp
         ReadResourceRequest readResourceRequest = new ReadResourceRequest("file://example2.txt");
         jsonrpcRequest = JsonRpcRequest.buildRequest(1, "resources/read", readResourceRequest);
         response = rpcCall(jsonrpcRequest);
-        ReadResourceResult readResourceResult = objectMapper.convertValue(response.result().orElseThrow(), ReadResourceResult.class);
+        ReadResourceResult readResourceResult = jsonMapper.convertValue(response.result().orElseThrow(), ReadResourceResult.class);
         assertThat(readResourceResult.contents())
                 .hasSize(1)
                 .first()
