@@ -11,6 +11,7 @@ variations of MCP servers defined by the standard. This module supports:
 - Stateless MCP servers [(see spec)](https://github.com/modelcontextprotocol/modelcontextprotocol/discussions?discussions_q=stateless)
 - Streamable HTTP transport [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#streamable-http)
 - Resources [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/resources)
+- Resource templates [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/resources)
 - Prompts [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/prompts)
 - Tools [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/tools)
 - Ping [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/ping)
@@ -19,7 +20,6 @@ variations of MCP servers defined by the standard. This module supports:
 It uses the [MCP reference Java SDK](https://github.com/modelcontextprotocol/java-sdk) as its internal implementation.
 This implementation is very limited at does not support:
 
-- Resource templates [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/resources)
 - Completions [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/completion)
 - Progress notifications [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/progress)
 - Limited server-sent notifications during processing (e.g. for progress: [see spec](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/progress))
@@ -56,6 +56,12 @@ public String greeting(@McpDescription("Name of the person to greet") String nam
 
 @McpResource(name = "example1", uri = "file://example1.txt", description = "This is example1 resource.", mimeType = "text/plain")
 public ResourceContents resource()
+{
+    return new ResourceContents("foo2", "file://example1.txt", "text/plain", "This is the content of file://example1.txt");
+}
+
+@McpResourceTemplate(name = "example1", uriTemplate = "file:{path1}/{path2}", description = "This is an example resource template", mimeType = "text/plain")
+public ResourceContents resourceTemplate(ReadResourceRequest request)
 {
     return new ResourceContents("foo2", "file://example1.txt", "text/plain", "This is the content of file://example1.txt");
 }
@@ -152,6 +158,17 @@ A browser should open with the MCP Inspector tool. Set the "Transport Type" to
     - `HttpServletRequest`
     - An Identity instance (via [McpIdentityMapper](src/main/java/io/airlift/mcp/McpIdentityMapper.java))
     - [Resource](src/main/java/io/airlift/mcp/model/Resource.java) - the source resource being read
+    - [ReadResourceRequest](src/main/java/io/airlift/mcp/model/ReadResourceRequest.java)
+- Returns either:
+    - [ResourceContents](src/main/java/io/airlift/mcp/model/ResourceContents.java)
+    - [List&lt;ResourceContents&gt;](src/main/java/io/airlift/mcp/model/ResourceContents.java)
+
+#### ResourceTemplates
+
+- Parameters can be:
+    - `HttpServletRequest`
+    - An Identity instance (via [McpIdentityMapper](src/main/java/io/airlift/mcp/McpIdentityMapper.java))
+    - [ResourceTemplate](src/main/java/io/airlift/mcp/model/ResourceTemplate.java) - the source resource template being read
     - [ReadResourceRequest](src/main/java/io/airlift/mcp/model/ReadResourceRequest.java)
 - Returns either:
     - [ResourceContents](src/main/java/io/airlift/mcp/model/ResourceContents.java)

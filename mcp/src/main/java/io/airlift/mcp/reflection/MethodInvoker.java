@@ -11,6 +11,7 @@ import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.GetPromptRequest;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.Resource;
+import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.reflection.MethodParameter.CallToolRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.GetPromptRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.HttpRequestParameter;
@@ -18,6 +19,7 @@ import io.airlift.mcp.reflection.MethodParameter.IdentityParameter;
 import io.airlift.mcp.reflection.MethodParameter.ObjectParameter;
 import io.airlift.mcp.reflection.MethodParameter.ReadResourceRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.SourceResourceParameter;
+import io.airlift.mcp.reflection.MethodParameter.SourceResourceTemplateParameter;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.lang.invoke.MethodHandle;
@@ -68,6 +70,8 @@ public class MethodInvoker
 
         Builder withReadResourceRequest(Resource sourceResource, ReadResourceRequest readResourceRequest);
 
+        Builder withReadResourceTemplateRequest(ResourceTemplate sourceResourceTemplate, ReadResourceRequest readResourceRequest);
+
         Object invoke();
     }
 
@@ -79,6 +83,7 @@ public class MethodInvoker
             private Optional<GetPromptRequest> getPromptRequest = Optional.empty();
             private Optional<CallToolRequest> callToolRequest = Optional.empty();
             private Optional<Resource> sourceResource = Optional.empty();
+            private Optional<ResourceTemplate> sourceResourceTemplate = Optional.empty();
             private Optional<ReadResourceRequest> readResourceRequest = Optional.empty();
 
             @Override
@@ -111,6 +116,14 @@ public class MethodInvoker
             }
 
             @Override
+            public Builder withReadResourceTemplateRequest(ResourceTemplate sourceResourceTemplate, ReadResourceRequest readResourceRequest)
+            {
+                this.sourceResourceTemplate = Optional.of(sourceResourceTemplate);
+                this.readResourceRequest = Optional.of(readResourceRequest);
+                return this;
+            }
+
+            @Override
             public Object invoke()
             {
                 try {
@@ -120,6 +133,7 @@ public class MethodInvoker
                                 case GetPromptRequestParameter _ -> getPromptRequest.orElseThrow(() -> new IllegalStateException("GetPromptRequest is required"));
                                 case CallToolRequestParameter _ -> callToolRequest.orElseThrow(() -> new IllegalStateException("CallToolRequest is required"));
                                 case SourceResourceParameter _ -> sourceResource.orElseThrow(() -> new IllegalStateException("SourceResource is required"));
+                                case SourceResourceTemplateParameter _ -> sourceResourceTemplate.orElseThrow(() -> new IllegalStateException("SourceResourceTemplate is required"));
                                 case ReadResourceRequestParameter _ -> readResourceRequest.orElseThrow(() -> new IllegalStateException("ReadResourceRequest is required"));
                                 case IdentityParameter _ -> retrieveIdentityValue(request);
                                 case ObjectParameter objectParameter -> valueForObjectParameter(arguments, objectParameter);

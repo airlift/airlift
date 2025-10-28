@@ -7,10 +7,13 @@ import io.airlift.mcp.handler.PromptEntry;
 import io.airlift.mcp.handler.PromptHandler;
 import io.airlift.mcp.handler.ResourceEntry;
 import io.airlift.mcp.handler.ResourceHandler;
+import io.airlift.mcp.handler.ResourceTemplateEntry;
+import io.airlift.mcp.handler.ResourceTemplateHandler;
 import io.airlift.mcp.handler.ToolEntry;
 import io.airlift.mcp.handler.ToolHandler;
 import io.airlift.mcp.model.Prompt;
 import io.airlift.mcp.model.Resource;
+import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.model.Tool;
 import io.modelcontextprotocol.json.McpJsonMapper;
 import io.modelcontextprotocol.server.McpStatelessSyncServer;
@@ -30,7 +33,7 @@ public class ReferenceServer
     private final McpJsonMapper objectMapper;
 
     @Inject
-    public ReferenceServer(McpStatelessSyncServer server, McpJsonMapper objectMapper, Set<ToolEntry> tools, Set<PromptEntry> prompts, Set<ResourceEntry> resources)
+    public ReferenceServer(McpStatelessSyncServer server, McpJsonMapper objectMapper, Set<ToolEntry> tools, Set<PromptEntry> prompts, Set<ResourceEntry> resources, Set<ResourceTemplateEntry> resourceTemplates)
     {
         this.server = requireNonNull(server, "server is null");
         this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
@@ -38,6 +41,7 @@ public class ReferenceServer
         tools.forEach(tool -> addTool(tool.tool(), tool.toolHandler()));
         prompts.forEach(prompt -> addPrompt(prompt.prompt(), prompt.promptHandler()));
         resources.forEach(resource -> addResource(resource.resource(), resource.handler()));
+        resourceTemplates.forEach(resourceTemplate -> addResourceTemplate(resourceTemplate.resourceTemplate(), resourceTemplate.handler()));
     }
 
     @PreDestroy
@@ -87,5 +91,17 @@ public class ReferenceServer
     public void removeResource(String resourceUri)
     {
         server.removeResource(resourceUri);
+    }
+
+    @Override
+    public void addResourceTemplate(ResourceTemplate resourceTemplate, ResourceTemplateHandler handler)
+    {
+        server.addResourceTemplate(Mapper.mapResourceTemplate(resourceTemplate, handler));
+    }
+
+    @Override
+    public void removeResourceTemplate(String uriTemplate)
+    {
+        server.removeResourceTemplate(uriTemplate);
     }
 }

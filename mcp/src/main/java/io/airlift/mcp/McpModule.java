@@ -12,6 +12,7 @@ import io.airlift.json.JsonSubType;
 import io.airlift.json.JsonSubTypeBinder;
 import io.airlift.mcp.handler.PromptEntry;
 import io.airlift.mcp.handler.ResourceEntry;
+import io.airlift.mcp.handler.ResourceTemplateEntry;
 import io.airlift.mcp.handler.ToolEntry;
 import io.airlift.mcp.model.Content;
 import io.airlift.mcp.model.Content.AudioContent;
@@ -25,6 +26,7 @@ import io.airlift.mcp.reference.ReferenceModule;
 import io.airlift.mcp.reflection.IdentityMapperMetadata;
 import io.airlift.mcp.reflection.PromptHandlerProvider;
 import io.airlift.mcp.reflection.ResourceHandlerProvider;
+import io.airlift.mcp.reflection.ResourceTemplateHandlerProvider;
 import io.airlift.mcp.reflection.ToolHandlerProvider;
 import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema;
@@ -54,13 +56,14 @@ public class McpModule
     private final Set<ToolHandlerProvider> tools;
     private final Set<PromptHandlerProvider> prompts;
     private final Set<ResourceHandlerProvider> resources;
+    private final Set<ResourceTemplateHandlerProvider> resourceTemplates;
 
     public static Builder builder()
     {
         return new Builder();
     }
 
-    private McpModule(Mode mode, McpMetadata metadata, Optional<IdentityMapperBinding> identityMapperBinding, Set<Class<?>> classes, Set<ToolHandlerProvider> tools, Set<PromptHandlerProvider> prompts, Set<ResourceHandlerProvider> resources)
+    private McpModule(Mode mode, McpMetadata metadata, Optional<IdentityMapperBinding> identityMapperBinding, Set<Class<?>> classes, Set<ToolHandlerProvider> tools, Set<PromptHandlerProvider> prompts, Set<ResourceHandlerProvider> resources, Set<ResourceTemplateHandlerProvider> resourceTemplates)
     {
         this.mode = requireNonNull(mode, "mode is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
@@ -69,6 +72,7 @@ public class McpModule
         this.tools = ImmutableSet.copyOf(tools);
         this.prompts = ImmutableSet.copyOf(prompts);
         this.resources = ImmutableSet.copyOf(resources);
+        this.resourceTemplates = ImmutableSet.copyOf(resourceTemplates);
 
         validateRoles();
     }
@@ -131,6 +135,7 @@ public class McpModule
             ImmutableSet.Builder<ToolHandlerProvider> tools = ImmutableSet.builder();
             ImmutableSet.Builder<PromptHandlerProvider> prompts = ImmutableSet.builder();
             ImmutableSet.Builder<ResourceHandlerProvider> resources = ImmutableSet.builder();
+            ImmutableSet.Builder<ResourceTemplateHandlerProvider> resourceTemplates = ImmutableSet.builder();
 
             classesSet.forEach(clazz -> {
                 Optional<? extends Class<?>> identityClass = identityMapperBinding.map(IdentityMapperBinding::identityType);
@@ -143,11 +148,15 @@ public class McpModule
 
                 forAllInClass(clazz, McpResource.class, identityClass, (mcpResource, method, parameters) ->
                         resources.add(new ResourceHandlerProvider(mcpResource, clazz, method, parameters)));
+
+                forAllInClass(clazz, McpResourceTemplate.class, identityClass, (mcpResourceTemplate, method, parameters) ->
+                        resourceTemplates.add(new ResourceTemplateHandlerProvider(mcpResourceTemplate, clazz, method, parameters)));
             });
 
             Set<ToolHandlerProvider> localTools = tools.build();
             Set<PromptHandlerProvider> localPrompts = prompts.build();
             Set<ResourceHandlerProvider> localResources = resources.build();
+            Set<ResourceTemplateHandlerProvider> localResourceTemplates = resourceTemplates.build();
 
             if (!localTools.isEmpty()) {
                 metadata = metadata.withTools(true);
@@ -159,7 +168,7 @@ public class McpModule
                 metadata = metadata.withResources(true);
             }
 
-            return new McpModule(mode, metadata, identityMapperBinding, classesSet, localTools, localPrompts, localResources);
+            return new McpModule(mode, metadata, identityMapperBinding, classesSet, localTools, localPrompts, localResources, localResourceTemplates);
         }
     }
 
@@ -172,6 +181,7 @@ public class McpModule
         bindTools(binder);
         bindPrompts(binder);
         bindResources(binder);
+        bindResourceTemplates(binder);
         bindJsonSubTypes(binder);
         bindCustomErrorTypes(binder);
         bindIdentityMapper(binder);
@@ -202,6 +212,12 @@ public class McpModule
     {
         Multibinder<ResourceEntry> resourcesBinder = newSetBinder(binder, ResourceEntry.class);
         resources.forEach(resource -> resourcesBinder.addBinding().toProvider(resource).in(SINGLETON));
+    }
+
+    private void bindResourceTemplates(Binder binder)
+    {
+        Multibinder<ResourceTemplateEntry> resourceTemplatesBinder = newSetBinder(binder, ResourceTemplateEntry.class);
+        resourceTemplates.forEach(resourceTemplate -> resourceTemplatesBinder.addBinding().toProvider(resourceTemplate).in(SINGLETON));
     }
 
     private void bindPrompts(Binder binder)

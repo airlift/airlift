@@ -345,6 +345,21 @@ public class TestMcp
                 .first()
                 .extracting(ResourceContents::text)
                 .isEqualTo(Optional.of("This is the content of file://example2.txt"));
+
+        readResourceRequest = new ReadResourceRequest("file://test.template");
+        jsonrpcRequest = JsonRpcRequest.buildRequest(1, "resources/read", readResourceRequest);
+        response = rpcCall(jsonrpcRequest);
+        readResourceResult = objectMapper.convertValue(response.result().orElseThrow(), ReadResourceResult.class);
+        assertThat(readResourceResult.contents())
+                .hasSize(1)
+                .first()
+                .extracting(ResourceContents::text)
+                .isEqualTo(Optional.of("You requested: file://test.template"));
+
+        readResourceRequest = new ReadResourceRequest("file://not-a-template");
+        jsonrpcRequest = JsonRpcRequest.buildRequest(1, "resources/read", readResourceRequest);
+        response = rpcCall(jsonrpcRequest);
+        assertThat(response.error()).map(JsonRpcErrorDetail::code).contains(-32002);
     }
 
     @Test

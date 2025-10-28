@@ -5,6 +5,7 @@ import io.airlift.mcp.McpException;
 import io.airlift.mcp.McpMetadata;
 import io.airlift.mcp.handler.PromptHandler;
 import io.airlift.mcp.handler.ResourceHandler;
+import io.airlift.mcp.handler.ResourceTemplateHandler;
 import io.airlift.mcp.handler.ToolHandler;
 import io.airlift.mcp.model.Annotations;
 import io.airlift.mcp.model.CallToolRequest;
@@ -17,6 +18,7 @@ import io.airlift.mcp.model.Prompt;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceContents;
+import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.model.Role;
 import io.airlift.mcp.model.StructuredContent;
 import io.airlift.mcp.model.Tool;
@@ -112,6 +114,37 @@ interface Mapper
         });
 
         return new McpStatelessServerFeatures.SyncResourceSpecification(theirResourceBuilder.build(), exceptionSafeHandler(handler));
+    }
+
+    static McpStatelessServerFeatures.SyncResourceTemplateSpecification mapResourceTemplate(ResourceTemplate ourResourceTemplate, ResourceTemplateHandler ourHandler)
+    {
+        McpSchema.ResourceTemplate.Builder theirResourceTemplateBuilder = McpSchema.ResourceTemplate.builder()
+                .name(ourResourceTemplate.name())
+                .uriTemplate(ourResourceTemplate.uriTemplate());
+
+        ourResourceTemplate.description().ifPresent(theirResourceTemplateBuilder::description);
+
+        ourResourceTemplate.annotations().ifPresent(annotations -> {
+            McpSchema.Annotations theirAnnotations = mapAnnotations(annotations);
+            theirResourceTemplateBuilder.annotations(theirAnnotations);
+        });
+
+        theirResourceTemplateBuilder.mimeType(ourResourceTemplate.mimeType());
+
+        BiFunction<McpTransportContext, McpSchema.ReadResourceRequest, McpSchema.ReadResourceResult> handler = ((context, theirReadResourceRequest) -> {
+            HttpServletRequest request = (HttpServletRequest) context.get(McpMetadata.CONTEXT_REQUEST_KEY);
+            ReadResourceRequest readResourceRequest = new ReadResourceRequest(theirReadResourceRequest.uri(), Optional.ofNullable(theirReadResourceRequest.meta()));
+
+            List<ResourceContents> ourResourceContents = ourHandler.readResourceTemplate(request, ourResourceTemplate, readResourceRequest);
+
+            List<McpSchema.ResourceContents> theirResourceContents = ourResourceContents.stream()
+                    .map(Mapper::mapResourceContents)
+                    .collect(toImmutableList());
+
+            return new McpSchema.ReadResourceResult(theirResourceContents);
+        });
+
+        return new McpStatelessServerFeatures.SyncResourceTemplateSpecification(theirResourceTemplateBuilder.build(), exceptionSafeHandler(handler));
     }
 
     static <T, R> BiFunction<McpTransportContext, T, R> exceptionSafeHandler(BiFunction<McpTransportContext, T, R> handler)
