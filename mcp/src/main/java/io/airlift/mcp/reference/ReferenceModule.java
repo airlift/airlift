@@ -28,6 +28,7 @@ public class ReferenceModule
     public void configure(Binder binder)
     {
         binder.bind(ReferenceServer.class).asEagerSingleton();
+        binder.bind(io.airlift.mcp.McpServer.class).to(ReferenceServer.class).in(SINGLETON);
         newSetBinder(binder, Filter.class).addBinding().to(ReferenceFilter.class).in(SINGLETON);
     }
 
