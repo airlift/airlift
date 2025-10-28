@@ -8,7 +8,9 @@ import io.airlift.mcp.reflection.MethodParameter.HttpRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.IdentityParameter;
 import io.airlift.mcp.reflection.MethodParameter.ObjectParameter;
 import io.airlift.mcp.reflection.MethodParameter.ReadResourceRequestParameter;
+import io.airlift.mcp.reflection.MethodParameter.ResourceTemplateValuesParameter;
 import io.airlift.mcp.reflection.MethodParameter.SourceResourceParameter;
+import io.airlift.mcp.reflection.MethodParameter.SourceResourceTemplateParameter;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -25,7 +27,8 @@ public interface Predicates
     Predicate<MethodParameter> isCallToolRequest = methodParameter -> methodParameter instanceof CallToolRequestParameter;
     Predicate<MethodParameter> isReadResourceRequest = methodParameter -> methodParameter instanceof ReadResourceRequestParameter;
     Predicate<MethodParameter> isSourceResource = methodParameter -> methodParameter instanceof SourceResourceParameter;
-    Predicate<MethodParameter> isSourceResourceTemplate = methodParameter -> methodParameter instanceof MethodParameter.SourceResourceTemplateParameter;
+    Predicate<MethodParameter> isSourceResourceTemplate = methodParameter -> methodParameter instanceof SourceResourceTemplateParameter;
+    Predicate<MethodParameter> isResourceTemplateValues = methodParameter -> methodParameter instanceof ResourceTemplateValuesParameter;
     Predicate<MethodParameter> isObject = methodParameter -> (methodParameter instanceof ObjectParameter);
     Predicate<MethodParameter> isString = methodParameter -> (methodParameter instanceof ObjectParameter objectParameter)
             && objectParameter.rawType().equals(String.class);

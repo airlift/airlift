@@ -5,6 +5,7 @@ import io.airlift.mcp.model.CallToolResult;
 import io.airlift.mcp.model.Content;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.ResourceContents;
+import io.airlift.mcp.model.ResourceTemplateValues;
 import io.airlift.mcp.model.StructuredContentResult;
 
 import java.util.List;
@@ -48,9 +49,10 @@ public class TestingEndpoints
     }
 
     @McpResourceTemplate(name = "template", uriTemplate = "file://{id}.template", description = "This is a resource template", mimeType = "text/plain")
-    public List<ResourceContents> exampleResourceTemplate(ReadResourceRequest readResourceRequest)
+    public List<ResourceContents> exampleResourceTemplate(ReadResourceRequest request, ResourceTemplateValues resourceTemplateValues)
     {
-        return ImmutableList.of(new ResourceContents(readResourceRequest.uri(), readResourceRequest.uri(), "text/plain", "You requested: " + readResourceRequest.uri()));
+        String id = resourceTemplateValues.templateValues().getOrDefault("id", "n/a");
+        return ImmutableList.of(new ResourceContents(request.uri(), request.uri(), "text/plain", "ID is: " + id));
     }
 
     @McpTool(name = "addThree", description = "Add three numbers")

@@ -15,6 +15,8 @@ import io.modelcontextprotocol.server.McpServer.StatelessSyncSpecification;
 import io.modelcontextprotocol.server.McpStatelessSyncServer;
 import io.modelcontextprotocol.server.transport.HttpServletStatelessServerTransport;
 import io.modelcontextprotocol.spec.McpSchema;
+import io.modelcontextprotocol.util.DefaultMcpUriTemplateManagerFactory;
+import io.modelcontextprotocol.util.McpUriTemplateManagerFactory;
 import jakarta.servlet.Filter;
 
 import static com.google.inject.Scopes.SINGLETON;
@@ -30,6 +32,7 @@ public class ReferenceModule
         binder.bind(ReferenceServer.class).asEagerSingleton();
         binder.bind(io.airlift.mcp.McpServer.class).to(ReferenceServer.class).in(SINGLETON);
         newSetBinder(binder, Filter.class).addBinding().to(ReferenceFilter.class).in(SINGLETON);
+        binder.bind(McpUriTemplateManagerFactory.class).to(DefaultMcpUriTemplateManagerFactory.class).in(SINGLETON);
     }
 
     @Singleton
@@ -45,7 +48,7 @@ public class ReferenceModule
 
     @Singleton
     @Provides
-    public McpStatelessSyncServer buildServer(HttpServletStatelessServerTransport transport, McpMetadata metadata, McpJsonMapper objectMapper)
+    public McpStatelessSyncServer buildServer(HttpServletStatelessServerTransport transport, McpMetadata metadata, McpJsonMapper objectMapper, McpUriTemplateManagerFactory uriTemplateManagerFactory)
     {
         McpSchema.ServerCapabilities serverCapabilities = new McpSchema.ServerCapabilities(
                 null,
@@ -58,6 +61,7 @@ public class ReferenceModule
         StatelessSyncSpecification builder = McpServer.sync(transport)
                 .jsonMapper(objectMapper)
                 .capabilities(serverCapabilities)
+                .uriTemplateManagerFactory(uriTemplateManagerFactory)
                 .serverInfo(metadata.implementation().name(), metadata.implementation().version());
 
         metadata.instructions().map(builder::instructions);

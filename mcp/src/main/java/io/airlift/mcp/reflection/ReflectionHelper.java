@@ -8,12 +8,14 @@ import io.airlift.mcp.model.GetPromptRequest;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceTemplate;
+import io.airlift.mcp.model.ResourceTemplateValues;
 import io.airlift.mcp.reflection.MethodParameter.CallToolRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.GetPromptRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.HttpRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.IdentityParameter;
 import io.airlift.mcp.reflection.MethodParameter.ObjectParameter;
 import io.airlift.mcp.reflection.MethodParameter.ReadResourceRequestParameter;
+import io.airlift.mcp.reflection.MethodParameter.ResourceTemplateValuesParameter;
 import io.airlift.mcp.reflection.MethodParameter.SourceResourceParameter;
 import io.airlift.mcp.reflection.MethodParameter.SourceResourceTemplateParameter;
 import jakarta.servlet.http.HttpServletRequest;
@@ -87,6 +89,10 @@ public interface ReflectionHelper
 
                     if (identityClass.map(clazz -> clazz.isAssignableFrom(parameter.getType())).orElse(false)) {
                         return IdentityParameter.INSTANCE;
+                    }
+
+                    if (ResourceTemplateValues.class.isAssignableFrom(parameter.getType())) {
+                        return ResourceTemplateValuesParameter.INSTANCE;
                     }
 
                     Optional<String> description = Optional.ofNullable(parameter.getAnnotation(McpDescription.class)).map(McpDescription::value);
