@@ -84,8 +84,8 @@ public class ReferenceServer
     }
 
     @Override
-    public void removeResource(String resourceName)
+    public void removeResource(String resourceUri)
     {
-        server.removeResource(resourceName);
+        server.removeResource(resourceUri);
     }
 }
