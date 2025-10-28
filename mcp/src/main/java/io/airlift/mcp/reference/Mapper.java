@@ -19,6 +19,7 @@ import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.ResourceTemplate;
+import io.airlift.mcp.model.ResourceTemplateValues;
 import io.airlift.mcp.model.Role;
 import io.airlift.mcp.model.StructuredContent;
 import io.airlift.mcp.model.Tool;
@@ -36,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
@@ -116,7 +118,7 @@ interface Mapper
         return new McpStatelessServerFeatures.SyncResourceSpecification(theirResourceBuilder.build(), exceptionSafeHandler(handler));
     }
 
-    static McpStatelessServerFeatures.SyncResourceTemplateSpecification mapResourceTemplate(ResourceTemplate ourResourceTemplate, ResourceTemplateHandler ourHandler)
+    static McpStatelessServerFeatures.SyncResourceTemplateSpecification mapResourceTemplate(ResourceTemplate ourResourceTemplate, ResourceTemplateHandler ourHandler, Function<String, Map<String, String>> templateValuesMapper)
     {
         McpSchema.ResourceTemplate.Builder theirResourceTemplateBuilder = McpSchema.ResourceTemplate.builder()
                 .name(ourResourceTemplate.name())
@@ -135,7 +137,8 @@ interface Mapper
             HttpServletRequest request = (HttpServletRequest) context.get(McpMetadata.CONTEXT_REQUEST_KEY);
             ReadResourceRequest readResourceRequest = new ReadResourceRequest(theirReadResourceRequest.uri(), Optional.ofNullable(theirReadResourceRequest.meta()));
 
-            List<ResourceContents> ourResourceContents = ourHandler.readResourceTemplate(request, ourResourceTemplate, readResourceRequest);
+            Map<String, String> templateValues = templateValuesMapper.apply(readResourceRequest.uri());
+            List<ResourceContents> ourResourceContents = ourHandler.readResourceTemplate(request, ourResourceTemplate, readResourceRequest, new ResourceTemplateValues(templateValues));
 
             List<McpSchema.ResourceContents> theirResourceContents = ourResourceContents.stream()
                     .map(Mapper::mapResourceContents)

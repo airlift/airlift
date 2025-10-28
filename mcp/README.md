@@ -61,7 +61,7 @@ public ResourceContents resource()
 }
 
 @McpResourceTemplate(name = "example1", uriTemplate = "file:{path1}/{path2}", description = "This is an example resource template", mimeType = "text/plain")
-public ResourceContents resourceTemplate(ReadResourceRequest request)
+public ResourceContents resourceTemplate(ReadResourceRequest request, ResourceTemplateValues templateValues)
 {
     return new ResourceContents("foo2", "file://example1.txt", "text/plain", "This is the content of file://example1.txt");
 }
@@ -170,6 +170,7 @@ A browser should open with the MCP Inspector tool. Set the "Transport Type" to
     - An Identity instance (via [McpIdentityMapper](src/main/java/io/airlift/mcp/McpIdentityMapper.java))
     - [ResourceTemplate](src/main/java/io/airlift/mcp/model/ResourceTemplate.java) - the source resource template being read
     - [ReadResourceRequest](src/main/java/io/airlift/mcp/model/ReadResourceRequest.java)
+    - [ResourceTemplateValues](src/main/java/io/airlift/mcp/model/ResourceTemplateValues.java)
 - Returns either:
     - [ResourceContents](src/main/java/io/airlift/mcp/model/ResourceContents.java)
     - [List&lt;ResourceContents&gt;](src/main/java/io/airlift/mcp/model/ResourceContents.java)

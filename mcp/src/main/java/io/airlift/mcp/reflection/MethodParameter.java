@@ -37,6 +37,12 @@ public sealed interface MethodParameter
         public static final SourceResourceTemplateParameter INSTANCE = new SourceResourceTemplateParameter();
     }
 
+    record ResourceTemplateValuesParameter()
+            implements MethodParameter
+    {
+        public static final ResourceTemplateValuesParameter INSTANCE = new ResourceTemplateValuesParameter();
+    }
+
     record ReadResourceRequestParameter()
             implements MethodParameter
     {

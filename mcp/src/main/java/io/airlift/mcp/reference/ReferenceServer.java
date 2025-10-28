@@ -17,6 +17,8 @@ import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.model.Tool;
 import io.modelcontextprotocol.json.McpJsonMapper;
 import io.modelcontextprotocol.server.McpStatelessSyncServer;
+import io.modelcontextprotocol.util.McpUriTemplateManager;
+import io.modelcontextprotocol.util.McpUriTemplateManagerFactory;
 import jakarta.annotation.PreDestroy;
 
 import java.time.Duration;
@@ -31,12 +33,14 @@ public class ReferenceServer
 
     private final McpStatelessSyncServer server;
     private final McpJsonMapper objectMapper;
+    private final McpUriTemplateManagerFactory uriTemplateManagerFactory;
 
     @Inject
-    public ReferenceServer(McpStatelessSyncServer server, McpJsonMapper objectMapper, Set<ToolEntry> tools, Set<PromptEntry> prompts, Set<ResourceEntry> resources, Set<ResourceTemplateEntry> resourceTemplates)
+    public ReferenceServer(McpStatelessSyncServer server, McpJsonMapper objectMapper, McpUriTemplateManagerFactory uriTemplateManagerFactory, Set<ToolEntry> tools, Set<PromptEntry> prompts, Set<ResourceEntry> resources, Set<ResourceTemplateEntry> resourceTemplates)
     {
         this.server = requireNonNull(server, "server is null");
         this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
+        this.uriTemplateManagerFactory = requireNonNull(uriTemplateManagerFactory, "uriTemplateManagerFactory is null");
 
         tools.forEach(tool -> addTool(tool.tool(), tool.toolHandler()));
         prompts.forEach(prompt -> addPrompt(prompt.prompt(), prompt.promptHandler()));
@@ -96,7 +100,8 @@ public class ReferenceServer
     @Override
     public void addResourceTemplate(ResourceTemplate resourceTemplate, ResourceTemplateHandler handler)
     {
-        server.addResourceTemplate(Mapper.mapResourceTemplate(resourceTemplate, handler));
+        McpUriTemplateManager manager = uriTemplateManagerFactory.create(resourceTemplate.uriTemplate());
+        server.addResourceTemplate(Mapper.mapResourceTemplate(resourceTemplate, handler, manager::extractVariableValues));
     }
 
     @Override

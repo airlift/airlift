@@ -354,7 +354,7 @@ public class TestMcp
                 .hasSize(1)
                 .first()
                 .extracting(ResourceContents::text)
-                .isEqualTo(Optional.of("You requested: file://test.template"));
+                .isEqualTo(Optional.of("ID is: test"));
 
         readResourceRequest = new ReadResourceRequest("file://not-a-template");
         jsonrpcRequest = JsonRpcRequest.buildRequest(1, "resources/read", readResourceRequest);

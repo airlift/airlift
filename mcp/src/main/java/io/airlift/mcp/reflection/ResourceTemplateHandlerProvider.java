@@ -20,6 +20,7 @@ import java.util.OptionalDouble;
 import static io.airlift.mcp.reflection.Predicates.isHttpRequest;
 import static io.airlift.mcp.reflection.Predicates.isIdentity;
 import static io.airlift.mcp.reflection.Predicates.isReadResourceRequest;
+import static io.airlift.mcp.reflection.Predicates.isResourceTemplateValues;
 import static io.airlift.mcp.reflection.Predicates.isSourceResourceTemplate;
 import static io.airlift.mcp.reflection.Predicates.returnsResourceContents;
 import static io.airlift.mcp.reflection.Predicates.returnsResourceContentsList;
@@ -45,7 +46,7 @@ public class ResourceTemplateHandlerProvider
         this.method = requireNonNull(method, "method is null");
         this.parameters = ImmutableList.copyOf(parameters);
 
-        validate(method, parameters, isHttpRequest.or(isIdentity).or(isReadResourceRequest).or(isSourceResourceTemplate), returnsResourceContents.or(returnsResourceContentsList));
+        validate(method, parameters, isHttpRequest.or(isIdentity).or(isReadResourceRequest).or(isSourceResourceTemplate).or(isResourceTemplateValues), returnsResourceContents.or(returnsResourceContentsList));
         this.resultIsSingleContent = returnsResourceContents.test(method);
 
         this.resourceTemplate = buildResourceTemplate(
@@ -73,11 +74,13 @@ public class ResourceTemplateHandlerProvider
     public ResourceTemplateEntry get()
     {
         Object instance = injector.getInstance(clazz);
+
         MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper);
 
-        ResourceTemplateHandler resourceTemplateHandler = (request, sourceResourceTemplate, readResourceRequest) -> {
+        ResourceTemplateHandler resourceTemplateHandler = (request, sourceResourceTemplate, readResourceRequest, resourceTemplateValues) -> {
             Object result = methodInvoker.builder(request)
                     .withReadResourceTemplateRequest(sourceResourceTemplate, readResourceRequest)
+                    .withResourceTemplateValues(resourceTemplateValues)
                     .invoke();
             return mapResult(method, result, resultIsSingleContent);
         };
