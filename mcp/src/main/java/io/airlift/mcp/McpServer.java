@@ -21,5 +21,5 @@ public interface McpServer
 
     void addResource(Resource resource, ResourceHandler handler);
 
-    void removeResource(String resourceName);
+    void removeResource(String resourceUri);
 }
