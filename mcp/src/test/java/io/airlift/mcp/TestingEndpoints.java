@@ -3,9 +3,11 @@ package io.airlift.mcp;
 import com.google.common.collect.ImmutableList;
 import io.airlift.mcp.model.CallToolResult;
 import io.airlift.mcp.model.Content;
+import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.StructuredContentResult;
 
+import java.util.List;
 import java.util.Optional;
 
 import static io.airlift.mcp.McpException.exception;
@@ -43,6 +45,12 @@ public class TestingEndpoints
     public ResourceContents example2Resource()
     {
         return new ResourceContents("foo2", "file://example2.txt", "text/plain", "This is the content of file://example2.txt");
+    }
+
+    @McpResourceTemplate(name = "template", uriTemplate = "file://{id}.template", description = "This is a resource template", mimeType = "text/plain")
+    public List<ResourceContents> exampleResourceTemplate(ReadResourceRequest readResourceRequest)
+    {
+        return ImmutableList.of(new ResourceContents(readResourceRequest.uri(), readResourceRequest.uri(), "text/plain", "You requested: " + readResourceRequest.uri()));
     }
 
     @McpTool(name = "addThree", description = "Add three numbers")

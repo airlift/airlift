@@ -25,6 +25,7 @@ public interface Predicates
     Predicate<MethodParameter> isCallToolRequest = methodParameter -> methodParameter instanceof CallToolRequestParameter;
     Predicate<MethodParameter> isReadResourceRequest = methodParameter -> methodParameter instanceof ReadResourceRequestParameter;
     Predicate<MethodParameter> isSourceResource = methodParameter -> methodParameter instanceof SourceResourceParameter;
+    Predicate<MethodParameter> isSourceResourceTemplate = methodParameter -> methodParameter instanceof MethodParameter.SourceResourceTemplateParameter;
     Predicate<MethodParameter> isObject = methodParameter -> (methodParameter instanceof ObjectParameter);
     Predicate<MethodParameter> isString = methodParameter -> (methodParameter instanceof ObjectParameter objectParameter)
             && objectParameter.rawType().equals(String.class);

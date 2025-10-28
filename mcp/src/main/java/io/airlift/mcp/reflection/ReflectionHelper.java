@@ -7,6 +7,7 @@ import io.airlift.mcp.model.Content.TextContent;
 import io.airlift.mcp.model.GetPromptRequest;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.Resource;
+import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.reflection.MethodParameter.CallToolRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.GetPromptRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.HttpRequestParameter;
@@ -14,6 +15,7 @@ import io.airlift.mcp.reflection.MethodParameter.IdentityParameter;
 import io.airlift.mcp.reflection.MethodParameter.ObjectParameter;
 import io.airlift.mcp.reflection.MethodParameter.ReadResourceRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.SourceResourceParameter;
+import io.airlift.mcp.reflection.MethodParameter.SourceResourceTemplateParameter;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.lang.annotation.Annotation;
@@ -73,6 +75,10 @@ public interface ReflectionHelper
 
                     if (Resource.class.isAssignableFrom(parameter.getType())) {
                         return SourceResourceParameter.INSTANCE;
+                    }
+
+                    if (ResourceTemplate.class.isAssignableFrom(parameter.getType())) {
+                        return SourceResourceTemplateParameter.INSTANCE;
                     }
 
                     if (ReadResourceRequest.class.isAssignableFrom(parameter.getType())) {
