@@ -265,6 +265,33 @@ public class TestBootstrap
     }
 
     @Test
+    public void testDisableSystemProperties()
+    {
+        System.setProperty("foo.password", "password from system properties");
+        FooConfig config = new Bootstrap(binder -> {
+            configBinder(binder).bindConfig(FooConfig.class);
+            binder.bind(FooInstance.class).asEagerSingleton();
+        })
+                .withUseSystemProperties(false)
+                .initialize()
+                .getInstance(FooConfig.class);
+
+        assertThat(config.getPassword()).isNull();
+
+        FooConfig configWithSystemProperties = new Bootstrap(binder -> {
+            configBinder(binder).bindConfig(FooConfig.class);
+            binder.bind(FooInstance.class).asEagerSingleton();
+        })
+                .withUseSystemProperties(true)
+                .initialize()
+                .getInstance(FooConfig.class);
+
+        assertThat(configWithSystemProperties.getPassword()).isEqualTo("password from system properties");
+
+        System.clearProperty("foo.password");
+    }
+
+    @Test
     public void testOptionalBindingWithLifeCycle()
     {
         Module module = binder -> {

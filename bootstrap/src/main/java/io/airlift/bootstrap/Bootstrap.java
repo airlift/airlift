@@ -83,6 +83,7 @@ public class Bootstrap
     private Map<String, String> optionalConfigurationProperties;
     private boolean initializeLogging = true;
     private boolean envInterpolation = true;
+    private boolean useSystemProperties = true;
     private boolean quiet;
     private boolean loadSecretsPlugins;
     private boolean skipErrorReporting;
@@ -159,6 +160,11 @@ public class Bootstrap
         return withEnvInterpolation(false);
     }
 
+    public Bootstrap disableSystemProperties()
+    {
+        return withUseSystemProperties(false);
+    }
+
     public Bootstrap quiet()
     {
         return withQuiet(true);
@@ -201,6 +207,12 @@ public class Bootstrap
     public Bootstrap withEnvInterpolation(boolean interpolate)
     {
         this.envInterpolation = interpolate;
+        return this;
+    }
+
+    public Bootstrap withUseSystemProperties(boolean useSystemProperties)
+    {
+        this.useSystemProperties = useSystemProperties;
         return this;
     }
 
@@ -259,7 +271,10 @@ public class Bootstrap
             properties.putAll(optionalConfigurationProperties);
         }
         properties.putAll(requiredProperties);
-        properties.putAll(getSystemProperties());
+
+        if (useSystemProperties) {
+            properties.putAll(getSystemProperties());
+        }
 
         // replace secrets in property values
         List<Message> errors = new ArrayList<>();
