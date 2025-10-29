@@ -32,7 +32,14 @@ public final class ConfigurationLoader
 {
     private ConfigurationLoader() {}
 
+    @Deprecated
     public static Map<String, String> loadProperties()
+            throws IOException
+    {
+        return loadProperties(true);
+    }
+
+    public static Map<String, String> loadProperties(boolean useSystemProperties)
             throws IOException
     {
         Map<String, String> result = new TreeMap<>();
@@ -41,7 +48,9 @@ public final class ConfigurationLoader
             result.putAll(loadPropertiesFrom(configFile));
         }
 
-        result.putAll(getSystemProperties());
+        if (useSystemProperties) {
+            result.putAll(getSystemProperties());
+        }
 
         return ImmutableSortedMap.copyOf(result);
     }
