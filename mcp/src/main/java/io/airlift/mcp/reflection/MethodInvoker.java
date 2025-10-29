@@ -2,10 +2,12 @@ package io.airlift.mcp.reflection;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Suppliers;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
+import com.google.inject.Provider;
 import io.airlift.mcp.McpException;
 import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.GetPromptRequest;
@@ -32,6 +34,7 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
@@ -43,10 +46,11 @@ public class MethodInvoker
     private final String methodName;
     private final List<MethodParameter> parameters;
     private final ObjectMapper objectMapper;
-    private final MethodHandle methodHandle;
+    private final Supplier<MethodHandle> methodHandle;
 
+    // instance is a Provider to avoid a circular dependency problem with `McpServer` implementations
     @Inject
-    public MethodInvoker(Object instance, Method method, List<MethodParameter> parameters, ObjectMapper objectMapper)
+    public MethodInvoker(Provider<?> instance, Method method, List<MethodParameter> parameters, ObjectMapper objectMapper)
     {
         this.methodName = method.getName();
         this.parameters = ImmutableList.copyOf(parameters);
@@ -55,7 +59,7 @@ public class MethodInvoker
         try {
             MethodType methodType = MethodType.methodType(method.getReturnType(), method.getParameterTypes());
             MethodHandle builder = MethodHandles.lookup().findVirtual(method.getDeclaringClass(), method.getName(), methodType);
-            methodHandle = builder.bindTo(instance);
+            methodHandle = Suppliers.memoize(() -> builder.bindTo(instance.get()));
         }
         catch (Exception e) {
             throw new RuntimeException(e);
@@ -153,7 +157,7 @@ public class MethodInvoker
                             })
                             .toArray();
 
-                    return methodHandle.invokeWithArguments(methodArguments);
+                    return methodHandle.get().invokeWithArguments(methodArguments);
                 }
                 catch (Throwable e) {
                     Throwable rootCause = Throwables.getRootCause(e);

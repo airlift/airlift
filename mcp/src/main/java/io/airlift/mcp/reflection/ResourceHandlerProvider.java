@@ -76,7 +76,7 @@ public class ResourceHandlerProvider
     @Override
     public ResourceEntry get()
     {
-        Object instance = injector.getInstance(clazz);
+        Provider<?> instance = injector.getProvider(clazz);
         MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper);
 
         ResourceHandler resourceHandler = (request, sourceResource, readResourceRequest) -> {

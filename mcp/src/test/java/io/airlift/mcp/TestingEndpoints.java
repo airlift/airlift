@@ -1,6 +1,7 @@
 package io.airlift.mcp;
 
 import com.google.common.collect.ImmutableList;
+import com.google.inject.Inject;
 import io.airlift.mcp.model.CallToolResult;
 import io.airlift.mcp.model.Content;
 import io.airlift.mcp.model.ReadResourceRequest;
@@ -12,10 +13,20 @@ import java.util.List;
 import java.util.Optional;
 
 import static io.airlift.mcp.McpException.exception;
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@SuppressWarnings({"unused", "FieldCanBeLocal"})
 public class TestingEndpoints
 {
+    private final McpServer mcpServer;
+
+    @Inject
+    public TestingEndpoints(McpServer mcpServer)
+    {
+        this.mcpServer = requireNonNull(mcpServer, "mcpServer is null");
+    }
+
     @McpTool(name = "add", description = "Add two numbers")
     public int add(TestingIdentity testingIdentity, int a, int b)
     {

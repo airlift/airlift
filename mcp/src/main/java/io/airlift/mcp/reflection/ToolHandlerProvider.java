@@ -98,7 +98,7 @@ public class ToolHandlerProvider
     @Override
     public ToolEntry get()
     {
-        Object instance = injector.getInstance(clazz);
+        Provider<?> instance = injector.getProvider(clazz);
         MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper);
 
         ToolHandler toolHandler = (request, toolRequest) -> {
