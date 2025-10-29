@@ -73,7 +73,7 @@ public class PromptHandlerProvider
     @Override
     public PromptEntry get()
     {
-        Object instance = injector.getInstance(clazz);
+        Provider<?> instance = injector.getProvider(clazz);
         MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper);
 
         PromptHandler promptHandler = (request, promptRequest) -> {

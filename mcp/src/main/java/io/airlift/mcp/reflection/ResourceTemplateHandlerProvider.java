@@ -73,8 +73,7 @@ public class ResourceTemplateHandlerProvider
     @Override
     public ResourceTemplateEntry get()
     {
-        Object instance = injector.getInstance(clazz);
-
+        Provider<?> instance = injector.getProvider(clazz);
         MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper);
 
         ResourceTemplateHandler resourceTemplateHandler = (request, sourceResourceTemplate, readResourceRequest, resourceTemplateValues) -> {
