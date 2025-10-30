@@ -95,7 +95,7 @@
         <dep.airlift.version>372-SNAPSHOT</dep.airlift.version>
         <dep.brotli4j.version>1.20.0</dep.brotli4j.version>
         <dep.bouncycastle.version>1.82</dep.bouncycastle.version>
-        <dep.mcp.sdk.version>0.14.1</dep.mcp.sdk.version>
+        <dep.mcp.sdk.version>0.15.0</dep.mcp.sdk.version>
         <dep.jersey.version>3.1.11</dep.jersey.version>
         <dep.jjwt.version>0.13.0</dep.jjwt.version>
     </properties>
