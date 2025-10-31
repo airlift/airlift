@@ -80,10 +80,10 @@ public class TimeStat
         if (nanos < 0) {
             throw new IllegalArgumentException("value is negative: " + nanos);
         }
-        oneMinute.add(nanos);
-        fiveMinutes.add(nanos);
-        fifteenMinutes.add(nanos);
-        allTime.add(nanos);
+        oneMinute.addNanos(nanos);
+        fiveMinutes.addNanos(nanos);
+        fifteenMinutes.addNanos(nanos);
+        allTime.addNanos(nanos);
     }
 
     public <T> T time(Callable<T> callable)
