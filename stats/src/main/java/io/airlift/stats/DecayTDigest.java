@@ -16,7 +16,6 @@ package io.airlift.stats;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Ticker;
 
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static io.airlift.stats.ExponentialDecay.weight;
@@ -125,11 +124,6 @@ public class DecayTDigest
     public double valueAt(double quantile)
     {
         return digest.valueAt(quantile);
-    }
-
-    public List<Double> valuesAt(List<Double> quantiles)
-    {
-        return digest.valuesAt(quantiles);
     }
 
     public double[] valuesAt(double... quantiles)

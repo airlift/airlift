@@ -16,8 +16,8 @@ class TestTimeDistribution
     {
         TestingTicker ticker = new TestingTicker();
         TimeDistribution distribution = new TimeDistribution(ticker);
-        distribution.add(SECONDS.toNanos(1));
-        distribution.add(SECONDS.toNanos(3));
+        distribution.addNanos(SECONDS.toNanos(1));
+        distribution.addNanos(SECONDS.toNanos(3));
 
         assertThat(distribution.getCount()).isEqualTo(0);
         assertThat(distribution.getAvg()).isNaN();
@@ -28,7 +28,7 @@ class TestTimeDistribution
         assertThat(distribution.getCount()).isEqualTo(2);
         assertThat(distribution.getAvg()).isEqualTo(2);
 
-        distribution.add(SECONDS.toNanos(5));
+        distribution.addNanos(SECONDS.toNanos(5));
         ticker.increment(MERGE_THRESHOLD_NANOS / 2, TimeUnit.NANOSECONDS); // time not lapsed enough to merge
 
         assertThat(distribution.getCount()).isEqualTo(2);

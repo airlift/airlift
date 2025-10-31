@@ -5,7 +5,6 @@ import com.google.errorprone.annotations.concurrent.GuardedBy;
 import io.airlift.stats.Distribution;
 import org.weakref.jmx.Managed;
 
-import java.util.Map;
 import java.util.function.Supplier;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -118,7 +117,7 @@ public class CachedDistribution
     }
 
     @Managed
-    public Map<Double, Double> getPercentiles()
+    public double[] getPercentiles()
     {
         return getDistribution().getPercentiles();
     }
