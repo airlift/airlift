@@ -68,6 +68,11 @@ public class TDigest
         this(DEFAULT_COMPRESSION);
     }
 
+    public TDigest(int expectedSize)
+    {
+        this(DEFAULT_COMPRESSION, expectedSize);
+    }
+
     public TDigest(double compression)
     {
         this(
@@ -78,6 +83,20 @@ public class TDigest
                 0,
                 new double[INITIAL_CAPACITY],
                 new double[INITIAL_CAPACITY],
+                false,
+                false);
+    }
+
+    public TDigest(double compression, int expectedSize)
+    {
+        this(
+                compression,
+                Double.POSITIVE_INFINITY,
+                Double.NEGATIVE_INFINITY,
+                0,
+                0,
+                new double[expectedSize],
+                new double[expectedSize],
                 false,
                 false);
     }
