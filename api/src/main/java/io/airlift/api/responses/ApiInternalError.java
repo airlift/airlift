@@ -9,10 +9,10 @@ import static io.airlift.http.client.HttpStatus.INTERNAL_SERVER_ERROR;
 import static java.util.Objects.requireNonNull;
 
 @ApiResponse(name = "internalError", description = "Unknown or internal error", status = INTERNAL_SERVER_ERROR)
-public record ApiInternalError(@ApiDescription("Description of the error") Optional<String> details)
+public record ApiInternalError(@ApiDescription("Description of the error") Optional<String> message)
 {
     public ApiInternalError
     {
-        requireNonNull(details, "details is null");
+        requireNonNull(message, "message is null");
     }
 }

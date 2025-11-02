@@ -5,6 +5,7 @@ import io.airlift.http.client.HttpStatus;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
+import java.util.List;
 import java.util.Optional;
 
 import static io.airlift.api.internals.Mappers.buildStatus;
@@ -13,54 +14,84 @@ public final class ApiException
 {
     private ApiException() {}
 
-    public static RuntimeException notFound(String resourceName)
+    public static RuntimeException notFound(String message)
     {
-        return buildResponse(new ApiNotFound(resourceName, Optional.empty()));
+        return buildResponse(new ApiNotFound(message, Optional.empty(), Optional.empty()));
     }
 
-    public static RuntimeException notFound(String resourceName, String description)
+    public static RuntimeException notFound(String message, String description)
     {
-        return buildResponse(new ApiNotFound(resourceName, Optional.of(description)));
+        return buildResponse(new ApiNotFound(message, Optional.of(description), Optional.empty()));
+    }
+
+    public static RuntimeException notFound(String message, String description, List<String> fields)
+    {
+        return buildResponse(new ApiNotFound(message, Optional.of(description), Optional.of(fields)));
+    }
+
+    public static RuntimeException notFound(String message, List<String> fields)
+    {
+        return buildResponse(new ApiNotFound(message, Optional.empty(), Optional.of(fields)));
     }
 
     public static RuntimeException badRequest()
     {
-        return buildResponse(new ApiBadRequest(Optional.empty()));
+        return buildResponse(new ApiBadRequest(Optional.empty(), Optional.empty()));
     }
 
-    public static RuntimeException badRequest(String details)
+    public static RuntimeException badRequest(String message)
     {
-        return buildResponse(new ApiBadRequest(Optional.of(details)));
+        return buildResponse(new ApiBadRequest(Optional.of(message), Optional.empty()));
     }
 
-    public static RuntimeException internalError(String details)
+    public static RuntimeException badRequest(String message, List<String> fields)
     {
-        return buildResponse(new ApiInternalError(Optional.of(details)));
+        return buildResponse(new ApiBadRequest(Optional.of(message), Optional.of(fields)));
     }
 
-    public static RuntimeException unauthorized(String details)
+    public static RuntimeException internalError(String message)
     {
-        return buildResponse(new ApiUnauthorized(Optional.of(details)));
+        return buildResponse(new ApiInternalError(Optional.of(message)));
     }
 
-    public static RuntimeException forbidden(String details)
+    public static RuntimeException unauthorized(String message)
     {
-        return buildResponse(new ApiForbidden(Optional.of(details)));
+        return buildResponse(new ApiUnauthorized(Optional.of(message)));
     }
 
-    public static RuntimeException response(Object response)
+    public static RuntimeException forbidden(String message)
     {
-        HttpStatus httpStatus = buildStatus(response);
-        Response httpResponse = Response.status(httpStatus.code()).entity(response).build();
+        return buildResponse(new ApiForbidden(Optional.of(message)));
+    }
+
+    public static RuntimeException alreadyExists(String message)
+    {
+        return buildResponse(new ApiAlreadyExists(Optional.of(message)));
+    }
+
+    public static RuntimeException aborted(String message)
+    {
+        return buildResponse(new ApiAborted(Optional.of(message)));
+    }
+
+    public static RuntimeException tooManyRequests(String message)
+    {
+        return buildResponse(new ApiTooManyRequests(Optional.of(message)));
+    }
+
+    public static RuntimeException response(Object apiResponseInstance)
+    {
+        HttpStatus httpStatus = buildStatus(apiResponseInstance);
+        Response httpResponse = Response.status(httpStatus.code()).entity(apiResponseInstance).build();
         return new WebApplicationException(httpResponse);
     }
 
-    private static WebApplicationException buildResponse(Object response)
+    private static WebApplicationException buildResponse(Object apiResponseInstance)
     {
-        ApiResponse apiResponse = Optional.of(response.getClass().getAnnotation(ApiResponse.class))
+        ApiResponse apiResponse = Optional.of(apiResponseInstance.getClass().getAnnotation(ApiResponse.class))
                 .orElseThrow(() -> new IllegalArgumentException("Response class is not annotated with @%s".formatted(ApiResponse.class.getSimpleName())));
 
-        Response httpResponse = Response.status(apiResponse.status().code()).entity(response).build();
+        Response httpResponse = Response.status(apiResponse.status().code()).entity(apiResponseInstance).build();
         return new WebApplicationException(httpResponse);
     }
 }

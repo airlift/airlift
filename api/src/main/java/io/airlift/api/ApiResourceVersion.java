@@ -3,6 +3,7 @@ package io.airlift.api;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.common.collect.ImmutableList;
 
 import static io.airlift.api.responses.ApiException.badRequest;
 
@@ -42,7 +43,7 @@ public record ApiResourceVersion(long version)
             return Long.parseUnsignedLong(str, 16);
         }
         catch (NumberFormatException e) {
-            throw badRequest("Invalid syncToken");
+            throw badRequest("Invalid syncToken", ImmutableList.of("syncToken"));
         }
     }
 }

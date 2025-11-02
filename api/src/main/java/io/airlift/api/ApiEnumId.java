@@ -1,5 +1,7 @@
 package io.airlift.api;
 
+import com.google.common.collect.ImmutableList;
+
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.stream.Stream;
@@ -33,6 +35,6 @@ public abstract class ApiEnumId<RESOURCE, INTERNALID extends Enum<INTERNALID>>
                     return constant.equals(id);
                 })
                 .findFirst()
-                .orElseThrow(() -> badRequest("Invalid id: " + id));
+                .orElseThrow(() -> badRequest("Invalid id: " + id, ImmutableList.of("id")));
     }
 }

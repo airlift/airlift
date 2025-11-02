@@ -1,6 +1,7 @@
 package io.airlift.api.binding;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
@@ -168,7 +169,7 @@ class SpecialApiTypeValueParamProvider
                     // raw value starts with annotation's prefix value - apply the builder on the decoded value sans the prefix
                     String adjustedValue = value.substring(lookupPrefix.length());
                     return idLookup.lookup(containerRequest, adjustedValue)
-                            .orElseThrow(() -> notFound("%s not found: %s".formatted(rawType.getSimpleName(), value)));
+                            .orElseThrow(() -> notFound("%s not found: %s".formatted(rawType.getSimpleName(), value), ImmutableList.of(rawType.getSimpleName())));
                 }
             }
 

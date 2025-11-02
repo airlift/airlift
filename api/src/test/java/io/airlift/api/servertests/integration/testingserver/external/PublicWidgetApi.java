@@ -1,5 +1,6 @@
 package io.airlift.api.servertests.integration.testingserver.external;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.airlift.api.ApiCreate;
 import io.airlift.api.ApiCustom;
@@ -105,7 +106,7 @@ public class PublicWidgetApi
         return switch (detailId.toString()) {
             case "1" -> new DetailResult(detailId, new ApiResourceVersion(1), new NameAndAge("A name", 42));
             case "2" -> new DetailResult(detailId, new ApiResourceVersion(1), new Schedule("A schedule", Instant.now(), Instant.now().plusSeconds(60)));
-            default -> throw badRequest("Unknown ID");
+            default -> throw badRequest("Unknown ID", ImmutableList.of("ID"));
         };
     }
 
