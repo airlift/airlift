@@ -10,6 +10,7 @@ import org.glassfish.jersey.server.ContainerRequest;
 import org.glassfish.jersey.server.model.ResourceMethod;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -26,6 +27,11 @@ public class JaxrsUtil
     public static boolean isApiService(ContainerRequestContext requestContext)
     {
         return findApiResourceMethod(requestContext).isPresent();
+    }
+
+    public static boolean isApiResource(Type type)
+    {
+        return (type instanceof Class<?> clazz) && (clazz.getAnnotation(ApiResource.class) != null);
     }
 
     public static boolean isApiResource(Class<?> clazz)
