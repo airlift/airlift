@@ -100,16 +100,9 @@ public interface ResourceValidator
         switch (modelResource.resourceType()) {
             case LIST -> {
                 if (!state.contains(PARENT_IS_READ_ONLY) && !state.contains(IS_RESULT_RESOURCE)) {
-                    Type containerType;
-                    if (modelResource.modifiers().contains(OPTIONAL)) {
-                        containerType = extractGenericParameter(modelResource.containerType(), 0);
-                    }
-                    else {
-                        containerType = modelResource.containerType();
-                    }
-
-                    if (!(containerType instanceof Class<?> clazz) || (!String.class.isAssignableFrom(clazz) && !ApiId.class.isAssignableFrom(clazz) && !clazz.isEnum() && !clazz.isAnnotationPresent(ApiResource.class))) {
-                        throw new ValidatorException("Collections that are not read only must be Collection<String> or Collection<? extends ApiAbstractId> or Collection<? extends Enum> or a collection of resources. %s is not".formatted(containerType));
+                    Type targetType = modelResource.type();
+                    if (!(targetType instanceof Class<?> clazz) || (!String.class.isAssignableFrom(clazz) && !ApiId.class.isAssignableFrom(clazz) && !clazz.isEnum() && !clazz.isAnnotationPresent(ApiResource.class))) {
+                        throw new ValidatorException("Collections that are not read only must be Collection<String> or Collection<? extends ApiAbstractId> or Collection<? extends Enum> or a collection of resources. %s is not".formatted(targetType));
                     }
                 }
 
