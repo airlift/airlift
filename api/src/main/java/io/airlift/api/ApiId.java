@@ -2,6 +2,7 @@ package io.airlift.api;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.common.collect.ImmutableList;
 import io.airlift.api.validation.ValidationContext;
 
 import java.lang.reflect.Constructor;
@@ -53,7 +54,7 @@ public abstract class ApiId<RESOURCE, INTERNALID>
             return (INTERNALID) internalIdCtor.orElseThrow(UnsupportedOperationException::new).newInstance(id);
         }
         catch (Exception e) {
-            throw badRequest("Invalid id: " + id);
+            throw badRequest("Invalid id: " + id, ImmutableList.of("id"));
         }
     }
 

@@ -45,15 +45,15 @@ import static java.util.Objects.requireNonNull;
 
 public interface Mappers
 {
-    static HttpStatus buildStatus(Object response)
+    static HttpStatus buildStatus(Object apiResponseInstance)
     {
-        requireNonNull(response, "response is null");
+        requireNonNull(apiResponseInstance, "apiResponseInstance is null");
 
-        if (!response.getClass().isRecord()) {
+        if (!apiResponseInstance.getClass().isRecord()) {
             throw new IllegalArgumentException("Responses must be records");
         }
 
-        ApiResponse apiResponse = response.getClass().getAnnotation(ApiResponse.class);
+        ApiResponse apiResponse = apiResponseInstance.getClass().getAnnotation(ApiResponse.class);
         if (apiResponse == null) {
             throw new IllegalArgumentException("Response is missing @%s annotation".formatted(ApiResponse.class.getSimpleName()));
         }
