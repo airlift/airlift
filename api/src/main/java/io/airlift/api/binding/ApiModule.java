@@ -66,6 +66,7 @@ public class ApiModule
     private final OpenApiExtensionFilter extensionFilter;
     private final boolean withCompatibilityTester;
     private final boolean withApiLogging;
+    private final ApiMode apiMode;
 
     private ApiModule(
             ModelApi modelApi,
@@ -76,7 +77,8 @@ public class ApiModule
             Consumer<AnnotatedBindingBuilder<OpenApiFilter>> openApiFilterBinding,
             OpenApiExtensionFilter extensionFilter,
             boolean withCompatibilityTester,
-            boolean withApiLogging)
+            boolean withApiLogging,
+            ApiMode apiMode)
     {
         this.modelApi = requireNonNull(modelApi, "api is null");
         this.requestFilters = ImmutableSet.copyOf(requestFilters);
@@ -87,6 +89,7 @@ public class ApiModule
         this.extensionFilter = requireNonNull(extensionFilter, "extensionFilter is null");
         this.withCompatibilityTester = withCompatibilityTester;
         this.withApiLogging = withApiLogging;
+        this.apiMode = requireNonNull(apiMode, "apiMode is null");
     }
 
     public static Builder builder()
@@ -105,6 +108,7 @@ public class ApiModule
         private Consumer<AnnotatedBindingBuilder<OpenApiFilter>> openApiFilterBinding;
         private boolean withCompatibilityTester;
         private boolean withApiLogging;
+        private ApiMode apiMode = ApiMode.DEBUG;
 
         private Builder() {}
 
@@ -197,6 +201,12 @@ public class ApiModule
             return this;
         }
 
+        public Builder forProduction()
+        {
+            this.apiMode = ApiMode.PRODUCTION;
+            return this;
+        }
+
         public Module build()
         {
             Consumer<AnnotatedBindingBuilder<OpenApiFilter>> localFilterBinding = (openApiFilterBinding != null) ? openApiFilterBinding : binding -> binding.toInstance(ignore -> _ -> true);
@@ -211,7 +221,8 @@ public class ApiModule
                     localFilterBinding,
                     localExtensionFilter,
                     withCompatibilityTester,
-                    withApiLogging);
+                    withApiLogging,
+                    apiMode);
         }
 
         private ModelApi mergeApis()
@@ -237,6 +248,7 @@ public class ApiModule
 
         binder.bind(ResourceSerializationValidator.class).toInstance(new ResourceSerializationValidator(modelApi.needsSerializationValidation()));
         binder.bind(SerializationValidator.class).asEagerSingleton();
+        binder.bind(ApiMode.class).toInstance(apiMode);
 
         bindUnwrapped(binder, modelApi.unwrappedResources());
         bindPolyResources(binder, modelApi.polyResources());
