@@ -281,8 +281,10 @@ public class ResourceBuilder
 
                 String appliedDescription = (forcedDescription != null) ? forcedDescription : Optional.ofNullable(componentDescription).map(ApiDescription::value).orElse("");
 
-                ModelResource component = internalBuildAndAdd(Optional.of(recordComponent.getName()), recordComponent.getGenericType())
-                        .withNameAndDescription(recordComponent.getName(), appliedDescription);
+                ModelResource componentModelResource = internalBuildAndAdd(Optional.of(recordComponent.getName()), recordComponent.getGenericType());
+                // the component resource name will not be accurate as it gets set to this record's component name, so set the openApiName appropriately
+                String componentOpenApiName = componentModelResource.openApiName().orElseGet(componentModelResource::name);
+                ModelResource component = componentModelResource.withNameAndDescription(recordComponent.getName(), Optional.of(componentOpenApiName), appliedDescription);
 
                 boolean isForcedReadOnly = isForcedReadOnly(recordComponent.getType());
                 boolean hasReadOnly = (recordComponent.getAnnotation(ApiReadOnly.class) != null);

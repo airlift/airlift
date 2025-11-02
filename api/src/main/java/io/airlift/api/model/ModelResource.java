@@ -56,7 +56,7 @@ public record ModelResource(
         this(type, name, openApiName, description, components, resourceType, type, modifiers, quotas, ImmutableSet.of(), Optional.empty(), Optional.empty(), Optional.empty());
     }
 
-    public ModelResource withNameAndDescription(String name, String description)
+    public ModelResource withNameAndDescription(String name, Optional<String> openApiName, String description)
     {
         return new ModelResource(type, name, openApiName, description, components, resourceType, containerType, modifiers, quotas, limitedValues, supportsIdLookup, polyResource, enumDescriptions);
     }
