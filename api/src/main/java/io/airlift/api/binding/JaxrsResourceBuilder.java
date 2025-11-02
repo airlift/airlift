@@ -77,6 +77,7 @@ class JaxrsResourceBuilder
         jaxrsBinder.bind(JaxrsBindingBridge.class);
         jaxrsBinder.bind(JaxrsMapper.class);
         jaxrsBinder.bind(ApiStreamResponseWriter.class);
+        jaxrsBinder.bind(JaxrsStatusValidator.class);
     }
 
     void bindService(ModelService service)

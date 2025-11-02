@@ -1,4 +1,4 @@
-test|public|1|POST|resource(test|RESOURCE|message|BASIC|java.lang.String)|resource(detail|RESOURCE)|[]|[]|[400|401|403]
+test|public|1|POST|resource(test|RESOURCE|message|BASIC|java.lang.String)|resource(detail|RESOURCE)|[]|[]|[400|401|403|409]
 
 Metadata:
 POST
@@ -23,3 +23,4 @@ Response(s):
 400
 401
 403
+409

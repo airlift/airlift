@@ -35,8 +35,10 @@ import io.airlift.api.model.ModelResourceModifier;
 import io.airlift.api.model.ModelResourceType;
 import io.airlift.api.model.ModelResponse;
 import io.airlift.api.model.ModelSupportsIdLookup;
+import io.airlift.api.responses.ApiAlreadyExists;
 import io.airlift.api.responses.ApiBadRequest;
 import io.airlift.api.responses.ApiForbidden;
+import io.airlift.api.responses.ApiNotFound;
 import io.airlift.api.responses.ApiUnauthorized;
 import io.airlift.api.validation.ValidatorException;
 import jakarta.ws.rs.container.Suspended;
@@ -181,7 +183,7 @@ public class MethodBuilder
                 Annotation apiObj = apiAnnotations.getFirst();
                 Metadata metadata = toMetadata(apiObj);
                 Parameters parameters = buildParameters(method, modelResource, metadata.type());
-                Set<ModelResponse> responses = buildResponses(metadata);
+                Set<ModelResponse> responses = buildResponses(metadata, parameters);
                 yield Optional.of(buildMethod(metadata, method, parameters, responses));
             }
             default -> throw new ValidatorException("API method has multiple @Api* annotations");
@@ -276,12 +278,28 @@ public class MethodBuilder
                 metadata.openApiName);
     }
 
-    private Set<ModelResponse> buildResponses(Metadata metadata)
+    private Set<ModelResponse> buildResponses(Metadata metadata, Parameters parameters)
     {
         Set<Class<?>> responseClasses = new HashSet<>(ImmutableSet.copyOf(metadata.responses));
         responseClasses.add(ApiBadRequest.class);
         responseClasses.add(ApiUnauthorized.class);
         responseClasses.add(ApiForbidden.class);
+
+        switch (metadata.type) {
+            case GET, DELETE, LIST -> responseClasses.add(ApiNotFound.class);
+
+            case CREATE -> {
+                responseClasses.add(ApiAlreadyExists.class);
+                if (parameters.parameters().stream().anyMatch(parameter -> parameter.supportsIdLookup().isPresent())) {
+                    responseClasses.add(ApiNotFound.class);
+                }
+            }
+
+            case UPDATE -> {
+                responseClasses.add(ApiAlreadyExists.class);
+                responseClasses.add(ApiNotFound.class);
+            }
+        }
 
         return responseClasses.stream()
                 .map(responseClass -> {
