@@ -12,25 +12,12 @@ public class TestDistribution
         Distribution distribution = new Distribution(0.1);
 
         distribution.add(10);
-        assertThat(distribution.getCount()).isEqualTo(1D);
-        assertThat(distribution.getAvg()).isEqualTo(10D);
+
+        assertThat(distribution.snapshot().count()).isEqualTo(1D);
+        assertThat(distribution.snapshot().avg()).isEqualTo(10D);
 
         distribution.reset();
-
-        assertThat(distribution.getCount()).isEqualTo(0D);
-        assertThat(distribution.getAvg()).isNaN();
-    }
-
-    @Test
-    public void testDuplicate()
-    {
-        Distribution distribution = new Distribution(0.1);
-
-        distribution.add(100);
-
-        Distribution copy = distribution.duplicate();
-
-        assertThat(copy.getCount()).isEqualTo(distribution.getCount());
-        assertThat(copy.getTotal()).isEqualTo(distribution.getTotal());
+        assertThat(distribution.snapshot().count()).isEqualTo(0D);
+        assertThat(distribution.snapshot().avg()).isNaN();
     }
 }
