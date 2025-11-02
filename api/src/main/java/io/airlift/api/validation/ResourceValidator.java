@@ -26,6 +26,7 @@ import java.util.stream.Stream;
 
 import static io.airlift.api.ApiResourceVersion.PUBLIC_NAME;
 import static io.airlift.api.ApiServiceTrait.DESCRIPTIONS_REQUIRED;
+import static io.airlift.api.binding.JaxrsUtil.isApiResource;
 import static io.airlift.api.builders.ResourceBuilder.isBasic;
 import static io.airlift.api.internals.Generics.extractGenericParameter;
 import static io.airlift.api.internals.Generics.validateMap;
@@ -112,6 +113,10 @@ public interface ResourceValidator
                 if (modelResource.modifiers().contains(IS_STREAMING_RESPONSE)) {
                     throw new ValidatorException("%s cannot be used in collections".formatted(ApiStreamResponse.class));
                 }
+
+                if (isApiResource(modelResource.type())) {
+                    validateDeclaredResource(context, service, modelResource, state);
+                }
             }
 
             case MAP -> {
@@ -133,6 +138,10 @@ public interface ResourceValidator
             case PAGINATED_RESULT -> {
                 if (!state.contains(IS_RESULT_RESOURCE)) {
                     throw new ValidatorException("%s cannot be a parameter".formatted(ApiPagination.class.getSimpleName()));
+                }
+
+                if (isApiResource(modelResource.type())) {
+                    validateDeclaredResource(context, service, modelResource, state);
                 }
             }
 
