@@ -22,6 +22,7 @@ import io.airlift.api.ApiResponseFilter;
 import io.airlift.api.binding.JaxrsQuotaFilter.ApiQuotaControllerProxy;
 import io.airlift.api.builders.ApiBuilder;
 import io.airlift.api.compatability.ApiCompatibility;
+import io.airlift.api.compatability.ApiCompatibilityTester;
 import io.airlift.api.model.ModelApi;
 import io.airlift.api.model.ModelDeprecation;
 import io.airlift.api.model.ModelMethod;
@@ -64,7 +65,7 @@ public class ApiModule
     private final Optional<OpenApiMetadata> openApiMetadata;
     private final Consumer<AnnotatedBindingBuilder<OpenApiFilter>> openApiFilterBinding;
     private final OpenApiExtensionFilter extensionFilter;
-    private final boolean withCompatibilityTester;
+    private final Optional<ApiCompatibilityTester> compatibilityTester;
     private final boolean withApiLogging;
     private final ApiMode apiMode;
 
@@ -76,7 +77,7 @@ public class ApiModule
             Optional<OpenApiMetadata> openApiMetadata,
             Consumer<AnnotatedBindingBuilder<OpenApiFilter>> openApiFilterBinding,
             OpenApiExtensionFilter extensionFilter,
-            boolean withCompatibilityTester,
+            Optional<ApiCompatibilityTester> compatibilityTester,
             boolean withApiLogging,
             ApiMode apiMode)
     {
@@ -87,7 +88,7 @@ public class ApiModule
         this.openApiMetadata = requireNonNull(openApiMetadata, "openApiMetadata is null");
         this.openApiFilterBinding = requireNonNull(openApiFilterBinding, "openApiFilterBinding is null");
         this.extensionFilter = requireNonNull(extensionFilter, "extensionFilter is null");
-        this.withCompatibilityTester = withCompatibilityTester;
+        this.compatibilityTester = requireNonNull(compatibilityTester, "compatibilityTester is null");
         this.withApiLogging = withApiLogging;
         this.apiMode = requireNonNull(apiMode, "apiMode is null");
     }
@@ -106,7 +107,7 @@ public class ApiModule
         private Optional<OpenApiMetadata> openApiMetadata = Optional.empty();
         private OpenApiExtensionFilter extensionFilter;
         private Consumer<AnnotatedBindingBuilder<OpenApiFilter>> openApiFilterBinding;
-        private boolean withCompatibilityTester;
+        private Optional<ApiCompatibilityTester> compatibilityTester = Optional.empty();
         private boolean withApiLogging;
         private ApiMode apiMode = ApiMode.DEBUG;
 
@@ -189,9 +190,9 @@ public class ApiModule
             return this;
         }
 
-        public Builder withCompatibilityTester()
+        public Builder withCompatibilityTester(ApiCompatibilityTester compatibilityTester)
         {
-            withCompatibilityTester = true;
+            this.compatibilityTester = Optional.of(compatibilityTester);
             return this;
         }
 
@@ -220,7 +221,7 @@ public class ApiModule
                     openApiMetadata,
                     localFilterBinding,
                     localExtensionFilter,
-                    withCompatibilityTester,
+                    compatibilityTester,
                     withApiLogging,
                     apiMode);
         }
@@ -253,9 +254,10 @@ public class ApiModule
         bindUnwrapped(binder, modelApi.unwrappedResources());
         bindPolyResources(binder, modelApi.polyResources());
 
-        if (withCompatibilityTester) {
+        compatibilityTester.ifPresent(tester -> {
+            binder.bind(ApiCompatibilityTester.class).toInstance(tester);
             binder.bind(ApiCompatibility.class).asEagerSingleton();
-        }
+        });
     }
 
     private void bindApi(Binder binder)
