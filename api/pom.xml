@@ -17,7 +17,7 @@
         <air.main.basedir>${project.parent.basedir}</air.main.basedir>
 
         <!-- TODO move these to airbase -->
-        <dep.commons-fileupload2.version>2.0.0-M2</dep.commons-fileupload2.version>
+        <dep.commons-fileupload2.version>2.0.0-M4</dep.commons-fileupload2.version>
         <dep.apache.httpcore.version>4.4.16</dep.apache.httpcore.version>
         <dep.apache.httpmime.version>4.5.14</dep.apache.httpmime.version>
     </properties>

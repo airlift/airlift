@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static io.airlift.api.responses.ApiException.badRequest;
@@ -145,6 +146,9 @@ class MultiPartReader
     {
         return new RequestContext()
         {
+            private static final Pattern MULTIPART_RELATED =
+                    Pattern.compile("^\\s*multipart/related.*", Pattern.CASE_INSENSITIVE);
+
             @Override
             public String getCharacterEncoding()
             {
@@ -173,6 +177,12 @@ class MultiPartReader
             public InputStream getInputStream()
             {
                 return containerRequest.getEntityStream();
+            }
+
+            @Override
+            public boolean isMultipartRelated()
+            {
+                return MULTIPART_RELATED.matcher(getContentType()).matches();
             }
         };
     }
