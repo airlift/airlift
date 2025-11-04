@@ -211,6 +211,12 @@ public class MockUriInfo
     }
 
     @Override
+    public String getMatchedResourceTemplate()
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public List<String> getMatchedURIs(boolean decode)
     {
         // this requires knowledge of @Path

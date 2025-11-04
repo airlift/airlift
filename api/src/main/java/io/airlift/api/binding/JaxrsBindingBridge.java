@@ -10,7 +10,7 @@ import io.airlift.api.openapi.OpenApiFilter;
 import io.airlift.api.openapi.OpenApiMetadata;
 import io.airlift.api.openapi.OpenApiProvider;
 import jakarta.ws.rs.core.GenericType;
-import org.glassfish.jersey.internal.inject.AbstractBinder;
+import org.glassfish.jersey.inject.hk2.AbstractBinder;
 
 import java.util.Collection;
 import java.util.Map;
