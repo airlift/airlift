@@ -3,6 +3,7 @@ package io.airlift.api.validation;
 import io.airlift.api.ApiDescription;
 import io.airlift.api.ApiReadOnly;
 import io.airlift.api.ApiResource;
+import io.airlift.api.ApiStringId;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -41,7 +42,10 @@ public record ResourceWithAllTypes(
         @ApiDescription("A type") List<SimpleResource> lSimpleResource,
         @ApiDescription("A type") Set<SimpleResource> sSimpleResource,
         @ApiDescription("A type") Optional<SimpleResource> oSimpleResource,
-        @ApiDescription("A type") Optional<UUID> oUuid)
+        @ApiDescription("A type") Optional<UUID> oUuid,
+        @ApiDescription("A type") List<SimpleId> listOfNameIds,
+        @ApiDescription("A type") Optional<List<SimpleId>> maybeNameIds,
+        @ApiDescription("A type") Optional<SimpleId> maybeNameId)
 {
     public enum Stuff
     {
@@ -54,5 +58,19 @@ public record ResourceWithAllTypes(
     @ApiReadOnly
     public record SimpleResource(@ApiDescription("A name") String name)
     {
+    }
+
+    public class SimpleId
+            extends ApiStringId<SimpleResource>
+    {
+        public SimpleId()
+        {
+            super(UUID.randomUUID().toString());
+        }
+
+        public SimpleId(String id)
+        {
+            super(id);
+        }
     }
 }
