@@ -267,7 +267,7 @@ TODO why this?
         else if (ApiId.class.isAssignableFrom(rawType)) {
             String id = buildResourceId(resourceFromPossibleId(rawType));
             if (isCollection || isOptional) {
-                String idSuffix = isOptional ? id : (id + "s");
+                String idSuffix = isCollection ? (id + "s") : id;
                 String capitalizedIdSuffix = capitalize(idSuffix);
                 if (!component.name().endsWith(capitalizedIdSuffix) && !component.name().equals(idSuffix)) {
                     String container = isOptional ? "Optionals" : "Collections";
