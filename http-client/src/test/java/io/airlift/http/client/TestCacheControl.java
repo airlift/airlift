@@ -36,8 +36,8 @@ public class TestCacheControl
         assertThat(c.isNoTransform()).isTrue();
         assertThat(c.getNoCacheFields()).hasSize(1);
         assertThat(c.getPrivateFields()).hasSize(1);
-        assertThat(c.getPrivateFields().get(0)).isEqualTo("foo");
-        assertThat(c.getNoCacheFields().get(0)).isEqualTo("bar");
+        assertThat(c.getPrivateFields().getFirst()).isEqualTo("foo");
+        assertThat(c.getNoCacheFields().getFirst()).isEqualTo("bar");
     }
 
     @Test
