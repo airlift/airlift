@@ -292,7 +292,7 @@ public class TestQuantileDigest
                 .boxed()
                 .map(i -> new QuantileDigest.Bucket(1, i - 1))
                 .collect(Collectors.toList());
-        expected.add(0, new QuantileDigest.Bucket(0, Double.NaN));
+        expected.addFirst(new QuantileDigest.Bucket(0, Double.NaN));
         assertThat(digest.getHistogram(bucketUpperBounds, middleFunction)).isEqualTo(expected);
 
         assertThat(digest.getHistogram(asList(doubleToSortableLong(7), doubleToSortableLong(10)), middleFunction)).isEqualTo(asList(new QuantileDigest.Bucket(17, -2.0),
@@ -321,7 +321,7 @@ public class TestQuantileDigest
         double actualMaxError = digest.getConfidenceFactor();
 
         for (long value = 0; value < total; ++value) {
-            QuantileDigest.Bucket bucket = digest.getHistogram(asList(value)).get(0);
+            QuantileDigest.Bucket bucket = digest.getHistogram(asList(value)).getFirst();
 
             // estimated count should have an absolute error smaller than 2 * maxError * N
             assertThat(Math.abs(bucket.getCount() - value)).isLessThan(2 * actualMaxError * total);
