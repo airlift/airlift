@@ -41,13 +41,15 @@ import com.google.inject.spi.Message;
 import com.google.inject.spi.ProviderInstanceBinding;
 import io.airlift.configuration.ConfigurationMetadata.AttributeMetadata;
 import jakarta.annotation.Nullable;
+import jakarta.annotation.PreDestroy;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
-import jakarta.validation.Validator;
+import jakarta.validation.ValidatorFactory;
 import org.hibernate.validator.HibernateValidator;
 import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.lang.reflect.InvocationTargetException;
@@ -82,27 +84,11 @@ import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 
 public class ConfigurationFactory
+        implements AutoCloseable
 {
-    @GuardedBy("VALIDATOR")
-    private static final Validator VALIDATOR;
-
     private static final Splitter VALUE_SPLITTER = Splitter.on(",").omitEmptyStrings().trimResults();
     private static final LoadingCache<Class<?>, ConfigurationMetadata<?>> METADATA_CACHE = CacheBuilder.newBuilder()
             .build(CacheLoader.from(ConfigurationMetadata::getConfigurationMetadata));
-
-    static {
-        // this prevents hibernate validator from using the thread context classloader
-        try (ThreadContextClassLoader _ = new ThreadContextClassLoader(null)) {
-            VALIDATOR = Validation.byProvider(HibernateValidator.class)
-                    .configure()
-                    .externalClassLoader(HibernateValidator.class.getClassLoader())
-                    .ignoreXmlConfiguration()
-                    .messageInterpolator(new ParameterMessageInterpolator(Set.of(ENGLISH), ENGLISH, false))
-                    .buildValidatorFactory()
-                    .getValidator();
-        }
-    }
-
     private final Map<String, String> properties;
     private final WarningsMonitor warningsMonitor;
     private final ConcurrentMap<ConfigurationProvider<?>, Object> instanceCache = new ConcurrentHashMap<>();
@@ -112,6 +98,7 @@ public class ConfigurationFactory
     @GuardedBy("this")
     private final List<Consumer<ConfigurationProvider<?>>> configurationBindingListeners = new ArrayList<>();
     private final ListMultimap<Key<?>, ConfigDefaultsHolder<?>> registeredDefaultConfigs = Multimaps.synchronizedListMultimap(ArrayListMultimap.create());
+    private final ValidatorFactory validatorFactory;
 
     public ConfigurationFactory(Map<String, String> properties)
     {
@@ -122,6 +109,15 @@ public class ConfigurationFactory
     {
         this.properties = ImmutableMap.copyOf(properties);
         this.warningsMonitor = warningsMonitor;
+
+        try (ThreadContextClassLoader _ = new ThreadContextClassLoader(null)) {
+            this.validatorFactory = Validation.byProvider(HibernateValidator.class)
+                    .configure()
+                    .externalClassLoader(HibernateValidator.class.getClassLoader())
+                    .ignoreXmlConfiguration()
+                    .messageInterpolator(new ParameterMessageInterpolator(Set.of(ENGLISH), ENGLISH, false))
+                    .buildValidatorFactory();
+        }
     }
 
     public Map<String, String> getProperties()
@@ -438,11 +434,9 @@ public class ConfigurationFactory
         return new ConfigurationHolder<>(instance, problems);
     }
 
-    private static <T> Set<ConstraintViolation<T>> validate(T instance)
+    private <T> Set<ConstraintViolation<T>> validate(T instance)
     {
-        synchronized (VALIDATOR) {
-            return VALIDATOR.validate(instance);
-        }
+        return validatorFactory.getValidator().validate(instance);
     }
 
     @SuppressWarnings("unchecked")
@@ -765,6 +759,14 @@ public class ConfigurationFactory
             return factory.invoke(null, value, new String[0]);
         }
         return factory.invoke(null, value);
+    }
+
+    @Override
+    @PreDestroy
+    public void close()
+            throws IOException
+    {
+        validatorFactory.close();
     }
 
     private static class ConfigurationHolder<T>
