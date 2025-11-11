@@ -237,10 +237,10 @@ final class ExponentiallyDecayingSample
                 final double p = percentiles[i];
                 final double pos = p * (values.size() + 1);
                 if (pos < 1) {
-                    scores[i] = values.get(0);
+                    scores[i] = values.getFirst();
                 }
                 else if (pos >= values.size()) {
-                    scores[i] = values.get(values.size() - 1);
+                    scores[i] = values.getLast();
                 }
                 else {
                     final double lower = values.get((int) pos - 1);

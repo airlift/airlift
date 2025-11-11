@@ -310,7 +310,7 @@ class OpenApiBuilder
             mainResource = modelMethod.requestBody().get();
         }
         else {
-            mainResource = modelMethod.parameters().isEmpty() ? null : modelMethod.parameters().get(0);
+            mainResource = modelMethod.parameters().isEmpty() ? null : modelMethod.parameters().getFirst();
         }
 
         for (int i = 0; i < modelMethod.parameters().size(); ++i) {

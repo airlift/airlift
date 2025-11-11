@@ -70,7 +70,7 @@ public class StatusResponseHandler
         public String getHeader(String name)
         {
             List<String> values = getHeaders().get(HeaderName.of(name));
-            return values.isEmpty() ? null : values.get(0);
+            return values.isEmpty() ? null : values.getFirst();
         }
 
         public List<String> getHeaders(String name)
