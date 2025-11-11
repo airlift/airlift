@@ -117,8 +117,7 @@ public class HttpDiscoveryAnnouncementClient
                     throw new DiscoveryException(String.format("Announcement failed with status code %s: %s", statusCode, getBodyForError(response)));
                 }
 
-                Duration maxAge = extractMaxAge(response);
-                return maxAge;
+                return extractMaxAge(response);
             }
         });
     }
