@@ -79,11 +79,11 @@ public class TestJsonCodec
     @Test
     public void testTypeTokenList()
     {
-        JsonCodec<List<Person>> jsonCodec = jsonCodec(new TypeToken<List<Person>>() {});
+        JsonCodec<List<Person>> jsonCodec = jsonCodec(new TypeToken<>() {});
 
         Person.validatePersonListJsonCodec(jsonCodec);
 
-        JsonCodec<List<Vehicle>> vehicleJsonCodec = jsonCodec(new TypeToken<List<Vehicle>>() {});
+        JsonCodec<List<Vehicle>> vehicleJsonCodec = jsonCodec(new TypeToken<>() {});
 
         Vehicle.validateVehicleListJsonCodec(vehicleJsonCodec);
     }
@@ -127,11 +127,11 @@ public class TestJsonCodec
     @Test
     public void testTypeLiteralMap()
     {
-        JsonCodec<Map<String, Person>> jsonCodec = jsonCodec(new TypeToken<Map<String, Person>>() {});
+        JsonCodec<Map<String, Person>> jsonCodec = jsonCodec(new TypeToken<>() {});
 
         Person.validatePersonMapJsonCodec(jsonCodec);
 
-        JsonCodec<Map<String, Vehicle>> vehicleJsonCodec = jsonCodec(new TypeToken<Map<String, Vehicle>>() {});
+        JsonCodec<Map<String, Vehicle>> vehicleJsonCodec = jsonCodec(new TypeToken<>() {});
 
         Vehicle.validateVehicleMapJsonCodec(vehicleJsonCodec);
     }
@@ -183,7 +183,7 @@ public class TestJsonCodec
     @Test
     public void testImmutableTypeTokenList()
     {
-        JsonCodec<List<ImmutablePerson>> jsonCodec = jsonCodec(new TypeToken<List<ImmutablePerson>>() {});
+        JsonCodec<List<ImmutablePerson>> jsonCodec = jsonCodec(new TypeToken<>() {});
 
         ImmutablePerson.validatePersonListJsonCodec(jsonCodec);
     }
@@ -207,7 +207,7 @@ public class TestJsonCodec
     @Test
     public void testImmutableTypeTokenMap()
     {
-        JsonCodec<Map<String, ImmutablePerson>> jsonCodec = jsonCodec(new TypeToken<Map<String, ImmutablePerson>>() {});
+        JsonCodec<Map<String, ImmutablePerson>> jsonCodec = jsonCodec(new TypeToken<>() {});
 
         ImmutablePerson.validatePersonMapJsonCodec(jsonCodec);
     }

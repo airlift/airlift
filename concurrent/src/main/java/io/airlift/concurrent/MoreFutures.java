@@ -87,7 +87,7 @@ public final class MoreFutures
      */
     public static <T> void mirror(ListenableFuture<? extends T> source, SettableFuture<? super T> destination, boolean mayInterruptIfRunning)
     {
-        FutureCallback<T> callback = new FutureCallback<T>()
+        FutureCallback<T> callback = new FutureCallback<>()
         {
             @Override
             public void onSuccess(@Nullable T result)
@@ -481,7 +481,7 @@ public final class MoreFutures
             return null;
         });
 
-        FutureCallback<V> callback = new FutureCallback<V>()
+        FutureCallback<V> callback = new FutureCallback<>()
         {
             @Override
             public void onSuccess(V result)
@@ -537,7 +537,7 @@ public final class MoreFutures
         requireNonNull(future, "future is null");
         requireNonNull(successCallback, "successCallback is null");
 
-        FutureCallback<T> callback = new FutureCallback<T>()
+        FutureCallback<T> callback = new FutureCallback<>()
         {
             @Override
             public void onSuccess(@Nullable T result)
@@ -587,7 +587,7 @@ public final class MoreFutures
         requireNonNull(future, "future is null");
         requireNonNull(exceptionCallback, "exceptionCallback is null");
 
-        FutureCallback<T> callback = new FutureCallback<T>()
+        FutureCallback<T> callback = new FutureCallback<>()
         {
             @Override
             public void onSuccess(@Nullable T result) {}

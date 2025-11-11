@@ -122,7 +122,7 @@ public class TestJsonModule
         ImmutableList<Integer> list = ImmutableList.of(3, 5, 8);
 
         String json = objectMapper.writeValueAsString(list);
-        ImmutableList<Integer> actual = objectMapper.readValue(json, new TypeReference<ImmutableList<Integer>>() {});
+        List<Integer> actual = objectMapper.readValue(json, new TypeReference<>() {});
 
         assertThat(actual).isEqualTo(list);
     }
@@ -162,7 +162,7 @@ public class TestJsonModule
     private Map<String, Object> createCarMap()
             throws IOException
     {
-        return objectMapper.readValue(objectMapper.writeValueAsString(CAR), new TypeReference<Map<String, Object>>() {});
+        return objectMapper.readValue(objectMapper.writeValueAsString(CAR), new TypeReference<>() {});
     }
 
     public static class Car

@@ -61,7 +61,7 @@ public class TestJsonCodecFactory
     @Test
     public void testTypeLiteralList()
     {
-        JsonCodec<List<Person>> jsonCodec = jsonCodecFactory.jsonCodec(new TypeToken<List<Person>>() {});
+        JsonCodec<List<Person>> jsonCodec = jsonCodecFactory.jsonCodec(new TypeToken<>() {});
 
         validateListCodec(jsonCodec);
     }
@@ -97,7 +97,7 @@ public class TestJsonCodecFactory
     @Test
     public void testTypeLiteralMap()
     {
-        JsonCodec<Map<String, Person>> jsonCodec = jsonCodecFactory.jsonCodec(new TypeToken<Map<String, Person>>() {});
+        JsonCodec<Map<String, Person>> jsonCodec = jsonCodecFactory.jsonCodec(new TypeToken<>() {});
 
         validateMapCodec(jsonCodec);
     }
