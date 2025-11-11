@@ -44,7 +44,7 @@ public final class JwksDecoder
     public static Map<String, PublicKey> decodeKeys(String jwksJson)
     {
         JsonKeys keys = KEYS_CODEC.fromJson(jwksJson);
-        return keys.getKeys().stream()
+        return keys.keys().stream()
                 .map(JwksDecoder::tryDecodeJwkKey)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
@@ -114,19 +114,11 @@ public final class JwksDecoder
         }
     }
 
-    public static class JsonKeys
+    public record JsonKeys(@JsonProperty("keys") List<JsonKey> keys)
     {
-        private final List<JsonKey> keys;
-
-        @JsonCreator
-        public JsonKeys(@JsonProperty("keys") List<JsonKey> keys)
+        public JsonKeys
         {
-            this.keys = ImmutableList.copyOf(requireNonNull(keys, "keys is null"));
-        }
-
-        public List<JsonKey> getKeys()
-        {
-            return keys;
+            keys = ImmutableList.copyOf(keys);
         }
     }
 
