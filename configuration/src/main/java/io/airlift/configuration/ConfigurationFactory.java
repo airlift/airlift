@@ -316,7 +316,7 @@ public class ConfigurationFactory
 
     public <T> T build(Class<T> configClass, @Nullable String prefix)
     {
-        return build(configClass, Optional.ofNullable(prefix), ConfigDefaults.noDefaults()).getInstance();
+        return build(configClass, Optional.ofNullable(prefix), ConfigDefaults.noDefaults()).instance();
     }
 
     /**
@@ -335,11 +335,11 @@ public class ConfigurationFactory
 
         ConfigurationBinding<T> configurationBinding = configurationProvider.getConfigurationBinding();
         ConfigurationHolder<T> holder = build(configurationBinding.configClass(), configurationBinding.prefix(), getConfigDefaults(configurationBinding.key()));
-        instance = holder.getInstance();
+        instance = holder.instance();
 
         // inform caller about warnings
         if (warningsMonitor != null) {
-            for (Message message : holder.getProblems().getWarnings()) {
+            for (Message message : holder.problems().getWarnings()) {
                 warningsMonitor.onWarning(message.toString());
             }
         }
@@ -767,26 +767,8 @@ public class ConfigurationFactory
         validatorFactory.close();
     }
 
-    private static class ConfigurationHolder<T>
+    private record ConfigurationHolder<T>(T instance, Problems problems)
     {
-        private final T instance;
-        private final Problems problems;
-
-        private ConfigurationHolder(T instance, Problems problems)
-        {
-            this.instance = instance;
-            this.problems = problems;
-        }
-
-        public T getInstance()
-        {
-            return instance;
-        }
-
-        public Problems getProblems()
-        {
-            return problems;
-        }
     }
 
     private class ConfigurationProviderConsumer
