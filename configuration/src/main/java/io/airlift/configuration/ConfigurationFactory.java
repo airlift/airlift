@@ -47,6 +47,7 @@ import jakarta.validation.Validator;
 import org.hibernate.validator.HibernateValidator;
 import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
 
+import java.io.Closeable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.lang.reflect.InvocationTargetException;
@@ -90,10 +91,8 @@ public class ConfigurationFactory
             .build(CacheLoader.from(ConfigurationMetadata::getConfigurationMetadata));
 
     static {
-        ClassLoader currentClassLoader = Thread.currentThread().getContextClassLoader();
-        try {
-            // this prevents hibernate validator from using the thread context classloader
-            Thread.currentThread().setContextClassLoader(null);
+        // this prevents hibernate validator from using the thread context classloader
+        try (ThreadContextClassLoader _ = new ThreadContextClassLoader(null)) {
             VALIDATOR = Validation.byProvider(HibernateValidator.class)
                     .configure()
                     .externalClassLoader(HibernateValidator.class.getClassLoader())
@@ -101,9 +100,6 @@ public class ConfigurationFactory
                     .messageInterpolator(new ParameterMessageInterpolator(Set.of(ENGLISH), ENGLISH, false))
                     .buildValidatorFactory()
                     .getValidator();
-        }
-        finally {
-            Thread.currentThread().setContextClassLoader(currentClassLoader);
         }
     }
 
@@ -809,6 +805,24 @@ public class ConfigurationFactory
         public void accept(ConfigurationProvider<?> configurationProvider)
         {
             listener.configurationBound(configurationProvider.getConfigurationBinding(), configBinder);
+        }
+    }
+
+    static class ThreadContextClassLoader
+            implements Closeable
+    {
+        private final ClassLoader originalThreadContextClassLoader;
+
+        public ThreadContextClassLoader(ClassLoader newThreadContextClassLoader)
+        {
+            this.originalThreadContextClassLoader = Thread.currentThread().getContextClassLoader();
+            Thread.currentThread().setContextClassLoader(newThreadContextClassLoader);
+        }
+
+        @Override
+        public void close()
+        {
+            Thread.currentThread().setContextClassLoader(originalThreadContextClassLoader);
         }
     }
 }
