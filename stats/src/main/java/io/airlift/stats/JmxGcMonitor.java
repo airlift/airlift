@@ -43,6 +43,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.sun.management.GarbageCollectionNotificationInfo.GARBAGE_COLLECTION_NOTIFICATION;
 import static io.airlift.units.DataSize.succinctBytes;
+import static io.airlift.units.Duration.succinctDuration;
 import static java.lang.Math.max;
 import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
 import static java.util.Objects.requireNonNull;
@@ -168,8 +169,8 @@ public class JmxGcMonitor
 
                 // assumption that minor GCs run currently, so we do not print stopped or application time
                 log.debug(
-                        "Minor GC: duration %sms: %s -> %s",
-                        info.getDurationMs(),
+                        "Minor GC: duration %s: %s -> %s",
+                        succinctDuration(info.getDurationMs(), MILLISECONDS),
                         info.getBeforeGcTotal(),
                         info.getAfterGcTotal());
             }
@@ -188,8 +189,8 @@ public class JmxGcMonitor
 
                 // assumption that minor GCs run currently, so we do not print stopped or application time
                 log.debug(
-                        "Minor GC: duration %sms: %s -> %s",
-                        info.getDurationMs(),
+                        "Minor GC: duration %s: %s -> %s",
+                        succinctDuration(info.getDurationMs(), MILLISECONDS),
                         info.getBeforeGcTotal(),
                         info.getAfterGcTotal());
             }
@@ -213,9 +214,9 @@ public class JmxGcMonitor
                 info.getAfterGcTotal().toBytes());
         if (percentHeapReclaimed < MINIMUM_PERCENTAGE_OF_HEAP_RECLAIMED) {
             log.warn(
-                    "Major GC: application %sms, stopped %sms: %s -> %s (only recovered %.1f%% of heap memory)",
-                    applicationRuntime,
-                    info.getDurationMs(),
+                    "Major GC: application %s, stopped %s: %s -> %s (only recovered %.1f%% of heap memory)",
+                    succinctDuration(applicationRuntime, MILLISECONDS),
+                    succinctDuration(info.getDurationMs(), MILLISECONDS),
                     info.getBeforeGcTotal(),
                     info.getAfterGcTotal(),
                     percentHeapReclaimed);
@@ -223,9 +224,9 @@ public class JmxGcMonitor
         }
 
         log.info(
-                "Major GC: application %sms, stopped %sms: %s -> %s",
-                applicationRuntime,
-                info.getDurationMs(),
+                "Major GC: application %s, stopped %s: %s -> %s",
+                succinctDuration(applicationRuntime, MILLISECONDS),
+                succinctDuration(info.getDurationMs(), MILLISECONDS),
                 info.getBeforeGcTotal(),
                 info.getAfterGcTotal());
     }
