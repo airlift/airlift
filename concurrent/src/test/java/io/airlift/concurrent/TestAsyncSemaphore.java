@@ -700,7 +700,7 @@ public class TestAsyncSemaphore
 
     private static FutureCallback<Object> completionCallback(AtomicInteger successCount, AtomicInteger failureCount, CountDownLatch completionLatch)
     {
-        return new FutureCallback<Object>()
+        return new FutureCallback<>()
         {
             @Override
             public void onSuccess(@Nullable Object result)

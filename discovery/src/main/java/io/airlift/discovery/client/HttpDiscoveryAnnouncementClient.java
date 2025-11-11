@@ -106,7 +106,7 @@ public class HttpDiscoveryAnnouncementClient
                 .setHeader("Content-Type", MEDIA_TYPE_JSON.toString())
                 .setBodyGenerator(jsonBodyGenerator(announcementCodec, announcement))
                 .build();
-        return httpClient.executeAsync(request, new DiscoveryResponseHandler<Duration>("Announcement", uri)
+        return httpClient.executeAsync(request, new DiscoveryResponseHandler<>("Announcement", uri)
         {
             @Override
             public Duration handle(Request request, Response response)
