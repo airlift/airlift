@@ -105,7 +105,7 @@ public class CertificationRequest
     @Override
     public int hashCode()
     {
-        return Objects.hash(certificationRequestInfo, signatureAlgorithmIdentifier, signature);
+        return Objects.hash(certificationRequestInfo, signatureAlgorithmIdentifier, Arrays.hashCode(signature));
     }
 
     @Override
