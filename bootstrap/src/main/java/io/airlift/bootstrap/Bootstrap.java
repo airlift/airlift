@@ -52,6 +52,7 @@ import java.util.TreeMap;
 
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
+import static io.airlift.bootstrap.ClosingBinder.closingBinder;
 import static io.airlift.bootstrap.FuzzyMatcher.findSimilar;
 import static io.airlift.configuration.ConfigurationLoader.getSystemProperties;
 import static io.airlift.configuration.ConfigurationLoader.loadPropertiesFrom;
@@ -352,6 +353,7 @@ public class Bootstrap
         Builder<Module> moduleList = ImmutableList.builder();
         moduleList.add(new LifeCycleModule(name));
         moduleList.add(new ConfigurationModule(configurationFactory));
+        moduleList.add(binder -> closingBinder(binder).registerCloseable(configurationFactory));
         moduleList.add(binder -> binder.bind(WarningsMonitor.class).toInstance(log::warn));
 
         // disable broken Guice "features"
