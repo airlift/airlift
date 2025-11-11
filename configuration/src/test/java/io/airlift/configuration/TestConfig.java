@@ -298,15 +298,10 @@ public class TestConfig
                 install(SwitchModule.switchModule(
                         SwitchConfig.class,
                         SwitchConfig::getValue,
-                        value -> {
-                            switch (value) {
-                                case A:
-                                    return a;
-                                case B:
-                                    return b;
-                                default:
-                                    throw new RuntimeException("Not supported value: " + value);
-                            }
+                        value -> switch (value) {
+                            case A -> a;
+                            case B -> b;
+                            default -> throw new RuntimeException("Not supported value: " + value);
                         }));
             }
         };
