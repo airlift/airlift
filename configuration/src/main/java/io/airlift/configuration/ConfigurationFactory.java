@@ -181,7 +181,7 @@ public class ConfigurationFactory
                 @Override
                 public <T> Void visit(Binding<T> binding)
                 {
-                    if (binding instanceof InstanceBinding instanceBinding) {
+                    if (binding instanceof InstanceBinding<?> instanceBinding) {
                         // configuration listener
                         if (instanceBinding.getInstance() instanceof ConfigurationBindingListenerHolder) {
                             addConfigurationBindingListener(((ConfigurationBindingListenerHolder) instanceBinding.getInstance()).getConfigurationBindingListener());
@@ -196,7 +196,7 @@ public class ConfigurationFactory
                     // configuration provider
                     if (binding instanceof ProviderInstanceBinding<?> providerInstanceBinding) {
                         Provider<?> provider = providerInstanceBinding.getProviderInstance();
-                        if (provider instanceof ConfigurationProvider configurationProvider) {
+                        if (provider instanceof ConfigurationProvider<?> configurationProvider) {
                             registerConfigurationProvider(configurationProvider, Optional.of(binding.getSource()));
                         }
                     }
