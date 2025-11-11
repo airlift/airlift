@@ -122,7 +122,7 @@ public class CachingServiceSelector
             future = lookupClient.refreshServices(oldDescriptors);
         }
 
-        future = chainedCallback(future, new FutureCallback<ServiceDescriptors>()
+        future = chainedCallback(future, new FutureCallback<>()
         {
             @Override
             public void onSuccess(ServiceDescriptors newDescriptors)
@@ -163,7 +163,7 @@ public class CachingServiceSelector
             Executor executor)
     {
         final SettableFuture<V> done = SettableFuture.create();
-        Futures.addCallback(future, new FutureCallback<V>()
+        Futures.addCallback(future, new FutureCallback<>()
         {
             @Override
             public void onSuccess(V result)

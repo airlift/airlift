@@ -62,7 +62,7 @@ public class JsonCodec<T>
         requireNonNull(type, "type is null");
 
         Type listType = new TypeToken<List<T>>() {}
-                .where(new TypeParameter<T>() {}, type)
+                .where(new TypeParameter<>() {}, type)
                 .getType();
 
         return new JsonCodec<>(OBJECT_MAPPER_SUPPLIER.get(), listType);
@@ -73,7 +73,7 @@ public class JsonCodec<T>
         requireNonNull(type, "type is null");
 
         Type listType = new TypeToken<List<T>>() {}
-                .where(new TypeParameter<T>() {}, type.getTypeToken())
+                .where(new TypeParameter<>() {}, type.getTypeToken())
                 .getType();
 
         return new JsonCodec<>(OBJECT_MAPPER_SUPPLIER.get(), listType);
@@ -85,8 +85,8 @@ public class JsonCodec<T>
         requireNonNull(valueType, "valueType is null");
 
         Type mapType = new TypeToken<Map<K, V>>() {}
-                .where(new TypeParameter<K>() {}, keyType)
-                .where(new TypeParameter<V>() {}, valueType)
+                .where(new TypeParameter<>() {}, keyType)
+                .where(new TypeParameter<>() {}, valueType)
                 .getType();
 
         return new JsonCodec<>(OBJECT_MAPPER_SUPPLIER.get(), mapType);
@@ -98,8 +98,8 @@ public class JsonCodec<T>
         requireNonNull(valueType, "valueType is null");
 
         Type mapType = new TypeToken<Map<K, V>>() {}
-                .where(new TypeParameter<K>() {}, keyType)
-                .where(new TypeParameter<V>() {}, valueType.getTypeToken())
+                .where(new TypeParameter<>() {}, keyType)
+                .where(new TypeParameter<>() {}, valueType.getTypeToken())
                 .getType();
 
         return new JsonCodec<>(OBJECT_MAPPER_SUPPLIER.get(), mapType);

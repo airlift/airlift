@@ -60,7 +60,7 @@ public class TestHttpAnnouncementBinder
                 .addProperty("http-external", httpServerInfo.getHttpExternalUri().toASCIIString())
                 .build();
 
-        Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() {}));
+        Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<>() {}));
 
         assertAnnouncement(announcements, announcement);
     }
@@ -99,7 +99,7 @@ public class TestHttpAnnouncementBinder
                 .addProperty("http-external", secondaryServerInfo.getHttpExternalUri().toASCIIString())
                 .build();
 
-        Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() {}));
+        Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<>() {}));
 
         assertAnnouncements(announcements, ImmutableSet.of(primaryAnnouncement, secondaryAnnouncement));
     }
@@ -125,7 +125,7 @@ public class TestHttpAnnouncementBinder
                 .addProperty("https-external", httpServerInfo.getHttpsExternalUri().toASCIIString())
                 .build();
 
-        Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() {}));
+        Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<>() {}));
 
         assertAnnouncement(announcements, announcement);
     }
@@ -153,7 +153,7 @@ public class TestHttpAnnouncementBinder
                 .addProperty("https-external", httpServerInfo.getHttpsExternalUri().toASCIIString())
                 .build();
 
-        Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() {}));
+        Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<>() {}));
 
         assertAnnouncement(announcements, announcement);
     }
@@ -182,7 +182,7 @@ public class TestHttpAnnouncementBinder
                 .addProperty("https-external", httpServerInfo.getHttpsExternalUri().toASCIIString())
                 .build();
 
-        Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() {}));
+        Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<>() {}));
 
         assertAnnouncement(announcements, announcement);
     }

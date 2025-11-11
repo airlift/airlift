@@ -85,7 +85,7 @@ public class ConfigBinder
             TypeToken<T> typeToken = (TypeToken<T>) TypeToken.of(key.getTypeLiteral().getType());
             return (TypeLiteral<ConfigDefaultsHolder<T>>)
                     TypeLiteral.get(new TypeToken<ConfigDefaultsHolder<T>>() {}
-                            .where(new TypeParameter<T>() {}, typeToken)
+                            .where(new TypeParameter<>() {}, typeToken)
                             .getType());
         }
     }

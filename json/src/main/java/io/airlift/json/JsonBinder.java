@@ -45,10 +45,10 @@ public class JsonBinder
     private JsonBinder(Binder binder)
     {
         binder = requireNonNull(binder, "binder is null").skipSources(getClass());
-        keySerializerMapBinder = MapBinder.newMapBinder(binder, new TypeLiteral<Class<?>>() {}, new TypeLiteral<JsonSerializer<?>>() {}, JsonKeySerde.class);
-        keyDeserializerMapBinder = MapBinder.newMapBinder(binder, new TypeLiteral<Class<?>>() {}, new TypeLiteral<KeyDeserializer>() {}, JsonKeySerde.class);
-        serializerMapBinder = MapBinder.newMapBinder(binder, new TypeLiteral<Class<?>>() {}, new TypeLiteral<JsonSerializer<?>>() {});
-        deserializerMapBinder = MapBinder.newMapBinder(binder, new TypeLiteral<Class<?>>() {}, new TypeLiteral<JsonDeserializer<?>>() {});
+        keySerializerMapBinder = MapBinder.newMapBinder(binder, new TypeLiteral<>() {}, new TypeLiteral<>() {}, JsonKeySerde.class);
+        keyDeserializerMapBinder = MapBinder.newMapBinder(binder, new TypeLiteral<>() {}, new TypeLiteral<>() {}, JsonKeySerde.class);
+        serializerMapBinder = MapBinder.newMapBinder(binder, new TypeLiteral<>() {}, new TypeLiteral<>() {});
+        deserializerMapBinder = MapBinder.newMapBinder(binder, new TypeLiteral<>() {}, new TypeLiteral<>() {});
         moduleBinder = newSetBinder(binder, Module.class);
     }
 

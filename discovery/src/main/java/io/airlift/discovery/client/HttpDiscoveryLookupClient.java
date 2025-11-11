@@ -122,7 +122,7 @@ public class HttpDiscoveryLookupClient
         if (serviceDescriptors != null && serviceDescriptors.getETag() != null) {
             requestBuilder.setHeader(HttpHeaders.ETAG, serviceDescriptors.getETag());
         }
-        return httpClient.executeAsync(requestBuilder.build(), new DiscoveryResponseHandler<ServiceDescriptors>(format("Lookup of %s", type), uri)
+        return httpClient.executeAsync(requestBuilder.build(), new DiscoveryResponseHandler<>(format("Lookup of %s", type), uri)
         {
             @Override
             public ServiceDescriptors handle(Request request, Response response)

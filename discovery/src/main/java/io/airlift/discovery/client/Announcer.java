@@ -145,7 +145,7 @@ public final class Announcer
 
         ListenableFuture<Duration> future = announcementClient.announce(getServiceAnnouncements());
 
-        Futures.addCallback(future, new FutureCallback<Duration>()
+        Futures.addCallback(future, new FutureCallback<>()
         {
             @Override
             public void onSuccess(Duration expectedDelay)

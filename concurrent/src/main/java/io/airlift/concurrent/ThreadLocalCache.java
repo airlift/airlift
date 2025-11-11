@@ -36,7 +36,7 @@ public final class ThreadLocalCache<K, V>
     public ThreadLocalCache(int maxSizePerThread, Function<K, V> loader)
     {
         checkArgument(maxSizePerThread > 0, "max size must be greater than zero");
-        this.cache = ThreadLocal.withInitial(() -> new BoundedMap<K, V>(maxSizePerThread));
+        this.cache = ThreadLocal.withInitial(() -> new BoundedMap<>(maxSizePerThread));
         this.loader = requireNonNull(loader, "loader is null");
     }
 
