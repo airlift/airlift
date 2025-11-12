@@ -18,14 +18,6 @@ package io.airlift.json;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.deser.std.StdScalarDeserializer;
-import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
@@ -37,6 +29,14 @@ import org.joda.time.format.ISODateTimeFormat;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DatabindException;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.deser.std.StdScalarDeserializer;
+import tools.jackson.databind.ser.std.ToStringSerializer;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -122,7 +122,7 @@ public class TestJsonModule
         ImmutableList<Integer> list = ImmutableList.of(3, 5, 8);
 
         String json = objectMapper.writeValueAsString(list);
-        ImmutableList<Integer> actual = objectMapper.readValue(json, new TypeReference<ImmutableList<Integer>>() {});
+        ImmutableList<Integer> actual = objectMapper.readValue(json, new TypeReference<>() {});
 
         assertThat(actual).isEqualTo(list);
     }
@@ -442,14 +442,13 @@ public class TestJsonModule
 
         @Override
         public SuperDuperNameList deserialize(JsonParser jp, DeserializationContext context)
-                throws IOException
         {
-            JsonToken token = jp.getCurrentToken();
+            JsonToken token = jp.currentToken();
             if (token == JsonToken.VALUE_STRING) {
-                return new SuperDuperNameList(jp.getText(), null);
+                return new SuperDuperNameList(jp.getString(), null);
             }
             context.handleUnexpectedToken(handledType(), jp);
-            throw JsonMappingException.from(jp, null);
+            throw DatabindException.from(jp, "not a string");
         }
     }
 
