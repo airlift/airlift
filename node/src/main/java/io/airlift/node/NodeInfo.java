@@ -46,6 +46,7 @@ import static io.airlift.configuration.ConfigurationLoader.loadPropertiesFrom;
 import static io.airlift.configuration.ConfigurationUtils.replaceEnvironmentVariables;
 import static io.airlift.node.AddressToHostname.encodeAddressAsHostname;
 import static java.util.Objects.requireNonNull;
+import static java.util.Objects.requireNonNullElseGet;
 
 @Singleton
 public class NodeInfo
@@ -119,13 +120,7 @@ public class NodeInfo
             this.nodeId = UUID.randomUUID().toString();
         }
 
-        if (location != null) {
-            this.location = location;
-        }
-        else {
-            this.location = "/" + this.nodeId;
-        }
-
+        this.location = requireNonNullElseGet(location, () -> "/" + this.nodeId);
         this.binarySpec = binarySpec;
         this.configSpec = configSpec;
 
@@ -136,12 +131,7 @@ public class NodeInfo
             this.internalAddress = findInternalAddress(internalAddressSource);
         }
 
-        if (bindIp != null) {
-            this.bindIp = bindIp;
-        }
-        else {
-            this.bindIp = InetAddresses.fromInteger(0);
-        }
+        this.bindIp = requireNonNullElseGet(bindIp, () -> InetAddresses.fromInteger(0));
 
         if (externalAddress != null) {
             this.externalAddress = externalAddress;

@@ -34,7 +34,7 @@ public class ProblemsTest
 
         List<Message> errors = problems.getErrors();
         assertThat(errors).hasSize(1);
-        assertThat(errors.get(0).getMessage()).isEqualTo("message 1");
+        assertThat(errors.getFirst().getMessage()).isEqualTo("message 1");
 
         assertThat(problems.getWarnings().size()).as("Found unexpected warnings in problem object").isEqualTo(0);
 
@@ -78,7 +78,7 @@ public class ProblemsTest
 
         List<Message> errors = problems.getErrors();
         assertThat(errors).hasSize(1);
-        assertThat(errors.get(0).getMessage()).contains("message %d", "NaN", "IllegalFormatConversionException");
+        assertThat(errors.getFirst().getMessage()).contains("message %d", "NaN", "IllegalFormatConversionException");
 
         assertThat(problems.getWarnings().size()).as("Found unexpected warnings in problem object").isEqualTo(0);
 
@@ -101,7 +101,7 @@ public class ProblemsTest
 
         List<Message> warnings = problems.getWarnings();
         assertThat(warnings).hasSize(1);
-        assertThat(warnings.get(0).getMessage()).isEqualTo("message 1");
+        assertThat(warnings.getFirst().getMessage()).isEqualTo("message 1");
 
         try {
             problems.throwIfHasErrors();
@@ -143,7 +143,7 @@ public class ProblemsTest
 
         List<Message> warnings = problems.getWarnings();
         assertThat(warnings).hasSize(1);
-        assertThat(warnings.get(0).getMessage()).contains("message %d", "NaN", "IllegalFormatConversionException");
+        assertThat(warnings.getFirst().getMessage()).contains("message %d", "NaN", "IllegalFormatConversionException");
 
         try {
             problems.throwIfHasErrors();

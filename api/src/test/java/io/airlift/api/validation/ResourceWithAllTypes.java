@@ -60,7 +60,7 @@ public record ResourceWithAllTypes(
     {
     }
 
-    public class SimpleId
+    public static class SimpleId
             extends ApiStringId<SimpleResource>
     {
         public SimpleId()

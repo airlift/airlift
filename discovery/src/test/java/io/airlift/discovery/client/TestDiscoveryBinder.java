@@ -46,7 +46,7 @@ public class TestDiscoveryBinder
                 new TestModule(),
                 binder -> discoveryBinder(binder).bindServiceAnnouncement(new ServiceAnnouncementProvider().get()));
 
-        Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() {}));
+        Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<>() {}));
         assertThat(announcements).isEqualTo(ImmutableSet.of(ANNOUNCEMENT));
     }
 
@@ -57,7 +57,7 @@ public class TestDiscoveryBinder
                 new TestModule(),
                 binder -> discoveryBinder(binder).bindServiceAnnouncement(ServiceAnnouncementProvider.class));
 
-        Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() {}));
+        Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<>() {}));
         assertThat(announcements).isEqualTo(ImmutableSet.of(ANNOUNCEMENT));
     }
 
@@ -68,7 +68,7 @@ public class TestDiscoveryBinder
                 new TestModule(),
                 binder -> discoveryBinder(binder).bindServiceAnnouncement(new ServiceAnnouncementProvider()));
 
-        Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<Set<ServiceAnnouncement>>() {}));
+        Set<ServiceAnnouncement> announcements = injector.getInstance(Key.get(new TypeLiteral<>() {}));
         assertThat(announcements).isEqualTo(ImmutableSet.of(ANNOUNCEMENT));
     }
 

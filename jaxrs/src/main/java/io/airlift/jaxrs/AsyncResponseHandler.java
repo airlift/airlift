@@ -90,7 +90,7 @@ public class AsyncResponseHandler
 
     private static <T> FutureCallback<T> toFutureCallback(AsyncResponse asyncResponse)
     {
-        return new FutureCallback<T>()
+        return new FutureCallback<>()
         {
             @Override
             public void onSuccess(T value)

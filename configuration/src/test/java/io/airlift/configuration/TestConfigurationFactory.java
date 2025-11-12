@@ -750,14 +750,11 @@ public class TestConfigurationFactory
 
             public static Value fromString(String string)
             {
-                switch (requireNonNull(string, "string is null")) {
-                    case "yes":
-                        return TRUE;
-                    case "no":
-                        return FALSE;
-                    default:
-                        throw new IllegalArgumentException("Invalid value: " + string);
-                }
+                return switch (requireNonNull(string, "string is null")) {
+                    case "yes" -> TRUE;
+                    case "no" -> FALSE;
+                    default -> throw new IllegalArgumentException("Invalid value: " + string);
+                };
             }
         }
 

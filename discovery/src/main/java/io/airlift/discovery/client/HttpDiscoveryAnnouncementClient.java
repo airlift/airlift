@@ -106,7 +106,7 @@ public class HttpDiscoveryAnnouncementClient
                 .setHeader("Content-Type", MEDIA_TYPE_JSON.toString())
                 .setBodyGenerator(jsonBodyGenerator(announcementCodec, announcement))
                 .build();
-        return httpClient.executeAsync(request, new DiscoveryResponseHandler<Duration>("Announcement", uri)
+        return httpClient.executeAsync(request, new DiscoveryResponseHandler<>("Announcement", uri)
         {
             @Override
             public Duration handle(Request request, Response response)
@@ -117,8 +117,7 @@ public class HttpDiscoveryAnnouncementClient
                     throw new DiscoveryException(String.format("Announcement failed with status code %s: %s", statusCode, getBodyForError(response)));
                 }
 
-                Duration maxAge = extractMaxAge(response);
-                return maxAge;
+                return extractMaxAge(response);
             }
         });
     }
@@ -198,7 +197,7 @@ public class HttpDiscoveryAnnouncementClient
         return DEFAULT_DELAY;
     }
 
-    private class DiscoveryResponseHandler<T>
+    private static class DiscoveryResponseHandler<T>
             implements ResponseHandler<T, DiscoveryException>
     {
         private final String name;

@@ -67,8 +67,8 @@ public class TestTimeStat
         ticker.increment(MERGE_THRESHOLD_NANOS, TimeUnit.NANOSECONDS); // force a merge
         TimeDistribution allTime = stat.getAllTime();
         assertThat(allTime.getCount()).isEqualTo(values.size());
-        assertThat(fuzzyEquals(allTime.getMax(), values.get(values.size() - 1) * 0.001, 0.000_000_000_1)).isTrue();
-        assertThat(allTime.getMin()).isEqualTo(values.get(0) * 0.001);
+        assertThat(fuzzyEquals(allTime.getMax(), values.getLast() * 0.001, 0.000_000_000_1)).isTrue();
+        assertThat(allTime.getMin()).isEqualTo(values.getFirst() * 0.001);
         assertThat(allTime.getAvg()).isCloseTo(values.stream().mapToDouble(x -> x).average().getAsDouble() * 0.001, within(0.001));
         assertThat(allTime.getUnit()).isEqualTo(TimeUnit.SECONDS);
 
