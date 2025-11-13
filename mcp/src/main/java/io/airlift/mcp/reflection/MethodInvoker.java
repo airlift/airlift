@@ -9,6 +9,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import io.airlift.mcp.McpException;
+import io.airlift.mcp.McpRequestContext;
 import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.GetPromptRequest;
 import io.airlift.mcp.model.ReadResourceRequest;
@@ -19,12 +20,12 @@ import io.airlift.mcp.reflection.MethodParameter.CallToolRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.GetPromptRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.HttpRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.IdentityParameter;
+import io.airlift.mcp.reflection.MethodParameter.McpRequestContextParameter;
 import io.airlift.mcp.reflection.MethodParameter.ObjectParameter;
 import io.airlift.mcp.reflection.MethodParameter.ReadResourceRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.ResourceTemplateValuesParameter;
 import io.airlift.mcp.reflection.MethodParameter.SourceResourceParameter;
 import io.airlift.mcp.reflection.MethodParameter.SourceResourceTemplateParameter;
-import jakarta.servlet.http.HttpServletRequest;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -83,7 +84,7 @@ public class MethodInvoker
         Object invoke();
     }
 
-    public Builder builder(HttpServletRequest request)
+    public Builder builder(McpRequestContext requestContext)
     {
         return new Builder()
         {
@@ -145,14 +146,15 @@ public class MethodInvoker
                 try {
                     Object[] methodArguments = parameters.stream()
                             .map(parameter -> switch (parameter) {
-                                case HttpRequestParameter _ -> request;
+                                case HttpRequestParameter _ -> requestContext.request();
+                                case McpRequestContextParameter _ -> requestContext;
                                 case GetPromptRequestParameter _ -> getPromptRequest.orElseThrow(() -> new IllegalStateException("GetPromptRequest is required"));
                                 case CallToolRequestParameter _ -> callToolRequest.orElseThrow(() -> new IllegalStateException("CallToolRequest is required"));
                                 case SourceResourceParameter _ -> sourceResource.orElseThrow(() -> new IllegalStateException("SourceResource is required"));
                                 case SourceResourceTemplateParameter _ -> sourceResourceTemplate.orElseThrow(() -> new IllegalStateException("SourceResourceTemplate is required"));
                                 case ReadResourceRequestParameter _ -> readResourceRequest.orElseThrow(() -> new IllegalStateException("ReadResourceRequest is required"));
                                 case ResourceTemplateValuesParameter _ -> resourceTemplateValues.orElseThrow(() -> new IllegalStateException("ResourceTemplateValues is required"));
-                                case IdentityParameter _ -> retrieveIdentityValue(request);
+                                case IdentityParameter _ -> retrieveIdentityValue(requestContext.request());
                                 case ObjectParameter objectParameter -> valueForObjectParameter(arguments, objectParameter);
                             })
                             .toArray();
