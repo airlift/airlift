@@ -1,10 +1,11 @@
 package io.airlift.mcp.model;
 
+import java.util.Optional;
 import java.util.OptionalDouble;
 
 import static java.util.Objects.requireNonNull;
 
-public record ProgressNotification(String progressToken, String message, OptionalDouble progress, OptionalDouble total)
+public record ProgressNotification(Optional<Object> progressToken, String message, OptionalDouble progress, OptionalDouble total)
 {
     public ProgressNotification
     {
