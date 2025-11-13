@@ -3,7 +3,9 @@ package io.airlift.mcp.reference;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.mcp.McpException;
 import io.airlift.mcp.McpMetadata;
+import io.airlift.mcp.McpRequestContext;
 import io.airlift.mcp.handler.PromptHandler;
+import io.airlift.mcp.handler.RequestContextProvider;
 import io.airlift.mcp.handler.ResourceHandler;
 import io.airlift.mcp.handler.ResourceTemplateHandler;
 import io.airlift.mcp.handler.ToolHandler;
@@ -30,6 +32,7 @@ import io.modelcontextprotocol.server.McpStatelessServerFeatures;
 import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -40,6 +43,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static io.airlift.mcp.reference.ReferenceFilter.HTTP_RESPONSE_ATTRIBUTE;
 
 interface Mapper
 {
@@ -85,7 +89,24 @@ interface Mapper
         return McpSchema.Role.valueOf(ourRole.name().toUpperCase());
     }
 
-    static McpStatelessServerFeatures.SyncResourceSpecification mapResource(Resource ourResource, ResourceHandler ourHandler)
+    static McpRequestContext buildMcpRequestContext(McpTransportContext mcpTransportContext, Optional<Map<String, Object>> meta, RequestContextProvider requestContextProvider)
+    {
+        Optional<Object> progressToken = meta.flatMap(m -> {
+            Object value = m.get("progressToken");
+            if (value instanceof Number number) {
+                return Optional.of(number.longValue());
+            }
+            if (value != null) {
+                return Optional.of(String.valueOf(value));
+            }
+            return Optional.empty();
+        });
+        HttpServletRequest request = (HttpServletRequest) mcpTransportContext.get(McpMetadata.CONTEXT_REQUEST_KEY);
+        HttpServletResponse response = (HttpServletResponse) request.getAttribute(HTTP_RESPONSE_ATTRIBUTE);
+        return requestContextProvider.get(request, response, progressToken);
+    }
+
+    static McpStatelessServerFeatures.SyncResourceSpecification mapResource(RequestContextProvider requestContextProvider, Resource ourResource, ResourceHandler ourHandler)
     {
         McpSchema.Resource.Builder theirResourceBuilder = McpSchema.Resource.builder()
                 .name(ourResource.name())
@@ -103,10 +124,9 @@ interface Mapper
         ourResource.size().ifPresent(theirResourceBuilder::size);
 
         BiFunction<McpTransportContext, McpSchema.ReadResourceRequest, McpSchema.ReadResourceResult> handler = ((context, theirReadResourceRequest) -> {
-            HttpServletRequest request = (HttpServletRequest) context.get(McpMetadata.CONTEXT_REQUEST_KEY);
             ReadResourceRequest readResourceRequest = new ReadResourceRequest(theirReadResourceRequest.uri(), Optional.ofNullable(theirReadResourceRequest.meta()));
-
-            List<ResourceContents> ourResourceContents = ourHandler.readResource(request, ourResource, readResourceRequest);
+            McpRequestContext mcpRequestContext = buildMcpRequestContext(context, Optional.ofNullable(theirReadResourceRequest.meta()), requestContextProvider);
+            List<ResourceContents> ourResourceContents = ourHandler.readResource(mcpRequestContext, ourResource, readResourceRequest);
 
             List<McpSchema.ResourceContents> theirResourceContents = ourResourceContents.stream()
                     .map(Mapper::mapResourceContents)
@@ -118,7 +138,7 @@ interface Mapper
         return new McpStatelessServerFeatures.SyncResourceSpecification(theirResourceBuilder.build(), exceptionSafeHandler(handler));
     }
 
-    static McpStatelessServerFeatures.SyncResourceTemplateSpecification mapResourceTemplate(ResourceTemplate ourResourceTemplate, ResourceTemplateHandler ourHandler, Function<String, Map<String, String>> templateValuesMapper)
+    static McpStatelessServerFeatures.SyncResourceTemplateSpecification mapResourceTemplate(RequestContextProvider requestContextProvider, ResourceTemplate ourResourceTemplate, ResourceTemplateHandler ourHandler, Function<String, Map<String, String>> templateValuesMapper)
     {
         McpSchema.ResourceTemplate.Builder theirResourceTemplateBuilder = McpSchema.ResourceTemplate.builder()
                 .name(ourResourceTemplate.name())
@@ -134,11 +154,11 @@ interface Mapper
         theirResourceTemplateBuilder.mimeType(ourResourceTemplate.mimeType());
 
         BiFunction<McpTransportContext, McpSchema.ReadResourceRequest, McpSchema.ReadResourceResult> handler = ((context, theirReadResourceRequest) -> {
-            HttpServletRequest request = (HttpServletRequest) context.get(McpMetadata.CONTEXT_REQUEST_KEY);
             ReadResourceRequest readResourceRequest = new ReadResourceRequest(theirReadResourceRequest.uri(), Optional.ofNullable(theirReadResourceRequest.meta()));
+            McpRequestContext requestContext = buildMcpRequestContext(context, Optional.ofNullable(theirReadResourceRequest.meta()), requestContextProvider);
 
             Map<String, String> templateValues = templateValuesMapper.apply(readResourceRequest.uri());
-            List<ResourceContents> ourResourceContents = ourHandler.readResourceTemplate(request, ourResourceTemplate, readResourceRequest, new ResourceTemplateValues(templateValues));
+            List<ResourceContents> ourResourceContents = ourHandler.readResourceTemplate(requestContext, ourResourceTemplate, readResourceRequest, new ResourceTemplateValues(templateValues));
 
             List<McpSchema.ResourceContents> theirResourceContents = ourResourceContents.stream()
                     .map(Mapper::mapResourceContents)
@@ -167,7 +187,7 @@ interface Mapper
         };
     }
 
-    static McpStatelessServerFeatures.SyncPromptSpecification mapPrompt(Prompt ourPrompt, PromptHandler ourHandler)
+    static McpStatelessServerFeatures.SyncPromptSpecification mapPrompt(RequestContextProvider requestContextProvider, Prompt ourPrompt, PromptHandler ourHandler)
     {
         List<McpSchema.PromptArgument> ourArguments = ourPrompt
                 .arguments()
@@ -181,10 +201,10 @@ interface Mapper
                 ourArguments);
 
         BiFunction<McpTransportContext, McpSchema.GetPromptRequest, McpSchema.GetPromptResult> handler = (context, theirGetPromptRequest) -> {
-            HttpServletRequest request = (HttpServletRequest) context.get(McpMetadata.CONTEXT_REQUEST_KEY);
             GetPromptRequest getPromptRequest = new GetPromptRequest(theirGetPromptRequest.name(), theirGetPromptRequest.arguments(), Optional.ofNullable(theirGetPromptRequest.meta()));
+            McpRequestContext requestContext = buildMcpRequestContext(context, Optional.ofNullable(theirGetPromptRequest.meta()), requestContextProvider);
 
-            GetPromptResult promptResult = ourHandler.getPrompt(request, getPromptRequest);
+            GetPromptResult promptResult = ourHandler.getPrompt(requestContext, getPromptRequest);
 
             List<McpSchema.PromptMessage> promptMessages = promptResult.messages()
                     .stream()
@@ -207,7 +227,7 @@ interface Mapper
         return new McpSchema.PromptArgument(ourArgument.name(), ourArgument.description().orElse(null), ourArgument.required());
     }
 
-    static McpStatelessServerFeatures.SyncToolSpecification mapTool(McpJsonMapper objectMapper, Tool ourTool, ToolHandler ourHandler)
+    static McpStatelessServerFeatures.SyncToolSpecification mapTool(RequestContextProvider requestContextProvider, McpJsonMapper objectMapper, Tool ourTool, ToolHandler ourHandler)
     {
         try {
             McpSchema.Tool.Builder theirToolBuilder = McpSchema.Tool.builder()
@@ -229,10 +249,10 @@ interface Mapper
             theirToolBuilder.annotations(theirToolAnnotations);
 
             BiFunction<McpTransportContext, McpSchema.CallToolRequest, McpSchema.CallToolResult> callHandler = ((context, theirCallToolRequest) -> {
-                HttpServletRequest request = (HttpServletRequest) context.get(McpMetadata.CONTEXT_REQUEST_KEY);
                 CallToolRequest callToolRequest = new CallToolRequest(theirCallToolRequest.name(), theirCallToolRequest.arguments(), Optional.ofNullable(theirCallToolRequest.meta()));
+                McpRequestContext requestContext = buildMcpRequestContext(context, Optional.ofNullable(theirCallToolRequest.meta()), requestContextProvider);
 
-                CallToolResult callToolResult = ourHandler.callTool(request, callToolRequest);
+                CallToolResult callToolResult = ourHandler.callTool(requestContext, callToolRequest);
 
                 List<McpSchema.Content> theirContent = callToolResult.content()
                         .stream()
