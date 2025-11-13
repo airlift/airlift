@@ -9,6 +9,7 @@
  */
 package io.airlift.mcp;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,9 +26,11 @@ import io.airlift.http.client.FullJsonResponseHandler.JsonResponse;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.JsonBodyGenerator;
 import io.airlift.http.client.Request;
+import io.airlift.http.client.StreamingResponse;
 import io.airlift.http.server.HttpServerInfo;
 import io.airlift.http.server.testing.TestingHttpServerModule;
 import io.airlift.jaxrs.JaxrsModule;
+import io.airlift.json.JsonCodec;
 import io.airlift.json.JsonModule;
 import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.CallToolResult;
@@ -41,6 +44,7 @@ import io.airlift.mcp.model.JsonRpcResponse;
 import io.airlift.mcp.model.ListPromptsResult;
 import io.airlift.mcp.model.ListResourcesResult;
 import io.airlift.mcp.model.ListToolsResult;
+import io.airlift.mcp.model.ProgressNotification;
 import io.airlift.mcp.model.Prompt;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.ReadResourceResult;
@@ -50,13 +54,21 @@ import io.airlift.mcp.model.StructuredContent;
 import io.airlift.mcp.model.Tool;
 import io.airlift.node.NodeModule;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.OptionalDouble;
 import java.util.stream.Stream;
 
 import static com.google.inject.Scopes.SINGLETON;
@@ -70,6 +82,7 @@ import static io.airlift.mcp.TestingIdentityMapper.EXPECTED_IDENTITY;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
 import static jakarta.servlet.http.HttpServletResponse.SC_METHOD_NOT_ALLOWED;
 import static jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.InstanceOfAssertFactories.type;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
@@ -83,6 +96,7 @@ public class TestMcp
     private final Injector injector;
     private final URI baseUri;
     private final ObjectMapper objectMapper;
+    private final List<String> lastRequestEvents = new ArrayList<>();
 
     public TestMcp()
     {
@@ -108,6 +122,12 @@ public class TestMcp
         httpClient = injector.getInstance(Key.get(HttpClient.class, ForTest.class));
         baseUri = injector.getInstance(HttpServerInfo.class).getHttpUri().resolve("/mcp");
         objectMapper = injector.getInstance(ObjectMapper.class);
+    }
+
+    @BeforeAll
+    public void setup()
+    {
+        lastRequestEvents.clear();
     }
 
     @AfterAll
@@ -276,7 +296,7 @@ public class TestMcp
         ListToolsResult listToolsResult = objectMapper.convertValue(response.result().orElseThrow(), ListToolsResult.class);
         assertThat(listToolsResult.tools())
                 .extracting(Tool::name)
-                .containsExactlyInAnyOrder("add", "throws", "addThree", "addFirstTwoAndAllThree");
+                .containsExactlyInAnyOrder("add", "throws", "addThree", "addFirstTwoAndAllThree", "progress");
 
         CallToolRequest callToolRequest = new CallToolRequest("add", ImmutableMap.of("a", 1, "b", 2));
         jsonrpcRequest = JsonRpcRequest.buildRequest(1, "tools/call", callToolRequest);
@@ -383,6 +403,31 @@ public class TestMcp
         assertThat(response.getStatusCode()).isEqualTo(SC_METHOD_NOT_ALLOWED);
     }
 
+    @Test
+    public void testProgress()
+            throws JsonProcessingException
+    {
+        CallToolRequest callToolRequest = new CallToolRequest("progress", ImmutableMap.of());
+        JsonRpcRequest<?> jsonrpcRequest = JsonRpcRequest.buildRequest(1, "tools/call", callToolRequest);
+        JsonRpcResponse<?> response = rpcCallSse("Mr. Tester", jsonrpcRequest).getValue();
+
+        for (int i = 0; i <= 100; ++i) {
+            ProgressNotification progressNotification = new ProgressNotification(Optional.empty(), "Progress " + i + "%", OptionalDouble.of(i), OptionalDouble.of(100));
+            String expectedProgressEvent = objectMapper.writeValueAsString(JsonRpcRequest.buildNotification("notifications/progress", progressNotification));
+            assertThat(lastRequestEvents).hasSizeGreaterThanOrEqualTo(i);
+            String event = lastRequestEvents.get(i);
+            assertThat(event).isEqualTo(expectedProgressEvent);
+        }
+
+        CallToolResult callToolResult = objectMapper.convertValue(response.result().orElseThrow(), new TypeReference<>() {});
+        assertThat(callToolResult.content())
+                .hasSize(1)
+                .first()
+                .asInstanceOf(type(TextContent.class))
+                .extracting(TextContent::text)
+                .isEqualTo("true");
+    }
+
     private JsonRpcResponse<?> rpcCall(JsonRpcRequest<?> jsonrpcRequest)
     {
         return rpcCall("Mr. Tester", jsonrpcRequest).getValue();
@@ -398,5 +443,47 @@ public class TestMcp
                 .build();
 
         return httpClient.execute(request, createFullJsonResponseHandler(jsonCodec(new TypeToken<>() {})));
+    }
+
+    private JsonResponse<JsonRpcResponse<?>> rpcCallSse(String identityHeader, JsonRpcRequest<?> jsonrpcRequest)
+    {
+        JsonCodec<JsonRpcResponse<?>> responseCodec = jsonCodec(new TypeToken<>() {});
+
+        Request request = preparePost().setUri(baseUri)
+                .addHeader("Content-Type", "application/json")
+                .addHeader("Accept", "application/json,text/event-stream")
+                .addHeader(IDENTITY_HEADER, identityHeader)
+                .setBodyGenerator(JsonBodyGenerator.jsonBodyGenerator(jsonCodec(new TypeToken<JsonRpcRequest<?>>() {}), jsonrpcRequest))
+                .build();
+
+        lastRequestEvents.clear();
+
+        try (StreamingResponse response = httpClient.executeStreaming(request)) {
+            if (response.getStatusCode() > 299) {
+                return new JsonResponse<>(response.getStatusCode(), response.getHeaders(), responseCodec, response.getInputStream().readAllBytes());
+            }
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(response.getInputStream()));
+
+            while (true) {
+                String line = reader.readLine();
+                if (line == null) {
+                    break;
+                }
+
+                if (line.startsWith("data: ")) {
+                    lastRequestEvents.add(line.substring(6));
+                }
+            }
+
+            if (lastRequestEvents.isEmpty()) {
+                throw new UncheckedIOException(new IOException("No events received from MCP server"));
+            }
+
+            return new JsonResponse<>(response.getStatusCode(), response.getHeaders(), responseCodec, lastRequestEvents.getLast().getBytes(UTF_8));
+        }
+        catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 }

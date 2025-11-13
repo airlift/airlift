@@ -35,7 +35,9 @@ import static java.util.Objects.requireNonNull;
 public class ReferenceFilter
         extends HttpFilter
 {
-    private static final String MCP_IDENTITY_ATTRIBUTE = "airlift.mcp.identity";
+    public static final String HTTP_RESPONSE_ATTRIBUTE = ReferenceFilter.class.getName() + ".response";
+
+    private static final String MCP_IDENTITY_ATTRIBUTE = ReferenceFilter.class.getName() + ".identity";
     private static final Set<String> ALLOWED_HTTP_METHODS = ImmutableSet.of("GET", "POST");
     private static final Logger log = Logger.get(ReferenceFilter.class);
 
@@ -64,8 +66,12 @@ public class ReferenceFilter
             McpIdentity identity = identityMapper.get().map(request);
             switch (identity) {
                 case Authenticated<?> authenticated -> {
+                    SseResponseWrapper sseResponseWrapper = new SseResponseWrapper(response);
+
                     request.setAttribute(MCP_IDENTITY_ATTRIBUTE, authenticated.identity());
-                    transport.service(request, response);
+                    request.setAttribute(HTTP_RESPONSE_ATTRIBUTE, sseResponseWrapper);
+
+                    transport.service(request, sseResponseWrapper);
                 }
                 case Unauthenticated unauthenticated -> {
                     response.setContentType(APPLICATION_JSON);
