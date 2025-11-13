@@ -6,6 +6,7 @@ import io.airlift.mcp.reflection.MethodParameter.CallToolRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.GetPromptRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.HttpRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.IdentityParameter;
+import io.airlift.mcp.reflection.MethodParameter.McpRequestContextParameter;
 import io.airlift.mcp.reflection.MethodParameter.ObjectParameter;
 import io.airlift.mcp.reflection.MethodParameter.ReadResourceRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.ResourceTemplateValuesParameter;
@@ -21,7 +22,7 @@ import static io.airlift.mcp.reflection.ReflectionHelper.listArgument;
 
 public interface Predicates
 {
-    Predicate<MethodParameter> isHttpRequest = methodParameter -> methodParameter instanceof HttpRequestParameter;
+    Predicate<MethodParameter> isHttpRequestOrContext = methodParameter -> (methodParameter instanceof HttpRequestParameter) || (methodParameter instanceof McpRequestContextParameter);
     Predicate<MethodParameter> isIdentity = methodParameter -> methodParameter instanceof IdentityParameter;
     Predicate<MethodParameter> isGetPromptRequest = methodParameter -> methodParameter instanceof GetPromptRequestParameter;
     Predicate<MethodParameter> isCallToolRequest = methodParameter -> methodParameter instanceof CallToolRequestParameter;
