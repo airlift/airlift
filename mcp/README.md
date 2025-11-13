@@ -16,13 +16,12 @@ variations of MCP servers defined by the standard. This module supports:
 - Tools [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/tools)
 - Ping [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/ping)
 - Structured content [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/tools#structured-content)
+- Progress notifications [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/progress)
 
 It uses the [MCP reference Java SDK](https://github.com/modelcontextprotocol/java-sdk) as its internal implementation.
 This implementation is very limited at does not support:
 
 - Completions [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/completion)
-- Progress notifications [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/progress)
-- Limited server-sent notifications during processing (e.g. for progress: [see spec](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/progress))
 - `_meta` field [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic#meta)
 - `context` field [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/changelog) in `CompletionRequest`
 - Sessions [(see spec)](https://modelcontextprotocol.io/docs/concepts/transports#session-management)
@@ -88,7 +87,7 @@ Example of creating a tool programmatically:
 - Register the tool with the [McpServer](src/main/java/io/airlift/mcp/McpServer.java) (which can be `@Inject`ed):
 
 ```java
-mcpServer.addTool(tool, (httpRequest, callToolRequest) -> {
+mcpServer.addTool(tool, (requestContext, callToolRequest) -> {
     // ... etc ...
     return new CallToolResult(...);
 });
@@ -120,6 +119,7 @@ A browser should open with the MCP Inspector tool. Set the "Transport Type" to
 
 - Parameters can be:
     - `HttpServletRequest`
+    - `McpRequestContext`
     - An Identity instance (via [McpIdentityMapper](src/main/java/io/airlift/mcp/McpIdentityMapper.java))
     - [CallToolRequest](src/main/java/io/airlift/mcp/model/CallToolRequest.java)
     - supported Java types
@@ -156,6 +156,7 @@ A browser should open with the MCP Inspector tool. Set the "Transport Type" to
 
 - Parameters can be:
     - `HttpServletRequest`
+    - `McpRequestContext`
     - An Identity instance (via [McpIdentityMapper](src/main/java/io/airlift/mcp/McpIdentityMapper.java))
     - [Resource](src/main/java/io/airlift/mcp/model/Resource.java) - the source resource being read
     - [ReadResourceRequest](src/main/java/io/airlift/mcp/model/ReadResourceRequest.java)
@@ -167,6 +168,7 @@ A browser should open with the MCP Inspector tool. Set the "Transport Type" to
 
 - Parameters can be:
     - `HttpServletRequest`
+    - `McpRequestContext`
     - An Identity instance (via [McpIdentityMapper](src/main/java/io/airlift/mcp/McpIdentityMapper.java))
     - [ResourceTemplate](src/main/java/io/airlift/mcp/model/ResourceTemplate.java) - the source resource template being read
     - [ReadResourceRequest](src/main/java/io/airlift/mcp/model/ReadResourceRequest.java)
