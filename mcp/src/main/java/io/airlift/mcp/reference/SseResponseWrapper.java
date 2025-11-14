@@ -40,12 +40,10 @@ class SseResponseWrapper
         boolean useSse = (status >= SC_OK) && (status < SC_MULTIPLE_CHOICES);
         if (useSse) {
             if (ssePrintWriter == null) {
-                ssePrintWriter = new SsePrintWriter(super.getWriter(), () -> super.setContentType("text/event-stream"));
+                ssePrintWriter = new SsePrintWriter(super.getOutputStream(), () -> super.setContentType("text/event-stream"));
             }
-
-            return ssePrintWriter;
         }
 
-        return super.getWriter();
+        return (ssePrintWriter != null) ? ssePrintWriter : super.getWriter();
     }
 }

@@ -17,22 +17,19 @@ variations of MCP servers defined by the standard. This module supports:
 - Ping [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/ping)
 - Structured content [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/tools#structured-content)
 - Progress notifications [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/progress)
-
-It uses the [MCP reference Java SDK](https://github.com/modelcontextprotocol/java-sdk) as its internal implementation.
-This implementation is very limited at does not support:
-
-- Completions [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/completion)
-- `_meta` field [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic#meta)
-- `context` field [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/changelog) in `CompletionRequest`
 - Sessions [(see spec)](https://modelcontextprotocol.io/docs/concepts/transports#session-management)
-- Cancellation [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/cancellation)
-- List changed events [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/lifecycle#initialization)
 - Subscriptions [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/lifecycle#initialization)
 - Server-sent logging [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/logging)
-- Pagination [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/pagination)
+- Sampling [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/client/sampling)
+- List changed events [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/lifecycle#initialization)
 - Elicitation [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/client/elicitation)
 - Roots [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/client/roots)
-- Sampling [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/client/sampling)
+
+It uses the [MCP reference Java SDK](https://github.com/modelcontextprotocol/java-sdk) as its internal implementation and does not support:
+
+- Completions [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/completion)
+- Cancellation [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/cancellation)
+- Pagination [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/pagination)
 
 ## Creating tools, prompts, and resources declaratively
 
@@ -92,6 +89,16 @@ mcpServer.addTool(tool, (requestContext, callToolRequest) -> {
     return new CallToolResult(...);
 });
 ```
+
+## Sessions
+
+- See [sessions](sessions.md)
+
+To enable features such as logging, list change notifications, etc. sessions must be enabled.
+Airlift comes bundled with an in-memory session implementation. This implementation only supports
+a single server and all session data is lost when the server restarts. For production use cases
+a distributed session implementation should be used. See [sessions](sessions.md) for
+details.
 
 ## Tester/Demo
 

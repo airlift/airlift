@@ -20,12 +20,22 @@
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
+            <artifactId>configuration</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
             <artifactId>json</artifactId>
         </dependency>
 
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>log</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>units</artifactId>
         </dependency>
 
         <dependency>
