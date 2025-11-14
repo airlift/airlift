@@ -15,7 +15,11 @@ import io.airlift.mcp.model.CallToolResult;
 import io.airlift.mcp.model.Content;
 import io.airlift.mcp.model.GetPromptRequest;
 import io.airlift.mcp.model.GetPromptResult;
+import io.airlift.mcp.model.Implementation;
+import io.airlift.mcp.model.InitializeRequest;
 import io.airlift.mcp.model.JsonRpcErrorDetail;
+import io.airlift.mcp.model.ListChanged;
+import io.airlift.mcp.model.LoggingLevel;
 import io.airlift.mcp.model.Prompt;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.Resource;
@@ -285,5 +289,31 @@ interface Mapper
     static Map<String, Object> mapStructuredContent(McpJsonMapper objectMapper, StructuredContent<?> ourStructuredContent)
     {
         return objectMapper.convertValue(ourStructuredContent, new TypeRef<>() {});
+    }
+
+    static InitializeRequest.ClientCapabilities mapClientCapabilities(McpSchema.ClientCapabilities theirClientCapabilities)
+    {
+        return new InitializeRequest.ClientCapabilities(
+                Optional.ofNullable(theirClientCapabilities.roots())
+                        .map(roots -> new ListChanged(roots.listChanged())),
+                Optional.ofNullable(theirClientCapabilities.sampling())
+                        .map(_ -> new InitializeRequest.Sampling()),
+                Optional.ofNullable(theirClientCapabilities.elicitation())
+                        .map(_ -> new InitializeRequest.Elicitation()));
+    }
+
+    static Implementation mapImplementation(McpSchema.Implementation theirImplementation)
+    {
+        return new Implementation(theirImplementation.name(), theirImplementation.version());
+    }
+
+    static LoggingLevel mapLoggingLevel(McpSchema.LoggingLevel theirLoggingLevel)
+    {
+        return LoggingLevel.valueOf(theirLoggingLevel.name());
+    }
+
+    static McpSchema.LoggingLevel unmapLoggingLevel(LoggingLevel ourLoggingLevel)
+    {
+        return McpSchema.LoggingLevel.valueOf(ourLoggingLevel.name());
     }
 }

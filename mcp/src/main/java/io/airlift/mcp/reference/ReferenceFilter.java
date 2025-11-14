@@ -44,13 +44,15 @@ public class ReferenceFilter
     private final HttpServletStatelessServerTransport transport;
     private final McpMetadata metadata;
     private final Optional<McpIdentityMapper> identityMapper;
+    private final Optional<SessionHandlerAndTransport> sessionHandler;
 
     @Inject
-    public ReferenceFilter(HttpServletStatelessServerTransport transport, McpMetadata metadata, Optional<McpIdentityMapper> identityMapper)
+    public ReferenceFilter(HttpServletStatelessServerTransport transport, McpMetadata metadata, Optional<McpIdentityMapper> identityMapper, Optional<SessionHandlerAndTransport> sessionHandler)
     {
         this.transport = requireNonNull(transport, "transport is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
         this.identityMapper = requireNonNull(identityMapper, "identityMapper is null");
+        this.sessionHandler = requireNonNull(sessionHandler, "sessionHandler is null");
     }
 
     @Override
@@ -71,7 +73,12 @@ public class ReferenceFilter
                     request.setAttribute(MCP_IDENTITY_ATTRIBUTE, authenticated.identity());
                     request.setAttribute(HTTP_RESPONSE_ATTRIBUTE, sseResponseWrapper);
 
-                    transport.service(request, sseResponseWrapper);
+                    if (sessionHandler.isPresent()) {
+                        sessionHandler.get().handleRequest(request, sseResponseWrapper);
+                    }
+                    else {
+                        transport.service(request, sseResponseWrapper);
+                    }
                 }
                 case Unauthenticated unauthenticated -> {
                     response.setContentType(APPLICATION_JSON);

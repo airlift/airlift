@@ -25,6 +25,8 @@ public interface McpServer
 
     void removeResource(String resourceUri);
 
+    void notifyResourceChanged(String resourceUri);
+
     void addResourceTemplate(ResourceTemplate resourceTemplate, ResourceTemplateHandler handler);
 
     void removeResourceTemplate(String uriTemplate);

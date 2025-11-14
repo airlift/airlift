@@ -10,6 +10,7 @@ import io.airlift.http.server.testing.TestingHttpServerModule;
 import io.airlift.jaxrs.JaxrsModule;
 import io.airlift.json.JsonModule;
 import io.airlift.log.Logger;
+import io.airlift.mcp.session.memory.McpMemorySessionModule;
 import io.airlift.node.NodeModule;
 
 import java.util.Optional;
@@ -43,6 +44,7 @@ public class LocalServer
                 .add(mcpModule)
                 .add(binder -> binder.bind(TestingEndpoints.class).in(SINGLETON))
                 .add(new NodeModule())
+                .add(new McpMemorySessionModule())
                 .add(new TestingHttpServerModule(port.orElse(0)))
                 .add(new JaxrsModule())
                 .add(new JsonModule());

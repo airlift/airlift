@@ -54,7 +54,7 @@ import io.airlift.mcp.model.StructuredContent;
 import io.airlift.mcp.model.Tool;
 import io.airlift.node.NodeModule;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -124,7 +124,7 @@ public class TestMcp
         objectMapper = injector.getInstance(ObjectMapper.class);
     }
 
-    @BeforeAll
+    @BeforeEach
     public void setup()
     {
         lastRequestEvents.clear();
@@ -296,7 +296,7 @@ public class TestMcp
         ListToolsResult listToolsResult = objectMapper.convertValue(response.result().orElseThrow(), ListToolsResult.class);
         assertThat(listToolsResult.tools())
                 .extracting(Tool::name)
-                .containsExactlyInAnyOrder("add", "throws", "addThree", "addFirstTwoAndAllThree", "progress");
+                .containsExactlyInAnyOrder("add", "throws", "addThree", "addFirstTwoAndAllThree", "progress", "changeExampleResource", "addResource", "samplingTest", "elicitationTest", "logging", "showCurrentRoots");
 
         CallToolRequest callToolRequest = new CallToolRequest("add", ImmutableMap.of("a", 1, "b", 2));
         jsonrpcRequest = JsonRpcRequest.buildRequest(1, "tools/call", callToolRequest);

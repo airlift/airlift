@@ -1,7 +1,7 @@
 package io.airlift.mcp.reference;
 
+import java.io.OutputStream;
 import java.io.PrintWriter;
-import java.io.Writer;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -15,7 +15,7 @@ class SsePrintWriter
     private final Runnable upgradeHandler;
     private boolean hasBeenUpgraded;
 
-    SsePrintWriter(Writer out, Runnable upgradeHandler)
+    SsePrintWriter(OutputStream out, Runnable upgradeHandler)
     {
         super(out, false);
 
