@@ -14,6 +14,7 @@
 
     <properties>
         <air.main.basedir>${project.parent.basedir}</air.main.basedir>
+        <air.test.timezone>Asia/Kathmandu</air.test.timezone>
     </properties>
 
     <dependencies>

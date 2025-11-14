@@ -24,13 +24,14 @@ import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.security.spec.ECGenParameterSpec;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.security.KeyStore.getDefaultType;
+import static java.time.ZoneOffset.UTC;
+import static java.time.temporal.ChronoUnit.DAYS;
 import static java.util.Collections.list;
 import static java.util.Objects.requireNonNull;
 import static javax.net.ssl.KeyManagerFactory.getDefaultAlgorithm;
@@ -146,8 +147,8 @@ public final class AutomaticMtls
     static CertificateBuilder certificateBuilder(String sharedSecret, String commonName)
     {
         KeyPair keyPair = fromSharedSecret(sharedSecret);
-        LocalDate notBefore = LocalDate.now();
-        LocalDate notAfter = notBefore.plusYears(10);
+        Instant notBefore = Instant.now().truncatedTo(DAYS);
+        Instant notAfter = notBefore.atZone(UTC).plusYears(10).toInstant();
         X500Principal subject = certificateSubject(commonName);
         return CertificateBuilder.certificateBuilder()
                 .setKeyPair(keyPair)
