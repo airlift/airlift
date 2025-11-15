@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import io.airlift.mcp.McpException;
 import io.airlift.mcp.McpMetadata;
 import io.airlift.mcp.McpRequestContext;
+import io.airlift.mcp.handler.CompletionHandler;
 import io.airlift.mcp.handler.PromptHandler;
 import io.airlift.mcp.handler.RequestContextProvider;
 import io.airlift.mcp.handler.ResourceHandler;
@@ -12,6 +13,13 @@ import io.airlift.mcp.handler.ToolHandler;
 import io.airlift.mcp.model.Annotations;
 import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.CallToolResult;
+import io.airlift.mcp.model.CompleteReference;
+import io.airlift.mcp.model.CompleteReference.PromptReference;
+import io.airlift.mcp.model.CompleteReference.ResourceReference;
+import io.airlift.mcp.model.CompleteRequest;
+import io.airlift.mcp.model.CompleteRequest.CompleteArgument;
+import io.airlift.mcp.model.CompleteRequest.CompleteContext;
+import io.airlift.mcp.model.CompleteResult;
 import io.airlift.mcp.model.Content;
 import io.airlift.mcp.model.GetPromptRequest;
 import io.airlift.mcp.model.GetPromptResult;
@@ -225,6 +233,38 @@ interface Mapper
     static McpSchema.PromptArgument mapPromptArgument(Prompt.Argument ourArgument)
     {
         return new McpSchema.PromptArgument(ourArgument.name(), ourArgument.description().orElse(null), ourArgument.required());
+    }
+
+    static McpStatelessServerFeatures.SyncCompletionSpecification mapCompletion(RequestContextProvider requestContextProvider, CompleteReference ourCompleteReference, CompletionHandler ourCompletionHandler)
+    {
+        McpSchema.CompleteReference theirCompleteReference = switch (ourCompleteReference) {
+            case PromptReference(var name, var title) -> new McpSchema.PromptReference(McpSchema.PromptReference.TYPE, name, title.orElse(null));
+            case ResourceReference(var uri) -> new McpSchema.ResourceReference(McpSchema.ResourceReference.TYPE, uri);
+        };
+
+        BiFunction<McpTransportContext, McpSchema.CompleteRequest, McpSchema.CompleteResult> completeHandler = ((context, theirCompleteRequest) -> {
+            CompleteReference completeReference = switch (theirCompleteRequest.ref()) {
+                case McpSchema.PromptReference(_, var name, var title) -> new PromptReference(name, Optional.ofNullable(title));
+                case McpSchema.ResourceReference(_, var uri) -> new ResourceReference(uri);
+            };
+
+            CompleteArgument completeArgument = new CompleteArgument(theirCompleteRequest.argument().name(), theirCompleteRequest.argument().value());
+
+            Optional<CompleteContext> completeContext = Optional.ofNullable(theirCompleteRequest.context())
+                    .map(theirContext -> new CompleteContext(theirContext.arguments()));
+
+            CompleteRequest completeRequest = new CompleteRequest(completeReference, completeArgument, completeContext);
+            McpRequestContext requestContext = buildMcpRequestContext(context, Optional.ofNullable(theirCompleteRequest.meta()), requestContextProvider);
+
+            CompleteResult completeResult = ourCompletionHandler.complete(requestContext, completeRequest);
+
+            Integer total = completeResult.completion().total().orElse(completeResult.completion().values().size());
+            Boolean hasMore = completeResult.completion().hasMore().orElse(false);
+            McpSchema.CompleteResult.CompleteCompletion theirCompletion = new McpSchema.CompleteResult.CompleteCompletion(completeResult.completion().values(), total, hasMore);
+            return new McpSchema.CompleteResult(theirCompletion);
+        });
+
+        return new McpStatelessServerFeatures.SyncCompletionSpecification(theirCompleteReference, completeHandler);
     }
 
     static McpStatelessServerFeatures.SyncToolSpecification mapTool(RequestContextProvider requestContextProvider, McpJsonMapper objectMapper, Tool ourTool, ToolHandler ourHandler)
