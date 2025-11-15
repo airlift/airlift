@@ -61,6 +61,18 @@ public sealed interface MethodParameter
         public static final IdentityParameter INSTANCE = new IdentityParameter();
     }
 
+    record CompleteArgumentParameter()
+            implements MethodParameter
+    {
+        public static final CompleteArgumentParameter INSTANCE = new CompleteArgumentParameter();
+    }
+
+    record CompleteContextParameter()
+            implements MethodParameter
+    {
+        public static final CompleteContextParameter INSTANCE = new CompleteContextParameter();
+    }
+
     record ObjectParameter(
             String name,
             Class<?> rawType,
