@@ -31,9 +31,15 @@ import io.airlift.http.server.HttpServerInfo;
 import io.airlift.http.server.testing.TestingHttpServerModule;
 import io.airlift.jaxrs.JaxrsModule;
 import io.airlift.json.JsonCodec;
+import io.airlift.json.JsonCodecFactory;
 import io.airlift.json.JsonModule;
 import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.CallToolResult;
+import io.airlift.mcp.model.CompleteReference.PromptReference;
+import io.airlift.mcp.model.CompleteReference.ResourceReference;
+import io.airlift.mcp.model.CompleteRequest;
+import io.airlift.mcp.model.CompleteRequest.CompleteArgument;
+import io.airlift.mcp.model.CompleteResult;
 import io.airlift.mcp.model.Content.TextContent;
 import io.airlift.mcp.model.GetPromptRequest;
 import io.airlift.mcp.model.GetPromptResult;
@@ -76,7 +82,6 @@ import static io.airlift.http.client.FullJsonResponseHandler.createFullJsonRespo
 import static io.airlift.http.client.HttpClientBinder.httpClientBinder;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.Request.Builder.preparePost;
-import static io.airlift.json.JsonCodec.jsonCodec;
 import static io.airlift.mcp.TestingIdentityMapper.ERRORED_IDENTITY;
 import static io.airlift.mcp.TestingIdentityMapper.EXPECTED_IDENTITY;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
@@ -84,6 +89,7 @@ import static jakarta.servlet.http.HttpServletResponse.SC_METHOD_NOT_ALLOWED;
 import static jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.InstanceOfAssertFactories.list;
 import static org.assertj.core.api.InstanceOfAssertFactories.type;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 
@@ -97,6 +103,7 @@ public class TestMcp
     private final URI baseUri;
     private final ObjectMapper objectMapper;
     private final List<String> lastRequestEvents = new ArrayList<>();
+    private final JsonCodecFactory jsonCodecFactory;
 
     public TestMcp()
     {
@@ -122,6 +129,8 @@ public class TestMcp
         httpClient = injector.getInstance(Key.get(HttpClient.class, ForTest.class));
         baseUri = injector.getInstance(HttpServerInfo.class).getHttpUri().resolve("/mcp");
         objectMapper = injector.getInstance(ObjectMapper.class);
+
+        jsonCodecFactory = new JsonCodecFactory(() -> objectMapper);
     }
 
     @BeforeAll
@@ -183,10 +192,10 @@ public class TestMcp
         Request request = preparePost().setUri(baseUri)
                 .addHeader("Content-Type", "application/json")
                 .addHeader(IDENTITY_HEADER, "Mr. Tester")
-                .setBodyGenerator(JsonBodyGenerator.jsonBodyGenerator(jsonCodec(new TypeToken<JsonRpcRequest<?>>() {}), rpcRequest))
+                .setBodyGenerator(JsonBodyGenerator.jsonBodyGenerator(jsonCodecFactory.jsonCodec(new TypeToken<JsonRpcRequest<?>>() {}), rpcRequest))
                 .build();
 
-        FullJsonResponseHandler.JsonResponse<Object> response = httpClient.execute(request, createFullJsonResponseHandler(jsonCodec(new TypeToken<>() {})));
+        FullJsonResponseHandler.JsonResponse<Object> response = httpClient.execute(request, createFullJsonResponseHandler(jsonCodecFactory.jsonCodec(new TypeToken<>() {})));
         assertThat(response.getStatusCode()).isEqualTo(400);
         assertThat(response.getResponseBody())
                 .isEqualTo("{\"message\":\"Both application/json and text/event-stream required in Accept header\"}");
@@ -196,9 +205,9 @@ public class TestMcp
                 .addHeader("Content-Type", "application/json")
                 .addHeader("Accept", "application/json, text/event-stream")
                 .addHeader(IDENTITY_HEADER, "Mr. Tester")
-                .setBodyGenerator(JsonBodyGenerator.jsonBodyGenerator(jsonCodec(new TypeToken<>() {}), new ListToolsResult(ImmutableList.of())))
+                .setBodyGenerator(JsonBodyGenerator.jsonBodyGenerator(jsonCodecFactory.jsonCodec(new TypeToken<>() {}), new ListToolsResult(ImmutableList.of())))
                 .build();
-        response = httpClient.execute(request, createFullJsonResponseHandler(jsonCodec(new TypeToken<>() {})));
+        response = httpClient.execute(request, createFullJsonResponseHandler(jsonCodecFactory.jsonCodec(new TypeToken<>() {})));
         assertThat(response.getStatusCode()).isEqualTo(400);
         assertThat(response.getResponseBody())
                 .isEqualTo("{\"message\":\"Invalid message format\"}");
@@ -342,7 +351,7 @@ public class TestMcp
         ListPromptsResult listPromptsResult = objectMapper.convertValue(response.result().orElseThrow(), ListPromptsResult.class);
         assertThat(listPromptsResult.prompts())
                 .extracting(Prompt::name)
-                .containsExactlyInAnyOrder("greeting");
+                .containsExactlyInAnyOrder("greeting", "age");
 
         GetPromptRequest getPromptRequest = new GetPromptRequest("greeting", ImmutableMap.of("name", "Galt"));
         rpcRequest = JsonRpcRequest.buildRequest(1, "prompts/get", getPromptRequest);
@@ -402,7 +411,7 @@ public class TestMcp
                 .addHeader("Accept", "application/json,text/event-stream")
                 .build();
 
-        var response = httpClient.execute(request, createFullJsonResponseHandler(jsonCodec(new TypeToken<>() {})));
+        var response = httpClient.execute(request, createFullJsonResponseHandler(jsonCodecFactory.jsonCodec(new TypeToken<>() {})));
         assertThat(response.getStatusCode()).isEqualTo(SC_UNAUTHORIZED);
 
         request = prepareGet()
@@ -411,7 +420,7 @@ public class TestMcp
                 .addHeader(IDENTITY_HEADER, EXPECTED_IDENTITY)
                 .build();
 
-        response = httpClient.execute(request, createFullJsonResponseHandler(jsonCodec(new TypeToken<>() {})));
+        response = httpClient.execute(request, createFullJsonResponseHandler(jsonCodecFactory.jsonCodec(new TypeToken<>() {})));
         assertThat(response.getStatusCode()).isEqualTo(SC_METHOD_NOT_ALLOWED);
     }
 
@@ -440,9 +449,34 @@ public class TestMcp
                 .isEqualTo("true");
     }
 
+    @Test
+    public void testCompletions()
+    {
+        CompleteRequest completeRequest = new CompleteRequest(new PromptReference("greeting", Optional.empty()), new CompleteArgument("name", "Jo"), Optional.empty());
+        JsonRpcRequest<?> jsonrpcRequest = JsonRpcRequest.buildRequest(1, "completion/complete", completeRequest);
+        JsonRpcResponse<?> response = rpcCall(jsonrpcRequest);
+
+        CompleteResult completeResult = objectMapper.convertValue(response.result().orElseThrow(), new TypeReference<>() {});
+        assertThat(completeResult.completion().values())
+                .hasSize(1)
+                .first()
+                .asInstanceOf(type(String.class))
+                .isEqualTo("Jordan");
+
+        completeRequest = new CompleteRequest(new ResourceReference("file://{id}.template"), new CompleteArgument("id", "m"), Optional.empty());
+        jsonrpcRequest = JsonRpcRequest.buildRequest(1, "completion/complete", completeRequest);
+        response = rpcCall(jsonrpcRequest);
+
+        completeResult = objectMapper.convertValue(response.result().orElseThrow(), new TypeReference<>() {});
+        assertThat(completeResult.completion().values())
+                .hasSize(2)
+                .asInstanceOf(list(String.class))
+                .containsExactlyInAnyOrder("manny", "moe");
+    }
+
     private JsonRpcResponse<?> rpcCall(JsonRpcRequest<?> rpcRequest)
     {
-        return rpcCall("Mr. Tester", rpcRequest).getValue();
+        return rpcCall(EXPECTED_IDENTITY, rpcRequest).getValue();
     }
 
     private JsonResponse<JsonRpcResponse<?>> rpcCall(String identityHeader, JsonRpcRequest<?> rpcRequest)
@@ -451,21 +485,21 @@ public class TestMcp
                 .addHeader("Content-Type", "application/json")
                 .addHeader("Accept", "application/json,text/event-stream")
                 .addHeader(IDENTITY_HEADER, identityHeader)
-                .setBodyGenerator(JsonBodyGenerator.jsonBodyGenerator(jsonCodec(new TypeToken<JsonRpcRequest<?>>() {}), rpcRequest))
+                .setBodyGenerator(JsonBodyGenerator.jsonBodyGenerator(jsonCodecFactory.jsonCodec(new TypeToken<JsonRpcRequest<?>>() {}), rpcRequest))
                 .build();
 
-        return httpClient.execute(request, createFullJsonResponseHandler(jsonCodec(new TypeToken<>() {})));
+        return httpClient.execute(request, createFullJsonResponseHandler(jsonCodecFactory.jsonCodec(new TypeToken<>() {})));
     }
 
     private JsonResponse<JsonRpcResponse<?>> rpcCallSse(String identityHeader, JsonRpcRequest<?> rpcRequest)
     {
-        JsonCodec<JsonRpcResponse<?>> responseCodec = jsonCodec(new TypeToken<>() {});
+        JsonCodec<JsonRpcResponse<?>> responseCodec = jsonCodecFactory.jsonCodec(new TypeToken<>() {});
 
         Request request = preparePost().setUri(baseUri)
                 .addHeader("Content-Type", "application/json")
                 .addHeader("Accept", "application/json,text/event-stream")
                 .addHeader(IDENTITY_HEADER, identityHeader)
-                .setBodyGenerator(JsonBodyGenerator.jsonBodyGenerator(jsonCodec(new TypeToken<JsonRpcRequest<?>>() {}), rpcRequest))
+                .setBodyGenerator(JsonBodyGenerator.jsonBodyGenerator(jsonCodecFactory.jsonCodec(new TypeToken<JsonRpcRequest<?>>() {}), rpcRequest))
                 .build();
 
         lastRequestEvents.clear();
