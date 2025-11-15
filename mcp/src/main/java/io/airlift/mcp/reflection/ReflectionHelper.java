@@ -3,6 +3,8 @@ package io.airlift.mcp.reflection;
 import io.airlift.mcp.McpDescription;
 import io.airlift.mcp.McpRequestContext;
 import io.airlift.mcp.model.CallToolRequest;
+import io.airlift.mcp.model.CompleteRequest.CompleteArgument;
+import io.airlift.mcp.model.CompleteRequest.CompleteContext;
 import io.airlift.mcp.model.Content;
 import io.airlift.mcp.model.Content.TextContent;
 import io.airlift.mcp.model.GetPromptRequest;
@@ -11,6 +13,8 @@ import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.model.ResourceTemplateValues;
 import io.airlift.mcp.reflection.MethodParameter.CallToolRequestParameter;
+import io.airlift.mcp.reflection.MethodParameter.CompleteArgumentParameter;
+import io.airlift.mcp.reflection.MethodParameter.CompleteContextParameter;
 import io.airlift.mcp.reflection.MethodParameter.GetPromptRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.HttpRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.IdentityParameter;
@@ -99,6 +103,14 @@ public interface ReflectionHelper
 
                     if (ResourceTemplateValues.class.isAssignableFrom(parameter.getType())) {
                         return ResourceTemplateValuesParameter.INSTANCE;
+                    }
+
+                    if (CompleteArgument.class.isAssignableFrom(parameter.getType())) {
+                        return CompleteArgumentParameter.INSTANCE;
+                    }
+
+                    if (CompleteContext.class.isAssignableFrom(parameter.getType())) {
+                        return CompleteContextParameter.INSTANCE;
                     }
 
                     Optional<String> description = Optional.ofNullable(parameter.getAnnotation(McpDescription.class)).map(McpDescription::value);
