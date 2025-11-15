@@ -28,6 +28,7 @@ import io.airlift.mcp.reflection.PromptHandlerProvider;
 import io.airlift.mcp.reflection.ResourceHandlerProvider;
 import io.airlift.mcp.reflection.ResourceTemplateHandlerProvider;
 import io.airlift.mcp.reflection.ToolHandlerProvider;
+import io.airlift.mcp.session.McpSessionController;
 import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema;
 
@@ -41,6 +42,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.inject.Scopes.SINGLETON;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
+import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
 import static io.airlift.json.JsonBinder.jsonBinder;
 import static io.airlift.json.JsonSubTypeBinder.jsonSubTypeBinder;
 import static io.airlift.mcp.reflection.ReflectionHelper.forAllInClass;
@@ -185,10 +187,16 @@ public class McpModule
         bindJsonSubTypes(binder);
         bindCustomErrorTypes(binder);
         bindIdentityMapper(binder);
+        bindSessions(binder);
 
         if (mode == Mode.REFERENCE_SDK) {
             binder.install(new ReferenceModule());
         }
+    }
+
+    private void bindSessions(Binder binder)
+    {
+        newOptionalBinder(binder, McpSessionController.class);
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})

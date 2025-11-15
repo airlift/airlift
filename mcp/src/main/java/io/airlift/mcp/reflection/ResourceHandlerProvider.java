@@ -21,7 +21,7 @@ import java.util.OptionalDouble;
 import java.util.OptionalLong;
 
 import static io.airlift.mcp.McpException.exception;
-import static io.airlift.mcp.reflection.Predicates.isHttpRequest;
+import static io.airlift.mcp.reflection.Predicates.isHttpRequestOrContext;
 import static io.airlift.mcp.reflection.Predicates.isIdentity;
 import static io.airlift.mcp.reflection.Predicates.isReadResourceRequest;
 import static io.airlift.mcp.reflection.Predicates.isSourceResource;
@@ -48,7 +48,7 @@ public class ResourceHandlerProvider
         this.method = requireNonNull(method, "method is null");
         this.parameters = ImmutableList.copyOf(parameters);
 
-        validate(method, parameters, isHttpRequest.or(isIdentity).or(isReadResourceRequest).or(isSourceResource), returnsResourceContents.or(returnsResourceContentsList));
+        validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isReadResourceRequest).or(isSourceResource), returnsResourceContents.or(returnsResourceContentsList));
         resultIsSingleContent = returnsResourceContents.test(method);
 
         resource = buildResource(
@@ -79,8 +79,8 @@ public class ResourceHandlerProvider
         Provider<?> instance = injector.getProvider(clazz);
         MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper);
 
-        ResourceHandler resourceHandler = (request, sourceResource, readResourceRequest) -> {
-            Object result = methodInvoker.builder(request)
+        ResourceHandler resourceHandler = (requestContext, sourceResource, readResourceRequest) -> {
+            Object result = methodInvoker.builder(requestContext)
                     .withReadResourceRequest(sourceResource, readResourceRequest)
                     .invoke();
             return mapResult(method, result, resultIsSingleContent);
