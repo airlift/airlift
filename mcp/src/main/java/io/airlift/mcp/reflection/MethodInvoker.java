@@ -11,12 +11,16 @@ import com.google.inject.Provider;
 import io.airlift.mcp.McpException;
 import io.airlift.mcp.McpRequestContext;
 import io.airlift.mcp.model.CallToolRequest;
+import io.airlift.mcp.model.CompleteRequest.CompleteArgument;
+import io.airlift.mcp.model.CompleteRequest.CompleteContext;
 import io.airlift.mcp.model.GetPromptRequest;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.model.ResourceTemplateValues;
 import io.airlift.mcp.reflection.MethodParameter.CallToolRequestParameter;
+import io.airlift.mcp.reflection.MethodParameter.CompleteArgumentParameter;
+import io.airlift.mcp.reflection.MethodParameter.CompleteContextParameter;
 import io.airlift.mcp.reflection.MethodParameter.GetPromptRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.HttpRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.IdentityParameter;
@@ -81,6 +85,10 @@ public class MethodInvoker
 
         Builder withResourceTemplateValues(ResourceTemplateValues resourceTemplateValues);
 
+        Builder withCompleteArgument(CompleteArgument completeArgument);
+
+        Builder withCompleteContext(CompleteContext completeContext);
+
         Object invoke();
     }
 
@@ -95,6 +103,8 @@ public class MethodInvoker
             private Optional<ResourceTemplate> sourceResourceTemplate = Optional.empty();
             private Optional<ReadResourceRequest> readResourceRequest = Optional.empty();
             private Optional<ResourceTemplateValues> resourceTemplateValues = Optional.empty();
+            private Optional<CompleteArgument> completeArgument = Optional.empty();
+            private Optional<CompleteContext> completeContext = Optional.empty();
 
             @Override
             public Builder withArguments(Map<String, Object> arguments)
@@ -141,6 +151,20 @@ public class MethodInvoker
             }
 
             @Override
+            public Builder withCompleteArgument(CompleteArgument completeArgument)
+            {
+                this.completeArgument = Optional.of(completeArgument);
+                return this;
+            }
+
+            @Override
+            public Builder withCompleteContext(CompleteContext completeContext)
+            {
+                this.completeContext = Optional.of(completeContext);
+                return this;
+            }
+
+            @Override
             public Object invoke()
             {
                 try {
@@ -155,6 +179,8 @@ public class MethodInvoker
                                 case ReadResourceRequestParameter _ -> readResourceRequest.orElseThrow(() -> new IllegalStateException("ReadResourceRequest is required"));
                                 case ResourceTemplateValuesParameter _ -> resourceTemplateValues.orElseThrow(() -> new IllegalStateException("ResourceTemplateValues is required"));
                                 case IdentityParameter _ -> retrieveIdentityValue(requestContext.request());
+                                case CompleteArgumentParameter _ -> completeArgument.orElseThrow(() -> new IllegalStateException("CompleteArgument is required"));
+                                case CompleteContextParameter _ -> completeContext.orElseThrow(() -> new IllegalStateException("CompleteContext is required"));
                                 case ObjectParameter objectParameter -> valueForObjectParameter(arguments, objectParameter);
                             })
                             .toArray();
