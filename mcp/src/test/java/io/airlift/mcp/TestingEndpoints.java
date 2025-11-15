@@ -3,6 +3,8 @@ package io.airlift.mcp;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.airlift.mcp.model.CallToolResult;
+import io.airlift.mcp.model.CompleteRequest.CompleteArgument;
+import io.airlift.mcp.model.CompleteRequest.CompleteContext;
 import io.airlift.mcp.model.Content;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.ResourceContents;
@@ -11,7 +13,9 @@ import io.airlift.mcp.model.StructuredContentResult;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.mcp.McpException.exception;
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,16 +39,50 @@ public class TestingEndpoints
         return a + b;
     }
 
+    @McpTool(name = "progress", description = "Test progress notifications")
+    public boolean toolWithNotifications(McpRequestContext requestContext)
+    {
+        for (int i = 0; i <= 100; ++i) {
+            requestContext.sendProgress(i, 100, "Progress " + i + "%");
+            try {
+                TimeUnit.MILLISECONDS.sleep(10);
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            }
+        }
+        return true;
+    }
+
     @McpTool(name = "throws", description = "Throws an exception for testing purposes")
     public void throwsException()
     {
         throw exception("this ain't good");
     }
 
+    @McpPrompt(name = "age", description = "What is your age?")
+    public String age(@McpDescription("What is your age?") String age)
+    {
+        return "You are " + age + "years old.";
+    }
+
     @McpPrompt(name = "greeting", description = "Generate a greeting message")
     public String greeting(@McpDescription("Name of the person to greet") String name)
     {
         return "Hello, " + name + "!";
+    }
+
+    @McpPromptCompletion(name = "greeting")
+    public List<String> nameCompletions(CompleteArgument argument, CompleteContext context)
+    {
+        if (argument.name().equals("name")) {
+            return ImmutableList.of("Jordan", "Rita", "Bobby", "Oliver", "Olive", "Steve")
+                    .stream()
+                    .filter(name -> name.toLowerCase().startsWith(argument.value().toLowerCase()))
+                    .collect(toImmutableList());
+        }
+        return ImmutableList.of();
     }
 
     @McpResource(name = "example1", uri = "file://example1.txt", description = "This is example1 resource.", mimeType = "text/plain")
@@ -64,6 +102,18 @@ public class TestingEndpoints
     {
         String id = resourceTemplateValues.templateValues().getOrDefault("id", "n/a");
         return ImmutableList.of(new ResourceContents(request.uri(), request.uri(), "text/plain", "ID is: " + id));
+    }
+
+    @McpResourceTemplateCompletion(uriTemplate = "file://{id}.template")
+    public List<String> example1ResourceCompletions(CompleteArgument argument)
+    {
+        if (argument.name().equals("id")) {
+            return ImmutableList.of("manny", "moe", "jack")
+                    .stream()
+                    .filter(uri -> uri.toLowerCase().startsWith(argument.value().toLowerCase()))
+                    .collect(toImmutableList());
+        }
+        return ImmutableList.of();
     }
 
     @McpTool(name = "addThree", description = "Add three numbers")

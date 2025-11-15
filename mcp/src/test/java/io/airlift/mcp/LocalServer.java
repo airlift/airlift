@@ -1,5 +1,6 @@
 package io.airlift.mcp;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Injector;
@@ -24,6 +25,7 @@ public class LocalServer
     private static final Logger log = Logger.get(LocalServer.class);
 
     public static void main(String[] args)
+            throws JsonProcessingException
     {
         Optional<Integer> port = switch (args.length) {
             case 0 -> Optional.empty();
