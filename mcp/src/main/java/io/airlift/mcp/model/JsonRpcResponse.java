@@ -7,6 +7,7 @@ import static java.util.Objects.requireNonNull;
 
 // see https://www.jsonrpc.org/specification#response_object
 public record JsonRpcResponse<T>(String jsonrpc, Object id, Optional<JsonRpcErrorDetail> error, Optional<T> result)
+        implements JsonRpcMessage
 {
     public JsonRpcResponse
     {

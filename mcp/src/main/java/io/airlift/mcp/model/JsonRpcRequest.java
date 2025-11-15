@@ -6,6 +6,7 @@ import static java.util.Objects.requireNonNull;
 
 // see https://www.jsonrpc.org/specification#request_object
 public record JsonRpcRequest<T>(String jsonrpc, Object id, String method, Optional<T> params)
+        implements JsonRpcMessage
 {
     public static final String JSON_RPC_VERSION = "2.0";
 
