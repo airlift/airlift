@@ -297,15 +297,10 @@ public class TestConfig
                 install(switchModule(
                         SwitchConfig.class,
                         SwitchConfig::getValue,
-                        value -> {
-                            switch (value) {
-                                case A:
-                                    return a;
-                                case B:
-                                    return b;
-                                default:
-                                    throw new RuntimeException("Not supported value: " + value);
-                            }
+                        value -> switch (value) {
+                            case A -> a;
+                            case B -> b;
+                            default -> throw new RuntimeException("Not supported value: " + value);
                         }));
             }
         };
@@ -331,7 +326,7 @@ public class TestConfig
     @SafeVarargs
     private static <T> Module createModule(Key<T> key, Class<T> configClass, String prefix, ConfigDefaults<T>... configDefaults)
     {
-        Module module = binder -> {
+        return binder -> {
             ConfigBinder configBinder = configBinder(binder);
 
             configBinder.bindConfig(key, configClass, prefix);
@@ -340,8 +335,6 @@ public class TestConfig
                 configBinder.bindConfigDefaults(key, configDefault);
             }
         };
-
-        return module;
     }
 
     private static Map<String, String> prefix(String prefix, Map<String, String> properties)

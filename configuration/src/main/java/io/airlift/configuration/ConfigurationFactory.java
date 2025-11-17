@@ -41,12 +41,15 @@ import com.google.inject.spi.Message;
 import com.google.inject.spi.ProviderInstanceBinding;
 import io.airlift.configuration.ConfigurationMetadata.AttributeMetadata;
 import jakarta.annotation.Nullable;
+import jakarta.annotation.PreDestroy;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
-import jakarta.validation.Validator;
+import jakarta.validation.ValidatorFactory;
 import org.hibernate.validator.HibernateValidator;
 import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.lang.reflect.InvocationTargetException;
@@ -81,32 +84,11 @@ import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 
 public class ConfigurationFactory
+        implements AutoCloseable
 {
-    @GuardedBy("VALIDATOR")
-    private static final Validator VALIDATOR;
-
     private static final Splitter VALUE_SPLITTER = Splitter.on(",").omitEmptyStrings().trimResults();
     private static final LoadingCache<Class<?>, ConfigurationMetadata<?>> METADATA_CACHE = CacheBuilder.newBuilder()
             .build(CacheLoader.from(ConfigurationMetadata::getConfigurationMetadata));
-
-    static {
-        ClassLoader currentClassLoader = Thread.currentThread().getContextClassLoader();
-        try {
-            // this prevents hibernate validator from using the thread context classloader
-            Thread.currentThread().setContextClassLoader(null);
-            VALIDATOR = Validation.byProvider(HibernateValidator.class)
-                    .configure()
-                    .externalClassLoader(HibernateValidator.class.getClassLoader())
-                    .ignoreXmlConfiguration()
-                    .messageInterpolator(new ParameterMessageInterpolator(Set.of(ENGLISH), ENGLISH, false))
-                    .buildValidatorFactory()
-                    .getValidator();
-        }
-        finally {
-            Thread.currentThread().setContextClassLoader(currentClassLoader);
-        }
-    }
-
     private final Map<String, String> properties;
     private final WarningsMonitor warningsMonitor;
     private final ConcurrentMap<ConfigurationProvider<?>, Object> instanceCache = new ConcurrentHashMap<>();
@@ -116,6 +98,7 @@ public class ConfigurationFactory
     @GuardedBy("this")
     private final List<Consumer<ConfigurationProvider<?>>> configurationBindingListeners = new ArrayList<>();
     private final ListMultimap<Key<?>, ConfigDefaultsHolder<?>> registeredDefaultConfigs = Multimaps.synchronizedListMultimap(ArrayListMultimap.create());
+    private final ValidatorFactory validatorFactory;
 
     public ConfigurationFactory(Map<String, String> properties)
     {
@@ -126,6 +109,15 @@ public class ConfigurationFactory
     {
         this.properties = ImmutableMap.copyOf(properties);
         this.warningsMonitor = warningsMonitor;
+
+        try (ThreadContextClassLoader _ = new ThreadContextClassLoader(null)) {
+            this.validatorFactory = Validation.byProvider(HibernateValidator.class)
+                    .configure()
+                    .externalClassLoader(HibernateValidator.class.getClassLoader())
+                    .ignoreXmlConfiguration()
+                    .messageInterpolator(new ParameterMessageInterpolator(Set.of(ENGLISH), ENGLISH, false))
+                    .buildValidatorFactory();
+        }
     }
 
     public Map<String, String> getProperties()
@@ -190,7 +182,7 @@ public class ConfigurationFactory
                 @Override
                 public <T> Void visit(Binding<T> binding)
                 {
-                    if (binding instanceof InstanceBinding instanceBinding) {
+                    if (binding instanceof InstanceBinding<?> instanceBinding) {
                         // configuration listener
                         if (instanceBinding.getInstance() instanceof ConfigurationBindingListenerHolder) {
                             addConfigurationBindingListener(((ConfigurationBindingListenerHolder) instanceBinding.getInstance()).getConfigurationBindingListener());
@@ -205,7 +197,7 @@ public class ConfigurationFactory
                     // configuration provider
                     if (binding instanceof ProviderInstanceBinding<?> providerInstanceBinding) {
                         Provider<?> provider = providerInstanceBinding.getProviderInstance();
-                        if (provider instanceof ConfigurationProvider configurationProvider) {
+                        if (provider instanceof ConfigurationProvider<?> configurationProvider) {
                             registerConfigurationProvider(configurationProvider, Optional.of(binding.getSource()));
                         }
                     }
@@ -325,7 +317,7 @@ public class ConfigurationFactory
 
     public <T> T build(Class<T> configClass, @Nullable String prefix)
     {
-        return build(configClass, Optional.ofNullable(prefix), ConfigDefaults.noDefaults()).getInstance();
+        return build(configClass, Optional.ofNullable(prefix), ConfigDefaults.noDefaults()).instance();
     }
 
     /**
@@ -344,11 +336,11 @@ public class ConfigurationFactory
 
         ConfigurationBinding<T> configurationBinding = configurationProvider.getConfigurationBinding();
         ConfigurationHolder<T> holder = build(configurationBinding.configClass(), configurationBinding.prefix(), getConfigDefaults(configurationBinding.key()));
-        instance = holder.getInstance();
+        instance = holder.instance();
 
         // inform caller about warnings
         if (warningsMonitor != null) {
-            for (Message message : holder.getProblems().getWarnings()) {
+            for (Message message : holder.problems().getWarnings()) {
                 warningsMonitor.onWarning(message.toString());
             }
         }
@@ -442,11 +434,9 @@ public class ConfigurationFactory
         return new ConfigurationHolder<>(instance, problems);
     }
 
-    private static <T> Set<ConstraintViolation<T>> validate(T instance)
+    private <T> Set<ConstraintViolation<T>> validate(T instance)
     {
-        synchronized (VALIDATOR) {
-            return VALIDATOR.validate(instance);
-        }
+        return validatorFactory.getValidator().validate(instance);
     }
 
     @SuppressWarnings("unchecked")
@@ -771,26 +761,16 @@ public class ConfigurationFactory
         return factory.invoke(null, value);
     }
 
-    private static class ConfigurationHolder<T>
+    @Override
+    @PreDestroy
+    public void close()
+            throws IOException
     {
-        private final T instance;
-        private final Problems problems;
+        validatorFactory.close();
+    }
 
-        private ConfigurationHolder(T instance, Problems problems)
-        {
-            this.instance = instance;
-            this.problems = problems;
-        }
-
-        public T getInstance()
-        {
-            return instance;
-        }
-
-        public Problems getProblems()
-        {
-            return problems;
-        }
+    private record ConfigurationHolder<T>(T instance, Problems problems)
+    {
     }
 
     private class ConfigurationProviderConsumer
@@ -809,6 +789,24 @@ public class ConfigurationFactory
         public void accept(ConfigurationProvider<?> configurationProvider)
         {
             listener.configurationBound(configurationProvider.getConfigurationBinding(), configBinder);
+        }
+    }
+
+    static class ThreadContextClassLoader
+            implements Closeable
+    {
+        private final ClassLoader originalThreadContextClassLoader;
+
+        public ThreadContextClassLoader(ClassLoader newThreadContextClassLoader)
+        {
+            this.originalThreadContextClassLoader = Thread.currentThread().getContextClassLoader();
+            Thread.currentThread().setContextClassLoader(newThreadContextClassLoader);
+        }
+
+        @Override
+        public void close()
+        {
+            Thread.currentThread().setContextClassLoader(originalThreadContextClassLoader);
         }
     }
 }

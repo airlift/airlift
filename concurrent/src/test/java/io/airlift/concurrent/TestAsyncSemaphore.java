@@ -354,7 +354,7 @@ public class TestAsyncSemaphore
             assertThat(result).isNotDone();
             assertThat(tasks.getFutures()).hasSize(concurrency);
 
-            tasks.getFutures().get(0).set("value0");
+            tasks.getFutures().getFirst().set("value0");
             assertThat(result).isNotDone();
             assertThat(tasks.getFutures()).hasSize(concurrency + 1);
 
@@ -386,7 +386,7 @@ public class TestAsyncSemaphore
             assertThat(result).isNotDone();
             assertThat(tasks.getFutures()).hasSize(concurrency);
 
-            tasks.getFutures().get(0).set("value0");
+            tasks.getFutures().getFirst().set("value0");
             assertThat(result).isNotDone();
             assertThat(tasks.getFutures()).hasSize(concurrency + 1);
 
@@ -501,7 +501,7 @@ public class TestAsyncSemaphore
                     concurrency,
                     directExecutor());
             assertThat(result).isNotDone();
-            tasks.getFutures().get(0).set("value");
+            tasks.getFutures().getFirst().set("value");
             assertThat(result).isNotDone();
             result.cancel(true);
             assertThat(tasks.getFutures()).hasSize(concurrency + 1);
@@ -536,7 +536,7 @@ public class TestAsyncSemaphore
                     concurrency,
                     directExecutor());
             assertThat(result).isNotDone();
-            tasks.getFutures().get(0).set("value");
+            tasks.getFutures().getFirst().set("value");
             assertThat(result).isNotDone();
             result.cancel(true);
             assertThat(tasks.getFutures()).hasSize(concurrency + 1);
@@ -569,7 +569,7 @@ public class TestAsyncSemaphore
                 concurrency,
                 directExecutor());
         assertThat(result).isNotDone();
-        tasks.getFutures().get(0).set("value");
+        tasks.getFutures().getFirst().set("value");
         assertThat(result).isDone();
         assertThatFutureFailsWithMessageContaining(result, message);
         for (int i = 1; i < concurrency; i++) {
@@ -700,7 +700,7 @@ public class TestAsyncSemaphore
 
     private static FutureCallback<Object> completionCallback(AtomicInteger successCount, AtomicInteger failureCount, CountDownLatch completionLatch)
     {
-        return new FutureCallback<Object>()
+        return new FutureCallback<>()
         {
             @Override
             public void onSuccess(@Nullable Object result)

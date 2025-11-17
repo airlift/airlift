@@ -210,10 +210,10 @@ public class CacheControl
             else {
                 List<String> pair = ImmutableList.copyOf(Splitter.on("=").limit(2).split(token));
                 if (pair.size() == 2) {
-                    cacheControl.getCacheExtension().put(pair.get(0), pair.get(1));
+                    cacheControl.getCacheExtension().put(pair.getFirst(), pair.getLast());
                 }
                 else {
-                    cacheControl.getCacheExtension().put(pair.get(0), "");
+                    cacheControl.getCacheExtension().put(pair.getFirst(), "");
                 }
             }
         }
