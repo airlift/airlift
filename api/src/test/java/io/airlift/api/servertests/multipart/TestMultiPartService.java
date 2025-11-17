@@ -1,6 +1,5 @@
 package io.airlift.api.servertests.multipart;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.Resources;
 import io.airlift.api.servertests.ServerTestBase;
 import io.airlift.http.client.Request;
@@ -11,6 +10,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.File;
 import java.io.IOException;
