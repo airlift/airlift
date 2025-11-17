@@ -25,6 +25,7 @@ import io.airlift.json.LengthLimitedWriter.LengthLimitExceededException;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.lang.reflect.Type;
@@ -267,5 +268,15 @@ public class JsonCodec<T>
     TypeToken<T> getTypeToken()
     {
         return (TypeToken<T>) TypeToken.of(type);
+    }
+
+    public void toJsonStream(T instance, OutputStream stream)
+    {
+        try {
+            mapper.writerFor(javaType).writeValue(stream, instance);
+        }
+        catch (IOException e) {
+            throw new IllegalArgumentException(format("%s could not be converted to JSON", instance.getClass().getName()), e);
+        }
     }
 }

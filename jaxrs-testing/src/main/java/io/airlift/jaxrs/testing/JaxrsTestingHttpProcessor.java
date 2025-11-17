@@ -23,6 +23,7 @@ import io.airlift.http.client.Request;
 import io.airlift.http.client.Response;
 import io.airlift.http.client.StaticBodyGenerator;
 import io.airlift.http.client.StreamingBodyGenerator;
+import io.airlift.http.client.StreamingJsonBodyGenerator;
 import io.airlift.http.client.testing.TestingHttpClient;
 import io.airlift.http.client.testing.TestingResponse;
 import io.airlift.log.Logger;
@@ -103,6 +104,11 @@ public class JaxrsTestingHttpProcessor
                 case ByteBufferBodyGenerator generator -> getBytes(generator.getByteBuffers());
                 case FileBodyGenerator generator -> Files.readAllBytes(generator.getPath());
                 case StreamingBodyGenerator generator -> {
+                    try (InputStream stream = generator.source()) {
+                        yield stream.readAllBytes();
+                    }
+                }
+                case StreamingJsonBodyGenerator<?> generator -> {
                     try (InputStream stream = generator.source()) {
                         yield stream.readAllBytes();
                     }
