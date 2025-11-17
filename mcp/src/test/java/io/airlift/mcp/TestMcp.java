@@ -54,7 +54,6 @@ import io.airlift.mcp.model.StructuredContent;
 import io.airlift.mcp.model.Tool;
 import io.airlift.node.NodeModule;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -96,7 +95,6 @@ public class TestMcp
     private final Injector injector;
     private final URI baseUri;
     private final ObjectMapper objectMapper;
-    private final List<String> lastRequestEvents = new ArrayList<>();
 
     public TestMcp()
     {
@@ -122,12 +120,6 @@ public class TestMcp
         httpClient = injector.getInstance(Key.get(HttpClient.class, ForTest.class));
         baseUri = injector.getInstance(HttpServerInfo.class).getHttpUri().resolve("/mcp");
         objectMapper = injector.getInstance(ObjectMapper.class);
-    }
-
-    @BeforeAll
-    public void setup()
-    {
-        lastRequestEvents.clear();
     }
 
     @AfterAll
@@ -296,7 +288,7 @@ public class TestMcp
         ListToolsResult listToolsResult = objectMapper.convertValue(response.result().orElseThrow(), ListToolsResult.class);
         assertThat(listToolsResult.tools())
                 .extracting(Tool::name)
-                .containsExactlyInAnyOrder("add", "throws", "addThree", "addFirstTwoAndAllThree", "progress");
+                .containsExactlyInAnyOrder("add", "throws", "addThree", "addFirstTwoAndAllThree", "progress", "pings");
 
         CallToolRequest callToolRequest = new CallToolRequest("add", ImmutableMap.of("a", 1, "b", 2));
         jsonrpcRequest = JsonRpcRequest.buildRequest(1, "tools/call", callToolRequest);
@@ -407,9 +399,11 @@ public class TestMcp
     public void testProgress()
             throws JsonProcessingException
     {
+        List<String> lastRequestEvents = new ArrayList<>();
+
         CallToolRequest callToolRequest = new CallToolRequest("progress", ImmutableMap.of());
         JsonRpcRequest<?> jsonrpcRequest = JsonRpcRequest.buildRequest(1, "tools/call", callToolRequest);
-        JsonRpcResponse<?> response = rpcCallSse("Mr. Tester", jsonrpcRequest).getValue();
+        JsonRpcResponse<?> response = rpcCallSse("Mr. Tester", jsonrpcRequest, lastRequestEvents).getValue();
 
         for (int i = 0; i <= 100; ++i) {
             ProgressNotification progressNotification = new ProgressNotification(Optional.empty(), "Progress " + i + "%", OptionalDouble.of(i), OptionalDouble.of(100));
@@ -426,6 +420,31 @@ public class TestMcp
                 .asInstanceOf(type(TextContent.class))
                 .extracting(TextContent::text)
                 .isEqualTo("true");
+    }
+
+    @Test
+    public void testPing()
+            throws JsonProcessingException
+    {
+        List<String> lastRequestEvents = new ArrayList<>();
+        CallToolRequest callToolRequest = new CallToolRequest("pings", ImmutableMap.of());
+        JsonRpcRequest<?> jsonrpcRequest = JsonRpcRequest.buildRequest(1, "tools/call", callToolRequest);
+        JsonRpcResponse<?> response = rpcCallSse("Mr. Tester", jsonrpcRequest, lastRequestEvents).getValue();
+
+        for (int i = 0; i <= 100; ++i) {
+            String expectedPingEvent = objectMapper.writeValueAsString(JsonRpcRequest.buildNotification("ping"));
+            assertThat(lastRequestEvents).hasSizeGreaterThanOrEqualTo(i);
+            String event = lastRequestEvents.get(i);
+            assertThat(event).isEqualTo(expectedPingEvent);
+        }
+
+        CallToolResult callToolResult = objectMapper.convertValue(response.result().orElseThrow(), new TypeReference<>() {});
+        assertThat(callToolResult.content())
+                .hasSize(1)
+                .first()
+                .asInstanceOf(type(TextContent.class))
+                .extracting(TextContent::text)
+                .isEqualTo("false");
     }
 
     private JsonRpcResponse<?> rpcCall(JsonRpcRequest<?> jsonrpcRequest)
@@ -445,7 +464,7 @@ public class TestMcp
         return httpClient.execute(request, createFullJsonResponseHandler(jsonCodec(new TypeToken<>() {})));
     }
 
-    private JsonResponse<JsonRpcResponse<?>> rpcCallSse(String identityHeader, JsonRpcRequest<?> jsonrpcRequest)
+    private JsonResponse<JsonRpcResponse<?>> rpcCallSse(String identityHeader, JsonRpcRequest<?> jsonrpcRequest, List<String> lastRequestEvents)
     {
         JsonCodec<JsonRpcResponse<?>> responseCodec = jsonCodec(new TypeToken<>() {});
 

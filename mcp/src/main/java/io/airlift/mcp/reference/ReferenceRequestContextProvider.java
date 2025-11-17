@@ -39,6 +39,12 @@ public class ReferenceRequestContextProvider
                 return request;
             }
 
+            @Override
+            public void ping()
+            {
+                sendNotification("ping", Optional.empty());
+            }
+
             @SuppressWarnings("SwitchStatementWithTooFewBranches")
             @Override
             public void sendProgress(double progress, double total, String message)

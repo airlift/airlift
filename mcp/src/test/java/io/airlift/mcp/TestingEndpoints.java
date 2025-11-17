@@ -12,6 +12,7 @@ import io.airlift.mcp.model.StructuredContentResult;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.function.IntConsumer;
 
 import static io.airlift.mcp.McpException.exception;
 import static java.util.Objects.requireNonNull;
@@ -39,17 +40,15 @@ public class TestingEndpoints
     @McpTool(name = "progress", description = "Test progress notifications")
     public boolean toolWithNotifications(McpRequestContext requestContext)
     {
-        for (int i = 0; i <= 100; ++i) {
-            requestContext.sendProgress(i, 100, "Progress " + i + "%");
-            try {
-                TimeUnit.MILLISECONDS.sleep(10);
-            }
-            catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new RuntimeException(e);
-            }
-        }
+        run100Times(i -> requestContext.sendProgress(i, 100, "Progress " + i + "%"));
         return true;
+    }
+
+    @McpTool(name = "pings", description = "Test progress notifications")
+    public boolean toolWithPings(McpRequestContext requestContext)
+    {
+        run100Times(_ -> requestContext.ping());
+        return false;
     }
 
     @McpTool(name = "throws", description = "Throws an exception for testing purposes")
@@ -111,5 +110,19 @@ public class TestingEndpoints
                 ImmutableList.of(new Content.TextContent(String.valueOf(a + b + c))),
                 new TwoAndThree(a + b, a + b + c),
                 false);
+    }
+
+    private void run100Times(IntConsumer runner)
+    {
+        for (int i = 0; i <= 100; ++i) {
+            runner.accept(i);
+            try {
+                TimeUnit.MILLISECONDS.sleep(10);
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            }
+        }
     }
 }
