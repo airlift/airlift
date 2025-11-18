@@ -23,8 +23,10 @@ import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -46,25 +48,27 @@ class SchemaBuilder
     private final boolean enumsAsStrings;
     private final String schemaTag;
     private final Map<Type, ModelResource> typeToResourceCache;
+    private final Map<String, Schema<?>> allOfSchemas;
 
     SchemaBuilder(boolean enumsAsStrings)
     {
-        this(TAG_MODEL_DEFINITIONS, new HashMap<>(), enumsAsStrings, new HashMap<>());
+        this(TAG_MODEL_DEFINITIONS, new HashMap<>(), enumsAsStrings, new HashMap<>(), new HashMap<>());
     }
 
-    private SchemaBuilder(String schemaTag, Map<SchemaKey, Schema<?>> schemas, boolean enumsAsStrings, Map<Type, ModelResource> typeToResourceCache)
+    private SchemaBuilder(String schemaTag, Map<SchemaKey, Schema<?>> schemas, boolean enumsAsStrings, Map<Type, ModelResource> typeToResourceCache, Map<String, Schema<?>> allOfSchemas)
     {
         this.schemaTag = requireNonNull(schemaTag, "schemaTag is null");
         // don't copy
         this.schemas = requireNonNull(schemas, "schemas is null");
         this.enumsAsStrings = enumsAsStrings;
-        this.typeToResourceCache = typeToResourceCache;
+        this.typeToResourceCache = requireNonNull(typeToResourceCache, "typeToResourceCache is null");  // don't copy
+        this.allOfSchemas = requireNonNull(allOfSchemas, "allOfSchemas is null");  // don't copy
     }
 
     @SuppressWarnings("SameParameterValue")
     SchemaBuilder withSchemaTag(String schemaTag)
     {
-        return new SchemaBuilder(schemaTag, schemas, enumsAsStrings, typeToResourceCache);
+        return new SchemaBuilder(schemaTag, schemas, enumsAsStrings, typeToResourceCache, allOfSchemas);
     }
 
     private record SchemaKey(Optional<String> parent, Type containerType, ModelResourceType resourceType, BuildSchemaMode mode)
@@ -110,7 +114,7 @@ class SchemaBuilder
 
     Collection<Schema<?>> build()
     {
-        return schemas.values();
+        return withMissingRefs();
     }
 
     Schema<?> buildMultiPartForm(ModelResource modelResource, BuildSchemaMode mode)
@@ -190,6 +194,23 @@ class SchemaBuilder
             schema = buildEnum(clazz);
         }
         return Optional.ofNullable(schema);
+    }
+
+    private List<Schema<?>> withMissingRefs()
+    {
+        List<Schema<?>> localSchemas = new ArrayList<>(schemas.values());
+
+        // allOf schemas do not add the sub-schema to the main schema list because they get merged with the
+        // parent. See the buildResourceSchema() method and the line "if (mode.isAllOf())".
+        // However, recursive references may exist to these sub-schemas and the schemas may not
+        // have been added anywhere else. So, add in any missing referenced allOf schemas here.
+        HashMap<String, Schema<?>> localAllOfSchemas = new HashMap<>(allOfSchemas);
+        // remove any allOf schemas that are already included
+        schemas.values().stream().map(Schema::getName).forEach(localAllOfSchemas::remove);
+        // add the missing schemas
+        localSchemas.addAll(localAllOfSchemas.values());
+
+        return localSchemas;
     }
 
     private Schema<?> buildEnum(Class<?> clazz)
@@ -283,6 +304,9 @@ class SchemaBuilder
 
         if (mode.isAllOf()) {
             // we don't save allOf schemas. They get merged with the parent.
+            // However, keep track of them in case there are recursive references to them
+            // that need to be added prior to building.
+            allOfSchemas.put(schema.getName(), schema);
             return schema;
         }
 
