@@ -17,6 +17,7 @@ import io.airlift.http.client.RequestStats;
 import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.StaticBodyGenerator;
 import io.airlift.http.client.StreamingBodyGenerator;
+import io.airlift.http.client.StreamingJsonBodyGenerator;
 import io.airlift.http.client.StreamingResponse;
 import io.airlift.http.client.jetty.HttpClientLogger.RequestInfo;
 import io.airlift.http.client.jetty.HttpClientLogger.ResponseInfo;
@@ -990,6 +991,7 @@ public class JettyHttpClient
                 case ByteBufferBodyGenerator generator -> jettyRequest.body(new ByteBufferRequestContent(generator.getByteBuffers()));
                 case FileBodyGenerator generator -> jettyRequest.body(fileContent(generator.getPath()));
                 case StreamingBodyGenerator generator -> jettyRequest.body(new InputStreamRequestContent(generator.contentType(), generator.source(), new ByteBufferPool.Sized(httpClient.getByteBufferPool())));
+                case StreamingJsonBodyGenerator<?> generator -> jettyRequest.body(new InputStreamRequestContent(generator.contentType(), generator.source(), new ByteBufferPool.Sized(httpClient.getByteBufferPool())));
             }
         }
 
