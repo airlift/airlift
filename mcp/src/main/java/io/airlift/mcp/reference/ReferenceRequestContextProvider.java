@@ -5,7 +5,11 @@ import com.google.inject.Inject;
 import io.airlift.mcp.McpRequestContext;
 import io.airlift.mcp.handler.RequestContextProvider;
 import io.airlift.mcp.model.JsonRpcRequest;
+import io.airlift.mcp.model.LoggingLevel;
+import io.airlift.mcp.model.LoggingMessageNotification;
 import io.airlift.mcp.model.ProgressNotification;
+import io.airlift.mcp.sessions.SessionController;
+import io.airlift.mcp.sessions.SessionId;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -14,17 +18,22 @@ import java.util.Optional;
 import java.util.OptionalDouble;
 
 import static io.airlift.mcp.McpException.exception;
+import static io.airlift.mcp.reference.ReferenceServerTransport.requireSessionId;
+import static io.airlift.mcp.sessions.SessionKey.LOGGING_LEVEL;
+import static io.modelcontextprotocol.spec.McpSchema.METHOD_NOTIFICATION_MESSAGE;
 import static java.util.Objects.requireNonNull;
 
 public class ReferenceRequestContextProvider
         implements RequestContextProvider
 {
     private final ObjectMapper objectMapper;
+    private final Optional<SessionController> sessionController;
 
     @Inject
-    public ReferenceRequestContextProvider(ObjectMapper objectMapper)
+    public ReferenceRequestContextProvider(ObjectMapper objectMapper, Optional<SessionController> sessionController)
     {
         this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
+        this.sessionController = requireNonNull(sessionController, "sessionController is null");
     }
 
     @Override
@@ -49,6 +58,20 @@ public class ReferenceRequestContextProvider
 
                 ProgressNotification notification = new ProgressNotification(appliedProgressToken, message, OptionalDouble.of(progress), OptionalDouble.of(total));
                 sendNotification("notifications/progress", Optional.of(notification));
+            }
+
+            @Override
+            public void sendLog(LoggingLevel level, Optional<String> logger, Optional<Object> data)
+            {
+                SessionController localSessionController = sessionController.orElseThrow(() -> new IllegalStateException("Sessions not enabled"));
+
+                SessionId sessionId = requireSessionId(request);
+                LoggingLevel sessionLoggingLevel = localSessionController.getSessionValue(sessionId, LOGGING_LEVEL)
+                        .orElseThrow(() -> exception("Session is invalid"));
+                if (level.level() >= sessionLoggingLevel.level()) {
+                    LoggingMessageNotification logNotification = new LoggingMessageNotification(level, logger, data);
+                    sendNotification(METHOD_NOTIFICATION_MESSAGE, Optional.of(logNotification));
+                }
             }
 
             @SuppressWarnings("SameParameterValue")

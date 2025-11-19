@@ -17,6 +17,8 @@ variations of MCP servers defined by the standard. This module supports:
 - Ping [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/ping)
 - Structured content [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/tools#structured-content)
 - Progress notifications [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/progress)
+- Sessions [(see spec)](https://modelcontextprotocol.io/docs/concepts/transports#session-management)
+- Server-sent logging [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/logging)
 
 It uses the [MCP reference Java SDK](https://github.com/modelcontextprotocol/java-sdk) as its internal implementation.
 This implementation is very limited at does not support:
@@ -24,11 +26,9 @@ This implementation is very limited at does not support:
 - Completions [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/completion)
 - `_meta` field [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic#meta)
 - `context` field [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/changelog) in `CompletionRequest`
-- Sessions [(see spec)](https://modelcontextprotocol.io/docs/concepts/transports#session-management)
 - Cancellation [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/cancellation)
 - List changed events [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/lifecycle#initialization)
 - Subscriptions [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/lifecycle#initialization)
-- Server-sent logging [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/logging)
 - Pagination [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/pagination)
 - Elicitation [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/client/elicitation)
 - Roots [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/client/roots)
@@ -176,3 +176,14 @@ A browser should open with the MCP Inspector tool. Set the "Transport Type" to
 - Returns either:
     - [ResourceContents](src/main/java/io/airlift/mcp/model/ResourceContents.java)
     - [List&lt;ResourceContents&gt;](src/main/java/io/airlift/mcp/model/ResourceContents.java)
+
+## Sessions
+
+Airlift MCP servers can optionally be configured to support MCP [sessions](https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#session-management). 
+Currently, sessions are required for 
+[server-sent logging](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/logging),
+however that will likely change in a future version of the MCP spec.
+
+To enable session support use the `withSessions()` method of the `McpModule`. For Production, a DB-backed,
+resilient implementation of [SessionController](src/main/java/io/airlift/mcp/sessions/SessionController.java) should be used. For testing, an in-memory implementation is provided:
+[MemorySessionController](src/main/java/io/airlift/mcp/sessions/MemorySessionController.java).

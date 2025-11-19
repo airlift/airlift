@@ -16,11 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.reflect.TypeToken;
-import com.google.inject.Injector;
 import com.google.inject.Key;
-import com.google.inject.Module;
-import io.airlift.bootstrap.Bootstrap;
-import io.airlift.bootstrap.LifeCycleManager;
 import io.airlift.http.client.FullJsonResponseHandler;
 import io.airlift.http.client.FullJsonResponseHandler.JsonResponse;
 import io.airlift.http.client.HttpClient;
@@ -28,10 +24,7 @@ import io.airlift.http.client.JsonBodyGenerator;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.StreamingResponse;
 import io.airlift.http.server.HttpServerInfo;
-import io.airlift.http.server.testing.TestingHttpServerModule;
-import io.airlift.jaxrs.JaxrsModule;
 import io.airlift.json.JsonCodec;
-import io.airlift.json.JsonModule;
 import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.CallToolResult;
 import io.airlift.mcp.model.Content.TextContent;
@@ -52,7 +45,6 @@ import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.StructuredContent;
 import io.airlift.mcp.model.Tool;
-import io.airlift.node.NodeModule;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -73,7 +65,6 @@ import java.util.stream.Stream;
 
 import static com.google.inject.Scopes.SINGLETON;
 import static io.airlift.http.client.FullJsonResponseHandler.createFullJsonResponseHandler;
-import static io.airlift.http.client.HttpClientBinder.httpClientBinder;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.Request.Builder.preparePost;
 import static io.airlift.json.JsonCodec.jsonCodec;
@@ -92,36 +83,21 @@ public class TestMcp
 {
     public static final String IDENTITY_HEADER = "X-Testing-Identity";
 
+    private final TestingServer testingServer;
     private final HttpClient httpClient;
-    private final Injector injector;
     private final URI baseUri;
     private final ObjectMapper objectMapper;
     private final List<String> lastRequestEvents = new ArrayList<>();
 
     public TestMcp()
     {
-        Module mcpModule = McpModule.builder()
-                .withAllInClass(TestingEndpoints.class)
+        testingServer = new TestingServer(Optional.empty(), builder -> builder
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
-                .build();
+                .build());
 
-        ImmutableList.Builder<Module> modules = ImmutableList.<Module>builder()
-                .add(mcpModule)
-                .add(binder -> httpClientBinder(binder).bindHttpClient("test", ForTest.class))
-                .add(new NodeModule())
-                .add(new TestingHttpServerModule(getClass().getName()))
-                .add(new JaxrsModule())
-                .add(new JsonModule());
-
-        ImmutableMap.Builder<String, String> serverProperties = ImmutableMap.<String, String>builder()
-                .put("node.environment", "testing");
-
-        Bootstrap app = new Bootstrap(modules.build());
-        injector = app.setRequiredConfigurationProperties(serverProperties.build()).initialize();
-
-        httpClient = injector.getInstance(Key.get(HttpClient.class, ForTest.class));
-        baseUri = injector.getInstance(HttpServerInfo.class).getHttpUri().resolve("/mcp");
-        objectMapper = injector.getInstance(ObjectMapper.class);
+        httpClient = testingServer.injector().getInstance(Key.get(HttpClient.class, ForTest.class));
+        baseUri = testingServer.injector().getInstance(HttpServerInfo.class).getHttpUri().resolve("/mcp");
+        objectMapper = testingServer.injector().getInstance(ObjectMapper.class);
     }
 
     @BeforeAll
@@ -133,7 +109,7 @@ public class TestMcp
     @AfterAll
     public void shutdown()
     {
-        injector.getInstance(LifeCycleManager.class).stop();
+        testingServer.close();
     }
 
     static Stream<JsonRpcRequest<?>> authRpcRequests()
@@ -189,7 +165,7 @@ public class TestMcp
         FullJsonResponseHandler.JsonResponse<Object> response = httpClient.execute(request, createFullJsonResponseHandler(jsonCodec(new TypeToken<>() {})));
         assertThat(response.getStatusCode()).isEqualTo(400);
         assertThat(response.getResponseBody())
-                .isEqualTo("{\"code\":-32600,\"message\":\"Both application/json and text/event-stream required in Accept header\"}");
+                .isEqualTo("{\"code\":%s,\"message\":\"Both application/json and text/event-stream required in Accept header\"}".formatted(INVALID_REQUEST.code()));
 
         // nonsensical object in body
         request = preparePost().setUri(baseUri)
@@ -201,7 +177,7 @@ public class TestMcp
         response = httpClient.execute(request, createFullJsonResponseHandler(jsonCodec(new TypeToken<>() {})));
         assertThat(response.getStatusCode()).isEqualTo(400);
         assertThat(response.getResponseBody())
-                .isEqualTo("{\"code\":-32600,\"message\":\"Invalid message format\"}");
+                .isEqualTo("{\"code\":%s,\"message\":\"Invalid message format\"}".formatted(INVALID_REQUEST.code()));
     }
 
     @Test
@@ -308,7 +284,7 @@ public class TestMcp
         ListToolsResult listToolsResult = objectMapper.convertValue(response.result().orElseThrow(), ListToolsResult.class);
         assertThat(listToolsResult.tools())
                 .extracting(Tool::name)
-                .containsExactlyInAnyOrder("add", "throws", "addThree", "addFirstTwoAndAllThree", "progress");
+                .containsExactlyInAnyOrder("add", "throws", "addThree", "addFirstTwoAndAllThree", "progress", "log");
 
         CallToolRequest callToolRequest = new CallToolRequest("add", ImmutableMap.of("a", 1, "b", 2));
         rpcRequest = JsonRpcRequest.buildRequest(1, "tools/call", callToolRequest);

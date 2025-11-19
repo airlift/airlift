@@ -29,6 +29,7 @@ import static com.google.common.net.HttpHeaders.WWW_AUTHENTICATE;
 import static jakarta.servlet.http.HttpServletResponse.SC_FORBIDDEN;
 import static jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+import static java.util.Locale.ROOT;
 import static java.util.Objects.requireNonNull;
 
 public class ReferenceFilter
@@ -37,7 +38,7 @@ public class ReferenceFilter
     public static final String HTTP_RESPONSE_ATTRIBUTE = ReferenceFilter.class.getName() + ".response";
 
     private static final String MCP_IDENTITY_ATTRIBUTE = ReferenceFilter.class.getName() + ".identity";
-    private static final Set<String> ALLOWED_HTTP_METHODS = ImmutableSet.of("GET", "POST");
+    private static final Set<String> ALLOWED_HTTP_METHODS = ImmutableSet.of("GET", "POST", "DELETE");
     private static final Logger log = Logger.get(ReferenceFilter.class);
 
     private final ReferenceServerTransport transport;
@@ -52,6 +53,14 @@ public class ReferenceFilter
         this.identityMapper = requireNonNull(identityMapper, "identityMapper is null");
     }
 
+    public boolean isMcpRequest(HttpServletRequest request)
+    {
+        if (ALLOWED_HTTP_METHODS.contains(request.getMethod().toUpperCase(ROOT))) {
+            return metadata.uriPath().equals(request.getRequestURI());
+        }
+        return false;
+    }
+
     @Override
     protected void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws IOException, ServletException
@@ -63,29 +72,34 @@ public class ReferenceFilter
 
         if (identityMapper.isPresent()) {
             McpIdentity identity = identityMapper.get().map(request);
-            switch (identity) {
-                case Authenticated<?> authenticated -> {
-                    request.setAttribute(MCP_IDENTITY_ATTRIBUTE, authenticated.identity());
-                    request.setAttribute(HTTP_RESPONSE_ATTRIBUTE, response);
+            try {
+                switch (identity) {
+                    case Authenticated<?> authenticated -> {
+                        request.setAttribute(MCP_IDENTITY_ATTRIBUTE, authenticated.identity());
+                        request.setAttribute(HTTP_RESPONSE_ATTRIBUTE, response);
 
-                    transport.service(request, response);
+                        transport.service(request, response);
+                    }
+                    case Unauthenticated unauthenticated -> {
+                        response.setContentType(APPLICATION_JSON);
+                        response.sendError(SC_UNAUTHORIZED, unauthenticated.message());
+                        unauthenticated.authenticateHeaders()
+                                .forEach(header -> response.addHeader(WWW_AUTHENTICATE, header));
+                    }
+                    case Unauthorized unauthorized -> {
+                        response.setContentType(APPLICATION_JSON);
+                        response.sendError(SC_FORBIDDEN, unauthorized.message());
+                    }
+                    case Error error -> {
+                        log.error(error.cause(), "An error was thrown during MCP authentication");
+                        throw error.cause();
+                    }
                 }
-                case Unauthenticated unauthenticated -> {
-                    response.setContentType(APPLICATION_JSON);
-                    response.sendError(SC_UNAUTHORIZED, unauthenticated.message());
-                    unauthenticated.authenticateHeaders()
-                            .forEach(header -> response.addHeader(WWW_AUTHENTICATE, header));
-                }
-                case Unauthorized unauthorized -> {
-                    response.setContentType(APPLICATION_JSON);
-                    response.sendError(SC_FORBIDDEN, unauthorized.message());
-                }
-                case Error error -> {
-                    log.error(error.cause(), "An error was thrown during MCP authentication");
-                    // this will improve if the MCP reference team accepts our PR: https://github.com/modelcontextprotocol/java-sdk/pull/465
-                    JsonRpcErrorDetail errorDetail = error.cause().errorDetail();
-                    throw new McpError(new McpSchema.JSONRPCResponse.JSONRPCError(errorDetail.code(), errorDetail.message(), errorDetail.data()));
-                }
+            }
+            catch (McpException mcpException) {
+                log.debug(mcpException, "Request: %s", request.getRequestURI());
+                JsonRpcErrorDetail errorDetail = mcpException.errorDetail();
+                throw new McpError(new McpSchema.JSONRPCResponse.JSONRPCError(errorDetail.code(), errorDetail.message(), errorDetail.data()));
             }
         }
     }
@@ -97,13 +111,5 @@ public class ReferenceFilter
             throw McpException.exception(JsonRpcErrorCode.INTERNAL_ERROR, "Error in request processing. MCP identity not found.");
         }
         return identity;
-    }
-
-    private boolean isMcpRequest(HttpServletRequest request)
-    {
-        if (ALLOWED_HTTP_METHODS.contains(request.getMethod())) {
-            return metadata.uriPath().equals(request.getRequestURI());
-        }
-        return false;
     }
 }
