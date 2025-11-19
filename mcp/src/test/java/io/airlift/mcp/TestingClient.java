@@ -17,13 +17,14 @@ import static io.airlift.mcp.TestingIdentityMapper.IDENTITY_HEADER;
 import static io.modelcontextprotocol.spec.McpSchema.ElicitResult.Action.ACCEPT;
 import static java.util.Objects.requireNonNull;
 
-public record TestingClient(McpSyncClient mcpClient, List<String> progress)
+public record TestingClient(McpSyncClient mcpClient, List<String> logs, List<String> progress)
         implements Closeable
 {
     public TestingClient
     {
         requireNonNull(mcpClient, "mcpClient is null");
         requireNonNull(progress, "progress is null");   // do not copy
+        requireNonNull(logs, "logs is null");   // do not copy
     }
 
     @Override
@@ -34,6 +35,7 @@ public record TestingClient(McpSyncClient mcpClient, List<String> progress)
 
     public void reset()
     {
+        logs.clear();
         progress.clear();
     }
 
@@ -48,18 +50,20 @@ public record TestingClient(McpSyncClient mcpClient, List<String> progress)
                 .customizeRequest(builder -> builder.header(IDENTITY_HEADER, idToken))
                 .build();
 
+        List<String> logs = new CopyOnWriteArrayList<>();
         List<String> progress = new CopyOnWriteArrayList<>();
 
         McpSyncClient client = McpClient.sync(clientTransport)
                 .requestTimeout(Duration.ofMinutes(1))
                 .capabilities(McpSchema.ClientCapabilities.builder().roots(true).sampling().elicitation().build())
                 .elicitation(_ -> new McpSchema.ElicitResult(ACCEPT, ImmutableMap.of("name", name, "comments", "this is " + name)))
+                .loggingConsumer(loggingNotification -> logs.add(loggingNotification.data()))
                 .progressConsumer(progressNotification -> progress.add(progressNotification.message()))
                 .build();
         client.initialize();
 
         closer.register(client::closeGracefully);
 
-        return new TestingClient(client, progress);
+        return new TestingClient(client, logs, progress);
     }
 }

@@ -6,6 +6,7 @@ import io.airlift.mcp.model.CallToolResult;
 import io.airlift.mcp.model.CompleteRequest.CompleteArgument;
 import io.airlift.mcp.model.CompleteRequest.CompleteContext;
 import io.airlift.mcp.model.Content;
+import io.airlift.mcp.model.LoggingLevel;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.ResourceTemplateValues;
@@ -147,5 +148,12 @@ public class TestingEndpoints
                 ImmutableList.of(new Content.TextContent(String.valueOf(allThree))),
                 new TwoAndThree(firstTwo, allThree),
                 false);
+    }
+
+    @McpTool(name = "log", description = "Test logging")
+    public void testLogging(McpRequestContext requestContext)
+    {
+        requestContext.sendLog(LoggingLevel.DEBUG, "This is debug");
+        requestContext.sendLog(LoggingLevel.ALERT, "This is alert");
     }
 }
