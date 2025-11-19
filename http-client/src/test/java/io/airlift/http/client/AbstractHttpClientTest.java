@@ -8,6 +8,7 @@ import io.airlift.http.client.HttpClient.HttpResponseFuture;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
 import io.airlift.http.client.jetty.JettyHttpClient;
+import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -42,6 +43,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
@@ -611,6 +613,7 @@ public abstract class AbstractHttpClientTest
 
             Request request = prepareGet()
                     .setUri(server.baseURI())
+                    .setMaxContentLength(DataSize.ofBytes(LARGE_CONTENT.length()))
                     .build();
 
             executeRequest(server, request).ifPresent(streamingResponse -> {
@@ -620,6 +623,30 @@ public abstract class AbstractHttpClientTest
                 }
                 catch (IOException e) {
                     throw new UncheckedIOException(e);
+                }
+            });
+        }
+    }
+
+    @Test
+    public void testExecuteStreamingOverLimit()
+            throws Exception
+    {
+        try (CloseableTestHttpServer server = newServer()) {
+            server.servlet().setResponseBody(LARGE_CONTENT);
+
+            Request request = prepareGet()
+                    .setUri(server.baseURI())
+                    .setMaxContentLength(DataSize.ofBytes(10))
+                    .build();
+
+            executeRequest(server, request).ifPresent(streamingResponse -> {
+                try (streamingResponse) {
+                    String responseString = new String(streamingResponse.getInputStream().readAllBytes(), UTF_8);
+                    assertThat(responseString).isEqualTo(LARGE_CONTENT);
+                }
+                catch (IOException e) {
+                    assertThat(e).hasMessageContaining("Response size exceeded limit of 10B");
                 }
             });
         }
@@ -889,7 +916,7 @@ public abstract class AbstractHttpClientTest
             CloseableTestHttpServer server;
         };
 
-        try (JettyHttpClient httpClient = new JettyHttpClient("streaming-test", createClientConfig())) {
+        try (JettyHttpClient httpClient = new JettyHttpClient("streaming-test", createClientConfig().setMaxContentLength(DataSize.ofBytes(content.length())))) {
             HttpServlet pipeServlet = new HttpServlet()
             {
                 @Override
@@ -1298,6 +1325,37 @@ public abstract class AbstractHttpClientTest
         HttpResponseFuture<T> future = null;
         try {
             future = client.executeAsync(request, responseHandler);
+        }
+        catch (Exception e) {
+            fail("Unexpected exception", e);
+        }
+
+        try {
+            return future.get();
+        }
+        catch (InterruptedException e) {
+            currentThread().interrupt();
+            throw new RuntimeException(e);
+        }
+        catch (ExecutionException e) {
+            throwIfUnchecked(e.getCause());
+
+            if (e.getCause() instanceof Exception) {
+                // the HTTP client and ResponseHandler interface enforces this
+                throw AbstractHttpClientTest.<E>castThrowable(e.getCause());
+            }
+
+            // e.getCause() is some direct subclass of throwable
+            throw new RuntimeException(e.getCause());
+        }
+    }
+
+    public static <T, E extends Exception> T executeAsync(Executor executor, JettyHttpClient client, Request request, ResponseHandler<T, E> responseHandler)
+            throws E
+    {
+        HttpResponseFuture<T> future = null;
+        try {
+            future = client.executeAsync(executor, request, responseHandler);
         }
         catch (Exception e) {
             fail("Unexpected exception", e);

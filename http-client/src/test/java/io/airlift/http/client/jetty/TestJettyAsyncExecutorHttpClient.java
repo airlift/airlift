@@ -7,8 +7,11 @@ import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.StreamingResponse;
 
 import java.util.Optional;
+import java.util.concurrent.Executors;
 
-public class TestAsyncJettyHttpClient
+import static io.airlift.concurrent.Threads.virtualThreadsNamed;
+
+public class TestJettyAsyncExecutorHttpClient
         extends AbstractHttpClientTest
 {
     @Override
@@ -19,7 +22,7 @@ public class TestAsyncJettyHttpClient
     }
 
     @Override
-    public Optional<StreamingResponse> executeRequest(CloseableTestHttpServer server, Request request)
+    public Optional<StreamingResponse> executeRequest(AbstractHttpClientTest.CloseableTestHttpServer server, Request request)
     {
         return Optional.empty();
     }
@@ -34,7 +37,7 @@ public class TestAsyncJettyHttpClient
 
     @SuppressWarnings("unchecked")
     @Override
-    public <T, E extends Exception> T executeRequest(CloseableTestHttpServer server, Request request, ResponseHandler<T, E> responseHandler)
+    public <T, E extends Exception> T executeRequest(AbstractHttpClientTest.CloseableTestHttpServer server, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
         return executeRequest(server, createClientConfig(), request, responseHandler);
@@ -42,11 +45,11 @@ public class TestAsyncJettyHttpClient
 
     @SuppressWarnings("unchecked")
     @Override
-    public <T, E extends Exception> T executeRequest(CloseableTestHttpServer server, HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
+    public <T, E extends Exception> T executeRequest(AbstractHttpClientTest.CloseableTestHttpServer server, HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
         try (JettyHttpClient client = server.createClient(config)) {
-            return executeAsync(client, request, responseHandler);
+            return executeAsync(Executors.newThreadPerTaskExecutor(virtualThreadsNamed("async-executor-pool#v")), client, request, responseHandler);
         }
     }
 }
