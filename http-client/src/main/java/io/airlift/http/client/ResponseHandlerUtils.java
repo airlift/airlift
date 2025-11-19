@@ -3,6 +3,7 @@ package io.airlift.http.client;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.ConnectException;
+import java.util.concurrent.ExecutionException;
 
 import static com.google.common.base.Throwables.throwIfUnchecked;
 
@@ -19,6 +20,9 @@ public final class ResponseHandlerUtils
         }
         if (exception instanceof IOException) {
             throw new UncheckedIOException("Failed communicating with server: " + urlFor(request), (IOException) exception);
+        }
+        if (exception instanceof ExecutionException e) {
+            return propagate(request, e.getCause());
         }
         throwIfUnchecked(exception);
         throw new RuntimeException(exception);

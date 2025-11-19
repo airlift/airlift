@@ -4,7 +4,6 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
 import com.google.common.net.HostAndPort;
-import com.google.common.primitives.Ints;
 import io.airlift.http.client.BodyGenerator;
 import io.airlift.http.client.ByteBufferBodyGenerator;
 import io.airlift.http.client.FileBodyGenerator;
@@ -115,10 +114,10 @@ import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Throwables.throwIfUnchecked;
-import static com.google.common.base.Verify.verify;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.InetAddresses.isInetAddress;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
+import static io.airlift.http.client.jetty.ThrowingLimitInputStream.limiting;
 import static io.airlift.node.AddressToHostname.tryDecodeHostnameToAddress;
 import static io.airlift.security.mtls.AutomaticMtls.addClientTrust;
 import static io.opentelemetry.api.common.AttributeKey.stringKey;
@@ -312,9 +311,7 @@ public class JettyHttpClient
                         new BasicResult(proxy.getURI(), PROXY_AUTHORIZATION, config.getHttpProxyUser().get(), config.getHttpProxyPassword().get()));
             }
         }
-
-        int maxBufferSize = toIntExact(max(max(config.getMaxContentLength().toBytes(), config.getRequestBufferSize().toBytes()), config.getResponseBufferSize().toBytes()));
-        httpClient.setByteBufferPool(createByteBufferPool(maxBufferSize, config));
+        httpClient.setByteBufferPool(createByteBufferPool(toIntExact(max(config.getRequestBufferSize().toBytes(), config.getResponseBufferSize().toBytes())), config));
         httpClient.setExecutor(createExecutor(name, config.getMinThreads(), config.getMaxThreads(), config.isUseVirtualThreads()));
         httpClient.setScheduler(createScheduler(name, config.getTimeoutConcurrency(), config.getTimeoutThreads()));
         httpClient.setStrictEventOrdering(config.isStrictEventOrdering());
@@ -698,6 +695,7 @@ public class JettyHttpClient
             }
         };
 
+        final Request finalRequest = request;
         return switch (internalExecute(request, exceptionHandler, span)) {
             case InternalExceptionResponse<StreamingResponse> response -> response.exceptionResponse;
             case InternalStandardResponse<StreamingResponse> response -> new StreamingResponse()
@@ -729,7 +727,7 @@ public class JettyHttpClient
                 @Override
                 public InputStream getInputStream()
                 {
-                    return response.jettyResponse.getInputStream();
+                    return lengthLimited(response.jettyResponse.getInputStream(), finalRequest.getMaxContentLength());
                 }
 
                 @Override
@@ -744,6 +742,13 @@ public class JettyHttpClient
                 }
             };
         };
+    }
+
+    private InputStream lengthLimited(InputStream inputStream, Optional<DataSize> maxContentLength)
+    {
+        return maxContentLength
+                .map(dataSize -> limiting(inputStream, dataSize.toBytes()))
+                .orElseGet(() -> limiting(inputStream, this.maxContentLength.toBytes()));
     }
 
     public <T, E extends Exception> T doExecute(Request request, ResponseHandler<T, E> responseHandler, Span span)
@@ -849,7 +854,7 @@ public class JettyHttpClient
         long responseStart = System.nanoTime();
 
         try {
-            JettyResponse jettyResponse = new JettyResponse(response, listener.getInputStream());
+            JettyResponse jettyResponse = new JettyResponse(response, lengthLimited(listener.getInputStream(), context.maxContentLength()));
             Runnable completionHandler = buildCompletionHandler(request, listener, span, jettyResponse, context.sizeListener(), requestStart, responseStart);
             return new InternalStandardResponse<>(jettyResponse, completionHandler);
         }
@@ -915,23 +920,21 @@ public class JettyHttpClient
         Span span = startSpan(request);
         request = injectTracing(request, span);
 
-        RequestContext jettyRequest = buildRequestContext(request);
-
-        request.getMaxContentLength()
-                .ifPresent(maxRequestContentLength -> verify(maxRequestContentLength.compareTo(maxContentLength) <= 0, "maxRequestContentLength must be less than or equal to maxContentLength"));
-
-        JettyResponseFuture<T, E> future = new JettyResponseFuture<>(request, jettyRequest.request(), jettyRequest.sizeListener()::getBytes, responseHandler, span, stats, recordRequestComplete);
-        JettyResponseListener<T, E> listener = new JettyResponseListener<>(jettyRequest.request(), future, Ints.saturatedCast(request.getMaxContentLength().orElse(maxContentLength).toBytes()));
+        RequestContext context = buildRequestContext(request);
+        JettyResponseFuture<T, E> future = new JettyResponseFuture<>(request, context.request(), context.sizeListener()::getBytes, responseHandler, span, stats, recordRequestComplete);
+        InputStreamResponseListener listener = new InputStreamResponseListener();
 
         try {
-            return listener.send();
+            context.request().send(listener);
+            httpClient.getExecutor().execute(processResponse(context, listener, future));
+            return future;
         }
         catch (RuntimeException e) {
             if (!(e instanceof RejectedExecutionException)) {
                 e = new RejectedExecutionException(e);
             }
             // normally this is a rejected execution exception because the client has been closed
-            requestLogger.log(jettyRequest.info(), ResponseInfo.failed(Optional.empty(), Optional.of(e)));
+            requestLogger.log(context.info(), ResponseInfo.failed(Optional.empty(), Optional.of(e)));
             future.failed(e);
             return future;
         }
@@ -958,6 +961,35 @@ public class JettyHttpClient
                 .setAttribute(ServerAttributes.SERVER_ADDRESS, request.getUri().getHost())
                 .setAttribute(ServerAttributes.SERVER_PORT, (long) port)
                 .startSpan();
+    }
+
+    private <T, E extends Exception> Runnable processResponse(RequestContext context, InputStreamResponseListener listener, JettyResponseFuture<T, E> future)
+    {
+        return () -> {
+            try {
+                Response response = listener.get(context.request.getTimeout(), MILLISECONDS);
+                try (InputStream stream = lengthLimited(listener.getInputStream(), context.maxContentLength())) {
+                    future.completed(response, stream);
+                }
+                catch (IOException e) {
+                    requestLogger.log(context.info(), ResponseInfo.failed(Optional.of(response), Optional.of(e)));
+                    future.failed(e);
+                }
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                requestLogger.log(context.info(), ResponseInfo.failed(Optional.empty(), Optional.of(e)));
+                future.failed(e);
+            }
+            catch (TimeoutException e) {
+                requestLogger.log(context.info(), ResponseInfo.failed(Optional.empty(), Optional.of(e)));
+                future.failed(e);
+            }
+            catch (ExecutionException e) {
+                requestLogger.log(context.info(), ResponseInfo.failed(Optional.empty(), Optional.of(e)));
+                future.failed(e.getCause());
+            }
+        };
     }
 
     @SuppressWarnings("DataFlowIssue")
@@ -1022,10 +1054,10 @@ public class JettyHttpClient
         RequestSizeListener requestSizeListener = new RequestSizeListener();
         jettyRequest.onRequestContent(requestSizeListener);
 
-        return new RequestContext(jettyRequest, RequestInfo.from(jettyRequest, requestTime), requestSizeListener, requestTime);
+        return new RequestContext(jettyRequest, finalRequest.getMaxContentLength(), RequestInfo.from(jettyRequest, requestTime), requestSizeListener, requestTime);
     }
 
-    private record RequestContext(HttpRequest request, RequestInfo info, RequestSizeListener sizeListener, long timestamp) {}
+    private record RequestContext(HttpRequest request, Optional<DataSize> maxContentLength, RequestInfo info, RequestSizeListener sizeListener, long timestamp) {}
 
     private boolean shouldBeDiagnosed(Result result)
     {

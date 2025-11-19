@@ -8,6 +8,7 @@ import io.airlift.http.client.HttpClient.HttpResponseFuture;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
 import io.airlift.http.client.jetty.JettyHttpClient;
+import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -611,6 +612,7 @@ public abstract class AbstractHttpClientTest
 
             Request request = prepareGet()
                     .setUri(server.baseURI())
+                    .setMaxContentLength(DataSize.ofBytes(LARGE_CONTENT.length()))
                     .build();
 
             executeRequest(server, request).ifPresent(streamingResponse -> {
@@ -620,6 +622,30 @@ public abstract class AbstractHttpClientTest
                 }
                 catch (IOException e) {
                     throw new UncheckedIOException(e);
+                }
+            });
+        }
+    }
+
+    @Test
+    public void testExecuteStreamingOverLimit()
+            throws Exception
+    {
+        try (CloseableTestHttpServer server = newServer()) {
+            server.servlet().setResponseBody(LARGE_CONTENT);
+
+            Request request = prepareGet()
+                    .setUri(server.baseURI())
+                    .setMaxContentLength(DataSize.ofBytes(10))
+                    .build();
+
+            executeRequest(server, request).ifPresent(streamingResponse -> {
+                try (streamingResponse) {
+                    String responseString = new String(streamingResponse.getInputStream().readAllBytes(), UTF_8);
+                    assertThat(responseString).isEqualTo(LARGE_CONTENT);
+                }
+                catch (IOException e) {
+                    assertThat(e).hasMessageContaining("Response size exceeded limit of 10B");
                 }
             });
         }
@@ -889,7 +915,7 @@ public abstract class AbstractHttpClientTest
             CloseableTestHttpServer server;
         };
 
-        try (JettyHttpClient httpClient = new JettyHttpClient("streaming-test", createClientConfig())) {
+        try (JettyHttpClient httpClient = new JettyHttpClient("streaming-test", createClientConfig().setMaxContentLength(DataSize.ofBytes(content.length())))) {
             HttpServlet pipeServlet = new HttpServlet()
             {
                 @Override
