@@ -5,10 +5,14 @@ import com.google.inject.Inject;
 import io.airlift.log.Logger;
 import io.airlift.mcp.McpException;
 import io.airlift.mcp.McpMetadata;
+import io.airlift.mcp.model.LoggingLevel;
+import io.airlift.mcp.sessions.SessionController;
+import io.airlift.mcp.sessions.SessionId;
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.json.McpJsonMapper;
 import io.modelcontextprotocol.server.McpStatelessServerHandler;
 import io.modelcontextprotocol.spec.McpError;
+import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.JSONRPCMessage;
 import io.modelcontextprotocol.spec.McpSchema.JSONRPCNotification;
 import io.modelcontextprotocol.spec.McpSchema.JSONRPCRequest;
@@ -23,11 +27,20 @@ import reactor.core.publisher.Mono;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static io.airlift.mcp.McpException.exception;
+import static io.airlift.mcp.reference.ReferenceFilter.HTTP_RESPONSE_ATTRIBUTE;
+import static io.airlift.mcp.sessions.SessionKey.LOGGING_LEVEL;
 import static io.modelcontextprotocol.common.McpTransportContext.KEY;
+import static io.modelcontextprotocol.spec.HttpHeaders.MCP_SESSION_ID;
 import static io.modelcontextprotocol.spec.McpSchema.ErrorCodes.INTERNAL_ERROR;
 import static io.modelcontextprotocol.spec.McpSchema.ErrorCodes.INVALID_REQUEST;
+import static io.modelcontextprotocol.spec.McpSchema.JSONRPC_VERSION;
+import static io.modelcontextprotocol.spec.McpSchema.METHOD_INITIALIZE;
+import static io.modelcontextprotocol.spec.McpSchema.METHOD_LOGGING_SET_LEVEL;
+import static io.modelcontextprotocol.spec.McpSchema.METHOD_NOTIFICATION_INITIALIZED;
 import static io.modelcontextprotocol.spec.McpSchema.deserializeJsonRpcMessage;
 import static jakarta.servlet.http.HttpServletResponse.SC_ACCEPTED;
 import static jakarta.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
@@ -41,6 +54,7 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static jakarta.ws.rs.core.MediaType.SERVER_SENT_EVENTS;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
+import static reactor.core.publisher.Mono.just;
 
 // based off of io.modelcontextprotocol.server.transport.HttpServletStatelessServerTransport.java
 public class ReferenceServerTransport
@@ -53,14 +67,16 @@ public class ReferenceServerTransport
 
     private final McpJsonMapper mcpJsonMapper;
     private final String mcpEndpoint;
+    private final Optional<SessionController> sessionController;
     private volatile McpStatelessServerHandler mcpHandler;
     private volatile boolean isClosing;
 
     @Inject
-    public ReferenceServerTransport(McpMetadata metadata, McpJsonMapper mcpJsonMapper)
+    public ReferenceServerTransport(McpMetadata metadata, McpJsonMapper mcpJsonMapper, Optional<SessionController> sessionController)
     {
         this.mcpJsonMapper = requireNonNull(mcpJsonMapper, "jsonMapper is null");
         this.mcpEndpoint = metadata.uriPath();
+        this.sessionController = requireNonNull(sessionController, "sessionController is null");
     }
 
     @Override
@@ -124,7 +140,7 @@ public class ReferenceServerTransport
             JSONRPCMessage message = deserializeJsonRpcMessage(mcpJsonMapper, body);
             switch (message) {
                 case JSONRPCRequest rpcRequest -> handleRpcRequest(transportContext, response, rpcRequest, messageWriter);
-                case JSONRPCNotification jsonrpcNotification -> handleRpcNotification(transportContext, response, jsonrpcNotification);
+                case JSONRPCNotification rpcNotification -> handleRpcNotification(transportContext, response, rpcNotification);
                 default -> responseError(response, SC_BAD_REQUEST, invalidRequest("The server accepts either requests or notifications"));
             }
         }
@@ -141,21 +157,28 @@ public class ReferenceServerTransport
         }
     }
 
-    private void handleRpcNotification(McpTransportContext transportContext, HttpServletResponse response, JSONRPCNotification jsonrpcNotification)
+    @SuppressWarnings("SwitchStatementWithTooFewBranches")
+    private void handleRpcNotification(McpTransportContext transportContext, HttpServletResponse response, JSONRPCNotification rpcNotification)
     {
-        mcpHandler.handleNotification(transportContext, jsonrpcNotification)
-                .contextWrite(ctx -> ctx.put(KEY, transportContext))
-                .block();
+        Mono<Void> mono = switch (rpcNotification.method()) {
+            case METHOD_NOTIFICATION_INITIALIZED -> Mono.empty();  // do nothing - just acknowledge
+            default -> mcpHandler.handleNotification(transportContext, rpcNotification);
+        };
+
+        mono.contextWrite(ctx -> ctx.put(KEY, transportContext)).block();
         response.setStatus(SC_ACCEPTED);
     }
 
     private void handleRpcRequest(McpTransportContext transportContext, HttpServletResponse response, JSONRPCRequest rpcRequest, ReferenceMessageWriter messageWriter)
             throws IOException
     {
-        JSONRPCResponse rpcResponse = mcpHandler
-                .handleRequest(transportContext, rpcRequest)
-                .contextWrite(ctx -> ctx.put(KEY, transportContext))
-                .block();
+        Mono<JSONRPCResponse> rpcResponseMono = switch (rpcRequest.method()) {
+            case METHOD_INITIALIZE -> sessionController.map(controller -> handleInitialize(controller, transportContext, rpcRequest)).orElseGet(() -> mcpHandler.handleRequest(transportContext, rpcRequest));
+            case METHOD_LOGGING_SET_LEVEL -> sessionController.map(controller -> handleSetLoggingLevel(controller, transportContext, rpcRequest)).orElseGet(() -> mcpHandler.handleRequest(transportContext, rpcRequest));
+            default -> mcpHandler.handleRequest(transportContext, rpcRequest);
+        };
+
+        JSONRPCResponse rpcResponse = rpcResponseMono.contextWrite(ctx -> ctx.put(KEY, transportContext)).block();
 
         response.setContentType(APPLICATION_JSON);
         response.setCharacterEncoding(UTF_8.name());
@@ -165,6 +188,30 @@ public class ReferenceServerTransport
 
         messageWriter.write(jsonResponseText);
         messageWriter.flushMessages();
+    }
+
+    private Mono<JSONRPCResponse> handleSetLoggingLevel(SessionController sessionController, McpTransportContext transportContext, JSONRPCRequest rpcRequest)
+    {
+        SessionId sessionId = requireSessionId(transportContext);
+
+        McpSchema.SetLevelRequest setLevelRequest = mcpJsonMapper.convertValue(rpcRequest.params(), McpSchema.SetLevelRequest.class);
+        if (!sessionController.setSessionValue(sessionId, LOGGING_LEVEL, LoggingLevel.valueOf(setLevelRequest.level().name()))) {
+            throw exception("Failed to set logging level for MCP session");
+        }
+
+        return just(new JSONRPCResponse(JSONRPC_VERSION, rpcRequest.id(), ImmutableMap.of(), null));
+    }
+
+    private Mono<JSONRPCResponse> handleInitialize(SessionController sessionController, McpTransportContext transportContext, JSONRPCRequest rpcRequest)
+    {
+        HttpServletRequest request = (HttpServletRequest) transportContext.get(McpMetadata.CONTEXT_REQUEST_KEY);
+        HttpServletResponse response = (HttpServletResponse) request.getAttribute(HTTP_RESPONSE_ATTRIBUTE);
+
+        SessionId sessionId = sessionController.createSession(request);
+        response.addHeader(MCP_SESSION_ID, sessionId.id());
+        sessionController.setSessionValue(sessionId, LOGGING_LEVEL, LoggingLevel.INFO);
+
+        return mcpHandler.handleRequest(transportContext, rpcRequest);
     }
 
     private void responseError(HttpServletResponse response, int httpCode, McpError mcpError)
@@ -179,6 +226,19 @@ public class ReferenceServerTransport
         writer.write(jsonError);
 
         writer.flush();
+    }
+
+    private static SessionId requireSessionId(McpTransportContext transportContext)
+    {
+        HttpServletRequest request = (HttpServletRequest) transportContext.get(McpMetadata.CONTEXT_REQUEST_KEY);
+        return requireSessionId(request);
+    }
+
+    static SessionId requireSessionId(HttpServletRequest request)
+    {
+        String sessionId = Optional.ofNullable(request.getHeader(MCP_SESSION_ID))
+                .orElseThrow(() -> exception("Missing MCP_SESSION_ID header in request"));
+        return new SessionId(sessionId);
     }
 
     private static McpError invalidRequest(String message)

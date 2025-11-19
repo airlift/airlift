@@ -63,29 +63,34 @@ public class ReferenceFilter
 
         if (identityMapper.isPresent()) {
             McpIdentity identity = identityMapper.get().map(request);
-            switch (identity) {
-                case Authenticated<?> authenticated -> {
-                    request.setAttribute(MCP_IDENTITY_ATTRIBUTE, authenticated.identity());
-                    request.setAttribute(HTTP_RESPONSE_ATTRIBUTE, response);
+            try {
+                switch (identity) {
+                    case Authenticated<?> authenticated -> {
+                        request.setAttribute(MCP_IDENTITY_ATTRIBUTE, authenticated.identity());
+                        request.setAttribute(HTTP_RESPONSE_ATTRIBUTE, response);
 
-                    transport.service(request, response);
+                        transport.service(request, response);
+                    }
+                    case Unauthenticated unauthenticated -> {
+                        response.setContentType(APPLICATION_JSON);
+                        response.sendError(SC_UNAUTHORIZED, unauthenticated.message());
+                        unauthenticated.authenticateHeaders()
+                                .forEach(header -> response.addHeader(WWW_AUTHENTICATE, header));
+                    }
+                    case Unauthorized unauthorized -> {
+                        response.setContentType(APPLICATION_JSON);
+                        response.sendError(SC_FORBIDDEN, unauthorized.message());
+                    }
+                    case Error error -> {
+                        log.error(error.cause(), "An error was thrown during MCP authentication");
+                        throw error.cause();
+                    }
                 }
-                case Unauthenticated unauthenticated -> {
-                    response.setContentType(APPLICATION_JSON);
-                    response.sendError(SC_UNAUTHORIZED, unauthenticated.message());
-                    unauthenticated.authenticateHeaders()
-                            .forEach(header -> response.addHeader(WWW_AUTHENTICATE, header));
-                }
-                case Unauthorized unauthorized -> {
-                    response.setContentType(APPLICATION_JSON);
-                    response.sendError(SC_FORBIDDEN, unauthorized.message());
-                }
-                case Error error -> {
-                    log.error(error.cause(), "An error was thrown during MCP authentication");
-                    // this will improve if the MCP reference team accepts our PR: https://github.com/modelcontextprotocol/java-sdk/pull/465
-                    JsonRpcErrorDetail errorDetail = error.cause().errorDetail();
-                    throw new McpError(new McpSchema.JSONRPCResponse.JSONRPCError(errorDetail.code(), errorDetail.message(), errorDetail.data()));
-                }
+            }
+            catch (McpException mcpException) {
+                log.debug(mcpException, "Request: %s", request.getRequestURI());
+                JsonRpcErrorDetail errorDetail = mcpException.errorDetail();
+                throw new McpError(new McpSchema.JSONRPCResponse.JSONRPCError(errorDetail.code(), errorDetail.message(), errorDetail.data()));
             }
         }
     }
