@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.airlift.mcp.model.CallToolResult;
 import io.airlift.mcp.model.Content;
+import io.airlift.mcp.model.LoggingLevel;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.ResourceTemplateValues;
@@ -56,6 +57,13 @@ public class TestingEndpoints
     public void throwsException()
     {
         throw exception("this ain't good");
+    }
+
+    @McpTool(name = "log", description = "Test logging")
+    public void testLogging(McpRequestContext requestContext)
+    {
+        requestContext.sendLog(LoggingLevel.DEBUG, "This is debug");
+        requestContext.sendLog(LoggingLevel.ALERT, "This is alert");
     }
 
     @McpPrompt(name = "greeting", description = "Generate a greeting message")
