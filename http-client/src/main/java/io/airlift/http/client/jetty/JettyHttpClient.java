@@ -105,6 +105,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
@@ -903,6 +904,11 @@ public class JettyHttpClient
     @Override
     public <T, E extends Exception> HttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
     {
+        return executeAsync(httpClient.getExecutor(), request, responseHandler);
+    }
+
+    public <T, E extends Exception> HttpResponseFuture<T> executeAsync(Executor executor, Request request, ResponseHandler<T, E> responseHandler)
+    {
         requireNonNull(request, "request is null");
         requireNonNull(responseHandler, "responseHandler is null");
 
@@ -926,7 +932,7 @@ public class JettyHttpClient
 
         try {
             context.request().send(listener);
-            httpClient.getExecutor().execute(processResponse(context, listener, future));
+            executor.execute(processResponse(context, listener, future));
             return future;
         }
         catch (RuntimeException e) {

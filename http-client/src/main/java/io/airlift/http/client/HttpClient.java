@@ -18,6 +18,7 @@ package io.airlift.http.client;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.io.Closeable;
+import java.util.concurrent.Executor;
 
 public interface HttpClient
         extends Closeable
@@ -25,7 +26,15 @@ public interface HttpClient
     <T, E extends Exception> T execute(Request request, ResponseHandler<T, E> responseHandler)
             throws E;
 
+    /**
+     * Execute the request asynchronously using the http client executor to invoke the response handler.
+     */
     <T, E extends Exception> HttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler);
+
+    /**
+     * Execute the request asynchronously using the provided executor to invoke the response handler.
+     */
+    <T, E extends Exception> HttpResponseFuture<T> executeAsync(Executor executor, Request request, ResponseHandler<T, E> responseHandler);
 
     StreamingResponse executeStreaming(Request request);
 
