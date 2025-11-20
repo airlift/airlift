@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.stream.Collectors;
 
-import static io.airlift.mcp.McpMetadata.CONTEXT_REQUEST_KEY;
 import static io.modelcontextprotocol.common.McpTransportContext.KEY;
 import static io.modelcontextprotocol.spec.McpSchema.ErrorCodes.INTERNAL_ERROR;
 import static io.modelcontextprotocol.spec.McpSchema.ErrorCodes.INVALID_REQUEST;
@@ -48,6 +47,8 @@ public class ReferenceServerTransport
         extends HttpServlet
         implements McpStatelessServerTransport
 {
+    public static final String CONTEXT_MESSAGE_WRITER_KEY = McpMetadata.class.getName() + ".messageWriter";
+
     private static final Logger logger = Logger.get(ReferenceServerTransport.class);
 
     private final McpJsonMapper mcpJsonMapper;
@@ -104,7 +105,11 @@ public class ReferenceServerTransport
             return;
         }
 
-        McpTransportContext transportContext = McpTransportContext.create(ImmutableMap.of(CONTEXT_REQUEST_KEY, request));
+        ReferenceMessageWriter messageWriter = new ReferenceMessageWriter(response);
+
+        McpTransportContext transportContext = McpTransportContext.create(ImmutableMap.of(
+                McpMetadata.CONTEXT_REQUEST_KEY, request,
+                CONTEXT_MESSAGE_WRITER_KEY, messageWriter));
 
         String accept = request.getHeader(ACCEPT);
         if (accept == null || !(accept.contains(APPLICATION_JSON) && accept.contains(SERVER_SENT_EVENTS))) {
@@ -118,7 +123,7 @@ public class ReferenceServerTransport
 
             JSONRPCMessage message = deserializeJsonRpcMessage(mcpJsonMapper, body);
             switch (message) {
-                case JSONRPCRequest rpcRequest -> handleRpcRequest(transportContext, response, rpcRequest);
+                case JSONRPCRequest rpcRequest -> handleRpcRequest(transportContext, response, rpcRequest, messageWriter);
                 case JSONRPCNotification rpcNotification -> handleRpcNotification(transportContext, response, rpcNotification);
                 default -> responseError(response, SC_BAD_REQUEST, invalidRequest("The server accepts either requests or notifications"));
             }
@@ -144,7 +149,7 @@ public class ReferenceServerTransport
         response.setStatus(SC_ACCEPTED);
     }
 
-    private void handleRpcRequest(McpTransportContext transportContext, HttpServletResponse response, JSONRPCRequest rpcRequest)
+    private void handleRpcRequest(McpTransportContext transportContext, HttpServletResponse response, JSONRPCRequest rpcRequest, ReferenceMessageWriter messageWriter)
             throws IOException
     {
         JSONRPCResponse rpcResponse = mcpHandler
@@ -158,9 +163,8 @@ public class ReferenceServerTransport
 
         String jsonResponseText = mcpJsonMapper.writeValueAsString(rpcResponse);
 
-        PrintWriter writer = response.getWriter();
-        writer.write(jsonResponseText);
-        writer.flush();
+        messageWriter.write(jsonResponseText);
+        messageWriter.flushMessages();
     }
 
     private void responseError(HttpServletResponse response, int httpCode, McpError mcpError)
