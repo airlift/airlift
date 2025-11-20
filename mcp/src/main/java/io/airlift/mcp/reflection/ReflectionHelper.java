@@ -1,6 +1,7 @@
 package io.airlift.mcp.reflection;
 
 import io.airlift.mcp.McpDescription;
+import io.airlift.mcp.McpRequestContext;
 import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.Content;
 import io.airlift.mcp.model.Content.TextContent;
@@ -13,6 +14,7 @@ import io.airlift.mcp.reflection.MethodParameter.CallToolRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.GetPromptRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.HttpRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.IdentityParameter;
+import io.airlift.mcp.reflection.MethodParameter.McpRequestContextParameter;
 import io.airlift.mcp.reflection.MethodParameter.ObjectParameter;
 import io.airlift.mcp.reflection.MethodParameter.ReadResourceRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.ResourceTemplateValuesParameter;
@@ -65,6 +67,10 @@ public interface ReflectionHelper
 
                     if (parameter.getType().equals(HttpServletRequest.class)) {
                         return HttpRequestParameter.INSTANCE;
+                    }
+
+                    if (parameter.getType().equals(McpRequestContext.class)) {
+                        return McpRequestContextParameter.INSTANCE;
                     }
 
                     if (GetPromptRequest.class.isAssignableFrom(parameter.getType())) {

@@ -6,7 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static io.airlift.mcp.McpException.exception;
-import static io.airlift.mcp.TestMcp.IDENTITY_HEADER;
+import static io.airlift.mcp.TestMcpNoSession.IDENTITY_HEADER;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INTERNAL_ERROR;
 import static io.airlift.mcp.model.McpIdentity.Authenticated.authenticated;
 import static io.airlift.mcp.model.McpIdentity.Error.error;
