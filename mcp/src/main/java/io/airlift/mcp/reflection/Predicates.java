@@ -22,7 +22,7 @@ import static io.airlift.mcp.reflection.ReflectionHelper.listArgument;
 
 public interface Predicates
 {
-    Predicate<MethodParameter> isHttpRequestOrContext = methodParameter -> (methodParameter instanceof HttpRequestParameter) || (methodParameter instanceof McpRequestContextParameter);
+    Predicate<MethodParameter> isHttpRequestOrContext = methodParameter -> methodParameter instanceof HttpRequestParameter || methodParameter instanceof McpRequestContextParameter;
     Predicate<MethodParameter> isIdentity = methodParameter -> methodParameter instanceof IdentityParameter;
     Predicate<MethodParameter> isGetPromptRequest = methodParameter -> methodParameter instanceof GetPromptRequestParameter;
     Predicate<MethodParameter> isCallToolRequest = methodParameter -> methodParameter instanceof CallToolRequestParameter;
@@ -30,8 +30,8 @@ public interface Predicates
     Predicate<MethodParameter> isSourceResource = methodParameter -> methodParameter instanceof SourceResourceParameter;
     Predicate<MethodParameter> isSourceResourceTemplate = methodParameter -> methodParameter instanceof SourceResourceTemplateParameter;
     Predicate<MethodParameter> isResourceTemplateValues = methodParameter -> methodParameter instanceof ResourceTemplateValuesParameter;
-    Predicate<MethodParameter> isObject = methodParameter -> (methodParameter instanceof ObjectParameter);
-    Predicate<MethodParameter> isString = methodParameter -> (methodParameter instanceof ObjectParameter objectParameter)
+    Predicate<MethodParameter> isObject = methodParameter -> methodParameter instanceof ObjectParameter;
+    Predicate<MethodParameter> isString = methodParameter -> methodParameter instanceof ObjectParameter objectParameter
             && objectParameter.rawType().equals(String.class);
 
     Predicate<Method> returnsAnything = _ -> true;

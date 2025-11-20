@@ -189,7 +189,7 @@ public class TestMcp
         FullJsonResponseHandler.JsonResponse<Object> response = httpClient.execute(request, createFullJsonResponseHandler(jsonCodec(new TypeToken<>() {})));
         assertThat(response.getStatusCode()).isEqualTo(400);
         assertThat(response.getResponseBody())
-                .isEqualTo("{\"message\":\"Both application/json and text/event-stream required in Accept header\"}");
+                .isEqualTo("{\"code\":-32600,\"message\":\"Both application/json and text/event-stream required in Accept header\"}");
 
         // nonsensical object in body
         request = preparePost().setUri(baseUri)
@@ -201,7 +201,7 @@ public class TestMcp
         response = httpClient.execute(request, createFullJsonResponseHandler(jsonCodec(new TypeToken<>() {})));
         assertThat(response.getStatusCode()).isEqualTo(400);
         assertThat(response.getResponseBody())
-                .isEqualTo("{\"message\":\"Invalid message format\"}");
+                .isEqualTo("{\"code\":-32600,\"message\":\"Invalid message format\"}");
     }
 
     @Test
@@ -274,7 +274,7 @@ public class TestMcp
 
         // Test not sending an optional parameter
         callToolRequest = new CallToolRequest("addFirstTwoAndAllThree", ImmutableMap.of("a", 1, "b", 2));
-        jsonrpcRequest = JsonRpcRequest.buildRequest(1, "tools/call", callToolRequest);
+        JsonRpcRequest<?> jsonrpcRequest = JsonRpcRequest.buildRequest(1, "tools/call", callToolRequest);
         response = rpcCall(jsonrpcRequest);
         twoAndThreeCallToolResult = objectMapper.convertValue(response.result().orElseThrow(), new TypeReference<>() {});
         assertThat(twoAndThreeCallToolResult.isError()).isFalse();
