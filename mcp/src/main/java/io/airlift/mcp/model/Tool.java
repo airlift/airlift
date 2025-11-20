@@ -16,16 +16,19 @@ public record Tool(String name, Optional<String> description, ObjectNode inputSc
             OptionalBoolean destructiveHint,
             OptionalBoolean idempotentHint,
             OptionalBoolean openWorldHint,
-            OptionalBoolean returnDirect)
+            OptionalBoolean returnDirect,
+            ToolExecution taskHint)
     {
         public ToolAnnotations
         {
             requireNonNull(title, "title is null");
+
             readOnlyHint = firstNonNull(readOnlyHint, UNDEFINED);
             destructiveHint = firstNonNull(destructiveHint, UNDEFINED);
             idempotentHint = firstNonNull(idempotentHint, UNDEFINED);
             openWorldHint = firstNonNull(openWorldHint, UNDEFINED);
             returnDirect = firstNonNull(returnDirect, UNDEFINED);
+            taskHint = firstNonNull(taskHint, ToolExecution.FORBIDDEN);
         }
     }
 

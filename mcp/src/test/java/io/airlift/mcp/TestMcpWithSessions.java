@@ -59,7 +59,7 @@ public class TestMcpWithSessions
 
     public TestMcpWithSessions()
     {
-        TestingServer testingServer = new TestingServer(Optional.empty(), builder -> builder
+        TestingServer testingServer = new TestingServer(ImmutableMap.of(), Optional.empty(), builder -> builder
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
                 .withSessions(binding -> binding.to(MemorySessionController.class).in(SINGLETON))
                 .build());

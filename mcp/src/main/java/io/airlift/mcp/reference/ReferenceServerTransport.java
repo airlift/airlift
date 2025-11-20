@@ -28,6 +28,7 @@ import reactor.core.publisher.Mono;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.UncheckedIOException;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -68,14 +69,16 @@ public class ReferenceServerTransport
 
     private final McpJsonMapper mcpJsonMapper;
     private final Optional<SessionController> sessionController;
+    private final TaskEmulationDecorator taskEmulationDecorator;
     private volatile McpStatelessServerHandler mcpHandler;
     private volatile boolean isClosing;
 
     @Inject
-    public ReferenceServerTransport(McpJsonMapper mcpJsonMapper, Optional<SessionController> sessionController)
+    public ReferenceServerTransport(McpJsonMapper mcpJsonMapper, Optional<SessionController> sessionController, TaskEmulationDecorator taskEmulationDecorator)
     {
         this.mcpJsonMapper = requireNonNull(mcpJsonMapper, "jsonMapper is null");
         this.sessionController = requireNonNull(sessionController, "sessionController is null");
+        this.taskEmulationDecorator = requireNonNull(taskEmulationDecorator, "taskEmulationDecorator is null");
     }
 
     @Override
@@ -145,13 +148,14 @@ public class ReferenceServerTransport
             switch (message) {
                 case JSONRPCRequest rpcRequest -> handleRpcRequest(transportContext, response, rpcRequest, messageWriter);
                 case JSONRPCNotification rpcNotification -> handleRpcNotification(transportContext, response, rpcNotification);
+                case JSONRPCResponse rpcResponse -> handleRpcResponse(response, rpcResponse);
                 default -> responseError(response, SC_BAD_REQUEST, invalidRequest("The server accepts either requests or notifications"));
             }
         }
         catch (McpException | WebApplicationException exception) {
             throw exception;
         }
-        catch (IllegalArgumentException | IOException e) {
+        catch (IllegalArgumentException | IOException | UncheckedIOException e) {
             logger.error("Failed to deserialize message: {}", e.getMessage());
             responseError(response, SC_BAD_REQUEST, invalidRequest("Invalid message format"));
         }
@@ -159,6 +163,18 @@ public class ReferenceServerTransport
             logger.error("Unexpected error handling message: {}", e.getMessage());
             responseError(response, SC_INTERNAL_SERVER_ERROR, internalError("Unexpected error: " + e.getMessage()));
         }
+    }
+
+    private void handleRpcResponse(HttpServletResponse response, JSONRPCResponse rpcResponse)
+    {
+        taskEmulationDecorator.handleMcpResponse(rpcResponse, () -> {
+            try {
+                responseError(response, SC_BAD_REQUEST, invalidRequest("The server does not accept responses"));
+            }
+            catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
     }
 
     @SuppressWarnings("SwitchStatementWithTooFewBranches")

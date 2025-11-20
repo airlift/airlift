@@ -4,9 +4,8 @@ import com.google.common.collect.ImmutableMap;
 import io.airlift.mcp.McpException;
 import io.airlift.mcp.McpMetadata;
 import io.airlift.mcp.McpRequestContext;
+import io.airlift.mcp.handler.MessageWriter;
 import io.airlift.mcp.handler.PromptHandler;
-import io.airlift.mcp.handler.RequestContextProvider;
-import io.airlift.mcp.handler.RequestContextProvider.MessageWriter;
 import io.airlift.mcp.handler.ResourceHandler;
 import io.airlift.mcp.handler.ResourceTemplateHandler;
 import io.airlift.mcp.handler.ToolHandler;
@@ -33,7 +32,6 @@ import io.modelcontextprotocol.server.McpStatelessServerFeatures;
 import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -44,7 +42,6 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static io.airlift.mcp.reference.ReferenceFilter.HTTP_RESPONSE_ATTRIBUTE;
 import static io.airlift.mcp.reference.ReferenceServerTransport.CONTEXT_MESSAGE_WRITER_KEY;
 
 interface Mapper
@@ -100,8 +97,7 @@ interface Mapper
         });
 
         HttpServletRequest request = (HttpServletRequest) mcpTransportContext.get(McpMetadata.CONTEXT_REQUEST_KEY);
-        HttpServletResponse response = (HttpServletResponse) request.getAttribute(HTTP_RESPONSE_ATTRIBUTE);
-        return requestContextProvider.get(request, response, messageWriter, progressToken);
+        return requestContextProvider.build(request, messageWriter, progressToken);
     }
 
     static MessageWriter messageWriterFromContext(McpTransportContext mcpTransportContext)
@@ -254,7 +250,7 @@ interface Mapper
             theirToolBuilder.annotations(theirToolAnnotations);
 
             BiFunction<McpTransportContext, McpSchema.CallToolRequest, McpSchema.CallToolResult> callHandler = ((context, theirCallToolRequest) -> {
-                CallToolRequest callToolRequest = new CallToolRequest(theirCallToolRequest.name(), theirCallToolRequest.arguments(), Optional.ofNullable(theirCallToolRequest.meta()));
+                CallToolRequest callToolRequest = new CallToolRequest(theirCallToolRequest.name(), theirCallToolRequest.arguments(), Optional.ofNullable(theirCallToolRequest.meta()), Optional.empty());
                 McpRequestContext requestContext = buildMcpRequestContext(context, Optional.ofNullable(theirCallToolRequest.meta()), requestContextProvider, messageWriterFromContext(context));
 
                 CallToolResult callToolResult = ourHandler.callTool(requestContext, callToolRequest);

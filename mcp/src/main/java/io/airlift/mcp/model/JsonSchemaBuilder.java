@@ -52,6 +52,11 @@ public class JsonSchemaBuilder
     private final String exceptionContext;
     private final List<Class<?>> parents = new ArrayList<>();
 
+    public static ObjectNode forRecord(Class<?> recordType)
+    {
+        return new JsonSchemaBuilder(recordType.getName()).build(Optional.empty(), recordType);
+    }
+
     public JsonSchemaBuilder(String exceptionContext)
     {
         this.exceptionContext = requireNonNull(exceptionContext, "exceptionContext is null");
@@ -214,7 +219,6 @@ public class JsonSchemaBuilder
         propertiesConsumer.accept(propertiesNode, requiredNode);
 
         ObjectNode objectNode = objectMapper.createObjectNode();
-        objectNode.put("$schema", "https://json-schema.org/draft/2020-12/schema");
         description.ifPresent(value -> objectNode.put("description", value));
         objectNode.put("type", "object");
         objectNode.set("properties", propertiesNode);

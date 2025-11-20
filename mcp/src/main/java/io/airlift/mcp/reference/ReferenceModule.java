@@ -6,7 +6,6 @@ import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import io.airlift.mcp.McpMetadata;
-import io.airlift.mcp.handler.RequestContextProvider;
 import io.airlift.mcp.sessions.SessionController;
 import io.modelcontextprotocol.json.McpJsonMapper;
 import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
@@ -28,6 +27,7 @@ import java.util.Optional;
 
 import static com.google.inject.Scopes.SINGLETON;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
+import static io.airlift.configuration.ConfigBinder.configBinder;
 
 public class ReferenceModule
         implements Module
@@ -40,7 +40,10 @@ public class ReferenceModule
         binder.bind(io.airlift.mcp.McpServer.class).to(ReferenceServer.class).in(SINGLETON);
         newSetBinder(binder, Filter.class).addBinding().to(ReferenceFilter.class).in(SINGLETON);
         binder.bind(McpUriTemplateManagerFactory.class).to(DefaultMcpUriTemplateManagerFactory.class).in(SINGLETON);
-        binder.bind(RequestContextProvider.class).to(ReferenceRequestContextProvider.class).in(SINGLETON);
+        binder.bind(RequestContextProvider.class).in(SINGLETON);
+
+        configBinder(binder).bindConfig(TaskEmulationConfig.class);
+        binder.bind(TaskEmulationDecorator.class).asEagerSingleton();
     }
 
     // bound via method so users can override the binding if needed

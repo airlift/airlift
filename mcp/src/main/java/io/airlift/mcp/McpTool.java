@@ -1,11 +1,13 @@
 package io.airlift.mcp;
 
 import io.airlift.mcp.model.OptionalBoolean;
+import io.airlift.mcp.model.ToolExecution;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 import static io.airlift.mcp.model.OptionalBoolean.UNDEFINED;
+import static io.airlift.mcp.model.ToolExecution.FORBIDDEN;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
@@ -28,4 +30,6 @@ public @interface McpTool
     OptionalBoolean openWorldHint() default UNDEFINED;
 
     OptionalBoolean returnDirect() default UNDEFINED;
+
+    ToolExecution taskSupport() default FORBIDDEN;
 }

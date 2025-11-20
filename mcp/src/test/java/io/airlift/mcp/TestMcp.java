@@ -91,7 +91,7 @@ public class TestMcp
 
     public TestMcp()
     {
-        testingServer = new TestingServer(Optional.empty(), builder -> builder
+        testingServer = new TestingServer(ImmutableMap.of(), Optional.empty(), builder -> builder
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
                 .build());
 
@@ -284,7 +284,7 @@ public class TestMcp
         ListToolsResult listToolsResult = objectMapper.convertValue(response.result().orElseThrow(), ListToolsResult.class);
         assertThat(listToolsResult.tools())
                 .extracting(Tool::name)
-                .containsExactlyInAnyOrder("add", "throws", "addThree", "addFirstTwoAndAllThree", "progress", "log");
+                .containsExactlyInAnyOrder("add", "throws", "addThree", "addFirstTwoAndAllThree", "progress", "log", "elicitationThenSample", "testElicitation", "taskThatThrows");
 
         CallToolRequest callToolRequest = new CallToolRequest("add", ImmutableMap.of("a", 1, "b", 2));
         rpcRequest = JsonRpcRequest.buildRequest(1, "tools/call", callToolRequest);
@@ -378,7 +378,7 @@ public class TestMcp
                 .addHeader("Accept", "application/json,text/event-stream")
                 .build();
 
-        var response = httpClient.execute(request, createFullJsonResponseHandler(jsonCodec(new TypeToken<>() {})));
+        JsonResponse<Object> response = httpClient.execute(request, createFullJsonResponseHandler(jsonCodec(new TypeToken<>() {})));
         assertThat(response.getStatusCode()).isEqualTo(SC_UNAUTHORIZED);
 
         request = prepareGet()

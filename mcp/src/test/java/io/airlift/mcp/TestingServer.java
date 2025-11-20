@@ -12,6 +12,7 @@ import io.airlift.json.JsonModule;
 import io.airlift.node.NodeModule;
 
 import java.io.Closeable;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -22,7 +23,7 @@ public class TestingServer
 {
     private final Injector injector;
 
-    public TestingServer(Optional<Module> additionalModule, Function<McpModule.Builder, Module> mcpModuleApplicator)
+    public TestingServer(Map<String, String> properties, Optional<Module> additionalModule, Function<McpModule.Builder, Module> mcpModuleApplicator)
     {
         McpModule.Builder mcpModuleBuilder = McpModule.builder()
                 .withAllInClass(TestingEndpoints.class);
@@ -32,6 +33,7 @@ public class TestingServer
         ImmutableList.Builder<com.google.inject.Module> modules = ImmutableList.<Module>builder()
                 .add(mcpModule)
                 .add(binder -> httpClientBinder(binder).bindHttpClient("test", ForTest.class))
+                .add(binder -> binder.bind(MockAppTaskProcessor.class).asEagerSingleton())
                 .add(new NodeModule())
                 .add(new TestingHttpServerModule("testing"))
                 .add(new JaxrsModule())
@@ -40,7 +42,9 @@ public class TestingServer
         additionalModule.ifPresent(modules::add);
 
         ImmutableMap.Builder<String, String> serverProperties = ImmutableMap.<String, String>builder()
-                .put("node.environment", "testing");
+                .put("node.environment", "testing")
+                .put("mcp.task-emulation.task-ttl", "5s");
+        serverProperties.putAll(properties);
 
         Bootstrap app = new Bootstrap(modules.build());
         injector = app.setRequiredConfigurationProperties(serverProperties.build()).initialize();

@@ -19,6 +19,8 @@ variations of MCP servers defined by the standard. This module supports:
 - Progress notifications [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/progress)
 - Sessions [(see spec)](https://modelcontextprotocol.io/docs/concepts/transports#session-management)
 - Server-sent logging [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/logging)
+- Elicitation [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/client/elicitation)
+- Sampling [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/client/sampling)
 
 It uses the [MCP reference Java SDK](https://github.com/modelcontextprotocol/java-sdk) as its internal implementation.
 This implementation is very limited at does not support:
@@ -30,9 +32,7 @@ This implementation is very limited at does not support:
 - List changed events [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/lifecycle#initialization)
 - Subscriptions [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/lifecycle#initialization)
 - Pagination [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/pagination)
-- Elicitation [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/client/elicitation)
 - Roots [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/client/roots)
-- Sampling [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/client/sampling)
 
 ## Creating tools, prompts, and resources declaratively
 
@@ -187,3 +187,12 @@ however that will likely change in a future version of the MCP spec.
 To enable session support use the `withSessions()` method of the `McpModule`. For Production, a DB-backed,
 resilient implementation of [SessionController](src/main/java/io/airlift/mcp/sessions/SessionController.java) should be used. For testing, an in-memory implementation is provided:
 [MemorySessionController](src/main/java/io/airlift/mcp/sessions/MemorySessionController.java).
+
+## Tasks
+
+The draft MCP spec adds [support for tasks](https://modelcontextprotocol.io/specification/2025-11-25/basic/utilities/tasks):
+
+> Tasks are durable state machines that carry information about the underlying execution state of the request they wrap,
+> and are intended for requestor polling and deferred result retrieval.
+
+The current version of Airlift contains an emulated/backward-compatible [implementation of tasks](tasks.md).
