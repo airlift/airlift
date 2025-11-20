@@ -36,6 +36,7 @@ public class ReferenceServer
     private final McpJsonMapper objectMapper;
     private final McpUriTemplateManagerFactory uriTemplateManagerFactory;
     private final RequestContextProvider requestContextProvider;
+    private final TaskEmulationDecorator taskEmulationDecorator;
 
     @Inject
     public ReferenceServer(
@@ -46,12 +47,14 @@ public class ReferenceServer
             Set<PromptEntry> prompts,
             Set<ResourceEntry> resources,
             Set<ResourceTemplateEntry> resourceTemplates,
-            RequestContextProvider requestContextProvider)
+            RequestContextProvider requestContextProvider,
+            TaskEmulationDecorator taskEmulationDecorator)
     {
         this.server = requireNonNull(server, "server is null");
         this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
         this.uriTemplateManagerFactory = requireNonNull(uriTemplateManagerFactory, "uriTemplateManagerFactory is null");
         this.requestContextProvider = requireNonNull(requestContextProvider, "requestContextProvider is null");
+        this.taskEmulationDecorator = requireNonNull(taskEmulationDecorator, "taskEmulationDecorator is null");
 
         tools.forEach(tool -> addTool(tool.tool(), tool.toolHandler()));
         prompts.forEach(prompt -> addPrompt(prompt.prompt(), prompt.promptHandler()));
@@ -75,7 +78,8 @@ public class ReferenceServer
     @Override
     public void addTool(Tool tool, ToolHandler toolHandler)
     {
-        server.addTool(Mapper.mapTool(requestContextProvider, objectMapper, tool, toolHandler));
+        ToolHandler decoratedToolHandler = taskEmulationDecorator.handleMcpResponse(toolHandler);
+        server.addTool(Mapper.mapTool(requestContextProvider, objectMapper, tool, decoratedToolHandler));
     }
 
     @Override

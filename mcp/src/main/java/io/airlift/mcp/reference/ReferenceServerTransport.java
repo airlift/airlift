@@ -5,6 +5,7 @@ import com.google.inject.Inject;
 import io.airlift.log.Logger;
 import io.airlift.mcp.McpException;
 import io.airlift.mcp.McpMetadata;
+import io.airlift.mcp.handler.RequestContextProvider;
 import io.airlift.mcp.model.LoggingLevel;
 import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.sessions.SessionId;
@@ -27,6 +28,7 @@ import reactor.core.publisher.Mono;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.UncheckedIOException;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -68,15 +70,19 @@ public class ReferenceServerTransport
     private final McpJsonMapper mcpJsonMapper;
     private final String mcpEndpoint;
     private final Optional<SessionController> sessionController;
+    private final TaskEmulationDecorator taskEmulationDecorator;
+    private final RequestContextProvider requestContextProvider;
     private volatile McpStatelessServerHandler mcpHandler;
     private volatile boolean isClosing;
 
     @Inject
-    public ReferenceServerTransport(McpMetadata metadata, McpJsonMapper mcpJsonMapper, Optional<SessionController> sessionController)
+    public ReferenceServerTransport(McpMetadata metadata, McpJsonMapper mcpJsonMapper, Optional<SessionController> sessionController, TaskEmulationDecorator taskEmulationDecorator, RequestContextProvider requestContextProvider)
     {
         this.mcpJsonMapper = requireNonNull(mcpJsonMapper, "jsonMapper is null");
         this.mcpEndpoint = metadata.uriPath();
         this.sessionController = requireNonNull(sessionController, "sessionController is null");
+        this.taskEmulationDecorator = requireNonNull(taskEmulationDecorator, "taskEmulationDecorator is null");
+        this.requestContextProvider = requireNonNull(requestContextProvider, "requestContextProvider is null");
     }
 
     @Override
@@ -141,13 +147,14 @@ public class ReferenceServerTransport
             switch (message) {
                 case JSONRPCRequest rpcRequest -> handleRpcRequest(transportContext, response, rpcRequest, messageWriter);
                 case JSONRPCNotification rpcNotification -> handleRpcNotification(transportContext, response, rpcNotification);
+                case JSONRPCResponse rpcResponse -> handleRpcResponse(response, rpcResponse);
                 default -> responseError(response, SC_BAD_REQUEST, invalidRequest("The server accepts either requests or notifications"));
             }
         }
         catch (McpException mcpException) {
             throw mcpException;
         }
-        catch (IllegalArgumentException | IOException e) {
+        catch (IllegalArgumentException | IOException | UncheckedIOException e) {
             logger.error("Failed to deserialize message: {}", e.getMessage());
             responseError(response, SC_BAD_REQUEST, invalidRequest("Invalid message format"));
         }
@@ -155,6 +162,18 @@ public class ReferenceServerTransport
             logger.error("Unexpected error handling message: {}", e.getMessage());
             responseError(response, SC_INTERNAL_SERVER_ERROR, internalError("Unexpected error: " + e.getMessage()));
         }
+    }
+
+    private void handleRpcResponse(HttpServletResponse response, JSONRPCResponse rpcResponse)
+    {
+        taskEmulationDecorator.handleMcpResponse(rpcResponse, () -> {
+            try {
+                responseError(response, SC_BAD_REQUEST, invalidRequest("The server does not accept responses"));
+            }
+            catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
     }
 
     @SuppressWarnings("SwitchStatementWithTooFewBranches")

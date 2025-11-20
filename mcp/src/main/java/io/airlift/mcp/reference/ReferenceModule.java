@@ -35,6 +35,7 @@ public class ReferenceModule
     {
         binder.bind(ReferenceServer.class).asEagerSingleton();
         binder.bind(ReferenceServerTransport.class).asEagerSingleton();
+        binder.bind(TaskEmulationDecorator.class).asEagerSingleton();
         binder.bind(io.airlift.mcp.McpServer.class).to(ReferenceServer.class).in(SINGLETON);
         newSetBinder(binder, Filter.class).addBinding().to(ReferenceFilter.class).in(SINGLETON);
         binder.bind(McpUriTemplateManagerFactory.class).to(DefaultMcpUriTemplateManagerFactory.class).in(SINGLETON);

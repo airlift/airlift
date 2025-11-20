@@ -11,6 +11,18 @@ public interface McpRequestContext
 
     void sendProgress(double progress, double total, String message);
 
+    <T> void sendMessage(Optional<Object> id, String method, Optional<T> params);
+
+    default <T> void sendNotification(String method, Optional<T> params)
+    {
+        sendMessage(Optional.empty(), method, params);
+    }
+
+    default <T> void sendRequest(Object id, String method, Optional<T> params)
+    {
+        sendMessage(Optional.of(id), method, params);
+    }
+
     default void sendLog(LoggingLevel level, String message)
     {
         sendLog(level, Optional.empty(), Optional.of(message));

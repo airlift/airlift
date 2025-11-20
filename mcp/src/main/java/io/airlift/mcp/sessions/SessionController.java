@@ -10,7 +10,7 @@ import java.util.function.UnaryOperator;
 public interface SessionController
 {
     /**
-     * Create a mew sessopm and return its ID
+     * Create a mew session and return its ID
      */
     SessionId createSession(HttpServletRequest request);
 

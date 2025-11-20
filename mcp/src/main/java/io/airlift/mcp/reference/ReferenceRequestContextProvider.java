@@ -18,9 +18,12 @@ import java.util.Optional;
 import java.util.OptionalDouble;
 
 import static io.airlift.mcp.McpException.exception;
+import static io.airlift.mcp.model.JsonRpcRequest.JSON_RPC_VERSION;
+import static io.airlift.mcp.model.JsonRpcRequest.buildNotification;
 import static io.airlift.mcp.reference.ReferenceServerTransport.requireSessionId;
 import static io.airlift.mcp.sessions.SessionKey.LOGGING_LEVEL;
 import static io.modelcontextprotocol.spec.McpSchema.METHOD_NOTIFICATION_MESSAGE;
+import static io.modelcontextprotocol.spec.McpSchema.METHOD_NOTIFICATION_PROGRESS;
 import static java.util.Objects.requireNonNull;
 
 public class ReferenceRequestContextProvider
@@ -57,7 +60,7 @@ public class ReferenceRequestContextProvider
                 });
 
                 ProgressNotification notification = new ProgressNotification(appliedProgressToken, message, OptionalDouble.of(progress), OptionalDouble.of(total));
-                sendNotification("notifications/progress", Optional.of(notification));
+                internalSendMessage(METHOD_NOTIFICATION_PROGRESS, Optional.of(notification));
             }
 
             @Override
@@ -68,16 +71,27 @@ public class ReferenceRequestContextProvider
                         .orElseThrow(() -> exception("Session is invalid"));
                 if (level.level() >= sessionLoggingLevel.level()) {
                     LoggingMessageNotification logNotification = new LoggingMessageNotification(level, logger, data);
-                    sendNotification(METHOD_NOTIFICATION_MESSAGE, Optional.of(logNotification));
+                    internalSendMessage(METHOD_NOTIFICATION_MESSAGE, Optional.of(logNotification));
                 }
             }
 
-            @SuppressWarnings("SameParameterValue")
-            private void sendNotification(String method, Optional<Object> params)
+            @Override
+            public <T> void sendMessage(Optional<Object> id, String method, Optional<T> params)
+            {
+                JsonRpcRequest<?> message = new JsonRpcRequest<>(JSON_RPC_VERSION, id.orElse(null), method, params);
+                internalSendRequest(message);
+            }
+
+            private void internalSendMessage(String method, Optional<Object> params)
+            {
+                JsonRpcRequest<?> notification = params.map(p -> buildNotification(method, p)).orElseGet(() -> buildNotification(method));
+                internalSendRequest(notification);
+            }
+
+            private void internalSendRequest(JsonRpcRequest<?> rpcRequest)
             {
                 try {
-                    JsonRpcRequest<?> notification = params.map(p -> JsonRpcRequest.buildNotification(method, p)).orElseGet(() -> JsonRpcRequest.buildNotification(method));
-                    String json = objectMapper.writeValueAsString(notification);
+                    String json = objectMapper.writeValueAsString(rpcRequest);
                     messageWriter.writeMessage(json);
                     messageWriter.flushMessages();
                 }

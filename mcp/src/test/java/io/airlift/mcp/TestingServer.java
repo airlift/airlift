@@ -32,6 +32,7 @@ public class TestingServer
         ImmutableList.Builder<com.google.inject.Module> modules = ImmutableList.<Module>builder()
                 .add(mcpModule)
                 .add(binder -> httpClientBinder(binder).bindHttpClient("test", ForTest.class))
+                .add(binder -> binder.bind(MockAppTaskProcessor.class).asEagerSingleton())
                 .add(new NodeModule())
                 .add(new TestingHttpServerModule())
                 .add(new JaxrsModule())

@@ -11,6 +11,7 @@ import io.airlift.jaxrs.JaxrsModule;
 import io.airlift.json.JsonModule;
 import io.airlift.log.Logger;
 import io.airlift.mcp.sessions.MemorySessionController;
+import io.airlift.mcp.tasks.SessionTaskController;
 import io.airlift.node.NodeModule;
 
 import java.util.Optional;
@@ -39,12 +40,14 @@ public class LocalServer
                 .withAllInClass(TestingEndpoints.class)
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.toInstance(_ -> authenticated(new TestingIdentity("Mr. Tester"))))
                 .withSessions(binding -> binding.to(MemorySessionController.class).in(SINGLETON))
+                .withTasks(binding -> binding.to(SessionTaskController.class).in(SINGLETON))
                 .build();
 
         ImmutableList.Builder<Module> modules = ImmutableList.<Module>builder()
                 .add(mcpModule)
                 .add(binder -> binder.bind(TestingEndpoints.class).in(SINGLETON))
                 .add(new NodeModule())
+                .add(binder -> binder.bind(MockAppTaskProcessor.class).asEagerSingleton())
                 .add(new TestingHttpServerModule(port.orElse(0)))
                 .add(new JaxrsModule())
                 .add(new JsonModule());

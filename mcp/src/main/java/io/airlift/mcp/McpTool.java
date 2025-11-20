@@ -1,6 +1,7 @@
 package io.airlift.mcp;
 
 import io.airlift.mcp.model.OptionalBoolean;
+import io.airlift.mcp.model.TaskHint;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
@@ -28,4 +29,6 @@ public @interface McpTool
     OptionalBoolean openWorldHint() default UNDEFINED;
 
     OptionalBoolean returnDirect() default UNDEFINED;
+
+    TaskHint taskHint() default TaskHint.NEVER;
 }

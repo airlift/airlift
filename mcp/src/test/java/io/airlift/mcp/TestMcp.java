@@ -272,7 +272,7 @@ public class TestMcp
         ListToolsResult listToolsResult = objectMapper.convertValue(response.result().orElseThrow(), ListToolsResult.class);
         assertThat(listToolsResult.tools())
                 .extracting(Tool::name)
-                .containsExactlyInAnyOrder("add", "throws", "addThree", "addFirstTwoAndAllThree", "progress", "log");
+                .containsExactlyInAnyOrder("add", "throws", "addThree", "addFirstTwoAndAllThree", "progress", "log", "elicitationThenSample", "testElicitation");
 
         CallToolRequest callToolRequest = new CallToolRequest("add", ImmutableMap.of("a", 1, "b", 2));
         jsonrpcRequest = JsonRpcRequest.buildRequest(1, "tools/call", callToolRequest);

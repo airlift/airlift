@@ -5,12 +5,16 @@ import com.google.common.io.Closer;
 import io.airlift.http.server.testing.TestingHttpServer;
 import io.airlift.mcp.model.McpIdentity;
 import io.airlift.mcp.sessions.MemorySessionController;
+import io.airlift.mcp.tasks.SessionTaskController;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
+import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.ClientCapabilities;
+import io.modelcontextprotocol.spec.McpSchema.CreateMessageResult;
 import io.modelcontextprotocol.spec.McpSchema.ElicitResult;
+import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -29,7 +33,9 @@ import static io.modelcontextprotocol.spec.McpSchema.ElicitResult.Action.ACCEPT;
 import static io.modelcontextprotocol.spec.McpSchema.LoggingLevel.ALERT;
 import static io.modelcontextprotocol.spec.McpSchema.LoggingLevel.DEBUG;
 import static io.modelcontextprotocol.spec.McpSchema.LoggingLevel.EMERGENCY;
+import static io.modelcontextprotocol.spec.McpSchema.Role.USER;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.InstanceOfAssertFactories.type;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 
 @TestInstance(PER_CLASS)
@@ -45,13 +51,15 @@ public class TestMcpWithSessions
     public TestMcpWithSessions()
     {
         McpIdentityMapper identityMapper = _ -> new McpIdentity.Authenticated<>("yep");
+
         testingServer = new TestingServer(Optional.empty(), builder -> builder
                 .withIdentityMapper(McpIdentity.class, binding -> binding.toInstance(identityMapper))
                 .withSessions(binding -> binding.to(MemorySessionController.class).in(SINGLETON))
+                .withTasks(binding -> binding.to(SessionTaskController.class).in(SINGLETON))
                 .build());
 
-        client1 = buildClient("Client 1");
-        client2 = buildClient("Client 2");
+        client1 = buildClient("Client1");
+        client2 = buildClient("Client2");
     }
 
     @AfterAll
@@ -109,6 +117,46 @@ public class TestMcpWithSessions
         assertThat(client2.progress).isEqualTo(expectedProgress);
     }
 
+    @Test
+    public void testElicitation()
+    {
+        CallToolResult callToolResult = client1.mcpClient.callTool(new CallToolRequest("testElicitation", ImmutableMap.of()));
+        assertThat(callToolResult.content())
+                .hasSize(1)
+                .first()
+                .asInstanceOf(type(TextContent.class))
+                .extracting(TextContent::text)
+                .isEqualTo("Client1, Client1sky");
+
+        callToolResult = client2.mcpClient.callTool(new CallToolRequest("testElicitation", ImmutableMap.of()));
+        assertThat(callToolResult.content())
+                .hasSize(1)
+                .first()
+                .asInstanceOf(type(TextContent.class))
+                .extracting(TextContent::text)
+                .isEqualTo("Client2, Client2sky");
+    }
+
+    @Test
+    public void testElicitationThenSampling()
+    {
+        CallToolResult callToolResult = client1.mcpClient.callTool(new CallToolRequest("elicitationThenSample", ImmutableMap.of()));
+        assertThat(callToolResult.content())
+                .hasSize(1)
+                .first()
+                .asInstanceOf(type(TextContent.class))
+                .extracting(TextContent::text)
+                .isEqualTo("Go ahead: Client1, Client1sky");
+
+        callToolResult = client2.mcpClient.callTool(new CallToolRequest("elicitationThenSample", ImmutableMap.of()));
+        assertThat(callToolResult.content())
+                .hasSize(1)
+                .first()
+                .asInstanceOf(type(TextContent.class))
+                .extracting(TextContent::text)
+                .isEqualTo("Go ahead: Client2, Client2sky");
+    }
+
     private Client buildClient(String name)
     {
         HttpClientStreamableHttpTransport clientTransport = HttpClientStreamableHttpTransport.builder(testingServer.injector().getInstance(TestingHttpServer.class).getBaseUrl().toString())
@@ -120,7 +168,8 @@ public class TestMcpWithSessions
         McpSyncClient client = McpClient.sync(clientTransport)
                 .requestTimeout(Duration.ofMinutes(1))
                 .capabilities(ClientCapabilities.builder().roots(true).sampling().elicitation().build())
-                .elicitation(_ -> new ElicitResult(ACCEPT, ImmutableMap.of("name", name, "comments", "this is " + name)))
+                .elicitation(_ -> new ElicitResult(ACCEPT, ImmutableMap.of("firstName", name, "lastName", name + "sky")))
+                .sampling(createMessageRequest -> new CreateMessageResult(USER, new TextContent("Go ahead: " + ((TextContent) createMessageRequest.messages().getFirst().content()).text()), "dummy", null))
                 .progressConsumer(progressNotification -> progress.add(progressNotification.message()))
                 .loggingConsumer(loggingNotification -> logs.add(loggingNotification.data()))
                 .build();

@@ -138,7 +138,8 @@ public class ToolHandlerProvider
                 tool.destructiveHint(),
                 tool.idempotentHint(),
                 tool.openWorldHint(),
-                tool.returnDirect());
+                tool.returnDirect(),
+                tool.taskHint());
 
         Optional<ObjectNode> outputSchema;
         if (CallToolResult.class.isAssignableFrom(method.getReturnType())) {

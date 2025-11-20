@@ -258,7 +258,7 @@ interface Mapper
             theirToolBuilder.annotations(theirToolAnnotations);
 
             BiFunction<McpTransportContext, McpSchema.CallToolRequest, McpSchema.CallToolResult> callHandler = ((context, theirCallToolRequest) -> {
-                CallToolRequest callToolRequest = new CallToolRequest(theirCallToolRequest.name(), theirCallToolRequest.arguments(), Optional.ofNullable(theirCallToolRequest.meta()));
+                CallToolRequest callToolRequest = new CallToolRequest(theirCallToolRequest.name(), theirCallToolRequest.arguments(), Optional.ofNullable(theirCallToolRequest.meta()), Optional.empty());
                 McpRequestContext requestContext = buildMcpRequestContext(context, Optional.ofNullable(theirCallToolRequest.meta()), requestContextProvider, messageWriterFromContext(context));
 
                 CallToolResult callToolResult = ourHandler.callTool(requestContext, callToolRequest);
