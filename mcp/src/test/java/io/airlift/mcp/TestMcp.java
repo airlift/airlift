@@ -147,7 +147,7 @@ public class TestMcp
         FullJsonResponseHandler.JsonResponse<Object> response = httpClient.execute(request, createFullJsonResponseHandler(jsonCodecFactory.jsonCodec(new TypeToken<>() {})));
         assertThat(response.getStatusCode()).isEqualTo(400);
         assertThat(response.getResponseBody())
-                .isEqualTo("{\"message\":\"Both application/json and text/event-stream required in Accept header\"}");
+                .contains("\"message\":\"Both application/json and text/event-stream required in Accept header\"");
 
         // nonsensical object in body
         request = preparePost().setUri(uri)
@@ -159,7 +159,7 @@ public class TestMcp
         response = httpClient.execute(request, createFullJsonResponseHandler(jsonCodecFactory.jsonCodec(new TypeToken<>() {})));
         assertThat(response.getStatusCode()).isEqualTo(400);
         assertThat(response.getResponseBody())
-                .isEqualTo("{\"message\":\"Invalid message format\"}");
+                .contains("\"message\":\"Invalid message format\"");
     }
 
     @Test

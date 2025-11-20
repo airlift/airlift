@@ -13,7 +13,6 @@ import io.airlift.mcp.model.McpIdentity.Authenticated;
 import io.airlift.mcp.model.McpIdentity.Error;
 import io.airlift.mcp.model.McpIdentity.Unauthenticated;
 import io.airlift.mcp.model.McpIdentity.Unauthorized;
-import io.modelcontextprotocol.server.transport.HttpServletStatelessServerTransport;
 import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema;
 import jakarta.servlet.FilterChain;
@@ -41,12 +40,12 @@ public class ReferenceFilter
     private static final Set<String> ALLOWED_HTTP_METHODS = ImmutableSet.of("GET", "POST");
     private static final Logger log = Logger.get(ReferenceFilter.class);
 
-    private final HttpServletStatelessServerTransport transport;
+    private final ReferenceServerTransport transport;
     private final McpMetadata metadata;
     private final Optional<McpIdentityMapper> identityMapper;
 
     @Inject
-    public ReferenceFilter(HttpServletStatelessServerTransport transport, McpMetadata metadata, Optional<McpIdentityMapper> identityMapper)
+    public ReferenceFilter(ReferenceServerTransport transport, McpMetadata metadata, Optional<McpIdentityMapper> identityMapper)
     {
         this.transport = requireNonNull(transport, "transport is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
@@ -66,12 +65,10 @@ public class ReferenceFilter
             McpIdentity identity = identityMapper.get().map(request);
             switch (identity) {
                 case Authenticated<?> authenticated -> {
-                    SseResponseWrapper sseResponseWrapper = new SseResponseWrapper(response);
-
                     request.setAttribute(MCP_IDENTITY_ATTRIBUTE, authenticated.identity());
-                    request.setAttribute(HTTP_RESPONSE_ATTRIBUTE, sseResponseWrapper);
+                    request.setAttribute(HTTP_RESPONSE_ATTRIBUTE, response);
 
-                    transport.service(request, sseResponseWrapper);
+                    transport.service(request, response);
                 }
                 case Unauthenticated unauthenticated -> {
                     response.setContentType(APPLICATION_JSON);

@@ -5,6 +5,7 @@ import io.airlift.mcp.McpException;
 import io.airlift.mcp.McpMetadata;
 import io.airlift.mcp.McpRequestContext;
 import io.airlift.mcp.handler.CompletionHandler;
+import io.airlift.mcp.handler.MessageWriter;
 import io.airlift.mcp.handler.PromptHandler;
 import io.airlift.mcp.handler.RequestContextProvider;
 import io.airlift.mcp.handler.ResourceHandler;
@@ -52,6 +53,7 @@ import java.util.function.Function;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.mcp.reference.ReferenceFilter.HTTP_RESPONSE_ATTRIBUTE;
+import static io.airlift.mcp.reference.ReferenceServerTransport.CONTEXT_MESSAGE_WRITER_KEY;
 
 interface Mapper
 {
@@ -97,21 +99,24 @@ interface Mapper
         return McpSchema.Role.valueOf(ourRole.name().toUpperCase());
     }
 
-    static McpRequestContext buildMcpRequestContext(McpTransportContext mcpTransportContext, Optional<Map<String, Object>> meta, RequestContextProvider requestContextProvider)
+    static McpRequestContext buildMcpRequestContext(McpTransportContext mcpTransportContext, Optional<Map<String, Object>> meta, RequestContextProvider requestContextProvider, MessageWriter messageWriter)
     {
-        Optional<Object> progressToken = meta.flatMap(m -> {
-            Object value = m.get("progressToken");
-            if (value instanceof Number number) {
-                return Optional.of(number.longValue());
-            }
-            if (value != null) {
-                return Optional.of(String.valueOf(value));
-            }
-            return Optional.empty();
+        Optional<Object> progressToken = meta.flatMap(m -> switch (m.get("progressToken")) {
+            case null -> Optional.empty();
+            case Number number -> Optional.of(number.longValue());
+            case Object obj -> Optional.of(String.valueOf(obj));
         });
+
         HttpServletRequest request = (HttpServletRequest) mcpTransportContext.get(McpMetadata.CONTEXT_REQUEST_KEY);
         HttpServletResponse response = (HttpServletResponse) request.getAttribute(HTTP_RESPONSE_ATTRIBUTE);
-        return requestContextProvider.get(request, response, progressToken);
+        return requestContextProvider.get(request, response, messageWriter, progressToken);
+    }
+
+    static MessageWriter messageWriterFromContext(McpTransportContext mcpTransportContext)
+    {
+        return Optional.ofNullable(mcpTransportContext.get(CONTEXT_MESSAGE_WRITER_KEY))
+                .map(MessageWriter.class::cast)
+                .orElseThrow(() -> new IllegalStateException("MessageWriter not found in transport context"));
     }
 
     static McpStatelessServerFeatures.SyncResourceSpecification mapResource(RequestContextProvider requestContextProvider, Resource ourResource, ResourceHandler ourHandler)
@@ -133,7 +138,7 @@ interface Mapper
 
         BiFunction<McpTransportContext, McpSchema.ReadResourceRequest, McpSchema.ReadResourceResult> handler = ((context, theirReadResourceRequest) -> {
             ReadResourceRequest readResourceRequest = new ReadResourceRequest(theirReadResourceRequest.uri(), Optional.ofNullable(theirReadResourceRequest.meta()));
-            McpRequestContext mcpRequestContext = buildMcpRequestContext(context, Optional.ofNullable(theirReadResourceRequest.meta()), requestContextProvider);
+            McpRequestContext mcpRequestContext = buildMcpRequestContext(context, Optional.ofNullable(theirReadResourceRequest.meta()), requestContextProvider, messageWriterFromContext(context));
             List<ResourceContents> ourResourceContents = ourHandler.readResource(mcpRequestContext, ourResource, readResourceRequest);
 
             List<McpSchema.ResourceContents> theirResourceContents = ourResourceContents.stream()
@@ -163,7 +168,7 @@ interface Mapper
 
         BiFunction<McpTransportContext, McpSchema.ReadResourceRequest, McpSchema.ReadResourceResult> handler = ((context, theirReadResourceRequest) -> {
             ReadResourceRequest readResourceRequest = new ReadResourceRequest(theirReadResourceRequest.uri(), Optional.ofNullable(theirReadResourceRequest.meta()));
-            McpRequestContext requestContext = buildMcpRequestContext(context, Optional.ofNullable(theirReadResourceRequest.meta()), requestContextProvider);
+            McpRequestContext requestContext = buildMcpRequestContext(context, Optional.ofNullable(theirReadResourceRequest.meta()), requestContextProvider, messageWriterFromContext(context));
 
             Map<String, String> templateValues = templateValuesMapper.apply(readResourceRequest.uri());
             List<ResourceContents> ourResourceContents = ourHandler.readResourceTemplate(requestContext, ourResourceTemplate, readResourceRequest, new ResourceTemplateValues(templateValues));
@@ -210,7 +215,7 @@ interface Mapper
 
         BiFunction<McpTransportContext, McpSchema.GetPromptRequest, McpSchema.GetPromptResult> handler = (context, theirGetPromptRequest) -> {
             GetPromptRequest getPromptRequest = new GetPromptRequest(theirGetPromptRequest.name(), theirGetPromptRequest.arguments(), Optional.ofNullable(theirGetPromptRequest.meta()));
-            McpRequestContext requestContext = buildMcpRequestContext(context, Optional.ofNullable(theirGetPromptRequest.meta()), requestContextProvider);
+            McpRequestContext requestContext = buildMcpRequestContext(context, Optional.ofNullable(theirGetPromptRequest.meta()), requestContextProvider, messageWriterFromContext(context));
 
             GetPromptResult promptResult = ourHandler.getPrompt(requestContext, getPromptRequest);
 
@@ -254,7 +259,7 @@ interface Mapper
                     .map(theirContext -> new CompleteContext(theirContext.arguments()));
 
             CompleteRequest completeRequest = new CompleteRequest(completeReference, completeArgument, completeContext);
-            McpRequestContext requestContext = buildMcpRequestContext(context, Optional.ofNullable(theirCompleteRequest.meta()), requestContextProvider);
+            McpRequestContext requestContext = buildMcpRequestContext(context, Optional.ofNullable(theirCompleteRequest.meta()), requestContextProvider, messageWriterFromContext(context));
 
             CompleteResult completeResult = ourCompletionHandler.complete(requestContext, completeRequest);
 
@@ -290,7 +295,7 @@ interface Mapper
 
             BiFunction<McpTransportContext, McpSchema.CallToolRequest, McpSchema.CallToolResult> callHandler = ((context, theirCallToolRequest) -> {
                 CallToolRequest callToolRequest = new CallToolRequest(theirCallToolRequest.name(), theirCallToolRequest.arguments(), Optional.ofNullable(theirCallToolRequest.meta()));
-                McpRequestContext requestContext = buildMcpRequestContext(context, Optional.ofNullable(theirCallToolRequest.meta()), requestContextProvider);
+                McpRequestContext requestContext = buildMcpRequestContext(context, Optional.ofNullable(theirCallToolRequest.meta()), requestContextProvider, messageWriterFromContext(context));
 
                 CallToolResult callToolResult = ourHandler.callTool(requestContext, callToolRequest);
 

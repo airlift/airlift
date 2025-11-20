@@ -3,6 +3,7 @@ package io.airlift.mcp.reference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 import io.airlift.mcp.McpRequestContext;
+import io.airlift.mcp.handler.MessageWriter;
 import io.airlift.mcp.handler.RequestContextProvider;
 import io.airlift.mcp.model.JsonRpcRequest;
 import io.airlift.mcp.model.ProgressNotification;
@@ -10,7 +11,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.Optional;
 import java.util.OptionalDouble;
 
@@ -29,7 +29,7 @@ public class ReferenceRequestContextProvider
     }
 
     @Override
-    public McpRequestContext get(HttpServletRequest request, HttpServletResponse response, Optional<Object> progressToken)
+    public McpRequestContext get(HttpServletRequest request, HttpServletResponse response, MessageWriter messageWriter, Optional<Object> progressToken)
     {
         return new McpRequestContext()
         {
@@ -44,7 +44,7 @@ public class ReferenceRequestContextProvider
             public void sendProgress(double progress, double total, String message)
             {
                 Optional<Object> appliedProgressToken = progressToken.map(token -> switch (token) {
-                    case Number n -> Optional.of(n.longValue());
+                    case Number number -> Optional.of(number.longValue());
                     default -> progressToken;
                 });
 
@@ -52,17 +52,14 @@ public class ReferenceRequestContextProvider
                 sendNotification("notifications/progress", Optional.of(notification));
             }
 
+            @SuppressWarnings("SameParameterValue")
             private void sendNotification(String method, Optional<Object> params)
             {
                 try {
-                    PrintWriter writer = response.getWriter();
-                    if (!(writer instanceof SsePrintWriter ssePrintWriter)) {
-                        throw exception("Response writer is not an SsePrintWriter");
-                    }
-                    JsonRpcRequest<?> notification = params.map(p -> JsonRpcRequest.buildNotification(method, p)).orElseGet(() -> JsonRpcRequest.buildNotification(method));
+                    JsonRpcRequest<?> notification = params.map(param -> JsonRpcRequest.buildNotification(method, param)).orElseGet(() -> JsonRpcRequest.buildNotification(method));
                     String json = objectMapper.writeValueAsString(notification);
-                    ssePrintWriter.writeMessage(json);
-                    ssePrintWriter.flush();
+                    messageWriter.writeMessage(json);
+                    messageWriter.flushMessages();
                 }
                 catch (IOException e) {
                     throw exception(e);
