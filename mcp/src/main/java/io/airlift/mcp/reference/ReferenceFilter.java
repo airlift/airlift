@@ -65,12 +65,10 @@ public class ReferenceFilter
             McpIdentity identity = identityMapper.get().map(request);
             switch (identity) {
                 case Authenticated<?> authenticated -> {
-                    SseResponseWrapper sseResponseWrapper = new SseResponseWrapper(response);
-
                     request.setAttribute(MCP_IDENTITY_ATTRIBUTE, authenticated.identity());
-                    request.setAttribute(HTTP_RESPONSE_ATTRIBUTE, sseResponseWrapper);
+                    request.setAttribute(HTTP_RESPONSE_ATTRIBUTE, response);
 
-                    transport.service(request, sseResponseWrapper);
+                    transport.service(request, response);
                 }
                 case Unauthenticated unauthenticated -> {
                     response.setContentType(APPLICATION_JSON);

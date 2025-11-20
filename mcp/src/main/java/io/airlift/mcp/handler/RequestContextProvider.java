@@ -8,5 +8,14 @@ import java.util.Optional;
 
 public interface RequestContextProvider
 {
-    McpRequestContext get(HttpServletRequest request, HttpServletResponse response, Optional<Object> progressToken);
+    interface MessageWriter
+    {
+        void writeMessage(String data);
+
+        void writeMessage(String data, Optional<String> messageId);
+
+        void flushMessages();
+    }
+
+    McpRequestContext get(HttpServletRequest request, HttpServletResponse response, MessageWriter messageWriter, Optional<Object> progressToken);
 }
