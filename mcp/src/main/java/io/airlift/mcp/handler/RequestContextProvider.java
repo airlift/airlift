@@ -8,5 +8,5 @@ import java.util.Optional;
 
 public interface RequestContextProvider
 {
-    McpRequestContext get(HttpServletRequest request, HttpServletResponse response, Optional<Object> progressToken);
+    McpRequestContext get(HttpServletRequest request, HttpServletResponse response, MessageWriter messageWriter, Optional<Object> progressToken);
 }
