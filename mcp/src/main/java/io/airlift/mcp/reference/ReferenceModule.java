@@ -2,7 +2,6 @@ package io.airlift.mcp.reference;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.google.inject.Binder;
 import com.google.inject.Module;
@@ -15,7 +14,6 @@ import io.airlift.mcp.handler.RequestContextProvider;
 import io.airlift.mcp.handler.ResourceTemplateEntry;
 import io.airlift.mcp.model.CompleteReference.PromptReference;
 import io.airlift.mcp.model.CompleteReference.ResourceReference;
-import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.json.McpJsonMapper;
 import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.json.schema.JsonSchemaValidator;
@@ -24,7 +22,6 @@ import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServer.StatelessSyncSpecification;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncCompletionSpecification;
 import io.modelcontextprotocol.server.McpStatelessSyncServer;
-import io.modelcontextprotocol.server.transport.HttpServletStatelessServerTransport;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.ServerCapabilities;
 import io.modelcontextprotocol.spec.McpSchema.ServerCapabilities.CompletionCapabilities;
@@ -43,7 +40,6 @@ import java.util.Set;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.inject.Scopes.SINGLETON;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
-import static io.airlift.mcp.McpMetadata.CONTEXT_REQUEST_KEY;
 import static io.airlift.mcp.reference.Mapper.mapCompletion;
 
 public class ReferenceModule
@@ -52,35 +48,31 @@ public class ReferenceModule
     @Override
     public void configure(Binder binder)
     {
-        binder.bind(ReferenceServer.class).asEagerSingleton();
+        bindReferenceServer(binder);
+        binder.bind(ReferenceServerTransport.class).asEagerSingleton();
         binder.bind(io.airlift.mcp.McpServer.class).to(ReferenceServer.class).in(SINGLETON);
         newSetBinder(binder, Filter.class).addBinding().to(ReferenceFilter.class).in(SINGLETON);
         binder.bind(McpUriTemplateManagerFactory.class).to(DefaultMcpUriTemplateManagerFactory.class).in(SINGLETON);
         binder.bind(RequestContextProvider.class).to(ReferenceRequestContextProvider.class).in(SINGLETON);
     }
 
-    @Singleton
-    @Provides
-    public HttpServletStatelessServerTransport mcpTransport(McpMetadata metadata, McpJsonMapper objectMapper)
+    // bound via method so users can override the binding if needed
+    protected void bindReferenceServer(Binder binder)
     {
-        return HttpServletStatelessServerTransport.builder()
-                .messageEndpoint(metadata.uriPath())
-                .jsonMapper(objectMapper)
-                .contextExtractor(request -> McpTransportContext.create(ImmutableMap.of(CONTEXT_REQUEST_KEY, request)))
-                .build();
+        binder.bind(ReferenceServer.class).asEagerSingleton();
     }
 
     @Singleton
     @Provides
     public McpStatelessSyncServer buildServer(
-            HttpServletStatelessServerTransport transport,
+            ReferenceServerTransport transport,
             McpMetadata metadata,
-            McpJsonMapper objectMapper,
+            McpJsonMapper mcpJsonMapper,
             McpUriTemplateManagerFactory uriTemplateManagerFactory,
+            JsonSchemaValidator jsonSchemaValidator,
             RequestContextProvider requestContextProvider,
             Set<PromptEntry> prompts,
             Set<ResourceTemplateEntry> resourceTemplates,
-            JsonSchemaValidator jsonSchemaValidator,
             Set<CompletionEntry> completions)
     {
         ServerCapabilities serverCapabilities = new ServerCapabilities(
@@ -92,7 +84,7 @@ public class ReferenceModule
                 metadata.tools() ? new ToolCapabilities(false) : null);
 
         StatelessSyncSpecification builder = McpServer.sync(transport)
-                .jsonMapper(objectMapper)
+                .jsonMapper(mcpJsonMapper)
                 .capabilities(serverCapabilities)
                 .uriTemplateManagerFactory(uriTemplateManagerFactory)
                 .jsonSchemaValidator(jsonSchemaValidator)
