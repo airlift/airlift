@@ -1,6 +1,6 @@
 package io.airlift.mcp.reference;
 
-import io.airlift.mcp.handler.RequestContextProvider.MessageWriter;
+import io.airlift.mcp.handler.MessageWriter;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
