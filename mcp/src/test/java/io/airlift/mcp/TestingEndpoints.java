@@ -1,18 +1,32 @@
 package io.airlift.mcp;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
+import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.CallToolResult;
-import io.airlift.mcp.model.Content;
+import io.airlift.mcp.model.Content.TextContent;
+import io.airlift.mcp.model.ElicitRequest;
+import io.airlift.mcp.model.ElicitResult;
+import io.airlift.mcp.model.JsonSchemaBuilder;
+import io.airlift.mcp.model.LoggingLevel;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.ResourceTemplateValues;
+import io.airlift.mcp.model.SamplingRequest;
+import io.airlift.mcp.model.SamplingResult;
 import io.airlift.mcp.model.StructuredContentResult;
+import io.airlift.mcp.model.Task;
+import io.airlift.mcp.model.TaskHint;
+import io.airlift.mcp.tasks.TaskId;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import static io.airlift.mcp.McpException.exception;
+import static io.airlift.mcp.model.Task.META_KEY_RELATED_TASK;
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -20,11 +34,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TestingEndpoints
 {
     private final McpServer mcpServer;
+    private final MockAppTaskProcessor appTaskProcessor;
+    private final ObjectMapper objectMapper;
 
     @Inject
-    public TestingEndpoints(McpServer mcpServer)
+    public TestingEndpoints(McpServer mcpServer, MockAppTaskProcessor appTaskProcessor, ObjectMapper objectMapper)
     {
         this.mcpServer = requireNonNull(mcpServer, "mcpServer is null");
+        this.appTaskProcessor = requireNonNull(appTaskProcessor, "appTaskProcessor is null");
+        this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
     }
 
     @McpTool(name = "add", description = "Add two numbers")
@@ -35,10 +53,87 @@ public class TestingEndpoints
         return a + b;
     }
 
+    @McpTool(name = "progress", description = "Test progress notifications")
+    public boolean toolWithNotifications(McpRequestContext requestContext)
+    {
+        for (int i = 0; i <= 100; ++i) {
+            requestContext.sendProgress(i, 100, "Progress " + i + "%");
+            try {
+                TimeUnit.MILLISECONDS.sleep(10);
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            }
+        }
+        return true;
+    }
+
     @McpTool(name = "throws", description = "Throws an exception for testing purposes")
     public void throwsException()
     {
         throw exception("this ain't good");
+    }
+
+    @McpTool(name = "log", description = "Test logging")
+    public void testLogging(McpRequestContext requestContext)
+    {
+        requestContext.sendLog(LoggingLevel.DEBUG, "This is debug");
+        requestContext.sendLog(LoggingLevel.ALERT, "This is alert");
+    }
+
+    public record FullName(String firstName, String lastName) {}
+
+    @McpTool(name = "testElicitation", description = "Test elicitation", taskHint = TaskHint.ALWAYS)
+    public CallToolResult testElicitation(McpRequestContext requestContext, CallToolRequest callToolRequest)
+    {
+        if (callToolRequest.task().isEmpty()) {
+            return new CallToolResult(ImmutableList.of(new TextContent("Tool request did not indicate creating a task")), Optional.empty(), false);
+        }
+
+        Task task = appTaskProcessor.createTask(requestContext, callToolRequest);
+        TaskId taskId = new TaskId(task.taskId());
+
+        ElicitRequest elicitRequest = new ElicitRequest("Tell us who you are", JsonSchemaBuilder.forRecord(TestingEndpoints.FullName.class), Optional.of(ImmutableMap.of(META_KEY_RELATED_TASK, task.taskId())));
+        appTaskProcessor.setPendingRequest(taskId, "elicitation/create", elicitRequest, ElicitResult.class, elicitResult -> appTaskProcessor.completeTask(taskId, mapElicitationResult(elicitResult)));
+
+        return new CallToolResult(task);
+    }
+
+    @McpTool(name = "elicitationThenSample", description = "Test elicitation, then sampling", taskHint = TaskHint.ALWAYS)
+    public CallToolResult testElicitationThenSample(McpRequestContext requestContext, CallToolRequest callToolRequest)
+    {
+        if (callToolRequest.task().isEmpty()) {
+            return new CallToolResult(ImmutableList.of(new TextContent("Tool request did not indicate creating a task")), Optional.empty(), false);
+        }
+
+        Task task = appTaskProcessor.createTask(requestContext, callToolRequest);
+        TaskId taskId = new TaskId(task.taskId());
+
+        ElicitRequest elicitRequest = new ElicitRequest("Tell us who you are", JsonSchemaBuilder.forRecord(TestingEndpoints.FullName.class), Optional.of(ImmutableMap.of(META_KEY_RELATED_TASK, task.taskId())));
+        appTaskProcessor.setPendingRequest(taskId, "elicitation/create", elicitRequest, ElicitResult.class, elicitResult -> {
+            CallToolResult callToolResult = mapElicitationResult(elicitResult);
+            if (callToolResult.isError()) {
+                appTaskProcessor.completeTask(taskId, callToolResult);
+            }
+            else {
+                SamplingRequest samplingRequest = new SamplingRequest(((TextContent) callToolResult.content().getFirst()).text(), 100);
+                appTaskProcessor.setPendingRequest(taskId, "sampling/createMessage", samplingRequest, SamplingResult.class, maybeSamplingResult -> {
+                    CallToolResult finalCallToolResult = maybeSamplingResult.map(samplingResult -> new CallToolResult(samplingResult.content()))
+                            .orElseGet(() -> new CallToolResult(ImmutableList.of(new TextContent("Sampling failed")), Optional.empty(), true));
+                    appTaskProcessor.completeTask(taskId, finalCallToolResult);
+                });
+            }
+        });
+
+        return new CallToolResult(task);
+    }
+
+    private CallToolResult mapElicitationResult(Optional<ElicitResult> maybeElicitResult)
+    {
+        return maybeElicitResult.map(elicitResult -> elicitResult.map(objectMapper, FullName.class).map(fullName -> new CallToolResult(new TextContent(fullName.firstName() + ", " + fullName.lastName())))
+                        .orElseGet(() -> new CallToolResult(ImmutableList.of(new TextContent(elicitResult.action().name())), Optional.empty(), true)))
+                .orElseGet(() -> new CallToolResult(ImmutableList.of(new TextContent("Elicitation failed")), Optional.empty(), true));
     }
 
     @McpPrompt(name = "greeting", description = "Generate a greeting message")
@@ -71,7 +166,7 @@ public class TestingEndpoints
     {
         assertThat(testingIdentity.name()).isEqualTo("Mr. Tester");
 
-        return new CallToolResult(ImmutableList.of(new Content.TextContent(String.valueOf(a + b + c))),
+        return new CallToolResult(ImmutableList.of(new TextContent(String.valueOf(a + b + c))),
                 Optional.empty(),
                 false);
     }
@@ -85,13 +180,13 @@ public class TestingEndpoints
 
         if (a < 0 || b < 0 || c < 0) {
             return new StructuredContentResult<>(
-                    ImmutableList.of(new Content.TextContent("Negative numbers are not allowed")),
+                    ImmutableList.of(new TextContent("Negative numbers are not allowed")),
                     Optional.empty(),
                     true);
         }
 
         return new StructuredContentResult<>(
-                ImmutableList.of(new Content.TextContent(String.valueOf(a + b + c))),
+                ImmutableList.of(new TextContent(String.valueOf(a + b + c))),
                 new TwoAndThree(a + b, a + b + c),
                 false);
     }
