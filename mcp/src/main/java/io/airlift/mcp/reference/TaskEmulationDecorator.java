@@ -104,8 +104,7 @@ public class TaskEmulationDecorator
                 case WORKING -> throw new IllegalStateException("Task is still working");
                 case INPUT_REQUIRED -> throw new IllegalStateException("Task is still waiting on input");
                 case FAILED, CANCELLED -> new CallToolResult(ImmutableList.of(new TextContent("Task failed")), Optional.empty(), true);
-                case COMPLETED ->
-                        taskController.getTaskResult(taskId).orElseGet(() -> new CallToolResult(ImmutableList.of(new TextContent("No result returned")), Optional.empty(), false));
+                case COMPLETED -> taskController.getTaskResult(taskId).orElseGet(() -> new CallToolResult(ImmutableList.of(new TextContent("No result returned")), Optional.empty(), false));
             };
         }
         finally {

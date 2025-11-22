@@ -39,17 +39,17 @@ public class SessionTaskController
 {
     private final SessionController sessionController;
 
-    private record ServerToClientRequests(List<JsonRpcRequest<?>> requests)
+    public record ServerToClientRequests(List<JsonRpcRequest<?>> requests)
     {
-        private ServerToClientRequests
+        public ServerToClientRequests
         {
             requireNonNull(requests, "requests is null");   // don't copy
         }
     }
 
-    private record ServerToClientResponses(Map<UUID, Optional<JsonRpcResponse<?>>> responses)
+    public record ServerToClientResponses(Map<UUID, Optional<JsonRpcResponse<?>>> responses)
     {
-        private ServerToClientResponses
+        public ServerToClientResponses
         {
             requireNonNull(responses, "responses is null");   // don't copy
         }

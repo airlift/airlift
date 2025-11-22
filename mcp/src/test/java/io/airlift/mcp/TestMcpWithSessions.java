@@ -57,6 +57,7 @@ public class TestMcpWithSessions
                 .withSessions(binding -> binding.to(MemorySessionController.class).in(SINGLETON))
                 .withTasks(binding -> binding.to(SessionTaskController.class).in(SINGLETON))
                 .build());
+        closer.register(testingServer);
 
         client1 = buildClient("Client1");
         client2 = buildClient("Client2");
