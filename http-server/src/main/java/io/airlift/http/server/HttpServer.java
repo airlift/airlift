@@ -168,7 +168,9 @@ public class HttpServer
 
         server = new Server(threadPool, createScheduler(name + "-scheduler"), createByteBufferPool(maxBufferSize, config));
         server.setName(name);
-        server.setStopAtShutdown(true);
+        // stopAtShutdown registers a shutdown hook that stops the server, when JVM exits. It's not needed
+        // as the LifeCycleManager takes care of stopping the server at exit.
+        server.setStopAtShutdown(false);
         server.setStopTimeout(config.getStopTimeout().toMillis());
 
         this.monitoredQueuedThreadPoolMBean = new MonitoredQueuedThreadPoolMBean(threadPool);
