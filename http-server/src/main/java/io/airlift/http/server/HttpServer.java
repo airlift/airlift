@@ -59,7 +59,6 @@ import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.MonitoredQueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
-import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.VirtualThreadPool;
 import org.weakref.jmx.Managed;
 import org.weakref.jmx.Nested;
@@ -86,7 +85,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
 import static io.airlift.http.server.ServerFeature.CASE_SENSITIVE_HEADER_CACHE;
@@ -166,7 +164,7 @@ public class HttpServer
                 toSafeBytes(config.getMaxResponseHeaderSize()).orElse(8192)),
                 toSafeBytes(config.getOutputBufferSize()).orElse(32768)));
 
-        server = new Server(threadPool, createScheduler(name + "-scheduler"), createByteBufferPool(maxBufferSize, config));
+        server = new Server(threadPool, new ScheduledExecutorScheduler(name + "-scheduler", false), createByteBufferPool(maxBufferSize, config));
         server.setName(name);
         // stopAtShutdown registers a shutdown hook that stops the server, when JVM exits. It's not needed
         // as the LifeCycleManager takes care of stopping the server at exit.
@@ -526,6 +524,7 @@ public class HttpServer
                 .orElse(0L);
 
         log.debug("Server %s stopping in %s, %d active requests to complete", Duration.succinctDuration(server.getStopTimeout(), MILLISECONDS), activeRequests);
+
         server.stop();
 
         if (scheduledExecutorService != null) {
@@ -572,19 +571,5 @@ public class HttpServer
         }
 
         return OptionalLong.of(dataSize.toBytes());
-    }
-
-    private static Scheduler createScheduler(String name)
-    {
-        Scheduler scheduler = new ScheduledExecutorScheduler(name, true);
-        try {
-            scheduler.start();
-        }
-        catch (Exception e) {
-            throwIfUnchecked(e);
-            throw new RuntimeException(e);
-        }
-
-        return scheduler;
     }
 }
