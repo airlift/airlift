@@ -64,7 +64,7 @@ public class ServerTestBase
     {
         ImmutableList.Builder<Module> modules = ImmutableList.<Module>builder()
                 .add(new NodeModule())
-                .add(new TestingHttpServerModule())
+                .add(new TestingHttpServerModule(getClass().getName()))
                 .add(binder -> binder.bind(new TypeLiteral<Map<String, AtomicInteger>>() {}).toInstance(counters))
                 .add(new JsonModule())
                 .add(new JaxrsModule());

@@ -54,7 +54,7 @@ public class TestMBeanResource
     {
         Bootstrap app = new Bootstrap(
                 new TestingNodeModule(),
-                new TestingHttpServerModule(),
+                new TestingHttpServerModule(getClass().getName()),
                 new JsonModule(),
                 new JaxrsModule(),
                 new JmxHttpModule(),

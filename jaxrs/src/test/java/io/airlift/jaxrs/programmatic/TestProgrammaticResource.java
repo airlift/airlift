@@ -112,7 +112,7 @@ public class TestProgrammaticResource
                 new TestingNodeModule(),
                 new JaxrsModule(),
                 new JsonModule(),
-                new TestingHttpServerModule())
+                new TestingHttpServerModule(getClass().getName()))
                 .quiet()
                 .doNotInitializeLogging()
                 .initialize();

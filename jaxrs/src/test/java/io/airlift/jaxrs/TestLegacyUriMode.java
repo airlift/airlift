@@ -107,7 +107,7 @@ public class TestLegacyUriMode
                     }
                 },
                 new TestingNodeModule(),
-                new TestingHttpServerModule(),
+                new TestingHttpServerModule(getClass().getName()),
                 new JaxrsModule(),
                 new JsonModule())
                 .quiet()

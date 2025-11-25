@@ -165,7 +165,7 @@ public abstract class AbstractTestTestingHttpServer
 
         Bootstrap app = new Bootstrap(
                 new TestingNodeModule(),
-                new TestingHttpServerModule(),
+                new TestingHttpServerModule(getClass().getName()),
                 binder -> {
                     binder.bind(Servlet.class).toInstance(servlet);
                 });
@@ -197,7 +197,7 @@ public abstract class AbstractTestTestingHttpServer
 
         Bootstrap app = new Bootstrap(
                 new TestingNodeModule(),
-                new TestingHttpServerModule(),
+                new TestingHttpServerModule(getClass().getName()),
                 binder -> {
                     binder.bind(Servlet.class).toInstance(servlet);
                     newSetBinder(binder, Filter.class).addBinding().toInstance(filter);
@@ -231,7 +231,7 @@ public abstract class AbstractTestTestingHttpServer
 
         Bootstrap app = new Bootstrap(
                 new TestingNodeModule(),
-                new TestingHttpServerModule(0),
+                new TestingHttpServerModule(getClass().getName()),
                 binder -> {
                     binder.bind(Servlet.class).toInstance(servlet);
                     httpServerBinder(binder).bindResource("/", "webapp/user").withWelcomeFile("user-welcome.txt");
@@ -354,7 +354,7 @@ public abstract class AbstractTestTestingHttpServer
         NodeInfo nodeInfo = new NodeInfo("test");
         HttpServerConfig config = new HttpServerConfig().setHttpPort(0);
         HttpServerInfo httpServerInfo = new HttpServerInfo(config, nodeInfo);
-        return new TestingHttpServer(httpServerInfo, nodeInfo, config, servlet, serverFeatures);
+        return new TestingHttpServer("testing", httpServerInfo, nodeInfo, config, servlet, serverFeatures);
     }
 
     private static TestingHttpServer createTestingHttpServerWithFilter(Set<ServerFeature> serverFeatures, DummyServlet servlet, DummyFilter filter)
@@ -363,7 +363,7 @@ public abstract class AbstractTestTestingHttpServer
         NodeInfo nodeInfo = new NodeInfo("test");
         HttpServerConfig config = new HttpServerConfig().setHttpPort(0);
         HttpServerInfo httpServerInfo = new HttpServerInfo(config, nodeInfo);
-        return new TestingHttpServer(httpServerInfo, nodeInfo, config, Optional.empty(), servlet, ImmutableSet.of(filter), ImmutableSet.of(), serverFeatures, ClientCertificate.NONE);
+        return new TestingHttpServer("testing", httpServerInfo, nodeInfo, config, Optional.empty(), servlet, ImmutableSet.of(filter), ImmutableSet.of(), serverFeatures, ClientCertificate.NONE);
     }
 
     static class DummyServlet
