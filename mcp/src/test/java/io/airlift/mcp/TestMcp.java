@@ -95,7 +95,7 @@ public class TestMcp
                 .add(mcpModule)
                 .add(binder -> httpClientBinder(binder).bindHttpClient("test", ForTest.class))
                 .add(new NodeModule())
-                .add(new TestingHttpServerModule())
+                .add(new TestingHttpServerModule(getClass().getName()))
                 .add(new JaxrsModule())
                 .add(new JsonModule());
 

@@ -31,7 +31,7 @@ public class TestingServer
         ImmutableList.Builder<Module> modules = ImmutableList.<Module>builder()
                 .add(new TestingServerModule())
                 .add(new NodeModule())
-                .add(new TestingHttpServerModule(port))
+                .add(new TestingHttpServerModule(getClass().getName(), port))
                 .add(new JsonModule())
                 .add(new JaxrsModule());
 

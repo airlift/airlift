@@ -43,7 +43,7 @@ public class LocalServer
                 .add(mcpModule)
                 .add(binder -> binder.bind(TestingEndpoints.class).in(SINGLETON))
                 .add(new NodeModule())
-                .add(new TestingHttpServerModule(port.orElse(0)))
+                .add(new TestingHttpServerModule(LocalServer.class.getName(), port.orElse(0)))
                 .add(new JaxrsModule())
                 .add(new JsonModule());
 

@@ -38,16 +38,18 @@ public class TestingHttpServer
     private final HttpServerInfo httpServerInfo;
 
     public TestingHttpServer(
+            String name,
             HttpServerInfo httpServerInfo,
             NodeInfo nodeInfo,
             HttpServerConfig config,
             Servlet servlet)
             throws IOException
     {
-        this(httpServerInfo, nodeInfo, config, servlet, ServerFeature.builder().build());
+        this(name, httpServerInfo, nodeInfo, config, servlet, ServerFeature.builder().build());
     }
 
     public TestingHttpServer(
+            String name,
             HttpServerInfo httpServerInfo,
             NodeInfo nodeInfo,
             HttpServerConfig config,
@@ -55,7 +57,9 @@ public class TestingHttpServer
             Set<ServerFeature> serverFeatures)
             throws IOException
     {
-        this(httpServerInfo,
+        this(
+                name,
+                httpServerInfo,
                 nodeInfo,
                 config,
                 Optional.empty(),
@@ -68,6 +72,7 @@ public class TestingHttpServer
 
     @Inject
     public TestingHttpServer(
+            @ForTestingServer String name,
             HttpServerInfo httpServerInfo,
             NodeInfo nodeInfo,
             HttpServerConfig config,
@@ -79,7 +84,7 @@ public class TestingHttpServer
             ClientCertificate clientCertificate)
             throws IOException
     {
-        super("testing",
+        super(name,
                 httpServerInfo,
                 nodeInfo,
                 config.setLogEnabled(false),

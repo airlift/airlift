@@ -36,15 +36,17 @@ import static io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 public class TestingHttpServerModule
         extends AbstractConfigurationAwareModule
 {
+    private final String name;
     private final int httpPort;
 
-    public TestingHttpServerModule()
+    public TestingHttpServerModule(String name)
     {
-        this(0);
+        this(name, 0);
     }
 
-    public TestingHttpServerModule(int httpPort)
+    public TestingHttpServerModule(String name, int httpPort)
     {
+        this.name = name;
         this.httpPort = httpPort;
     }
 
@@ -54,8 +56,10 @@ public class TestingHttpServerModule
         binder.disableCircularProxies();
 
         configBinder(binder).bindConfig(HttpServerConfig.class);
-        configBinder(binder).bindConfigDefaults(HttpServerConfig.class, config -> config.setHttpPort(httpPort));
+        configBinder(binder).bindConfigDefaults(HttpServerConfig.class, config -> config
+                .setHttpPort(httpPort));
 
+        binder.bind(String.class).annotatedWith(ForTestingServer.class).toInstance(name);
         binder.bind(HttpServerInfo.class).in(Scopes.SINGLETON);
         binder.bind(TestingHttpServer.class).in(Scopes.SINGLETON);
         newOptionalBinder(binder, ClientCertificate.class).setDefault().toInstance(ClientCertificate.NONE);
