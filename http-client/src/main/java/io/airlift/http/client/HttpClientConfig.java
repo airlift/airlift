@@ -93,6 +93,9 @@ public class HttpClientConfig
     private Optional<Duration> tcpKeepAliveIdleTime = Optional.empty();
     private boolean strictEventOrdering;
     private boolean useVirtualThreads;
+    private boolean deflateCompressionEnabled;
+    private boolean brotliCompressionEnabled;
+    private boolean zstdCompressionEnabled;
 
     /**
      * This property is initialized with Jetty's default excluded ciphers list.
@@ -775,6 +778,42 @@ public class HttpClientConfig
     public HttpClientConfig setUseVirtualThreads(boolean useVirtualThreads)
     {
         this.useVirtualThreads = useVirtualThreads;
+        return this;
+    }
+
+    public boolean isDeflateCompressionEnabled()
+    {
+        return deflateCompressionEnabled;
+    }
+
+    @Config("http-client.deflate-compression.enabled")
+    public HttpClientConfig setDeflateCompressionEnabled(boolean deflateCompressionEnabled)
+    {
+        this.deflateCompressionEnabled = deflateCompressionEnabled;
+        return this;
+    }
+
+    public boolean isBrotliCompressionEnabled()
+    {
+        return brotliCompressionEnabled;
+    }
+
+    @Config("http-client.brotli-compression.enabled")
+    public HttpClientConfig setBrotliCompressionEnabled(boolean brotliCompressionEnabled)
+    {
+        this.brotliCompressionEnabled = brotliCompressionEnabled;
+        return this;
+    }
+
+    public boolean isZstdCompressionEnabled()
+    {
+        return zstdCompressionEnabled;
+    }
+
+    @Config("http-client.zstd-compression.enabled")
+    public HttpClientConfig setZstdCompressionEnabled(boolean zstdCompressionEnabled)
+    {
+        this.zstdCompressionEnabled = zstdCompressionEnabled;
         return this;
     }
 
