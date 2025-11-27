@@ -29,9 +29,11 @@ import jakarta.annotation.PreDestroy;
 import jakarta.servlet.Filter;
 import jakarta.servlet.Servlet;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
-import org.eclipse.jetty.compression.Compression;
+import org.eclipse.jetty.compression.brotli.BrotliCompression;
+import org.eclipse.jetty.compression.gzip.GzipCompression;
 import org.eclipse.jetty.compression.server.CompressionConfig;
 import org.eclipse.jetty.compression.server.CompressionHandler;
+import org.eclipse.jetty.compression.zstandard.ZstandardCompression;
 import org.eclipse.jetty.ee11.servlet.FilterHolder;
 import org.eclipse.jetty.ee11.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee11.servlet.ServletHolder;
@@ -78,11 +80,9 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.EnumSet;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
-import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
@@ -194,7 +194,6 @@ public class HttpServer
         this.monitoredQueuedThreadPoolMBean = new MonitoredQueuedThreadPoolMBean(threadPool);
 
         boolean showStackTrace = config.isShowStackTrace();
-        boolean enableCompression = config.isCompressionEnabled();
 
         this.sslContextFactory = maybeSslContextFactory;
 
@@ -331,18 +330,33 @@ public class HttpServer
                 serverFeatures.contains(LEGACY_URI_COMPLIANCE),
                 serverFeatures.contains(REQUEST_CANCELLATION));
 
-        if (enableCompression) {
+        if (config.isGzipCompressionEnabled() || config.isBrotliCompressionEnabled() || config.isZstdCompressionEnabled()) {
             CompressionHandler compressionHandler = new CompressionHandler();
 
-            Iterator<Compression> loader = ServiceLoader.load(Compression.class, HttpServer.class.getClassLoader())
-                    .iterator();
-
-            while (loader.hasNext()) {
+            if (config.isGzipCompressionEnabled()) {
                 try {
-                    compressionHandler.putCompression(loader.next());
+                    compressionHandler.putCompression(new GzipCompression());
                 }
                 catch (Throwable t) {
-                    log.error(t, "Error loading http server compression");
+                    log.error(t, "Error loading gzip http server compression");
+                }
+            }
+
+            if (config.isBrotliCompressionEnabled()) {
+                try {
+                    compressionHandler.putCompression(new BrotliCompression());
+                }
+                catch (Throwable t) {
+                    log.error(t, "Error loading brotli http server compression");
+                }
+            }
+
+            if (config.isZstdCompressionEnabled()) {
+                try {
+                    compressionHandler.putCompression(new ZstandardCompression());
+                }
+                catch (Throwable t) {
+                    log.error(t, "Error loading zstd http server compression");
                 }
             }
 
@@ -365,7 +379,7 @@ public class HttpServer
                     config.getLogHistory(),
                     config.getLogQueueSize(),
                     config.getLogMaxFileSize().toBytes(),
-                    config.isCompressionEnabled(),
+                    config.isLogCompressionEnabled(),
                     config.isLogImmediateFlush()));
         }
         server.setHandler(new GracefulHandler(statsHandler));

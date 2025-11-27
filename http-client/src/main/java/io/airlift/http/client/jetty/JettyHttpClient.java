@@ -2,6 +2,8 @@ package io.airlift.http.client.jetty;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ListMultimap;
 import com.google.common.net.HostAndPort;
 import com.google.common.primitives.Ints;
@@ -20,6 +22,7 @@ import io.airlift.http.client.StreamingBodyGenerator;
 import io.airlift.http.client.StreamingResponse;
 import io.airlift.http.client.jetty.HttpClientLogger.RequestInfo;
 import io.airlift.http.client.jetty.HttpClientLogger.ResponseInfo;
+import io.airlift.log.Logger;
 import io.airlift.security.pem.PemReader;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
@@ -44,6 +47,7 @@ import org.eclipse.jetty.client.AbstractConnectionPool;
 import org.eclipse.jetty.client.BasicAuthentication.BasicResult;
 import org.eclipse.jetty.client.ByteBufferRequestContent;
 import org.eclipse.jetty.client.BytesRequestContent;
+import org.eclipse.jetty.client.ContentDecoder;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
@@ -61,6 +65,8 @@ import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.client.transport.HttpExchange;
 import org.eclipse.jetty.client.transport.HttpRequest;
 import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
+import org.eclipse.jetty.compression.Compression;
+import org.eclipse.jetty.compression.client.CompressionContentDecoderFactory;
 import org.eclipse.jetty.http.HttpCookieStore;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http2.client.HTTP2Client;
@@ -70,6 +76,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.ConnectionStatistics;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -98,11 +105,16 @@ import java.nio.channels.SelectableChannel;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Queue;
+import java.util.ServiceConfigurationError;
+import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -132,6 +144,8 @@ import static org.eclipse.jetty.http.HttpHeader.PROXY_AUTHORIZATION;
 public class JettyHttpClient
         implements io.airlift.http.client.HttpClient
 {
+    private static final Logger log = Logger.get(JettyHttpClient.class);
+
     // This attribute will be deprecated in OTEL soon
     static final AttributeKey<Boolean> EXCEPTION_ESCAPED = AttributeKey.booleanKey("exception.escaped");
 
@@ -313,8 +327,8 @@ public class JettyHttpClient
 
         ByteBufferPool byteBufferPool = createByteBufferPool(maxBufferSize, config);
         this.sizedByteBufferPool = new ByteBufferPool.Sized(byteBufferPool, false, toIntExact(config.getResponseBufferSize().toBytes()));
-
         httpClient.setByteBufferPool(byteBufferPool);
+
         httpClient.setExecutor(createExecutor(name, config.getMinThreads(), config.getMaxThreads(), config.isUseVirtualThreads()));
         httpClient.setScheduler(createScheduler(name, config.getTimeoutConcurrency(), config.getTimeoutThreads()));
         httpClient.setStrictEventOrdering(config.isStrictEventOrdering());
@@ -354,14 +368,34 @@ public class JettyHttpClient
             requestLogger = new NoopLogger();
         }
 
+        // Registering decoder factories before start prevents Jetty from service-loading (and starting) all available codecs
+        boolean decodersConfigured = configureContentDecoders(config);
+        ContentDecoder.Factory placeholder = null;
+        if (!decodersConfigured) {
+            // Jetty service-loads and starts every codec when no decoder factory is registered. A placeholder
+            // prevents that and is removed right after start, before any request can use it.
+            placeholder = new ContentDecoder.Factory("placeholder")
+            {
+                @Override
+                public Content.Source newDecoderContentSource(Content.Source contentSource)
+                {
+                    throw new UnsupportedOperationException();
+                }
+            };
+            httpClient.getContentDecoderFactories().put(placeholder);
+        }
+
         try {
             httpClient.start();
 
-            // remove the GZIP encoding from the client
-            // TODO: there should be a better way to to do this
-            httpClient.getContentDecoderFactories().clear();
+            if (placeholder != null) {
+                httpClient.getContentDecoderFactories().clear();
+                httpClient.getContentDecoderFactories().removeBean(placeholder);
+            }
         }
         catch (Exception e) {
+            // the constructor fails, so close() will never be called
+            close();
             if (e instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
             }
@@ -443,6 +477,56 @@ public class JettyHttpClient
             }
             distribution.add(NANOSECONDS.toMillis(finished - responseStarted));
         });
+    }
+
+    private boolean configureContentDecoders(HttpClientConfig config)
+    {
+        // Only providers of enabled codecs are instantiated, since their constructors may load native libraries
+        ImmutableMap.Builder<String, String> builder = ImmutableMap.builder();
+        if (config.isGzipCompressionEnabled()) {
+            builder.put("org.eclipse.jetty.compression.gzip.GzipCompression", "gzip");
+        }
+        if (config.isBrotliCompressionEnabled()) {
+            builder.put("org.eclipse.jetty.compression.brotli.BrotliCompression", "br");
+        }
+        if (config.isZstdCompressionEnabled()) {
+            builder.put("org.eclipse.jetty.compression.zstandard.ZstandardCompression", "zstd");
+        }
+
+        Map<String, String> enabledProviders = builder.buildOrThrow();
+        if (enabledProviders.isEmpty()) {
+            return false;
+        }
+
+        ImmutableSet.Builder<String> loadedEncodingsBuilder = ImmutableSet.builderWithExpectedSize(enabledProviders.size());
+        Iterator<ServiceLoader.Provider<Compression>> providers = ServiceLoader.load(Compression.class, JettyHttpClient.class.getClassLoader())
+                .stream()
+                .iterator();
+        while (providers.hasNext()) {
+            try {
+                ServiceLoader.Provider<Compression> provider = providers.next();
+                String providerName = provider.type().getName();
+                if (!enabledProviders.containsKey(providerName)) {
+                    continue;
+                }
+                Compression compression = provider.get();
+                compression.setByteBufferPool(httpClient.getByteBufferPool());
+                CompressionContentDecoderFactory factory = new CompressionContentDecoderFactory(compression);
+                httpClient.getContentDecoderFactories().put(factory);
+                loadedEncodingsBuilder.add(enabledProviders.get(providerName));
+            }
+            catch (ServiceConfigurationError e) {
+                log.error(e, "Error loading http client compression providers");
+            }
+        }
+
+        Set<String> loadedEncodings = loadedEncodingsBuilder.build();
+        for (String encoding : enabledProviders.values()) {
+            if (!loadedEncodings.contains(encoding)) {
+                log.error("Http client compression '%s' is enabled but could not be loaded", encoding);
+            }
+        }
+        return !loadedEncodings.isEmpty();
     }
 
     private ByteBufferPool createByteBufferPool(int maxBufferSize, HttpClientConfig config)

@@ -32,10 +32,12 @@ import static io.airlift.units.DataSize.Unit.KILOBYTE;
 import static io.airlift.units.DataSize.Unit.MEGABYTE;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestHttpServerConfig
 {
     @Test
+    @SuppressWarnings("deprecation")
     public void testDefaults()
     {
         assertRecordedDefaults(recordDefaults(HttpServerConfig.class)
@@ -64,6 +66,9 @@ public class TestHttpServerConfig
                 .setHttp2InitialStreamReceiveWindowSize(DataSize.of(16, MEGABYTE))
                 .setHttp2StreamIdleTimeout(new Duration(15, SECONDS))
                 .setCompressionEnabled(true)
+                .setGzipCompressionEnabled(true)
+                .setBrotliCompressionEnabled(true)
+                .setZstdCompressionEnabled(true)
                 .setMaxHeapMemory(null)
                 .setMaxDirectMemory(null)
                 .setNotifyRemoteAsyncErrors(false)
@@ -71,6 +76,7 @@ public class TestHttpServerConfig
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     public void testExplicitPropertyMappings()
     {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
@@ -98,7 +104,10 @@ public class TestHttpServerConfig
                 .put("http-server.http2.stream-receive-window-size", "4MB")
                 .put("http-server.http2.input-buffer-size", "4MB")
                 .put("http-server.http2.stream-idle-timeout", "23s")
+                .put("http-server.gzip-compression.enabled", "false")
+                .put("http-server.zstd-compression.enabled", "false")
                 .put("http-server.compression.enabled", "false")
+                .put("http-server.brotli-compression.enabled", "false")
                 .put("http-server.max-heap-memory", "127GB")
                 .put("http-server.max-direct-memory", "129GB")
                 .put("http-server.notify-remote-async-errors", "true")
@@ -131,11 +140,40 @@ public class TestHttpServerConfig
                 .setHttp2InputBufferSize(DataSize.of(4, MEGABYTE))
                 .setHttp2StreamIdleTimeout(new Duration(23, SECONDS))
                 .setCompressionEnabled(false)
+                .setGzipCompressionEnabled(false)
+                .setBrotliCompressionEnabled(false)
+                .setZstdCompressionEnabled(false)
                 .setMaxHeapMemory(DataSize.of(127, GIGABYTE))
                 .setMaxDirectMemory(DataSize.of(129, GIGABYTE))
                 .setNotifyRemoteAsyncErrors(true)
                 .setTrackMemoryAllocations(true);
 
         assertFullMapping(properties, expected);
+    }
+
+    @Test
+    @SuppressWarnings("deprecation")
+    public void testLegacyCompressionPropertyIsMasterSwitch()
+    {
+        HttpServerConfig disabled = new HttpServerConfig()
+                .setCompressionEnabled(false)
+                .setBrotliCompressionEnabled(true);
+        assertThat(disabled.isCompressionEnabled()).isFalse();
+        assertThat(disabled.isGzipCompressionEnabled()).isFalse();
+        assertThat(disabled.isBrotliCompressionEnabled()).isFalse();
+        assertThat(disabled.isZstdCompressionEnabled()).isFalse();
+
+        // order of setters must not matter
+        HttpServerConfig reversed = new HttpServerConfig()
+                .setBrotliCompressionEnabled(true)
+                .setCompressionEnabled(false);
+        assertThat(reversed.isBrotliCompressionEnabled()).isFalse();
+
+        HttpServerConfig enabled = new HttpServerConfig()
+                .setCompressionEnabled(true)
+                .setGzipCompressionEnabled(false);
+        assertThat(enabled.isGzipCompressionEnabled()).isFalse();
+        assertThat(enabled.isBrotliCompressionEnabled()).isTrue();
+        assertThat(enabled.isZstdCompressionEnabled()).isTrue();
     }
 }

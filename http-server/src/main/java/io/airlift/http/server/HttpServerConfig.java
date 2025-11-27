@@ -92,6 +92,9 @@ public class HttpServerConfig
     private boolean showStackTrace = true;
 
     private boolean compressionEnabled = true;
+    private boolean gzipCompressionEnabled = true;
+    private boolean brotliCompressionEnabled = true;
+    private boolean zstdCompressionEnabled = true;
 
     private Optional<DataSize> maxHeapMemory = Optional.empty();
     private Optional<DataSize> maxDirectMemory = Optional.empty();
@@ -421,15 +424,60 @@ public class HttpServerConfig
         return this;
     }
 
+    public boolean isGzipCompressionEnabled()
+    {
+        return compressionEnabled && gzipCompressionEnabled;
+    }
+
+    @Config("http-server.gzip-compression.enabled")
+    public HttpServerConfig setGzipCompressionEnabled(boolean gzipCompressionEnabled)
+    {
+        this.gzipCompressionEnabled = gzipCompressionEnabled;
+        return this;
+    }
+
+    /**
+     * @deprecated Use the per-codec properties instead.
+     */
+    @Deprecated
     public boolean isCompressionEnabled()
     {
         return compressionEnabled;
     }
 
+    /**
+     * @deprecated Use the per-codec properties instead. Acts as a master switch: when false, all codecs are disabled
+     *         regardless of the per-codec properties.
+     */
+    @Deprecated
     @Config("http-server.compression.enabled")
     public HttpServerConfig setCompressionEnabled(boolean compressionEnabled)
     {
         this.compressionEnabled = compressionEnabled;
+        return this;
+    }
+
+    public boolean isBrotliCompressionEnabled()
+    {
+        return compressionEnabled && brotliCompressionEnabled;
+    }
+
+    @Config("http-server.brotli-compression.enabled")
+    public HttpServerConfig setBrotliCompressionEnabled(boolean brotliCompressionEnabled)
+    {
+        this.brotliCompressionEnabled = brotliCompressionEnabled;
+        return this;
+    }
+
+    public boolean isZstdCompressionEnabled()
+    {
+        return compressionEnabled && zstdCompressionEnabled;
+    }
+
+    @Config("http-server.zstd-compression.enabled")
+    public HttpServerConfig setZstdCompressionEnabled(boolean zstdCompressionEnabled)
+    {
+        this.zstdCompressionEnabled = zstdCompressionEnabled;
         return this;
     }
 
