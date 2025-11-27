@@ -74,6 +74,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.io.MoreFiles.deleteRecursively;
@@ -82,6 +84,7 @@ import static com.google.common.io.Resources.getResource;
 import static com.google.common.net.HttpHeaders.X_FORWARDED_FOR;
 import static com.google.common.net.HttpHeaders.X_FORWARDED_HOST;
 import static com.google.common.net.HttpHeaders.X_FORWARDED_PROTO;
+import static io.airlift.concurrent.Threads.virtualThreadsNamed;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
@@ -102,6 +105,8 @@ import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
 @Execution(SAME_THREAD)
 public class TestHttpServerProvider
 {
+    private final Executor responseExecutor = Executors.newThreadPerTaskExecutor(virtualThreadsNamed("http-server-provider-response#v"));
+
     private HttpServer server;
     private File tempDir;
     private File logFile;
@@ -499,7 +504,7 @@ public class TestHttpServerProvider
         try (HttpClient client = new JettyHttpClient()) {
             URI uri = URI.create(httpServerInfo.getHttpUri().toASCIIString() + "/?sleep=50000");
             Request request = prepareGet().setUri(uri).build();
-            HttpResponseFuture<?> future = client.executeAsync(request, createStatusResponseHandler());
+            HttpResponseFuture<?> future = client.executeAsync(responseExecutor, request, createStatusResponseHandler());
 
             // wait until the servlet starts processing the request
             servlet.getSleeping().get(1, SECONDS);

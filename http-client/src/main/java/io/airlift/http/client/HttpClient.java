@@ -18,6 +18,7 @@ package io.airlift.http.client;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.io.Closeable;
+import java.util.concurrent.Executor;
 
 public interface HttpClient
         extends Closeable
@@ -25,13 +26,24 @@ public interface HttpClient
     <T, E extends Exception> T execute(Request request, ResponseHandler<T, E> responseHandler)
             throws E;
 
-    <T, E extends Exception> HttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler);
-
     /**
-     * Executes the given request and returns a response stream.
+     * Executes request asynchronously running {@link ResponseHandler} on the client's http thread pool.
+     * Blocks client's http thread while reading.
+     *
+     * @deprecated {@link HttpClient#executeAsync(Executor, Request, ResponseHandler)} instead as this variant makes does
+     * not buffer response while processing and makes it explicit which thread is used while calling ResponseHandler.
+     *
      * <p>
      * <b>Note:</b> {@link Request#getMaxResponseContentLength} is ignored.
      */
+    @Deprecated
+    <T, E extends Exception> HttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler);
+
+    /**a
+     * Executes the given request and returns a response stream. The response handler is executed using the provided executor.
+     */
+    <T, E extends Exception> HttpResponseFuture<T> executeAsync(Executor executor, Request request, ResponseHandler<T, E> responseHandler);
+
     StreamingResponse executeStreaming(Request request);
 
     RequestStats getStats();

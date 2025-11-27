@@ -38,10 +38,13 @@ import java.io.InputStream;
 import java.net.URI;
 import java.util.Optional;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
+import static io.airlift.concurrent.Threads.virtualThreadsNamed;
 import static io.airlift.discovery.client.DiscoveryAnnouncementClient.DEFAULT_DELAY;
 import static io.airlift.http.client.HttpStatus.NOT_MODIFIED;
 import static io.airlift.http.client.HttpStatus.OK;
@@ -53,6 +56,8 @@ import static java.util.Objects.requireNonNull;
 public class HttpDiscoveryLookupClient
         implements DiscoveryLookupClient
 {
+    private final Executor responseExecutor = Executors.newThreadPerTaskExecutor(virtualThreadsNamed("discovery-lookup-response#v"));
+
     private final String environment;
     private final Supplier<URI> discoveryServiceURI;
     private final NodeInfo nodeInfo;
@@ -122,7 +127,7 @@ public class HttpDiscoveryLookupClient
         if (serviceDescriptors != null && serviceDescriptors.getETag() != null) {
             requestBuilder.setHeader(HttpHeaders.ETAG, serviceDescriptors.getETag());
         }
-        return httpClient.executeAsync(requestBuilder.build(), new DiscoveryResponseHandler<>(format("Lookup of %s", type), uri)
+        return httpClient.executeAsync(responseExecutor, requestBuilder.build(), new DiscoveryResponseHandler<>(format("Lookup of %s", type), uri)
         {
             @Override
             public ServiceDescriptors handle(Request request, Response response)

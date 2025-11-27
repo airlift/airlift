@@ -3,6 +3,7 @@ package io.airlift.http.client.testing;
 import com.google.common.util.concurrent.ForwardingListenableFuture;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
+import io.airlift.concurrent.ExecutorServiceAdapter;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.RequestStats;
@@ -11,6 +12,7 @@ import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.StreamingResponse;
 import io.airlift.units.Duration;
 
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -42,6 +44,7 @@ public class TestingHttpClient
     }
 
     @Override
+    @Deprecated
     public <T, E extends Exception> HttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
     {
         requireNonNull(request, "request is null");
@@ -50,6 +53,19 @@ public class TestingHttpClient
 
         AtomicReference<String> state = new AtomicReference<>("SENDING_REQUEST");
         ListenableFuture<T> future = executor.submit(() -> execute(request, responseHandler, state));
+
+        return new TestingHttpResponseFuture<>(future, state);
+    }
+
+    @Override
+    public <T, E extends Exception> HttpResponseFuture<T> executeAsync(Executor executor, Request request, ResponseHandler<T, E> responseHandler)
+    {
+        requireNonNull(request, "request is null");
+        requireNonNull(responseHandler, "responseHandler is null");
+        checkState(!closed.get(), "client is closed");
+
+        AtomicReference<String> state = new AtomicReference<>("SENDING_REQUEST");
+        ListenableFuture<T> future = listeningDecorator(ExecutorServiceAdapter.from(executor)).submit(() -> execute(request, responseHandler, state));
 
         return new TestingHttpResponseFuture<>(future, state);
     }
