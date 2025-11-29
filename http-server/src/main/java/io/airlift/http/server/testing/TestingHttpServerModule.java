@@ -39,6 +39,15 @@ public class TestingHttpServerModule
     private final String name;
     private final int httpPort;
 
+    /**
+     * @deprecated use {@link #TestingHttpServerModule(String, int)} or {@link #TestingHttpServerModule(String)} instead
+     */
+    @Deprecated(forRemoval = true)
+    public TestingHttpServerModule()
+    {
+        this("testing", 0);
+    }
+
     public TestingHttpServerModule(String name)
     {
         this(name, 0);
