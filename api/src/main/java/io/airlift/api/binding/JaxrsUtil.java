@@ -1,5 +1,6 @@
 package io.airlift.api.binding;
 
+import io.airlift.api.ApiPolyResource;
 import io.airlift.api.ApiResource;
 import io.airlift.api.ApiService;
 import io.airlift.api.model.ModelMethod;
@@ -31,12 +32,12 @@ public class JaxrsUtil
 
     public static boolean isApiResource(Type type)
     {
-        return (type instanceof Class<?> clazz) && (clazz.getAnnotation(ApiResource.class) != null);
+        return (type instanceof Class<?> clazz) && isApiResource(clazz);
     }
 
     public static boolean isApiResource(Class<?> clazz)
     {
-        return clazz.getAnnotation(ApiResource.class) != null;
+        return (clazz.getAnnotation(ApiResource.class) != null) || (clazz.getAnnotation(ApiPolyResource.class) != null);
     }
 
     public static Optional<ModelMethod> findApiServiceMethod(ContainerRequestContext requestContext, ModelServices modelServices)
