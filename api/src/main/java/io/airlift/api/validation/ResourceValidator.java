@@ -14,7 +14,6 @@ import io.airlift.api.ApiUnwrapped;
 import io.airlift.api.model.ModelMethod;
 import io.airlift.api.model.ModelPolyResource;
 import io.airlift.api.model.ModelResource;
-import io.airlift.api.model.ModelResourceType;
 import io.airlift.api.model.ModelServiceMetadata;
 
 import java.lang.reflect.Method;
@@ -41,6 +40,7 @@ import static io.airlift.api.model.ModelResourceModifier.PATCH;
 import static io.airlift.api.model.ModelResourceModifier.READ_ONLY;
 import static io.airlift.api.model.ModelResourceModifier.VOID;
 import static io.airlift.api.model.ModelResourceModifier.hasReadOnly;
+import static io.airlift.api.model.ModelResourceType.BASIC;
 import static io.airlift.api.model.ModelResourceType.LIST;
 import static io.airlift.api.model.ModelResourceType.RESOURCE;
 import static io.airlift.api.validation.ResourceValidationState.Option.ALLOW_BASIC_RESOURCES;
@@ -100,8 +100,9 @@ public interface ResourceValidator
 
         switch (modelResource.resourceType()) {
             case LIST -> {
+                Type targetType = modelResource.type();
+
                 if (!state.contains(PARENT_IS_READ_ONLY) && !state.contains(IS_RESULT_RESOURCE)) {
-                    Type targetType = modelResource.type();
                     if (!(targetType instanceof Class<?> clazz) || (!String.class.isAssignableFrom(clazz) && !ApiId.class.isAssignableFrom(clazz) && !clazz.isEnum() && !clazz.isAnnotationPresent(ApiResource.class) && !clazz.isAnnotationPresent(ApiPolyResource.class))) {
                         throw new ValidatorException("Collections that are not read only must be Collection<String> or Collection<? extends ApiAbstractId> or Collection<? extends Enum> or a collection of resources. %s is not".formatted(targetType));
                     }
@@ -114,7 +115,7 @@ public interface ResourceValidator
                     throw new ValidatorException("%s cannot be used in collections".formatted(ApiStreamResponse.class));
                 }
 
-                if (isApiResource(modelResource.type())) {
+                if (isApiResource(targetType)) {
                     validateDeclaredResource(context, service, modelResource, state);
                 }
             }
@@ -169,7 +170,7 @@ public interface ResourceValidator
             }
         }
 
-        modelResource.polyResource().ifPresent(polyResource -> validatePolyResource(context, modelResource, polyResource));
+        modelResource.polyResource().ifPresent(polyResource -> validatePolyResource(context, service, modelResource, polyResource, state));
 
         modelResource.components().forEach(component -> {
             boolean hasDescription = !component.description().isBlank();
@@ -179,7 +180,7 @@ public interface ResourceValidator
                     throw new ValidatorException("%s fields cannot have a %s. At: %s".formatted(ApiUnwrapped.class.getSimpleName(), ApiDescription.class.getSimpleName(), component.type()));
                 }
             }
-            else if ((component.resourceType() != ModelResourceType.BASIC) && !hasDescription && service.type().serviceTraits().contains(DESCRIPTIONS_REQUIRED)) {
+            else if ((component.resourceType() != BASIC) && !hasDescription && service.type().serviceTraits().contains(DESCRIPTIONS_REQUIRED)) {
                 throw new ValidatorException("%s component %s is missing %s annotation.".formatted(modelResource.type(), component.name(), ApiDescription.class.getSimpleName()));
             }
 
@@ -232,7 +233,7 @@ TODO why this?
             return cached;
         }
 
-        if ((resource.resourceType() == ModelResourceType.BASIC) || hasReadOnly(resource.modifiers())) {
+        if ((resource.resourceType() == BASIC) || hasReadOnly(resource.modifiers())) {
             cache.put(resource, true);
             return true;
         }
@@ -287,7 +288,7 @@ TODO why this?
         }
     }
 
-    private static void validatePolyResource(ValidationContext context, ModelResource modelResource, ModelPolyResource polyResource)
+    private static void validatePolyResource(ValidationContext context, ModelServiceMetadata service, ModelResource modelResource, ModelPolyResource polyResource, ResourceValidationState state)
     {
         if (modelResource.type() instanceof Class<?> clazz) {
             context.registerPolyResource(clazz);
@@ -301,6 +302,9 @@ TODO why this?
                         .forEach(component -> {
                             if (component.name().equals(polyResource.key())) {
                                 throw new ValidatorException("%s is a sub-resource of %s and has a component that is the same as the %s key: %s".formatted(subResource.type(), ApiPolyResource.class.getSimpleName(), ApiPolyResource.class.getSimpleName(), polyResource.key()));
+                            }
+                            if (component.resourceType() != BASIC) {
+                                internalValidate(context, service, Optional.of(component.name()), component, state);
                             }
                         }));
     }

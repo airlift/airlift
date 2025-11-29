@@ -12,6 +12,7 @@ import io.airlift.api.model.ModelResource;
 import io.airlift.api.model.ModelServiceMetadata;
 import io.airlift.api.model.ModelServiceType;
 import io.airlift.api.model.ModelServices;
+import io.airlift.json.JsonModule;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -138,8 +139,10 @@ public class TestConforming
     @Test
     public void testAllTypes()
     {
-        ModelServices services = ApiBuilder.apiBuilder().add(ServiceWithAllTypes.class).build().modelServices();
-        assertThat(services.errors()).hasSize(0);
+        // do a thorough test by creating a real ApiModule. This will do full validation including serialization validation
+        ModelApi modelApi = ApiBuilder.apiBuilder().add(ServiceWithAllTypes.class).build();
+        Module module = ApiModule.builder().addApi(modelApi).build();
+        Guice.createInjector(module, new JsonModule());
     }
 
     @Test
