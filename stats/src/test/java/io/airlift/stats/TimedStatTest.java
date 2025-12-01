@@ -49,9 +49,9 @@ public class TimedStatTest
         Collections.sort(values);
 
         assertThat(stat.getCount()).isEqualTo(values.size());
-        assertThat(stat.getMax()).isEqualTo(values.get(values.size() - 1));
-        assertThat(stat.getMin()).isEqualTo(values.get(0));
-        assertThat(stat.getMean()).isEqualTo((values.get(0) + values.get(values.size() - 1)) / 2.0);
+        assertThat(stat.getMax()).isEqualTo(values.getLast());
+        assertThat(stat.getMin()).isEqualTo(values.getFirst());
+        assertThat(stat.getMean()).isEqualTo((values.getFirst() + values.getLast()) / 2.0);
 
         assertPercentile("tp50", stat.getTP50(), values, 0.50);
         assertPercentile("tp90", stat.getTP90(), values, 0.90);

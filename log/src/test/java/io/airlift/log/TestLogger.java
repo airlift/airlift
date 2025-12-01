@@ -333,7 +333,7 @@ public class TestLogger
         public LogRecord takeRecord()
         {
             assertThat(!records.isEmpty()).as("No messages logged").isTrue();
-            return records.remove(0);
+            return records.removeFirst();
         }
 
         public boolean isEmpty()
