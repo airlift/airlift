@@ -1,15 +1,9 @@
 package io.airlift.api.binding;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.exc.InvalidNullException;
-import com.fasterxml.jackson.databind.exc.InvalidTypeIdException;
-import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import com.google.common.base.Throwables;
 import com.google.inject.Inject;
 import io.airlift.api.ApiPatch;
-import io.airlift.jaxrs.JsonMapper;
+import io.airlift.jaxrs.JacksonJsonMapper;
 import jakarta.annotation.Priority;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.Produces;
@@ -19,22 +13,29 @@ import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.ext.MessageBodyReader;
 import jakarta.ws.rs.ext.MessageBodyWriter;
 import jakarta.ws.rs.ext.Provider;
+import tools.jackson.core.exc.StreamReadException;
+import tools.jackson.databind.exc.InvalidNullException;
+import tools.jackson.databind.exc.InvalidTypeIdException;
+import tools.jackson.databind.exc.MismatchedInputException;
+import tools.jackson.databind.exc.UnrecognizedPropertyException;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_NULL_CREATOR_PROPERTIES;
-import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES;
-import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_NUMBERS_FOR_ENUMS;
-import static com.fasterxml.jackson.databind.SerializationFeature.FAIL_ON_UNWRAPPED_TYPE_IDENTIFIERS;
 import static io.airlift.api.responses.ApiException.badRequest;
 import static java.util.Objects.requireNonNull;
+import static tools.jackson.databind.DeserializationFeature.FAIL_ON_NULL_CREATOR_PROPERTIES;
+import static tools.jackson.databind.DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES;
+import static tools.jackson.databind.SerializationFeature.FAIL_ON_UNWRAPPED_TYPE_IDENTIFIERS;
+import static tools.jackson.databind.cfg.EnumFeature.FAIL_ON_NUMBERS_FOR_ENUMS;
 
 @Priority(0)
 @Provider
@@ -45,19 +46,20 @@ public class JaxrsMapper
 {
     private static final Pattern BAD_POLY_TYPE = Pattern.compile("(No binding was made for property name \")(.*)(\" and value \")(.*)(\". Double check the addBinding\\(\\) or addPermittedSubClassBindings\\(\\).)");
 
-    private final JsonMapper jsonMapper;
+    private final JacksonJsonMapper jsonMapper;
     private final PatchFieldsBuilder patchFieldsBuilder;
 
     @Inject
-    public JaxrsMapper(ObjectMapper objectMapper, PatchFieldsBuilder patchFieldsBuilder)
+    public JaxrsMapper(JsonMapper objectMapper, PatchFieldsBuilder patchFieldsBuilder)
     {
         this.patchFieldsBuilder = requireNonNull(patchFieldsBuilder, "patchFieldsBuilder is null");
-        jsonMapper = new JsonMapper(objectMapper);
-
-        objectMapper.enable(FAIL_ON_NULL_FOR_PRIMITIVES);
-        objectMapper.enable(FAIL_ON_NULL_CREATOR_PROPERTIES);
-        objectMapper.enable(FAIL_ON_NUMBERS_FOR_ENUMS);
-        objectMapper.disable(FAIL_ON_UNWRAPPED_TYPE_IDENTIFIERS);
+        jsonMapper = new JacksonJsonMapper(objectMapper
+                .rebuild()
+                .enable(FAIL_ON_NULL_FOR_PRIMITIVES)
+                .enable(FAIL_ON_NULL_CREATOR_PROPERTIES)
+                .enable(FAIL_ON_NUMBERS_FOR_ENUMS)
+                .disable(FAIL_ON_UNWRAPPED_TYPE_IDENTIFIERS)
+                .build());
     }
 
     @Override
@@ -90,7 +92,7 @@ public class JaxrsMapper
 
             return jsonMapper.readFrom(type, genericType, annotations, mediaType, httpHeaders, entityStream);
         }
-        catch (IOException e) {
+        catch (UncheckedIOException e) {
             return mapException(e);
         }
     }
@@ -100,7 +102,7 @@ public class JaxrsMapper
         throw switch (Throwables.getRootCause(e)) {
             case UnrecognizedPropertyException propertyException -> badRequest("Field does not exist: " + propertyException.getPropertyName());
 
-            case JsonParseException jsonParseException -> badRequest(jsonParseException.getOriginalMessage());
+            case StreamReadException jsonParseException -> badRequest(jsonParseException.getOriginalMessage());
 
             case InvalidTypeIdException invalidTypeIdException -> badPolyException("typeKey", invalidTypeIdException.getTypeId());
 

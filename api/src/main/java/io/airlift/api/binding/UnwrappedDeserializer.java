@@ -1,15 +1,13 @@
 package io.airlift.api.binding;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.TreeNode;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.airlift.api.ApiUnwrapped;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.exc.StreamReadException;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ValueDeserializer;
 
-import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.RecordComponent;
 import java.util.Optional;
@@ -19,7 +17,7 @@ import java.util.stream.Stream;
 // see: https://github.com/FasterXML/jackson-databind/issues/3726
 // NOTE: this deserializer relies on removing FAIL_ON_UNKNOWN_PROPERTIES from the mapper
 class UnwrappedDeserializer
-        extends JsonDeserializer<Object>
+        extends ValueDeserializer<Object>
 {
     private final Class<?> clazz;
     private final Constructor<?> constructor;
@@ -34,36 +32,32 @@ class UnwrappedDeserializer
 
     @Override
     public Object deserialize(JsonParser parser, DeserializationContext context)
-            throws IOException
     {
-        ObjectMapper objectMapper = (ObjectMapper) parser.getCodec();
-
-        TreeNode tree = parser.readValueAsTree();
-
+        JsonNode tree = context.readTree(parser);
         RecordComponent[] recordComponents = clazz.getRecordComponents();
         Object[] arguments = new Object[recordComponents.length];
 
         for (int i = 0; i < recordComponents.length; ++i) {
             RecordComponent recordComponent = recordComponents[i];
-            JavaType javaType = objectMapper.getTypeFactory().constructType(recordComponent.getGenericType());
+            JavaType javaType = context.getTypeFactory().constructType(recordComponent.getGenericType());
 
             Object value;
             if (recordComponent.isAnnotationPresent(ApiUnwrapped.class)) {
-                value = objectMapper.treeToValue(tree, javaType);
+                value = context.readTreeAsValue(tree, javaType);
             }
             else {
-                TreeNode componentNode = tree.get(recordComponent.getName());
+                JsonNode componentNode = tree.get(recordComponent.getName());
 
                 if (componentNode == null) {
                     if (Optional.class.isAssignableFrom(recordComponent.getType())) {
                         value = Optional.empty();
                     }
                     else {
-                        throw new JsonParseException(parser, "Expected component not found: %s".formatted(recordComponent.getName()));
+                        throw new StreamReadException(parser, "Expected component not found: %s".formatted(recordComponent.getName()));
                     }
                 }
                 else {
-                    value = objectMapper.treeToValue(componentNode, javaType);
+                    value = context.readTreeAsValue(componentNode, javaType);
                 }
             }
             arguments[i] = value;
@@ -73,7 +67,7 @@ class UnwrappedDeserializer
             return constructor.newInstance(arguments);
         }
         catch (Exception e) {
-            throw new JsonParseException(parser, "Could not create instance");
+            throw new StreamReadException(parser, "Could not create instance");
         }
     }
 

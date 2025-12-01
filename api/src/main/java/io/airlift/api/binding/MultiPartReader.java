@@ -1,6 +1,5 @@
 package io.airlift.api.binding;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.TypeToken;
 import io.airlift.api.ApiMultiPart.ApiMultiPartForm;
@@ -13,6 +12,7 @@ import org.apache.commons.fileupload2.core.FileItemInputIterator;
 import org.apache.commons.fileupload2.core.RequestContext;
 import org.apache.commons.fileupload2.jakarta.servlet6.JakartaServletFileUpload;
 import org.glassfish.jersey.server.ContainerRequest;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.io.InputStream;
