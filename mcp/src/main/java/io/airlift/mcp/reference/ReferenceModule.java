@@ -10,6 +10,8 @@ import io.airlift.mcp.McpMetadata;
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.json.McpJsonMapper;
 import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
+import io.modelcontextprotocol.json.schema.JsonSchemaValidator;
+import io.modelcontextprotocol.json.schema.jackson.DefaultJsonSchemaValidator;
 import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServer.StatelessSyncSpecification;
 import io.modelcontextprotocol.server.McpStatelessSyncServer;
@@ -48,7 +50,12 @@ public class ReferenceModule
 
     @Singleton
     @Provides
-    public McpStatelessSyncServer buildServer(HttpServletStatelessServerTransport transport, McpMetadata metadata, McpJsonMapper objectMapper, McpUriTemplateManagerFactory uriTemplateManagerFactory)
+    public McpStatelessSyncServer buildServer(
+            HttpServletStatelessServerTransport transport,
+            McpMetadata metadata,
+            McpJsonMapper objectMapper,
+            McpUriTemplateManagerFactory uriTemplateManagerFactory,
+            JsonSchemaValidator jsonSchemaValidator)
     {
         McpSchema.ServerCapabilities serverCapabilities = new McpSchema.ServerCapabilities(
                 null,
@@ -62,6 +69,7 @@ public class ReferenceModule
                 .jsonMapper(objectMapper)
                 .capabilities(serverCapabilities)
                 .uriTemplateManagerFactory(uriTemplateManagerFactory)
+                .jsonSchemaValidator(jsonSchemaValidator)
                 .serverInfo(metadata.implementation().name(), metadata.implementation().version());
 
         metadata.instructions().map(builder::instructions);
@@ -74,5 +82,12 @@ public class ReferenceModule
     public McpJsonMapper mcpJsonMapper(ObjectMapper objectMapper)
     {
         return new JacksonMcpJsonMapper(objectMapper);
+    }
+
+    @Singleton
+    @Provides
+    public JsonSchemaValidator mcpJsonSchemaValidator(ObjectMapper objectMapper)
+    {
+        return new DefaultJsonSchemaValidator(objectMapper);
     }
 }
