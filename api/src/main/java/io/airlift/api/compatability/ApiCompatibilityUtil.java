@@ -148,6 +148,8 @@ public class ApiCompatibilityUtil
             return; // optional fields can be ignored for GET/LIST purposes but not for CREATE/UPDATE purposes
         }
         parts.add(modelResource.name());
+        appendModifiers(parts, modelResource);
+
         if (alreadyVisited.add(modelResource.name() + DELIMITER + mode)) {
             parts.add(modelResource.resourceType().name());
             if (!isRoot) {
@@ -160,6 +162,13 @@ public class ApiCompatibilityUtil
             }
             appendPossibleEnum(modelServiceType, parts, modelResource.type());
             modelResource.components().forEach(component -> appendResource(modelServiceType, parts, component, alreadyVisited, mode, false));
+        }
+    }
+
+    private static void appendModifiers(List<String> parts, ModelResource modelResource)
+    {
+        if (modelResource.modifiers().contains(ModelResourceModifier.IS_UNWRAPPED)) {
+            parts.add("unwrapped");
         }
     }
 
