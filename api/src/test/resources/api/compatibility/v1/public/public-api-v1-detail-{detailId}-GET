@@ -1,4 +1,4 @@
-detail/{detailId}|public|1|GET|resource(detail|RESOURCE|detailId|BASIC|io.airlift.api.servertests.integration.testingserver.external.DetailId|syncToken|BASIC|io.airlift.api.ApiResourceVersion|detail)||[detailId]|[]|[400|401|403|404]
+detail/{detailId}|public|1|GET|resource(detail|RESOURCE|detailId|BASIC|io.airlift.api.servertests.integration.testingserver.external.DetailId|syncToken|BASIC|io.airlift.api.ApiResourceVersion|detail|unwrapped)||[detailId]|[]|[400|401|403|404]
 
 Metadata:
 GET

@@ -104,4 +104,9 @@ public record ModelResource(
     {
         return new ModelResource(type, name, openApiName, description, components, resourceType, containerType, modifiers, quotas, limitedValues, supportsIdLookup, polyResource, Optional.of(enumDescriptions));
     }
+
+    public ModelResource withComponents(List<ModelResource> components)
+    {
+        return new ModelResource(type, name, openApiName, description, components, resourceType, containerType, modifiers, quotas, limitedValues, supportsIdLookup, polyResource, enumDescriptions);
+    }
 }
