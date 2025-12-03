@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.function.Consumer;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static io.airlift.api.compatability.ApiCompatibilityUtil.specFileExists;
@@ -95,7 +96,11 @@ public final class ApiCompatibilityTester
     public void test(ModelServices modelServices)
     {
         boolean newFileCreationEnabled = Boolean.getBoolean(newFileCreationPropertyName);
+        test(modelServices, newFileCreationEnabled, _ -> System.exit(1));
+    }
 
+    public void test(ModelServices modelServices, boolean newFileCreationEnabled, Consumer<List<String>> errorHandler)
+    {
         List<String> errors = new ArrayList<>();
         Collection<String> usedSet = new HashSet<>();
         modelServices.services().forEach(modelService -> {
@@ -156,7 +161,7 @@ public final class ApiCompatibilityTester
                     
                     """.formatted(newFileCreationPropertyName, newFileCreationPropertyName));
 
-            System.exit(1);
+            errorHandler.accept(errors);
         }
     }
 
