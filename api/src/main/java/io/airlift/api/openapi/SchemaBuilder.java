@@ -35,9 +35,9 @@ import java.util.stream.Stream;
 
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static io.airlift.api.internals.Strings.capitalize;
+import static io.airlift.api.model.ModelResourceModifier.IS_UNWRAPPED;
 import static io.airlift.api.model.ModelResourceModifier.MULTIPART_RESOURCE_IS_FIRST_ITEM;
 import static io.airlift.api.model.ModelResourceModifier.RECURSIVE_REFERENCE;
-import static io.airlift.api.model.ModelResourceModifier.UNWRAP_INTO_PARENT;
 import static io.airlift.api.openapi.OpenApiMetadata.TAG_MODEL_DEFINITIONS;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
@@ -316,7 +316,7 @@ class SchemaBuilder
 
     private void buildComponentSchema(BuildSchemaMode mode, Schema<?> schema, ModelResource component)
     {
-        if (component.modifiers().contains(UNWRAP_INTO_PARENT)) {
+        if (component.modifiers().contains(IS_UNWRAPPED)) {
             buildResourceSchema(schema, component, allOfMode(mode));
         }
         else {
