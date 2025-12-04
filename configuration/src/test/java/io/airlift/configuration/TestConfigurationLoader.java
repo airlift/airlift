@@ -59,7 +59,7 @@ public class TestConfigurationLoader
     {
         System.setProperty("test", "foo");
 
-        Map<String, String> properties = loadProperties(true);
+        Map<String, String> properties = loadProperties();
 
         assertThat(properties.get("test")).isEqualTo("foo");
 
@@ -73,25 +73,12 @@ public class TestConfigurationLoader
         File file = createConfigFile(out -> out.print("test: foo"));
         System.setProperty("config", file.getAbsolutePath());
 
-        Map<String, String> properties = loadProperties(true);
+        Map<String, String> properties = loadProperties();
 
         assertThat(properties.get("test")).isEqualTo("foo");
         assertThat(properties.get("config")).isEqualTo(file.getAbsolutePath());
 
         System.clearProperty("config");
-    }
-
-    @Test
-    public void testLoadsFromFileWithoutSystemProperties()
-            throws IOException
-    {
-        System.setProperty("test", "foo");
-
-        Map<String, String> properties = loadProperties(false);
-
-        assertThat(properties.get("test")).isNull();
-
-        System.clearProperty("test");
     }
 
     @Test
@@ -105,7 +92,7 @@ public class TestConfigurationLoader
         System.setProperty("config", file.getAbsolutePath());
         System.setProperty("trim-whitespace-key2", " \t key2-value \t ");
 
-        Map<String, String> properties = loadProperties(true);
+        Map<String, String> properties = loadProperties();
 
         // config files are often human-managed and we need to be permissive, stripping trailing whitespace if any
         assertThat(properties.get("trim-whitespace-key1")).isEqualTo("key1-value");
@@ -128,7 +115,7 @@ public class TestConfigurationLoader
         System.setProperty("config", file.getAbsolutePath());
         System.setProperty("key1", "overridden");
 
-        Map<String, String> properties = loadProperties(true);
+        Map<String, String> properties = loadProperties();
 
         assertThat(properties.get("config")).isEqualTo(file.getAbsolutePath());
         assertThat(properties.get("key1")).isEqualTo("overridden");
