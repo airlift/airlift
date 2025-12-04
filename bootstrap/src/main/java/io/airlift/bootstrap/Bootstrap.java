@@ -56,6 +56,7 @@ import static io.airlift.bootstrap.FuzzyMatcher.findSimilar;
 import static io.airlift.configuration.ConfigurationLoader.getSystemProperties;
 import static io.airlift.configuration.ConfigurationLoader.loadPropertiesFrom;
 import static io.airlift.configuration.TomlConfiguration.createTomlConfiguration;
+import static java.lang.Boolean.parseBoolean;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
@@ -84,7 +85,7 @@ public class Bootstrap
     private boolean initializeLogging = true;
     private boolean envInterpolation = true;
     private boolean useSystemProperties = true;
-    private boolean quiet;
+    private boolean quiet = parseBoolean(System.getProperty("airlift.quiet"));
     private boolean loadSecretsPlugins;
     private boolean skipErrorReporting;
 
