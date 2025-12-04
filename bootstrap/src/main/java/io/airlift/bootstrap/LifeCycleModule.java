@@ -62,7 +62,8 @@ public class LifeCycleModule
 
         binder.bindListener(any(), this::provision);
 
-        newExporter(binder).export(LifeCycleManager.class).withGeneratedName();
+        newExporter(binder).export(LifeCycleManager.class)
+                .as(generator -> generator.generatedNameOf(LifeCycleManager.class, name));
     }
 
     private <T> void provision(ProvisionInvocation<T> provision)
