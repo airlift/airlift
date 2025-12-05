@@ -28,6 +28,8 @@ import io.airlift.mcp.reflection.PromptHandlerProvider;
 import io.airlift.mcp.reflection.ResourceHandlerProvider;
 import io.airlift.mcp.reflection.ResourceTemplateHandlerProvider;
 import io.airlift.mcp.reflection.ToolHandlerProvider;
+import io.airlift.mcp.sessions.SessionController;
+import io.airlift.mcp.tasks.TaskController;
 import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema;
 
@@ -37,10 +39,12 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.inject.Scopes.SINGLETON;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
+import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
 import static io.airlift.json.JsonBinder.jsonBinder;
 import static io.airlift.json.JsonSubTypeBinder.jsonSubTypeBinder;
 import static io.airlift.mcp.reflection.ReflectionHelper.forAllInClass;
@@ -57,13 +61,25 @@ public class McpModule
     private final Set<PromptHandlerProvider> prompts;
     private final Set<ResourceHandlerProvider> resources;
     private final Set<ResourceTemplateHandlerProvider> resourceTemplates;
+    private final Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding;
+    private final Optional<Consumer<LinkedBindingBuilder<TaskController>>> taskControllerBinding;
 
     public static Builder builder()
     {
         return new Builder();
     }
 
-    private McpModule(Mode mode, McpMetadata metadata, Optional<IdentityMapperBinding> identityMapperBinding, Set<Class<?>> classes, Set<ToolHandlerProvider> tools, Set<PromptHandlerProvider> prompts, Set<ResourceHandlerProvider> resources, Set<ResourceTemplateHandlerProvider> resourceTemplates)
+    private McpModule(
+            Mode mode,
+            McpMetadata metadata,
+            Optional<IdentityMapperBinding> identityMapperBinding,
+            Set<Class<?>> classes,
+            Set<ToolHandlerProvider> tools,
+            Set<PromptHandlerProvider> prompts,
+            Set<ResourceHandlerProvider> resources,
+            Set<ResourceTemplateHandlerProvider> resourceTemplates,
+            Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding,
+            Optional<Consumer<LinkedBindingBuilder<TaskController>>> taskControllerBinding)
     {
         this.mode = requireNonNull(mode, "mode is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
@@ -73,6 +89,8 @@ public class McpModule
         this.prompts = ImmutableSet.copyOf(prompts);
         this.resources = ImmutableSet.copyOf(resources);
         this.resourceTemplates = ImmutableSet.copyOf(resourceTemplates);
+        this.sessionControllerBinding = requireNonNull(sessionControllerBinding, "sessionControllerBinding is null");
+        this.taskControllerBinding = requireNonNull(taskControllerBinding, "taskControllerBinding is null");
 
         validateRoles();
     }
@@ -98,6 +116,8 @@ public class McpModule
         private Optional<IdentityMapperBinding> identityMapperBinding = Optional.empty();
         private McpMetadata metadata = new McpMetadata("/mcp");
         private Mode mode = Mode.REFERENCE_SDK;
+        private Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding = Optional.empty();
+        private Optional<Consumer<LinkedBindingBuilder<TaskController>>> taskControllerBinding = Optional.empty();
 
         private Builder()
         {
@@ -124,7 +144,25 @@ public class McpModule
 
         public <T> Builder withIdentityMapper(Class<T> identityType, Consumer<LinkedBindingBuilder<McpIdentityMapper>> identityMapperBinding)
         {
+            checkArgument(this.identityMapperBinding.isEmpty(), "Identity mapper binding is already set");
+
             this.identityMapperBinding = Optional.of(new IdentityMapperBinding(identityType, identityMapperBinding));
+            return this;
+        }
+
+        public Builder withSessions(Consumer<LinkedBindingBuilder<SessionController>> sessionControllerBinding)
+        {
+            checkArgument(this.sessionControllerBinding.isEmpty(), "Session controller binding is already set");
+
+            this.sessionControllerBinding = Optional.of(sessionControllerBinding);
+            return this;
+        }
+
+        public Builder withTasks(Consumer<LinkedBindingBuilder<TaskController>> taskControllerBinding)
+        {
+            checkArgument(this.taskControllerBinding.isEmpty(), "Task controller binding is already set");
+
+            this.taskControllerBinding = Optional.of(taskControllerBinding);
             return this;
         }
 
@@ -168,7 +206,7 @@ public class McpModule
                 metadata = metadata.withResources(true);
             }
 
-            return new McpModule(mode, metadata, identityMapperBinding, classesSet, localTools, localPrompts, localResources, localResourceTemplates);
+            return new McpModule(mode, metadata, identityMapperBinding, classesSet, localTools, localPrompts, localResources, localResourceTemplates, sessionControllerBinding, taskControllerBinding);
         }
     }
 
@@ -185,16 +223,26 @@ public class McpModule
         bindJsonSubTypes(binder);
         bindCustomErrorTypes(binder);
         bindIdentityMapper(binder);
+        bindSessions(binder);
 
         if (mode == Mode.REFERENCE_SDK) {
             binder.install(new ReferenceModule());
         }
     }
 
+    private void bindSessions(Binder binder)
+    {
+        OptionalBinder<SessionController> sessionControllerBinder = newOptionalBinder(binder, SessionController.class);
+        sessionControllerBinding.ifPresent(binding -> binding.accept(sessionControllerBinder.setBinding()));
+
+        OptionalBinder<TaskController> taskControllerBinder = newOptionalBinder(binder, TaskController.class);
+        taskControllerBinding.ifPresent(binding -> binding.accept(taskControllerBinder.setBinding()));
+    }
+
     @SuppressWarnings({"unchecked", "rawtypes"})
     private void bindIdentityMapper(Binder binder)
     {
-        OptionalBinder<? extends McpIdentityMapper> identityBinder = OptionalBinder.newOptionalBinder(binder, new TypeLiteral<>() {});
+        OptionalBinder<? extends McpIdentityMapper> identityBinder = newOptionalBinder(binder, new TypeLiteral<>() {});
 
         identityMapperBinding.ifPresent(binding -> {
             Consumer rawConsumer = binding.identityMapperBinding;
