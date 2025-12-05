@@ -7,8 +7,11 @@ import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.StreamingResponse;
 
 import java.util.Optional;
+import java.util.concurrent.Executors;
 
-public class TestAsyncJettyHttpClient
+import static io.airlift.concurrent.Threads.virtualThreadsNamed;
+
+public class TestJettyAsyncExecutorHttpClient
         extends AbstractHttpClientTest
 {
     @Override
@@ -25,14 +28,6 @@ public class TestAsyncJettyHttpClient
     }
 
     @Override
-    public void testConnectTimeout()
-            throws Exception
-    {
-        // Async client doesn't work properly with timeouts as this is expected for the caller to put timeout on the Future.get
-        doTestConnectTimeout(true);
-    }
-
-    @Override
     public <T, E extends Exception> T executeRequest(CloseableTestHttpServer server, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
     {
@@ -44,16 +39,7 @@ public class TestAsyncJettyHttpClient
             throws Exception
     {
         try (JettyHttpClient client = server.createClient(config)) {
-            return executeAsync(client, request, responseHandler);
-        }
-    }
-
-    protected void testPutMethodWithStreamingBodyGenerator(boolean largeContent)
-            throws Exception
-    {
-        // don't test with async clients as they buffer responses and the LARGE content is too big
-        if (!largeContent) {
-            super.testPiped(largeContent);
+            return executeAsync(Executors.newThreadPerTaskExecutor(virtualThreadsNamed("async-executor-pool#v")), client, request, responseHandler);
         }
     }
 }
