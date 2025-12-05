@@ -24,14 +24,6 @@ public class TestAsyncJettyHttpClient
         return Optional.empty();
     }
 
-    @Override
-    public void testConnectTimeout()
-            throws Exception
-    {
-        // Async client doesn't work properly with timeouts as this is expected for the caller to put timeout on the Future.get
-        doTestConnectTimeout(true);
-    }
-
     @SuppressWarnings("unchecked")
     @Override
     public <T, E extends Exception> T executeRequest(CloseableTestHttpServer server, Request request, ResponseHandler<T, E> responseHandler)
@@ -47,15 +39,6 @@ public class TestAsyncJettyHttpClient
     {
         try (JettyHttpClient client = server.createClient(config)) {
             return executeAsync(client, request, responseHandler);
-        }
-    }
-
-    protected void testPutMethodWithStreamingBodyGenerator(boolean largeContent)
-            throws Exception
-    {
-        // don't test with async clients as they buffer responses and the LARGE content is too big
-        if (!largeContent) {
-            super.testPiped(largeContent);
         }
     }
 }
