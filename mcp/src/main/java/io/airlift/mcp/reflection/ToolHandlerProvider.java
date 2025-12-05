@@ -25,7 +25,7 @@ import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.model.JsonSchemaBuilder.isPrimitiveType;
 import static io.airlift.mcp.model.JsonSchemaBuilder.isSupportedType;
 import static io.airlift.mcp.reflection.Predicates.isCallToolRequest;
-import static io.airlift.mcp.reflection.Predicates.isHttpRequest;
+import static io.airlift.mcp.reflection.Predicates.isHttpRequestOrContext;
 import static io.airlift.mcp.reflection.Predicates.isIdentity;
 import static io.airlift.mcp.reflection.Predicates.isObject;
 import static io.airlift.mcp.reflection.Predicates.returnsAnything;
@@ -51,7 +51,7 @@ public class ToolHandlerProvider
         this.method = requireNonNull(method, "method is null");
         this.parameters = ImmutableList.copyOf(parameters);
 
-        validate(method, parameters, isHttpRequest.or(isIdentity).or(isObject).or(isCallToolRequest), returnsAnything);
+        validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isObject).or(isCallToolRequest), returnsAnything);
 
         tool = buildTool(mcpTool, method, parameters);
 
@@ -101,8 +101,8 @@ public class ToolHandlerProvider
         Provider<?> instance = injector.getProvider(clazz);
         MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper);
 
-        ToolHandler toolHandler = (request, toolRequest) -> {
-            Object result = methodInvoker.builder(request)
+        ToolHandler toolHandler = (requestContext, toolRequest) -> {
+            Object result = methodInvoker.builder(requestContext)
                     .withArguments(toolRequest.arguments())
                     .withCallToolRequest(toolRequest)
                     .invoke();

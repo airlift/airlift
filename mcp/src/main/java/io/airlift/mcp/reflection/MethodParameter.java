@@ -13,6 +13,12 @@ public sealed interface MethodParameter
         public static final HttpRequestParameter INSTANCE = new HttpRequestParameter();
     }
 
+    record McpRequestContextParameter()
+            implements MethodParameter
+    {
+        public static final McpRequestContextParameter INSTANCE = new McpRequestContextParameter();
+    }
+
     record GetPromptRequestParameter()
             implements MethodParameter
     {
