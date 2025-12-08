@@ -5,9 +5,7 @@ import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.StreamingResponse;
-import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 
 import java.io.IOException;
 import java.net.URI;
@@ -68,16 +66,6 @@ public class TestJettyHttpsClientPem
     {
         HttpClientConfig httpClientConfig = config.setKeyStorePath(getResource("client.pem").getPath());
         httpClientConfig.setTrustStorePath(getResource("ca.crt").getPath());
-    }
-
-    // TLS connections seem to have some conditions that do not respect timeouts
-    @RepeatedTest(value = 10, failureThreshold = 5)
-    @Timeout(20)
-    @Override
-    public void testConnectTimeout()
-            throws Exception
-    {
-        super.testConnectTimeout();
     }
 
     @Test

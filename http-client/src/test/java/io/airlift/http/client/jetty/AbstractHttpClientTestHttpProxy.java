@@ -20,8 +20,6 @@ import io.airlift.http.client.Response;
 import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.StreamingResponse;
 import io.airlift.http.client.TestingHttpProxy;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -44,19 +42,6 @@ public abstract class AbstractHttpClientTestHttpProxy
     public HttpClientConfig createClientConfig()
     {
         return new HttpClientConfig();
-    }
-
-    @Override
-    @Test
-    @Timeout(5)
-    public void testConnectTimeout()
-            throws Exception
-    {
-        // When using a proxy, the connect timeout is for the connection to the proxy server,
-        // not the ultimate destination server. For this test, the connection to the proxy
-        // succeeds immediately, but the proxy's connection to the destination server will
-        // time out. Therefore, we use the idle time as the expected timeout for proxy tests.
-        doTestConnectTimeout(true);
     }
 
     @Override

@@ -147,12 +147,6 @@ public abstract class AbstractHttpClientTest
     public void testConnectTimeout()
             throws Exception
     {
-        doTestConnectTimeout(false);
-    }
-
-    protected void doTestConnectTimeout(boolean useIdleTimeout)
-            throws Exception
-    {
         try (BackloggedServer server = new BackloggedServer()) {
             HttpClientConfig config = createClientConfig();
             config.setConnectTimeout(new Duration(5, MILLISECONDS));
@@ -172,7 +166,7 @@ public abstract class AbstractHttpClientTest
                 if (!(isConnectTimeout(t) || (t instanceof ClosedChannelException) || (t instanceof TimeoutException))) {
                     fail(format("unexpected exception: [%s]", getStackTraceAsString(t)));
                 }
-                Duration maxDuration = useIdleTimeout ? config.getIdleTimeout() : config.getConnectTimeout();
+                Duration maxDuration = config.getConnectTimeout();
                 maxDuration = new Duration(maxDuration.toMillis() + 300, MILLISECONDS);
                 assertThat(nanosSince(start)).isLessThan(maxDuration);
             }
