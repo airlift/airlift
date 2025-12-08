@@ -23,9 +23,10 @@ public class TestJettyHttpClientSocksProxy
     public Optional<StreamingResponse> executeRequest(CloseableTestHttpServer server, Request request)
             throws Exception
     {
-        TestingSocksProxy testingSocksProxy = new TestingSocksProxy().start();
-        JettyHttpClient client = server.createClient(createClientConfig().setSocksProxy(testingSocksProxy.getHostAndPort()));
-        return Optional.of(new TestingStreamingResponse(() -> client.executeStreaming(request), testingSocksProxy, client));
+        try (TestingSocksProxy testingSocksProxy = new TestingSocksProxy().start()) {
+            JettyHttpClient client = server.createClient(createClientConfig().setSocksProxy(testingSocksProxy.getHostAndPort()));
+            return Optional.of(new TestingStreamingResponse(() -> client.executeStreaming(request), testingSocksProxy, client));
+        }
     }
 
     @Override
