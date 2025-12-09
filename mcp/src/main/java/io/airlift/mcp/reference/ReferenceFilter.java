@@ -13,7 +13,6 @@ import io.airlift.mcp.model.McpIdentity.Authenticated;
 import io.airlift.mcp.model.McpIdentity.Error;
 import io.airlift.mcp.model.McpIdentity.Unauthenticated;
 import io.airlift.mcp.model.McpIdentity.Unauthorized;
-import io.modelcontextprotocol.server.transport.HttpServletStatelessServerTransport;
 import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema;
 import jakarta.servlet.FilterChain;
@@ -27,24 +26,26 @@ import java.util.Optional;
 import java.util.Set;
 
 import static com.google.common.net.HttpHeaders.WWW_AUTHENTICATE;
-import static io.modelcontextprotocol.server.transport.HttpServletStatelessServerTransport.APPLICATION_JSON;
 import static jakarta.servlet.http.HttpServletResponse.SC_FORBIDDEN;
 import static jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static java.util.Objects.requireNonNull;
 
 public class ReferenceFilter
         extends HttpFilter
 {
-    private static final String MCP_IDENTITY_ATTRIBUTE = "airlift.mcp.identity";
+    public static final String HTTP_RESPONSE_ATTRIBUTE = ReferenceFilter.class.getName() + ".response";
+
+    private static final String MCP_IDENTITY_ATTRIBUTE = ReferenceFilter.class.getName() + ".identity";
     private static final Set<String> ALLOWED_HTTP_METHODS = ImmutableSet.of("GET", "POST");
     private static final Logger log = Logger.get(ReferenceFilter.class);
 
-    private final HttpServletStatelessServerTransport transport;
+    private final ReferenceServerTransport transport;
     private final McpMetadata metadata;
     private final Optional<McpIdentityMapper> identityMapper;
 
     @Inject
-    public ReferenceFilter(HttpServletStatelessServerTransport transport, McpMetadata metadata, Optional<McpIdentityMapper> identityMapper)
+    public ReferenceFilter(ReferenceServerTransport transport, McpMetadata metadata, Optional<McpIdentityMapper> identityMapper)
     {
         this.transport = requireNonNull(transport, "transport is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
@@ -62,27 +63,34 @@ public class ReferenceFilter
 
         if (identityMapper.isPresent()) {
             McpIdentity identity = identityMapper.get().map(request);
-            switch (identity) {
-                case Authenticated<?> authenticated -> {
-                    request.setAttribute(MCP_IDENTITY_ATTRIBUTE, authenticated.identity());
-                    transport.service(request, response);
+            try {
+                switch (identity) {
+                    case Authenticated<?> authenticated -> {
+                        request.setAttribute(MCP_IDENTITY_ATTRIBUTE, authenticated.identity());
+                        request.setAttribute(HTTP_RESPONSE_ATTRIBUTE, response);
+
+                        transport.service(request, response);
+                    }
+                    case Unauthenticated unauthenticated -> {
+                        response.setContentType(APPLICATION_JSON);
+                        response.sendError(SC_UNAUTHORIZED, unauthenticated.message());
+                        unauthenticated.authenticateHeaders()
+                                .forEach(header -> response.addHeader(WWW_AUTHENTICATE, header));
+                    }
+                    case Unauthorized unauthorized -> {
+                        response.setContentType(APPLICATION_JSON);
+                        response.sendError(SC_FORBIDDEN, unauthorized.message());
+                    }
+                    case Error error -> {
+                        log.error(error.cause(), "An error was thrown during MCP authentication");
+                        throw error.cause();
+                    }
                 }
-                case Unauthenticated unauthenticated -> {
-                    response.setContentType(APPLICATION_JSON);
-                    response.sendError(SC_UNAUTHORIZED, unauthenticated.message());
-                    unauthenticated.authenticateHeaders()
-                            .forEach(header -> response.addHeader(WWW_AUTHENTICATE, header));
-                }
-                case Unauthorized unauthorized -> {
-                    response.setContentType(APPLICATION_JSON);
-                    response.sendError(SC_FORBIDDEN, unauthorized.message());
-                }
-                case Error error -> {
-                    log.error(error.cause(), "An error was thrown during MCP authentication");
-                    // this will improve if the MCP reference team accepts our PR: https://github.com/modelcontextprotocol/java-sdk/pull/465
-                    JsonRpcErrorDetail errorDetail = error.cause().errorDetail();
-                    throw new McpError(new McpSchema.JSONRPCResponse.JSONRPCError(errorDetail.code(), errorDetail.message(), errorDetail.data()));
-                }
+            }
+            catch (McpException mcpException) {
+                log.debug(mcpException, "Request: %s", request.getRequestURI());
+                JsonRpcErrorDetail errorDetail = mcpException.errorDetail();
+                throw new McpError(new McpSchema.JSONRPCResponse.JSONRPCError(errorDetail.code(), errorDetail.message(), errorDetail.data()));
             }
         }
     }

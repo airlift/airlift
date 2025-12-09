@@ -1,13 +1,12 @@
 package io.airlift.mcp.reference;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableMap;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import io.airlift.mcp.McpMetadata;
-import io.modelcontextprotocol.common.McpTransportContext;
+import io.airlift.mcp.sessions.SessionController;
 import io.modelcontextprotocol.json.McpJsonMapper;
 import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.json.schema.JsonSchemaValidator;
@@ -15,15 +14,20 @@ import io.modelcontextprotocol.json.schema.jackson.DefaultJsonSchemaValidator;
 import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServer.StatelessSyncSpecification;
 import io.modelcontextprotocol.server.McpStatelessSyncServer;
-import io.modelcontextprotocol.server.transport.HttpServletStatelessServerTransport;
-import io.modelcontextprotocol.spec.McpSchema;
+import io.modelcontextprotocol.spec.McpSchema.ServerCapabilities;
+import io.modelcontextprotocol.spec.McpSchema.ServerCapabilities.LoggingCapabilities;
+import io.modelcontextprotocol.spec.McpSchema.ServerCapabilities.PromptCapabilities;
+import io.modelcontextprotocol.spec.McpSchema.ServerCapabilities.ResourceCapabilities;
+import io.modelcontextprotocol.spec.McpSchema.ServerCapabilities.ToolCapabilities;
 import io.modelcontextprotocol.util.DefaultMcpUriTemplateManagerFactory;
 import io.modelcontextprotocol.util.McpUriTemplateManagerFactory;
 import jakarta.servlet.Filter;
 
+import java.util.Optional;
+
 import static com.google.inject.Scopes.SINGLETON;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
-import static io.airlift.mcp.McpMetadata.CONTEXT_REQUEST_KEY;
+import static io.airlift.configuration.ConfigBinder.configBinder;
 
 public class ReferenceModule
         implements Module
@@ -32,41 +36,32 @@ public class ReferenceModule
     public void configure(Binder binder)
     {
         binder.bind(ReferenceServer.class).asEagerSingleton();
+        binder.bind(ReferenceServerTransport.class).asEagerSingleton();
         binder.bind(io.airlift.mcp.McpServer.class).to(ReferenceServer.class).in(SINGLETON);
         newSetBinder(binder, Filter.class).addBinding().to(ReferenceFilter.class).in(SINGLETON);
         binder.bind(McpUriTemplateManagerFactory.class).to(DefaultMcpUriTemplateManagerFactory.class).in(SINGLETON);
+        binder.bind(RequestContextProvider.class).in(SINGLETON);
+
+        configBinder(binder).bindConfig(TaskEmulationConfig.class);
+        binder.bind(TaskEmulationDecorator.class).asEagerSingleton();
     }
 
     @Singleton
     @Provides
-    public HttpServletStatelessServerTransport mcpTransport(McpMetadata metadata, McpJsonMapper objectMapper)
+    public McpStatelessSyncServer buildServer(ReferenceServerTransport transport, McpMetadata metadata, McpJsonMapper mcpJsonMapper, McpUriTemplateManagerFactory uriTemplateManagerFactory, JsonSchemaValidator jsonSchemaValidator, Optional<SessionController> sessionController)
     {
-        return HttpServletStatelessServerTransport.builder()
-                .messageEndpoint(metadata.uriPath())
-                .jsonMapper(objectMapper)
-                .contextExtractor(request -> McpTransportContext.create(ImmutableMap.of(CONTEXT_REQUEST_KEY, request)))
-                .build();
-    }
+        boolean sessionsEnabled = sessionController.isPresent();
 
-    @Singleton
-    @Provides
-    public McpStatelessSyncServer buildServer(
-            HttpServletStatelessServerTransport transport,
-            McpMetadata metadata,
-            McpJsonMapper objectMapper,
-            McpUriTemplateManagerFactory uriTemplateManagerFactory,
-            JsonSchemaValidator jsonSchemaValidator)
-    {
-        McpSchema.ServerCapabilities serverCapabilities = new McpSchema.ServerCapabilities(
+        ServerCapabilities serverCapabilities = new ServerCapabilities(
                 null,
                 null,
-                null,
-                metadata.prompts() ? new McpSchema.ServerCapabilities.PromptCapabilities(false) : null,
-                metadata.resources() ? new McpSchema.ServerCapabilities.ResourceCapabilities(false, false) : null,
-                metadata.tools() ? new McpSchema.ServerCapabilities.ToolCapabilities(false) : null);
+                sessionsEnabled ? new LoggingCapabilities() : null,
+                metadata.prompts() ? new PromptCapabilities(false) : null,
+                metadata.resources() ? new ResourceCapabilities(false, false) : null,
+                metadata.tools() ? new ToolCapabilities(false) : null);
 
         StatelessSyncSpecification builder = McpServer.sync(transport)
-                .jsonMapper(objectMapper)
+                .jsonMapper(mcpJsonMapper)
                 .capabilities(serverCapabilities)
                 .uriTemplateManagerFactory(uriTemplateManagerFactory)
                 .jsonSchemaValidator(jsonSchemaValidator)
