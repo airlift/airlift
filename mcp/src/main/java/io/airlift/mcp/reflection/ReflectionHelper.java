@@ -96,7 +96,7 @@ public interface ReflectionHelper
                     }
 
                     Optional<String> description = Optional.ofNullable(parameter.getAnnotation(McpDescription.class)).map(McpDescription::value);
-                    return new ObjectParameter(parameter.getName(), parameter.getType(), genericType, description, Optional.class.isAssignableFrom(parameter.getType()));
+                    return new ObjectParameter(parameter.getName(), parameter.getType(), genericType, description, !Optional.class.isAssignableFrom(parameter.getType()));
                 })
                 .collect(toImmutableList());
     }

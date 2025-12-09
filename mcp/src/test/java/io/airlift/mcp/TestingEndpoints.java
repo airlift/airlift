@@ -78,21 +78,24 @@ public class TestingEndpoints
 
     public record TwoAndThree(int firstTwo, int allThree) {}
 
-    @McpTool(name = "addFirstTwoAndAllThree", description = "Add the first two numbers together, and add all three numbers together. Numbers must be >= 0")
-    public StructuredContentResult<TwoAndThree> addTwoAndThree(TestingIdentity testingIdentity, int a, int b, int c)
+    @McpTool(name = "addFirstTwoAndAllThree", description = "Add the first two numbers together, and potentially all three numbers together. Numbers must be >= 0")
+    public StructuredContentResult<TwoAndThree> addTwoAndThree(TestingIdentity testingIdentity, int a, int b, Optional<Integer> c)
     {
         assertThat(testingIdentity.name()).isEqualTo("Mr. Tester");
 
-        if (a < 0 || b < 0 || c < 0) {
+        if (a < 0 || b < 0 || c.map(num -> num < 0).orElse(false)) {
             return new StructuredContentResult<>(
                     ImmutableList.of(new Content.TextContent("Negative numbers are not allowed")),
                     Optional.empty(),
                     true);
         }
 
+        int firstTwo = a + b;
+        int allThree = firstTwo + c.orElse(0);
+
         return new StructuredContentResult<>(
-                ImmutableList.of(new Content.TextContent(String.valueOf(a + b + c))),
-                new TwoAndThree(a + b, a + b + c),
+                ImmutableList.of(new Content.TextContent(String.valueOf(allThree))),
+                new TwoAndThree(firstTwo, allThree),
                 false);
     }
 }
