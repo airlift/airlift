@@ -63,13 +63,19 @@ public class JsonSchemaBuilder
                 .flatMap(methodParameter -> (methodParameter instanceof ObjectParameter objectParameter) ? Stream.of(objectParameter) : Stream.empty())
                 .forEach(objectParameter -> {
                     ObjectNode typeNode;
-                    if (objectParameter.rawType().isRecord()) {
+                    Class<?> rawType = objectParameter.rawType();
+                    if (Optional.class.isAssignableFrom(rawType)) {
+                        Type genericType = optionalArgument(objectParameter.genericType())
+                                .orElseThrow(() -> exception("Optional record component isn't fully declared: " + objectParameter.name()));
+                        rawType = TypeLiteral.get(genericType).getRawType();
+                    }
+                    if (rawType.isRecord()) {
                         typeNode = buildObject(objectParameter.description(), (objectProperties, objectRequried) ->
                                 buildRecord(objectParameter.rawType(), objectProperties, objectRequried));
                     }
                     else {
                         typeNode = objectMapper.createObjectNode();
-                        typeNode.put("type", primitiveType(objectParameter.rawType()));
+                        typeNode.put("type", primitiveType(rawType));
                         description.ifPresent(value -> typeNode.put("description", value));
                     }
 

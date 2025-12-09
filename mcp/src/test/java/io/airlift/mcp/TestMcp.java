@@ -252,6 +252,18 @@ public class TestMcp
                 .extracting(StructuredContent::value)
                 .isEqualTo(ImmutableMap.of("firstTwo", 3, "allThree", 6));
 
+        // Test not sending an optional parameter
+        callToolRequest = new CallToolRequest("addFirstTwoAndAllThree", ImmutableMap.of("a", 1, "b", 2));
+        jsonrpcRequest = JsonRpcRequest.buildRequest(1, "tools/call", callToolRequest);
+        response = rpcCall(jsonrpcRequest);
+        twoAndThreeCallToolResult = objectMapper.convertValue(response.result().orElseThrow(), new TypeReference<>() {});
+        assertThat(twoAndThreeCallToolResult.isError()).isFalse();
+        assertThat(twoAndThreeCallToolResult.structuredContent())
+                .isPresent()
+                .get()
+                .extracting(StructuredContent::value)
+                .isEqualTo(ImmutableMap.of("firstTwo", 3, "allThree", 3));
+
         // Test the "error" path
         callToolRequest = new CallToolRequest("addFirstTwoAndAllThree", ImmutableMap.of("a", -1, "b", -2, "c", -3));
         jsonrpcRequest = JsonRpcRequest.buildRequest(1, "tools/call", callToolRequest);
