@@ -14,6 +14,7 @@
 package io.airlift.configuration;
 
 import com.google.common.reflect.AbstractInvocationHandler;
+import com.google.errorprone.annotations.concurrent.GuardedBy;
 import com.google.inject.Binder;
 import com.google.inject.Key;
 import com.google.inject.Module;
@@ -30,12 +31,21 @@ import static java.util.Objects.requireNonNull;
 public abstract class AbstractConfigurationAwareModule
         implements ConfigurationAwareModule
 {
+    @GuardedBy("this")
     private ConfigurationFactory configurationFactory;
+    @GuardedBy("this")
     private Binder binder;
 
     @Override
     public synchronized void setConfigurationFactory(ConfigurationFactory configurationFactory)
     {
+        // Prevent re-setting the configuration factory. The primary goal is to prevent using a single
+        // instance from multiple threads. Doing so could easily lead to silent correctness issues.
+        checkState(
+                this.configurationFactory == null || this.configurationFactory == configurationFactory,
+                "configurationFactory is already set to %s when setting to %s",
+                this.configurationFactory,
+                configurationFactory);
         this.configurationFactory = requireNonNull(configurationFactory, "configurationFactory is null");
     }
 
