@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import static com.google.inject.name.Names.named;
 import static io.airlift.configuration.ConfigBinder.configBinder;
@@ -286,7 +287,7 @@ public class TestConfig
         Module a = binder -> binder.bind(String.class).toInstance("used value a");
         Module b = binder -> binder.bind(String.class).toInstance("used value b");
 
-        Module module = new AbstractConfigurationAwareModule()
+        Supplier<Module> module = () -> new AbstractConfigurationAwareModule()
         {
             @Override
             protected void setup(Binder binder)
@@ -310,9 +311,9 @@ public class TestConfig
             }
         };
 
-        assertThat(createInjector(ImmutableMap.of("value", "a"), module).getInstance(String.class)).isEqualTo("used value a");
-        assertThat(createInjector(ImmutableMap.of("value", "b"), module).getInstance(String.class)).isEqualTo("used value b");
-        assertThatThrownBy(() -> createInjector(ImmutableMap.of("value", "c"), module))
+        assertThat(createInjector(ImmutableMap.of("value", "a"), module.get()).getInstance(String.class)).isEqualTo("used value a");
+        assertThat(createInjector(ImmutableMap.of("value", "b"), module.get()).getInstance(String.class)).isEqualTo("used value b");
+        assertThatThrownBy(() -> createInjector(ImmutableMap.of("value", "c"), module.get()))
                 .hasStackTraceContaining("Not supported value: C");
     }
 
