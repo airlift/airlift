@@ -84,6 +84,7 @@ final class SparseHll
         return serialized.getByte(0) == Format.SPARSE_V2.getTag();
     }
 
+    @Override
     public void insertHash(long hash)
     {
         // TODO: investigate whether accumulate, sort and merge results in better performance due to avoiding the shift+insert in every call
@@ -148,6 +149,7 @@ final class SparseHll
         numberOfEntries = (short) entries.length;
     }
 
+    @Override
     public DenseHll toDense()
     {
         DenseHll result = new DenseHll(indexBitLength);
@@ -266,6 +268,7 @@ final class SparseHll
         return Arrays.copyOf(result, index);
     }
 
+    @Override
     public Slice serialize()
     {
         int size = SizeOf.SIZE_OF_BYTE + // format tag
@@ -300,6 +303,7 @@ final class SparseHll
     }
 
     @VisibleForTesting
+    @Override
     public void verify()
     {
         checkState(numberOfEntries <= entries.length,

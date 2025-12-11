@@ -393,6 +393,7 @@ public class TestConfig
     {
         SwitchValue value;
 
+        @Override
         public SwitchValue getValue()
         {
             return value;

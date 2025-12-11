@@ -372,6 +372,7 @@ public class QuantileDigest
         {
             private double sum;
 
+            @Override
             public boolean process(int node)
             {
                 sum += counts[node];
@@ -1281,6 +1282,7 @@ public class QuantileDigest
             return result;
         }
 
+        @Override
         public String toString()
         {
             return String.format("[count: %f, mean: %f]", count, mean);

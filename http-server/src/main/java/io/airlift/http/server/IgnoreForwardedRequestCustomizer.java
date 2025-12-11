@@ -32,6 +32,7 @@ public class IgnoreForwardedRequestCustomizer
         final HttpFields headers = builder.asImmutable();
 
         return new Request.Wrapper(request) {
+            @Override
             public HttpFields getHeaders()
             {
                 return headers;
