@@ -435,6 +435,7 @@
                                     -XepDisableWarningsInGeneratedCode \
                                     <!-- TODO enable more checks, i.e. remove "-XepDisableAllChecks", see also trinodb/trino's pom.xml errorprone configuration -->
                                     -XepDisableAllChecks \
+                                    -Xep:GuardedBy:ERROR \
                                     -Xep:MissingOverride:ERROR \
                                 </arg>
                             </compilerArgs>
