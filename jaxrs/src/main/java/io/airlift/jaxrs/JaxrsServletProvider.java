@@ -30,6 +30,7 @@ public class JaxrsServletProvider
         this.injector = requireNonNull(injector, "injector is null");
     }
 
+    @Override
     public Servlet get()
     {
         return new ServletContainer(injector.getInstance(qualifiedKey(qualifier, ResourceConfig.class)));

@@ -924,6 +924,7 @@ public class TestConfigurationMetadata
             return value;
         }
 
+        @Override
         public void setValue(String value)
         {
             this.value = value;

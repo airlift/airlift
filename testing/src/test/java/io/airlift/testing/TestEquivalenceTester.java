@@ -98,7 +98,7 @@ public class TestEquivalenceTester
     @SuppressWarnings({"EqualsAndHashcode", "checkstyle:EqualsHashCode"})
     static class NotReflexive
     {
-        @SuppressWarnings("override")
+        @Override
         public boolean equals(Object that)
         {
             return (that instanceof NotReflexive) && (this != that);

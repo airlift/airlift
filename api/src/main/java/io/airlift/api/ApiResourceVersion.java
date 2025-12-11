@@ -32,6 +32,7 @@ public record ApiResourceVersion(long version)
     }
 
     @JsonIgnore
+    @Override
     public long version()
     {
         return version;
