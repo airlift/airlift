@@ -29,6 +29,9 @@ import io.airlift.configuration.ConfigPropertyMetadata;
 import io.airlift.configuration.ConfigSecuritySensitive;
 import org.junit.jupiter.api.Test;
 
+import java.util.Map;
+import java.util.Set;
+
 import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
 import static io.airlift.configuration.ConditionalModule.conditionalModule;
 import static io.airlift.configuration.ConfigBinder.configBinder;
@@ -305,6 +308,49 @@ public class TestBootstrap
         Bootstrap bootstrap = new Bootstrap(module);
         LifeCycleManager lifeCycleManager = bootstrap.initialize().getInstance(LifeCycleManager.class);
         lifeCycleManager.stop();
+    }
+
+    @Test
+    public void testConsumedProperty()
+    {
+        AbstractConfigurationAwareModule module = new AbstractConfigurationAwareModule()
+        {
+            @Override
+            protected void setup(Binder binder)
+            {
+                this.consumeProperty(new ConfigPropertyMetadata("some-secret", true));
+                this.consumeProperty(new ConfigPropertyMetadata("some-not-secret", false));
+            }
+        };
+        Bootstrap bootstrap = new Bootstrap(module)
+                .setOptionalConfigurationProperties(Map.of(
+                        "some-secret", "secret-value",
+                        "some-not-secret", "not-secret-value",
+                        "some-other", "other-value"));
+
+        assertThat((Object) bootstrap.configure())
+                .isEqualTo(Set.of(
+                        new ConfigPropertyMetadata("some-secret", true),
+                        new ConfigPropertyMetadata("some-not-secret", false)));
+    }
+
+    @Test
+    public void testRequiredConsumedProperty()
+    {
+        AbstractConfigurationAwareModule module = new AbstractConfigurationAwareModule()
+        {
+            @Override
+            protected void setup(Binder binder)
+            {
+                this.consumeProperty(new ConfigPropertyMetadata("foo.password", true));
+                this.consumeProperty(new ConfigPropertyMetadata("foo.disabled", false));
+            }
+        };
+        Bootstrap bootstrap = new Bootstrap(module)
+                .setRequiredConfigurationProperty("foo.password", "foo")
+                .setRequiredConfigurationProperty("foo.disabled", "true");
+
+        bootstrap.initialize(); // doesn't throw
     }
 
     public static class Instance {}
