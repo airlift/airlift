@@ -63,17 +63,17 @@ public abstract class AbstractConfigurationAwareModule
         }
     }
 
-    protected void consumeProperty(ConfigPropertyMetadata property)
+    protected synchronized void consumeProperty(ConfigPropertyMetadata property)
     {
         configurationFactory.consumeProperty(property);
     }
 
-    protected Map<String, String> getProperties()
+    protected synchronized Map<String, String> getProperties()
     {
         return configurationFactory.getProperties();
     }
 
-    protected Optional<String> getProperty(String name)
+    protected synchronized Optional<String> getProperty(String name)
     {
         return Optional.ofNullable(configurationFactory.getProperties().get(name));
     }

@@ -220,7 +220,9 @@ public class BufferedHandler
                             }
 
                             // Merge back dropped messages snapshot
-                            dropSnapshot.forEachEntry(dropCountBySource::add);
+                            for (Multiset.Entry<String> entry : dropSnapshot.entrySet()) {
+                                dropCountBySource.add(entry.getElement(), entry.getCount());
+                            }
                         }
                         finally {
                             queueDrainLock.unlock();

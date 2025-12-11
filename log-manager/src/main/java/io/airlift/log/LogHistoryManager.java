@@ -30,6 +30,7 @@ import java.util.stream.Stream;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
+import static com.google.common.collect.Iterators.addAll;
 import static io.airlift.log.LogFileName.parseHistoryLogFileName;
 import static java.util.Objects.requireNonNull;
 
@@ -54,10 +55,10 @@ final class LogHistoryManager
 
         // list existing logs
         try (Stream<Path> paths = Files.list(masterLogFile.getParent())) {
-            paths.map(this::createLogFile)
+            addAll(files, paths.map(this::createLogFile)
                     .filter(Optional::isPresent)
                     .map(Optional::get)
-                    .forEach(files::add);
+                    .iterator());
             totalSize = files.stream()
                     .mapToLong(LogFile::getSize)
                     .sum();

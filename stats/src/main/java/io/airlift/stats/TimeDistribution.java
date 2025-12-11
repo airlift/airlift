@@ -35,7 +35,7 @@ public class TimeDistribution
     private final Ticker ticker;
     private final double alpha;
     private final Object[] locks = new Object[STRIPES];
-    @GuardedBy("locks")
+    // @GuardedBy("locks[i]") for partials[i]
     private final DecayTDigest[] partials = new DecayTDigest[STRIPES];
     @GuardedBy("this")
     private DecayTDigest merged;
@@ -193,9 +193,8 @@ public class TimeDistribution
                 partialTotal.reset();
                 lastMerge = ticker.read();
             }
+            return merged;
         }
-
-        return merged;
     }
 
     private double convertToUnit(double nanos)

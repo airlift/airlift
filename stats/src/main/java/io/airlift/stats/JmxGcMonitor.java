@@ -196,6 +196,7 @@ public class JmxGcMonitor
         }
     }
 
+    @GuardedBy("this")
     private void logMajorGc(GarbageCollectionNotificationInfo info)
     {
         majorGcCount.incrementAndGet();
