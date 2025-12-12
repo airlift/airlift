@@ -26,24 +26,6 @@ import static java.util.Objects.requireNonNull;
 public class ConditionalModule<T>
         extends AbstractConfigurationAwareModule
 {
-    /**
-     * @deprecated Use {@link #conditionalModule} instead
-     */
-    @Deprecated
-    public static <T> Module installModuleIf(Class<T> config, Predicate<T> predicate, Module module, Module otherwise)
-    {
-        return conditionalModule(config, predicate, module, otherwise);
-    }
-
-    /**
-     * @deprecated Use {@link #conditionalModule} instead
-     */
-    @Deprecated
-    public static <T> Module installModuleIf(Class<T> config, Predicate<T> predicate, Module module)
-    {
-        return conditionalModule(config, predicate, module);
-    }
-
     public static <T> Module conditionalModule(Class<T> config, Predicate<T> predicate, Module module, Module otherwise)
     {
         return combine(
