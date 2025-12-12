@@ -292,7 +292,7 @@ public final class LifeCycleManager
         return (e instanceof InvocationTargetException && e.getCause() instanceof Exception exception) ? exception : e;
     }
 
-    class ThreadContextClassLoader
+    static class ThreadContextClassLoader
             implements Closeable
     {
         private final ClassLoader originalThreadContextClassLoader;

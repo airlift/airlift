@@ -459,8 +459,7 @@
                                     -Xep:CatchFail:ERROR \
                                     <!-- TODO fix the code & enable CheckReturnValue check (it's ERROR by default) -->
                                     -Xep:CheckReturnValue:WARN \
-                                    <!-- TODO fix the code & enable ClassCanBeStatic check -->
-                                    -Xep:ClassCanBeStatic:WARN \
+                                    -Xep:ClassCanBeStatic:ERROR \
                                     -Xep:ClassName:ERROR \
                                     -Xep:ClassNewInstance:ERROR \
                                     -Xep:CollectionUndefinedEquality:ERROR \
