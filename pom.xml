@@ -433,10 +433,158 @@
                                 <arg>
                                     -Xplugin:ErrorProne \
                                     -XepDisableWarningsInGeneratedCode \
-                                    <!-- TODO enable more checks, i.e. remove "-XepDisableAllChecks", see also trinodb/trino's pom.xml errorprone configuration -->
-                                    -XepDisableAllChecks \
+                                    -Xep:AlmostJavadoc:ERROR \
+                                    -Xep:AmbiguousMethodReference:ERROR \
+                                    <!-- TODO fix the code & enable AnnotateFormatMethod check -->
+                                    -Xep:AnnotateFormatMethod:WARN \
+                                    -Xep:ArgumentSelectionDefectChecker:ERROR \
+                                    -Xep:ArrayAsKeyOfSetOrMap:ERROR \
+                                    <!-- TODO fix the code & enable ArrayHashCode check (it's ERROR by default) -->
+                                    -Xep:ArrayHashCode:WARN \
+                                    -Xep:AssertEqualsArgumentOrderChecker:ERROR \
+                                    -Xep:AssertThrowsMultipleStatements:ERROR \
+                                    -Xep:AssertionFailureIgnored:ERROR \
+                                    -Xep:AttemptedNegativeZero:ERROR \
+                                    -Xep:BadComparable:ERROR \
+                                    <!-- TODO fix the code & enable BadInstanceof check -->
+                                    -Xep:BadInstanceof:WARN \
+                                    <!-- TODO fix the code & enable BanJNDI check (it's ERROR by default) -->
+                                    -Xep:BanJNDI:WARN \
+                                    -Xep:BigDecimalEquals:ERROR \
+                                    -Xep:BoxedPrimitiveConstructor:ERROR \
+                                    -Xep:ByteBufferBackingArray:ERROR \
+                                    -Xep:CacheLoaderNull:ERROR \
+                                    -Xep:CanonicalDuration:ERROR \
+                                    -Xep:CatchAndPrintStackTrace:ERROR \
+                                    -Xep:CatchFail:ERROR \
+                                    <!-- TODO fix the code & enable CheckReturnValue check (it's ERROR by default) -->
+                                    -Xep:CheckReturnValue:WARN \
+                                    <!-- TODO fix the code & enable ClassCanBeStatic check -->
+                                    -Xep:ClassCanBeStatic:WARN \
+                                    -Xep:ClassName:ERROR \
+                                    -Xep:ClassNewInstance:ERROR \
+                                    -Xep:CollectionUndefinedEquality:ERROR \
+                                    -Xep:CollectorShouldNotUseState:ERROR \
+                                    -Xep:CompareToZero:ERROR \
+                                    -Xep:DateChecker:ERROR \
+                                    -Xep:DateFormatConstant:ERROR \
+                                    <!-- TODO fix the code & enable DefaultCharset check -->
+                                    -Xep:DefaultCharset:WARN \
+                                    -Xep:DepAnn:ERROR \
+                                    -Xep:DeprecatedVariable:ERROR \
+                                    -Xep:DistinctVarargsChecker:ERROR \
+                                    -Xep:DoNotCallSuggester:OFF \
+                                    -Xep:DoubleCheckedLocking:ERROR \
+                                    -Xep:EmptyBlockTag:ERROR \
+                                    -Xep:EmptySetMultibindingContributions:ERROR \
+                                    <!-- we would rather want the opposite check -->
+                                    -Xep:EqualsGetClass:OFF \
+                                    <!-- TODO fix the code & enable EqualsHashCode check (it's ERROR by default) -->
+                                    -Xep:EqualsHashCode:WARN \
+                                    -Xep:EqualsIncompatibleType:ERROR \
+                                    <!-- TODO fix the code & enable EqualsNull check (it's ERROR by default) -->
+                                    -Xep:EqualsNull:WARN \
+                                    -Xep:EqualsUnsafeCast:ERROR \
+                                    <!-- TODO fix the code & enable EqualsUsingHashCode check -->
+                                    -Xep:EqualsUsingHashCode:WARN \
+                                    -Xep:ErroneousBitwiseExpression:ERROR \
+                                    -Xep:ErroneousThreadPoolConstructorChecker:ERROR \
+                                    <!-- TODO fix the code & enable EscapedEntity check -->
+                                    -Xep:EscapedEntity:WARN \
+                                    -Xep:ExpensiveLenientFormatString:ERROR \
+                                    -Xep:ExtendingJUnitAssert:ERROR \
+                                    -Xep:ExtendsObject:ERROR \
+                                    -Xep:FallThrough:ERROR \
+                                    -Xep:Finalize:ERROR \
+                                    <!-- TODO fix the code & enable FormatString check (it's ERROR by default) -->
+                                    -Xep:FormatString:WARN \
+                                    <!-- TODO fix the code & enable FormatStringAnnotation check (it's ERROR by default) -->
+                                    -Xep:FormatStringAnnotation:WARN \
+                                    -Xep:GetClassOnEnum:ERROR \
                                     -Xep:GuardedBy:ERROR \
+                                    -Xep:HidingField:ERROR \
+                                    -Xep:JavaTimeDefaultTimeZone:OFF \
+                                    <!-- covered by Modernizer -->
+                                    -Xep:JdkObsolete:OFF \
+                                    <!-- This check requires list fields to be declared as ImmutableList, which is not in line with project's code style -->
+                                    -Xep:Immutable:OFF \
+                                    <!-- flags enums with List fields even if initialized with ImmutableList, and other false positives -->
+                                    -Xep:ImmutableEnumChecker:OFF \
+                                    -Xep:ImmutableSetForContains:ERROR \
+                                    <!-- TODO fix the code & enable ImpossibleNullComparison check (it's ERROR by default) -->
+                                    -Xep:ImpossibleNullComparison:WARN \
+                                    <!-- TODO fix the code & enable InconsistentCapitalization check -->
+                                    <!-- fields/variables should not differ only in case -->
+                                    -Xep:InconsistentCapitalization:WARN \
+                                    -Xep:InconsistentHashCode:ERROR \
+                                    -Xep:InjectOnConstructorOfAbstractClass:ERROR \
+                                    -Xep:InvalidInlineTag:ERROR \
+                                    <!-- TODO fix the code & enable LenientFormatStringValidation check (it's ERROR by default) -->
+                                    -Xep:LenientFormatStringValidation:WARN \
+                                    -Xep:MisleadingEscapedSpace:OFF \
+                                    <!-- TODO fix the code & enable MissingCasesInEnumSwitch check -->
+                                    -Xep:MissingCasesInEnumSwitch:WARN \
                                     -Xep:MissingOverride:ERROR \
+                                    <!-- Sometimes our javadoc contains just a @see directive -->
+                                    -Xep:MissingSummary:OFF \
+                                    -Xep:ModifiedButNotUsed:ERROR \
+                                    <!-- TODO fix the code & enable MutablePublicArray check -->
+                                    -Xep:MutablePublicArray:WARN \
+                                    <!-- TODO fix the code & enable NarrowCalculation check -->
+                                    -Xep:NarrowCalculation:WARN \
+                                    -Xep:NarrowingCompoundAssignment:ERROR \
+                                    -Xep:NullOptional:ERROR \
+                                    -Xep:NullableOptional:ERROR \
+                                    -Xep:NullablePrimitive:ERROR \
+                                    <!-- TODO fix the code and enable ObjectEqualsForPrimitives check -->
+                                    -Xep:ObjectEqualsForPrimitives:WARN \
+                                    -Xep:ObjectToString:ERROR \
+                                    <!-- TODO fix the code and enable OptionalMapUnusedValue check (it's ERROR by default) -->
+                                    -Xep:OptionalMapUnusedValue:WARN \
+                                    -Xep:OptionalNotPresent:ERROR \
+                                    <!-- TODO fix the code and enable OptionalOfRedundantMethod check (it's ERROR by default) -->
+                                    -Xep:OptionalOfRedundantMethod:WARN \
+                                    -Xep:OrphanedFormatString:ERROR \
+                                    -Xep:Overrides:ERROR \
+                                    <!-- TODO fix the code and enable PatternMatchingInstanceof -->
+                                    -Xep:PatternMatchingInstanceof:WARN \
+                                    -Xep:PreconditionsExpensiveString:ERROR \
+                                    <!-- flags List fields even if initialized with ImmutableList -->
+                                    -Xep:PreferredInterfaceType:OFF \
+                                    -Xep:PrimitiveArrayPassedToVarargsMethod:ERROR \
+                                    -Xep:RedundantNullCheck:ERROR \
+                                    -Xep:RethrowReflectiveOperationExceptionAsLinkageError:OFF \
+                                    <!-- TODO fix the code and enable SelfAssertion check (it's ERROR by default) -->
+                                    -Xep:SelfAssertion:WARN \
+                                    <!-- TODO fix the code and enable SelfAssignment check (it's ERROR by default) -->
+                                    -Xep:SelfAssignment:WARN \
+                                    <!-- TODO fix the code and enable SelfEquals check (it's ERROR by default) -->
+                                    -Xep:SelfEquals:WARN \
+                                    <!-- TODO fix the code and enable StaticAssignmentOfThrowable check -->
+                                    -Xep:StaticAssignmentOfThrowable:WARN \
+                                    -Xep:StaticGuardedByInstance:ERROR \
+                                    <!-- TODO fix the code and enable StreamResourceLeak check (it's ERROR by default) -->
+                                    -Xep:StreamResourceLeak:WARN \
+                                    <!-- TODO fix the code and enable StringCaseLocaleUsage check -->
+                                    -Xep:StringCaseLocaleUsage:WARN \
+                                    -Xep:SuppressWarningsDeprecated:ERROR \
+                                    -Xep:ThreeLetterTimeZoneID:ERROR \
+                                    -Xep:TraditionalSwitchExpression:ERROR \
+                                    -Xep:UnicodeEscape:ERROR \
+                                    -Xep:UnnecessaryCopy:ERROR \
+                                    -Xep:UnnecessaryLongToIntConversion:ERROR \
+                                    -Xep:UnnecessaryMethodReference:ERROR \
+                                    -Xep:UnnecessaryOptionalGet:ERROR \
+                                    <!-- TODO fix the code and enable UnnecessaryParentheses check -->
+                                    -Xep:UnnecessaryParentheses:WARN \
+                                    <!-- false positive from io.airlift.configuration.Config annotation -->
+                                    -Xep:UnnecessaryQualifier:OFF \
+                                    <!-- TODO fix the code and enable UnnecessaryStringBuilder check -->
+                                    -Xep:UnnecessaryStringBuilder:WARN \
+                                    -Xep:UnusedMethod:OFF \
+                                    <!-- TODO fix the code and enable UnusedVariable check -->
+                                    -Xep:UnusedVariable:WARN \
+                                    -Xep:UseEnumSwitch:ERROR \
                                 </arg>
                             </compilerArgs>
                             <annotationProcessorPaths>
