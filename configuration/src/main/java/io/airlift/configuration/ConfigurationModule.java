@@ -19,7 +19,6 @@ import com.google.inject.Binder;
 import com.google.inject.Module;
 
 import java.lang.annotation.Annotation;
-import java.util.stream.Stream;
 
 import static io.airlift.configuration.ConfigBinder.configBinder;
 
@@ -43,37 +42,12 @@ public class ConfigurationModule
         configurationFactory.getConfigurationProviders().forEach(configurationProvider -> bindConfigurationProvider(binder, configurationProvider));
     }
 
-    /**
-     * @deprecated Use {@link ConfigurationAwareModule#combine}
-     */
-    @Deprecated
-    public static ConfigurationAwareModule installModules(Module... modules)
-    {
-        return new AbstractConfigurationAwareModule()
-        {
-            @Override
-            protected void setup(Binder binder)
-            {
-                Stream.of(modules)
-                        .forEach(this::install);
-            }
-        };
-    }
-
     private static <T> void bindConfigurationProvider(Binder binder, ConfigurationProvider<T> configurationProvider)
     {
         binder.bind(configurationProvider.getConfigurationBinding().key()).toProvider(configurationProvider);
     }
 
-    /**
-     * @deprecated As of Airlift 0.109, replaced by {@link ConfigBinder#configBinder(Binder)}.
-     */
-    @Deprecated
-    public static AnnotatedBindingBuilder bindConfig(Binder binder)
-    {
-        return new AnnotatedBindingBuilder(binder.skipSources(ConfigurationModule.class));
-    }
-
+    @Deprecated(forRemoval = true)
     public static class AnnotatedBindingBuilder
             extends PrefixBindingBuilder
     {
@@ -93,6 +67,7 @@ public class ConfigurationModule
         }
     }
 
+    @Deprecated(forRemoval = true)
     public static class PrefixBindingBuilder
             extends ConfigBindingBuilder
     {
@@ -107,6 +82,7 @@ public class ConfigurationModule
         }
     }
 
+    @Deprecated(forRemoval = true)
     public static class ConfigBindingBuilder
     {
         protected final Binder binder;
