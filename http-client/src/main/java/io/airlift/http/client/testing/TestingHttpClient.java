@@ -151,7 +151,7 @@ public class TestingHttpClient
                 throws Exception;
     }
 
-    private class TestingHttpResponseFuture<T>
+    private static class TestingHttpResponseFuture<T>
             extends ForwardingListenableFuture<T>
             implements HttpResponseFuture<T>
     {

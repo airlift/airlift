@@ -1159,7 +1159,7 @@ public abstract class AbstractHttpClientTest
         }
     }
 
-    private class DefaultOnExceptionResponseHandler
+    private static class DefaultOnExceptionResponseHandler
             implements ResponseHandler<Object, RuntimeException>
     {
         private final Object defaultObject;
