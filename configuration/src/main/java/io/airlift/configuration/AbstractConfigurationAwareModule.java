@@ -31,6 +31,11 @@ import static java.util.Objects.requireNonNull;
 public abstract class AbstractConfigurationAwareModule
         implements ConfigurationAwareModule
 {
+    // When set, restore original behavior of setConfigurationFactory which allows multiple sequential calls (and makes concurrent calls incorrect!)
+    // TODO remove after some time
+    private static final boolean LEGACY_LAX_SET_CONFIGURATION_FACTORY =
+            Boolean.getBoolean("io.airlift.configuration.AbstractConfigurationAwareModule.legacyLaxSetConfigurationFactory");
+
     @GuardedBy("this")
     private ConfigurationFactory configurationFactory;
     @GuardedBy("this")
@@ -42,7 +47,7 @@ public abstract class AbstractConfigurationAwareModule
         // Prevent re-setting the configuration factory. The primary goal is to prevent using a single
         // instance from multiple threads. Doing so could easily lead to silent correctness issues.
         checkState(
-                this.configurationFactory == null || this.configurationFactory == configurationFactory,
+                LEGACY_LAX_SET_CONFIGURATION_FACTORY || this.configurationFactory == null || this.configurationFactory == configurationFactory,
                 "configurationFactory is already set to %s when setting to %s",
                 this.configurationFactory,
                 configurationFactory);
