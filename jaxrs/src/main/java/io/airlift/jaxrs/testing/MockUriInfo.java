@@ -167,7 +167,7 @@ public class MockUriInfo
                 continue;
             }
 
-            String key = urlDecode(pair.get(0));
+            String key = urlDecode(pair.getFirst());
             String value = null;
             if (pair.size() != 1) {
                 value = QUERY_PARAM_VALUE_JOINER.join(pair.subList(1, pair.size()));

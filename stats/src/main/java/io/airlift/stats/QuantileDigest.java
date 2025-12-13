@@ -411,17 +411,17 @@ public class QuantileDigest
      */
     public long getQuantile(double quantile)
     {
-        return getQuantiles(ImmutableList.of(quantile)).get(0);
+        return getQuantiles(ImmutableList.of(quantile)).getFirst();
     }
 
     public long getQuantileLowerBound(double quantile)
     {
-        return getQuantilesLowerBound(ImmutableList.of(quantile)).get(0);
+        return getQuantilesLowerBound(ImmutableList.of(quantile)).getFirst();
     }
 
     public long getQuantileUpperBound(double quantile)
     {
-        return getQuantilesUpperBound(ImmutableList.of(quantile)).get(0);
+        return getQuantilesUpperBound(ImmutableList.of(quantile)).getFirst();
     }
 
     /**

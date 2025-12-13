@@ -48,8 +48,7 @@ class HttpServiceSelectorProvider
 
         ServiceSelector serviceSelector = injector.getInstance(Key.get(ServiceSelector.class, serviceType(type)));
 
-        HttpServiceSelector httpServiceSelector = new HttpServiceSelectorImpl(serviceSelector);
-        return httpServiceSelector;
+        return new HttpServiceSelectorImpl(serviceSelector);
     }
 
     @Override
