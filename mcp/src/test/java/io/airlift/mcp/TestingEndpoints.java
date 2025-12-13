@@ -11,6 +11,7 @@ import io.airlift.mcp.model.StructuredContentResult;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import static io.airlift.mcp.McpException.exception;
 import static java.util.Objects.requireNonNull;
@@ -33,6 +34,22 @@ public class TestingEndpoints
         assertThat(testingIdentity.name()).isEqualTo("Mr. Tester");
 
         return a + b;
+    }
+
+    @McpTool(name = "progress", description = "Test progress notifications")
+    public boolean toolWithNotifications(McpRequestContext requestContext)
+    {
+        for (int i = 0; i <= 100; ++i) {
+            requestContext.sendProgress(i, 100, "Progress " + i + "%");
+            try {
+                TimeUnit.MILLISECONDS.sleep(10);
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            }
+        }
+        return true;
     }
 
     @McpTool(name = "throws", description = "Throws an exception for testing purposes")
