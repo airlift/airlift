@@ -110,12 +110,18 @@ public class ResourceSerializationValidator
 
     private Object getDefaultValue(ValidationContext validationContext, Class<?> clazz, Type type)
     {
-        Object value = valueCache.get(type);
-        if (value == null) {    // don't use computeIfAbsent due to recursion
-            value = internalGetDefaultValue(validationContext, clazz, type);
-            valueCache.put(type, value);
+        validationContext.addValidatingResources(type);
+        try {
+            Object value = valueCache.get(type);
+            if (value == null) {    // don't use computeIfAbsent due to recursion
+                value = internalGetDefaultValue(validationContext, clazz, type);
+                valueCache.put(type, value);
+            }
+            return value;
         }
-        return value;
+        finally {
+            validationContext.removeValidatingResources(type);
+        }
     }
 
     private Object internalGetDefaultValue(ValidationContext validationContext, Class<?> clazz, Type type)
@@ -179,6 +185,9 @@ public class ResourceSerializationValidator
             }
             else {
                 classArgument = (Class<?>) typeArgument;
+            }
+            if (validationContext.isActiveValidatingResource(typeArgument)) {
+                return Optional.empty();
             }
             return Optional.of(getDefaultValue(validationContext, classArgument, typeArgument));
         }

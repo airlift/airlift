@@ -1,11 +1,14 @@
 package io.airlift.api.validation;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Guice;
+import com.google.inject.Injector;
 import com.google.inject.Module;
 import io.airlift.api.ApiServiceTrait;
 import io.airlift.api.binding.ApiModule;
+import io.airlift.api.binding.PolyResourceModule;
 import io.airlift.api.builders.ApiBuilder;
 import io.airlift.api.model.ModelApi;
 import io.airlift.api.model.ModelResource;
@@ -224,5 +227,18 @@ public class TestConforming
         ValidationContext validationContext5 = new ValidationContext();
         validationContext5.inContext("", _ -> validateResource(validationContext5, METADATA, resourceBuilder(BadRecursiveModel4.class).build()));
         assertThat(validationContext5.errors()).isNotEmpty().allMatch(s -> s.startsWith("Maps in resources must be Map<String, String>"));
+    }
+
+    @Test
+    public void testRecursiveSerialization()
+    {
+        PolyResourceModule.Builder builder = PolyResourceModule.builder();
+        builder.addPolyResource(RecursiveResourceBase.class);
+        Module module = builder.build();
+        Injector injector = Guice.createInjector(module, new JsonModule());
+        ObjectMapper objectMapper = injector.getInstance(ObjectMapper.class);
+
+        ResourceSerializationValidator serializationValidator = new ResourceSerializationValidator(ImmutableSet.of(RecursiveResource.class));
+        serializationValidator.validateSerialization(objectMapper);
     }
 }
