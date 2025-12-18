@@ -1,0 +1,17 @@
+package io.airlift.api.validation;
+
+import io.airlift.api.ApiDescription;
+import io.airlift.api.ApiPolyResource;
+import io.airlift.api.ApiResource;
+
+import java.util.List;
+import java.util.Optional;
+
+@ApiPolyResource(key = "typeKey", name = "foo", description = "foo")
+public sealed interface RecursiveResourceBase
+{
+    @ApiResource(name = "actualResource", description = "foo")
+    record ActualResource(
+            @ApiDescription("foo") Optional<List<RecursiveResourceBase>> nested)
+            implements RecursiveResourceBase {}
+}
