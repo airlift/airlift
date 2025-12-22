@@ -20,6 +20,7 @@ import io.airlift.configuration.ConfigurationFactory;
 import io.airlift.configuration.ConfigurationMetadata;
 import io.airlift.configuration.ConfigurationMetadata.AttributeMetadata;
 import net.bytebuddy.ByteBuddy;
+import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
 import net.bytebuddy.implementation.InvocationHandlerAdapter;
 import net.bytebuddy.matcher.ElementMatchers;
@@ -290,17 +291,18 @@ public final class ConfigAssertions
 
     public static <T> T recordDefaults(Class<T> type)
     {
-        Class<? extends T> loaded = new ByteBuddy()
+        DynamicType.Unloaded<T> unloaded = new ByteBuddy()
                 .subclass(type)
                 .implement($$RecordingConfigProxy.class)
                 .method(ElementMatchers.any())
                 .intercept(createInvocationHandler(type))
-                .make()
-                .load(type.getClassLoader(), ClassLoadingStrategy.Default.WRAPPER)
-                .getLoaded();
+                .make();
 
-        try {
-            return loaded.getConstructor().newInstance();
+        try (unloaded) {
+            return unloaded.load(type.getClassLoader(), ClassLoadingStrategy.Default.WRAPPER)
+                    .getLoaded()
+                    .getConstructor()
+                    .newInstance();
         }
         catch (ReflectiveOperationException e) {
             throw new AssertionError("Failed to instantiate proxy class for " + type.getName(), e);

@@ -58,8 +58,7 @@ public class ServiceSelectorProvider
 
         ServiceSelectorConfig selectorConfig = injector.getInstance(Key.get(ServiceSelectorConfig.class, serviceType(type)));
 
-        ServiceSelector serviceSelector = serviceSelectorFactory.createServiceSelector(type, selectorConfig);
-        return serviceSelector;
+        return serviceSelectorFactory.createServiceSelector(type, selectorConfig);
     }
 
     @Override

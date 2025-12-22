@@ -175,7 +175,7 @@ public class TestPemReader
     {
         ArrayList<String> aliases = Collections.list(keyStore.aliases());
         assertThat(aliases.size()).isEqualTo(1);
-        Certificate certificate = keyStore.getCertificate(aliases.get(0));
+        Certificate certificate = keyStore.getCertificate(aliases.getFirst());
         assertThat(certificate).isNotNull();
 
         assertThat(certificate).isInstanceOf(X509Certificate.class);
@@ -204,8 +204,7 @@ public class TestPemReader
         if (!matcher.find()) {
             throw new KeyStoreException("did not find a private key");
         }
-        byte[] data = PemReader.base64Decode(matcher.group(2));
-        return data;
+        return PemReader.base64Decode(matcher.group(2));
     }
 
     private static byte[] loadPublicKeyData(String keyFile)
@@ -218,8 +217,7 @@ public class TestPemReader
         if (!matcher.find()) {
             throw new KeyStoreException("did not find a private key");
         }
-        byte[] data = PemReader.base64Decode(matcher.group(2));
-        return data;
+        return PemReader.base64Decode(matcher.group(2));
     }
 
     private static File getResourceFile(String name)
