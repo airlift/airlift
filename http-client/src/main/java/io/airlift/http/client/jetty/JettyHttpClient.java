@@ -3,6 +3,7 @@ package io.airlift.http.client.jetty;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
+import com.google.common.io.Closer;
 import com.google.common.net.HostAndPort;
 import com.google.common.primitives.Ints;
 import io.airlift.http.client.BodyGenerator;
@@ -44,6 +45,7 @@ import org.eclipse.jetty.client.AbstractConnectionPool;
 import org.eclipse.jetty.client.BasicAuthentication.BasicResult;
 import org.eclipse.jetty.client.ByteBufferRequestContent;
 import org.eclipse.jetty.client.BytesRequestContent;
+import org.eclipse.jetty.client.ContentDecoder;
 import org.eclipse.jetty.client.Destination;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
@@ -61,6 +63,10 @@ import org.eclipse.jetty.client.transport.HttpDestination;
 import org.eclipse.jetty.client.transport.HttpExchange;
 import org.eclipse.jetty.client.transport.HttpRequest;
 import org.eclipse.jetty.client.transport.internal.HttpConnectionOverHTTP;
+import org.eclipse.jetty.compression.Compression;
+import org.eclipse.jetty.compression.brotli.BrotliCompression;
+import org.eclipse.jetty.compression.gzip.GzipCompression;
+import org.eclipse.jetty.compression.zstandard.ZstandardCompression;
 import org.eclipse.jetty.http.HttpCookieStore;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http2.client.HTTP2Client;
@@ -70,6 +76,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.ConnectionStatistics;
+import org.eclipse.jetty.io.Content;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -176,6 +183,8 @@ public class JettyHttpClient
 
     private final HttpClientLogger requestLogger;
     private final JettyClientDiagnostics clientDiagnostics;
+
+    private final Closer closer = Closer.create();
 
     public JettyHttpClient()
     {
@@ -315,8 +324,15 @@ public class JettyHttpClient
 
         int maxBufferSize = toIntExact(max(max(config.getMaxContentLength().toBytes(), config.getRequestBufferSize().toBytes()), config.getResponseBufferSize().toBytes()));
         httpClient.setByteBufferPool(createByteBufferPool(maxBufferSize, config));
-        httpClient.setExecutor(createExecutor(name, config.getMinThreads(), config.getMaxThreads(), config.isUseVirtualThreads()));
-        httpClient.setScheduler(createScheduler(name, config.getTimeoutConcurrency(), config.getTimeoutThreads()));
+
+        MonitoredQueuedThreadPool executor = createExecutor(name, config.getMinThreads(), config.getMaxThreads(), config.isUseVirtualThreads());
+        closer.register(() -> closeQuietly(executor));
+        httpClient.setExecutor(executor);
+
+        Scheduler scheduler = createScheduler(name, config.getTimeoutConcurrency(), config.getTimeoutThreads());
+        closer.register(() -> closeQuietly(scheduler));
+        httpClient.setScheduler(scheduler);
+
         httpClient.setStrictEventOrdering(config.isStrictEventOrdering());
 
         JettyAsyncSocketAddressResolver resolver = new JettyAsyncSocketAddressResolver(
@@ -349,6 +365,8 @@ public class JettyHttpClient
                     config.getLogFlushInterval(),
                     config.getLogMaxFileSize().toBytes(),
                     config.isLogCompressionEnabled());
+
+            closer.register(requestLogger::close);
         }
         else {
             requestLogger = new NoopLogger();
@@ -356,10 +374,23 @@ public class JettyHttpClient
 
         try {
             httpClient.start();
-
-            // remove the GZIP encoding from the client
-            // TODO: there should be a better way to to do this
+            // clear all content decoder factories first
             httpClient.getContentDecoderFactories().clear();
+
+            if (config.isDeflateCompressionEnabled()) {
+                createContentDecoderFactory(new GzipCompression())
+                        .ifPresent(httpClient.getContentDecoderFactories()::put);
+            }
+
+            if (config.isBrotliCompressionEnabled()) {
+                createContentDecoderFactory(new BrotliCompression())
+                        .ifPresent(httpClient.getContentDecoderFactories()::put);
+            }
+
+            if (config.isZstdCompressionEnabled()) {
+                createContentDecoderFactory(new ZstandardCompression())
+                        .ifPresent(httpClient.getContentDecoderFactories()::put);
+            }
         }
         catch (Exception e) {
             if (e instanceof InterruptedException) {
@@ -440,6 +471,19 @@ public class JettyHttpClient
             }
             distribution.add(NANOSECONDS.toMillis(finished - responseStarted));
         });
+    }
+
+    private Optional<CompressionContentDecoderFactory> createContentDecoderFactory(Compression compression)
+    {
+        compression.setByteBufferPool(httpClient.getByteBufferPool());
+        try {
+            compression.start();
+            closer.register(() -> closeQuietly(compression));
+            return Optional.of(new CompressionContentDecoderFactory(compression));
+        }
+        catch (Exception e) {
+            return Optional.empty();
+        }
     }
 
     private ByteBufferPool createByteBufferPool(int maxBufferSize, HttpClientConfig config)
@@ -1259,9 +1303,14 @@ public class JettyHttpClient
         // client must be destroyed before the pools or
         // you will create a several second busy wait loop
         closeQuietly(httpClient);
-        closeQuietly((LifeCycle) httpClient.getExecutor());
-        closeQuietly(httpClient.getScheduler());
-        requestLogger.close();
+
+        try {
+            // Close remaining components
+            closer.close();
+        }
+        catch (IOException ignored) {
+            // ignore close exceptions
+        }
     }
 
     @Override
@@ -1362,6 +1411,25 @@ public class JettyHttpClient
             if (result.isFailed() && shouldBeDiagnosed(result)) {
                 clientDiagnostics.logDiagnosticsInfo(httpClient);
             }
+        }
+    }
+
+    private static class CompressionContentDecoderFactory
+            extends ContentDecoder.Factory
+    {
+        private final Compression compression;
+
+        private CompressionContentDecoderFactory(Compression compression)
+        {
+            super(compression.getEncodingName());
+            this.compression = requireNonNull(compression);
+            installBean(compression);
+        }
+
+        @Override
+        public Content.Source newDecoderContentSource(Content.Source contentSource)
+        {
+            return compression.newDecoderSource(contentSource);
         }
     }
 }
