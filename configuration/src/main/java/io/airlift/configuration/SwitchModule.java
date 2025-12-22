@@ -14,7 +14,9 @@
 package io.airlift.configuration;
 
 import com.google.inject.Binder;
+import com.google.inject.Key;
 import com.google.inject.Module;
+import jakarta.annotation.Nullable;
 
 import java.util.function.Function;
 
@@ -28,24 +30,45 @@ public class SwitchModule<T>
             Function<C, V> valueProvider,
             Function<V, Module> moduleProvider)
     {
-        requireNonNull(valueProvider, "valueProvider is null");
-        moduleProvider = requireNonNull(moduleProvider, "moduleProvider is null");
-        return new SwitchModule<>(config, valueProvider.andThen(moduleProvider));
+        return new SwitchModule<>(Key.get(config), config, null, valueProvider.andThen(moduleProvider));
     }
 
+    public static <C, V> Module switchModule(
+            Class<C> config,
+            String prefix,
+            Function<C, V> valueProvider,
+            Function<V, Module> moduleProvider)
+    {
+        return new SwitchModule<>(Key.get(config), config, prefix, valueProvider.andThen(moduleProvider));
+    }
+
+    public static <C, V> Module switchModule(
+            Key<C> key,
+            Class<C> config,
+            String prefix,
+            Function<C, V> valueProvider,
+            Function<V, Module> moduleProvider)
+    {
+        return new SwitchModule<>(key, config, prefix, valueProvider.andThen(moduleProvider));
+    }
+
+    private final Key<T> key;
     private final Class<T> config;
+    private final @Nullable String prefix;
     private final Function<T, Module> moduleProvider;
 
-    private SwitchModule(Class<T> config, Function<T, Module> moduleProvider)
+    private SwitchModule(Key<T> key, Class<T> config, @Nullable String prefix, Function<T, Module> moduleProvider)
     {
+        this.key = requireNonNull(key, "key is null");
         this.config = requireNonNull(config, "config is null");
+        this.prefix = prefix;
         this.moduleProvider = requireNonNull(moduleProvider, "moduleProvider is null");
     }
 
     @Override
     protected void setup(Binder binder)
     {
-        T configuration = buildConfigObject(config);
+        T configuration = buildConfigObject(key, config, prefix);
         install(moduleProvider.apply(configuration));
     }
 }
