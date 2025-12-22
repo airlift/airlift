@@ -23,9 +23,28 @@ import java.util.function.Predicate;
 import static io.airlift.configuration.ConfigurationAwareModule.combine;
 import static java.util.Objects.requireNonNull;
 
+/**
+ * ConditionalModule is not preferable to using buildConfigObject directly.
+ * For example,
+ * <pre>
+ * install(conditionalModule(
+ *         SomeConfig.class,
+ *         config -> config.getSomeOption().equals("x"),
+ *         binder -> binder.bind(String.class).toInstance("X")));
+ * </pre>
+ *
+ * can be replaced with:
+ * <pre>
+ * SomeConfig testConfig = buildConfigObject(SomeConfig.class);
+ * if (testConfig.getSomeOption().equals("x")) {
+ *         binder.bind(String.class).toInstance("X");
+ * }
+ * </pre>
+ */
 public class ConditionalModule<T>
         extends AbstractConfigurationAwareModule
 {
+    @Deprecated
     public static <T> Module conditionalModule(Class<T> config, Predicate<T> predicate, Module module, Module otherwise)
     {
         return combine(
@@ -33,6 +52,7 @@ public class ConditionalModule<T>
                 conditionalModule(config, predicate.negate(), otherwise));
     }
 
+    @Deprecated
     public static <T> Module conditionalModule(Class<T> config, String prefix, Predicate<T> predicate, Module module, Module otherwise)
     {
         return combine(
@@ -40,16 +60,19 @@ public class ConditionalModule<T>
                 conditionalModule(config, prefix, predicate.negate(), otherwise));
     }
 
+    @Deprecated
     public static <T> Module conditionalModule(Class<T> config, Predicate<T> predicate, Module module)
     {
         return conditionalModule(config, null, predicate, module);
     }
 
+    @Deprecated
     public static <T> Module conditionalModule(Class<T> config, String prefix, Predicate<T> predicate, Module module)
     {
         return new ConditionalModule<>(Key.get(config), config, prefix, predicate, module);
     }
 
+    @Deprecated
     public static <T> Module conditionalModule(Key<T> key, Class<T> config, String prefix, Predicate<T> predicate, Module module)
     {
         return new ConditionalModule<>(key, config, prefix, predicate, module);

@@ -29,7 +29,6 @@ import jakarta.servlet.Filter;
 
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
-import static io.airlift.configuration.ConditionalModule.conditionalModule;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 
@@ -79,13 +78,13 @@ public class TestingHttpServerModule
         binder.bind(AnnouncementHttpServerInfo.class).to(LocalAnnouncementHttpServerInfo.class);
 
         newOptionalBinder(binder, HttpsConfig.class);
-        install(conditionalModule(HttpServerConfig.class, HttpServerConfig::isHttpsEnabled, moduleBinder -> {
-            configBinder(moduleBinder).bindConfig(HttpsConfig.class);
-            configBinder(moduleBinder).bindConfigDefaults(HttpsConfig.class, config -> {
+        if (buildConfigObject(HttpServerConfig.class).isHttpsEnabled()) {
+            configBinder(binder).bindConfig(HttpsConfig.class);
+            configBinder(binder).bindConfigDefaults(HttpsConfig.class, config -> {
                 if (httpPort == 0) {
                     config.setHttpsPort(0);
                 }
             });
-        }));
+        }
     }
 }

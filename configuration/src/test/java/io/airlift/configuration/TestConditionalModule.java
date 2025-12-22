@@ -13,17 +13,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import static io.airlift.configuration.ConditionalModule.conditionalModule;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@SuppressWarnings("deprecation")
 public class TestConditionalModule
 {
     @Test
     public void testConditionalModule()
     {
         Supplier<AbstractConfigurationAwareModule> moduleXY = () -> {
-            Module moduleX = conditionalModule(SomeConfig.class, config -> config.getSomeOption().equals("x"), binder -> binder.bind(String.class).toInstance("X"));
-            Module moduleY = conditionalModule(SomeConfig.class, config -> config.getSomeOption().equals("y"), binder -> binder.bind(String.class).toInstance("Y"));
+            Module moduleX = ConditionalModule.conditionalModule(SomeConfig.class, config -> config.getSomeOption().equals("x"), binder -> binder.bind(String.class).toInstance("X"));
+            Module moduleY = ConditionalModule.conditionalModule(SomeConfig.class, config -> config.getSomeOption().equals("y"), binder -> binder.bind(String.class).toInstance("Y"));
             return new AbstractConfigurationAwareModule()
             {
                 @Override
@@ -35,7 +35,7 @@ public class TestConditionalModule
             };
         };
 
-        Supplier<Module> moduleXElseZ = () -> conditionalModule(SomeConfig.class,
+        Supplier<Module> moduleXElseZ = () -> ConditionalModule.conditionalModule(SomeConfig.class,
                 config -> config.getSomeOption().equals("x"),
                 binder -> binder.bind(String.class).toInstance("X"),
                 binder -> binder.bind(String.class).toInstance("Z"));
@@ -58,8 +58,8 @@ public class TestConditionalModule
     public void testConditionalModuleWithPrefix()
     {
         Supplier<AbstractConfigurationAwareModule> moduleXY = () -> {
-            Module moduleX = conditionalModule(SomeConfig.class, "prefix", config -> config.getSomeOption().equals("x"), binder -> binder.bind(String.class).toInstance("X"));
-            Module moduleY = conditionalModule(SomeConfig.class, "prefix", config -> config.getSomeOption().equals("y"), binder -> binder.bind(String.class).toInstance("Y"));
+            Module moduleX = ConditionalModule.conditionalModule(SomeConfig.class, "prefix", config -> config.getSomeOption().equals("x"), binder -> binder.bind(String.class).toInstance("X"));
+            Module moduleY = ConditionalModule.conditionalModule(SomeConfig.class, "prefix", config -> config.getSomeOption().equals("y"), binder -> binder.bind(String.class).toInstance("Y"));
             return new AbstractConfigurationAwareModule()
             {
                 @Override
@@ -70,7 +70,7 @@ public class TestConditionalModule
                 }
             };
         };
-        Supplier<Module> moduleXElseZ = () -> conditionalModule(SomeConfig.class,
+        Supplier<Module> moduleXElseZ = () -> ConditionalModule.conditionalModule(SomeConfig.class,
                 "prefix",
                 config -> config.getSomeOption().equals("x"),
                 binder -> binder.bind(String.class).toInstance("X"),
