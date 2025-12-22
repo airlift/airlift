@@ -16,6 +16,7 @@ import java.util.function.Supplier;
 import static io.airlift.configuration.ConditionalModule.conditionalModule;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@SuppressWarnings("deprecated")
 public class TestConditionalModule
 {
     @Test

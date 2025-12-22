@@ -281,6 +281,7 @@ public class TestConfig
                 new ConfigurationBinding<>(Key.get(AnotherConfig.class), AnotherConfig.class, Optional.empty())));
     }
 
+    @SuppressWarnings("deprecated")
     @Test
     public void testSwitchModule()
     {

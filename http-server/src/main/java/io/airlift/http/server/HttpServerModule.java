@@ -33,7 +33,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.inject.Scopes.SINGLETON;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
-import static io.airlift.configuration.ConditionalModule.conditionalModule;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static java.util.Objects.requireNonNull;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
@@ -114,8 +113,9 @@ public class HttpServerModule
                     .toProvider(new HttpServerInfoProvider(qualifier))
                     .in(SINGLETON);
 
-        install(conditionalModule(qualifiedKey(HttpServerConfig.class), HttpServerConfig.class, configPrefix, HttpServerConfig::isHttpsEnabled, moduleBinder ->
-                configBinder(moduleBinder).bindConfig(qualifiedKey(HttpsConfig.class), HttpsConfig.class, configPrefix)));
+        if (buildConfigObject(qualifiedKey(HttpServerConfig.class), HttpServerConfig.class, configPrefix).isHttpsEnabled()) {
+            configBinder(binder).bindConfig(qualifiedKey(HttpsConfig.class), HttpsConfig.class, configPrefix);
+        }
 
         configBinder(binder).bindConfig(qualifiedKey(HttpServerConfig.class), HttpServerConfig.class, configPrefix);
     }
