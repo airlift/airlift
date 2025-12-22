@@ -44,7 +44,6 @@ import static com.google.inject.name.Names.named;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.configuration.MyEnum.BAR;
 import static io.airlift.configuration.MyEnum.FOO;
-import static io.airlift.configuration.SwitchModule.switchModule;
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.PARAMETER;
@@ -281,6 +280,7 @@ public class TestConfig
                 new ConfigurationBinding<>(Key.get(AnotherConfig.class), AnotherConfig.class, Optional.empty())));
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     public void testSwitchModule()
     {
@@ -295,7 +295,7 @@ public class TestConfig
                 ConfigBinder configBinder = configBinder(binder);
                 configBinder.bindConfig(SwitchConfig.class);
 
-                install(switchModule(
+                install(SwitchModule.switchModule(
                         SwitchConfig.class,
                         SwitchConfig::getValue,
                         value -> {
