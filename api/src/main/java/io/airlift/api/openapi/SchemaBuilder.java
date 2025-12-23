@@ -140,7 +140,7 @@ class SchemaBuilder
             return asList(modelResource, asRef(new Schema<>().name(schemaName(referencedModelResource, mode, Optional.empty()))));
         }
 
-        typeToResourceCache.put(modelResource.type(), modelResource);
+        typeToResourceCache.putIfAbsent(modelResource.type(), modelResource);
 
         Schema<?> schema = schemas.get(new SchemaKey(Optional.empty(), modelResource.containerType(), modelResource.resourceType(), mode));
         if (schema == null) {
@@ -291,6 +291,9 @@ class SchemaBuilder
 
     private Schema<?> buildResourceSchema(ModelResource modelResource, BuildSchemaMode mode)
     {
+        // prime the cache early to handle recursive references to themselves - Issue 1689
+        typeToResourceCache.putIfAbsent(modelResource.type(), modelResource);
+
         Schema<?> schema = newNamedSchema(schemaName(modelResource, mode, Optional.empty())).description(adjustedDescription(modelResource));
         return buildResourceSchema(schema, modelResource, mode);
     }
