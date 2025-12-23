@@ -80,6 +80,12 @@ public class ResourceSerializationValidator
             Class<?>[] argumentTypes = getArgumentTypes(recordComponents);
             return clazz.getConstructor(argumentTypes).newInstance(arguments);
         }
+        catch (ValidatorException e) {
+            throw e;
+        }
+        catch (NoSuchMethodException e) {
+            throw new ValidatorException("Constructor for record %s not found (check visibility, etc.). Message: %s".formatted(clazz.getName(), e.getMessage()));
+        }
         catch (Exception e) {
             throw new ValidatorException("Could not instantiate record %s. Message: %s".formatted(clazz.getName(), e.getMessage()));
         }
