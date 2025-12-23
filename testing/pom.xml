@@ -4,7 +4,7 @@
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airlift</artifactId>
-        <version>390</version>
+        <version>391-SNAPSHOT</version>
     </parent>
     <artifactId>testing</artifactId>
     <packaging>jar</packaging>
