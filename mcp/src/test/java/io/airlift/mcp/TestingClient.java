@@ -10,14 +10,16 @@ import io.modelcontextprotocol.spec.McpSchema;
 import java.io.Closeable;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import static io.airlift.mcp.TestingIdentityMapper.EXPECTED_IDENTITY;
 import static io.airlift.mcp.TestingIdentityMapper.IDENTITY_HEADER;
 import static io.modelcontextprotocol.spec.McpSchema.ElicitResult.Action.ACCEPT;
 import static java.util.Objects.requireNonNull;
 
-public record TestingClient(McpSyncClient mcpClient, List<String> logs, List<String> progress)
+public record TestingClient(McpSyncClient mcpClient, List<String> logs, List<String> progress, BlockingQueue<String> changes)
         implements Closeable
 {
     public TestingClient
@@ -25,6 +27,7 @@ public record TestingClient(McpSyncClient mcpClient, List<String> logs, List<Str
         requireNonNull(mcpClient, "mcpClient is null");
         requireNonNull(progress, "progress is null");   // do not copy
         requireNonNull(logs, "logs is null");   // do not copy
+        requireNonNull(changes, "changes is null");   // do not copy
     }
 
     @Override
@@ -37,6 +40,7 @@ public record TestingClient(McpSyncClient mcpClient, List<String> logs, List<Str
     {
         logs.clear();
         progress.clear();
+        changes.clear();
     }
 
     public static TestingClient buildClient(Closer closer, String baseUri, String name)
@@ -52,6 +56,9 @@ public record TestingClient(McpSyncClient mcpClient, List<String> logs, List<Str
 
         List<String> logs = new CopyOnWriteArrayList<>();
         List<String> progress = new CopyOnWriteArrayList<>();
+        BlockingQueue<String> changes = new LinkedBlockingQueue<>();
+
+        // can't record resource subscription changes until https://github.com/modelcontextprotocol/java-sdk/pull/735 is accepted/merged
 
         McpSyncClient client = McpClient.sync(clientTransport)
                 .requestTimeout(Duration.ofMinutes(1))
@@ -59,11 +66,14 @@ public record TestingClient(McpSyncClient mcpClient, List<String> logs, List<Str
                 .elicitation(_ -> new McpSchema.ElicitResult(ACCEPT, ImmutableMap.of("name", name, "comments", "this is " + name)))
                 .loggingConsumer(loggingNotification -> logs.add(loggingNotification.data()))
                 .progressConsumer(progressNotification -> progress.add(progressNotification.message()))
+                .toolsChangeConsumer(_ -> changes.add("tools"))
+                .promptsChangeConsumer(_ -> changes.add("prompts"))
+                .resourcesChangeConsumer(resources -> resources.forEach(resource -> changes.add(resource.uri())))
                 .build();
         client.initialize();
 
         closer.register(client::closeGracefully);
 
-        return new TestingClient(client, logs, progress);
+        return new TestingClient(client, logs, progress, changes);
     }
 }

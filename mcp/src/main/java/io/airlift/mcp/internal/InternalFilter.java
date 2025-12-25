@@ -3,6 +3,7 @@ package io.airlift.mcp.internal;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Supplier;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -24,8 +25,10 @@ import io.airlift.mcp.model.McpIdentity;
 import io.airlift.mcp.model.McpIdentity.Authenticated;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.SetLevelRequest;
+import io.airlift.mcp.model.SubscribeRequest;
 import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.sessions.SessionId;
+import io.airlift.mcp.versions.ResourceVersionController;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpFilter;
@@ -56,7 +59,9 @@ import static io.airlift.mcp.model.Constants.METHOD_PROMPT_GET;
 import static io.airlift.mcp.model.Constants.METHOD_PROMPT_LIST;
 import static io.airlift.mcp.model.Constants.METHOD_RESOURCES_LIST;
 import static io.airlift.mcp.model.Constants.METHOD_RESOURCES_READ;
+import static io.airlift.mcp.model.Constants.METHOD_RESOURCES_SUBSCRIBE;
 import static io.airlift.mcp.model.Constants.METHOD_RESOURCES_TEMPLATES_LIST;
+import static io.airlift.mcp.model.Constants.METHOD_RESOURCES_UNSUBSCRIBE;
 import static io.airlift.mcp.model.Constants.METHOD_TOOLS_CALL;
 import static io.airlift.mcp.model.Constants.METHOD_TOOLS_LIST;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
@@ -91,15 +96,23 @@ public class InternalFilter
     private final InternalMcpServer mcpServer;
     private final ObjectMapper objectMapper;
     private final Optional<SessionController> sessionController;
+    private final ResourceVersionController resourceVersionController;
 
     @Inject
-    public InternalFilter(McpMetadata metadata, Optional<McpIdentityMapper> identityMapper, InternalMcpServer mcpServer, ObjectMapper objectMapper, Optional<SessionController> sessionController)
+    public InternalFilter(
+            McpMetadata metadata,
+            Optional<McpIdentityMapper> identityMapper,
+            InternalMcpServer mcpServer,
+            ObjectMapper objectMapper,
+            Optional<SessionController> sessionController,
+            ResourceVersionController resourceVersionController)
     {
         this.metadata = requireNonNull(metadata, "metadata is null");
         this.identityMapper = requireNonNull(identityMapper, "identityMapper is null");
         this.mcpServer = requireNonNull(mcpServer, "mcpServer is null");
         this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
         this.sessionController = requireNonNull(sessionController, "sessionController is null");
+        this.resourceVersionController = requireNonNull(resourceVersionController, "resourceVersionController is null");
     }
 
     @Override
@@ -243,24 +256,27 @@ public class InternalFilter
 
     private void handleRpcRequest(HttpServletRequest request, HttpServletResponse response, Authenticated<?> authenticated, JsonRpcRequest<?> rpcRequest, InternalMessageWriter messageWriter)
     {
-        log.debug("Processing MCP request: %s, session: %s", rpcRequest.method(), request.getHeader(HEADER_SESSION_ID));
+        String rpcMethod = rpcRequest.method();
+        log.debug("Processing MCP request: %s, session: %s", rpcMethod, request.getHeader(HEADER_SESSION_ID));
 
         validateSession(request, rpcRequest);
 
         try {
-            Object result = switch (rpcRequest.method()) {
+            Object result = switch (rpcMethod) {
                 case METHOD_INITIALIZE -> mcpServer.initialize(response, authenticated, convertParams(rpcRequest, InitializeRequest.class));
-                case METHOD_TOOLS_LIST -> mcpServer.listTools(convertParams(rpcRequest, ListRequest.class));
-                case METHOD_TOOLS_CALL -> mcpServer.callTool(request, messageWriter, convertParams(rpcRequest, CallToolRequest.class));
-                case METHOD_PROMPT_LIST -> mcpServer.listPrompts(convertParams(rpcRequest, ListRequest.class));
-                case METHOD_PROMPT_GET -> mcpServer.getPrompt(request, messageWriter, convertParams(rpcRequest, GetPromptRequest.class));
-                case METHOD_RESOURCES_LIST -> mcpServer.listResources(convertParams(rpcRequest, ListRequest.class));
-                case METHOD_RESOURCES_TEMPLATES_LIST -> mcpServer.listResourceTemplates(convertParams(rpcRequest, ListRequest.class));
-                case METHOD_RESOURCES_READ -> mcpServer.readResources(request, messageWriter, convertParams(rpcRequest, ReadResourceRequest.class));
+                case METHOD_TOOLS_LIST -> withNotifications(request, messageWriter, () -> mcpServer.listTools(convertParams(rpcRequest, ListRequest.class)));
+                case METHOD_TOOLS_CALL -> withNotifications(request, messageWriter, () -> mcpServer.callTool(request, messageWriter, convertParams(rpcRequest, CallToolRequest.class)));
+                case METHOD_PROMPT_LIST -> withNotifications(request, messageWriter, () -> mcpServer.listPrompts(convertParams(rpcRequest, ListRequest.class)));
+                case METHOD_PROMPT_GET -> withNotifications(request, messageWriter, () -> mcpServer.getPrompt(request, messageWriter, convertParams(rpcRequest, GetPromptRequest.class)));
+                case METHOD_RESOURCES_LIST -> withNotifications(request, messageWriter, () -> mcpServer.listResources(convertParams(rpcRequest, ListRequest.class)));
+                case METHOD_RESOURCES_TEMPLATES_LIST -> withNotifications(request, messageWriter, () -> mcpServer.listResourceTemplates(convertParams(rpcRequest, ListRequest.class)));
+                case METHOD_RESOURCES_READ -> withNotifications(request, messageWriter, () -> mcpServer.readResources(request, messageWriter, convertParams(rpcRequest, ReadResourceRequest.class)));
                 case METHOD_PING -> ImmutableMap.of();
                 case METHOD_COMPLETION_COMPLETE -> mcpServer.completionComplete(request, messageWriter, convertParams(rpcRequest, CompleteRequest.class));
                 case METHOD_LOGGING_SET_LEVEL -> mcpServer.setLoggingLevel(request, convertParams(rpcRequest, SetLevelRequest.class));
-                default -> throw new IllegalArgumentException("Unknown method: " + rpcRequest.method());
+                case METHOD_RESOURCES_SUBSCRIBE -> mcpServer.resourcesSubscribe(request, convertParams(rpcRequest, SubscribeRequest.class));
+                case METHOD_RESOURCES_UNSUBSCRIBE -> mcpServer.resourcesUnsubscribe(request, convertParams(rpcRequest, SubscribeRequest.class));
+                default -> throw new IllegalArgumentException("Unknown method: " + rpcMethod);
             };
 
             response.setStatus(SC_OK);
@@ -282,6 +298,17 @@ public class InternalFilter
         catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private Object withNotifications(HttpServletRequest request, InternalMessageWriter messageWriter, Supplier<Object> supplier)
+    {
+        sessionController.ifPresent(_ -> {
+            SessionId sessionId = requireSessionId(request);
+            InternalRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, Optional.empty());
+            resourceVersionController.reconcile(requestContext::sendMessage, sessionId, mcpServer.buildSystemListVersions());
+        });
+
+        return supplier.get();
     }
 
     private void validateSession(HttpServletRequest request, JsonRpcRequest<?> rpcRequest)
