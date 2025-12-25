@@ -17,6 +17,12 @@
         <dependencies>
             <dependency>
                 <groupId>io.airlift</groupId>
+                <artifactId>api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
                 <artifactId>bootstrap</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -102,6 +108,12 @@
             <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>log-manager</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>mcp</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
