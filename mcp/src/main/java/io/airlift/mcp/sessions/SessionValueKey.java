@@ -1,17 +1,25 @@
 package io.airlift.mcp.sessions;
 
 import io.airlift.mcp.model.LoggingLevel;
+import io.airlift.mcp.versions.ResourceVersion;
+import io.airlift.mcp.versions.SystemListVersions;
 
 import static java.util.Objects.requireNonNull;
 
 public record SessionValueKey<T>(String name, Class<T> type)
 {
     public static final SessionValueKey<LoggingLevel> LOGGING_LEVEL = of(LoggingLevel.class);
+    public static final SessionValueKey<SystemListVersions> SYSTEM_LIST_VERSIONS = of(SystemListVersions.class);
 
     public SessionValueKey
     {
         requireNonNull(name, "name is null");
         requireNonNull(type, "type is null");
+    }
+
+    public static SessionValueKey<ResourceVersion> resourceVersionKey(String uri)
+    {
+        return of(uri, ResourceVersion.class);
     }
 
     public static <T> SessionValueKey<T> of(String name, Class<T> type)
