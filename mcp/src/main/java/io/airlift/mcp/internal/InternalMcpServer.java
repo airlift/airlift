@@ -187,7 +187,7 @@ public class InternalMcpServer
         completions.remove(completionKey(reference));
     }
 
-    InitializeResult initialize(HttpServletRequest request, HttpServletResponse response, InitializeRequest initializeRequest)
+    public InitializeResult initialize(HttpServletRequest request, HttpServletResponse response, InitializeRequest initializeRequest)
     {
         boolean sessionsEnabled = sessionController.map(controller -> {
             SessionId sessionId = controller.createSession(request);
@@ -210,7 +210,7 @@ public class InternalMcpServer
         return new InitializeResult(protocolVersion, serverCapabilities, metadata.implementation(), metadata.instructions());
     }
 
-    ListToolsResult listTools(ListRequest listRequest)
+    public ListToolsResult listTools(ListRequest listRequest)
     {
         List<Tool> localTools = tools.values().stream()
                 .map(ToolEntry::tool)
@@ -218,7 +218,7 @@ public class InternalMcpServer
         return paginationUtil.paginate(listRequest, localTools, Tool::name, ListToolsResult::new);
     }
 
-    ListPromptsResult listPrompts(ListRequest listRequest)
+    public ListPromptsResult listPrompts(ListRequest listRequest)
     {
         List<Prompt> localPrompts = prompts.values().stream()
                 .map(PromptEntry::prompt)
@@ -226,7 +226,7 @@ public class InternalMcpServer
         return paginationUtil.paginate(listRequest, localPrompts, Prompt::name, ListPromptsResult::new);
     }
 
-    ListResourcesResult listResources(ListRequest listRequest)
+    public ListResourcesResult listResources(ListRequest listRequest)
     {
         List<Resource> localResources = resources.values().stream()
                 .map(ResourceEntry::resource)
@@ -234,7 +234,12 @@ public class InternalMcpServer
         return paginationUtil.paginate(listRequest, localResources, Resource::name, ListResourcesResult::new);
     }
 
-    ListResourceTemplatesResult listResourceTemplates(ListRequest listRequest)
+    public Stream<Resource> streamResources()
+    {
+        return resources.values().stream().map(ResourceEntry::resource);
+    }
+
+    public ListResourceTemplatesResult listResourceTemplates(ListRequest listRequest)
     {
         List<ResourceTemplate> localResourceTemplates = resourceTemplates.values().stream()
                 .map(ResourceTemplateEntry::resourceTemplate)
@@ -242,7 +247,7 @@ public class InternalMcpServer
         return paginationUtil.paginate(listRequest, localResourceTemplates, ResourceTemplate::name, ListResourceTemplatesResult::new);
     }
 
-    CallToolResult callTool(HttpServletRequest request, MessageWriter messageWriter, CallToolRequest callToolRequest)
+    public CallToolResult callTool(HttpServletRequest request, MessageWriter messageWriter, CallToolRequest callToolRequest)
     {
         ToolEntry toolEntry = tools.get(callToolRequest.name());
         if (toolEntry == null) {
@@ -253,7 +258,7 @@ public class InternalMcpServer
         return toolEntry.toolHandler().callTool(requestContext, callToolRequest);
     }
 
-    GetPromptResult getPrompt(HttpServletRequest request, MessageWriter messageWriter, GetPromptRequest getPromptRequest)
+    public GetPromptResult getPrompt(HttpServletRequest request, MessageWriter messageWriter, GetPromptRequest getPromptRequest)
     {
         PromptEntry promptEntry = prompts.get(getPromptRequest.name());
         if (promptEntry == null) {
@@ -264,16 +269,30 @@ public class InternalMcpServer
         return promptEntry.promptHandler().getPrompt(requestContext, getPromptRequest);
     }
 
-    ReadResourceResult readResources(HttpServletRequest request, MessageWriter messageWriter, ReadResourceRequest readResourceRequest)
+    public ReadResourceResult readResources(HttpServletRequest request, MessageWriter messageWriter, ReadResourceRequest readResourceRequest)
     {
         McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, progressToken(readResourceRequest));
 
-        List<ResourceContents> resourceContents = findResource(readResourceRequest.uri())
-                .map(resourceEntry -> resourceEntry.handler().readResource(requestContext, resourceEntry.resource(), readResourceRequest))
-                .or(() -> findResourceTemplate(readResourceRequest.uri()).map(match -> match.entry.handler().readResourceTemplate(requestContext, match.entry.resourceTemplate(), readResourceRequest, match.values)))
+        List<ResourceContents> resourceContents = internalReadResource(readResourceRequest, requestContext)
                 .orElseThrow(() -> exception(RESOURCE_NOT_FOUND, "Resource not found: " + readResourceRequest.uri()));
 
         return new ReadResourceResult(resourceContents);
+    }
+
+    public Optional<List<ResourceContents>> readResources(String resource)
+    {
+        StubbedRequestContext requestContext = new StubbedRequestContext();
+        return internalReadResource(new ReadResourceRequest(resource), requestContext);
+    }
+
+    public Object setLoggingLevel(HttpServletRequest request, SetLevelRequest setLevelRequest)
+    {
+        SessionController localSessionController = sessionController.orElseThrow(() -> exception(INVALID_REQUEST, "set logging level not supported"));
+        SessionId sessionId = requireSessionId(request);
+
+        localSessionController.setSessionValue(sessionId, LOGGING_LEVEL, setLevelRequest.level());
+
+        return ImmutableMap.of();
     }
 
     CompleteResult completionComplete(HttpServletRequest request, InternalMessageWriter messageWriter, CompleteRequest completeRequest)
@@ -288,14 +307,11 @@ public class InternalMcpServer
         return completionEntry.handler().complete(requestContext, completeRequest);
     }
 
-    Object setLoggingLevel(HttpServletRequest request, SetLevelRequest setLevelRequest)
+    private Optional<List<ResourceContents>> internalReadResource(ReadResourceRequest readResourceRequest, McpRequestContext requestContext)
     {
-        SessionController localSessionController = sessionController.orElseThrow(() -> exception(INVALID_REQUEST, "set logging level not supported"));
-        SessionId sessionId = requireSessionId(request);
-
-        localSessionController.setSessionValue(sessionId, LOGGING_LEVEL, setLevelRequest.level());
-
-        return ImmutableMap.of();
+        return findResource(readResourceRequest.uri())
+                .map(resourceEntry -> resourceEntry.handler().readResource(requestContext, resourceEntry.resource(), readResourceRequest))
+                .or(() -> findResourceTemplate(readResourceRequest.uri()).map(match -> match.entry.handler().readResourceTemplate(requestContext, match.entry.resourceTemplate(), readResourceRequest, match.values)));
     }
 
     private Optional<ResourceEntry> findResource(String uriString)
