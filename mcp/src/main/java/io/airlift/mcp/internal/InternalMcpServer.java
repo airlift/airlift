@@ -51,9 +51,13 @@ import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.model.ResourceTemplateValues;
 import io.airlift.mcp.model.SetLevelRequest;
 import io.airlift.mcp.model.SubscribeListChanged;
+import io.airlift.mcp.model.SubscribeRequest;
 import io.airlift.mcp.model.Tool;
 import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.sessions.SessionId;
+import io.airlift.mcp.versions.VersionKey;
+import io.airlift.mcp.versions.VersionUtil;
+import io.airlift.mcp.versions.Versions;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.glassfish.jersey.uri.UriTemplate;
@@ -73,16 +77,25 @@ import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.internal.InternalRequestContext.requireSessionId;
 import static io.airlift.mcp.model.Constants.MCP_SESSION_ID;
 import static io.airlift.mcp.model.Constants.PROTOCOL_MCP_2025_06_18;
+import static io.airlift.mcp.model.Constants.PROTOCOL_MCP_2025_11_25;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
 import static io.airlift.mcp.model.JsonRpcErrorCode.RESOURCE_NOT_FOUND;
 import static io.airlift.mcp.sessions.ValueKey.LOGGING_LEVEL;
+import static io.airlift.mcp.sessions.ValueKey.SESSION_VERSIONS;
+import static io.airlift.mcp.versions.VersionType.RESOURCE;
+import static io.airlift.mcp.versions.VersionUtil.subscribeToResource;
+import static io.airlift.mcp.versions.VersionUtil.unsubscribeToResource;
+import static io.airlift.mcp.versions.Versions.EMPTY;
+import static io.airlift.mcp.versions.Versions.PROMPTS_LIST_KEY;
+import static io.airlift.mcp.versions.Versions.RESOURCES_LIST_KEY;
+import static io.airlift.mcp.versions.Versions.TOOLS_LIST_KEY;
 import static java.util.Objects.requireNonNull;
 
 public class InternalMcpServer
         implements McpServer
 {
-    private static final List<String> SUPPORTED_PROTOCOL_VERSIONS = ImmutableList.of(PROTOCOL_MCP_2025_06_18);
+    private static final List<String> SUPPORTED_PROTOCOL_VERSIONS = ImmutableList.of(PROTOCOL_MCP_2025_06_18, PROTOCOL_MCP_2025_11_25);
 
     private final Map<String, ToolEntry> tools = new ConcurrentHashMap<>();
     private final Map<String, PromptEntry> prompts = new ConcurrentHashMap<>();
@@ -187,12 +200,37 @@ public class InternalMcpServer
         completions.remove(completionKey(reference));
     }
 
+    @Override
+    public void updateToolsListVersion(String newVersion)
+    {
+        updateVersionKey(TOOLS_LIST_KEY, newVersion);
+    }
+
+    @Override
+    public void updatePromptsListVersion(String newVersion)
+    {
+        updateVersionKey(PROMPTS_LIST_KEY, newVersion);
+    }
+
+    @Override
+    public void updateResourcesListVersion(String newVersion)
+    {
+        updateVersionKey(RESOURCES_LIST_KEY, newVersion);
+    }
+
+    @Override
+    public void updateResourcesVersion(String uri, String newVersion)
+    {
+        updateVersionKey(new VersionKey(RESOURCE, uri), newVersion);
+    }
+
     InitializeResult initialize(HttpServletRequest request, HttpServletResponse response, InitializeRequest initializeRequest)
     {
         boolean sessionsEnabled = sessionController.map(controller -> {
             SessionId sessionId = controller.createSession(request);
             response.addHeader(MCP_SESSION_ID, sessionId.id());
             controller.setSessionValue(sessionId, LOGGING_LEVEL, LoggingLevel.INFO);
+            VersionUtil.initializeSession(controller, sessionId);
 
             return true;
         }).orElse(false);
@@ -203,9 +241,9 @@ public class InternalMcpServer
         ServerCapabilities serverCapabilities = new ServerCapabilities(
                 metadata.completions() ? Optional.of(new CompletionCapabilities()) : Optional.empty(),
                 sessionsEnabled ? Optional.of(new LoggingCapabilities()) : Optional.empty(),
-                metadata.prompts() ? Optional.of(new ListChanged(false)) : Optional.empty(),
-                metadata.resources() ? Optional.of(new SubscribeListChanged(false, false)) : Optional.empty(),
-                metadata.tools() ? Optional.of(new ListChanged(false)) : Optional.empty());
+                metadata.prompts() ? Optional.of(new ListChanged(sessionsEnabled)) : Optional.empty(),
+                metadata.resources() ? Optional.of(new SubscribeListChanged(sessionsEnabled, sessionsEnabled)) : Optional.empty(),
+                metadata.tools() ? Optional.of(new ListChanged(sessionsEnabled)) : Optional.empty());
 
         return new InitializeResult(protocolVersion, serverCapabilities, metadata.implementation(), metadata.instructions());
     }
@@ -290,12 +328,37 @@ public class InternalMcpServer
 
     Object setLoggingLevel(HttpServletRequest request, SetLevelRequest setLevelRequest)
     {
-        SessionController localSessionController = sessionController.orElseThrow(() -> exception(INVALID_REQUEST, "set logging level not supported"));
+        SessionController localSessionController = requireSessionController();
         SessionId sessionId = requireSessionId(request);
 
         localSessionController.setSessionValue(sessionId, LOGGING_LEVEL, setLevelRequest.level());
 
         return ImmutableMap.of();
+    }
+
+    Object resourcesSubscribe(HttpServletRequest request, SubscribeRequest subscribeRequest)
+    {
+        SessionController localSessionController = requireSessionController();
+        SessionId sessionId = requireSessionId(request);
+
+        subscribeToResource(localSessionController, sessionId, subscribeRequest.uri());
+
+        return ImmutableMap.of();
+    }
+
+    Object resourcesUnsubscribe(HttpServletRequest request, SubscribeRequest subscribeRequest)
+    {
+        SessionController localSessionController = requireSessionController();
+        SessionId sessionId = requireSessionId(request);
+
+        unsubscribeToResource(localSessionController, sessionId, subscribeRequest.uri());
+
+        return ImmutableMap.of();
+    }
+
+    private SessionController requireSessionController()
+    {
+        return sessionController.orElseThrow(() -> exception(INVALID_REQUEST, "Sessions are not enabled"));
     }
 
     private Optional<ResourceEntry> findResource(String uriString)
@@ -357,5 +420,16 @@ public class InternalMcpServer
             case PromptReference(var name, _) -> name;
             case ResourceReference(var uri) -> uri;
         };
+    }
+
+    private void updateVersionKey(VersionKey key, String newVersion)
+    {
+        SessionController localSessionController = sessionController.orElseThrow(() -> new IllegalStateException("Sessions not enabled"));
+
+        localSessionController.computeSystemValue(SESSION_VERSIONS, current -> {
+            Versions currentSessionVersions = current.orElse(EMPTY);
+            Versions newSessionVersions = currentSessionVersions.withVersion(key, newVersion);
+            return Optional.of(newSessionVersions);
+        });
     }
 }

@@ -88,8 +88,7 @@ class InternalRequestContext
         return new SessionId(sessionId);
     }
 
-    @SuppressWarnings("SameParameterValue")
-    private void internalSendMessage(String method, Optional<Object> params)
+    void internalSendMessage(String method, Optional<Object> params)
     {
         JsonRpcRequest<?> notification = params.map(p -> buildNotification(method, p)).orElseGet(() -> buildNotification(method));
         internalSendRequest(notification);

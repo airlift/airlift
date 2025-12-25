@@ -5,7 +5,6 @@ import io.airlift.log.Logger;
 import io.airlift.mcp.model.ResourcesUpdatedNotification;
 import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.sessions.SessionId;
-import io.airlift.mcp.sessions.ValueController;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -34,14 +33,14 @@ public class VersionUtil
     public static void initializeSession(SessionController sessionController, SessionId sessionId)
     {
         Versions systemVersions = systemSessionVersions(sessionController);
-        sessionController.sessionValues(sessionId).set(SESSION_VERSIONS, systemVersions);
+        sessionController.setSessionValue(sessionId, SESSION_VERSIONS, systemVersions);
     }
 
     public static void unsubscribeToResource(SessionController sessionController, SessionId sessionId, String uri)
     {
         VersionKey key = new VersionKey(RESOURCE, uri);
 
-        sessionController.sessionValues(sessionId).compute(SESSION_VERSIONS, current ->
+        sessionController.computeSessionValue(sessionId, SESSION_VERSIONS, current ->
                 current.map(latestRequestVersions -> latestRequestVersions.withoutKey(key)));
     }
 
@@ -51,7 +50,7 @@ public class VersionUtil
         Versions systemVersions = systemSessionVersions(sessionController);
         String currentVersion = systemVersions.versions().getOrDefault(key, DEFAULT_VERSION);
 
-        sessionController.sessionValues(sessionId).compute(SESSION_VERSIONS, current -> {
+        sessionController.computeSessionValue(sessionId, SESSION_VERSIONS, current -> {
             Versions latestRequestVersions = current.orElse(systemVersions);
             Versions updatedVersions = latestRequestVersions.withVersion(key, currentVersion);
             return Optional.of(updatedVersions);
@@ -62,13 +61,12 @@ public class VersionUtil
     {
         Versions systemVersions = systemSessionVersions(sessionController);
 
-        ValueController valueController = sessionController.sessionValues(sessionId);
-        valueController.get(SESSION_VERSIONS)
-                .ifPresentOrElse(requestVersions -> reconcile(valueController, notifier, systemVersions, requestVersions),
-                        () -> valueController.set(SESSION_VERSIONS, systemVersions));
+        sessionController.getSessionValue(sessionId, SESSION_VERSIONS)
+                .ifPresentOrElse(requestVersions -> reconcile(sessionController, sessionId, notifier, systemVersions, requestVersions),
+                        () -> sessionController.setSessionValue(sessionId, SESSION_VERSIONS, systemVersions));
     }
 
-    private static void reconcile(ValueController valueController, VersionNotifier notifier, Versions systemVersions, Versions requestVersions)
+    private static void reconcile(SessionController sessionController, SessionId sessionId, VersionNotifier notifier, Versions systemVersions, Versions requestVersions)
     {
         if (changedKeys(systemVersions, requestVersions).isEmpty()) {
             return;
@@ -76,7 +74,7 @@ public class VersionUtil
 
         Set<VersionKey> changedKeys = new HashSet<>();
 
-        valueController.compute(SESSION_VERSIONS, current -> {
+        sessionController.computeSessionValue(sessionId, SESSION_VERSIONS, current -> {
             Versions latestRequestVersions = current.orElse(systemVersions);
 
             Set<VersionKey> localChangedKeys = changedKeys(systemVersions, latestRequestVersions);
@@ -126,6 +124,6 @@ public class VersionUtil
 
     private static Versions systemSessionVersions(SessionController sessionController)
     {
-        return sessionController.systemValues().get(SESSION_VERSIONS).orElse(EMPTY);
+        return sessionController.getSystemValue(SESSION_VERSIONS).orElse(EMPTY);
     }
 }

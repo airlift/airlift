@@ -11,6 +11,7 @@ import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.ResourceTemplateValues;
 import io.airlift.mcp.model.StructuredContentResult;
+import io.airlift.mcp.versions.VersionType;
 
 import java.util.List;
 import java.util.Optional;
@@ -155,5 +156,21 @@ public class TestingEndpoints
     {
         requestContext.sendLog(LoggingLevel.DEBUG, "This is debug");
         requestContext.sendLog(LoggingLevel.ALERT, "This is alert");
+    }
+
+    @McpTool(name = "setVersion", description = "Set the version of a system list or resource")
+    public void incrementListOrResource(VersionType type, String name, String version)
+    {
+        switch (type) {
+            case SYSTEM -> {
+                switch (name) {
+                    case "tools" -> mcpServer.updateToolsListVersion(version);
+                    case "prompts" -> mcpServer.updatePromptsListVersion(version);
+                    case "resources" -> mcpServer.updateResourcesListVersion(version);
+                    default -> throw new IllegalArgumentException("Unknown system session version name: " + name);
+                }
+            }
+            case RESOURCE -> mcpServer.updateResourcesVersion(name, version);
+        }
     }
 }
