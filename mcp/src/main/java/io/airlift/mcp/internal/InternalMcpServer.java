@@ -276,12 +276,20 @@ public class InternalMcpServer
     {
         McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, progressToken(readResourceRequest));
 
-        List<ResourceContents> resourceContents = findResource(readResourceRequest.uri())
-                .map(resourceEntry -> resourceEntry.handler().readResource(requestContext, resourceEntry.resource(), readResourceRequest))
-                .or(() -> findResourceTemplate(readResourceRequest.uri()).map(match -> match.entry.handler().readResourceTemplate(requestContext, match.entry.resourceTemplate(), readResourceRequest, match.values)))
+        List<ResourceContents> resourceContents = internalReadResource(readResourceRequest, requestContext)
                 .orElseThrow(() -> exception(RESOURCE_NOT_FOUND, "Resource not found: " + readResourceRequest.uri()));
 
         return new ReadResourceResult(resourceContents);
+    }
+
+    Object setLoggingLevel(HttpServletRequest request, SetLevelRequest setLevelRequest)
+    {
+        SessionController localSessionController = sessionController.orElseThrow(() -> exception(INVALID_REQUEST, "set logging level not supported"));
+        SessionId sessionId = requireSessionId(request);
+
+        localSessionController.setSessionValue(sessionId, LOGGING_LEVEL, setLevelRequest.level());
+
+        return ImmutableMap.of();
     }
 
     CompleteResult completionComplete(HttpServletRequest request, InternalMessageWriter messageWriter, CompleteRequest completeRequest)
@@ -296,13 +304,11 @@ public class InternalMcpServer
         return completionEntry.handler().complete(requestContext, completeRequest);
     }
 
-    Object setLoggingLevel(HttpServletRequest request, SetLevelRequest setLevelRequest)
+    private Optional<List<ResourceContents>> internalReadResource(ReadResourceRequest readResourceRequest, McpRequestContext requestContext)
     {
-        SessionController localSessionController = sessionController.orElseThrow(() -> exception(INVALID_REQUEST, "set logging level not supported"));
-
-        localSessionController.setSessionValue(requireSessionId(request), LOGGING_LEVEL, setLevelRequest.level());
-
-        return ImmutableMap.of();
+        return findResource(readResourceRequest.uri())
+                .map(resourceEntry -> resourceEntry.handler().readResource(requestContext, resourceEntry.resource(), readResourceRequest))
+                .or(() -> findResourceTemplate(readResourceRequest.uri()).map(match -> match.entry.handler().readResourceTemplate(requestContext, match.entry.resourceTemplate(), readResourceRequest, match.values)));
     }
 
     private Optional<ResourceEntry> findResource(String uriString)
