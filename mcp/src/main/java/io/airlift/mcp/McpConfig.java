@@ -11,6 +11,7 @@ public class McpConfig
 {
     private int defaultPageSize = 25;
     private Duration defaultSessionTimeout = new Duration(15, MINUTES);
+    private Duration resourceVersionUpdateInterval = new Duration(5, MINUTES);
 
     @Min(1)
     public int getDefaultPageSize()
@@ -35,6 +36,19 @@ public class McpConfig
     public McpConfig setDefaultSessionTimeout(Duration defaultSessionTimeout)
     {
         this.defaultSessionTimeout = defaultSessionTimeout;
+        return this;
+    }
+
+    @MinDuration("1ms")
+    public Duration getResourceVersionUpdateInterval()
+    {
+        return resourceVersionUpdateInterval;
+    }
+
+    @Config("mcp.resource-version.update-interval")
+    public McpConfig setResourceVersionUpdateInterval(Duration resourceVersionUpdateInterval)
+    {
+        this.resourceVersionUpdateInterval = resourceVersionUpdateInterval;
         return this;
     }
 }

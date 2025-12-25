@@ -19,7 +19,8 @@ public class TestMcpConfig
     {
         assertRecordedDefaults(ConfigAssertions.recordDefaults(McpConfig.class)
                 .setDefaultPageSize(25)
-                .setDefaultSessionTimeout(new Duration(15, MINUTES)));
+                .setDefaultSessionTimeout(new Duration(15, MINUTES))
+                .setResourceVersionUpdateInterval(new Duration(5, MINUTES)));
     }
 
     @Test
@@ -28,11 +29,13 @@ public class TestMcpConfig
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("mcp.page-size", "2468")
                 .put("mcp.session.timeout", "1d")
+                .put("mcp.resource-version.update-interval", "12d")
                 .build();
 
         McpConfig expected = new McpConfig()
                 .setDefaultPageSize(2468)
-                .setDefaultSessionTimeout(new Duration(1, DAYS));
+                .setDefaultSessionTimeout(new Duration(1, DAYS))
+                .setResourceVersionUpdateInterval(new Duration(12, DAYS));
 
         assertFullMapping(properties, expected);
     }
