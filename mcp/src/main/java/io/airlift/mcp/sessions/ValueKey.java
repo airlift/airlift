@@ -1,12 +1,14 @@
 package io.airlift.mcp.sessions;
 
 import io.airlift.mcp.model.LoggingLevel;
+import io.airlift.mcp.versions.Versions;
 
 import static java.util.Objects.requireNonNull;
 
 public record ValueKey<T>(String name, Class<T> type)
 {
     public static final ValueKey<LoggingLevel> LOGGING_LEVEL = of(LoggingLevel.class);
+    public static final ValueKey<Versions> SESSION_VERSIONS = of(Versions.class);
 
     public ValueKey
     {
