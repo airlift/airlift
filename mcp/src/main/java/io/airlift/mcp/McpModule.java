@@ -68,7 +68,17 @@ public class McpModule
         return new Builder();
     }
 
-    private McpModule(Mode mode, McpMetadata metadata, Optional<IdentityMapperBinding> identityMapperBinding, Set<Class<?>> classes, Set<ToolHandlerProvider> tools, Set<PromptHandlerProvider> prompts, Set<ResourceHandlerProvider> resources, Set<ResourceTemplateHandlerProvider> resourceTemplates, Set<CompletionHandlerProvider> completions, Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding)
+    private McpModule(
+            Mode mode,
+            McpMetadata metadata,
+            Optional<IdentityMapperBinding> identityMapperBinding,
+            Set<Class<?>> classes,
+            Set<ToolHandlerProvider> tools,
+            Set<PromptHandlerProvider> prompts,
+            Set<ResourceHandlerProvider> resources,
+            Set<ResourceTemplateHandlerProvider> resourceTemplates,
+            Set<CompletionHandlerProvider> completions,
+            Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding)
     {
         this.mode = requireNonNull(mode, "mode is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
