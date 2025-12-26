@@ -134,11 +134,11 @@ public class ToolHandlerProvider
 
         Tool.ToolAnnotations toolAnnotations = new Tool.ToolAnnotations(
                 title,
-                tool.readOnlyHint(),
-                tool.destructiveHint(),
-                tool.idempotentHint(),
-                tool.openWorldHint(),
-                tool.returnDirect());
+                tool.readOnlyHint().toJsonValue(),
+                tool.destructiveHint().toJsonValue(),
+                tool.idempotentHint().toJsonValue(),
+                tool.openWorldHint().toJsonValue(),
+                tool.returnDirect().toJsonValue());
 
         Optional<ObjectNode> outputSchema;
         if (CallToolResult.class.isAssignableFrom(method.getReturnType())) {
