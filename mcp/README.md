@@ -16,15 +16,12 @@ variations of MCP servers defined by the standard. This module supports:
 - Tools [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/tools)
 - Ping [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/ping)
 - Structured content [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/tools#structured-content)
+- Progress notifications [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/progress)
+- Completions [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/completion)
 
 It uses the [MCP reference Java SDK](https://github.com/modelcontextprotocol/java-sdk) as its internal implementation.
 This implementation is very limited at does not support:
 
-- Completions [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/completion)
-- Progress notifications [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/progress)
-- Limited server-sent notifications during processing (e.g. for progress: [see spec](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/progress))
-- `_meta` field [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic#meta)
-- `context` field [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/changelog) in `CompletionRequest`
 - Sessions [(see spec)](https://modelcontextprotocol.io/docs/concepts/transports#session-management)
 - Cancellation [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/cancellation)
 - List changed events [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/lifecycle#initialization)
@@ -35,10 +32,20 @@ This implementation is very limited at does not support:
 - Roots [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/client/roots)
 - Sampling [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/client/sampling)
 
-## Creating tools, prompts, and resources declaratively
+## Creating tools, prompts, resources, and completions declaratively
 
 ```java
 // in some class...
+
+import com.google.common.collect.ImmutableList;
+import io.airlift.mcp.McpDescription;
+import io.airlift.mcp.McpPrompt;
+import io.airlift.mcp.McpPromptCompletion;
+import io.airlift.mcp.McpResource;
+import io.airlift.mcp.McpResourceTemplate;
+import io.airlift.mcp.McpResourceTemplateCompletion;
+import io.airlift.mcp.McpTool;
+import io.airlift.mcp.model.ResourceTemplateValues;
 
 @McpTool(name = "add", description = "Adds two numbers")
 public int addTwoNumbers(
@@ -54,6 +61,18 @@ public String greeting(@McpDescription("Name of the person to greet") String nam
     return "Hello, " + name + "!";
 }
 
+@McpPromptCompletion(name = "greeting")
+public List<String> nameCompletions(CompleteArgument argument)
+{
+    if (argument.name().equals("name")) {
+        return ImmutableList.of("Jordan", "Rita", "Bobby", "Oliver", "Olive", "Steve")
+                .stream()
+                .filter(name -> name.toLowerCase().startsWith(argument.value().toLowerCase()))
+                .collect(toImmutableList());
+    }
+    return ImmutableList.of();
+}
+
 @McpResource(name = "example1", uri = "file://example1.txt", description = "This is example1 resource.", mimeType = "text/plain")
 public ResourceContents resource()
 {
@@ -64,6 +83,18 @@ public ResourceContents resource()
 public ResourceContents resourceTemplate(ReadResourceRequest request, ResourceTemplateValues templateValues)
 {
     return new ResourceContents("foo2", "file://example1.txt", "text/plain", "This is the content of file://example1.txt");
+}
+
+@McpResourceTemplateCompletion(uriTemplate = "file:{path1}/{path2}")
+public List<String> resourceTemplateCompletion(CompleteArgument argument)
+{
+    if (argument.name().equals("id")) {
+        return ImmutableList.of("manny", "moe", "jack")
+                .stream()
+                .filter(uri -> uri.toLowerCase().startsWith(argument.value().toLowerCase()))
+                .collect(toImmutableList());
+    }
+    return ImmutableList.of();
 }
 ```
 
@@ -80,7 +111,7 @@ Module module = McpModule.builder()
 binder.install(module);
 ```
 
-## Creating tools, prompts, and resources programmatically
+## Creating tools, prompts, resources, and completions programmatically
 
 Example of creating a tool programmatically:
 
@@ -88,7 +119,7 @@ Example of creating a tool programmatically:
 - Register the tool with the [McpServer](src/main/java/io/airlift/mcp/McpServer.java) (which can be `@Inject`ed):
 
 ```java
-mcpServer.addTool(tool, (httpRequest, callToolRequest) -> {
+mcpServer.addTool(tool, (requestContext, callToolRequest) -> {
     // ... etc ...
     return new CallToolResult(...);
 });
@@ -114,12 +145,13 @@ npx @modelcontextprotocol/inspector
 A browser should open with the MCP Inspector tool. Set the "Transport Type" to
 "Streamable HTTP". Change the URL to `http://localhost:8888/mcp` and click "Connect".
 
-## Allowed parameters for declarative tools, prompts, and resources
+## Allowed parameters for declarative tools, prompts, resources, and completions
 
 #### Tools
 
 - Parameters can be:
     - `HttpServletRequest`
+    - `McpRequestContext`
     - An Identity instance (via [McpIdentityMapper](src/main/java/io/airlift/mcp/McpIdentityMapper.java))
     - [CallToolRequest](src/main/java/io/airlift/mcp/model/CallToolRequest.java)
     - supported Java types
@@ -156,6 +188,7 @@ A browser should open with the MCP Inspector tool. Set the "Transport Type" to
 
 - Parameters can be:
     - `HttpServletRequest`
+    - `McpRequestContext`
     - An Identity instance (via [McpIdentityMapper](src/main/java/io/airlift/mcp/McpIdentityMapper.java))
     - [Resource](src/main/java/io/airlift/mcp/model/Resource.java) - the source resource being read
     - [ReadResourceRequest](src/main/java/io/airlift/mcp/model/ReadResourceRequest.java)
@@ -167,6 +200,7 @@ A browser should open with the MCP Inspector tool. Set the "Transport Type" to
 
 - Parameters can be:
     - `HttpServletRequest`
+    - `McpRequestContext`
     - An Identity instance (via [McpIdentityMapper](src/main/java/io/airlift/mcp/McpIdentityMapper.java))
     - [ResourceTemplate](src/main/java/io/airlift/mcp/model/ResourceTemplate.java) - the source resource template being read
     - [ReadResourceRequest](src/main/java/io/airlift/mcp/model/ReadResourceRequest.java)
@@ -174,3 +208,15 @@ A browser should open with the MCP Inspector tool. Set the "Transport Type" to
 - Returns either:
     - [ResourceContents](src/main/java/io/airlift/mcp/model/ResourceContents.java)
     - [List&lt;ResourceContents&gt;](src/main/java/io/airlift/mcp/model/ResourceContents.java)
+
+#### Completions (for prompts and resource templates)
+
+- Parameters can be:
+    - `HttpServletRequest`
+    - `McpRequestContext`
+    - An Identity instance (via [McpIdentityMapper](src/main/java/io/airlift/mcp/McpIdentityMapper.java))
+    - [CompleteArgument](src/main/java/io/airlift/mcp/model/CompleteRequest.java)
+    - [CompleteContext](src/main/java/io/airlift/mcp/model/CompleteRequest.java)
+- Returns either:
+    - [CompleteCompletion](src/main/java/io/airlift/mcp/model/CompleteResult.java)
+    - `List<String>`
