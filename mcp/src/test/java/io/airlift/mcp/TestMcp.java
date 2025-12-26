@@ -99,7 +99,10 @@ public class TestMcp
 
     public TestMcp()
     {
-        testingServer = new TestingServer(ImmutableMap.of(), Optional.empty(), builder -> builder
+        // the reference client doesn't track HTTP GET notifications
+        Map<String, String> properties = ImmutableMap.of("mcp.http-get-events.enabled", "false");
+
+        testingServer = new TestingServer(properties, Optional.empty(), builder -> builder
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
                 .withSessions(binding -> binding.to(MemorySessionController.class).in(SINGLETON))
                 .build());
