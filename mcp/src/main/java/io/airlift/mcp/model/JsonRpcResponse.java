@@ -2,7 +2,7 @@ package io.airlift.mcp.model;
 
 import java.util.Optional;
 
-import static io.airlift.mcp.model.JsonRpcRequest.JSON_RPC_VERSION;
+import static io.airlift.mcp.model.Constants.JSON_RPC_VERSION;
 import static java.util.Objects.requireNonNull;
 
 // see https://www.jsonrpc.org/specification#response_object
