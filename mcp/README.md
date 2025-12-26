@@ -19,8 +19,7 @@ variations of MCP servers defined by the standard. This module supports:
 - Progress notifications [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/progress)
 - Completions [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/completion)
 
-It uses the [MCP reference Java SDK](https://github.com/modelcontextprotocol/java-sdk) as its internal implementation.
-This implementation is very limited at does not support:
+This module does not currently support:
 
 - Sessions [(see spec)](https://modelcontextprotocol.io/docs/concepts/transports#session-management)
 - Cancellation [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/cancellation)
