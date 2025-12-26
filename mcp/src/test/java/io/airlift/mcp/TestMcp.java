@@ -119,7 +119,9 @@ public abstract class TestMcp
             }
         };
 
-        Map<String, String> properties = ImmutableMap.of("mcp.resource-version.update-interval", "1ms");
+        Map<String, String> properties = ImmutableMap.of(
+                "mcp.resource-version.update-interval", "1ms",
+                "mcp.http-get-events.enabled", "false");
 
         testingServer = new TestingServer(properties, Optional.of(module), builder -> builder
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
