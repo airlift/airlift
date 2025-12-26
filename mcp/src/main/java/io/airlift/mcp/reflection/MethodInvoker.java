@@ -218,7 +218,7 @@ public class MethodInvoker
             return Optional.empty();
         }
 
-        if (objectParameter.rawType().isRecord() || Optional.class.isAssignableFrom(objectParameter.rawType())) {
+        if (objectParameter.rawType().isRecord() || Optional.class.isAssignableFrom(objectParameter.rawType()) || objectParameter.rawType().isEnum()) {
             JavaType javaType = objectMapper.getTypeFactory().constructType(objectParameter.genericType());
             return objectMapper.convertValue(value, javaType);
         }
