@@ -119,7 +119,10 @@ public abstract class TestMcp
             }
         };
 
-        testingServer = new TestingServer(ImmutableMap.of(), Optional.of(module), builder -> builder
+        // the reference client doesn't track HTTP GET notifications
+        Map<String, String> properties = ImmutableMap.of("mcp.http-get-events.enabled", "false");
+
+        testingServer = new TestingServer(properties, Optional.of(module), builder -> builder
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
                 .withSessions(binding -> binding.to((mode == DATABASE_SESSIONS) ? TestingDatabaseSessionController.class : MemorySessionController.class).in(SINGLETON))
                 .build());
