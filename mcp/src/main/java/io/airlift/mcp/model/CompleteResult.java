@@ -3,6 +3,7 @@ package io.airlift.mcp.model;
 import com.google.common.collect.ImmutableList;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.OptionalInt;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -18,7 +19,7 @@ public record CompleteResult(CompleteCompletion completion)
         requireNonNull(completion, "completion is null");
     }
 
-    public record CompleteCompletion(List<String> values, OptionalInt total, OptionalBoolean hasMore)
+    public record CompleteCompletion(List<String> values, OptionalInt total, Optional<Boolean> hasMore)
     {
         public CompleteCompletion
         {
