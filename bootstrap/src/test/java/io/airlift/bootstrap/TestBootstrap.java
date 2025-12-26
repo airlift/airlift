@@ -33,7 +33,6 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
-import static io.airlift.configuration.ConditionalModule.conditionalModule;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -164,10 +163,9 @@ public class TestBootstrap
             @Override
             protected void setup(Binder binder)
             {
-                install(conditionalModule(
-                        FooConfig.class,
-                        FooConfig::isFoo,
-                        innerBinder -> configBinder(innerBinder).bindConfig(BarConfig.class)));
+                if (buildConfigObject(FooConfig.class).isFoo()) {
+                    configBinder(binder).bindConfig(BarConfig.class);
+                }
             }
         };
         Bootstrap bootstrap = new Bootstrap(module);
