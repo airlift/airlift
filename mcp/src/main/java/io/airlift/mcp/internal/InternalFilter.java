@@ -2,12 +2,14 @@ package io.airlift.mcp.internal;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Stopwatch;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import io.airlift.log.Logger;
 import io.airlift.mcp.ErrorHandler;
+import io.airlift.mcp.McpConfig;
 import io.airlift.mcp.McpIdentityMapper;
 import io.airlift.mcp.McpMetadata;
 import io.airlift.mcp.model.CallToolRequest;
@@ -23,6 +25,7 @@ import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.SetLevelRequest;
 import io.airlift.mcp.model.SubscribeRequest;
 import io.airlift.mcp.sessions.SessionController;
+import io.airlift.mcp.sessions.SessionId;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpFilter;
@@ -32,8 +35,10 @@ import jakarta.ws.rs.WebApplicationException;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
 import static com.google.common.net.HttpHeaders.WWW_AUTHENTICATE;
 import static io.airlift.mcp.McpException.exception;
@@ -90,9 +95,19 @@ public class InternalFilter
     private final ObjectMapper objectMapper;
     private final ErrorHandler errorHandler;
     private final Optional<SessionController> sessionController;
+    private final boolean httpGetEventsEnabled;
+    private final Duration streamingPingThreshold;
+    private final Duration streamingTimeout;
 
     @Inject
-    public InternalFilter(McpMetadata metadata, McpIdentityMapper identityMapper, InternalMcpServer mcpServer, ObjectMapper objectMapper, ErrorHandler errorHandler, Optional<SessionController> sessionController)
+    public InternalFilter(
+            McpMetadata metadata,
+            McpIdentityMapper identityMapper,
+            InternalMcpServer mcpServer,
+            ObjectMapper objectMapper,
+            ErrorHandler errorHandler,
+            Optional<SessionController> sessionController,
+            McpConfig mcpConfig)
     {
         this.metadata = requireNonNull(metadata, "metadata is null");
         this.identityMapper = requireNonNull(identityMapper, "identityMapper is null");
@@ -100,6 +115,10 @@ public class InternalFilter
         this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
         this.errorHandler = requireNonNull(errorHandler, "errorHandler is null");
         this.sessionController = requireNonNull(sessionController, "sessionController is null");
+
+        httpGetEventsEnabled = mcpConfig.isHttpGetEventsEnabled();
+        streamingPingThreshold = mcpConfig.getEventStreamingPingThreshold().toJavaTime();
+        streamingTimeout = mcpConfig.getEventStreamingTimeout().toJavaTime();
     }
 
     @Override
@@ -142,9 +161,60 @@ public class InternalFilter
 
         switch (request.getMethod().toUpperCase(ROOT)) {
             case POST -> handleMcpPostRequest(request, response, authenticated);
-            case GET -> response.setStatus(SC_METHOD_NOT_ALLOWED);
+            case GET -> handleMpcGetRequest(request, response);
             case DELETE -> handleMcpDeleteRequest(request, response);
             default -> response.setStatus(SC_NOT_FOUND);
+        }
+    }
+
+    private void handleMpcGetRequest(HttpServletRequest request, HttpServletResponse response)
+    {
+        boolean wasHandled = httpGetEventsEnabled && sessionController.map(controller -> {
+            handleEventStreaming(request, response, controller);
+            return true;
+        }).orElse(false);
+
+        if (!wasHandled) {
+            response.setStatus(SC_METHOD_NOT_ALLOWED);
+        }
+    }
+
+    @SuppressWarnings("BusyWait")
+    private void handleEventStreaming(HttpServletRequest request, HttpServletResponse response, SessionController sessionController)
+    {
+        SessionId sessionId = requireSessionId(request);
+
+        Stopwatch timeoutStopwatch = Stopwatch.createStarted();
+        Stopwatch pingStopwatch = Stopwatch.createStarted();
+
+        InternalMessageWriter messageWriter = new InternalMessageWriter(response);
+        InternalRequestContext requestContext = new InternalRequestContext(objectMapper, Optional.of(sessionController), request, messageWriter, Optional.empty());
+
+        while (timeoutStopwatch.elapsed().compareTo(streamingTimeout) < 0) {
+            if (!sessionController.validateSession(sessionId)) {
+                log.warn(String.format("Session validation failed for %s", sessionId));
+                break;
+            }
+
+            BiConsumer<String, Optional<Object>> notifier = (method, params) -> {
+                requestContext.sendMessage(method, params);
+
+                pingStopwatch.reset().start();
+            };
+            mcpServer.reconcileVersions(request, messageWriter);
+
+            if (pingStopwatch.elapsed().compareTo(streamingPingThreshold) >= 0) {
+                notifier.accept(METHOD_PING, Optional.empty());
+            }
+
+            try {
+                Thread.sleep(streamingPingThreshold.toMillis());
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.info("Event streaming interrupted for session %s", sessionId);
+                break;
+            }
         }
     }
 

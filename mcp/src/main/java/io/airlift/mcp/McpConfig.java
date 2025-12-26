@@ -6,12 +6,16 @@ import io.airlift.units.MinDuration;
 import jakarta.validation.constraints.Min;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class McpConfig
 {
     private int defaultPageSize = 25;
     private Duration defaultSessionTimeout = new Duration(15, MINUTES);
     private Duration resourceVersionUpdateInterval = new Duration(1, MINUTES);
+    private boolean httpGetEventsEnabled = true;
+    private Duration eventStreamingPingThreshold = new Duration(15, SECONDS);
+    private Duration eventStreamingTimeout = new Duration(5, MINUTES);
 
     @Min(1)
     public int getDefaultPageSize()
@@ -49,6 +53,44 @@ public class McpConfig
     public McpConfig setResourceVersionUpdateInterval(Duration resourceVersionUpdateInterval)
     {
         this.resourceVersionUpdateInterval = resourceVersionUpdateInterval;
+        return this;
+    }
+
+    public boolean isHttpGetEventsEnabled()
+    {
+        return httpGetEventsEnabled;
+    }
+
+    @Config("mcp.http-get-events.enabled")
+    public McpConfig setHttpGetEventsEnabled(boolean httpGetEventsEnabled)
+    {
+        this.httpGetEventsEnabled = httpGetEventsEnabled;
+        return this;
+    }
+
+    @MinDuration("1ms")
+    public Duration getEventStreamingPingThreshold()
+    {
+        return eventStreamingPingThreshold;
+    }
+
+    @Config("mcp.event-streaming.ping-threshold")
+    public McpConfig setEventStreamingPingThreshold(Duration eventStreamingPingThreshold)
+    {
+        this.eventStreamingPingThreshold = eventStreamingPingThreshold;
+        return this;
+    }
+
+    @MinDuration("1ms")
+    public Duration getEventStreamingTimeout()
+    {
+        return eventStreamingTimeout;
+    }
+
+    @Config("mcp.event-streaming.timeout")
+    public McpConfig setEventStreamingTimeout(Duration eventStreamingTimeout)
+    {
+        this.eventStreamingTimeout = eventStreamingTimeout;
         return this;
     }
 }
