@@ -6,7 +6,6 @@ import jakarta.servlet.http.HttpServletRequest;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static io.airlift.mcp.McpException.exception;
-import static io.airlift.mcp.TestMcp.IDENTITY_HEADER;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INTERNAL_ERROR;
 import static io.airlift.mcp.model.McpIdentity.Authenticated.authenticated;
 import static io.airlift.mcp.model.McpIdentity.Error.error;
@@ -18,6 +17,7 @@ public class TestingIdentityMapper
 {
     public static final String EXPECTED_IDENTITY = "Mr. Tester";
     public static final String ERRORED_IDENTITY = "Bad Actor";
+    public static final String IDENTITY_HEADER = "X-Testing-Identity";
 
     @Override
     public McpIdentity map(HttpServletRequest request)
