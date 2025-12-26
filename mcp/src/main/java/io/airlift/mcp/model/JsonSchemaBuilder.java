@@ -70,13 +70,11 @@ public class JsonSchemaBuilder
                         rawType = TypeLiteral.get(genericType).getRawType();
                     }
                     if (rawType.isRecord()) {
-                        typeNode = buildObject(objectParameter.description(), (objectProperties, objectRequried) ->
-                                buildRecord(objectParameter.rawType(), objectProperties, objectRequried));
+                        typeNode = buildObject(objectParameter.description(), (objectProperties, objectRequired) ->
+                                buildRecord(objectParameter.rawType(), objectProperties, objectRequired));
                     }
                     else {
-                        typeNode = objectMapper.createObjectNode();
-                        typeNode.put("type", primitiveType(rawType));
-                        description.ifPresent(value -> typeNode.put("description", value));
+                        typeNode = buildStandard(description, rawType);
                     }
 
                     properties.set(objectParameter.name(), typeNode);
@@ -91,6 +89,23 @@ public class JsonSchemaBuilder
     {
         return buildObject(description, (objectProperties, objectRequried) ->
                 buildRecord(recordType, objectProperties, objectRequried));
+    }
+
+    private ObjectNode buildStandard(Optional<String> description, Class<?> rawType)
+    {
+        ObjectNode typeNode = objectMapper.createObjectNode();
+        typeNode.put("type", primitiveType(rawType));
+        description.ifPresent(value -> typeNode.put("description", value));
+
+        if (rawType.isEnum()) {
+            ArrayNode enumValues = objectMapper.createArrayNode();
+            Stream.of(rawType.getEnumConstants())
+                    .map(String::valueOf)
+                    .forEach(enumValues::add);
+            typeNode.set("enum", enumValues);
+        }
+
+        return typeNode;
     }
 
     private void buildRecord(Class<?> recordType, ObjectNode properties, ArrayNode required)
@@ -175,9 +190,7 @@ public class JsonSchemaBuilder
             typeNode = buildArray(description, collectionType);
         }
         else {
-            typeNode = objectMapper.createObjectNode();
-            typeNode.put("type", primitiveType(rawType));
-            description.ifPresent(value -> typeNode.put("description", value));
+            typeNode = buildStandard(description, rawType);
         }
         return typeNode;
     }
@@ -224,6 +237,9 @@ public class JsonSchemaBuilder
 
     private String primitiveType(Class<?> rawType)
     {
+        if (rawType.isEnum()) {
+            return primitiveType(String.class);
+        }
         return Optional.ofNullable(primitiveTypes.get(rawType))
                 .orElseThrow(() -> exception("Unsupported primitive type: " + rawType));
     }
