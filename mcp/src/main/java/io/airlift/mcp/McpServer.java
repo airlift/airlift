@@ -1,9 +1,11 @@
 package io.airlift.mcp;
 
+import io.airlift.mcp.handler.CompletionHandler;
 import io.airlift.mcp.handler.PromptHandler;
 import io.airlift.mcp.handler.ResourceHandler;
 import io.airlift.mcp.handler.ResourceTemplateHandler;
 import io.airlift.mcp.handler.ToolHandler;
+import io.airlift.mcp.model.CompleteReference;
 import io.airlift.mcp.model.Prompt;
 import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceTemplate;
@@ -28,4 +30,8 @@ public interface McpServer
     void addResourceTemplate(ResourceTemplate resourceTemplate, ResourceTemplateHandler handler);
 
     void removeResourceTemplate(String uriTemplate);
+
+    void addCompletion(CompleteReference reference, CompletionHandler handler);
+
+    void removeCompletion(CompleteReference reference);
 }

@@ -7,7 +7,6 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.binder.LinkedBindingBuilder;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.OptionalBinder;
-import io.airlift.json.JsonBinder;
 import io.airlift.json.JsonSubType;
 import io.airlift.json.JsonSubTypeBinder;
 import io.airlift.mcp.handler.CompletionEntry;
@@ -15,6 +14,7 @@ import io.airlift.mcp.handler.PromptEntry;
 import io.airlift.mcp.handler.ResourceEntry;
 import io.airlift.mcp.handler.ResourceTemplateEntry;
 import io.airlift.mcp.handler.ToolEntry;
+import io.airlift.mcp.internal.InternalMcpModule;
 import io.airlift.mcp.model.CompleteReference;
 import io.airlift.mcp.model.CompleteReference.PromptReference;
 import io.airlift.mcp.model.CompleteReference.ResourceReference;
@@ -24,30 +24,22 @@ import io.airlift.mcp.model.Content.EmbeddedResource;
 import io.airlift.mcp.model.Content.ImageContent;
 import io.airlift.mcp.model.Content.ResourceLink;
 import io.airlift.mcp.model.Content.TextContent;
-import io.airlift.mcp.model.Role;
-import io.airlift.mcp.reference.McpErrorSerializer;
-import io.airlift.mcp.reference.ReferenceModule;
 import io.airlift.mcp.reflection.CompletionHandlerProvider;
 import io.airlift.mcp.reflection.IdentityMapperMetadata;
 import io.airlift.mcp.reflection.PromptHandlerProvider;
 import io.airlift.mcp.reflection.ResourceHandlerProvider;
 import io.airlift.mcp.reflection.ResourceTemplateHandlerProvider;
 import io.airlift.mcp.reflection.ToolHandlerProvider;
-import io.modelcontextprotocol.spec.McpError;
-import io.modelcontextprotocol.spec.McpSchema;
 
-import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 
-import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.inject.Scopes.SINGLETON;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
-import static io.airlift.json.JsonBinder.jsonBinder;
 import static io.airlift.json.JsonSubTypeBinder.jsonSubTypeBinder;
+import static io.airlift.mcp.McpMetadata.DEFAULT;
+import static io.airlift.mcp.McpModule.Mode.STANDARD;
 import static io.airlift.mcp.reflection.ReflectionHelper.forAllInClass;
 import static java.util.Objects.requireNonNull;
 
@@ -80,13 +72,11 @@ public class McpModule
         this.resources = ImmutableSet.copyOf(resources);
         this.resourceTemplates = ImmutableSet.copyOf(resourceTemplates);
         this.completions = ImmutableSet.copyOf(completions);
-
-        validateRoles();
     }
 
     public enum Mode
     {
-        REFERENCE_SDK,
+        STANDARD,
         UNBOUND_IMPLEMENTATION,
     }
 
@@ -103,8 +93,8 @@ public class McpModule
     {
         private final ImmutableSet.Builder<Class<?>> classes = ImmutableSet.builder();
         private Optional<IdentityMapperBinding> identityMapperBinding = Optional.empty();
-        private McpMetadata metadata = new McpMetadata("/mcp");
-        private Mode mode = Mode.REFERENCE_SDK;
+        private McpMetadata metadata = DEFAULT;
+        private Mode mode = STANDARD;
 
         private Builder()
         {
@@ -200,12 +190,11 @@ public class McpModule
         bindResources(binder);
         bindResourceTemplates(binder);
         bindJsonSubTypes(binder);
-        bindCustomErrorTypes(binder);
         bindIdentityMapper(binder);
         bindCompletions(binder);
 
-        if (mode == Mode.REFERENCE_SDK) {
-            binder.install(new ReferenceModule());
+        if (mode == STANDARD) {
+            binder.install(new InternalMcpModule());
         }
     }
 
@@ -272,19 +261,5 @@ public class McpModule
                 .add(ResourceReference.class, "ref/resource")
                 .build();
         jsonSubTypeBinder.bindJsonSubType(contentJsonSubType);
-    }
-
-    private void bindCustomErrorTypes(Binder binder)
-    {
-        JsonBinder jsonBinder = jsonBinder(binder);
-        jsonBinder.addSerializerBinding(McpError.class).to(McpErrorSerializer.class).in(SINGLETON);
-    }
-
-    private void validateRoles()
-    {
-        Set<String> ourRoles = Stream.of(Role.values()).map(role -> role.name().toUpperCase(Locale.ROOT)).collect(toImmutableSet());
-        Set<String> theirRoles = Stream.of(McpSchema.Role.values()).map(role -> role.name().toUpperCase(Locale.ROOT)).collect(toImmutableSet());
-
-        checkState(ourRoles.equals(theirRoles), "Roles in McpModule do not match the roles defined in McpSchema: Ours: %s, Theirs: %s: ", ourRoles, theirRoles);
     }
 }

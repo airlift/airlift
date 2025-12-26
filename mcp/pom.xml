@@ -20,6 +20,11 @@
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
+            <artifactId>bootstrap</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
             <artifactId>json</artifactId>
         </dependency>
 
@@ -47,41 +52,6 @@
             <groupId>com.google.inject</groupId>
             <artifactId>guice</artifactId>
             <classifier>classes</classifier>
-        </dependency>
-
-        <dependency>
-            <groupId>io.modelcontextprotocol.sdk</groupId>
-            <artifactId>mcp-core</artifactId>
-            <!-- mcp-core and mcp-json-jackson2 depend on mcp-json, but mcp-core shades it -->
-            <exclusions>
-                <exclusion>
-                    <groupId>io.modelcontextprotocol.sdk</groupId>
-                    <artifactId>mcp-json</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>io.modelcontextprotocol.sdk</groupId>
-            <artifactId>mcp-json-jackson2</artifactId>
-            <!-- mcp-core and mcp-json-jackson2 depend on mcp-json, but mcp-core shades it -->
-            <exclusions>
-                <exclusion>
-                    <groupId>io.modelcontextprotocol.sdk</groupId>
-                    <artifactId>mcp-json</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>io.projectreactor</groupId>
-            <artifactId>reactor-core</artifactId>
-            <version>3.8.1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>jakarta.annotation</groupId>
-            <artifactId>jakarta.annotation-api</artifactId>
         </dependency>
 
         <dependency>
@@ -113,12 +83,6 @@
 
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>bootstrap</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>${project.groupId}</groupId>
             <artifactId>http-client</artifactId>
             <scope>test</scope>
         </dependency>
@@ -133,6 +97,32 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>jaxrs</artifactId>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.modelcontextprotocol.sdk</groupId>
+            <artifactId>mcp-core</artifactId>
+            <scope>test</scope>
+            <!-- mcp-core and mcp-json-jackson2 depend on mcp-json, but mcp-core shades it -->
+            <exclusions>
+                <exclusion>
+                    <groupId>io.modelcontextprotocol.sdk</groupId>
+                    <artifactId>mcp-json</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>io.modelcontextprotocol.sdk</groupId>
+            <artifactId>mcp-json-jackson2</artifactId>
+            <scope>test</scope>
+            <!-- mcp-core and mcp-json-jackson2 depend on mcp-json, but mcp-core shades it -->
+            <exclusions>
+                <exclusion>
+                    <groupId>io.modelcontextprotocol.sdk</groupId>
+                    <artifactId>mcp-json</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -168,7 +158,6 @@
 
     <build>
         <plugins>
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>

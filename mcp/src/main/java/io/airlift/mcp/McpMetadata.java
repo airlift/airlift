@@ -8,7 +8,7 @@ import static java.util.Objects.requireNonNull;
 
 public record McpMetadata(String uriPath, Implementation implementation, Optional<String> instructions, boolean tools, boolean prompts, boolean resources, boolean completions)
 {
-    public static final String CONTEXT_REQUEST_KEY = McpMetadata.class.getName() + ".request";
+    public static final McpMetadata DEFAULT = new McpMetadata("/mcp");
 
     public McpMetadata
     {

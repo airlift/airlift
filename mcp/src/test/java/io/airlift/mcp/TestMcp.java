@@ -123,8 +123,8 @@ public class TestMcp
 
         assertThatThrownBy(() -> buildClient(closer, baseUri, "error-token", ERRORED_IDENTITY))
                 .rootCause()
-                .hasMessageContaining("code=" + INTERNAL_ERROR.code())
-                .hasMessageContaining("message=This identity cannot catch a break");
+                .hasMessageContaining("\"code\":" + INTERNAL_ERROR.code())
+                .hasMessageContaining("\"message\":\"This identity cannot catch a break");
     }
 
     @Test
@@ -368,7 +368,7 @@ public class TestMcp
 
         ReadResourceRequest badReadResourceRequest = new ReadResourceRequest("file://not-a-template");
         assertThatThrownBy(() -> client1.mcpClient().readResource(badReadResourceRequest))
-                .satisfies(e -> assertMcpError(e, RESOURCE_NOT_FOUND, "Resource not found"));
+                .satisfies(e -> assertMcpError(e, RESOURCE_NOT_FOUND, "Resource not found: file://not-a-template"));
     }
 
     private void assertMcpError(Throwable throwable, int code, String message)

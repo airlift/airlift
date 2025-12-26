@@ -1,4 +1,4 @@
-package io.airlift.mcp.reference;
+package io.airlift.mcp.internal;
 
 import io.airlift.mcp.handler.MessageWriter;
 import jakarta.servlet.http.HttpServletResponse;
@@ -12,14 +12,14 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static java.util.Objects.requireNonNull;
 
-class ReferenceMessageWriter
+class InternalMessageWriter
         implements MessageWriter
 {
     private final HttpServletResponse response;
     private final AtomicLong nextId = new AtomicLong();
     private final AtomicBoolean hasBeenUpgraded = new AtomicBoolean();
 
-    ReferenceMessageWriter(HttpServletResponse response)
+    InternalMessageWriter(HttpServletResponse response)
     {
         this.response = requireNonNull(response, "response is null");
     }

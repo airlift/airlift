@@ -14,6 +14,7 @@ import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.CompleteRequest.CompleteArgument;
 import io.airlift.mcp.model.CompleteRequest.CompleteContext;
 import io.airlift.mcp.model.GetPromptRequest;
+import io.airlift.mcp.model.JsonRpcErrorCode;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceTemplate;
@@ -30,6 +31,7 @@ import io.airlift.mcp.reflection.MethodParameter.ReadResourceRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.ResourceTemplateValuesParameter;
 import io.airlift.mcp.reflection.MethodParameter.SourceResourceParameter;
 import io.airlift.mcp.reflection.MethodParameter.SourceResourceTemplateParameter;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -42,8 +44,8 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 import static io.airlift.mcp.McpException.exception;
+import static io.airlift.mcp.model.Constants.MCP_IDENTITY_ATTRIBUTE;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
-import static io.airlift.mcp.reference.ReferenceFilter.retrieveIdentityValue;
 import static java.util.Objects.requireNonNull;
 
 public class MethodInvoker
@@ -222,5 +224,15 @@ public class MethodInvoker
         }
 
         return value;
+    }
+
+    private static Object retrieveIdentityValue(HttpServletRequest request)
+            throws McpException
+    {
+        Object identity = request.getAttribute(MCP_IDENTITY_ATTRIBUTE);
+        if (identity == null) {
+            throw McpException.exception(JsonRpcErrorCode.INTERNAL_ERROR, "Error in request processing. MCP identity not found.");
+        }
+        return identity;
     }
 }
