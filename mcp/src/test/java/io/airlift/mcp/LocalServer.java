@@ -39,6 +39,7 @@ public class LocalServer
                 .withAllInClass(TestingEndpoints.class)
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.toInstance(_ -> authenticated(new TestingIdentity("Mr. Tester"))))
                 .withSessions(binding -> binding.to(MemorySessionController.class).in(SINGLETON))
+                .withEventStreaming(McpEventStreaming.DEFAULT)
                 .build();
 
         ImmutableList.Builder<Module> modules = ImmutableList.<Module>builder()

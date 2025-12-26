@@ -3,12 +3,14 @@ package io.airlift.mcp.internal;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Stopwatch;
 import com.google.common.base.Supplier;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import io.airlift.log.Logger;
+import io.airlift.mcp.McpEventStreaming;
 import io.airlift.mcp.McpException;
 import io.airlift.mcp.McpIdentityMapper;
 import io.airlift.mcp.McpMetadata;
@@ -28,6 +30,7 @@ import io.airlift.mcp.model.SetLevelRequest;
 import io.airlift.mcp.model.SubscribeRequest;
 import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.sessions.SessionId;
+import io.airlift.mcp.versions.VersionNotifier;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpFilter;
@@ -95,15 +98,17 @@ public class InternalFilter
     private final InternalMcpServer mcpServer;
     private final ObjectMapper objectMapper;
     private final Optional<SessionController> sessionController;
+    private final Optional<McpEventStreaming> eventStreaming;
 
     @Inject
-    public InternalFilter(McpMetadata metadata, Optional<McpIdentityMapper> identityMapper, InternalMcpServer mcpServer, ObjectMapper objectMapper, Optional<SessionController> sessionController)
+    public InternalFilter(McpMetadata metadata, Optional<McpIdentityMapper> identityMapper, InternalMcpServer mcpServer, ObjectMapper objectMapper, Optional<SessionController> sessionController, Optional<McpEventStreaming> eventStreaming)
     {
         this.metadata = requireNonNull(metadata, "metadata is null");
         this.identityMapper = requireNonNull(identityMapper, "identityMapper is null");
         this.mcpServer = requireNonNull(mcpServer, "mcpServer is null");
         this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
         this.sessionController = requireNonNull(sessionController, "sessionController is null");
+        this.eventStreaming = requireNonNull(eventStreaming, "eventStreaming is null");
     }
 
     @Override
@@ -177,9 +182,60 @@ public class InternalFilter
 
         switch (request.getMethod().toUpperCase(ROOT)) {
             case POST -> handleMcpPostRequest(request, response);
-            case GET -> response.setStatus(SC_METHOD_NOT_ALLOWED);
+            case GET -> handleMpcGetRequest(request, response);
             case DELETE -> handleMcpDeleteRequest(request, response);
             default -> response.setStatus(SC_NOT_FOUND);
+        }
+    }
+
+    private void handleMpcGetRequest(HttpServletRequest request, HttpServletResponse response)
+    {
+        boolean wasHandled = sessionController.map(controller -> eventStreaming.map(streaming -> {
+            handleEventStreaming(request, response, controller, streaming);
+            return true;
+        }).orElse(false)).orElse(false);
+
+        if (!wasHandled) {
+            response.setStatus(SC_METHOD_NOT_ALLOWED);
+        }
+    }
+
+    @SuppressWarnings("BusyWait")
+    private void handleEventStreaming(HttpServletRequest request, HttpServletResponse response, SessionController sessionController, McpEventStreaming eventStreaming)
+    {
+        SessionId sessionId = requireSessionId(request);
+
+        Stopwatch timeoutStopwatch = Stopwatch.createStarted();
+        Stopwatch pingStopwatch = Stopwatch.createStarted();
+
+        InternalMessageWriter messageWriter = new InternalMessageWriter(response);
+        InternalRequestContext requestContext = new InternalRequestContext(objectMapper, Optional.of(sessionController), request, messageWriter, Optional.empty());
+
+        while (timeoutStopwatch.elapsed().compareTo(eventStreaming.timeout()) < 0) {
+            if (!sessionController.validateSession(sessionId)) {
+                log.warn(String.format("Session validation failed for %s", sessionId));
+                break;
+            }
+
+            VersionNotifier notifier = (method, params) -> {
+                requestContext.internalSendMessage(method, params);
+
+                pingStopwatch.reset().start();
+            };
+            reconcile(sessionController, notifier, sessionId);
+
+            if (pingStopwatch.elapsed().compareTo(eventStreaming.pingThreshold()) >= 0) {
+                notifier.sendNotification(METHOD_PING, Optional.empty());
+            }
+
+            try {
+                Thread.sleep(eventStreaming.pingThreshold().toMillis());
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.info("Event streaming interrupted for session %s", sessionId);
+                break;
+            }
         }
     }
 
@@ -293,11 +349,13 @@ public class InternalFilter
 
     private Object withNotifications(HttpServletRequest request, InternalMessageWriter messageWriter, Supplier<Object> supplier)
     {
-        sessionController.ifPresent(controller -> {
-            SessionId sessionId = requireSessionId(request);
-            InternalRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, Optional.empty());
-            reconcile(controller, requestContext::internalSendMessage, sessionId);
-        });
+        if (eventStreaming.isEmpty()) {
+            sessionController.ifPresent(controller -> {
+                SessionId sessionId = requireSessionId(request);
+                InternalRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, Optional.empty());
+                reconcile(controller, requestContext::internalSendMessage, sessionId);
+            });
+        }
 
         return supplier.get();
     }

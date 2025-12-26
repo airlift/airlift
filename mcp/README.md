@@ -21,12 +21,12 @@ variations of MCP servers defined by the standard. This module supports:
 - Pagination [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/pagination)
 - Sessions [(see spec)](https://modelcontextprotocol.io/docs/concepts/transports#session-management)
 - Server-sent logging [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/logging)
+- List changed events [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/lifecycle#initialization)
+- Subscriptions [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/lifecycle#initialization)
 
 This module does not currently support:
 
 - Cancellation [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/cancellation)
-- List changed events [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/lifecycle#initialization)
-- Subscriptions [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/lifecycle#initialization)
 - Elicitation [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/client/elicitation)
 - Roots [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/client/roots)
 - Sampling [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/client/sampling)

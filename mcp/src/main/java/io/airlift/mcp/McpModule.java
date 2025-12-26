@@ -59,13 +59,25 @@ public class McpModule
     private final Set<ResourceTemplateHandlerProvider> resourceTemplates;
     private final Set<CompletionHandlerProvider> completions;
     private final Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding;
+    private final Optional<McpEventStreaming> eventStreaming;
 
     public static Builder builder()
     {
         return new Builder();
     }
 
-    private McpModule(Mode mode, McpMetadata metadata, Optional<IdentityMapperBinding> identityMapperBinding, Set<Class<?>> classes, Set<ToolHandlerProvider> tools, Set<PromptHandlerProvider> prompts, Set<ResourceHandlerProvider> resources, Set<ResourceTemplateHandlerProvider> resourceTemplates, Set<CompletionHandlerProvider> completions, Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding)
+    private McpModule(
+            Mode mode,
+            McpMetadata metadata,
+            Optional<IdentityMapperBinding> identityMapperBinding,
+            Set<Class<?>> classes,
+            Set<ToolHandlerProvider> tools,
+            Set<PromptHandlerProvider> prompts,
+            Set<ResourceHandlerProvider> resources,
+            Set<ResourceTemplateHandlerProvider> resourceTemplates,
+            Set<CompletionHandlerProvider> completions,
+            Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding,
+            Optional<McpEventStreaming> eventStreaming)
     {
         this.mode = requireNonNull(mode, "mode is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
@@ -77,6 +89,7 @@ public class McpModule
         this.resourceTemplates = ImmutableSet.copyOf(resourceTemplates);
         this.completions = ImmutableSet.copyOf(completions);
         this.sessionControllerBinding = requireNonNull(sessionControllerBinding, "sessionControllerBinding is null");
+        this.eventStreaming = requireNonNull(eventStreaming, "eventStreaming is null");
     }
 
     public enum Mode
@@ -101,11 +114,16 @@ public class McpModule
         private McpMetadata metadata = DEFAULT;
         private Mode mode = STANDARD;
         private Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding = Optional.empty();
+        private Optional<McpEventStreaming> eventStreaming = Optional.empty();
 
         private Builder()
         {
         }
 
+        /**
+         * Note: if the metadata contains a {@link McpEventStreaming} instance,
+         * then event streaming will be enabled.
+         */
         public Builder withMetadata(McpMetadata metadata)
         {
             this.metadata = requireNonNull(metadata, "metadata is null");
@@ -138,6 +156,13 @@ public class McpModule
             checkArgument(this.sessionControllerBinding.isEmpty(), "Session controller binding is already set");
 
             this.sessionControllerBinding = Optional.of(sessionControllerBinding);
+            return this;
+        }
+
+        // NOTE: does nothing if sessions are not enabled
+        public Builder withEventStreaming(McpEventStreaming eventStreaming)
+        {
+            this.eventStreaming = Optional.of(requireNonNull(eventStreaming, "eventStreaming is null"));
             return this;
         }
 
@@ -191,7 +216,7 @@ public class McpModule
                 metadata = metadata.withCompletions(true);
             }
 
-            return new McpModule(mode, metadata, identityMapperBinding, classesSet, localTools, localPrompts, localResources, localResourceTemplates, localCompletions, sessionControllerBinding);
+            return new McpModule(mode, metadata, identityMapperBinding, classesSet, localTools, localPrompts, localResources, localResourceTemplates, localCompletions, sessionControllerBinding, eventStreaming);
         }
     }
 
@@ -209,10 +234,17 @@ public class McpModule
         bindIdentityMapper(binder);
         bindCompletions(binder);
         bindSessions(binder);
+        bindEventStreaming(binder);
 
         if (mode == STANDARD) {
             binder.install(new InternalMcpModule());
         }
+    }
+
+    private void bindEventStreaming(Binder binder)
+    {
+        OptionalBinder<McpEventStreaming> eventStreamingBinder = newOptionalBinder(binder, McpEventStreaming.class);
+        eventStreaming.ifPresent(value -> eventStreamingBinder.setBinding().toInstance(value));
     }
 
     private void bindSessions(Binder binder)
