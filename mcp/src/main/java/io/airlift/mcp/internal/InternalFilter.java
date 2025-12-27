@@ -75,6 +75,7 @@ import static io.airlift.mcp.model.Constants.NOTIFICATION_CANCELLED;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_INITIALIZED;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
 import static io.airlift.mcp.sessions.SessionValueKey.cancellationKey;
+import static io.airlift.mcp.sessions.SessionValueKey.serverToClientResponseKey;
 import static jakarta.servlet.http.HttpServletResponse.SC_ACCEPTED;
 import static jakarta.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
 import static jakarta.servlet.http.HttpServletResponse.SC_FORBIDDEN;
@@ -307,14 +308,21 @@ public class InternalFilter
         }
         catch (Exception e) {
             throwIfInstanceOf(e.getCause(), McpException.class);
-            log.error("Unexpected error handling message: {}", e.getMessage());
+            log.error(e, "Unexpected error handling message: {}", e.getMessage());
             responseError(response, SC_INTERNAL_SERVER_ERROR, internalError("Unexpected error: " + e.getMessage()));
         }
     }
 
+    @SuppressWarnings("rawtypes")
     private void handleRpcResponse(HttpServletRequest request, HttpServletResponse response, JsonRpcResponse<?> rpcResponse)
     {
         log.debug("Processing MCP response: %s, session: %s", rpcResponse.id(), request.getHeader(HEADER_SESSION_ID));
+
+        sessionController.ifPresent(controller -> {
+            SessionId sessionId = requireSessionId(request);
+            SessionValueKey<JsonRpcResponse> responseKey = serverToClientResponseKey(rpcResponse.id());
+            controller.setSessionValue(sessionId, responseKey, rpcResponse);
+        });
 
         response.setStatus(SC_ACCEPTED);
     }
