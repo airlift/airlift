@@ -2,13 +2,12 @@ package io.airlift.mcp.model;
 
 import java.util.Optional;
 
+import static io.airlift.mcp.model.Constants.JSON_RPC_VERSION;
 import static java.util.Objects.requireNonNull;
 
 // see https://www.jsonrpc.org/specification#request_object
 public record JsonRpcRequest<T>(String jsonrpc, Object id, String method, Optional<T> params)
 {
-    public static final String JSON_RPC_VERSION = "2.0";
-
     public JsonRpcRequest
     {
         requireNonNull(jsonrpc, "jsonrpc is null");
