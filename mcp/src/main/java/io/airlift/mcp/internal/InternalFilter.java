@@ -72,6 +72,7 @@ import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
 import static io.airlift.mcp.model.JsonRpcErrorCode.METHOD_NOT_FOUND;
 import static io.airlift.mcp.model.JsonRpcErrorCode.PARSE_ERROR;
 import static io.airlift.mcp.sessions.SessionValueKey.cancellationKey;
+import static io.airlift.mcp.sessions.SessionValueKey.serverToClientResponseKey;
 import static jakarta.servlet.http.HttpServletResponse.SC_ACCEPTED;
 import static jakarta.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
 import static jakarta.servlet.http.HttpServletResponse.SC_FORBIDDEN;
@@ -267,9 +268,16 @@ public class InternalFilter
         }
     }
 
+    @SuppressWarnings("rawtypes")
     private void handleRpcResponse(HttpServletRequest request, HttpServletResponse response, JsonRpcResponse<?> rpcResponse)
     {
         log.debug("Processing MCP response: %s, session: %s", rpcResponse.id(), request.getHeader(HEADER_SESSION_ID));
+
+        sessionController.ifPresent(controller -> {
+            SessionId sessionId = requireSessionId(request);
+            SessionValueKey<JsonRpcResponse> responseKey = serverToClientResponseKey(rpcResponse.id());
+            controller.setSessionValue(sessionId, responseKey, rpcResponse);
+        });
 
         response.setStatus(SC_ACCEPTED);
     }

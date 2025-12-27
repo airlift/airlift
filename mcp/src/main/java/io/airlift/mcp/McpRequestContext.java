@@ -1,10 +1,13 @@
 package io.airlift.mcp;
 
 import io.airlift.mcp.model.InitializeRequest.ClientCapabilities;
+import io.airlift.mcp.model.JsonRpcResponse;
 import io.airlift.mcp.model.LoggingLevel;
 import jakarta.servlet.http.HttpServletRequest;
 
+import java.time.Duration;
 import java.util.Optional;
+import java.util.concurrent.TimeoutException;
 
 public interface McpRequestContext
 {
@@ -29,6 +32,14 @@ public interface McpRequestContext
     }
 
     default ClientCapabilities clientCapabilities()
+    {
+        // only implemented when sessions are configured
+
+        throw new UnsupportedOperationException();
+    }
+
+    default <R> JsonRpcResponse<R> serverToClientRequest(String method, Object params, Class<R> responseType, Duration timeout, Duration pollInterval)
+            throws InterruptedException, TimeoutException
     {
         // only implemented when sessions are configured
 

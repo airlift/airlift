@@ -291,7 +291,7 @@ public abstract class TestMcp
         ListToolsResult listToolsResult = client1.mcpClient().listTools();
         assertThat(listToolsResult.tools())
                 .extracting(Tool::name)
-                .containsExactlyInAnyOrder("add", "throws", "addThree", "addFirstTwoAndAllThree", "progress", "log", "setVersion", "sleep");
+                .containsExactlyInAnyOrder("add", "throws", "addThree", "addFirstTwoAndAllThree", "progress", "log", "setVersion", "sleep", "elicitation", "sampling");
 
         CallToolResult callToolResult = client1.mcpClient().callTool(new CallToolRequest("add", ImmutableMap.of("a", 1, "b", 2)));
         assertThat(callToolResult.content())
@@ -636,6 +636,18 @@ public abstract class TestMcp
                         fail(e);
                     }
                 });
+    }
+
+    @Test
+    public void testElicitation()
+    {
+        CallToolResult callToolResult = client1.mcpClient().callTool(new CallToolRequest("elicitation", ImmutableMap.of()));
+        assertThat(callToolResult.content())
+                .hasSize(1)
+                .first()
+                .asInstanceOf(type(TextContent.class))
+                .extracting(TextContent::text)
+                .isEqualTo("Hello, " + client1.name() + " " + client1.name() + "sky!");
     }
 
     private AbstractCollectionAssert<?, Collection<? extends String>, String, ObjectAssert<String>> assertChanges(BlockingQueue<String> changes, int qty)
