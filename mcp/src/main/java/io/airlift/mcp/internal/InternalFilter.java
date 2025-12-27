@@ -19,6 +19,7 @@ import io.airlift.mcp.model.JsonRpcErrorCode;
 import io.airlift.mcp.model.JsonRpcErrorDetail;
 import io.airlift.mcp.model.JsonRpcRequest;
 import io.airlift.mcp.model.JsonRpcResponse;
+import io.airlift.mcp.model.ListRequest;
 import io.airlift.mcp.model.McpIdentity;
 import io.airlift.mcp.model.McpIdentity.Authenticated;
 import io.airlift.mcp.model.ReadResourceRequest;
@@ -228,12 +229,12 @@ public class InternalFilter
         try {
             Object result = switch (rpcRequest.method()) {
                 case METHOD_INITIALIZE -> mcpServer.initialize(convertParams(rpcRequest, InitializeRequest.class));
-                case METHOD_TOOLS_LIST -> mcpServer.listTools();
+                case METHOD_TOOLS_LIST -> mcpServer.listTools(convertParams(rpcRequest, ListRequest.class));
                 case METHOD_TOOLS_CALL -> mcpServer.callTool(request, messageWriter, convertParams(rpcRequest, CallToolRequest.class));
-                case METHOD_PROMPT_LIST -> mcpServer.listPrompts();
+                case METHOD_PROMPT_LIST -> mcpServer.listPrompts(convertParams(rpcRequest, ListRequest.class));
                 case METHOD_PROMPT_GET -> mcpServer.getPrompt(request, messageWriter, convertParams(rpcRequest, GetPromptRequest.class));
-                case METHOD_RESOURCES_LIST -> mcpServer.listResources();
-                case METHOD_RESOURCES_TEMPLATES_LIST -> mcpServer.listResourceTemplates();
+                case METHOD_RESOURCES_LIST -> mcpServer.listResources(convertParams(rpcRequest, ListRequest.class));
+                case METHOD_RESOURCES_TEMPLATES_LIST -> mcpServer.listResourceTemplates(convertParams(rpcRequest, ListRequest.class));
                 case METHOD_RESOURCES_READ -> mcpServer.readResources(request, messageWriter, convertParams(rpcRequest, ReadResourceRequest.class));
                 case METHOD_PING -> ImmutableMap.of();
                 case METHOD_COMPLETION_COMPLETE -> mcpServer.completionComplete(request, messageWriter, convertParams(rpcRequest, CompleteRequest.class));

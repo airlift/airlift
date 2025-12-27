@@ -34,6 +34,7 @@ import io.airlift.mcp.model.InitializeResult.CompletionCapabilities;
 import io.airlift.mcp.model.InitializeResult.ServerCapabilities;
 import io.airlift.mcp.model.ListChanged;
 import io.airlift.mcp.model.ListPromptsResult;
+import io.airlift.mcp.model.ListRequest;
 import io.airlift.mcp.model.ListResourceTemplatesResult;
 import io.airlift.mcp.model.ListResourcesResult;
 import io.airlift.mcp.model.ListToolsResult;
@@ -81,9 +82,10 @@ public class InternalMcpServer
     private final ObjectMapper objectMapper;
     private final McpMetadata metadata;
     private final LifeCycleManager lifeCycleManager;
+    private final PaginationUtil paginationUtil;
 
     @Inject
-    public InternalMcpServer(
+    InternalMcpServer(
             ObjectMapper objectMapper,
             McpMetadata metadata,
             LifeCycleManager lifeCycleManager,
@@ -91,11 +93,13 @@ public class InternalMcpServer
             Set<PromptEntry> prompts,
             Set<ResourceEntry> resources,
             Set<ResourceTemplateEntry> resourceTemplates,
-            Set<CompletionEntry> completions)
+            Set<CompletionEntry> completions,
+            PaginationUtil paginationUtil)
     {
         this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
         this.lifeCycleManager = requireNonNull(lifeCycleManager, "lifeCycleManager is null");
+        this.paginationUtil = requireNonNull(paginationUtil, "paginationUtil is null");
 
         tools.forEach(tool -> addTool(tool.tool(), tool.toolHandler()));
         prompts.forEach(prompt -> addPrompt(prompt.prompt(), prompt.promptHandler()));
@@ -185,36 +189,36 @@ public class InternalMcpServer
         return new InitializeResult(protocolVersion, serverCapabilities, metadata.implementation(), metadata.instructions());
     }
 
-    ListToolsResult listTools()
+    ListToolsResult listTools(ListRequest listRequest)
     {
         List<Tool> localTools = tools.values().stream()
                 .map(ToolEntry::tool)
                 .collect(toImmutableList());
-        return new ListToolsResult(localTools);
+        return paginationUtil.paginate(listRequest, localTools, Tool::name, ListToolsResult::new);
     }
 
-    ListPromptsResult listPrompts()
+    ListPromptsResult listPrompts(ListRequest listRequest)
     {
         List<Prompt> localPrompts = prompts.values().stream()
                 .map(PromptEntry::prompt)
                 .collect(toImmutableList());
-        return new ListPromptsResult(localPrompts);
+        return paginationUtil.paginate(listRequest, localPrompts, Prompt::name, ListPromptsResult::new);
     }
 
-    ListResourcesResult listResources()
+    ListResourcesResult listResources(ListRequest listRequest)
     {
         List<Resource> localResources = resources.values().stream()
                 .map(ResourceEntry::resource)
                 .collect(toImmutableList());
-        return new ListResourcesResult(localResources);
+        return paginationUtil.paginate(listRequest, localResources, Resource::name, ListResourcesResult::new);
     }
 
-    ListResourceTemplatesResult listResourceTemplates()
+    ListResourceTemplatesResult listResourceTemplates(ListRequest listRequest)
     {
         List<ResourceTemplate> localResourceTemplates = resourceTemplates.values().stream()
                 .map(ResourceTemplateEntry::resourceTemplate)
                 .collect(toImmutableList());
-        return new ListResourceTemplatesResult(localResourceTemplates);
+        return paginationUtil.paginate(listRequest, localResourceTemplates, ResourceTemplate::name, ListResourceTemplatesResult::new);
     }
 
     CallToolResult callTool(HttpServletRequest request, MessageWriter messageWriter, CallToolRequest callToolRequest)
