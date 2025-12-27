@@ -1,5 +1,6 @@
 package io.airlift.mcp;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.airlift.mcp.model.CallToolResult;
@@ -20,17 +21,20 @@ import java.util.concurrent.TimeUnit;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.mcp.McpException.exception;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SuppressWarnings({"unused", "FieldCanBeLocal"})
 public class TestingEndpoints
 {
     private final McpServer mcpServer;
+    private final SleepToolController sleepToolController;
 
     @Inject
-    public TestingEndpoints(McpServer mcpServer)
+    public TestingEndpoints(McpServer mcpServer, SleepToolController sleepToolController)
     {
         this.mcpServer = requireNonNull(mcpServer, "mcpServer is null");
+        this.sleepToolController = requireNonNull(sleepToolController, "sleepToolLatch is null");
     }
 
     @McpTool(name = "add", description = "Add two numbers")
@@ -171,6 +175,40 @@ public class TestingEndpoints
                 }
             }
             case RESOURCE -> mcpServer.updateResourcesVersion(name, version);
+        }
+    }
+
+    @McpTool(name = "sleep", description = "Sleep for a specified number of seconds")
+    public String sleepForSeconds(String name, int secondsToSleep)
+    {
+        sleepToolController.startedLatch().release();
+
+        long msToSleep = TimeUnit.SECONDS.toMillis(secondsToSleep);
+
+        try {
+            while (true) {
+                Stopwatch stopwatch = Stopwatch.createStarted();
+                String exitName = sleepToolController.namesThatShouldExit().poll(msToSleep, MILLISECONDS);
+                msToSleep -= stopwatch.elapsed(MILLISECONDS);
+
+                if ((exitName == null) || (msToSleep <= 0)) {
+                    return "timeout";
+                }
+
+                if (exitName.equals(name)) {
+                    return "success";
+                }
+
+                // it's not ours - add it back
+                sleepToolController.namesThatShouldExit().add(exitName);
+            }
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return "interrupted";
+        }
+        finally {
+            sleepToolController.namesThatHaveExited().add(name);
         }
     }
 }

@@ -60,6 +60,7 @@ public class McpModule
     private final Set<CompletionHandlerProvider> completions;
     private final Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding;
     private final Optional<McpEventStreaming> eventStreaming;
+    private final Consumer<LinkedBindingBuilder<McpCancellationHandler>> cancellationHandlerBinding;
 
     public static Builder builder()
     {
@@ -77,7 +78,8 @@ public class McpModule
             Set<ResourceTemplateHandlerProvider> resourceTemplates,
             Set<CompletionHandlerProvider> completions,
             Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding,
-            Optional<McpEventStreaming> eventStreaming)
+            Optional<McpEventStreaming> eventStreaming,
+            Consumer<LinkedBindingBuilder<McpCancellationHandler>> cancellationHandlerBinding)
     {
         this.mode = requireNonNull(mode, "mode is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
@@ -90,6 +92,7 @@ public class McpModule
         this.completions = ImmutableSet.copyOf(completions);
         this.sessionControllerBinding = requireNonNull(sessionControllerBinding, "sessionControllerBinding is null");
         this.eventStreaming = requireNonNull(eventStreaming, "eventStreaming is null");
+        this.cancellationHandlerBinding = requireNonNull(cancellationHandlerBinding, "cancellationHandlerBinding is null");
     }
 
     public enum Mode
@@ -115,6 +118,7 @@ public class McpModule
         private Mode mode = STANDARD;
         private Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding = Optional.empty();
         private Optional<McpEventStreaming> eventStreaming = Optional.empty();
+        private Consumer<LinkedBindingBuilder<McpCancellationHandler>> cancellationHandlerBinding = binder -> binder.toInstance(McpCancellationHandler.DEFAULT);
 
         private Builder()
         {
@@ -163,6 +167,13 @@ public class McpModule
         public Builder withEventStreaming(McpEventStreaming eventStreaming)
         {
             this.eventStreaming = Optional.of(requireNonNull(eventStreaming, "eventStreaming is null"));
+            return this;
+        }
+
+        // NOTE: does nothing if sessions are not enabled
+        public Builder withCancellationHandler(Consumer<LinkedBindingBuilder<McpCancellationHandler>> cancellationHandlerBinding)
+        {
+            this.cancellationHandlerBinding = requireNonNull(cancellationHandlerBinding, "cancellationHandlerBinding is null");
             return this;
         }
 
@@ -216,7 +227,19 @@ public class McpModule
                 metadata = metadata.withCompletions(true);
             }
 
-            return new McpModule(mode, metadata, identityMapperBinding, classesSet, localTools, localPrompts, localResources, localResourceTemplates, localCompletions, sessionControllerBinding, eventStreaming);
+            return new McpModule(
+                    mode,
+                    metadata,
+                    identityMapperBinding,
+                    classesSet,
+                    localTools,
+                    localPrompts,
+                    localResources,
+                    localResourceTemplates,
+                    localCompletions,
+                    sessionControllerBinding,
+                    eventStreaming,
+                    cancellationHandlerBinding);
         }
     }
 
@@ -235,10 +258,16 @@ public class McpModule
         bindCompletions(binder);
         bindSessions(binder);
         bindEventStreaming(binder);
+        bindCancellationHandler(binder);
 
         if (mode == STANDARD) {
             binder.install(new InternalMcpModule());
         }
+    }
+
+    private void bindCancellationHandler(Binder binder)
+    {
+        cancellationHandlerBinding.accept(binder.bind(McpCancellationHandler.class));
     }
 
     private void bindEventStreaming(Binder binder)

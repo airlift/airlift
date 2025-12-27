@@ -1,5 +1,6 @@
 package io.airlift.mcp.sessions;
 
+import io.airlift.mcp.model.CancelledNotification;
 import io.airlift.mcp.model.LoggingLevel;
 import io.airlift.mcp.versions.Versions;
 
@@ -14,6 +15,11 @@ public record ValueKey<T>(String name, Class<T> type)
     {
         requireNonNull(name, "name is null");
         requireNonNull(type, "type is null");
+    }
+
+    public static ValueKey<CancelledNotification> cancellationKey(Object requestId)
+    {
+        return new ValueKey<>("cancellation-notification-" + requestId, CancelledNotification.class);
     }
 
     public static <T> ValueKey<T> of(String name, Class<T> type)

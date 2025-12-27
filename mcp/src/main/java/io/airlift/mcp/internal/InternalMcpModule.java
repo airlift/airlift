@@ -16,6 +16,7 @@ public class InternalMcpModule
     {
         binder.bind(InternalMcpServer.class).in(SINGLETON);
         binder.bind(PaginationUtil.class).in(SINGLETON);
+        binder.bind(CancellationController.class).in(SINGLETON);
         binder.bind(McpServer.class).to(InternalMcpServer.class).in(SINGLETON);
 
         newSetBinder(binder, Filter.class).addBinding().to(InternalFilter.class).in(SINGLETON);
