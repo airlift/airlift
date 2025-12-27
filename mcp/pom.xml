@@ -29,6 +29,11 @@
 
         <dependency>
             <groupId>${project.groupId}</groupId>
+            <artifactId>concurrent</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
             <artifactId>configuration</artifactId>
         </dependency>
 
@@ -69,6 +74,11 @@
         </dependency>
 
         <dependency>
+            <groupId>jakarta.annotation</groupId>
+            <artifactId>jakarta.annotation-api</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>jakarta.servlet</groupId>
             <artifactId>jakarta.servlet-api</artifactId>
         </dependency>
@@ -96,12 +106,6 @@
 
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>concurrent</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>${project.groupId}</groupId>
             <artifactId>configuration-testing</artifactId>
             <scope>runtime</scope>
         </dependency>
@@ -109,12 +113,6 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>node</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>jakarta.annotation</groupId>
-            <artifactId>jakarta.annotation-api</artifactId>
             <scope>runtime</scope>
         </dependency>
 

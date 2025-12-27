@@ -38,6 +38,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.inject.Scopes.SINGLETON;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
@@ -61,6 +62,7 @@ public class McpModule
     private final Set<ResourceTemplateHandlerProvider> resourceTemplates;
     private final Set<CompletionHandlerProvider> completions;
     private final Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding;
+    private final Consumer<LinkedBindingBuilder<McpCancellationHandler>> cancellationHandlerBinding;
 
     public static Builder builder()
     {
@@ -77,7 +79,8 @@ public class McpModule
             Set<ResourceHandlerProvider> resources,
             Set<ResourceTemplateHandlerProvider> resourceTemplates,
             Set<CompletionHandlerProvider> completions,
-            Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding)
+            Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding,
+            Consumer<LinkedBindingBuilder<McpCancellationHandler>> cancellationHandlerBinding)
     {
         this.mode = requireNonNull(mode, "mode is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
@@ -89,6 +92,7 @@ public class McpModule
         this.resourceTemplates = ImmutableSet.copyOf(resourceTemplates);
         this.completions = ImmutableSet.copyOf(completions);
         this.sessionControllerBinding = requireNonNull(sessionControllerBinding, "sessionControllerBinding is null");
+        this.cancellationHandlerBinding = requireNonNull(cancellationHandlerBinding, "cancellationHandlerBinding is null");
     }
 
     public enum Mode
@@ -129,6 +133,7 @@ public class McpModule
         private McpMetadata metadata = DEFAULT;
         private Mode mode = STANDARD;
         private Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding = Optional.empty();
+        private Consumer<LinkedBindingBuilder<McpCancellationHandler>> cancellationHandlerBinding = binder -> binder.toInstance(McpCancellationHandler.DEFAULT);
 
         private Builder()
         {
@@ -166,6 +171,14 @@ public class McpModule
             checkArgument(this.sessionControllerBinding.isEmpty(), "Session controller binding is already set");
 
             this.sessionControllerBinding = Optional.of(sessionControllerBinding);
+            return this;
+        }
+
+        public Builder withCancellationHandler(Consumer<LinkedBindingBuilder<McpCancellationHandler>> cancellationHandlerBinding)
+        {
+            checkState(sessionControllerBinding.isPresent(), "Session controller binding is required for cancellation support");
+
+            this.cancellationHandlerBinding = requireNonNull(cancellationHandlerBinding, "cancellationHandlerBinding is null");
             return this;
         }
 
@@ -208,7 +221,18 @@ public class McpModule
 
             IdentityMapperBinding localIdentityMapperBinding = identityMapperBinding.orElseThrow(() -> new IllegalStateException("Identity mapper binding is required"));
 
-            return new McpModule(mode, metadata, localIdentityMapperBinding, classesSet, localTools, localPrompts, localResources, localResourceTemplates, localCompletions, sessionControllerBinding);
+            return new McpModule(
+                    mode,
+                    metadata,
+                    localIdentityMapperBinding,
+                    classesSet,
+                    localTools,
+                    localPrompts,
+                    localResources,
+                    localResourceTemplates,
+                    localCompletions,
+                    sessionControllerBinding,
+                    cancellationHandlerBinding);
         }
     }
 
@@ -230,6 +254,7 @@ public class McpModule
         bindIdentityMapper(binder);
         bindCompletions(binder);
         bindSessions(binder);
+        bindCancellation(binder);
 
         if (mode == STANDARD) {
             binder.install(new InternalMcpModule());
@@ -240,6 +265,12 @@ public class McpModule
     {
         identityMapperBinding.identityMapperBinding.accept(binder.bind(McpIdentityMapper.class));
         binder.bind(IdentityMapperMetadata.class).toInstance(new IdentityMapperMetadata(identityMapperBinding.identityType));
+    }
+
+    private void bindCancellation(Binder binder)
+    {
+        binder.bind(CancellationController.class).in(SINGLETON);
+        cancellationHandlerBinding.accept(binder.bind(McpCancellationHandler.class));
     }
 
     private void bindSessions(Binder binder)

@@ -34,6 +34,7 @@ public interface Constants
     String NOTIFICATION_PROMPTS_LIST_CHANGED = "notifications/prompts/list_changed";
     String NOTIFICATION_MESSAGE = "notifications/message";
     String NOTIFICATION_ROOTS_LIST_CHANGED = "notifications/roots/list_changed";
+    String NOTIFICATION_CANCELLED = "notifications/cancelled";
 
     String HEADER_SESSION_ID = "Mcp-Session-Id";
     String HEADER_PROTOCOL_VERSION = "MCP-Protocol-Version";

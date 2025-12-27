@@ -1,5 +1,6 @@
 package io.airlift.mcp;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
@@ -28,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.mcp.McpException.exception;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SuppressWarnings({"unused", "FieldCanBeLocal"})
@@ -37,6 +39,7 @@ public class TestingEndpoints
     private final Set<ToolEntry> tools;
     private final Set<PromptEntry> prompts;
     private final Set<ResourceEntry> resources;
+    private final SleepToolController sleepToolController;
     private volatile String example2Content = "This is the content of file://example2.txt";
     private volatile String example1Content = "This is the content of file://example1.txt";
 
@@ -45,13 +48,15 @@ public class TestingEndpoints
             McpServer mcpServer,
             Set<ToolEntry> tools,
             Set<PromptEntry> prompts,
-            Set<ResourceEntry> resources)
+            Set<ResourceEntry> resources,
+            SleepToolController sleepToolController)
     {
         this.mcpServer = requireNonNull(mcpServer, "mcpServer is null");
 
         this.tools = ImmutableSet.copyOf(tools);
         this.prompts = ImmutableSet.copyOf(prompts);
         this.resources = ImmutableSet.copyOf(resources);
+        this.sleepToolController = requireNonNull(sleepToolController, "sleepToolController is null");
     }
 
     @McpTool(name = "add", description = "Add two numbers")
@@ -234,6 +239,40 @@ public class TestingEndpoints
                     default -> throw new IllegalArgumentException("Unknown resource session version name: " + name);
                 }
             }
+        }
+    }
+
+    @McpTool(name = "sleep", description = "Sleep for a specified number of seconds")
+    public String sleepForSeconds(String name, int secondsToSleep)
+    {
+        sleepToolController.startedLatch().release();
+
+        long msToSleep = TimeUnit.SECONDS.toMillis(secondsToSleep);
+
+        try {
+            while (true) {
+                Stopwatch stopwatch = Stopwatch.createStarted();
+                String exitName = sleepToolController.namesThatShouldExit().poll(msToSleep, MILLISECONDS);
+                msToSleep -= stopwatch.elapsed(MILLISECONDS);
+
+                if ((exitName == null) || (msToSleep <= 0)) {
+                    return "timeout";
+                }
+
+                if (exitName.equals(name)) {
+                    return "success";
+                }
+
+                // it's not ours - add it back
+                sleepToolController.namesThatShouldExit().add(exitName);
+            }
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return "interrupted";
+        }
+        finally {
+            sleepToolController.namesThatHaveExited().add(name);
         }
     }
 }
