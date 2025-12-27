@@ -3,11 +3,21 @@ package io.airlift.mcp.model;
 import com.google.common.collect.ImmutableList;
 
 import java.util.List;
+import java.util.Optional;
 
-public record ListPromptsResult(List<Prompt> prompts)
+import static java.util.Objects.requireNonNull;
+
+public record ListPromptsResult(List<Prompt> prompts, Optional<String> nextCursor)
+        implements PaginatedResult
 {
     public ListPromptsResult
     {
         prompts = ImmutableList.copyOf(prompts);
+        requireNonNull(nextCursor, "nextCursor is null");
+    }
+
+    public ListPromptsResult(List<Prompt> prompts)
+    {
+        this(prompts, Optional.empty());
     }
 }
