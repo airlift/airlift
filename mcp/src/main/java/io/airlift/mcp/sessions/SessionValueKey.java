@@ -1,5 +1,6 @@
 package io.airlift.mcp.sessions;
 
+import io.airlift.mcp.model.CancelledNotification;
 import io.airlift.mcp.model.LoggingLevel;
 import io.airlift.mcp.versions.ResourceVersion;
 import io.airlift.mcp.versions.SystemListVersions;
@@ -15,6 +16,11 @@ public record SessionValueKey<T>(String name, Class<T> type)
     {
         requireNonNull(name, "name is null");
         requireNonNull(type, "type is null");
+    }
+
+    public static SessionValueKey<CancelledNotification> cancellationKey(Object requestId)
+    {
+        return new SessionValueKey<>("cancellation-notification-" + requestId, CancelledNotification.class);
     }
 
     public static SessionValueKey<ResourceVersion> resourceVersionKey(String uri)

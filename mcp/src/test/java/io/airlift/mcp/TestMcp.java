@@ -8,11 +8,12 @@ import com.google.common.io.Closer;
 import com.google.common.reflect.TypeToken;
 import io.airlift.http.client.FullJsonResponseHandler;
 import io.airlift.http.client.HttpClient;
-import io.airlift.http.client.JsonBodyGenerator;
 import io.airlift.http.client.Request;
 import io.airlift.http.server.HttpServerInfo;
 import io.airlift.http.server.testing.TestingHttpServer;
 import io.airlift.json.JsonCodecFactory;
+import io.airlift.log.Logger;
+import io.airlift.mcp.model.CancelledNotification;
 import io.airlift.mcp.model.JsonRpcRequest;
 import io.airlift.mcp.sessions.MemorySessionController;
 import io.airlift.mcp.sessions.SessionController;
@@ -42,31 +43,43 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 import org.assertj.core.api.ListAssert;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.inject.Scopes.SINGLETON;
 import static io.airlift.http.client.FullJsonResponseHandler.createFullJsonResponseHandler;
+import static io.airlift.http.client.JsonBodyGenerator.jsonBodyGenerator;
 import static io.airlift.http.client.Request.Builder.prepareDelete;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.Request.Builder.preparePost;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
+import static io.airlift.json.JsonCodec.jsonCodec;
 import static io.airlift.mcp.TestingClient.buildClient;
 import static io.airlift.mcp.TestingIdentityMapper.ERRORED_IDENTITY;
 import static io.airlift.mcp.TestingIdentityMapper.EXPECTED_IDENTITY;
 import static io.airlift.mcp.TestingIdentityMapper.IDENTITY_HEADER;
+import static io.airlift.mcp.model.Constants.NOTIFICATION_CANCELLED;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INTERNAL_ERROR;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
 import static io.modelcontextprotocol.spec.HttpHeaders.MCP_SESSION_ID;
@@ -88,6 +101,8 @@ import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 @TestInstance(PER_CLASS)
 public class TestMcp
 {
+    private static final Logger log = Logger.get(TestMcp.class);
+
     private final Closer closer = Closer.create();
     private final TestingClient client1;
     private final TestingClient client2;
@@ -100,7 +115,9 @@ public class TestMcp
     public TestMcp()
     {
         // the reference client doesn't track HTTP GET notifications
-        Map<String, String> properties = ImmutableMap.of("mcp.http-get-events.enabled", "false");
+        Map<String, String> properties = ImmutableMap.of(
+                "mcp.http-get-events.enabled", "false",
+                "mcp.cancellation.check-interval", "1ms");
 
         testingServer = new TestingServer(properties, Optional.empty(), builder -> builder
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
@@ -164,7 +181,7 @@ public class TestMcp
         Request request = preparePost().setUri(uri)
                 .addHeader("Content-Type", "application/json")
                 .addHeader(IDENTITY_HEADER, EXPECTED_IDENTITY)
-                .setBodyGenerator(JsonBodyGenerator.jsonBodyGenerator(jsonCodecFactory.jsonCodec(new TypeToken<JsonRpcRequest<?>>() {}), rpcRequest))
+                .setBodyGenerator(jsonBodyGenerator(jsonCodecFactory.jsonCodec(new TypeToken<JsonRpcRequest<?>>() {}), rpcRequest))
                 .build();
 
         FullJsonResponseHandler.JsonResponse<Object> response = httpClient.execute(request, createFullJsonResponseHandler(jsonCodecFactory.jsonCodec(new TypeToken<>() {})));
@@ -177,7 +194,7 @@ public class TestMcp
                 .addHeader("Content-Type", "application/json")
                 .addHeader("Accept", "application/json, text/event-stream")
                 .addHeader(IDENTITY_HEADER, "Mr. Tester")
-                .setBodyGenerator(JsonBodyGenerator.jsonBodyGenerator(jsonCodecFactory.jsonCodec(new TypeToken<>() {}), new io.airlift.mcp.model.ListToolsResult(ImmutableList.of())))
+                .setBodyGenerator(jsonBodyGenerator(jsonCodecFactory.jsonCodec(new TypeToken<>() {}), new io.airlift.mcp.model.ListToolsResult(ImmutableList.of())))
                 .build();
         response = httpClient.execute(request, createFullJsonResponseHandler(jsonCodecFactory.jsonCodec(new TypeToken<>() {})));
         assertThat(response.getStatusCode()).isEqualTo(400);
@@ -249,7 +266,7 @@ public class TestMcp
         ListToolsResult listToolsResult = client1.mcpClient().listTools();
         assertThat(listToolsResult.tools())
                 .extracting(Tool::name)
-                .containsExactlyInAnyOrder("add", "throws", "addThree", "addFirstTwoAndAllThree", "progress", "log", "setVersion");
+                .containsExactlyInAnyOrder("add", "throws", "addThree", "addFirstTwoAndAllThree", "progress", "log", "setVersion", "sleep");
 
         CallToolResult callToolResult = client1.mcpClient().callTool(new CallToolRequest("add", ImmutableMap.of("a", 1, "b", 2)));
         assertThat(callToolResult.content())
@@ -492,6 +509,108 @@ public class TestMcp
         assertChanges(client1.changes(), 2).containsExactlyInAnyOrder("tools", "prompts");
         assertChanges(client2.changes(), 2).containsExactlyInAnyOrder("tools", "prompts");
         assertChanges(localClient.changes(), 2).containsExactlyInAnyOrder("tools", "prompts");
+    }
+
+    @RepeatedTest(5)
+    public void testCancellation()
+            throws Exception
+    {
+        SleepToolController sleepToolController = testingServer.injector().getInstance(SleepToolController.class);
+        sleepToolController.reset();
+
+        // control run to make sure it exits as expected after sleep time
+
+        CallToolResult callToolResult = client1.mcpClient().callTool(new CallToolRequest("sleep", ImmutableMap.of("name", "dummy", "secondsToSleep", 3)));
+        assertThat(callToolResult.content())
+                .hasSize(1)
+                .first()
+                .asInstanceOf(type(TextContent.class))
+                .extracting(TextContent::text)
+                .isEqualTo("timeout");
+
+        sleepToolController.reset();
+
+        // start multiple calls to the sleep() tool that will sleep for 1 day (i.e. forever for our purposes)
+
+        int threadQty = 10;
+        ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
+
+        Map<String, Future<CallToolResult>> runs = IntStream.range(0, threadQty)
+                .mapToObj(index -> {
+                    String name = "run-" + index;
+                    Callable<CallToolResult> callToolResultCallable = () -> client1.mcpClient().callTool(new CallToolRequest("sleep", ImmutableMap.of("name", name, "secondsToSleep", (int) TimeUnit.DAYS.toSeconds(1))));
+                    Future<CallToolResult> future = executorService.submit(callToolResultCallable);
+                    return Map.entry(name, future);
+                })
+                .collect(toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        // wait for all the sleep() tool runs to start
+        assertThat(sleepToolController.startedLatch().tryAcquire(threadQty, 5, SECONDS)).isTrue();
+
+        // they should all be registered in the CancellationController
+        Collection<Object> activeRequestIds = testingServer.injector().getInstance(CancellationController.class).activeRequestIds();
+        assertThat(activeRequestIds).hasSize(threadQty);
+
+        // choose a random run's request ID to cancel
+        Object requestId = ImmutableList.copyOf(activeRequestIds).get(ThreadLocalRandom.current().nextInt(threadQty));
+
+        // send a cancellation notification for the random run
+        URI uri = testingServer.injector().getInstance(HttpServerInfo.class).getHttpUri().resolve("/mcp");
+        CancelledNotification cancelledNotification = new CancelledNotification(requestId, Optional.of("Just because"));
+        JsonRpcRequest<CancelledNotification> jsonRpcRequest = JsonRpcRequest.buildNotification(NOTIFICATION_CANCELLED, cancelledNotification);
+
+        // can't know which session it is - try em all
+        sessionController.sessionIds().forEach(sessionId -> {
+            Request request = preparePost().setUri(uri)
+                    .addHeader("Content-Type", "application/json")
+                    .addHeader("Accept", "application/json, text/event-stream")
+                    .addHeader(IDENTITY_HEADER, EXPECTED_IDENTITY)
+                    .addHeader(MCP_SESSION_ID, sessionId.id())
+                    .setBodyGenerator(jsonBodyGenerator(jsonCodec(new TypeToken<>() {}), jsonRpcRequest))
+                    .build();
+            httpClient.execute(request, createStatusResponseHandler());
+        });
+
+        // wait for one of the sleep() tool runs to exit
+        String exitName = sleepToolController.namesThatHaveExited().poll(10, SECONDS);
+        assertThat(exitName).isNotNull();
+        log.info("Sleep tool run with name %s was cancelled", exitName);
+
+        // figure out which thread it belongs to
+        Future<CallToolResult> interruptedFuture = runs.get(exitName);
+        assertThat(interruptedFuture).isNotNull();
+
+        // the interrupted tool run should return "interrupted"
+        callToolResult = interruptedFuture.get(10, SECONDS);
+        assertThat(callToolResult.content())
+                .hasSize(1)
+                .first()
+                .asInstanceOf(type(TextContent.class))
+                .extracting(TextContent::text)
+                .isEqualTo("interrupted");
+
+        // the other tool runs should still be running
+        // send them all a signal via sleepToolController for them to exit
+        // they should all exit with "success"
+        runs.entrySet().stream()
+                .filter(entry -> !entry.getKey().equals(exitName))
+                .forEach(entry -> {
+                    try {
+                        assertThat(entry.getValue().isDone()).isFalse();
+                        sleepToolController.namesThatShouldExit().add(entry.getKey());
+
+                        CallToolResult result = entry.getValue().get(5, SECONDS);
+                        assertThat(result.content())
+                                .hasSize(1)
+                                .first()
+                                .asInstanceOf(type(TextContent.class))
+                                .extracting(TextContent::text)
+                                .isEqualTo("success");
+                    }
+                    catch (Exception e) {
+                        fail(e);
+                    }
+                });
     }
 
     private ListAssert<String> assertChanges(BlockingQueue<String> changes, int qty)
