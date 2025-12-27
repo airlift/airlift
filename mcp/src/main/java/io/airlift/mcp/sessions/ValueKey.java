@@ -1,6 +1,7 @@
 package io.airlift.mcp.sessions;
 
 import io.airlift.mcp.model.CancelledNotification;
+import io.airlift.mcp.model.InitializeRequest.ClientCapabilities;
 import io.airlift.mcp.model.LoggingLevel;
 import io.airlift.mcp.versions.Versions;
 
@@ -10,6 +11,7 @@ public record ValueKey<T>(String name, Class<T> type)
 {
     public static final ValueKey<LoggingLevel> LOGGING_LEVEL = of(LoggingLevel.class);
     public static final ValueKey<Versions> SESSION_VERSIONS = of(Versions.class);
+    public static final ValueKey<ClientCapabilities> CLIENT_CAPABILITIES = of(ClientCapabilities.class);
 
     public ValueKey
     {

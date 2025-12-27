@@ -3,6 +3,7 @@ package io.airlift.mcp.internal;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.airlift.mcp.McpRequestContext;
 import io.airlift.mcp.handler.MessageWriter;
+import io.airlift.mcp.model.InitializeRequest.ClientCapabilities;
 import io.airlift.mcp.model.JsonRpcRequest;
 import io.airlift.mcp.model.LoggingLevel;
 import io.airlift.mcp.model.LoggingMessageNotification;
@@ -21,6 +22,7 @@ import static io.airlift.mcp.model.Constants.METHOD_PING;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_MESSAGE;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_PROGRESS;
 import static io.airlift.mcp.model.JsonRpcRequest.buildNotification;
+import static io.airlift.mcp.sessions.ValueKey.CLIENT_CAPABILITIES;
 import static io.airlift.mcp.sessions.ValueKey.LOGGING_LEVEL;
 import static java.util.Objects.requireNonNull;
 
@@ -79,6 +81,16 @@ class InternalRequestContext
             LoggingMessageNotification logNotification = new LoggingMessageNotification(level, logger, data);
             internalSendMessage(NOTIFICATION_MESSAGE, Optional.of(logNotification));
         }
+    }
+
+    @Override
+    public ClientCapabilities clientCapabilities()
+    {
+        SessionController localSessionController = sessionController.orElseThrow(() -> new IllegalStateException("Sessions not enabled"));
+        SessionId sessionId = requireSessionId(request);
+
+        return localSessionController.getSessionValue(sessionId, CLIENT_CAPABILITIES)
+                .orElseThrow(() -> exception("Session does not contain client capabilities"));
     }
 
     static SessionId requireSessionId(HttpServletRequest request)

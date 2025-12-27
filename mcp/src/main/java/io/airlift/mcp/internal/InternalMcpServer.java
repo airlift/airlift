@@ -81,6 +81,7 @@ import static io.airlift.mcp.model.Constants.PROTOCOL_MCP_2025_11_25;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
 import static io.airlift.mcp.model.JsonRpcErrorCode.RESOURCE_NOT_FOUND;
+import static io.airlift.mcp.sessions.ValueKey.CLIENT_CAPABILITIES;
 import static io.airlift.mcp.sessions.ValueKey.LOGGING_LEVEL;
 import static io.airlift.mcp.sessions.ValueKey.SESSION_VERSIONS;
 import static io.airlift.mcp.versions.VersionType.RESOURCE;
@@ -229,7 +230,9 @@ public class InternalMcpServer
         boolean sessionsEnabled = sessionController.map(controller -> {
             SessionId sessionId = controller.createSession(request);
             response.addHeader(MCP_SESSION_ID, sessionId.id());
+
             controller.setSessionValue(sessionId, LOGGING_LEVEL, LoggingLevel.INFO);
+            controller.setSessionValue(sessionId, CLIENT_CAPABILITIES, initializeRequest.capabilities());
             VersionUtil.initializeSession(controller, sessionId);
 
             return true;

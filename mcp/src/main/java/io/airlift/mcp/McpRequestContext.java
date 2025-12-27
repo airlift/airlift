@@ -1,5 +1,6 @@
 package io.airlift.mcp;
 
+import io.airlift.mcp.model.InitializeRequest.ClientCapabilities;
 import io.airlift.mcp.model.LoggingLevel;
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -19,6 +20,13 @@ public interface McpRequestContext
     }
 
     default void sendLog(LoggingLevel level, Optional<String> logger, Optional<Object> data)
+    {
+        // only implemented when sessions are configured
+
+        throw new UnsupportedOperationException();
+    }
+
+    default ClientCapabilities clientCapabilities()
     {
         // only implemented when sessions are configured
 
