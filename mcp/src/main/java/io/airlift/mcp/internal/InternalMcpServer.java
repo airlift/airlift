@@ -94,6 +94,7 @@ import static io.airlift.mcp.model.Constants.PROTOCOL_MCP_2025_06_18;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
 import static io.airlift.mcp.model.JsonRpcErrorCode.RESOURCE_NOT_FOUND;
+import static io.airlift.mcp.sessions.SessionValueKey.CLIENT_CAPABILITIES;
 import static io.airlift.mcp.sessions.SessionValueKey.LOGGING_LEVEL;
 import static io.airlift.mcp.sessions.SessionValueKey.SYSTEM_LIST_VERSIONS;
 import static io.airlift.mcp.sessions.SessionValueKey.resourceVersionKey;
@@ -224,6 +225,7 @@ public class InternalMcpServer
 
             controller.setSessionValue(sessionId, LOGGING_LEVEL, LoggingLevel.INFO);
             controller.setSessionValue(sessionId, SYSTEM_LIST_VERSIONS, buildSystemListVersions());
+            controller.setSessionValue(sessionId, CLIENT_CAPABILITIES, initializeRequest.capabilities());
 
             return true;
         }).orElse(false);
