@@ -18,6 +18,7 @@ variations of MCP servers defined by the standard. This module supports:
 - Structured content [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/tools#structured-content)
 - Progress notifications [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/progress)
 - Completions [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/completion)
+- Pagination [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/pagination)
 
 This module does not currently support:
 
@@ -26,7 +27,6 @@ This module does not currently support:
 - List changed events [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/lifecycle#initialization)
 - Subscriptions [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/lifecycle#initialization)
 - Server-sent logging [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/logging)
-- Pagination [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/pagination)
 - Elicitation [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/client/elicitation)
 - Roots [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/client/roots)
 - Sampling [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/client/sampling)
