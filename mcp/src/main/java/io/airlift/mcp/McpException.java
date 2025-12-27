@@ -18,6 +18,13 @@ public class McpException
         this.errorDetail = requireNonNull(errorDetail, "errorDetail is null");
     }
 
+    public McpException(Throwable cause, JsonRpcErrorDetail errorDetail)
+    {
+        super(cause);
+
+        this.errorDetail = requireNonNull(errorDetail, "errorDetail is null");
+    }
+
     public JsonRpcErrorDetail errorDetail()
     {
         return errorDetail;
@@ -51,5 +58,11 @@ public class McpException
     {
         JsonRpcErrorDetail detail = new JsonRpcErrorDetail(code, message, data);
         return new McpException(detail);
+    }
+
+    public static McpException exception(Throwable cause)
+    {
+        JsonRpcErrorDetail detail = new JsonRpcErrorDetail(INVALID_REQUEST, Optional.ofNullable(cause.getMessage()).orElse("Internal error"), Optional.empty());
+        return new McpException(cause, detail);
     }
 }

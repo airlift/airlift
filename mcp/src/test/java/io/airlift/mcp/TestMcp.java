@@ -1,299 +1,270 @@
-/*
- * Copyright Starburst Data, Inc. All rights reserved.
- *
- * THIS IS UNPUBLISHED PROPRIETARY SOURCE CODE OF STARBURST DATA.
- * The copyright notice above does not evidence any
- * actual or intended publication of such source code.
- *
- * Redistribution of this material is strictly prohibited.
- */
 package io.airlift.mcp;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
+import com.google.common.io.Closer;
 import com.google.common.reflect.TypeToken;
-import com.google.inject.Injector;
-import com.google.inject.Key;
-import com.google.inject.Module;
-import io.airlift.bootstrap.Bootstrap;
-import io.airlift.bootstrap.LifeCycleManager;
 import io.airlift.http.client.FullJsonResponseHandler;
-import io.airlift.http.client.FullJsonResponseHandler.JsonResponse;
 import io.airlift.http.client.HttpClient;
-import io.airlift.http.client.JsonBodyGenerator;
 import io.airlift.http.client.Request;
 import io.airlift.http.server.HttpServerInfo;
-import io.airlift.http.server.testing.TestingHttpServerModule;
-import io.airlift.jaxrs.JaxrsModule;
-import io.airlift.json.JsonModule;
-import io.airlift.mcp.model.CallToolRequest;
-import io.airlift.mcp.model.CallToolResult;
-import io.airlift.mcp.model.Content.TextContent;
-import io.airlift.mcp.model.GetPromptRequest;
-import io.airlift.mcp.model.GetPromptResult;
-import io.airlift.mcp.model.GetPromptResult.PromptMessage;
-import io.airlift.mcp.model.JsonRpcErrorDetail;
+import io.airlift.http.server.testing.TestingHttpServer;
+import io.airlift.json.JsonCodecFactory;
+import io.airlift.log.Logger;
+import io.airlift.mcp.internal.CancellationController;
+import io.airlift.mcp.model.CancelledNotification;
 import io.airlift.mcp.model.JsonRpcRequest;
-import io.airlift.mcp.model.JsonRpcResponse;
-import io.airlift.mcp.model.ListPromptsResult;
-import io.airlift.mcp.model.ListResourcesResult;
-import io.airlift.mcp.model.ListToolsResult;
-import io.airlift.mcp.model.Prompt;
-import io.airlift.mcp.model.ReadResourceRequest;
-import io.airlift.mcp.model.ReadResourceResult;
-import io.airlift.mcp.model.Resource;
-import io.airlift.mcp.model.ResourceContents;
-import io.airlift.mcp.model.StructuredContent;
-import io.airlift.mcp.model.Tool;
-import io.airlift.node.NodeModule;
+import io.airlift.mcp.sessions.MemorySessionController;
+import io.airlift.mcp.sessions.SessionController;
+import io.airlift.mcp.sessions.SessionId;
+import io.modelcontextprotocol.spec.McpError;
+import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
+import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
+import io.modelcontextprotocol.spec.McpSchema.CompleteRequest;
+import io.modelcontextprotocol.spec.McpSchema.CompleteRequest.CompleteArgument;
+import io.modelcontextprotocol.spec.McpSchema.CompleteResult;
+import io.modelcontextprotocol.spec.McpSchema.GetPromptRequest;
+import io.modelcontextprotocol.spec.McpSchema.GetPromptResult;
+import io.modelcontextprotocol.spec.McpSchema.JSONRPCResponse.JSONRPCError;
+import io.modelcontextprotocol.spec.McpSchema.ListPromptsResult;
+import io.modelcontextprotocol.spec.McpSchema.ListResourcesResult;
+import io.modelcontextprotocol.spec.McpSchema.ListToolsResult;
+import io.modelcontextprotocol.spec.McpSchema.Prompt;
+import io.modelcontextprotocol.spec.McpSchema.PromptMessage;
+import io.modelcontextprotocol.spec.McpSchema.PromptReference;
+import io.modelcontextprotocol.spec.McpSchema.ReadResourceRequest;
+import io.modelcontextprotocol.spec.McpSchema.ReadResourceResult;
+import io.modelcontextprotocol.spec.McpSchema.Resource;
+import io.modelcontextprotocol.spec.McpSchema.ResourceReference;
+import io.modelcontextprotocol.spec.McpSchema.TextContent;
+import io.modelcontextprotocol.spec.McpSchema.TextResourceContents;
+import io.modelcontextprotocol.spec.McpSchema.Tool;
+import org.assertj.core.api.ListAssert;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
 
+import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.inject.Scopes.SINGLETON;
 import static io.airlift.http.client.FullJsonResponseHandler.createFullJsonResponseHandler;
-import static io.airlift.http.client.HttpClientBinder.httpClientBinder;
+import static io.airlift.http.client.JsonBodyGenerator.jsonBodyGenerator;
+import static io.airlift.http.client.Request.Builder.prepareDelete;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.Request.Builder.preparePost;
+import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static io.airlift.json.JsonCodec.jsonCodec;
+import static io.airlift.mcp.TestingClient.buildClient;
 import static io.airlift.mcp.TestingIdentityMapper.ERRORED_IDENTITY;
 import static io.airlift.mcp.TestingIdentityMapper.EXPECTED_IDENTITY;
+import static io.airlift.mcp.TestingIdentityMapper.IDENTITY_HEADER;
+import static io.airlift.mcp.model.Constants.NOTIFICATION_CANCELLED;
+import static io.airlift.mcp.model.JsonRpcErrorCode.INTERNAL_ERROR;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
+import static io.modelcontextprotocol.spec.HttpHeaders.MCP_SESSION_ID;
+import static io.modelcontextprotocol.spec.McpSchema.ErrorCodes.RESOURCE_NOT_FOUND;
+import static io.modelcontextprotocol.spec.McpSchema.LoggingLevel.ALERT;
+import static io.modelcontextprotocol.spec.McpSchema.LoggingLevel.DEBUG;
+import static io.modelcontextprotocol.spec.McpSchema.LoggingLevel.EMERGENCY;
 import static jakarta.servlet.http.HttpServletResponse.SC_METHOD_NOT_ALLOWED;
 import static jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.InstanceOfAssertFactories.list;
 import static org.assertj.core.api.InstanceOfAssertFactories.type;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 
 @TestInstance(PER_CLASS)
 public class TestMcp
 {
-    public static final String IDENTITY_HEADER = "X-Testing-Identity";
+    private static final Logger log = Logger.get(TestMcp.class);
 
+    private final Closer closer = Closer.create();
+    private final TestingClient client1;
+    private final TestingClient client2;
+    private final String baseUri;
     private final HttpClient httpClient;
-    private final Injector injector;
-    private final URI baseUri;
     private final ObjectMapper objectMapper;
+    private final TestingServer testingServer;
+    private final MemorySessionController sessionController;
 
     public TestMcp()
     {
-        Module mcpModule = McpModule.builder()
-                .withAllInClass(TestingEndpoints.class)
+        testingServer = new TestingServer(Optional.empty(), builder -> builder
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
-                .build();
+                .withSessions(binding -> binding.to(MemorySessionController.class).in(SINGLETON))
+                .build());
+        closer.register(testingServer);
 
-        ImmutableList.Builder<Module> modules = ImmutableList.<Module>builder()
-                .add(mcpModule)
-                .add(binder -> httpClientBinder(binder).bindHttpClient("test", ForTest.class))
-                .add(new NodeModule())
-                .add(new TestingHttpServerModule(getClass().getName()))
-                .add(new JaxrsModule())
-                .add(new JsonModule());
+        baseUri = testingServer.injector().getInstance(TestingHttpServer.class).getBaseUrl().toString();
 
-        ImmutableMap.Builder<String, String> serverProperties = ImmutableMap.<String, String>builder()
-                .put("node.environment", "testing");
+        client1 = buildClient(closer, baseUri, "Client 1");
+        client2 = buildClient(closer, baseUri, "Client 2");
 
-        Bootstrap app = new Bootstrap(modules.build());
-        injector = app.setRequiredConfigurationProperties(serverProperties.build()).initialize();
-
-        httpClient = injector.getInstance(Key.get(HttpClient.class, ForTest.class));
-        baseUri = injector.getInstance(HttpServerInfo.class).getHttpUri().resolve("/mcp");
-        objectMapper = injector.getInstance(ObjectMapper.class);
+        httpClient = testingServer.httpClient();
+        objectMapper = testingServer.injector().getInstance(ObjectMapper.class);
+        sessionController = (MemorySessionController) testingServer.injector().getInstance(SessionController.class);
     }
 
     @AfterAll
     public void shutdown()
+            throws IOException
     {
-        injector.getInstance(LifeCycleManager.class).stop();
+        closer.close();
     }
 
-    static Stream<JsonRpcRequest<?>> authRpcRequests()
+    @AfterEach
+    public void reset()
     {
-        return Stream.of(
-                JsonRpcRequest.buildRequest(1, "tools/list"),
-                JsonRpcRequest.buildRequest(1, "tools/call", new CallToolRequest("add", ImmutableMap.of("a", 1, "b", 2))),
-                JsonRpcRequest.buildRequest(1, "prompts/list", 1),
-                JsonRpcRequest.buildRequest(1, "prompts/get", new GetPromptRequest("greeting", ImmutableMap.of("name", "Galt"))),
-                JsonRpcRequest.buildRequest(1, "resources/list"),
-                JsonRpcRequest.buildRequest(1, "resources/read", new ReadResourceRequest("file://example1.txt")));
+        Stream.of(client1, client2).forEach(TestingClient::reset);
     }
 
-    @ParameterizedTest
-    @MethodSource("authRpcRequests")
-    public void testAuth(JsonRpcRequest<?> request)
+    @Test
+    public void testBadAuth()
     {
-        // No identity header
-        JsonResponse<JsonRpcResponse<?>> response = rpcCall("", request);
-        assertThat(response.getStatusCode()).isEqualTo(401);
-        assertThat(response.getHeaders("WWW-Authenticate")).hasSize(1).first().isEqualTo(IDENTITY_HEADER);
-        assertThat(response.getResponseBody()).contains("Empty or missing identity header");
+        assertThatThrownBy(() -> buildClient(closer, baseUri, "no-token", ""))
+                .rootCause()
+                .hasMessageContaining("\"status\":\"401\"")
+                .hasMessageContaining("Empty or missing identity header");
 
-        // Invalid identity header
-        response = rpcCall("Invalid Identity", request);
-        assertThat(response.getStatusCode()).isEqualTo(403);
-        assertThat(response.getHeaders("WWW-Authenticate")).isEmpty();
-        assertThat(response.getResponseBody()).contains("Identity Invalid Identity is not authorized to access");
+        assertThatThrownBy(() -> buildClient(closer, baseUri, "invalid-token", "Invalid Identity"))
+                .rootCause()
+                .hasMessageContaining("\"status\":\"403\"")
+                .hasMessageContaining("Identity Invalid Identity is not authorized to access");
 
-        response = rpcCall(ERRORED_IDENTITY, request);
-        assertThat(response.getStatusCode()).isEqualTo(500);
-        assertThat(response.getHeaders("WWW-Authenticate")).isEmpty();
-        assertThat(response.getResponseBody()).contains("This identity cannot catch a break");
-
-        // Valid identity header
-        response = rpcCall(EXPECTED_IDENTITY, request);
-        assertThat(response.getStatusCode()).isEqualTo(200);
+        assertThatThrownBy(() -> buildClient(closer, baseUri, "error-token", ERRORED_IDENTITY))
+                .rootCause()
+                .hasMessageContaining("\"code\":" + INTERNAL_ERROR.code())
+                .hasMessageContaining("\"message\":\"This identity cannot catch a break");
     }
 
     @Test
     public void testInvalidRpcRequests()
     {
-        CallToolRequest callToolRequest = new CallToolRequest("add", ImmutableMap.of("a", 1, "b", 2));
-        JsonRpcRequest<?> jsonrpcRequest = JsonRpcRequest.buildRequest(1, "tools/call", callToolRequest);
+        io.airlift.mcp.model.CallToolRequest callToolRequest = new io.airlift.mcp.model.CallToolRequest("add", ImmutableMap.of("a", 1, "b", 2));
+        JsonRpcRequest<?> rpcRequest = JsonRpcRequest.buildRequest(1, "tools/call", callToolRequest);
+
+        JsonCodecFactory jsonCodecFactory = new JsonCodecFactory(() -> objectMapper);
+
+        URI uri = testingServer.injector().getInstance(HttpServerInfo.class).getHttpUri().resolve("/mcp");
 
         // missing proper Accept header
-        Request request = preparePost().setUri(baseUri)
+        Request request = preparePost().setUri(uri)
                 .addHeader("Content-Type", "application/json")
-                .addHeader(IDENTITY_HEADER, "Mr. Tester")
-                .setBodyGenerator(JsonBodyGenerator.jsonBodyGenerator(jsonCodec(new TypeToken<JsonRpcRequest<?>>() {}), jsonrpcRequest))
+                .addHeader(IDENTITY_HEADER, EXPECTED_IDENTITY)
+                .setBodyGenerator(jsonBodyGenerator(jsonCodecFactory.jsonCodec(new TypeToken<JsonRpcRequest<?>>() {}), rpcRequest))
                 .build();
 
-        FullJsonResponseHandler.JsonResponse<Object> response = httpClient.execute(request, createFullJsonResponseHandler(jsonCodec(new TypeToken<>() {})));
+        FullJsonResponseHandler.JsonResponse<Object> response = httpClient.execute(request, createFullJsonResponseHandler(jsonCodecFactory.jsonCodec(new TypeToken<>() {})));
         assertThat(response.getStatusCode()).isEqualTo(400);
         assertThat(response.getResponseBody())
-                .isEqualTo("{\"message\":\"Both application/json and text/event-stream required in Accept header\"}");
+                .contains("\"message\":\"Both application/json and text/event-stream required in Accept header\"");
 
         // nonsensical object in body
-        request = preparePost().setUri(baseUri)
+        request = preparePost().setUri(uri)
                 .addHeader("Content-Type", "application/json")
                 .addHeader("Accept", "application/json, text/event-stream")
                 .addHeader(IDENTITY_HEADER, "Mr. Tester")
-                .setBodyGenerator(JsonBodyGenerator.jsonBodyGenerator(jsonCodec(new TypeToken<>() {}), new ListToolsResult(ImmutableList.of())))
+                .setBodyGenerator(jsonBodyGenerator(jsonCodecFactory.jsonCodec(new TypeToken<>() {}), new io.airlift.mcp.model.ListToolsResult(ImmutableList.of())))
                 .build();
-        response = httpClient.execute(request, createFullJsonResponseHandler(jsonCodec(new TypeToken<>() {})));
+        response = httpClient.execute(request, createFullJsonResponseHandler(jsonCodecFactory.jsonCodec(new TypeToken<>() {})));
         assertThat(response.getStatusCode()).isEqualTo(400);
         assertThat(response.getResponseBody())
-                .isEqualTo("{\"message\":\"Invalid message format\"}");
+                .contains("\"message\":\"Invalid message format\"");
     }
 
     @Test
-    public void testToolPrimitiveStructuredContent()
+    public void testLogging()
     {
-        JsonRpcRequest<?> listToolsRpcRequest = JsonRpcRequest.buildRequest(1, "tools/list");
+        client1.mcpClient().setLoggingLevel(EMERGENCY);
+        client2.mcpClient().setLoggingLevel(EMERGENCY);
 
-        JsonRpcResponse<?> listToolsResponse = rpcCall(listToolsRpcRequest);
-        ListToolsResult listToolsResult = objectMapper.convertValue(listToolsResponse.result().orElseThrow(), ListToolsResult.class);
-        assertThat(listToolsResult.tools())
-                .filteredOn(tool -> tool.name().equals("addThree"))
-                .hasSize(1)
-                .first()
-                .extracting(Tool::outputSchema)
-                .satisfies(node -> assertThat(node.isEmpty()));
+        client1.mcpClient().callTool(new CallToolRequest("log", ImmutableMap.of()));
+        client2.mcpClient().callTool(new CallToolRequest("log", ImmutableMap.of()));
+        assertThat(client1.logs()).isEmpty();
+        assertThat(client2.logs()).isEmpty();
 
-        CallToolRequest callToolRequest = new CallToolRequest("addThree", ImmutableMap.of("a", 1, "b", 2, "c", 3));
-        JsonRpcRequest<?> jsonrpcRequest = JsonRpcRequest.buildRequest(1, "tools/call", callToolRequest);
-        JsonRpcResponse<?> response = rpcCall(jsonrpcRequest);
-        CallToolResult callToolResult = objectMapper.convertValue(response.result().orElseThrow(), new TypeReference<>() {});
-        assertThat(callToolResult.structuredContent())
-                .isEmpty();
-        assertThat(callToolResult.content())
-                .hasSize(1)
-                .first()
-                .asInstanceOf(type(TextContent.class))
-                .extracting(TextContent::text)
-                .isEqualTo("6");
+        client1.mcpClient().setLoggingLevel(ALERT);
+        client2.mcpClient().setLoggingLevel(DEBUG);
+
+        client1.mcpClient().callTool(new CallToolRequest("log", ImmutableMap.of()));
+        assertThat(client1.logs()).containsExactly("This is alert");
+        assertThat(client2.logs()).isEmpty();
+
+        client2.mcpClient().callTool(new CallToolRequest("log", ImmutableMap.of()));
+        assertThat(client1.logs()).containsExactly("This is alert");
+        assertThat(client2.logs()).containsExactlyInAnyOrder("This is alert", "This is debug");
     }
 
     @Test
-    public void testToolEmbeddedStructuredContent()
+    public void testProgress()
     {
-        JsonRpcRequest<?> listToolsRpcRequest = JsonRpcRequest.buildRequest(1, "tools/list");
+        List<String> expectedProgress = IntStream.rangeClosed(0, 100)
+                .mapToObj(i -> "Progress " + i + "%")
+                .collect(toImmutableList());
 
-        JsonRpcResponse<?> listToolsResponse = rpcCall(listToolsRpcRequest);
-        ListToolsResult listToolsResult = objectMapper.convertValue(listToolsResponse.result().orElseThrow(), ListToolsResult.class);
-        assertThat(listToolsResult.tools())
-                .filteredOn(tool -> tool.name().equals("addFirstTwoAndAllThree"))
+        client1.mcpClient().callTool(new CallToolRequest("progress", ImmutableMap.of()));
+        assertThat(client1.progress()).isEqualTo(expectedProgress);
+        assertThat(client2.progress()).isEmpty();
+
+        client2.mcpClient().callTool(new CallToolRequest("progress", ImmutableMap.of()));
+        assertThat(client1.progress()).isEqualTo(expectedProgress);
+        assertThat(client2.progress()).isEqualTo(expectedProgress);
+    }
+
+    @Test
+    public void testCompletions()
+    {
+        CompleteRequest completeRequest = new CompleteRequest(new PromptReference("greeting"), new CompleteArgument("name", "Jo"));
+        CompleteResult completeResult = client1.mcpClient().completeCompletion(completeRequest);
+        assertThat(completeResult.completion().values())
                 .hasSize(1)
                 .first()
-                .extracting(Tool::outputSchema)
-                .extracting(Optional::get)
-                .satisfies(node -> {
-                    assertThat(node.get("type").asText()).isEqualTo("object");
+                .asInstanceOf(type(String.class))
+                .isEqualTo("Jordan");
 
-                    assertThat(node.get("required"))
-                            .isNotNull()
-                            .extracting(JsonNode::asText)
-                            .containsExactlyInAnyOrder("firstTwo", "allThree");
-
-                    assertThat(node.get("properties")).isNotNull();
-                    JsonNode properties = node.get("properties");
-                    assertThat(properties.fieldNames()).toIterable().containsExactlyInAnyOrder("firstTwo", "allThree");
-
-                    assertThat(properties.get("firstTwo").get("type").asText()).isEqualTo("integer");
-                    assertThat(properties.get("allThree").get("type").asText()).isEqualTo("integer");
-                });
-
-        CallToolRequest callToolRequest = new CallToolRequest("addFirstTwoAndAllThree", ImmutableMap.of("a", 1, "b", 2, "c", 3));
-        JsonRpcRequest<?> jsonrpcRequest = JsonRpcRequest.buildRequest(1, "tools/call", callToolRequest);
-        JsonRpcResponse<?> response = rpcCall(jsonrpcRequest);
-        CallToolResult twoAndThreeCallToolResult = objectMapper.convertValue(response.result().orElseThrow(), new TypeReference<>() {});
-        assertThat(twoAndThreeCallToolResult.isError()).isFalse();
-        assertThat(twoAndThreeCallToolResult.structuredContent())
-                .isPresent()
-                .get()
-                .extracting(StructuredContent::value)
-                .isEqualTo(ImmutableMap.of("firstTwo", 3, "allThree", 6));
-
-        // Test not sending an optional parameter
-        callToolRequest = new CallToolRequest("addFirstTwoAndAllThree", ImmutableMap.of("a", 1, "b", 2));
-        jsonrpcRequest = JsonRpcRequest.buildRequest(1, "tools/call", callToolRequest);
-        response = rpcCall(jsonrpcRequest);
-        twoAndThreeCallToolResult = objectMapper.convertValue(response.result().orElseThrow(), new TypeReference<>() {});
-        assertThat(twoAndThreeCallToolResult.isError()).isFalse();
-        assertThat(twoAndThreeCallToolResult.structuredContent())
-                .isPresent()
-                .get()
-                .extracting(StructuredContent::value)
-                .isEqualTo(ImmutableMap.of("firstTwo", 3, "allThree", 3));
-
-        // Test the "error" path
-        callToolRequest = new CallToolRequest("addFirstTwoAndAllThree", ImmutableMap.of("a", -1, "b", -2, "c", -3));
-        jsonrpcRequest = JsonRpcRequest.buildRequest(1, "tools/call", callToolRequest);
-        response = rpcCall(jsonrpcRequest);
-        twoAndThreeCallToolResult = objectMapper.convertValue(response.result().orElseThrow(), new TypeReference<>() {});
-        assertThat(twoAndThreeCallToolResult.isError()).isTrue();
-        assertThat(twoAndThreeCallToolResult.structuredContent()).isEmpty();
-        assertThat(twoAndThreeCallToolResult.content())
-                .hasSize(1)
-                .first()
-                .asInstanceOf(type(TextContent.class))
-                .extracting(TextContent::text)
-                .isEqualTo("Negative numbers are not allowed");
+        completeRequest = new CompleteRequest(new ResourceReference("file://{id}.template"), new CompleteArgument("id", "m"));
+        completeResult = client1.mcpClient().completeCompletion(completeRequest);
+        assertThat(completeResult.completion().values())
+                .hasSize(2)
+                .asInstanceOf(list(String.class))
+                .containsExactlyInAnyOrder("manny", "moe");
     }
 
     @Test
     public void testTools()
     {
-        JsonRpcRequest<?> jsonrpcRequest = JsonRpcRequest.buildRequest(1, "tools/list");
-
-        JsonRpcResponse<?> response = rpcCall(jsonrpcRequest);
-        ListToolsResult listToolsResult = objectMapper.convertValue(response.result().orElseThrow(), ListToolsResult.class);
+        ListToolsResult listToolsResult = client1.mcpClient().listTools();
         assertThat(listToolsResult.tools())
                 .extracting(Tool::name)
-                .containsExactlyInAnyOrder("add", "throws", "addThree", "addFirstTwoAndAllThree");
+                .containsExactlyInAnyOrder("add", "throws", "addThree", "addFirstTwoAndAllThree", "progress", "log", "setVersion", "sleep");
 
-        CallToolRequest callToolRequest = new CallToolRequest("add", ImmutableMap.of("a", 1, "b", 2));
-        jsonrpcRequest = JsonRpcRequest.buildRequest(1, "tools/call", callToolRequest);
-        response = rpcCall(jsonrpcRequest);
-        CallToolResult callToolResult = objectMapper.convertValue(response.result().orElseThrow(), CallToolResult.class);
+        CallToolResult callToolResult = client1.mcpClient().callTool(new CallToolRequest("add", ImmutableMap.of("a", 1, "b", 2)));
         assertThat(callToolResult.content())
                 .hasSize(1)
                 .first()
@@ -303,31 +274,122 @@ public class TestMcp
     }
 
     @Test
+    public void testToolPrimitiveStructuredContent()
+    {
+        ListToolsResult listToolsResult = client1.mcpClient().listTools();
+        assertThat(listToolsResult.tools())
+                .filteredOn(tool -> tool.name().equals("addThree"))
+                .hasSize(1)
+                .first()
+                .extracting(Tool::outputSchema)
+                .satisfies(outputSchema -> assertThat(outputSchema).isNull());
+
+        CallToolRequest callToolRequest = new CallToolRequest("addThree", ImmutableMap.of("a", 1, "b", 2, "c", 3));
+        CallToolResult callToolResult = client1.mcpClient().callTool(callToolRequest);
+        assertThat(callToolResult.structuredContent()).isNull();
+        assertThat(callToolResult.content())
+                .hasSize(1)
+                .first()
+                .asInstanceOf(type(TextContent.class))
+                .extracting(TextContent::text)
+                .isEqualTo("6");
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void testToolEmbeddedStructuredContent()
+    {
+        ListToolsResult listToolsResult = client1.mcpClient().listTools();
+        assertThat(listToolsResult.tools())
+                .filteredOn(tool -> tool.name().equals("addFirstTwoAndAllThree"))
+                .hasSize(1)
+                .first()
+                .extracting(Tool::outputSchema)
+                .satisfies(outputSchema -> {
+                    assertThat(outputSchema.get("type")).isEqualTo("object");
+
+                    assertThat(outputSchema.get("required"))
+                            .isNotNull()
+                            .asInstanceOf(type(List.class))
+                            .satisfies(list -> assertThat(list).containsExactlyInAnyOrder("firstTwo", "allThree"));
+
+                    assertThat(outputSchema.get("properties")).isNotNull();
+                    Map<String, Object> properties = (Map<String, Object>) outputSchema.get("properties");
+                    assertThat(properties.keySet()).containsExactlyInAnyOrder("firstTwo", "allThree");
+
+                    assertThat(((Map<String, Object>) properties.get("firstTwo")).get("type")).isEqualTo("integer");
+                    assertThat(((Map<String, Object>) properties.get("allThree")).get("type")).isEqualTo("integer");
+                });
+
+        CallToolRequest callToolRequest = new CallToolRequest("addFirstTwoAndAllThree", ImmutableMap.of("a", 1, "b", 2, "c", 3));
+        CallToolResult twoAndThreeCallToolResult = client1.mcpClient().callTool(callToolRequest);
+        assertThat(twoAndThreeCallToolResult.isError()).isFalse();
+        assertThat(twoAndThreeCallToolResult.structuredContent())
+                .isNotNull()
+                .isEqualTo(ImmutableMap.of("firstTwo", 3, "allThree", 6));
+
+        // Test not sending an optional parameter
+        callToolRequest = new CallToolRequest("addFirstTwoAndAllThree", ImmutableMap.of("a", 1, "b", 2));
+        twoAndThreeCallToolResult = client1.mcpClient().callTool(callToolRequest);
+        assertThat(twoAndThreeCallToolResult.isError()).isFalse();
+        assertThat(twoAndThreeCallToolResult.structuredContent())
+                .isNotNull()
+                .isEqualTo(ImmutableMap.of("firstTwo", 3, "allThree", 3));
+
+        // Test the "error" path
+        callToolRequest = new CallToolRequest("addFirstTwoAndAllThree", ImmutableMap.of("a", -1, "b", -2, "c", -3));
+        twoAndThreeCallToolResult = client1.mcpClient().callTool(callToolRequest);
+        assertThat(twoAndThreeCallToolResult.isError()).isTrue();
+        assertThat(twoAndThreeCallToolResult.structuredContent()).isNull();
+        assertThat(twoAndThreeCallToolResult.content())
+                .hasSize(1)
+                .first()
+                .asInstanceOf(type(TextContent.class))
+                .extracting(TextContent::text)
+                .isEqualTo("Negative numbers are not allowed");
+    }
+
+    @Test
     public void testExceptionWrapping()
     {
         CallToolRequest callToolRequest = new CallToolRequest("throws", ImmutableMap.of());
-        JsonRpcRequest<?> jsonrpcRequest = JsonRpcRequest.buildRequest(1, "tools/call", callToolRequest);
-        JsonRpcResponse<?> response = rpcCall(jsonrpcRequest);
+        assertThatThrownBy(() -> client1.mcpClient().callTool(callToolRequest))
+                .satisfies(exception -> assertMcpError(exception, INVALID_REQUEST.code(), "this ain't good"));
+    }
 
-        assertThat(response.error())
-                .contains(new JsonRpcErrorDetail(INVALID_REQUEST, "this ain't good"));
+    @Test
+    public void testGetMcpReturns405()
+    {
+        URI uri = testingServer.injector().getInstance(HttpServerInfo.class).getHttpUri().resolve("/mcp");
+        JsonCodecFactory jsonCodecFactory = new JsonCodecFactory(() -> objectMapper);
+
+        Request request = prepareGet()
+                .setUri(uri)
+                .addHeader("Accept", "application/json,text/event-stream")
+                .build();
+
+        var response = httpClient.execute(request, createFullJsonResponseHandler(jsonCodecFactory.jsonCodec(new TypeToken<>() {})));
+        assertThat(response.getStatusCode()).isEqualTo(SC_UNAUTHORIZED);
+
+        request = prepareGet()
+                .setUri(uri)
+                .addHeader("Accept", "application/json,text/event-stream")
+                .addHeader(IDENTITY_HEADER, EXPECTED_IDENTITY)
+                .build();
+
+        response = httpClient.execute(request, createFullJsonResponseHandler(jsonCodecFactory.jsonCodec(new TypeToken<>() {})));
+        assertThat(response.getStatusCode()).isEqualTo(SC_METHOD_NOT_ALLOWED);
     }
 
     @Test
     public void testPrompts()
     {
-        JsonRpcRequest<?> jsonrpcRequest = JsonRpcRequest.buildRequest(1, "prompts/list", 1);
-
-        JsonRpcResponse<?> response = rpcCall(jsonrpcRequest);
-        ListPromptsResult listPromptsResult = objectMapper.convertValue(response.result().orElseThrow(), ListPromptsResult.class);
+        ListPromptsResult listPromptsResult = client1.mcpClient().listPrompts();
         assertThat(listPromptsResult.prompts())
                 .extracting(Prompt::name)
-                .containsExactlyInAnyOrder("greeting");
+                .containsExactlyInAnyOrder("greeting", "age");
 
-        GetPromptRequest getPromptRequest = new GetPromptRequest("greeting", ImmutableMap.of("name", "Galt"));
-        jsonrpcRequest = JsonRpcRequest.buildRequest(1, "prompts/get", getPromptRequest);
-        response = rpcCall(jsonrpcRequest);
-        GetPromptResult getPromptResult = objectMapper.convertValue(response.result().orElseThrow(), GetPromptResult.class);
+        GetPromptResult getPromptResult = client1.mcpClient().getPrompt(new GetPromptRequest("greeting", ImmutableMap.of("name", "Galt")));
         assertThat(getPromptResult.messages())
                 .hasSize(1)
                 .first()
@@ -340,75 +402,254 @@ public class TestMcp
     @Test
     public void testResources()
     {
-        JsonRpcRequest<?> jsonrpcRequest = JsonRpcRequest.buildRequest(1, "resources/list");
-
-        JsonRpcResponse<?> response = rpcCall(jsonrpcRequest);
-        ListResourcesResult listResourcesResult = objectMapper.convertValue(response.result().orElseThrow(), ListResourcesResult.class);
+        ListResourcesResult listResourcesResult = client1.mcpClient().listResources();
         assertThat(listResourcesResult.resources())
                 .extracting(Resource::name)
                 .containsExactlyInAnyOrder("example1", "example2");
 
         ReadResourceRequest readResourceRequest = new ReadResourceRequest("file://example2.txt");
-        jsonrpcRequest = JsonRpcRequest.buildRequest(1, "resources/read", readResourceRequest);
-        response = rpcCall(jsonrpcRequest);
-        ReadResourceResult readResourceResult = objectMapper.convertValue(response.result().orElseThrow(), ReadResourceResult.class);
+        ReadResourceResult readResourceResult = client1.mcpClient().readResource(readResourceRequest);
         assertThat(readResourceResult.contents())
                 .hasSize(1)
                 .first()
-                .extracting(ResourceContents::text)
-                .isEqualTo(Optional.of("This is the content of file://example2.txt"));
+                .asInstanceOf(type(TextResourceContents.class))
+                .extracting(TextResourceContents::text)
+                .isEqualTo("This is the content of file://example2.txt");
 
         readResourceRequest = new ReadResourceRequest("file://test.template");
-        jsonrpcRequest = JsonRpcRequest.buildRequest(1, "resources/read", readResourceRequest);
-        response = rpcCall(jsonrpcRequest);
-        readResourceResult = objectMapper.convertValue(response.result().orElseThrow(), ReadResourceResult.class);
+        readResourceResult = client1.mcpClient().readResource(readResourceRequest);
         assertThat(readResourceResult.contents())
                 .hasSize(1)
                 .first()
-                .extracting(ResourceContents::text)
-                .isEqualTo(Optional.of("ID is: test"));
+                .asInstanceOf(type(TextResourceContents.class))
+                .extracting(TextResourceContents::text)
+                .isEqualTo("ID is: test");
 
-        readResourceRequest = new ReadResourceRequest("file://not-a-template");
-        jsonrpcRequest = JsonRpcRequest.buildRequest(1, "resources/read", readResourceRequest);
-        response = rpcCall(jsonrpcRequest);
-        assertThat(response.error()).map(JsonRpcErrorDetail::code).contains(-32002);
+        ReadResourceRequest badReadResourceRequest = new ReadResourceRequest("file://not-a-template");
+        assertThatThrownBy(() -> client1.mcpClient().readResource(badReadResourceRequest))
+                .satisfies(e -> assertMcpError(e, RESOURCE_NOT_FOUND, "Resource not found: file://not-a-template"));
     }
 
     @Test
-    public void testGetMcpReturns405()
+    public void testExpiredSession()
     {
-        Request request = prepareGet()
-                .setUri(baseUri)
-                .addHeader("Accept", "application/json,text/event-stream")
-                .build();
+        Set<SessionId> preSessionIds = sessionController.sessionIds();
+        TestingClient client = buildClient(closer, baseUri, "testExpiredSession");
+        Set<SessionId> postSessionIds = sessionController.sessionIds();
+        SessionId clientSessionId = Sets.difference(postSessionIds, preSessionIds).iterator().next();
 
-        var response = httpClient.execute(request, createFullJsonResponseHandler(jsonCodec(new TypeToken<>() {})));
-        assertThat(response.getStatusCode()).isEqualTo(SC_UNAUTHORIZED);
+        // simulate session expiring
+        sessionController.deleteSession(clientSessionId);
 
-        request = prepareGet()
-                .setUri(baseUri)
-                .addHeader("Accept", "application/json,text/event-stream")
+        assertThatThrownBy(client.mcpClient()::listTools)
+                .hasMessageContaining("HTTP 404 Not Found");
+    }
+
+    @Test
+    public void testDeleteSession()
+    {
+        Set<SessionId> preSessionIds = sessionController.sessionIds();
+        TestingClient client = buildClient(closer, baseUri, "testDeleteSession");
+        Set<SessionId> postSessionIds = sessionController.sessionIds();
+        SessionId clientSessionId = Sets.difference(postSessionIds, preSessionIds).iterator().next();
+
+        Request request = prepareDelete()
+                .setUri(URI.create(baseUri + "/mcp"))
+                .addHeader(MCP_SESSION_ID, clientSessionId.id())
                 .addHeader(IDENTITY_HEADER, EXPECTED_IDENTITY)
                 .build();
+        httpClient.execute(request, createStatusResponseHandler());
 
-        response = httpClient.execute(request, createFullJsonResponseHandler(jsonCodec(new TypeToken<>() {})));
-        assertThat(response.getStatusCode()).isEqualTo(SC_METHOD_NOT_ALLOWED);
+        assertThatThrownBy(client.mcpClient()::listTools)
+                .hasMessageContaining("HTTP 404 Not Found");
     }
 
-    private JsonRpcResponse<?> rpcCall(JsonRpcRequest<?> jsonrpcRequest)
+    @Test
+    public void testListChangeNotifications()
     {
-        return rpcCall("Mr. Tester", jsonrpcRequest).getValue();
+        client1.changes().clear();
+        client2.changes().clear();
+
+        client1.mcpClient().callTool(new CallToolRequest("setVersion", ImmutableMap.of("type", "SYSTEM", "name", "tools", "version", "new")));
+
+        TestingClient localClient = buildClient(closer, baseUri, "testListChangeNotifications");
+
+        client1.mcpClient().listTools();
+        client2.mcpClient().listTools();
+        localClient.mcpClient().listTools();
+
+        assertChanges(client1.changes(), 1).contains("tools");
+        assertChanges(client2.changes(), 1).contains("tools");
+        assertChanges(localClient.changes(), 0).isEmpty();   // created after the version change
+
+        client1.changes().clear();
+        client2.changes().clear();
+
+        client1.mcpClient().listTools();
+        client2.mcpClient().listTools();
+        localClient.mcpClient().listTools();
+
+        assertChanges(client1.changes(), 0).isEmpty();
+        assertChanges(client2.changes(), 0).isEmpty();
+        assertChanges(localClient.changes(), 0).isEmpty();
+
+        client2.mcpClient().callTool(new CallToolRequest("setVersion", ImmutableMap.of("type", "SYSTEM", "name", "tools", "version", "newer")));
+        client2.mcpClient().callTool(new CallToolRequest("setVersion", ImmutableMap.of("type", "SYSTEM", "name", "prompts", "version", "newer")));
+
+        client1.mcpClient().listTools();
+        client2.mcpClient().listTools();
+        localClient.mcpClient().listTools();
+
+        assertChanges(client1.changes(), 2).containsExactlyInAnyOrder("tools", "prompts");
+        assertChanges(client2.changes(), 2).containsExactlyInAnyOrder("tools", "prompts");
+        assertChanges(localClient.changes(), 2).containsExactlyInAnyOrder("tools", "prompts");
     }
 
-    private JsonResponse<JsonRpcResponse<?>> rpcCall(String identityHeader, JsonRpcRequest<?> jsonrpcRequest)
+    @RepeatedTest(5)
+    public void testCancellation()
+            throws Exception
     {
-        Request request = preparePost().setUri(baseUri)
-                .addHeader("Content-Type", "application/json")
-                .addHeader("Accept", "application/json,text/event-stream")
-                .addHeader(IDENTITY_HEADER, identityHeader)
-                .setBodyGenerator(JsonBodyGenerator.jsonBodyGenerator(jsonCodec(new TypeToken<JsonRpcRequest<?>>() {}), jsonrpcRequest))
-                .build();
+        SleepToolController sleepToolController = testingServer.injector().getInstance(SleepToolController.class);
+        sleepToolController.reset();
 
-        return httpClient.execute(request, createFullJsonResponseHandler(jsonCodec(new TypeToken<>() {})));
+        // control run to make sure it exits as expected after sleep time
+
+        CallToolResult callToolResult = client1.mcpClient().callTool(new CallToolRequest("sleep", ImmutableMap.of("name", "dummy", "secondsToSleep", 3)));
+        assertThat(callToolResult.content())
+                .hasSize(1)
+                .first()
+                .asInstanceOf(type(TextContent.class))
+                .extracting(TextContent::text)
+                .isEqualTo("timeout");
+
+        sleepToolController.reset();
+
+        // start multiple calls to the sleep() tool that will sleep for 1 day (i.e. forever for our purposes)
+
+        int threadQty = 10;
+        ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
+
+        Map<String, Future<CallToolResult>> runs = IntStream.range(0, threadQty)
+                .mapToObj(index -> {
+                    String name = "run-" + index;
+                    Callable<CallToolResult> callToolResultCallable = () -> client1.mcpClient().callTool(new CallToolRequest("sleep", ImmutableMap.of("name", name, "secondsToSleep", (int) TimeUnit.DAYS.toSeconds(1))));
+                    Future<CallToolResult> future = executorService.submit(callToolResultCallable);
+                    return Map.entry(name, future);
+                })
+                .collect(toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        // wait for all the sleep() tool runs to start
+        assertThat(sleepToolController.startedLatch().tryAcquire(threadQty, 5, SECONDS)).isTrue();
+
+        // they should all be registered in the CancellationController
+        Collection<Object> activeRequestIds = testingServer.injector().getInstance(CancellationController.class).activeRequestIds();
+        assertThat(activeRequestIds).hasSize(threadQty);
+
+        // choose a random run's request ID to cancel
+        Object requestId = ImmutableList.copyOf(activeRequestIds).get(ThreadLocalRandom.current().nextInt(threadQty));
+
+        // send a cancellation notification for the random run
+        URI uri = testingServer.injector().getInstance(HttpServerInfo.class).getHttpUri().resolve("/mcp");
+        CancelledNotification cancelledNotification = new CancelledNotification(requestId, Optional.of("Just because"));
+        JsonRpcRequest<CancelledNotification> jsonRpcRequest = JsonRpcRequest.buildNotification(NOTIFICATION_CANCELLED, cancelledNotification);
+
+        // can't know which session it is - try em all
+        sessionController.sessionIds().forEach(sessionId -> {
+            Request request = preparePost().setUri(uri)
+                    .addHeader("Content-Type", "application/json")
+                    .addHeader("Accept", "application/json, text/event-stream")
+                    .addHeader(IDENTITY_HEADER, EXPECTED_IDENTITY)
+                    .addHeader(MCP_SESSION_ID, sessionId.id())
+                    .setBodyGenerator(jsonBodyGenerator(jsonCodec(new TypeToken<>() {}), jsonRpcRequest))
+                    .build();
+            httpClient.execute(request, createStatusResponseHandler());
+        });
+
+        // wait for one of the sleep() tool runs to exit
+        String exitName = sleepToolController.namesThatHaveExited().poll(10, SECONDS);
+        assertThat(exitName).isNotNull();
+        log.info("Sleep tool run with name %s was cancelled", exitName);
+
+        // figure out which thread it belongs to
+        Future<CallToolResult> interruptedFuture = runs.get(exitName);
+        assertThat(interruptedFuture).isNotNull();
+
+        // the interrupted tool run should return "interrupted"
+        callToolResult = interruptedFuture.get(10, SECONDS);
+        assertThat(callToolResult.content())
+                .hasSize(1)
+                .first()
+                .asInstanceOf(type(TextContent.class))
+                .extracting(TextContent::text)
+                .isEqualTo("interrupted");
+
+        // the other tool runs should still be running
+        // send them all a signal via sleepToolController for them to exit
+        // they should all exit with "success"
+        runs.entrySet().stream()
+                .filter(entry -> !entry.getKey().equals(exitName))
+                .forEach(entry -> {
+                    try {
+                        assertThat(entry.getValue().isDone()).isFalse();
+                        sleepToolController.namesThatShouldExit().add(entry.getKey());
+
+                        CallToolResult result = entry.getValue().get(5, SECONDS);
+                        assertThat(result.content())
+                                .hasSize(1)
+                                .first()
+                                .asInstanceOf(type(TextContent.class))
+                                .extracting(TextContent::text)
+                                .isEqualTo("success");
+                    }
+                    catch (Exception e) {
+                        fail(e);
+                    }
+                });
+    }
+
+    private ListAssert<String> assertChanges(BlockingQueue<String> changes, int qty)
+    {
+        if (qty == 0) {
+            try {
+                // sleep for a bit to ensure there are no changes
+                // this isn't perfect but given the current API it's the best we can do
+                MILLISECONDS.sleep(250);
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                fail("Interrupted while checking empty changes");
+            }
+
+            if (changes.isEmpty()) {
+                return assertThat(ImmutableList.of());
+            }
+            fail("Expected no changes, but some were found");
+        }
+
+        List<String> result = new ArrayList<>();
+        while (qty-- > 0) {
+            try {
+                String value = changes.poll(2, SECONDS);
+                if (value != null) {
+                    result.add(value);
+                    continue;
+                }
+                fail("Timed out waiting for changes");
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                fail("Interrupted while waiting for changes to complete");
+            }
+        }
+        return assertThat(result);
+    }
+
+    private void assertMcpError(Throwable throwable, int code, String message)
+    {
+        assertThat(throwable)
+                .asInstanceOf(type(McpError.class))
+                .extracting(McpError::getJsonRpcError)
+                .extracting(JSONRPCError::code, JSONRPCError::message)
+                .contains(code, message);
     }
 }
