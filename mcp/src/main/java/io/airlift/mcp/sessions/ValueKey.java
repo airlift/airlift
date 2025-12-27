@@ -2,6 +2,7 @@ package io.airlift.mcp.sessions;
 
 import io.airlift.mcp.model.CancelledNotification;
 import io.airlift.mcp.model.InitializeRequest.ClientCapabilities;
+import io.airlift.mcp.model.JsonRpcResponse;
 import io.airlift.mcp.model.LoggingLevel;
 import io.airlift.mcp.versions.Versions;
 
@@ -22,6 +23,12 @@ public record ValueKey<T>(String name, Class<T> type)
     public static ValueKey<CancelledNotification> cancellationKey(Object requestId)
     {
         return new ValueKey<>("cancellation-notification-" + requestId, CancelledNotification.class);
+    }
+
+    @SuppressWarnings("rawtypes")
+    public static ValueKey<JsonRpcResponse> serverToClientResponseKey(Object requestId)
+    {
+        return new ValueKey<>("server-to-client-request-" + requestId, JsonRpcResponse.class);
     }
 
     public static <T> ValueKey<T> of(String name, Class<T> type)

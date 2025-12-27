@@ -296,14 +296,21 @@ public class InternalFilter
         }
         catch (Exception e) {
             throwIfInstanceOf(e.getCause(), McpException.class);
-            log.error("Unexpected error handling message: {}", e.getMessage());
+            log.error(e, "Unexpected error handling message: {}", e.getMessage());
             responseError(response, SC_INTERNAL_SERVER_ERROR, internalError("Unexpected error: " + e.getMessage()));
         }
     }
 
+    @SuppressWarnings("rawtypes")
     private void handleRpcResponse(HttpServletRequest request, HttpServletResponse response, JsonRpcResponse<?> rpcResponse)
     {
         log.debug("Processing MCP response: %s, session: %s", rpcResponse.id(), request.getHeader(HEADER_SESSION_ID));
+
+        sessionController.ifPresent(controller -> {
+            SessionId sessionId = requireSessionId(request);
+            ValueKey<JsonRpcResponse> responseKey = ValueKey.serverToClientResponseKey(rpcResponse.id());
+            controller.setSessionValue(sessionId, responseKey, rpcResponse);
+        });
 
         response.setStatus(SC_ACCEPTED);
     }
