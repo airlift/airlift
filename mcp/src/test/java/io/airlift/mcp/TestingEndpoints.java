@@ -1,5 +1,6 @@
 package io.airlift.mcp;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -10,24 +11,35 @@ import io.airlift.mcp.handler.ToolEntry;
 import io.airlift.mcp.model.CallToolResult;
 import io.airlift.mcp.model.CompleteRequest.CompleteArgument;
 import io.airlift.mcp.model.CompleteRequest.CompleteContext;
-import io.airlift.mcp.model.Content;
+import io.airlift.mcp.model.Constants;
+import io.airlift.mcp.model.Content.TextContent;
+import io.airlift.mcp.model.CreateMessageRequest;
+import io.airlift.mcp.model.CreateMessageResult;
+import io.airlift.mcp.model.ElicitRequest;
+import io.airlift.mcp.model.ElicitResult;
+import io.airlift.mcp.model.JsonRpcResponse;
+import io.airlift.mcp.model.JsonSchemaBuilder;
 import io.airlift.mcp.model.LoggingLevel;
 import io.airlift.mcp.model.Prompt;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.ResourceTemplateValues;
+import io.airlift.mcp.model.Role;
 import io.airlift.mcp.model.StructuredContentResult;
 import io.airlift.mcp.model.Tool;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.mcp.McpException.exception;
+import static io.airlift.mcp.model.ElicitResult.Action.ACCEPT;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -149,7 +161,7 @@ public class TestingEndpoints
     {
         assertThat(testingIdentity.name()).isEqualTo("Mr. Tester");
 
-        return new CallToolResult(ImmutableList.of(new Content.TextContent(String.valueOf(a + b + c))),
+        return new CallToolResult(ImmutableList.of(new TextContent(String.valueOf(a + b + c))),
                 Optional.empty(),
                 false);
     }
@@ -163,7 +175,7 @@ public class TestingEndpoints
 
         if (a < 0 || b < 0 || c.map(num -> num < 0).orElse(false)) {
             return new StructuredContentResult<>(
-                    ImmutableList.of(new Content.TextContent("Negative numbers are not allowed")),
+                    ImmutableList.of(new TextContent("Negative numbers are not allowed")),
                     Optional.empty(),
                     true);
         }
@@ -172,7 +184,7 @@ public class TestingEndpoints
         int allThree = firstTwo + c.orElse(0);
 
         return new StructuredContentResult<>(
-                ImmutableList.of(new Content.TextContent(String.valueOf(allThree))),
+                ImmutableList.of(new TextContent(String.valueOf(allThree))),
                 new TwoAndThree(firstTwo, allThree),
                 false);
     }
@@ -274,5 +286,64 @@ public class TestingEndpoints
         finally {
             sleepToolController.namesThatHaveExited().add(name);
         }
+    }
+
+    public record Person(String firstName, String lastName) {}
+
+    @McpTool(name = "elicitation", description = "Test elicitation")
+    public String elicitation(McpRequestContext requestContext)
+    {
+        if (requestContext.clientCapabilities().elicitation().isEmpty()) {
+            throw new RuntimeException("Client does not support elicitation");
+        }
+
+        ObjectNode elicitation = new JsonSchemaBuilder("elicitation").build(Optional.empty(), Person.class);
+        ElicitRequest elicitRequest = new ElicitRequest("Who are you?", elicitation);
+        JsonRpcResponse<ElicitResult> response;
+        try {
+            response = requestContext.serverToClientRequest(Constants.METHOD_ELICITATION_CREATE, elicitRequest, ElicitResult.class, Duration.ofMinutes(5), Duration.ofSeconds(30));
+        }
+        catch (InterruptedException | TimeoutException e) {
+            throw new RuntimeException(e);
+        }
+        ElicitResult elicitResult = response.result().orElseThrow();
+        if (elicitResult.action() != ACCEPT) {
+            return elicitResult.action().toJsonValue();
+        }
+        return elicitResult.content()
+                .map(contentMap -> "Hello, " + contentMap.get("firstName") + " " + contentMap.get("lastName") + "!")
+                .orElse("No content");
+    }
+
+    @McpTool(name = "sampling", description = "Test sampling")
+    public String sampling(McpRequestContext requestContext)
+    {
+        if (requestContext.clientCapabilities().sampling().isEmpty()) {
+            throw new RuntimeException("Client does not support sampling");
+        }
+
+        CreateMessageRequest createMessageRequest = new CreateMessageRequest(Role.USER, new TextContent("Are you sure?"), 100);
+        JsonRpcResponse<CreateMessageResult> response = null;
+        try {
+            response = requestContext.serverToClientRequest(Constants.METHOD_SAMPLING_CREATE_MESSAGE, createMessageRequest, CreateMessageResult.class, Duration.ofMinutes(5), Duration.ofSeconds(1));
+        }
+        catch (InterruptedException | TimeoutException e) {
+            throw new RuntimeException(e);
+        }
+
+        if (response.error().isPresent()) {
+            return response.error().get().message();
+        }
+
+        CreateMessageResult createMessageResult = response.result().orElseThrow();
+        if (createMessageResult.stopReason().isPresent()) {
+            return "Stopped: " + createMessageResult.stopReason().get().toJsonValue();
+        }
+
+        if (createMessageResult.content() instanceof TextContent(var text, _)) {
+            return "Response: " + text;
+        }
+
+        return "Response: unknown";
     }
 }

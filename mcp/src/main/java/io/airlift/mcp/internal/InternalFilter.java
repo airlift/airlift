@@ -45,6 +45,7 @@ import java.util.function.BiConsumer;
 
 import static com.google.common.net.HttpHeaders.WWW_AUTHENTICATE;
 import static io.airlift.mcp.McpException.exception;
+import static io.airlift.mcp.internal.InternalRequestContext.optionalSessionId;
 import static io.airlift.mcp.internal.InternalRequestContext.requireSessionId;
 import static io.airlift.mcp.model.Constants.HEADER_SESSION_ID;
 import static io.airlift.mcp.model.Constants.MCP_IDENTITY_ATTRIBUTE;
@@ -69,6 +70,7 @@ import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
 import static io.airlift.mcp.model.JsonRpcErrorCode.METHOD_NOT_FOUND;
 import static io.airlift.mcp.model.JsonRpcErrorCode.PARSE_ERROR;
 import static io.airlift.mcp.sessions.SessionValueKey.cancellationKey;
+import static io.airlift.mcp.sessions.SessionValueKey.serverToClientResponseKey;
 import static jakarta.servlet.http.HttpServletResponse.SC_ACCEPTED;
 import static jakarta.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
 import static jakarta.servlet.http.HttpServletResponse.SC_FORBIDDEN;
@@ -262,9 +264,13 @@ public class InternalFilter
         }
     }
 
+    @SuppressWarnings("rawtypes")
     private void handleRpcResponse(HttpServletRequest request, HttpServletResponse response, JsonRpcResponse<?> rpcResponse)
     {
-        log.debug("Processing MCP response: %s, session: %s", rpcResponse.id(), request.getHeader(HEADER_SESSION_ID));
+        log.debug("Processing MCP response: %s, session: %s", rpcResponse.id(), optionalSessionId(request).map(SessionId::id).orElse("-"));
+
+        sessionController.ifPresent(controller ->
+                controller.setSessionValue(requireSessionId(request), serverToClientResponseKey(rpcResponse.id()), rpcResponse));
 
         response.setStatus(SC_ACCEPTED);
     }

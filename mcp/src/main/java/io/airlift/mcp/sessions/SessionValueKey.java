@@ -2,6 +2,7 @@ package io.airlift.mcp.sessions;
 
 import io.airlift.mcp.model.CancelledNotification;
 import io.airlift.mcp.model.InitializeRequest.ClientCapabilities;
+import io.airlift.mcp.model.JsonRpcResponse;
 import io.airlift.mcp.model.LoggingLevel;
 import io.airlift.mcp.versions.ResourceVersion;
 import io.airlift.mcp.versions.SystemListVersions;
@@ -18,6 +19,12 @@ public record SessionValueKey<T>(String name, Class<T> type)
     {
         requireNonNull(name, "name is null");
         requireNonNull(type, "type is null");
+    }
+
+    @SuppressWarnings("rawtypes")
+    public static SessionValueKey<JsonRpcResponse> serverToClientResponseKey(Object requestId)
+    {
+        return new SessionValueKey<>("server-to-client-request-" + requestId, JsonRpcResponse.class);
     }
 
     public static SessionValueKey<CancelledNotification> cancellationKey(Object requestId)
