@@ -25,6 +25,11 @@
 
         <dependency>
             <groupId>${project.groupId}</groupId>
+            <artifactId>concurrent</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
             <artifactId>configuration</artifactId>
         </dependency>
 
@@ -62,6 +67,11 @@
             <groupId>com.google.inject</groupId>
             <artifactId>guice</artifactId>
             <classifier>classes</classifier>
+        </dependency>
+
+        <dependency>
+            <groupId>jakarta.annotation</groupId>
+            <artifactId>jakarta.annotation-api</artifactId>
         </dependency>
 
         <dependency>
