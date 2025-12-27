@@ -9,16 +9,23 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import io.airlift.mcp.McpException;
+import io.airlift.mcp.McpRequestContext;
 import io.airlift.mcp.model.CallToolRequest;
+import io.airlift.mcp.model.CompleteRequest.CompleteArgument;
+import io.airlift.mcp.model.CompleteRequest.CompleteContext;
 import io.airlift.mcp.model.GetPromptRequest;
+import io.airlift.mcp.model.JsonRpcErrorCode;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.model.ResourceTemplateValues;
 import io.airlift.mcp.reflection.MethodParameter.CallToolRequestParameter;
+import io.airlift.mcp.reflection.MethodParameter.CompleteArgumentParameter;
+import io.airlift.mcp.reflection.MethodParameter.CompleteContextParameter;
 import io.airlift.mcp.reflection.MethodParameter.GetPromptRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.HttpRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.IdentityParameter;
+import io.airlift.mcp.reflection.MethodParameter.McpRequestContextParameter;
 import io.airlift.mcp.reflection.MethodParameter.ObjectParameter;
 import io.airlift.mcp.reflection.MethodParameter.ReadResourceRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.ResourceTemplateValuesParameter;
@@ -37,8 +44,8 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 import static io.airlift.mcp.McpException.exception;
+import static io.airlift.mcp.model.Constants.MCP_IDENTITY_ATTRIBUTE;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
-import static io.airlift.mcp.reference.ReferenceFilter.retrieveIdentityValue;
 import static java.util.Objects.requireNonNull;
 
 public class MethodInvoker
@@ -80,10 +87,14 @@ public class MethodInvoker
 
         Builder withResourceTemplateValues(ResourceTemplateValues resourceTemplateValues);
 
+        Builder withCompleteArgument(CompleteArgument completeArgument);
+
+        Builder withCompleteContext(CompleteContext completeContext);
+
         Object invoke();
     }
 
-    public Builder builder(HttpServletRequest request)
+    public Builder builder(McpRequestContext requestContext)
     {
         return new Builder()
         {
@@ -94,6 +105,8 @@ public class MethodInvoker
             private Optional<ResourceTemplate> sourceResourceTemplate = Optional.empty();
             private Optional<ReadResourceRequest> readResourceRequest = Optional.empty();
             private Optional<ResourceTemplateValues> resourceTemplateValues = Optional.empty();
+            private Optional<CompleteArgument> completeArgument = Optional.empty();
+            private Optional<CompleteContext> completeContext = Optional.empty();
 
             @Override
             public Builder withArguments(Map<String, Object> arguments)
@@ -140,19 +153,36 @@ public class MethodInvoker
             }
 
             @Override
+            public Builder withCompleteArgument(CompleteArgument completeArgument)
+            {
+                this.completeArgument = Optional.of(completeArgument);
+                return this;
+            }
+
+            @Override
+            public Builder withCompleteContext(CompleteContext completeContext)
+            {
+                this.completeContext = Optional.of(completeContext);
+                return this;
+            }
+
+            @Override
             public Object invoke()
             {
                 try {
                     Object[] methodArguments = parameters.stream()
                             .map(parameter -> switch (parameter) {
-                                case HttpRequestParameter _ -> request;
+                                case HttpRequestParameter _ -> requestContext.request();
+                                case McpRequestContextParameter _ -> requestContext;
                                 case GetPromptRequestParameter _ -> getPromptRequest.orElseThrow(() -> new IllegalStateException("GetPromptRequest is required"));
                                 case CallToolRequestParameter _ -> callToolRequest.orElseThrow(() -> new IllegalStateException("CallToolRequest is required"));
                                 case SourceResourceParameter _ -> sourceResource.orElseThrow(() -> new IllegalStateException("SourceResource is required"));
                                 case SourceResourceTemplateParameter _ -> sourceResourceTemplate.orElseThrow(() -> new IllegalStateException("SourceResourceTemplate is required"));
                                 case ReadResourceRequestParameter _ -> readResourceRequest.orElseThrow(() -> new IllegalStateException("ReadResourceRequest is required"));
                                 case ResourceTemplateValuesParameter _ -> resourceTemplateValues.orElseThrow(() -> new IllegalStateException("ResourceTemplateValues is required"));
-                                case IdentityParameter _ -> retrieveIdentityValue(request);
+                                case IdentityParameter _ -> retrieveIdentityValue(requestContext.request());
+                                case CompleteArgumentParameter _ -> completeArgument.orElseThrow(() -> new IllegalStateException("CompleteArgument is required"));
+                                case CompleteContextParameter _ -> completeContext.orElseThrow(() -> new IllegalStateException("CompleteContext is required"));
                                 case ObjectParameter objectParameter -> valueForObjectParameter(arguments, objectParameter);
                             })
                             .toArray();
@@ -188,11 +218,21 @@ public class MethodInvoker
             return Optional.empty();
         }
 
-        if (objectParameter.rawType().isRecord() || Optional.class.isAssignableFrom(objectParameter.rawType())) {
+        if (objectParameter.rawType().isRecord() || Optional.class.isAssignableFrom(objectParameter.rawType()) || objectParameter.rawType().isEnum()) {
             JavaType javaType = objectMapper.getTypeFactory().constructType(objectParameter.genericType());
             return objectMapper.convertValue(value, javaType);
         }
 
         return value;
+    }
+
+    private static Object retrieveIdentityValue(HttpServletRequest request)
+            throws McpException
+    {
+        Object identity = request.getAttribute(MCP_IDENTITY_ATTRIBUTE);
+        if (identity == null) {
+            throw McpException.exception(JsonRpcErrorCode.INTERNAL_ERROR, "Error in request processing. MCP identity not found.");
+        }
+        return identity;
     }
 }

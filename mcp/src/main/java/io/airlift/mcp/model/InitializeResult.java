@@ -8,7 +8,7 @@ public record InitializeResult(
         String protocolVersion,
         ServerCapabilities capabilities,
         Implementation serverInfo,
-        String instructions)
+        Optional<String> instructions)
 {
     public record ServerCapabilities(Optional<CompletionCapabilities> completions, Optional<LoggingCapabilities> logging, Optional<ListChanged> prompts, Optional<SubscribeListChanged> resources, Optional<ListChanged> tools)
     {
@@ -30,4 +30,12 @@ public record InitializeResult(
     public record CompletionCapabilities() {}
 
     public record LoggingCapabilities() {}
+
+    public InitializeResult
+    {
+        requireNonNull(protocolVersion, "protocolVersion is null");
+        requireNonNull(capabilities, "capabilities is null");
+        requireNonNull(serverInfo, "serverInfo is null");
+        requireNonNull(instructions, "instructions is null");
+    }
 }
