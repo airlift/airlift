@@ -44,6 +44,7 @@ public class LocalServer
         ImmutableList.Builder<Module> modules = ImmutableList.<Module>builder()
                 .add(mcpModule)
                 .add(binder -> binder.bind(TestingEndpoints.class).in(SINGLETON))
+                .add(binder -> binder.bind(SleepToolController.class).toInstance(SleepToolController.instance()))
                 .add(new NodeModule())
                 .add(new TestingHttpServerModule(LocalServer.class.getName(), port.orElse(0)))
                 .add(new JaxrsModule())

@@ -10,6 +10,7 @@ import java.util.Map;
 import static io.airlift.configuration.testing.ConfigAssertions.assertFullMapping;
 import static io.airlift.configuration.testing.ConfigAssertions.assertRecordedDefaults;
 import static java.util.concurrent.TimeUnit.DAYS;
+import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -24,7 +25,8 @@ public class TestMcpConfig
                 .setResourceVersionUpdateInterval(new Duration(1, MINUTES))
                 .setHttpGetEventsEnabled(true)
                 .setEventStreamingPingThreshold(new Duration(15, SECONDS))
-                .setEventStreamingTimeout(new Duration(5, MINUTES)));
+                .setEventStreamingTimeout(new Duration(5, MINUTES))
+                .setCancellationCheckInterval(new Duration(1, SECONDS)));
     }
 
     @Test
@@ -37,6 +39,7 @@ public class TestMcpConfig
                 .put("mcp.http-get-events.enabled", "false")
                 .put("mcp.event-streaming.ping-threshold", "123m")
                 .put("mcp.event-streaming.timeout", "456m")
+                .put("mcp.cancellation.check-interval", "1h")
                 .build();
 
         McpConfig expected = new McpConfig()
@@ -45,7 +48,8 @@ public class TestMcpConfig
                 .setResourceVersionUpdateInterval(new Duration(12, DAYS))
                 .setHttpGetEventsEnabled(false)
                 .setEventStreamingPingThreshold(new Duration(123, MINUTES))
-                .setEventStreamingTimeout(new Duration(456, MINUTES));
+                .setEventStreamingTimeout(new Duration(456, MINUTES))
+                .setCancellationCheckInterval(new Duration(1, HOURS));
 
         assertFullMapping(properties, expected);
     }

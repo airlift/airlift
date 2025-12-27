@@ -16,6 +16,7 @@ public class McpConfig
     private boolean httpGetEventsEnabled = true;
     private Duration eventStreamingPingThreshold = new Duration(15, SECONDS);
     private Duration eventStreamingTimeout = new Duration(5, MINUTES);
+    private Duration cancellationCheckInterval = new Duration(1, SECONDS);
 
     @Min(1)
     public int getDefaultPageSize()
@@ -91,6 +92,19 @@ public class McpConfig
     public McpConfig setEventStreamingTimeout(Duration eventStreamingTimeout)
     {
         this.eventStreamingTimeout = eventStreamingTimeout;
+        return this;
+    }
+
+    @MinDuration("1ms")
+    public Duration getCancellationCheckInterval()
+    {
+        return cancellationCheckInterval;
+    }
+
+    @Config("mcp.cancellation.check-interval")
+    public McpConfig setCancellationCheckInterval(Duration cancellationCheckInterval)
+    {
+        this.cancellationCheckInterval = cancellationCheckInterval;
         return this;
     }
 }
