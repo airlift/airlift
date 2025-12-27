@@ -35,6 +35,7 @@ public class TestingServer
         ImmutableList.Builder<com.google.inject.Module> modules = ImmutableList.<Module>builder()
                 .add(mcpModule)
                 .add(binder -> httpClientBinder(binder).bindHttpClient("test", ForTest.class))
+                .add(binder -> binder.bind(SleepToolController.class).toInstance(SleepToolController.instance()))
                 .add(new NodeModule())
                 .add(new TestingHttpServerModule("testing"))
                 .add(new JaxrsModule())
