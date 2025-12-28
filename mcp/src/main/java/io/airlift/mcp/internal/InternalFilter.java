@@ -23,6 +23,7 @@ import io.airlift.mcp.model.JsonRpcResponse;
 import io.airlift.mcp.model.ListRequest;
 import io.airlift.mcp.model.McpIdentity;
 import io.airlift.mcp.model.McpIdentity.Authenticated;
+import io.airlift.mcp.model.Protocol;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.SetLevelRequest;
 import io.airlift.mcp.model.SubscribeRequest;
@@ -46,6 +47,7 @@ import java.util.function.BiConsumer;
 import static com.google.common.net.HttpHeaders.WWW_AUTHENTICATE;
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.internal.InternalRequestContext.optionalSessionId;
+import static io.airlift.mcp.internal.InternalRequestContext.protocol;
 import static io.airlift.mcp.internal.InternalRequestContext.requireSessionId;
 import static io.airlift.mcp.model.Constants.HEADER_SESSION_ID;
 import static io.airlift.mcp.model.Constants.MCP_IDENTITY_ATTRIBUTE;
@@ -313,14 +315,16 @@ public class InternalFilter
 
         validateSession(request, rpcRequest);
 
+        Protocol currentProtocol = protocol(sessionController, request);
+
         Object result = switch (rpcMethod) {
             case METHOD_INITIALIZE -> mcpServer.initialize(response, authenticated, convertParams(rpcRequest, InitializeRequest.class));
-            case METHOD_TOOLS_LIST -> withManagement(request, requestId, messageWriter, () -> mcpServer.listTools(convertParams(rpcRequest, ListRequest.class)));
+            case METHOD_TOOLS_LIST -> withManagement(request, requestId, messageWriter, () -> mcpServer.listTools(currentProtocol, convertParams(rpcRequest, ListRequest.class)));
             case METHOD_TOOLS_CALL -> withManagement(request, requestId, messageWriter, () -> mcpServer.callTool(request, messageWriter, convertParams(rpcRequest, CallToolRequest.class)));
-            case METHOD_PROMPT_LIST -> withManagement(request, requestId, messageWriter, () -> mcpServer.listPrompts(convertParams(rpcRequest, ListRequest.class)));
+            case METHOD_PROMPT_LIST -> withManagement(request, requestId, messageWriter, () -> mcpServer.listPrompts(currentProtocol, convertParams(rpcRequest, ListRequest.class)));
             case METHOD_PROMPT_GET -> withManagement(request, requestId, messageWriter, () -> mcpServer.getPrompt(request, messageWriter, convertParams(rpcRequest, GetPromptRequest.class)));
-            case METHOD_RESOURCES_LIST -> withManagement(request, requestId, messageWriter, () -> mcpServer.listResources(convertParams(rpcRequest, ListRequest.class)));
-            case METHOD_RESOURCES_TEMPLATES_LIST -> withManagement(request, requestId, messageWriter, () -> mcpServer.listResourceTemplates(convertParams(rpcRequest, ListRequest.class)));
+            case METHOD_RESOURCES_LIST -> withManagement(request, requestId, messageWriter, () -> mcpServer.listResources(currentProtocol, convertParams(rpcRequest, ListRequest.class)));
+            case METHOD_RESOURCES_TEMPLATES_LIST -> withManagement(request, requestId, messageWriter, () -> mcpServer.listResourceTemplates(currentProtocol, convertParams(rpcRequest, ListRequest.class)));
             case METHOD_RESOURCES_READ -> withManagement(request, requestId, messageWriter, () -> mcpServer.readResources(request, messageWriter, convertParams(rpcRequest, ReadResourceRequest.class)));
             case METHOD_PING -> ImmutableMap.of();
             case METHOD_COMPLETION_COMPLETE -> mcpServer.completionComplete(request, messageWriter, convertParams(rpcRequest, CompleteRequest.class));

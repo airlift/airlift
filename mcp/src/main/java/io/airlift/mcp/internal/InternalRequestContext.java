@@ -14,6 +14,7 @@ import io.airlift.mcp.model.ListRootsResult;
 import io.airlift.mcp.model.LoggingLevel;
 import io.airlift.mcp.model.LoggingMessageNotification;
 import io.airlift.mcp.model.ProgressNotification;
+import io.airlift.mcp.model.Protocol;
 import io.airlift.mcp.model.Root;
 import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.sessions.SessionId;
@@ -37,8 +38,10 @@ import static io.airlift.mcp.model.Constants.NOTIFICATION_MESSAGE;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_PROGRESS;
 import static io.airlift.mcp.model.JsonRpcRequest.buildNotification;
 import static io.airlift.mcp.model.JsonRpcRequest.buildRequest;
+import static io.airlift.mcp.model.Protocol.LATEST_PROTOCOL;
 import static io.airlift.mcp.sessions.SessionValueKey.CLIENT_CAPABILITIES;
 import static io.airlift.mcp.sessions.SessionValueKey.LOGGING_LEVEL;
+import static io.airlift.mcp.sessions.SessionValueKey.PROTOCOL;
 import static io.airlift.mcp.sessions.SessionValueKey.ROOTS;
 import static io.airlift.mcp.sessions.SessionValueKey.serverToClientResponseKey;
 import static java.util.Objects.requireNonNull;
@@ -210,6 +213,13 @@ class InternalRequestContext
     {
         return Optional.ofNullable(request.getHeader(MCP_SESSION_ID))
                 .map(SessionId::new);
+    }
+
+    static Protocol protocol(Optional<SessionController> sessionController, HttpServletRequest request)
+    {
+        return sessionController.flatMap(controller ->
+                        optionalSessionId(request).flatMap(sessionId -> controller.getSessionValue(sessionId, PROTOCOL)))
+                .orElse(LATEST_PROTOCOL);
     }
 
     private List<Root> updateRoots(Duration timeout, Duration pollInterval, SessionId sessionId)
