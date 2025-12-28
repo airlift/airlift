@@ -10,6 +10,7 @@ import com.google.inject.binder.LinkedBindingBuilder;
 import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.OptionalBinder;
+import com.google.inject.name.Names;
 import io.airlift.json.JsonSubType;
 import io.airlift.json.JsonSubTypeBinder;
 import io.airlift.mcp.handler.CompletionEntry;
@@ -37,6 +38,7 @@ import io.airlift.mcp.reflection.ResourceTemplateHandlerProvider;
 import io.airlift.mcp.reflection.ToolHandlerProvider;
 import io.airlift.mcp.sessions.SessionController;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -57,6 +59,8 @@ import static java.util.Objects.requireNonNull;
 public class McpModule
         implements Module
 {
+    public static final String MCP_SERVER_ICONS = "mcp-server-icons";
+
     private final Mode mode;
     private final McpMetadata metadata;
     private final IdentityMapperBinding identityMapperBinding;
@@ -69,6 +73,7 @@ public class McpModule
     private final Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding;
     private final Consumer<LinkedBindingBuilder<McpCancellationHandler>> cancellationHandlerBinding;
     private final Map<String, Consumer<LinkedBindingBuilder<Icon>>> icons;
+    private final Set<String> serverIcons;
 
     public static Builder builder()
     {
@@ -87,7 +92,8 @@ public class McpModule
             Set<CompletionHandlerProvider> completions,
             Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding,
             Consumer<LinkedBindingBuilder<McpCancellationHandler>> cancellationHandlerBinding,
-            Map<String, Consumer<LinkedBindingBuilder<Icon>>> icons)
+            Map<String, Consumer<LinkedBindingBuilder<Icon>>> icons,
+            Set<String> serverIcons)
     {
         this.mode = requireNonNull(mode, "mode is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
@@ -101,6 +107,7 @@ public class McpModule
         this.sessionControllerBinding = requireNonNull(sessionControllerBinding, "sessionControllerBinding is null");
         this.cancellationHandlerBinding = requireNonNull(cancellationHandlerBinding, "cancellationHandlerBinding is null");
         this.icons = ImmutableMap.copyOf(icons);
+        this.serverIcons = ImmutableSet.copyOf(serverIcons);
     }
 
     public enum Mode
@@ -138,6 +145,7 @@ public class McpModule
     {
         private final ImmutableSet.Builder<Class<?>> classes = ImmutableSet.builder();
         private final ImmutableMap.Builder<String, Consumer<LinkedBindingBuilder<Icon>>> icons = ImmutableMap.builder();
+        private final ImmutableSet.Builder<String> serverIcons = ImmutableSet.builder();
         private Optional<IdentityMapperBinding> identityMapperBinding = Optional.empty();
         private McpMetadata metadata = DEFAULT;
         private Mode mode = STANDARD;
@@ -197,6 +205,13 @@ public class McpModule
             return this;
         }
 
+        // NOTE: icons must be bound via addIcon()
+        public Builder withServerIcons(Collection<String> iconNames)
+        {
+            serverIcons.addAll(iconNames);
+            return this;
+        }
+
         public Module build()
         {
             Set<Class<?>> classesSet = classes.build();
@@ -248,7 +263,8 @@ public class McpModule
                     localCompletions,
                     sessionControllerBinding,
                     cancellationHandlerBinding,
-                    icons.build());
+                    icons.build(),
+                    serverIcons.build());
         }
     }
 
@@ -290,6 +306,9 @@ public class McpModule
 
         MapBinder<String, Icon> mapBinder = MapBinder.newMapBinder(binder, String.class, Icon.class);
         icons.forEach((name, binding) -> binding.accept(mapBinder.addBinding(name)));
+
+        Multibinder<String> serverIconsBinder = newSetBinder(binder, String.class, Names.named(MCP_SERVER_ICONS));
+        serverIcons.forEach(iconName -> serverIconsBinder.addBinding().toInstance(iconName));
     }
 
     private void bindCancellation(Binder binder)

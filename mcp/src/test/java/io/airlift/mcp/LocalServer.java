@@ -2,6 +2,7 @@ package io.airlift.mcp;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import io.airlift.bootstrap.Bootstrap;
@@ -41,6 +42,7 @@ public class LocalServer
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.toInstance((_) -> authenticated(new TestingIdentity("Mr. Tester"))))
                 .withSessions(binding -> binding.to(MemorySessionController.class).in(SINGLETON))
                 .addIcon("google", binding -> binding.toInstance(new Icon("https://www.gstatic.com/images/branding/searchlogo/ico/favicon.ico")))
+                .withServerIcons(ImmutableSet.of("google"))
                 .build();
 
         ImmutableList.Builder<Module> modules = ImmutableList.<Module>builder()
