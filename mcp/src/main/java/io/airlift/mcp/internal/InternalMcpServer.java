@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
+import com.google.inject.name.Named;
 import io.airlift.bootstrap.LifeCycleManager;
 import io.airlift.mcp.McpConfig;
 import io.airlift.mcp.McpMetadata;
@@ -30,6 +31,7 @@ import io.airlift.mcp.model.CompleteResult;
 import io.airlift.mcp.model.CompleteResult.CompleteCompletion;
 import io.airlift.mcp.model.GetPromptRequest;
 import io.airlift.mcp.model.GetPromptResult;
+import io.airlift.mcp.model.Implementation;
 import io.airlift.mcp.model.InitializeRequest;
 import io.airlift.mcp.model.InitializeResult;
 import io.airlift.mcp.model.InitializeResult.CompletionCapabilities;
@@ -56,6 +58,7 @@ import io.airlift.mcp.model.SetLevelRequest;
 import io.airlift.mcp.model.SubscribeListChanged;
 import io.airlift.mcp.model.SubscribeRequest;
 import io.airlift.mcp.model.Tool;
+import io.airlift.mcp.reflection.IconHelper;
 import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.sessions.SessionId;
 import io.airlift.mcp.sessions.SessionValueKey;
@@ -79,6 +82,7 @@ import java.util.stream.Stream;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.mcp.McpException.exception;
+import static io.airlift.mcp.McpModule.MCP_SERVER_ICONS;
 import static io.airlift.mcp.internal.InternalRequestContext.optionalSessionId;
 import static io.airlift.mcp.internal.InternalRequestContext.requireSessionId;
 import static io.airlift.mcp.model.Constants.MCP_SESSION_ID;
@@ -109,6 +113,7 @@ public class InternalMcpServer
     private final Optional<SessionController> sessionController;
     private final Duration sessionTimeout;
     private final ResourceVersionController resourceVersionController;
+    private final Implementation serverImplementation;
 
     @Inject
     InternalMcpServer(
@@ -123,7 +128,9 @@ public class InternalMcpServer
             Set<CompletionEntry> completions,
             PaginationUtil paginationUtil,
             McpConfig mcpConfig,
-            ResourceVersionController resourceVersionController)
+            ResourceVersionController resourceVersionController,
+            IconHelper iconHelper,
+            @Named(MCP_SERVER_ICONS) Set<String> serverIcons)
     {
         this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
@@ -139,6 +146,9 @@ public class InternalMcpServer
         completions.forEach(completion -> addCompletion(completion.reference(), completion.handler()));
 
         sessionTimeout = mcpConfig.getDefaultSessionTimeout().toJavaTime();
+
+        serverImplementation = iconHelper.mapIcons(serverIcons).map(icons -> metadata.implementation().withAdditionalIcons(icons))
+                .orElse(metadata.implementation());
     }
 
     @Override
@@ -242,7 +252,9 @@ public class InternalMcpServer
                 resources.isEmpty() ? Optional.empty() : Optional.of(new SubscribeListChanged(sessionsEnabled, sessionsEnabled)),
                 tools.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(sessionsEnabled)));
 
-        return new InitializeResult(protocol.value(), serverCapabilities, metadata.implementation(), metadata.instructions());
+        Implementation localImplementation = protocol.supportsIcons() ? serverImplementation : serverImplementation.simpleForm();
+
+        return new InitializeResult(protocol.value(), serverCapabilities, localImplementation, metadata.instructions());
     }
 
     ListToolsResult listTools(HttpServletRequest request, ListRequest listRequest)
