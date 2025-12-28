@@ -120,7 +120,7 @@ public class DebugApp
         }
 
         if (simulateError) {
-            callToolResult = new CallToolResult(content, callToolResult.structuredContent(), true, callToolResult.meta());
+            callToolResult = new CallToolResult(Optional.of(content), callToolResult.structuredContent(), Optional.empty(), Optional.of(true), callToolResult.meta());
         }
 
         return callToolResult;
