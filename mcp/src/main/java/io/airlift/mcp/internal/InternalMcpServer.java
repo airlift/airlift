@@ -361,6 +361,7 @@ public class InternalMcpServer
                 prompts.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(sessionsEnabled)),
                 resources.isEmpty() && resourceTemplates.isEmpty() ? Optional.empty() : Optional.of(new SubscribeListChanged(sessionsEnabled, sessionsEnabled)),
                 tools.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(sessionsEnabled)),
+                Optional.empty(),
                 Optional.empty());
 
         Implementation localImplementation = protocol.supportsIcons() ? serverImplementation : serverImplementation.simpleForm();
@@ -424,7 +425,7 @@ public class InternalMcpServer
             return toolEntry.toolHandler().callTool(requestContext, callToolRequest);
         }
         catch (McpClientException mcpClientException) {
-            return new CallToolResult(ImmutableList.of(new TextContent(mcpClientException.unwrap().errorDetail().message())), Optional.empty(), true, Optional.empty());
+            return new CallToolResult(Optional.of(ImmutableList.of(new TextContent(mcpClientException.unwrap().errorDetail().message()))), Optional.empty(), Optional.empty(), Optional.of(true), Optional.empty());
         }
     }
 
