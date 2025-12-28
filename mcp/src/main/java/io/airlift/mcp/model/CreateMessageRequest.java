@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalDouble;
+import java.util.OptionalInt;
 
 import static com.google.common.base.MoreObjects.firstNonNull;
 import static java.util.Locale.ROOT;
@@ -21,8 +22,9 @@ public record CreateMessageRequest(
         int maxTokens,
         Optional<List<String>> stopSequences,
         Optional<Map<String, Object>> metadata,
-        Optional<Map<String, Object>> meta)
-        implements Meta
+        Optional<Map<String, Object>> meta,
+        OptionalInt ttl)
+        implements Meta, TaskMetadata
 {
     public CreateMessageRequest
     {
@@ -34,21 +36,22 @@ public record CreateMessageRequest(
         stopSequences = firstNonNull(stopSequences, Optional.empty());
         metadata = firstNonNull(metadata, Optional.empty());
         meta = firstNonNull(meta, Optional.empty());
+        ttl = firstNonNull(ttl, OptionalInt.empty());
     }
 
     public CreateMessageRequest(List<SamplingMessage> messages, int maxTokens)
     {
-        this(messages, Optional.empty(), Optional.empty(), Optional.empty(), OptionalDouble.empty(), maxTokens, Optional.empty(), Optional.empty(), Optional.empty());
+        this(messages, Optional.empty(), Optional.empty(), Optional.empty(), OptionalDouble.empty(), maxTokens, Optional.empty(), Optional.empty(), Optional.empty(), OptionalInt.empty());
     }
 
     public CreateMessageRequest(SamplingMessage messages, int maxTokens)
     {
-        this(ImmutableList.of(messages), Optional.empty(), Optional.empty(), Optional.empty(), OptionalDouble.empty(), maxTokens, Optional.empty(), Optional.empty(), Optional.empty());
+        this(ImmutableList.of(messages), Optional.empty(), Optional.empty(), Optional.empty(), OptionalDouble.empty(), maxTokens, Optional.empty(), Optional.empty(), Optional.empty(), OptionalInt.empty());
     }
 
     public CreateMessageRequest(Role role, Content content, int maxTokens)
     {
-        this(ImmutableList.of(new SamplingMessage(role, content)), Optional.empty(), Optional.empty(), Optional.empty(), OptionalDouble.empty(), maxTokens, Optional.empty(), Optional.empty(), Optional.empty());
+        this(ImmutableList.of(new SamplingMessage(role, content)), Optional.empty(), Optional.empty(), Optional.empty(), OptionalDouble.empty(), maxTokens, Optional.empty(), Optional.empty(), Optional.empty(), OptionalInt.empty());
     }
 
     public record SamplingMessage(Role role, Content content)

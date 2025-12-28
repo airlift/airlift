@@ -11,7 +11,21 @@ public record InitializeResult(
         Implementation serverInfo,
         Optional<String> instructions)
 {
-    public record ServerCapabilities(Optional<CompletionCapabilities> completions, Optional<LoggingCapabilities> logging, Optional<ListChanged> prompts, Optional<SubscribeListChanged> resources, Optional<ListChanged> tools)
+    public InitializeResult
+    {
+        requireNonNull(protocolVersion, "protocolVersion is null");
+        requireNonNull(capabilities, "capabilities is null");
+        requireNonNull(serverInfo, "serverInfo is null");
+        instructions = firstNonNull(instructions, Optional.empty());
+    }
+
+    public record ServerCapabilities(
+            Optional<CompletionCapabilities> completions,
+            Optional<LoggingCapabilities> logging,
+            Optional<ListChanged> prompts,
+            Optional<SubscribeListChanged> resources,
+            Optional<ListChanged> tools,
+            Optional<TaskCapabilities> tasks)
     {
         public ServerCapabilities
         {
@@ -20,11 +34,12 @@ public record InitializeResult(
             prompts = firstNonNull(prompts, Optional.empty());
             resources = firstNonNull(resources, Optional.empty());
             tools = firstNonNull(tools, Optional.empty());
+            tasks = firstNonNull(tasks, Optional.empty());
         }
 
         public ServerCapabilities()
         {
-            this(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+            this(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
         }
     }
 
@@ -32,11 +47,29 @@ public record InitializeResult(
 
     public record LoggingCapabilities() {}
 
-    public InitializeResult
+    public record TaskTools(Optional<Property> call)
     {
-        requireNonNull(protocolVersion, "protocolVersion is null");
-        requireNonNull(capabilities, "capabilities is null");
-        requireNonNull(serverInfo, "serverInfo is null");
-        instructions = firstNonNull(instructions, Optional.empty());
+        public TaskTools
+        {
+            call = firstNonNull(call, Optional.empty());
+        }
+    }
+
+    public record TaskRequests(Optional<TaskTools> tools)
+    {
+        public TaskRequests
+        {
+            tools = firstNonNull(tools, Optional.empty());
+        }
+    }
+
+    public record TaskCapabilities(Optional<Property> cancel, Optional<Property> list, Optional<TaskRequests> requests)
+    {
+        public TaskCapabilities
+        {
+            cancel = firstNonNull(cancel, Optional.empty());
+            list = firstNonNull(list, Optional.empty());
+            requests = firstNonNull(requests, Optional.empty());
+        }
     }
 }

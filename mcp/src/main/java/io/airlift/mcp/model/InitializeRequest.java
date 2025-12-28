@@ -13,16 +13,6 @@ public record InitializeRequest(
         Optional<Map<String, Object>> meta)
         implements Meta
 {
-    public record ClientCapabilities(Optional<ListChanged> roots, Optional<Sampling> sampling, Optional<Elicitation> elicitation)
-    {
-        public ClientCapabilities
-        {
-            roots = firstNonNull(roots, Optional.empty());
-            sampling = firstNonNull(sampling, Optional.empty());
-            elicitation = firstNonNull(elicitation, Optional.empty());
-        }
-    }
-
     public InitializeRequest
     {
         requireNonNull(protocolVersion, "protocolVersion is null");
@@ -36,7 +26,53 @@ public record InitializeRequest(
         this(protocolVersion, capabilities, clientInfo, Optional.empty());
     }
 
+    public record ClientCapabilities(Optional<ListChanged> roots, Optional<Sampling> sampling, Optional<Elicitation> elicitation, Optional<ClientTaskCapabilities> tasks)
+    {
+        public ClientCapabilities
+        {
+            roots = firstNonNull(roots, Optional.empty());
+            sampling = firstNonNull(sampling, Optional.empty());
+            elicitation = firstNonNull(elicitation, Optional.empty());
+            tasks = firstNonNull(tasks, Optional.empty());
+        }
+    }
+
     public record Sampling() {}
 
     public record Elicitation() {}
+
+    public record TaskSampling(Optional<Property> createMessage)
+    {
+        public TaskSampling
+        {
+            createMessage = firstNonNull(createMessage, Optional.empty());
+        }
+    }
+
+    public record TaskElicitation(Optional<Property> create)
+    {
+        public TaskElicitation
+        {
+            create = firstNonNull(create, Optional.empty());
+        }
+    }
+
+    public record ClientTaskRequests(Optional<TaskElicitation> elicitation, Optional<TaskSampling> sampling)
+    {
+        public ClientTaskRequests
+        {
+            elicitation = firstNonNull(elicitation, Optional.empty());
+            sampling = firstNonNull(sampling, Optional.empty());
+        }
+    }
+
+    public record ClientTaskCapabilities(Optional<Property> cancel, Optional<Property> list, Optional<ClientTaskRequests> requests)
+    {
+        public ClientTaskCapabilities
+        {
+            cancel = firstNonNull(cancel, Optional.empty());
+            list = firstNonNull(list, Optional.empty());
+            requests = firstNonNull(requests, Optional.empty());
+        }
+    }
 }

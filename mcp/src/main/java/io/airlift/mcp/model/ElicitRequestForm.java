@@ -4,12 +4,13 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import static com.google.common.base.MoreObjects.firstNonNull;
 import static java.util.Objects.requireNonNull;
 
-public record ElicitRequestForm(Optional<String> mode, String message, ObjectNode requestedSchema, Optional<Map<String, Object>> meta)
-        implements Meta
+public record ElicitRequestForm(Optional<String> mode, String message, ObjectNode requestedSchema, Optional<Map<String, Object>> meta, OptionalInt ttl)
+        implements Meta, TaskMetadata
 {
     public ElicitRequestForm
     {
@@ -17,10 +18,11 @@ public record ElicitRequestForm(Optional<String> mode, String message, ObjectNod
         requireNonNull(message, "message is null");
         requireNonNull(requestedSchema, "requestedSchema is null");
         meta = firstNonNull(meta, Optional.empty());
+        ttl = firstNonNull(ttl, OptionalInt.empty());
     }
 
     public ElicitRequestForm(String message, ObjectNode requestedSchema)
     {
-        this(Optional.of("form"), message, requestedSchema, Optional.empty());
+        this(Optional.of("form"), message, requestedSchema, Optional.empty(), OptionalInt.empty());
     }
 }
