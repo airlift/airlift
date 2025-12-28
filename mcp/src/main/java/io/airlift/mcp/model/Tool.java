@@ -7,15 +7,14 @@ import java.util.Optional;
 import static com.google.common.base.MoreObjects.firstNonNull;
 import static java.util.Objects.requireNonNull;
 
-public record Tool(String name, Optional<String> description, ObjectNode inputSchema, Optional<ObjectNode> outputSchema, ToolAnnotations annotations)
+public record Tool(String name, Optional<String> description, Optional<String> title, ObjectNode inputSchema, Optional<ObjectNode> outputSchema, ToolAnnotations annotations)
 {
     public record ToolAnnotations(
             Optional<String> title,
             Optional<Boolean> readOnlyHint,
             Optional<Boolean> destructiveHint,
             Optional<Boolean> idempotentHint,
-            Optional<Boolean> openWorldHint,
-            Optional<Boolean> returnDirect)
+            Optional<Boolean> openWorldHint)
     {
         public ToolAnnotations
         {
@@ -24,7 +23,6 @@ public record Tool(String name, Optional<String> description, ObjectNode inputSc
             destructiveHint = firstNonNull(destructiveHint, Optional.empty());
             idempotentHint = firstNonNull(idempotentHint, Optional.empty());
             openWorldHint = firstNonNull(openWorldHint, Optional.empty());
-            returnDirect = firstNonNull(returnDirect, Optional.empty());
         }
     }
 
@@ -32,6 +30,8 @@ public record Tool(String name, Optional<String> description, ObjectNode inputSc
     {
         requireNonNull(name, "name is null");
         description = firstNonNull(description, Optional.empty());
+        title = firstNonNull(title, Optional.empty());
+        requireNonNull(inputSchema, "inputSchema is null");
         outputSchema = firstNonNull(outputSchema, Optional.empty());
         requireNonNull(annotations, "annotations is null");
     }
