@@ -15,7 +15,7 @@ import io.airlift.mcp.model.Constants;
 import io.airlift.mcp.model.Content.TextContent;
 import io.airlift.mcp.model.CreateMessageRequest;
 import io.airlift.mcp.model.CreateMessageResult;
-import io.airlift.mcp.model.ElicitRequest;
+import io.airlift.mcp.model.ElicitRequestForm;
 import io.airlift.mcp.model.ElicitResult;
 import io.airlift.mcp.model.JsonRpcResponse;
 import io.airlift.mcp.model.JsonSchemaBuilder;
@@ -304,7 +304,7 @@ public class TestingEndpoints
         }
 
         ObjectNode elicitation = new JsonSchemaBuilder("elicitation").build(Optional.empty(), Person.class);
-        ElicitRequest elicitRequest = new ElicitRequest("Who are you?", elicitation);
+        ElicitRequestForm elicitRequest = new ElicitRequestForm("Who are you?", elicitation);
         JsonRpcResponse<ElicitResult> response;
         try {
             response = requestContext.serverToClientRequest(Constants.METHOD_ELICITATION_CREATE, elicitRequest, ElicitResult.class, Duration.ofMinutes(5), Duration.ofSeconds(30));
@@ -329,7 +329,7 @@ public class TestingEndpoints
         }
 
         CreateMessageRequest createMessageRequest = new CreateMessageRequest(Role.USER, new TextContent("Are you sure?"), 100);
-        JsonRpcResponse<CreateMessageResult> response = null;
+        JsonRpcResponse<CreateMessageResult> response;
         try {
             response = requestContext.serverToClientRequest(Constants.METHOD_SAMPLING_CREATE_MESSAGE, createMessageRequest, CreateMessageResult.class, Duration.ofMinutes(5), Duration.ofSeconds(1));
         }
