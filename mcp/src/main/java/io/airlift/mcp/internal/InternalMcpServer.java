@@ -49,6 +49,7 @@ import io.airlift.mcp.model.McpIdentity;
 import io.airlift.mcp.model.Meta;
 import io.airlift.mcp.model.OptionalBoolean;
 import io.airlift.mcp.model.Prompt;
+import io.airlift.mcp.model.Protocol;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.ReadResourceResult;
 import io.airlift.mcp.model.Resource;
@@ -90,12 +91,13 @@ import static io.airlift.mcp.model.Constants.NOTIFICATION_PROMPTS_LIST_CHANGED;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_RESOURCES_LIST_CHANGED;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_RESOURCES_UPDATED;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_TOOLS_LIST_CHANGED;
-import static io.airlift.mcp.model.Constants.PROTOCOL_MCP_2025_06_18;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
 import static io.airlift.mcp.model.JsonRpcErrorCode.RESOURCE_NOT_FOUND;
+import static io.airlift.mcp.model.Protocol.LATEST_PROTOCOL;
 import static io.airlift.mcp.sessions.SessionValueKey.CLIENT_CAPABILITIES;
 import static io.airlift.mcp.sessions.SessionValueKey.LOGGING_LEVEL;
+import static io.airlift.mcp.sessions.SessionValueKey.PROTOCOL;
 import static io.airlift.mcp.sessions.SessionValueKey.SYSTEM_LIST_VERSIONS;
 import static io.airlift.mcp.sessions.SessionValueKey.resourceVersionKey;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -104,8 +106,6 @@ import static java.util.Objects.requireNonNull;
 public class InternalMcpServer
         implements McpServer
 {
-    private static final List<String> SUPPORTED_PROTOCOL_VERSIONS = ImmutableList.of(PROTOCOL_MCP_2025_06_18);
-
     private static final int RECONCILE_PAGE_SIZE = 100;
 
     private final Map<String, ToolEntry> tools = new ConcurrentHashMap<>();
@@ -219,6 +219,9 @@ public class InternalMcpServer
 
     InitializeResult initialize(HttpServletResponse response, McpIdentity.Authenticated<?> authenticated, InitializeRequest initializeRequest)
     {
+        Protocol protocol = Protocol.of(initializeRequest.protocolVersion())
+                .orElse(LATEST_PROTOCOL);
+
         boolean sessionsEnabled = sessionController.map(controller -> {
             SessionId sessionId = controller.createSession(authenticated, Optional.of(sessionTimeout));
             response.addHeader(MCP_SESSION_ID, sessionId.id());
@@ -226,12 +229,10 @@ public class InternalMcpServer
             controller.setSessionValue(sessionId, LOGGING_LEVEL, LoggingLevel.INFO);
             controller.setSessionValue(sessionId, SYSTEM_LIST_VERSIONS, buildSystemListVersions());
             controller.setSessionValue(sessionId, CLIENT_CAPABILITIES, initializeRequest.capabilities());
+            controller.setSessionValue(sessionId, PROTOCOL, protocol);
 
             return true;
         }).orElse(false);
-
-        boolean protocolVersionIsSupported = SUPPORTED_PROTOCOL_VERSIONS.contains(initializeRequest.protocolVersion());
-        String protocolVersion = protocolVersionIsSupported ? initializeRequest.protocolVersion() : SUPPORTED_PROTOCOL_VERSIONS.getLast();
 
         ServerCapabilities serverCapabilities = new ServerCapabilities(
                 completions.isEmpty() ? Optional.empty() : Optional.of(new CompletionCapabilities()),
@@ -240,7 +241,7 @@ public class InternalMcpServer
                 resources.isEmpty() ? Optional.empty() : Optional.of(new SubscribeListChanged(sessionsEnabled, sessionsEnabled)),
                 tools.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(sessionsEnabled)));
 
-        return new InitializeResult(protocolVersion, serverCapabilities, metadata.implementation(), metadata.instructions());
+        return new InitializeResult(protocol.value(), serverCapabilities, metadata.implementation(), metadata.instructions());
     }
 
     ListToolsResult listTools(ListRequest listRequest)
