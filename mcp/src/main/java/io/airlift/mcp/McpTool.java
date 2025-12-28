@@ -26,6 +26,4 @@ public @interface McpTool
     OptionalBoolean idempotentHint() default UNDEFINED;
 
     OptionalBoolean openWorldHint() default UNDEFINED;
-
-    OptionalBoolean returnDirect() default UNDEFINED;
 }

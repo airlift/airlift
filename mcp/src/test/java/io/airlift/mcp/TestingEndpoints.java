@@ -214,6 +214,7 @@ public class TestingEndpoints
                         ToolEntry firstTool = tools.iterator().next();
                         Tool alteredTool = new Tool(
                                 firstTool.tool().name(),
+                                firstTool.tool().description(),
                                 Optional.of(UUID.randomUUID().toString()),
                                 firstTool.tool().inputSchema(),
                                 firstTool.tool().outputSchema(),
