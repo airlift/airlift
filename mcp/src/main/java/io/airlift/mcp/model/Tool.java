@@ -4,8 +4,11 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static com.google.common.base.MoreObjects.firstNonNull;
+import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static java.util.Objects.requireNonNull;
 
 public record Tool(
@@ -17,6 +20,8 @@ public record Tool(
         ToolAnnotations annotations,
         Optional<List<Icon>> icons)
 {
+    private static final Set<Character> ALLOWED_CHARACTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_-.".chars().mapToObj(i -> (char) i).collect(toImmutableSet());
+
     public Tool
     {
         requireNonNull(name, "name is null");
@@ -26,11 +31,22 @@ public record Tool(
         outputSchema = firstNonNull(outputSchema, Optional.empty());
         requireNonNull(annotations, "annotations is null");
         icons = firstNonNull(icons, Optional.empty());
+
+        validateName(name);
     }
 
     public Tool(String name, Optional<String> description, Optional<String> title, ObjectNode inputSchema, Optional<ObjectNode> outputSchema, ToolAnnotations annotations)
     {
         this(name, description, title, inputSchema, outputSchema, annotations, Optional.empty());
+    }
+
+    public static void validateName(String name)
+    {
+        // see: https://modelcontextprotocol.io/specification/2025-11-25/server/tools#tool-names
+
+        requireNonNull(name, "name is null");
+        checkState(!name.isEmpty() && name.length() <= 128, "Tool name must be between 1 and 128 characters");
+        checkState(name.chars().allMatch(c -> ALLOWED_CHARACTERS.contains((char) c)), "Tool name must be between 1 and 128 characters");
     }
 
     public Tool withIcons(Optional<List<Icon>> icons)
