@@ -1,12 +1,14 @@
 package io.airlift.mcp;
 
 import io.airlift.mcp.model.OptionalBoolean;
+import io.airlift.mcp.model.ToolExecution;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.util.function.Consumer;
 
 import static io.airlift.mcp.model.OptionalBoolean.UNDEFINED;
+import static io.airlift.mcp.model.ToolExecution.FORBIDDEN;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
@@ -25,6 +27,8 @@ public @interface McpTool
      * via {@link McpModule.Builder#addIcon(String, Consumer)}.
      */
     String[] icons() default {};
+
+    ToolExecution execution() default FORBIDDEN;
 
     OptionalBoolean readOnlyHint() default UNDEFINED;
 

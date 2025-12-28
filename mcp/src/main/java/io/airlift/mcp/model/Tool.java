@@ -18,7 +18,8 @@ public record Tool(
         ObjectNode inputSchema,
         Optional<ObjectNode> outputSchema,
         ToolAnnotations annotations,
-        Optional<List<Icon>> icons)
+        Optional<List<Icon>> icons,
+        Optional<ToolExecution> execution)
 {
     private static final Set<Character> ALLOWED_CHARACTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_-.".chars().mapToObj(i -> (char) i).collect(toImmutableSet());
 
@@ -31,13 +32,14 @@ public record Tool(
         outputSchema = firstNonNull(outputSchema, Optional.empty());
         requireNonNull(annotations, "annotations is null");
         icons = firstNonNull(icons, Optional.empty());
+        execution = firstNonNull(execution, Optional.empty());
 
         validateName(name);
     }
 
     public Tool(String name, Optional<String> description, Optional<String> title, ObjectNode inputSchema, Optional<ObjectNode> outputSchema, ToolAnnotations annotations)
     {
-        this(name, description, title, inputSchema, outputSchema, annotations, Optional.empty());
+        this(name, description, title, inputSchema, outputSchema, annotations, Optional.empty(), Optional.empty());
     }
 
     public static void validateName(String name)
@@ -51,12 +53,17 @@ public record Tool(
 
     public Tool withIcons(Optional<List<Icon>> icons)
     {
-        return new Tool(name, description, title, inputSchema, outputSchema, annotations, icons);
+        return new Tool(name, description, title, inputSchema, outputSchema, annotations, icons, execution);
     }
 
     public Tool withoutIcons()
     {
-        return new Tool(name, description, title, inputSchema, outputSchema, annotations, Optional.empty());
+        return new Tool(name, description, title, inputSchema, outputSchema, annotations, Optional.empty(), execution);
+    }
+
+    public Tool withoutExecution()
+    {
+        return new Tool(name, description, title, inputSchema, outputSchema, annotations, icons, Optional.empty());
     }
 
     public record ToolAnnotations(
