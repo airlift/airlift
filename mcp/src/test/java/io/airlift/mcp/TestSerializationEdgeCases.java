@@ -9,6 +9,7 @@ import com.google.common.collect.ImmutableSet;
 import io.airlift.json.JsonSubType;
 import io.airlift.json.ObjectMapperProvider;
 import io.airlift.log.Logger;
+import io.airlift.mcp.model.Icon;
 import io.airlift.mcp.model.JsonRpcRequest;
 import io.airlift.mcp.model.JsonRpcResponse;
 import io.airlift.mcp.model.McpIdentity;
@@ -78,6 +79,10 @@ public class TestSerializationEdgeCases
         if (OptionalInt.class.isAssignableFrom(rawType) || OptionalLong.class.isAssignableFrom(rawType) || OptionalDouble.class.isAssignableFrom(rawType)) {
             // Important edge case - many clients will omit fields that are optional
             return null;
+        }
+
+        if (Icon.Theme.class.isAssignableFrom(rawType)) {
+            return Icon.Theme.DARK;
         }
 
         if (rawType.isEnum()) {

@@ -37,6 +37,7 @@ public class ResourceTemplateHandlerProvider
     private final Method method;
     private final List<MethodParameter> parameters;
     private final boolean resultIsSingleContent;
+    private final List<String> icons;
     private Injector injector;
     private ObjectMapper objectMapper;
 
@@ -45,6 +46,7 @@ public class ResourceTemplateHandlerProvider
         this.clazz = requireNonNull(clazz, "clazz is null");
         this.method = requireNonNull(method, "method is null");
         this.parameters = ImmutableList.copyOf(parameters);
+        icons = ImmutableList.copyOf(mcpResourceTemplate.icons());
 
         validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isReadResourceRequest).or(isSourceResourceTemplate).or(isResourceTemplateValues), returnsResourceContents.or(returnsResourceContentsList));
         this.resultIsSingleContent = returnsResourceContents.test(method);
@@ -74,6 +76,7 @@ public class ResourceTemplateHandlerProvider
     public ResourceTemplateEntry get()
     {
         Provider<?> instance = injector.getProvider(clazz);
+        IconHelper iconHelper = injector.getInstance(IconHelper.class);
         MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper);
 
         ResourceTemplateHandler resourceTemplateHandler = (requestContext, sourceResourceTemplate, readResourceRequest, resourceTemplateValues) -> {
@@ -84,10 +87,10 @@ public class ResourceTemplateHandlerProvider
             return mapResult(method, result, resultIsSingleContent);
         };
 
-        return new ResourceTemplateEntry(resourceTemplate, resourceTemplateHandler);
+        return new ResourceTemplateEntry(resourceTemplate.withIcons(iconHelper.mapIcons(icons)), resourceTemplateHandler);
     }
 
-    static ResourceTemplate buildResourceTemplate(String name, String uriTemplate, String mimeType, String descriptionOrEmpty, Role[] audience, double priority)
+    private static ResourceTemplate buildResourceTemplate(String name, String uriTemplate, String mimeType, String descriptionOrEmpty, Role[] audience, double priority)
     {
         Optional<String> description = descriptionOrEmpty.isEmpty() ? Optional.empty() : Optional.of(descriptionOrEmpty);
 
@@ -96,6 +99,7 @@ public class ResourceTemplateHandlerProvider
                 isNaN(priority) ? OptionalDouble.empty() : OptionalDouble.of(priority));
 
         Optional<Annotations> useAnnotations = annotations.equals(Annotations.EMPTY) ? Optional.empty() : Optional.of(annotations);
+
         return new ResourceTemplate(name, uriTemplate, description, mimeType, useAnnotations);
     }
 }

@@ -10,6 +10,7 @@ import io.airlift.http.server.testing.TestingHttpServerModule;
 import io.airlift.jaxrs.JaxrsModule;
 import io.airlift.json.JsonModule;
 import io.airlift.log.Logger;
+import io.airlift.mcp.model.Icon;
 import io.airlift.mcp.sessions.MemorySessionController;
 import io.airlift.node.NodeModule;
 
@@ -39,6 +40,7 @@ public class LocalServer
                 .withAllInClass(TestingEndpoints.class)
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.toInstance((_, sessionId) -> authenticated(new TestingIdentity("Mr. Tester"))))
                 .withSessions(binding -> binding.to(MemorySessionController.class).in(SINGLETON))
+                .addIcon("google", binding -> binding.toInstance(new Icon("https://www.gstatic.com/images/branding/searchlogo/ico/favicon.ico")))
                 .build();
 
         ImmutableList.Builder<Module> modules = ImmutableList.<Module>builder()

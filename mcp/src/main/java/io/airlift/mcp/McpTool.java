@@ -4,6 +4,7 @@ import io.airlift.mcp.model.OptionalBoolean;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
+import java.util.function.Consumer;
 
 import static io.airlift.mcp.model.OptionalBoolean.UNDEFINED;
 import static java.lang.annotation.ElementType.METHOD;
@@ -18,6 +19,12 @@ public @interface McpTool
     String description() default "";
 
     String title() default "";
+
+    /**
+     * Names of icons for this tool. Icons must be bound
+     * via {@link McpModule.Builder#addIcon(String, Consumer)}.
+     */
+    String[] icons() default {};
 
     OptionalBoolean readOnlyHint() default UNDEFINED;
 

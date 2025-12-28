@@ -79,6 +79,7 @@ import java.util.stream.Stream;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.mcp.McpException.exception;
+import static io.airlift.mcp.internal.InternalRequestContext.optionalSessionId;
 import static io.airlift.mcp.internal.InternalRequestContext.requireSessionId;
 import static io.airlift.mcp.model.Constants.MCP_SESSION_ID;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
@@ -244,34 +245,46 @@ public class InternalMcpServer
         return new InitializeResult(protocol.value(), serverCapabilities, metadata.implementation(), metadata.instructions());
     }
 
-    ListToolsResult listTools(ListRequest listRequest)
+    ListToolsResult listTools(HttpServletRequest request, ListRequest listRequest)
     {
+        boolean localSupportsIcons = supportsIcons(request);
+
         List<Tool> localTools = tools.values().stream()
                 .map(ToolEntry::tool)
+                .map(tool -> localSupportsIcons ? tool : tool.withoutIcons())
                 .collect(toImmutableList());
         return paginationUtil.paginate(listRequest, localTools, Tool::name, ListToolsResult::new);
     }
 
-    ListPromptsResult listPrompts(ListRequest listRequest)
+    ListPromptsResult listPrompts(HttpServletRequest request, ListRequest listRequest)
     {
+        boolean localSupportsIcons = supportsIcons(request);
+
         List<Prompt> localPrompts = prompts.values().stream()
                 .map(PromptEntry::prompt)
+                .map(prompt -> localSupportsIcons ? prompt : prompt.withoutIcons())
                 .collect(toImmutableList());
         return paginationUtil.paginate(listRequest, localPrompts, Prompt::name, ListPromptsResult::new);
     }
 
-    ListResourcesResult listResources(ListRequest listRequest)
+    ListResourcesResult listResources(HttpServletRequest request, ListRequest listRequest)
     {
+        boolean localSupportsIcons = supportsIcons(request);
+
         List<Resource> localResources = resources.values().stream()
                 .map(ResourceEntry::resource)
+                .map(resource -> localSupportsIcons ? resource : resource.withoutIcons())
                 .collect(toImmutableList());
         return paginationUtil.paginate(listRequest, localResources, Resource::name, ListResourcesResult::new);
     }
 
-    ListResourceTemplatesResult listResourceTemplates(ListRequest listRequest)
+    ListResourceTemplatesResult listResourceTemplates(HttpServletRequest request, ListRequest listRequest)
     {
+        boolean localSupportsIcons = supportsIcons(request);
+
         List<ResourceTemplate> localResourceTemplates = resourceTemplates.values().stream()
                 .map(ResourceTemplateEntry::resourceTemplate)
+                .map(resourceTemplate -> localSupportsIcons ? resourceTemplate : resourceTemplate.withoutIcons())
                 .collect(toImmutableList());
         return paginationUtil.paginate(listRequest, localResourceTemplates, ResourceTemplate::name, ListResourceTemplatesResult::new);
     }
@@ -444,5 +457,14 @@ public class InternalMcpServer
             case PromptReference(var name, _) -> name;
             case ResourceReference(var uri) -> uri;
         };
+    }
+
+    private boolean supportsIcons(HttpServletRequest request)
+    {
+        return sessionController.map(controller -> optionalSessionId(request).map(sessionId -> {
+                    Protocol protocol = controller.getSessionValue(sessionId, PROTOCOL).orElse(LATEST_PROTOCOL);
+                    return protocol.supportsIcons();
+                }
+        ).orElse(false)).orElse(false);
     }
 }
