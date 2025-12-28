@@ -12,7 +12,22 @@ public record InitializeResult(
         Implementation serverInfo,
         Optional<String> instructions)
 {
-    public record ServerCapabilities(Optional<CompletionCapabilities> completions, Optional<LoggingCapabilities> logging, Optional<ListChanged> prompts, Optional<SubscribeListChanged> resources, Optional<ListChanged> tools, Optional<Map<String, Object>> experimental)
+    public InitializeResult
+    {
+        requireNonNull(protocolVersion, "protocolVersion is null");
+        requireNonNull(capabilities, "capabilities is null");
+        requireNonNull(serverInfo, "serverInfo is null");
+        instructions = requireNonNullElse(instructions, Optional.empty());
+    }
+
+    public record ServerCapabilities(
+            Optional<CompletionCapabilities> completions,
+            Optional<LoggingCapabilities> logging,
+            Optional<ListChanged> prompts,
+            Optional<SubscribeListChanged> resources,
+            Optional<ListChanged> tools,
+            Optional<TaskCapabilities> tasks,
+            Optional<Map<String, Object>> experimental)
             implements Experimental
     {
         public ServerCapabilities
@@ -23,11 +38,12 @@ public record InitializeResult(
             resources = requireNonNullElse(resources, Optional.empty());
             tools = requireNonNullElse(tools, Optional.empty());
             experimental = requireNonNullElse(experimental, Optional.empty());
+            tasks = requireNonNullElse(tasks, Optional.empty());
         }
 
         public ServerCapabilities()
         {
-            this(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+            this(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
         }
     }
 
@@ -35,11 +51,29 @@ public record InitializeResult(
 
     public record LoggingCapabilities() {}
 
-    public InitializeResult
+    public record TaskTools(Optional<Property> call)
     {
-        requireNonNull(protocolVersion, "protocolVersion is null");
-        requireNonNull(capabilities, "capabilities is null");
-        requireNonNull(serverInfo, "serverInfo is null");
-        instructions = requireNonNullElse(instructions, Optional.empty());
+        public TaskTools
+        {
+            call = requireNonNullElse(call, Optional.empty());
+        }
+    }
+
+    public record TaskRequests(Optional<TaskTools> tools)
+    {
+        public TaskRequests
+        {
+            tools = requireNonNullElse(tools, Optional.empty());
+        }
+    }
+
+    public record TaskCapabilities(Optional<Property> cancel, Optional<Property> list, Optional<TaskRequests> requests)
+    {
+        public TaskCapabilities
+        {
+            cancel = requireNonNullElse(cancel, Optional.empty());
+            list = requireNonNullElse(list, Optional.empty());
+            requests = requireNonNullElse(requests, Optional.empty());
+        }
     }
 }
