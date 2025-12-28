@@ -2,9 +2,6 @@ package io.airlift.mcp.model;
 
 public interface Constants
 {
-    String PROTOCOL_MCP_2025_06_18 = "2025-06-18";
-    String PROTOCOL_MCP_2025_11_25 = "2025-11-25";
-
     String JSON_RPC_VERSION = "2.0";
 
     String MCP_SESSION_ID = "Mcp-Session-Id";
