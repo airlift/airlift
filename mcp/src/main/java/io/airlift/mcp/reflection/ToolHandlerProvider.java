@@ -162,6 +162,6 @@ public class ToolHandlerProvider
         JsonSchemaBuilder jsonSchemaBuilder = new JsonSchemaBuilder("Tool: " + tool.name());
         ObjectNode jsonSchema = jsonSchemaBuilder.build(description, parameters);
 
-        return new Tool(tool.name(), description, title, jsonSchema, outputSchema, toolAnnotations);
+        return new Tool(tool.name(), description, title, jsonSchema, outputSchema, toolAnnotations, Optional.empty(), Optional.of(tool.execution()));
     }
 }
