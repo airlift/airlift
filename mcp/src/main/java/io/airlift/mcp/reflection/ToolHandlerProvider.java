@@ -42,6 +42,7 @@ public class ToolHandlerProvider
     private final Method method;
     private final List<MethodParameter> parameters;
     private final ReturnType returnType;
+    private final List<String> icons;
     private Injector injector;
     private ObjectMapper objectMapper;
 
@@ -50,6 +51,7 @@ public class ToolHandlerProvider
         this.clazz = requireNonNull(clazz, "clazz is null");
         this.method = requireNonNull(method, "method is null");
         this.parameters = ImmutableList.copyOf(parameters);
+        icons = ImmutableList.copyOf(mcpTool.icons());
 
         validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isObject).or(isCallToolRequest), returnsAnything);
 
@@ -100,6 +102,7 @@ public class ToolHandlerProvider
     {
         Provider<?> instance = injector.getProvider(clazz);
         MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper);
+        IconHelper iconHelper = injector.getInstance(IconHelper.class);
 
         ToolHandler toolHandler = (requestContext, toolRequest) -> {
             Object result = methodInvoker.builder(requestContext)
@@ -119,7 +122,7 @@ public class ToolHandlerProvider
             };
         };
 
-        return new ToolEntry(tool, toolHandler);
+        return new ToolEntry(tool.withIcons(iconHelper.mapIcons(icons)), toolHandler);
     }
 
     private CallToolResult mapStructuredContentResult(StructuredContentResult<?> result)

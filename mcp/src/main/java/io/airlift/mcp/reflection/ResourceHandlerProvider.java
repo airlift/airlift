@@ -39,6 +39,7 @@ public class ResourceHandlerProvider
     private final Method method;
     private final List<MethodParameter> parameters;
     private final boolean resultIsSingleContent;
+    private final List<String> icons;
     private Injector injector;
     private ObjectMapper objectMapper;
 
@@ -47,6 +48,7 @@ public class ResourceHandlerProvider
         this.clazz = requireNonNull(clazz, "clazz is null");
         this.method = requireNonNull(method, "method is null");
         this.parameters = ImmutableList.copyOf(parameters);
+        icons = ImmutableList.copyOf(mcpResource.icons());
 
         validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isReadResourceRequest).or(isSourceResource), returnsResourceContents.or(returnsResourceContentsList));
         resultIsSingleContent = returnsResourceContents.test(method);
@@ -78,6 +80,7 @@ public class ResourceHandlerProvider
     {
         Provider<?> instance = injector.getProvider(clazz);
         MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper);
+        IconHelper iconHelper = injector.getInstance(IconHelper.class);
 
         ResourceHandler resourceHandler = (requestContext, sourceResource, readResourceRequest) -> {
             Object result = methodInvoker.builder(requestContext)
@@ -86,7 +89,7 @@ public class ResourceHandlerProvider
             return mapResult(method, result, resultIsSingleContent);
         };
 
-        return new ResourceEntry(resource, resourceHandler);
+        return new ResourceEntry(resource.withIcons(iconHelper.mapIcons(icons)), resourceHandler);
     }
 
     @SuppressWarnings("unchecked")
@@ -103,7 +106,7 @@ public class ResourceHandlerProvider
         return (List<ResourceContents>) result;
     }
 
-    static Resource buildResource(String name, String uri, String mimeType, String descriptionOrEmpty, long size, Role[] audience, double priority)
+    private static Resource buildResource(String name, String uri, String mimeType, String descriptionOrEmpty, long size, Role[] audience, double priority)
     {
         Optional<String> description = descriptionOrEmpty.isEmpty() ? Optional.empty() : Optional.of(descriptionOrEmpty);
 
@@ -113,6 +116,7 @@ public class ResourceHandlerProvider
 
         OptionalLong useSize = (size >= 0) ? OptionalLong.of(size) : OptionalLong.empty();
         Optional<Annotations> useAnnotations = annotations.equals(Annotations.EMPTY) ? Optional.empty() : Optional.of(annotations);
+
         return new Resource(name, uri, description, mimeType, useSize, useAnnotations);
     }
 }

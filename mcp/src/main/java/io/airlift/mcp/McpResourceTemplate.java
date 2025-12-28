@@ -4,6 +4,7 @@ import io.airlift.mcp.model.Role;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
+import java.util.function.Consumer;
 
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
@@ -19,6 +20,12 @@ public @interface McpResourceTemplate
     String mimeType();
 
     String description() default "";
+
+    /**
+     * Names of icons for this tool. Icons must be bound
+     * via {@link McpModule.Builder#addIcon(String, Consumer)}.
+     */
+    String[] icons() default {};
 
     Role[] audience() default {};
 

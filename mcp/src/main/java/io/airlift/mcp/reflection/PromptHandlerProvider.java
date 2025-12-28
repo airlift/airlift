@@ -42,6 +42,7 @@ public class PromptHandlerProvider
     private final List<MethodParameter> parameters;
     private final Role role;
     private final boolean isGetPromptResult;
+    private final List<String> icons;
     private Injector injector;
     private ObjectMapper objectMapper;
 
@@ -51,6 +52,7 @@ public class PromptHandlerProvider
         this.method = requireNonNull(method, "method is null");
         this.parameters = ImmutableList.copyOf(parameters);
         this.role = mcpPrompt.role();
+        icons = ImmutableList.copyOf(mcpPrompt.icons());
 
         validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isString).or(isGetPromptRequest), returnsString.or(returnsGetPromptResult));
 
@@ -74,6 +76,7 @@ public class PromptHandlerProvider
     public PromptEntry get()
     {
         Provider<?> instance = injector.getProvider(clazz);
+        IconHelper iconHelper = injector.getInstance(IconHelper.class);
         MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper);
 
         PromptHandler promptHandler = (requestContext, promptRequest) -> {
@@ -93,12 +96,13 @@ public class PromptHandlerProvider
             return new GetPromptResult(prompt.description(), ImmutableList.of(new PromptMessage(role, content)));
         };
 
-        return new PromptEntry(prompt, promptHandler);
+        return new PromptEntry(prompt.withIcons(iconHelper.mapIcons(icons)), promptHandler);
     }
 
     private static Prompt buildPrompt(McpPrompt prompt, List<MethodParameter> parameters)
     {
         Optional<String> description = prompt.description().isEmpty() ? Optional.empty() : Optional.of(prompt.description());
+
         return new Prompt(prompt.name(), description, Optional.of(prompt.role()), toPromptArguments(parameters));
     }
 

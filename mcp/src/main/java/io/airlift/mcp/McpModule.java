@@ -1,11 +1,13 @@
 package io.airlift.mcp;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.TypeLiteral;
 import com.google.inject.binder.LinkedBindingBuilder;
+import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.OptionalBinder;
 import io.airlift.json.JsonSubType;
@@ -25,7 +27,9 @@ import io.airlift.mcp.model.Content.EmbeddedResource;
 import io.airlift.mcp.model.Content.ImageContent;
 import io.airlift.mcp.model.Content.ResourceLink;
 import io.airlift.mcp.model.Content.TextContent;
+import io.airlift.mcp.model.Icon;
 import io.airlift.mcp.reflection.CompletionHandlerProvider;
+import io.airlift.mcp.reflection.IconHelper;
 import io.airlift.mcp.reflection.IdentityMapperMetadata;
 import io.airlift.mcp.reflection.PromptHandlerProvider;
 import io.airlift.mcp.reflection.ResourceHandlerProvider;
@@ -34,6 +38,7 @@ import io.airlift.mcp.reflection.ToolHandlerProvider;
 import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.versions.ResourceVersionController;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -63,6 +68,7 @@ public class McpModule
     private final Set<CompletionHandlerProvider> completions;
     private final Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding;
     private final Consumer<LinkedBindingBuilder<McpCancellationHandler>> cancellationHandlerBinding;
+    private final Map<String, Consumer<LinkedBindingBuilder<Icon>>> icons;
 
     public static Builder builder()
     {
@@ -80,7 +86,8 @@ public class McpModule
             Set<ResourceTemplateHandlerProvider> resourceTemplates,
             Set<CompletionHandlerProvider> completions,
             Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding,
-            Consumer<LinkedBindingBuilder<McpCancellationHandler>> cancellationHandlerBinding)
+            Consumer<LinkedBindingBuilder<McpCancellationHandler>> cancellationHandlerBinding,
+            Map<String, Consumer<LinkedBindingBuilder<Icon>>> icons)
     {
         this.mode = requireNonNull(mode, "mode is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
@@ -93,6 +100,7 @@ public class McpModule
         this.completions = ImmutableSet.copyOf(completions);
         this.sessionControllerBinding = requireNonNull(sessionControllerBinding, "sessionControllerBinding is null");
         this.cancellationHandlerBinding = requireNonNull(cancellationHandlerBinding, "cancellationHandlerBinding is null");
+        this.icons = ImmutableMap.copyOf(icons);
     }
 
     public enum Mode
@@ -129,6 +137,7 @@ public class McpModule
     public static class Builder
     {
         private final ImmutableSet.Builder<Class<?>> classes = ImmutableSet.builder();
+        private final ImmutableMap.Builder<String, Consumer<LinkedBindingBuilder<Icon>>> icons = ImmutableMap.builder();
         private Optional<IdentityMapperBinding> identityMapperBinding = Optional.empty();
         private McpMetadata metadata = DEFAULT;
         private Mode mode = STANDARD;
@@ -181,6 +190,12 @@ public class McpModule
             return this;
         }
 
+        public Builder addIcon(String name, Consumer<LinkedBindingBuilder<Icon>> binding)
+        {
+            icons.put(name, binding);
+            return this;
+        }
+
         public Module build()
         {
             Set<Class<?>> classesSet = classes.build();
@@ -229,7 +244,8 @@ public class McpModule
                     localResourceTemplates,
                     localCompletions,
                     sessionControllerBinding,
-                    cancellationHandlerBinding);
+                    cancellationHandlerBinding,
+                    icons.build());
         }
     }
 
@@ -251,10 +267,19 @@ public class McpModule
         bindCompletions(binder);
         bindSessions(binder);
         bindCancellation(binder);
+        bindIcons(binder);
 
         if (mode == STANDARD) {
             binder.install(new InternalMcpModule());
         }
+    }
+
+    private void bindIcons(Binder binder)
+    {
+        binder.bind(IconHelper.class).in(SINGLETON);
+
+        MapBinder<String, Icon> mapBinder = MapBinder.newMapBinder(binder, String.class, Icon.class);
+        icons.forEach((name, binding) -> binding.accept(mapBinder.addBinding(name)));
     }
 
     private void bindCancellation(Binder binder)
