@@ -138,8 +138,7 @@ public class ToolHandlerProvider
                 tool.readOnlyHint().toJsonValue(),
                 tool.destructiveHint().toJsonValue(),
                 tool.idempotentHint().toJsonValue(),
-                tool.openWorldHint().toJsonValue(),
-                tool.returnDirect().toJsonValue());
+                tool.openWorldHint().toJsonValue());
 
         Optional<ObjectNode> outputSchema;
         if (CallToolResult.class.isAssignableFrom(method.getReturnType())) {
@@ -160,6 +159,6 @@ public class ToolHandlerProvider
         JsonSchemaBuilder jsonSchemaBuilder = new JsonSchemaBuilder("Tool: " + tool.name());
         ObjectNode jsonSchema = jsonSchemaBuilder.build(description, parameters);
 
-        return new Tool(tool.name(), description, jsonSchema, outputSchema, toolAnnotations);
+        return new Tool(tool.name(), description, title, jsonSchema, outputSchema, toolAnnotations);
     }
 }

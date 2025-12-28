@@ -239,7 +239,8 @@ public class InternalMcpServer
                 sessionsEnabled ? Optional.of(new LoggingCapabilities()) : Optional.empty(),
                 prompts.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(sessionsEnabled)),
                 resources.isEmpty() ? Optional.empty() : Optional.of(new SubscribeListChanged(sessionsEnabled, sessionsEnabled)),
-                tools.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(sessionsEnabled)));
+                tools.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(sessionsEnabled)),
+                Optional.empty());
 
         return new InitializeResult(protocol.value(), serverCapabilities, metadata.implementation(), metadata.instructions());
     }
