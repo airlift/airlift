@@ -15,6 +15,7 @@ import io.airlift.mcp.model.JsonSchemaBuilder;
 import io.airlift.mcp.model.StructuredContent;
 import io.airlift.mcp.model.StructuredContentResult;
 import io.airlift.mcp.model.Tool;
+import io.airlift.mcp.model.Tool.Execution;
 
 import java.lang.reflect.Method;
 import java.util.List;
@@ -162,6 +163,6 @@ public class ToolHandlerProvider
         JsonSchemaBuilder jsonSchemaBuilder = new JsonSchemaBuilder("Tool: " + tool.name());
         ObjectNode jsonSchema = jsonSchemaBuilder.build(description, parameters);
 
-        return new Tool(tool.name(), description, title, jsonSchema, outputSchema, toolAnnotations);
+        return new Tool(tool.name(), description, title, jsonSchema, outputSchema, toolAnnotations, Optional.empty(), Optional.of(new Execution(tool.execution())));
     }
 }

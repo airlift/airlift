@@ -260,6 +260,7 @@ public class InternalMcpServer
                 prompts.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(sessionsEnabled)),
                 resources.isEmpty() ? Optional.empty() : Optional.of(new SubscribeListChanged(sessionsEnabled, sessionsEnabled)),
                 tools.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(sessionsEnabled)),
+                Optional.empty(),
                 Optional.empty());
 
         Implementation localImplementation = protocol.supportsIcons() ? serverImplementation : serverImplementation.simpleForm();
