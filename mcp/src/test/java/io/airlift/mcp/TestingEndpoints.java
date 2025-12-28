@@ -73,7 +73,7 @@ public class TestingEndpoints
         this.sleepToolController = requireNonNull(sleepToolController, "sleepToolController is null");
     }
 
-    @McpTool(name = "add", description = "Add two numbers")
+    @McpTool(name = "add", description = "Add two numbers", icons = "google")
     public int add(TestingIdentity testingIdentity, int a, int b)
     {
         assertThat(testingIdentity.name()).isEqualTo("Mr. Tester");
@@ -103,7 +103,7 @@ public class TestingEndpoints
         throw exception("this ain't good");
     }
 
-    @McpPrompt(name = "age", description = "What is your age?")
+    @McpPrompt(name = "age", description = "What is your age?", icons = "google")
     public String age(@McpDescription("What is your age?") String age)
     {
         return "You are " + age + "years old.";
@@ -127,7 +127,7 @@ public class TestingEndpoints
         return ImmutableList.of();
     }
 
-    @McpResource(name = "example1", uri = "file://example1.txt", description = "This is example1 resource.", mimeType = "text/plain")
+    @McpResource(name = "example1", uri = "file://example1.txt", description = "This is example1 resource.", mimeType = "text/plain", icons = "google")
     public ResourceContents example1Resource()
     {
         return new ResourceContents("foo2", "file://example1.txt", "text/plain", example1Content);
@@ -139,7 +139,7 @@ public class TestingEndpoints
         return new ResourceContents("foo2", "file://example2.txt", "text/plain", example2Content);
     }
 
-    @McpResourceTemplate(name = "template", uriTemplate = "file://{id}.template", description = "This is a resource template", mimeType = "text/plain")
+    @McpResourceTemplate(name = "template", uriTemplate = "file://{id}.template", description = "This is a resource template", mimeType = "text/plain", icons = "google")
     public List<ResourceContents> exampleResourceTemplate(ReadResourceRequest request, ResourceTemplateValues resourceTemplateValues)
     {
         String id = resourceTemplateValues.templateValues().getOrDefault("id", "n/a");
@@ -218,7 +218,8 @@ public class TestingEndpoints
                                 Optional.of(UUID.randomUUID().toString()),
                                 firstTool.tool().inputSchema(),
                                 firstTool.tool().outputSchema(),
-                                firstTool.tool().annotations());
+                                firstTool.tool().annotations(),
+                                firstTool.tool().icons());
                         mcpServer.addTool(alteredTool, firstTool.toolHandler());
                     }
 
@@ -228,7 +229,8 @@ public class TestingEndpoints
                                 firstPrompt.prompt().name(),
                                 Optional.of(UUID.randomUUID().toString()),
                                 firstPrompt.prompt().role(),
-                                firstPrompt.prompt().arguments());
+                                firstPrompt.prompt().arguments(),
+                                firstPrompt.prompt().icons());
                         mcpServer.addPrompt(alteredPrompt, firstPrompt.promptHandler());
                     }
 
@@ -240,7 +242,8 @@ public class TestingEndpoints
                                 Optional.of(UUID.randomUUID().toString()),
                                 firstResource.resource().mimeType(),
                                 firstResource.resource().size(),
-                                firstResource.resource().annotations());
+                                firstResource.resource().annotations(),
+                                firstResource.resource().icons());
                         mcpServer.addResource(alteredResource, firstResource.handler());
                     }
 

@@ -245,34 +245,38 @@ public class InternalMcpServer
         return new InitializeResult(protocol.value(), serverCapabilities, metadata.implementation(), metadata.instructions());
     }
 
-    ListToolsResult listTools(ListRequest listRequest)
+    ListToolsResult listTools(Protocol protocol, ListRequest listRequest)
     {
         List<Tool> localTools = tools.values().stream()
                 .map(ToolEntry::tool)
+                .map(tool -> protocol.supportsIcons() ? tool : tool.withoutIcons())
                 .collect(toImmutableList());
         return paginationUtil.paginate(listRequest, localTools, Tool::name, ListToolsResult::new);
     }
 
-    ListPromptsResult listPrompts(ListRequest listRequest)
+    ListPromptsResult listPrompts(Protocol protocol, ListRequest listRequest)
     {
         List<Prompt> localPrompts = prompts.values().stream()
                 .map(PromptEntry::prompt)
+                .map(prompt -> protocol.supportsIcons() ? prompt : prompt.withoutIcons())
                 .collect(toImmutableList());
         return paginationUtil.paginate(listRequest, localPrompts, Prompt::name, ListPromptsResult::new);
     }
 
-    ListResourcesResult listResources(ListRequest listRequest)
+    ListResourcesResult listResources(Protocol protocol, ListRequest listRequest)
     {
         List<Resource> localResources = resources.values().stream()
                 .map(ResourceEntry::resource)
+                .map(resource -> protocol.supportsIcons() ? resource : resource.withoutIcons())
                 .collect(toImmutableList());
         return paginationUtil.paginate(listRequest, localResources, Resource::name, ListResourcesResult::new);
     }
 
-    ListResourceTemplatesResult listResourceTemplates(ListRequest listRequest)
+    ListResourceTemplatesResult listResourceTemplates(Protocol protocol, ListRequest listRequest)
     {
         List<ResourceTemplate> localResourceTemplates = resourceTemplates.values().stream()
                 .map(ResourceTemplateEntry::resourceTemplate)
+                .map(resourceTemplate -> protocol.supportsIcons() ? resourceTemplate : resourceTemplate.withoutIcons())
                 .collect(toImmutableList());
         return paginationUtil.paginate(listRequest, localResourceTemplates, ResourceTemplate::name, ListResourceTemplatesResult::new);
     }
