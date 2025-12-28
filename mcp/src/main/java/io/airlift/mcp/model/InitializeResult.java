@@ -1,5 +1,6 @@
 package io.airlift.mcp.model;
 
+import java.util.Map;
 import java.util.Optional;
 
 import static com.google.common.base.MoreObjects.firstNonNull;
@@ -11,7 +12,8 @@ public record InitializeResult(
         Implementation serverInfo,
         Optional<String> instructions)
 {
-    public record ServerCapabilities(Optional<CompletionCapabilities> completions, Optional<LoggingCapabilities> logging, Optional<ListChanged> prompts, Optional<SubscribeListChanged> resources, Optional<ListChanged> tools)
+    public record ServerCapabilities(Optional<CompletionCapabilities> completions, Optional<LoggingCapabilities> logging, Optional<ListChanged> prompts, Optional<SubscribeListChanged> resources, Optional<ListChanged> tools, Optional<Map<String, Object>> experimental)
+            implements Experimental
     {
         public ServerCapabilities
         {
@@ -20,11 +22,12 @@ public record InitializeResult(
             prompts = firstNonNull(prompts, Optional.empty());
             resources = firstNonNull(resources, Optional.empty());
             tools = firstNonNull(tools, Optional.empty());
+            experimental = firstNonNull(experimental, Optional.empty());
         }
 
         public ServerCapabilities()
         {
-            this(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+            this(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
         }
     }
 

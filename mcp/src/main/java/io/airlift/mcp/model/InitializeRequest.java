@@ -13,13 +13,15 @@ public record InitializeRequest(
         Optional<Map<String, Object>> meta)
         implements Meta
 {
-    public record ClientCapabilities(Optional<ListChanged> roots, Optional<Sampling> sampling, Optional<Elicitation> elicitation)
+    public record ClientCapabilities(Optional<ListChanged> roots, Optional<Sampling> sampling, Optional<Elicitation> elicitation, Optional<Map<String, Object>> experimental)
+            implements Experimental
     {
         public ClientCapabilities
         {
             roots = firstNonNull(roots, Optional.empty());
             sampling = firstNonNull(sampling, Optional.empty());
             elicitation = firstNonNull(elicitation, Optional.empty());
+            experimental = firstNonNull(experimental, Optional.empty());
         }
     }
 
