@@ -1,11 +1,13 @@
 package io.airlift.mcp;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.google.common.io.Closer;
 import com.google.common.reflect.TypeToken;
+import com.google.inject.Module;
 import io.airlift.http.client.FullJsonResponseHandler;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.Request;
@@ -62,6 +64,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -75,6 +78,7 @@ import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.Request.Builder.preparePost;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static io.airlift.json.JsonCodec.jsonCodec;
+import static io.airlift.mcp.TestMcp.Mode.DATABASE_SESSIONS;
 import static io.airlift.mcp.TestingClient.buildClient;
 import static io.airlift.mcp.TestingIdentityMapper.ERRORED_IDENTITY;
 import static io.airlift.mcp.TestingIdentityMapper.EXPECTED_IDENTITY;
@@ -99,7 +103,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 
 @TestInstance(PER_CLASS)
-public class TestMcp
+public abstract class TestMcp
 {
     private static final Logger log = Logger.get(TestMcp.class);
 
@@ -110,18 +114,31 @@ public class TestMcp
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
     private final TestingServer testingServer;
-    private final MemorySessionController sessionController;
+    private final Supplier<Set<SessionId>> sessionIdsSupplier;
+    private final Consumer<SessionId> sessionDeleter;
 
-    public TestMcp()
+    public enum Mode
+    {
+        MEMORY_SESSIONS,
+        DATABASE_SESSIONS,
+    }
+
+    protected TestMcp(Mode mode)
     {
         // the reference client doesn't track HTTP GET notifications
         Map<String, String> properties = ImmutableMap.of(
                 "mcp.http-get-events.enabled", "false",
                 "mcp.cancellation.check-interval", "1ms");
 
-        testingServer = new TestingServer(properties, Optional.empty(), builder -> builder
+        Module module = binder -> {
+            if (mode == DATABASE_SESSIONS) {
+                binder.bind(TestingDatabaseServer.class).in(SINGLETON);
+            }
+        };
+
+        testingServer = new TestingServer(properties, Optional.of(module), builder -> builder
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
-                .withSessions(binding -> binding.to(MemorySessionController.class).in(SINGLETON))
+                .withSessions(binding -> binding.to((mode == DATABASE_SESSIONS) ? TestingDatabaseSessionController.class : MemorySessionController.class).in(SINGLETON))
                 .build());
         closer.register(testingServer);
 
@@ -132,7 +149,14 @@ public class TestMcp
 
         httpClient = testingServer.httpClient();
         objectMapper = testingServer.injector().getInstance(ObjectMapper.class);
-        sessionController = (MemorySessionController) testingServer.injector().getInstance(SessionController.class);
+
+        SessionController sessionController = testingServer.injector().getInstance(SessionController.class);
+
+        sessionIdsSupplier = switch (mode) {
+            case MEMORY_SESSIONS -> () -> ((MemorySessionController) sessionController).sessionIds();
+            case DATABASE_SESSIONS -> () -> ((TestingDatabaseSessionController) sessionController).sessionIds();
+        };
+        sessionDeleter = sessionController::deleteSession;
     }
 
     @AfterAll
@@ -437,13 +461,13 @@ public class TestMcp
     @Test
     public void testExpiredSession()
     {
-        Set<SessionId> preSessionIds = sessionController.sessionIds();
+        Set<SessionId> preSessionIds = sessionIdsSupplier.get();
         TestingClient client = buildClient(closer, baseUri, "testExpiredSession");
-        Set<SessionId> postSessionIds = sessionController.sessionIds();
+        Set<SessionId> postSessionIds = sessionIdsSupplier.get();
         SessionId clientSessionId = Sets.difference(postSessionIds, preSessionIds).iterator().next();
 
         // simulate session expiring
-        sessionController.deleteSession(clientSessionId);
+        sessionDeleter.accept(clientSessionId);
 
         assertThatThrownBy(client.mcpClient()::listTools)
                 .hasMessageContaining("HTTP 404 Not Found");
@@ -452,9 +476,9 @@ public class TestMcp
     @Test
     public void testDeleteSession()
     {
-        Set<SessionId> preSessionIds = sessionController.sessionIds();
+        Set<SessionId> preSessionIds = sessionIdsSupplier.get();
         TestingClient client = buildClient(closer, baseUri, "testDeleteSession");
-        Set<SessionId> postSessionIds = sessionController.sessionIds();
+        Set<SessionId> postSessionIds = sessionIdsSupplier.get();
         SessionId clientSessionId = Sets.difference(postSessionIds, preSessionIds).iterator().next();
 
         Request request = prepareDelete()
@@ -560,7 +584,7 @@ public class TestMcp
         JsonRpcRequest<CancelledNotification> jsonRpcRequest = JsonRpcRequest.buildNotification(NOTIFICATION_CANCELLED, cancelledNotification);
 
         // can't know which session it is - try em all
-        sessionController.sessionIds().forEach(sessionId -> {
+        sessionIdsSupplier.get().forEach(sessionId -> {
             Request request = preparePost().setUri(uri)
                     .addHeader("Content-Type", "application/json")
                     .addHeader("Accept", "application/json, text/event-stream")
@@ -616,13 +640,18 @@ public class TestMcp
     @Test
     public void testElicitation()
     {
-        CallToolResult callToolResult = client1.mcpClient().callTool(new CallToolRequest("elicitation", ImmutableMap.of()));
+        testElicitation(client1);
+    }
+
+    public static void testElicitation(TestingClient client)
+    {
+        CallToolResult callToolResult = client.mcpClient().callTool(new CallToolRequest("elicitation", ImmutableMap.of()));
         assertThat(callToolResult.content())
                 .hasSize(1)
                 .first()
                 .asInstanceOf(type(TextContent.class))
                 .extracting(TextContent::text)
-                .isEqualTo("Hello, " + client1.name() + " " + client1.name() + "sky!");
+                .isEqualTo("Hello, " + client.name() + " " + client.name() + "sky!");
     }
 
     private ListAssert<String> assertChanges(BlockingQueue<String> changes, int qty)

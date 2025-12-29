@@ -5,6 +5,7 @@ import com.google.common.io.Closer;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
+import io.modelcontextprotocol.spec.McpClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
 
 import java.io.Closeable;
@@ -55,6 +56,11 @@ public record TestingClient(String name, McpSyncClient mcpClient, List<String> l
                 .customizeRequest(builder -> builder.header(IDENTITY_HEADER, idToken))
                 .build();
 
+        return buildClient(closer, name, clientTransport);
+    }
+
+    public static TestingClient buildClient(Closer closer, String name, McpClientTransport clientTransport)
+    {
         List<String> logs = new CopyOnWriteArrayList<>();
         List<String> progress = new CopyOnWriteArrayList<>();
         BlockingQueue<String> changes = new LinkedBlockingQueue<>();

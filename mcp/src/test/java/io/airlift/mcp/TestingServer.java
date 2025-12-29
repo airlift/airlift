@@ -45,6 +45,7 @@ public class TestingServer
 
         ImmutableMap.Builder<String, String> serverProperties = ImmutableMap.<String, String>builder()
                 .put("node.environment", "testing")
+                .put("mcp.resource-version.update-interval", "1s")
                 .putAll(properties);
 
         Bootstrap app = new Bootstrap(modules.build());
