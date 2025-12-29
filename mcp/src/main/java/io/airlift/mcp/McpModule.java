@@ -37,6 +37,7 @@ import java.util.function.Consumer;
 
 import static com.google.inject.Scopes.SINGLETON;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
+import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.json.JsonSubTypeBinder.jsonSubTypeBinder;
 import static io.airlift.mcp.McpMetadata.DEFAULT;
 import static io.airlift.mcp.McpModule.Mode.STANDARD;
@@ -183,6 +184,8 @@ public class McpModule
     public void configure(Binder binder)
     {
         binder.bind(McpMetadata.class).toInstance(metadata);
+
+        configBinder(binder).bindConfig(McpConfig.class);
 
         bindClasses(binder);
         bindTools(binder);

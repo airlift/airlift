@@ -14,6 +14,7 @@ import io.airlift.json.JsonModule;
 import io.airlift.node.NodeModule;
 
 import java.io.Closeable;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -24,7 +25,7 @@ public class TestingServer
 {
     private final Injector injector;
 
-    public TestingServer(Optional<Module> additionalModule, Function<McpModule.Builder, Module> mcpModuleApplicator)
+    public TestingServer(Map<String, String> properties, Optional<Module> additionalModule, Function<McpModule.Builder, Module> mcpModuleApplicator)
     {
         McpModule.Builder mcpModuleBuilder = McpModule.builder()
                 .withAllInClass(TestingEndpoints.class);
@@ -42,10 +43,11 @@ public class TestingServer
         additionalModule.ifPresent(modules::add);
 
         ImmutableMap.Builder<String, String> serverProperties = ImmutableMap.<String, String>builder()
-                .put("node.environment", "testing");
+                .put("node.environment", "testing")
+                .putAll(properties);
 
         Bootstrap app = new Bootstrap(modules.build());
-        injector = app.setRequiredConfigurationProperties(serverProperties.build()).initialize();
+        injector = app.setRequiredConfigurationProperties(serverProperties.buildKeepingLast()).initialize();
     }
 
     public Injector injector()
