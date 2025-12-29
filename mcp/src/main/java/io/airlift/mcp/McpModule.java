@@ -5,7 +5,9 @@ import com.google.common.collect.ImmutableSet;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.binder.AnnotatedBindingBuilder;
+import com.google.inject.binder.LinkedBindingBuilder;
 import com.google.inject.multibindings.Multibinder;
+import com.google.inject.multibindings.OptionalBinder;
 import io.airlift.json.JsonSubType;
 import io.airlift.json.JsonSubTypeBinder;
 import io.airlift.mcp.handler.CompletionEntry;
@@ -29,11 +31,13 @@ import io.airlift.mcp.reflection.PromptHandlerProvider;
 import io.airlift.mcp.reflection.ResourceHandlerProvider;
 import io.airlift.mcp.reflection.ResourceTemplateHandlerProvider;
 import io.airlift.mcp.reflection.ToolHandlerProvider;
+import io.airlift.mcp.sessions.SessionController;
 
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.inject.Scopes.SINGLETON;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
@@ -56,13 +60,14 @@ public class McpModule
     private final Set<ResourceHandlerProvider> resources;
     private final Set<ResourceTemplateHandlerProvider> resourceTemplates;
     private final Set<CompletionHandlerProvider> completions;
+    private final Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding;
 
     public static Builder builder()
     {
         return new Builder();
     }
 
-    private McpModule(Mode mode, McpMetadata metadata, IdentityMapperBinding identityMapperBinding, Set<Class<?>> classes, Set<ToolHandlerProvider> tools, Set<PromptHandlerProvider> prompts, Set<ResourceHandlerProvider> resources, Set<ResourceTemplateHandlerProvider> resourceTemplates, Set<CompletionHandlerProvider> completions)
+    private McpModule(Mode mode, McpMetadata metadata, IdentityMapperBinding identityMapperBinding, Set<Class<?>> classes, Set<ToolHandlerProvider> tools, Set<PromptHandlerProvider> prompts, Set<ResourceHandlerProvider> resources, Set<ResourceTemplateHandlerProvider> resourceTemplates, Set<CompletionHandlerProvider> completions, Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding)
     {
         this.mode = requireNonNull(mode, "mode is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
@@ -73,6 +78,7 @@ public class McpModule
         this.resources = ImmutableSet.copyOf(resources);
         this.resourceTemplates = ImmutableSet.copyOf(resourceTemplates);
         this.completions = ImmutableSet.copyOf(completions);
+        this.sessionControllerBinding = requireNonNull(sessionControllerBinding, "sessionControllerBinding is null");
     }
 
     public enum Mode
@@ -112,6 +118,7 @@ public class McpModule
         private Optional<IdentityMapperBinding> identityMapperBinding = Optional.empty();
         private McpMetadata metadata = DEFAULT;
         private Mode mode = STANDARD;
+        private Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding = Optional.empty();
 
         private Builder()
         {
@@ -138,7 +145,17 @@ public class McpModule
 
         public <T> Builder withIdentityMapper(Class<T> identityType, Consumer<AnnotatedBindingBuilder<McpIdentityMapper>> identityMapperBinding)
         {
+            checkArgument(this.identityMapperBinding.isEmpty(), "Identity mapper binding is already set");
+
             this.identityMapperBinding = Optional.of(new IdentityMapperBinding(identityType, identityMapperBinding));
+            return this;
+        }
+
+        public Builder withSessions(Consumer<LinkedBindingBuilder<SessionController>> sessionControllerBinding)
+        {
+            checkArgument(this.sessionControllerBinding.isEmpty(), "Session controller binding is already set");
+
+            this.sessionControllerBinding = Optional.of(sessionControllerBinding);
             return this;
         }
 
@@ -181,7 +198,7 @@ public class McpModule
 
             IdentityMapperBinding localIdentityMapperBinding = identityMapperBinding.orElseThrow(() -> new IllegalStateException("Identity mapper binding is required"));
 
-            return new McpModule(mode, metadata, localIdentityMapperBinding, classesSet, localTools, localPrompts, localResources, localResourceTemplates, localCompletions);
+            return new McpModule(mode, metadata, localIdentityMapperBinding, classesSet, localTools, localPrompts, localResources, localResourceTemplates, localCompletions, sessionControllerBinding);
         }
     }
 
@@ -202,6 +219,7 @@ public class McpModule
         bindJsonSubTypes(binder);
         bindIdentityMapper(binder);
         bindCompletions(binder);
+        bindSessions(binder);
 
         if (mode == STANDARD) {
             binder.install(new InternalMcpModule());
@@ -212,6 +230,12 @@ public class McpModule
     {
         identityMapperBinding.identityMapperBinding.accept(binder.bind(McpIdentityMapper.class));
         binder.bind(IdentityMapperMetadata.class).toInstance(new IdentityMapperMetadata(identityMapperBinding.identityType));
+    }
+
+    private void bindSessions(Binder binder)
+    {
+        OptionalBinder<SessionController> sessionControllerBinder = newOptionalBinder(binder, SessionController.class);
+        sessionControllerBinding.ifPresent(sessionControllerBinding -> sessionControllerBinding.accept(sessionControllerBinder.setBinding()));
     }
 
     private void bindClasses(Binder binder)

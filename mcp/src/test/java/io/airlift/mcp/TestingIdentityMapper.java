@@ -2,7 +2,10 @@ package io.airlift.mcp;
 
 import com.google.common.collect.ImmutableList;
 import io.airlift.mcp.model.McpIdentity;
+import io.airlift.mcp.sessions.SessionId;
 import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.Optional;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static io.airlift.mcp.McpException.exception;
@@ -20,7 +23,7 @@ public class TestingIdentityMapper
     public static final String IDENTITY_HEADER = "X-Testing-Identity";
 
     @Override
-    public McpIdentity map(HttpServletRequest request)
+    public McpIdentity map(HttpServletRequest request, Optional<SessionId> sessionId)
     {
         String authHeader = request.getHeader(IDENTITY_HEADER);
         if (isNullOrEmpty(authHeader)) {
