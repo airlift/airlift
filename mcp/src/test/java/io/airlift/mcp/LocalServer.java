@@ -10,6 +10,7 @@ import io.airlift.http.server.testing.TestingHttpServerModule;
 import io.airlift.jaxrs.JaxrsModule;
 import io.airlift.json.JsonModule;
 import io.airlift.log.Logger;
+import io.airlift.mcp.sessions.MemorySessionController;
 import io.airlift.node.NodeModule;
 
 import java.util.Optional;
@@ -36,7 +37,8 @@ public class LocalServer
 
         Module mcpModule = McpModule.builder()
                 .withAllInClass(TestingEndpoints.class)
-                .withIdentityMapper(TestingIdentity.class, binding -> binding.toInstance(_ -> authenticated(new TestingIdentity("Mr. Tester"))))
+                .withIdentityMapper(TestingIdentity.class, binding -> binding.toInstance((_) -> authenticated(new TestingIdentity("Mr. Tester"))))
+                .withSessions(binding -> binding.to(MemorySessionController.class).in(SINGLETON))
                 .build();
 
         ImmutableList.Builder<Module> modules = ImmutableList.<Module>builder()

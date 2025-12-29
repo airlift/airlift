@@ -19,14 +19,14 @@ variations of MCP servers defined by the standard. This module supports:
 - Progress notifications [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/progress)
 - Completions [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/completion)
 - Pagination [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/pagination)
+- Sessions [(see spec)](https://modelcontextprotocol.io/docs/concepts/transports#session-management)
+- Server-sent logging [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/logging)
 
 This module does not currently support:
 
-- Sessions [(see spec)](https://modelcontextprotocol.io/docs/concepts/transports#session-management)
 - Cancellation [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/cancellation)
 - List changed events [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/lifecycle#initialization)
 - Subscriptions [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/lifecycle#initialization)
-- Server-sent logging [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/logging)
 - Elicitation [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/client/elicitation)
 - Roots [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/client/roots)
 - Sampling [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/client/sampling)
@@ -219,3 +219,14 @@ A browser should open with the MCP Inspector tool. Set the "Transport Type" to
 - Returns either:
     - [CompleteCompletion](src/main/java/io/airlift/mcp/model/CompleteResult.java)
     - `List<String>`
+
+## Sessions
+
+Airlift MCP servers can optionally be configured to support MCP [sessions](https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#session-management).
+Currently, sessions are required for
+[server-sent logging](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/logging),
+however that will likely change in a future version of the MCP spec.
+
+To enable session support use the `withSessions()` method of the `McpModule`. For Production, a DB-backed,
+resilient implementation of [SessionController](src/main/java/io/airlift/mcp/sessions/SessionController.java) should be used. For testing, an in-memory implementation is provided:
+[MemorySessionController](src/main/java/io/airlift/mcp/sessions/MemorySessionController.java).
