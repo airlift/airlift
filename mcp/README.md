@@ -7,18 +7,18 @@
 This module provides support for creating [MCP servers](https://modelcontextprotocol.io). There are several
 variations of MCP servers defined by the standard. This module supports:
 
-- Protocol version 2025-06-18 [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/changelog#major-changes)
+- Protocol version 2025-11-25 [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/changelog#major-changes)
 - Stateless MCP servers [(see spec)](https://github.com/modelcontextprotocol/modelcontextprotocol/discussions?discussions_q=stateless)
-- Streamable HTTP transport [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#streamable-http)
-- Resources [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/resources)
-- Resource templates [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/resources)
-- Prompts [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/prompts)
-- Tools [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/tools)
-- Ping [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/ping)
-- Structured content [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/tools#structured-content)
-- Progress notifications [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/progress)
-- Completions [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/completion)
-- Pagination [(see spec)](https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/pagination)
+- Streamable HTTP transport [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#streamable-http)
+- Resources [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/server/resources)
+- Resource templates [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/server/resources)
+- Prompts [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/server/prompts)
+- Tools [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/server/tools)
+- Ping [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/basic/utilities/ping)
+- Structured content [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/server/tools#structured-content)
+- Progress notifications [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/basic/utilities/progress)
+- Completions [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/server/utilities/completion)
+- Pagination [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/basic/utilities/pagination)
 - Sessions [(see spec)](https://modelcontextprotocol.io/docs/concepts/transports#session-management)
 - Server-sent logging [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/server/utilities/logging)
 - List changed events [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle#initialization)
@@ -223,9 +223,9 @@ A browser should open with the MCP Inspector tool. Set the "Transport Type" to
 
 ## Sessions
 
-Airlift MCP servers can optionally be configured to support MCP [sessions](https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#session-management).
+Airlift MCP servers can optionally be configured to support MCP [sessions](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#session-management).
 Currently, sessions are required for
-[server-sent logging](https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/logging),
+[server-sent logging](https://modelcontextprotocol.io/specification/2025-11-25/server/utilities/logging),
 however that will likely change in a future version of the MCP spec.
 
 To enable session support use the `withSessions()` method of the `McpModule`. For Production, a DB-backed,
