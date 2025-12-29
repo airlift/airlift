@@ -15,6 +15,10 @@
 
     <properties>
         <air.main.basedir>${project.parent.basedir}</air.main.basedir>
+
+        <dep.testcontainers.version>2.0.2</dep.testcontainers.version>
+        <dep.hikari.version>7.0.2</dep.hikari.version>
+        <dep.postgresql.version>42.7.8</dep.postgresql.version>
     </properties>
 
     <dependencies>
@@ -92,6 +96,12 @@
 
         <dependency>
             <groupId>${project.groupId}</groupId>
+            <artifactId>concurrent</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
             <artifactId>configuration-testing</artifactId>
             <scope>runtime</scope>
         </dependency>
@@ -99,6 +109,12 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>node</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>jakarta.annotation</groupId>
+            <artifactId>jakarta.annotation-api</artifactId>
             <scope>runtime</scope>
         </dependency>
 
@@ -117,6 +133,13 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>jaxrs</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+            <version>${dep.hikari.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -173,6 +196,27 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-params</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>${dep.postgresql.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <version>${dep.testcontainers.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-postgresql</artifactId>
+            <version>${dep.testcontainers.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
