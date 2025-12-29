@@ -2,8 +2,10 @@ package io.airlift.mcp.internal;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import io.airlift.bootstrap.LifeCycleManager;
+import io.airlift.mcp.McpConfig;
 import io.airlift.mcp.McpMetadata;
 import io.airlift.mcp.McpRequestContext;
 import io.airlift.mcp.McpServer;
@@ -31,6 +33,7 @@ import io.airlift.mcp.model.GetPromptResult;
 import io.airlift.mcp.model.InitializeRequest;
 import io.airlift.mcp.model.InitializeResult;
 import io.airlift.mcp.model.InitializeResult.CompletionCapabilities;
+import io.airlift.mcp.model.InitializeResult.LoggingCapabilities;
 import io.airlift.mcp.model.InitializeResult.ServerCapabilities;
 import io.airlift.mcp.model.ListChanged;
 import io.airlift.mcp.model.ListPromptsResult;
@@ -38,6 +41,8 @@ import io.airlift.mcp.model.ListRequest;
 import io.airlift.mcp.model.ListResourceTemplatesResult;
 import io.airlift.mcp.model.ListResourcesResult;
 import io.airlift.mcp.model.ListToolsResult;
+import io.airlift.mcp.model.LoggingLevel;
+import io.airlift.mcp.model.McpIdentity;
 import io.airlift.mcp.model.Meta;
 import io.airlift.mcp.model.OptionalBoolean;
 import io.airlift.mcp.model.Prompt;
@@ -47,12 +52,17 @@ import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.model.ResourceTemplateValues;
+import io.airlift.mcp.model.SetLevelRequest;
 import io.airlift.mcp.model.SubscribeListChanged;
 import io.airlift.mcp.model.Tool;
+import io.airlift.mcp.sessions.SessionController;
+import io.airlift.mcp.sessions.SessionId;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.glassfish.jersey.uri.UriTemplate;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,10 +74,13 @@ import java.util.stream.Stream;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.mcp.McpException.exception;
+import static io.airlift.mcp.internal.InternalRequestContext.requireSessionId;
+import static io.airlift.mcp.model.Constants.MCP_SESSION_ID;
 import static io.airlift.mcp.model.Constants.PROTOCOL_MCP_2025_06_18;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
 import static io.airlift.mcp.model.JsonRpcErrorCode.RESOURCE_NOT_FOUND;
+import static io.airlift.mcp.sessions.SessionValueKey.LOGGING_LEVEL;
 import static java.util.Objects.requireNonNull;
 
 public class InternalMcpServer
@@ -84,29 +97,36 @@ public class InternalMcpServer
     private final McpMetadata metadata;
     private final LifeCycleManager lifeCycleManager;
     private final PaginationUtil paginationUtil;
+    private final Optional<SessionController> sessionController;
+    private final Duration sessionTimeout;
 
     @Inject
     InternalMcpServer(
             ObjectMapper objectMapper,
             McpMetadata metadata,
             LifeCycleManager lifeCycleManager,
+            Optional<SessionController> sessionController,
             Set<ToolEntry> tools,
             Set<PromptEntry> prompts,
             Set<ResourceEntry> resources,
             Set<ResourceTemplateEntry> resourceTemplates,
             Set<CompletionEntry> completions,
-            PaginationUtil paginationUtil)
+            PaginationUtil paginationUtil,
+            McpConfig mcpConfig)
     {
         this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
         this.lifeCycleManager = requireNonNull(lifeCycleManager, "lifeCycleManager is null");
         this.paginationUtil = requireNonNull(paginationUtil, "paginationUtil is null");
+        this.sessionController = requireNonNull(sessionController, "sessionController is null");
 
         tools.forEach(tool -> addTool(tool.tool(), tool.toolHandler()));
         prompts.forEach(prompt -> addPrompt(prompt.prompt(), prompt.promptHandler()));
         resources.forEach(resource -> addResource(resource.resource(), resource.handler()));
         resourceTemplates.forEach(resourceTemplate -> addResourceTemplate(resourceTemplate.resourceTemplate(), resourceTemplate.handler()));
         completions.forEach(completion -> addCompletion(completion.reference(), completion.handler()));
+
+        sessionTimeout = mcpConfig.getDefaultSessionTimeout().toJavaTime();
     }
 
     @Override
@@ -175,14 +195,22 @@ public class InternalMcpServer
         completions.remove(completionKey(reference));
     }
 
-    InitializeResult initialize(InitializeRequest initializeRequest)
+    InitializeResult initialize(HttpServletResponse response, McpIdentity.Authenticated<?> authenticated, InitializeRequest initializeRequest)
     {
+        boolean sessionsEnabled = sessionController.map(controller -> {
+            SessionId sessionId = controller.createSession(Optional.of(authenticated), Optional.of(sessionTimeout));
+            response.addHeader(MCP_SESSION_ID, sessionId.id());
+            controller.setSessionValue(sessionId, LOGGING_LEVEL, LoggingLevel.INFO);
+
+            return true;
+        }).orElse(false);
+
         boolean protocolVersionIsSupported = SUPPORTED_PROTOCOL_VERSIONS.contains(initializeRequest.protocolVersion());
         String protocolVersion = protocolVersionIsSupported ? initializeRequest.protocolVersion() : SUPPORTED_PROTOCOL_VERSIONS.getLast();
 
         ServerCapabilities serverCapabilities = new ServerCapabilities(
                 completions.isEmpty() ? Optional.empty() : Optional.of(new CompletionCapabilities()),
-                Optional.empty(),
+                sessionsEnabled ? Optional.of(new LoggingCapabilities()) : Optional.empty(),
                 prompts.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(false)),
                 resources.isEmpty() ? Optional.empty() : Optional.of(new SubscribeListChanged(false, false)),
                 tools.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(false)));
@@ -229,7 +257,7 @@ public class InternalMcpServer
             throw exception(INVALID_PARAMS, "Tool not found: " + callToolRequest.name());
         }
 
-        McpRequestContext requestContext = new InternalRequestContext(objectMapper, request, messageWriter, progressToken(callToolRequest));
+        McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, progressToken(callToolRequest));
         return toolEntry.toolHandler().callTool(requestContext, callToolRequest);
     }
 
@@ -240,13 +268,13 @@ public class InternalMcpServer
             throw exception(INVALID_PARAMS, "Prompt not found: " + getPromptRequest.name());
         }
 
-        McpRequestContext requestContext = new InternalRequestContext(objectMapper, request, messageWriter, progressToken(getPromptRequest));
+        McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, progressToken(getPromptRequest));
         return promptEntry.promptHandler().getPrompt(requestContext, getPromptRequest);
     }
 
     ReadResourceResult readResources(HttpServletRequest request, MessageWriter messageWriter, ReadResourceRequest readResourceRequest)
     {
-        McpRequestContext requestContext = new InternalRequestContext(objectMapper, request, messageWriter, progressToken(readResourceRequest));
+        McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, progressToken(readResourceRequest));
 
         List<ResourceContents> resourceContents = findResource(readResourceRequest.uri())
                 .map(resourceEntry -> resourceEntry.handler().readResource(requestContext, resourceEntry.resource(), readResourceRequest))
@@ -263,9 +291,18 @@ public class InternalMcpServer
             return new CompleteResult(new CompleteCompletion(ImmutableList.of(), OptionalInt.empty(), OptionalBoolean.UNDEFINED));
         }
 
-        McpRequestContext requestContext = new InternalRequestContext(objectMapper, request, messageWriter, progressToken(completeRequest));
+        McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, progressToken(completeRequest));
 
         return completionEntry.handler().complete(requestContext, completeRequest);
+    }
+
+    Object setLoggingLevel(HttpServletRequest request, SetLevelRequest setLevelRequest)
+    {
+        SessionController localSessionController = sessionController.orElseThrow(() -> exception(INVALID_REQUEST, "set logging level not supported"));
+
+        localSessionController.setSessionValue(requireSessionId(request), LOGGING_LEVEL, setLevelRequest.level());
+
+        return ImmutableMap.of();
     }
 
     private Optional<ResourceEntry> findResource(String uriString)
