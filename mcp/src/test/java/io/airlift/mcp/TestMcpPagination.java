@@ -1,5 +1,6 @@
 package io.airlift.mcp;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Closer;
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
@@ -46,9 +47,8 @@ public class TestMcpPagination
 
     public TestMcpPagination()
     {
-        TestingServer testingServer = new TestingServer(Optional.empty(), builder -> builder
+        TestingServer testingServer = new TestingServer(ImmutableMap.of("mcp.page-size", Integer.toString(PAGE_SIZE)), Optional.empty(), builder -> builder
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
-                .withMetadata(McpMetadata.DEFAULT.withPageSize(PAGE_SIZE))
                 .build());
         closer.register(testingServer);
 

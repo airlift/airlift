@@ -1,7 +1,7 @@
 package io.airlift.mcp.internal;
 
 import com.google.inject.Inject;
-import io.airlift.mcp.McpMetadata;
+import io.airlift.mcp.McpConfig;
 import io.airlift.mcp.model.PaginatedRequest;
 
 import java.util.List;
@@ -18,9 +18,9 @@ class PaginationUtil
     private final int pageSize;
 
     @Inject
-    PaginationUtil(McpMetadata metadata)
+    PaginationUtil(McpConfig mcpConfig)
     {
-        pageSize = metadata.pageSize();
+        pageSize = mcpConfig.getDefaultPageSize();
     }
 
     <T, L> T paginate(PaginatedRequest request, List<L> items, Function<L, String> keyMapper, BiFunction<List<L>, Optional<String>, T> resultMapper)
