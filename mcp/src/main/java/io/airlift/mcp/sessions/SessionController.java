@@ -30,12 +30,7 @@ public interface SessionController
      *     must persist until explicitly deleted.
      * </p>
      */
-    SessionId createSession(Optional<McpIdentity> identity, Optional<Duration> ttl);
-
-    default SessionId createPermanentSession(Optional<McpIdentity> identity)
-    {
-        return createSession(identity, FOREVER_TTL);
-    }
+    SessionId createSession(McpIdentity identity, Optional<Duration> ttl);
 
     /**
      * @return {@code true} if the session ID is valid, {@code false} otherwise
@@ -91,8 +86,8 @@ public interface SessionController
      * </p>
      *
      * <p>
-     * {@code updater} receives an {@link Optional} containing the existing value (or {@link Optional#empty()} if no value is present)
-     * and should return an {@link Optional} containing the new value to set (or {@link Optional#empty()} to remove the value).
+     *     {@code updater} receives an {@link Optional} containing the existing value (or {@link Optional#empty()} if no value is present)
+     *     and should return an {@link Optional} containing the new value to set (or {@link Optional#empty()} to remove the value).
      * </p>
      *
      * @return the computed value or {@code empty()} if that's the computed value or if the session ID is invalid

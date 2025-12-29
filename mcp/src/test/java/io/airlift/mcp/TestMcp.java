@@ -1,11 +1,13 @@
 package io.airlift.mcp;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.google.common.io.Closer;
 import com.google.common.reflect.TypeToken;
+import com.google.inject.Module;
 import io.airlift.http.client.FullJsonResponseHandler;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.JsonBodyGenerator;
@@ -50,6 +52,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -60,6 +63,7 @@ import static io.airlift.http.client.Request.Builder.prepareDelete;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.Request.Builder.preparePost;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
+import static io.airlift.mcp.TestMcp.Mode.DATABASE_SESSIONS;
 import static io.airlift.mcp.TestingClient.buildClient;
 import static io.airlift.mcp.TestingIdentityMapper.ERRORED_IDENTITY;
 import static io.airlift.mcp.TestingIdentityMapper.EXPECTED_IDENTITY;
@@ -80,7 +84,7 @@ import static org.assertj.core.api.InstanceOfAssertFactories.type;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 
 @TestInstance(PER_CLASS)
-public class TestMcp
+public abstract class TestMcp
 {
     private final Closer closer = Closer.create();
     private final TestingClient client1;
@@ -89,13 +93,26 @@ public class TestMcp
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
     private final TestingServer testingServer;
-    private final MemorySessionController sessionController;
+    private final Supplier<Set<SessionId>> sessionIdsSupplier;
+    private final Consumer<SessionId> sessionDeleter;
 
-    public TestMcp()
+    public enum Mode
     {
-        testingServer = new TestingServer(ImmutableMap.of(), Optional.empty(), builder -> builder
+        MEMORY_SESSIONS,
+        DATABASE_SESSIONS,
+    }
+
+    protected TestMcp(Mode mode)
+    {
+        Module module = binder -> {
+            if (mode == DATABASE_SESSIONS) {
+                binder.bind(TestingDatabaseServer.class).in(SINGLETON);
+            }
+        };
+
+        testingServer = new TestingServer(ImmutableMap.of(), Optional.of(module), builder -> builder
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
-                .withSessions(binding -> binding.to(MemorySessionController.class).in(SINGLETON))
+                .withSessions(binding -> binding.to((mode == DATABASE_SESSIONS) ? TestingDatabaseSessionController.class : MemorySessionController.class).in(SINGLETON))
                 .build());
         closer.register(testingServer);
 
@@ -106,7 +123,14 @@ public class TestMcp
 
         httpClient = testingServer.httpClient();
         objectMapper = testingServer.injector().getInstance(ObjectMapper.class);
-        sessionController = (MemorySessionController) testingServer.injector().getInstance(SessionController.class);
+
+        SessionController sessionController = testingServer.injector().getInstance(SessionController.class);
+
+        sessionIdsSupplier = switch (mode) {
+            case MEMORY_SESSIONS -> () -> ((MemorySessionController) sessionController).sessionIds();
+            case DATABASE_SESSIONS -> () -> ((TestingDatabaseSessionController) sessionController).sessionIds();
+        };
+        sessionDeleter = sessionController::deleteSession;
     }
 
     @AfterAll
@@ -411,13 +435,13 @@ public class TestMcp
     @Test
     public void testExpiredSession()
     {
-        Set<SessionId> preSessionIds = sessionController.sessionIds();
+        Set<SessionId> preSessionIds = sessionIdsSupplier.get();
         TestingClient client = buildClient(closer, baseUri, "testExpiredSession");
-        Set<SessionId> postSessionIds = sessionController.sessionIds();
+        Set<SessionId> postSessionIds = sessionIdsSupplier.get();
         SessionId clientSessionId = Sets.difference(postSessionIds, preSessionIds).iterator().next();
 
         // simulate session expiring
-        sessionController.deleteSession(clientSessionId);
+        sessionDeleter.accept(clientSessionId);
 
         assertThatThrownBy(client.mcpClient()::listTools)
                 .hasMessageContaining("HTTP 404 Not Found");
@@ -426,9 +450,9 @@ public class TestMcp
     @Test
     public void testDeleteSession()
     {
-        Set<SessionId> preSessionIds = sessionController.sessionIds();
+        Set<SessionId> preSessionIds = sessionIdsSupplier.get();
         TestingClient client = buildClient(closer, baseUri, "testDeleteSession");
-        Set<SessionId> postSessionIds = sessionController.sessionIds();
+        Set<SessionId> postSessionIds = sessionIdsSupplier.get();
         SessionId clientSessionId = Sets.difference(postSessionIds, preSessionIds).iterator().next();
 
         Request request = prepareDelete()

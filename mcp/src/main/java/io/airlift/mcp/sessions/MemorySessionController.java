@@ -120,7 +120,7 @@ public class MemorySessionController
     }
 
     @Override
-    public SessionId createSession(Optional<McpIdentity> identity, Optional<Duration> ttl)
+    public SessionId createSession(McpIdentity identity, Optional<Duration> ttl)
     {
         clean();
 
