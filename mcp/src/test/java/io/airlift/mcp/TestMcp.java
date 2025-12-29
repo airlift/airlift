@@ -3,6 +3,7 @@ package io.airlift.mcp;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 import com.google.common.io.Closer;
 import com.google.common.reflect.TypeToken;
 import io.airlift.http.client.FullJsonResponseHandler;
@@ -13,6 +14,9 @@ import io.airlift.http.server.HttpServerInfo;
 import io.airlift.http.server.testing.TestingHttpServer;
 import io.airlift.json.JsonCodecFactory;
 import io.airlift.mcp.model.JsonRpcRequest;
+import io.airlift.mcp.sessions.MemorySessionController;
+import io.airlift.mcp.sessions.SessionController;
+import io.airlift.mcp.sessions.SessionId;
 import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
@@ -45,21 +49,28 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.inject.Scopes.SINGLETON;
 import static io.airlift.http.client.FullJsonResponseHandler.createFullJsonResponseHandler;
+import static io.airlift.http.client.Request.Builder.prepareDelete;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.Request.Builder.preparePost;
+import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static io.airlift.mcp.TestingClient.buildClient;
 import static io.airlift.mcp.TestingIdentityMapper.ERRORED_IDENTITY;
 import static io.airlift.mcp.TestingIdentityMapper.EXPECTED_IDENTITY;
 import static io.airlift.mcp.TestingIdentityMapper.IDENTITY_HEADER;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INTERNAL_ERROR;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
+import static io.modelcontextprotocol.spec.HttpHeaders.MCP_SESSION_ID;
 import static io.modelcontextprotocol.spec.McpSchema.ErrorCodes.RESOURCE_NOT_FOUND;
+import static io.modelcontextprotocol.spec.McpSchema.LoggingLevel.ALERT;
+import static io.modelcontextprotocol.spec.McpSchema.LoggingLevel.DEBUG;
+import static io.modelcontextprotocol.spec.McpSchema.LoggingLevel.EMERGENCY;
 import static jakarta.servlet.http.HttpServletResponse.SC_METHOD_NOT_ALLOWED;
 import static jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -78,11 +89,13 @@ public class TestMcp
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
     private final TestingServer testingServer;
+    private final MemorySessionController sessionController;
 
     public TestMcp()
     {
         testingServer = new TestingServer(ImmutableMap.of(), Optional.empty(), builder -> builder
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
+                .withSessions(binding -> binding.to(MemorySessionController.class).in(SINGLETON))
                 .build());
         closer.register(testingServer);
 
@@ -93,6 +106,7 @@ public class TestMcp
 
         httpClient = testingServer.httpClient();
         objectMapper = testingServer.injector().getInstance(ObjectMapper.class);
+        sessionController = (MemorySessionController) testingServer.injector().getInstance(SessionController.class);
     }
 
     @AfterAll
@@ -163,6 +177,29 @@ public class TestMcp
     }
 
     @Test
+    public void testLogging()
+    {
+        client1.mcpClient().setLoggingLevel(EMERGENCY);
+        client2.mcpClient().setLoggingLevel(EMERGENCY);
+
+        client1.mcpClient().callTool(new CallToolRequest("log", ImmutableMap.of()));
+        client2.mcpClient().callTool(new CallToolRequest("log", ImmutableMap.of()));
+        assertThat(client1.logs()).isEmpty();
+        assertThat(client2.logs()).isEmpty();
+
+        client1.mcpClient().setLoggingLevel(ALERT);
+        client2.mcpClient().setLoggingLevel(DEBUG);
+
+        client1.mcpClient().callTool(new CallToolRequest("log", ImmutableMap.of()));
+        assertThat(client1.logs()).containsExactly("This is alert");
+        assertThat(client2.logs()).isEmpty();
+
+        client2.mcpClient().callTool(new CallToolRequest("log", ImmutableMap.of()));
+        assertThat(client1.logs()).containsExactly("This is alert");
+        assertThat(client2.logs()).containsExactlyInAnyOrder("This is alert", "This is debug");
+    }
+
+    @Test
     public void testProgress()
     {
         List<String> expectedProgress = IntStream.rangeClosed(0, 100)
@@ -203,7 +240,7 @@ public class TestMcp
         ListToolsResult listToolsResult = client1.mcpClient().listTools();
         assertThat(listToolsResult.tools())
                 .extracting(Tool::name)
-                .containsExactlyInAnyOrder("add", "throws", "addThree", "addFirstTwoAndAllThree", "progress");
+                .containsExactlyInAnyOrder("add", "throws", "addThree", "addFirstTwoAndAllThree", "progress", "log");
 
         CallToolResult callToolResult = client1.mcpClient().callTool(new CallToolRequest("add", ImmutableMap.of("a", 1, "b", 2)));
         assertThat(callToolResult.content())
@@ -369,6 +406,40 @@ public class TestMcp
         ReadResourceRequest badReadResourceRequest = new ReadResourceRequest("file://not-a-template");
         assertThatThrownBy(() -> client1.mcpClient().readResource(badReadResourceRequest))
                 .satisfies(e -> assertMcpError(e, RESOURCE_NOT_FOUND, "Resource not found: file://not-a-template"));
+    }
+
+    @Test
+    public void testExpiredSession()
+    {
+        Set<SessionId> preSessionIds = sessionController.sessionIds();
+        TestingClient client = buildClient(closer, baseUri, "testExpiredSession");
+        Set<SessionId> postSessionIds = sessionController.sessionIds();
+        SessionId clientSessionId = Sets.difference(postSessionIds, preSessionIds).iterator().next();
+
+        // simulate session expiring
+        sessionController.deleteSession(clientSessionId);
+
+        assertThatThrownBy(client.mcpClient()::listTools)
+                .hasMessageContaining("HTTP 404 Not Found");
+    }
+
+    @Test
+    public void testDeleteSession()
+    {
+        Set<SessionId> preSessionIds = sessionController.sessionIds();
+        TestingClient client = buildClient(closer, baseUri, "testDeleteSession");
+        Set<SessionId> postSessionIds = sessionController.sessionIds();
+        SessionId clientSessionId = Sets.difference(postSessionIds, preSessionIds).iterator().next();
+
+        Request request = prepareDelete()
+                .setUri(URI.create(baseUri + "/mcp"))
+                .addHeader(MCP_SESSION_ID, clientSessionId.id())
+                .addHeader(IDENTITY_HEADER, EXPECTED_IDENTITY)
+                .build();
+        httpClient.execute(request, createStatusResponseHandler());
+
+        assertThatThrownBy(client.mcpClient()::listTools)
+                .hasMessageContaining("HTTP 404 Not Found");
     }
 
     private void assertMcpError(Throwable throwable, int code, String message)

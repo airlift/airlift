@@ -23,6 +23,9 @@ import io.airlift.mcp.model.ListRequest;
 import io.airlift.mcp.model.McpIdentity;
 import io.airlift.mcp.model.McpIdentity.Authenticated;
 import io.airlift.mcp.model.ReadResourceRequest;
+import io.airlift.mcp.model.SetLevelRequest;
+import io.airlift.mcp.sessions.SessionController;
+import io.airlift.mcp.sessions.SessionId;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpFilter;
@@ -41,10 +44,13 @@ import java.util.stream.Collectors;
 import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Throwables.throwIfInstanceOf;
 import static com.google.common.net.HttpHeaders.WWW_AUTHENTICATE;
+import static io.airlift.mcp.internal.InternalRequestContext.optionalSessionId;
+import static io.airlift.mcp.internal.InternalRequestContext.requireSessionId;
 import static io.airlift.mcp.model.Constants.HEADER_SESSION_ID;
 import static io.airlift.mcp.model.Constants.MCP_IDENTITY_ATTRIBUTE;
 import static io.airlift.mcp.model.Constants.METHOD_COMPLETION_COMPLETE;
 import static io.airlift.mcp.model.Constants.METHOD_INITIALIZE;
+import static io.airlift.mcp.model.Constants.METHOD_LOGGING_SET_LEVEL;
 import static io.airlift.mcp.model.Constants.METHOD_PING;
 import static io.airlift.mcp.model.Constants.METHOD_PROMPT_GET;
 import static io.airlift.mcp.model.Constants.METHOD_PROMPT_LIST;
@@ -68,6 +74,7 @@ import static jakarta.ws.rs.HttpMethod.POST;
 import static jakarta.ws.rs.core.HttpHeaders.ACCEPT;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static jakarta.ws.rs.core.MediaType.SERVER_SENT_EVENTS;
+import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Locale.ROOT;
 import static java.util.Objects.requireNonNull;
@@ -83,14 +90,16 @@ public class InternalFilter
     private final Optional<McpIdentityMapper> identityMapper;
     private final InternalMcpServer mcpServer;
     private final ObjectMapper objectMapper;
+    private final Optional<SessionController> sessionController;
 
     @Inject
-    public InternalFilter(McpMetadata metadata, Optional<McpIdentityMapper> identityMapper, InternalMcpServer mcpServer, ObjectMapper objectMapper)
+    public InternalFilter(McpMetadata metadata, Optional<McpIdentityMapper> identityMapper, InternalMcpServer mcpServer, ObjectMapper objectMapper, Optional<SessionController> sessionController)
     {
         this.metadata = requireNonNull(metadata, "metadata is null");
         this.identityMapper = requireNonNull(identityMapper, "identityMapper is null");
         this.mcpServer = requireNonNull(mcpServer, "mcpServer is null");
         this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
+        this.sessionController = requireNonNull(sessionController, "sessionController is null");
     }
 
     @Override
@@ -107,10 +116,10 @@ public class InternalFilter
 
     private void internalDoFilter(McpIdentityMapper identityMapper, HttpServletRequest request, HttpServletResponse response)
     {
-        McpIdentity identity = identityMapper.map(request);
+        McpIdentity identity = identityMapper.map(request, optionalSessionId(request));
         try {
             switch (identity) {
-                case Authenticated<?> authenticated -> handleMpcRequest(request, response, authenticated.identity());
+                case Authenticated<?> authenticated -> handleMpcRequest(request, response, authenticated);
 
                 case McpIdentity.Unauthenticated unauthenticated -> {
                     response.setContentType(APPLICATION_JSON);
@@ -158,18 +167,28 @@ public class InternalFilter
         responseError(response, SC_BAD_REQUEST, errorDetail);
     }
 
-    private void handleMpcRequest(HttpServletRequest request, HttpServletResponse response, Object identity)
+    private void handleMpcRequest(HttpServletRequest request, HttpServletResponse response, Authenticated<?> authenticated)
     {
-        request.setAttribute(MCP_IDENTITY_ATTRIBUTE, identity);
+        request.setAttribute(MCP_IDENTITY_ATTRIBUTE, authenticated.identity());
 
         switch (request.getMethod().toUpperCase(ROOT)) {
-            case POST -> handleMcpPostRequest(request, response);
-            case GET, DELETE -> response.setStatus(SC_METHOD_NOT_ALLOWED);
+            case POST -> handleMcpPostRequest(request, response, authenticated);
+            case GET -> response.setStatus(SC_METHOD_NOT_ALLOWED);
+            case DELETE -> handleMcpDeleteRequest(request, response);
             default -> response.setStatus(SC_NOT_FOUND);
         }
     }
 
-    private void handleMcpPostRequest(HttpServletRequest request, HttpServletResponse response)
+    private void handleMcpDeleteRequest(HttpServletRequest request, HttpServletResponse response)
+    {
+        sessionController.ifPresentOrElse(controller -> {
+            SessionId sessionId = requireSessionId(request);
+            controller.deleteSession(sessionId);
+            response.setStatus(SC_ACCEPTED);
+        }, () -> response.setStatus(SC_METHOD_NOT_ALLOWED));
+    }
+
+    private void handleMcpPostRequest(HttpServletRequest request, HttpServletResponse response, Authenticated<?> authenticated)
     {
         InternalMessageWriter messageWriter = new InternalMessageWriter(response);
 
@@ -188,7 +207,7 @@ public class InternalFilter
 
             Object message = deserializeJsonRpcMessage(body);
             switch (message) {
-                case JsonRpcRequest<?> rpcRequest when (rpcRequest.id() != null) -> handleRpcRequest(request, response, rpcRequest, messageWriter);
+                case JsonRpcRequest<?> rpcRequest when (rpcRequest.id() != null) -> handleRpcRequest(request, response, authenticated, rpcRequest, messageWriter);
                 case JsonRpcRequest<?> rpcRequest -> handleRpcNotification(request, response, rpcRequest);
                 case JsonRpcResponse<?> rpcResponse -> handleRpcResponse(request, response, rpcResponse);
                 default -> responseError(response, SC_BAD_REQUEST, invalidRequest("The server accepts either requests or notifications"));
@@ -222,13 +241,15 @@ public class InternalFilter
         response.setStatus(SC_ACCEPTED);
     }
 
-    private void handleRpcRequest(HttpServletRequest request, HttpServletResponse response, JsonRpcRequest<?> rpcRequest, InternalMessageWriter messageWriter)
+    private void handleRpcRequest(HttpServletRequest request, HttpServletResponse response, Authenticated<?> authenticated, JsonRpcRequest<?> rpcRequest, InternalMessageWriter messageWriter)
     {
         log.debug("Processing MCP request: %s, session: %s", rpcRequest.method(), request.getHeader(HEADER_SESSION_ID));
 
+        validateSession(request, rpcRequest);
+
         try {
             Object result = switch (rpcRequest.method()) {
-                case METHOD_INITIALIZE -> mcpServer.initialize(convertParams(rpcRequest, InitializeRequest.class));
+                case METHOD_INITIALIZE -> mcpServer.initialize(response, authenticated, convertParams(rpcRequest, InitializeRequest.class));
                 case METHOD_TOOLS_LIST -> mcpServer.listTools(convertParams(rpcRequest, ListRequest.class));
                 case METHOD_TOOLS_CALL -> mcpServer.callTool(request, messageWriter, convertParams(rpcRequest, CallToolRequest.class));
                 case METHOD_PROMPT_LIST -> mcpServer.listPrompts(convertParams(rpcRequest, ListRequest.class));
@@ -238,6 +259,7 @@ public class InternalFilter
                 case METHOD_RESOURCES_READ -> mcpServer.readResources(request, messageWriter, convertParams(rpcRequest, ReadResourceRequest.class));
                 case METHOD_PING -> ImmutableMap.of();
                 case METHOD_COMPLETION_COMPLETE -> mcpServer.completionComplete(request, messageWriter, convertParams(rpcRequest, CompleteRequest.class));
+                case METHOD_LOGGING_SET_LEVEL -> mcpServer.setLoggingLevel(request, convertParams(rpcRequest, SetLevelRequest.class));
                 default -> throw new IllegalArgumentException("Unknown method: " + rpcRequest.method());
             };
 
@@ -259,6 +281,18 @@ public class InternalFilter
         }
         catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private void validateSession(HttpServletRequest request, JsonRpcRequest<?> rpcRequest)
+    {
+        if (!METHOD_INITIALIZE.equals(rpcRequest.method())) {
+            sessionController.ifPresent(controller -> {
+                SessionId sessionId = requireSessionId(request);
+                if (!controller.validateSession(sessionId)) {
+                    throw new WebApplicationException(NOT_FOUND);
+                }
+            });
         }
     }
 
