@@ -81,7 +81,7 @@ public class TestMcp
 
     public TestMcp()
     {
-        testingServer = new TestingServer(Optional.empty(), builder -> builder
+        testingServer = new TestingServer(ImmutableMap.of(), Optional.empty(), builder -> builder
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
                 .build());
         closer.register(testingServer);
