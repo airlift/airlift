@@ -6,7 +6,7 @@ import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
 
-public record McpMetadata(String uriPath, Implementation implementation, Optional<String> instructions, boolean tools, boolean prompts, boolean resources, boolean completions, int pageSize)
+public record McpMetadata(String uriPath, Implementation implementation, Optional<String> instructions, boolean tools, boolean prompts, boolean resources, boolean completions)
 {
     public static final McpMetadata DEFAULT = new McpMetadata("/mcp");
 
@@ -19,41 +19,36 @@ public record McpMetadata(String uriPath, Implementation implementation, Optiona
 
     public McpMetadata(String uriPath)
     {
-        this(uriPath, new Implementation("mcp", "1.0.0"), Optional.empty(), false, false, false, false, 100);
+        this(uriPath, new Implementation("mcp", "1.0.0"), Optional.empty(), false, false, false, false);
     }
 
     public McpMetadata withImplementation(Implementation implementation)
     {
-        return new McpMetadata(uriPath, implementation, instructions, tools, prompts, resources, completions, pageSize);
+        return new McpMetadata(uriPath, implementation, instructions, tools, prompts, resources, completions);
     }
 
     public McpMetadata withInstructions(String instructions)
     {
-        return new McpMetadata(uriPath, implementation, Optional.ofNullable(instructions), tools, prompts, resources, completions, pageSize);
+        return new McpMetadata(uriPath, implementation, Optional.ofNullable(instructions), tools, prompts, resources, completions);
     }
 
     public McpMetadata withTools(boolean tools)
     {
-        return new McpMetadata(uriPath, implementation, instructions, tools, prompts, resources, completions, pageSize);
+        return new McpMetadata(uriPath, implementation, instructions, tools, prompts, resources, completions);
     }
 
     public McpMetadata withPrompts(boolean prompts)
     {
-        return new McpMetadata(uriPath, implementation, instructions, tools, prompts, resources, completions, pageSize);
+        return new McpMetadata(uriPath, implementation, instructions, tools, prompts, resources, completions);
     }
 
     public McpMetadata withResources(boolean resources)
     {
-        return new McpMetadata(uriPath, implementation, instructions, tools, prompts, resources, completions, pageSize);
+        return new McpMetadata(uriPath, implementation, instructions, tools, prompts, resources, completions);
     }
 
     public McpMetadata withCompletions(boolean completions)
     {
-        return new McpMetadata(uriPath, implementation, instructions, tools, prompts, resources, completions, pageSize);
-    }
-
-    public McpMetadata withPageSize(int pageSize)
-    {
-        return new McpMetadata(uriPath, implementation, instructions, tools, prompts, resources, completions, pageSize);
+        return new McpMetadata(uriPath, implementation, instructions, tools, prompts, resources, completions);
     }
 }
