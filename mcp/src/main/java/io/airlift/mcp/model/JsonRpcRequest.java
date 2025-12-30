@@ -7,6 +7,7 @@ import static io.airlift.mcp.model.Constants.JSON_RPC_VERSION;
 
 // see https://www.jsonrpc.org/specification#request_object
 public record JsonRpcRequest<T>(String jsonrpc, Object id, String method, Optional<T> params)
+        implements JsonRpcMessage
 {
     public JsonRpcRequest
     {
