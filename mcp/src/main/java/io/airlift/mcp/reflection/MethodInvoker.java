@@ -180,7 +180,7 @@ public class MethodInvoker
                                 case SourceResourceTemplateParameter _ -> sourceResourceTemplate.orElseThrow(() -> new IllegalStateException("SourceResourceTemplate is required"));
                                 case ReadResourceRequestParameter _ -> readResourceRequest.orElseThrow(() -> new IllegalStateException("ReadResourceRequest is required"));
                                 case ResourceTemplateValuesParameter _ -> resourceTemplateValues.orElseThrow(() -> new IllegalStateException("ResourceTemplateValues is required"));
-                                case IdentityParameter _ -> retrieveIdentityValue(requestContext.request());
+                                case IdentityParameter _ -> retrieveIdentityValue(requestContext.request().orElseThrow(() -> new IllegalStateException("IdentityValue is required")));
                                 case CompleteArgumentParameter _ -> completeArgument.orElseThrow(() -> new IllegalStateException("CompleteArgument is required"));
                                 case CompleteContextParameter _ -> completeContext.orElseThrow(() -> new IllegalStateException("CompleteContext is required"));
                                 case ObjectParameter objectParameter -> valueForObjectParameter(arguments, objectParameter);
