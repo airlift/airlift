@@ -43,9 +43,9 @@ class InternalRequestContext
     }
 
     @Override
-    public HttpServletRequest request()
+    public Optional<HttpServletRequest> request()
     {
-        return request;
+        return Optional.of(request);
     }
 
     @SuppressWarnings("SwitchStatementWithTooFewBranches")
