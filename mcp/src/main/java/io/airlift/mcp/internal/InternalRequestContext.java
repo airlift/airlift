@@ -58,13 +58,13 @@ class InternalRequestContext
         });
 
         ProgressNotification notification = new ProgressNotification(appliedProgressToken, message, OptionalDouble.of(progress), OptionalDouble.of(total));
-        internalSendMessage(NOTIFICATION_PROGRESS, Optional.of(notification));
+        sendMessage(NOTIFICATION_PROGRESS, Optional.of(notification));
     }
 
     @Override
     public void sendPing()
     {
-        internalSendMessage(METHOD_PING, Optional.empty());
+        sendMessage(METHOD_PING, Optional.empty());
     }
 
     @Override
@@ -77,8 +77,15 @@ class InternalRequestContext
                 .orElseThrow(() -> exception("Session is invalid"));
         if (level.level() >= sessionLoggingLevel.level()) {
             LoggingMessageNotification logNotification = new LoggingMessageNotification(level, logger, data);
-            internalSendMessage(NOTIFICATION_MESSAGE, Optional.of(logNotification));
+            sendMessage(NOTIFICATION_MESSAGE, Optional.of(logNotification));
         }
+    }
+
+    @Override
+    public void sendMessage(String method, Optional<Object> params)
+    {
+        JsonRpcRequest<?> notification = params.map(p -> buildNotification(method, p)).orElseGet(() -> buildNotification(method));
+        internalSendRequest(notification);
     }
 
     static SessionId requireSessionId(HttpServletRequest request)
@@ -90,13 +97,6 @@ class InternalRequestContext
     {
         return Optional.ofNullable(request.getHeader(MCP_SESSION_ID))
                 .map(SessionId::new);
-    }
-
-    @SuppressWarnings("SameParameterValue")
-    private void internalSendMessage(String method, Optional<Object> params)
-    {
-        JsonRpcRequest<?> notification = params.map(p -> buildNotification(method, p)).orElseGet(() -> buildNotification(method));
-        internalSendRequest(notification);
     }
 
     private void internalSendRequest(JsonRpcRequest<?> rpcRequest)
