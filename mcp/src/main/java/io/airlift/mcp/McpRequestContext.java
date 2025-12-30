@@ -24,4 +24,6 @@ public interface McpRequestContext
 
         throw new UnsupportedOperationException();
     }
+
+    void sendMessage(String method, Optional<Object> params);
 }
