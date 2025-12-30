@@ -7,7 +7,7 @@ import java.util.Optional;
 
 public interface McpRequestContext
 {
-    HttpServletRequest request();
+    Optional<HttpServletRequest> request();
 
     void sendProgress(double progress, double total, String message);
 
