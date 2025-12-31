@@ -163,19 +163,6 @@ public class McpModule
             Set<ResourceTemplateHandlerProvider> localResourceTemplates = resourceTemplates.build();
             Set<CompletionHandlerProvider> localCompletions = completions.build();
 
-            if (!localTools.isEmpty()) {
-                metadata = metadata.withTools(true);
-            }
-            if (!localPrompts.isEmpty()) {
-                metadata = metadata.withPrompts(true);
-            }
-            if (!localResources.isEmpty()) {
-                metadata = metadata.withResources(true);
-            }
-            if (!localCompletions.isEmpty()) {
-                metadata = metadata.withCompletions(true);
-            }
-
             return new McpModule(mode, metadata, identityMapperBinding, classesSet, localTools, localPrompts, localResources, localResourceTemplates, localCompletions);
         }
     }

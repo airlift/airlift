@@ -180,11 +180,11 @@ public class InternalMcpServer
         String protocolVersion = protocolVersionIsSupported ? initializeRequest.protocolVersion() : SUPPORTED_PROTOCOL_VERSIONS.getLast();
 
         ServerCapabilities serverCapabilities = new ServerCapabilities(
-                metadata.completions() ? Optional.of(new CompletionCapabilities()) : Optional.empty(),
+                completions.isEmpty() ? Optional.empty() : Optional.of(new CompletionCapabilities()),
                 Optional.empty(),
-                metadata.prompts() ? Optional.of(new ListChanged(false)) : Optional.empty(),
-                metadata.resources() ? Optional.of(new SubscribeListChanged(false, false)) : Optional.empty(),
-                metadata.tools() ? Optional.of(new ListChanged(false)) : Optional.empty());
+                prompts.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(false)),
+                resources.isEmpty() ? Optional.empty() : Optional.of(new SubscribeListChanged(false, false)),
+                tools.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(false)));
 
         return new InitializeResult(protocolVersion, serverCapabilities, metadata.implementation(), metadata.instructions());
     }
