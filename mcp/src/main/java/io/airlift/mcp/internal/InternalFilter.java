@@ -55,6 +55,7 @@ import static io.airlift.mcp.internal.InternalRequestContext.requireSessionId;
 import static io.airlift.mcp.model.Constants.HEADER_LAST_EVENT_ID;
 import static io.airlift.mcp.model.Constants.HEADER_SESSION_ID;
 import static io.airlift.mcp.model.Constants.MCP_IDENTITY_ATTRIBUTE;
+import static io.airlift.mcp.model.Constants.MCP_REQUEST_ID_ATTRIBUTE;
 import static io.airlift.mcp.model.Constants.MESSAGE_WRITER_ATTRIBUTE;
 import static io.airlift.mcp.model.Constants.METHOD_COMPLETION_COMPLETE;
 import static io.airlift.mcp.model.Constants.METHOD_INITIALIZE;
@@ -370,6 +371,8 @@ public class InternalFilter
 
         String rpcMethod = rpcRequest.method();
         Object requestId = rpcRequest.id();
+
+        request.setAttribute(MCP_REQUEST_ID_ATTRIBUTE, requestId);
 
         log.debug("Processing MCP request: %s, session: %s", rpcMethod, request.getHeader(HEADER_SESSION_ID));
 

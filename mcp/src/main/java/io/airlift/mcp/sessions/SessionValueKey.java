@@ -7,6 +7,7 @@ import io.airlift.mcp.model.JsonRpcResponse;
 import io.airlift.mcp.model.ListRootsResult;
 import io.airlift.mcp.model.LoggingLevel;
 import io.airlift.mcp.model.Protocol;
+import io.airlift.mcp.tasks.TaskAdapter;
 import io.airlift.mcp.versions.ResourceVersion;
 import io.airlift.mcp.versions.SystemListVersions;
 
@@ -25,6 +26,11 @@ public record SessionValueKey<T>(String name, Class<T> type)
     {
         requireNonNull(name, "name is null");
         requireNonNull(type, "type is null");
+    }
+
+    public static SessionValueKey<TaskAdapter> taskAdapterKey(String taskId)
+    {
+        return new SessionValueKey<>(taskId, TaskAdapter.class);
     }
 
     @SuppressWarnings("rawtypes")

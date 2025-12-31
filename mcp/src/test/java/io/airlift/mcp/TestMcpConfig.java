@@ -27,7 +27,10 @@ public class TestMcpConfig
                 .setEventStreamingPingThreshold(new Duration(15, SECONDS))
                 .setEventStreamingTimeout(new Duration(5, MINUTES))
                 .setCancellationCheckInterval(new Duration(1, SECONDS))
-                .setMaxResumableMessages(100));
+                .setMaxResumableMessages(100)
+                .setDefaultTaskTtl(new Duration(1, HOURS))
+                .setTaskCleanupInterval(new Duration(15, MINUTES))
+                .setAbandonedTaskThreshold(new Duration(7, DAYS)));
     }
 
     @Test
@@ -42,6 +45,9 @@ public class TestMcpConfig
                 .put("mcp.event-streaming.timeout", "456m")
                 .put("mcp.cancellation.check-interval", "1h")
                 .put("mcp.resumable-messages.max", "962")
+                .put("mcp.task.default-ttl", "5678m")
+                .put("mcp.task.cleanup-interval", "269s")
+                .put("mcp.task.abandoned-threshold", "8h")
                 .build();
 
         McpConfig expected = new McpConfig()
@@ -52,7 +58,10 @@ public class TestMcpConfig
                 .setEventStreamingPingThreshold(new Duration(123, MINUTES))
                 .setEventStreamingTimeout(new Duration(456, MINUTES))
                 .setCancellationCheckInterval(new Duration(1, HOURS))
-                .setMaxResumableMessages(962);
+                .setMaxResumableMessages(962)
+                .setDefaultTaskTtl(new Duration(5678, MINUTES))
+                .setTaskCleanupInterval(new Duration(269, SECONDS))
+                .setAbandonedTaskThreshold(new Duration(8, HOURS));
 
         assertFullMapping(properties, expected);
     }

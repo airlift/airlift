@@ -37,6 +37,7 @@ import io.airlift.mcp.reflection.ResourceHandlerProvider;
 import io.airlift.mcp.reflection.ResourceTemplateHandlerProvider;
 import io.airlift.mcp.reflection.ToolHandlerProvider;
 import io.airlift.mcp.sessions.SessionController;
+import io.airlift.mcp.tasks.TaskController;
 import io.airlift.mcp.versions.ResourceVersionController;
 
 import java.util.Collection;
@@ -272,6 +273,7 @@ public class McpModule
     {
         binder.bind(McpMetadata.class).toInstance(metadata);
         binder.bind(ResourceVersionController.class).in(SINGLETON);
+        binder.bind(TaskController.class).in(SINGLETON);
 
         configBinder(binder).bindConfig(McpConfig.class);
 

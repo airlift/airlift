@@ -47,4 +47,5 @@ public interface Constants
     String MCP_IDENTITY_ATTRIBUTE = Constants.class.getName() + ".identity";
     String RPC_MESSAGE_ATTRIBUTE = Constants.class.getName() + ".message";
     String MESSAGE_WRITER_ATTRIBUTE = Constants.class.getName() + ".messageWriter";
+    String MCP_REQUEST_ID_ATTRIBUTE = Constants.class.getName() + ".requestId";
 }
