@@ -18,7 +18,7 @@ import io.airlift.node.NodeModule;
 import java.util.Optional;
 
 import static com.google.inject.Scopes.SINGLETON;
-import static io.airlift.mcp.model.McpIdentity.Authenticated.authenticated;
+import static io.airlift.mcp.McpIdentity.Authenticated.authenticated;
 
 public class LocalServer
 {

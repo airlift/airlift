@@ -11,7 +11,6 @@ import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.google.inject.Inject;
 import io.airlift.concurrent.Threads;
 import io.airlift.log.Logger;
-import io.airlift.mcp.model.McpIdentity;
 import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.sessions.SessionId;
 import io.airlift.mcp.sessions.SessionValueKey;
