@@ -1,12 +1,15 @@
 package io.airlift.mcp;
 
+import io.airlift.mcp.tasks.TaskContextId;
+
 import java.util.List;
+import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
 
 public sealed interface McpIdentity
 {
-    record Authenticated<T>(T identity)
+    record Authenticated<T>(T identity, Optional<TaskContextId> taskContextId)
             implements McpIdentity
     {
         public Authenticated
@@ -14,9 +17,14 @@ public sealed interface McpIdentity
             requireNonNull(identity, "identity is null");
         }
 
+        public static <T> Authenticated<T> authenticated(T identity, Optional<TaskContextId> taskContextId)
+        {
+            return new Authenticated<>(identity, taskContextId);
+        }
+
         public static <T> Authenticated<T> authenticated(T identity)
         {
-            return new Authenticated<>(identity);
+            return new Authenticated<>(identity, Optional.empty());
         }
     }
 
