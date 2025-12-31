@@ -117,7 +117,7 @@ public final class ConfigAssertions
         // verify all supplied properties are supported and not deprecated
         assertPropertiesSupported(metadata, properties.keySet(), false);
 
-        // verify that every (non-deprecated and not exlicitly skipped) property is tested
+        // verify that every (non-deprecated and not explicitly skipped) property is tested
         Set<String> nonSkippedProperties = new TreeSet<>();
         for (AttributeMetadata attribute : metadata.getAttributes().values()) {
             if (attribute.getInjectionPoint().getProperty() != null) {
