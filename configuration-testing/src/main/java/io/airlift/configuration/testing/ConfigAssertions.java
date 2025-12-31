@@ -16,6 +16,7 @@
 package io.airlift.configuration.testing;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import io.airlift.configuration.ConfigurationFactory;
 import io.airlift.configuration.ConfigurationMetadata;
 import io.airlift.configuration.ConfigurationMetadata.AttributeMetadata;
@@ -117,17 +118,24 @@ public final class ConfigAssertions
         assertPropertiesSupported(metadata, properties.keySet(), false);
 
         // verify that every (non-deprecated and not explicitly skipped) property is tested
-        Set<String> nonSkippedProperties = new TreeSet<>();
+        Set<String> allProperties = new HashSet<>();
         for (AttributeMetadata attribute : metadata.getAttributes().values()) {
             if (attribute.getInjectionPoint().getProperty() != null) {
-                nonSkippedProperties.add(attribute.getInjectionPoint().getProperty());
+                allProperties.add(attribute.getInjectionPoint().getProperty());
             }
         }
-        nonSkippedProperties.removeAll(skipped);
+        Set<String> invalidSkipped = new TreeSet<>(Sets.difference(skipped, allProperties));
+        if (!invalidSkipped.isEmpty()) {
+            throw new IllegalArgumentException("Invalid skipped properties: " + invalidSkipped);
+        }
+        Set<String> skippedButTested = new TreeSet<>(Sets.intersection(skipped, properties.keySet()));
+        if (!skippedButTested.isEmpty()) {
+            throw new IllegalArgumentException("Skipped but tested properties: " + skippedButTested);
+        }
+        Set<String> nonSkippedProperties = Sets.difference(allProperties, skipped);
 
-        if (!properties.keySet().equals(nonSkippedProperties)) {
-            Set<String> untestedProperties = new TreeSet<>(nonSkippedProperties);
-            untestedProperties.removeAll(properties.keySet());
+        Set<String> untestedProperties = new TreeSet<>(Sets.difference(nonSkippedProperties, properties.keySet()));
+        if (!untestedProperties.isEmpty()) {
             throw new AssertionError("Untested properties " + untestedProperties);
         }
 
