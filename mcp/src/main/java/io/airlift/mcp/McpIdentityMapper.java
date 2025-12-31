@@ -1,6 +1,5 @@
 package io.airlift.mcp;
 
-import io.airlift.mcp.model.McpIdentity;
 import io.airlift.mcp.sessions.SessionId;
 import jakarta.servlet.http.HttpServletRequest;
 

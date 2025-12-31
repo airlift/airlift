@@ -1,6 +1,6 @@
 package io.airlift.mcp.sessions;
 
-import io.airlift.mcp.model.McpIdentity;
+import io.airlift.mcp.McpIdentity;
 
 import java.time.Duration;
 import java.util.List;

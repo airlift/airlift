@@ -5,7 +5,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import io.airlift.log.Logger;
-import io.airlift.mcp.model.McpIdentity;
+import io.airlift.mcp.McpIdentity;
 
 import java.time.Duration;
 import java.time.Instant;
