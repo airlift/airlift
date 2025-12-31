@@ -1,6 +1,7 @@
 package io.airlift.mcp.internal;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
@@ -32,21 +33,28 @@ import io.airlift.mcp.model.CompleteResult;
 import io.airlift.mcp.model.CompleteResult.CompleteCompletion;
 import io.airlift.mcp.model.GetPromptRequest;
 import io.airlift.mcp.model.GetPromptResult;
+import io.airlift.mcp.model.GetTaskRequest;
 import io.airlift.mcp.model.Implementation;
 import io.airlift.mcp.model.InitializeRequest;
 import io.airlift.mcp.model.InitializeResult;
 import io.airlift.mcp.model.InitializeResult.CompletionCapabilities;
 import io.airlift.mcp.model.InitializeResult.LoggingCapabilities;
 import io.airlift.mcp.model.InitializeResult.ServerCapabilities;
+import io.airlift.mcp.model.InitializeResult.TaskCapabilities;
+import io.airlift.mcp.model.InitializeResult.TaskRequests;
+import io.airlift.mcp.model.InitializeResult.TaskTools;
+import io.airlift.mcp.model.JsonRpcMessage;
 import io.airlift.mcp.model.ListChanged;
 import io.airlift.mcp.model.ListPromptsResult;
 import io.airlift.mcp.model.ListRequest;
 import io.airlift.mcp.model.ListResourceTemplatesResult;
 import io.airlift.mcp.model.ListResourcesResult;
+import io.airlift.mcp.model.ListTasksResult;
 import io.airlift.mcp.model.ListToolsResult;
 import io.airlift.mcp.model.LoggingLevel;
 import io.airlift.mcp.model.Meta;
 import io.airlift.mcp.model.Prompt;
+import io.airlift.mcp.model.Property;
 import io.airlift.mcp.model.Protocol;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.ReadResourceResult;
@@ -57,11 +65,15 @@ import io.airlift.mcp.model.ResourceTemplateValues;
 import io.airlift.mcp.model.SetLevelRequest;
 import io.airlift.mcp.model.SubscribeListChanged;
 import io.airlift.mcp.model.SubscribeRequest;
+import io.airlift.mcp.model.Task;
 import io.airlift.mcp.model.Tool;
 import io.airlift.mcp.reflection.IconHelper;
 import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.sessions.SessionId;
 import io.airlift.mcp.sessions.SessionValueKey;
+import io.airlift.mcp.tasks.TaskAdapter;
+import io.airlift.mcp.tasks.TaskContextId;
+import io.airlift.mcp.tasks.TaskController;
 import io.airlift.mcp.versions.ResourceVersion;
 import io.airlift.mcp.versions.ResourceVersionController;
 import io.airlift.mcp.versions.SystemListVersions;
@@ -78,6 +90,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
@@ -89,7 +102,10 @@ import static io.airlift.mcp.model.Constants.MCP_SESSION_ID;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
 import static io.airlift.mcp.model.JsonRpcErrorCode.RESOURCE_NOT_FOUND;
+import static io.airlift.mcp.model.Property.INSTANCE;
 import static io.airlift.mcp.model.Protocol.LATEST_PROTOCOL;
+import static io.airlift.mcp.model.ToolExecution.OPTIONAL;
+import static io.airlift.mcp.model.ToolExecution.REQUIRED;
 import static io.airlift.mcp.sessions.SessionValueKey.CLIENT_CAPABILITIES;
 import static io.airlift.mcp.sessions.SessionValueKey.LOGGING_LEVEL;
 import static io.airlift.mcp.sessions.SessionValueKey.PROTOCOL;
@@ -113,7 +129,11 @@ public class InternalMcpServer
     private final Optional<SessionController> sessionController;
     private final Duration sessionTimeout;
     private final ResourceVersionController resourceVersionController;
+    private final TaskController taskController;
     private final Implementation serverImplementation;
+    private final int pageSize;
+    private final Duration streamingTimeout;
+    private final Duration pingThreshold;
 
     @Inject
     InternalMcpServer(
@@ -130,7 +150,8 @@ public class InternalMcpServer
             McpConfig mcpConfig,
             ResourceVersionController resourceVersionController,
             IconHelper iconHelper,
-            @Named(MCP_SERVER_ICONS) Set<String> serverIcons)
+            @Named(MCP_SERVER_ICONS) Set<String> serverIcons,
+            TaskController taskController)
     {
         this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
@@ -138,6 +159,7 @@ public class InternalMcpServer
         this.paginationUtil = requireNonNull(paginationUtil, "paginationUtil is null");
         this.sessionController = requireNonNull(sessionController, "sessionController is null");
         this.resourceVersionController = requireNonNull(resourceVersionController, "resourceVersionController is null");
+        this.taskController = requireNonNull(taskController, "taskController is null");
 
         tools.forEach(tool -> addTool(tool.tool(), tool.toolHandler()));
         prompts.forEach(prompt -> addPrompt(prompt.prompt(), prompt.promptHandler()));
@@ -146,6 +168,9 @@ public class InternalMcpServer
         completions.forEach(completion -> addCompletion(completion.reference(), completion.handler()));
 
         sessionTimeout = mcpConfig.getDefaultSessionTimeout().toJavaTime();
+        pageSize = mcpConfig.getDefaultPageSize();
+        streamingTimeout = mcpConfig.getEventStreamingTimeout().toJavaTime();
+        pingThreshold = mcpConfig.getEventStreamingPingThreshold().toJavaTime();
 
         serverImplementation = iconHelper.mapIcons(serverIcons).map(icons -> metadata.implementation().withAdditionalIcons(icons))
                 .orElse(metadata.implementation());
@@ -245,13 +270,18 @@ public class InternalMcpServer
             return true;
         }).orElse(false);
 
+        boolean supportsTasks = tools.values().stream()
+                .map(ToolEntry::tool)
+                .flatMap(tool -> tool.execution().stream())
+                .anyMatch(toolExecution -> (toolExecution == OPTIONAL) || (toolExecution == REQUIRED));
+
         ServerCapabilities serverCapabilities = new ServerCapabilities(
                 completions.isEmpty() ? Optional.empty() : Optional.of(new CompletionCapabilities()),
                 sessionsEnabled ? Optional.of(new LoggingCapabilities()) : Optional.empty(),
                 prompts.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(sessionsEnabled)),
                 resources.isEmpty() ? Optional.empty() : Optional.of(new SubscribeListChanged(sessionsEnabled, sessionsEnabled)),
                 tools.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(sessionsEnabled)),
-                Optional.empty());
+                supportsTasks ? Optional.of(new TaskCapabilities(INSTANCE, INSTANCE, Optional.of(new TaskRequests(Optional.of(new TaskTools(INSTANCE)))))) : Optional.empty());
 
         Implementation localImplementation = protocol.supportsIcons() ? serverImplementation : serverImplementation.simpleForm();
 
@@ -395,6 +425,53 @@ public class InternalMcpServer
         localSessionController.deleteSessionValue(sessionId, key);
 
         return ImmutableMap.of();
+    }
+
+    ListTasksResult listTasks(Optional<TaskContextId> taskContextId, ListRequest listRequest)
+    {
+        TaskContextId localTaskContextId = taskContextId.orElseThrow(() -> exception(INVALID_REQUEST, "tasks not supported"));
+
+        List<Task> tasks = taskController.listTasks(localTaskContextId, pageSize, listRequest.cursor())
+                .stream()
+                .map(TaskAdapter::toTask)
+                .collect(toImmutableList());
+        return paginationUtil.paginate(listRequest, tasks, Task::taskId, ListTasksResult::new);
+    }
+
+    Task getTask(Optional<TaskContextId> taskContextId, GetTaskRequest getTaskRequest)
+    {
+        TaskContextId localTaskContextId = taskContextId.orElseThrow(() -> exception(INVALID_REQUEST, "tasks not supported"));
+
+        return taskController.getTask(localTaskContextId, getTaskRequest.taskId())
+                .map(TaskAdapter::toTask)
+                .orElseThrow(() -> exception(INVALID_PARAMS, "Task not found: " + getTaskRequest.taskId()));
+    }
+
+    JsonRpcMessage blockUntilTaskResult(HttpServletRequest request, InternalMessageWriter messageWriter, boolean cancelTask, Optional<TaskContextId> taskContextId, GetTaskRequest getTaskRequest)
+            throws InterruptedException, TimeoutException
+    {
+        TaskContextId localTaskContextId = taskContextId.orElseThrow(() -> exception(INVALID_REQUEST, "tasks not supported"));
+
+        if (cancelTask) {
+            taskController.setTaskMessage(localTaskContextId, getTaskRequest.taskId(), Optional.empty(), Optional.of("Cancelled by client"), true);
+        }
+
+        Predicate<TaskAdapter> condition = task -> (task != null) && switch (task.toTaskStatus()) {
+            case COMPLETED, FAILED, CANCELLED -> true;
+            default -> false;
+        };
+
+        TaskAdapter task = taskController.getTask(localTaskContextId, getTaskRequest.taskId())
+                .orElseThrow(() -> exception(INVALID_PARAMS, "Task not found: " + getTaskRequest.taskId()));
+
+        if (condition.apply(task)) {
+            return task.message().orElseThrow(() -> exception(INVALID_PARAMS, "Task result not found: " + getTaskRequest.taskId()));
+        }
+
+        McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, task.progressToken());
+        return taskController.blockUntilCondition(localTaskContextId, getTaskRequest.taskId(), streamingTimeout, pingThreshold, requestContext::sendPing, condition)
+                .message()
+                .orElseThrow(() -> exception(INVALID_PARAMS, "Task result not received in time or task not found: " + getTaskRequest.taskId()));
     }
 
     SystemListVersions buildSystemListVersions()

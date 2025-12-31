@@ -21,6 +21,7 @@ import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.CancelledNotification;
 import io.airlift.mcp.model.CompleteRequest;
 import io.airlift.mcp.model.GetPromptRequest;
+import io.airlift.mcp.model.GetTaskRequest;
 import io.airlift.mcp.model.InitializeRequest;
 import io.airlift.mcp.model.JsonRpcRequest;
 import io.airlift.mcp.model.JsonRpcResponse;
@@ -56,9 +57,14 @@ import static io.airlift.mcp.model.Constants.HEADER_LAST_EVENT_ID;
 import static io.airlift.mcp.model.Constants.HEADER_SESSION_ID;
 import static io.airlift.mcp.model.Constants.MCP_IDENTITY_ATTRIBUTE;
 import static io.airlift.mcp.model.Constants.MCP_REQUEST_ID_ATTRIBUTE;
+import static io.airlift.mcp.model.Constants.MCP_TASK_CONTEXT_ID_ATTRIBUTE;
 import static io.airlift.mcp.model.Constants.MESSAGE_WRITER_ATTRIBUTE;
+import static io.airlift.mcp.model.Constants.METHOD_CANCEL_TASK;
 import static io.airlift.mcp.model.Constants.METHOD_COMPLETION_COMPLETE;
+import static io.airlift.mcp.model.Constants.METHOD_GET_TASK;
+import static io.airlift.mcp.model.Constants.METHOD_GET_TASK_RESULT;
 import static io.airlift.mcp.model.Constants.METHOD_INITIALIZE;
+import static io.airlift.mcp.model.Constants.METHOD_LIST_TASKS;
 import static io.airlift.mcp.model.Constants.METHOD_LOGGING_SET_LEVEL;
 import static io.airlift.mcp.model.Constants.METHOD_PING;
 import static io.airlift.mcp.model.Constants.METHOD_PROMPT_GET;
@@ -183,6 +189,7 @@ public class InternalFilter
             throws Exception
     {
         request.setAttribute(MCP_IDENTITY_ATTRIBUTE, authenticated.identity());
+        authenticated.taskContextId().ifPresent(taskContextId -> request.setAttribute(MCP_TASK_CONTEXT_ID_ATTRIBUTE, taskContextId));
 
         switch (request.getMethod().toUpperCase(ROOT)) {
             case POST -> handleMcpPostRequest(request, response, authenticated);
@@ -392,6 +399,10 @@ public class InternalFilter
             case METHOD_LOGGING_SET_LEVEL -> mcpServer.setLoggingLevel(request, convertParams(rpcRequest, SetLevelRequest.class));
             case METHOD_RESOURCES_SUBSCRIBE -> mcpServer.resourcesSubscribe(request, convertParams(rpcRequest, SubscribeRequest.class));
             case METHOD_RESOURCES_UNSUBSCRIBE -> mcpServer.resourcesUnsubscribe(request, convertParams(rpcRequest, SubscribeRequest.class));
+            case METHOD_LIST_TASKS -> mcpServer.listTasks(authenticated.taskContextId(), convertParams(rpcRequest, ListRequest.class));
+            case METHOD_GET_TASK -> mcpServer.getTask(authenticated.taskContextId(), convertParams(rpcRequest, GetTaskRequest.class));
+            case METHOD_GET_TASK_RESULT -> mcpServer.blockUntilTaskResult(request, messageWriter, false, authenticated.taskContextId(), convertParams(rpcRequest, GetTaskRequest.class));
+            case METHOD_CANCEL_TASK -> mcpServer.blockUntilTaskResult(request, messageWriter, true, authenticated.taskContextId(), convertParams(rpcRequest, GetTaskRequest.class));
             default -> throw exception(METHOD_NOT_FOUND, "Unknown method: " + rpcRequest.method());
         };
 

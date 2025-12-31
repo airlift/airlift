@@ -1,14 +1,14 @@
 package io.airlift.mcp.tasks;
 
-import com.google.common.annotations.VisibleForTesting;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Predicate;
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import io.airlift.log.Logger;
 import io.airlift.mcp.McpConfig;
 import io.airlift.mcp.McpIdentity;
-import io.airlift.mcp.model.CallToolResult;
-import io.airlift.mcp.model.JsonRpcErrorDetail;
+import io.airlift.mcp.McpTasks;
 import io.airlift.mcp.model.JsonRpcMessage;
 import io.airlift.mcp.model.JsonRpcRequest;
 import io.airlift.mcp.model.JsonRpcResponse;
@@ -38,26 +38,30 @@ import static io.airlift.concurrent.Threads.daemonThreadsNamed;
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.model.Constants.META_RELATED_TASK;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
+import static io.airlift.mcp.model.JsonRpcRequest.buildRequest;
 import static io.airlift.mcp.sessions.SessionValueKey.taskAdapterKey;
 import static java.lang.Math.toIntExact;
 import static java.util.Objects.requireNonNull;
 
 public class TaskController
+        implements McpTasks
 {
     private static final Logger log = Logger.get(TaskController.class);
 
     private static final int PAGE_SIZE = 100;
 
     private final Optional<SessionController> sessionController;
+    private final ObjectMapper objectMapper;
     private final ScheduledExecutorService executorService;
     private final Duration cleanupInterval;
     private final Duration defaultTaskTtl;
     private final Duration abandonedTaskThreshold;
 
     @Inject
-    public TaskController(Optional<SessionController> sessionController, McpConfig config)
+    public TaskController(Optional<SessionController> sessionController, McpConfig config, ObjectMapper objectMapper)
     {
         this.sessionController = requireNonNull(sessionController, "sessionController is null");
+        this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
 
         executorService = Executors.newSingleThreadScheduledExecutor(daemonThreadsNamed("task-controller"));
 
@@ -96,6 +100,7 @@ public class TaskController
         return sessionController.validateSession(toSessionId(taskContextId));
     }
 
+    @Override
     public void deleteTaskContext(TaskContextId taskContextId)
     {
         SessionController sessionController = requireSessionController();
@@ -118,6 +123,66 @@ public class TaskController
         return newTask;
     }
 
+    @Override
+    public TaskBuilder createTask(TaskContextId taskContextId)
+    {
+        return new TaskBuilder()
+        {
+            private final ImmutableMap.Builder<String, String> attributes = ImmutableMap.builder();
+            private Object requestId;
+            private Optional<Object> progressToken = Optional.empty();
+            private OptionalInt pollInterval = OptionalInt.empty();
+            private OptionalInt ttl = OptionalInt.empty();
+
+            @Override
+            public TaskBuilder withRequestId(Object requestId)
+            {
+                this.requestId = requireNonNull(requestId, "requestId is null");
+
+                return this;
+            }
+
+            @Override
+            public TaskBuilder addAttribute(String key, String value)
+            {
+                attributes.put(key, value);
+
+                return this;
+            }
+
+            @Override
+            public TaskBuilder withProgressToken(Object progressToken)
+            {
+                this.progressToken = Optional.ofNullable(progressToken);
+
+                return this;
+            }
+
+            @Override
+            public TaskBuilder withPollInterval(int pollIntervalMs)
+            {
+                this.pollInterval = OptionalInt.of(pollIntervalMs);
+
+                return this;
+            }
+
+            @Override
+            public TaskBuilder withTtlInterval(int ttlMs)
+            {
+                this.ttl = OptionalInt.of(ttlMs);
+
+                return this;
+            }
+
+            @Override
+            public TaskAdapter create()
+            {
+                return createTask(taskContextId, requestId, attributes.build(), progressToken, pollInterval, ttl);
+            }
+        };
+    }
+
+    @Override
     public Optional<TaskAdapter> getTask(TaskContextId taskContextId, String taskId)
     {
         SessionController sessionController = requireSessionController();
@@ -152,6 +217,22 @@ public class TaskController
         throw new TimeoutException("Timed out waiting for server to client response");
     }
 
+    @Override
+    public <R> JsonRpcResponse<R> serverToClientRequest(TaskContextId taskContextId, String taskId, String method, Object params, Class<R> responseType, Duration timeout, Duration pollInterval)
+            throws InterruptedException, TimeoutException
+    {
+        String requestId = UUID.randomUUID().toString();
+        JsonRpcRequest<?> request = buildRequest(requestId, method, params);
+        if (!setTaskMessage(taskContextId, taskId, request, Optional.empty())) {
+            throw exception(INVALID_PARAMS, "Failed to send request %s for task %s".formatted(method, taskId));
+        }
+        TaskAdapter taskAdapter = blockUntilCondition(taskContextId, taskId, timeout, pollInterval, () -> {}, task -> task.responses().containsKey(requestId));
+        return Optional.ofNullable(taskAdapter.responses().get(requestId))
+                .map(response -> response.map(responseType, objectMapper))
+                .orElseThrow(() -> exception(INVALID_PARAMS, "Task %s response does not exist", taskId));
+    }
+
+    @Override
     public List<TaskAdapter> listTasks(TaskContextId taskContextId, int pageSize, Optional<String> taskIdCursor)
     {
         SessionController sessionController = requireSessionController();
@@ -163,6 +244,7 @@ public class TaskController
                 .collect(toImmutableList());
     }
 
+    @Override
     public boolean deleteTask(TaskContextId taskContextId, String taskId)
     {
         SessionController sessionController = requireSessionController();
@@ -172,16 +254,7 @@ public class TaskController
         return sessionController.deleteSessionValue(sessionId, taskHolderKey);
     }
 
-    public static JsonRpcMessage buildResult(TaskAdapter task, CallToolResult callToolResult)
-    {
-        return new JsonRpcResponse<>(task.requestId(), Optional.empty(), Optional.of(callToolResult));
-    }
-
-    public static JsonRpcMessage buildError(TaskAdapter task, JsonRpcErrorDetail errorDetail)
-    {
-        return new JsonRpcResponse<>(task.requestId(), Optional.of(errorDetail), Optional.empty());
-    }
-
+    @Override
     public boolean setTaskAttributes(TaskContextId taskContextId, String taskId, Map<String, String> attributes)
     {
         SessionController sessionController = requireSessionController();
@@ -238,6 +311,18 @@ public class TaskController
 
             return Optional.of(updatedTask);
         });
+    }
+
+    @Override
+    public boolean setTaskMessage(TaskContextId taskContextId, String taskId, JsonRpcMessage message, Optional<String> statusMessage)
+    {
+        return setTaskMessage(taskContextId, taskId, Optional.of(message), statusMessage, false);
+    }
+
+    @Override
+    public boolean requestTaskCancellation(TaskContextId taskContextId, String taskId, Optional<String> statusMessage)
+    {
+        return setTaskMessage(taskContextId, taskId, Optional.empty(), statusMessage, true);
     }
 
     @SuppressWarnings("unchecked")

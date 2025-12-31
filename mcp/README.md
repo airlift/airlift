@@ -27,9 +27,6 @@ variations of MCP servers defined by the standard. This module supports:
 - Elicitation [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/client/elicitation)
 - Sampling [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/client/sampling)
 - Roots [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/client/roots)
-
-This module does not currently support:
-
 - Tasks [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/basic/utilities/tasks)
 
 ## Creating tools, prompts, resources, and completions declaratively
@@ -231,3 +228,31 @@ however that will likely change in a future version of the MCP spec.
 To enable session support use the `withSessions()` method of the `McpModule`. For Production, a DB-backed,
 resilient implementation of [SessionController](src/main/java/io/airlift/mcp/sessions/SessionController.java) should be used. For testing, an in-memory implementation is provided:
 [MemorySessionController](src/main/java/io/airlift/mcp/sessions/MemorySessionController.java).
+
+## Tasks
+
+When [sessions](#sessions) are enabled and the client protocol is `2025-11-25` or greater, task support is enabled.
+See the [MCP task spec](https://modelcontextprotocol.io/specification/2025-11-25/basic/utilities/tasks) for complete
+details.
+
+Tasks can be enabled declaratively for tools via the `execution` attribute of the `@McpTool` annotation. The tool
+can then return a task via the `CallToolResult`. The task must be created via the 
+[TaskController](src/main/java/io/airlift/mcp/tasks/TaskController.java) which can be injected. Airlift manages
+the MCP portion of a task; it is up to your application to manage the actual execution of the task. Assuming your
+`SessionController` is horizontally scalable, tasks will work correctly in a clustered environment. Tasks start
+in a `WORKING` state. Use the various methods of the `TaskController` to update the task state as your application
+executes the task. 
+
+Airlift uses an adapter for tasks, [TaskAdapter](src/main/java/io/airlift/mcp/tasks/TaskAdapter.java).
+This adapter will receive responses to any server-to-client requests that your application sends (via
+`TaskController.setTaskMessage(...)`) in the adapter's `responses` map.
+
+Tasks are cancellable. In order to facilitate this, any task related code you run should be wrapped using the injectable
+[CancellationController](src/main/java/io/airlift/mcp/CancellationController.java)
+via it's `executeCancellableTask()` method (be prepared to catch `InterruptedException`).
+
+### TaskContextId
+
+All tasks run as part of a `TaskContextId` for security and isolation purposes. `TaskContextId`s are related to
+the MCP Identity and should be created/managed by the `McpIdentityMapper`. Create a new `TaskContextId` for each
+logical identity boundary (e.g. a user or a role, etc.) and store the `TaskContextId` in your DB or identity system.

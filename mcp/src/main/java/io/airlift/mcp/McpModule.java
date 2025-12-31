@@ -273,7 +273,6 @@ public class McpModule
     {
         binder.bind(McpMetadata.class).toInstance(metadata);
         binder.bind(ResourceVersionController.class).in(SINGLETON);
-        binder.bind(TaskController.class).in(SINGLETON);
 
         configBinder(binder).bindConfig(McpConfig.class);
 
@@ -290,6 +289,7 @@ public class McpModule
         bindSessions(binder);
         bindCancellation(binder);
         bindIcons(binder);
+        bindTasks(binder);
 
         if (mode == STANDARD) {
             binder.install(new InternalMcpModule());
@@ -300,6 +300,12 @@ public class McpModule
     {
         identityMapperBinding.identityMapperBinding.accept(binder.bind(McpIdentityMapper.class));
         binder.bind(IdentityMapperMetadata.class).toInstance(new IdentityMapperMetadata(identityMapperBinding.identityType));
+    }
+
+    private static void bindTasks(Binder binder)
+    {
+        binder.bind(TaskController.class).in(SINGLETON);
+        binder.bind(McpTasks.class).to(TaskController.class).in(SINGLETON);
     }
 
     private void bindIcons(Binder binder)
