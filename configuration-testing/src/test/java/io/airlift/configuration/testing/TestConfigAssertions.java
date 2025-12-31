@@ -33,6 +33,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 
 public class TestConfigAssertions
@@ -197,6 +198,34 @@ public class TestConfigAssertions
                 .setHomePage(URI.create("http://example.com"));
 
         ConfigAssertions.assertFullMapping(properties, expected, ImmutableSet.of("phone"));
+    }
+
+    @Test
+    public void testValidateSkipped()
+    {
+        Map<String, String> properties = new ImmutableMap.Builder<String, String>()
+                .put("name", "Jenny")
+                .put("email", "jenny@compuserve.com")
+                .put("home-page", "http://example.com")
+                .build();
+
+        PersonConfig expected = new PersonConfig()
+                .setName("Jenny")
+                .setEmail("jenny@compuserve.com")
+                .setHomePage(URI.create("http://example.com"));
+
+        // For illustration purposes
+        ConfigAssertions.assertFullMapping(properties, expected, ImmutableSet.of("phone"));
+
+        // 'something-else' does not exist
+        assertThatThrownBy(() -> ConfigAssertions.assertFullMapping(properties, expected, ImmutableSet.of("something-else")))
+                .hasMessage("Invalid skipped properties: [something-else]");
+        assertThatThrownBy(() -> ConfigAssertions.assertFullMapping(properties, expected, ImmutableSet.of("phone", "something-else")))
+                .hasMessage("Invalid skipped properties: [something-else]");
+
+        // 'name' should not be skipped, because it's tested
+        assertThatThrownBy(() -> ConfigAssertions.assertFullMapping(properties, expected, ImmutableSet.of("phone", "name")))
+                .hasMessage("Skipped but tested properties: [name]");
     }
 
     @Test
