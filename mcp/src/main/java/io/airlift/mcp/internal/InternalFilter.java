@@ -412,7 +412,7 @@ public class InternalFilter
             });
         }
 
-        return cancellationController.executeCancellable(optionalSessionId(request), requestId, supplier);
+        return cancellationController.executeCancellableRequest(optionalSessionId(request), requestId, supplier);
     }
 
     private void validateSession(HttpServletRequest request, JsonRpcRequest<?> rpcRequest)

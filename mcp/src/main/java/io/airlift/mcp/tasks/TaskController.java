@@ -1,5 +1,6 @@
 package io.airlift.mcp.tasks;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Predicate;
 import com.google.common.base.Stopwatch;
 import com.google.inject.Inject;
@@ -269,6 +270,11 @@ public class TaskController
         });
     }
 
+    public SessionId toSessionId(TaskContextId taskContextId)
+    {
+        return new SessionId(taskContextId.id());
+    }
+
     private void cleanupExpiredTasks(SessionController sessionController)
     {
         Optional<SessionId> cursor = Optional.empty();
@@ -333,11 +339,6 @@ public class TaskController
                 }
             }
         });
-    }
-
-    private SessionId toSessionId(TaskContextId taskContextId)
-    {
-        return new SessionId(taskContextId.id());
     }
 
     private SessionController requireSessionController()
