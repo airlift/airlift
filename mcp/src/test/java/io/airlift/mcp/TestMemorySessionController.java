@@ -1,6 +1,6 @@
 package io.airlift.mcp;
 
-import io.airlift.mcp.model.McpIdentity;
+import io.airlift.mcp.McpIdentity.Authenticated;
 import io.airlift.mcp.sessions.MemorySessionController;
 import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.sessions.SessionId;
@@ -21,7 +21,7 @@ public class TestMemorySessionController
         Duration shortDuration = Duration.ofMillis(100);
 
         SessionController controller = new MemorySessionController(Duration.ofMillis(1));
-        SessionId sessionId = controller.createSession(new McpIdentity.Authenticated<>("dummy"), Optional.of(shortDuration));
+        SessionId sessionId = controller.createSession(new Authenticated<>("dummy"), Optional.of(shortDuration));
         for (int i = 0; i < 10; i++) {
             // keep the session alive
             boolean success = controller.setSessionValue(sessionId, SessionValueKey.of("key", String.class), "value");

@@ -12,7 +12,6 @@ import io.airlift.log.Logger;
 import io.airlift.mcp.model.Icon;
 import io.airlift.mcp.model.JsonRpcRequest;
 import io.airlift.mcp.model.JsonRpcResponse;
-import io.airlift.mcp.model.McpIdentity;
 import io.airlift.mcp.model.OptionalBoolean;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.StructuredContent;
@@ -62,7 +61,6 @@ public class TestSerializationEdgeCases
         getClasses(JsonRpcRequest.class.getPackageName())
                 .stream()
                 .filter(Class::isRecord)
-                .filter(clazz -> !McpIdentity.class.isAssignableFrom(clazz))    // test code can't deal with this one - it's not important for serialization testing
                 .forEach(clazz -> computeAndTest(cache, clazz));
     }
 

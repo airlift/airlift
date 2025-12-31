@@ -1,6 +1,6 @@
 package io.airlift.mcp;
 
-import io.airlift.mcp.model.McpIdentity;
+import io.airlift.mcp.McpIdentity.Authenticated;
 import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.sessions.SessionId;
 import io.airlift.mcp.sessions.SessionValueKey;
@@ -39,7 +39,7 @@ public abstract class TestSessionController
                 .collect(toImmutableList());
 
         SessionController controller = sessionController();
-        SessionId sessionId = controller.createSession(new McpIdentity.Authenticated<>("dummy"), Optional.empty());
+        SessionId sessionId = controller.createSession(new Authenticated<>("dummy"), Optional.empty());
 
         aKeys.forEach(key -> controller.setSessionValue(sessionId, key, new TypeA(key.name())));
         bKeys.forEach(key -> controller.setSessionValue(sessionId, key, new TypeB(key.name())));
@@ -56,7 +56,7 @@ public abstract class TestSessionController
             throws InterruptedException
     {
         SessionController controller = sessionController();
-        SessionId sessionId = controller.createSession(new McpIdentity.Authenticated<>("dummy"), Optional.empty());
+        SessionId sessionId = controller.createSession(new Authenticated<>("dummy"), Optional.empty());
 
         SessionValueKey<String> key = new SessionValueKey<>("key", String.class);
 

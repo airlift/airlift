@@ -1,6 +1,4 @@
-package io.airlift.mcp.model;
-
-import io.airlift.mcp.McpException;
+package io.airlift.mcp;
 
 import java.util.List;
 

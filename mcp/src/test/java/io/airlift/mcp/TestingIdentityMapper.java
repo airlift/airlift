@@ -1,16 +1,15 @@
 package io.airlift.mcp;
 
 import com.google.common.collect.ImmutableList;
-import io.airlift.mcp.model.McpIdentity;
 import jakarta.servlet.http.HttpServletRequest;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static io.airlift.mcp.McpException.exception;
+import static io.airlift.mcp.McpIdentity.Authenticated.authenticated;
+import static io.airlift.mcp.McpIdentity.Error.error;
+import static io.airlift.mcp.McpIdentity.Unauthenticated.unauthenticated;
+import static io.airlift.mcp.McpIdentity.Unauthorized.unauthorized;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INTERNAL_ERROR;
-import static io.airlift.mcp.model.McpIdentity.Authenticated.authenticated;
-import static io.airlift.mcp.model.McpIdentity.Error.error;
-import static io.airlift.mcp.model.McpIdentity.Unauthenticated.unauthenticated;
-import static io.airlift.mcp.model.McpIdentity.Unauthorized.unauthorized;
 
 public class TestingIdentityMapper
         implements McpIdentityMapper
