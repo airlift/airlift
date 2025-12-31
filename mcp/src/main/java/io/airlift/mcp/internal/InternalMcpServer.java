@@ -7,6 +7,7 @@ import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import io.airlift.bootstrap.LifeCycleManager;
 import io.airlift.mcp.McpConfig;
+import io.airlift.mcp.McpIdentity.Authenticated;
 import io.airlift.mcp.McpMetadata;
 import io.airlift.mcp.McpRequestContext;
 import io.airlift.mcp.McpServer;
@@ -44,7 +45,6 @@ import io.airlift.mcp.model.ListResourceTemplatesResult;
 import io.airlift.mcp.model.ListResourcesResult;
 import io.airlift.mcp.model.ListToolsResult;
 import io.airlift.mcp.model.LoggingLevel;
-import io.airlift.mcp.model.McpIdentity;
 import io.airlift.mcp.model.Meta;
 import io.airlift.mcp.model.Prompt;
 import io.airlift.mcp.model.Protocol;
@@ -228,7 +228,7 @@ public class InternalMcpServer
         return internalReadResource(new ReadResourceRequest(resource), requestContext);
     }
 
-    InitializeResult initialize(HttpServletResponse response, McpIdentity.Authenticated<?> authenticated, InitializeRequest initializeRequest)
+    InitializeResult initialize(HttpServletResponse response, Authenticated<?> authenticated, InitializeRequest initializeRequest)
     {
         Optional<Protocol> maybeProtocol = Protocol.of(initializeRequest.protocolVersion());
         Protocol protocol = maybeProtocol.orElse(LATEST_PROTOCOL);
