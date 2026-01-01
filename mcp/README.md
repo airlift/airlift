@@ -26,10 +26,10 @@ variations of MCP servers defined by the standard. This module supports:
 - Cancellation [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/basic/utilities/cancellation)
 - Elicitation [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/client/elicitation)
 - Sampling [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/client/sampling)
+- Roots [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/client/roots)
 
 This module does not currently support:
 
-- Roots [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/client/roots)
 - Tasks [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/basic/utilities/tasks)
 
 ## Creating tools, prompts, resources, and completions declaratively

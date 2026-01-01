@@ -3,9 +3,11 @@ package io.airlift.mcp;
 import io.airlift.mcp.model.InitializeRequest.ClientCapabilities;
 import io.airlift.mcp.model.JsonRpcResponse;
 import io.airlift.mcp.model.LoggingLevel;
+import io.airlift.mcp.model.Root;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 
@@ -18,6 +20,10 @@ public interface McpRequestContext
     void sendPing();
 
     void sendMessage(String method, Optional<Object> params);
+
+    // NOTE: roots are cached in the current session when sessions are enabled
+    List<Root> requestRoots(Duration timeout, Duration pollInterval)
+            throws InterruptedException, TimeoutException;
 
     default void sendLog(LoggingLevel level, String message)
     {

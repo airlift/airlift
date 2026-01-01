@@ -22,6 +22,7 @@ import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.sessions.SessionId;
 import io.modelcontextprotocol.spec.HttpHeaders;
 import io.modelcontextprotocol.spec.McpError;
+import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.CompleteRequest;
@@ -290,7 +291,7 @@ public abstract class TestMcp
         ListToolsResult listToolsResult = client1.mcpClient().listTools();
         assertThat(listToolsResult.tools())
                 .extracting(Tool::name)
-                .containsExactlyInAnyOrder("add", "throws", "addThree", "addFirstTwoAndAllThree", "progress", "log", "setVersion", "sleep", "elicitation", "sampling");
+                .containsExactlyInAnyOrder("add", "throws", "addThree", "addFirstTwoAndAllThree", "progress", "log", "setVersion", "sleep", "elicitation", "sampling", "roots");
 
         CallToolResult callToolResult = client1.mcpClient().callTool(new CallToolRequest("add", ImmutableMap.of("a", 1, "b", 2)));
         assertThat(callToolResult.content())
@@ -652,6 +653,38 @@ public abstract class TestMcp
                 .asInstanceOf(type(TextContent.class))
                 .extracting(TextContent::text)
                 .isEqualTo("Hello, " + client.name() + " " + client.name() + "sky!");
+    }
+
+    @Test
+    public void testRoots()
+    {
+        CallToolResult callToolResult = client1.mcpClient().callTool(new CallToolRequest("roots", ImmutableMap.of()));
+        assertThat(callToolResult.content())
+                .hasSize(1)
+                .first()
+                .asInstanceOf(type(TextContent.class))
+                .extracting(TextContent::text)
+                .isEqualTo("");
+
+        client1.mcpClient().addRoot(new McpSchema.Root("file://1", "1"));
+        client1.mcpClient().addRoot(new McpSchema.Root("file://2", "2"));
+        client1.mcpClient().rootsListChangedNotification();
+
+        callToolResult = client1.mcpClient().callTool(new CallToolRequest("roots", ImmutableMap.of()));
+        assertThat(callToolResult.content())
+                .hasSize(1)
+                .first()
+                .asInstanceOf(type(TextContent.class))
+                .extracting(TextContent::text)
+                .isEqualTo("file://1, file://2");
+
+        callToolResult = client2.mcpClient().callTool(new CallToolRequest("roots", ImmutableMap.of()));
+        assertThat(callToolResult.content())
+                .hasSize(1)
+                .first()
+                .asInstanceOf(type(TextContent.class))
+                .extracting(TextContent::text)
+                .isEqualTo("");
     }
 
     private ListAssert<String> assertChanges(BlockingQueue<String> changes, int qty)
