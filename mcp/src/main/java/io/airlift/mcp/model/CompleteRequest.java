@@ -15,7 +15,7 @@ public record CompleteRequest(CompleteReference ref, CompleteArgument argument, 
     {
         requireNonNull(ref, "ref is null");
         requireNonNull(argument, "argument is null");
-        requireNonNull(context, "context is null");
+        context = firstNonNull(context, Optional.empty());
         meta = firstNonNull(meta, Optional.empty());
     }
 

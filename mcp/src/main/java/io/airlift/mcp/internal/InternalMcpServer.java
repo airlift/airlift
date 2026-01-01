@@ -39,6 +39,7 @@ import io.airlift.mcp.model.ListResourceTemplatesResult;
 import io.airlift.mcp.model.ListResourcesResult;
 import io.airlift.mcp.model.ListToolsResult;
 import io.airlift.mcp.model.Meta;
+import io.airlift.mcp.model.OptionalBoolean;
 import io.airlift.mcp.model.Prompt;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.ReadResourceResult;
@@ -259,7 +260,7 @@ public class InternalMcpServer
     {
         CompletionEntry completionEntry = completions.get(completionKey(completeRequest.ref()));
         if (completionEntry == null) {
-            return new CompleteResult(new CompleteCompletion(ImmutableList.of(), OptionalInt.empty(), Optional.empty()));
+            return new CompleteResult(new CompleteCompletion(ImmutableList.of(), OptionalInt.empty(), OptionalBoolean.UNDEFINED));
         }
 
         McpRequestContext requestContext = new InternalRequestContext(objectMapper, request, messageWriter, progressToken(completeRequest));

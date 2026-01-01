@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Optional;
 
+import static com.google.common.base.MoreObjects.firstNonNull;
 import static java.util.Objects.requireNonNull;
 
 public record CallToolResult(List<Content> content, Optional<StructuredContent<?>> structuredContent, boolean isError)
@@ -12,7 +13,7 @@ public record CallToolResult(List<Content> content, Optional<StructuredContent<?
     public CallToolResult
     {
         requireNonNull(content, "content is null");
-        requireNonNull(structuredContent, "structuredContent is null");
+        structuredContent = firstNonNull(structuredContent, Optional.empty());
     }
 
     public CallToolResult(Content content)
