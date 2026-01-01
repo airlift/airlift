@@ -6,8 +6,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UncheckedIOException;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static java.util.Objects.requireNonNull;
 
@@ -15,7 +15,6 @@ class InternalMessageWriter
         implements MessageWriter
 {
     private final HttpServletResponse response;
-    private final AtomicLong nextId = new AtomicLong();
     private final AtomicBoolean hasBeenUpgraded = new AtomicBoolean();
 
     InternalMessageWriter(HttpServletResponse response)
@@ -43,7 +42,7 @@ class InternalMessageWriter
     @Override
     public void writeMessage(String data)
     {
-        String messageId = Long.toString(nextId.getAndIncrement());
+        String messageId = UUID.randomUUID().toString();
 
         if (hasBeenUpgraded.compareAndSet(false, true)) {
             response.setContentType("text/event-stream");
