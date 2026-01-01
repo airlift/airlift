@@ -1,5 +1,6 @@
 package io.airlift.mcp;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Binder;
 import com.google.inject.Module;
@@ -88,6 +89,22 @@ public class McpModule
             requireNonNull(identityType, "identityType is null");
             requireNonNull(identityMapperBinding, "identityMapperBinding is null");
         }
+    }
+
+    @VisibleForTesting
+    public static JsonSubType buildJsonSubType()
+    {
+        return JsonSubType.builder()
+                .forBase(Content.class, "type")
+                .add(TextContent.class, "text")
+                .add(ImageContent.class, "image")
+                .add(AudioContent.class, "audio")
+                .add(EmbeddedResource.class, "resource")
+                .add(ResourceLink.class, "resource_link")
+                .forBase(CompleteReference.class, "type")
+                .add(PromptReference.class, "ref/prompt")
+                .add(ResourceReference.class, "ref/resource")
+                .build();
     }
 
     public static class Builder
@@ -237,19 +254,9 @@ public class McpModule
 
     private void bindJsonSubTypes(Binder binder)
     {
-        JsonSubTypeBinder jsonSubTypeBinder = jsonSubTypeBinder(binder);
+        JsonSubType jsonSubType = buildJsonSubType();
 
-        JsonSubType contentJsonSubType = JsonSubType.builder()
-                .forBase(Content.class, "type")
-                .add(TextContent.class, "text")
-                .add(ImageContent.class, "image")
-                .add(AudioContent.class, "audio")
-                .add(EmbeddedResource.class, "resource")
-                .add(ResourceLink.class, "resource_link")
-                .forBase(CompleteReference.class, "type")
-                .add(PromptReference.class, "ref/prompt")
-                .add(ResourceReference.class, "ref/resource")
-                .build();
-        jsonSubTypeBinder.bindJsonSubType(contentJsonSubType);
+        JsonSubTypeBinder jsonSubTypeBinder = jsonSubTypeBinder(binder);
+        jsonSubTypeBinder.bindJsonSubType(jsonSubType);
     }
 }

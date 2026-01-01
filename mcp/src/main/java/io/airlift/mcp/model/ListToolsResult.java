@@ -5,7 +5,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Optional;
 
-import static java.util.Objects.requireNonNull;
+import static com.google.common.base.MoreObjects.firstNonNull;
 
 public record ListToolsResult(List<Tool> tools, Optional<String> nextCursor)
         implements PaginatedResult
@@ -13,7 +13,7 @@ public record ListToolsResult(List<Tool> tools, Optional<String> nextCursor)
     public ListToolsResult
     {
         tools = ImmutableList.copyOf(tools);
-        requireNonNull(nextCursor, "nextCursor is null");
+        nextCursor = firstNonNull(nextCursor, Optional.empty());
     }
 
     public ListToolsResult(List<Tool> tools)

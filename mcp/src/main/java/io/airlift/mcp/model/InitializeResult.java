@@ -2,6 +2,7 @@ package io.airlift.mcp.model;
 
 import java.util.Optional;
 
+import static com.google.common.base.MoreObjects.firstNonNull;
 import static java.util.Objects.requireNonNull;
 
 public record InitializeResult(
@@ -14,11 +15,11 @@ public record InitializeResult(
     {
         public ServerCapabilities
         {
-            requireNonNull(completions, "completions is null");
-            requireNonNull(logging, "logging is null");
-            requireNonNull(prompts, "prompts is null");
-            requireNonNull(resources, "resources is null");
-            requireNonNull(tools, "tools is null");
+            completions = firstNonNull(completions, Optional.empty());
+            logging = firstNonNull(logging, Optional.empty());
+            prompts = firstNonNull(prompts, Optional.empty());
+            resources = firstNonNull(resources, Optional.empty());
+            tools = firstNonNull(tools, Optional.empty());
         }
 
         public ServerCapabilities()
@@ -36,6 +37,6 @@ public record InitializeResult(
         requireNonNull(protocolVersion, "protocolVersion is null");
         requireNonNull(capabilities, "capabilities is null");
         requireNonNull(serverInfo, "serverInfo is null");
-        requireNonNull(instructions, "instructions is null");
+        instructions = firstNonNull(instructions, Optional.empty());
     }
 }

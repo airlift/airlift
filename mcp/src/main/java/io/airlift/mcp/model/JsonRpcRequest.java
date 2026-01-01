@@ -2,17 +2,17 @@ package io.airlift.mcp.model;
 
 import java.util.Optional;
 
+import static com.google.common.base.MoreObjects.firstNonNull;
 import static io.airlift.mcp.model.Constants.JSON_RPC_VERSION;
-import static java.util.Objects.requireNonNull;
 
 // see https://www.jsonrpc.org/specification#request_object
 public record JsonRpcRequest<T>(String jsonrpc, Object id, String method, Optional<T> params)
 {
     public JsonRpcRequest
     {
-        requireNonNull(jsonrpc, "jsonrpc is null");
-        requireNonNull(method, "method is null");
-        requireNonNull(params, "params is null");
+        jsonrpc = firstNonNull(jsonrpc, "");
+        method = firstNonNull(method, "");
+        params = firstNonNull(params, Optional.empty());
     }
 
     public static <T> JsonRpcRequest<T> buildRequest(Object id, String method, T params)
