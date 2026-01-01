@@ -2,6 +2,7 @@ package io.airlift.mcp.model;
 
 import java.util.Optional;
 
+import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Verify.verify;
 import static java.util.Objects.requireNonNull;
 
@@ -9,10 +10,11 @@ public record ResourceContents(Optional<String> name, String uri, String mimeTyp
 {
     public ResourceContents
     {
-        requireNonNull(name, "name is null");
+        name = firstNonNull(name, Optional.empty());
         requireNonNull(uri, "uri is null");
         requireNonNull(mimeType, "mimeType is null");
-        requireNonNull(text, "text is null");
+        text = firstNonNull(text, Optional.empty());
+        blob = firstNonNull(blob, Optional.empty());
 
         verify((text.isPresent() || blob.isPresent()) && (text.isPresent() != blob.isPresent()), "Only one of text or blob must be present");
     }

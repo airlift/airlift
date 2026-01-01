@@ -17,9 +17,9 @@ public record InitializeRequest(
     {
         public ClientCapabilities
         {
-            requireNonNull(roots, "roots is null");
-            requireNonNull(sampling, "sampling is null");
-            requireNonNull(elicitation, "elicitation is null");
+            roots = firstNonNull(roots, Optional.empty());
+            sampling = firstNonNull(sampling, Optional.empty());
+            elicitation = firstNonNull(elicitation, Optional.empty());
         }
     }
 

@@ -2,6 +2,7 @@ package io.airlift.mcp.model;
 
 import java.util.Optional;
 
+import static com.google.common.base.MoreObjects.firstNonNull;
 import static java.util.Objects.requireNonNull;
 
 public record JsonRpcErrorDetail(int code, String message, Optional<Object> data)
@@ -9,7 +10,7 @@ public record JsonRpcErrorDetail(int code, String message, Optional<Object> data
     public JsonRpcErrorDetail
     {
         requireNonNull(message, "message is null");
-        requireNonNull(data, "data is null");
+        data = firstNonNull(data, Optional.empty());
     }
 
     public JsonRpcErrorDetail(JsonRpcErrorCode errorCode, String message)

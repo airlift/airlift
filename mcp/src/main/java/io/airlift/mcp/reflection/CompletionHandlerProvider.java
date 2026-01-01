@@ -17,6 +17,7 @@ import io.airlift.mcp.model.CompleteRequest.CompleteContext;
 import io.airlift.mcp.model.CompleteResult;
 import io.airlift.mcp.model.CompleteResult.CompleteCompletion;
 import io.airlift.mcp.model.JsonRpcErrorCode;
+import io.airlift.mcp.model.OptionalBoolean;
 
 import java.lang.reflect.Method;
 import java.util.List;
@@ -83,7 +84,7 @@ public class CompletionHandlerProvider
         MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper);
 
         CompleteContext emptyContext = new CompleteContext(ImmutableMap.of());
-        CompleteResult emptyResult = new CompleteResult(new CompleteCompletion(ImmutableList.of(), OptionalInt.empty(), Optional.empty()));
+        CompleteResult emptyResult = new CompleteResult(new CompleteCompletion(ImmutableList.of(), OptionalInt.empty(), OptionalBoolean.UNDEFINED));
 
         CompletionHandler handler = (requestContext, completeRequest) -> {
             if (!completeRequest.ref().getClass().equals(completeReference.getClass())) {
@@ -104,7 +105,7 @@ public class CompletionHandlerProvider
             }
 
             List<String> values = (List<String>) result;
-            return new CompleteResult(new CompleteCompletion(values, OptionalInt.empty(), Optional.empty()));
+            return new CompleteResult(new CompleteCompletion(values, OptionalInt.empty(), OptionalBoolean.UNDEFINED));
         };
 
         return new CompletionEntry(completeReference, handler);

@@ -5,7 +5,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Optional;
 
-import static java.util.Objects.requireNonNull;
+import static com.google.common.base.MoreObjects.firstNonNull;
 
 public record ListResourceTemplatesResult(List<ResourceTemplate> resourceTemplates, Optional<String> nextCursor)
         implements PaginatedResult
@@ -13,7 +13,7 @@ public record ListResourceTemplatesResult(List<ResourceTemplate> resourceTemplat
     public ListResourceTemplatesResult
     {
         resourceTemplates = ImmutableList.copyOf(resourceTemplates);
-        requireNonNull(nextCursor, "nextCursor is null");
+        nextCursor = firstNonNull(nextCursor, Optional.empty());
     }
 
     public ListResourceTemplatesResult(List<ResourceTemplate> resourceTemplates)
