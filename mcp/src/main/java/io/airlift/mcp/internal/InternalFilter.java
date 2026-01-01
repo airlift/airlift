@@ -15,6 +15,8 @@ import io.airlift.mcp.McpIdentity;
 import io.airlift.mcp.McpIdentity.Authenticated;
 import io.airlift.mcp.McpIdentityMapper;
 import io.airlift.mcp.McpMetadata;
+import io.airlift.mcp.SentMessages;
+import io.airlift.mcp.SentMessages.SentMessage;
 import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.CancelledNotification;
 import io.airlift.mcp.model.CompleteRequest;
@@ -40,6 +42,7 @@ import jakarta.ws.rs.WebApplicationException;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -49,6 +52,7 @@ import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.internal.InternalRequestContext.optionalSessionId;
 import static io.airlift.mcp.internal.InternalRequestContext.protocol;
 import static io.airlift.mcp.internal.InternalRequestContext.requireSessionId;
+import static io.airlift.mcp.model.Constants.HEADER_LAST_EVENT_ID;
 import static io.airlift.mcp.model.Constants.HEADER_SESSION_ID;
 import static io.airlift.mcp.model.Constants.MCP_IDENTITY_ATTRIBUTE;
 import static io.airlift.mcp.model.Constants.MESSAGE_WRITER_ATTRIBUTE;
@@ -73,6 +77,7 @@ import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
 import static io.airlift.mcp.model.JsonRpcErrorCode.METHOD_NOT_FOUND;
 import static io.airlift.mcp.model.JsonRpcErrorCode.PARSE_ERROR;
 import static io.airlift.mcp.sessions.SessionValueKey.ROOTS;
+import static io.airlift.mcp.sessions.SessionValueKey.SENT_MESSAGES;
 import static io.airlift.mcp.sessions.SessionValueKey.cancellationKey;
 import static io.airlift.mcp.sessions.SessionValueKey.serverToClientResponseKey;
 import static jakarta.servlet.http.HttpServletResponse.SC_ACCEPTED;
@@ -111,6 +116,7 @@ public class InternalFilter
     private final Duration streamingPingThreshold;
     private final Duration streamingTimeout;
     private final CancellationController cancellationController;
+    private final int maxResumableMessages;
 
     @Inject
     public InternalFilter(
@@ -134,6 +140,7 @@ public class InternalFilter
         httpGetEventsEnabled = mcpConfig.isHttpGetEventsEnabled();
         streamingPingThreshold = mcpConfig.getEventStreamingPingThreshold().toJavaTime();
         streamingTimeout = mcpConfig.getEventStreamingTimeout().toJavaTime();
+        maxResumableMessages = mcpConfig.getMaxResumableMessages();
     }
 
     @Override
@@ -205,6 +212,9 @@ public class InternalFilter
         InternalMessageWriter messageWriter = new InternalMessageWriter(response);
         InternalRequestContext requestContext = new InternalRequestContext(objectMapper, Optional.of(sessionController), request, messageWriter, Optional.empty());
 
+        Optional.ofNullable(request.getHeader(HEADER_LAST_EVENT_ID))
+                .ifPresent(lastEventId -> replaySentMessages(sessionController, sessionId, lastEventId, messageWriter));
+
         while (timeoutStopwatch.elapsed().compareTo(streamingTimeout) < 0) {
             if (!sessionController.validateSession(sessionId)) {
                 log.warn(String.format("Session validation failed for %s", sessionId));
@@ -216,7 +226,10 @@ public class InternalFilter
 
                 pingStopwatch.reset().start();
             };
+
             mcpServer.reconcileVersions(request, messageWriter);
+
+            checkSaveSentMessages(sessionController, sessionId, messageWriter);
 
             if (pingStopwatch.elapsed().compareTo(streamingPingThreshold) >= 0) {
                 notifier.accept(METHOD_PING, Optional.empty());
@@ -231,6 +244,24 @@ public class InternalFilter
                 break;
             }
         }
+    }
+
+    private void replaySentMessages(SessionController sessionController, SessionId sessionId, String lastEventId, InternalMessageWriter messageWriter)
+    {
+        sessionController.getSessionValue(sessionId, SENT_MESSAGES)
+                .ifPresent(sentMessages -> {
+                    boolean found = false;
+                    for (SentMessage sentMessage : sentMessages.messages()) {
+                        if (found) {
+                            log.info("Sending resumable messages to session %s", sessionId);
+                            messageWriter.internalWriteMessage(sentMessage.id(), sentMessage.data());
+                        }
+                        else {
+                            found = sentMessage.id().equals(lastEventId);
+                        }
+                    }
+                    messageWriter.flushMessages();
+                });
     }
 
     private void handleMcpDeleteRequest(HttpServletRequest request, HttpServletResponse response)
@@ -266,9 +297,24 @@ public class InternalFilter
                 default -> throw exception(SC_BAD_REQUEST, "The server accepts either requests or notifications");
             }
         }
+
+        sessionController.ifPresent(controller -> optionalSessionId(request)
+                .ifPresent(sessionId -> checkSaveSentMessages(controller, sessionId, messageWriter)));
     }
 
-    @SuppressWarnings("rawtypes")
+    private void checkSaveSentMessages(SessionController sessionController, SessionId sessionId, InternalMessageWriter messageWriter)
+    {
+        List<SentMessage> sentMessages = messageWriter.takeSentMessages();
+        if (sentMessages.isEmpty()) {
+            return;
+        }
+
+        sessionController.computeSessionValue(sessionId, SENT_MESSAGES, current -> {
+            SentMessages currentSentMessages = current.orElseGet(SentMessages::new);
+            return Optional.of(currentSentMessages.withAdditionalMessages(sentMessages, maxResumableMessages));
+        });
+    }
+
     private void handleRpcResponse(HttpServletRequest request, HttpServletResponse response, JsonRpcResponse<?> rpcResponse)
     {
         log.debug("Processing MCP response: %s, session: %s", rpcResponse.id(), optionalSessionId(request).map(SessionId::id).orElse("-"));

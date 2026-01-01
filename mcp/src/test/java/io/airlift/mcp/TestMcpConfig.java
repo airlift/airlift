@@ -26,7 +26,8 @@ public class TestMcpConfig
                 .setHttpGetEventsEnabled(true)
                 .setEventStreamingPingThreshold(new Duration(15, SECONDS))
                 .setEventStreamingTimeout(new Duration(5, MINUTES))
-                .setCancellationCheckInterval(new Duration(1, SECONDS)));
+                .setCancellationCheckInterval(new Duration(1, SECONDS))
+                .setMaxResumableMessages(100));
     }
 
     @Test
@@ -40,6 +41,7 @@ public class TestMcpConfig
                 .put("mcp.event-streaming.ping-threshold", "123m")
                 .put("mcp.event-streaming.timeout", "456m")
                 .put("mcp.cancellation.check-interval", "1h")
+                .put("mcp.resumable-messages.max", "962")
                 .build();
 
         McpConfig expected = new McpConfig()
@@ -49,7 +51,8 @@ public class TestMcpConfig
                 .setHttpGetEventsEnabled(false)
                 .setEventStreamingPingThreshold(new Duration(123, MINUTES))
                 .setEventStreamingTimeout(new Duration(456, MINUTES))
-                .setCancellationCheckInterval(new Duration(1, HOURS));
+                .setCancellationCheckInterval(new Duration(1, HOURS))
+                .setMaxResumableMessages(962);
 
         assertFullMapping(properties, expected);
     }

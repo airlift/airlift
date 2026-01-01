@@ -21,6 +21,7 @@ import io.airlift.mcp.model.JsonRpcRequest;
 import io.airlift.mcp.sessions.MemorySessionController;
 import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.sessions.SessionId;
+import io.modelcontextprotocol.spec.HttpHeaders;
 import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
@@ -85,10 +86,10 @@ import static io.airlift.mcp.TestingClient.buildClient;
 import static io.airlift.mcp.TestingIdentityMapper.ERRORED_IDENTITY;
 import static io.airlift.mcp.TestingIdentityMapper.EXPECTED_IDENTITY;
 import static io.airlift.mcp.TestingIdentityMapper.IDENTITY_HEADER;
+import static io.airlift.mcp.model.Constants.MCP_SESSION_ID;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_CANCELLED;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INTERNAL_ERROR;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
-import static io.modelcontextprotocol.spec.HttpHeaders.MCP_SESSION_ID;
 import static io.modelcontextprotocol.spec.McpSchema.ErrorCodes.RESOURCE_NOT_FOUND;
 import static io.modelcontextprotocol.spec.McpSchema.LoggingLevel.ALERT;
 import static io.modelcontextprotocol.spec.McpSchema.LoggingLevel.DEBUG;
@@ -485,7 +486,7 @@ public abstract class TestMcp
 
         Request request = prepareDelete()
                 .setUri(URI.create(baseUri + "/mcp"))
-                .addHeader(MCP_SESSION_ID, clientSessionId.id())
+                .addHeader(HttpHeaders.MCP_SESSION_ID, clientSessionId.id())
                 .addHeader(IDENTITY_HEADER, EXPECTED_IDENTITY)
                 .build();
         httpClient.execute(request, createStatusResponseHandler());
