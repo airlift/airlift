@@ -26,6 +26,7 @@ import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.ResourceTemplateValues;
 import io.airlift.mcp.model.Role;
+import io.airlift.mcp.model.Root;
 import io.airlift.mcp.model.StructuredContentResult;
 import io.airlift.mcp.model.Tool;
 
@@ -42,6 +43,7 @@ import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.model.ElicitResult.Action.ACCEPT;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.stream.Collectors.joining;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SuppressWarnings({"unused", "FieldCanBeLocal"})
@@ -345,5 +347,19 @@ public class TestingEndpoints
         }
 
         return "Response: unknown";
+    }
+
+    @McpTool(name = "roots", description = "List roots")
+    public String listRoots(McpRequestContext requestContext)
+    {
+        try {
+            return requestContext.requestRoots(Duration.ofMinutes(1), Duration.ofSeconds(30))
+                    .stream()
+                    .map(Root::uri)
+                    .collect(joining(", "));
+        }
+        catch (InterruptedException | TimeoutException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
