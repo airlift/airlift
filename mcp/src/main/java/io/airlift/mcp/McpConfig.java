@@ -17,6 +17,7 @@ public class McpConfig
     private Duration eventStreamingPingThreshold = new Duration(15, SECONDS);
     private Duration eventStreamingTimeout = new Duration(5, MINUTES);
     private Duration cancellationCheckInterval = new Duration(1, SECONDS);
+    private int maxResumableMessages = 100;
 
     @Min(1)
     public int getDefaultPageSize()
@@ -105,6 +106,19 @@ public class McpConfig
     public McpConfig setCancellationCheckInterval(Duration cancellationCheckInterval)
     {
         this.cancellationCheckInterval = cancellationCheckInterval;
+        return this;
+    }
+
+    @Min(0)
+    public int getMaxResumableMessages()
+    {
+        return maxResumableMessages;
+    }
+
+    @Config("mcp.resumable-messages.max")
+    public McpConfig setMaxResumableMessages(int maxResumableMessages)
+    {
+        this.maxResumableMessages = maxResumableMessages;
         return this;
     }
 }

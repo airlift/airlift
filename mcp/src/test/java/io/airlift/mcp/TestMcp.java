@@ -21,6 +21,7 @@ import io.airlift.mcp.model.JsonRpcRequest;
 import io.airlift.mcp.sessions.MemorySessionController;
 import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.sessions.SessionId;
+import io.modelcontextprotocol.spec.HttpHeaders;
 import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
@@ -63,7 +64,6 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -89,13 +89,13 @@ import static io.airlift.mcp.TestingIdentityMapper.IDENTITY_HEADER;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_CANCELLED;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INTERNAL_ERROR;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
-import static io.modelcontextprotocol.spec.HttpHeaders.MCP_SESSION_ID;
 import static io.modelcontextprotocol.spec.McpSchema.ErrorCodes.RESOURCE_NOT_FOUND;
 import static io.modelcontextprotocol.spec.McpSchema.LoggingLevel.ALERT;
 import static io.modelcontextprotocol.spec.McpSchema.LoggingLevel.DEBUG;
 import static io.modelcontextprotocol.spec.McpSchema.LoggingLevel.EMERGENCY;
 import static jakarta.servlet.http.HttpServletResponse.SC_METHOD_NOT_ALLOWED;
 import static jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED;
+import static java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -485,7 +485,7 @@ public abstract class TestMcp
 
         Request request = prepareDelete()
                 .setUri(URI.create(baseUri + "/mcp"))
-                .addHeader(MCP_SESSION_ID, clientSessionId.id())
+                .addHeader(HttpHeaders.MCP_SESSION_ID, clientSessionId.id())
                 .addHeader(IDENTITY_HEADER, EXPECTED_IDENTITY)
                 .build();
         httpClient.execute(request, createStatusResponseHandler());
@@ -559,7 +559,7 @@ public abstract class TestMcp
         // start multiple calls to the sleep() tool that will sleep for 1 day (i.e. forever for our purposes)
 
         int threadQty = 10;
-        ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
+        ExecutorService executorService = newVirtualThreadPerTaskExecutor();
 
         Map<String, Future<CallToolResult>> runs = IntStream.range(0, threadQty)
                 .mapToObj(index -> {
@@ -591,7 +591,7 @@ public abstract class TestMcp
                     .addHeader("Content-Type", "application/json")
                     .addHeader("Accept", "application/json, text/event-stream")
                     .addHeader(IDENTITY_HEADER, EXPECTED_IDENTITY)
-                    .addHeader(MCP_SESSION_ID, sessionId.id())
+                    .addHeader(HttpHeaders.MCP_SESSION_ID, sessionId.id())
                     .setBodyGenerator(jsonBodyGenerator(jsonCodec(new TypeToken<>() {}), jsonRpcRequest))
                     .build();
             httpClient.execute(request, createStatusResponseHandler());
