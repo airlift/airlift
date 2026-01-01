@@ -124,10 +124,7 @@ public class InternalFilter
                     response.sendError(SC_FORBIDDEN, unauthorized.message());
                 }
 
-                case McpIdentity.Error error -> {
-                    log.error(error.cause(), "An error was thrown during MCP authentication");
-                    throw error.cause();
-                }
+                case McpIdentity.Error error -> throw error.cause();
             }
         }
         catch (WebApplicationException webApplicationException) {
@@ -264,10 +261,8 @@ public class InternalFilter
 
     private <T> T convertParams(JsonRpcRequest<?> rpcRequest, Class<T> clazz)
     {
-        if (rpcRequest.params().isEmpty()) {
-            throw new IllegalArgumentException("Missing required parameters");
-        }
-        return objectMapper.convertValue(rpcRequest.params(), clazz);
+        Object value = rpcRequest.params().map(v -> (Object) v).orElseGet(ImmutableMap::of);
+        return objectMapper.convertValue(value, clazz);
     }
 
     private void responseError(HttpServletResponse response, int httpCode, JsonRpcErrorDetail mcpError)

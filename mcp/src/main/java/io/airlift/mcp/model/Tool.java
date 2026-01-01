@@ -19,7 +19,7 @@ public record Tool(String name, Optional<String> description, ObjectNode inputSc
     {
         public ToolAnnotations
         {
-            requireNonNull(title, "title is null");
+            title = firstNonNull(title, Optional.empty());
             readOnlyHint = firstNonNull(readOnlyHint, Optional.empty());
             destructiveHint = firstNonNull(destructiveHint, Optional.empty());
             idempotentHint = firstNonNull(idempotentHint, Optional.empty());
@@ -31,9 +31,8 @@ public record Tool(String name, Optional<String> description, ObjectNode inputSc
     public Tool
     {
         requireNonNull(name, "name is null");
-        requireNonNull(description, "description is null");
-        requireNonNull(inputSchema, "inputSchema is null");
-        requireNonNull(outputSchema, "outputSchema is null");
+        description = firstNonNull(description, Optional.empty());
+        outputSchema = firstNonNull(outputSchema, Optional.empty());
         requireNonNull(annotations, "annotations is null");
     }
 }

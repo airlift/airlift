@@ -2,6 +2,7 @@ package io.airlift.mcp.model;
 
 import java.util.Optional;
 
+import static com.google.common.base.MoreObjects.firstNonNull;
 import static java.util.Objects.requireNonNull;
 
 public sealed interface CompleteReference
@@ -12,7 +13,7 @@ public sealed interface CompleteReference
         public PromptReference
         {
             requireNonNull(name, "name is null");
-            requireNonNull(title, "title is null");
+            title = firstNonNull(title, Optional.empty());
         }
     }
 

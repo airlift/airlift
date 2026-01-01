@@ -5,7 +5,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.OptionalDouble;
 
-import static java.util.Objects.requireNonNull;
+import static com.google.common.base.MoreObjects.firstNonNull;
 
 public record Annotations(List<Role> audience, OptionalDouble priority)
 {
@@ -14,6 +14,6 @@ public record Annotations(List<Role> audience, OptionalDouble priority)
     public Annotations
     {
         audience = ImmutableList.copyOf(audience);
-        requireNonNull(priority, "priority is null");
+        priority = firstNonNull(priority, OptionalDouble.empty());
     }
 }
