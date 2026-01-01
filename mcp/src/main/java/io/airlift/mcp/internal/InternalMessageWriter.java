@@ -1,13 +1,17 @@
 package io.airlift.mcp.internal;
 
+import com.google.common.collect.ImmutableList;
 import io.airlift.mcp.McpException;
+import io.airlift.mcp.SentMessages.SentMessage;
 import io.airlift.mcp.handler.MessageWriter;
 import io.airlift.mcp.model.JsonRpcErrorDetail;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.airlift.mcp.model.JsonRpcErrorCode.CONNECTION_CLOSED;
@@ -18,6 +22,7 @@ class InternalMessageWriter
 {
     private final HttpServletResponse response;
     private final AtomicBoolean hasBeenUpgraded = new AtomicBoolean();
+    private final List<SentMessage> sentMessages = new CopyOnWriteArrayList<>();
 
     InternalMessageWriter(HttpServletResponse response)
     {
@@ -41,11 +46,25 @@ class InternalMessageWriter
         }
     }
 
+    List<SentMessage> takeSentMessages()
+    {
+        List<SentMessage> result = ImmutableList.copyOf(sentMessages);
+        sentMessages.clear();
+        return result;
+    }
+
     @Override
     public void writeMessage(String data)
     {
         String messageId = UUID.randomUUID().toString();
 
+        sentMessages.add(new SentMessage(messageId, data));
+
+        internalWriteMessage(messageId, data);
+    }
+
+    void internalWriteMessage(String messageId, String data)
+    {
         if (hasBeenUpgraded.compareAndSet(false, true)) {
             response.setContentType("text/event-stream");
         }
