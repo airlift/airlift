@@ -67,10 +67,12 @@ import static io.airlift.mcp.model.Constants.METHOD_TOOLS_CALL;
 import static io.airlift.mcp.model.Constants.METHOD_TOOLS_LIST;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_CANCELLED;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_INITIALIZED;
+import static io.airlift.mcp.model.Constants.NOTIFICATION_ROOTS_LIST_CHANGED;
 import static io.airlift.mcp.model.Constants.RPC_MESSAGE_ATTRIBUTE;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
 import static io.airlift.mcp.model.JsonRpcErrorCode.METHOD_NOT_FOUND;
 import static io.airlift.mcp.model.JsonRpcErrorCode.PARSE_ERROR;
+import static io.airlift.mcp.sessions.SessionValueKey.ROOTS;
 import static io.airlift.mcp.sessions.SessionValueKey.cancellationKey;
 import static io.airlift.mcp.sessions.SessionValueKey.serverToClientResponseKey;
 import static jakarta.servlet.http.HttpServletResponse.SC_ACCEPTED;
@@ -289,10 +291,21 @@ public class InternalFilter
         switch (rpcRequest.method()) {
             case NOTIFICATION_INITIALIZED -> {} // ignore
             case NOTIFICATION_CANCELLED -> handleRpcCancellation(request, convertParams(rpcRequest, CancelledNotification.class));
+            case NOTIFICATION_ROOTS_LIST_CHANGED -> handleRpcRootsChanged(request);
             default -> log.warn("Unknown MCP notification method: %s", rpcRequest.method());
         }
 
         response.setStatus(SC_ACCEPTED);
+    }
+
+    private void handleRpcRootsChanged(HttpServletRequest request)
+    {
+        sessionController.ifPresent(controller -> {
+            SessionId sessionId = requireSessionId(request);
+            controller.deleteSessionValue(sessionId, ROOTS);
+
+            log.info("Handling roots/list_changed notification for session %s", sessionId);
+        });
     }
 
     private void handleRpcCancellation(HttpServletRequest request, CancelledNotification cancelledNotification)
