@@ -35,6 +35,7 @@ public interface Constants
 
     String HEADER_SESSION_ID = "Mcp-Session-Id";
     String HEADER_PROTOCOL_VERSION = "MCP-Protocol-Version";
+    String HEADER_LAST_EVENT_ID = "Last-Event-ID";
 
     String MCP_IDENTITY_ATTRIBUTE = Constants.class.getName() + ".identity";
     String HTTP_RESPONSE_ATTRIBUTE = Constants.class.getName() + ".response";

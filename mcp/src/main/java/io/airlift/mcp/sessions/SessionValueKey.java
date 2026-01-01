@@ -1,5 +1,6 @@
 package io.airlift.mcp.sessions;
 
+import io.airlift.mcp.SentMessages;
 import io.airlift.mcp.model.CancelledNotification;
 import io.airlift.mcp.model.InitializeRequest.ClientCapabilities;
 import io.airlift.mcp.model.JsonRpcResponse;
@@ -16,6 +17,7 @@ public record SessionValueKey<T>(String name, Class<T> type)
     public static final SessionValueKey<SystemListVersions> SYSTEM_LIST_VERSIONS = of(SystemListVersions.class);
     public static final SessionValueKey<ClientCapabilities> CLIENT_CAPABILITIES = of(ClientCapabilities.class);
     public static final SessionValueKey<Protocol> PROTOCOL = of(Protocol.class);
+    public static final SessionValueKey<SentMessages> SENT_MESSAGES = of(SentMessages.class);
 
     public SessionValueKey
     {

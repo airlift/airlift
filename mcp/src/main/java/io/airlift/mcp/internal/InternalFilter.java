@@ -17,6 +17,8 @@ import io.airlift.mcp.McpIdentity;
 import io.airlift.mcp.McpIdentity.Authenticated;
 import io.airlift.mcp.McpIdentityMapper;
 import io.airlift.mcp.McpMetadata;
+import io.airlift.mcp.SentMessages;
+import io.airlift.mcp.SentMessages.SentMessage;
 import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.CancelledNotification;
 import io.airlift.mcp.model.CompleteRequest;
@@ -46,6 +48,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UncheckedIOException;
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -56,6 +59,7 @@ import static com.google.common.base.Throwables.throwIfInstanceOf;
 import static com.google.common.net.HttpHeaders.WWW_AUTHENTICATE;
 import static io.airlift.mcp.internal.InternalRequestContext.optionalSessionId;
 import static io.airlift.mcp.internal.InternalRequestContext.requireSessionId;
+import static io.airlift.mcp.model.Constants.HEADER_LAST_EVENT_ID;
 import static io.airlift.mcp.model.Constants.HEADER_SESSION_ID;
 import static io.airlift.mcp.model.Constants.MCP_IDENTITY_ATTRIBUTE;
 import static io.airlift.mcp.model.Constants.METHOD_COMPLETION_COMPLETE;
@@ -74,6 +78,7 @@ import static io.airlift.mcp.model.Constants.METHOD_TOOLS_LIST;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_CANCELLED;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_INITIALIZED;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
+import static io.airlift.mcp.sessions.SessionValueKey.SENT_MESSAGES;
 import static io.airlift.mcp.sessions.SessionValueKey.cancellationKey;
 import static io.airlift.mcp.sessions.SessionValueKey.serverToClientResponseKey;
 import static jakarta.servlet.http.HttpServletResponse.SC_ACCEPTED;
@@ -112,6 +117,7 @@ public class InternalFilter
     private final Duration streamingPingThreshold;
     private final Duration streamingTimeout;
     private final CancellationController cancellationController;
+    private final int maxResumableMessages;
 
     @Inject
     public InternalFilter(
@@ -135,6 +141,7 @@ public class InternalFilter
         httpGetEventsEnabled = mcpConfig.isHttpGetEventsEnabled();
         streamingPingThreshold = mcpConfig.getEventStreamingPingThreshold().toJavaTime();
         streamingTimeout = mcpConfig.getEventStreamingTimeout().toJavaTime();
+        maxResumableMessages = mcpConfig.getMaxResumableMessages();
     }
 
     @Override
@@ -237,6 +244,9 @@ public class InternalFilter
         InternalMessageWriter messageWriter = new InternalMessageWriter(response);
         InternalRequestContext requestContext = new InternalRequestContext(objectMapper, Optional.of(sessionController), request, messageWriter, Optional.empty());
 
+        Optional.ofNullable(request.getHeader(HEADER_LAST_EVENT_ID))
+                .ifPresent(lastEventId -> replaySentMessages(sessionController, sessionId, lastEventId, messageWriter));
+
         while (timeoutStopwatch.elapsed().compareTo(streamingTimeout) < 0) {
             if (!sessionController.validateSession(sessionId)) {
                 log.warn(String.format("Session validation failed for %s", sessionId));
@@ -248,7 +258,9 @@ public class InternalFilter
 
                 pingStopwatch.reset().start();
             };
+
             resourceVersionController.reconcile(notifier, sessionId, mcpServer.buildSystemListVersions());
+            checkSaveSentMessages(sessionController, sessionId, messageWriter);
 
             if (pingStopwatch.elapsed().compareTo(streamingPingThreshold) >= 0) {
                 notifier.accept(METHOD_PING, Optional.empty());
@@ -263,6 +275,24 @@ public class InternalFilter
                 break;
             }
         }
+    }
+
+    private void replaySentMessages(SessionController sessionController, SessionId sessionId, String lastEventId, InternalMessageWriter messageWriter)
+    {
+        sessionController.getSessionValue(sessionId, SENT_MESSAGES)
+                .ifPresent(sentMessages -> {
+                    boolean found = false;
+                    for (SentMessage sentMessage : sentMessages.messages()) {
+                        if (found) {
+                            log.info("Sending resumable messages to session %s", sessionId);
+                            messageWriter.internalWriteMessage(sentMessage.id(), sentMessage.data());
+                        }
+                        else {
+                            found = sentMessage.id().equals(lastEventId);
+                        }
+                    }
+                    messageWriter.flushMessages();
+                });
     }
 
     private void handleMcpDeleteRequest(HttpServletRequest request, HttpServletResponse response)
@@ -298,6 +328,9 @@ public class InternalFilter
                 case JsonRpcResponse<?> rpcResponse -> handleRpcResponse(request, response, rpcResponse);
                 default -> responseError(response, SC_BAD_REQUEST, invalidRequest("The server accepts either requests or notifications"));
             }
+
+            sessionController.ifPresent(controller -> optionalSessionId(request)
+                    .ifPresent(sessionId -> checkSaveSentMessages(controller, sessionId, messageWriter)));
         }
         catch (McpException | WebApplicationException e) {
             throw e;
@@ -311,6 +344,19 @@ public class InternalFilter
             log.error(e, "Unexpected error handling message: {}", e.getMessage());
             responseError(response, SC_INTERNAL_SERVER_ERROR, internalError("Unexpected error: " + e.getMessage()));
         }
+    }
+
+    private void checkSaveSentMessages(SessionController sessionController, SessionId sessionId, InternalMessageWriter messageWriter)
+    {
+        List<SentMessage> sentMessages = messageWriter.takeSentMessages();
+        if (sentMessages.isEmpty()) {
+            return;
+        }
+
+        sessionController.computeSessionValue(sessionId, SENT_MESSAGES, current -> {
+            SentMessages currentSentMessages = current.orElseGet(SentMessages::new);
+            return Optional.of(currentSentMessages.withAdditionalMessages(sentMessages, maxResumableMessages));
+        });
     }
 
     @SuppressWarnings("rawtypes")
@@ -362,12 +408,17 @@ public class InternalFilter
             Object result = switch (rpcMethod) {
                 case METHOD_INITIALIZE -> mcpServer.initialize(response, authenticated, convertParams(rpcRequest, InitializeRequest.class));
                 case METHOD_TOOLS_LIST -> withManagement(request, requestId, messageWriter, () -> mcpServer.listTools(request, convertParams(rpcRequest, ListRequest.class)));
-                case METHOD_TOOLS_CALL -> withManagement(request, requestId, messageWriter, () -> mcpServer.callTool(request, messageWriter, convertParams(rpcRequest, CallToolRequest.class)));
+                case METHOD_TOOLS_CALL ->
+                        withManagement(request, requestId, messageWriter, () -> mcpServer.callTool(request, messageWriter, convertParams(rpcRequest, CallToolRequest.class)));
                 case METHOD_PROMPT_LIST -> withManagement(request, requestId, messageWriter, () -> mcpServer.listPrompts(request, convertParams(rpcRequest, ListRequest.class)));
-                case METHOD_PROMPT_GET -> withManagement(request, requestId, messageWriter, () -> mcpServer.getPrompt(request, messageWriter, convertParams(rpcRequest, GetPromptRequest.class)));
-                case METHOD_RESOURCES_LIST -> withManagement(request, requestId, messageWriter, () -> mcpServer.listResources(request, convertParams(rpcRequest, ListRequest.class)));
-                case METHOD_RESOURCES_TEMPLATES_LIST -> withManagement(request, requestId, messageWriter, () -> mcpServer.listResourceTemplates(request, convertParams(rpcRequest, ListRequest.class)));
-                case METHOD_RESOURCES_READ -> withManagement(request, requestId, messageWriter, () -> mcpServer.readResources(request, messageWriter, convertParams(rpcRequest, ReadResourceRequest.class)));
+                case METHOD_PROMPT_GET ->
+                        withManagement(request, requestId, messageWriter, () -> mcpServer.getPrompt(request, messageWriter, convertParams(rpcRequest, GetPromptRequest.class)));
+                case METHOD_RESOURCES_LIST ->
+                        withManagement(request, requestId, messageWriter, () -> mcpServer.listResources(request, convertParams(rpcRequest, ListRequest.class)));
+                case METHOD_RESOURCES_TEMPLATES_LIST ->
+                        withManagement(request, requestId, messageWriter, () -> mcpServer.listResourceTemplates(request, convertParams(rpcRequest, ListRequest.class)));
+                case METHOD_RESOURCES_READ ->
+                        withManagement(request, requestId, messageWriter, () -> mcpServer.readResources(request, messageWriter, convertParams(rpcRequest, ReadResourceRequest.class)));
                 case METHOD_PING -> ImmutableMap.of();
                 case METHOD_COMPLETION_COMPLETE -> mcpServer.completionComplete(request, messageWriter, convertParams(rpcRequest, CompleteRequest.class));
                 case METHOD_LOGGING_SET_LEVEL -> mcpServer.setLoggingLevel(request, convertParams(rpcRequest, SetLevelRequest.class));
