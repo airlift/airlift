@@ -6,7 +6,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UncheckedIOException;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -44,19 +43,15 @@ class InternalMessageWriter
     @Override
     public void writeMessage(String data)
     {
-        writeMessage(data, Optional.of(Long.toString(nextId.getAndIncrement())));
-    }
+        String messageId = Long.toString(nextId.getAndIncrement());
 
-    @Override
-    public void writeMessage(String data, Optional<String> messageId)
-    {
         if (hasBeenUpgraded.compareAndSet(false, true)) {
             response.setContentType("text/event-stream");
         }
 
         try {
             PrintWriter writer = response.getWriter();
-            messageId.ifPresent(id -> writer.write("id: " + encode(id) + "\n"));
+            writer.write("id: " + encode(messageId) + "\n");
             writer.write("data: " + encode(data) + "\n\n");
         }
         catch (IOException e) {
