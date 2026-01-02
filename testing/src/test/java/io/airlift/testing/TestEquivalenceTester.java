@@ -98,6 +98,7 @@ public class TestEquivalenceTester
     @SuppressWarnings({"EqualsAndHashcode", "checkstyle:EqualsHashCode"})
     static class NotReflexive
     {
+        @SuppressWarnings("EqualsHashCode")
         @Override
         public boolean equals(Object that)
         {
@@ -247,7 +248,7 @@ public class TestEquivalenceTester
     static class EqualsNull
     {
         @Override
-        @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
+        @SuppressWarnings({"EqualsWhichDoesntCheckParameterClass", "EqualsHashCode"})
         public boolean equals(Object that)
         {
             return that == null || this == that;
@@ -273,7 +274,7 @@ public class TestEquivalenceTester
     static class EqualsNullThrowsException
     {
         @Override
-        @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
+        @SuppressWarnings({"EqualsWhichDoesntCheckParameterClass", "EqualsHashCode", "EqualsUsingHashCode"})
         public boolean equals(Object that)
         {
             return this.hashCode() == that.hashCode();
@@ -299,7 +300,7 @@ public class TestEquivalenceTester
     static class EqualsUnrelatedClass
     {
         @Override
-        @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
+        @SuppressWarnings({"EqualsWhichDoesntCheckParameterClass", "EqualsHashCode"})
         public boolean equals(Object that)
         {
             return that != null;
@@ -325,7 +326,7 @@ public class TestEquivalenceTester
     static class EqualsOtherClassThrowsException
     {
         @Override
-        @SuppressWarnings({"EqualsWhichDoesntCheckParameterClass", "RedundantCast"})
+        @SuppressWarnings({"EqualsWhichDoesntCheckParameterClass", "RedundantCast", "EqualsHashCode", "EqualsUsingHashCode"})
         public boolean equals(Object that)
         {
             return that != null && ((EqualsOtherClassThrowsException) that).hashCode() == this.hashCode();

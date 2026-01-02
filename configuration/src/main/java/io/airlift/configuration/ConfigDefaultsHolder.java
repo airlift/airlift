@@ -56,7 +56,7 @@ class ConfigDefaultsHolder<T>
         }
         ConfigDefaultsHolder<?> other = (ConfigDefaultsHolder<?>) obj;
         return Objects.equals(this.configDefaults, other.configDefaults)
-                && Objects.equals(this.priority, other.priority);
+                && this.priority == other.priority;
     }
 
     @Override

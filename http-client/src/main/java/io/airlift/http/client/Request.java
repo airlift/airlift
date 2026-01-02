@@ -176,7 +176,7 @@ public final class Request
                 Objects.equals(maxContentLength, r.maxContentLength) &&
                 Objects.equals(bodyGenerator, r.bodyGenerator) &&
                 Objects.equals(spanBuilder, r.spanBuilder) &&
-                Objects.equals(followRedirects, r.followRedirects);
+                followRedirects == r.followRedirects;
     }
 
     @Override
