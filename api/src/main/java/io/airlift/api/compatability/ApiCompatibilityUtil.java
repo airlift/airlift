@@ -56,7 +56,10 @@ public class ApiCompatibilityUtil
         File file = directory.toPath().resolve(specFileName(service, modelMethod)).toFile();
         checkArgument(file.exists(), "Method compatibility file %s not found".formatted(file));
         try {
-            String specFromFile = Files.lines(file.toPath(), UTF_8).findFirst().orElseThrow(() -> new IllegalStateException("Could not read spec from first line of: " + file));
+            String specFromFile;
+            try (Stream<String> lines = Files.lines(file.toPath(), UTF_8)) {
+                specFromFile = lines.findFirst().orElseThrow(() -> new IllegalStateException("Could not read spec from first line of: " + file));
+            }
             String currentSpec = methodSpec(service, modelMethod);
             if (!currentSpec.equals(specFromFile)) {
                 throw new IllegalStateException("""
