@@ -145,13 +145,7 @@ class InternalRequestContext
             Optional<JsonRpcResponse> maybeResponse = localSessionController.getSessionValue(sessionId, responseKey);
             if (maybeResponse.isPresent()) {
                 try {
-                    JsonRpcResponse rpcResponse = maybeResponse.get();
-                    if (rpcResponse.result().isPresent()) {
-                        Object result = rpcResponse.result().get();
-                        R convertedValue = objectMapper.convertValue(result, responseType);
-                        return new JsonRpcResponse<>(rpcResponse.id(), Optional.empty(), Optional.of(convertedValue));
-                    }
-                    return rpcResponse;
+                    return maybeResponse.get().map(responseType, objectMapper);
                 }
                 finally {
                     localSessionController.deleteSessionValue(sessionId, responseKey);

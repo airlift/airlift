@@ -1,5 +1,7 @@
 package io.airlift.mcp.model;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.util.Optional;
 
 import static com.google.common.base.MoreObjects.firstNonNull;
@@ -20,5 +22,13 @@ public record JsonRpcResponse<T>(String jsonrpc, Object id, Optional<JsonRpcErro
     public JsonRpcResponse(Object id, Optional<JsonRpcErrorDetail> error, Optional<T> result)
     {
         this(JSON_RPC_VERSION, id, error, result);
+    }
+
+    public <R> JsonRpcResponse<R> map(Class<R> responseType, ObjectMapper objectMapper)
+    {
+        return result().map(value -> {
+            R convertedValue = objectMapper.convertValue(value, responseType);
+            return new JsonRpcResponse<>(id(), Optional.empty(), Optional.of(convertedValue));
+        }).orElseGet(() -> new JsonRpcResponse<>(id(), error, Optional.empty()));
     }
 }
