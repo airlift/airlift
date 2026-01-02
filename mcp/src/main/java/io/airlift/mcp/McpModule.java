@@ -4,10 +4,8 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Binder;
 import com.google.inject.Module;
-import com.google.inject.TypeLiteral;
-import com.google.inject.binder.LinkedBindingBuilder;
+import com.google.inject.binder.AnnotatedBindingBuilder;
 import com.google.inject.multibindings.Multibinder;
-import com.google.inject.multibindings.OptionalBinder;
 import io.airlift.json.JsonSubType;
 import io.airlift.json.JsonSubTypeBinder;
 import io.airlift.mcp.handler.CompletionEntry;
@@ -50,7 +48,7 @@ public class McpModule
 {
     private final Mode mode;
     private final McpMetadata metadata;
-    private final Optional<IdentityMapperBinding> identityMapperBinding;
+    private final IdentityMapperBinding identityMapperBinding;
     private final Set<Class<?>> classes;
     private final Set<ToolHandlerProvider> tools;
     private final Set<PromptHandlerProvider> prompts;
@@ -63,7 +61,7 @@ public class McpModule
         return new Builder();
     }
 
-    private McpModule(Mode mode, McpMetadata metadata, Optional<IdentityMapperBinding> identityMapperBinding, Set<Class<?>> classes, Set<ToolHandlerProvider> tools, Set<PromptHandlerProvider> prompts, Set<ResourceHandlerProvider> resources, Set<ResourceTemplateHandlerProvider> resourceTemplates, Set<CompletionHandlerProvider> completions)
+    private McpModule(Mode mode, McpMetadata metadata, IdentityMapperBinding identityMapperBinding, Set<Class<?>> classes, Set<ToolHandlerProvider> tools, Set<PromptHandlerProvider> prompts, Set<ResourceHandlerProvider> resources, Set<ResourceTemplateHandlerProvider> resourceTemplates, Set<CompletionHandlerProvider> completions)
     {
         this.mode = requireNonNull(mode, "mode is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
@@ -82,7 +80,7 @@ public class McpModule
         UNBOUND_IMPLEMENTATION,
     }
 
-    record IdentityMapperBinding(Class<?> identityType, Consumer<? extends LinkedBindingBuilder<?>> identityMapperBinding)
+    record IdentityMapperBinding(Class<?> identityType, Consumer<AnnotatedBindingBuilder<McpIdentityMapper>> identityMapperBinding)
     {
         IdentityMapperBinding
         {
@@ -137,7 +135,7 @@ public class McpModule
             return this;
         }
 
-        public <T> Builder withIdentityMapper(Class<T> identityType, Consumer<LinkedBindingBuilder<McpIdentityMapper>> identityMapperBinding)
+        public <T> Builder withIdentityMapper(Class<T> identityType, Consumer<AnnotatedBindingBuilder<McpIdentityMapper>> identityMapperBinding)
         {
             this.identityMapperBinding = Optional.of(new IdentityMapperBinding(identityType, identityMapperBinding));
             return this;
@@ -180,7 +178,9 @@ public class McpModule
             Set<ResourceTemplateHandlerProvider> localResourceTemplates = resourceTemplates.build();
             Set<CompletionHandlerProvider> localCompletions = completions.build();
 
-            return new McpModule(mode, metadata, identityMapperBinding, classesSet, localTools, localPrompts, localResources, localResourceTemplates, localCompletions);
+            IdentityMapperBinding localIdentityMapperBinding = identityMapperBinding.orElseThrow(() -> new IllegalStateException("Identity mapper binding is required"));
+
+            return new McpModule(mode, metadata, localIdentityMapperBinding, classesSet, localTools, localPrompts, localResources, localResourceTemplates, localCompletions);
         }
     }
 
@@ -205,16 +205,10 @@ public class McpModule
         }
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     private void bindIdentityMapper(Binder binder)
     {
-        OptionalBinder<? extends McpIdentityMapper> identityBinder = OptionalBinder.newOptionalBinder(binder, new TypeLiteral<>() {});
-
-        identityMapperBinding.ifPresent(binding -> {
-            Consumer rawConsumer = binding.identityMapperBinding;
-            rawConsumer.accept(identityBinder.setBinding());
-            binder.bind(IdentityMapperMetadata.class).toInstance(new IdentityMapperMetadata(binding.identityType));
-        });
+        identityMapperBinding.identityMapperBinding.accept(binder.bind(McpIdentityMapper.class));
+        binder.bind(IdentityMapperMetadata.class).toInstance(new IdentityMapperMetadata(identityMapperBinding.identityType));
     }
 
     private void bindClasses(Binder binder)
