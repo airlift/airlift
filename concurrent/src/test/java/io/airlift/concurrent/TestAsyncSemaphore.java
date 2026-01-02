@@ -427,8 +427,7 @@ public class TestAsyncSemaphore
                     concurrency,
                     () -> {
                         throw new RuntimeException("callable failed");
-                    },
-                    "callable failed");
+                    });
         }
     }
 
@@ -449,8 +448,7 @@ public class TestAsyncSemaphore
         for (int concurrency : testedConcurrency()) {
             testProcessAllToCompletionFailure(
                     concurrency,
-                    () -> immediateFailedFuture(new RuntimeException("future failed")),
-                    "future failed");
+                    () -> immediateFailedFuture(new RuntimeException("future failed")));
         }
     }
 
@@ -471,8 +469,7 @@ public class TestAsyncSemaphore
         for (int concurrency : testedConcurrency()) {
             testProcessAllToCompletionFailure(
                     concurrency,
-                    Futures::immediateCancelledFuture,
-                    "Task was cancelled");
+                    Futures::immediateCancelledFuture);
         }
     }
 
@@ -594,7 +591,7 @@ public class TestAsyncSemaphore
         }
     }
 
-    private static void testProcessAllToCompletionFailure(int concurrency, Supplier<ListenableFuture<String>> failure, String message)
+    private static void testProcessAllToCompletionFailure(int concurrency, Supplier<ListenableFuture<String>> failure)
     {
         TestingTasks tasks = new TestingTasks(concurrency);
         tasks.injectFailure(concurrency - 1, failure);
