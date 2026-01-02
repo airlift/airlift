@@ -513,7 +513,6 @@
                                     -Xep:InvalidInlineTag:ERROR \
                                     <!-- TODO fix the code & enable LenientFormatStringValidation check (it's ERROR by default) -->
                                     -Xep:LenientFormatStringValidation:WARN \
-                                    -Xep:MisleadingEscapedSpace:OFF \
                                     <!-- TODO fix the code & enable MissingCasesInEnumSwitch check -->
                                     -Xep:MissingCasesInEnumSwitch:WARN \
                                     -Xep:MissingOverride:ERROR \
