@@ -32,6 +32,7 @@ import java.util.logging.ErrorManager;
 import java.util.logging.Formatter;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
+import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -502,9 +503,12 @@ public class TestRollingFileMessageOutput
         assertThat(symbolicLinkTarget.getNameCount()).isEqualTo(1);
         assertThat(symbolicLinkTarget).hasNoParentRaw();
 
-        List<Path> logFiles = Files.list(masterFile.getParent())
-                .filter(not(masterFile::equals))
-                .collect(toImmutableList());
+        List<Path> logFiles;
+        try (Stream<Path> list = Files.list(masterFile.getParent())) {
+            logFiles = list
+                    .filter(not(masterFile::equals))
+                    .collect(toImmutableList());
+        }
         for (Path logFile : logFiles) {
             assertThat(logFile).isRegularFile();
             assertThat(parseHistoryLogFileName(masterFile.getFileName().toString(), logFile.getFileName().toString()).isPresent()).isTrue();

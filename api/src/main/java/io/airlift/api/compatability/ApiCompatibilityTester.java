@@ -7,12 +7,14 @@ import io.airlift.log.Logger;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static io.airlift.api.compatability.ApiCompatibilityUtil.specFileExists;
@@ -134,14 +136,16 @@ public final class ApiCompatibilityTester
 
         String fixedPath = sourcePath.replace(classesDir, resourcesDir);
         try {
-            Files.walk(Paths.get(fixedPath)).forEach(compatibilityPath -> {
-                File compatibilityFile = compatibilityPath.toFile();
-                if (compatibilityFile.isFile() && !compatibilityFile.isHidden()) {
-                    if (!usedSet.contains(compatibilityFile.getName())) {
-                        errors.add("Compatibility file without implementation - did the method get removed/changed? %s".formatted(compatibilityFile.getAbsolutePath()));
+            try (Stream<Path> walk = Files.walk(Paths.get(fixedPath))) {
+                walk.forEach(compatibilityPath -> {
+                    File compatibilityFile = compatibilityPath.toFile();
+                    if (compatibilityFile.isFile() && !compatibilityFile.isHidden()) {
+                        if (!usedSet.contains(compatibilityFile.getName())) {
+                            errors.add("Compatibility file without implementation - did the method get removed/changed? %s".formatted(compatibilityFile.getAbsolutePath()));
+                        }
                     }
-                }
-            });
+                });
+            }
         }
         catch (IOException e) {
             errors.add(e.getMessage());

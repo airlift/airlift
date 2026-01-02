@@ -562,8 +562,7 @@
                                     <!-- TODO fix the code and enable StaticAssignmentOfThrowable check -->
                                     -Xep:StaticAssignmentOfThrowable:WARN \
                                     -Xep:StaticGuardedByInstance:ERROR \
-                                    <!-- TODO fix the code and enable StreamResourceLeak check (it's ERROR by default) -->
-                                    -Xep:StreamResourceLeak:WARN \
+                                    -Xep:StreamResourceLeak:ERROR \
                                     <!-- TODO fix the code and enable StringCaseLocaleUsage check -->
                                     -Xep:StringCaseLocaleUsage:WARN \
                                     -Xep:SuppressWarningsDeprecated:ERROR \
