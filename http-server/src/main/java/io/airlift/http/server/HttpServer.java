@@ -130,7 +130,7 @@ public class HttpServer
             Set<HttpResourceBinding> resources,
             Set<ServerFeature> serverFeatures,
             ClientCertificate clientCertificate,
-            Optional<MBeanServer> mbeanServer,
+            Optional<MBeanServer> mBeanServer,
             Optional<SslContextFactory.Server> maybeSslContextFactory)
             throws IOException
     {
@@ -142,7 +142,7 @@ public class HttpServer
         requireNonNull(servlet, "servlet is null");
         requireNonNull(maybeSslContextFactory, "maybeSslContextFactory is null");
         requireNonNull(clientCertificate, "clientCertificate is null");
-        requireNonNull(mbeanServer, "mbeanServer is null");
+        requireNonNull(mBeanServer, "mBeanServer is null");
 
         checkArgument(!config.isHttpsEnabled() || maybeHttpsConfig.isPresent(), "httpsConfig must be present when HTTPS is enabled");
         MonitoredQueuedThreadPool threadPool = new MonitoredQueuedThreadPool(config.getMaxThreads());
@@ -178,9 +178,9 @@ public class HttpServer
 
         this.sslContextFactory = maybeSslContextFactory;
 
-        if (mbeanServer.isPresent()) {
+        if (mBeanServer.isPresent()) {
             // export jmx mbeans if a server was provided
-            server.addBean(new MBeanContainer(mbeanServer.orElseThrow()));
+            server.addBean(new MBeanContainer(mBeanServer.orElseThrow()));
         }
 
         HttpConfiguration baseHttpConfiguration = new HttpConfiguration();
