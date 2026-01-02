@@ -520,8 +520,6 @@
                                     <!-- Sometimes our javadoc contains just a @see directive -->
                                     -Xep:MissingSummary:OFF \
                                     -Xep:ModifiedButNotUsed:ERROR \
-                                    <!-- TODO fix the code & enable MutablePublicArray check -->
-                                    -Xep:MutablePublicArray:WARN \
                                     <!-- TODO fix the code & enable NarrowCalculation check -->
                                     -Xep:NarrowCalculation:WARN \
                                     -Xep:NarrowingCompoundAssignment:ERROR \
