@@ -23,7 +23,7 @@ import jakarta.annotation.PreDestroy;
 public class InstanceOne
 {
     @Inject
-    public InstanceOne(DependentInstance otro) {}
+    public InstanceOne(@SuppressWarnings("UnusedVariable") DependentInstance otro) {}
 
     @PostConstruct
     public void postMakeOne()

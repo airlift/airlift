@@ -356,20 +356,20 @@ public class TestBootstrap
     public static class InstanceA
     {
         @Inject
-        public InstanceA(InstanceB b) {}
+        public InstanceA(@SuppressWarnings("UnusedVariable") InstanceB b) {}
     }
 
     public static class InstanceB
     {
         @Inject
-        public InstanceB(InstanceA a) {}
+        public InstanceB(@SuppressWarnings("UnusedVariable") InstanceA a) {}
     }
 
     public static class FooInstance
     {
         @SuppressWarnings("AssignmentToStaticFieldFromInstanceMethod")
         @Inject
-        public FooInstance(FooConfig config)
+        public FooInstance(@SuppressWarnings("UnusedVariable") FooConfig config)
         {
             fooInstanceCreated = true;
         }

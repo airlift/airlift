@@ -252,7 +252,6 @@ public final class Request
         private SpanBuilder spanBuilder;
         private Optional<HttpVersion> version = Optional.empty();
         private boolean followRedirects = true;
-        private boolean preserveAuthorizationOnRedirect;
         private Optional<Duration> requestTimeout = Optional.empty();
         private Optional<Duration> idleTimeout = Optional.empty();
         private Optional<DataSize> maxContentLength = Optional.empty();

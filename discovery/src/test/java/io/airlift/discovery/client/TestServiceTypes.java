@@ -28,6 +28,7 @@ public class TestServiceTypes
     @ServiceType("banana")
     private final ServiceType bananaServiceType;
 
+    @SuppressWarnings("UnusedVariable") // used by reflection
     @ServiceType("quot\"ation-and-\\backslash")
     private final ServiceType serviceTypeWithCharacters;
 

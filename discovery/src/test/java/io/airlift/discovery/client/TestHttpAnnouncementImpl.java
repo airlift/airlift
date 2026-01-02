@@ -28,6 +28,7 @@ public class TestHttpAnnouncementImpl
     @HttpAnnouncement(announcementId = "banana")
     private final HttpAnnouncement bananaHttpAnnouncement;
 
+    @SuppressWarnings("UnusedVariable") // used by reflection
     @HttpAnnouncement(announcementId = "quot\"ation-and-\\backslash")
     private final HttpAnnouncement httpAnnouncementWithCharacters;
 

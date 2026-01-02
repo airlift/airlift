@@ -143,7 +143,6 @@ public final class Announcer
             log.error("Expected service announcement after %s, but announcement was delayed %s", expectedDelay, Duration.nanosSince(delayStart));
         }
 
-        long requestStart = System.nanoTime();
         ListenableFuture<Duration> future = announcementClient.announce(getServiceAnnouncements());
 
         Futures.addCallback(future, new FutureCallback<Duration>()
