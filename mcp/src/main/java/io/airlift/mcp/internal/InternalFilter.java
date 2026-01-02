@@ -80,12 +80,12 @@ public class InternalFilter
     private static final Set<String> ALLOWED_HTTP_METHODS = ImmutableSet.of("GET", "POST", "DELETE");
 
     private final McpMetadata metadata;
-    private final Optional<McpIdentityMapper> identityMapper;
+    private final McpIdentityMapper identityMapper;
     private final InternalMcpServer mcpServer;
     private final ObjectMapper objectMapper;
 
     @Inject
-    public InternalFilter(McpMetadata metadata, Optional<McpIdentityMapper> identityMapper, InternalMcpServer mcpServer, ObjectMapper objectMapper)
+    public InternalFilter(McpMetadata metadata, McpIdentityMapper identityMapper, InternalMcpServer mcpServer, ObjectMapper objectMapper)
     {
         this.metadata = requireNonNull(metadata, "metadata is null");
         this.identityMapper = requireNonNull(identityMapper, "identityMapper is null");
@@ -102,11 +102,6 @@ public class InternalFilter
             return;
         }
 
-        identityMapper.ifPresent(mapper -> internalDoFilter(mapper, request, response));
-    }
-
-    private void internalDoFilter(McpIdentityMapper identityMapper, HttpServletRequest request, HttpServletResponse response)
-    {
         McpIdentity identity = identityMapper.map(request);
         try {
             switch (identity) {
