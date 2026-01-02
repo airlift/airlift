@@ -43,7 +43,7 @@ public class HttpServerProvider
     private final Optional<Class<? extends Annotation>> qualifier;
 
     private Injector injector;
-    private Optional<MBeanServer> mbeanServer = Optional.empty();
+    private Optional<MBeanServer> mBeanServer = Optional.empty();
 
     public HttpServerProvider(String name, Optional<Class<? extends Annotation>> qualifier)
     {
@@ -54,7 +54,7 @@ public class HttpServerProvider
     @Inject(optional = true)
     public void setMBeanServer(MBeanServer mBeanServer)
     {
-        mbeanServer = Optional.of(requireNonNull(mBeanServer, "mBeanServer is null"));
+        this.mBeanServer = Optional.of(requireNonNull(mBeanServer, "mBeanServer is null"));
     }
 
     @Inject
@@ -78,7 +78,7 @@ public class HttpServerProvider
                     injector.getInstance(qualifiedKey(qualifier, new TypeLiteral<>() {})),
                     injector.getInstance(qualifiedKey(qualifier, new TypeLiteral<>() {})),
                     injector.getInstance(qualifiedKey(qualifier, ClientCertificate.class)),
-                    mbeanServer,
+                    mBeanServer,
                     injector.getInstance(qualifiedKey(qualifier, new TypeLiteral<>() {})));
             httpServer.start();
             return httpServer;

@@ -505,9 +505,8 @@
                                     <!-- flags enums with List fields even if initialized with ImmutableList, and other false positives -->
                                     -Xep:ImmutableEnumChecker:OFF \
                                     -Xep:ImmutableSetForContains:ERROR \
-                                    <!-- TODO fix the code & enable InconsistentCapitalization check -->
                                     <!-- fields/variables should not differ only in case -->
-                                    -Xep:InconsistentCapitalization:WARN \
+                                    -Xep:InconsistentCapitalization:ERROR \
                                     -Xep:InconsistentHashCode:ERROR \
                                     -Xep:InjectOnConstructorOfAbstractClass:ERROR \
                                     -Xep:InvalidInlineTag:ERROR \
