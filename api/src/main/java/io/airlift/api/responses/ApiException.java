@@ -88,7 +88,7 @@ public final class ApiException
 
     private static WebApplicationException buildResponse(Object apiResponseInstance)
     {
-        ApiResponse apiResponse = Optional.of(apiResponseInstance.getClass().getAnnotation(ApiResponse.class))
+        ApiResponse apiResponse = Optional.ofNullable(apiResponseInstance.getClass().getAnnotation(ApiResponse.class))
                 .orElseThrow(() -> new IllegalArgumentException("Response class is not annotated with @%s".formatted(ApiResponse.class.getSimpleName())));
 
         Response httpResponse = Response.status(apiResponse.status().code()).entity(apiResponseInstance).build();

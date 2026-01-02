@@ -74,7 +74,7 @@ public class TestConfigurationInspector
 
         public Optional<Boolean> getHiddenValue()
         {
-            return Optional.ofNullable(booleanValue);
+            return Optional.of(booleanValue);
         }
     }
 }
