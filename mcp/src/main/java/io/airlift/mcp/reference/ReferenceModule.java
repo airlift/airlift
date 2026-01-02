@@ -72,7 +72,7 @@ public class ReferenceModule
                 .jsonSchemaValidator(jsonSchemaValidator)
                 .serverInfo(metadata.implementation().name(), metadata.implementation().version());
 
-        metadata.instructions().map(builder::instructions);
+        metadata.instructions().ifPresent(builder::instructions);
 
         return builder.build();
     }

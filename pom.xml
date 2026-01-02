@@ -510,8 +510,6 @@
                                     <!-- flags enums with List fields even if initialized with ImmutableList, and other false positives -->
                                     -Xep:ImmutableEnumChecker:OFF \
                                     -Xep:ImmutableSetForContains:ERROR \
-                                    <!-- TODO fix the code & enable ImpossibleNullComparison check (it's ERROR by default) -->
-                                    -Xep:ImpossibleNullComparison:WARN \
                                     <!-- TODO fix the code & enable InconsistentCapitalization check -->
                                     <!-- fields/variables should not differ only in case -->
                                     -Xep:InconsistentCapitalization:WARN \
@@ -538,11 +536,7 @@
                                     <!-- TODO fix the code and enable ObjectEqualsForPrimitives check -->
                                     -Xep:ObjectEqualsForPrimitives:WARN \
                                     -Xep:ObjectToString:ERROR \
-                                    <!-- TODO fix the code and enable OptionalMapUnusedValue check (it's ERROR by default) -->
-                                    -Xep:OptionalMapUnusedValue:WARN \
                                     -Xep:OptionalNotPresent:ERROR \
-                                    <!-- TODO fix the code and enable OptionalOfRedundantMethod check (it's ERROR by default) -->
-                                    -Xep:OptionalOfRedundantMethod:WARN \
                                     -Xep:OrphanedFormatString:ERROR \
                                     -Xep:Overrides:ERROR \
                                     <!-- TODO fix the code and enable PatternMatchingInstanceof -->
