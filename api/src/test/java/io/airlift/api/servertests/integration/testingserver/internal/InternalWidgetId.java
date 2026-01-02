@@ -42,7 +42,7 @@ public class InternalWidgetId
     @Override
     public boolean equals(Object o)
     {
-        return (this == o) || ((o instanceof InternalWidgetId internalWidgetId) && Objects.equals(id, internalWidgetId.id));
+        return o instanceof InternalWidgetId internalWidgetId && id == internalWidgetId.id;
     }
 
     @Override
