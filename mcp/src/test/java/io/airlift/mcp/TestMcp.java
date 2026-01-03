@@ -159,7 +159,7 @@ public class TestMcp
         response = httpClient.execute(request, createFullJsonResponseHandler(jsonCodecFactory.jsonCodec(new TypeToken<>() {})));
         assertThat(response.getStatusCode()).isEqualTo(400);
         assertThat(response.getResponseBody())
-                .contains("\"message\":\"Invalid message format\"");
+                .contains("\"message\":\"Cannot deserialize JSONRPCMessage");
     }
 
     @Test
