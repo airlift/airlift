@@ -39,5 +39,6 @@ public interface Constants
     String HEADER_PROTOCOL_VERSION = "MCP-Protocol-Version";
 
     String MCP_IDENTITY_ATTRIBUTE = Constants.class.getName() + ".identity";
-    String HTTP_RESPONSE_ATTRIBUTE = Constants.class.getName() + ".response";
+    String RPC_MESSAGE_ATTRIBUTE = Constants.class.getName() + ".message";
+    String MESSAGE_WRITER_ATTRIBUTE = Constants.class.getName() + ".messageWriter";
 }

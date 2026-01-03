@@ -62,7 +62,12 @@ public class McpException
 
     public static McpException exception(Throwable cause)
     {
-        JsonRpcErrorDetail detail = new JsonRpcErrorDetail(INVALID_REQUEST, Optional.ofNullable(cause.getMessage()).orElse("Internal error"), Optional.empty());
+        return exception(INVALID_REQUEST, cause);
+    }
+
+    public static McpException exception(JsonRpcErrorCode errorCode, Throwable cause)
+    {
+        JsonRpcErrorDetail detail = new JsonRpcErrorDetail(errorCode, Optional.ofNullable(cause.getMessage()).orElse("Internal error"), Optional.empty());
         return new McpException(cause, detail);
     }
 }

@@ -9,7 +9,6 @@ import io.airlift.mcp.McpResource;
 import io.airlift.mcp.handler.ResourceEntry;
 import io.airlift.mcp.handler.ResourceHandler;
 import io.airlift.mcp.model.Annotations;
-import io.airlift.mcp.model.JsonRpcErrorCode;
 import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.Role;
@@ -21,6 +20,7 @@ import java.util.OptionalDouble;
 import java.util.OptionalLong;
 
 import static io.airlift.mcp.McpException.exception;
+import static io.airlift.mcp.model.JsonRpcErrorCode.INTERNAL_ERROR;
 import static io.airlift.mcp.reflection.Predicates.isHttpRequestOrContext;
 import static io.airlift.mcp.reflection.Predicates.isIdentity;
 import static io.airlift.mcp.reflection.Predicates.isReadResourceRequest;
@@ -93,7 +93,7 @@ public class ResourceHandlerProvider
     static List<ResourceContents> mapResult(Method method, Object result, boolean resultIsSingleContent)
     {
         if (result == null) {
-            throw exception(JsonRpcErrorCode.INTERNAL_ERROR, "ResourceHandler %s returned null".formatted(method.getName()));
+            throw exception(INTERNAL_ERROR, "ResourceHandler %s returned null".formatted(method.getName()));
         }
 
         if (resultIsSingleContent) {

@@ -11,7 +11,6 @@ import io.airlift.mcp.handler.ToolEntry;
 import io.airlift.mcp.handler.ToolHandler;
 import io.airlift.mcp.model.CallToolResult;
 import io.airlift.mcp.model.Content;
-import io.airlift.mcp.model.JsonRpcErrorCode;
 import io.airlift.mcp.model.JsonSchemaBuilder;
 import io.airlift.mcp.model.StructuredContent;
 import io.airlift.mcp.model.StructuredContentResult;
@@ -22,6 +21,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static io.airlift.mcp.McpException.exception;
+import static io.airlift.mcp.model.JsonRpcErrorCode.INTERNAL_ERROR;
+import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
 import static io.airlift.mcp.model.JsonSchemaBuilder.isPrimitiveType;
 import static io.airlift.mcp.model.JsonSchemaBuilder.isSupportedType;
 import static io.airlift.mcp.reflection.Predicates.isCallToolRequest;
@@ -71,7 +72,7 @@ public class ToolHandlerProvider
             returnType = ReturnType.STRUCTURED;
         }
         else {
-            throw new IllegalArgumentException("Method %s has unsupported return type: %s".formatted(method.getName(), method.getGenericReturnType()));
+            throw exception(INVALID_PARAMS, "Method %s has unsupported return type: %s".formatted(method.getName(), method.getGenericReturnType()));
         }
     }
 
@@ -107,7 +108,7 @@ public class ToolHandlerProvider
                     .withCallToolRequest(toolRequest)
                     .invoke();
             if (result == null && returnType != ReturnType.VOID) {
-                throw exception(JsonRpcErrorCode.INTERNAL_ERROR, "Tool %s returned null".formatted(method.getName()));
+                throw exception(INTERNAL_ERROR, "Tool %s returned null".formatted(method.getName()));
             }
 
             return switch (returnType) {
