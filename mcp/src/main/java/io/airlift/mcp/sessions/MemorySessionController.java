@@ -17,10 +17,16 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static io.airlift.mcp.sessions.SessionConditionUtil.waitForCondition;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class MemorySessionController
         implements SessionController
@@ -37,6 +43,8 @@ public class MemorySessionController
     {
         private final Map<Class<?>, Map<String, Object>> values = new ConcurrentHashMap<>();
         private final Optional<Duration> ttl;
+        private final Lock lock = new ReentrantLock();
+        private final Condition condition = lock.newCondition();
         private volatile Instant lastUsage = Instant.now();
 
         private Session(Optional<Duration> ttl)
@@ -62,6 +70,8 @@ public class MemorySessionController
             lastUsage = Instant.now();
 
             typeMap(key.type()).put(key.name(), value);
+
+            signal();
         }
 
         private <T> void compute(SessionValueKey<T> key, UnaryOperator<Optional<T>> updater)
@@ -72,6 +82,8 @@ public class MemorySessionController
                 Optional<T> existing = Optional.ofNullable(existingValue).map(key.type()::cast);
                 return updater.apply(existing).orElse(null);
             });
+
+            signal();
         }
 
         private void remove(SessionValueKey<?> key)
@@ -79,12 +91,25 @@ public class MemorySessionController
             lastUsage = Instant.now();
 
             typeMap(key.type()).remove(key.name());
+
+            signal();
         }
 
         private boolean canBeExpired(Instant now)
         {
             return ttl.map(localTtl -> lastUsage.plus(localTtl).isBefore(now))
                     .orElse(false);
+        }
+
+        private void signal()
+        {
+            lock.lock();
+            try {
+                condition.signalAll();
+            }
+            finally {
+                lock.unlock();
+            }
         }
     }
 
@@ -179,6 +204,28 @@ public class MemorySessionController
                     return true;
                 })
                 .orElse(false);
+    }
+
+    @Override
+    public <T> Optional<Boolean> blockUntilCondition(SessionId sessionId, SessionValueKey<T> key, Duration timeout, Function<Optional<T>, Boolean> condition)
+            throws InterruptedException
+    {
+        boolean result = waitForCondition(this, sessionId, key, timeout, condition, maxWait -> {
+            Optional<Session> maybeSession = getSession(sessionId);
+            if (maybeSession.isEmpty()) {
+                return false;
+            }
+
+            Session session = maybeSession.get();
+            session.lock.lock();
+            try {
+                return session.condition.await(maxWait.toMillis(), MILLISECONDS);
+            }
+            finally {
+                session.lock.unlock();
+            }
+        });
+        return Optional.of(result);
     }
 
     @Override
