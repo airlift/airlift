@@ -7,7 +7,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public interface SessionController
 {
@@ -45,6 +48,28 @@ public interface SessionController
     void deleteSession(SessionId sessionId);
 
     /**
+     * <p>
+     *     Block until the given condition returns {@code true} for the value associated with the given key in the session,
+     *     or until the timeout expires.
+     * </p>
+     *
+     * <p>
+     *     IMPORTANT: this is optional behavior. If the implementation does not support waiting for session changes,
+     *     the method should simply sleep for the duration of the timeout and return (as the default does).
+     * </p>
+     *
+     * <p>
+     *     The condition receives an optional value for the key. If the value is {@code empty()}, the key is not present in the session,
+     *     has been deleted, etc.
+     * </p>
+     */
+    default <T> void blockUntilCondition(SessionId sessionId, SessionValueKey<T> key, Duration timeout, Function<Optional<T>, Boolean> condition)
+            throws InterruptedException
+    {
+        MILLISECONDS.sleep(timeout.getSeconds() * 1000);
+    }
+
+    /**
      * @return the value associated with the given key in the session, or {@link Optional#empty()}
      * if the key is not present in the session or if the session ID is invalid
      */
@@ -66,8 +91,8 @@ public interface SessionController
      * </p>
      *
      * <p>
-     *     {@code updater} receives an {@link Optional} containing the existing value (or {@link Optional#empty()} if no value is present)
-     *     and should return an {@link Optional} containing the new value to set (or {@link Optional#empty()} to remove the value).
+     * {@code updater} receives an {@link Optional} containing the existing value (or {@link Optional#empty()} if no value is present)
+     * and should return an {@link Optional} containing the new value to set (or {@link Optional#empty()} to remove the value).
      * </p>
      *
      * @return the computed value or {@code empty()} if that's the computed value or if the session ID is invalid
