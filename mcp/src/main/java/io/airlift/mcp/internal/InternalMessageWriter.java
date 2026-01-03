@@ -1,15 +1,17 @@
 package io.airlift.mcp.internal;
 
+import io.airlift.mcp.McpException;
 import io.airlift.mcp.handler.MessageWriter;
+import io.airlift.mcp.model.JsonRpcErrorDetail;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.UncheckedIOException;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static io.airlift.mcp.model.JsonRpcErrorCode.CONNECTION_CLOSED;
 import static java.util.Objects.requireNonNull;
 
 class InternalMessageWriter
@@ -37,7 +39,7 @@ class InternalMessageWriter
             }
         }
         catch (IOException e) {
-            throw new UncheckedIOException(e);
+            throw new McpException(e, new JsonRpcErrorDetail(CONNECTION_CLOSED, "Connection appears to be closed while writing message"));
         }
     }
 
@@ -60,7 +62,7 @@ class InternalMessageWriter
             writer.write("data: " + encode(data) + "\n\n");
         }
         catch (IOException e) {
-            throw new UncheckedIOException(e);
+            throw new McpException(e, new JsonRpcErrorDetail(CONNECTION_CLOSED, "Connection appears to be closed while writing message"));
         }
     }
 
@@ -71,8 +73,13 @@ class InternalMessageWriter
             response.getWriter().flush();
         }
         catch (IOException e) {
-            throw new UncheckedIOException(e);
+            throw new McpException(e, new JsonRpcErrorDetail(CONNECTION_CLOSED, "Connection appears to be closed while writing message"));
         }
+    }
+
+    boolean hasBeenUpgraded()
+    {
+        return hasBeenUpgraded.get();
     }
 
     private static String encode(String str)

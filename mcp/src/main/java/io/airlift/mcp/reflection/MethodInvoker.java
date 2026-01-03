@@ -8,13 +8,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
+import io.airlift.mcp.McpClientException;
 import io.airlift.mcp.McpException;
 import io.airlift.mcp.McpRequestContext;
 import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.CompleteRequest.CompleteArgument;
 import io.airlift.mcp.model.CompleteRequest.CompleteContext;
 import io.airlift.mcp.model.GetPromptRequest;
-import io.airlift.mcp.model.JsonRpcErrorCode;
+import io.airlift.mcp.model.JsonRpcErrorDetail;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceTemplate;
@@ -45,7 +46,7 @@ import java.util.function.Supplier;
 
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.model.Constants.MCP_IDENTITY_ATTRIBUTE;
-import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
+import static io.airlift.mcp.model.JsonRpcErrorCode.INTERNAL_ERROR;
 import static java.util.Objects.requireNonNull;
 
 public class MethodInvoker
@@ -69,7 +70,7 @@ public class MethodInvoker
             methodHandle = Suppliers.memoize(() -> builder.bindTo(instance.get()));
         }
         catch (Exception e) {
-            throw new RuntimeException(e);
+            throw exception(e);
         }
     }
 
@@ -192,16 +193,16 @@ public class MethodInvoker
                 catch (Throwable e) {
                     Throwable rootCause = Throwables.getRootCause(e);
                     throw switch (rootCause) {
-                        case McpException mcpException -> mcpException;
-                        case RuntimeException runtimeException -> runtimeException;
+                        case McpException mcpException -> new McpClientException(mcpException);
+                        case RuntimeException runtimeException -> new McpClientException(exception(runtimeException));
                         case InvocationTargetException invocationTargetException -> {
                             Throwable targetException = invocationTargetException.getTargetException();
                             if (targetException instanceof McpException mcpException) {
                                 yield mcpException;
                             }
-                            yield new RuntimeException(targetException);
+                            yield new McpClientException(exception(targetException));
                         }
-                        default -> new RuntimeException("Failed to invoke method: " + methodName, rootCause);
+                        default -> new McpException(rootCause, new JsonRpcErrorDetail(INTERNAL_ERROR, "Failed to invoke method: " + methodName));
                     };
                 }
             }
@@ -213,7 +214,7 @@ public class MethodInvoker
         Object value = arguments.get(objectParameter.name());
         if (value == null) {
             if (objectParameter.required()) {
-                throw exception(INVALID_REQUEST, "Missing required parameter: " + objectParameter.name());
+                throw new McpClientException(exception("Missing required parameter: " + objectParameter.name()));
             }
             return Optional.empty();
         }
@@ -231,7 +232,7 @@ public class MethodInvoker
     {
         Object identity = request.getAttribute(MCP_IDENTITY_ATTRIBUTE);
         if (identity == null) {
-            throw McpException.exception(JsonRpcErrorCode.INTERNAL_ERROR, "Error in request processing. MCP identity not found.");
+            throw exception(INTERNAL_ERROR, "Error in request processing. MCP identity not found.");
         }
         return identity;
     }

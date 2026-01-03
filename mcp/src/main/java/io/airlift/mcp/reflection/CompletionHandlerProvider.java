@@ -16,7 +16,6 @@ import io.airlift.mcp.model.CompleteReference.ResourceReference;
 import io.airlift.mcp.model.CompleteRequest.CompleteContext;
 import io.airlift.mcp.model.CompleteResult;
 import io.airlift.mcp.model.CompleteResult.CompleteCompletion;
-import io.airlift.mcp.model.JsonRpcErrorCode;
 import io.airlift.mcp.model.OptionalBoolean;
 
 import java.lang.reflect.Method;
@@ -25,6 +24,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 import static io.airlift.mcp.McpException.exception;
+import static io.airlift.mcp.model.JsonRpcErrorCode.INTERNAL_ERROR;
 import static io.airlift.mcp.reflection.Predicates.isCompleteArgument;
 import static io.airlift.mcp.reflection.Predicates.isCompleteContext;
 import static io.airlift.mcp.reflection.Predicates.isHttpRequestOrContext;
@@ -97,7 +97,7 @@ public class CompletionHandlerProvider
                     .invoke();
 
             if (result == null) {
-                throw exception(JsonRpcErrorCode.INTERNAL_ERROR, "CompletionHandler %s returned null".formatted(method.getName()));
+                throw exception(INTERNAL_ERROR, "CompletionHandler %s returned null".formatted(method.getName()));
             }
 
             if (result instanceof CompleteCompletion completeCompletion) {

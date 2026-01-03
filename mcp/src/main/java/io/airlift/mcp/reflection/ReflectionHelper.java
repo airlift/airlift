@@ -39,6 +39,8 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static io.airlift.mcp.McpException.exception;
+import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
 import static io.airlift.mcp.reflection.ReflectionHelper.parseParameters;
 
 public interface ReflectionHelper
@@ -53,12 +55,12 @@ public interface ReflectionHelper
 
         methodParameters.forEach(methodParameter -> {
             if (!parameterPredicateChain.test(methodParameter)) {
-                throw new IllegalArgumentException("Parameter is invalid for method %s: %s.".formatted(method, methodDebug.apply(methodParameter)));
+                throw exception(INVALID_PARAMS, "Parameter is invalid for method %s: %s.".formatted(method, methodDebug.apply(methodParameter)));
             }
         });
 
         if (!methodPredicateChain.test(method)) {
-            throw new IllegalArgumentException("Return type is invalid for method: %s".formatted(method));
+            throw exception(INVALID_PARAMS, "Return type is invalid for method: %s".formatted(method));
         }
     }
 
@@ -185,6 +187,6 @@ public interface ReflectionHelper
             }
         }
 
-        throw new IllegalArgumentException("Type does not have a single type-argument that is a class: " + type);
+        throw exception(INVALID_PARAMS, "Type does not have a single type-argument that is a class: " + type);
     }
 }
