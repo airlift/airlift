@@ -17,10 +17,13 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static io.airlift.mcp.sessions.SessionConditionUtil.waitForCondition;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class MemorySessionController
         implements SessionController
@@ -37,6 +40,7 @@ public class MemorySessionController
     {
         private final Map<Class<?>, Map<String, Object>> values = new ConcurrentHashMap<>();
         private final Optional<Duration> ttl;
+        private final Signal signal = new Signal();
         private volatile Instant lastUsage = Instant.now();
 
         private Session(Optional<Duration> ttl)
@@ -62,6 +66,8 @@ public class MemorySessionController
             lastUsage = Instant.now();
 
             typeMap(key.type()).put(key.name(), value);
+
+            signal.signalAll();
         }
 
         private <T> Optional<T> compute(SessionValueKey<T> key, UnaryOperator<Optional<T>> updater)
@@ -73,6 +79,8 @@ public class MemorySessionController
                 return updater.apply(existing).orElse(null);
             });
 
+            signal.signalAll();
+
             return Optional.ofNullable(computed).map(key.type()::cast);
         }
 
@@ -81,6 +89,8 @@ public class MemorySessionController
             lastUsage = Instant.now();
 
             typeMap(key.type()).remove(key.name());
+
+            signal.signalAll();
         }
 
         private boolean canBeExpired(Instant now)
@@ -177,6 +187,22 @@ public class MemorySessionController
                     return true;
                 })
                 .orElse(false);
+    }
+
+    @Override
+    public <T> void blockUntilCondition(SessionId sessionId, SessionValueKey<T> key, Duration timeout, Function<Optional<T>, Boolean> condition)
+            throws InterruptedException
+    {
+        waitForCondition(this, sessionId, key, timeout, condition, maxWait -> {
+            Optional<Session> maybeSession = getSession(sessionId);
+            if (maybeSession.isEmpty()) {
+                MILLISECONDS.sleep(maxWait.toMillis());
+                return;
+            }
+
+            Session session = maybeSession.get();
+            session.signal.waitForSignal(maxWait.toMillis(), MILLISECONDS);
+        });
     }
 
     @Override
