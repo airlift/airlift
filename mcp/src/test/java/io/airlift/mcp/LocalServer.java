@@ -43,6 +43,7 @@ public class LocalServer
                 .withAllInClass(DebugApp.class)
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.toInstance((_) -> authenticated(new TestingIdentity("Mr. Tester"))))
                 .withSessions(binding -> binding.to(MemorySessionController.class).in(SINGLETON))
+                .withTaskContextMapper(binding -> binding.to(TestingTaskContextMapper.class).in(SINGLETON))
                 .addIcon("google", binding -> binding.toInstance(new Icon("https://www.gstatic.com/images/branding/searchlogo/ico/favicon.ico")))
                 .withServerIcons(ImmutableSet.of("google"))
                 .build();

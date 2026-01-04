@@ -1,14 +1,13 @@
-package io.airlift.mcp.sessions;
+package io.airlift.mcp.tasks;
 
 import com.fasterxml.jackson.annotation.JsonValue;
-import io.airlift.mcp.tasks.TaskContextId;
 
 import static java.util.Objects.requireNonNull;
 
-public record SessionId(@JsonValue String id)
+record TaskContextIdImpl(@JsonValue String id)
         implements TaskContextId
 {
-    public SessionId
+    TaskContextIdImpl
     {
         requireNonNull(id, "id is null");
     }

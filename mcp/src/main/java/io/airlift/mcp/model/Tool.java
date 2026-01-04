@@ -89,6 +89,11 @@ public record Tool(
         }
     }
 
+    public Tool withAdjustedExecution()
+    {
+        return execution.map(thisExecution -> ((thisExecution.taskSupport == ToolExecution.UNDEFINED) || thisExecution.taskSupport == ToolExecution.FORBIDDEN) ? withoutExecution() : this).orElse(this);
+    }
+
     public record ToolAnnotations(
             Optional<String> title,
             Optional<Boolean> readOnlyHint,

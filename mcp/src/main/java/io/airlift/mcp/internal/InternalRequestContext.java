@@ -2,6 +2,8 @@ package io.airlift.mcp.internal;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Stopwatch;
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.mcp.McpRequestContext;
@@ -21,6 +23,9 @@ import io.airlift.mcp.sessions.BlockingResult.Fulfilled;
 import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.sessions.SessionId;
 import io.airlift.mcp.sessions.SessionValueKey;
+import io.airlift.mcp.tasks.TaskContextId;
+import io.airlift.mcp.tasks.TaskController;
+import io.airlift.mcp.tasks.Tasks;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.IOException;
@@ -38,6 +43,8 @@ import static io.airlift.mcp.model.Constants.METHOD_PING;
 import static io.airlift.mcp.model.Constants.METHOD_ROOTS_LIST;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_MESSAGE;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_PROGRESS;
+import static io.airlift.mcp.model.Constants.RPC_REQUEST_ID_ATTRIBUTE;
+import static io.airlift.mcp.model.Constants.TASK_CONTEXT_ID_ATTRIBUTE;
 import static io.airlift.mcp.model.JsonRpcRequest.buildNotification;
 import static io.airlift.mcp.model.JsonRpcRequest.buildRequest;
 import static io.airlift.mcp.model.Protocol.LATEST_PROTOCOL;
@@ -58,14 +65,28 @@ class InternalRequestContext
     private final HttpServletRequest request;
     private final MessageWriter messageWriter;
     private final Optional<Object> progressToken;
+    private final Supplier<Tasks> tasksSupplier;
 
-    InternalRequestContext(ObjectMapper objectMapper, Optional<SessionController> sessionController, HttpServletRequest request, MessageWriter messageWriter, Optional<Object> progressToken)
+    InternalRequestContext(ObjectMapper objectMapper,
+            Optional<SessionController> sessionController,
+            HttpServletRequest request,
+            MessageWriter messageWriter,
+            Optional<Object> progressToken,
+            Optional<TaskController> taskController)
     {
         this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
         this.sessionController = requireNonNull(sessionController, "sessionController is null");
         this.request = requireNonNull(request, "request is null");
         this.messageWriter = requireNonNull(messageWriter, "messageWriter is null");
         this.progressToken = requireNonNull(progressToken, "progressToken is null");
+
+        tasksSupplier = Suppliers.memoize(() -> {
+            TaskController localTaskController = taskController.orElseThrow(() -> new IllegalStateException("Tasks not enabled"));
+            TaskContextId taskContextId = (TaskContextId) Optional.ofNullable(request.getAttribute(TASK_CONTEXT_ID_ATTRIBUTE)).orElseThrow(() -> exception("task context id not set in request"));
+            Object requestId = Optional.ofNullable(request.getAttribute(RPC_REQUEST_ID_ATTRIBUTE)).orElseThrow(() -> exception("request id not set in request"));
+
+            return localTaskController.tasksForRequest(taskContextId, requestId, progressToken);
+        });
     }
 
     @Override
@@ -204,9 +225,20 @@ class InternalRequestContext
         }
     }
 
+    @Override
+    public Tasks tasks()
+    {
+        return tasksSupplier.get();
+    }
+
+    static SessionId requireSessionId(Optional<SessionId> maybeSessionId)
+    {
+        return maybeSessionId.orElseThrow(() -> exception("Missing %s header in request".formatted(MCP_SESSION_ID)));
+    }
+
     static SessionId requireSessionId(HttpServletRequest request)
     {
-        return optionalSessionId(request).orElseThrow(() -> exception("Missing %s header in request".formatted(MCP_SESSION_ID)));
+        return requireSessionId(optionalSessionId(request));
     }
 
     static Optional<SessionId> optionalSessionId(HttpServletRequest request)

@@ -8,7 +8,6 @@ import java.lang.annotation.Target;
 import java.util.function.Consumer;
 
 import static io.airlift.mcp.model.OptionalBoolean.UNDEFINED;
-import static io.airlift.mcp.model.ToolExecution.FORBIDDEN;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
@@ -28,7 +27,7 @@ public @interface McpTool
      */
     String[] icons() default {};
 
-    ToolExecution execution() default FORBIDDEN;
+    ToolExecution execution() default ToolExecution.UNDEFINED;
 
     OptionalBoolean readOnlyHint() default UNDEFINED;
 
