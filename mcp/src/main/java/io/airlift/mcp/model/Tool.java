@@ -66,6 +66,11 @@ public record Tool(
         return new Tool(name, description, title, inputSchema, outputSchema, annotations, icons, Optional.empty());
     }
 
+    public Tool withAdjustedExecution()
+    {
+        return execution.map(localExecution -> (localExecution == ToolExecution.FORBIDDEN) ? withoutExecution() : this).orElse(this);
+    }
+
     public record ToolAnnotations(
             Optional<String> title,
             Optional<Boolean> readOnlyHint,

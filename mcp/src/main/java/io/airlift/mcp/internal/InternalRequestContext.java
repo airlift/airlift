@@ -204,9 +204,14 @@ class InternalRequestContext
         }
     }
 
+    static SessionId requireSessionId(Optional<SessionId> maybeSessionId)
+    {
+        return maybeSessionId.orElseThrow(() -> exception("Missing %s header in request".formatted(MCP_SESSION_ID)));
+    }
+
     static SessionId requireSessionId(HttpServletRequest request)
     {
-        return optionalSessionId(request).orElseThrow(() -> exception("Missing %s header in request".formatted(MCP_SESSION_ID)));
+        return requireSessionId(optionalSessionId(request));
     }
 
     static Optional<SessionId> optionalSessionId(HttpServletRequest request)

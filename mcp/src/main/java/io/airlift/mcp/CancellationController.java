@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.common.util.concurrent.MoreExecutors.shutdownAndAwaitTermination;
 import static io.airlift.concurrent.Threads.virtualThreadsNamed;
 import static io.airlift.mcp.McpException.exception;
@@ -33,9 +34,18 @@ public class CancellationController
 
     private final McpCancellationHandler cancellationHandler;
     private final Optional<SessionController> sessionController;
-    private final Set<Object> activeRequestIds = Sets.newConcurrentHashSet();
+    private final Set<ActiveCancellation> activeSet = Sets.newConcurrentHashSet();
     private final Duration interval;
     private final ExecutorService executorService;
+
+    private record ActiveCancellation(Optional<Object> requestId, Optional<String> taskId)
+    {
+        private ActiveCancellation
+        {
+            requireNonNull(requestId, "requestId is null");
+            requireNonNull(taskId, "taskId is null");
+        }
+    }
 
     @Inject
     public CancellationController(McpCancellationHandler cancellationHandler, Optional<SessionController> sessionController, McpConfig mcpConfig)
@@ -51,7 +61,9 @@ public class CancellationController
     @VisibleForTesting
     public Collection<Object> activeRequestIds()
     {
-        return activeRequestIds;
+        return activeSet.stream()
+                .flatMap(activeCancellation -> activeCancellation.requestId.stream())
+                .collect(toImmutableSet());
     }
 
     @PreDestroy
@@ -75,7 +87,7 @@ public class CancellationController
         private final SessionId sessionId;
         private final SessionValueKey<T> key;
 
-        private Object requestId;
+        private ActiveCancellation activeCancellation;
         private Function<Optional<T>, Boolean> condition;
         private BiConsumer<SessionId, SessionValueKey<T>> postCancellationAction = (_, _) -> {};
         private Function<Optional<T>, Optional<String>> reasonMapper = _ -> Optional.empty();
@@ -89,7 +101,13 @@ public class CancellationController
 
         public Builder<T> withRequestId(Object requestId)
         {
-            this.requestId = requireNonNull(requestId, "requestId is null");
+            activeCancellation = new ActiveCancellation(Optional.of(requestId), Optional.empty());
+            return this;
+        }
+
+        public Builder<T> withTaskId(String taskId)
+        {
+            activeCancellation = new ActiveCancellation(Optional.empty(), Optional.of(taskId));
             return this;
         }
 
@@ -111,19 +129,19 @@ public class CancellationController
             return this;
         }
 
-        public Object executeCancellable(Supplier<Object> supplier)
+        public <R> R executeCancellable(Supplier<R> supplier)
         {
-            requireNonNull(requestId, "requestId is required");
+            requireNonNull(activeCancellation, "requestId or taskId are required");
             requireNonNull(condition, "condition is required");
 
             return CancellationController.this.executeCancellable(this, supplier);
         }
     }
 
-    private <T> Object executeCancellable(Builder<T> builder, Supplier<Object> supplier)
+    private <T, R> R executeCancellable(Builder<T> builder, Supplier<R> supplier)
     {
-        if (!activeRequestIds.add(builder.requestId)) {
-            throw exception("Request is already being processed: " + builder.requestId);
+        if (!activeSet.add(builder.activeCancellation)) {
+            throw exception("Request or task is already being processed: " + builder.activeCancellation);
         }
 
         Runnable cancellationThreadCloser = () -> {};
@@ -132,7 +150,7 @@ public class CancellationController
             return supplier.get();
         }
         finally {
-            activeRequestIds.remove(builder.requestId);
+            activeSet.remove(builder.activeCancellation);
             cancellationThreadCloser.run();
         }
     }
@@ -152,9 +170,10 @@ public class CancellationController
                         isClosed.set(true);
 
                         try {
-                            if (activeRequestIds.contains(builder.requestId)) {
+                            if (activeSet.contains(builder.activeCancellation)) {
                                 Optional<String> maybeReason = builder.reasonMapper.apply(value);
-                                cancellationHandler.cancelRequest(activeThread, builder.requestId, maybeReason);
+                                Object id = builder.activeCancellation.requestId.orElseGet(() -> builder.activeCancellation.taskId().orElseThrow());
+                                cancellationHandler.cancel(activeThread, id, maybeReason);
                             }
                         }
                         finally {
