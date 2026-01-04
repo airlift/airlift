@@ -5,6 +5,7 @@ import com.google.common.io.Closer;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
+import io.modelcontextprotocol.experimental.tasks.InMemoryTaskStore;
 import io.modelcontextprotocol.spec.McpClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
 
@@ -66,6 +67,7 @@ public record TestingClient(String name, McpSyncClient mcpClient, BlockingQueue<
         McpSyncClient client = McpClient.sync(clientTransport)
                 .requestTimeout(Duration.ofMinutes(1))
                 .capabilities(McpSchema.ClientCapabilities.builder().roots(true).sampling().elicitation().build())
+                .sampling(_ -> new McpSchema.CreateMessageResult(McpSchema.Role.USER, new McpSchema.TextContent("test"), "test", null))
                 .elicitation(_ -> new McpSchema.ElicitResult(ACCEPT, ImmutableMap.of("firstName", name, "lastName", name + "sky")))
                 .loggingConsumer(loggingNotification -> logs.add(loggingNotification.data()))
                 .progressConsumer(progressNotification -> progress.add(progressNotification.message()))
@@ -73,6 +75,7 @@ public record TestingClient(String name, McpSyncClient mcpClient, BlockingQueue<
                 .promptsChangeConsumer(_ -> changes.add("prompts"))
                 .resourcesChangeConsumer(resources -> resources.forEach(resource -> changes.add(resource.uri())))
                 .resourcesUpdateConsumer(resources -> resources.forEach(resource -> changes.add(resource.uri())))
+                .taskStore(new InMemoryTaskStore<>())
                 .build();
         client.initialize();
 

@@ -4,6 +4,7 @@ import io.airlift.mcp.model.InitializeRequest.ClientCapabilities;
 import io.airlift.mcp.model.JsonRpcResponse;
 import io.airlift.mcp.model.LoggingLevel;
 import io.airlift.mcp.model.Root;
+import io.airlift.mcp.tasks.Tasks;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.time.Duration;
@@ -43,4 +44,7 @@ public interface McpRequestContext
     // only implemented when sessions are configured
     List<Root> requestRoots(Duration timeout, Duration pollInterval)
             throws InterruptedException, TimeoutException;
+
+    // only implemented when sessions and tasks are configured
+    Tasks tasks();
 }

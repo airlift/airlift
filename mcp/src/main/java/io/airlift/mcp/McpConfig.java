@@ -2,9 +2,12 @@ package io.airlift.mcp;
 
 import io.airlift.configuration.Config;
 import io.airlift.units.Duration;
+import io.airlift.units.MaxDuration;
 import io.airlift.units.MinDuration;
 import jakarta.validation.constraints.Min;
 
+import static java.util.concurrent.TimeUnit.DAYS;
+import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -18,6 +21,8 @@ public class McpConfig
     private Duration cancellationCheckInterval = new Duration(1, SECONDS);
     private int maxResumableMessages = 100;
     private int maxSessionCache = 10000;
+    private Duration defaultTaskTtl = new Duration(1, HOURS);
+    private Duration abandonedTaskThreshold = new Duration(7, DAYS);
 
     @Min(1)
     public int getDefaultPageSize()
@@ -119,6 +124,33 @@ public class McpConfig
     public McpConfig setMaxSessionCache(int maxSessionCache)
     {
         this.maxSessionCache = maxSessionCache;
+        return this;
+    }
+
+    @MinDuration("1ms")
+    @MaxDuration(Integer.MAX_VALUE + "ms")
+    public Duration getDefaultTaskTtl()
+    {
+        return defaultTaskTtl;
+    }
+
+    @Config("mcp.task.default-ttl")
+    public McpConfig setDefaultTaskTtl(Duration defaultTaskTtl)
+    {
+        this.defaultTaskTtl = defaultTaskTtl;
+        return this;
+    }
+
+    @MinDuration("1ms")
+    public Duration getAbandonedTaskThreshold()
+    {
+        return abandonedTaskThreshold;
+    }
+
+    @Config("mcp.task.abandoned-threshold")
+    public McpConfig setAbandonedTaskThreshold(Duration abandonedTaskThreshold)
+    {
+        this.abandonedTaskThreshold = abandonedTaskThreshold;
         return this;
     }
 }
