@@ -45,6 +45,10 @@ public interface Constants
     String HEADER_LAST_EVENT_ID = "Last-Event-ID";
 
     String MCP_IDENTITY_ATTRIBUTE = Constants.class.getName() + ".identity";
+    String TASK_CONTEXT_ID_ATTRIBUTE = Constants.class.getName() + ".taskContextId";
     String RPC_MESSAGE_ATTRIBUTE = Constants.class.getName() + ".message";
     String MESSAGE_WRITER_ATTRIBUTE = Constants.class.getName() + ".messageWriter";
+    String RPC_REQUEST_ID_ATTRIBUTE = Constants.class.getName() + ".requestId";
+
+    String PROGRESS_TOKEN = "progressToken";
 }

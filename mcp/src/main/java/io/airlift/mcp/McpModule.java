@@ -42,6 +42,9 @@ import io.airlift.mcp.reflection.ToolHandlerProvider;
 import io.airlift.mcp.sessions.CachingSessionController;
 import io.airlift.mcp.sessions.ForSessionCaching;
 import io.airlift.mcp.sessions.SessionController;
+import io.airlift.mcp.tasks.TaskContextMapper;
+import io.airlift.mcp.tasks.TaskController;
+import io.airlift.mcp.tasks.TaskControllerModule;
 import io.airlift.mcp.versions.VersionsController;
 
 import java.util.Collection;
@@ -82,6 +85,7 @@ public class McpModule
     private final Consumer<LinkedBindingBuilder<McpCancellationHandler>> cancellationHandlerBinding;
     private final Map<String, Consumer<LinkedBindingBuilder<Icon>>> icons;
     private final Set<String> serverIcons;
+    private final Optional<Consumer<LinkedBindingBuilder<TaskContextMapper>>> taskContextMapperBinding;
 
     public static Builder builder()
     {
@@ -102,7 +106,8 @@ public class McpModule
             Optional<Consumer<LinkedBindingBuilder<McpCapabilityFilter>>> capabilityFilterBinding,
             Consumer<LinkedBindingBuilder<McpCancellationHandler>> cancellationHandlerBinding,
             Map<String, Consumer<LinkedBindingBuilder<Icon>>> icons,
-            Set<String> serverIcons)
+            Set<String> serverIcons,
+            Optional<Consumer<LinkedBindingBuilder<TaskContextMapper>>> taskContextMapperBinding)
     {
         this.mode = requireNonNull(mode, "mode is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
@@ -118,6 +123,7 @@ public class McpModule
         this.cancellationHandlerBinding = requireNonNull(cancellationHandlerBinding, "cancellationHandlerBinding is null");
         this.icons = ImmutableMap.copyOf(icons);
         this.serverIcons = ImmutableSet.copyOf(serverIcons);
+        this.taskContextMapperBinding = requireNonNull(taskContextMapperBinding, "taskContextMapperBinding is null");
     }
 
     public enum Mode
@@ -162,6 +168,7 @@ public class McpModule
         private Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding = Optional.empty();
         private Optional<Consumer<LinkedBindingBuilder<McpCapabilityFilter>>> capabilityFilterBinding = Optional.empty();
         private Consumer<LinkedBindingBuilder<McpCancellationHandler>> cancellationHandlerBinding = binder -> binder.toInstance(McpCancellationHandler.DEFAULT);
+        private Optional<Consumer<LinkedBindingBuilder<TaskContextMapper>>> taskContextMapperBinding = Optional.empty();
 
         private Builder()
         {
@@ -230,6 +237,14 @@ public class McpModule
             return this;
         }
 
+        public Builder withTaskContextMapper(Consumer<LinkedBindingBuilder<TaskContextMapper>> taskContextMapperBinding)
+        {
+            checkArgument(this.taskContextMapperBinding.isEmpty(), "Task context mapper binding is already set");
+
+            this.taskContextMapperBinding = Optional.of(taskContextMapperBinding);
+            return this;
+        }
+
         public Module build()
         {
             Set<Class<?>> classesSet = classes.build();
@@ -285,7 +300,8 @@ public class McpModule
                     capabilityFilterBinding,
                     cancellationHandlerBinding,
                     icons.build(),
-                    serverIcons.build());
+                    serverIcons.build(),
+                    taskContextMapperBinding);
         }
     }
 
@@ -311,10 +327,22 @@ public class McpModule
         bindCapabilityFilter(binder);
         bindCancellation(binder);
         bindIcons(binder);
+        bindTasks(binder);
 
         if (mode == STANDARD) {
             binder.install(new InternalMcpModule());
         }
+    }
+
+    private void bindTasks(Binder binder)
+    {
+        taskContextMapperBinding.ifPresentOrElse(binding -> {
+            checkState(sessionControllerBinding.isPresent(), "SessionController must be bound to use TaskController");
+            binder.install(new TaskControllerModule(binding));
+        }, () -> {
+            newOptionalBinder(binder, TaskController.class);
+            newOptionalBinder(binder, TaskContextMapper.class);
+        });
     }
 
     private void bindIdentityMapper(Binder binder)
