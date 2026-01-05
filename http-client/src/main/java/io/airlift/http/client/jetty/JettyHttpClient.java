@@ -104,6 +104,7 @@ import java.security.KeyStore;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Queue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.RejectedExecutionException;
@@ -697,7 +698,7 @@ public class JettyHttpClient
             }
         };
 
-        return switch (internalExecute(request, exceptionHandler, span)) {
+        return switch (internalExecute(request, OptionalLong.empty(), exceptionHandler, span)) {
             case InternalExceptionResponse<StreamingResponse> response -> response.exceptionResponse;
             case InternalStandardResponse<StreamingResponse> response -> new StreamingResponse()
             {
@@ -748,7 +749,7 @@ public class JettyHttpClient
     public <T, E extends Exception> T doExecute(Request request, ResponseHandler<T, E> responseHandler, Span span)
             throws E
     {
-        return switch (internalExecute(request, responseHandler::handleException, span)) {
+        return switch (internalExecute(request, OptionalLong.of(getMaxResponseContentLength(request).toBytes()), responseHandler::handleException, span)) {
             case InternalExceptionResponse<T> response -> response.exceptionResponse;
             case InternalStandardResponse<T> response -> {
                 try {
@@ -790,7 +791,7 @@ public class JettyHttpClient
         }
     }
 
-    private <T, E extends Exception> InternalResponse<T> internalExecute(Request request, ExceptionHandler<T, E> exceptionHandler, Span span)
+    private <T, E extends Exception> InternalResponse<T> internalExecute(Request request, OptionalLong maxResponseContentLength, ExceptionHandler<T, E> exceptionHandler, Span span)
             throws E
     {
         long requestStart = System.nanoTime();
@@ -848,7 +849,11 @@ public class JettyHttpClient
         long responseStart = System.nanoTime();
 
         try {
-            JettyResponse jettyResponse = new JettyResponse(response, listener.getInputStream());
+            InputStream inputStream = listener.getInputStream();
+            if (maxResponseContentLength.isPresent()) {
+                inputStream = new ThrowingLimitingInputStream(inputStream, maxResponseContentLength.orElseThrow());
+            }
+            JettyResponse jettyResponse = new JettyResponse(response, inputStream);
             Runnable completionHandler = buildCompletionHandler(request, listener, span, jettyResponse, context.sizeListener(), requestStart, responseStart);
             return new InternalStandardResponse<>(jettyResponse, completionHandler);
         }
@@ -916,16 +921,7 @@ public class JettyHttpClient
 
         RequestContext jettyRequest = buildRequestContext(request);
 
-        DataSize maxResponseContentLength = request.getMaxResponseContentLength()
-                .map(value -> {
-                    checkArgument(
-                            value.compareTo(this.maxResponseContentLength) <= 0,
-                            "Request's maxResponseContentLength (%s) must be less than or equal to maxResponseContentLength (%s)",
-                            value, this.maxResponseContentLength);
-                    return value;
-                })
-                .orElse(this.maxResponseContentLength);
-
+        DataSize maxResponseContentLength = getMaxResponseContentLength(request);
         JettyResponseFuture<T, E> future = new JettyResponseFuture<>(request, jettyRequest.request(), jettyRequest.sizeListener()::getBytes, responseHandler, span, stats, recordRequestComplete);
         JettyResponseListener<T, E> listener = new JettyResponseListener<>(jettyRequest.request(), future, Ints.saturatedCast(maxResponseContentLength.toBytes()));
 
@@ -1053,6 +1049,19 @@ public class JettyHttpClient
         catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    private DataSize getMaxResponseContentLength(Request request)
+    {
+        return request.getMaxResponseContentLength()
+                .map(value -> {
+                    checkArgument(
+                            value.compareTo(this.maxResponseContentLength) <= 0,
+                            "Request's maxResponseContentLength (%s) must be less than or equal to maxResponseContentLength (%s)",
+                            value, this.maxResponseContentLength);
+                    return value;
+                })
+                .orElse(this.maxResponseContentLength);
     }
 
     public List<HttpRequestFilter> getRequestFilters()
