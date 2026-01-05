@@ -96,6 +96,9 @@ public class TestHttpClientConfig
                 .setTcpKeepAliveIdleTime(null)
                 .setStrictEventOrdering(false)
                 .setUseVirtualThreads(false)
+                .setDeflateCompressionEnabled(false)
+                .setBrotliCompressionEnabled(false)
+                .setZstdCompressionEnabled(false)
                 .setTrackMemoryAllocations(false));
     }
 
@@ -152,6 +155,9 @@ public class TestHttpClientConfig
                 .put("http-client.tcp-keep-alive-idle-time", "1m")
                 .put("http-client.strict-event-ordering", "true")
                 .put("http-client.use-virtual-threads", "true")
+                .put("http-client.deflate-compression.enabled", "true")
+                .put("http-client.brotli-compression.enabled", "true")
+                .put("http-client.zstd-compression.enabled", "true")
                 .put("http-client.track-memory-allocations", "true")
                 .build();
 
@@ -205,6 +211,9 @@ public class TestHttpClientConfig
                 .setTcpKeepAliveIdleTime(new Duration(1, MINUTES))
                 .setStrictEventOrdering(true)
                 .setUseVirtualThreads(true)
+                .setDeflateCompressionEnabled(true)
+                .setBrotliCompressionEnabled(true)
+                .setZstdCompressionEnabled(true)
                 .setTrackMemoryAllocations(true);
 
         ConfigAssertions.assertFullMapping(properties, expected);
