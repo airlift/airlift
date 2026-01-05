@@ -80,6 +80,7 @@ public class TestFileExistsValidator
 
         @FileExists
         @NotNull
+        @SuppressWarnings("unused")
         public Object getTestedValue()
         {
             return testedValue;
@@ -89,6 +90,7 @@ public class TestFileExistsValidator
     private static final class InvalidBean
     {
         @FileExists(message = "Message should not be allowed to be set")
+        @SuppressWarnings("unused")
         public Path getValue()
         {
             return Paths.get("./pom.xml");
@@ -104,6 +106,7 @@ public class TestFileExistsValidator
             this.value = value;
         }
 
+        @SuppressWarnings("unused")
         public Optional<@FileExists Path> getValue()
         {
             return value;

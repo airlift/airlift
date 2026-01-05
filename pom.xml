@@ -561,7 +561,7 @@
                                     -Xep:UnnecessaryQualifier:OFF \
                                     <!-- TODO fix the code and enable UnnecessaryStringBuilder check -->
                                     -Xep:UnnecessaryStringBuilder:WARN \
-                                    -Xep:UnusedMethod:OFF \
+                                    -Xep:UnusedMethod:ERROR \
                                     -Xep:UnusedVariable:ERROR \
                                     -Xep:UseEnumSwitch:ERROR \
                                 </arg>
