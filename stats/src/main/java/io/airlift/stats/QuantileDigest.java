@@ -1207,14 +1207,6 @@ public class QuantileDigest
         return bitsToLong(values[node] & (~mask));
     }
 
-    private long middle(int node)
-    {
-        long lower = lowerBound(node);
-        long upper = upperBound(node);
-
-        return lower + (upper - lower) / 2;
-    }
-
     private static Ticker noOpTicker()
     {
         return new Ticker()

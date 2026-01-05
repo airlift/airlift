@@ -385,11 +385,6 @@ public class TestJsonModule
     {
         private List<String> name;
 
-        private SuperDuperNameList(String superDuperNameList)
-        {
-            this(superDuperNameList, null);
-        }
-
         private SuperDuperNameList(String superDuperNameList, @SuppressWarnings("UnusedVariable") Object stopJacksonFromUsingStringConstructor)
         {
             this.name = ImmutableList.copyOf(Splitter.on('*').split(superDuperNameList));

@@ -1152,6 +1152,7 @@ public class TestConfigurationMetadata
         }
 
         @Config("value")
+        @SuppressWarnings("unused")
         private void setValue(String value)
         {
             this.value = value;
@@ -1225,6 +1226,7 @@ public class TestConfigurationMetadata
         }
 
         @Config("value")
+        @SuppressWarnings("unused")
         private void setValue(boolean value)
         {
             this.value = value;

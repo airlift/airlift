@@ -16,10 +16,8 @@ package io.airlift.http.client.jetty;
 import com.google.common.annotations.VisibleForTesting;
 import io.airlift.http.client.jetty.HttpClientLogger.RequestInfo;
 import io.airlift.http.client.jetty.HttpClientLogger.ResponseInfo;
-import jakarta.annotation.Nullable;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
-import org.eclipse.jetty.http.HttpFields;
 
 import java.time.Instant;
 import java.util.Locale;
@@ -208,16 +206,5 @@ class HttpRequestEvent
         }
 
         return Optional.of(className);
-    }
-
-    @Nullable
-    private static String getHeader(Request request, String header)
-    {
-        requireNonNull(header, "header is null");
-        HttpFields headers = request.getHeaders();
-        if (headers != null) {
-            return headers.get(header);
-        }
-        return null;
     }
 }
