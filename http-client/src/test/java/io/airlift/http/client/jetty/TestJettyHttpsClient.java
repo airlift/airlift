@@ -35,7 +35,7 @@ public class TestJettyHttpsClient
     }
 
     @Override
-    public Optional<StreamingResponse> executeRequest(CloseableTestHttpServer server, Request request)
+    public Optional<StreamingResponse> executeStreamingRequest(CloseableTestHttpServer server, Request request)
     {
         HttpClientConfig config = createClientConfig();
         addKeystore(config);

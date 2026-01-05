@@ -19,7 +19,7 @@ public class TestJettyHttpClient
     }
 
     @Override
-    public Optional<StreamingResponse> executeRequest(CloseableTestHttpServer server, Request request)
+    public Optional<StreamingResponse> executeStreamingRequest(CloseableTestHttpServer server, Request request)
     {
         JettyHttpClient client = server.createClient(createClientConfig());
         return Optional.of(new TestingStreamingResponse(() -> client.executeStreaming(request), client));

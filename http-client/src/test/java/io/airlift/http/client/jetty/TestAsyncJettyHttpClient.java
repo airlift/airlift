@@ -19,7 +19,7 @@ public class TestAsyncJettyHttpClient
     }
 
     @Override
-    public Optional<StreamingResponse> executeRequest(CloseableTestHttpServer server, Request request)
+    public Optional<StreamingResponse> executeStreamingRequest(CloseableTestHttpServer server, Request request)
     {
         return Optional.empty();
     }
