@@ -43,7 +43,7 @@ public class TestLimits
     public void testStringLimitDefaultJsonFactory()
             throws IOException
     {
-        testNameLengthLimit(new ObjectMapperProvider());
+        testStringLengthLimit(new ObjectMapperProvider());
     }
 
     @Test
@@ -51,7 +51,7 @@ public class TestLimits
             throws IOException
     {
         JsonFactory myJsonFactory = new JsonFactory();
-        testNameLengthLimit(new ObjectMapperProvider(myJsonFactory));
+        testStringLengthLimit(new ObjectMapperProvider(myJsonFactory));
     }
 
     private void testStringLengthLimit(ObjectMapperProvider objectMapperProvider)
