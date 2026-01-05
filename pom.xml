@@ -472,7 +472,6 @@
                                     -Xep:DepAnn:ERROR \
                                     -Xep:DeprecatedVariable:ERROR \
                                     -Xep:DistinctVarargsChecker:ERROR \
-                                    -Xep:DoNotCallSuggester:OFF \
                                     -Xep:DoubleCheckedLocking:ERROR \
                                     -Xep:EmptyBlockTag:ERROR \
                                     -Xep:EmptySetMultibindingContributions:ERROR \
@@ -536,6 +535,7 @@
                                     -Xep:PreferredInterfaceType:OFF \
                                     -Xep:PrimitiveArrayPassedToVarargsMethod:ERROR \
                                     -Xep:RedundantNullCheck:ERROR \
+                                    <!-- disabled likely because we disagree with the suggested fix -->
                                     -Xep:RethrowReflectiveOperationExceptionAsLinkageError:OFF \
                                     <!-- TODO fix the code and enable SelfAssertion check (it's ERROR by default) -->
                                     -Xep:SelfAssertion:WARN \
