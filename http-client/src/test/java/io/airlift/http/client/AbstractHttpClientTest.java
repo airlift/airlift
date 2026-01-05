@@ -100,7 +100,7 @@ public abstract class AbstractHttpClientTest
 
     protected abstract HttpClientConfig createClientConfig();
 
-    public abstract Optional<StreamingResponse> executeRequest(CloseableTestHttpServer server, Request request)
+    public abstract Optional<StreamingResponse> executeStreamingRequest(CloseableTestHttpServer server, Request request)
             throws Exception;
 
     public abstract <T, E extends Exception> T executeRequest(CloseableTestHttpServer server, Request request, ResponseHandler<T, E> responseHandler)
@@ -607,7 +607,7 @@ public abstract class AbstractHttpClientTest
                     .setUri(server.baseURI())
                     .build();
 
-            executeRequest(server, request).ifPresent(streamingResponse -> {
+            executeStreamingRequest(server, request).ifPresent(streamingResponse -> {
                 try (streamingResponse) {
                     String responseString = new String(streamingResponse.getInputStream().readAllBytes(), UTF_8);
                     assertThat(responseString).isEqualTo(LARGE_CONTENT);

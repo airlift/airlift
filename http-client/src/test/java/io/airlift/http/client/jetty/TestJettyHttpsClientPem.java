@@ -34,7 +34,7 @@ public class TestJettyHttpsClientPem
     }
 
     @Override
-    public Optional<StreamingResponse> executeRequest(CloseableTestHttpServer server, Request request)
+    public Optional<StreamingResponse> executeStreamingRequest(CloseableTestHttpServer server, Request request)
             throws Exception
     {
         HttpClientConfig config = createClientConfig();
