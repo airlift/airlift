@@ -55,7 +55,7 @@ public class TestHttpClientConfig
                 .setDestinationIdleTimeout(new Duration(1, MINUTES))
                 .setMaxConnectionsPerServer(20)
                 .setMaxRequestsQueuedPerDestination(1024)
-                .setMaxContentLength(DataSize.of(16, MEGABYTE))
+                .setMaxResponseContentLength(DataSize.of(16, MEGABYTE))
                 .setRequestBufferSize(DataSize.of(4, KILOBYTE))
                 .setResponseBufferSize(DataSize.of(16, KILOBYTE))
                 .setMaxRequestHeaderSize(DataSize.of(8, KILOBYTE))
@@ -111,7 +111,7 @@ public class TestHttpClientConfig
                 .put("http-client.destination-idle-timeout", "10s")
                 .put("http-client.max-connections-per-server", "3")
                 .put("http-client.max-requests-queued-per-destination", "10")
-                .put("http-client.max-content-length", "1MB")
+                .put("http-client.max-response-content-length", "1MB")
                 .put("http-client.request-buffer-size", "42kB")
                 .put("http-client.response-buffer-size", "43kB")
                 .put("http-client.max-request-header-size", "16kB")
@@ -164,7 +164,7 @@ public class TestHttpClientConfig
                 .setDestinationIdleTimeout(new Duration(10, SECONDS))
                 .setMaxConnectionsPerServer(3)
                 .setMaxRequestsQueuedPerDestination(10)
-                .setMaxContentLength(DataSize.of(1, MEGABYTE))
+                .setMaxResponseContentLength(DataSize.of(1, MEGABYTE))
                 .setRequestBufferSize(DataSize.of(42, KILOBYTE))
                 .setResponseBufferSize(DataSize.of(43, KILOBYTE))
                 .setMaxRequestHeaderSize(DataSize.of(16, KILOBYTE))
@@ -215,10 +215,12 @@ public class TestHttpClientConfig
     {
         Map<String, String> currentProperties = new ImmutableMap.Builder<String, String>()
                 .put("http-client.idle-timeout", "111m")
+                .put("http-client.max-response-content-length", "17B")
                 .build();
 
         Map<String, String> oldProperties = new ImmutableMap.Builder<String, String>()
                 .put("http-client.read-timeout", "111m")
+                .put("http-client.max-content-length", "17B")
                 .build();
 
         ConfigAssertions.assertDeprecatedEquivalence(HttpClientConfig.class, currentProperties, oldProperties);

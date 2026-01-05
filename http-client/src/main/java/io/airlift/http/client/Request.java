@@ -46,7 +46,7 @@ public final class Request
     private final Optional<Duration> requestTimeout;
     private final Optional<Duration> idleTimeout;
     private final BodyGenerator bodyGenerator;
-    private final Optional<DataSize> maxContentLength;
+    private final Optional<DataSize> maxResponseContentLength;
     private final Optional<SpanBuilder> spanBuilder;
     private final boolean followRedirects;
 
@@ -58,7 +58,7 @@ public final class Request
             Optional<Duration> requestTimeout,
             Optional<Duration> idleTimeout,
             BodyGenerator bodyGenerator,
-            Optional<DataSize> maxContentLength,
+            Optional<DataSize> maxResponseContentLength,
             Optional<SpanBuilder> spanBuilder,
             boolean followRedirects)
     {
@@ -76,7 +76,7 @@ public final class Request
         this.requestTimeout = requireNonNull(requestTimeout, "requestTimeout is null");
         this.idleTimeout = requireNonNull(idleTimeout, "idleTimeout is null");
         this.bodyGenerator = bodyGenerator;
-        this.maxContentLength = requireNonNull(maxContentLength, "maxContentLength is null");
+        this.maxResponseContentLength = requireNonNull(maxResponseContentLength, "maxResponseContentLength is null");
         this.spanBuilder = requireNonNull(spanBuilder, "spanBuilder is null");
         this.followRedirects = followRedirects;
     }
@@ -125,9 +125,9 @@ public final class Request
         return idleTimeout;
     }
 
-    public Optional<DataSize> getMaxContentLength()
+    public Optional<DataSize> getMaxResponseContentLength()
     {
-        return maxContentLength;
+        return maxResponseContentLength;
     }
 
     public BodyGenerator getBodyGenerator()
@@ -155,7 +155,7 @@ public final class Request
                 .add("headers", headers)
                 .add("timeout", requestTimeout.orElse(null))
                 .add("idleTimeout", idleTimeout.orElse(null))
-                .add("maxContentLength", maxContentLength)
+                .add("maxResponseContentLength", maxResponseContentLength)
                 .add("bodyGenerator", bodyGenerator)
                 .add("spanBuilder", spanBuilder.isPresent() ? "present" : "empty")
                 .add("followRedirects", followRedirects)
@@ -174,7 +174,7 @@ public final class Request
                 Objects.equals(headers, r.headers) &&
                 Objects.equals(requestTimeout, r.requestTimeout) &&
                 Objects.equals(idleTimeout, r.idleTimeout) &&
-                Objects.equals(maxContentLength, r.maxContentLength) &&
+                Objects.equals(maxResponseContentLength, r.maxResponseContentLength) &&
                 Objects.equals(bodyGenerator, r.bodyGenerator) &&
                 Objects.equals(spanBuilder, r.spanBuilder) &&
                 followRedirects == r.followRedirects;
@@ -190,7 +190,7 @@ public final class Request
                 headers,
                 requestTimeout,
                 idleTimeout,
-                maxContentLength,
+                maxResponseContentLength,
                 bodyGenerator,
                 spanBuilder,
                 followRedirects);
@@ -241,7 +241,7 @@ public final class Request
 
             request.getRequestTimeout().ifPresent(builder::setRequestTimeout);
             request.getIdleTimeout().ifPresent(builder::setIdleTimeout);
-            request.getMaxContentLength().ifPresent(builder::setMaxContentLength);
+            request.getMaxResponseContentLength().ifPresent(builder::setMaxResponseContentLength);
 
             return builder;
         }
@@ -255,7 +255,7 @@ public final class Request
         private boolean followRedirects = true;
         private Optional<Duration> requestTimeout = Optional.empty();
         private Optional<Duration> idleTimeout = Optional.empty();
-        private Optional<DataSize> maxContentLength = Optional.empty();
+        private Optional<DataSize> maxResponseContentLength = Optional.empty();
 
         @CanIgnoreReturnValue
         public Builder setUri(URI uri)
@@ -335,10 +335,20 @@ public final class Request
             return this;
         }
 
+        /**
+         * @deprecated Use {@link #setMaxResponseContentLength(DataSize)} instead
+         */
+        @Deprecated
         @CanIgnoreReturnValue
         public Builder setMaxContentLength(DataSize maxContentLength)
         {
-            this.maxContentLength = Optional.ofNullable(maxContentLength);
+            return this.setMaxResponseContentLength(maxContentLength);
+        }
+
+        @CanIgnoreReturnValue
+        public Builder setMaxResponseContentLength(DataSize maxResponseContentLength)
+        {
+            this.maxResponseContentLength = Optional.ofNullable(maxResponseContentLength);
             return this;
         }
 
@@ -352,7 +362,7 @@ public final class Request
                     requestTimeout,
                     idleTimeout,
                     bodyGenerator,
-                    maxContentLength,
+                    maxResponseContentLength,
                     Optional.ofNullable(spanBuilder),
                     followRedirects);
         }

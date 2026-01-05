@@ -73,7 +73,7 @@ public class HttpClientConfig
     private Duration destinationIdleTimeout = new Duration(1, MINUTES);
     private int maxConnectionsPerServer = 20;
     private int maxRequestsQueuedPerDestination = 1024;
-    private DataSize maxContentLength = DataSize.of(16, MEGABYTE);
+    private DataSize maxResponseContentLength = DataSize.of(16, MEGABYTE);
     private DataSize requestBufferSize = DataSize.of(4, KILOBYTE);
     private DataSize responseBufferSize = DataSize.of(16, KILOBYTE);
     private DataSize maxRequestHeaderSize = DataSize.of(8, KILOBYTE);
@@ -237,15 +237,16 @@ public class HttpClientConfig
     }
 
     @NotNull
-    public DataSize getMaxContentLength()
+    public DataSize getMaxResponseContentLength()
     {
-        return maxContentLength;
+        return maxResponseContentLength;
     }
 
-    @Config("http-client.max-content-length")
-    public HttpClientConfig setMaxContentLength(DataSize maxContentLength)
+    @Config("http-client.max-response-content-length")
+    @LegacyConfig("http-client.max-content-length")
+    public HttpClientConfig setMaxResponseContentLength(DataSize maxResponseContentLength)
     {
-        this.maxContentLength = maxContentLength;
+        this.maxResponseContentLength = maxResponseContentLength;
         return this;
     }
 
