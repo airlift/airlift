@@ -449,17 +449,17 @@ public class JettyHttpClient
 
         ArrayByteBufferPool pool = config.isTrackMemoryAllocations() ?
                 new ArrayByteBufferPool.Tracking(
-                    0,
-                    maxBufferSize,
-                    Integer.MAX_VALUE,
-                    maxHeapMemory,
-                    maxOffHeapMemory) :
+                        0,
+                        maxBufferSize,
+                        Integer.MAX_VALUE,
+                        maxHeapMemory,
+                        maxOffHeapMemory) :
                 new ArrayByteBufferPool.Quadratic(
-                    0,
-                    maxBufferSize,
-                    Integer.MAX_VALUE,
-                    maxHeapMemory,
-                    maxOffHeapMemory);
+                        0,
+                        maxBufferSize,
+                        Integer.MAX_VALUE,
+                        maxHeapMemory,
+                        maxOffHeapMemory);
         pool.setStatisticsEnabled(true);
         return pool;
     }
@@ -989,7 +989,8 @@ public class JettyHttpClient
                 case StaticBodyGenerator generator -> jettyRequest.body(new BytesRequestContent(generator.getBody()));
                 case ByteBufferBodyGenerator generator -> jettyRequest.body(new ByteBufferRequestContent(generator.getByteBuffers()));
                 case FileBodyGenerator generator -> jettyRequest.body(fileContent(generator.getPath()));
-                case StreamingBodyGenerator generator -> jettyRequest.body(new InputStreamRequestContent(generator.contentType(), generator.source(), new ByteBufferPool.Sized(httpClient.getByteBufferPool())));
+                case StreamingBodyGenerator generator ->
+                        jettyRequest.body(new InputStreamRequestContent(generator.contentType(), generator.source(), new ByteBufferPool.Sized(httpClient.getByteBufferPool())));
             }
         }
 
@@ -1032,10 +1033,10 @@ public class JettyHttpClient
         return Throwables.getCausalChain(result.getFailure()).stream()
                 .anyMatch(e ->
                         e instanceof TimeoutException ||
-                        e instanceof RejectedExecutionException ||
-                        e instanceof InterruptedException ||
-                        e instanceof IllegalArgumentException ||
-                        e instanceof IllegalStateException);
+                                e instanceof RejectedExecutionException ||
+                                e instanceof InterruptedException ||
+                                e instanceof IllegalArgumentException ||
+                                e instanceof IllegalStateException);
     }
 
     private static PathRequestContent fileContent(Path path)
