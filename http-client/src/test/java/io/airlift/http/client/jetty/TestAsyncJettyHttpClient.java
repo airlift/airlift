@@ -24,7 +24,6 @@ public class TestAsyncJettyHttpClient
         return Optional.empty();
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public <T, E extends Exception> T executeRequest(CloseableTestHttpServer server, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
@@ -32,7 +31,6 @@ public class TestAsyncJettyHttpClient
         return executeRequest(server, createClientConfig(), request, responseHandler);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public <T, E extends Exception> T executeRequest(CloseableTestHttpServer server, HttpClientConfig config, Request request, ResponseHandler<T, E> responseHandler)
             throws Exception
