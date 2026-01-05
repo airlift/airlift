@@ -115,7 +115,6 @@ import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Throwables.throwIfUnchecked;
-import static com.google.common.base.Verify.verify;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.InetAddresses.isInetAddress;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
@@ -917,11 +916,18 @@ public class JettyHttpClient
 
         RequestContext jettyRequest = buildRequestContext(request);
 
-        request.getMaxContentLength()
-                .ifPresent(maxRequestContentLength -> verify(maxRequestContentLength.compareTo(maxContentLength) <= 0, "maxRequestContentLength must be less than or equal to maxContentLength"));
+        DataSize maxContentLength = request.getMaxContentLength()
+                .map(value -> {
+                    checkArgument(
+                            value.compareTo(this.maxContentLength) <= 0,
+                            "Request's maxContentLength (%s) must be less than or equal to maxContentLength (%s)",
+                            value, this.maxContentLength);
+                    return value;
+                })
+                .orElse(this.maxContentLength);
 
         JettyResponseFuture<T, E> future = new JettyResponseFuture<>(request, jettyRequest.request(), jettyRequest.sizeListener()::getBytes, responseHandler, span, stats, recordRequestComplete);
-        JettyResponseListener<T, E> listener = new JettyResponseListener<>(jettyRequest.request(), future, Ints.saturatedCast(request.getMaxContentLength().orElse(maxContentLength).toBytes()));
+        JettyResponseListener<T, E> listener = new JettyResponseListener<>(jettyRequest.request(), future, Ints.saturatedCast(maxContentLength.toBytes()));
 
         try {
             return listener.send();
