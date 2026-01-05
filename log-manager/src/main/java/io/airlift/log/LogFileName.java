@@ -20,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.DateTimeException;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
@@ -153,7 +154,7 @@ final class LogFileName
 
     public static LogFileName generateNextLogFileName(Path masterLogFile, Optional<String> compressionExtension)
     {
-        LocalDateTime dateTime = LocalDateTime.now().withNano(0);
+        LocalDateTime dateTime = LocalDateTime.now(ZoneId.systemDefault()).withNano(0);
         String suffix = DATE_TIME_FORMATTER.format(dateTime);
         for (int index = 0; index < MAX_GENERATED_INDEX; index++) {
             String newFileName = masterLogFile.getFileName() + suffix + (index > 0 ? "-" + index : "");

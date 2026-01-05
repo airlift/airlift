@@ -479,7 +479,7 @@ public class HttpServer
                 .map(X509Certificate::getNotAfter)
                 .min(naturalOrder())
                 .map(date -> ZonedDateTime.ofInstant(date.toInstant(), ZoneId.systemDefault()))
-                .map(date -> ZonedDateTime.now().until(date, DAYS))
+                .map(date -> ZonedDateTime.now(ZoneId.systemDefault()).until(date, DAYS))
                 .orElse(null);
     }
 
