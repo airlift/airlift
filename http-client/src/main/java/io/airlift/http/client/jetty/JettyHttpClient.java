@@ -149,7 +149,7 @@ public class JettyHttpClient
     private static final AttributeKey<String> CLIENT_NAME = stringKey("airlift.http.client_name");
 
     private final HttpClient httpClient;
-    private final DataSize maxContentLength;
+    private final DataSize maxResponseContentLength;
     private final Duration requestTimeout;
     private final Duration idleTimeout;
     private final boolean recordRequestComplete;
@@ -248,7 +248,7 @@ public class JettyHttpClient
         requireNonNull(requestFilters, "requestFilters is null");
         requireNonNull(httpStatusListeners, "httpStatusListeners is null");
 
-        maxContentLength = config.getMaxContentLength();
+        maxResponseContentLength = config.getMaxResponseContentLength();
         requestTimeout = config.getRequestTimeout();
         idleTimeout = config.getIdleTimeout();
         recordRequestComplete = config.getRecordRequestComplete();
@@ -312,7 +312,7 @@ public class JettyHttpClient
             }
         }
 
-        int maxBufferSize = toIntExact(max(max(config.getMaxContentLength().toBytes(), config.getRequestBufferSize().toBytes()), config.getResponseBufferSize().toBytes()));
+        int maxBufferSize = toIntExact(max(max(config.getMaxResponseContentLength().toBytes(), config.getRequestBufferSize().toBytes()), config.getResponseBufferSize().toBytes()));
         httpClient.setByteBufferPool(createByteBufferPool(maxBufferSize, config));
         httpClient.setExecutor(createExecutor(name, config.getMinThreads(), config.getMaxThreads(), config.isUseVirtualThreads()));
         httpClient.setScheduler(createScheduler(name, config.getTimeoutConcurrency(), config.getTimeoutThreads()));
@@ -916,18 +916,18 @@ public class JettyHttpClient
 
         RequestContext jettyRequest = buildRequestContext(request);
 
-        DataSize maxContentLength = request.getMaxContentLength()
+        DataSize maxResponseContentLength = request.getMaxResponseContentLength()
                 .map(value -> {
                     checkArgument(
-                            value.compareTo(this.maxContentLength) <= 0,
-                            "Request's maxContentLength (%s) must be less than or equal to maxContentLength (%s)",
-                            value, this.maxContentLength);
+                            value.compareTo(this.maxResponseContentLength) <= 0,
+                            "Request's maxResponseContentLength (%s) must be less than or equal to maxResponseContentLength (%s)",
+                            value, this.maxResponseContentLength);
                     return value;
                 })
-                .orElse(this.maxContentLength);
+                .orElse(this.maxResponseContentLength);
 
         JettyResponseFuture<T, E> future = new JettyResponseFuture<>(request, jettyRequest.request(), jettyRequest.sizeListener()::getBytes, responseHandler, span, stats, recordRequestComplete);
-        JettyResponseListener<T, E> listener = new JettyResponseListener<>(jettyRequest.request(), future, Ints.saturatedCast(maxContentLength.toBytes()));
+        JettyResponseListener<T, E> listener = new JettyResponseListener<>(jettyRequest.request(), future, Ints.saturatedCast(maxResponseContentLength.toBytes()));
 
         try {
             return listener.send();
