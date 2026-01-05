@@ -35,6 +35,7 @@ import java.util.Optional;
 
 import static io.airlift.security.jwks.JwksDecoder.decodeKeys;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.time.ZoneOffset.UTC;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestJwksDecoder
@@ -189,7 +190,7 @@ public class TestJwksDecoder
                 .header().keyId("test-rsa")
                 .and()
                 .subject("test-user")
-                .expiration(Date.from(ZonedDateTime.now().plusMinutes(5).toInstant()))
+                .expiration(Date.from(ZonedDateTime.now(UTC).plusMinutes(5).toInstant()))
                 .compact();
 
         Jws<Claims> claimsJws = Jwts.parser()
@@ -313,7 +314,7 @@ public class TestJwksDecoder
                 .header().keyId(keyName)
                 .and()
                 .subject("test-user")
-                .expiration(Date.from(ZonedDateTime.now().plusMinutes(5).toInstant()))
+                .expiration(Date.from(ZonedDateTime.now(UTC).plusMinutes(5).toInstant()))
                 .compact();
 
         Jws<Claims> claimsJws = Jwts.parser()

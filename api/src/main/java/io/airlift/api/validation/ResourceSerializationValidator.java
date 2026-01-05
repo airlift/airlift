@@ -15,6 +15,7 @@ import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -151,7 +152,7 @@ public class ResourceSerializationValidator
             return Instant.now();
         }
         if (LocalDate.class.isAssignableFrom(clazz)) {
-            return LocalDate.now();
+            return LocalDate.now(ZoneId.systemDefault());
         }
         if (BigDecimal.class.isAssignableFrom(clazz)) {
             return BigDecimal.ZERO;

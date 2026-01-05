@@ -27,6 +27,7 @@ import java.security.KeyStore;
 import java.security.cert.X509Certificate;
 import java.security.spec.ECGenParameterSpec;
 import java.time.LocalDate;
+import java.time.ZoneId;
 
 import static io.airlift.security.cert.CertificateBuilder.certificateBuilder;
 import static java.time.ZoneOffset.UTC;
@@ -45,7 +46,7 @@ public class TestCertificateBuilder
 
         X500Principal issuer = new X500Principal("CN=issuer,O=Airlift");
         X500Principal subject = new X500Principal("CN=subject,O=Airlift");
-        LocalDate notBefore = LocalDate.now();
+        LocalDate notBefore = LocalDate.now(ZoneId.systemDefault());
         LocalDate notAfter = notBefore.plus(10, YEARS);
         X509Certificate certificate = certificateBuilder()
                 .setKeyPair(keyPair)
