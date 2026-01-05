@@ -1,5 +1,6 @@
 package io.airlift.http.client;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -8,6 +9,7 @@ import io.airlift.http.client.HttpClient.HttpResponseFuture;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
 import io.airlift.http.client.jetty.JettyHttpClient;
+import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -66,9 +68,11 @@ import static io.airlift.http.client.Request.Builder.preparePut;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static io.airlift.http.client.StreamingBodyGenerator.streamingBodyGenerator;
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
+import static io.airlift.units.DataSize.Unit.BYTE;
 import static io.airlift.units.Duration.nanosSince;
 import static java.lang.String.format;
 import static java.lang.Thread.currentThread;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -939,6 +943,52 @@ public abstract class AbstractHttpClientTest
 
                 assertThat(locals.putContent).isEqualTo(content);
             }
+        }
+    }
+
+    @Test
+    public void testMaxContentLength()
+            throws Exception
+    {
+        try (CloseableTestHttpServer server = newServer()) {
+            // Must be all ASCII.
+            String text = "Hello world!".repeat(1024 / 4); // ~3KB
+            server.servlet().setResponseBody(text);
+
+            // Response within limit
+            Request request = prepareGet()
+                    .setUri(server.baseURI().resolve("/a/path"))
+                    .setMaxResponseContentLength(DataSize.of(text.length(), BYTE))
+                    .build();
+            StringResponse response = executeRequest(server, request, createStringResponseHandler());
+            assertThat(response.getStatusCode()).isEqualTo(200);
+            assertThat(response.getBody()).isEqualTo(text);
+
+            // Response exceeds limit
+            Request limitedRequest = fromRequest(request)
+                    .setMaxResponseContentLength(DataSize.of(text.length() - 1, BYTE))
+                    .build();
+            assertThatThrownBy(() -> executeRequest(server, limitedRequest, createStringResponseHandler()))
+                    .satisfies(throwable -> {
+                        if (Strings.nullToEmpty(throwable.getMessage()).startsWith("Failed reading response from server")) {
+                            assertThat(throwable)
+                                    .hasStackTraceContaining("InputStream exceeded maximum length of 3071");
+                        }
+                        else {
+                            assertThat(throwable)
+                                    .hasMessage("Buffering capacity 3071 exceeded");
+                        }
+                    });
+
+            // Streaming execution bypasses content limits
+            executeStreamingRequest(server, limitedRequest).ifPresent(streamingResponse -> {
+                try (streamingResponse) {
+                    assertThat(new String(streamingResponse.getInputStream().readAllBytes(), US_ASCII)).isEqualTo(text);
+                }
+                catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
         }
     }
 
