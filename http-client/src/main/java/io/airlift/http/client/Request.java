@@ -19,6 +19,7 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.MultimapBuilder;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 import io.opentelemetry.api.trace.SpanBuilder;
@@ -256,18 +257,21 @@ public final class Request
         private Optional<Duration> idleTimeout = Optional.empty();
         private Optional<DataSize> maxContentLength = Optional.empty();
 
+        @CanIgnoreReturnValue
         public Builder setUri(URI uri)
         {
             this.uri = validateUri(uri);
             return this;
         }
 
+        @CanIgnoreReturnValue
         public Builder setMethod(String method)
         {
             this.method = method;
             return this;
         }
 
+        @CanIgnoreReturnValue
         public Builder setHeader(String name, String value)
         {
             this.headers.removeAll(name);
@@ -275,54 +279,63 @@ public final class Request
             return this;
         }
 
+        @CanIgnoreReturnValue
         public Builder addHeader(String name, String value)
         {
             this.headers.put(name, value);
             return this;
         }
 
+        @CanIgnoreReturnValue
         public Builder addHeaders(Multimap<String, String> headers)
         {
             this.headers.putAll(headers);
             return this;
         }
 
+        @CanIgnoreReturnValue
         public Builder setBodyGenerator(BodyGenerator bodyGenerator)
         {
             this.bodyGenerator = bodyGenerator;
             return this;
         }
 
+        @CanIgnoreReturnValue
         public Builder setSpanBuilder(SpanBuilder spanBuilder)
         {
             this.spanBuilder = spanBuilder;
             return this;
         }
 
+        @CanIgnoreReturnValue
         public Builder setFollowRedirects(boolean followRedirects)
         {
             this.followRedirects = followRedirects;
             return this;
         }
 
+        @CanIgnoreReturnValue
         public Builder setVersion(HttpVersion version)
         {
             this.version = Optional.ofNullable(version);
             return this;
         }
 
+        @CanIgnoreReturnValue
         public Builder setRequestTimeout(Duration timeout)
         {
             this.requestTimeout = Optional.ofNullable(timeout);
             return this;
         }
 
+        @CanIgnoreReturnValue
         public Builder setIdleTimeout(Duration timeout)
         {
             this.idleTimeout = Optional.ofNullable(timeout);
             return this;
         }
 
+        @CanIgnoreReturnValue
         public Builder setMaxContentLength(DataSize maxContentLength)
         {
             this.maxContentLength = Optional.ofNullable(maxContentLength);
