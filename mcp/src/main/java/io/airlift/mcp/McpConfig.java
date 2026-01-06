@@ -11,7 +11,7 @@ public class McpConfig
 {
     private int defaultPageSize = 25;
     private Duration defaultSessionTimeout = new Duration(15, MINUTES);
-    private Duration resourceVersionUpdateInterval = new Duration(5, MINUTES);
+    private Duration resourceVersionUpdateInterval = new Duration(1, MINUTES);
 
     @Min(1)
     public int getDefaultPageSize()

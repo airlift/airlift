@@ -1,8 +1,11 @@
 package io.airlift.mcp.internal;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.hash.Hasher;
+import com.google.common.hash.Hashing;
 import com.google.inject.Inject;
 import io.airlift.bootstrap.LifeCycleManager;
 import io.airlift.mcp.McpConfig;
@@ -52,17 +55,24 @@ import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.model.ResourceTemplateValues;
+import io.airlift.mcp.model.ResourcesUpdatedNotification;
 import io.airlift.mcp.model.SetLevelRequest;
 import io.airlift.mcp.model.SubscribeListChanged;
+import io.airlift.mcp.model.SubscribeRequest;
 import io.airlift.mcp.model.Tool;
 import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.sessions.SessionId;
+import io.airlift.mcp.sessions.SessionValueKey;
+import io.airlift.mcp.versions.ResourceVersion;
+import io.airlift.mcp.versions.SystemListVersions;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.glassfish.jersey.uri.UriTemplate;
 
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -76,17 +86,26 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.internal.InternalRequestContext.requireSessionId;
 import static io.airlift.mcp.model.Constants.MCP_SESSION_ID;
+import static io.airlift.mcp.model.Constants.NOTIFICATION_PROMPTS_LIST_CHANGED;
+import static io.airlift.mcp.model.Constants.NOTIFICATION_RESOURCES_LIST_CHANGED;
+import static io.airlift.mcp.model.Constants.NOTIFICATION_RESOURCES_UPDATED;
+import static io.airlift.mcp.model.Constants.NOTIFICATION_TOOLS_LIST_CHANGED;
 import static io.airlift.mcp.model.Constants.PROTOCOL_MCP_2025_06_18;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
 import static io.airlift.mcp.model.JsonRpcErrorCode.RESOURCE_NOT_FOUND;
 import static io.airlift.mcp.sessions.SessionValueKey.LOGGING_LEVEL;
+import static io.airlift.mcp.sessions.SessionValueKey.SYSTEM_LIST_VERSIONS;
+import static io.airlift.mcp.sessions.SessionValueKey.resourceVersionKey;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
 public class InternalMcpServer
         implements McpServer
 {
     private static final List<String> SUPPORTED_PROTOCOL_VERSIONS = ImmutableList.of(PROTOCOL_MCP_2025_06_18);
+
+    private static final int RECONCILE_PAGE_SIZE = 100;
 
     private final Map<String, ToolEntry> tools = new ConcurrentHashMap<>();
     private final Map<String, PromptEntry> prompts = new ConcurrentHashMap<>();
@@ -99,6 +118,7 @@ public class InternalMcpServer
     private final PaginationUtil paginationUtil;
     private final Optional<SessionController> sessionController;
     private final Duration sessionTimeout;
+    private final Duration versionUpdateInterval;
 
     @Inject
     InternalMcpServer(
@@ -127,6 +147,7 @@ public class InternalMcpServer
         completions.forEach(completion -> addCompletion(completion.reference(), completion.handler()));
 
         sessionTimeout = mcpConfig.getDefaultSessionTimeout().toJavaTime();
+        versionUpdateInterval = mcpConfig.getResourceVersionUpdateInterval().toJavaTime();
     }
 
     @Override
@@ -200,7 +221,9 @@ public class InternalMcpServer
         boolean sessionsEnabled = sessionController.map(controller -> {
             SessionId sessionId = controller.createSession(authenticated, Optional.of(sessionTimeout));
             response.addHeader(MCP_SESSION_ID, sessionId.id());
+
             controller.setSessionValue(sessionId, LOGGING_LEVEL, LoggingLevel.INFO);
+            controller.setSessionValue(sessionId, SYSTEM_LIST_VERSIONS, buildSystemListVersions());
 
             return true;
         }).orElse(false);
@@ -211,9 +234,9 @@ public class InternalMcpServer
         ServerCapabilities serverCapabilities = new ServerCapabilities(
                 completions.isEmpty() ? Optional.empty() : Optional.of(new CompletionCapabilities()),
                 sessionsEnabled ? Optional.of(new LoggingCapabilities()) : Optional.empty(),
-                prompts.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(false)),
-                resources.isEmpty() ? Optional.empty() : Optional.of(new SubscribeListChanged(false, false)),
-                tools.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(false)));
+                prompts.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(sessionsEnabled)),
+                resources.isEmpty() ? Optional.empty() : Optional.of(new SubscribeListChanged(sessionsEnabled, sessionsEnabled)),
+                tools.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(sessionsEnabled)));
 
         return new InitializeResult(protocolVersion, serverCapabilities, metadata.implementation(), metadata.instructions());
     }
@@ -304,11 +327,107 @@ public class InternalMcpServer
         return completionEntry.handler().complete(requestContext, completeRequest);
     }
 
+    Object resourcesSubscribe(HttpServletRequest request, InternalMessageWriter messageWriter, SubscribeRequest subscribeRequest)
+    {
+        SessionController localSessionController = requireSessionController();
+        SessionId sessionId = requireSessionId(request);
+        McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, progressToken(subscribeRequest));
+
+        List<ResourceContents> resourceContents = internalReadResource(new ReadResourceRequest(subscribeRequest.uri(), subscribeRequest.meta()), requestContext)
+                .orElseThrow(() -> exception(RESOURCE_NOT_FOUND, "Resource not found: " + subscribeRequest.uri()));
+
+        String hash = listHash(resourceContents.stream());
+        SessionValueKey<ResourceVersion> key = resourceVersionKey(subscribeRequest.uri());
+
+        localSessionController.setSessionValue(sessionId, key, new ResourceVersion(hash));
+
+        return ImmutableMap.of();
+    }
+
+    Object resourcesUnsubscribe(HttpServletRequest request, SubscribeRequest subscribeRequest)
+    {
+        SessionController localSessionController = requireSessionController();
+        SessionId sessionId = requireSessionId(request);
+
+        SessionValueKey<ResourceVersion> key = resourceVersionKey(subscribeRequest.uri());
+        localSessionController.deleteSessionValue(sessionId, key);
+
+        return ImmutableMap.of();
+    }
+
+    void reconcileVersions(HttpServletRequest request, InternalMessageWriter messageWriter)
+    {
+        SessionController localSessionController = requireSessionController();
+        SessionId sessionId = requireSessionId(request);
+
+        Instant now = Instant.now();
+
+        SystemListVersions sessionSystemListVersions = localSessionController.getSessionValue(sessionId, SYSTEM_LIST_VERSIONS).orElse(new SystemListVersions("", "", "", "", now));
+
+        Duration elapsedSinceLastCheck = Duration.between(sessionSystemListVersions.lastCheck(), now);
+        if (elapsedSinceLastCheck.compareTo(versionUpdateInterval) < 0) {
+            return;
+        }
+
+        SystemListVersions systemVersions = buildSystemListVersions();
+
+        McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, Optional.empty());
+
+        if (!sessionSystemListVersions.toolsVersion().equals(systemVersions.toolsVersion())) {
+            requestContext.sendMessage(NOTIFICATION_TOOLS_LIST_CHANGED, Optional.empty());
+        }
+        if (!sessionSystemListVersions.promptsVersion().equals(systemVersions.promptsVersion())) {
+            requestContext.sendMessage(NOTIFICATION_PROMPTS_LIST_CHANGED, Optional.empty());
+        }
+        if (!sessionSystemListVersions.resourcesVersion().equals(systemVersions.resourcesVersion()) || !sessionSystemListVersions.resourceTemplatesVersion().equals(systemVersions.resourceTemplatesVersion())) {
+            requestContext.sendMessage(NOTIFICATION_RESOURCES_LIST_CHANGED, Optional.empty());
+        }
+
+        localSessionController.setSessionValue(sessionId, SYSTEM_LIST_VERSIONS, systemVersions);
+
+        // iterate over any subscribed resources and notify if updated
+        Optional<String> cursor = Optional.empty();
+        do {
+            List<Map.Entry<String, ResourceVersion>> subscriptions = localSessionController.listSessionValues(sessionId, ResourceVersion.class, RECONCILE_PAGE_SIZE, cursor);
+            subscriptions.forEach(subscription -> {
+                String uri = subscription.getKey();
+                ResourceVersion resourceVersion = subscription.getValue();
+
+                Optional<List<ResourceContents>> resourceContents = internalReadResource(new ReadResourceRequest(uri, Optional.empty()), requestContext);
+                String newHash = resourceContents
+                        .map(contents -> listHash(contents.stream()))
+                        .orElse("");
+                if (!resourceVersion.version().equals(newHash)) {
+                    requestContext.sendMessage(NOTIFICATION_RESOURCES_UPDATED, Optional.of(new ResourcesUpdatedNotification(uri)));
+                    localSessionController.setSessionValue(sessionId, resourceVersionKey(uri), new ResourceVersion(newHash));
+                }
+            });
+
+            cursor = (subscriptions.size() < RECONCILE_PAGE_SIZE) ? Optional.empty() : Optional.of(subscriptions.getLast().getKey());
+        }
+        while (cursor.isPresent());
+    }
+
+    private SystemListVersions buildSystemListVersions()
+    {
+        return new SystemListVersions(
+                listHash(tools.values().stream().map(ToolEntry::tool)),
+                listHash(prompts.values().stream().map(PromptEntry::prompt)),
+                listHash(resources.values().stream().map(ResourceEntry::resource)),
+                listHash(resourceTemplates.values().stream().map(ResourceTemplateEntry::resourceTemplate)),
+                Instant.now());
+    }
+
     private Optional<List<ResourceContents>> internalReadResource(ReadResourceRequest readResourceRequest, McpRequestContext requestContext)
     {
         return findResource(readResourceRequest.uri())
                 .map(resourceEntry -> resourceEntry.handler().readResource(requestContext, resourceEntry.resource(), readResourceRequest))
                 .or(() -> findResourceTemplate(readResourceRequest.uri()).map(match -> match.entry.handler().readResourceTemplate(requestContext, match.entry.resourceTemplate(), readResourceRequest, match.values)));
+    }
+
+    private SessionController requireSessionController()
+    {
+        return sessionController.orElseThrow(() -> exception(INVALID_REQUEST, "Sessions are not enabled"));
     }
 
     private Optional<ResourceEntry> findResource(String uriString)
@@ -370,5 +489,24 @@ public class InternalMcpServer
             case PromptReference(var name, _) -> name;
             case ResourceReference(var uri) -> uri;
         };
+    }
+
+    @SuppressWarnings("UnstableApiUsage")
+    private <T> String listHash(Stream<? extends T> stream)
+    {
+        Hasher hasher = Hashing.sha256().newHasher();
+        stream.map(this::asJson)
+                .forEach(json -> hasher.putString(json, UTF_8));
+        return hasher.hash().toString();
+    }
+
+    private <T> String asJson(T item)
+    {
+        try {
+            return objectMapper.writeValueAsString(item);
+        }
+        catch (JsonProcessingException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 }
