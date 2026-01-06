@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.io.Closer;
 import com.google.common.reflect.TypeToken;
@@ -41,6 +42,8 @@ import io.modelcontextprotocol.spec.McpSchema.ResourceReference;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import io.modelcontextprotocol.spec.McpSchema.TextResourceContents;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
+import org.assertj.core.api.AbstractCollectionAssert;
+import org.assertj.core.api.ObjectAssert;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -48,10 +51,13 @@ import org.junit.jupiter.api.TestInstance;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -77,8 +83,11 @@ import static io.modelcontextprotocol.spec.McpSchema.LoggingLevel.DEBUG;
 import static io.modelcontextprotocol.spec.McpSchema.LoggingLevel.EMERGENCY;
 import static jakarta.servlet.http.HttpServletResponse.SC_METHOD_NOT_ALLOWED;
 import static jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Fail.fail;
 import static org.assertj.core.api.InstanceOfAssertFactories.list;
 import static org.assertj.core.api.InstanceOfAssertFactories.type;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
@@ -110,7 +119,9 @@ public abstract class TestMcp
             }
         };
 
-        testingServer = new TestingServer(ImmutableMap.of(), Optional.of(module), builder -> builder
+        Map<String, String> properties = ImmutableMap.of("mcp.resource-version.update-interval", "1ms");
+
+        testingServer = new TestingServer(properties, Optional.of(module), builder -> builder
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
                 .withSessions(binding -> binding.to((mode == DATABASE_SESSIONS) ? TestingDatabaseSessionController.class : MemorySessionController.class).in(SINGLETON))
                 .build());
@@ -264,7 +275,7 @@ public abstract class TestMcp
         ListToolsResult listToolsResult = client1.mcpClient().listTools();
         assertThat(listToolsResult.tools())
                 .extracting(Tool::name)
-                .containsExactlyInAnyOrder("add", "throws", "addThree", "addFirstTwoAndAllThree", "progress", "log");
+                .containsExactlyInAnyOrder("add", "throws", "addThree", "addFirstTwoAndAllThree", "progress", "log", "setVersion");
 
         CallToolResult callToolResult = client1.mcpClient().callTool(new CallToolRequest("add", ImmutableMap.of("a", 1, "b", 2)));
         assertThat(callToolResult.content())
@@ -464,6 +475,86 @@ public abstract class TestMcp
 
         assertThatThrownBy(client.mcpClient()::listTools)
                 .hasMessageContaining("HTTP 404 Not Found");
+    }
+
+    @Test
+    public void testListChangeNotifications()
+    {
+        client1.changes().clear();
+        client2.changes().clear();
+
+        client1.mcpClient().callTool(new CallToolRequest("setVersion", ImmutableMap.of("type", "SYSTEM", "name", "tools")));
+
+        TestingClient localClient = buildClient(closer, baseUri, "testListChangeNotifications");
+
+        client1.mcpClient().listTools();
+        client2.mcpClient().listTools();
+        localClient.mcpClient().listTools();
+
+        assertChanges(client1.changes(), 1).contains("tools");
+        assertChanges(client2.changes(), 1).contains("tools");
+        assertChanges(localClient.changes(), 0).isEmpty();   // created after the version change
+
+        client1.changes().clear();
+        client2.changes().clear();
+
+        client1.mcpClient().listTools();
+        client2.mcpClient().listTools();
+        localClient.mcpClient().listTools();
+
+        assertChanges(client1.changes(), 0).isEmpty();
+        assertChanges(client2.changes(), 0).isEmpty();
+        assertChanges(localClient.changes(), 0).isEmpty();
+
+        // the Java SDK client does not currently support resource list change notifications
+
+        client2.mcpClient().callTool(new CallToolRequest("setVersion", ImmutableMap.of("type", "SYSTEM", "name", "tools")));
+        client2.mcpClient().callTool(new CallToolRequest("setVersion", ImmutableMap.of("type", "SYSTEM", "name", "prompts")));
+
+        client1.mcpClient().listTools();
+        client2.mcpClient().listTools();
+        localClient.mcpClient().listTools();
+
+        assertChanges(client1.changes(), 2).containsExactlyInAnyOrder("tools", "prompts");
+        assertChanges(client2.changes(), 2).containsExactlyInAnyOrder("tools", "prompts");
+        assertChanges(localClient.changes(), 2).containsExactlyInAnyOrder("tools", "prompts");
+    }
+
+    private AbstractCollectionAssert<?, Collection<? extends String>, String, ObjectAssert<String>> assertChanges(BlockingQueue<String> changes, int qty)
+    {
+        if (qty == 0) {
+            try {
+                // sleep for a bit to ensure there are no changes
+                // this isn't perfect but given the current API it's the best we can do
+                MILLISECONDS.sleep(250);
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                fail("Interrupted while checking empty changes");
+            }
+
+            if (changes.isEmpty()) {
+                return assertThat(ImmutableSet.of());
+            }
+            fail("Expected no changes, but some were found");
+        }
+
+        Set<String> result = new HashSet<>();
+        while (result.size() < qty) {
+            try {
+                String value = changes.poll(5, SECONDS);
+                if (value != null) {
+                    result.add(value);
+                    continue;
+                }
+                fail("Timed out waiting for changes");
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                fail("Interrupted while waiting for changes to complete");
+            }
+        }
+        return assertThat(result);
     }
 
     private void assertMcpError(Throwable throwable, int code, String message)
