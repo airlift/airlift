@@ -198,7 +198,7 @@ public class InternalMcpServer
     InitializeResult initialize(HttpServletResponse response, McpIdentity.Authenticated<?> authenticated, InitializeRequest initializeRequest)
     {
         boolean sessionsEnabled = sessionController.map(controller -> {
-            SessionId sessionId = controller.createSession(Optional.of(authenticated), Optional.of(sessionTimeout));
+            SessionId sessionId = controller.createSession(authenticated.identity(), Optional.of(sessionTimeout));
             response.addHeader(MCP_SESSION_ID, sessionId.id());
             controller.setSessionValue(sessionId, LOGGING_LEVEL, LoggingLevel.INFO);
 

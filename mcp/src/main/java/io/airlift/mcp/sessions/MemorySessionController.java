@@ -5,7 +5,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import io.airlift.log.Logger;
-import io.airlift.mcp.model.McpIdentity;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -120,7 +119,7 @@ public class MemorySessionController
     }
 
     @Override
-    public SessionId createSession(Optional<McpIdentity> identity, Optional<Duration> ttl)
+    public SessionId createSession(Object identity, Optional<Duration> ttl)
     {
         clean();
 

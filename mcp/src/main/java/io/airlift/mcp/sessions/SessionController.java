@@ -29,10 +29,16 @@ public interface SessionController
      *     are specially intended for system or admin use cases where the session
      *     must persist until explicitly deleted.
      * </p>
+     *
+     * @param identity the identity associated with the session. Retrieved from {@link McpIdentity.Authenticated#identity()}
+     * @param ttl the suggested time-to-live duration for the session or {@code empty()} for a permanent session
      */
-    SessionId createSession(Optional<McpIdentity> identity, Optional<Duration> ttl);
+    SessionId createSession(Object identity, Optional<Duration> ttl);
 
-    default SessionId createPermanentSession(Optional<McpIdentity> identity)
+    /**
+     * Convenience method to create a permanent session (i.e., one that never expires automatically)
+     */
+    default SessionId createPermanentSession(Object identity)
     {
         return createSession(identity, FOREVER_TTL);
     }

@@ -39,7 +39,7 @@ public class TestMemorySessionController
                 .collect(toImmutableList());
 
         SessionController controller = new MemorySessionController();
-        SessionId sessionId = controller.createSession(Optional.empty(), Optional.empty());
+        SessionId sessionId = controller.createSession("dummy", Optional.empty());
 
         aKeys.forEach(key -> controller.setSessionValue(sessionId, key, new TypeA(key.name())));
         bKeys.forEach(key -> controller.setSessionValue(sessionId, key, new TypeB(key.name())));
@@ -59,7 +59,7 @@ public class TestMemorySessionController
         Duration shortDuration = Duration.ofMillis(100);
 
         SessionController controller = new MemorySessionController(Duration.ofMillis(1));
-        SessionId sessionId = controller.createSession(Optional.empty(), Optional.of(shortDuration));
+        SessionId sessionId = controller.createSession("dummy", Optional.of(shortDuration));
         for (int i = 0; i < 10; i++) {
             // keep the session alive
             boolean success = controller.setSessionValue(sessionId, SessionValueKey.of("key", String.class), "value");
@@ -78,7 +78,7 @@ public class TestMemorySessionController
             throws InterruptedException
     {
         SessionController controller = new MemorySessionController();
-        SessionId sessionId = controller.createSession(Optional.empty(), Optional.empty());
+        SessionId sessionId = controller.createSession("dummy", Optional.empty());
 
         SessionValueKey<String> key = new SessionValueKey<>("key", String.class);
 
