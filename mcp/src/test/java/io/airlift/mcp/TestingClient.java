@@ -10,9 +10,7 @@ import io.modelcontextprotocol.spec.McpSchema;
 
 import java.io.Closeable;
 import java.time.Duration;
-import java.util.List;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import static io.airlift.mcp.TestingIdentityMapper.EXPECTED_IDENTITY;
@@ -20,7 +18,7 @@ import static io.airlift.mcp.TestingIdentityMapper.IDENTITY_HEADER;
 import static io.modelcontextprotocol.spec.McpSchema.ElicitResult.Action.ACCEPT;
 import static java.util.Objects.requireNonNull;
 
-public record TestingClient(String name, McpSyncClient mcpClient, List<String> logs, List<String> progress, BlockingQueue<String> changes)
+public record TestingClient(String name, McpSyncClient mcpClient, BlockingQueue<String> logs, BlockingQueue<String> progress, BlockingQueue<String> changes)
         implements Closeable
 {
     public TestingClient
@@ -61,8 +59,8 @@ public record TestingClient(String name, McpSyncClient mcpClient, List<String> l
 
     public static TestingClient buildClient(Closer closer, String name, McpClientTransport clientTransport)
     {
-        List<String> logs = new CopyOnWriteArrayList<>();
-        List<String> progress = new CopyOnWriteArrayList<>();
+        BlockingQueue<String> logs = new LinkedBlockingQueue<>();
+        BlockingQueue<String> progress = new LinkedBlockingQueue<>();
         BlockingQueue<String> changes = new LinkedBlockingQueue<>();
 
         // can't record resource subscription changes until https://github.com/modelcontextprotocol/java-sdk/pull/735 is accepted/merged
