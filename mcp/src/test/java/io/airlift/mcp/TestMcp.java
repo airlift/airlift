@@ -236,19 +236,19 @@ public abstract class TestMcp
 
         client1.mcpClient().callTool(new CallToolRequest("log", ImmutableMap.of()));
         client2.mcpClient().callTool(new CallToolRequest("log", ImmutableMap.of()));
-        assertThat(client1.logs()).isEmpty();
-        assertThat(client2.logs()).isEmpty();
+        assertThat(takeNFromQueue(client1.logs(), 1)).isEmpty();
+        assertThat(takeNFromQueue(client2.logs(), 1)).isEmpty();
 
         client1.mcpClient().setLoggingLevel(ALERT);
         client2.mcpClient().setLoggingLevel(DEBUG);
 
         client1.mcpClient().callTool(new CallToolRequest("log", ImmutableMap.of()));
-        assertThat(client1.logs()).containsExactly("This is alert");
+        assertThat(takeNFromQueue(client1.logs(), 2)).containsExactly("This is alert");
         assertThat(client2.logs()).isEmpty();
 
         client2.mcpClient().callTool(new CallToolRequest("log", ImmutableMap.of()));
-        assertThat(client1.logs()).containsExactly("This is alert");
-        assertThat(client2.logs()).containsExactlyInAnyOrder("This is alert", "This is debug");
+        assertThat(takeNFromQueue(client1.logs(), 1)).isEmpty();
+        assertThat(takeNFromQueue(client2.logs(), 2)).containsExactlyInAnyOrder("This is alert", "This is debug");
     }
 
     @Test
@@ -259,12 +259,12 @@ public abstract class TestMcp
                 .collect(toImmutableList());
 
         client1.mcpClient().callTool(new CallToolRequest("progress", ImmutableMap.of()));
-        assertThat(client1.progress()).isEqualTo(expectedProgress);
-        assertThat(client2.progress()).isEmpty();
+        assertThat(takeNFromQueue(client1.progress(), 101)).isEqualTo(expectedProgress);
+        assertThat(takeNFromQueue(client2.progress(), 1)).isEmpty();
 
         client2.mcpClient().callTool(new CallToolRequest("progress", ImmutableMap.of()));
-        assertThat(client1.progress()).isEqualTo(expectedProgress);
-        assertThat(client2.progress()).isEqualTo(expectedProgress);
+        assertThat(takeNFromQueue(client1.progress(), 1)).isEmpty();
+        assertThat(takeNFromQueue(client2.progress(), 101)).isEqualTo(expectedProgress);
     }
 
     @Test
@@ -729,5 +729,24 @@ public abstract class TestMcp
                 .extracting(McpError::getJsonRpcError)
                 .extracting(JSONRPCError::code, JSONRPCError::message)
                 .contains(code, message);
+    }
+
+    private List<String> takeNFromQueue(BlockingQueue<String> queue, int qty)
+    {
+        ImmutableList.Builder<String> builder = ImmutableList.builder();
+        while (qty-- > 0) {
+            try {
+                String value = queue.poll(250, MILLISECONDS);
+                if (value == null) {
+                    break;
+                }
+                builder.add(value);
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            }
+        }
+        return builder.build();
     }
 }
