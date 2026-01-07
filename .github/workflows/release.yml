@@ -47,7 +47,7 @@ jobs:
         env:
           MAVEN_GPG_PASSPHRASE: ${{ secrets.JRELEASER_GPG_PASSPHRASE }}
         run: |
-          ./mvnw -B release:prepare -Poss-release,oss-stage
+          ./mvnw -B release:prepare -Poss-release
 
       - name: Determine release version
         run: |
@@ -59,7 +59,7 @@ jobs:
         env:
           MAVEN_GPG_PASSPHRASE: ${{ secrets.JRELEASER_GPG_PASSPHRASE }}
         run: |
-          ./mvnw -B release:perform -Poss-release,oss-stage
+          ./mvnw -B release:perform -Poss-release
 
       - name: Display git status and history, checkout release tag
         run: |
@@ -82,7 +82,7 @@ jobs:
           MAVENCENTRAL_USERNAME: ${{ secrets.JRELEASER_NEXUS2_MAVEN_CENTRAL_USERNAME }}
           MAVENCENTRAL_PASSWORD: ${{ secrets.JRELEASER_NEXUS2_MAVEN_CENTRAL_TOKEN }}
         run:
-          ./mvnw njord:publish -Poss-release,oss-stage
+          ./mvnw njord:publish -Poss-release
 
       - name: Push git changes
         run: |
