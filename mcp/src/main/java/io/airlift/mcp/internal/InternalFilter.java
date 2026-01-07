@@ -398,10 +398,12 @@ public class InternalFilter
 
     private Object withManagement(HttpServletRequest request, Object requestId, InternalMessageWriter messageWriter, Supplier<Object> supplier)
     {
-        sessionController.ifPresent(_ -> mcpServer.reconcileVersions(request, messageWriter));
-
         if (sessionController.isEmpty()) {
             return supplier.get();
+        }
+
+        if (!httpGetEventsEnabled) {
+            mcpServer.reconcileVersions(request, messageWriter);
         }
 
         return cancellationController.builder(requireSessionId(request), cancellationKey(requestId))
