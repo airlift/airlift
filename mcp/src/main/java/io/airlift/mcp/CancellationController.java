@@ -15,7 +15,7 @@ import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -126,29 +126,31 @@ public class CancellationController
             throw exception("Request is already being processed: " + builder.requestId);
         }
 
-        Future<?> future = null;
+        Runnable cancellationThreadCloser = () -> {};
         try {
-            future = startCancellationThread(builder);
+            cancellationThreadCloser = startCancellationThread(builder);
             return supplier.get();
         }
         finally {
             activeRequestIds.remove(builder.requestId);
-            if (future != null) {
-                future.cancel(true);
-            }
+            cancellationThreadCloser.run();
         }
     }
 
-    private <T> Future<?> startCancellationThread(Builder<T> builder)
+    private <T> Runnable startCancellationThread(Builder<T> builder)
     {
         Thread activeThread = Thread.currentThread();
 
-        return executorService.submit(() -> {
+        AtomicBoolean isClosed = new AtomicBoolean();
+
+        executorService.execute(() -> {
             try {
-                while (!Thread.currentThread().isInterrupted()) {
-                    builder.sessionController.blockUntilCondition(builder.sessionId, builder.key, interval, builder.condition);
+                while (!isClosed.get()) {
                     Optional<T> value = builder.sessionController.getSessionValue(builder.sessionId, builder.key);
+
                     if (builder.condition.apply(value)) {
+                        isClosed.set(true);
+
                         try {
                             if (activeRequestIds.contains(builder.requestId)) {
                                 Optional<String> maybeReason = builder.reasonMapper.apply(value);
@@ -158,7 +160,9 @@ public class CancellationController
                         finally {
                             builder.postCancellationAction.accept(builder.sessionId, builder.key);
                         }
-                        break;
+                    }
+                    else {
+                        builder.sessionController.blockUntilCondition(builder.sessionId, builder.key, interval, builder.condition);
                     }
                 }
             }
@@ -167,5 +171,13 @@ public class CancellationController
                 // ignore
             }
         });
+
+        /*
+            A naive implementation would be to interrupt the cancellation thread. However, this might cause
+            the current thread to be interrupted when the "builder.postCancellationAction" is called causing that
+            action to fail. Instead, use a simple boolean. It may mean that this thread lives a bit longer than necessary,
+            but it avoids potential issues with interrupting the wrong thread.
+         */
+        return () -> isClosed.set(true);
     }
 }
