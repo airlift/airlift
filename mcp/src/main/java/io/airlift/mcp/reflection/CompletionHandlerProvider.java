@@ -105,7 +105,7 @@ public class CompletionHandlerProvider
             }
 
             List<String> values = (List<String>) result;
-            return new CompleteResult(new CompleteCompletion(values, OptionalInt.empty(), OptionalBoolean.UNDEFINED));
+            return new CompleteResult(new CompleteCompletion(values, OptionalInt.empty(), OptionalBoolean.FALSE));
         };
 
         return new CompletionEntry(completeReference, handler);
