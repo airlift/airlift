@@ -472,7 +472,7 @@ public class TestingDatabaseSessionController
                 }
             }
             catch (Throwable e) {
-                log.error("Error connecting/listening to database", e);
+                log.error(e, "Error connecting/listening to database");
                 try {
                     SECONDS.sleep(1);
                 }
