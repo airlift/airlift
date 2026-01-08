@@ -107,6 +107,7 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Queue;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
@@ -900,6 +901,7 @@ public class JettyHttpClient
     }
 
     @Override
+    @Deprecated
     public <T, E extends Exception> HttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
     {
         requireNonNull(request, "request is null");
@@ -937,6 +939,75 @@ public class JettyHttpClient
             future.failed(e);
             return future;
         }
+    }
+
+    @Override
+    public <T, E extends Exception> HttpResponseFuture<T> executeAsync(Executor executor, Request request, ResponseHandler<T, E> responseHandler)
+    {
+        requireNonNull(request, "request is null");
+        requireNonNull(responseHandler, "responseHandler is null");
+
+        try {
+            request = applyRequestFilters(request);
+        }
+        catch (RuntimeException e) {
+            startSpan(request)
+                    .setStatus(StatusCode.ERROR, e.getMessage())
+                    .recordException(e, Attributes.of(EXCEPTION_ESCAPED, true))
+                    .end();
+            return new FailedHttpResponseFuture<>(e);
+        }
+
+        Span span = startSpan(request);
+        request = injectTracing(request, span);
+
+        RequestContext context = buildRequestContext(request);
+        JettyResponseFuture<T, E> future = new JettyResponseFuture<>(request, context.request(), context.sizeListener()::getBytes, responseHandler, span, stats, recordRequestComplete);
+        InputStreamResponseListener listener = new InputStreamResponseListener();
+
+        try {
+            context.request().send(listener);
+            executor.execute(processResponse(context, listener, future));
+            return future;
+        }
+        catch (RuntimeException e) {
+            if (!(e instanceof RejectedExecutionException)) {
+                e = new RejectedExecutionException(e);
+            }
+            // normally this is a rejected execution exception because the client has been closed
+            requestLogger.log(context.info(), ResponseInfo.failed(Optional.empty(), Optional.of(e)));
+            future.failed(e);
+            return future;
+        }
+    }
+
+    private <T, E extends Exception> Runnable processResponse(RequestContext context, InputStreamResponseListener listener, JettyResponseFuture<T, E> future)
+    {
+        return () -> {
+            try {
+                Response response = listener.get(context.request.getTimeout(), MILLISECONDS);
+                try (InputStream stream = new ThrowingLimitingInputStream(listener.getInputStream(), context.maxContentLength().toBytes())) {
+                    future.completed(response, stream);
+                }
+                catch (IOException e) {
+                    requestLogger.log(context.info(), ResponseInfo.failed(Optional.of(response), Optional.of(e)));
+                    future.failed(e);
+                }
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                requestLogger.log(context.info(), ResponseInfo.failed(Optional.empty(), Optional.of(e)));
+                future.failed(e);
+            }
+            catch (TimeoutException e) {
+                requestLogger.log(context.info(), ResponseInfo.failed(Optional.empty(), Optional.of(e)));
+                future.failed(e);
+            }
+            catch (ExecutionException e) {
+                requestLogger.log(context.info(), ResponseInfo.failed(Optional.empty(), Optional.of(e)));
+                future.failed(e.getCause());
+            }
+        };
     }
 
     private Request applyRequestFilters(Request request)
@@ -1025,10 +1096,10 @@ public class JettyHttpClient
         RequestSizeListener requestSizeListener = new RequestSizeListener();
         jettyRequest.onRequestContent(requestSizeListener);
 
-        return new RequestContext(jettyRequest, RequestInfo.from(jettyRequest, requestTime), requestSizeListener, requestTime);
+        return new RequestContext(jettyRequest, RequestInfo.from(jettyRequest, requestTime), requestSizeListener, finalRequest.getMaxResponseContentLength().orElse(this.maxResponseContentLength), requestTime);
     }
 
-    private record RequestContext(HttpRequest request, RequestInfo info, RequestSizeListener sizeListener, long timestamp) {}
+    private record RequestContext(HttpRequest request, RequestInfo info, RequestSizeListener sizeListener, DataSize maxContentLength, long timestamp) {}
 
     private boolean shouldBeDiagnosed(Result result)
     {

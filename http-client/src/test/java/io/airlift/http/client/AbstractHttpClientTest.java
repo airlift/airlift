@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
@@ -1336,12 +1337,44 @@ public abstract class AbstractHttpClientTest
         return (t instanceof SocketTimeoutException) || (t instanceof SocketException);
     }
 
+    @SuppressWarnings("deprecation")
     public static <T, E extends Exception> T executeAsync(JettyHttpClient client, Request request, ResponseHandler<T, E> responseHandler)
             throws E
     {
         HttpResponseFuture<T> future = null;
         try {
             future = client.executeAsync(request, responseHandler);
+        }
+        catch (Exception e) {
+            fail("Unexpected exception", e);
+        }
+
+        try {
+            return future.get();
+        }
+        catch (InterruptedException e) {
+            currentThread().interrupt();
+            throw new RuntimeException(e);
+        }
+        catch (ExecutionException e) {
+            throwIfUnchecked(e.getCause());
+
+            if (e.getCause() instanceof Exception) {
+                // the HTTP client and ResponseHandler interface enforces this
+                throw AbstractHttpClientTest.<E>castThrowable(e.getCause());
+            }
+
+            // e.getCause() is some direct subclass of throwable
+            throw new RuntimeException(e.getCause());
+        }
+    }
+
+    public static <T, E extends Exception> T executeAsync(Executor executor, JettyHttpClient client, Request request, ResponseHandler<T, E> responseHandler)
+            throws E
+    {
+        HttpResponseFuture<T> future = null;
+        try {
+            future = client.executeAsync(executor, request, responseHandler);
         }
         catch (Exception e) {
             fail("Unexpected exception", e);

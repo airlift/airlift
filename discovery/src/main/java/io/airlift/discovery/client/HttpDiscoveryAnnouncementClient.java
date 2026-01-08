@@ -39,11 +39,14 @@ import java.net.UnknownHostException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
+import static io.airlift.concurrent.Threads.virtualThreadsNamed;
 import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
 import static io.airlift.http.client.JsonBodyGenerator.jsonBodyGenerator;
 import static io.airlift.http.client.Request.Builder.prepareDelete;
@@ -54,6 +57,8 @@ import static java.util.Objects.requireNonNull;
 public class HttpDiscoveryAnnouncementClient
         implements DiscoveryAnnouncementClient
 {
+    private final Executor responseExecutor = Executors.newThreadPerTaskExecutor(virtualThreadsNamed("discovery-announcement-response#v"));
+
     private static final MediaType MEDIA_TYPE_JSON = MediaType.create("application", "json");
     private static final Logger log = Logger.get(HttpDiscoveryAnnouncementClient.class);
 
@@ -106,7 +111,7 @@ public class HttpDiscoveryAnnouncementClient
                 .setHeader("Content-Type", MEDIA_TYPE_JSON.toString())
                 .setBodyGenerator(jsonBodyGenerator(announcementCodec, announcement))
                 .build();
-        return httpClient.executeAsync(request, new DiscoveryResponseHandler<>("Announcement", uri)
+        return httpClient.executeAsync(responseExecutor, request, new DiscoveryResponseHandler<>("Announcement", uri)
         {
             @Override
             public Duration handle(Request request, Response response)
@@ -149,7 +154,7 @@ public class HttpDiscoveryAnnouncementClient
                 .setUri(createAnnouncementLocation(uri, nodeInfo.getNodeId()))
                 .setHeader("User-Agent", nodeInfo.getNodeId())
                 .build();
-        return httpClient.executeAsync(request, new DiscoveryResponseHandler<>("Unannouncement", uri));
+        return httpClient.executeAsync(responseExecutor, request, new DiscoveryResponseHandler<>("Unannouncement", uri));
     }
 
     @VisibleForTesting
