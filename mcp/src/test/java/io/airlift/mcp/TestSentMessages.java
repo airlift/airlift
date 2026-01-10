@@ -2,11 +2,13 @@ package io.airlift.mcp;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Closer;
+import com.google.inject.Key;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.StreamingResponse;
 import io.airlift.http.server.HttpServerInfo;
 import io.airlift.http.server.testing.TestingHttpServer;
 import io.airlift.mcp.SentMessages.SentMessage;
+import io.airlift.mcp.sessions.ForSessionCaching;
 import io.airlift.mcp.sessions.MemorySessionController;
 import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.sessions.SessionId;
@@ -66,7 +68,7 @@ public class TestSentMessages
 
         client = buildClient(closer, baseUri, "client");
 
-        sessionController = (MemorySessionController) testingServer.injector().getInstance(SessionController.class);
+        sessionController = (MemorySessionController) testingServer.injector().getInstance(Key.get(SessionController.class, ForSessionCaching.class));
     }
 
     @AfterAll

@@ -8,6 +8,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.io.Closer;
 import com.google.common.reflect.TypeToken;
+import com.google.inject.Key;
 import com.google.inject.Module;
 import io.airlift.http.client.FullJsonResponseHandler;
 import io.airlift.http.client.HttpClient;
@@ -18,6 +19,7 @@ import io.airlift.json.JsonCodecFactory;
 import io.airlift.log.Logger;
 import io.airlift.mcp.model.CancelledNotification;
 import io.airlift.mcp.model.JsonRpcRequest;
+import io.airlift.mcp.sessions.ForSessionCaching;
 import io.airlift.mcp.sessions.MemorySessionController;
 import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.sessions.SessionId;
@@ -153,7 +155,7 @@ public abstract class TestMcp
         httpClient = testingServer.httpClient();
         objectMapper = testingServer.injector().getInstance(ObjectMapper.class);
 
-        SessionController sessionController = testingServer.injector().getInstance(SessionController.class);
+        SessionController sessionController = testingServer.injector().getInstance(Key.get(SessionController.class, ForSessionCaching.class));
 
         sessionIdsSupplier = switch (mode) {
             case MEMORY_SESSIONS -> () -> ((MemorySessionController) sessionController).sessionIds();
