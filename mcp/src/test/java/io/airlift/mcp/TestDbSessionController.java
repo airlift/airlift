@@ -19,7 +19,7 @@ public class TestDbSessionController
     public TestDbSessionController()
     {
         testingDatabaseServer = new TestingDatabaseServer();
-        sessionController = new TestingDatabaseSessionController(testingDatabaseServer, new ObjectMapperProvider().get());
+        sessionController = new TestingDatabaseSessionController(testingDatabaseServer, new ObjectMapperProvider().get(), new McpConfig());
         sessionController.initialize();
     }
 

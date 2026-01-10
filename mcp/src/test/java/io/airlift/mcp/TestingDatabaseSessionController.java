@@ -25,6 +25,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
@@ -41,6 +43,7 @@ import java.util.stream.Stream;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.util.concurrent.MoreExecutors.shutdownAndAwaitTermination;
 import static io.airlift.mcp.sessions.SessionConditionUtil.waitForCondition;
+import static java.sql.Types.BIGINT;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -56,7 +59,9 @@ public class TestingDatabaseSessionController
             CREATE TABLE IF NOT EXISTS sessions
             (
                 session_id VARCHAR(36) PRIMARY KEY,
-                created_at TIMESTAMP NOT NULL DEFAULT now()
+                created_at TIMESTAMP NOT NULL DEFAULT now(),
+                updated_at TIMESTAMP NOT NULL DEFAULT now(),
+                ttl_ms BIGINT NULL
             );
             
             CREATE TABLE IF NOT EXISTS session_values
@@ -68,6 +73,18 @@ public class TestingDatabaseSessionController
                 PRIMARY KEY (session_id, type, name),
                 FOREIGN KEY (session_id) REFERENCES sessions (session_id) ON DELETE CASCADE
             );
+            """;
+
+    private static final String DELETE_STALE_SESSIONS_SQL = """
+            DELETE FROM sessions
+            WHERE ttl_ms IS NOT NULL
+              AND (created_at + (ttl_ms || ' milliseconds')::INTERVAL) < now()
+            """;
+
+    private static final String UPDATE_SESSION_SQL = """
+            UPDATE sessions
+            SET updated_at = now()
+            WHERE session_id = ?
             """;
 
     private static final String VALIDATE_SESSION_SQL = """
@@ -110,7 +127,7 @@ public class TestingDatabaseSessionController
             """;
 
     private static final String CREATE_SESSION_SQL = """
-            INSERT INTO sessions (session_id) VALUES (?)
+            INSERT INTO sessions (session_id, ttl_ms) VALUES (?, ?)
             """;
 
     private static final String LIST_VALUES_SQL = """
@@ -143,9 +160,11 @@ public class TestingDatabaseSessionController
     private final ObjectMapper objectMapper;
     private final ExecutorService executorService;
     private final Cache<String, Signal> signals;
+    private final AtomicReference<Instant> lastStaleSessionCleanup = new AtomicReference<>(Instant.now());
+    private final Duration sessionTimeout;
 
     @Inject
-    public TestingDatabaseSessionController(TestingDatabaseServer database, ObjectMapper objectMapper)
+    public TestingDatabaseSessionController(TestingDatabaseServer database, ObjectMapper objectMapper, McpConfig mcpConfig)
     {
         this.database = requireNonNull(database, "database is null");
         this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
@@ -155,6 +174,8 @@ public class TestingDatabaseSessionController
         signals = CacheBuilder.newBuilder()
                 .softValues()
                 .build();
+
+        sessionTimeout = mcpConfig.getDefaultSessionTimeout().toJavaTime();
     }
 
     @PostConstruct
@@ -176,13 +197,19 @@ public class TestingDatabaseSessionController
     @Override
     public SessionId createSession(McpIdentity identity, Optional<Duration> ttl)
     {
-        // this is merely a test implementation, so we ignore the ttl
+        checkClean();
 
         SessionId sessionId = new SessionId(UUID.randomUUID().toString());
 
         database.inTransaction(connection -> {
             PreparedStatement preparedStatement = connection.prepareStatement(CREATE_SESSION_SQL);
             preparedStatement.setString(1, sessionId.id());
+            if (ttl.isPresent()) {
+                preparedStatement.setLong(2, ttl.get().toMillis());
+            }
+            else {
+                preparedStatement.setNull(2, BIGINT);
+            }
             preparedStatement.executeUpdate();
         });
 
@@ -192,13 +219,20 @@ public class TestingDatabaseSessionController
     @Override
     public boolean validateSession(SessionId sessionId)
     {
-        return database.withConnection(connection ->
-                internalValidateSession(connection, sessionId));
+        checkClean();
+
+        return database.withConnection(connection -> {
+            PreparedStatement preparedStatement = connection.prepareStatement(UPDATE_SESSION_SQL);
+            preparedStatement.setString(1, sessionId.id());
+            return preparedStatement.executeUpdate() != 0;
+        });
     }
 
     @Override
     public void deleteSession(SessionId sessionId)
     {
+        checkClean();
+
         database.inTransaction(connection -> {
             PreparedStatement preparedStatement = connection.prepareStatement(DELETE_SESSION_SQL);
             preparedStatement.setString(1, sessionId.id());
@@ -209,6 +243,8 @@ public class TestingDatabaseSessionController
     @Override
     public <T> Optional<T> getSessionValue(SessionId sessionId, SessionValueKey<T> key)
     {
+        checkClean();
+
         return database.withConnection(connection ->
                         internalGetValue(connection, sessionId, key, SELECT_VALUE_SQL))
                 .map(maybeJson -> mapJson(key.type(), maybeJson));
@@ -217,6 +253,8 @@ public class TestingDatabaseSessionController
     @Override
     public <T> Optional<T> computeSessionValue(SessionId sessionId, SessionValueKey<T> key, UnaryOperator<Optional<T>> updater)
     {
+        checkClean();
+
         return database.withTransaction(connection -> {
             if (!internalValidateSession(connection, sessionId)) {
                 return Optional.empty();
@@ -279,6 +317,8 @@ public class TestingDatabaseSessionController
     @Override
     public <T> boolean setSessionValue(SessionId sessionId, SessionValueKey<T> key, T value)
     {
+        checkClean();
+
         String json;
         try {
             json = objectMapper.writeValueAsString(value);
@@ -309,6 +349,8 @@ public class TestingDatabaseSessionController
     @Override
     public <T> boolean deleteSessionValue(SessionId sessionId, SessionValueKey<T> key)
     {
+        checkClean();
+
         return database.withTransaction(connection -> {
             if (!internalValidateSession(connection, sessionId)) {
                 return false;
@@ -326,6 +368,8 @@ public class TestingDatabaseSessionController
     public <T> void blockUntilCondition(SessionId sessionId, SessionValueKey<T> key, Duration timeout, Function<Optional<T>, Boolean> condition)
             throws InterruptedException
     {
+        checkClean();
+
         /*
             blockUntilCondition() is merely an optimization and does not need to be perfect nor exact.
          */
@@ -346,6 +390,8 @@ public class TestingDatabaseSessionController
     @Override
     public <T> List<Map.Entry<String, T>> listSessionValues(SessionId sessionId, Class<T> type, int pageSize, Optional<String> lastName)
     {
+        checkClean();
+
         return database.withConnection(connection -> {
                     PreparedStatement preparedStatement = connection.prepareStatement(LIST_VALUES_SQL);
                     preparedStatement.setString(1, sessionId.id());
@@ -371,6 +417,8 @@ public class TestingDatabaseSessionController
     @Override
     public List<SessionId> listSessions(int pageSize, Optional<SessionId> cursor)
     {
+        checkClean();
+
         return database.withConnection(connection -> {
             PreparedStatement preparedStatement = connection.prepareStatement(LIST_SESSIONS_SQL);
             preparedStatement.setString(1, cursor.map(SessionId::id).orElse(null));
@@ -416,6 +464,7 @@ public class TestingDatabaseSessionController
         return value.replace("'", "");
     }
 
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     private static boolean internalValidateSession(Connection connection, SessionId sessionId)
             throws SQLException
     {
@@ -448,6 +497,24 @@ public class TestingDatabaseSessionController
         preparedStatement.setString(2, type(key));
         preparedStatement.setString(3, key.name());
         preparedStatement.executeUpdate();
+    }
+
+    private void checkClean()
+    {
+        Instant lastCleanup = lastStaleSessionCleanup.get();
+        Instant now = Instant.now();
+        if (Duration.between(lastCleanup, now).compareTo(sessionTimeout) >= 0) {
+            if (lastStaleSessionCleanup.compareAndSet(lastCleanup, now)) {
+                int qtyDeleted = database.withTransaction(connection -> {
+                    Statement statement = connection.createStatement();
+                    return statement.executeUpdate(DELETE_STALE_SESSIONS_SQL);
+                });
+
+                if (qtyDeleted > 0) {
+                    log.info("Cleaned up %d stale sessions".formatted(qtyDeleted));
+                }
+            }
+        }
     }
 
     private <T> T mapJson(Class<T> type, String json)
