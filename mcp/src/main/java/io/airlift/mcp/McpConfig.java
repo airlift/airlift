@@ -18,6 +18,7 @@ public class McpConfig
     private Duration eventStreamingTimeout = new Duration(5, MINUTES);
     private Duration cancellationCheckInterval = new Duration(1, SECONDS);
     private int maxResumableMessages = 100;
+    private int maxSessionCache = 10000;
 
     @Min(1)
     public int getDefaultPageSize()
@@ -119,6 +120,19 @@ public class McpConfig
     public McpConfig setMaxResumableMessages(int maxResumableMessages)
     {
         this.maxResumableMessages = maxResumableMessages;
+        return this;
+    }
+
+    @Min(1)
+    public int getMaxSessionCache()
+    {
+        return maxSessionCache;
+    }
+
+    @Config("mcp.session.cache.max-size")
+    public McpConfig setMaxSessionCache(int maxSessionCache)
+    {
+        this.maxSessionCache = maxSessionCache;
         return this;
     }
 }

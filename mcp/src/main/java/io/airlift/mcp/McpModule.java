@@ -4,6 +4,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Binder;
+import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.binder.AnnotatedBindingBuilder;
 import com.google.inject.binder.LinkedBindingBuilder;
@@ -36,6 +37,8 @@ import io.airlift.mcp.reflection.PromptHandlerProvider;
 import io.airlift.mcp.reflection.ResourceHandlerProvider;
 import io.airlift.mcp.reflection.ResourceTemplateHandlerProvider;
 import io.airlift.mcp.reflection.ToolHandlerProvider;
+import io.airlift.mcp.sessions.CachingSessionController;
+import io.airlift.mcp.sessions.ForSessionCaching;
 import io.airlift.mcp.sessions.SessionController;
 
 import java.util.Collection;
@@ -320,7 +323,12 @@ public class McpModule
     private void bindSessions(Binder binder)
     {
         OptionalBinder<SessionController> sessionControllerBinder = newOptionalBinder(binder, SessionController.class);
-        sessionControllerBinding.ifPresent(sessionControllerBinding -> sessionControllerBinding.accept(sessionControllerBinder.setBinding()));
+        OptionalBinder<SessionController> sessionControllerDelegateBinder = newOptionalBinder(binder, Key.get(SessionController.class, ForSessionCaching.class));
+
+        sessionControllerBinding.ifPresent(sessionControllerBinding -> {
+            sessionControllerBinding.accept(sessionControllerDelegateBinder.setBinding());
+            sessionControllerBinder.setDefault().to(CachingSessionController.class).in(SINGLETON);
+        });
     }
 
     private void bindClasses(Binder binder)
