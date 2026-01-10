@@ -74,8 +74,6 @@ public class TestingDatabaseSessionController
             SELECT 1 FROM sessions WHERE session_id = ?
             """;
 
-    private static final String VALIDATE_SESSION_FOR_UPDATE_SQL = VALIDATE_SESSION_SQL + " FOR UPDATE";
-
     private static final String DELETE_SESSION_SQL = """
             DELETE FROM sessions WHERE session_id = ?
             """;
@@ -195,7 +193,7 @@ public class TestingDatabaseSessionController
     public boolean validateSession(SessionId sessionId)
     {
         return database.withConnection(connection ->
-                internalValidateSession(connection, sessionId, VALIDATE_SESSION_SQL));
+                internalValidateSession(connection, sessionId));
     }
 
     @Override
@@ -220,7 +218,7 @@ public class TestingDatabaseSessionController
     public <T> Optional<T> computeSessionValue(SessionId sessionId, SessionValueKey<T> key, UnaryOperator<Optional<T>> updater)
     {
         return database.withTransaction(connection -> {
-            if (!internalValidateSession(connection, sessionId, VALIDATE_SESSION_FOR_UPDATE_SQL)) {
+            if (!internalValidateSession(connection, sessionId)) {
                 return Optional.empty();
             }
 
@@ -290,7 +288,7 @@ public class TestingDatabaseSessionController
         }
 
         return database.withTransaction(connection -> {
-            if (!internalValidateSession(connection, sessionId, VALIDATE_SESSION_SQL)) {
+            if (!internalValidateSession(connection, sessionId)) {
                 return false;
             }
 
@@ -312,7 +310,7 @@ public class TestingDatabaseSessionController
     public <T> boolean deleteSessionValue(SessionId sessionId, SessionValueKey<T> key)
     {
         return database.withTransaction(connection -> {
-            if (!internalValidateSession(connection, sessionId, VALIDATE_SESSION_SQL)) {
+            if (!internalValidateSession(connection, sessionId)) {
                 return false;
             }
 
@@ -418,10 +416,10 @@ public class TestingDatabaseSessionController
         return value.replace("'", "");
     }
 
-    private static boolean internalValidateSession(Connection connection, SessionId sessionId, String validateSessionSql)
+    private static boolean internalValidateSession(Connection connection, SessionId sessionId)
             throws SQLException
     {
-        PreparedStatement preparedStatement = connection.prepareStatement(validateSessionSql);
+        PreparedStatement preparedStatement = connection.prepareStatement(VALIDATE_SESSION_SQL);
         preparedStatement.setString(1, sessionId.id());
         var resultSet = preparedStatement.executeQuery();
         return resultSet.next();
