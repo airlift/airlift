@@ -219,7 +219,8 @@ public class TestingEndpoints
                                 firstTool.tool().inputSchema(),
                                 firstTool.tool().outputSchema(),
                                 firstTool.tool().annotations(),
-                                firstTool.tool().icons());
+                                firstTool.tool().icons(),
+                                firstTool.tool().execution());
                         mcpServer.addTool(alteredTool, firstTool.toolHandler());
                     }
 

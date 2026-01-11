@@ -23,6 +23,11 @@ class PaginationUtil
         pageSize = mcpConfig.getDefaultPageSize();
     }
 
+    int pageSize()
+    {
+        return pageSize;
+    }
+
     <T, L> T paginate(PaginatedRequest request, List<L> items, Function<L, String> keyMapper, BiFunction<List<L>, Optional<String>, T> resultMapper)
     {
         Stream<L> itemsStream = request.cursor()
