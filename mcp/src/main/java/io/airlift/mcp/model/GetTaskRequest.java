@@ -14,4 +14,10 @@ public record GetTaskRequest(String taskId, Optional<Map<String, Object>> meta)
         requireNonNull(taskId, "taskId is null");
         meta = firstNonNull(meta, Optional.empty());
     }
+
+    @Override
+    public GetTaskRequest withMeta(Map<String, Object> meta)
+    {
+        return new GetTaskRequest(taskId, Optional.of(meta));
+    }
 }

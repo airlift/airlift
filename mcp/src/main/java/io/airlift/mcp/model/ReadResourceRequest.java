@@ -19,4 +19,10 @@ public record ReadResourceRequest(String uri, Optional<Map<String, Object>> meta
     {
         this(uri, Optional.empty());
     }
+
+    @Override
+    public ReadResourceRequest withMeta(Map<String, Object> meta)
+    {
+        return new ReadResourceRequest(uri, Optional.of(meta));
+    }
 }

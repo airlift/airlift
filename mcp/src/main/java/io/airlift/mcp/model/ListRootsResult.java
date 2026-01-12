@@ -16,4 +16,10 @@ public record ListRootsResult(List<Root> roots, Optional<Map<String, Object>> me
         roots = ImmutableList.copyOf(roots);
         meta = requireNonNullElse(meta, Optional.empty());
     }
+
+    @Override
+    public ListRootsResult withMeta(Map<String, Object> meta)
+    {
+        return new ListRootsResult(roots, Optional.of(meta));
+    }
 }
