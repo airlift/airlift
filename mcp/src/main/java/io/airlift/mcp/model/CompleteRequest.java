@@ -24,6 +24,12 @@ public record CompleteRequest(CompleteReference ref, CompleteArgument argument, 
         this(ref, argument, context, Optional.empty());
     }
 
+    @Override
+    public CompleteRequest withMeta(Map<String, Object> meta)
+    {
+        return new CompleteRequest(ref, argument, context, Optional.of(meta));
+    }
+
     public record CompleteArgument(String name, String value)
     {
         public CompleteArgument

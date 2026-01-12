@@ -51,6 +51,12 @@ public record CreateMessageRequest(
         this(ImmutableList.of(new SamplingMessage(role, content)), Optional.empty(), Optional.empty(), Optional.empty(), OptionalDouble.empty(), maxTokens, Optional.empty(), Optional.empty(), Optional.empty());
     }
 
+    @Override
+    public CreateMessageRequest withMeta(Map<String, Object> meta)
+    {
+        return new CreateMessageRequest(messages, modelPreferences, systemPrompt, includeContext, temperature, maxTokens, stopSequences, metadata, Optional.of(meta));
+    }
+
     public record SamplingMessage(Role role, Content content)
     {
         public SamplingMessage

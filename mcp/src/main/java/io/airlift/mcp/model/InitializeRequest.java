@@ -13,18 +13,6 @@ public record InitializeRequest(
         Optional<Map<String, Object>> meta)
         implements Meta
 {
-    public record ClientCapabilities(Optional<ListChanged> roots, Optional<Sampling> sampling, Optional<Elicitation> elicitation, Optional<Map<String, Object>> experimental)
-            implements Experimental
-    {
-        public ClientCapabilities
-        {
-            roots = requireNonNullElse(roots, Optional.empty());
-            sampling = requireNonNullElse(sampling, Optional.empty());
-            elicitation = requireNonNullElse(elicitation, Optional.empty());
-            experimental = requireNonNullElse(experimental, Optional.empty());
-        }
-    }
-
     public InitializeRequest
     {
         requireNonNull(protocolVersion, "protocolVersion is null");
@@ -36,6 +24,24 @@ public record InitializeRequest(
     public InitializeRequest(String protocolVersion, ClientCapabilities capabilities, Implementation clientInfo)
     {
         this(protocolVersion, capabilities, clientInfo, Optional.empty());
+    }
+
+    @Override
+    public InitializeRequest withMeta(Map<String, Object> meta)
+    {
+        return new InitializeRequest(protocolVersion, capabilities, clientInfo, Optional.of(meta));
+    }
+
+    public record ClientCapabilities(Optional<ListChanged> roots, Optional<Sampling> sampling, Optional<Elicitation> elicitation, Optional<Map<String, Object>> experimental)
+            implements Experimental
+    {
+        public ClientCapabilities
+        {
+            roots = requireNonNullElse(roots, Optional.empty());
+            sampling = requireNonNullElse(sampling, Optional.empty());
+            elicitation = requireNonNullElse(elicitation, Optional.empty());
+            experimental = requireNonNullElse(experimental, Optional.empty());
+        }
     }
 
     public record Sampling() {}

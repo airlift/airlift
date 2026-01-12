@@ -19,6 +19,12 @@ public record ElicitResult(Action action, Optional<Map<String, Object>> content,
         meta = requireNonNullElse(meta, Optional.empty());
     }
 
+    @Override
+    public ElicitResult withMeta(Map<String, Object> meta)
+    {
+        return new ElicitResult(action, content, Optional.of(meta));
+    }
+
     public enum Action
     {
         ACCEPT,

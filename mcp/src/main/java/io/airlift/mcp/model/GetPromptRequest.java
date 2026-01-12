@@ -22,4 +22,10 @@ public record GetPromptRequest(String name, Map<String, Object> arguments, Optio
     {
         this(name, arguments, Optional.empty());
     }
+
+    @Override
+    public GetPromptRequest withMeta(Map<String, Object> meta)
+    {
+        return new GetPromptRequest(name, arguments, Optional.of(meta));
+    }
 }

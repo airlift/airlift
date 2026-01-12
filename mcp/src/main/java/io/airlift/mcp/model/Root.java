@@ -15,4 +15,10 @@ public record Root(String uri, Optional<String> name, Optional<Map<String, Objec
         name = requireNonNullElse(name, Optional.empty());
         meta = requireNonNullElse(meta, Optional.empty());
     }
+
+    @Override
+    public Root withMeta(Map<String, Object> meta)
+    {
+        return new Root(uri, name, Optional.of(meta));
+    }
 }

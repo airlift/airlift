@@ -424,7 +424,7 @@ public class InternalMcpServer
             return toolEntry.toolHandler().callTool(requestContext, callToolRequest);
         }
         catch (McpClientException mcpClientException) {
-            return new CallToolResult(ImmutableList.of(new TextContent(mcpClientException.unwrap().errorDetail().message())), Optional.empty(), true);
+            return new CallToolResult(ImmutableList.of(new TextContent(mcpClientException.unwrap().errorDetail().message())), Optional.empty(), true, Optional.empty());
         }
     }
 
