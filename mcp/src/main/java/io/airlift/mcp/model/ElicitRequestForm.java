@@ -23,4 +23,10 @@ public record ElicitRequestForm(Optional<String> mode, String message, ObjectNod
     {
         this(Optional.of("form"), message, requestedSchema, Optional.empty());
     }
+
+    @Override
+    public ElicitRequestForm withMeta(Map<String, Object> meta)
+    {
+        return new ElicitRequestForm(mode, message, requestedSchema, Optional.of(meta));
+    }
 }

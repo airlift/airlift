@@ -22,4 +22,10 @@ public record ElicitRequestUrl(Optional<String> mode, String elicitationId, Stri
     {
         this(Optional.of("url"), elicitationId, message, url, Optional.empty());
     }
+
+    @Override
+    public ElicitRequestUrl withMeta(Map<String, Object> meta)
+    {
+        return new ElicitRequestUrl(mode, elicitationId, message, url, Optional.of(meta));
+    }
 }

@@ -3,6 +3,7 @@ package io.airlift.mcp.model;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -18,7 +19,9 @@ public record Tool(
         ObjectNode inputSchema,
         Optional<ObjectNode> outputSchema,
         ToolAnnotations annotations,
-        Optional<List<Icon>> icons)
+        Optional<List<Icon>> icons,
+        Optional<Map<String, Object>> meta)
+        implements Meta
 {
     private static final Set<Character> ALLOWED_CHARACTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_-.".chars().mapToObj(i -> (char) i).collect(toImmutableSet());
 
@@ -31,13 +34,25 @@ public record Tool(
         outputSchema = requireNonNullElse(outputSchema, Optional.empty());
         requireNonNull(annotations, "annotations is null");
         icons = requireNonNullElse(icons, Optional.empty());
+        meta = requireNonNullElse(meta, Optional.empty());
 
         validateName(name);
     }
 
+    public Tool(String name, Optional<String> description, Optional<String> title, ObjectNode inputSchema, Optional<ObjectNode> outputSchema, ToolAnnotations annotations, Optional<List<Icon>> icons)
+    {
+        this(name, description, title, inputSchema, outputSchema, annotations, icons, Optional.empty());
+    }
+
     public Tool(String name, Optional<String> description, Optional<String> title, ObjectNode inputSchema, Optional<ObjectNode> outputSchema, ToolAnnotations annotations)
     {
-        this(name, description, title, inputSchema, outputSchema, annotations, Optional.empty());
+        this(name, description, title, inputSchema, outputSchema, annotations, Optional.empty(), Optional.empty());
+    }
+
+    @Override
+    public Tool withMeta(Map<String, Object> meta)
+    {
+        return new Tool(name, description, title, inputSchema, outputSchema, annotations, icons, Optional.of(meta));
     }
 
     public static void validateName(String name)
@@ -51,12 +66,12 @@ public record Tool(
 
     public Tool withIcons(Optional<List<Icon>> icons)
     {
-        return new Tool(name, description, title, inputSchema, outputSchema, annotations, icons);
+        return new Tool(name, description, title, inputSchema, outputSchema, annotations, icons, meta);
     }
 
     public Tool withoutIcons()
     {
-        return new Tool(name, description, title, inputSchema, outputSchema, annotations, Optional.empty());
+        return new Tool(name, description, title, inputSchema, outputSchema, annotations, Optional.empty(), meta);
     }
 
     public record ToolAnnotations(
