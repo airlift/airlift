@@ -26,6 +26,12 @@ public record InitializeRequest(
         this(protocolVersion, capabilities, clientInfo, Optional.empty());
     }
 
+    @Override
+    public InitializeRequest withMeta(Map<String, Object> meta)
+    {
+        return new InitializeRequest(protocolVersion, capabilities, clientInfo, Optional.of(meta));
+    }
+
     public record ClientCapabilities(Optional<ListChanged> roots, Optional<Sampling> sampling, Optional<Elicitation> elicitation, Optional<ClientTaskCapabilities> tasks, Optional<Map<String, Object>> experimental)
             implements Experimental
     {

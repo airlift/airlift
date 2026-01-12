@@ -27,6 +27,12 @@ public record CallToolRequest(String name, Map<String, Object> arguments, Option
 
     public CallToolRequest(String name)
     {
-        this(name, ImmutableMap.of(), Optional.empty());
+        this(name, ImmutableMap.of(), Optional.empty(), OptionalInt.empty());
+    }
+
+    @Override
+    public CallToolRequest withMeta(Map<String, Object> meta)
+    {
+        return new CallToolRequest(name, arguments, Optional.of(meta), ttl);
     }
 }
