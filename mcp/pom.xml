@@ -18,7 +18,7 @@
 
         <dep.testcontainers.version>2.0.3</dep.testcontainers.version>
         <dep.hikari.version>7.0.2</dep.hikari.version>
-        <dep.postgresql.version>42.7.8</dep.postgresql.version>
+        <dep.postgresql.version>42.7.9</dep.postgresql.version>
     </properties>
 
     <dependencies>
