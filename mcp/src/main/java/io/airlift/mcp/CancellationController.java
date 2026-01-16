@@ -18,6 +18,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import static com.google.common.util.concurrent.MoreExecutors.shutdownAndAwaitTermination;
 import static io.airlift.concurrent.Threads.virtualThreadsNamed;
@@ -76,7 +77,7 @@ public class CancellationController
         private final SessionValueKey<T> key;
 
         private Object requestId;
-        private Function<Optional<T>, Boolean> condition;
+        private Predicate<Optional<T>> condition;
         private BiConsumer<SessionId, SessionValueKey<T>> postCancellationAction = (_, _) -> {};
         private Function<Optional<T>, Optional<String>> reasonMapper = _ -> Optional.empty();
 
@@ -93,7 +94,7 @@ public class CancellationController
             return this;
         }
 
-        public Builder<T> withIsCancelledCondition(Function<Optional<T>, Boolean> condition)
+        public Builder<T> withIsCancelledCondition(Predicate<Optional<T>> condition)
         {
             this.condition = requireNonNull(condition, "condition is null");
             return this;
@@ -148,7 +149,7 @@ public class CancellationController
                 while (!isClosed.get()) {
                     Optional<T> value = builder.sessionController.getSessionValue(builder.sessionId, builder.key);
 
-                    if (builder.condition.apply(value)) {
+                    if (builder.condition.test(value)) {
                         isClosed.set(true);
 
                         try {

@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
-import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -58,7 +58,7 @@ public interface SessionController
      *     has been deleted, etc.
      * </p>
      */
-    default <T> void blockUntilCondition(SessionId sessionId, SessionValueKey<T> key, Duration timeout, Function<Optional<T>, Boolean> condition)
+    default <T> void blockUntilCondition(SessionId sessionId, SessionValueKey<T> key, Duration timeout, Predicate<Optional<T>> condition)
             throws InterruptedException
     {
         MILLISECONDS.sleep(timeout.getSeconds() * 1000);
