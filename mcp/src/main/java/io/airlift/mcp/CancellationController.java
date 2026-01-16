@@ -97,9 +97,10 @@ public class CancellationController
             return this;
         }
 
-        public Builder<T> withIsCancelledCondition(Predicate<Optional<T>> condition)
+        public Builder<T> withIsCancelledCondition(Predicate<T> condition)
         {
-            this.condition = requireNonNull(condition, "condition is null");
+            requireNonNull(condition, "condition is null");
+            this.condition = maybeValue -> maybeValue.map(condition::test).orElse(false);
             return this;
         }
 
