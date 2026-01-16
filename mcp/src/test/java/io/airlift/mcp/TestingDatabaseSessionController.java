@@ -11,6 +11,7 @@ import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.google.inject.Inject;
 import io.airlift.concurrent.Threads;
 import io.airlift.log.Logger;
+import io.airlift.mcp.sessions.BlockingResult;
 import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.sessions.SessionId;
 import io.airlift.mcp.sessions.SessionValueKey;
@@ -365,7 +366,7 @@ public class TestingDatabaseSessionController
     }
 
     @Override
-    public <T> void blockUntilCondition(SessionId sessionId, SessionValueKey<T> key, Duration timeout, Predicate<Optional<T>> condition)
+    public <T> BlockingResult<T> blockUntilCondition(SessionId sessionId, SessionValueKey<T> key, Duration timeout, Predicate<Optional<T>> condition)
             throws InterruptedException
     {
         checkClean();
@@ -375,7 +376,7 @@ public class TestingDatabaseSessionController
          */
 
         String value = notificationValue(sessionId, key);
-        waitForCondition(this, sessionId, key, timeout, condition, maxWait -> {
+        return waitForCondition(this, sessionId, key, timeout, condition, maxWait -> {
             try {
                 Signal signal = signals.get(value, Signal::new);
                 signal.waitForSignal(maxWait.toMillis(), MILLISECONDS);

@@ -1,6 +1,8 @@
 package io.airlift.mcp;
 
 import io.airlift.mcp.McpIdentity.Authenticated;
+import io.airlift.mcp.sessions.BlockingResult;
+import io.airlift.mcp.sessions.BlockingResult.TimedOut;
 import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.sessions.SessionId;
 import io.airlift.mcp.sessions.SessionValueKey;
@@ -74,7 +76,8 @@ public abstract class TestSessionController
             }
         });
 
-        controller.blockUntilCondition(sessionId, key, Duration.ofSeconds(1), Optional::isPresent);
+        BlockingResult<String> blockingResult = controller.blockUntilCondition(sessionId, key, Duration.ofSeconds(1), Optional::isPresent);
+        assertThat(blockingResult).isInstanceOf(TimedOut.class);
 
         CountDownLatch latch1 = new CountDownLatch(1);
         Future<Void> future = newVirtualThreadPerTaskExecutor().submit(() -> {

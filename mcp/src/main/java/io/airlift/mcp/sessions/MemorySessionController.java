@@ -21,6 +21,7 @@ import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.sessions.SessionConditionUtil.waitForCondition;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -190,17 +191,11 @@ public class MemorySessionController
     }
 
     @Override
-    public <T> void blockUntilCondition(SessionId sessionId, SessionValueKey<T> key, Duration timeout, Predicate<Optional<T>> condition)
+    public <T> BlockingResult<T> blockUntilCondition(SessionId sessionId, SessionValueKey<T> key, Duration timeout, Predicate<Optional<T>> condition)
             throws InterruptedException
     {
-        waitForCondition(this, sessionId, key, timeout, condition, maxWait -> {
-            Optional<Session> maybeSession = getSession(sessionId);
-            if (maybeSession.isEmpty()) {
-                MILLISECONDS.sleep(maxWait.toMillis());
-                return;
-            }
-
-            Session session = maybeSession.get();
+        return waitForCondition(this, sessionId, key, timeout, condition, maxWait -> {
+            Session session = getSession(sessionId).orElseThrow(() -> exception("Session not found: " + sessionId));
             session.signal.waitForSignal(maxWait.toMillis(), MILLISECONDS);
         });
     }
