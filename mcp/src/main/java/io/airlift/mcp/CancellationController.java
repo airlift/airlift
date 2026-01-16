@@ -5,6 +5,9 @@ import com.google.common.base.Supplier;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import io.airlift.log.Logger;
+import io.airlift.mcp.sessions.BlockingResult.EmptyFulfilled;
+import io.airlift.mcp.sessions.BlockingResult.Fulfilled;
+import io.airlift.mcp.sessions.BlockingResult.TimedOut;
 import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.sessions.SessionId;
 import io.airlift.mcp.sessions.SessionValueKey;
@@ -147,23 +150,10 @@ public class CancellationController
         executorService.execute(() -> {
             try {
                 while (!isClosed.get()) {
-                    Optional<T> value = builder.sessionController.getSessionValue(builder.sessionId, builder.key);
-
-                    if (builder.condition.test(value)) {
-                        isClosed.set(true);
-
-                        try {
-                            if (activeRequestIds.contains(builder.requestId)) {
-                                Optional<String> maybeReason = builder.reasonMapper.apply(value);
-                                cancellationHandler.cancelRequest(activeThread, builder.requestId, maybeReason);
-                            }
-                        }
-                        finally {
-                            builder.postCancellationAction.accept(builder.sessionId, builder.key);
-                        }
-                    }
-                    else {
-                        builder.sessionController.blockUntilCondition(builder.sessionId, builder.key, interval, builder.condition);
+                    switch (builder.sessionController.blockUntilCondition(builder.sessionId, builder.key, interval, builder.condition)) {
+                        case Fulfilled<T>(var value) -> handleCancellation(builder, Optional.of(value), isClosed, activeThread);
+                        case EmptyFulfilled _ -> handleCancellation(builder, Optional.empty(), isClosed, activeThread);
+                        case TimedOut _ -> {}   // do nothing and iterate again
                     }
                 }
             }
@@ -180,5 +170,20 @@ public class CancellationController
             but it avoids potential issues with interrupting the wrong thread.
          */
         return () -> isClosed.set(true);
+    }
+
+    private <T> void handleCancellation(Builder<T> builder, Optional<T> value, AtomicBoolean isClosed, Thread activeThread)
+    {
+        isClosed.set(true);
+
+        try {
+            if (activeRequestIds.contains(builder.requestId)) {
+                Optional<String> maybeReason = builder.reasonMapper.apply(value);
+                cancellationHandler.cancelRequest(activeThread, builder.requestId, maybeReason);
+            }
+        }
+        finally {
+            builder.postCancellationAction.accept(builder.sessionId, builder.key);
+        }
     }
 }

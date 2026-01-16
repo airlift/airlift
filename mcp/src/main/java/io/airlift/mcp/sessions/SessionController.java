@@ -10,6 +10,7 @@ import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
+import static io.airlift.mcp.sessions.SessionConditionUtil.waitForCondition;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public interface SessionController
@@ -44,24 +45,24 @@ public interface SessionController
 
     /**
      * <p>
-     *     Block until the given condition returns {@code true} for the value associated with the given key in the session,
-     *     or until the timeout expires.
+     * Block until the given condition returns {@code true} for the value associated with the given key in the session,
+     * or until the timeout expires.
      * </p>
      *
      * <p>
-     *     IMPORTANT: this is optional behavior. If the implementation does not support waiting for session changes,
-     *     the method should simply sleep for the duration of the timeout and return (as the default does).
+     * IMPORTANT: this is optional behavior. If the implementation does not support waiting for session changes,
+     * use the default implementation.
      * </p>
      *
      * <p>
-     *     The condition receives an optional value for the key. If the value is {@code empty()}, the key is not present in the session,
-     *     has been deleted, etc.
+     * The condition receives an optional value for the key. If the value is {@code empty()}, the key is not present in the session,
+     * has been deleted, etc.
      * </p>
      */
-    default <T> void blockUntilCondition(SessionId sessionId, SessionValueKey<T> key, Duration timeout, Predicate<Optional<T>> condition)
+    default <T> BlockingResult<T> blockUntilCondition(SessionId sessionId, SessionValueKey<T> key, Duration timeout, Predicate<Optional<T>> condition)
             throws InterruptedException
     {
-        MILLISECONDS.sleep(timeout.getSeconds() * 1000);
+        return waitForCondition(this, sessionId, key, timeout, condition, maxWait -> MILLISECONDS.sleep(maxWait.toMillis()));
     }
 
     /**
