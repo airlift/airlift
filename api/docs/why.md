@@ -2,7 +2,7 @@
 
 This document analyzes the benefits of adopting Airlift's API Builder framework versus the traditional JAX-RS + Swagger approach, with concrete examples from real-world codebases.
 
-## Summary
+## Executive Summary
 
 Many projects use **JAX-RS + Swagger annotations** to build and document REST APIs. After analyzing typical Airlift-based codebases, we've identified opportunities where **Airlift API Builder** can reduce boilerplate, enforce consistency, and prevent common issues.
 
@@ -127,13 +127,13 @@ public class RoleResource
     }
 
     // Custom operations for non-standard patterns
-    @ApiCustom(method = "GET", path = "deleted")
+    @ApiCustom(type = "deleted", verb = "GET")
     public List<Role> listDeleted(@Context UserInfo userInfo)
     {
         return roleApi.listDeleted(userInfo);
     }
 
-    @ApiCustom(method = "PUT", path = "{roleId}/users/{userId}")
+    @ApiCustom(type = "{roleId}/users/{userId}", verb = "PUT")
     public boolean assignUserToRole(
             @Context UserInfo userInfo,
             @ApiId("roleId") UUID roleId,
@@ -223,15 +223,16 @@ public PaginatedResponse<Role> listAll(
 
 ```java
 @ApiList
-@ApiPagination
-public ApiPaginatedResult<Role> listAll(@Context UserInfo userInfo)
+public ApiPaginatedResult<Role> listAll(
+        @Context UserInfo userInfo,
+        @ApiParameter ApiPagination pagination)
 {
-    return roleApi.listAllPaginated(userInfo);
+    return roleApi.listAllPaginated(userInfo, pagination);
 }
 ```
 
 The framework handles:
-- `pageToken` and `pageSize` query parameters
+- `pageToken` and `pageSize` query parameters via the `ApiPagination` record
 - Consistent `nextPageToken` in response
 - Standardized pagination envelope across all endpoints
 
@@ -239,18 +240,18 @@ The framework handles:
 
 ```java
 @ApiList
-@ApiPagination
 public ApiPaginatedResult<Role> listRoles(
-        @ApiFilter("name") String nameFilter,
-        @ApiFilter("createdAfter") Instant createdAfter,
-        @ApiOrderBy RoleSortField orderBy,
-        @ApiOrderByDirection SortDirection direction)
+        @ApiParameter ApiPagination pagination,
+        @ApiParameter ApiFilter nameFilter,
+        @ApiParameter ApiFilter createdAfter,
+        @ApiParameter ApiOrderBy orderBy)
 {
-    return roleApi.list(nameFilter, createdAfter, orderBy, direction);
+    return roleApi.list(nameFilter, createdAfter.map(Instant::new), orderBy);
 }
 ```
 
 Benefits:
+- Filter names derived from parameter names
 - Type-checked at compile time
 - Automatically documented in OpenAPI
 - Consistent query parameter naming across all resources
@@ -259,14 +260,13 @@ Benefits:
 
 ```java
 @ApiCreate
-@ApiValidateOnly  // Enables ?validateOnly=true query parameter
-public Role create(RoleCreation input)
+public Role create(RoleCreation input, ApiValidateOnly validateOnly)
 {
-    return roleApi.create(input);
+    return roleApi.create(input, validateOnly.requested());
 }
 ```
 
-Clients can validate requests without side effects - useful for form validation UX.
+The `ApiValidateOnly` record enables `?validateOnly=true` query parameter support. Clients can validate requests without side effects - useful for form validation UX.
 
 ## Problems API Builder Prevents
 
@@ -330,6 +330,32 @@ Traditional approach requires:
 
 **With Airlift API Builder:** Browse to `/public-api` in any running instance.
 
+## Java Records as API Resources
+
+Airlift API Builder leverages Java records to define user-visible "resources" in the [Google Cloud API Design Guide](https://cloud.google.com/apis/design) sense. Records provide:
+
+**Immutability:** Resources are immutable data structures, matching the API design principle that resources represent state at a point in time.
+
+**Automatic serialization:** Records work seamlessly with Jackson for JSON serialization/deserialization.
+
+**Concise definitions:** A resource that would require a class with constructors, getters, equals, hashCode, and toString becomes a single line:
+
+```java
+public record Role(UUID id, String name, Instant createdAt) {}
+
+public record RoleCreation(String name) {}
+
+public record ApiPagination(String pageToken, int pageSize) {}
+
+public record ApiFilter(String value) {}
+
+public record ApiOrderBy(String field, SortDirection direction) {}
+
+public record ApiValidateOnly(boolean requested) {}
+```
+
+These records serve as the contract between client and server, automatically reflected in the OpenAPI schema.
+
 ## Conclusion
 
 Airlift API Builder offers meaningful improvements over traditional JAX-RS + Swagger:
@@ -339,14 +365,15 @@ Airlift API Builder offers meaningful improvements over traditional JAX-RS + Swa
 - **Framework-enforced** consistency (status codes, pagination, filtering)
 - **Runtime API discovery** at `/public-api`
 - **Prevention** of common issues (schema drift, undocumented endpoints, inconsistent patterns)
+- **Java records** for clean, type-safe resource definitions
 
-The migration cost is modest for most codebases, and the framework aligns well with existing Airlift infrastructure investments.
+The framework aligns well with existing Airlift infrastructure investments and follows the Google Cloud API Design Guide principles.
 
 ## Design Philosophy
 
 Airlift API Builder follows the [Google Cloud API Design Guide](https://cloud.google.com/apis/design) principles:
 
-- **Resources** - Models validated against naming and structural conventions
+- **Resources** - Java records validated against naming and structural conventions
 - **Methods** - Standardized operations (List, Get, Create, Update, Delete) replacing raw HTTP verbs
 - **URIs** - Automatically generated paths conforming to specification guidelines
 
