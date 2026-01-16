@@ -424,7 +424,7 @@ public class InternalFilter
         }
 
         return cancellationController.builder(requireSessionId(request), cancellationKey(requestId))
-                .withIsCancelledCondition(Optional::isPresent)
+                .withIsCancelledCondition(_ -> true)
                 .withReasonMapper(cancellation -> cancellation.flatMap(CancelledNotification::reason))
                 .withRequestId(requestId)
                 .withPostCancellationAction((sessionId, key) -> sessionController.ifPresent(controller -> controller.deleteSessionValue(sessionId, key)))
