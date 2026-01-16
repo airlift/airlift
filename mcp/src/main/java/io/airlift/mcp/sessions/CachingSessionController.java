@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -71,7 +71,7 @@ public class CachingSessionController
     }
 
     @Override
-    public <T> void blockUntilCondition(SessionId sessionId, SessionValueKey<T> key, Duration timeout, Function<Optional<T>, Boolean> condition)
+    public <T> void blockUntilCondition(SessionId sessionId, SessionValueKey<T> key, Duration timeout, Predicate<Optional<T>> condition)
             throws InterruptedException
     {
         delegate.blockUntilCondition(sessionId, key, timeout, condition);

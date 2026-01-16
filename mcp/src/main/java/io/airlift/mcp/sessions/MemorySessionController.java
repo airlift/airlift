@@ -17,7 +17,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
@@ -190,7 +190,7 @@ public class MemorySessionController
     }
 
     @Override
-    public <T> void blockUntilCondition(SessionId sessionId, SessionValueKey<T> key, Duration timeout, Function<Optional<T>, Boolean> condition)
+    public <T> void blockUntilCondition(SessionId sessionId, SessionValueKey<T> key, Duration timeout, Predicate<Optional<T>> condition)
             throws InterruptedException
     {
         waitForCondition(this, sessionId, key, timeout, condition, maxWait -> {
