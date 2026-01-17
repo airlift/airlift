@@ -140,7 +140,7 @@ class InternalRequestContext
 
         while (timeout.isPositive()) {
             Stopwatch stopwatch = Stopwatch.createStarted();
-            BlockingResult<JsonRpcResponse> blockingResult = localSessionController.blockUntilCondition(sessionId, responseKey, pollInterval, Optional::isPresent);
+            BlockingResult<JsonRpcResponse> blockingResult = localSessionController.blockUntil(sessionId, responseKey, pollInterval, Optional::isPresent);
             timeout = timeout.minus(stopwatch.elapsed());
 
             if (blockingResult instanceof Fulfilled<JsonRpcResponse>(var rpcResponse)) {

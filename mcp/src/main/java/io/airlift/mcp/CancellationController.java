@@ -150,7 +150,7 @@ public class CancellationController
         executorService.execute(() -> {
             try {
                 while (!isClosed.get()) {
-                    switch (builder.sessionController.blockUntilCondition(builder.sessionId, builder.key, interval, builder.condition)) {
+                    switch (builder.sessionController.blockUntil(builder.sessionId, builder.key, interval, builder.condition)) {
                         case Fulfilled<T>(var value) -> handleCancellation(builder, Optional.of(value), isClosed, activeThread);
                         case EmptyFulfilled _ -> handleCancellation(builder, Optional.empty(), isClosed, activeThread);
                         case TimedOut _ -> {}   // do nothing and iterate again

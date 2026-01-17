@@ -191,7 +191,7 @@ public class MemorySessionController
     }
 
     @Override
-    public <T> BlockingResult<T> blockUntilCondition(SessionId sessionId, SessionValueKey<T> key, Duration timeout, Predicate<Optional<T>> condition)
+    public <T> BlockingResult<T> blockUntil(SessionId sessionId, SessionValueKey<T> key, Duration timeout, Predicate<Optional<T>> condition)
             throws InterruptedException
     {
         return waitForCondition(this, sessionId, key, timeout, condition, maxWait -> {

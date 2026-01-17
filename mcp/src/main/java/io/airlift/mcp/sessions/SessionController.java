@@ -59,7 +59,7 @@ public interface SessionController
      * has been deleted, etc.
      * </p>
      */
-    default <T> BlockingResult<T> blockUntilCondition(SessionId sessionId, SessionValueKey<T> key, Duration timeout, Predicate<Optional<T>> condition)
+    default <T> BlockingResult<T> blockUntil(SessionId sessionId, SessionValueKey<T> key, Duration timeout, Predicate<Optional<T>> condition)
             throws InterruptedException
     {
         return waitForCondition(this, sessionId, key, timeout, condition, maxWait -> MILLISECONDS.sleep(maxWait.toMillis()));

@@ -71,10 +71,10 @@ public class CachingSessionController
     }
 
     @Override
-    public <T> BlockingResult<T> blockUntilCondition(SessionId sessionId, SessionValueKey<T> key, Duration timeout, Predicate<Optional<T>> condition)
+    public <T> BlockingResult<T> blockUntil(SessionId sessionId, SessionValueKey<T> key, Duration timeout, Predicate<Optional<T>> condition)
             throws InterruptedException
     {
-        return delegate.blockUntilCondition(sessionId, key, timeout, condition);
+        return delegate.blockUntil(sessionId, key, timeout, condition);
     }
 
     @Override
