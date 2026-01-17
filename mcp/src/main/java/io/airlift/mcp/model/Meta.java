@@ -9,4 +9,6 @@ public interface Meta
 {
     @JsonProperty("_meta")
     Optional<Map<String, Object>> meta();
+
+    Object withMeta(Map<String, Object> meta);
 }

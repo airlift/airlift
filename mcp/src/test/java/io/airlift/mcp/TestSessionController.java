@@ -1,6 +1,8 @@
 package io.airlift.mcp;
 
 import io.airlift.mcp.McpIdentity.Authenticated;
+import io.airlift.mcp.sessions.BlockingResult;
+import io.airlift.mcp.sessions.BlockingResult.TimedOut;
 import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.sessions.SessionId;
 import io.airlift.mcp.sessions.SessionValueKey;
@@ -74,12 +76,13 @@ public abstract class TestSessionController
             }
         });
 
-        controller.blockUntilCondition(sessionId, key, Duration.ofSeconds(1), Optional::isPresent);
+        BlockingResult<String> blockingResult = controller.blockUntil(sessionId, key, Duration.ofSeconds(1), Optional::isPresent);
+        assertThat(blockingResult).isInstanceOf(TimedOut.class);
 
         CountDownLatch latch1 = new CountDownLatch(1);
         Future<Void> future = newVirtualThreadPerTaskExecutor().submit(() -> {
             latch1.countDown();
-            controller.blockUntilCondition(sessionId, key, Duration.ofSeconds(1), Optional::isPresent);
+            controller.blockUntil(sessionId, key, Duration.ofSeconds(1), Optional::isPresent);
             return null;
         });
 
@@ -94,7 +97,7 @@ public abstract class TestSessionController
         CountDownLatch latch2 = new CountDownLatch(1);
         future = newVirtualThreadPerTaskExecutor().submit(() -> {
             latch2.countDown();
-            controller.blockUntilCondition(sessionId, key, Duration.ofSeconds(1), value -> value.isPresent() && value.get().equals("newValue"));
+            controller.blockUntil(sessionId, key, Duration.ofSeconds(1), value -> value.isPresent() && value.get().equals("newValue"));
             return null;
         });
 
@@ -110,7 +113,7 @@ public abstract class TestSessionController
         CountDownLatch latch3 = new CountDownLatch(1);
         future = newVirtualThreadPerTaskExecutor().submit(() -> {
             latch3.countDown();
-            controller.blockUntilCondition(sessionId, key, Duration.ofSeconds(1), value -> value.isPresent() && value.get().equals("computed"));
+            controller.blockUntil(sessionId, key, Duration.ofSeconds(1), value -> value.isPresent() && value.get().equals("computed"));
             return null;
         });
 
@@ -127,7 +130,7 @@ public abstract class TestSessionController
         CountDownLatch latch4 = new CountDownLatch(1);
         future = newVirtualThreadPerTaskExecutor().submit(() -> {
             latch4.countDown();
-            controller.blockUntilCondition(sessionId, key, Duration.ofSeconds(1), Optional::isEmpty);
+            controller.blockUntil(sessionId, key, Duration.ofSeconds(1), Optional::isEmpty);
             return null;
         });
 

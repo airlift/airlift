@@ -6,18 +6,18 @@ import java.util.Optional;
 import static com.google.common.base.MoreObjects.firstNonNull;
 import static java.util.Objects.requireNonNull;
 
-public record SubscribeRequest(String uri, Optional<Map<String, Object>> meta)
+public record GetTaskRequest(String taskId, Optional<Map<String, Object>> meta)
         implements Meta
 {
-    public SubscribeRequest
+    public GetTaskRequest
     {
-        requireNonNull(uri, "uri is null");
+        requireNonNull(taskId, "taskId is null");
         meta = firstNonNull(meta, Optional.empty());
     }
 
     @Override
-    public SubscribeRequest withMeta(Map<String, Object> meta)
+    public GetTaskRequest withMeta(Map<String, Object> meta)
     {
-        return new SubscribeRequest(uri, Optional.of(meta));
+        return new GetTaskRequest(taskId, Optional.of(meta));
     }
 }

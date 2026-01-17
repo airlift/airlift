@@ -16,6 +16,8 @@ import io.airlift.mcp.model.LoggingMessageNotification;
 import io.airlift.mcp.model.ProgressNotification;
 import io.airlift.mcp.model.Protocol;
 import io.airlift.mcp.model.Root;
+import io.airlift.mcp.sessions.BlockingResult;
+import io.airlift.mcp.sessions.BlockingResult.Fulfilled;
 import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.sessions.SessionId;
 import io.airlift.mcp.sessions.SessionValueKey;
@@ -138,13 +140,11 @@ class InternalRequestContext
 
         while (timeout.isPositive()) {
             Stopwatch stopwatch = Stopwatch.createStarted();
-            localSessionController.blockUntilCondition(sessionId, responseKey, pollInterval, Optional::isPresent);
+            BlockingResult<JsonRpcResponse> blockingResult = localSessionController.blockUntil(sessionId, responseKey, pollInterval, Optional::isPresent);
             timeout = timeout.minus(stopwatch.elapsed());
 
-            Optional<JsonRpcResponse> maybeResponse = localSessionController.getSessionValue(sessionId, responseKey);
-            if (maybeResponse.isPresent()) {
+            if (blockingResult instanceof Fulfilled<JsonRpcResponse>(var rpcResponse)) {
                 try {
-                    JsonRpcResponse rpcResponse = maybeResponse.get();
                     if (rpcResponse.result().isPresent()) {
                         Object result = rpcResponse.result().get();
                         R convertedValue = objectMapper.convertValue(result, responseType);
@@ -204,9 +204,14 @@ class InternalRequestContext
         }
     }
 
+    static SessionId requireSessionId(Optional<SessionId> maybeSessionId)
+    {
+        return maybeSessionId.orElseThrow(() -> exception("Missing %s header in request".formatted(MCP_SESSION_ID)));
+    }
+
     static SessionId requireSessionId(HttpServletRequest request)
     {
-        return optionalSessionId(request).orElseThrow(() -> exception("Missing %s header in request".formatted(MCP_SESSION_ID)));
+        return requireSessionId(optionalSessionId(request));
     }
 
     static Optional<SessionId> optionalSessionId(HttpServletRequest request)
