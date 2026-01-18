@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
+import static io.airlift.json.ObjectMapperProvider.toObjectMapperProvider;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestSpanSerialization
@@ -57,9 +58,9 @@ public class TestSpanSerialization
         OpenTelemetry openTelemetry = OpenTelemetry.propagating(
                 ContextPropagators.create(W3CTraceContextPropagator.getInstance()));
 
-        return new JsonCodecFactory(new ObjectMapperProvider()
+        return new JsonCodecFactory(toObjectMapperProvider(new ObjectMapperProvider()
                 .withJsonSerializers(Map.of(Span.class, new SpanSerializer(openTelemetry)))
-                .withJsonDeserializers(Map.of(Span.class, new SpanDeserializer(openTelemetry))))
+                .withJsonDeserializers(Map.of(Span.class, new SpanDeserializer(openTelemetry)))))
                 .prettyPrint()
                 .jsonCodec(Span.class);
     }
