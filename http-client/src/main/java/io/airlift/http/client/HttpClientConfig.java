@@ -93,6 +93,7 @@ public class HttpClientConfig
     private Optional<Duration> tcpKeepAliveIdleTime = Optional.empty();
     private boolean strictEventOrdering;
     private boolean useVirtualThreads;
+    private boolean preserveContentDecoderFactories;
 
     /**
      * This property is initialized with Jetty's default excluded ciphers list.
@@ -776,6 +777,19 @@ public class HttpClientConfig
     public HttpClientConfig setUseVirtualThreads(boolean useVirtualThreads)
     {
         this.useVirtualThreads = useVirtualThreads;
+        return this;
+    }
+
+    public boolean isPreserveContentDecoderFactories()
+    {
+        return preserveContentDecoderFactories;
+    }
+
+    @ConfigHidden
+    @Config("http-client.preserve-content-decoder-factories")
+    public HttpClientConfig setPreserveContentDecoderFactories(boolean preserveContentDecoderFactories)
+    {
+        this.preserveContentDecoderFactories = preserveContentDecoderFactories;
         return this;
     }
 
