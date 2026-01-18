@@ -98,7 +98,7 @@ The same resource with Airlift API Builder:
 @ResourceSecurity(AUTHENTICATED_USER)
 public class RoleResource
 {
-    @List(description = "...")
+    @ApiList(description = "...")
     public List<Role> listAll(@Context UserInfo userInfo)
     {
         return roleApi.listAll(userInfo);
