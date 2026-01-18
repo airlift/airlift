@@ -19,6 +19,7 @@ import io.airlift.configuration.Config;
 import io.airlift.configuration.ConfigDescription;
 import io.airlift.configuration.ConfigHidden;
 import io.airlift.configuration.DefunctConfig;
+import io.airlift.configuration.LegacyConfig;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 import io.airlift.units.MaxDataSize;
@@ -99,7 +100,9 @@ public class HttpServerConfig
 
     private boolean showStackTrace = true;
 
-    private boolean compressionEnabled = true;
+    private boolean deflateCompressionEnabled = true;
+    private boolean brotliCompressionEnabled;
+    private boolean zstdCompressionEnabled;
 
     private Optional<DataSize> maxHeapMemory = Optional.empty();
     private Optional<DataSize> maxDirectMemory = Optional.empty();
@@ -498,15 +501,40 @@ public class HttpServerConfig
         return this;
     }
 
-    public boolean isCompressionEnabled()
+    public boolean isDeflateCompressionEnabled()
     {
-        return compressionEnabled;
+        return deflateCompressionEnabled;
     }
 
-    @Config("http-server.compression.enabled")
-    public HttpServerConfig setCompressionEnabled(boolean compressionEnabled)
+    @Config("http-server.deflate-compression.enabled")
+    @LegacyConfig("http-server.compression.enabled")
+    public HttpServerConfig setDeflateCompressionEnabled(boolean deflateCompressionEnabled)
     {
-        this.compressionEnabled = compressionEnabled;
+        this.deflateCompressionEnabled = deflateCompressionEnabled;
+        return this;
+    }
+
+    public boolean isBrotliCompressionEnabled()
+    {
+        return brotliCompressionEnabled;
+    }
+
+    @Config("http-server.brotli-compression.enabled")
+    public HttpServerConfig setBrotliCompressionEnabled(boolean brotliCompressionEnabled)
+    {
+        this.brotliCompressionEnabled = brotliCompressionEnabled;
+        return this;
+    }
+
+    public boolean isZstdCompressionEnabled()
+    {
+        return zstdCompressionEnabled;
+    }
+
+    @Config("http-server.zstd-compression.enabled")
+    public HttpServerConfig setZstdCompressionEnabled(boolean zstdCompressionEnabled)
+    {
+        this.zstdCompressionEnabled = zstdCompressionEnabled;
         return this;
     }
 
