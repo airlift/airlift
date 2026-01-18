@@ -95,31 +95,30 @@ public Response getById(
 The same resource with Airlift API Builder:
 
 ```java
-@ApiResource(path = "/api/v1/roles")
 @ResourceSecurity(AUTHENTICATED_USER)
 public class RoleResource
 {
-    @ApiList
+    @List(description = "...")
     public List<Role> listAll(@Context UserInfo userInfo)
     {
         return roleApi.listAll(userInfo);
     }
 
-    @ApiGet
-    public Role getById(@Context UserInfo userInfo, @ApiId UUID roleId)
+    @ApiGet(description = "...")
+    public Role getById(@Context UserInfo userInfo, @ApiParameter RoleId roleId)
     {
         return roleApi.getById(userInfo, roleId)
                 .orElseThrow(NotFoundException::new);
     }
 
-    @ApiCreate
+    @ApiCreate(description = "...")
     public Role insert(@Context UserInfo userInfo, RoleCreation role)
     {
         return roleApi.insert(userInfo, role.name());
     }
 
-    @ApiDelete
-    public void delete(@Context UserInfo userInfo, @ApiId UUID roleId)
+    @ApiDelete(description = "...")
+    public void delete(@Context UserInfo userInfo, @ApiParameter RoleId roleId)
     {
         if (!roleApi.delete(userInfo, roleId)) {
             throw new NotFoundException();
@@ -127,26 +126,26 @@ public class RoleResource
     }
 
     // Custom operations for non-standard patterns
-    @ApiCustom(type = "deleted", verb = "GET")
+    @ApiCustom(type = LIST, verb = "list", description = "...")
     public List<Role> listDeleted(@Context UserInfo userInfo)
     {
         return roleApi.listDeleted(userInfo);
     }
 
-    @ApiCustom(type = "{roleId}/users/{userId}", verb = "PUT")
-    public boolean assignUserToRole(
+    @ApiCustom(type = UPDATE, verb = "assign", description = "...")
+    public void assignUserToRole(
             @Context UserInfo userInfo,
-            @ApiId("roleId") UUID roleId,
-            @ApiId("userId") UUID userId)
+            @ApiParameter RoleId roleId,
+            @ApiParameter UserId userId)
     {
-        return roleApi.assignUserToRole(userInfo, userId, roleId);
+        roleApi.assignUserToRole(userInfo, userId, roleId);
     }
 }
 ```
 
 **Key differences:**
 - `@ApiGet` replaces `@GET` + `@Path` + `@ApiResponse` + `@Content` + `@Schema`
-- `@ApiId` replaces `@PathParam` with convention-based path generation
+- `@ApiParameter` replaces `@PathParam` with convention-based path generation
 - No `optionalResponse()` helper needed
 - OpenAPI generated automatically from method signatures
 
@@ -222,7 +221,7 @@ public PaginatedResponse<Role> listAll(
 **With Airlift API Builder:**
 
 ```java
-@ApiList
+@ApiList(description = "...")
 public ApiPaginatedResult<Role> listAll(
         @Context UserInfo userInfo,
         @ApiParameter ApiPagination pagination)
@@ -239,7 +238,7 @@ The framework handles:
 ### 5. Type-Safe Filtering and Ordering
 
 ```java
-@ApiList
+@ApiList(description = "...")
 public ApiPaginatedResult<Role> listRoles(
         @ApiParameter ApiPagination pagination,
         @ApiParameter ApiFilter nameFilter,
@@ -259,8 +258,8 @@ Benefits:
 ### 6. Validation Dry-Run Support
 
 ```java
-@ApiCreate
-public Role create(RoleCreation input, ApiValidateOnly validateOnly)
+@ApiCreate(description = "...")
+public Role create(RoleCreation input, @ApiParameter ApiValidateOnly validateOnly)
 {
     return roleApi.create(input, validateOnly.requested());
 }
@@ -286,7 +285,7 @@ The endpoint works without `@ApiResponse`, so developers add the JAX-RS annotati
 **With Airlift API Builder:** A single annotation serves both purposes:
 
 ```java
-@ApiGet                 // Required - makes endpoint work AND documents it
+@ApiGet(description = "Return the role with the given ID")    // Required - makes endpoint work AND documents it
 public Role getById(...) { }
 ```
 
@@ -341,17 +340,11 @@ Airlift API Builder leverages Java records to define user-visible "resources" in
 **Concise definitions:** A resource that would require a class with constructors, getters, equals, hashCode, and toString becomes a single line:
 
 ```java
-public record Role(UUID id, String name, Instant createdAt) {}
+@ApiResource(name = "role", ...)
+public record Role(@ApiDescription("...") RoleId roleId, @ApiDescription("...") String name, @ApiDescription("...") Instant createdAt) {}
 
-public record RoleCreation(String name) {}
-
-public record ApiPagination(String pageToken, int pageSize) {}
-
-public record ApiFilter(String value) {}
-
-public record ApiOrderBy(String field, SortDirection direction) {}
-
-public record ApiValidateOnly(boolean requested) {}
+@ApiResource(name = "roleCreation", ...)
+public record RoleCreation(@ApiDescription("...") String name) {}
 ```
 
 These records serve as the contract between client and server, automatically reflected in the OpenAPI schema.
