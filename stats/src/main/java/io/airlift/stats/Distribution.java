@@ -1,20 +1,27 @@
 package io.airlift.stats;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Ticker;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.errorprone.annotations.ThreadSafe;
 import com.google.errorprone.annotations.concurrent.GuardedBy;
 import org.weakref.jmx.Managed;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-
-import static com.google.common.base.Verify.verify;
+import static com.google.common.base.Ticker.systemTicker;
+import static java.lang.Math.clamp;
+import static java.lang.Math.floorMod;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 @ThreadSafe
 public class Distribution
 {
+    @VisibleForTesting
+    static final long MERGE_THRESHOLD_NANOS = MILLISECONDS.toNanos(100);
+
     private static final double[] SNAPSHOT_QUANTILES = new double[] {0.01, 0.05, 0.10, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99};
     private static final double[] PERCENTILES;
+    private static final int STRIPES = clamp(2, Runtime.getRuntime().availableProcessors(), 16);
 
     static {
         PERCENTILES = new double[100];
@@ -24,152 +31,204 @@ public class Distribution
     }
 
     private final double alpha;
-    @GuardedBy("this")
-    private DecayTDigest digest;
+    private final Ticker ticker;
 
+    private final Object[] locks = new Object[STRIPES];
+    @GuardedBy("locks")
+    private final DecayTDigest[] partials = new DecayTDigest[STRIPES];
+    @GuardedBy("this")
+    private DecayTDigest merged;
+    @GuardedBy("this")
+    private long lastMerge;
     private final DecayCounter total;
+    private final DecayCounter partialTotal;
 
     public Distribution()
     {
-        this(0);
+        this(systemTicker(), 0);
     }
 
     public Distribution(double alpha)
     {
-        this(alpha, new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha), new DecayCounter(alpha));
+        this(systemTicker(), alpha);
     }
 
-    private Distribution(double alpha, DecayTDigest digest, DecayCounter total)
+    Distribution(Ticker ticker, double alpha)
     {
+        this(ticker, alpha, new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha), new DecayCounter(alpha));
+    }
+
+    private Distribution(Ticker ticker, double alpha, DecayTDigest merged, DecayCounter total)
+    {
+        requireNonNull(ticker, "ticker is null");
         this.alpha = alpha;
-        this.digest = requireNonNull(digest, "digest is null");
-        this.total = requireNonNull(total, "total is null");
+        this.merged = merged;
+        for (int i = 0; i < STRIPES; i++) {
+            locks[i] = new Object();
+        }
+        this.total = total;
+        this.partialTotal = new DecayCounter(alpha);
+        this.ticker = ticker;
+        this.lastMerge = ticker.read(); // do not merge immediately
     }
 
-    public synchronized void add(long value)
+    public void add(long value)
     {
-        digest.add(value);
-        total.add(value);
+        add(value, 1);
     }
 
-    public synchronized void add(long value, long count)
+    public void add(long value, long count)
     {
-        digest.add(value, count);
-        total.add(value * count);
-    }
-
-    public synchronized Distribution duplicate()
-    {
-        return new Distribution(alpha, digest.duplicate(), total.duplicate());
+        int segment = floorMod(Thread.currentThread().threadId(), STRIPES);
+        synchronized (locks[segment]) {
+            if (partials[segment] == null) {
+                partials[segment] = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
+            }
+            partials[segment].add(value, count);
+        }
+        partialTotal.add(value * count); // Fine outside of lock as DecayCounter is thread safe
     }
 
     @Managed
     public synchronized void reset()
     {
         total.reset();
-        digest = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
+        partialTotal.reset();
+        merged = new DecayTDigest(TDigest.DEFAULT_COMPRESSION, alpha);
+        // Reset all partial digests (stripes) to avoid stale data
+        for (int i = 0; i < partials.length; i++) {
+            synchronized (locks[i]) {
+                partials[i] = null;
+            }
+        }
+    }
+
+    DecayTDigest mergeAndGetIfNeeded()
+    {
+        return mergeAndGetIfNeeded(false);
+    }
+
+    @VisibleForTesting
+    @CanIgnoreReturnValue
+    DecayTDigest mergeAndGetIfNeeded(boolean forceMerge)
+    {
+        synchronized (this) {
+            if (forceMerge || ticker.read() - lastMerge >= MERGE_THRESHOLD_NANOS) {
+                for (int i = 0; i < STRIPES; i++) {
+                    synchronized (locks[i]) {
+                        if (partials[i] == null) {
+                            continue;
+                        }
+                        merged.merge(partials[i]);
+                        // Reset the partial
+                        partials[i] = null;
+                    }
+                }
+                total.merge(partialTotal);
+                partialTotal.reset();
+                lastMerge = ticker.read();
+            }
+        }
+
+        return merged;
     }
 
     @Managed
     public synchronized double getCount()
     {
-        return digest.getCount();
+        return mergeAndGetIfNeeded().getCount();
     }
 
     @Managed
-    public synchronized double getTotal()
+    public double getTotal()
     {
         return total.getCount();
     }
 
     @Managed
-    public synchronized double getP01()
+    public double getP01()
     {
-        return digest.valueAt(0.01);
+        return mergeAndGetIfNeeded().valueAt(0.01);
     }
 
     @Managed
-    public synchronized double getP05()
+    public double getP05()
     {
-        return digest.valueAt(0.05);
+        return mergeAndGetIfNeeded().valueAt(0.05);
     }
 
     @Managed
-    public synchronized double getP10()
+    public double getP10()
     {
-        return digest.valueAt(0.10);
+        return mergeAndGetIfNeeded().valueAt(0.10);
     }
 
     @Managed
-    public synchronized double getP25()
+    public double getP25()
     {
-        return digest.valueAt(0.25);
+        return mergeAndGetIfNeeded().valueAt(0.25);
     }
 
     @Managed
-    public synchronized double getP50()
+    public double getP50()
     {
-        return digest.valueAt(0.5);
+        return mergeAndGetIfNeeded().valueAt(0.5);
     }
 
     @Managed
-    public synchronized double getP75()
+    public double getP75()
     {
-        return digest.valueAt(0.75);
+        return mergeAndGetIfNeeded().valueAt(0.75);
     }
 
     @Managed
-    public synchronized double getP90()
+    public double getP90()
     {
-        return digest.valueAt(0.90);
+        return mergeAndGetIfNeeded().valueAt(0.90);
     }
 
     @Managed
-    public synchronized double getP95()
+    public double getP95()
     {
-        return digest.valueAt(0.95);
+        return mergeAndGetIfNeeded().valueAt(0.95);
     }
 
     @Managed
-    public synchronized double getP99()
+    public double getP99()
     {
-        return digest.valueAt(0.99);
+        return mergeAndGetIfNeeded().valueAt(0.99);
     }
 
     @Managed
-    public synchronized double getMin()
+    public double getMin()
     {
-        return digest.getMin();
+        return mergeAndGetIfNeeded().getMin();
     }
 
     @Managed
-    public synchronized double getMax()
+    public double getMax()
     {
-        return digest.getMax();
+        return mergeAndGetIfNeeded().getMax();
     }
 
     @Managed
-    public synchronized double getAvg()
+    public double getAvg()
     {
         return getTotal() / getCount();
     }
 
     @Managed
-    public Map<Double, Double> getPercentiles()
+    public double[] getPercentiles()
     {
-        double[] values;
         synchronized (this) {
-            values = digest.valuesAt(PERCENTILES);
+            return mergeAndGetIfNeeded().valuesAt(PERCENTILES);
         }
+    }
 
-        verify(values.length == PERCENTILES.length, "result length mismatch");
-
-        Map<Double, Double> result = new LinkedHashMap<>(values.length);
-        for (int i = 0; i < values.length; ++i) {
-            result.put(PERCENTILES[i], values[i]);
-        }
-
-        return result;
+    public Distribution duplicate()
+    {
+        DecayTDigest digest = mergeAndGetIfNeeded(true);
+        return new Distribution(ticker, alpha, digest.duplicate(), total.duplicate());
     }
 
     public DistributionSnapshot snapshot()
@@ -180,6 +239,7 @@ public class Distribution
         double max;
         double[] quantiles;
         synchronized (this) {
+            DecayTDigest digest = mergeAndGetIfNeeded(true);
             totalCount = total.getCount();
             digestCount = digest.getCount();
             min = digest.getMin();

@@ -12,6 +12,9 @@ public class TestDistribution
         Distribution distribution = new Distribution(0.1);
 
         distribution.add(10);
+
+        distribution.mergeAndGetIfNeeded(true);
+
         assertThat(distribution.getCount()).isEqualTo(1D);
         assertThat(distribution.getAvg()).isEqualTo(10D);
 
