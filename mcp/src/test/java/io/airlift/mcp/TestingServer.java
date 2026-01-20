@@ -11,7 +11,6 @@ import io.airlift.http.client.HttpClient;
 import io.airlift.http.server.testing.TestingHttpServerModule;
 import io.airlift.jaxrs.JaxrsModule;
 import io.airlift.json.JsonModule;
-import io.airlift.mcp.model.Icon;
 import io.airlift.node.NodeModule;
 
 import java.io.Closeable;
@@ -28,11 +27,7 @@ public class TestingServer
 
     public TestingServer(Map<String, String> properties, Optional<Module> additionalModule, Function<McpModule.Builder, Module> mcpModuleApplicator)
     {
-        McpModule.Builder mcpModuleBuilder = McpModule.builder()
-                .addIcon("google", binding -> binding.toInstance(new Icon("https://www.gstatic.com/images/branding/searchlogo/ico/favicon.ico")))
-                .withAllInClass(TestingEndpoints.class);
-
-        Module mcpModule = mcpModuleApplicator.apply(mcpModuleBuilder);
+        Module mcpModule = mcpModuleApplicator.apply(McpModule.builder());
 
         ImmutableList.Builder<com.google.inject.Module> modules = ImmutableList.<Module>builder()
                 .add(mcpModule)

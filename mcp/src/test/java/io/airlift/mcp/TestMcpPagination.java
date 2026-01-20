@@ -9,6 +9,7 @@ import io.airlift.mcp.handler.PromptEntry;
 import io.airlift.mcp.handler.ResourceEntry;
 import io.airlift.mcp.handler.ResourceTemplateEntry;
 import io.airlift.mcp.handler.ToolEntry;
+import io.airlift.mcp.model.Icon;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.ListPromptsResult;
 import io.modelcontextprotocol.spec.McpSchema.ListResourceTemplatesResult;
@@ -49,6 +50,8 @@ public class TestMcpPagination
     {
         TestingServer testingServer = new TestingServer(ImmutableMap.of("mcp.page-size", Integer.toString(PAGE_SIZE)), Optional.empty(), builder -> builder
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
+                .withAllInClass(TestingEndpoints.class)
+                .addIcon("google", binding -> binding.toInstance(new Icon("https://www.gstatic.com/images/branding/searchlogo/ico/favicon.ico")))
                 .build());
         closer.register(testingServer);
 
