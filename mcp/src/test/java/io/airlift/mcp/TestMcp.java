@@ -91,7 +91,6 @@ import static io.airlift.mcp.TestingIdentityMapper.IDENTITY_HEADER;
 import static io.airlift.mcp.model.Constants.MCP_SESSION_ID;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_CANCELLED;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INTERNAL_ERROR;
-import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
 import static io.modelcontextprotocol.spec.McpSchema.ErrorCodes.RESOURCE_NOT_FOUND;
 import static io.modelcontextprotocol.spec.McpSchema.LoggingLevel.ALERT;
 import static io.modelcontextprotocol.spec.McpSchema.LoggingLevel.DEBUG;
@@ -386,8 +385,14 @@ public abstract class TestMcp
     public void testExceptionWrapping()
     {
         CallToolRequest callToolRequest = new CallToolRequest("throws", ImmutableMap.of());
-        assertThatThrownBy(() -> client1.mcpClient().callTool(callToolRequest))
-                .satisfies(exception -> assertMcpError(exception, INVALID_REQUEST.code(), "this ain't good"));
+        CallToolResult callToolResult = client1.mcpClient().callTool(callToolRequest);
+        assertThat(callToolResult.isError()).isTrue();
+        assertThat(callToolResult.content())
+                .hasSize(1)
+                .first()
+                .asInstanceOf(type(TextContent.class))
+                .extracting(TextContent::text)
+                .isEqualTo("this ain't good");
     }
 
     @Test
