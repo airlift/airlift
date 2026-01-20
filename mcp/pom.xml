@@ -17,6 +17,7 @@
         <air.main.basedir>${project.parent.basedir}</air.main.basedir>
 
         <dep.testcontainers.version>2.0.3</dep.testcontainers.version>
+        <dep.docker-java.version>3.7.0</dep.docker-java.version>
         <dep.hikari.version>7.0.2</dep.hikari.version>
         <dep.postgresql.version>42.7.9</dep.postgresql.version>
     </properties>
@@ -102,6 +103,13 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
             <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.docker-java</groupId>
+            <artifactId>docker-java-api</artifactId>
+            <version>${dep.docker-java.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>

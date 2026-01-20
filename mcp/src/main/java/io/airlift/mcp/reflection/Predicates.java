@@ -17,8 +17,6 @@ import io.airlift.mcp.reflection.MethodParameter.SourceResourceParameter;
 import io.airlift.mcp.reflection.MethodParameter.SourceResourceTemplateParameter;
 
 import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.WildcardType;
 import java.util.function.Predicate;
 
 import static io.airlift.mcp.reflection.ReflectionHelper.listArgument;
@@ -49,7 +47,5 @@ public interface Predicates
             .map(t -> t.equals(String.class))
             .orElse(false);
     Predicate<Method> returnsString = method -> method.getReturnType().equals(String.class);
-    Predicate<Method> returnsGetPromptResult = method -> method.getReturnType().equals(GetPromptResult.class)
-            && (method.getGenericReturnType() instanceof ParameterizedType parameterizedType)
-            && (parameterizedType.getActualTypeArguments()[0] instanceof WildcardType);
+    Predicate<Method> returnsGetPromptResult = method -> method.getReturnType().equals(GetPromptResult.class);
 }
