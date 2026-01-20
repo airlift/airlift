@@ -9,6 +9,8 @@ import com.google.common.collect.ImmutableSet;
 import io.airlift.json.JsonSubType;
 import io.airlift.json.ObjectMapperProvider;
 import io.airlift.log.Logger;
+import io.airlift.mcp.model.CallToolRequest;
+import io.airlift.mcp.model.GetPromptRequest;
 import io.airlift.mcp.model.Icon;
 import io.airlift.mcp.model.JsonRpcRequest;
 import io.airlift.mcp.model.JsonRpcResponse;
@@ -37,6 +39,7 @@ import java.util.stream.Stream;
 
 import static com.google.common.base.MoreObjects.firstNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 
 @SuppressWarnings("NullOptional")
 public class TestSerializationEdgeCases
@@ -106,6 +109,16 @@ public class TestSerializationEdgeCases
 
         if (JsonRpcResponse.class.isAssignableFrom(rawType)) {
             return new JsonRpcResponse<>(null, null, null, null);
+        }
+
+        if (CallToolRequest.class.isAssignableFrom(rawType) || GetPromptRequest.class.isAssignableFrom(rawType)) {
+            // sometimes arguments are not provided for CallToolRequest/GetPromptRequest
+            try {
+                objectMapper.readerFor(rawType).readValue("{\"name\":\"example\"}");
+            }
+            catch (JsonProcessingException e) {
+                fail(e);
+            }
         }
 
         if (rawType.isRecord()) {

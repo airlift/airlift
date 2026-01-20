@@ -14,12 +14,17 @@ public record CallToolRequest(String name, Map<String, Object> arguments, Option
     public CallToolRequest
     {
         requireNonNull(name, "name is null");
-        arguments = ImmutableMap.copyOf(arguments);
+        arguments = firstNonNull(arguments, ImmutableMap.of());
         meta = firstNonNull(meta, Optional.empty());
     }
 
     public CallToolRequest(String name, Map<String, Object> arguments)
     {
         this(name, arguments, Optional.empty());
+    }
+
+    public CallToolRequest(String name)
+    {
+        this(name, ImmutableMap.of(), Optional.empty());
     }
 }
