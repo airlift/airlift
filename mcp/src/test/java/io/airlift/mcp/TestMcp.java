@@ -18,6 +18,7 @@ import io.airlift.http.server.testing.TestingHttpServer;
 import io.airlift.json.JsonCodecFactory;
 import io.airlift.log.Logger;
 import io.airlift.mcp.model.CancelledNotification;
+import io.airlift.mcp.model.Icon;
 import io.airlift.mcp.model.JsonRpcRequest;
 import io.airlift.mcp.sessions.ForSessionCaching;
 import io.airlift.mcp.sessions.MemorySessionController;
@@ -143,6 +144,8 @@ public abstract class TestMcp
         testingServer = new TestingServer(properties, Optional.of(module), builder -> builder
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
                 .withSessions(binding -> binding.to((mode == DATABASE_SESSIONS) ? TestingDatabaseSessionController.class : MemorySessionController.class).in(SINGLETON))
+                .addIcon("google", binding -> binding.toInstance(new Icon("https://www.gstatic.com/images/branding/searchlogo/ico/favicon.ico")))
+                .withAllInClass(TestingEndpoints.class)
                 .build());
         closer.register(testingServer);
 
