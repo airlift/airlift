@@ -9,6 +9,7 @@ import com.google.common.hash.Hashing;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import io.airlift.bootstrap.LifeCycleManager;
+import io.airlift.mcp.McpClientException;
 import io.airlift.mcp.McpConfig;
 import io.airlift.mcp.McpIdentity.Authenticated;
 import io.airlift.mcp.McpMetadata;
@@ -33,6 +34,7 @@ import io.airlift.mcp.model.CompleteReference.ResourceReference;
 import io.airlift.mcp.model.CompleteRequest;
 import io.airlift.mcp.model.CompleteResult;
 import io.airlift.mcp.model.CompleteResult.CompleteCompletion;
+import io.airlift.mcp.model.Content.TextContent;
 import io.airlift.mcp.model.GetPromptRequest;
 import io.airlift.mcp.model.GetPromptResult;
 import io.airlift.mcp.model.Implementation;
@@ -301,7 +303,12 @@ public class InternalMcpServer
         }
 
         McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, progressToken(callToolRequest));
-        return toolEntry.toolHandler().callTool(requestContext, callToolRequest);
+        try {
+            return toolEntry.toolHandler().callTool(requestContext, callToolRequest);
+        }
+        catch (McpClientException mcpClientException) {
+            return new CallToolResult(ImmutableList.of(new TextContent(mcpClientException.unwrap().errorDetail().message())), Optional.empty(), true);
+        }
     }
 
     GetPromptResult getPrompt(HttpServletRequest request, MessageWriter messageWriter, GetPromptRequest getPromptRequest)
