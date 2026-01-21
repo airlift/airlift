@@ -307,13 +307,12 @@ public class NodeInfo
     private InetAddress findInternalIp()
     {
         List<Function<List<InetAddress>, Optional<InetAddress>>> searchOrder = new ArrayList<>(3);
+        searchOrder.add(candidates -> findLocalAddress(candidates, preferIpv6Address));
         if (this.preferIpv6Address) {
             searchOrder.add(NodeInfo::findIpv6address);
-            searchOrder.add(NodeInfo::findLocalAddress);
             searchOrder.add(NodeInfo::findIpv4address);
         }
         else {
-            searchOrder.add(NodeInfo::findLocalAddress);
             searchOrder.add(NodeInfo::findIpv4address);
             searchOrder.add(NodeInfo::findIpv6address);
         }
@@ -324,7 +323,7 @@ public class NodeInfo
             .filter(Optional::isPresent)                        // select only valid results
             .findFirst()
             .orElse(Optional.empty())                     // we could not find any source
-            .orElse(null);                                // it is most likely that this is a disconnected developer machine
+            .orElseGet(InetAddress::getLoopbackAddress);        // it is most likely that this is a disconnected developer machine
     }
 
     private static Optional<InetAddress> findIpv4address(List<InetAddress> candidates)
@@ -349,27 +348,16 @@ public class NodeInfo
         return Optional.empty();
     }
 
-    private static Optional<InetAddress> findLocalAddress(List<InetAddress> candidates)
+    private static Optional<InetAddress> findLocalAddress(List<InetAddress> candidates, boolean preferIpv6Address)
     {
-        // Check if local host address is a good v4 address
-        InetAddress localAddress = null;
         try {
-            localAddress = InetAddress.getLocalHost();
-            if (isV4Address(localAddress) && getGoodAddresses().contains(localAddress)) {
-                return Optional.of(localAddress);
-            }
+            InetAddress address = InetAddress.getLocalHost();
+            boolean preferred = preferIpv6Address ? isV6Address(address) : isV4Address(address);
+            return preferred && candidates.contains(address) ? Optional.of(address) : Optional.empty();
         }
         catch (UnknownHostException ignored) {
+            return Optional.empty();
         }
-        if (localAddress == null) {
-            try {
-                localAddress = InetAddress.getByAddress(new byte[] {127, 0, 0, 1});
-            }
-            catch (UnknownHostException e) {
-                throw new AssertionError("Could not get local ip address");
-            }
-        }
-        return Optional.ofNullable(localAddress);
     }
 
     private static List<InetAddress> getGoodAddresses()
