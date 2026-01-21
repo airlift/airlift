@@ -5,6 +5,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.Request;
+import io.airlift.http.client.RequestLifecycleHandler;
 import io.airlift.http.client.RequestStats;
 import io.airlift.http.client.Response;
 import io.airlift.http.client.ResponseHandler;
@@ -55,10 +56,11 @@ public class TestingHttpClient
     }
 
     @Override
-    public <T, E extends Exception> T execute(Request request, ResponseHandler<T, E> responseHandler)
+    public <T, E extends Exception> T execute(Request request, RequestLifecycleHandler lifecycleHandler, ResponseHandler<T, E> responseHandler)
             throws E
     {
         requireNonNull(request, "request is null");
+        requireNonNull(lifecycleHandler, "lifecycleHandler is null");
         requireNonNull(responseHandler, "responseHandler is null");
         checkState(!closed.get(), "client is closed");
         return execute(request, responseHandler, new AtomicReference<>("SENDING_REQUEST"));
