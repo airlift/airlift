@@ -13,6 +13,7 @@ import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.HttpRequestFilter;
 import io.airlift.http.client.HttpStatusListener;
 import io.airlift.http.client.Request;
+import io.airlift.http.client.RequestLifecycleHandler;
 import io.airlift.http.client.RequestStats;
 import io.airlift.http.client.ResponseHandler;
 import io.airlift.http.client.StaticBodyGenerator;
@@ -117,6 +118,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.InetAddresses.isInetAddress;
+import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
 import static io.airlift.node.AddressToHostname.tryDecodeHostnameToAddress;
 import static io.airlift.security.mtls.AutomaticMtls.addClientTrust;
@@ -656,7 +658,7 @@ public class JettyHttpClient
     }
 
     @Override
-    public <T, E extends Exception> T execute(Request request, ResponseHandler<T, E> responseHandler)
+    public <T, E extends Exception> T execute(Request request, RequestLifecycleHandler lifecycleHandler, ResponseHandler<T, E> responseHandler)
             throws E
     {
         request = applyRequestFilters(request);
@@ -665,7 +667,12 @@ public class JettyHttpClient
         request = injectTracing(request, span);
 
         try {
-            InternalResponse<T> internalResponse = internalExecute(request, OptionalLong.of(getMaxResponseContentLength(request).toBytes()), responseHandler::handleException, span);
+            InternalResponse<T> internalResponse = internalExecute(
+                    request,
+                    lifecycleHandler,
+                    OptionalLong.of(getMaxResponseContentLength(request).toBytes()),
+                    responseHandler::handleException,
+                    span);
             return switch (internalResponse) {
                 case InternalExceptionResponse<T> response -> response.exceptionResponse;
                 case InternalStandardResponse<T> response -> {
@@ -685,6 +692,7 @@ public class JettyHttpClient
         }
         finally {
             span.end();
+            lifecycleHandler.destroy();
         }
     }
 
@@ -708,7 +716,8 @@ public class JettyHttpClient
             }
         };
 
-        return switch (internalExecute(request, OptionalLong.empty(), exceptionHandler, span)) {
+        InternalResponse<StreamingResponse> internalResponse = internalExecute(request, RequestLifecycleHandler.create(), OptionalLong.empty(), exceptionHandler, span);
+        return switch (internalResponse) {
             case InternalExceptionResponse<StreamingResponse> response -> response.exceptionResponse;
             case InternalStandardResponse<StreamingResponse> response -> new StreamingResponse()
             {
@@ -785,7 +794,12 @@ public class JettyHttpClient
         }
     }
 
-    private <T, E extends Exception> InternalResponse<T> internalExecute(Request request, OptionalLong maxResponseContentLength, ExceptionHandler<T, E> exceptionHandler, Span span)
+    private <T, E extends Exception> InternalResponse<T> internalExecute(
+            Request request,
+            RequestLifecycleHandler lifecycleHandler,
+            OptionalLong maxResponseContentLength,
+            ExceptionHandler<T, E> exceptionHandler,
+            Span span)
             throws E
     {
         long requestStart = System.nanoTime();
@@ -796,6 +810,7 @@ public class JettyHttpClient
         InputStreamResponseListener listener = new InputStreamResponseListener();
         // fire the request
         context.request().send(listener);
+        lifecycleHandler.cancelled().addListener(() -> context.request().abort(RequestCancelledException.INSTANCE), directExecutor());
 
         // wait for response to begin
         Response response;
