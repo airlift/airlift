@@ -5,7 +5,7 @@ import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multiset;
-import io.airlift.http.client.HttpClient.HttpResponseFuture;
+import com.google.common.util.concurrent.ListenableFuture;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
 import io.airlift.http.client.jetty.JettyHttpClient;
@@ -1339,7 +1339,7 @@ public abstract class AbstractHttpClientTest
     public static <T, E extends Exception> T executeAsync(JettyHttpClient client, Request request, ResponseHandler<T, E> responseHandler)
             throws E
     {
-        HttpResponseFuture<T> future = null;
+        ListenableFuture<T> future = null;
         try {
             future = client.executeAsync(request, responseHandler);
         }

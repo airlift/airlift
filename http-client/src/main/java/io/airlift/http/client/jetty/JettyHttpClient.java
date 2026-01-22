@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ListMultimap;
 import com.google.common.net.HostAndPort;
 import com.google.common.primitives.Ints;
+import com.google.common.util.concurrent.ListenableFuture;
 import io.airlift.http.client.BodyGenerator;
 import io.airlift.http.client.ByteBufferBodyGenerator;
 import io.airlift.http.client.FileBodyGenerator;
@@ -118,6 +119,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.net.InetAddresses.isInetAddress;
+import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
 import static io.airlift.node.AddressToHostname.tryDecodeHostnameToAddress;
 import static io.airlift.security.mtls.AutomaticMtls.addClientTrust;
@@ -900,7 +902,7 @@ public class JettyHttpClient
     }
 
     @Override
-    public <T, E extends Exception> HttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
+    public <T, E extends Exception> ListenableFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
     {
         requireNonNull(request, "request is null");
         requireNonNull(responseHandler, "responseHandler is null");
@@ -913,7 +915,7 @@ public class JettyHttpClient
                     .setStatus(StatusCode.ERROR, e.getMessage())
                     .recordException(e, Attributes.of(EXCEPTION_ESCAPED, true))
                     .end();
-            return new FailedHttpResponseFuture<>(e);
+            return immediateFailedFuture(e);
         }
 
         Span span = startSpan(request);

@@ -1,7 +1,6 @@
 package io.airlift.http.client.jetty;
 
 import com.google.common.util.concurrent.AbstractFuture;
-import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.RequestStats;
 import io.airlift.http.client.ResponseHandler;
@@ -15,7 +14,7 @@ import org.eclipse.jetty.client.Response;
 
 import java.io.InputStream;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.LongSupplier;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
@@ -25,21 +24,11 @@ import static java.util.Objects.requireNonNull;
 
 class JettyResponseFuture<T, E extends Exception>
         extends AbstractFuture<T>
-        implements HttpClient.HttpResponseFuture<T>
 {
     private static final Throwable CANCELLATION_CAUSE = new Throwable("Request was cancelled");
 
-    private enum JettyAsyncHttpState
-    {
-        WAITING_FOR_CONNECTION,
-        PROCESSING_RESPONSE,
-        DONE,
-        FAILED,
-        CANCELED
-    }
-
     private final long requestStart = System.nanoTime();
-    private final AtomicReference<JettyAsyncHttpState> state = new AtomicReference<>(JettyAsyncHttpState.WAITING_FOR_CONNECTION);
+    private final AtomicBoolean canceled = new AtomicBoolean();
     private final Request request;
     private final org.eclipse.jetty.client.Request jettyRequest;
     private final LongSupplier requestSize;
@@ -67,18 +56,12 @@ class JettyResponseFuture<T, E extends Exception>
     }
 
     @Override
-    public String getState()
-    {
-        return state.get().toString();
-    }
-
-    @Override
     public boolean cancel(boolean mayInterruptIfRunning)
     {
         try {
             span.setStatus(StatusCode.ERROR, "cancelled");
             stats.recordRequestCanceled();
-            state.set(JettyAsyncHttpState.CANCELED);
+            canceled.set(true);
             jettyRequest.abort(CANCELLATION_CAUSE);
             return super.cancel(mayInterruptIfRunning);
         }
@@ -93,7 +76,7 @@ class JettyResponseFuture<T, E extends Exception>
 
     void completed(Response response, InputStream content)
     {
-        if (state.get() == JettyAsyncHttpState.CANCELED) {
+        if (canceled.get()) {
             return;
         }
 
@@ -115,7 +98,6 @@ class JettyResponseFuture<T, E extends Exception>
             storeException(e);
             return;
         }
-        state.set(JettyAsyncHttpState.DONE);
         set(value);
 
         span.setStatus(StatusCode.OK);
@@ -129,7 +111,6 @@ class JettyResponseFuture<T, E extends Exception>
         // since the response is fully cached in memory at this point
         long responseStart = System.nanoTime();
 
-        state.set(JettyAsyncHttpState.PROCESSING_RESPONSE);
         JettyResponse jettyResponse = null;
         T value;
         try {
@@ -149,7 +130,7 @@ class JettyResponseFuture<T, E extends Exception>
 
     void failed(Throwable throwable)
     {
-        if (state.get() == JettyAsyncHttpState.CANCELED) {
+        if (canceled.get()) {
             return;
         }
 
@@ -160,7 +141,6 @@ class JettyResponseFuture<T, E extends Exception>
             try {
                 T value = responseHandler.handleException(request, (Exception) throwable);
                 // handler returned a value, store it in the future
-                state.set(JettyAsyncHttpState.DONE);
                 set(value);
                 return;
             }
@@ -177,10 +157,7 @@ class JettyResponseFuture<T, E extends Exception>
     private void storeException(Throwable throwable)
     {
         if (throwable instanceof CancellationException) {
-            state.set(JettyAsyncHttpState.CANCELED);
-        }
-        else {
-            state.set(JettyAsyncHttpState.FAILED);
+            canceled.set(true);
         }
 
         if (throwable == null) {
@@ -198,7 +175,7 @@ class JettyResponseFuture<T, E extends Exception>
     {
         return toStringHelper(this)
                 .add("requestStart", requestStart)
-                .add("state", state)
+                .add("canceled", canceled.get())
                 .add("request", request)
                 .toString();
     }

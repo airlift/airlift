@@ -18,8 +18,8 @@ package io.airlift.http.server;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.net.HostAndPort;
+import com.google.common.util.concurrent.ListenableFuture;
 import io.airlift.http.client.HttpClient;
-import io.airlift.http.client.HttpClient.HttpResponseFuture;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.HttpUriBuilder;
 import io.airlift.http.client.Request;
@@ -499,7 +499,7 @@ public class TestHttpServerProvider
         try (HttpClient client = new JettyHttpClient()) {
             URI uri = URI.create(httpServerInfo.getHttpUri().toASCIIString() + "/?sleep=50000");
             Request request = prepareGet().setUri(uri).build();
-            HttpResponseFuture<?> future = client.executeAsync(request, createStatusResponseHandler());
+            ListenableFuture<?> future = client.executeAsync(request, createStatusResponseHandler());
 
             // wait until the servlet starts processing the request
             servlet.getSleeping().get(1, SECONDS);
