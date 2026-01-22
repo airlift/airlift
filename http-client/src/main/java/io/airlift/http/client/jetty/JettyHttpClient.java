@@ -665,7 +665,18 @@ public class JettyHttpClient
         request = injectTracing(request, span);
 
         try {
-            return doExecute(request, responseHandler, span);
+            InternalResponse<T> internalResponse = internalExecute(request, OptionalLong.of(getMaxResponseContentLength(request).toBytes()), responseHandler::handleException, span);
+            return switch (internalResponse) {
+                case InternalExceptionResponse<T> response -> response.exceptionResponse;
+                case InternalStandardResponse<T> response -> {
+                    try {
+                        yield responseHandler.handle(request, response.jettyResponse);
+                    }
+                    finally {
+                        response.completionHandler.run();
+                    }
+                }
+            };
         }
         catch (Throwable t) {
             span.setStatus(StatusCode.ERROR, t.getMessage());
@@ -742,22 +753,6 @@ public class JettyHttpClient
                     }
                 }
             };
-        };
-    }
-
-    public <T, E extends Exception> T doExecute(Request request, ResponseHandler<T, E> responseHandler, Span span)
-            throws E
-    {
-        return switch (internalExecute(request, OptionalLong.of(getMaxResponseContentLength(request).toBytes()), responseHandler::handleException, span)) {
-            case InternalExceptionResponse<T> response -> response.exceptionResponse;
-            case InternalStandardResponse<T> response -> {
-                try {
-                    yield responseHandler.handle(request, response.jettyResponse);
-                }
-                finally {
-                    response.completionHandler.run();
-                }
-            }
         };
     }
 
