@@ -11,6 +11,7 @@ import io.airlift.http.client.StringResponseHandler.StringResponse;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -43,6 +44,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -943,6 +945,43 @@ public abstract class AbstractHttpClientTest
 
                 assertThat(locals.putContent).isEqualTo(content);
             }
+        }
+    }
+
+    @Test
+    public void testExecuteAsyncGetState()
+            throws Exception
+    {
+        CountDownLatch requestStarted = new CountDownLatch(1);
+        CountDownLatch requestCanComplete = new CountDownLatch(1);
+        HttpServlet servlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                    throws ServletException, IOException
+            {
+                try {
+                    requestStarted.countDown();
+                    assertThat(requestCanComplete.await(10, SECONDS)).as("requestCanComplete").isTrue();
+                    response.getWriter().write("everything is fine");
+                }
+                catch (Exception e) {
+                    throw new ServletException(e);
+                }
+            }
+        };
+
+        try (TestingHttpServer server = new TestingHttpServer(keystore, servlet);
+                JettyHttpClient client = new JettyHttpClient(createClientConfig())) {
+            Request request = prepareGet()
+                    .setUri(server.baseURI().resolve("/a/path"))
+                    .build();
+            HttpResponseFuture<StringResponse> future = client.executeAsync(request, createStringResponseHandler());
+            assertThat(requestStarted.await(10, SECONDS)).as("requestStarted").isTrue();
+            assertThat(future.getState()).isEqualTo("WAITING_FOR_CONNECTION");
+            requestCanComplete.countDown();
+            assertThat(future.get().getBody()).isEqualTo("everything is fine");
+            assertThat(future.getState()).isEqualTo("DONE");
         }
     }
 
