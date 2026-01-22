@@ -93,7 +93,6 @@ import java.io.UncheckedIOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
-import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.NetworkChannel;
 import java.nio.channels.SelectableChannel;
@@ -1182,19 +1181,6 @@ public class JettyHttpClient
     public int getLoggerQueueSize()
     {
         return requestLogger.getQueueSize();
-    }
-
-    // todo this should be @Managed but operations with parameters are broken in jmx utils https://github.com/martint/jmxutils/issues/27
-    @SuppressWarnings("UnusedDeclaration")
-    public String dumpDestination(URI uri)
-    {
-        return httpClient.getDestinations().stream()
-                .filter(destination -> Objects.equals(destination.getOrigin().getScheme(), uri.getScheme()))
-                .filter(destination -> Objects.equals(destination.getOrigin().getAddress().getHost(), uri.getHost()))
-                .filter(destination -> destination.getOrigin().getAddress().getPort() == uri.getPort())
-                .findFirst()
-                .map(JettyHttpClient::dumpDestination)
-                .orElse(null);
     }
 
     private static String dumpDestination(Destination destination)
