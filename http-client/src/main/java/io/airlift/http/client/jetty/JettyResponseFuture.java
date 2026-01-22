@@ -27,8 +27,6 @@ class JettyResponseFuture<T, E extends Exception>
         extends AbstractFuture<T>
         implements HttpClient.HttpResponseFuture<T>
 {
-    private static final Throwable CANCELLATION_CAUSE = new Throwable("Request was cancelled");
-
     private enum JettyAsyncHttpState
     {
         WAITING_FOR_CONNECTION,
@@ -79,7 +77,7 @@ class JettyResponseFuture<T, E extends Exception>
             span.setStatus(StatusCode.ERROR, "cancelled");
             stats.recordRequestCanceled();
             state.set(JettyAsyncHttpState.CANCELED);
-            jettyRequest.abort(CANCELLATION_CAUSE);
+            jettyRequest.abort(RequestCancelledException.INSTANCE);
             return super.cancel(mayInterruptIfRunning);
         }
         catch (Throwable e) {
