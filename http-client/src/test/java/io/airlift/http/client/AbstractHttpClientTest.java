@@ -5,6 +5,7 @@ import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multiset;
+import com.google.common.util.concurrent.ListenableFuture;
 import io.airlift.http.client.HttpClient.HttpResponseFuture;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
@@ -48,6 +49,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -945,6 +947,39 @@ public abstract class AbstractHttpClientTest
 
                 assertThat(locals.putContent).isEqualTo(content);
             }
+        }
+    }
+
+    @Test
+    public void testCancelAsyncExecute()
+            throws Exception
+    {
+        SynchronousQueue<ListenableFuture<?>> requestFutureQueue = new SynchronousQueue<>();
+        HttpServlet servlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                    throws ServletException
+            {
+                try {
+                    requestFutureQueue.take().cancel(true);
+                    response.getWriter().write("everything is fine");
+                }
+                catch (Exception e) {
+                    throw new ServletException(e);
+                }
+            }
+        };
+
+        try (TestingHttpServer server = new TestingHttpServer(keystore, servlet);
+                JettyHttpClient client = new JettyHttpClient(createClientConfig())) {
+            Request request = prepareGet()
+                    .setUri(server.baseURI().resolve("/a/path"))
+                    .build();
+            ListenableFuture<?> future = client.executeAsync(request, createStatusResponseHandler());
+            requestFutureQueue.put(future);
+            assertThatThrownBy(future::get)
+                    .hasMessage("Task was cancelled.");
         }
     }
 
