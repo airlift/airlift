@@ -13,7 +13,6 @@ import io.airlift.units.Duration;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.util.concurrent.MoreExecutors.listeningDecorator;
@@ -42,16 +41,15 @@ public class TestingHttpClient
     }
 
     @Override
-    public <T, E extends Exception> HttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
+    public <T, E extends Exception> ListenableFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler)
     {
         requireNonNull(request, "request is null");
         requireNonNull(responseHandler, "responseHandler is null");
         checkState(!closed.get(), "client is closed");
 
-        AtomicReference<String> state = new AtomicReference<>("SENDING_REQUEST");
-        ListenableFuture<T> future = executor.submit(() -> execute(request, responseHandler, state));
+        ListenableFuture<T> future = executor.submit(() -> doExecute(request, responseHandler));
 
-        return new TestingHttpResponseFuture<>(future, state);
+        return new TestingHttpResponseFuture<>(future);
     }
 
     @Override
@@ -61,7 +59,7 @@ public class TestingHttpClient
         requireNonNull(request, "request is null");
         requireNonNull(responseHandler, "responseHandler is null");
         checkState(!closed.get(), "client is closed");
-        return execute(request, responseHandler, new AtomicReference<>("SENDING_REQUEST"));
+        return doExecute(request, responseHandler);
     }
 
     @Override
@@ -70,17 +68,15 @@ public class TestingHttpClient
         throw new UnsupportedOperationException();
     }
 
-    private <T, E extends Exception> T execute(Request request, ResponseHandler<T, E> responseHandler, AtomicReference<String> state)
+    private <T, E extends Exception> T doExecute(Request request, ResponseHandler<T, E> responseHandler)
             throws E
     {
-        state.set("PROCESSING_REQUEST");
         Response response;
         long requestStart = System.nanoTime();
         try {
             response = processor.handle(request);
         }
         catch (Exception | Error e) {
-            state.set("FAILED");
             long responseStart = System.nanoTime();
             Duration requestProcessingTime = new Duration(responseStart - requestStart, NANOSECONDS);
             if (e instanceof Exception) {
@@ -110,14 +106,12 @@ public class TestingHttpClient
         checkState(response != null, "response is null");
 
         // notify handler
-        state.set("PROCESSING_RESPONSE");
         long responseStart = System.nanoTime();
         Duration requestProcessingTime = new Duration(responseStart - requestStart, NANOSECONDS);
         try {
             return responseHandler.handle(request, response);
         }
         finally {
-            state.set("DONE");
             stats.recordResponseReceived(request.getMethod(),
                     response.getStatusCode(),
                     response.getBytesRead(),
@@ -153,27 +147,18 @@ public class TestingHttpClient
 
     private static class TestingHttpResponseFuture<T>
             extends ForwardingListenableFuture<T>
-            implements HttpResponseFuture<T>
     {
-        private final AtomicReference<String> state;
         private final ListenableFuture<T> future;
 
-        private TestingHttpResponseFuture(ListenableFuture<T> future, AtomicReference<String> state)
+        private TestingHttpResponseFuture(ListenableFuture<T> future)
         {
             this.future = future;
-            this.state = state;
         }
 
         @Override
         protected ListenableFuture<T> delegate()
         {
             return future;
-        }
-
-        @Override
-        public String getState()
-        {
-            return state.get();
         }
     }
 }

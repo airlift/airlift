@@ -1,8 +1,8 @@
 package io.airlift.http.client.testing;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import io.airlift.http.client.AbstractHttpClientTest.CaptureExceptionResponseHandler;
 import io.airlift.http.client.AbstractHttpClientTest.CapturedException;
-import io.airlift.http.client.HttpClient.HttpResponseFuture;
 import io.airlift.http.client.Request;
 import org.junit.jupiter.api.Test;
 
@@ -25,7 +25,7 @@ public class TestTestingHttpClient
 
         RuntimeException expectedException = new RuntimeException("test exception");
 
-        HttpResponseFuture<String> future = new TestingHttpClient(input -> {
+        ListenableFuture<String> future = new TestingHttpClient(input -> {
             throw expectedException;
         }).executeAsync(request, new CaptureExceptionResponseHandler());
 

@@ -25,7 +25,7 @@ public interface HttpClient
     <T, E extends Exception> T execute(Request request, ResponseHandler<T, E> responseHandler)
             throws E;
 
-    <T, E extends Exception> HttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler);
+    <T, E extends Exception> ListenableFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler);
 
     /**
      * Executes the given request and returns a response stream.
@@ -40,13 +40,4 @@ public interface HttpClient
     void close();
 
     boolean isClosed();
-
-    interface HttpResponseFuture<T>
-            extends ListenableFuture<T>
-    {
-        /**
-         * State for diagnostics.  Do not rely on values from this method.
-         */
-        String getState();
-    }
 }
