@@ -6,18 +6,10 @@ import org.eclipse.jetty.client.Result;
 
 import java.net.URI;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 class JettyRequestListener
         implements Request.Listener, Response.Listener
 {
-    enum State
-    {
-        CREATED, SENDING_REQUEST, AWAITING_RESPONSE, READING_RESPONSE, FINISHED
-    }
-
-    private final AtomicReference<State> state = new AtomicReference<>(State.CREATED);
-
     private final URI uri;
     private final long created = System.nanoTime();
     private final AtomicLong requestStarted = new AtomicLong();
@@ -33,11 +25,6 @@ class JettyRequestListener
     public URI getUri()
     {
         return uri;
-    }
-
-    public State getState()
-    {
-        return state.get();
     }
 
     public long getCreated()
@@ -68,8 +55,6 @@ class JettyRequestListener
     @Override
     public void onBegin(Request request)
     {
-        changeState(State.SENDING_REQUEST);
-
         long now = System.nanoTime();
         requestStarted.compareAndSet(0, now);
     }
@@ -77,8 +62,6 @@ class JettyRequestListener
     @Override
     public void onSuccess(Request request)
     {
-        changeState(State.AWAITING_RESPONSE);
-
         long now = System.nanoTime();
         requestStarted.compareAndSet(0, now);
         requestFinished.compareAndSet(0, now);
@@ -87,8 +70,6 @@ class JettyRequestListener
     @Override
     public void onBegin(Response response)
     {
-        changeState(State.READING_RESPONSE);
-
         long now = System.nanoTime();
         requestStarted.compareAndSet(0, now);
         requestFinished.compareAndSet(0, now);
@@ -98,19 +79,10 @@ class JettyRequestListener
     @Override
     public void onComplete(Result result)
     {
-        changeState(State.FINISHED);
-
         long now = System.nanoTime();
         requestStarted.compareAndSet(0, now);
         requestFinished.compareAndSet(0, now);
         responseStarted.compareAndSet(0, now);
         responseFinished.compareAndSet(0, now);
-    }
-
-    private synchronized void changeState(State newState)
-    {
-        if (state.get().ordinal() < newState.ordinal()) {
-            state.set(newState);
-        }
     }
 }
