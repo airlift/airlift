@@ -63,8 +63,6 @@ public record TestingClient(String name, McpSyncClient mcpClient, BlockingQueue<
         BlockingQueue<String> progress = new LinkedBlockingQueue<>();
         BlockingQueue<String> changes = new LinkedBlockingQueue<>();
 
-        // can't record resource subscription changes until https://github.com/modelcontextprotocol/java-sdk/pull/735 is accepted/merged
-
         McpSyncClient client = McpClient.sync(clientTransport)
                 .requestTimeout(Duration.ofMinutes(1))
                 .capabilities(McpSchema.ClientCapabilities.builder().roots(true).sampling().elicitation().build())
@@ -74,6 +72,7 @@ public record TestingClient(String name, McpSyncClient mcpClient, BlockingQueue<
                 .toolsChangeConsumer(_ -> changes.add("tools"))
                 .promptsChangeConsumer(_ -> changes.add("prompts"))
                 .resourcesChangeConsumer(resources -> resources.forEach(resource -> changes.add(resource.uri())))
+                .resourcesUpdateConsumer(resources -> resources.forEach(resource -> changes.add(resource.uri())))
                 .build();
         client.initialize();
 

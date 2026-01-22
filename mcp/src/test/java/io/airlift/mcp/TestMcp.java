@@ -507,6 +507,7 @@ public abstract class TestMcp
 
     @Test
     public void testListChangeNotifications()
+            throws InterruptedException
     {
         client1.changes().clear();
         client2.changes().clear();
@@ -534,8 +535,10 @@ public abstract class TestMcp
         assertChanges(client2.changes(), 0).isEmpty();
         assertChanges(localClient.changes(), 0).isEmpty();
 
-        // the Java SDK client does not currently support resource list change notifications
+        client1.mcpClient().subscribeResource(new McpSchema.SubscribeRequest("file://example1.txt"));
+        client2.mcpClient().subscribeResource(new McpSchema.SubscribeRequest("file://example1.txt"));
 
+        client2.mcpClient().callTool(new CallToolRequest("setVersion", ImmutableMap.of("type", "RESOURCE", "name", "example1")));
         client2.mcpClient().callTool(new CallToolRequest("setVersion", ImmutableMap.of("type", "SYSTEM", "name", "tools")));
         client2.mcpClient().callTool(new CallToolRequest("setVersion", ImmutableMap.of("type", "SYSTEM", "name", "prompts")));
 
@@ -543,9 +546,10 @@ public abstract class TestMcp
         client2.mcpClient().listTools();
         localClient.mcpClient().listTools();
 
-        assertChanges(client1.changes(), 2).containsExactlyInAnyOrder("tools", "prompts");
-        assertChanges(client2.changes(), 2).containsExactlyInAnyOrder("tools", "prompts");
+        assertChanges(client1.changes(), 3).containsExactlyInAnyOrder("tools", "prompts", "file://example1.txt");
+        assertChanges(client2.changes(), 3).containsExactlyInAnyOrder("tools", "prompts", "file://example1.txt");
         assertChanges(localClient.changes(), 2).containsExactlyInAnyOrder("tools", "prompts");
+        assertThat(localClient.changes().poll(2, SECONDS)).isNull();
     }
 
     @RepeatedTest(5)
