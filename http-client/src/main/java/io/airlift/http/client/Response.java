@@ -15,12 +15,15 @@
  */
 package io.airlift.http.client;
 
+import com.google.common.annotations.Beta;
 import com.google.common.collect.ListMultimap;
 import jakarta.annotation.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+
+import static java.util.Objects.requireNonNull;
 
 public interface Response
 {
@@ -42,8 +45,39 @@ public interface Response
 
     ListMultimap<HeaderName, String> getHeaders();
 
-    long getBytesRead();
+    @Beta
+    Content getContent();
 
+    // TODO eventually deprecate in favor of getContent()
     InputStream getInputStream()
             throws IOException;
+
+    /**
+     * Returns number of bytes read via {@link #getContent()} or {@link #getInputStream()}.
+     */
+    long getBytesRead();
+
+    @Beta
+    sealed interface Content
+            permits BytesContent, InputStreamContent {}
+
+    @Beta
+    record BytesContent(byte[] bytes)
+            implements Content
+    {
+        public BytesContent
+        {
+            requireNonNull(bytes, "bytes is null");
+        }
+    }
+
+    @Beta
+    record InputStreamContent(InputStream inputStream)
+            implements Content
+    {
+        public InputStreamContent
+        {
+            requireNonNull(inputStream, "inputStream is null");
+        }
+    }
 }

@@ -27,8 +27,8 @@ import java.util.List;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
+import static io.airlift.http.client.ResponseHandlerUtils.getResponseBytes;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
-import static io.airlift.http.client.ResponseHandlerUtils.readResponseBytes;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
@@ -59,7 +59,7 @@ public class FullJsonResponseHandler<T>
     @Override
     public JsonResponse<T> handle(Request request, Response response)
     {
-        byte[] bytes = readResponseBytes(request, response);
+        byte[] bytes = getResponseBytes(request, response);
         String contentType = response.getHeader(CONTENT_TYPE);
         if ((contentType == null) || !MediaType.parse(contentType).is(MEDIA_TYPE_JSON)) {
             return new JsonResponse<>(response.getStatusCode(), response.getHeaders(), bytes);

@@ -23,8 +23,8 @@ import io.airlift.json.JsonCodec;
 import java.util.Set;
 
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
+import static io.airlift.http.client.ResponseHandlerUtils.getResponseBytes;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
-import static io.airlift.http.client.ResponseHandlerUtils.readResponseBytes;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class JsonResponseHandler<T>
@@ -80,7 +80,10 @@ public class JsonResponseHandler<T>
             throw new UnexpectedResponseException("Expected application/json response from server but got " + contentType, request, response);
         }
 
-        byte[] bytes = readResponseBytes(request, response);
+        // TODO avoid buffering whole response before invoking the JSON codec.
+        // When response is an InputStream this requires additional data copy and increases peak memory usage.
+        // The data buffering is used only for error reporting, so perhaps it can be applied only on a retry.
+        byte[] bytes = getResponseBytes(request, response);
 
         try {
             return jsonCodec.fromJson(bytes);
