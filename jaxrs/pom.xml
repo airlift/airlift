@@ -122,6 +122,13 @@
 
         <!-- used by tests but also needed transitively -->
         <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- used by tests but also needed transitively -->
+        <dependency>
             <groupId>io.airlift</groupId>
             <artifactId>node</artifactId>
             <scope>runtime</scope>

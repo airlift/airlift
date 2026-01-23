@@ -18,6 +18,7 @@ package io.airlift.json;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonFactoryBuilder;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.StreamReadConstraints;
 import com.fasterxml.jackson.core.StreamReadFeature;
 import com.fasterxml.jackson.core.StreamWriteConstraints;
@@ -198,6 +199,11 @@ public class ObjectMapperProvider
 
         // use ISO dates
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+        // When serialization fails in the middle, it's better to return a truncated (invalid) JSON
+        // than something that could be interpreted as a valid (but incorrect) result.
+        // This is especially applicable to server endpoints that return JSON responses.
+        objectMapper.disable(JsonGenerator.Feature.AUTO_CLOSE_JSON_CONTENT);
 
         // Skip fields that are null or absent (Optional) when serializing objects.
         // This only applies to mapped object fields, not containers like Map or List.
