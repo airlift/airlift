@@ -3,6 +3,10 @@ name: Release snapshot version
 on:
   workflow_dispatch:
     inputs:
+      repository:
+        description: 'The repository to release snapshot release from (use with caution!)'
+        required: true
+        default: 'airlift/airlift'
       branch:
         description: 'The branch to release snapshot release from'
         required: true
@@ -17,6 +21,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          repository: '${{ github.event.inputs.repository }}'
           ref: ${{ github.event.inputs.branch }}
 
       - name: Install java
