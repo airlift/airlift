@@ -16,15 +16,20 @@
 package io.airlift.node;
 
 import com.google.common.base.VerifyException;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.net.InetAddresses;
+import io.airlift.node.NodeInfo.NodeAddresses;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.UncheckedIOException;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
+import java.util.List;
 import java.util.Map;
 
 import static com.google.common.io.Resources.getResource;
@@ -176,5 +181,82 @@ public class TestNodeInfo
         assertThatThrownBy(() -> new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, IP, "invalid.file", Map.of(), false))
                 .isInstanceOf(VerifyException.class)
                 .hasMessageMatching("Only one of annotationFile or annotations should be set, but not both");
+    }
+
+    @Test
+    public void testIpDiscoveryLocalHostPreferred()
+    {
+        InetAddress localHostIpv4 = Inet4Address.ofLiteral("10.1.2.3");
+        InetAddress localHostIpv6 = Inet6Address.ofLiteral("10::1234");
+        InetAddress otherIpv4 = Inet4Address.ofLiteral("10.1.2.4");
+        InetAddress otherIpv6 = Inet6Address.ofLiteral("10::1231");
+        // prefer ipv4
+        testInternalAddressDiscovery(false, localHostIpv4, ImmutableList.of(otherIpv6, otherIpv4, localHostIpv4), localHostIpv4);
+
+        // localHost not on the list of good addresses (this is the case for loopback addresses)
+        testInternalAddressDiscovery(false, localHostIpv4, ImmutableList.of(otherIpv6, otherIpv4), otherIpv4);
+
+        // prefer ipv4 over ipv6 local host
+        testInternalAddressDiscovery(false, localHostIpv6, ImmutableList.of(localHostIpv6, otherIpv4), otherIpv4);
+        // prefer ipv4 but no ipv4 ip available
+        testInternalAddressDiscovery(false, localHostIpv6, ImmutableList.of(localHostIpv6, otherIpv6), localHostIpv6);
+
+        testInternalAddressDiscovery(false, localHostIpv6, ImmutableList.of(), Inet4Address.ofLiteral("127.0.0.1"));
+        // prefer ipv6
+        testInternalAddressDiscovery(true, localHostIpv4, ImmutableList.of(otherIpv6, otherIpv4, localHostIpv4), otherIpv6);
+        testInternalAddressDiscovery(true, localHostIpv6, ImmutableList.of(otherIpv6, otherIpv4, localHostIpv6), localHostIpv6);
+
+        // prefer ipv6 over ipv4 local host
+        testInternalAddressDiscovery(true, localHostIpv4, ImmutableList.of(localHostIpv4, otherIpv6), otherIpv6);
+        // prefer ipv4 but no ipv4 ip available
+        testInternalAddressDiscovery(true, localHostIpv4, ImmutableList.of(localHostIpv4, otherIpv4), localHostIpv4);
+
+        // no good addresses, return ipv4 loopback address, even if ipv6 is preferred
+        testInternalAddressDiscovery(true, localHostIpv6, ImmutableList.of(), Inet4Address.ofLiteral("127.0.0.1"));
+
+        NodeAddresses throwingNetworkAddresses = new NodeAddresses()
+        {
+            @Override
+            public List<InetAddress> getAddresses()
+            {
+                return ImmutableList.of(otherIpv4, otherIpv6);
+            }
+
+            @Override
+            public InetAddress getLocalHost()
+                    throws UnknownHostException
+            {
+                throw new UnknownHostException();
+            }
+        };
+
+        NodeInfo nodeInfoIpv4 = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, IP, null, null, false, throwingNetworkAddresses);
+
+        assertThat(nodeInfoIpv4.getInternalAddress()).isEqualTo(InetAddresses.toAddrString(otherIpv4));
+
+        NodeInfo nodeInfoIpv6 = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, IP, null, null, true, throwingNetworkAddresses);
+
+        assertThat(nodeInfoIpv6.getInternalAddress()).isEqualTo(InetAddresses.toAddrString(otherIpv6));
+    }
+
+    private static void testInternalAddressDiscovery(boolean preferIpv6Address, InetAddress localHost, List<InetAddress> addresses, InetAddress expectedInternalAddress)
+    {
+        NodeAddresses networkAddresses = new NodeAddresses()
+        {
+            @Override
+            public List<InetAddress> getAddresses()
+            {
+                return addresses;
+            }
+
+            @Override
+            public InetAddress getLocalHost()
+            {
+                return localHost;
+            }
+        };
+        NodeInfo nodeInfo = new NodeInfo(ENVIRONMENT, POOL, "nodeInfo", null, null, null, null, null, null, IP, null, null, preferIpv6Address, networkAddresses);
+
+        assertThat(nodeInfo.getInternalAddress()).isEqualTo(InetAddresses.toAddrString(expectedInternalAddress));
     }
 }
