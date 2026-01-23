@@ -15,6 +15,7 @@
  */
 package io.airlift.node;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.net.InetAddresses;
@@ -102,6 +103,38 @@ public class NodeInfo
             Map<String, String> annotations,
             boolean preferIpv6Address)
     {
+        this(environment,
+                pool,
+                nodeId,
+                internalAddress,
+                bindIp,
+                externalAddress,
+                location,
+                binarySpec,
+                configSpec,
+                internalAddressSource,
+                annotationFile,
+                annotations,
+                preferIpv6Address,
+                NodeAddresses.DEFAULT);
+    }
+
+    @VisibleForTesting
+    NodeInfo(String environment,
+            String pool,
+            String nodeId,
+            String internalAddress,
+            InetAddress bindIp,
+            String externalAddress,
+            String location,
+            String binarySpec,
+            String configSpec,
+            AddressSource internalAddressSource,
+            String annotationFile,
+            Map<String, String> annotations,
+            boolean preferIpv6Address,
+            NodeAddresses networkAddresses)
+    {
         requireNonNull(environment, "environment is null");
         requireNonNull(pool, "pool is null");
         requireNonNull(internalAddressSource, "internalAddressSource is null");
@@ -128,7 +161,7 @@ public class NodeInfo
             this.internalAddress = internalAddress;
         }
         else {
-            this.internalAddress = findInternalAddress(internalAddressSource);
+            this.internalAddress = findInternalAddress(internalAddressSource, networkAddresses);
         }
 
         this.bindIp = requireNonNullElseGet(bindIp, () -> InetAddresses.fromInteger(0));
@@ -294,20 +327,20 @@ public class NodeInfo
                 .toString();
     }
 
-    private String findInternalAddress(AddressSource addressSource)
+    private String findInternalAddress(AddressSource addressSource, NodeAddresses networkAddresses)
     {
         return switch (addressSource) {
-            case IP -> InetAddresses.toAddrString(findInternalIp());
-            case IP_ENCODED_AS_HOSTNAME -> encodeAddressAsHostname(findInternalIp());
-            case HOSTNAME -> getLocalHost().getHostName();
-            case FQDN -> getLocalHost().getCanonicalHostName();
+            case IP -> InetAddresses.toAddrString(findInternalIp(networkAddresses));
+            case IP_ENCODED_AS_HOSTNAME -> encodeAddressAsHostname(findInternalIp(networkAddresses));
+            case HOSTNAME -> getLocalHost(networkAddresses).getHostName();
+            case FQDN -> getLocalHost(networkAddresses).getCanonicalHostName();
         };
     }
 
-    private InetAddress findInternalIp()
+    private InetAddress findInternalIp(NodeAddresses networkAddresses)
     {
         List<Function<List<InetAddress>, Optional<InetAddress>>> searchOrder = new ArrayList<>(3);
-        searchOrder.add(candidates -> findLocalAddress(candidates, preferIpv6Address));
+        searchOrder.add(candidates -> findLocalAddress(candidates, preferIpv6Address, networkAddresses));
         if (this.preferIpv6Address) {
             searchOrder.add(NodeInfo::findIpv6address);
             searchOrder.add(NodeInfo::findIpv4address);
@@ -317,7 +350,7 @@ public class NodeInfo
             searchOrder.add(NodeInfo::findIpv6address);
         }
 
-        List<InetAddress> goodAddresses = getGoodAddresses();
+        List<InetAddress> goodAddresses = networkAddresses.getAddresses();
         return searchOrder.stream()
             .map(source -> source.apply(goodAddresses))
             .filter(Optional::isPresent)                        // select only valid results
@@ -348,10 +381,10 @@ public class NodeInfo
         return Optional.empty();
     }
 
-    private static Optional<InetAddress> findLocalAddress(List<InetAddress> candidates, boolean preferIpv6Address)
+    private static Optional<InetAddress> findLocalAddress(List<InetAddress> candidates, boolean preferIpv6Address, NodeAddresses networkAddresses)
     {
         try {
-            InetAddress address = InetAddress.getLocalHost();
+            InetAddress address = networkAddresses.getLocalHost();
             boolean preferred = preferIpv6Address ? isV6Address(address) : isV4Address(address);
             return preferred && candidates.contains(address) ? Optional.of(address) : Optional.empty();
         }
@@ -410,13 +443,37 @@ public class NodeInfo
                 !address.isMulticastAddress();
     }
 
-    private static InetAddress getLocalHost()
+    private static InetAddress getLocalHost(NodeAddresses networkAddresses)
     {
         try {
-            return InetAddress.getLocalHost();
+            return networkAddresses.getLocalHost();
         }
         catch (UnknownHostException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    interface NodeAddresses
+    {
+        NodeAddresses DEFAULT = new NodeAddresses()
+        {
+            @Override
+            public List<InetAddress> getAddresses()
+            {
+                return getGoodAddresses();
+            }
+
+            @Override
+            public InetAddress getLocalHost()
+                    throws UnknownHostException
+            {
+                return InetAddress.getLocalHost();
+            }
+        };
+
+        List<InetAddress> getAddresses();
+
+        InetAddress getLocalHost()
+                throws UnknownHostException;
     }
 }
