@@ -7,6 +7,7 @@ import org.eclipse.jetty.client.Result;
 import static java.util.Objects.requireNonNull;
 
 class JettyResponseListener<T, E extends Exception>
+        // TODO use RetainingResponseListener to reduce data copying?
         extends BufferingResponseListener
 {
     private final Request request;
@@ -32,7 +33,11 @@ class JettyResponseListener<T, E extends Exception>
             future.failed(result.getFailure());
         }
         else {
-            future.completed(result.getResponse(), getContentAsInputStream());
+            // TODO it would be better to return response data as InputStream based on Jetty chunks, without any data copying
+            // There is no such builtin Jetty response listener to use, see https://github.com/jetty/jetty.project/issues/14373.
+            // Doing so would also require removal of data buffering in e.g. `JsonResponseHandler` which is used for error reporting.
+            // Perhaps buffering for errors could be done only on retries?
+            future.completed(result.getResponse(), getContent());
         }
     }
 }

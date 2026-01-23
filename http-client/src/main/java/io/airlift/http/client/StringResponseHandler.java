@@ -26,8 +26,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
+import static io.airlift.http.client.ResponseHandlerUtils.getResponseBytes;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
-import static io.airlift.http.client.ResponseHandlerUtils.readResponseBytes;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class StringResponseHandler
@@ -53,7 +53,7 @@ public class StringResponseHandler
     @Override
     public StringResponse handle(Request request, Response response)
     {
-        byte[] bytes = readResponseBytes(request, response);
+        byte[] bytes = getResponseBytes(request, response);
 
         Charset charset = Optional.ofNullable(response.getHeader(CONTENT_TYPE))
                 .map(MediaType::parse)

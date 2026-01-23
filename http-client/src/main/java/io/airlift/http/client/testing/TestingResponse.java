@@ -14,6 +14,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
+import java.util.function.LongSupplier;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -24,18 +25,27 @@ public class TestingResponse
 {
     private final HttpStatus status;
     private final ListMultimap<HeaderName, String> headers;
-    private final CountingInputStream countingInputStream;
+    private final Content content;
+    private final InputStream inputStream;
+    private final LongSupplier bytesRead;
 
     public TestingResponse(HttpStatus status, ListMultimap<String, String> headers, byte[] bytes)
     {
-        this(status, headers, new ByteArrayInputStream(requireNonNull(bytes, "bytes is null")));
+        this.status = requireNonNull(status, "status is null");
+        this.headers = ImmutableListMultimap.copyOf(toHeaderMap(requireNonNull(headers, "headers is null")));
+        this.content = new BytesContent(requireNonNull(bytes, "bytes is null"));
+        this.inputStream = new ByteArrayInputStream(bytes);
+        this.bytesRead = () -> bytes.length;
     }
 
     public TestingResponse(HttpStatus status, ListMultimap<String, String> headers, InputStream input)
     {
         this.status = requireNonNull(status, "status is null");
         this.headers = ImmutableListMultimap.copyOf(toHeaderMap(requireNonNull(headers, "headers is null")));
-        this.countingInputStream = new CountingInputStream(requireNonNull(input, "input is null"));
+        CountingInputStream countingInputStream = new CountingInputStream(requireNonNull(input, "input is null"));
+        this.content = new InputStreamContent(countingInputStream);
+        this.inputStream = countingInputStream;
+        this.bytesRead = countingInputStream::getCount;
     }
 
     @Override
@@ -57,16 +67,22 @@ public class TestingResponse
     }
 
     @Override
-    public long getBytesRead()
+    public Content getContent()
     {
-        return countingInputStream.getCount();
+        return content;
     }
 
     @Override
     public InputStream getInputStream()
             throws IOException
     {
-        return countingInputStream;
+        return inputStream;
+    }
+
+    @Override
+    public long getBytesRead()
+    {
+        return bytesRead.getAsLong();
     }
 
     @Override

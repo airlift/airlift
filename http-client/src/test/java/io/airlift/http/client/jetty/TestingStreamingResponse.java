@@ -87,9 +87,9 @@ public class TestingStreamingResponse
     }
 
     @Override
-    public long getBytesRead()
+    public Content getContent()
     {
-        return delegate.getBytesRead();
+        return delegate.getContent();
     }
 
     @Override
@@ -97,6 +97,12 @@ public class TestingStreamingResponse
             throws IOException
     {
         return delegate.getInputStream();
+    }
+
+    @Override
+    public long getBytesRead()
+    {
+        return delegate.getBytesRead();
     }
 
     @Override

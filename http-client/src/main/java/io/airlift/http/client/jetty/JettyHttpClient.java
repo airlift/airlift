@@ -731,15 +731,21 @@ public class JettyHttpClient
                 }
 
                 @Override
-                public long getBytesRead()
+                public Content getContent()
                 {
-                    return response.jettyResponse.getBytesRead();
+                    return response.jettyResponse.getContent();
                 }
 
                 @Override
                 public InputStream getInputStream()
                 {
                     return response.jettyResponse.getInputStream();
+                }
+
+                @Override
+                public long getBytesRead()
+                {
+                    return response.jettyResponse.getBytesRead();
                 }
 
                 @Override

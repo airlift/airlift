@@ -8,7 +8,9 @@ import io.airlift.http.client.HttpVersion;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpFields;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.util.function.LongSupplier;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 
@@ -16,13 +18,27 @@ class JettyResponse
         implements io.airlift.http.client.Response
 {
     private final Response response;
-    private final CountingInputStream inputStream;
+    private final Content content;
+    private final InputStream inputStream;
+    private final LongSupplier bytesRead;
     private final ListMultimap<HeaderName, String> headers;
+
+    public JettyResponse(Response response, byte[] content)
+    {
+        this.response = response;
+        this.content = new BytesContent(content);
+        this.inputStream = new ByteArrayInputStream(content);
+        this.bytesRead = () -> content.length;
+        this.headers = toHeadersMap(response.getHeaders());
+    }
 
     public JettyResponse(Response response, InputStream inputStream)
     {
         this.response = response;
-        this.inputStream = new CountingInputStream(inputStream);
+        CountingInputStream countingInputStream = new CountingInputStream(inputStream);
+        this.content = new InputStreamContent(countingInputStream);
+        this.inputStream = countingInputStream;
+        this.bytesRead = countingInputStream::getCount;
         this.headers = toHeadersMap(response.getHeaders());
     }
 
@@ -49,15 +65,21 @@ class JettyResponse
     }
 
     @Override
-    public long getBytesRead()
+    public Content getContent()
     {
-        return inputStream.getCount();
+        return content;
     }
 
     @Override
     public InputStream getInputStream()
     {
         return inputStream;
+    }
+
+    @Override
+    public long getBytesRead()
+    {
+        return bytesRead.getAsLong();
     }
 
     @Override

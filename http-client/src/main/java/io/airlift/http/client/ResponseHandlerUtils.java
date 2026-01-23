@@ -1,6 +1,7 @@
 package io.airlift.http.client;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.ConnectException;
 
@@ -24,10 +25,13 @@ public final class ResponseHandlerUtils
         throw new RuntimeException(exception);
     }
 
-    public static byte[] readResponseBytes(Request request, Response response)
+    public static byte[] getResponseBytes(Request request, Response response)
     {
         try {
-            return response.getInputStream().readAllBytes();
+            return switch (response.getContent()) {
+                case Response.BytesContent(byte[] bytes) -> bytes;
+                case Response.InputStreamContent(InputStream inputStream) -> inputStream.readAllBytes();
+            };
         }
         catch (IOException e) {
             throw new UncheckedIOException("Failed reading response from server: " + urlFor(request), e);
