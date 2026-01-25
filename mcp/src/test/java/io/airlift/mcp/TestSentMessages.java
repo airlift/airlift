@@ -56,8 +56,7 @@ public class TestSentMessages
     {
         // implicitly disable pings
         Map<String, String> properties = ImmutableMap.of(
-                "mcp.event-streaming.ping-threshold", "7d",
-                "mcp.resource-version.update-interval", "1ms");
+                "mcp.event-streaming.ping-threshold", "7d");
 
         testingServer = new TestingServer(properties, Optional.empty(), builder -> builder
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))

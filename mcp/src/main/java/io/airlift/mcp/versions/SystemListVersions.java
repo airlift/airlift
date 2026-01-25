@@ -1,10 +1,8 @@
 package io.airlift.mcp.versions;
 
-import java.time.Instant;
-
 import static java.util.Objects.requireNonNull;
 
-public record SystemListVersions(String toolsVersion, String promptsVersion, String resourcesVersion, String resourceTemplatesVersion, Instant lastCheck)
+public record SystemListVersions(String toolsVersion, String promptsVersion, String resourcesVersion, String resourceTemplatesVersion)
 {
     public SystemListVersions
     {
@@ -12,6 +10,5 @@ public record SystemListVersions(String toolsVersion, String promptsVersion, Str
         requireNonNull(promptsVersion, "promptsVersion is null");
         requireNonNull(resourcesVersion, "resourcesVersion is null");
         requireNonNull(resourceTemplatesVersion, "resourceTemplatesVersion is null");
-        requireNonNull(lastCheck, "lastCheck is null");
     }
 }

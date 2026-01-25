@@ -55,8 +55,7 @@ public class LocalServer
                 .add(new JsonModule());
 
         ImmutableMap.Builder<String, String> serverProperties = ImmutableMap.<String, String>builder()
-                .put("node.environment", "testing")
-                .put("mcp.resource-version.update-interval", "10s");
+                .put("node.environment", "testing");
 
         Bootstrap app = new Bootstrap(modules.build());
         Injector injector = app.setRequiredConfigurationProperties(serverProperties.build()).initialize();
