@@ -9,6 +9,7 @@ import com.google.common.hash.Hashing;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import io.airlift.bootstrap.LifeCycleManager;
+import io.airlift.log.Logger;
 import io.airlift.mcp.McpClientException;
 import io.airlift.mcp.McpConfig;
 import io.airlift.mcp.McpIdentity.Authenticated;
@@ -78,7 +79,7 @@ import org.glassfish.jersey.uri.UriTemplate;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.time.Duration;
-import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -112,6 +113,8 @@ import static java.util.Objects.requireNonNull;
 public class InternalMcpServer
         implements McpServer
 {
+    private static final Logger log = Logger.get(InternalMcpServer.class);
+
     private static final int RECONCILE_PAGE_SIZE = 100;
 
     private final Map<String, ToolEntry> tools = new ConcurrentHashMap<>();
@@ -125,7 +128,6 @@ public class InternalMcpServer
     private final PaginationUtil paginationUtil;
     private final Optional<SessionController> sessionController;
     private final Duration sessionTimeout;
-    private final Duration versionUpdateInterval;
     private final Implementation serverImplementation;
 
     @Inject
@@ -157,7 +159,6 @@ public class InternalMcpServer
         completions.forEach(completion -> addCompletion(completion.reference(), completion.handler()));
 
         sessionTimeout = mcpConfig.getDefaultSessionTimeout().toJavaTime();
-        versionUpdateInterval = mcpConfig.getResourceVersionUpdateInterval().toJavaTime();
 
         serverImplementation = iconHelper.mapIcons(serverIcons).map(icons -> metadata.implementation().withAdditionalIcons(icons))
                 .orElse(metadata.implementation());
@@ -387,52 +388,63 @@ public class InternalMcpServer
         SessionController localSessionController = requireSessionController();
         SessionId sessionId = requireSessionId(request);
 
-        Instant now = Instant.now();
-
-        SystemListVersions sessionSystemListVersions = localSessionController.getSessionValue(sessionId, SYSTEM_LIST_VERSIONS).orElse(new SystemListVersions("", "", "", "", now));
-
-        Duration elapsedSinceLastCheck = Duration.between(sessionSystemListVersions.lastCheck(), now);
-        if (elapsedSinceLastCheck.compareTo(versionUpdateInterval) < 0) {
-            return;
-        }
-
-        SystemListVersions systemVersions = buildSystemListVersions();
-
         McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, Optional.empty());
+        SystemListVersions currentVersions = buildSystemListVersions();
 
-        if (!sessionSystemListVersions.toolsVersion().equals(systemVersions.toolsVersion())) {
-            requestContext.sendMessage(NOTIFICATION_TOOLS_LIST_CHANGED, Optional.empty());
-        }
-        if (!sessionSystemListVersions.promptsVersion().equals(systemVersions.promptsVersion())) {
-            requestContext.sendMessage(NOTIFICATION_PROMPTS_LIST_CHANGED, Optional.empty());
-        }
-        if (!sessionSystemListVersions.resourcesVersion().equals(systemVersions.resourcesVersion()) || !sessionSystemListVersions.resourceTemplatesVersion().equals(systemVersions.resourceTemplatesVersion())) {
-            requestContext.sendMessage(NOTIFICATION_RESOURCES_LIST_CHANGED, Optional.empty());
-        }
+        record Notification(String message, Optional<Object> params) {}
 
-        localSessionController.setSessionValue(sessionId, SYSTEM_LIST_VERSIONS, systemVersions);
+        List<Notification> notifications = new ArrayList<>();
+
+        localSessionController.computeSessionValue(sessionId, SYSTEM_LIST_VERSIONS, maybePreviousVersions -> {
+            SystemListVersions previousVersions = maybePreviousVersions.orElseGet(() -> {
+                log.warn("No current versions found for session %s", sessionId);
+                return buildSystemListVersions();
+            });
+
+            if (!previousVersions.toolsVersion().equals(currentVersions.toolsVersion())) {
+                notifications.add(new Notification(NOTIFICATION_TOOLS_LIST_CHANGED, Optional.empty()));
+            }
+            if (!previousVersions.promptsVersion().equals(currentVersions.promptsVersion())) {
+                notifications.add(new Notification(NOTIFICATION_PROMPTS_LIST_CHANGED, Optional.empty()));
+            }
+            if (!previousVersions.resourcesVersion().equals(currentVersions.resourcesVersion()) || !previousVersions.resourceTemplatesVersion().equals(currentVersions.resourceTemplatesVersion())) {
+                notifications.add(new Notification(NOTIFICATION_RESOURCES_LIST_CHANGED, Optional.empty()));
+            }
+
+            return Optional.of(currentVersions);
+        });
 
         // iterate over any subscribed resources and notify if updated
+        //
+        // TODO this is somewhat expensive. In the future consider adding some hooks that clients can use to optimize this.
         Optional<String> cursor = Optional.empty();
         do {
             List<Map.Entry<String, ResourceVersion>> subscriptions = localSessionController.listSessionValues(sessionId, ResourceVersion.class, RECONCILE_PAGE_SIZE, cursor);
             subscriptions.forEach(subscription -> {
                 String uri = subscription.getKey();
-                ResourceVersion resourceVersion = subscription.getValue();
 
                 Optional<List<ResourceContents>> resourceContents = internalReadResource(new ReadResourceRequest(uri, Optional.empty()), requestContext);
                 String newHash = resourceContents
                         .map(contents -> listHash(contents.stream()))
                         .orElse("");
-                if (!resourceVersion.version().equals(newHash)) {
-                    requestContext.sendMessage(NOTIFICATION_RESOURCES_UPDATED, Optional.of(new ResourcesUpdatedNotification(uri)));
-                    localSessionController.setSessionValue(sessionId, resourceVersionKey(uri), new ResourceVersion(newHash));
-                }
+
+                localSessionController.computeSessionValue(sessionId, resourceVersionKey(uri), maybeOldVersion -> {
+                    if (maybeOldVersion.map(oldVersion -> !oldVersion.version().equals(newHash)).orElse(false)) {
+                        notifications.add(new Notification(NOTIFICATION_RESOURCES_UPDATED, Optional.of(new ResourcesUpdatedNotification(uri))));
+                        return maybeOldVersion;
+                    }
+                    return Optional.of(new ResourceVersion(newHash));
+                });
             });
 
             cursor = (subscriptions.size() < RECONCILE_PAGE_SIZE) ? Optional.empty() : Optional.of(subscriptions.getLast().getKey());
         }
         while (cursor.isPresent());
+
+        // ideally, we'd send these messages before updating the session state, but that would require
+        // sending them inside of a DB transaction and that isn't ideal. So, we send them after updating the session state.
+        // There is a small chance that these messages fail to send and the client will miss the notifications.
+        notifications.forEach(notification -> requestContext.sendMessage(notification.message, notification.params));
     }
 
     private SystemListVersions buildSystemListVersions()
@@ -441,8 +453,7 @@ public class InternalMcpServer
                 listHash(tools.values().stream().map(ToolEntry::tool)),
                 listHash(prompts.values().stream().map(PromptEntry::prompt)),
                 listHash(resources.values().stream().map(ResourceEntry::resource)),
-                listHash(resourceTemplates.values().stream().map(ResourceTemplateEntry::resourceTemplate)),
-                Instant.now());
+                listHash(resourceTemplates.values().stream().map(ResourceTemplateEntry::resourceTemplate)));
     }
 
     private Optional<List<ResourceContents>> internalReadResource(ReadResourceRequest readResourceRequest, McpRequestContext requestContext)

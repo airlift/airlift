@@ -12,7 +12,6 @@ public class McpConfig
 {
     private int defaultPageSize = 25;
     private Duration defaultSessionTimeout = new Duration(15, MINUTES);
-    private Duration resourceVersionUpdateInterval = new Duration(1, MINUTES);
     private boolean httpGetEventsEnabled = true;
     private Duration eventStreamingPingThreshold = new Duration(15, SECONDS);
     private Duration eventStreamingTimeout = new Duration(5, MINUTES);
@@ -43,19 +42,6 @@ public class McpConfig
     public McpConfig setDefaultSessionTimeout(Duration defaultSessionTimeout)
     {
         this.defaultSessionTimeout = defaultSessionTimeout;
-        return this;
-    }
-
-    @MinDuration("1ms")
-    public Duration getResourceVersionUpdateInterval()
-    {
-        return resourceVersionUpdateInterval;
-    }
-
-    @Config("mcp.resource-version.update-interval")
-    public McpConfig setResourceVersionUpdateInterval(Duration resourceVersionUpdateInterval)
-    {
-        this.resourceVersionUpdateInterval = resourceVersionUpdateInterval;
         return this;
     }
 

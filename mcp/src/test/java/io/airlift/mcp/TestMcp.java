@@ -137,9 +137,7 @@ public abstract class TestMcp
             }
         };
 
-        Map<String, String> properties = ImmutableMap.of(
-                "mcp.resource-version.update-interval", "1ms",
-                "mcp.http-get-events.enabled", "false");
+        Map<String, String> properties = ImmutableMap.of("mcp.http-get-events.enabled", "false");
 
         testingServer = new TestingServer(properties, Optional.of(module), builder -> builder
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
@@ -505,51 +503,52 @@ public abstract class TestMcp
                 .hasMessageContaining("HTTP 404 Not Found");
     }
 
-    @Test
+    @RepeatedTest(5)
     public void testListChangeNotifications()
             throws InterruptedException
     {
-        client1.changes().clear();
-        client2.changes().clear();
+        TestingClient listChangeClient1 = buildClient(closer, baseUri, "ListChangeNotifications1");
+        TestingClient listChangeClient2 = buildClient(closer, baseUri, "ListChangeNotifications2");
 
-        client1.mcpClient().callTool(new CallToolRequest("setVersion", ImmutableMap.of("type", "SYSTEM", "name", "tools")));
+        listChangeClient1.mcpClient().callTool(new CallToolRequest("setVersion", ImmutableMap.of("type", "SYSTEM", "name", "tools")));
 
-        TestingClient localClient = buildClient(closer, baseUri, "testListChangeNotifications");
+        TestingClient listChangeClient3 = buildClient(closer, baseUri, "ListChangeNotifications3");
 
-        client1.mcpClient().listTools();
-        client2.mcpClient().listTools();
-        localClient.mcpClient().listTools();
+        // calling listTools will also call reconcileVersions() internally
+        listChangeClient1.mcpClient().listTools();
+        listChangeClient2.mcpClient().listTools();
+        listChangeClient3.mcpClient().listTools();
 
-        assertChanges(client1.changes(), 1).contains("tools");
-        assertChanges(client2.changes(), 1).contains("tools");
-        assertChanges(localClient.changes(), 0).isEmpty();   // created after the version change
+        assertChanges(listChangeClient1.changes(), 1).contains("tools");
+        assertChanges(listChangeClient2.changes(), 1).contains("tools");
+        assertChanges(listChangeClient3.changes(), 0).isEmpty();   // created after the version change
 
-        client1.changes().clear();
-        client2.changes().clear();
+        listChangeClient1.changes().clear();
+        listChangeClient2.changes().clear();
 
-        client1.mcpClient().listTools();
-        client2.mcpClient().listTools();
-        localClient.mcpClient().listTools();
+        listChangeClient1.mcpClient().listTools();
+        listChangeClient2.mcpClient().listTools();
+        listChangeClient3.mcpClient().listTools();
 
-        assertChanges(client1.changes(), 0).isEmpty();
-        assertChanges(client2.changes(), 0).isEmpty();
-        assertChanges(localClient.changes(), 0).isEmpty();
+        assertChanges(listChangeClient1.changes(), 0).isEmpty();
+        assertChanges(listChangeClient2.changes(), 0).isEmpty();
+        assertChanges(listChangeClient3.changes(), 0).isEmpty();
 
-        client1.mcpClient().subscribeResource(new McpSchema.SubscribeRequest("file://example1.txt"));
-        client2.mcpClient().subscribeResource(new McpSchema.SubscribeRequest("file://example1.txt"));
+        listChangeClient1.mcpClient().subscribeResource(new McpSchema.SubscribeRequest("file://example1.txt"));
+        listChangeClient2.mcpClient().subscribeResource(new McpSchema.SubscribeRequest("file://example1.txt"));
 
-        client2.mcpClient().callTool(new CallToolRequest("setVersion", ImmutableMap.of("type", "RESOURCE", "name", "example1")));
-        client2.mcpClient().callTool(new CallToolRequest("setVersion", ImmutableMap.of("type", "SYSTEM", "name", "tools")));
-        client2.mcpClient().callTool(new CallToolRequest("setVersion", ImmutableMap.of("type", "SYSTEM", "name", "prompts")));
+        listChangeClient2.mcpClient().callTool(new CallToolRequest("setVersion", ImmutableMap.of("type", "RESOURCE", "name", "example1")));
+        listChangeClient2.mcpClient().callTool(new CallToolRequest("setVersion", ImmutableMap.of("type", "SYSTEM", "name", "tools")));
+        listChangeClient2.mcpClient().callTool(new CallToolRequest("setVersion", ImmutableMap.of("type", "SYSTEM", "name", "prompts")));
 
-        client1.mcpClient().listTools();
-        client2.mcpClient().listTools();
-        localClient.mcpClient().listTools();
+        listChangeClient1.mcpClient().listTools();
+        listChangeClient2.mcpClient().listTools();
+        listChangeClient3.mcpClient().listTools();
 
-        assertChanges(client1.changes(), 3).containsExactlyInAnyOrder("tools", "prompts", "file://example1.txt");
-        assertChanges(client2.changes(), 3).containsExactlyInAnyOrder("tools", "prompts", "file://example1.txt");
-        assertChanges(localClient.changes(), 2).containsExactlyInAnyOrder("tools", "prompts");
-        assertThat(localClient.changes().poll(2, SECONDS)).isNull();
+        assertChanges(listChangeClient1.changes(), 3).containsExactlyInAnyOrder("tools", "prompts", "file://example1.txt");
+        assertChanges(listChangeClient2.changes(), 3).containsExactlyInAnyOrder("tools", "prompts", "file://example1.txt");
+        assertChanges(listChangeClient3.changes(), 2).containsExactlyInAnyOrder("tools", "prompts");
+        assertThat(listChangeClient3.changes().poll(2, SECONDS)).isNull();
     }
 
     @RepeatedTest(5)
