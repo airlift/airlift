@@ -54,8 +54,6 @@ public class TestingDatabaseSessionController
 {
     private static final Logger log = Logger.get(TestingDatabaseSessionController.class);
 
-    private static final int LISTEN_TIMEOUT_MS = 1000;
-
     private static final String CREATE_TABLES_SQL = """
             CREATE TABLE IF NOT EXISTS sessions
             (
@@ -190,7 +188,7 @@ public class TestingDatabaseSessionController
     @PreDestroy
     public void close()
     {
-        if (!shutdownAndAwaitTermination(executorService, LISTEN_TIMEOUT_MS * 2, MILLISECONDS)) {
+        if (!shutdownAndAwaitTermination(executorService, 10, SECONDS)) {
             log.warn("Executor shutdown failed");
         }
     }
@@ -557,7 +555,7 @@ public class TestingDatabaseSessionController
         connection.createStatement().execute(LISTEN_SQL);
 
         while (!Thread.currentThread().isInterrupted()) {
-            PGNotification[] notifications = connection.unwrap(PgConnection.class).getNotifications(LISTEN_TIMEOUT_MS);
+            PGNotification[] notifications = connection.unwrap(PgConnection.class).getNotifications(0);
             Stream.of(notifications).forEach(notification -> {
                 Signal signal = signals.getIfPresent(notification.getParameter());
                 if (signal != null) {
