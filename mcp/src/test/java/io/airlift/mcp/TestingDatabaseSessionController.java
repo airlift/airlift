@@ -289,7 +289,7 @@ public class TestingDatabaseSessionController
                         }
                         // otherwise, another transaction inserted the value, so we need to retry
                     }
-                    else {
+                    else if (!currentValue.equals(result.get())) {
                         PreparedStatement preparedStatement = connection.prepareStatement(UPDATE_VALUE_SQL);
                         preparedStatement.setString(1, newValueJson);
                         preparedStatement.setString(2, sessionId.id());
