@@ -431,7 +431,6 @@ public class InternalMcpServer
                 localSessionController.computeSessionValue(sessionId, resourceVersionKey(uri), maybeOldVersion -> {
                     if (maybeOldVersion.map(oldVersion -> !oldVersion.version().equals(newHash)).orElse(false)) {
                         notifications.add(new Notification(NOTIFICATION_RESOURCES_UPDATED, Optional.of(new ResourcesUpdatedNotification(uri))));
-                        return maybeOldVersion;
                     }
                     return Optional.of(new ResourceVersion(newHash));
                 });
