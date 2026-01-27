@@ -12,7 +12,6 @@ jobs:
       fail-fast: false
       matrix:
         java-version:
-          - 24
           - 25
           - 26-ea
     steps:
