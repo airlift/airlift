@@ -109,7 +109,7 @@ class OpenApiBuilder
 
     static String jsonUriBuilder(OpenApiMetadata metadata, String id, int version, JsonUriMode mode)
     {
-        UriBuilder builder = UriBuilder.fromPath(metadata.baseBath());
+        UriBuilder builder = UriBuilder.fromPath(metadata.basePath());
         return switch (mode) {
             case TEMPLATE -> builder.path("{type:.*}")
                     .path("openapi")

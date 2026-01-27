@@ -8,12 +8,12 @@ import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
 
-public record OpenApiMetadata(Optional<SecurityScheme> security, List<ServiceDetail> serviceDetails, String baseBath, Duration cacheDuration)
+public record OpenApiMetadata(Optional<SecurityScheme> security, List<ServiceDetail> serviceDetails, String basePath, Duration cacheDuration)
 {
     public OpenApiMetadata
     {
         requireNonNull(security, "security is null");
-        requireNonNull(baseBath, "baseBath is null");
+        requireNonNull(basePath, "basePath is null");
         serviceDetails = ImmutableList.copyOf(serviceDetails);
     }
 
