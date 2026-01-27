@@ -9,4 +9,4 @@ Public Endpoints:
 - `https://<host>>/public-api` - UI for the public API
 - `https://<host>/public/openapi/v1/json` - Open API JSON
 
-Note: a custom URI prefix can be bound via `OpenApiMetdata`.
+Note: a custom URI prefix can be bound via `OpenApiMetadata`.
