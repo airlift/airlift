@@ -4,7 +4,6 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
-import java.io.StringReader;
 import java.util.function.Consumer;
 
 import static java.util.Objects.requireNonNull;
@@ -22,7 +21,7 @@ public sealed interface ApiStreamResponse
 
         public ApiTextStreamResponse(String content)
         {
-            this(new StringReader(content));
+            this(Reader.of(content));
         }
     }
 
