@@ -3,8 +3,8 @@ package io.airlift.mcp.model;
 import java.util.Map;
 import java.util.Optional;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
 import static java.util.Objects.requireNonNull;
+import static java.util.Objects.requireNonNullElse;
 
 public record InitializeRequest(
         String protocolVersion,
@@ -18,10 +18,10 @@ public record InitializeRequest(
     {
         public ClientCapabilities
         {
-            roots = firstNonNull(roots, Optional.empty());
-            sampling = firstNonNull(sampling, Optional.empty());
-            elicitation = firstNonNull(elicitation, Optional.empty());
-            experimental = firstNonNull(experimental, Optional.empty());
+            roots = requireNonNullElse(roots, Optional.empty());
+            sampling = requireNonNullElse(sampling, Optional.empty());
+            elicitation = requireNonNullElse(elicitation, Optional.empty());
+            experimental = requireNonNullElse(experimental, Optional.empty());
         }
     }
 
@@ -30,7 +30,7 @@ public record InitializeRequest(
         requireNonNull(protocolVersion, "protocolVersion is null");
         requireNonNull(capabilities, "capabilities is null");
         requireNonNull(clientInfo, "clientInfo is null");
-        meta = firstNonNull(meta, Optional.empty());
+        meta = requireNonNullElse(meta, Optional.empty());
     }
 
     public InitializeRequest(String protocolVersion, ClientCapabilities capabilities, Implementation clientInfo)

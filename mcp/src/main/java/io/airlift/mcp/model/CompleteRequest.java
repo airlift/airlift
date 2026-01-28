@@ -5,8 +5,8 @@ import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import java.util.Optional;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
 import static java.util.Objects.requireNonNull;
+import static java.util.Objects.requireNonNullElse;
 
 public record CompleteRequest(CompleteReference ref, CompleteArgument argument, Optional<CompleteContext> context, Optional<Map<String, Object>> meta)
         implements Meta
@@ -15,8 +15,8 @@ public record CompleteRequest(CompleteReference ref, CompleteArgument argument, 
     {
         requireNonNull(ref, "ref is null");
         requireNonNull(argument, "argument is null");
-        context = firstNonNull(context, Optional.empty());
-        meta = firstNonNull(meta, Optional.empty());
+        context = requireNonNullElse(context, Optional.empty());
+        meta = requireNonNullElse(meta, Optional.empty());
     }
 
     public CompleteRequest(CompleteReference ref, CompleteArgument argument, Optional<CompleteContext> context)

@@ -4,8 +4,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
 import static java.util.Objects.requireNonNull;
+import static java.util.Objects.requireNonNullElse;
 
 public record Resource(String name, String uri, Optional<String> description, String mimeType, OptionalLong size, Optional<Annotations> annotations, Optional<List<Icon>> icons)
 {
@@ -13,11 +13,11 @@ public record Resource(String name, String uri, Optional<String> description, St
     {
         requireNonNull(name, "name is null");
         requireNonNull(uri, "uri is null");
-        description = firstNonNull(description, Optional.empty());
+        description = requireNonNullElse(description, Optional.empty());
         requireNonNull(mimeType, "mimeType is null");
-        size = firstNonNull(size, OptionalLong.empty());
-        annotations = firstNonNull(annotations, Optional.empty());
-        icons = firstNonNull(icons, Optional.empty());
+        size = requireNonNullElse(size, OptionalLong.empty());
+        annotations = requireNonNullElse(annotations, Optional.empty());
+        icons = requireNonNullElse(icons, Optional.empty());
     }
 
     public Resource(String name, String uri, Optional<String> description, String mimeType, OptionalLong size, Optional<Annotations> annotations)

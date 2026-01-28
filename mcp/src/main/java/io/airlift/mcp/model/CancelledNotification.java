@@ -2,13 +2,13 @@ package io.airlift.mcp.model;
 
 import java.util.Optional;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
+import static java.util.Objects.requireNonNullElse;
 
 public record CancelledNotification(Object requestId, Optional<String> reason)
 {
     public CancelledNotification
     {
-        requestId = firstNonNull(requestId, "");
-        reason = firstNonNull(reason, Optional.empty());
+        requestId = requireNonNullElse(requestId, "");
+        reason = requireNonNullElse(reason, Optional.empty());
     }
 }

@@ -19,12 +19,12 @@ import java.io.IOException;
 import java.util.Optional;
 import java.util.Set;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static io.airlift.api.ApiTrait.BETA;
 import static jakarta.ws.rs.core.Response.Status.Family.SUCCESSFUL;
 import static java.util.Objects.requireNonNull;
+import static java.util.Objects.requireNonNullElse;
 
 @Priority(Priorities.ENTITY_CODER)
 public class JaxrsQuotaFilter
@@ -113,7 +113,7 @@ public class JaxrsQuotaFilter
     @SuppressWarnings("unchecked")
     private static Optional<Quota> activeQuota(Request request)
     {
-        return (Optional<Quota>) firstNonNull(((ContainerRequest) request).getProperty(JaxrsQuotaFilter.class.getName()), Optional.empty());
+        return (Optional<Quota>) requireNonNullElse(((ContainerRequest) request).getProperty(JaxrsQuotaFilter.class.getName()), Optional.empty());
     }
 
     private static void setActiveQuota(Request request, Optional<Quota> quota)

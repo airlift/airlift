@@ -16,9 +16,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static java.util.Objects.requireNonNull;
+import static java.util.Objects.requireNonNullElse;
 
 public class JsonRecord
 {
@@ -51,7 +51,7 @@ public class JsonRecord
                 thread,
                 loggerName,
                 message,
-                Stream.of(firstNonNull(parameters, EMPTY_ARRAY))
+                Stream.of(requireNonNullElse(parameters, EMPTY_ARRAY))
                         .map(Object::toString)
                         .toList(),
                 throwable,

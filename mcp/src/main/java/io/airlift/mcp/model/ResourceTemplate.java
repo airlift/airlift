@@ -3,8 +3,8 @@ package io.airlift.mcp.model;
 import java.util.List;
 import java.util.Optional;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
 import static java.util.Objects.requireNonNull;
+import static java.util.Objects.requireNonNullElse;
 
 public record ResourceTemplate(String name, String uriTemplate, Optional<String> description, String mimeType, Optional<Annotations> annotations, Optional<List<Icon>> icons)
 {
@@ -12,10 +12,10 @@ public record ResourceTemplate(String name, String uriTemplate, Optional<String>
     {
         requireNonNull(name, "name is null");
         requireNonNull(uriTemplate, "uriTemplate is null");
-        description = firstNonNull(description, Optional.empty());
+        description = requireNonNullElse(description, Optional.empty());
         requireNonNull(mimeType, "mimeType is null");
-        annotations = firstNonNull(annotations, Optional.empty());
-        icons = firstNonNull(icons, Optional.empty());
+        annotations = requireNonNullElse(annotations, Optional.empty());
+        icons = requireNonNullElse(icons, Optional.empty());
     }
 
     public ResourceTemplate(String name, String uriTemplate, Optional<String> description, String mimeType, Optional<Annotations> annotations)

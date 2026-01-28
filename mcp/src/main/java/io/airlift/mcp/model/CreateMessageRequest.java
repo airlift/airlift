@@ -8,9 +8,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalDouble;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
 import static java.util.Locale.ROOT;
 import static java.util.Objects.requireNonNull;
+import static java.util.Objects.requireNonNullElse;
 
 public record CreateMessageRequest(
         List<SamplingMessage> messages,
@@ -27,13 +27,13 @@ public record CreateMessageRequest(
     public CreateMessageRequest
     {
         messages = ImmutableList.copyOf(messages);
-        modelPreferences = firstNonNull(modelPreferences, Optional.empty());
-        systemPrompt = firstNonNull(systemPrompt, Optional.empty());
-        includeContext = firstNonNull(includeContext, Optional.empty());
-        temperature = firstNonNull(temperature, OptionalDouble.empty());
-        stopSequences = firstNonNull(stopSequences, Optional.empty());
-        metadata = firstNonNull(metadata, Optional.empty());
-        meta = firstNonNull(meta, Optional.empty());
+        modelPreferences = requireNonNullElse(modelPreferences, Optional.empty());
+        systemPrompt = requireNonNullElse(systemPrompt, Optional.empty());
+        includeContext = requireNonNullElse(includeContext, Optional.empty());
+        temperature = requireNonNullElse(temperature, OptionalDouble.empty());
+        stopSequences = requireNonNullElse(stopSequences, Optional.empty());
+        metadata = requireNonNullElse(metadata, Optional.empty());
+        meta = requireNonNullElse(meta, Optional.empty());
     }
 
     public CreateMessageRequest(List<SamplingMessage> messages, int maxTokens)
@@ -73,9 +73,9 @@ public record CreateMessageRequest(
         public ModelPreferences
         {
             hints = ImmutableList.copyOf(hints);
-            costPriority = firstNonNull(costPriority, OptionalDouble.empty());
-            speedPriority = firstNonNull(speedPriority, OptionalDouble.empty());
-            intelligencePriority = firstNonNull(intelligencePriority, OptionalDouble.empty());
+            costPriority = requireNonNullElse(costPriority, OptionalDouble.empty());
+            speedPriority = requireNonNullElse(speedPriority, OptionalDouble.empty());
+            intelligencePriority = requireNonNullElse(intelligencePriority, OptionalDouble.empty());
         }
 
         public ModelPreferences(List<ModelHint> hints)

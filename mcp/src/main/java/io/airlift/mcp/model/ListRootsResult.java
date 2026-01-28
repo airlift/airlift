@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
+import static java.util.Objects.requireNonNullElse;
 
 public record ListRootsResult(List<Root> roots, Optional<Map<String, Object>> meta)
         implements Meta
@@ -14,6 +14,6 @@ public record ListRootsResult(List<Root> roots, Optional<Map<String, Object>> me
     public ListRootsResult
     {
         roots = ImmutableList.copyOf(roots);
-        meta = firstNonNull(meta, Optional.empty());
+        meta = requireNonNullElse(meta, Optional.empty());
     }
 }

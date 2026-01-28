@@ -5,8 +5,8 @@ import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import java.util.Optional;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
 import static java.util.Objects.requireNonNull;
+import static java.util.Objects.requireNonNullElse;
 
 public record GetPromptRequest(String name, Map<String, Object> arguments, Optional<Map<String, Object>> meta)
         implements Meta
@@ -14,8 +14,8 @@ public record GetPromptRequest(String name, Map<String, Object> arguments, Optio
     public GetPromptRequest
     {
         requireNonNull(name, "name is null");
-        arguments = firstNonNull(arguments, ImmutableMap.of());
-        meta = firstNonNull(meta, Optional.empty());
+        arguments = requireNonNullElse(arguments, ImmutableMap.of());
+        meta = requireNonNullElse(meta, Optional.empty());
     }
 
     public GetPromptRequest(String name, Map<String, Object> arguments)
