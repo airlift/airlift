@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.parallel.Execution;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -54,12 +55,14 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.zip.GZIPOutputStream;
 
 import static com.google.common.base.Throwables.getStackTraceAsString;
 import static com.google.common.base.Throwables.throwIfInstanceOf;
 import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.net.HttpHeaders.ACCEPT_ENCODING;
 import static com.google.common.net.HttpHeaders.AUTHORIZATION;
+import static com.google.common.net.HttpHeaders.CONTENT_ENCODING;
 import static com.google.common.net.HttpHeaders.CONTENT_LENGTH;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.common.net.HttpHeaders.LOCATION;
@@ -712,6 +715,39 @@ public abstract class AbstractHttpClientTest
             server.servlet().addResponseHeader(CONTENT_TYPE, "application/json");
 
             StringResponse response = executeRequest(server, request, createStringResponseHandler());
+            assertThat(response.getHeader(CONTENT_TYPE)).isEqualTo("application/json");
+            assertThat(response.getBody()).isEqualTo(json);
+        }
+    }
+
+    @Test
+    public void testCompressionIsEnabled()
+            throws Exception
+    {
+        HttpClientConfig clientConfig = createClientConfig().setPreserveContentDecoderFactories(true);
+        try (CloseableTestHttpServer server = newServer(); JettyHttpClient client = server.createClient(clientConfig)) {
+            Request request = prepareGet()
+                    .setUri(server.baseURI())
+                    .setHeader(ACCEPT_ENCODING, "gzip")
+                    .build();
+
+            StringResponse response = client.execute(request, createStringResponseHandler());
+            Thread.sleep(1000);
+
+            String body = response.getBody();
+            assertThat(body).isEqualTo("");
+            assertThat(server.servlet().getRequestHeaders().containsKey(HeaderName.of(ACCEPT_ENCODING))).isTrue();
+
+            String json = "{\"fuite\":\"apple\",\"hello\":\"world\"}";
+            ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+            try (GZIPOutputStream gzip = new GZIPOutputStream(byteStream)) {
+                gzip.write(json.getBytes(UTF_8));
+            }
+            server.servlet().setResponseByte(byteStream.toByteArray());
+            server.servlet().addResponseHeader(CONTENT_TYPE, "application/json");
+            server.servlet().addResponseHeader(CONTENT_ENCODING, "gzip");
+
+            response = client.execute(request, createStringResponseHandler());
             assertThat(response.getHeader(CONTENT_TYPE)).isEqualTo("application/json");
             assertThat(response.getBody()).isEqualTo(json);
         }
