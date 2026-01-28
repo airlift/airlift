@@ -13,10 +13,6 @@
  */
 package io.airlift.json.subtype;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
-import com.fasterxml.jackson.databind.exc.InvalidTypeIdException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Guice;
@@ -31,6 +27,9 @@ import io.airlift.json.subtype.Employee.Programmer;
 import io.airlift.json.subtype.Part.Container;
 import io.airlift.json.subtype.Part.Item;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.exc.InvalidDefinitionException;
+import tools.jackson.databind.exc.InvalidTypeIdException;
 
 import static io.airlift.json.JsonSubTypeBinder.jsonSubTypeBinder;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -50,7 +49,6 @@ public class TestJsonSubType
 
     @Test
     public void testAddBinding()
-            throws Exception
     {
         JsonSubType jsonSubType = JsonSubType.builder()
                 .forBase(Employee.class, "type")
@@ -65,7 +63,6 @@ public class TestJsonSubType
 
     @Test
     public void testAddBindingSpecifiedNames()
-            throws Exception
     {
         JsonSubType jsonSubType = JsonSubType.builder()
                 .forBase(Employee.class, "specified")
@@ -80,7 +77,6 @@ public class TestJsonSubType
 
     @Test
     public void testAddPermittedSubClassBindings()
-            throws Exception
     {
         JsonSubType jsonSubType = JsonSubType.builder()
                 .forBase(Employee.class, "type")
@@ -94,7 +90,6 @@ public class TestJsonSubType
 
     @Test
     public void testAddPermittedSubClassBindingsSpecifiedNames()
-            throws Exception
     {
         JsonSubType jsonSubType = JsonSubType.builder()
                 .forBase(Employee.class, "bogus")
@@ -131,7 +126,6 @@ public class TestJsonSubType
 
     @Test
     public void testBuildMultipleTypes()
-            throws Exception
     {
         JsonSubType jsonSubType = JsonSubType.builder()
                 .forBase(Employee.class, "type")
@@ -169,7 +163,6 @@ public class TestJsonSubType
 
     @Test
     public void testStandalone()
-            throws Exception
     {
         JsonSubType jsonSubType = JsonSubType.builder()
                 .forBase(Employee.class, "type")
@@ -184,7 +177,6 @@ public class TestJsonSubType
 
     @Test
     public void testExpectedJson()
-            throws Exception
     {
         JsonSubType jsonSubType1 = JsonSubType.builder()
                 .forBase(Employee.class, "type")
@@ -212,14 +204,12 @@ public class TestJsonSubType
     }
 
     private static void internalTest(ObjectMapper objectMapper)
-            throws JsonProcessingException
     {
         internalTest(objectMapper, false);
         internalTest(objectMapper, true);
     }
 
     private static void internalTest(ObjectMapper objectMapper, boolean writeWithCodec)
-            throws JsonProcessingException
     {
         JsonCodecFactory codecFactory = new JsonCodecFactory(() -> objectMapper);
         JsonCodec<Employee> jsonCodec = codecFactory.jsonCodec(Employee.class);

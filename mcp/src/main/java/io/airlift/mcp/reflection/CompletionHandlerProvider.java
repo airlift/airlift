@@ -1,6 +1,5 @@
 package io.airlift.mcp.reflection;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
@@ -17,6 +16,7 @@ import io.airlift.mcp.model.CompleteRequest.CompleteContext;
 import io.airlift.mcp.model.CompleteResult;
 import io.airlift.mcp.model.CompleteResult.CompleteCompletion;
 import io.airlift.mcp.model.OptionalBoolean;
+import tools.jackson.databind.ObjectMapper;
 
 import java.lang.reflect.Method;
 import java.util.List;

@@ -1,7 +1,5 @@
 package io.airlift.api.binding;
 
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -38,6 +36,8 @@ import io.airlift.api.validation.ResourceSerializationValidator;
 import io.airlift.api.validation.ValidatorException;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.container.ContainerResponseFilter;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ValueDeserializer;
 
 import java.lang.reflect.Method;
 import java.util.List;
@@ -48,12 +48,12 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static com.fasterxml.jackson.databind.SerializationFeature.FAIL_ON_UNWRAPPED_TYPE_IDENTIFIERS;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
 import static io.airlift.api.binding.JaxrsResourceBuilder.jaxrsResourceBuilder;
 import static java.util.Objects.requireNonNull;
+import static tools.jackson.databind.SerializationFeature.FAIL_ON_UNWRAPPED_TYPE_IDENTIFIERS;
 
 public class ApiModule
         implements Module
@@ -309,9 +309,7 @@ public class ApiModule
         {
             requireNonNull(validator, "validator is null");
             requireNonNull(objectMapper, "objectMapper is null");
-
-            objectMapper.disable(FAIL_ON_UNWRAPPED_TYPE_IDENTIFIERS);
-            validator.validateSerialization(objectMapper);
+            validator.validateSerialization(objectMapper.rebuild().disable(FAIL_ON_UNWRAPPED_TYPE_IDENTIFIERS).build());
         }
     }
 
@@ -321,11 +319,8 @@ public class ApiModule
             return;
         }
 
-        MapBinder<Class<?>, JsonDeserializer<?>> mapBinder = MapBinder.newMapBinder(binder, new TypeLiteral<>() {}, new TypeLiteral<>() {});
-        resourcesWithUnwrappedComponents.forEach(clazz -> {
-            UnwrappedDeserializer deserializer = new UnwrappedDeserializer(clazz);
-            mapBinder.addBinding(clazz).toInstance(deserializer);
-        });
+        MapBinder<Class<?>, ValueDeserializer<?>> mapBinder = MapBinder.newMapBinder(binder, new TypeLiteral<>() {}, new TypeLiteral<>() {});
+        resourcesWithUnwrappedComponents.forEach(clazz -> mapBinder.addBinding(clazz).toInstance(new UnwrappedDeserializer(clazz)));
     }
 
     private void bindPolyResources(Binder binder, Set<Class<?>> polyResources)

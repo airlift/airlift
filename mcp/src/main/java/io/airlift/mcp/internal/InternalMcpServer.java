@@ -1,7 +1,5 @@
 package io.airlift.mcp.internal;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.Hasher;
@@ -75,8 +73,8 @@ import io.airlift.mcp.versions.SystemListVersions;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.glassfish.jersey.uri.UriTemplate;
+import tools.jackson.databind.ObjectMapper;
 
-import java.io.UncheckedIOException;
 import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -539,11 +537,6 @@ public class InternalMcpServer
 
     private <T> String asJson(T item)
     {
-        try {
-            return objectMapper.writeValueAsString(item);
-        }
-        catch (JsonProcessingException e) {
-            throw new UncheckedIOException(e);
-        }
+        return objectMapper.writeValueAsString(item);
     }
 }

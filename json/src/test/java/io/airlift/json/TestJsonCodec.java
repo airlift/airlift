@@ -30,13 +30,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.fasterxml.jackson.core.StreamReadConstraints.DEFAULT_MAX_STRING_LEN;
 import static io.airlift.json.JsonCodec.jsonCodec;
 import static io.airlift.json.JsonCodec.listJsonCodec;
 import static io.airlift.json.JsonCodec.mapJsonCodec;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static tools.jackson.core.StreamReadConstraints.DEFAULT_MAX_STRING_LEN;
 
 public class TestJsonCodec
 {
@@ -298,19 +298,19 @@ public class TestJsonCodec
         String jsonWithTrailingJsonContent = json + " \"valid json value\"";
         assertThatThrownBy(() -> codec.fromJson(jsonWithTrailingJsonContent))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Found characters after the expected end of input");
+                .hasStackTraceContaining("Trailing token (`JsonToken.VALUE_STRING`) found after value");
 
         assertThatThrownBy(() -> codec.fromJson(jsonWithTrailingJsonContent.getBytes(UTF_8)))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Found characters after the expected end of input");
+                .hasStackTraceContaining("Trailing token (`JsonToken.VALUE_STRING`) found after value");
 
         assertThatThrownBy(() -> codec.fromJson(new ByteArrayInputStream(jsonWithTrailingJsonContent.getBytes(UTF_8))))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Found characters after the expected end of input");
+                .hasStackTraceContaining("Trailing token (`JsonToken.VALUE_STRING`) found after value");
 
         assertThatThrownBy(() -> codec.fromJson(Reader.of(jsonWithTrailingJsonContent)))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Found characters after the expected end of input");
+                .hasStackTraceContaining("Trailing token (`JsonToken.VALUE_STRING`) found after value");
     }
 
     @Test
@@ -339,8 +339,8 @@ public class TestJsonCodec
                 new MyRecordAdditionalGetter("my value", true, true),
                 """
                 {
-                  "condition" : true,
                   "foo" : "my value",
+                  "condition" : true,
                   "isCool" : true,
                   "additionalProperty" : "additional property value"
                 }\
