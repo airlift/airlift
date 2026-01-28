@@ -217,3 +217,129 @@ curl -f localhost:8080
 
 You should receive a 404 Not Found response. This is expected! The server infrastructure is running and accepting requests (otherwise `curl` would report `Connection refused`), 
 but we haven't defined any API endpoints yet. That's what we'll do in the next step.
+
+## Step 2: Add an ApiService
+
+In this step, we'll add our first API service to the server. An API service is a class annotated with `@ApiService` that will contain methods for managing resources. We'll
+create a `BookService` for managing books in our bookstore, though it won't have any methods yet.
+
+### What We're Adding
+
+To create an API service, we need three things:
+1. An `ApiServiceType` - defines metadata about the service type (ID, version, title, description).
+2. An `ApiService` - the class that will contain our API methods.
+3. Registration in the server via `ApiModule`.
+
+### The BookServiceType
+
+First, we create a `BookServiceType` that implements the `ApiServiceType` interface:
+
+```java
+package io.airlift.api.examples.bookstore;
+
+import io.airlift.api.ApiServiceType;
+
+public class BookServiceType
+        implements ApiServiceType
+{
+    // All endpoints in this service type will have URIs beginning with `<service-type-id>/api/v<service-version-number>/`.
+
+    @Override
+    public String id()
+    {
+        return "bookServiceTypeId";
+    }
+
+    @Override
+    public int version()
+    {
+        return 21;
+    }
+
+    @Override
+    public String title()
+    {
+        return "Book Service Type";
+    }
+
+    @Override
+    public String description()
+    {
+        return "BookServiceType description";
+    }
+}
+```
+
+The `ApiServiceType` provides essential metadata:
+- `id`: A unique identifier for this service type. This becomes part of the URI path for all endpoints.
+- `version`: The API version number. This allows you to version your API and maintain backward compatibility.
+- `title`: A human-readable name for the service type.
+- `description`: A description of what this service type does.
+
+All endpoints in services of this type will have URIs that begin with `bookServiceTypeId/api/v21/`.
+
+### The BookService
+
+Next, we create the `BookService` class with the `@ApiService` annotation:
+
+```java
+package io.airlift.api.examples.bookstore;
+
+import io.airlift.api.ApiService;
+
+@ApiService(name = "bookService", type = BookServiceType.class, description = "Manage books in the bookstore")
+public class BookService
+{
+}
+```
+
+The `@ApiService` annotation tells API Builder to generate REST endpoints for this service. The annotation parameters specify:
+- `name`: The service instance name.
+- `type`: The service type (our `BookServiceType` class).
+- `description`: What this service does.
+
+Note that the class is currently empty—we haven't added any methods yet. We'll do that in the next step.
+
+### Registering the Service
+
+Finally, we need to register the service with the server. In `BookstoreServer.java`, we add an `ApiModule` after the other modules:
+
+```diff
+--- a/api/docs/examples/src/main/java/io/airlift/api/examples/bookstore/BookstoreServer.java
++++ b/api/docs/examples/src/main/java/io/airlift/api/examples/bookstore/BookstoreServer.java
+@@ -42,6 +43,11 @@ public class BookstoreServer
+                 .add(new JsonModule())
+                 .add(new JaxrsModule());
+
++        // Configure the API module with our book service
++        ApiModule.Builder apiBuilder = ApiModule.builder()
++                .addApi(builder -> builder.add(BookService.class));
++        modules.add(apiBuilder.build());
++
+         // Configure server properties
+         ImmutableMap.Builder<String, String> serverProperties = ImmutableMap.<String, String>builder()
+                 .put("node.environment", "development");
+```
+
+The `ApiModule` is responsible for:
+- Scanning the `@ApiService` annotated classes.
+- Generating JAX-RS resource classes for the API methods.
+- Registering those resources with the JAX-RS module.
+
+### Running and Verification
+
+Rebuild and run the server:
+
+```bash
+mvn compile
+mvn exec:java -Dexec.mainClass="io.airlift.api.examples.bookstore.BookstoreServer"
+```
+
+The server will start successfully, but if you try to access the API:
+
+```bash
+curl -f localhost:8080/bookServiceTypeId/api/v21/
+```
+
+You'll still get a 404 error. This is expected! While we've registered the service, it doesn't have any methods yet, so there are no endpoints to call. In the next step, we'll 
+add methods to create and retrieve books.

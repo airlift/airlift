@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Injector;
 import com.google.inject.Module;
+import io.airlift.api.binding.ApiModule;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.bootstrap.LifeCycleManager;
 import io.airlift.http.server.HttpServerInfo;
@@ -41,6 +42,11 @@ public class BookstoreServer
                 .add(new TestingHttpServerModule(getClass().getName(), port))
                 .add(new JsonModule())
                 .add(new JaxrsModule());
+
+        // Configure the API module with our book service
+        ApiModule.Builder apiBuilder = ApiModule.builder()
+                .addApi(builder -> builder.add(BookService.class));
+        modules.add(apiBuilder.build());
 
         // Configure server properties
         ImmutableMap.Builder<String, String> serverProperties = ImmutableMap.<String, String>builder()
