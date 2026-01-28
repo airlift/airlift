@@ -307,7 +307,7 @@ class OpenApiBuilder
             mainResource = modelMethod.returnType();
         }
         else if (modelMethod.requestBody().isPresent()) {
-            mainResource = modelMethod.requestBody().get();
+            mainResource = modelMethod.requestBody().orElseThrow();
         }
         else {
             mainResource = modelMethod.parameters().isEmpty() ? null : modelMethod.parameters().getFirst();
@@ -395,7 +395,7 @@ class OpenApiBuilder
             if (schema.isEmpty()) {
                 throw new RuntimeException("Unsupported external type: " + externalParameter.externalType());
             }
-            parameter.name(externalParameter.name()).description(externalParameter.description()).schema(schema.get()).required(false);
+            parameter.name(externalParameter.name()).description(externalParameter.description()).schema(schema.orElseThrow()).required(false);
             return parameter;
         });
     }

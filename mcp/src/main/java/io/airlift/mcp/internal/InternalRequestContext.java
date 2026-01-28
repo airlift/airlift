@@ -146,7 +146,7 @@ class InternalRequestContext
             if (blockingResult instanceof Fulfilled<JsonRpcResponse>(var rpcResponse)) {
                 try {
                     if (rpcResponse.result().isPresent()) {
-                        Object result = rpcResponse.result().get();
+                        Object result = rpcResponse.result().orElseThrow();
                         R convertedValue = objectMapper.convertValue(result, responseType);
                         return new JsonRpcResponse<>(rpcResponse.id(), Optional.empty(), Optional.of(convertedValue));
                     }
@@ -228,12 +228,12 @@ class InternalRequestContext
         JsonRpcResponse<ListRootsResult> newRoots = serverToClientRequest(METHOD_ROOTS_LIST, ImmutableMap.of(), ListRootsResult.class, timeout, pollInterval);
 
         if (newRoots.error().isPresent()) {
-            JsonRpcErrorDetail error = newRoots.error().get();
+            JsonRpcErrorDetail error = newRoots.error().orElseThrow();
             throw exception(error.code(), error.message());
         }
 
         if (newRoots.result().isPresent()) {
-            ListRootsResult listRootsResult = newRoots.result().get();
+            ListRootsResult listRootsResult = newRoots.result().orElseThrow();
             sessionController.ifPresent(controller -> controller.setSessionValue(sessionId, ROOTS, listRootsResult));
             return listRootsResult.roots();
         }

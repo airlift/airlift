@@ -167,7 +167,7 @@ public class TestHttpClientLogger
         assertThat(columns[1]).isEqualTo(HTTP_1_1.toString());
         assertThat(columns[2]).isEqualTo(method);
         assertThat(columns[3]).isEqualTo(uri.toString());
-        assertThat(columns[4]).isEqualTo(getFailureReason(responseInfo).get());
+        assertThat(columns[4]).isEqualTo(getFailureReason(responseInfo).orElseThrow());
         assertThat(columns[5]).isEqualTo(Integer.toString(NO_RESPONSE));
         assertThat(columns[6]).isNotEqualTo(Long.toString(0));
         assertThat(columns[7]).isEqualTo(Long.toString(0));

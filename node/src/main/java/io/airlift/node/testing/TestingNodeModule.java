@@ -97,7 +97,7 @@ public class TestingNodeModule
                 .setNodeBindIp(getLocalhostBindIp(bindAll));
 
         if (pool.isPresent()) {
-            nodeConfig.setPool(pool.get());
+            nodeConfig.setPool(pool.orElseThrow());
         }
 
         binder.bind(NodeConfig.class).toInstance(nodeConfig);

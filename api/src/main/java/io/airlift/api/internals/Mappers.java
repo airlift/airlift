@@ -93,7 +93,7 @@ public interface Mappers
             // method has no IDs or resource payloads so use the return type to set the URL's resource
             boolean lastParameterDifferentThanRequestBody = method.requestBody().map(requestBody -> lastParameter.map(p -> !p.name().equals(requestBody.name())).orElse(true)).orElse(false);
             if ((method.returnType().type() == void.class) && lastParameterDifferentThanRequestBody) {
-                addResourcePath(path, method.requestBody().get(), false, mode);
+                addResourcePath(path, method.requestBody().orElseThrow(), false, mode);
             }
             else {
                 addResourcePath(path, method.returnType(), false, mode);

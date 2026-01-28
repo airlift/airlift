@@ -17,7 +17,6 @@ import com.google.common.collect.ImmutableList;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -132,7 +131,7 @@ public class TestLogFileName
     public void testGenerateNextLogFileName()
     {
         // note: no actual files are created here
-        LogFileName logFileName = LogFileName.generateNextLogFileName(Paths.get(BASE_NAME), Optional.empty());
+        LogFileName logFileName = LogFileName.generateNextLogFileName(Path.of(BASE_NAME), Optional.empty());
         assertThat(logFileName.getIndex()).isEqualTo(OptionalInt.of(0));
         assertThat(logFileName.getLegacyIndex()).isEqualTo(OptionalInt.empty());
 
@@ -147,14 +146,14 @@ public class TestLogFileName
 
     private static void assertLogFile(String suffix, LocalDateTime dateTime, OptionalInt index, OptionalInt legacyIndex, boolean compressed)
     {
-        Path path = Paths.get(BASE_NAME + "-" + suffix);
+        Path path = Path.of(BASE_NAME + "-" + suffix);
         Optional<LogFileName> logFile = LogFileName.parseHistoryLogFileName(BASE_NAME, path.getFileName().toString());
         assertThat(logFile).isPresent();
-        assertThat(logFile.get().getDateTime()).isEqualTo(dateTime);
-        assertThat(logFile.get().getIndex()).isEqualTo(index);
-        assertThat(logFile.get().getLegacyIndex()).isEqualTo(legacyIndex);
-        assertThat(logFile.get().getSlug()).isEqualTo(Optional.empty());
-        assertThat(logFile.get().isCompressed()).isEqualTo(compressed);
+        assertThat(logFile.orElseThrow().getDateTime()).isEqualTo(dateTime);
+        assertThat(logFile.orElseThrow().getIndex()).isEqualTo(index);
+        assertThat(logFile.orElseThrow().getLegacyIndex()).isEqualTo(legacyIndex);
+        assertThat(logFile.orElseThrow().getSlug()).isEqualTo(Optional.empty());
+        assertThat(logFile.orElseThrow().isCompressed()).isEqualTo(compressed);
     }
 
     private static void assertOrdering(LogFileName... logFileNames)

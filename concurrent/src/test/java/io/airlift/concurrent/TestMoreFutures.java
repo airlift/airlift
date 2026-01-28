@@ -347,7 +347,7 @@ public class TestMoreFutures
         assertGetUnchecked(future -> {
             Optional<?> optional = tryGetFutureValue(future);
             if (optional.isPresent()) {
-                return optional.get();
+                return optional.orElseThrow();
             }
 
             // null value is also absent
@@ -365,7 +365,7 @@ public class TestMoreFutures
         assertGetUnchecked(future -> {
             Optional<?> optional = tryGetFutureValue(future, 100, MILLISECONDS);
             if (optional.isPresent()) {
-                return optional.get();
+                return optional.orElseThrow();
             }
 
             // null value is also absent
@@ -383,7 +383,7 @@ public class TestMoreFutures
         assertGetUnchecked(future -> {
             Optional<?> optional = tryGetFutureValue(future, 100, MILLISECONDS, IOException.class);
             if (optional.isPresent()) {
-                return optional.get();
+                return optional.orElseThrow();
             }
 
             // null value is also absent

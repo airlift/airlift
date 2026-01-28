@@ -204,7 +204,7 @@ public class TestingDatabaseSessionController
             PreparedStatement preparedStatement = connection.prepareStatement(CREATE_SESSION_SQL);
             preparedStatement.setString(1, sessionId.id());
             if (ttl.isPresent()) {
-                preparedStatement.setLong(2, ttl.get().toMillis());
+                preparedStatement.setLong(2, ttl.orElseThrow().toMillis());
             }
             else {
                 preparedStatement.setNull(2, BIGINT);
@@ -276,7 +276,7 @@ public class TestingDatabaseSessionController
                 result = updater.apply(currentValue);
 
                 if (result.isPresent()) {
-                    String newValueJson = objectMapper.writeValueAsString(result.get());
+                    String newValueJson = objectMapper.writeValueAsString(result.orElseThrow());
 
                     if (currentValue.isEmpty()) {
                         PreparedStatement preparedStatement = connection.prepareStatement(INSERT_VALUE_IF_NOT_EXISTS_SQL);
@@ -289,7 +289,7 @@ public class TestingDatabaseSessionController
                         }
                         // otherwise, another transaction inserted the value, so we need to retry
                     }
-                    else if (!currentValue.equals(result.get())) {
+                    else if (!currentValue.equals(result.orElseThrow())) {
                         PreparedStatement preparedStatement = connection.prepareStatement(UPDATE_VALUE_SQL);
                         preparedStatement.setString(1, newValueJson);
                         preparedStatement.setString(2, sessionId.id());

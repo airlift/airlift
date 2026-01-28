@@ -266,7 +266,7 @@ public class MetricsResource
                     // The managed class is directly translatable to an openmetrics type, don't recurse any further
                     Optional<Metric> metricFromTarget = getMetricFromTarget(child, metricAndAttribute, attributeDescription);
                     if (metricFromTarget.isPresent()) {
-                        metrics.add(metricFromTarget.get());
+                        metrics.add(metricFromTarget.orElseThrow());
                     }
                     else {
                         // Recurse this nested child

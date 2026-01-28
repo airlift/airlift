@@ -206,7 +206,7 @@ public class MemorySessionController
         return getSession(sessionId).map(session -> session.typeMap(type).entrySet()
                 .stream()
                 .sorted(Map.Entry.comparingByKey())
-                .filter(entry -> cursor.isEmpty() || cursor.get().compareTo(entry.getKey()) < 0)
+                .filter(entry -> cursor.isEmpty() || cursor.orElseThrow().compareTo(entry.getKey()) < 0)
                 .limit(pageSize)
                 .map(entry -> Map.entry(entry.getKey(), type.cast(entry.getValue())))
                 .collect(toImmutableList()))
@@ -218,7 +218,7 @@ public class MemorySessionController
     {
         return sessions.keySet().stream()
                 .sorted(Comparator.comparing(SessionId::id))
-                .filter(entry -> cursor.isEmpty() || cursor.get().id().compareTo(entry.id()) < 0)
+                .filter(entry -> cursor.isEmpty() || cursor.orElseThrow().id().compareTo(entry.id()) < 0)
                 .limit(pageSize)
                 .collect(toImmutableList());
     }

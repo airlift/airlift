@@ -15,7 +15,7 @@ public record ConfigurationBinding<T>(Key<T> key, Class<T> configClass, Optional
         requireNonNull(key, "key");
         requireNonNull(configClass, "configClass");
         requireNonNull(prefix, "prefix is null");
-        checkArgument(!prefix.isPresent() || !prefix.get().isEmpty(), "prefix is empty");
+        checkArgument(!prefix.isPresent() || !prefix.orElseThrow().isEmpty(), "prefix is empty");
     }
 
     @Override
