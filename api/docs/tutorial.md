@@ -422,3 +422,129 @@ curl -f --json '' localhost:8080/bookServiceTypeId/api/v21/
 
 The request should succeed (returning a 200 status code), though it doesn't do anything yet since the method is empty. But this does mean that the endpoint works and this empty 
 method is being invoked. In the next step, we'll make the endpoint actually create a new book inside the server.
+
+## Step 3.2: Add a Book Representation
+
+Now let's create an actual record that represents a book, and update our `createBook` method to accept and store book data.  API Builder calls this a resource, which is a data 
+structure annotated with `@ApiResource` that can be sent and received in API requests.  Please see [resources.md](resources.md) for more details.
+
+### Creating the BookData Resource
+
+We create a `BookData` record annotated with `@ApiResource`:
+
+```java
+package io.airlift.api.examples.bookstore;
+
+import io.airlift.api.ApiDescription;
+import io.airlift.api.ApiResource;
+
+import static java.util.Objects.requireNonNull;
+
+@ApiResource(name = "bookData", description = "Book information")
+public record BookData(
+        @ApiDescription("Title of the book") String title,
+        @ApiDescription("Author of the book") String author,
+        @ApiDescription("ISBN number") String isbn,
+        @ApiDescription("Year published") int year,
+        @ApiDescription("Price in USD") double price)
+{
+    public BookData
+    {
+        requireNonNull(title, "title is null");
+        requireNonNull(author, "author is null");
+        requireNonNull(isbn, "isbn is null");
+
+        if (year < 0) {
+            throw new IllegalArgumentException("year must be positive");
+        }
+        if (price < 0) {
+            throw new IllegalArgumentException("price must be positive");
+        }
+    }
+}
+```
+
+(The reason we call this `BookData` instead of just `Book` will become clear in later steps.)
+
+Key aspects of the resource class:
+- `@ApiResource`: Marks this class as an API resource that can be sent/received in API requests. API Builder will handle JSON serialization automatically.
+- `@ApiDescription`: Provides mandatory documentation for each field that will appear in generated API documentation.
+
+### Updating the BookService
+
+Now we update `BookService` to actually create and store books:
+
+```diff
+--- a/api/docs/examples/src/main/java/io/airlift/api/examples/bookstore/BookService.java
++++ b/api/docs/examples/src/main/java/io/airlift/api/examples/bookstore/BookService.java
+@@ -4,9 +4,25 @@ import io.airlift.api.ApiCreate;
+ import io.airlift.api.ApiService;
+ import io.airlift.api.ApiTrait;
+
++import java.util.Map;
++import java.util.concurrent.ConcurrentHashMap;
++import java.util.concurrent.atomic.AtomicInteger;
++
++import static io.airlift.api.responses.ApiException.badRequest;
++
+ @ApiService(name = "bookService", type = BookServiceType.class, description = "Manage books in the bookstore")
+ public class BookService
+ {
++    private final AtomicInteger nextId = new AtomicInteger(1);
++    private final Map<String, BookData> books = new ConcurrentHashMap<>();
++
+     @ApiCreate(description = "Create a new book", traits = {ApiTrait.BETA})
+-    public void createBook() {}
++    public void createBook(BookData bookData)
++    {
++        if (bookData == null) {
++            throw badRequest("Must provide BookData payload");
++        }
++        String id = String.valueOf(nextId.getAndIncrement()); // BookData includes ISBN, but ISBN is neither universal nor actually unique.
++        books.put(id, bookData);
++    }
+ }
+```
+
+What's changed:
+- **Storage**: We add an in-memory store using a map object to hold books.  In a real application, you'd likely use a database instead.
+- **Concurrency**: We use `ConcurrentHashMap` and `AtomicInteger` to ensure thread-safe operations since API services may be accessed concurrently.
+- **Method parameter**: The `createBook` method now accepts a `BookData` parameter. API Builder will automatically deserialize the JSON request body into a `BookData` object.
+- **Validation**: We check if the book data is null and throw a `badRequest` exception if so. This returns an HTTP 400 error to the client.
+- **Implementation**: We generate a unique ID and store the book in our map.
+
+Note that although we store the newly created book, we don't yet have a way to retrieve it. We'll add that functionality in a later step.
+
+### Running and Verification
+
+Rebuild and run the server:
+
+```bash
+mvn compile
+mvn exec:java -Dexec.mainClass="io.airlift.api.examples.bookstore.BookstoreServer"
+```
+
+If you look again for the `io.airlift.api.binding` log entry for the `createBook` endpoint, you'll notice that its URL has changed:
+
+```
+INFO	main	io.airlift.api.binding.JaxrsResourceBuilder	API POST bookServiceTypeId/api/v21/bookData BookService#createBook
+```
+
+This is an important aspect of how API Builder generates endpoints. Since the `createBook` method now accepts a `BookData` parameter, the endpoint URL includes `/bookData` (its 
+`@ApiResource` name).  Please see [uris.md](uris.md) for more details on this topic.
+
+Now you can create a book with actual data:
+
+```bash
+curl --json '{"title": "The Pragmatic Programmer", "author": "Hunt and Thomas", "isbn": "978-0135957059", "year": 2019, "price": 39.99}' localhost:8080/bookServiceTypeId/api/v21/bookData
+```
+
+The request should succeed with a 200 status code. The book is now stored in the service, though we can't retrieve it yet (we'll add an endpoint for that later).
+
+You can also test the validation by sending invalid or incomplete data:
+
+```bash
+curl -f --json '{"title": "Missing Fields"}' localhost:8080/bookServiceTypeId/api/v21/bookData
+```
+
+This should fail with a 400 Bad Request error because the required fields are missing.
