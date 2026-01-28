@@ -8,7 +8,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -107,7 +106,7 @@ public final class ApiCompatibilityTester
         Collection<String> usedSet = new HashSet<>();
         modelServices.services().forEach(modelService -> {
             String fixedPath = sourcePath.replace(classesDir, (resourcesDir + "/v%s/%s").formatted(modelService.service().type().version(), modelService.service().type().id()));
-            File directory = Paths.get(fixedPath).toFile();
+            File directory = Path.of(fixedPath).toFile();
             checkArgument(directory.exists() || directory.mkdirs(), "Could not make directory: " + directory);
 
             modelService.methods()
@@ -136,7 +135,7 @@ public final class ApiCompatibilityTester
 
         String fixedPath = sourcePath.replace(classesDir, resourcesDir);
         try {
-            try (Stream<Path> walk = Files.walk(Paths.get(fixedPath))) {
+            try (Stream<Path> walk = Files.walk(Path.of(fixedPath))) {
                 walk.forEach(compatibilityPath -> {
                     File compatibilityFile = compatibilityPath.toFile();
                     if (compatibilityFile.isFile() && !compatibilityFile.isHidden()) {

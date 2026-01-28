@@ -18,7 +18,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.security.Principal;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -161,7 +161,7 @@ public class JettyRequestLog
         if (tempFiles != null) {
             for (File tempFile : tempFiles) {
                 String newName = tempFile.getName().substring(0, tempFile.getName().length() - TEMP_FILE_EXTENSION.length());
-                File newFile = Paths.get(tempFile.getParent(), newName + LOG_FILE_EXTENSION).toFile();
+                File newFile = Path.of(tempFile.getParent(), newName + LOG_FILE_EXTENSION).toFile();
                 if (tempFile.renameTo(newFile)) {
                     log.info("Recovered temp file: %s", tempFile);
                 }

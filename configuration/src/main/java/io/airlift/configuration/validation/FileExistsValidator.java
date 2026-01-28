@@ -7,7 +7,6 @@ import jakarta.validation.ConstraintValidatorContext;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 public class FileExistsValidator
         implements ConstraintValidator<FileExists, Object>
@@ -43,7 +42,7 @@ public class FileExistsValidator
     private static boolean exists(Object path)
     {
         if (path instanceof String) {
-            return Files.exists(Paths.get((String) path));
+            return Files.exists(Path.of((String) path));
         }
 
         if (path instanceof Path) {
