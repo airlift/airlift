@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStreamReader;
-import java.io.StringReader;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -290,7 +290,7 @@ public class TestJsonCodec
                 .hasMessage("Invalid JSON bytes for [simple type, class io.airlift.json.ImmutablePerson]")
                 .hasStackTraceContaining("Unrecognized token 'trailer': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')");
 
-        assertThatThrownBy(() -> codec.fromJson(new StringReader(jsonWithTrailingContent)))
+        assertThatThrownBy(() -> codec.fromJson(Reader.of(jsonWithTrailingContent)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Invalid JSON characters for [simple type, class io.airlift.json.ImmutablePerson]")
                 .hasStackTraceContaining("Unrecognized token 'trailer': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')");
@@ -308,7 +308,7 @@ public class TestJsonCodec
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Found characters after the expected end of input");
 
-        assertThatThrownBy(() -> codec.fromJson(new StringReader(jsonWithTrailingJsonContent)))
+        assertThatThrownBy(() -> codec.fromJson(Reader.of(jsonWithTrailingJsonContent)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Found characters after the expected end of input");
     }
