@@ -312,7 +312,7 @@ TODO why this?
     private static void throwInvalid(Type type, Optional<String> name)
     {
         if (name.isPresent()) {
-            throw new ValidatorException("\"%s %s\" is not a valid resource type".formatted(type, name.get()));
+            throw new ValidatorException("\"%s %s\" is not a valid resource type".formatted(type, name.orElseThrow()));
         }
         throw new ValidatorException("%s is not a valid resource type".formatted(type));
     }

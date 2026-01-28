@@ -23,12 +23,12 @@ public interface DeprecationValidator
     {
         deprecations.forEach(deprecation -> validationContext.inContext("Deprecation of " + methodName(deprecation.method()), _ -> {
             if (deprecation.deprecationDate().isPresent()) {
-                if (deprecation.deprecationDate().get().isBefore(Instant.now())) {
+                if (deprecation.deprecationDate().orElseThrow().isBefore(Instant.now())) {
                     throw new ValidatorException("Deprecation date for %s is in the past".formatted(methodName(deprecation.method())));
                 }
             }
             if (deprecation.newImplementation().isPresent()) {
-                if (deprecation.newImplementation().get().isBlank()) {
+                if (deprecation.newImplementation().orElseThrow().isBlank()) {
                     throw new ValidatorException("New implementation for %s is blank".formatted(methodName(deprecation.method())));
                 }
             }

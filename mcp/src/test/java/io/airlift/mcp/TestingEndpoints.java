@@ -338,12 +338,12 @@ public class TestingEndpoints
         }
 
         if (response.error().isPresent()) {
-            return response.error().get().message();
+            return response.error().orElseThrow().message();
         }
 
         CreateMessageResult createMessageResult = response.result().orElseThrow();
         if (createMessageResult.stopReason().isPresent()) {
-            return "Stopped: " + createMessageResult.stopReason().get().toJsonValue();
+            return "Stopped: " + createMessageResult.stopReason().orElseThrow().toJsonValue();
         }
 
         if (createMessageResult.content() instanceof TextContent(var text, _)) {

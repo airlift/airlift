@@ -382,13 +382,13 @@ public class TestDynamicSizeBoundQueue
         assertThat(backoffResult1)
                 .as("Queue should provide a backoff future when at capacity")
                 .isPresent();
-        assertThat(backoffResult1.get()).isNotDone();
+        assertThat(backoffResult1.orElseThrow()).isNotDone();
 
         Optional<ListenableFuture<Void>> backoffResult2 = queue.offerWithBackoff("c");
         assertThat(backoffResult2)
                 .as("Queue should provide a backoff future when at capacity")
                 .isPresent();
-        assertThat(backoffResult2.get()).isNotDone();
+        assertThat(backoffResult2.orElseThrow()).isNotDone();
 
         assertThat(queue.poll())
                 .as("Dequeue an element to make some space")
@@ -398,8 +398,8 @@ public class TestDynamicSizeBoundQueue
                 .isLessThan(queue.getMaxSize());
 
         // Both backoff futures should complete when any space is made available
-        assertThat(backoffResult1.get()).isDone();
-        assertThat(backoffResult2.get()).isDone();
+        assertThat(backoffResult1.orElseThrow()).isDone();
+        assertThat(backoffResult2.orElseThrow()).isDone();
     }
 
     @Test
@@ -547,7 +547,7 @@ public class TestDynamicSizeBoundQueue
                 for (int j = 0; j < 200; j++) {
                     Optional<ListenableFuture<Void>> backoffFuture = queue.offerWithBackoff("ee");
                     while (backoffFuture.isPresent()) {
-                        Futures.getUnchecked(backoffFuture.get());
+                        Futures.getUnchecked(backoffFuture.orElseThrow());
                         backoffFuture = queue.offerWithBackoff("ee");
                     }
                 }

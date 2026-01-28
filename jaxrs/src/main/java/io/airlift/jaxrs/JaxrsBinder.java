@@ -48,7 +48,7 @@ public class JaxrsBinder
     {
         if (qualifier.isPresent()) {
             binder.bind(implementation)
-                    .annotatedWith(qualifier.get())
+                    .annotatedWith(qualifier.orElseThrow())
                     .to(implementation)
                     .in(SINGLETON);
         }
@@ -62,7 +62,7 @@ public class JaxrsBinder
     {
         if (qualifier.isPresent()) {
             binder.bind(implementation)
-                    .annotatedWith(qualifier.get())
+                    .annotatedWith(qualifier.orElseThrow())
                     .toProvider(provider)
                     .in(SINGLETON);
         }

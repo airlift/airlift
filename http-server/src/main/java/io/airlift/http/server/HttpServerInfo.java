@@ -62,7 +62,7 @@ public class HttpServerInfo
 
         if (config.isHttpsEnabled()) {
             checkArgument(httpsConfig.isPresent(), "httpsConfig must be present when HTTPS is enabled");
-            httpsChannel = createChannel(nodeInfo.getBindIp(), httpsConfig.get().getHttpsPort(), config.getHttpAcceptQueueSize());
+            httpsChannel = createChannel(nodeInfo.getBindIp(), httpsConfig.orElseThrow().getHttpsPort(), config.getHttpAcceptQueueSize());
             httpsUri = buildUri("https", nodeInfo.getInternalAddress(), port(httpsChannel));
             httpsExternalUri = buildUri("https", nodeInfo.getExternalAddress(), httpsUri.getPort());
         }

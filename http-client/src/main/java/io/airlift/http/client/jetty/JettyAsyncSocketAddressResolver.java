@@ -31,7 +31,7 @@ class JettyAsyncSocketAddressResolver
     {
         Optional<InetAddress> address = resolve(host);
         if (address.isPresent()) {
-            promise.succeeded(ImmutableList.of(new InetSocketAddress(address.get(), port)));
+            promise.succeeded(ImmutableList.of(new InetSocketAddress(address.orElseThrow(), port)));
             return;
         }
         super.resolve(host, port, context, promise);

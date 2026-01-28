@@ -97,7 +97,7 @@ public abstract class TestSessionController
         CountDownLatch latch2 = new CountDownLatch(1);
         future = newVirtualThreadPerTaskExecutor().submit(() -> {
             latch2.countDown();
-            controller.blockUntil(sessionId, key, Duration.ofSeconds(1), value -> value.isPresent() && value.get().equals("newValue"));
+            controller.blockUntil(sessionId, key, Duration.ofSeconds(1), value -> value.filter("newValue"::equals).isPresent());
             return null;
         });
 
@@ -113,7 +113,7 @@ public abstract class TestSessionController
         CountDownLatch latch3 = new CountDownLatch(1);
         future = newVirtualThreadPerTaskExecutor().submit(() -> {
             latch3.countDown();
-            controller.blockUntil(sessionId, key, Duration.ofSeconds(1), value -> value.isPresent() && value.get().equals("computed"));
+            controller.blockUntil(sessionId, key, Duration.ofSeconds(1), value -> value.filter("computed"::equals).isPresent());
             return null;
         });
 
