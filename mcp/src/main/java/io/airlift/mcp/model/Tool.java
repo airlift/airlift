@@ -6,10 +6,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static java.util.Objects.requireNonNull;
+import static java.util.Objects.requireNonNullElse;
 
 public record Tool(
         String name,
@@ -25,12 +25,12 @@ public record Tool(
     public Tool
     {
         requireNonNull(name, "name is null");
-        description = firstNonNull(description, Optional.empty());
-        title = firstNonNull(title, Optional.empty());
+        description = requireNonNullElse(description, Optional.empty());
+        title = requireNonNullElse(title, Optional.empty());
         requireNonNull(inputSchema, "inputSchema is null");
-        outputSchema = firstNonNull(outputSchema, Optional.empty());
+        outputSchema = requireNonNullElse(outputSchema, Optional.empty());
         requireNonNull(annotations, "annotations is null");
-        icons = firstNonNull(icons, Optional.empty());
+        icons = requireNonNullElse(icons, Optional.empty());
 
         validateName(name);
     }
@@ -68,11 +68,11 @@ public record Tool(
     {
         public ToolAnnotations
         {
-            title = firstNonNull(title, Optional.empty());
-            readOnlyHint = firstNonNull(readOnlyHint, Optional.empty());
-            destructiveHint = firstNonNull(destructiveHint, Optional.empty());
-            idempotentHint = firstNonNull(idempotentHint, Optional.empty());
-            openWorldHint = firstNonNull(openWorldHint, Optional.empty());
+            title = requireNonNullElse(title, Optional.empty());
+            readOnlyHint = requireNonNullElse(readOnlyHint, Optional.empty());
+            destructiveHint = requireNonNullElse(destructiveHint, Optional.empty());
+            idempotentHint = requireNonNullElse(idempotentHint, Optional.empty());
+            openWorldHint = requireNonNullElse(openWorldHint, Optional.empty());
         }
     }
 }

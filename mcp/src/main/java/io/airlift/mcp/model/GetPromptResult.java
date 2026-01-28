@@ -5,8 +5,8 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Optional;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
 import static java.util.Objects.requireNonNull;
+import static java.util.Objects.requireNonNullElse;
 
 public record GetPromptResult(Optional<String> description, List<PromptMessage> messages)
 {
@@ -21,7 +21,7 @@ public record GetPromptResult(Optional<String> description, List<PromptMessage> 
 
     public GetPromptResult
     {
-        description = firstNonNull(description, Optional.empty());
+        description = requireNonNullElse(description, Optional.empty());
         messages = ImmutableList.copyOf(messages);
     }
 }

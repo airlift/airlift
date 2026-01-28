@@ -5,9 +5,9 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.OptionalInt;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
+import static java.util.Objects.requireNonNullElse;
 
 public record CompleteResult(CompleteCompletion completion)
 {
@@ -24,8 +24,8 @@ public record CompleteResult(CompleteCompletion completion)
         public CompleteCompletion
         {
             values = ImmutableList.copyOf(values);
-            total = firstNonNull(total, OptionalInt.empty());
-            hasMore = firstNonNull(hasMore, OptionalBoolean.UNDEFINED);
+            total = requireNonNullElse(total, OptionalInt.empty());
+            hasMore = requireNonNullElse(hasMore, OptionalBoolean.UNDEFINED);
 
             checkArgument(values.size() <= MAX_COMPLETIONS, "values exceeds max completions");
         }

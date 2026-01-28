@@ -5,9 +5,9 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Map;
 import java.util.Optional;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
 import static java.util.Locale.ROOT;
 import static java.util.Objects.requireNonNull;
+import static java.util.Objects.requireNonNullElse;
 
 public record ElicitResult(Action action, Optional<Map<String, Object>> content, Optional<Map<String, Object>> meta)
         implements Meta
@@ -15,8 +15,8 @@ public record ElicitResult(Action action, Optional<Map<String, Object>> content,
     public ElicitResult
     {
         requireNonNull(action, "action is null");
-        content = firstNonNull(content, Optional.empty());
-        meta = firstNonNull(meta, Optional.empty());
+        content = requireNonNullElse(content, Optional.empty());
+        meta = requireNonNullElse(meta, Optional.empty());
     }
 
     public enum Action

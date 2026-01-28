@@ -82,7 +82,6 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
@@ -96,6 +95,7 @@ import static java.time.temporal.ChronoUnit.DAYS;
 import static java.util.Collections.list;
 import static java.util.Comparator.naturalOrder;
 import static java.util.Objects.requireNonNull;
+import static java.util.Objects.requireNonNullElse;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.eclipse.jetty.http.MimeTypes.Type.TEXT_PLAIN;
@@ -235,8 +235,8 @@ public class HttpServer
                     httpServerInfo.getHttpChannel(),
                     server,
                     null,
-                    firstNonNull(acceptors, -1),
-                    firstNonNull(selectors, -1),
+                    requireNonNullElse(acceptors, -1),
+                    requireNonNullElse(selectors, -1),
                     insecureFactories(config, httpConfiguration));
             httpConnector.setName("http");
             httpConnector.setPort(httpServerInfo.getHttpUri().getPort());
@@ -265,9 +265,9 @@ public class HttpServer
                     httpServerInfo.getHttpsChannel(),
                     server,
                     null,
-                    firstNonNull(acceptors, -1),
-                    firstNonNull(selectors, -1),
-                    secureFactories(config, httpsConfiguration, sslContextFactory.get()));
+                    requireNonNullElse(acceptors, -1),
+                    requireNonNullElse(selectors, -1),
+                    secureFactories(config, httpsConfiguration, sslContextFactory.orElseThrow()));
             httpsConnector.setName("https");
             httpsConnector.setPort(httpServerInfo.getHttpsUri().getPort());
             httpsConnector.setIdleTimeout(config.getNetworkMaxIdleTime().toMillis());

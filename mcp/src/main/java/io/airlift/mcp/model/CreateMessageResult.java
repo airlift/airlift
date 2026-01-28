@@ -5,8 +5,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 import java.util.Optional;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
 import static java.util.Objects.requireNonNull;
+import static java.util.Objects.requireNonNullElse;
 
 public record CreateMessageResult(Role role, Content content, String model, Optional<StopReason> stopReason)
 {
@@ -15,7 +15,7 @@ public record CreateMessageResult(Role role, Content content, String model, Opti
         requireNonNull(role, "role is null");
         requireNonNull(content, "content is null");
         requireNonNull(model, "model is null");
-        stopReason = firstNonNull(stopReason, Optional.empty());
+        stopReason = requireNonNullElse(stopReason, Optional.empty());
     }
 
     public enum StopReason

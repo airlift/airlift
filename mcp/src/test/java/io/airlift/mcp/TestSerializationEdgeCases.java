@@ -37,7 +37,7 @@ import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.stream.Stream;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
+import static java.util.Objects.requireNonNullElse;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -253,7 +253,7 @@ public class TestSerializationEdgeCases
             while (resources.hasMoreElements()) {
                 URL resource = resources.nextElement();
                 File directory = new File(resource.toURI());
-                for (File file : firstNonNull(directory.listFiles(), new File[0])) {
+                for (File file : requireNonNullElse(directory.listFiles(), new File[0])) {
                     if (file.getName().endsWith(".class")) {
                         String className = packageName + '.' + file.getName().substring(0, file.getName().length() - 6);
                         classes.add(Class.forName(className));

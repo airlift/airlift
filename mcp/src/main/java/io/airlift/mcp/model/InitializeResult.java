@@ -3,8 +3,8 @@ package io.airlift.mcp.model;
 import java.util.Map;
 import java.util.Optional;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
 import static java.util.Objects.requireNonNull;
+import static java.util.Objects.requireNonNullElse;
 
 public record InitializeResult(
         String protocolVersion,
@@ -17,12 +17,12 @@ public record InitializeResult(
     {
         public ServerCapabilities
         {
-            completions = firstNonNull(completions, Optional.empty());
-            logging = firstNonNull(logging, Optional.empty());
-            prompts = firstNonNull(prompts, Optional.empty());
-            resources = firstNonNull(resources, Optional.empty());
-            tools = firstNonNull(tools, Optional.empty());
-            experimental = firstNonNull(experimental, Optional.empty());
+            completions = requireNonNullElse(completions, Optional.empty());
+            logging = requireNonNullElse(logging, Optional.empty());
+            prompts = requireNonNullElse(prompts, Optional.empty());
+            resources = requireNonNullElse(resources, Optional.empty());
+            tools = requireNonNullElse(tools, Optional.empty());
+            experimental = requireNonNullElse(experimental, Optional.empty());
         }
 
         public ServerCapabilities()
@@ -40,6 +40,6 @@ public record InitializeResult(
         requireNonNull(protocolVersion, "protocolVersion is null");
         requireNonNull(capabilities, "capabilities is null");
         requireNonNull(serverInfo, "serverInfo is null");
-        instructions = firstNonNull(instructions, Optional.empty());
+        instructions = requireNonNullElse(instructions, Optional.empty());
     }
 }

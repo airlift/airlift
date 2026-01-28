@@ -97,7 +97,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.NetworkChannel;
 import java.nio.channels.SelectableChannel;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.util.List;
@@ -111,7 +110,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Throwables.throwIfUnchecked;
@@ -126,6 +124,7 @@ import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
+import static java.util.Objects.requireNonNullElse;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -263,7 +262,7 @@ public class JettyHttpClient
             {
                 super.configure(selectable);
                 if (config.getTcpKeepAliveIdleTime().isPresent()) {
-                    setKeepAlive(selectable, config.getTcpKeepAliveIdleTime().get());
+                    setKeepAlive(selectable, config.getTcpKeepAliveIdleTime().orElseThrow());
                 }
             }
         };
@@ -308,7 +307,7 @@ public class JettyHttpClient
             httpClient.getProxyConfiguration().addProxy(proxy);
             if (config.getHttpProxyUser().isPresent() && config.getHttpProxyPassword().isPresent()) {
                 httpClient.getAuthenticationStore().addAuthenticationResult(
-                        new BasicResult(proxy.getURI(), PROXY_AUTHORIZATION, config.getHttpProxyUser().get(), config.getHttpProxyPassword().get()));
+                        new BasicResult(proxy.getURI(), PROXY_AUTHORIZATION, config.getHttpProxyUser().orElseThrow(), config.getHttpProxyPassword().orElseThrow()));
             }
         }
 
@@ -325,7 +324,7 @@ public class JettyHttpClient
         httpClient.setSocketAddressResolver((host, port, context, promise) -> {
             Optional<InetAddress> inetAddress = tryDecodeHostnameToAddress(host);
             if (inetAddress.isPresent()) {
-                promise.succeeded(ImmutableList.of(new InetSocketAddress(inetAddress.get(), port)));
+                promise.succeeded(ImmutableList.of(new InetSocketAddress(inetAddress.orElseThrow(), port)));
                 return;
             }
             resolver.resolve(host, port, context, promise);
@@ -339,7 +338,7 @@ public class JettyHttpClient
         // configure logging
         this.logEnabled = config.isLogEnabled();
         if (logEnabled) {
-            String logFilePath = Paths.get(config.getLogPath(), format("%s-http-client.log", name)).toAbsolutePath().toString();
+            String logFilePath = Path.of(config.getLogPath(), format("%s-http-client.log", name)).toAbsolutePath().toString();
             requestLogger = new DefaultHttpClientLogger(
                     logFilePath,
                     config.getLogHistory(),
@@ -502,7 +501,7 @@ public class JettyHttpClient
         sslContextFactory.setSNIProvider(JettyHttpClient::getSniServerNames);
         sslContextFactory.setEndpointIdentificationAlgorithm(config.isVerifyHostname() ? "HTTPS" : null);
 
-        String keyStorePassword = firstNonNull(config.getKeyStorePassword(), "");
+        String keyStorePassword = requireNonNullElse(config.getKeyStorePassword(), "");
         KeyStore keyStore = null;
         if (config.getKeyStorePath() != null) {
             keyStore = loadKeyStore(config.getKeyStorePath(), config.getKeyStorePassword());

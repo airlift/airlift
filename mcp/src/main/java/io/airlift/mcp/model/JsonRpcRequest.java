@@ -5,8 +5,8 @@ import io.airlift.json.ObjectMapperProvider;
 
 import java.util.Optional;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
 import static io.airlift.mcp.model.Constants.JSON_RPC_VERSION;
+import static java.util.Objects.requireNonNullElse;
 
 // see https://www.jsonrpc.org/specification#request_object
 public record JsonRpcRequest<T>(String jsonrpc, Object id, String method, Optional<T> params)
@@ -16,9 +16,9 @@ public record JsonRpcRequest<T>(String jsonrpc, Object id, String method, Option
 
     public JsonRpcRequest
     {
-        jsonrpc = firstNonNull(jsonrpc, "");
-        method = firstNonNull(method, "");
-        params = firstNonNull(params, Optional.empty());
+        jsonrpc = requireNonNullElse(jsonrpc, "");
+        method = requireNonNullElse(method, "");
+        params = requireNonNullElse(params, Optional.empty());
     }
 
     public static <T> JsonRpcRequest<T> buildRequest(Object id, String method, T params)

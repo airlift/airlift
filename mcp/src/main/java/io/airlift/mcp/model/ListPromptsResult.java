@@ -5,7 +5,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Optional;
 
-import static com.google.common.base.MoreObjects.firstNonNull;
+import static java.util.Objects.requireNonNullElse;
 
 public record ListPromptsResult(List<Prompt> prompts, Optional<String> nextCursor)
         implements PaginatedResult
@@ -13,7 +13,7 @@ public record ListPromptsResult(List<Prompt> prompts, Optional<String> nextCurso
     public ListPromptsResult
     {
         prompts = ImmutableList.copyOf(prompts);
-        nextCursor = firstNonNull(nextCursor, Optional.empty());
+        nextCursor = requireNonNullElse(nextCursor, Optional.empty());
     }
 
     public ListPromptsResult(List<Prompt> prompts)
