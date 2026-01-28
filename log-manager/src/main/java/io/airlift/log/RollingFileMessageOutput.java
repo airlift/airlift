@@ -29,7 +29,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -109,7 +108,7 @@ final class RollingFileMessageOutput
         this.maxFileSize = maxFileSize.toBytes();
         this.compressionType = compressionType;
 
-        symlink = Paths.get(filename);
+        symlink = Path.of(filename);
 
         // ensure log directory can be created
         try {
@@ -450,7 +449,7 @@ final class RollingFileMessageOutput
         List<String> errorMessages = new ArrayList<>();
         for (File tempFile : tempFiles) {
             String newName = tempFile.getName().substring(0, tempFile.getName().length() - TEMP_FILE_EXTENSION.length());
-            File newFile = Paths.get(tempFile.getParent(), newName + LOG_FILE_EXTENSION).toFile();
+            File newFile = Path.of(tempFile.getParent(), newName + LOG_FILE_EXTENSION).toFile();
 
             if (!tempFile.renameTo(newFile)) {
                 errorMessages.add(format("Could not rename temp file [%s] to [%s]", tempFile, newFile));

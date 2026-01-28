@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.time.Instant;
 
 import static io.airlift.http.client.Request.Builder.preparePost;
@@ -29,7 +29,7 @@ public class TestMultiPartService
 {
     static final Instant INSTANT = Instant.now();
 
-    private static final File testFile = Paths.get(Resources.getResource("test-file.txt").getPath()).toFile();
+    private static final File testFile = Path.of(Resources.getResource("test-file.txt").getPath()).toFile();
 
     public TestMultiPartService()
     {
