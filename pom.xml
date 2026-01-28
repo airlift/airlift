@@ -93,7 +93,6 @@
         <air.release.preparation-goals>clean verify -DskipTests</air.release.preparation-goals>
 
         <project.build.targetJdk>25</project.build.targetJdk>
-        <air.modernizer.java-version>8</air.modernizer.java-version>
 
         <dep.airlift.version>396-SNAPSHOT</dep.airlift.version>
         <dep.brotli4j.version>1.20.0</dep.brotli4j.version>
