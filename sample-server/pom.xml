@@ -123,16 +123,15 @@
             <artifactId>jmxutils</artifactId>
         </dependency>
 
-        <!-- used by tests but also needed transitively -->
         <dependency>
             <groupId>io.airlift</groupId>
-            <artifactId>http-client</artifactId>
-            <scope>runtime</scope>
+            <artifactId>configuration-testing</artifactId>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>io.airlift</groupId>
-            <artifactId>configuration-testing</artifactId>
+            <artifactId>http-client</artifactId>
             <scope>test</scope>
         </dependency>
 
