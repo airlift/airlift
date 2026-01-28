@@ -22,7 +22,13 @@ import java.io.Closeable;
 public interface HttpClient
         extends Closeable
 {
-    <T, E extends Exception> T execute(Request request, ResponseHandler<T, E> responseHandler)
+    default <T, E extends Exception> T execute(Request request, ResponseHandler<T, E> responseHandler)
+            throws E
+    {
+        return execute(request, RequestLifecycleHandler.create(), responseHandler);
+    }
+
+    <T, E extends Exception> T execute(Request request, RequestLifecycleHandler lifecycleHandler, ResponseHandler<T, E> responseHandler)
             throws E;
 
     <T, E extends Exception> HttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler);
