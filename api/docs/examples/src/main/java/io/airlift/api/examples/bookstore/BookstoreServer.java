@@ -96,6 +96,8 @@ public class BookstoreServer
         log.info("Bookstore API Server Started");
         log.info("======================================================");
         log.info("Base URI: %s", server.getBaseUri());
+        log.info("");
+        log.info("Please see the io.airlift.api.binding log lines above for available endpoints.");
         log.info("======================================================");
         log.info("Press Ctrl+C to stop the server");
         log.info("======================================================");

@@ -343,3 +343,82 @@ curl -f localhost:8080/bookServiceTypeId/api/v21/
 
 You'll still get a 404 error. This is expected! While we've registered the service, it doesn't have any methods yet, so there are no endpoints to call. In the next step, we'll 
 add methods to create and retrieve books.
+
+## Step 3.1: Add a Service Endpoint
+
+Now that we have an API service registered, let's add our first endpoint. We'll create a method that adds a new books in the bookstore. This method will be invoked when a client
+sends an HTTP POST request to the corresponding URI.
+
+### Adding the Create Method
+
+In `BookService.java`, we add a method annotated with `@ApiCreate`:
+
+```diff
+--- a/api/docs/examples/src/main/java/io/airlift/api/examples/bookstore/BookService.java
++++ b/api/docs/examples/src/main/java/io/airlift/api/examples/bookstore/BookService.java
+@@ -1,8 +1,12 @@
+ package io.airlift.api.examples.bookstore;
+
++import io.airlift.api.ApiCreate;
+ import io.airlift.api.ApiService;
++import io.airlift.api.ApiTrait;
+
+ @ApiService(name = "bookService", type = BookServiceType.class, description = "Manage books in the bookstore")
+ public class BookService
+ {
++    @ApiCreate(description = "Create a new book", traits = {ApiTrait.BETA})
++    public void createBook() {}
+ }
+```
+
+The `@ApiCreate` annotation tells API Builder to generate a REST endpoint for creating resources. Key points:
+- `description`: Documents what this endpoint does.
+- `traits`: Optional metadata about the endpoint. `ApiTrait.BETA` marks this as a beta feature, which can be useful for communicating API stability to clients.
+
+The method is currently empty, but API Builder will generate a complete JAX-RS resource that handles HTTP POST requests. In future steps, we'll add parameters and 
+implementation logic.
+
+### Finding the Generated Endpoint URL in the Logs
+
+When the server starts, API Builder logs all registered endpoints to help you discover them. Look for log lines from the `io.airlift.api.binding` logger. They will show the 
+HTTP method, full URL, and the corresponding service method. We add a reminder of this to the `main()` method output.
+
+```diff
+--- a/api/docs/examples/src/main/java/io/airlift/api/examples/bookstore/BookstoreServer.java
++++ b/api/docs/examples/src/main/java/io/airlift/api/examples/bookstore/BookstoreServer.java
+@@ -96,6 +96,8 @@ public class BookstoreServer
+         log.info("Bookstore API Server Started");
+         log.info("======================================================");
+         log.info("Base URI: %s", server.getBaseUri());
++        log.info("");
++        log.info("Please see the io.airlift.api.binding log lines above for available endpoints.");
+         log.info("======================================================");
+         log.info("Press Ctrl+C to stop the server");
+         log.info("======================================================");
+```
+
+### Running and Verification
+
+Rebuild and run the server:
+
+```bash
+mvn compile
+mvn exec:java -Dexec.mainClass="io.airlift.api.examples.bookstore.BookstoreServer"
+```
+
+In the log output, look for lines from `io.airlift.api.binding` that show the registered endpoints. You should see something like:
+
+```
+INFO	main	io.airlift.api.binding.JaxrsResourceBuilder	API POST bookServiceTypeId/api/v21/ BookService#createBook
+```
+
+This means that a client can create a new book by sending a POST request to the cited URL. Now you can test the endpoint:
+
+```bash
+curl -f --json '' localhost:8080/bookServiceTypeId/api/v21/
+```
+
+(With `curl`, the `--json` option implies a POST request.)
+
+The request should succeed (returning a 200 status code), though it doesn't do anything yet since the method is empty. But this does mean that the endpoint works and this empty 
+method is being invoked. In the next step, we'll make the endpoint actually create a new book inside the server.
