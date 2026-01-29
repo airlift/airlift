@@ -117,7 +117,7 @@ public class DecayTDigest
         if (alpha > 0.0) {
             long nowInSeconds = nowInSeconds();
             if (nowInSeconds - landmarkInSeconds >= RESCALE_THRESHOLD_SECONDS) {
-                rescale(nowInSeconds);
+                landmarkInSeconds = digest.rescale(alpha, landmarkInSeconds, nowInSeconds);
             }
         }
     }
@@ -135,39 +135,6 @@ public class DecayTDigest
     public double[] valuesAt(double... quantiles)
     {
         return digest.valuesAt(quantiles);
-    }
-
-    private void rescale(long newLandmarkInSeconds)
-    {
-        // rescale the weights based on a new landmark to avoid numerical overflow issues
-        double factor = weight(alpha, newLandmarkInSeconds, landmarkInSeconds);
-        digest.totalWeight /= factor;
-
-        double min = Double.POSITIVE_INFINITY;
-        double max = Double.NEGATIVE_INFINITY;
-
-        int index = 0;
-        for (int i = 0; i < digest.centroidCount; i++) {
-            double weight = digest.weights[i] / factor;
-
-            // values with a scaled weight below 1 are effectively below the ZERO_WEIGHT_THRESHOLD
-            if (weight < 1) {
-                continue;
-            }
-
-            digest.weights[index] = weight;
-            digest.means[index] = digest.means[i];
-            index++;
-
-            min = Math.min(min, digest.means[i]);
-            max = Math.max(max, digest.means[i]);
-        }
-
-        digest.centroidCount = index;
-        digest.min = min;
-        digest.max = max;
-
-        landmarkInSeconds = newLandmarkInSeconds;
     }
 
     private long nowInSeconds()

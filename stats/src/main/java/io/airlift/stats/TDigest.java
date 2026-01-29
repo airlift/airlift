@@ -3,7 +3,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,6 +16,8 @@ package io.airlift.stats;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Ints;
+import com.google.errorprone.annotations.ThreadSafe;
+import com.google.errorprone.annotations.concurrent.GuardedBy;
 import io.airlift.slice.SizeOf;
 import io.airlift.slice.Slice;
 import io.airlift.slice.SliceInput;
@@ -25,17 +27,20 @@ import io.airlift.slice.Slices;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
+import java.util.concurrent.locks.StampedLock;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static io.airlift.slice.SizeOf.instanceSize;
+import static io.airlift.stats.ExponentialDecay.weight;
 import static java.lang.Double.isInfinite;
 import static java.lang.Double.isNaN;
 import static java.util.Objects.requireNonNull;
 
 /**
- * This class is NOT thread safe.
+ * This class is thread safe.
  */
+@ThreadSafe
 public class TDigest
 {
     public static final double DEFAULT_COMPRESSION = 100;
@@ -45,22 +50,39 @@ public class TDigest
     private static final int INITIAL_CAPACITY = 1;
     private static final int FUDGE_FACTOR = 10;
 
+    // Tie-breaker lock used only in the rare case of identity hash collisions during mergeWith
+    private static final Object TIE_LOCK = new Object();
+
+    private final StampedLock lock = new StampedLock();
+
     private final int maxSize;
     private final double compression;
 
-    double[] means;
-    double[] weights;
-    int centroidCount;
-    double totalWeight;
+    @GuardedBy("lock")
+    private double[] means;
+    @GuardedBy("lock")
+    private double[] weights;
+    @GuardedBy("lock")
+    private int centroidCount;
+    @GuardedBy("lock")
+    private double totalWeight;
 
-    double min;
-    double max;
+    @GuardedBy("lock")
+    private double min;
+    @GuardedBy("lock")
+    private double max;
 
+    @GuardedBy("lock")
     private boolean backwards;
+    @GuardedBy("lock")
     private boolean needsMerge;
 
+    // Temporary storage for merges, protected by lock to avoid allocation churn
+    @GuardedBy("lock")
     private int[] indexes;
+    @GuardedBy("lock")
     private double[] tempMeans;
+    @GuardedBy("lock")
     private double[] tempWeights;
 
     public TDigest()
@@ -109,16 +131,22 @@ public class TDigest
 
     public static TDigest copyOf(TDigest other)
     {
-        return new TDigest(
-                other.compression,
-                other.min,
-                other.max,
-                other.totalWeight,
-                other.centroidCount,
-                Arrays.copyOf(other.means, other.centroidCount),
-                Arrays.copyOf(other.weights, other.centroidCount),
-                other.needsMerge,
-                other.backwards);
+        long stamp = other.lock.readLock();
+        try {
+            return new TDigest(
+                    other.compression,
+                    other.min,
+                    other.max,
+                    other.totalWeight,
+                    other.centroidCount,
+                    Arrays.copyOf(other.means, other.centroidCount),
+                    Arrays.copyOf(other.weights, other.centroidCount),
+                    other.needsMerge,
+                    other.backwards);
+        }
+        finally {
+            other.lock.unlockRead(stamp);
+        }
     }
 
     public static TDigest deserialize(Slice serialized)
@@ -158,23 +186,62 @@ public class TDigest
 
     public double getMin()
     {
-        if (totalWeight == 0) {
+        long stamp = lock.tryOptimisticRead();
+        double currentTotalWeight = totalWeight;
+        double currentMin = min;
+        if (!lock.validate(stamp)) {
+            stamp = lock.readLock();
+            try {
+                currentTotalWeight = totalWeight;
+                currentMin = min;
+            }
+            finally {
+                lock.unlockRead(stamp);
+            }
+        }
+
+        if (currentTotalWeight == 0) {
             return Double.NaN;
         }
-        return min;
+        return currentMin;
     }
 
     public double getMax()
     {
-        if (totalWeight == 0) {
+        long stamp = lock.tryOptimisticRead();
+        double currentTotalWeight = totalWeight;
+        double currentMax = max;
+        if (!lock.validate(stamp)) {
+            stamp = lock.readLock();
+            try {
+                currentTotalWeight = totalWeight;
+                currentMax = max;
+            }
+            finally {
+                lock.unlockRead(stamp);
+            }
+        }
+
+        if (currentTotalWeight == 0) {
             return Double.NaN;
         }
-        return max;
+        return currentMax;
     }
 
     public double getCount()
     {
-        return totalWeight;
+        long stamp = lock.tryOptimisticRead();
+        double count = totalWeight;
+        if (!lock.validate(stamp)) {
+            stamp = lock.readLock();
+            try {
+                count = totalWeight;
+            }
+            finally {
+                lock.unlockRead(stamp);
+            }
+        }
+        return count;
     }
 
     public void add(double value)
@@ -189,50 +256,93 @@ public class TDigest
         checkArgument(!isInfinite(value), "value must be finite");
         checkArgument(!isInfinite(weight), "weight must be finite");
 
-        if (centroidCount == means.length) {
-            if (means.length < maxSize) {
-                ensureCapacity(Math.min(Math.max(means.length * 2, INITIAL_CAPACITY), maxSize));
-            }
-            else {
-                merge(internalCompressionFactor(compression));
-                if (centroidCount >= means.length) {
-                    throw new AssertionError("Invalid size estimation for T-Digest: " + Base64.getEncoder().encodeToString(serializeInternal().getBytes()));
+        long stamp = lock.writeLock();
+        try {
+            if (centroidCount == means.length) {
+                if (means.length < maxSize) {
+                    ensureCapacity(Math.min(Math.max(means.length * 2, INITIAL_CAPACITY), maxSize));
+                }
+                else {
+                    merge(internalCompressionFactor(compression));
+                    if (centroidCount >= means.length) {
+                        throw new AssertionError("Invalid size estimation for T-Digest: " + Base64.getEncoder().encodeToString(serializeInternal().getBytes()));
+                    }
                 }
             }
+
+            means[centroidCount] = value;
+            weights[centroidCount] = weight;
+            centroidCount++;
+
+            totalWeight += weight;
+            min = Math.min(value, min);
+            max = Math.max(value, max);
+
+            needsMerge = true;
         }
-
-        means[centroidCount] = value;
-        weights[centroidCount] = weight;
-        centroidCount++;
-
-        totalWeight += weight;
-        min = Math.min(value, min);
-        max = Math.max(value, max);
-
-        needsMerge = true;
+        finally {
+            lock.unlockWrite(stamp);
+        }
     }
 
     public void mergeWith(TDigest other)
     {
-        if (centroidCount + other.centroidCount > means.length) {
-            // first, try to compact the digests to make room
-            merge(internalCompressionFactor(compression));
-            other.merge(internalCompressionFactor(compression));
+        // To prevent deadlocks, we order lock acquisition by identity hash code.
+        int h1 = System.identityHashCode(this);
+        int h2 = System.identityHashCode(other);
 
-            // but if that's not sufficient to fit all clusters, grow the arrays
-            ensureCapacity(centroidCount + other.centroidCount);
+        long myStamp;
+        long otherStamp;
+
+        if (h1 < h2) {
+            myStamp = lock.writeLock();
+            otherStamp = other.lock.writeLock();
+        }
+        else if (h2 < h1) {
+            otherStamp = other.lock.writeLock();
+            myStamp = lock.writeLock();
+        }
+        else {
+            // Rare hash collision: enforce global order via static tie-breaker lock
+            synchronized (TIE_LOCK) {
+                myStamp = lock.writeLock();
+                otherStamp = other.lock.writeLock();
+            }
         }
 
-        System.arraycopy(other.means, 0, means, centroidCount, other.centroidCount);
-        System.arraycopy(other.weights, 0, weights, centroidCount, other.centroidCount);
+        try {
+            if (centroidCount + other.centroidCount > means.length) {
+                // first, try to compact the digests to make room
+                merge(internalCompressionFactor(compression));
+                other.merge(internalCompressionFactor(compression));
 
-        centroidCount += other.centroidCount;
-        totalWeight += other.totalWeight;
+                // but if that's not sufficient to fit all clusters, grow the arrays
+                ensureCapacity(centroidCount + other.centroidCount);
+            }
 
-        min = Math.min(min, other.min);
-        max = Math.max(max, other.max);
+            System.arraycopy(other.means, 0, means, centroidCount, other.centroidCount);
+            System.arraycopy(other.weights, 0, weights, centroidCount, other.centroidCount);
 
-        needsMerge = true;
+            centroidCount += other.centroidCount;
+            totalWeight += other.totalWeight;
+
+            min = Math.min(min, other.min);
+            max = Math.max(max, other.max);
+
+            needsMerge = true;
+        }
+        finally {
+            // Unlock both. Order of unlocking is not critical for correctness with StampedLock,
+            // but releasing in reverse acquisition order is good practice.
+            if (h1 < h2) {
+                other.lock.unlockWrite(otherStamp);
+                lock.unlockWrite(myStamp);
+            }
+            else {
+                lock.unlockWrite(myStamp);
+                other.lock.unlockWrite(otherStamp);
+            }
+        }
     }
 
     public double valueAt(double quantile)
@@ -253,100 +363,164 @@ public class TDigest
 
         validateQuantilesArgument(quantiles);
 
-        double[] result = new double[quantiles.length];
-
-        if (centroidCount == 0) {
-            Arrays.fill(result, Double.NaN);
-            return result;
-        }
-
-        mergeIfNeeded(internalCompressionFactor(compression));
-
-        if (centroidCount == 1) {
-            Arrays.fill(result, means[0]);
-            return result;
-        }
-
-        // offsets into the theoretical sequence of all values
-        for (int i = 0; i < result.length; i++) {
-            result[i] = quantiles[i] * totalWeight;
-        }
-
-        int index = 0;
-        // lowest value
-        while (index < result.length && result[index] < 1) {
-            result[index] = min;
-            index++;
-        }
-        // between bottom and first centroid
-        while (index < result.length && result[index] < weights[0] / 2) {
-            result[index] = (min + interpolate(result[index], 1, min, weights[0] / 2, means[0]));
-            index++;
-        }
-        // between last centroid and top, but not the greatest value
-        while (index < result.length && result[index] <= totalWeight - 1 && totalWeight - result[index] <= weights[centroidCount - 1] / 2 && weights[centroidCount - 1] / 2 > 1) {
-            // we interpolate back from the end, so the value is negative
-            result[index] = (max + interpolate(totalWeight - result[index], 1, max, weights[centroidCount - 1] / 2, means[centroidCount - 1]));
-            index++;
-        }
-        // greatest value
-        if (index < result.length && result[index] >= totalWeight - 1) {
-            Arrays.fill(result, index, result.length, max);
-            return result;
-        }
-
-        double weightSoFar = weights[0] / 2;
-        int currentCentroid = 0;
-        while (index < result.length) {
-            double delta = (weights[currentCentroid] + weights[currentCentroid + 1]) / 2;
-            while (currentCentroid < centroidCount - 1 && weightSoFar + delta <= result[index]) {
-                weightSoFar += delta;
-                currentCentroid++;
-                if (currentCentroid < centroidCount - 1) {
-                    delta = (weights[currentCentroid] + weights[currentCentroid + 1]) / 2;
+        long stamp = lock.readLock();
+        try {
+            if (needsMerge) {
+                // Try to upgrade to write lock to perform merge
+                long writeStamp = lock.tryConvertToWriteLock(stamp);
+                if (writeStamp == 0L) {
+                    lock.unlockRead(stamp);
+                    writeStamp = lock.writeLock();
                 }
+                stamp = writeStamp;
+
+                // Check again under write lock
+                if (needsMerge) {
+                    merge(internalCompressionFactor(compression));
+                    needsMerge = false;
+                }
+
+                // Downgrade back to read lock for the calculation phase
+                stamp = lock.tryConvertToReadLock(writeStamp);
             }
-            // past the last centroid
-            if (currentCentroid == centroidCount - 1) {
-                // between last centroid and top, but not the greatest value
-                while (index < result.length && result[index] <= totalWeight - 1 && weights[centroidCount - 1] / 2 > 1) {
-                    // we interpolate back from the end, so the value is negative
-                    result[index] = (max + interpolate(totalWeight - result[index], 1, max, weights[centroidCount - 1] / 2, means[centroidCount - 1]));
-                    index++;
-                }
-                // greatest value
-                if (index < result.length) {
-                    Arrays.fill(result, index, result.length, max);
-                }
+
+            // --- Calculation Phase (Read Only) ---
+
+            double[] result = new double[quantiles.length];
+
+            if (centroidCount == 0) {
+                Arrays.fill(result, Double.NaN);
                 return result;
             }
-            else {
-                // single-sample cluster on the left (current centroid) and the quantile falls within that cluster
-                if (weights[currentCentroid] == 1 && result[index] - weightSoFar < weights[currentCentroid] / 2) {
-                    result[index] = means[currentCentroid];
-                }
-                // single-sample cluster on the right (next centroid) and the quantile falls within that cluster
-                else if (weights[currentCentroid + 1] == 1 && result[index] - weightSoFar >= weights[currentCentroid] / 2) {
-                    result[index] = means[currentCentroid + 1];
-                }
-                // the quantile falls within a multi-sample cluster. If the other cluster is single-sample, we can exclude it from interpolation
-                else {
-                    double interpolationOffset = result[index] - weightSoFar;
-                    double interpolationSectionLength = delta;
-                    if (weights[currentCentroid] == 1) {
-                        interpolationOffset -= weights[currentCentroid] / 2;
-                        interpolationSectionLength = weights[currentCentroid + 1] / 2;
-                    }
-                    else if (weights[currentCentroid + 1] == 1) {
-                        interpolationSectionLength = weights[currentCentroid] / 2;
-                    }
-                    result[index] = (means[currentCentroid] + interpolate(interpolationOffset, 0, means[currentCentroid], interpolationSectionLength, means[currentCentroid + 1]));
-                }
+
+            if (centroidCount == 1) {
+                Arrays.fill(result, means[0]);
+                return result;
+            }
+
+            // offsets into the theoretical sequence of all values
+            for (int i = 0; i < result.length; i++) {
+                result[i] = quantiles[i] * totalWeight;
+            }
+
+            int index = 0;
+            // lowest value
+            while (index < result.length && result[index] < 1) {
+                result[index] = min;
                 index++;
             }
-        }
+            // between bottom and first centroid
+            while (index < result.length && result[index] < weights[0] / 2) {
+                result[index] = (min + interpolate(result[index], 1, min, weights[0] / 2, means[0]));
+                index++;
+            }
+            // between last centroid and top, but not the greatest value
+            while (index < result.length && result[index] <= totalWeight - 1 && totalWeight - result[index] <= weights[centroidCount - 1] / 2 && weights[centroidCount - 1] / 2 > 1) {
+                // we interpolate back from the end, so the value is negative
+                result[index] = (max + interpolate(totalWeight - result[index], 1, max, weights[centroidCount - 1] / 2, means[centroidCount - 1]));
+                index++;
+            }
+            // greatest value
+            if (index < result.length && result[index] >= totalWeight - 1) {
+                Arrays.fill(result, index, result.length, max);
+                return result;
+            }
 
-        return result;
+            double weightSoFar = weights[0] / 2;
+            int currentCentroid = 0;
+            while (index < result.length) {
+                double delta = (weights[currentCentroid] + weights[currentCentroid + 1]) / 2;
+                while (currentCentroid < centroidCount - 1 && weightSoFar + delta <= result[index]) {
+                    weightSoFar += delta;
+                    currentCentroid++;
+                    if (currentCentroid < centroidCount - 1) {
+                        delta = (weights[currentCentroid] + weights[currentCentroid + 1]) / 2;
+                    }
+                }
+                // past the last centroid
+                if (currentCentroid == centroidCount - 1) {
+                    // between last centroid and top, but not the greatest value
+                    while (index < result.length && result[index] <= totalWeight - 1 && weights[centroidCount - 1] / 2 > 1) {
+                        // we interpolate back from the end, so the value is negative
+                        result[index] = (max + interpolate(totalWeight - result[index], 1, max, weights[centroidCount - 1] / 2, means[centroidCount - 1]));
+                        index++;
+                    }
+                    // greatest value
+                    if (index < result.length) {
+                        Arrays.fill(result, index, result.length, max);
+                    }
+                    return result;
+                }
+                else {
+                    // single-sample cluster on the left (current centroid) and the quantile falls within that cluster
+                    if (weights[currentCentroid] == 1 && result[index] - weightSoFar < weights[currentCentroid] / 2) {
+                        result[index] = means[currentCentroid];
+                    }
+                    // single-sample cluster on the right (next centroid) and the quantile falls within that cluster
+                    else if (weights[currentCentroid + 1] == 1 && result[index] - weightSoFar >= weights[currentCentroid] / 2) {
+                        result[index] = means[currentCentroid + 1];
+                    }
+                    // the quantile falls within a multi-sample cluster. If the other cluster is single-sample, we can exclude it from interpolation
+                    else {
+                        double interpolationOffset = result[index] - weightSoFar;
+                        double interpolationSectionLength = delta;
+                        if (weights[currentCentroid] == 1) {
+                            interpolationOffset -= weights[currentCentroid] / 2;
+                            interpolationSectionLength = weights[currentCentroid + 1] / 2;
+                        }
+                        else if (weights[currentCentroid + 1] == 1) {
+                            interpolationSectionLength = weights[currentCentroid] / 2;
+                        }
+                        result[index] = (means[currentCentroid] + interpolate(interpolationOffset, 0, means[currentCentroid], interpolationSectionLength, means[currentCentroid + 1]));
+                    }
+                    index++;
+                }
+            }
+
+            return result;
+        }
+        finally {
+            lock.unlock(stamp);
+        }
+    }
+
+    public long rescale(double alpha, long landmarkInSeconds, long newLandmarkInSeconds)
+    {
+        long stamp = lock.writeLock();
+        try {
+            // rescale the weights based on a new landmark to avoid numerical overflow issues
+            double factor = weight(alpha, newLandmarkInSeconds, landmarkInSeconds);
+            totalWeight /= factor;
+
+            double newMin = Double.POSITIVE_INFINITY;
+            double newMax = Double.NEGATIVE_INFINITY;
+
+            int index = 0;
+            for (int i = 0; i < centroidCount; i++) {
+                double weight = weights[i] / factor;
+
+                // values with a scaled weight below 1 are effectively below the ZERO_WEIGHT_THRESHOLD
+                if (weight < 1) {
+                    continue;
+                }
+
+                weights[index] = weight;
+                means[index] = means[i];
+                index++;
+
+                newMin = Math.min(newMin, means[i]);
+                newMax = Math.max(newMax, means[i]);
+            }
+
+            centroidCount = index;
+            min = newMin;
+            max = newMax;
+
+            return newLandmarkInSeconds;
+        }
+        finally {
+            lock.unlockWrite(stamp);
+        }
     }
 
     private static void validateQuantilesArgument(double[] quantiles)
@@ -364,13 +538,24 @@ public class TDigest
 
     public Slice serialize()
     {
-        merge(compression);
-        return serializeInternal();
+        long stamp = lock.writeLock();
+        try {
+            merge(compression);
+            return serializeInternal();
+        }
+        finally {
+            lock.unlockWrite(stamp);
+        }
     }
 
+    /**
+     * Internal serialization method.
+     * Assumes lock is ALREADY held.
+     */
     private Slice serializeInternal()
     {
-        Slice result = Slices.allocate(serializedSizeInBytes());
+        // Safe to call static helper without lock
+        Slice result = Slices.allocate(serializedSizeInBytes(centroidCount));
         SliceOutput output = result.getOutput();
 
         output.writeByte(TDigest.FORMAT_TAG);
@@ -391,7 +576,11 @@ public class TDigest
         return result;
     }
 
-    public int serializedSizeInBytes()
+    /**
+     * Static helper for size calculation.
+     * Does NOT touch the lock. Pure calculation.
+     */
+    private static int serializedSizeInBytes(int centroidCount)
     {
         return SizeOf.SIZE_OF_BYTE + // format
                 SizeOf.SIZE_OF_DOUBLE + // min
@@ -403,16 +592,39 @@ public class TDigest
                 SizeOf.SIZE_OF_DOUBLE * centroidCount; // weights
     }
 
-    public int estimatedInMemorySizeInBytes()
+    public int serializedSizeInBytes()
     {
-        return (int) (T_DIGEST_SIZE +
-                SizeOf.sizeOf(means) +
-                SizeOf.sizeOf(weights) +
-                SizeOf.sizeOf(tempMeans) +
-                SizeOf.sizeOf(tempWeights) +
-                SizeOf.sizeOf(indexes));
+        long stamp = lock.tryOptimisticRead();
+        int count = centroidCount;
+        if (!lock.validate(stamp)) {
+            stamp = lock.readLock();
+            try {
+                count = centroidCount;
+            }
+            finally {
+                lock.unlockRead(stamp);
+            }
+        }
+        return serializedSizeInBytes(count);
     }
 
+    public int estimatedInMemorySizeInBytes()
+    {
+        long stamp = lock.readLock();
+        try {
+            return (int) (T_DIGEST_SIZE +
+                    SizeOf.sizeOf(means) +
+                    SizeOf.sizeOf(weights) +
+                    SizeOf.sizeOf(tempMeans) +
+                    SizeOf.sizeOf(tempWeights) +
+                    SizeOf.sizeOf(indexes));
+        }
+        finally {
+            lock.unlockRead(stamp);
+        }
+    }
+
+    // Assumes lock is held
     private void merge(double compression)
     {
         if (centroidCount == 0) {
@@ -488,23 +700,33 @@ public class TDigest
     @VisibleForTesting
     void forceMerge()
     {
-        merge(internalCompressionFactor(compression));
+        long stamp = lock.writeLock();
+        try {
+            merge(internalCompressionFactor(compression));
+        }
+        finally {
+            lock.unlockWrite(stamp);
+        }
     }
 
     @VisibleForTesting
     int getCentroidCount()
     {
-        return centroidCount;
-    }
-
-    private void mergeIfNeeded(double compression)
-    {
-        if (needsMerge) {
-            merge(compression);
-            needsMerge = false;
+        long stamp = lock.tryOptimisticRead();
+        int count = centroidCount;
+        if (!lock.validate(stamp)) {
+            stamp = lock.readLock();
+            try {
+                count = centroidCount;
+            }
+            finally {
+                lock.unlockRead(stamp);
+            }
         }
+        return count;
     }
 
+    // Assumes lock is held
     private void ensureCapacity(int newSize)
     {
         if (means.length < newSize) {
@@ -513,6 +735,7 @@ public class TDigest
         }
     }
 
+    // Assumes lock is held
     private void ensureTempCapacity(int capacity)
     {
         if (tempMeans.length <= capacity) {
@@ -522,6 +745,7 @@ public class TDigest
         }
     }
 
+    // Assumes lock is held
     private void initializeIndexes()
     {
         if (indexes == null || indexes.length != means.length) {
