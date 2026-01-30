@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import io.airlift.api.binding.ApiModule;
+import io.airlift.api.openapi.OpenApiMetadata;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.bootstrap.LifeCycleManager;
 import io.airlift.http.server.HttpServerInfo;
@@ -16,6 +17,7 @@ import io.airlift.node.NodeModule;
 import jakarta.ws.rs.core.UriBuilder;
 
 import java.net.URI;
+import java.util.Optional;
 
 /**
  * Main server class for the bookstore example.
@@ -45,7 +47,8 @@ public class BookstoreServer
 
         // Configure the API module with our book service
         ApiModule.Builder apiBuilder = ApiModule.builder()
-                .addApi(builder -> builder.add(BookService.class));
+                .addApi(builder -> builder.add(BookService.class))
+                .withOpenApiMetadata(new OpenApiMetadata(Optional.empty(), ImmutableList.of()));
         modules.add(apiBuilder.build());
 
         // Configure server properties
@@ -98,6 +101,8 @@ public class BookstoreServer
         log.info("Base URI: %s", server.getBaseUri());
         log.info("");
         log.info("Please see the io.airlift.api.binding log lines above for available endpoints.");
+        log.info("");
+        log.info("See the OpenAPI documentation at %s/bookServiceTypeId/openapi/v21/json", server.getBaseUri());
         log.info("======================================================");
         log.info("Press Ctrl+C to stop the server");
         log.info("======================================================");

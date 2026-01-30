@@ -903,3 +903,41 @@ curl -f -X PUT --json '{"bookId": "1", "syncToken": "1", "title": "The Pragmatic
 
 This will fail with a 400 Bad Request error indicating a sync token mismatch, demonstrating the optimistic concurrency control in action.
 
+## Step 6: Generate OpenAPI Documentation
+
+API Builder can automatically generate OpenAPI (Swagger) documentation for the API services it knows about. This documentation can be used to create interactive API docs,
+client SDKs, and more.  Please see [openapi.md](openapi.md) for details on how to enable and customize OpenAPI generation.
+
+We can illustrate this capability using our existing `BookstoreServer`.  To enable OpenAPI generation, we add an `OpenApiMetadata` object to our server's `ApiModule` configuration:
+
+```diff
+--- a/api/docs/examples/src/main/java/io/airlift/api/examples/bookstore/BookstoreServer.java
++++ b/api/docs/examples/src/main/java/io/airlift/api/examples/bookstore/BookstoreServer.java
+@@ -45,7 +47,8 @@ public class BookstoreServer
+
+         // Configure the API module with our book service
+         ApiModule.Builder apiBuilder = ApiModule.builder()
+-                .addApi(builder -> builder.add(BookService.class));
++                .addApi(builder -> builder.add(BookService.class))
++                .withOpenApiMetadata(new OpenApiMetadata(Optional.empty(), ImmutableList.of()));
+         modules.add(apiBuilder.build());
+
+         // Configure server properties
+@@ -98,6 +101,8 @@ public class BookstoreServer
+         log.info("Base URI: %s", server.getBaseUri());
+         log.info("");
+         log.info("Please see the io.airlift.api.binding log lines above for available endpoints.");
++        log.info("");
++        log.info("See the OpenAPI documentation at %s/bookServiceTypeId/openapi/v21/json", server.getBaseUri());
+         log.info("======================================================");
+         log.info("Press Ctrl+C to stop the server");
+         log.info("======================================================");
+```
+
+With this change, when the server starts, it will generate OpenAPI documentation for the `BookService` and make it available at the following URL:
+
+```bash
+curl localhost:8080/bookServiceTypeId/openapi/v21/json
+```
+
+This will return the OpenAPI JSON document describing the `BookService` API, including all its endpoints, parameters, and request/response schemas.
