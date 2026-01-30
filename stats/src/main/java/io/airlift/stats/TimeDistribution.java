@@ -96,56 +96,100 @@ public class TimeDistribution
     @Managed
     public double getCount()
     {
-        return mergeAndGetIfNeeded().getCount();
+        synchronized (this) {
+            mergeIfNeeded();
+            return merged.getCount();
+        }
     }
 
     @Managed
     public double getP50()
     {
-        return convertToUnit(mergeAndGetIfNeeded().valueAt(0.5));
+        double p50;
+        synchronized (this) {
+            mergeIfNeeded();
+            p50 = merged.valueAt(0.5);
+        }
+        return convertToUnit(p50);
     }
 
     @Managed
     public double getP75()
     {
-        return convertToUnit(mergeAndGetIfNeeded().valueAt(0.75));
+        double p75;
+        synchronized (this) {
+            mergeIfNeeded();
+            p75 = merged.valueAt(0.75);
+        }
+        return convertToUnit(p75);
     }
 
     @Managed
     public double getP90()
     {
-        return convertToUnit(mergeAndGetIfNeeded().valueAt(0.90));
+        double p90;
+        synchronized (this) {
+            mergeIfNeeded();
+            p90 = merged.valueAt(0.90);
+        }
+        return convertToUnit(p90);
     }
 
     @Managed
     public double getP95()
     {
-        return convertToUnit(mergeAndGetIfNeeded().valueAt(0.95));
+        double p95;
+        synchronized (this) {
+            mergeIfNeeded();
+            p95 = merged.valueAt(0.95);
+        }
+        return convertToUnit(p95);
     }
 
     @Managed
     public double getP99()
     {
-        return convertToUnit(mergeAndGetIfNeeded().valueAt(0.99));
+        double p99;
+        synchronized (this) {
+            mergeIfNeeded();
+            p99 = merged.valueAt(0.99);
+        }
+        return convertToUnit(p99);
     }
 
     @Managed
     public double getMin()
     {
-        return convertToUnit(mergeAndGetIfNeeded().getMin());
+        double min;
+        synchronized (this) {
+            mergeIfNeeded();
+            min = merged.getMin();
+        }
+        return convertToUnit(min);
     }
 
     @Managed
     public double getMax()
     {
-        return convertToUnit(mergeAndGetIfNeeded().getMax());
+        double max;
+        synchronized (this) {
+            mergeIfNeeded();
+            max = merged.getMax();
+        }
+        return convertToUnit(max);
     }
 
     @Managed
-    public synchronized double getAvg()
+    public double getAvg()
     {
-        double digestCount = mergeAndGetIfNeeded().getCount();
-        return convertToUnit(total.getCount()) / digestCount;
+        double digestCount;
+        double totalCount;
+        synchronized (this) {
+            mergeIfNeeded();
+            digestCount = merged.getCount();
+            totalCount = total.getCount();
+        }
+        return convertToUnit(totalCount) / digestCount;
     }
 
     @Managed
@@ -157,8 +201,11 @@ public class TimeDistribution
     @Managed
     public Map<Double, Double> getPercentiles()
     {
-        double[] values = mergeAndGetIfNeeded(true)
-                .valuesAt(PERCENTILES);
+        double[] values;
+        synchronized (this) {
+            mergeIfNeeded(true);
+            values = merged.valuesAt(PERCENTILES);
+        }
 
         verify(values.length == PERCENTILES.length, "values length mismatch");
 
@@ -170,12 +217,12 @@ public class TimeDistribution
         return result;
     }
 
-    private DecayTDigest mergeAndGetIfNeeded()
+    private void mergeIfNeeded()
     {
-        return mergeAndGetIfNeeded(false);
+        mergeIfNeeded(false);
     }
 
-    private DecayTDigest mergeAndGetIfNeeded(boolean forceMerge)
+    private void mergeIfNeeded(boolean forceMerge)
     {
         synchronized (this) {
             if (forceMerge || ticker.read() - lastMerge >= MERGE_THRESHOLD_NANOS) {
@@ -193,7 +240,6 @@ public class TimeDistribution
                 partialTotal.reset();
                 lastMerge = ticker.read();
             }
-            return merged;
         }
     }
 
@@ -215,7 +261,8 @@ public class TimeDistribution
         double max;
         double[] quantiles;
         synchronized (this) {
-            DecayTDigest digest = mergeAndGetIfNeeded(true);
+            mergeIfNeeded(true);
+            DecayTDigest digest = merged;
             totalCount = total.getCount();
             digestCount = digest.getCount();
             min = digest.getMin();
