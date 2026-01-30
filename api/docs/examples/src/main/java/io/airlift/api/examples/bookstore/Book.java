@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import io.airlift.api.ApiDescription;
 import io.airlift.api.ApiReadOnly;
 import io.airlift.api.ApiResource;
+import io.airlift.api.ApiResourceVersion;
 import io.airlift.api.ApiStringId;
 import io.airlift.api.ApiUnwrapped;
 
@@ -15,11 +16,13 @@ import static java.util.Objects.requireNonNull;
 @ApiResource(name = "book", description = "Book resource with metadata")
 public record Book(
         @ApiDescription("Unique book identifier") @ApiReadOnly Id bookId,
+        ApiResourceVersion syncToken,
         @ApiUnwrapped BookData data)
 {
     public Book
     {
         requireNonNull(bookId, "id is null");
+        requireNonNull(syncToken, "syncToken is null");
         requireNonNull(data, "data is null");
     }
 

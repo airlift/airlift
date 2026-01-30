@@ -740,3 +740,166 @@ curl -f localhost:8080/bookServiceTypeId/api/v21/book/999
 ```
 
 You'll receive a 404 Not Found error.
+
+## Step 5: Add an Update Endpoint
+
+Now that we can create and retrieve books, let's add the ability to update them. We'll use the `@ApiUpdate` annotation to create an endpoint that replaces a book's entire entry 
+with new values.
+
+### Adding the Sync Token
+
+Before implementing updates, we need to add a mechanism to prevent conflicting concurrent updates.  Without a careful approach, two clients could simultaneously attempt to make
+different changes to the same book and both succeed, but the second write would, in fact, overwrite the first.  This is known as the "lost update" problem.  A common solution
+is to use something called "optimistic concurrency control with versioning."  This means that each resource has a version number that changes each time the resource is updated.
+Clients must provide the current version number when updating a resource.  If another client updates the resource in the meantime, then the version numbers won't match, and the
+update will be rejected.  This prevents lost updates.
+
+To aid the implementation of this, API Builder provides a class named `ApiResourceVersion`, which we can add to our `Book` resource:
+
+```diff
+--- a/api/docs/examples/src/main/java/io/airlift/api/examples/bookstore/Book.java
++++ b/api/docs/examples/src/main/java/io/airlift/api/examples/bookstore/Book.java
+@@ -15,11 +16,13 @@ import static java.util.Objects.requireNonNull;
+ @ApiResource(name = "book", description = "Book resource with metadata")
+ public record Book(
+         @ApiDescription("Unique book identifier") @ApiReadOnly Id bookId,
++        ApiResourceVersion syncToken,
+         @ApiUnwrapped BookData data)
+ {
+     public Book
+     {
+         requireNonNull(bookId, "id is null");
++        requireNonNull(syncToken, "syncToken is null");
+         requireNonNull(data, "data is null");
+     }
+```
+
+The convention is that an `ApiResourceVersion` field must be named `syncToken`.  When this field exists in a resource, it means that optimistic concurrency control will be 
+enforced for updates to that resource.
+
+When a `Book` is created, the server will set its `syncToken` to some initial value.  Each time the book is updated successfully, the server will increment its version number 
+in the database.
+
+### Implementing the Update Method
+
+Now we add a method to `BookService` annotated with `@ApiUpdate`:
+
+```diff
+--- a/api/docs/examples/src/main/java/io/airlift/api/examples/bookstore/BookService.java
++++ b/api/docs/examples/src/main/java/io/airlift/api/examples/bookstore/BookService.java
+@@ -26,7 +28,7 @@ public class BookService
+             throw badRequest("Must provide BookData payload");
+         }
+         String id = String.valueOf(nextId.getAndIncrement());
+-        Book book = new Book(new Book.Id(id), bookData);
++        Book book = new Book(new Book.Id(id), new ApiResourceVersion(), bookData);
+         books.put(id, book);
+         return book;
+     }
+@@ -40,4 +42,33 @@ public class BookService
+         }
+         return book;
+     }
++
++    @ApiUpdate(description = "Overwrite book data")
++    public Book updateBook(@ApiParameter Book.Id id, Book newValue)
++    {
++        if (newValue == null) {
++            throw badRequest("Must provide Book payload");
++        }
++        if (!id.equals(newValue.bookId())) {
++            throw badRequest("Book ID in URL (%s) does not match Book ID in payload (%s)".formatted(id, newValue.bookId()));
++        }
++        synchronized (books) { // Make syncToken test-and-set atomic.
++            Book oldValue = books.get(id.toString());
++            if (oldValue == null) {
++                throw notFound("Book with ID %s not found".formatted(id));
++            }
++            if (!newValue.syncToken().equals(oldValue.syncToken())) {
++                throw badRequest("syncToken mismatch: expected %s but got %s".formatted(
++                        oldValue.syncToken().syncToken(),
++                        newValue.syncToken().syncToken()));
++            }
++            // Bump the syncToken version on update:
++            newValue = new Book(
++                    newValue.bookId(),
++                    new ApiResourceVersion(newValue.syncToken().version() + 1),
++                    newValue.data());
++            books.put(id.toString(), newValue);
++        }
++        return newValue;
++    }
+ }
+```
+
+Key aspects of the `updateBook` implementation:
+- `@ApiUpdate` marks this method as an update endpoint.  By default, it will accept HTTP PUT requests.  For HTTP PATCH support, please see [patch.md](patch.md).
+- **Parameters**: Takes the book ID (from the URL path) and the new Book value (from the request body).
+- **Sync token validation**: Compares the sync token in the request with the stored book's sync token. If they don't match, someone else has updated the book, and we reject the update.
+- **Version increment**: After a successful update, we create a new `Book` with an incremented sync token version. This ensures subsequent updates must use the new sync token.
+- **Synchronization**: The `synchronized` block ensures that the check-and-update operation is atomic, preventing race conditions.
+
+Note that we also updated `createBook` to initialize books with a new `ApiResourceVersion`.
+
+### Running and Verification
+
+Rebuild and run the server:
+
+```bash
+mvn compile
+mvn exec:java -Dexec.mainClass="io.airlift.api.examples.bookstore.BookstoreServer"
+```
+
+In the logs, you'll see a new PUT endpoint:
+
+```
+INFO	main	io.airlift.api.binding.JaxrsResourceBuilder	API PUT bookServiceTypeId/api/v21/book/{bookId} BookService#updateBook
+```
+
+First, create a book and note its ID and sync token:
+
+```bash
+curl --json '{"title": "The Pragmatic Programmer", "author": "Hunt and Thomas", "isbn": "978-0135957059", "year": 2019, "price": 39.99}' localhost:8080/bookServiceTypeId/api/v21/book
+```
+
+Response:
+```json
+{
+  "bookId": "1",
+  "syncToken": "1",
+  "title": "The Pragmatic Programmer",
+  "author": "Hunt and Thomas",
+  "isbn": "978-0135957059",
+  "year": 2019,
+  "price": 39.99
+}
+```
+
+Now update the book's price, including the sync token from the previous response:
+
+```bash
+curl -X PUT --json '{"bookId": "1", "syncToken": "1", "title": "The Pragmatic Programmer", "author": "Hunt and Thomas", "isbn": "978-0135957059", "year": 2019, "price": 44.99}' localhost:8080/bookServiceTypeId/api/v21/book/1
+```
+
+The response will show the updated book with a new sync token:
+
+```json
+{
+  "bookId": "1",
+  "syncToken": "2",
+  "title": "The Pragmatic Programmer",
+  "author": "Hunt and Thomas",
+  "isbn": "978-0135957059",
+  "year": 2019,
+  "price": 44.99
+}
+```
+
+If you try to update again using the old sync token, you'll get an error:
+
+```bash
+curl -f -X PUT --json '{"bookId": "1", "syncToken": "1", "title": "The Pragmatic Programmer", "author": "Hunt and Thomas", "isbn": "978-0135957059", "year": 2019, "price": 49.99}' localhost:8080/bookServiceTypeId/api/v21/book/1
+```
+
+This will fail with a 400 Bad Request error indicating a sync token mismatch, demonstrating the optimistic concurrency control in action.
+
