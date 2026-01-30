@@ -98,7 +98,7 @@
         <dep.brotli4j.version>1.20.0</dep.brotli4j.version>
         <dep.bouncycastle.version>1.83</dep.bouncycastle.version>
         <dep.mcp.sdk.version>0.17.2</dep.mcp.sdk.version>
-        <dep.jersey.version>4.0.1</dep.jersey.version>
+        <dep.jersey.version>4.0.2</dep.jersey.version>
         <dep.jjwt.version>0.13.0</dep.jjwt.version>
     </properties>
 
