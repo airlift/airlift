@@ -1,6 +1,6 @@
 package io.airlift.http.server;
 
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpStatus;
@@ -17,7 +17,7 @@ public class RejectForwardedRequestCustomizer
     {
         for (HttpField httpHeader : request.getHeaders()) {
             if (isForwardingHeader(httpHeader)) {
-                throw new BadMessageException(HttpStatus.NOT_ACCEPTABLE_406, "Server configuration does not allow processing of the %s header".formatted(httpHeader.getName()));
+                throw new HttpException.RuntimeException(HttpStatus.NOT_ACCEPTABLE_406, "Server configuration does not allow processing of the %s header".formatted(httpHeader.getName()));
             }
         }
         return request;

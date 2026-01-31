@@ -152,7 +152,7 @@ public class HttpServer
         threadPool.setDetailedDump(true);
         if (serverFeatures.contains(VIRTUAL_THREADS)) {
             VirtualThreadPool virtualExecutor = new VirtualThreadPool();
-            virtualExecutor.setMaxThreads(config.getMaxThreads());
+            virtualExecutor.setMaxConcurrentTasks(config.getMaxThreads());
             virtualExecutor.setName(name + "-worker#v");
             virtualExecutor.setDetailedDump(true);
             log.info("Virtual threads support is enabled");
