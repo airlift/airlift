@@ -39,6 +39,7 @@ import com.google.inject.spi.Elements;
 import com.google.inject.spi.InstanceBinding;
 import com.google.inject.spi.Message;
 import com.google.inject.spi.ProviderInstanceBinding;
+import io.airlift.configuration.Config.Encoding;
 import io.airlift.configuration.ConfigurationMetadata.AttributeMetadata;
 import jakarta.annotation.Nullable;
 import jakarta.annotation.PreDestroy;
@@ -56,9 +57,12 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -70,11 +74,13 @@ import java.util.function.Function;
 
 import static com.google.common.base.CaseFormat.LOWER_CAMEL;
 import static com.google.common.base.CaseFormat.UPPER_CAMEL;
+import static com.google.common.base.Throwables.throwIfInstanceOf;
 import static com.google.common.base.Verify.verify;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static com.google.common.collect.Sets.newConcurrentHashSet;
+import static io.airlift.configuration.Config.Encoding.UTF8_STRING;
 import static io.airlift.configuration.Problems.exceptionFor;
 import static java.lang.String.format;
 import static java.util.Arrays.stream;
@@ -570,7 +576,7 @@ public class ConfigurationFactory
 
         // coerce the property value to the final type
         TypeToken<?> propertyType = TypeToken.of(injectionPoint.getSetter().getGenericParameterTypes()[0]);
-        Object finalValue = coerce(propertyType, value);
+        Object finalValue = coerce(propertyType, value, attribute.getEncoding());
         if (finalValue == null) {
             throw new InvalidConfigurationException(format("Invalid value '%s' for type %s (property '%s') in order to call [%s]",
                     printableValue,
@@ -581,16 +587,33 @@ public class ConfigurationFactory
         return finalValue;
     }
 
-    private static Object coerce(TypeToken<?> type, String value)
+    private static Object coerce(TypeToken<?> type, String value, Encoding encoding)
     {
         if (type.isPrimitive() && value == null) {
             return null;
         }
 
         try {
+            if (type.isArray() && type.getComponentType().getRawType() == byte.class) {
+                return switch (encoding) {
+                    case UTF8_STRING -> value.getBytes(StandardCharsets.UTF_8);
+                    case BASE64 -> Base64.getDecoder().decode(value);
+                    case HEX -> HexFormat.of().parseHex(value);
+                };
+            }
+
+            if (encoding != UTF8_STRING) {
+                throw new InvalidConfigurationException("Configuration encoding %s cannot be applied to type %s".formatted(encoding, type));
+            }
+
+            if (type.isArray() && type.getComponentType().getRawType() == char.class) {
+                return value.toCharArray();
+            }
+
             if (String.class == type.getRawType()) {
                 return value;
             }
+
             if (Boolean.class == type.getRawType() || boolean.class == type.getRawType()) {
                 // Boolean.valueOf returns `false` when called with `"true "` argument
                 if ("true".equalsIgnoreCase(value)) {
@@ -623,7 +646,8 @@ public class ConfigurationFactory
                 return URI.create(value);
             }
         }
-        catch (Exception ignored) {
+        catch (Exception exception) {
+            throwIfInstanceOf(exception, InvalidConfigurationException.class);
             // ignore the random exceptions from the built in types
             return null;
         }
@@ -671,7 +695,7 @@ public class ConfigurationFactory
             TypeToken<?> argumentToken = getActualTypeArgument(type);
 
             return VALUE_SPLITTER.splitToStream(value)
-                    .map(item -> coerce(argumentToken, item))
+                    .map(item -> coerce(argumentToken, item, encoding))
                     .collect(toImmutableSet());
         }
 
@@ -679,13 +703,13 @@ public class ConfigurationFactory
             TypeToken<?> argumentToken = getActualTypeArgument(type);
 
             return VALUE_SPLITTER.splitToStream(value)
-                    .map(item -> coerce(argumentToken, item))
+                    .map(item -> coerce(argumentToken, item, encoding))
                     .collect(toImmutableList());
         }
 
         if (type.isSubtypeOf(TypeToken.of(Optional.class))) {
             TypeToken<?> argumentToken = getActualTypeArgument(type);
-            return Optional.ofNullable(coerce(argumentToken, value));
+            return Optional.ofNullable(coerce(argumentToken, value, encoding));
         }
 
         // Look for a static valueOf(String) method

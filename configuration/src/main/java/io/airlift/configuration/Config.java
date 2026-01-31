@@ -21,10 +21,21 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import static io.airlift.configuration.Config.Encoding.UTF8_STRING;
+
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface Config
 {
     String value();
+
+    Encoding encoding() default UTF8_STRING;
+
+    enum Encoding
+    {
+        UTF8_STRING,
+        BASE64,
+        HEX,
+    }
 }
