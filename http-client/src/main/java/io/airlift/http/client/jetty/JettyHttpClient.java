@@ -617,7 +617,7 @@ public class JettyHttpClient
 
             if (useVirtualThreads) {
                 VirtualThreadPool virtualExecutor = new VirtualThreadPool();
-                virtualExecutor.setMaxThreads(maxThreads);
+                virtualExecutor.setMaxConcurrentTasks(maxThreads);
                 virtualExecutor.setName("http-client-" + name + "#v");
                 virtualExecutor.setDetailedDump(true);
                 pool.setVirtualThreadsExecutor(virtualExecutor);
