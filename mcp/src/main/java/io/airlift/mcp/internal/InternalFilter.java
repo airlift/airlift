@@ -32,6 +32,7 @@ import io.airlift.mcp.model.SubscribeRequest;
 import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.sessions.SessionId;
 import io.airlift.mcp.sessions.SessionValueKey;
+import io.opentelemetry.api.common.AttributeKey;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpFilter;
@@ -48,6 +49,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 
 import static com.google.common.net.HttpHeaders.WWW_AUTHENTICATE;
+import static io.airlift.http.server.tracing.TracingServletFilter.updateRequestSpan;
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.internal.InternalRequestContext.optionalSessionId;
 import static io.airlift.mcp.internal.InternalRequestContext.protocol;
@@ -80,6 +82,7 @@ import static io.airlift.mcp.sessions.SessionValueKey.ROOTS;
 import static io.airlift.mcp.sessions.SessionValueKey.SENT_MESSAGES;
 import static io.airlift.mcp.sessions.SessionValueKey.cancellationKey;
 import static io.airlift.mcp.sessions.SessionValueKey.serverToClientResponseKey;
+import static io.opentelemetry.api.common.AttributeKey.stringKey;
 import static jakarta.servlet.http.HttpServletResponse.SC_ACCEPTED;
 import static jakarta.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
 import static jakarta.servlet.http.HttpServletResponse.SC_FORBIDDEN;
@@ -105,6 +108,13 @@ public class InternalFilter
     private static final Logger log = Logger.get(InternalFilter.class);
 
     private static final Set<String> ALLOWED_HTTP_METHODS = ImmutableSet.of("GET", "POST", "DELETE");
+
+    // TODO - remove when the next rev of opentelemetry-semconv is released
+    // see: https://github.com/open-telemetry/semantic-conventions-java/pull/396/changes#diff-1c3840320c0c5bfe484b22e6db177a87b014591107c61f9d5763f92117ddf7ff
+    static final AttributeKey<String> MCP_METHOD_NAME = stringKey("mcp.method.name");
+    static final AttributeKey<String> MCP_PROTOCOL_VERSION = stringKey("mcp.protocol.version");
+    static final AttributeKey<String> MCP_RESOURCE_URI = stringKey("mcp.resource.uri");
+    static final AttributeKey<String> MCP_SESSION_ID = stringKey("mcp.session.id");
 
     private final McpMetadata metadata;
     private final McpIdentityMapper identityMapper;
@@ -151,6 +161,11 @@ public class InternalFilter
             chain.doFilter(request, response);
             return;
         }
+
+        optionalSessionId(request)
+                .ifPresent(sessionId ->
+                        updateRequestSpan(request, span -> span.setAttribute(MCP_SESSION_ID, sessionId.id())));
+
         McpIdentity identity = identityMapper.map(request);
         try {
             switch (identity) {
@@ -357,6 +372,8 @@ public class InternalFilter
         String rpcMethod = rpcRequest.method();
         Object requestId = rpcRequest.id();
 
+        updateRequestSpan(request, span -> span.setAttribute(MCP_METHOD_NAME, rpcMethod));
+
         log.debug("Processing MCP request: %s, session: %s", rpcMethod, request.getHeader(HEADER_SESSION_ID));
 
         validateSession(request, rpcRequest);
@@ -364,7 +381,7 @@ public class InternalFilter
         Protocol currentProtocol = protocol(sessionController, request);
 
         Object result = switch (rpcMethod) {
-            case METHOD_INITIALIZE -> mcpServer.initialize(response, authenticated, convertParams(rpcRequest, InitializeRequest.class));
+            case METHOD_INITIALIZE -> mcpServer.initialize(request, response, authenticated, convertParams(rpcRequest, InitializeRequest.class));
             case METHOD_TOOLS_LIST -> withManagement(request, requestId, messageWriter, () -> mcpServer.listTools(currentProtocol, convertParams(rpcRequest, ListRequest.class)));
             case METHOD_TOOLS_CALL -> withManagement(request, requestId, messageWriter, () -> mcpServer.callTool(request, messageWriter, convertParams(rpcRequest, CallToolRequest.class)));
             case METHOD_PROMPT_LIST -> withManagement(request, requestId, messageWriter, () -> mcpServer.listPrompts(currentProtocol, convertParams(rpcRequest, ListRequest.class)));
