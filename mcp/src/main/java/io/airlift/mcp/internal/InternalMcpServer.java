@@ -90,8 +90,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static io.airlift.http.server.tracing.TracingServletFilter.updateRequestSpan;
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.McpModule.MCP_SERVER_ICONS;
+import static io.airlift.mcp.internal.InternalFilter.MCP_PROTOCOL_VERSION;
+import static io.airlift.mcp.internal.InternalFilter.MCP_RESOURCE_URI;
 import static io.airlift.mcp.internal.InternalRequestContext.requireSessionId;
 import static io.airlift.mcp.model.Constants.MCP_SESSION_ID;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_PROMPTS_LIST_CHANGED;
@@ -230,10 +233,12 @@ public class InternalMcpServer
         completions.remove(completionKey(reference));
     }
 
-    InitializeResult initialize(HttpServletResponse response, Authenticated<?> authenticated, InitializeRequest initializeRequest)
+    InitializeResult initialize(HttpServletRequest request, HttpServletResponse response, Authenticated<?> authenticated, InitializeRequest initializeRequest)
     {
         Protocol protocol = Protocol.of(initializeRequest.protocolVersion())
                 .orElse(LATEST_PROTOCOL);
+
+        updateRequestSpan(request, span -> span.setAttribute(MCP_PROTOCOL_VERSION, protocol.value()));
 
         boolean sessionsEnabled = sessionController.map(controller -> {
             SessionId sessionId = controller.createSession(authenticated, Optional.of(sessionTimeout));
@@ -243,6 +248,8 @@ public class InternalMcpServer
             controller.setSessionValue(sessionId, SYSTEM_LIST_VERSIONS, buildSystemListVersions());
             controller.setSessionValue(sessionId, CLIENT_CAPABILITIES, initializeRequest.capabilities());
             controller.setSessionValue(sessionId, PROTOCOL, protocol);
+
+            updateRequestSpan(request, span -> span.setAttribute(MCP_SESSION_ID, sessionId.id()));
 
             return true;
         }).orElse(false);
@@ -325,6 +332,8 @@ public class InternalMcpServer
 
     ReadResourceResult readResources(HttpServletRequest request, MessageWriter messageWriter, ReadResourceRequest readResourceRequest)
     {
+        updateRequestSpan(request, span -> span.setAttribute(MCP_RESOURCE_URI, readResourceRequest.uri()));
+
         McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, progressToken(readResourceRequest));
 
         List<ResourceContents> resourceContents = internalReadResource(readResourceRequest, requestContext)
@@ -357,6 +366,8 @@ public class InternalMcpServer
 
     Object resourcesSubscribe(HttpServletRequest request, InternalMessageWriter messageWriter, SubscribeRequest subscribeRequest)
     {
+        updateRequestSpan(request, span -> span.setAttribute(MCP_RESOURCE_URI, subscribeRequest.uri()));
+
         SessionController localSessionController = requireSessionController();
         SessionId sessionId = requireSessionId(request);
         McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, progressToken(subscribeRequest));
@@ -374,6 +385,8 @@ public class InternalMcpServer
 
     Object resourcesUnsubscribe(HttpServletRequest request, SubscribeRequest subscribeRequest)
     {
+        updateRequestSpan(request, span -> span.setAttribute(MCP_RESOURCE_URI, subscribeRequest.uri()));
+
         SessionController localSessionController = requireSessionController();
         SessionId sessionId = requireSessionId(request);
 

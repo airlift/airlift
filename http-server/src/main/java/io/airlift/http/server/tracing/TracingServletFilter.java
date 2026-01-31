@@ -29,6 +29,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 
 import java.io.IOException;
+import java.util.function.Consumer;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.base.Strings.nullToEmpty;
@@ -54,6 +55,13 @@ public final class TracingServletFilter
     {
         this.propagator = openTelemetry.getPropagators().getTextMapPropagator();
         this.tracer = requireNonNull(tracer, "tracer is null");
+    }
+
+    public static void updateRequestSpan(HttpServletRequest request, Consumer<Span> spanConsumer)
+    {
+        if (request.getAttribute(REQUEST_SPAN) instanceof Span span) {
+            spanConsumer.accept(span);
+        }
     }
 
     @Override
