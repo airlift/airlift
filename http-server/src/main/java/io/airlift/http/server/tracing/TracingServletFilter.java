@@ -21,11 +21,9 @@ import io.opentelemetry.semconv.UrlAttributes;
 import io.opentelemetry.semconv.UserAgentAttributes;
 import io.opentelemetry.semconv.incubating.HttpIncubatingAttributes;
 import io.opentelemetry.semconv.incubating.TlsIncubatingAttributes;
-import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
@@ -42,7 +40,7 @@ import static org.eclipse.jetty.ee11.servlet.ServletContextRequest.SSL_CIPHER_SU
 import static org.eclipse.jetty.ee11.servlet.ServletContextRequest.SSL_SESSION_ID;
 
 public final class TracingServletFilter
-        implements Filter
+        extends HttpFilter
 {
     // This attribute will be deprecated in OTEL soon
     static final AttributeKey<Boolean> EXCEPTION_ESCAPED = AttributeKey.booleanKey("exception.escaped");
@@ -59,24 +57,19 @@ public final class TracingServletFilter
     }
 
     @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+    public void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws IOException, ServletException
     {
-        if (!(request instanceof HttpServletRequest httpRequest) || !(response instanceof HttpServletResponse httpResponse)) {
-            chain.doFilter(request, response);
-            return;
-        }
+        Context parent = propagator.extract(Context.root(), request, ServletTextMapGetter.INSTANCE);
+        String method = request.getMethod().toUpperCase(ENGLISH);
 
-        Context parent = propagator.extract(Context.root(), httpRequest, ServletTextMapGetter.INSTANCE);
-        String method = httpRequest.getMethod().toUpperCase(ENGLISH);
-
-        SpanBuilder spanBuilder = tracer.spanBuilder(method + " " + httpRequest.getRequestURI())
+        SpanBuilder spanBuilder = tracer.spanBuilder(method + " " + request.getRequestURI())
                 .setParent(parent)
                 .setSpanKind(SpanKind.SERVER)
                 .setAttribute(HttpAttributes.HTTP_REQUEST_METHOD, method)
-                .setAttribute(UrlAttributes.URL_SCHEME, httpRequest.getScheme())
-                .setAttribute(ServerAttributes.SERVER_ADDRESS, httpRequest.getServerName())
-                .setAttribute(ServerAttributes.SERVER_PORT, getPort(httpRequest))
+                .setAttribute(UrlAttributes.URL_SCHEME, request.getScheme())
+                .setAttribute(ServerAttributes.SERVER_ADDRESS, request.getServerName())
+                .setAttribute(ServerAttributes.SERVER_PORT, getPort(request))
                 .setAttribute(ClientAttributes.CLIENT_ADDRESS, request.getRemoteAddr())
                 .setAttribute(NetworkAttributes.NETWORK_PROTOCOL_NAME, "http");
 
@@ -97,12 +90,12 @@ public final class TracingServletFilter
             spanBuilder.setAttribute(HttpIncubatingAttributes.HTTP_REQUEST_BODY_SIZE, request.getContentLengthLong());
         }
 
-        String target = getTarget(httpRequest);
+        String target = getTarget(request);
         if (!isNullOrEmpty(target)) {
             spanBuilder.setAttribute(UrlAttributes.URL_PATH, target);
         }
 
-        String userAgent = httpRequest.getHeader(USER_AGENT);
+        String userAgent = request.getHeader(USER_AGENT);
         if (!isNullOrEmpty(userAgent)) {
             spanBuilder.setAttribute(UserAgentAttributes.USER_AGENT_ORIGINAL, userAgent);
         }
@@ -112,7 +105,7 @@ public final class TracingServletFilter
         request.setAttribute(REQUEST_SPAN, span);
 
         try (Scope ignored = span.makeCurrent()) {
-            chain.doFilter(request, new TracingHttpServletResponse(httpResponse, span));
+            chain.doFilter(request, new TracingHttpServletResponse(response, span));
         }
         catch (Throwable t) {
             span.setStatus(StatusCode.ERROR, t.getMessage());
