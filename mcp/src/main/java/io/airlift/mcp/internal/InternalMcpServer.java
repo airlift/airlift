@@ -69,8 +69,7 @@ import io.airlift.mcp.model.Tool;
 import io.airlift.mcp.reflection.IconHelper;
 import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.sessions.SessionId;
-import io.airlift.mcp.sessions.SessionValueKey;
-import io.airlift.mcp.versions.ResourceVersion;
+import io.airlift.mcp.versions.ResourceVersions;
 import io.airlift.mcp.versions.SystemListVersions;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -90,6 +89,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static io.airlift.http.server.tracing.TracingServletFilter.updateRequestSpan;
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.McpModule.MCP_SERVER_ICONS;
@@ -108,17 +108,16 @@ import static io.airlift.mcp.model.Protocol.LATEST_PROTOCOL;
 import static io.airlift.mcp.sessions.SessionValueKey.CLIENT_CAPABILITIES;
 import static io.airlift.mcp.sessions.SessionValueKey.LOGGING_LEVEL;
 import static io.airlift.mcp.sessions.SessionValueKey.PROTOCOL;
+import static io.airlift.mcp.sessions.SessionValueKey.RESOURCE_VERSIONS;
 import static io.airlift.mcp.sessions.SessionValueKey.SYSTEM_LIST_VERSIONS;
-import static io.airlift.mcp.sessions.SessionValueKey.resourceVersionKey;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Map.entry;
 import static java.util.Objects.requireNonNull;
 
 public class InternalMcpServer
         implements McpServer
 {
     private static final Logger log = Logger.get(InternalMcpServer.class);
-
-    private static final int RECONCILE_PAGE_SIZE = 100;
 
     private final Map<String, ToolEntry> tools = new ConcurrentHashMap<>();
     private final Map<String, PromptEntry> prompts = new ConcurrentHashMap<>();
@@ -376,9 +375,12 @@ public class InternalMcpServer
                 .orElseThrow(() -> exception(RESOURCE_NOT_FOUND, "Resource not found: " + subscribeRequest.uri()));
 
         String hash = listHash(resourceContents.stream());
-        SessionValueKey<ResourceVersion> key = resourceVersionKey(subscribeRequest.uri());
 
-        localSessionController.setSessionValue(sessionId, key, new ResourceVersion(hash));
+        localSessionController.computeSessionValue(sessionId, RESOURCE_VERSIONS, currentValue -> {
+            ResourceVersions resourceVersions = currentValue.orElseGet(() -> new ResourceVersions(ImmutableMap.of()));
+            ResourceVersions updatedVersions = resourceVersions.with(subscribeRequest.uri(), hash);
+            return Optional.of(updatedVersions);
+        });
 
         return ImmutableMap.of();
     }
@@ -390,8 +392,11 @@ public class InternalMcpServer
         SessionController localSessionController = requireSessionController();
         SessionId sessionId = requireSessionId(request);
 
-        SessionValueKey<ResourceVersion> key = resourceVersionKey(subscribeRequest.uri());
-        localSessionController.deleteSessionValue(sessionId, key);
+        localSessionController.computeSessionValue(sessionId, RESOURCE_VERSIONS, currentValue -> {
+            ResourceVersions resourceVersions = currentValue.orElseGet(() -> new ResourceVersions(ImmutableMap.of()));
+            ResourceVersions updatedVersions = resourceVersions.without(subscribeRequest.uri());
+            return Optional.of(updatedVersions);
+        });
 
         return ImmutableMap.of();
     }
@@ -427,31 +432,29 @@ public class InternalMcpServer
             return Optional.of(currentVersions);
         });
 
-        // iterate over any subscribed resources and notify if updated
-        //
         // TODO this is somewhat expensive. In the future consider adding some hooks that clients can use to optimize this.
-        Optional<String> cursor = Optional.empty();
-        do {
-            List<Map.Entry<String, ResourceVersion>> subscriptions = localSessionController.listSessionValues(sessionId, ResourceVersion.class, RECONCILE_PAGE_SIZE, cursor);
-            subscriptions.forEach(subscription -> {
-                String uri = subscription.getKey();
+        localSessionController.computeSessionValue(sessionId, RESOURCE_VERSIONS, currentValue -> currentValue.map(resourceVersions -> {
+            Map<String, String> updatedUriToVersion = resourceVersions.uriToVersion().entrySet()
+                    .stream()
+                    .map(entry -> {
+                        String uri = entry.getKey();
+                        String oldHash = entry.getValue();
 
-                Optional<List<ResourceContents>> resourceContents = internalReadResource(new ReadResourceRequest(uri, Optional.empty()), requestContext);
-                String newHash = resourceContents
-                        .map(contents -> listHash(contents.stream()))
-                        .orElse("");
+                        Optional<List<ResourceContents>> resourceContents = internalReadResource(new ReadResourceRequest(uri, Optional.empty()), requestContext);
+                        String newHash = resourceContents
+                                .map(contents -> listHash(contents.stream()))
+                                .orElse("");
 
-                localSessionController.computeSessionValue(sessionId, resourceVersionKey(uri), maybeOldVersion -> {
-                    if (maybeOldVersion.map(oldVersion -> !oldVersion.version().equals(newHash)).orElse(false)) {
-                        notifications.add(new Notification(NOTIFICATION_RESOURCES_UPDATED, Optional.of(new ResourcesUpdatedNotification(uri))));
-                    }
-                    return Optional.of(new ResourceVersion(newHash));
-                });
-            });
+                        if (!oldHash.equals(newHash)) {
+                            notifications.add(new Notification(NOTIFICATION_RESOURCES_UPDATED, Optional.of(new ResourcesUpdatedNotification(uri))));
+                            return entry(uri, newHash);
+                        }
 
-            cursor = (subscriptions.size() < RECONCILE_PAGE_SIZE) ? Optional.empty() : Optional.of(subscriptions.getLast().getKey());
-        }
-        while (cursor.isPresent());
+                        return entry;
+                    })
+                    .collect(toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+            return new ResourceVersions(updatedUriToVersion);
+        }));
 
         // ideally, we'd send these messages before updating the session state, but that would require
         // sending them inside of a DB transaction and that isn't ideal. So, we send them after updating the session state.
