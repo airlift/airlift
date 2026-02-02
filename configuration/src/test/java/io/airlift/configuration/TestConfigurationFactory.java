@@ -31,8 +31,10 @@ import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -40,8 +42,12 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static io.airlift.configuration.Config.Encoding.BASE64;
+import static io.airlift.configuration.Config.Encoding.HEX;
+import static io.airlift.configuration.Config.Encoding.UTF8_STRING;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static java.lang.String.format;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -412,6 +418,26 @@ public class TestConfigurationFactory
     }
 
     @Test
+    public void testArrays()
+    {
+        TestingWarningsMonitor warningsMonitor = new TestingWarningsMonitor();
+        Map<String, String> values = ImmutableMap.of(
+                "byteArrayUtf8", "this is secret value",
+                "byteArrayBase64", Base64.getEncoder().encodeToString("this is secret value".getBytes(UTF_8)),
+                "byteArrayHex", HexFormat.of().formatHex("this is secret value".getBytes(UTF_8)),
+                "charArray", "this is another secret value");
+        Injector injector = createInjector(values, binder -> configBinder(binder).bindConfig(Arrays.class), warningsMonitor);
+        assertThat(injector.getInstance(Arrays.class).getByteArrayUtf8())
+                .containsExactly("this is secret value".getBytes(UTF_8));
+        assertThat(injector.getInstance(Arrays.class).getByteArrayBase64())
+                .containsExactly("this is secret value".getBytes(UTF_8));
+        assertThat(injector.getInstance(Arrays.class).getByteArrayHex())
+                .containsExactly("this is secret value".getBytes(UTF_8));
+        assertThat(injector.getInstance(Arrays.class).getCharArray())
+                .containsExactly("this is another secret value".toCharArray());
+    }
+
+    @Test
     public void testStringConstructor()
     {
         TestingWarningsMonitor warningsMonitor = new TestingWarningsMonitor();
@@ -607,7 +633,7 @@ public class TestConfigurationFactory
             return stringA;
         }
 
-        @Config("string-a")
+        @Config(value = "string-a")
         @LegacyConfig("string-value")
         public void setStringA(String stringValue)
         {
@@ -806,6 +832,59 @@ public class TestConfigurationFactory
         public void setValues(List<String> values)
         {
             this.values = values;
+        }
+    }
+
+    public static class Arrays
+    {
+        private byte[] byteArrayUtf8;
+        private byte[] byteArrayBase64;
+        private byte[] byteArrayHex;
+
+        private char[] charArray;
+
+        public byte[] getByteArrayUtf8()
+        {
+            return byteArrayUtf8;
+        }
+
+        @Config(value = "byteArrayUtf8", encoding = UTF8_STRING)
+        public void setByteArrayUtf8(byte[] byteArrayUtf8)
+        {
+            this.byteArrayUtf8 = byteArrayUtf8;
+        }
+
+        public byte[] getByteArrayBase64()
+        {
+            return byteArrayBase64;
+        }
+
+        @Config(value = "byteArrayBase64", encoding = BASE64)
+        public void setByteArrayBase64(byte[] byteArrayBase64)
+        {
+            this.byteArrayBase64 = byteArrayBase64;
+        }
+
+        public byte[] getByteArrayHex()
+        {
+            return byteArrayHex;
+        }
+
+        @Config(value = "byteArrayHex", encoding = HEX)
+        public void setByteArrayHex(byte[] byteArrayHex)
+        {
+            this.byteArrayHex = byteArrayHex;
+        }
+
+        public char[] getCharArray()
+        {
+            return charArray;
+        }
+
+        @Config("charArray")
+        public void setCharArray(char[] charArray)
+        {
+            this.charArray = charArray;
         }
     }
 
