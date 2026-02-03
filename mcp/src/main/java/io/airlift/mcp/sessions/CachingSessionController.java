@@ -18,6 +18,8 @@ import java.util.function.UnaryOperator;
 
 import static io.airlift.mcp.sessions.SessionValueKey.CLIENT_CAPABILITIES;
 import static io.airlift.mcp.sessions.SessionValueKey.PROTOCOL;
+import static io.airlift.mcp.sessions.SessionValueKey.RESOURCE_VERSIONS;
+import static io.airlift.mcp.sessions.SessionValueKey.SYSTEM_LIST_VERSIONS;
 import static java.util.Objects.requireNonNull;
 
 public class CachingSessionController
@@ -25,7 +27,9 @@ public class CachingSessionController
 {
     private static final Set<Class<?>> CACHEABLE_TYPES = Set.of(
             CLIENT_CAPABILITIES.type(),
-            PROTOCOL.type());
+            PROTOCOL.type(),
+            SYSTEM_LIST_VERSIONS.type(),
+            RESOURCE_VERSIONS.type());
 
     private final SessionController delegate;
     private final Cache<CacheKey<?>, Optional<?>> cache;

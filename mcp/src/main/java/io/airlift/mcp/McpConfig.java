@@ -16,6 +16,7 @@ public class McpConfig
     private Duration eventStreamingPingThreshold = new Duration(15, SECONDS);
     private Duration eventStreamingTimeout = new Duration(5, MINUTES);
     private Duration cancellationCheckInterval = new Duration(1, SECONDS);
+    private Duration resourceSubscriptionCachePeriod = new Duration(1, MINUTES);
     private int maxResumableMessages = 100;
     private int maxSessionCache = 10000;
 
@@ -119,6 +120,19 @@ public class McpConfig
     public McpConfig setMaxSessionCache(int maxSessionCache)
     {
         this.maxSessionCache = maxSessionCache;
+        return this;
+    }
+
+    @MinDuration("1ms")
+    public Duration getResourceSubscriptionCachePeriod()
+    {
+        return resourceSubscriptionCachePeriod;
+    }
+
+    @Config("mcp.resource-subscription.cache-period")
+    public McpConfig setResourceSubscriptionCachePeriod(Duration resourceSubscriptionCachePeriod)
+    {
+        this.resourceSubscriptionCachePeriod = resourceSubscriptionCachePeriod;
         return this;
     }
 }

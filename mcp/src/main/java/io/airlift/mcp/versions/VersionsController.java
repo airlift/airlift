@@ -2,11 +2,16 @@ package io.airlift.mcp.versions;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
+import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.google.inject.Inject;
 import io.airlift.log.Logger;
+import io.airlift.mcp.McpConfig;
+import io.airlift.mcp.McpException;
 import io.airlift.mcp.McpRequestContext;
 import io.airlift.mcp.McpServer;
 import io.airlift.mcp.model.ReadResourceRequest;
@@ -21,8 +26,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
+import static com.google.common.base.Throwables.getRootCause;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_PROMPTS_LIST_CHANGED;
@@ -34,6 +41,7 @@ import static io.airlift.mcp.model.JsonRpcErrorCode.RESOURCE_NOT_FOUND;
 import static io.airlift.mcp.sessions.SessionValueKey.RESOURCE_VERSIONS;
 import static io.airlift.mcp.sessions.SessionValueKey.SYSTEM_LIST_VERSIONS;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Map.entry;
 import static java.util.Objects.requireNonNull;
 
 public class VersionsController
@@ -43,13 +51,18 @@ public class VersionsController
     private final Optional<SessionController> sessionController;
     private final McpServer mcpServer;
     private final ObjectMapper objectMapper;
+    private final Cache<String, String> resourceVersionsCache;
 
     @Inject
-    public VersionsController(Optional<SessionController> sessionController, McpServer mcpServer, ObjectMapper objectMapper)
+    public VersionsController(Optional<SessionController> sessionController, McpServer mcpServer, ObjectMapper objectMapper, McpConfig mcpConfig)
     {
         this.sessionController = requireNonNull(sessionController, "sessionController is null");
         this.mcpServer = requireNonNull(mcpServer, "mcpServer is null");
         this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
+
+        resourceVersionsCache = CacheBuilder.newBuilder()
+                .expireAfterWrite(mcpConfig.getResourceSubscriptionCachePeriod().toJavaTime())
+                .build();
     }
 
     public void initializeSessionVersions(SessionId sessionId)
@@ -61,14 +74,11 @@ public class VersionsController
     {
         SessionController localSessionController = sessionController.orElseThrow(() -> exception(INVALID_REQUEST, "Sessions are not enabled"));
 
-        List<ResourceContents> resourceContents = mcpServer.readResourceContents(requestContext, new ReadResourceRequest(subscribeRequest.uri(), subscribeRequest.meta()))
-                .orElseThrow(() -> exception(RESOURCE_NOT_FOUND, "Resource not found: " + subscribeRequest.uri()));
-
-        String hash = listHash(resourceContents.stream());
+        String version = readResourceVersion(requestContext, subscribeRequest.uri(), true);
 
         localSessionController.computeSessionValue(sessionId, RESOURCE_VERSIONS, currentValue -> {
             ResourceVersions resourceVersions = currentValue.orElseGet(() -> new ResourceVersions(ImmutableMap.of()));
-            ResourceVersions updatedVersions = resourceVersions.with(subscribeRequest.uri(), hash);
+            ResourceVersions updatedVersions = resourceVersions.with(subscribeRequest.uri(), version);
             return Optional.of(updatedVersions);
         });
     }
@@ -103,11 +113,13 @@ public class VersionsController
 
     private void reconcileSystemListVersions(SessionController sessionController, SessionId sessionId, List<Notification> notifications)
     {
+        // pre-check against current value which should be cached in memory via CachingSessionController
         SystemListVersions currentSystemListVersions = buildSystemListVersions();
         Optional<SystemListVersions> sessionSystemListVersions = sessionController.getSessionValue(sessionId, SYSTEM_LIST_VERSIONS);
+        boolean precheckHasChanges = !sessionSystemListVersions.map(currentSystemListVersions::equals).orElse(false);
 
-        // pre-check against current value which should be cached in memory
-        if (!sessionSystemListVersions.map(currentSystemListVersions::equals).orElse(false)) {
+        if (precheckHasChanges) {
+            // now do it for real - this will also flush/reset the in-memory cached value in CachingSessionController
             sessionController.computeSessionValue(sessionId, SYSTEM_LIST_VERSIONS, maybePreviousVersions -> {
                 SystemListVersions previousVersions = maybePreviousVersions.orElseGet(() -> {
                     log.warn("No current versions found for session %s", sessionId);
@@ -131,29 +143,62 @@ public class VersionsController
 
     private void reconcileResourceSubscriptions(SessionController sessionController, McpRequestContext requestContext, SessionId sessionId, List<Notification> notifications)
     {
-        // TODO this is somewhat expensive. In the future consider adding some hooks that clients can use to optimize this.
-        sessionController.computeSessionValue(sessionId, RESOURCE_VERSIONS, currentValue -> currentValue.map(resourceVersions -> {
-            Map<String, String> updatedUriToVersion = resourceVersions.uriToVersion().entrySet()
-                    .stream()
-                    .map(entry -> {
-                        String uri = entry.getKey();
-                        String oldHash = entry.getValue();
+        // will likely be cached/in-memory via CachingSessionController
+        Map<String, String> currentSubscriptions = sessionController.getSessionValue(sessionId, RESOURCE_VERSIONS)
+                .map(ResourceVersions::uriToVersion)
+                .orElseGet(ImmutableMap::of);
 
-                        Optional<List<ResourceContents>> resourceContents = mcpServer.readResourceContents(requestContext, new ReadResourceRequest(uri, Optional.empty()));
-                        String newHash = resourceContents
-                                .map(contents -> listHash(contents.stream()))
-                                .orElse("");
+        // first, check likely cached/in-memory values to see if there are any changes
+        boolean precheckHasChanges = currentSubscriptions.entrySet()
+                .stream()
+                .anyMatch(entry -> {
+                    String uri = entry.getKey();
+                    String oldVersion = entry.getValue();
+                    String newVersion = readResourceVersion(requestContext, uri, false);
+                    return !oldVersion.equals(newVersion);
+                });
 
-                        if (!oldHash.equals(newHash)) {
-                            notifications.add(new Notification(NOTIFICATION_RESOURCES_UPDATED, Optional.of(new ResourcesUpdatedNotification(uri))));
-                            return Map.entry(uri, newHash);
-                        }
+        if (precheckHasChanges) {
+            // now do it for real - this will also flush/reset the in-memory cached value in CachingSessionController
+            sessionController.computeSessionValue(sessionId, RESOURCE_VERSIONS, currentValue -> currentValue.map(resourceVersions -> {
+                Map<String, String> updatedUriToVersion = resourceVersions.uriToVersion().entrySet()
+                        .stream()
+                        .map(entry -> {
+                            String uri = entry.getKey();
+                            String oldVersion = entry.getValue();
+                            String newVersion = readResourceVersion(requestContext, uri, false);
 
-                        return entry;
-                    })
-                    .collect(toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
-            return new ResourceVersions(updatedUriToVersion);
-        }));
+                            if (!oldVersion.equals(newVersion)) {
+                                notifications.add(new Notification(NOTIFICATION_RESOURCES_UPDATED, Optional.of(new ResourcesUpdatedNotification(uri))));
+                            }
+
+                            return entry(uri, newVersion);
+                        })
+                        .collect(toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+                return new ResourceVersions(updatedUriToVersion);
+            }));
+        }
+    }
+
+    private String readResourceVersion(McpRequestContext requestContext, String uri, boolean required)
+    {
+        try {
+            return resourceVersionsCache.get(uri, () -> {
+                Optional<List<ResourceContents>> resourceContents = mcpServer.readResourceContents(requestContext, new ReadResourceRequest(uri, Optional.empty()));
+                if (required && resourceContents.isEmpty()) {
+                    throw exception(RESOURCE_NOT_FOUND, "Resource not found: " + uri);
+                }
+                return resourceContents
+                        .map(contents -> listHash(contents.stream()))
+                        .orElse("");
+            });
+        }
+        catch (ExecutionException e) {
+            if (getRootCause(e) instanceof McpException mcpException) {
+                throw mcpException;
+            }
+            throw new UncheckedExecutionException(e);
+        }
     }
 
     private SystemListVersions buildSystemListVersions()
