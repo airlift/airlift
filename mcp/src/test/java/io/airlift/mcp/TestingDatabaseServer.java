@@ -12,6 +12,8 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
+import static com.google.common.base.Throwables.getRootCause;
+
 @SuppressWarnings("FieldCanBeLocal")
 public class TestingDatabaseServer
         implements Closeable
@@ -82,11 +84,8 @@ public class TestingDatabaseServer
             connection.commit();
             return result;
         }
-        catch (RuntimeException e) {
-            throw e;
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
+        catch (Throwable throwable) {
+            throw handleException(throwable);
         }
     }
 
@@ -109,11 +108,8 @@ public class TestingDatabaseServer
         try (Connection connection = hikariPool.getConnection()) {
             return handler.apply(connection);
         }
-        catch (RuntimeException e) {
-            throw e;
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
+        catch (Throwable throwable) {
+            throw handleException(throwable);
         }
     }
 
@@ -123,5 +119,19 @@ public class TestingDatabaseServer
             consumer.accept(connection);
             return null;
         });
+    }
+
+    private RuntimeException handleException(Throwable throwable)
+    {
+        return switch (getRootCause(throwable)) {
+            case InterruptedException interruptedException -> {
+                Thread.currentThread().interrupt();
+                yield new RuntimeException(interruptedException);
+            }
+
+            case RuntimeException runtimeException -> runtimeException;
+
+            default -> new RuntimeException(throwable);
+        };
     }
 }
