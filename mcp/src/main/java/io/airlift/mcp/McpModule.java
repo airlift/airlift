@@ -40,6 +40,7 @@ import io.airlift.mcp.reflection.ToolHandlerProvider;
 import io.airlift.mcp.sessions.CachingSessionController;
 import io.airlift.mcp.sessions.ForSessionCaching;
 import io.airlift.mcp.sessions.SessionController;
+import io.airlift.mcp.versions.VersionsController;
 
 import java.util.Collection;
 import java.util.Map;
@@ -275,6 +276,7 @@ public class McpModule
     public void configure(Binder binder)
     {
         binder.bind(McpMetadata.class).toInstance(metadata);
+        binder.bind(VersionsController.class).in(SINGLETON);
 
         configBinder(binder).bindConfig(McpConfig.class);
 
