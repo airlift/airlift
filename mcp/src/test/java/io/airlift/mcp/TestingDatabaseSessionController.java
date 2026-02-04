@@ -265,11 +265,6 @@ public class TestingDatabaseSessionController
             Optional<T> result = Optional.empty();
 
             while (!isDone) {
-                if (hasRetried) {
-                    throw new RuntimeException("Failed to compute session value after retrying");
-                }
-                hasRetried = true;
-
                 Optional<T> currentValue = internalGetValue(connection, sessionId, key, SELECT_VALUE_FOR_UPDATE_SQL)
                         .map(maybeJson -> mapJson(key.type(), maybeJson));
 
@@ -305,6 +300,11 @@ public class TestingDatabaseSessionController
                     internalDeleteValue(connection, sessionId, key);
                     isDone = true;
                 }
+
+                if (!isDone && hasRetried) {
+                    throw new RuntimeException("Failed to compute session value after retrying");
+                }
+                hasRetried = true;
             }
 
             postNotification(connection, sessionId, key);
