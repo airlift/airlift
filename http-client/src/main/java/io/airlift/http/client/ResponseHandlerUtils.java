@@ -1,6 +1,5 @@
 package io.airlift.http.client;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -42,7 +41,7 @@ public final class ResponseHandlerUtils
     public static InputStream getResponseStream(Response response)
     {
         return switch (response.getContent()) {
-            case Response.BytesContent(byte[] bytes) -> new ByteArrayInputStream(bytes);
+            case Response.BytesContent(_) -> throw new IllegalStateException("Expected response to contain InputStream");
             case Response.InputStreamContent(InputStream inputStream) -> inputStream;
         };
     }

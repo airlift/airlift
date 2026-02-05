@@ -101,6 +101,7 @@
         <dep.bouncycastle.version>1.83</dep.bouncycastle.version>
         <dep.mcp.sdk.version>0.17.2</dep.mcp.sdk.version>
         <dep.jersey.version>4.0.2</dep.jersey.version>
+        <dep.jetty.version>12.1.7-SNAPSHOT</dep.jetty.version>
         <dep.jjwt.version>0.13.0</dep.jjwt.version>
     </properties>
 
