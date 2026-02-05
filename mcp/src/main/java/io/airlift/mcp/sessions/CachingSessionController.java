@@ -16,8 +16,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkState;
 import static io.airlift.mcp.sessions.SessionValueKey.CLIENT_CAPABILITIES;
 import static io.airlift.mcp.sessions.SessionValueKey.PROTOCOL;
 import static java.util.Objects.requireNonNull;
@@ -30,7 +28,7 @@ public class CachingSessionController
             PROTOCOL.type());
 
     private final SessionController delegate;
-    private final Cache<CacheKey<?>, Optional<Object>> cache;
+    private final Cache<CacheKey<?>, Optional<?>> cache;
 
     private record CacheKey<T>(SessionId sessionId, SessionValueKey<T> key)
     {
@@ -81,9 +79,8 @@ public class CachingSessionController
     public <T> Optional<T> getSessionValue(SessionId sessionId, SessionValueKey<T> key)
     {
         if (isCacheable(key)) {
-            CacheKey<T> cacheKey = new CacheKey<>(sessionId, key);
             try {
-                return cache.get(cacheKey, () -> delegate.getSessionValue(sessionId, key).map(cacheKey.key.type()::cast))
+                return cache.get(cacheKey(sessionId, key), () -> delegate.getSessionValue(sessionId, key))
                         .map(key.type()::cast);
             }
             catch (ExecutionException e) {
@@ -98,9 +95,8 @@ public class CachingSessionController
     public <T> boolean setSessionValue(SessionId sessionId, SessionValueKey<T> key, T value)
     {
         if (isCacheable(key)) {
-            CacheKey<T> cacheKey = new CacheKey<>(sessionId, key);
-            checkState(!cache.asMap().containsKey(cacheKey), "Cache key already exists. Cached values cannot be replaced.");
-            cache.put(cacheKey, Optional.of(value));
+            // it is the responsibility of the caller to keep cached values consistent
+            cache.put(cacheKey(sessionId, key), Optional.of(value));
         }
 
         return delegate.setSessionValue(sessionId, key, value);
@@ -109,7 +105,14 @@ public class CachingSessionController
     @Override
     public <T> Optional<T> computeSessionValue(SessionId sessionId, SessionValueKey<T> key, UnaryOperator<Optional<T>> updater)
     {
-        checkArgument(!isCacheable(key), "computeSessionValue is not supported for cached types");
+        if (isCacheable(key)) {
+            return delegate.computeSessionValue(sessionId, key, currentValue -> {
+                Optional<T> newValue = updater.apply(currentValue);
+                // it is the responsibility of the caller to keep cached values consistent
+                cache.put(cacheKey(sessionId, key), newValue);
+                return newValue;
+            });
+        }
 
         return delegate.computeSessionValue(sessionId, key, updater);
     }
@@ -117,7 +120,10 @@ public class CachingSessionController
     @Override
     public <T> boolean deleteSessionValue(SessionId sessionId, SessionValueKey<T> key)
     {
-        checkArgument(!isCacheable(key), "deleteSessionValue is not supported for cached types");
+        if (isCacheable(key)) {
+            // it is the responsibility of the caller to keep cached values consistent
+            cache.put(cacheKey(sessionId, key), Optional.empty());
+        }
 
         return delegate.deleteSessionValue(sessionId, key);
     }
@@ -137,5 +143,10 @@ public class CachingSessionController
     private static <T> boolean isCacheable(SessionValueKey<T> key)
     {
         return CACHEABLE_TYPES.contains(key.type());
+    }
+
+    private static <T> CacheKey<T> cacheKey(SessionId sessionId, SessionValueKey<T> key)
+    {
+        return new CacheKey<>(sessionId, key);
     }
 }
