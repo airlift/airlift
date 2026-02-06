@@ -7,7 +7,7 @@ import io.airlift.mcp.model.JsonRpcResponse;
 import io.airlift.mcp.model.ListRootsResult;
 import io.airlift.mcp.model.LoggingLevel;
 import io.airlift.mcp.model.Protocol;
-import io.airlift.mcp.versions.ResourceVersion;
+import io.airlift.mcp.versions.ResourceVersions;
 import io.airlift.mcp.versions.SystemListVersions;
 
 import static java.util.Objects.requireNonNull;
@@ -20,6 +20,7 @@ public record SessionValueKey<T>(String name, Class<T> type)
     public static final SessionValueKey<ListRootsResult> ROOTS = of(ListRootsResult.class);
     public static final SessionValueKey<Protocol> PROTOCOL = of(Protocol.class);
     public static final SessionValueKey<SentMessages> SENT_MESSAGES = of(SentMessages.class);
+    public static final SessionValueKey<ResourceVersions> RESOURCE_VERSIONS = of(ResourceVersions.class);
 
     public SessionValueKey
     {
@@ -36,11 +37,6 @@ public record SessionValueKey<T>(String name, Class<T> type)
     public static SessionValueKey<CancelledNotification> cancellationKey(Object requestId)
     {
         return new SessionValueKey<>("cancellation-notification-" + requestId, CancelledNotification.class);
-    }
-
-    public static SessionValueKey<ResourceVersion> resourceVersionKey(String uri)
-    {
-        return of(uri, ResourceVersion.class);
     }
 
     public static <T> SessionValueKey<T> of(String name, Class<T> type)
