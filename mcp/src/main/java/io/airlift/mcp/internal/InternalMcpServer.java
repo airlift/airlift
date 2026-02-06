@@ -10,6 +10,7 @@ import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import io.airlift.bootstrap.LifeCycleManager;
 import io.airlift.log.Logger;
+import io.airlift.mcp.McpCapabilityFilter;
 import io.airlift.mcp.McpClientException;
 import io.airlift.mcp.McpConfig;
 import io.airlift.mcp.McpIdentity.Authenticated;
@@ -130,6 +131,7 @@ public class InternalMcpServer
     private final LifeCycleManager lifeCycleManager;
     private final PaginationUtil paginationUtil;
     private final Optional<SessionController> sessionController;
+    private final McpCapabilityFilter capabilityFilter;
     private final Duration sessionTimeout;
     private final Implementation serverImplementation;
 
@@ -147,13 +149,15 @@ public class InternalMcpServer
             PaginationUtil paginationUtil,
             McpConfig mcpConfig,
             IconHelper iconHelper,
-            @Named(MCP_SERVER_ICONS) Set<String> serverIcons)
+            @Named(MCP_SERVER_ICONS) Set<String> serverIcons,
+            McpCapabilityFilter capabilityFilter)
     {
         this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
         this.lifeCycleManager = requireNonNull(lifeCycleManager, "lifeCycleManager is null");
         this.paginationUtil = requireNonNull(paginationUtil, "paginationUtil is null");
         this.sessionController = requireNonNull(sessionController, "sessionController is null");
+        this.capabilityFilter = requireNonNull(capabilityFilter, "capabilityFilter is null");
 
         tools.forEach(tool -> addTool(tool.tool(), tool.toolHandler()));
         prompts.forEach(prompt -> addPrompt(prompt.prompt(), prompt.promptHandler()));
@@ -267,47 +271,55 @@ public class InternalMcpServer
         return new InitializeResult(protocol.value(), serverCapabilities, localImplementation, metadata.instructions());
     }
 
-    ListToolsResult listTools(Protocol protocol, ListRequest listRequest)
+    ListToolsResult listTools(Protocol protocol, Authenticated<?> authenticated, ListRequest listRequest)
     {
         List<Tool> localTools = tools.values().stream()
                 .map(ToolEntry::tool)
                 .map(tool -> protocol.supportsIcons() ? tool : tool.withoutIcons())
                 .collect(toImmutableList());
-        return paginationUtil.paginate(listRequest, localTools, Tool::name, ListToolsResult::new);
+        List<Tool> filteredTools = capabilityFilter.filterTools(authenticated, localTools);
+        return paginationUtil.paginate(listRequest, filteredTools, Tool::name, ListToolsResult::new);
     }
 
-    ListPromptsResult listPrompts(Protocol protocol, ListRequest listRequest)
+    ListPromptsResult listPrompts(Protocol protocol, Authenticated<?> authenticated, ListRequest listRequest)
     {
         List<Prompt> localPrompts = prompts.values().stream()
                 .map(PromptEntry::prompt)
                 .map(prompt -> protocol.supportsIcons() ? prompt : prompt.withoutIcons())
                 .collect(toImmutableList());
-        return paginationUtil.paginate(listRequest, localPrompts, Prompt::name, ListPromptsResult::new);
+        List<Prompt> filteredPrompts = capabilityFilter.filterPrompts(authenticated, localPrompts);
+        return paginationUtil.paginate(listRequest, filteredPrompts, Prompt::name, ListPromptsResult::new);
     }
 
-    ListResourcesResult listResources(Protocol protocol, ListRequest listRequest)
+    ListResourcesResult listResources(Protocol protocol, Authenticated<?> authenticated, ListRequest listRequest)
     {
         List<Resource> localResources = resources.values().stream()
                 .map(ResourceEntry::resource)
                 .map(resource -> protocol.supportsIcons() ? resource : resource.withoutIcons())
                 .collect(toImmutableList());
-        return paginationUtil.paginate(listRequest, localResources, Resource::name, ListResourcesResult::new);
+        List<Resource> filteredResources = capabilityFilter.filterResources(authenticated, localResources);
+        return paginationUtil.paginate(listRequest, filteredResources, Resource::name, ListResourcesResult::new);
     }
 
-    ListResourceTemplatesResult listResourceTemplates(Protocol protocol, ListRequest listRequest)
+    ListResourceTemplatesResult listResourceTemplates(Protocol protocol, Authenticated<?> authenticated, ListRequest listRequest)
     {
         List<ResourceTemplate> localResourceTemplates = resourceTemplates.values().stream()
                 .map(ResourceTemplateEntry::resourceTemplate)
                 .map(resourceTemplate -> protocol.supportsIcons() ? resourceTemplate : resourceTemplate.withoutIcons())
                 .collect(toImmutableList());
-        return paginationUtil.paginate(listRequest, localResourceTemplates, ResourceTemplate::name, ListResourceTemplatesResult::new);
+        List<ResourceTemplate> filteredResourceTemplates = capabilityFilter.filterResourceTemplates(authenticated, localResourceTemplates);
+        return paginationUtil.paginate(listRequest, filteredResourceTemplates, ResourceTemplate::name, ListResourceTemplatesResult::new);
     }
 
-    CallToolResult callTool(HttpServletRequest request, MessageWriter messageWriter, CallToolRequest callToolRequest)
+    CallToolResult callTool(HttpServletRequest request, Authenticated<?> authenticated, MessageWriter messageWriter, CallToolRequest callToolRequest)
     {
         ToolEntry toolEntry = tools.get(callToolRequest.name());
         if (toolEntry == null) {
             throw exception(INVALID_PARAMS, "Tool not found: " + callToolRequest.name());
+        }
+
+        if (capabilityFilter.filterTools(authenticated, ImmutableList.of(toolEntry.tool())).isEmpty()) {
+            return new CallToolResult(ImmutableList.of(new TextContent("Tool not allowed: " + callToolRequest.name())), Optional.empty(), true);
         }
 
         McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, progressToken(callToolRequest));
@@ -319,20 +331,42 @@ public class InternalMcpServer
         }
     }
 
-    GetPromptResult getPrompt(HttpServletRequest request, MessageWriter messageWriter, GetPromptRequest getPromptRequest)
+    GetPromptResult getPrompt(HttpServletRequest request, Authenticated<?> authenticated, MessageWriter messageWriter, GetPromptRequest getPromptRequest)
     {
         PromptEntry promptEntry = prompts.get(getPromptRequest.name());
         if (promptEntry == null) {
             throw exception(INVALID_PARAMS, "Prompt not found: " + getPromptRequest.name());
         }
 
+        if (capabilityFilter.filterPrompts(authenticated, ImmutableList.of(promptEntry.prompt())).isEmpty()) {
+            throw new McpClientException(exception(INVALID_PARAMS, "Prompt not allowed: " + getPromptRequest.name()));
+        }
+
         McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, progressToken(getPromptRequest));
         return promptEntry.promptHandler().getPrompt(requestContext, getPromptRequest);
     }
 
-    ReadResourceResult readResources(HttpServletRequest request, MessageWriter messageWriter, ReadResourceRequest readResourceRequest)
+    ReadResourceResult readResources(HttpServletRequest request, Authenticated<?> authenticated, MessageWriter messageWriter, ReadResourceRequest readResourceRequest)
     {
         updateRequestSpan(request, span -> span.setAttribute(MCP_RESOURCE_URI, readResourceRequest.uri()));
+
+        URI uri = URI.create(readResourceRequest.uri());
+        ResourceEntry resourceEntry = resources.get(uri);
+        if (resourceEntry != null) {
+            if (capabilityFilter.filterResources(authenticated, ImmutableList.of(resourceEntry.resource())).isEmpty()) {
+                throw new McpClientException(exception(INVALID_PARAMS, "Resource access not allowed: " + readResourceRequest.uri()));
+            }
+        }
+
+        for (Map.Entry<UriTemplate, ResourceTemplateEntry> entry : resourceTemplates.entrySet()) {
+            Map<String, String> variables = new HashMap<>();
+            if (entry.getKey().match(readResourceRequest.uri(), variables)) {
+                if (capabilityFilter.filterResourceTemplates(authenticated, ImmutableList.of(entry.getValue().resourceTemplate())).isEmpty()) {
+                    throw new McpClientException(exception(INVALID_PARAMS, "Resource access not allowed: " + readResourceRequest.uri()));
+                }
+                break;
+            }
+        }
 
         McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, progressToken(readResourceRequest));
 
@@ -352,10 +386,14 @@ public class InternalMcpServer
         return ImmutableMap.of();
     }
 
-    CompleteResult completionComplete(HttpServletRequest request, InternalMessageWriter messageWriter, CompleteRequest completeRequest)
+    CompleteResult completionComplete(HttpServletRequest request, Authenticated<?> authenticated, InternalMessageWriter messageWriter, CompleteRequest completeRequest)
     {
         CompletionEntry completionEntry = completions.get(completionKey(completeRequest.ref()));
         if (completionEntry == null) {
+            return new CompleteResult(new CompleteCompletion(ImmutableList.of(), OptionalInt.empty(), OptionalBoolean.UNDEFINED));
+        }
+
+        if (capabilityFilter.filterCompletions(authenticated, ImmutableList.of(completionEntry.reference())).isEmpty()) {
             return new CompleteResult(new CompleteCompletion(ImmutableList.of(), OptionalInt.empty(), OptionalBoolean.UNDEFINED));
         }
 

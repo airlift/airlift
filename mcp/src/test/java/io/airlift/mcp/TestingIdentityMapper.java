@@ -15,6 +15,7 @@ public class TestingIdentityMapper
         implements McpIdentityMapper
 {
     public static final String EXPECTED_IDENTITY = "Mr. Tester";
+    public static final String ANOTHER_IDENTITY = "Mrs. Other Tester";
     public static final String ERRORED_IDENTITY = "Bad Actor";
     public static final String IDENTITY_HEADER = "X-Testing-Identity";
 
@@ -28,9 +29,9 @@ public class TestingIdentityMapper
         if (authHeader.equals(ERRORED_IDENTITY)) {
             return error(exception(INTERNAL_ERROR, "This identity cannot catch a break"));
         }
-        if (!authHeader.equals(EXPECTED_IDENTITY)) {
+        if (!authHeader.equals(EXPECTED_IDENTITY) && !authHeader.equals(ANOTHER_IDENTITY)) {
             return unauthorized("Identity %s is not authorized to access".formatted(authHeader));
         }
-        return authenticated(new TestingIdentity(EXPECTED_IDENTITY));
+        return authenticated(new TestingIdentity(authHeader));
     }
 }

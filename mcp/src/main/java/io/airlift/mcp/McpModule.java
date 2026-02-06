@@ -74,6 +74,7 @@ public class McpModule
     private final Set<ResourceTemplateHandlerProvider> resourceTemplates;
     private final Set<CompletionHandlerProvider> completions;
     private final Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding;
+    private final Optional<Consumer<LinkedBindingBuilder<McpCapabilityFilter>>> capabilityFilterBinding;
     private final Consumer<LinkedBindingBuilder<McpCancellationHandler>> cancellationHandlerBinding;
     private final Map<String, Consumer<LinkedBindingBuilder<Icon>>> icons;
     private final Set<String> serverIcons;
@@ -94,6 +95,7 @@ public class McpModule
             Set<ResourceTemplateHandlerProvider> resourceTemplates,
             Set<CompletionHandlerProvider> completions,
             Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding,
+            Optional<Consumer<LinkedBindingBuilder<McpCapabilityFilter>>> capabilityFilterBinding,
             Consumer<LinkedBindingBuilder<McpCancellationHandler>> cancellationHandlerBinding,
             Map<String, Consumer<LinkedBindingBuilder<Icon>>> icons,
             Set<String> serverIcons)
@@ -108,6 +110,7 @@ public class McpModule
         this.resourceTemplates = ImmutableSet.copyOf(resourceTemplates);
         this.completions = ImmutableSet.copyOf(completions);
         this.sessionControllerBinding = requireNonNull(sessionControllerBinding, "sessionControllerBinding is null");
+        this.capabilityFilterBinding = requireNonNull(capabilityFilterBinding, "capabilityFilterBinding is null");
         this.cancellationHandlerBinding = requireNonNull(cancellationHandlerBinding, "cancellationHandlerBinding is null");
         this.icons = ImmutableMap.copyOf(icons);
         this.serverIcons = ImmutableSet.copyOf(serverIcons);
@@ -153,6 +156,7 @@ public class McpModule
         private McpMetadata metadata = DEFAULT;
         private Mode mode = STANDARD;
         private Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding = Optional.empty();
+        private Optional<Consumer<LinkedBindingBuilder<McpCapabilityFilter>>> capabilityFilterBinding = Optional.empty();
         private Consumer<LinkedBindingBuilder<McpCancellationHandler>> cancellationHandlerBinding = binder -> binder.toInstance(McpCancellationHandler.DEFAULT);
 
         private Builder()
@@ -191,6 +195,13 @@ public class McpModule
             checkArgument(this.sessionControllerBinding.isEmpty(), "Session controller binding is already set");
 
             this.sessionControllerBinding = Optional.of(sessionControllerBinding);
+            return this;
+        }
+
+        public Builder withCapabilityFilter(Consumer<LinkedBindingBuilder<McpCapabilityFilter>> filterBinding)
+        {
+            checkArgument(this.capabilityFilterBinding.isEmpty(), "Capability filter binding is already set");
+            this.capabilityFilterBinding = Optional.of(filterBinding);
             return this;
         }
 
@@ -265,6 +276,7 @@ public class McpModule
                     localResourceTemplates,
                     localCompletions,
                     sessionControllerBinding,
+                    capabilityFilterBinding,
                     cancellationHandlerBinding,
                     icons.build(),
                     serverIcons.build());
@@ -289,6 +301,7 @@ public class McpModule
         bindIdentityMapper(binder);
         bindCompletions(binder);
         bindSessions(binder);
+        bindCapabilityFilter(binder);
         bindCancellation(binder);
         bindIcons(binder);
 
@@ -329,6 +342,13 @@ public class McpModule
             sessionControllerBinding.accept(sessionControllerDelegateBinder.setBinding());
             sessionControllerBinder.setDefault().to(CachingSessionController.class).in(SINGLETON);
         });
+    }
+
+    private void bindCapabilityFilter(Binder binder)
+    {
+        OptionalBinder<McpCapabilityFilter> filterBinder = newOptionalBinder(binder, McpCapabilityFilter.class);
+        filterBinder.setDefault().to(AllowAllCapabilityFilter.class).in(SINGLETON);
+        capabilityFilterBinding.ifPresent(binding -> binding.accept(filterBinder.setBinding()));
     }
 
     private void bindClasses(Binder binder)
