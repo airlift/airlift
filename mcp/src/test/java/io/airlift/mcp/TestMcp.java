@@ -736,7 +736,7 @@ public abstract class TestMcp
         return assertThat(result);
     }
 
-    private void assertMcpError(Throwable throwable, int code, String message)
+    public static void assertMcpError(Throwable throwable, int code, String message)
     {
         assertThat(throwable)
                 .asInstanceOf(type(McpError.class))
