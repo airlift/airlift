@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.airlift</groupId>
         <artifactId>airlift</artifactId>
-        <version>400</version>
+        <version>401-SNAPSHOT</version>
     </parent>
     <artifactId>security-jwks</artifactId>
     <packaging>jar</packaging>
