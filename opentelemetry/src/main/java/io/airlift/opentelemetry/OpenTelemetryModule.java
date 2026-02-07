@@ -82,7 +82,7 @@ public class OpenTelemetryModule
 
     @Provides
     @Singleton
-    public Resource createResource(NodeInfo nodeInfo)
+    public Resource createResource(NodeInfo nodeInfo, OpenTelemetryConfig config)
     {
         AttributesBuilder attributes = Attributes.builder()
                 .put(ServiceAttributes.SERVICE_NAME, serviceName)
@@ -97,6 +97,7 @@ public class OpenTelemetryModule
                 .put(OsIncubatingAttributes.OS_VERSION, OS_VERSION.value())
                 .put(HostIncubatingAttributes.HOST_ARCH, hostArch());
         nodeInfo.getAnnotations().forEach((key, value) -> attributes.put(format("%s.%s", NODE_ANNOTATION_PREFIX, key), value));
+        config.getResourceAttributes().forEach(attributes::put);
 
         return Resource.getDefault().merge(Resource.create(attributes.build()));
     }
