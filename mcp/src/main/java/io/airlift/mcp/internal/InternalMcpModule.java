@@ -23,5 +23,6 @@ public class InternalMcpModule
         newSetBinder(binder, Filter.class).addBinding().to(InternalFilter.class).in(SINGLETON);
 
         newOptionalBinder(binder, ErrorHandler.class).setDefault().to(InternalErrorHandler.class);
+        newOptionalBinder(binder, ErrorHandler.class).setDefault().to(InternalErrorHandler.class);
     }
 }
