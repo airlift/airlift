@@ -31,6 +31,7 @@ import io.airlift.mcp.model.Content.ImageContent;
 import io.airlift.mcp.model.Content.ResourceLink;
 import io.airlift.mcp.model.Content.TextContent;
 import io.airlift.mcp.model.Icon;
+import io.airlift.mcp.reflection.AppContent;
 import io.airlift.mcp.reflection.CompletionHandlerProvider;
 import io.airlift.mcp.reflection.IconHelper;
 import io.airlift.mcp.reflection.IdentityMapperMetadata;
@@ -44,6 +45,7 @@ import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.versions.VersionsController;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -232,6 +234,8 @@ public class McpModule
         {
             Set<Class<?>> classesSet = classes.build();
 
+            Map<String, AppContent> apps = new HashMap<>();
+
             ImmutableSet.Builder<Provider<ToolEntry>> tools = ImmutableSet.builder();
             ImmutableSet.Builder<Provider<PromptEntry>> prompts = ImmutableSet.builder();
             ImmutableSet.Builder<Provider<ResourceEntry>> resources = ImmutableSet.builder();
@@ -242,7 +246,7 @@ public class McpModule
                 Optional<? extends Class<?>> identityClass = identityMapperBinding.map(IdentityMapperBinding::identityType);
 
                 forAllInClass(clazz, McpTool.class, identityClass, (mcpTool, method, parameters) ->
-                        tools.add(new ToolHandlerProvider(mcpTool, clazz, method, parameters)));
+                        tools.add(new ToolHandlerProvider(mcpTool, clazz, method, parameters, apps, resources::add)));
 
                 forAllInClass(clazz, McpPrompt.class, identityClass, (mcpPrompt, method, parameters) ->
                         prompts.add(new PromptHandlerProvider(mcpPrompt, clazz, method, parameters)));

@@ -33,4 +33,6 @@ public @interface McpTool
     OptionalBoolean idempotentHint() default UNDEFINED;
 
     OptionalBoolean openWorldHint() default UNDEFINED;
+
+    McpApp app() default @McpApp(resourceUri = "", sourcePath = "");
 }
