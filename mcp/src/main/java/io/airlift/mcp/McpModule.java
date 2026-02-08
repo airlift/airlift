@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.inject.Binder;
 import com.google.inject.Key;
 import com.google.inject.Module;
+import com.google.inject.Provider;
 import com.google.inject.binder.AnnotatedBindingBuilder;
 import com.google.inject.binder.LinkedBindingBuilder;
 import com.google.inject.multibindings.MapBinder;
@@ -69,11 +70,11 @@ public class McpModule
     private final McpMetadata metadata;
     private final IdentityMapperBinding identityMapperBinding;
     private final Set<Class<?>> classes;
-    private final Set<ToolHandlerProvider> tools;
-    private final Set<PromptHandlerProvider> prompts;
-    private final Set<ResourceHandlerProvider> resources;
-    private final Set<ResourceTemplateHandlerProvider> resourceTemplates;
-    private final Set<CompletionHandlerProvider> completions;
+    private final Set<Provider<ToolEntry>> tools;
+    private final Set<Provider<PromptEntry>> prompts;
+    private final Set<Provider<ResourceEntry>> resources;
+    private final Set<Provider<ResourceTemplateEntry>> resourceTemplates;
+    private final Set<Provider<CompletionEntry>> completions;
     private final Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding;
     private final Optional<Consumer<LinkedBindingBuilder<McpCapabilityFilter>>> capabilityFilterBinding;
     private final Consumer<LinkedBindingBuilder<McpCancellationHandler>> cancellationHandlerBinding;
@@ -90,11 +91,11 @@ public class McpModule
             McpMetadata metadata,
             IdentityMapperBinding identityMapperBinding,
             Set<Class<?>> classes,
-            Set<ToolHandlerProvider> tools,
-            Set<PromptHandlerProvider> prompts,
-            Set<ResourceHandlerProvider> resources,
-            Set<ResourceTemplateHandlerProvider> resourceTemplates,
-            Set<CompletionHandlerProvider> completions,
+            Set<Provider<ToolEntry>> tools,
+            Set<Provider<PromptEntry>> prompts,
+            Set<Provider<ResourceEntry>> resources,
+            Set<Provider<ResourceTemplateEntry>> resourceTemplates,
+            Set<Provider<CompletionEntry>> completions,
             Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding,
             Optional<Consumer<LinkedBindingBuilder<McpCapabilityFilter>>> capabilityFilterBinding,
             Consumer<LinkedBindingBuilder<McpCancellationHandler>> cancellationHandlerBinding,
@@ -231,11 +232,11 @@ public class McpModule
         {
             Set<Class<?>> classesSet = classes.build();
 
-            ImmutableSet.Builder<ToolHandlerProvider> tools = ImmutableSet.builder();
-            ImmutableSet.Builder<PromptHandlerProvider> prompts = ImmutableSet.builder();
-            ImmutableSet.Builder<ResourceHandlerProvider> resources = ImmutableSet.builder();
-            ImmutableSet.Builder<ResourceTemplateHandlerProvider> resourceTemplates = ImmutableSet.builder();
-            ImmutableSet.Builder<CompletionHandlerProvider> completions = ImmutableSet.builder();
+            ImmutableSet.Builder<Provider<ToolEntry>> tools = ImmutableSet.builder();
+            ImmutableSet.Builder<Provider<PromptEntry>> prompts = ImmutableSet.builder();
+            ImmutableSet.Builder<Provider<ResourceEntry>> resources = ImmutableSet.builder();
+            ImmutableSet.Builder<Provider<ResourceTemplateEntry>> resourceTemplates = ImmutableSet.builder();
+            ImmutableSet.Builder<Provider<CompletionEntry>> completions = ImmutableSet.builder();
 
             classesSet.forEach(clazz -> {
                 Optional<? extends Class<?>> identityClass = identityMapperBinding.map(IdentityMapperBinding::identityType);
@@ -258,11 +259,11 @@ public class McpModule
                         completions.add(new CompletionHandlerProvider(mcpResourceCompletion, clazz, method, parameters)));
             });
 
-            Set<ToolHandlerProvider> localTools = tools.build();
-            Set<PromptHandlerProvider> localPrompts = prompts.build();
-            Set<ResourceHandlerProvider> localResources = resources.build();
-            Set<ResourceTemplateHandlerProvider> localResourceTemplates = resourceTemplates.build();
-            Set<CompletionHandlerProvider> localCompletions = completions.build();
+            Set<Provider<ToolEntry>> localTools = tools.build();
+            Set<Provider<PromptEntry>> localPrompts = prompts.build();
+            Set<Provider<ResourceEntry>> localResources = resources.build();
+            Set<Provider<ResourceTemplateEntry>> localResourceTemplates = resourceTemplates.build();
+            Set<Provider<CompletionEntry>> localCompletions = completions.build();
 
             IdentityMapperBinding localIdentityMapperBinding = identityMapperBinding.orElseThrow(() -> new IllegalStateException("Identity mapper binding is required"));
 
