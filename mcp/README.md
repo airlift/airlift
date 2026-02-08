@@ -32,6 +32,10 @@ This module does not currently support:
 
 - Tasks [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/basic/utilities/tasks)
 
+This module currently supports these MCP extensions:
+
+- MCP Apps [(see spec)](https://modelcontextprotocol.github.io/ext-apps/api/documents/Overview.html)
+
 ## Creating tools, prompts, resources, and completions declaratively
 
 ```java
@@ -231,3 +235,14 @@ however that will likely change in a future version of the MCP spec.
 To enable session support use the `withSessions()` method of the `McpModule`. For Production, a DB-backed,
 resilient implementation of [SessionController](src/main/java/io/airlift/mcp/sessions/SessionController.java) should be used. For testing, an in-memory implementation is provided:
 [MemorySessionController](src/main/java/io/airlift/mcp/sessions/MemorySessionController.java).
+
+## Apps
+
+see: [McpApp](src/main/java/io/airlift/mcp/McpApp.java)
+
+Airlift supports the [MCP Apps extension](https://modelcontextprotocol.github.io/ext-apps/api/documents/Overview.html).
+You declare a tool as an MCP App by setting the `app` attribute of the `@McpTool` annotation using `@McpApp`. Airlift will
+automatically create the MCP UI resource. You can refer to the same MCP app URI in other tools as long as the
+`resourceUri` and `sourcePath` are the same. `sourcePath` refers to the path in your application of the compiled/built
+app HTML file. See the examples for more details: [MapApp](src/test/java/io/airlift/mcp/MapApp.java) 
+and [DebugApp](src/test/java/io/airlift/mcp/DebugApp.java).
