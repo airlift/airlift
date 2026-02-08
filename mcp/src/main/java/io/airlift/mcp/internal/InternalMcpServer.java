@@ -2,6 +2,7 @@ package io.airlift.mcp.internal;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.hash.Hasher;
@@ -38,17 +39,24 @@ import io.airlift.mcp.model.CompleteResult.CompleteCompletion;
 import io.airlift.mcp.model.Content.TextContent;
 import io.airlift.mcp.model.GetPromptRequest;
 import io.airlift.mcp.model.GetPromptResult;
+import io.airlift.mcp.model.GetTaskRequest;
 import io.airlift.mcp.model.Implementation;
 import io.airlift.mcp.model.InitializeRequest;
 import io.airlift.mcp.model.InitializeResult;
 import io.airlift.mcp.model.InitializeResult.CompletionCapabilities;
 import io.airlift.mcp.model.InitializeResult.LoggingCapabilities;
 import io.airlift.mcp.model.InitializeResult.ServerCapabilities;
+import io.airlift.mcp.model.InitializeResult.TaskCapabilities;
+import io.airlift.mcp.model.InitializeResult.TaskRequests;
+import io.airlift.mcp.model.InitializeResult.TaskTools;
+import io.airlift.mcp.model.JsonRpcMessage;
+import io.airlift.mcp.model.JsonRpcResponse;
 import io.airlift.mcp.model.ListChanged;
 import io.airlift.mcp.model.ListPromptsResult;
 import io.airlift.mcp.model.ListRequest;
 import io.airlift.mcp.model.ListResourceTemplatesResult;
 import io.airlift.mcp.model.ListResourcesResult;
+import io.airlift.mcp.model.ListTasksResult;
 import io.airlift.mcp.model.ListToolsResult;
 import io.airlift.mcp.model.LoggingLevel;
 import io.airlift.mcp.model.Meta;
@@ -65,17 +73,21 @@ import io.airlift.mcp.model.ResourcesUpdatedNotification;
 import io.airlift.mcp.model.SetLevelRequest;
 import io.airlift.mcp.model.SubscribeListChanged;
 import io.airlift.mcp.model.SubscribeRequest;
+import io.airlift.mcp.model.Task;
 import io.airlift.mcp.model.Tool;
 import io.airlift.mcp.reflection.IconHelper;
 import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.sessions.SessionId;
 import io.airlift.mcp.sessions.SessionValueKey;
+import io.airlift.mcp.tasks.TaskController;
+import io.airlift.mcp.tasks.TaskFacade;
 import io.airlift.mcp.versions.ResourceVersion;
 import io.airlift.mcp.versions.SystemListVersions;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.glassfish.jersey.uri.UriTemplate;
 
+import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.time.Duration;
@@ -87,6 +99,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
@@ -101,15 +114,21 @@ import static io.airlift.mcp.model.Constants.NOTIFICATION_PROMPTS_LIST_CHANGED;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_RESOURCES_LIST_CHANGED;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_RESOURCES_UPDATED;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_TOOLS_LIST_CHANGED;
+import static io.airlift.mcp.model.Constants.PROGRESS_TOKEN;
+import static io.airlift.mcp.model.JsonRpcErrorCode.INTERNAL_ERROR;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
+import static io.airlift.mcp.model.JsonRpcErrorCode.REQUEST_TIMEOUT;
 import static io.airlift.mcp.model.JsonRpcErrorCode.RESOURCE_NOT_FOUND;
+import static io.airlift.mcp.model.Property.INSTANCE;
 import static io.airlift.mcp.model.Protocol.LATEST_PROTOCOL;
 import static io.airlift.mcp.sessions.SessionValueKey.CLIENT_CAPABILITIES;
 import static io.airlift.mcp.sessions.SessionValueKey.LOGGING_LEVEL;
 import static io.airlift.mcp.sessions.SessionValueKey.PROTOCOL;
 import static io.airlift.mcp.sessions.SessionValueKey.SYSTEM_LIST_VERSIONS;
 import static io.airlift.mcp.sessions.SessionValueKey.resourceVersionKey;
+import static io.airlift.mcp.tasks.TaskConditions.hasMessage;
+import static io.airlift.mcp.tasks.TaskConditions.isCompleted;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
@@ -131,7 +150,10 @@ public class InternalMcpServer
     private final PaginationUtil paginationUtil;
     private final Optional<SessionController> sessionController;
     private final Duration sessionTimeout;
+    private final Optional<TaskController> taskController;
     private final Implementation serverImplementation;
+    private final Duration pingThreshold;
+    private final Duration timeout;
 
     @Inject
     InternalMcpServer(
@@ -147,13 +169,15 @@ public class InternalMcpServer
             PaginationUtil paginationUtil,
             McpConfig mcpConfig,
             IconHelper iconHelper,
-            @Named(MCP_SERVER_ICONS) Set<String> serverIcons)
+            @Named(MCP_SERVER_ICONS) Set<String> serverIcons,
+            Optional<TaskController> taskController)
     {
         this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
         this.lifeCycleManager = requireNonNull(lifeCycleManager, "lifeCycleManager is null");
         this.paginationUtil = requireNonNull(paginationUtil, "paginationUtil is null");
         this.sessionController = requireNonNull(sessionController, "sessionController is null");
+        this.taskController = requireNonNull(taskController, "taskController is null");
 
         tools.forEach(tool -> addTool(tool.tool(), tool.toolHandler()));
         prompts.forEach(prompt -> addPrompt(prompt.prompt(), prompt.promptHandler()));
@@ -165,6 +189,9 @@ public class InternalMcpServer
 
         serverImplementation = iconHelper.mapIcons(serverIcons).map(icons -> metadata.implementation().withAdditionalIcons(icons))
                 .orElse(metadata.implementation());
+
+        pingThreshold = mcpConfig.getEventStreamingPingThreshold().toJavaTime();
+        timeout = mcpConfig.getEventStreamingTimeout().toJavaTime();
     }
 
     @Override
@@ -260,6 +287,7 @@ public class InternalMcpServer
                 prompts.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(sessionsEnabled)),
                 resources.isEmpty() ? Optional.empty() : Optional.of(new SubscribeListChanged(sessionsEnabled, sessionsEnabled)),
                 tools.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(sessionsEnabled)),
+                protocol.supportsTasks() ? Optional.of(new TaskCapabilities(INSTANCE, INSTANCE, Optional.of(new TaskRequests(Optional.of(new TaskTools(INSTANCE)))))) : Optional.empty(),
                 Optional.empty());
 
         Implementation localImplementation = protocol.supportsIcons() ? serverImplementation : serverImplementation.simpleForm();
@@ -272,6 +300,7 @@ public class InternalMcpServer
         List<Tool> localTools = tools.values().stream()
                 .map(ToolEntry::tool)
                 .map(tool -> protocol.supportsIcons() ? tool : tool.withoutIcons())
+                .map(tool -> protocol.supportsTasks() ? tool.withAdjustedExecution() : tool.withoutExecution())
                 .collect(toImmutableList());
         return paginationUtil.paginate(listRequest, localTools, Tool::name, ListToolsResult::new);
     }
@@ -310,7 +339,7 @@ public class InternalMcpServer
             throw exception(INVALID_PARAMS, "Tool not found: " + callToolRequest.name());
         }
 
-        McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, progressToken(callToolRequest));
+        McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, progressToken(callToolRequest), taskController);
         try {
             return toolEntry.toolHandler().callTool(requestContext, callToolRequest);
         }
@@ -326,7 +355,7 @@ public class InternalMcpServer
             throw exception(INVALID_PARAMS, "Prompt not found: " + getPromptRequest.name());
         }
 
-        McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, progressToken(getPromptRequest));
+        McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, progressToken(getPromptRequest), taskController);
         return promptEntry.promptHandler().getPrompt(requestContext, getPromptRequest);
     }
 
@@ -334,7 +363,7 @@ public class InternalMcpServer
     {
         updateRequestSpan(request, span -> span.setAttribute(MCP_RESOURCE_URI, readResourceRequest.uri()));
 
-        McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, progressToken(readResourceRequest));
+        McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, progressToken(readResourceRequest), taskController);
 
         List<ResourceContents> resourceContents = internalReadResource(readResourceRequest, requestContext)
                 .orElseThrow(() -> exception(RESOURCE_NOT_FOUND, "Resource not found: " + readResourceRequest.uri()));
@@ -359,7 +388,7 @@ public class InternalMcpServer
             return new CompleteResult(new CompleteCompletion(ImmutableList.of(), OptionalInt.empty(), OptionalBoolean.UNDEFINED));
         }
 
-        McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, progressToken(completeRequest));
+        McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, progressToken(completeRequest), taskController);
 
         return completionEntry.handler().complete(requestContext, completeRequest);
     }
@@ -370,7 +399,7 @@ public class InternalMcpServer
 
         SessionController localSessionController = requireSessionController();
         SessionId sessionId = requireSessionId(request);
-        McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, progressToken(subscribeRequest));
+        McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, progressToken(subscribeRequest), taskController);
 
         List<ResourceContents> resourceContents = internalReadResource(new ReadResourceRequest(subscribeRequest.uri(), subscribeRequest.meta()), requestContext)
                 .orElseThrow(() -> exception(RESOURCE_NOT_FOUND, "Resource not found: " + subscribeRequest.uri()));
@@ -401,7 +430,7 @@ public class InternalMcpServer
         SessionController localSessionController = requireSessionController();
         SessionId sessionId = requireSessionId(request);
 
-        McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, Optional.empty());
+        McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, Optional.empty(), taskController);
         SystemListVersions currentVersions = buildSystemListVersions();
 
         record Notification(String message, Optional<Object> params) {}
@@ -459,6 +488,99 @@ public class InternalMcpServer
         notifications.forEach(notification -> requestContext.sendMessage(notification.message, notification.params));
     }
 
+    ListTasksResult listTasks(HttpServletRequest request, InternalMessageWriter messageWriter, ListRequest listRequest)
+    {
+        McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, Optional.empty(), taskController);
+
+        List<Task> tasks = requestContext.tasks().listTasks(paginationUtil.pageSize(), listRequest.cursor())
+                .stream()
+                .map(TaskFacade::toTask)
+                .collect(toImmutableList());
+        return paginationUtil.paginate(listRequest, tasks, Task::taskId, ListTasksResult::new);
+    }
+
+    Task getTask(HttpServletRequest request, InternalMessageWriter messageWriter, GetTaskRequest getTaskRequest)
+    {
+        McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, Optional.of(getTaskRequest), taskController);
+
+        return requestContext.tasks().getTask(getTaskRequest.taskId())
+                .map(TaskFacade::toTask)
+                .orElseThrow(() -> exception(INVALID_PARAMS, "Task not found: " + getTaskRequest.taskId()));
+    }
+
+    JsonRpcMessage blockUntilTaskCompletion(HttpServletRequest request, InternalMessageWriter messageWriter, GetTaskRequest getTaskRequest)
+    {
+        McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, Optional.empty(), taskController);
+
+        Duration timeoutRemaining = Duration.from(timeout);
+
+        String taskId = getTaskRequest.taskId();
+
+        JsonRpcMessage completionResult = null;
+        try {
+            while ((completionResult == null) && timeoutRemaining.isPositive()) {
+                Stopwatch stopwatch = Stopwatch.createStarted();
+
+                TaskFacade taskFacade = requestContext.tasks().blockUntil(taskId, pingThreshold, timeoutRemaining, hasMessage.or(isCompleted));
+                completionResult = switch (taskFacade.toTaskStatus()) {
+                    case INPUT_REQUIRED -> {
+                        JsonRpcMessage message = taskFacade.message().orElseThrow(() -> exception(INTERNAL_ERROR, "Task completed without a response. Task ID: " + taskId));
+                        messageWriter.writeMessage(objectMapper.writeValueAsString(message));
+                        messageWriter.flushMessages();
+                        requestContext.tasks().clearTaskMessages(taskId);
+                        yield null;
+                    }
+
+                    case COMPLETED, CANCELLED, FAILED -> taskFacade.message().orElseThrow(() -> exception(INTERNAL_ERROR, "Task completed without a response. Task ID: " + taskId));
+
+                    default -> null;
+                };
+
+                timeoutRemaining = timeoutRemaining.minus(stopwatch.elapsed());
+            }
+
+            if (completionResult == null) {
+                throw new TimeoutException();
+            }
+
+            return completionResult;
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw exception(INTERNAL_ERROR, "Task interrupted while waiting for task result. Task ID: " + taskId);
+        }
+        catch (IOException e) {
+            throw exception(INTERNAL_ERROR, "I/O error while sending task result. Task ID: " + taskId);
+        }
+        catch (TimeoutException e) {
+            throw exception(REQUEST_TIMEOUT, "Timed out waiting for task result. Task ID: " + taskId);
+        }
+    }
+
+    Task blockUntilTaskCancelled(HttpServletRequest request, InternalMessageWriter messageWriter, GetTaskRequest getTaskRequest)
+    {
+        McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, Optional.empty(), taskController);
+
+        requestContext.tasks().requestTaskCancellation(getTaskRequest.taskId(), Optional.empty());
+        try {
+            return requestContext.tasks().blockUntil(getTaskRequest.taskId(), pingThreshold, timeout, isCompleted).toTask();
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw exception(INTERNAL_ERROR, "Task interrupted while waiting for task cancellation. Task ID: " + getTaskRequest.taskId());
+        }
+        catch (TimeoutException e) {
+            throw exception(REQUEST_TIMEOUT, "Timed out waiting for task cancellation0. Task ID: " + getTaskRequest.taskId());
+        }
+    }
+
+    void acceptTaskResponse(HttpServletRequest request, InternalMessageWriter messageWriter, String taskId, JsonRpcResponse<?> rpcResponse)
+    {
+        McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, Optional.empty(), taskController);
+
+        requestContext.tasks().addServerToClientResponse(taskId, rpcResponse);
+    }
+
     private SystemListVersions buildSystemListVersions()
     {
         return new SystemListVersions(
@@ -478,6 +600,11 @@ public class InternalMcpServer
     private SessionController requireSessionController()
     {
         return sessionController.orElseThrow(() -> exception(INVALID_REQUEST, "Sessions are not enabled"));
+    }
+
+    private TaskController requireTaskController()
+    {
+        return taskController.orElseThrow(() -> exception(INVALID_REQUEST, "Tasks are not enabled"));
     }
 
     private Optional<ResourceEntry> findResource(String uriString)
@@ -510,7 +637,7 @@ public class InternalMcpServer
 
     private Optional<Object> progressToken(Meta meta)
     {
-        return meta.meta().flatMap(m -> Optional.ofNullable(m.get("progressToken")));
+        return meta.meta().flatMap(m -> Optional.ofNullable(m.get(PROGRESS_TOKEN)));
     }
 
     private static URI toUri(String uriString)
