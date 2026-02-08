@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.TypeLiteral;
 import io.airlift.json.ObjectMapperProvider;
+import io.airlift.mcp.McpDefaultValue;
 import io.airlift.mcp.McpDescription;
 import io.airlift.mcp.reflection.MethodParameter;
 import io.airlift.mcp.reflection.MethodParameter.ObjectParameter;
@@ -70,11 +71,14 @@ public class JsonSchemaBuilder
                         rawType = TypeLiteral.get(genericType).getRawType();
                     }
                     if (rawType.isRecord()) {
+                        if (objectParameter.defaultValue().isPresent()) {
+                            throw exception("Default values for record types aren't supported: " + objectParameter.name());
+                        }
                         typeNode = buildObject(objectParameter.description(), (objectProperties, objectRequired) ->
                                 buildRecord(objectParameter.rawType(), objectProperties, objectRequired));
                     }
                     else {
-                        typeNode = buildStandard(description, rawType);
+                        typeNode = buildStandard(objectParameter.description(), rawType, objectParameter.defaultValue());
                     }
 
                     properties.set(objectParameter.name(), typeNode);
@@ -91,11 +95,12 @@ public class JsonSchemaBuilder
                 buildRecord(recordType, objectProperties, objectRequried));
     }
 
-    private ObjectNode buildStandard(Optional<String> description, Class<?> rawType)
+    private ObjectNode buildStandard(Optional<String> description, Class<?> rawType, Optional<String> defaultValue)
     {
         ObjectNode typeNode = objectMapper.createObjectNode();
         typeNode.put("type", primitiveType(rawType));
         description.ifPresent(value -> typeNode.put("description", value));
+        applyDefaultValue(rawType, defaultValue, typeNode);
 
         if (rawType.isEnum()) {
             ArrayNode enumValues = objectMapper.createArrayNode();
@@ -106,6 +111,16 @@ public class JsonSchemaBuilder
         }
 
         return typeNode;
+    }
+
+    private void applyDefaultValue(Class<?> rawType, Optional<String> defaultValue, ObjectNode typeNode)
+    {
+        try {
+            defaultValue.ifPresent(value -> typeNode.putPOJO("default", objectMapper.convertValue(value, rawType)));
+        }
+        catch (Exception e) {
+            throw exception("Failed to convert default value: " + e.getMessage());
+        }
     }
 
     private void buildRecord(Class<?> recordType, ObjectNode properties, ArrayNode required)
@@ -135,7 +150,9 @@ public class JsonSchemaBuilder
 
                 Optional<String> description = Optional.ofNullable(recordComponent.getAnnotation(McpDescription.class))
                         .map(McpDescription::value);
-                ObjectNode typeNode = convertType(name, description, genericType, rawType);
+                Optional<String> defaultValue = Optional.ofNullable(recordComponent.getAnnotation(McpDefaultValue.class))
+                        .map(McpDefaultValue::value);
+                ObjectNode typeNode = convertType(name, description, genericType, rawType, defaultValue);
 
                 properties.set(name, typeNode);
             }
@@ -171,10 +188,13 @@ public class JsonSchemaBuilder
                 && parameterizedType.getActualTypeArguments()[1].equals(String.class);
     }
 
-    private ObjectNode convertType(String name, Optional<String> description, Type genericType, Class<?> rawType)
+    private ObjectNode convertType(String name, Optional<String> description, Type genericType, Class<?> rawType, Optional<String> defaultValue)
     {
         ObjectNode typeNode;
         if (rawType.isRecord()) {
+            if (defaultValue.isPresent()) {
+                throw exception("Default values for record types aren't supported: " + name);
+            }
             typeNode = buildObject(description, (objectProperties, objectRequired) ->
                     buildRecord(rawType, objectProperties, objectRequired));
         }
@@ -182,15 +202,21 @@ public class JsonSchemaBuilder
             if (!isSupportedMap(genericType)) {
                 throw exception("Map types for JSON schema must be Map<String, String>");
             }
+            if (defaultValue.isPresent()) {
+                throw exception("Default values for map types aren't supported: " + name);
+            }
             typeNode = buildMap(description);
         }
         else if (Collection.class.isAssignableFrom(rawType)) {
             Type collectionType = listArgument(genericType)
                     .orElseThrow(() -> exception("Collection record component isn't fully declared: " + name));
+            if (defaultValue.isPresent()) {
+                throw exception("Default values for collection types aren't supported: " + name);
+            }
             typeNode = buildArray(description, collectionType);
         }
         else {
-            typeNode = buildStandard(description, rawType);
+            typeNode = buildStandard(description, rawType, defaultValue);
         }
         return typeNode;
     }
@@ -198,7 +224,7 @@ public class JsonSchemaBuilder
     private ObjectNode buildArray(Optional<String> description, Type genericType)
     {
         Class<?> rawType = TypeLiteral.get(genericType).getRawType();
-        ObjectNode objectNode = convertType("[]", Optional.empty(), genericType, rawType);
+        ObjectNode objectNode = convertType("[]", Optional.empty(), genericType, rawType, Optional.empty());
 
         ObjectNode typeNode = objectMapper.createObjectNode();
         typeNode.put("type", "array");

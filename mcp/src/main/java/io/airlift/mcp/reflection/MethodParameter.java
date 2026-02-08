@@ -78,6 +78,7 @@ public sealed interface MethodParameter
             Class<?> rawType,
             Type genericType,
             Optional<String> description,
+            Optional<String> defaultValue,
             boolean required)
             implements MethodParameter
     {
@@ -87,6 +88,7 @@ public sealed interface MethodParameter
             requireNonNull(rawType, "rawType is null");
             requireNonNull(genericType, "genericType is null");
             requireNonNull(description, "description is null");
+            requireNonNull(defaultValue, "defaultValue is null");
         }
     }
 }
