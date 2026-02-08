@@ -1,5 +1,6 @@
 package io.airlift.mcp.reflection;
 
+import io.airlift.mcp.McpDefaultValue;
 import io.airlift.mcp.McpDescription;
 import io.airlift.mcp.McpRequestContext;
 import io.airlift.mcp.model.CallToolRequest;
@@ -116,7 +117,9 @@ public interface ReflectionHelper
                     }
 
                     Optional<String> description = Optional.ofNullable(parameter.getAnnotation(McpDescription.class)).map(McpDescription::value);
-                    return new ObjectParameter(parameter.getName(), parameter.getType(), genericType, description, !Optional.class.isAssignableFrom(parameter.getType()));
+                    Optional<String> defaultValue = Optional.ofNullable(parameter.getAnnotation(McpDefaultValue.class)).map(McpDefaultValue::value);
+
+                    return new ObjectParameter(parameter.getName(), parameter.getType(), genericType, description, defaultValue, !Optional.class.isAssignableFrom(parameter.getType()));
                 })
                 .collect(toImmutableList());
     }
