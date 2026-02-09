@@ -185,7 +185,7 @@ public class JsonSchemaBuilder
     {
         return (genericType instanceof ParameterizedType parameterizedType) && parameterizedType.getActualTypeArguments()[0].equals(String.class)
                 && (parameterizedType.getActualTypeArguments().length == 2)
-                && parameterizedType.getActualTypeArguments()[1].equals(String.class);
+                && (parameterizedType.getActualTypeArguments()[1].equals(String.class) || parameterizedType.getActualTypeArguments()[1].equals(Object.class));
     }
 
     private ObjectNode convertType(String name, Optional<String> description, Type genericType, Class<?> rawType, Optional<String> defaultValue)
@@ -200,12 +200,12 @@ public class JsonSchemaBuilder
         }
         else if (Map.class.isAssignableFrom(rawType)) {
             if (!isSupportedMap(genericType)) {
-                throw exception("Map types for JSON schema must be Map<String, String>");
+                throw exception("Map types for JSON schema must be Map<String, String> or Map<String, Object>");
             }
             if (defaultValue.isPresent()) {
                 throw exception("Default values for map types aren't supported: " + name);
             }
-            typeNode = buildMap(description);
+            typeNode = buildMap(description, ((ParameterizedType) genericType).getActualTypeArguments()[1]);
         }
         else if (Collection.class.isAssignableFrom(rawType)) {
             Type collectionType = listArgument(genericType)
@@ -233,10 +233,10 @@ public class JsonSchemaBuilder
         return typeNode;
     }
 
-    private ObjectNode buildMap(Optional<String> description)
+    private ObjectNode buildMap(Optional<String> description, Type valueType)
     {
         ObjectNode additionalPropertiesNode = objectMapper.createObjectNode();
-        additionalPropertiesNode.put("type", "string");
+        additionalPropertiesNode.put("type", valueType.equals(Object.class) ? "object" : "string");
 
         ObjectNode typeNode = objectMapper.createObjectNode();
         typeNode.put("type", "object");
