@@ -198,16 +198,16 @@ public class InternalFilter
 
         switch (request.getMethod().toUpperCase(ROOT)) {
             case POST -> handleMcpPostRequest(request, response, authenticated);
-            case GET -> handleMpcGetRequest(request, response);
+            case GET -> handleMpcGetRequest(request, response, authenticated);
             case DELETE -> handleMcpDeleteRequest(request, response);
             default -> response.setStatus(SC_NOT_FOUND);
         }
     }
 
-    private void handleMpcGetRequest(HttpServletRequest request, HttpServletResponse response)
+    private void handleMpcGetRequest(HttpServletRequest request, HttpServletResponse response, Authenticated<?> authenticated)
     {
         boolean wasHandled = httpGetEventsEnabled && sessionController.map(controller -> {
-            handleEventStreaming(request, response, controller);
+            handleEventStreaming(request, response, authenticated, controller);
             return true;
         }).orElse(false);
 
@@ -217,7 +217,7 @@ public class InternalFilter
     }
 
     @SuppressWarnings("BusyWait")
-    private void handleEventStreaming(HttpServletRequest request, HttpServletResponse response, SessionController sessionController)
+    private void handleEventStreaming(HttpServletRequest request, HttpServletResponse response, Authenticated<?> authenticated, SessionController sessionController)
     {
         SessionId sessionId = requireSessionId(request);
 
@@ -242,7 +242,7 @@ public class InternalFilter
                 pingStopwatch.reset().start();
             };
 
-            mcpServer.reconcileVersions(request, messageWriter);
+            mcpServer.reconcileVersions(request, authenticated, messageWriter);
 
             checkSaveSentMessages(sessionController, sessionId, messageWriter);
 
@@ -382,13 +382,13 @@ public class InternalFilter
 
         Object result = switch (rpcMethod) {
             case METHOD_INITIALIZE -> mcpServer.initialize(request, response, authenticated, convertParams(rpcRequest, InitializeRequest.class));
-            case METHOD_TOOLS_LIST -> withManagement(request, requestId, messageWriter, () -> mcpServer.listTools(currentProtocol, authenticated, convertParams(rpcRequest, ListRequest.class)));
-            case METHOD_TOOLS_CALL -> withManagement(request, requestId, messageWriter, () -> mcpServer.callTool(request, authenticated, messageWriter, convertParams(rpcRequest, CallToolRequest.class)));
-            case METHOD_PROMPT_LIST -> withManagement(request, requestId, messageWriter, () -> mcpServer.listPrompts(currentProtocol, authenticated, convertParams(rpcRequest, ListRequest.class)));
-            case METHOD_PROMPT_GET -> withManagement(request, requestId, messageWriter, () -> mcpServer.getPrompt(request, authenticated, messageWriter, convertParams(rpcRequest, GetPromptRequest.class)));
-            case METHOD_RESOURCES_LIST -> withManagement(request, requestId, messageWriter, () -> mcpServer.listResources(currentProtocol, authenticated, convertParams(rpcRequest, ListRequest.class)));
-            case METHOD_RESOURCES_TEMPLATES_LIST -> withManagement(request, requestId, messageWriter, () -> mcpServer.listResourceTemplates(currentProtocol, authenticated, convertParams(rpcRequest, ListRequest.class)));
-            case METHOD_RESOURCES_READ -> withManagement(request, requestId, messageWriter, () -> mcpServer.readResources(request, authenticated, messageWriter, convertParams(rpcRequest, ReadResourceRequest.class)));
+            case METHOD_TOOLS_LIST -> withManagement(request, authenticated, requestId, messageWriter, () -> mcpServer.listTools(currentProtocol, authenticated, convertParams(rpcRequest, ListRequest.class)));
+            case METHOD_TOOLS_CALL -> withManagement(request, authenticated, requestId, messageWriter, () -> mcpServer.callTool(request, authenticated, messageWriter, convertParams(rpcRequest, CallToolRequest.class)));
+            case METHOD_PROMPT_LIST -> withManagement(request, authenticated, requestId, messageWriter, () -> mcpServer.listPrompts(currentProtocol, authenticated, convertParams(rpcRequest, ListRequest.class)));
+            case METHOD_PROMPT_GET -> withManagement(request, authenticated, requestId, messageWriter, () -> mcpServer.getPrompt(request, authenticated, messageWriter, convertParams(rpcRequest, GetPromptRequest.class)));
+            case METHOD_RESOURCES_LIST -> withManagement(request, authenticated, requestId, messageWriter, () -> mcpServer.listResources(currentProtocol, authenticated, convertParams(rpcRequest, ListRequest.class)));
+            case METHOD_RESOURCES_TEMPLATES_LIST -> withManagement(request, authenticated, requestId, messageWriter, () -> mcpServer.listResourceTemplates(currentProtocol, authenticated, convertParams(rpcRequest, ListRequest.class)));
+            case METHOD_RESOURCES_READ -> withManagement(request, authenticated, requestId, messageWriter, () -> mcpServer.readResources(request, authenticated, messageWriter, convertParams(rpcRequest, ReadResourceRequest.class)));
             case METHOD_PING -> ImmutableMap.of();
             case METHOD_COMPLETION_COMPLETE -> mcpServer.completionComplete(request, authenticated, messageWriter, convertParams(rpcRequest, CompleteRequest.class));
             case METHOD_LOGGING_SET_LEVEL -> mcpServer.setLoggingLevel(request, convertParams(rpcRequest, SetLevelRequest.class));
@@ -413,14 +413,14 @@ public class InternalFilter
         });
     }
 
-    private Object withManagement(HttpServletRequest request, Object requestId, InternalMessageWriter messageWriter, Supplier<Object> supplier)
+    private Object withManagement(HttpServletRequest request, Authenticated<?> authenticated, Object requestId, InternalMessageWriter messageWriter, Supplier<Object> supplier)
     {
         if (sessionController.isEmpty()) {
             return supplier.get();
         }
 
         if (!httpGetEventsEnabled) {
-            mcpServer.reconcileVersions(request, messageWriter);
+            mcpServer.reconcileVersions(request, authenticated, messageWriter);
         }
 
         return cancellationController.builder(requireSessionId(request), cancellationKey(requestId))
