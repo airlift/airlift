@@ -287,7 +287,7 @@ public class InternalMcpServer
                 completions.isEmpty() ? Optional.empty() : Optional.of(new CompletionCapabilities()),
                 sessionsEnabled ? Optional.of(new LoggingCapabilities()) : Optional.empty(),
                 prompts.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(sessionsEnabled)),
-                resources.isEmpty() ? Optional.empty() : Optional.of(new SubscribeListChanged(sessionsEnabled, sessionsEnabled)),
+                resources.isEmpty() && resourceTemplates.isEmpty() ? Optional.empty() : Optional.of(new SubscribeListChanged(sessionsEnabled, sessionsEnabled)),
                 tools.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(sessionsEnabled)),
                 Optional.empty());
 
