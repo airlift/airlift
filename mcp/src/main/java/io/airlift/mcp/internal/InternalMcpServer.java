@@ -300,37 +300,40 @@ public class InternalMcpServer
     {
         List<Tool> localTools = tools.values().stream()
                 .map(ToolEntry::tool)
+                .filter(tool -> capabilityFilter.isAllowed(authenticated, tool))
                 .map(tool -> protocol.supportsIcons() ? tool : tool.withoutIcons())
                 .collect(toImmutableList());
-        List<Tool> filteredTools = capabilityFilter.allowedTools(authenticated, localTools);
-        return paginationUtil.paginate(listRequest, filteredTools, Tool::name, ListToolsResult::new);
+        return paginationUtil.paginate(listRequest, localTools, Tool::name, ListToolsResult::new);
     }
 
     ListPromptsResult listPrompts(Protocol protocol, Authenticated<?> authenticated, ListRequest listRequest)
     {
         List<Prompt> localPrompts = prompts.values().stream()
                 .map(PromptEntry::prompt)
+                .filter(prompt -> capabilityFilter.isAllowed(authenticated, prompt))
                 .map(prompt -> protocol.supportsIcons() ? prompt : prompt.withoutIcons())
                 .collect(toImmutableList());
-        return paginationUtil.paginate(listRequest, capabilityFilter.allowedPrompts(authenticated, localPrompts), Prompt::name, ListPromptsResult::new);
+        return paginationUtil.paginate(listRequest, localPrompts, Prompt::name, ListPromptsResult::new);
     }
 
     ListResourcesResult listResources(Protocol protocol, Authenticated<?> authenticated, ListRequest listRequest)
     {
         List<Resource> localResources = resources.values().stream()
                 .map(ResourceEntry::resource)
+                .filter(resource -> capabilityFilter.isAllowed(authenticated, resource))
                 .map(resource -> protocol.supportsIcons() ? resource : resource.withoutIcons())
                 .collect(toImmutableList());
-        return paginationUtil.paginate(listRequest, capabilityFilter.allowedResources(authenticated, localResources), Resource::name, ListResourcesResult::new);
+        return paginationUtil.paginate(listRequest, localResources, Resource::name, ListResourcesResult::new);
     }
 
     ListResourceTemplatesResult listResourceTemplates(Protocol protocol, Authenticated<?> authenticated, ListRequest listRequest)
     {
         List<ResourceTemplate> localResourceTemplates = resourceTemplates.values().stream()
                 .map(ResourceTemplateEntry::resourceTemplate)
+                .filter(resourceTemplate -> capabilityFilter.isAllowed(authenticated, resourceTemplate))
                 .map(resourceTemplate -> protocol.supportsIcons() ? resourceTemplate : resourceTemplate.withoutIcons())
                 .collect(toImmutableList());
-        return paginationUtil.paginate(listRequest, capabilityFilter.allowedResourceTemplates(authenticated, localResourceTemplates), ResourceTemplate::name, ListResourceTemplatesResult::new);
+        return paginationUtil.paginate(listRequest, localResourceTemplates, ResourceTemplate::name, ListResourceTemplatesResult::new);
     }
 
     CallToolResult callTool(HttpServletRequest request, Authenticated<?> authenticated, MessageWriter messageWriter, CallToolRequest callToolRequest)
