@@ -11,7 +11,9 @@ import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.google.inject.Inject;
 import io.airlift.log.Logger;
 import io.airlift.mcp.McpConfig;
+import io.airlift.mcp.McpEntities;
 import io.airlift.mcp.McpException;
+import io.airlift.mcp.McpIdentity.Authenticated;
 import io.airlift.mcp.McpRequestContext;
 import io.airlift.mcp.McpServer;
 import io.airlift.mcp.model.ReadResourceRequest;
@@ -65,16 +67,16 @@ public class VersionsController
                 .build();
     }
 
-    public void initializeSessionVersions(SessionId sessionId)
+    public void initializeSessionVersions(SessionId sessionId, Authenticated<?> identity)
     {
-        sessionController.ifPresent(controller -> controller.setSessionValue(sessionId, SYSTEM_LIST_VERSIONS, buildSystemListVersions()));
+        sessionController.ifPresent(controller -> controller.setSessionValue(sessionId, SYSTEM_LIST_VERSIONS, buildSystemListVersions(identity)));
     }
 
-    public void resourcesSubscribe(SessionId sessionId, McpRequestContext requestContext, SubscribeRequest subscribeRequest)
+    public void resourcesSubscribe(SessionId sessionId, Authenticated<?> identity, McpRequestContext requestContext, SubscribeRequest subscribeRequest)
     {
         SessionController localSessionController = sessionController.orElseThrow(() -> exception(INVALID_REQUEST, "Sessions are not enabled"));
 
-        String version = readResourceVersion(requestContext, subscribeRequest.uri(), true);
+        String version = readResourceVersion(requestContext, identity, subscribeRequest.uri(), true);
 
         localSessionController.computeSessionValue(sessionId, RESOURCE_VERSIONS, currentValue -> {
             ResourceVersions resourceVersions = currentValue.orElseGet(() -> new ResourceVersions(ImmutableMap.of()));
@@ -96,13 +98,13 @@ public class VersionsController
 
     private record Notification(String message, Optional<Object> params) {}
 
-    public void reconcileVersions(SessionId sessionId, McpRequestContext requestContext)
+    public void reconcileVersions(SessionId sessionId, Authenticated<?> identity, McpRequestContext requestContext)
     {
         sessionController.ifPresent(controller -> {
             List<Notification> notifications = new ArrayList<>();
 
-            reconcileSystemListVersions(controller, sessionId, notifications);
-            reconcileResourceSubscriptions(controller, requestContext, sessionId, notifications);
+            reconcileSystemListVersions(controller, identity, sessionId, notifications);
+            reconcileResourceSubscriptions(controller, identity, requestContext, sessionId, notifications);
 
             // ideally, we'd send these messages before updating the session state, but that would require
             // sending them inside of a DB transaction and that isn't ideal. So, we send them after updating the session state.
@@ -111,10 +113,10 @@ public class VersionsController
         });
     }
 
-    private void reconcileSystemListVersions(SessionController sessionController, SessionId sessionId, List<Notification> notifications)
+    private void reconcileSystemListVersions(SessionController sessionController, Authenticated<?> identity, SessionId sessionId, List<Notification> notifications)
     {
         // pre-check against current value which should be cached in memory via CachingSessionController
-        SystemListVersions currentSystemListVersions = buildSystemListVersions();
+        SystemListVersions currentSystemListVersions = buildSystemListVersions(identity);
         Optional<SystemListVersions> sessionSystemListVersions = sessionController.getSessionValue(sessionId, SYSTEM_LIST_VERSIONS);
         boolean precheckHasChanges = !sessionSystemListVersions.map(currentSystemListVersions::equals).orElse(false);
 
@@ -123,7 +125,7 @@ public class VersionsController
             sessionController.computeSessionValue(sessionId, SYSTEM_LIST_VERSIONS, maybePreviousVersions -> {
                 SystemListVersions previousVersions = maybePreviousVersions.orElseGet(() -> {
                     log.warn("No current versions found for session %s", sessionId);
-                    return buildSystemListVersions();
+                    return buildSystemListVersions(identity);
                 });
 
                 if (!previousVersions.toolsVersion().equals(currentSystemListVersions.toolsVersion())) {
@@ -141,7 +143,7 @@ public class VersionsController
         }
     }
 
-    private void reconcileResourceSubscriptions(SessionController sessionController, McpRequestContext requestContext, SessionId sessionId, List<Notification> notifications)
+    private void reconcileResourceSubscriptions(SessionController sessionController, Authenticated<?> identity, McpRequestContext requestContext, SessionId sessionId, List<Notification> notifications)
     {
         // will likely be cached/in-memory via CachingSessionController
         Map<String, String> currentSubscriptions = sessionController.getSessionValue(sessionId, RESOURCE_VERSIONS)
@@ -154,7 +156,7 @@ public class VersionsController
                 .anyMatch(entry -> {
                     String uri = entry.getKey();
                     String oldVersion = entry.getValue();
-                    String newVersion = readResourceVersion(requestContext, uri, false);
+                    String newVersion = readResourceVersion(requestContext, identity, uri, false);
                     return !oldVersion.equals(newVersion);
                 });
 
@@ -166,7 +168,7 @@ public class VersionsController
                         .map(entry -> {
                             String uri = entry.getKey();
                             String oldVersion = entry.getValue();
-                            String newVersion = readResourceVersion(requestContext, uri, false);
+                            String newVersion = readResourceVersion(requestContext, identity, uri, false);
 
                             if (!oldVersion.equals(newVersion)) {
                                 notifications.add(new Notification(NOTIFICATION_RESOURCES_UPDATED, Optional.of(new ResourcesUpdatedNotification(uri))));
@@ -180,11 +182,11 @@ public class VersionsController
         }
     }
 
-    private String readResourceVersion(McpRequestContext requestContext, String uri, boolean required)
+    private String readResourceVersion(McpRequestContext requestContext, Authenticated<?> identity, String uri, boolean required)
     {
         try {
             return resourceVersionsCache.get(uri, () -> {
-                Optional<List<ResourceContents>> resourceContents = mcpServer.readResourceContents(requestContext, new ReadResourceRequest(uri, Optional.empty()));
+                Optional<List<ResourceContents>> resourceContents = mcpServer.entities(identity).readResourceContents(requestContext, new ReadResourceRequest(uri, Optional.empty()));
                 if (required && resourceContents.isEmpty()) {
                     throw exception(RESOURCE_NOT_FOUND, "Resource not found: " + uri);
                 }
@@ -201,13 +203,15 @@ public class VersionsController
         }
     }
 
-    private SystemListVersions buildSystemListVersions()
+    private SystemListVersions buildSystemListVersions(Authenticated<?> identity)
     {
+        McpEntities entities = mcpServer.entities(identity);
+
         return new SystemListVersions(
-                listHash(mcpServer.tools().stream()),
-                listHash(mcpServer.prompts().stream()),
-                listHash(mcpServer.resources().stream()),
-                listHash(mcpServer.resourceTemplates().stream()));
+                listHash(entities.tools().stream()),
+                listHash(entities.prompts().stream()),
+                listHash(entities.resources().stream()),
+                listHash(entities.resourceTemplates().stream()));
     }
 
     @SuppressWarnings("UnstableApiUsage")
