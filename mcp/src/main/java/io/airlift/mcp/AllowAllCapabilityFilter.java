@@ -39,4 +39,10 @@ class AllowAllCapabilityFilter
     {
         return true;
     }
+
+    @Override
+    public boolean isAllowed(Authenticated<?> identity, String resourceUri)
+    {
+        return true;
+    }
 }

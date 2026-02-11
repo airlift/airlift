@@ -375,6 +375,10 @@ public class InternalMcpServer
     {
         updateRequestSpan(request, span -> span.setAttribute(MCP_RESOURCE_URI, readResourceRequest.uri()));
 
+        if (!capabilityFilter.isAllowed(authenticated, readResourceRequest.uri())) {
+            throw new McpClientException(exception(INVALID_PARAMS, "Resource access not allowed: " + readResourceRequest.uri()));
+        }
+
         URI uri = URI.create(readResourceRequest.uri());
         ResourceEntry resourceEntry = resources.get(uri);
         if (resourceEntry != null) {
@@ -427,9 +431,13 @@ public class InternalMcpServer
         return completionEntry.handler().complete(requestContext, completeRequest);
     }
 
-    Object resourcesSubscribe(HttpServletRequest request, InternalMessageWriter messageWriter, SubscribeRequest subscribeRequest)
+    Object resourcesSubscribe(HttpServletRequest request, Authenticated<?> authenticated, InternalMessageWriter messageWriter, SubscribeRequest subscribeRequest)
     {
         updateRequestSpan(request, span -> span.setAttribute(MCP_RESOURCE_URI, subscribeRequest.uri()));
+
+        if (!capabilityFilter.isAllowed(authenticated, subscribeRequest.uri())) {
+            throw new McpClientException(exception(INVALID_PARAMS, "Resource access not allowed: " + subscribeRequest.uri()));
+        }
 
         SessionId sessionId = requireSessionId(request);
         McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, progressToken(subscribeRequest));
