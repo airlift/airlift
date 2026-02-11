@@ -392,7 +392,7 @@ public class InternalFilter
             case METHOD_PING -> ImmutableMap.of();
             case METHOD_COMPLETION_COMPLETE -> mcpServer.completionComplete(request, authenticated, messageWriter, convertParams(rpcRequest, CompleteRequest.class));
             case METHOD_LOGGING_SET_LEVEL -> mcpServer.setLoggingLevel(request, convertParams(rpcRequest, SetLevelRequest.class));
-            case METHOD_RESOURCES_SUBSCRIBE -> mcpServer.resourcesSubscribe(request, messageWriter, convertParams(rpcRequest, SubscribeRequest.class));
+            case METHOD_RESOURCES_SUBSCRIBE -> mcpServer.resourcesSubscribe(request, authenticated, messageWriter, convertParams(rpcRequest, SubscribeRequest.class));
             case METHOD_RESOURCES_UNSUBSCRIBE -> mcpServer.resourcesUnsubscribe(request, convertParams(rpcRequest, SubscribeRequest.class));
             default -> throw exception(METHOD_NOT_FOUND, "Unknown method: " + rpcRequest.method());
         };

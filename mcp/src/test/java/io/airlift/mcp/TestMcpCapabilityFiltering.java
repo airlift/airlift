@@ -31,6 +31,7 @@ import io.modelcontextprotocol.spec.McpSchema.PromptReference;
 import io.modelcontextprotocol.spec.McpSchema.ReadResourceRequest;
 import io.modelcontextprotocol.spec.McpSchema.ReadResourceResult;
 import io.modelcontextprotocol.spec.McpSchema.ResourceReference;
+import io.modelcontextprotocol.spec.McpSchema.SubscribeRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -219,6 +220,11 @@ public class TestMcpCapabilityFiltering
         assertThatThrownBy(() -> client.mcpClient().readResource(new ReadResourceRequest("file://admin-resource.txt")))
                 .satisfies(e -> assertMcpError(e, INVALID_PARAMS, "Resource access not allowed: file://admin-resource.txt"));
 
+        // Verify public resource can be subscribed, but admin can't
+        client.mcpClient().subscribeResource(new SubscribeRequest("file://public-resource.txt"));
+        assertThatThrownBy(() -> client.mcpClient().subscribeResource(new SubscribeRequest("file://admin-resource.txt")))
+                .satisfies(e -> assertMcpError(e, INVALID_PARAMS, "Resource access not allowed: file://admin-resource.txt"));
+
         // Verify all tools are visible to admin
         TestingClient adminClient = TestingClient.buildClient(closer, baseUri, EXPECTED_IDENTITY, EXPECTED_IDENTITY);
         resources = adminClient.mcpClient().listResources();
@@ -230,6 +236,10 @@ public class TestMcpCapabilityFiltering
 
         McpSchema.ReadResourceResult adminResourceResult = adminClient.mcpClient().readResource(new ReadResourceRequest("file://public-resource.txt"));
         assertThat(adminResourceResult.contents()).hasSize(1);
+
+        // Verify admin can subscribe to all
+        adminClient.mcpClient().subscribeResource(new SubscribeRequest("file://public-resource.txt"));
+        adminClient.mcpClient().subscribeResource(new SubscribeRequest("file://admin-resource.txt"));
     }
 
     @Test
@@ -373,6 +383,13 @@ public class TestMcpCapabilityFiltering
                 case CompleteReference.PromptReference promptReference -> promptReference.name().contains("public");
                 case CompleteReference.ResourceReference resourceReference -> resourceReference.uri().contains("public");
             };
+        }
+
+        @Override
+        public boolean isAllowed(Authenticated<?> identity, String resourceUri)
+        {
+            TestingIdentity actualIdentity = (TestingIdentity) identity.identity();
+            return EXPECTED_IDENTITY.equals(actualIdentity.name()) || resourceUri.contains("public");
         }
     }
 
