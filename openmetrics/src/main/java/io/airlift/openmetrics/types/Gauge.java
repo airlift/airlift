@@ -14,6 +14,7 @@
 package io.airlift.openmetrics.types;
 
 import io.airlift.stats.labeled.LabelSet;
+import io.airlift.stats.labeled.LabeledGaugeStat;
 
 import java.util.Map;
 
@@ -36,6 +37,12 @@ public record Gauge(String metricName, double value, LabelSet labels, String hel
     public static Gauge from(String metricName, Number value, Map<String, String> labels, String help)
     {
         return new Gauge(metricName, value.doubleValue(), labels, help);
+    }
+
+    public static Gauge fromLabeledGaugeStat(Map<String, String> commonLabels, LabeledGaugeStat.Value labeledGaugeStat)
+    {
+        LabelSet mergedLabels = LabelSet.fromLabels(commonLabels, labeledGaugeStat.labels().asMap());
+        return new Gauge(labeledGaugeStat.metricName(), labeledGaugeStat.getValue(), mergedLabels, labeledGaugeStat.description());
     }
 
     @Override

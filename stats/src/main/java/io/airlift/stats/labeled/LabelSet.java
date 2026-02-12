@@ -44,6 +44,20 @@ public class LabelSet
         return new LabelSet(labels);
     }
 
+    public static LabelSet fromLabels(Map<String, String> labelsOne, Map<String, String> labelsTwo)
+    {
+        if (labelsOne.isEmpty()) {
+            return LabelSet.fromLabels(labelsTwo);
+        }
+        if (labelsTwo.isEmpty()) {
+            return LabelSet.fromLabels(labelsOne);
+        }
+        return LabelSet.fromLabels(ImmutableMap.<String, String>builder()
+                .putAll(labelsOne)
+                .putAll(labelsTwo)
+                .buildOrThrow());
+    }
+
     private LabelSet(Map<String, String> labels)
     {
         this.canonicalLabels = canonicalize(labels);
