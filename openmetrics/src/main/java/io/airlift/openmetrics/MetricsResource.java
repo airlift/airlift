@@ -22,10 +22,15 @@ import io.airlift.node.NodeInfo;
 import io.airlift.openmetrics.types.CompositeMetric;
 import io.airlift.openmetrics.types.Counter;
 import io.airlift.openmetrics.types.Gauge;
+import io.airlift.openmetrics.types.Histogram;
 import io.airlift.openmetrics.types.Metric;
 import io.airlift.openmetrics.types.Summary;
 import io.airlift.stats.CounterStat;
 import io.airlift.stats.TimeDistribution;
+import io.airlift.stats.labeled.LabelSet;
+import io.airlift.stats.labeled.LabeledCounterStat;
+import io.airlift.stats.labeled.LabeledGaugeStat;
+import io.airlift.stats.labeled.LabeledHistogramStat;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
@@ -44,6 +49,7 @@ import javax.management.ObjectName;
 import javax.management.ReflectionException;
 import javax.management.openmbean.CompositeData;
 
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +59,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.util.Objects.requireNonNull;
 
 @Path("/metrics")
@@ -255,6 +262,10 @@ public class MetricsResource
 
     private List<Metric> getMetricsRecursively(String prefix, ManagedClass managedClass)
     {
+        Optional<Metric> metricFromManagedClass = getMetricFromManagedClass(managedClass);
+        if (metricFromManagedClass.isPresent()) {
+            return metricFromManagedClass.stream().collect(toImmutableList());
+        }
         String metricName = sanitizeMetricName(prefix);
 
         ImmutableList.Builder<Metric> metrics = ImmutableList.builder();
@@ -294,25 +305,37 @@ public class MetricsResource
         return metrics.build();
     }
 
-    private Optional<Metric> getMetricFromTarget(ManagedClass managedClass, String metricName, String description)
+    private Optional<Object> getTarget(ManagedClass managedClass)
     {
-        Object target;
         try {
-            target = managedClass.getTarget();
+            return Optional.of(managedClass.getTarget());
         }
         catch (IllegalStateException ignored) {
             return Optional.empty();
         }
+    }
 
-        if (target instanceof CounterStat counterStat) {
-            return Optional.of(Counter.from(metricName, counterStat, labels, description));
-        }
+    private Optional<Metric> getMetricFromTarget(ManagedClass managedClass, String metricName, String description)
+    {
+        return getTarget(managedClass).flatMap(t -> switch (t) {
+            case CounterStat counterStat ->
+                    Optional.of(Counter.from(metricName, counterStat, labels, description));
+            case TimeDistribution timeDistribution ->
+                    Optional.of(Summary.from(metricName, timeDistribution, labels, description));
+            // Labeled stats are guaranteed to be registered as a top-level managed class
+            // if labeled stats are nested within another managed class, ignore them
+            default -> Optional.empty();
+        });
+    }
 
-        if (target instanceof TimeDistribution timeDistribution) {
-            return Optional.of(Summary.from(metricName, timeDistribution, labels, description));
-        }
-
-        return Optional.empty();
+    private Optional<Metric> getMetricFromManagedClass(ManagedClass managedClass)
+    {
+        return getTarget(managedClass).flatMap(t -> switch (t) {
+            case LabeledCounterStat.CounterStat labeledCounterStat -> Optional.of(Counter.fromLabeledCounterStat(labeledCounterStat));
+            case LabeledGaugeStat.GaugeStat labeledGaugeStat -> Optional.of(Gauge.fromLabeledGaugeStat(labeledGaugeStat));
+            case LabeledHistogramStat.HistogramStat labeledHistogramStat -> Optional.of(Histogram.fromLabeledHistogramStat(labeledHistogramStat));
+            default -> Optional.empty();
+        });
     }
 
     private String jmxMetricExpositions(ObjectName initialObjectName)
@@ -333,11 +356,17 @@ public class MetricsResource
                 .flatMap(List::stream);
     }
 
+    /**
+     * @param managedMetrics Stream of metrics from managed classes
+     * @return openmetrics expositions for the given metrics in deterministic sorted order, by metric family name then labels.
+     * sorting not required by openmetrics but makes testing and debugging easier
+     */
     @VisibleForTesting
     static String managedMetricExpositions(Stream<Metric> managedMetrics)
     {
         StringBuilder builder = new StringBuilder();
         Map<String, List<Metric>> metricFamilies = managedMetrics
+                .sorted(Comparator.comparing(Metric::metricName))
                 .collect(Collectors.groupingBy(
                         Metric::metricName,
                         LinkedHashMap::new,
@@ -345,6 +374,7 @@ public class MetricsResource
 
         // Only include metric descriptor once per metric family
         metricFamilies.forEach((metricName, metricFamily) -> {
+            metricFamily.sort(Comparator.comparing(Metric::labels, LabelSet.LABEL_SET_COMPARATOR));
             Class<?> clazz = metricFamily.get(0).getClass();
             Optional<Metric> classMismatch = metricFamily.stream()
                     .filter(c -> c.getClass() != clazz)

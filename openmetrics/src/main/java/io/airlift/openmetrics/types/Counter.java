@@ -15,6 +15,7 @@ package io.airlift.openmetrics.types;
 
 import io.airlift.stats.CounterStat;
 import io.airlift.stats.labeled.LabelSet;
+import io.airlift.stats.labeled.LabeledCounterStat;
 
 import java.util.Map;
 
@@ -37,6 +38,11 @@ public record Counter(String metricName, long value, LabelSet labels, String hel
     public static Counter from(String metricName, CounterStat counterStat, Map<String, String> labels, String help)
     {
         return new Counter(metricName, counterStat.getTotalCount(), LabelSet.fromLabels(labels), help);
+    }
+
+    public static Counter fromLabeledCounterStat(LabeledCounterStat.CounterStat labeledCounterStat)
+    {
+        return new Counter(labeledCounterStat.metricName(), labeledCounterStat.getCount(), labeledCounterStat.labels(), labeledCounterStat.description());
     }
 
     @Override
