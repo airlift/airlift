@@ -1,5 +1,6 @@
 package io.airlift.http.client;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -36,6 +37,14 @@ public final class ResponseHandlerUtils
         catch (IOException e) {
             throw new UncheckedIOException("Failed reading response from server: " + urlFor(request), e);
         }
+    }
+
+    public static InputStream getResponseStream(Response response)
+    {
+        return switch (response.getContent()) {
+            case Response.BytesContent(byte[] bytes) -> new ByteArrayInputStream(bytes);
+            case Response.InputStreamContent(InputStream inputStream) -> inputStream;
+        };
     }
 
     private static String urlFor(Request request)
