@@ -7,15 +7,12 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.net.HostAndPort;
 import com.google.common.primitives.Bytes;
 
-import java.io.ByteArrayOutputStream;
 import java.net.URI;
+import java.net.URLDecoder;
 import java.nio.ByteBuffer;
-import java.nio.charset.CharacterCodingException;
-import java.nio.charset.CodingErrorAction;
 import java.util.Iterator;
 import java.util.Map;
 
-import static com.google.common.base.CharMatcher.ascii;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.Streams.stream;
@@ -290,38 +287,7 @@ public class HttpUriBuilder
      */
     private static String percentDecode(String encoded)
     {
-        checkArgument(ascii().matchesAllOf(encoded), "string must be ASCII");
-
-        ByteArrayOutputStream out = new ByteArrayOutputStream(encoded.length());
-        for (int i = 0; i < encoded.length(); i++) {
-            char c = encoded.charAt(i);
-
-            if (c == '%') {
-                checkArgument(i + 2 < encoded.length(), "percent encoded value is truncated");
-
-                int high = Character.digit(encoded.charAt(i + 1), 16);
-                int low = Character.digit(encoded.charAt(i + 2), 16);
-
-                checkArgument(high != -1 && low != -1, "percent encoded value is not a valid hex string: ", encoded.substring(i, i + 2));
-
-                int value = (high << 4) | (low);
-                out.write(value);
-                i += 2;
-            }
-            else {
-                out.write((int) c);
-            }
-        }
-
-        try {
-            return UTF_8.newDecoder()
-                    .onMalformedInput(CodingErrorAction.REPORT)
-                    .decode(ByteBuffer.wrap(out.toByteArray()))
-                    .toString();
-        }
-        catch (CharacterCodingException e) {
-            throw new IllegalArgumentException("input does not represent a proper UTF8-encoded string");
-        }
+        return URLDecoder.decode(encoded, UTF_8);
     }
 
     private static String bracketedHostString(HostAndPort hostAndPort)
