@@ -29,11 +29,21 @@ public interface Metric
 
     String getMetricExposition();
 
-    static String formatSingleValuedMetric(String name, String type, String help, Map<String, String> labels, String value)
+    String getMetricDescriptor();
+
+    static String formatSingleValuedMetric(String name, Map<String, String> labels, String value)
     {
-        return TYPE_LINE_FORMAT.formatted(name, type) +
-                (Strings.isNullOrEmpty(help) ? "" : HELP_LINE_FORMAT.formatted(name, help)) +
-                VALUE_LINE_FORMAT.formatted(formatNameWithLabels(name, labels), value);
+        return VALUE_LINE_FORMAT.formatted(formatNameWithLabels(name, labels), value);
+    }
+
+    static String formatMetricDescriptor(String metricName, String type, String help)
+    {
+        StringBuilder output = new StringBuilder();
+        output.append(TYPE_LINE_FORMAT.formatted(metricName, type));
+        if (!Strings.isNullOrEmpty(help)) {
+            output.append(HELP_LINE_FORMAT.formatted(metricName, help));
+        }
+        return output.toString();
     }
 
     static String formatNameWithLabels(String name, Map<String, String> labels)

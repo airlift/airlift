@@ -37,6 +37,12 @@ public record Counter(String metricName, long value, Map<String, String> labels,
     @Override
     public String getMetricExposition()
     {
-        return Metric.formatSingleValuedMetric(metricName, "counter", help, labels, Long.toString(value));
+        return Metric.formatSingleValuedMetric(metricName, labels, Long.toString(value));
+    }
+
+    @Override
+    public String getMetricDescriptor()
+    {
+        return Metric.formatMetricDescriptor(metricName, "counter", help);
     }
 }

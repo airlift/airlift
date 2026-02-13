@@ -33,6 +33,12 @@ public record BigCounter(String metricName, BigInteger value, Map<String, String
     @Override
     public String getMetricExposition()
     {
-        return Metric.formatSingleValuedMetric(metricName, "counter", help, labels, value.toString());
+        return Metric.formatSingleValuedMetric(metricName, labels, value.toString());
+    }
+
+    @Override
+    public String getMetricDescriptor()
+    {
+        return Metric.formatMetricDescriptor(metricName, "counter", help);
     }
 }

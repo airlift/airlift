@@ -36,6 +36,12 @@ public record Gauge(String metricName, double value, Map<String, String> labels,
     @Override
     public String getMetricExposition()
     {
-        return Metric.formatSingleValuedMetric(metricName, "gauge", help, labels, Double.toString(value));
+        return Metric.formatSingleValuedMetric(metricName, labels, Double.toString(value));
+    }
+
+    @Override
+    public String getMetricDescriptor()
+    {
+        return Metric.formatMetricDescriptor(metricName, "gauge", help);
     }
 }

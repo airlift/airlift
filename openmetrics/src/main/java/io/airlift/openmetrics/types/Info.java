@@ -32,6 +32,12 @@ public record Info(String metricName, String value, Map<String, String> labels, 
     @Override
     public String getMetricExposition()
     {
-        return Metric.formatSingleValuedMetric(metricName, "info", help, labels, value);
+        return Metric.formatSingleValuedMetric(metricName, labels, value);
+    }
+
+    @Override
+    public String getMetricDescriptor()
+    {
+        return Metric.formatMetricDescriptor(metricName, "info", help);
     }
 }
