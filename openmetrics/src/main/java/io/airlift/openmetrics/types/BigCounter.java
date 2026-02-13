@@ -30,8 +30,8 @@ public record BigCounter(String metricName, BigInteger value, Map<String, String
     }
 
     @Override
-    public String getMetricExposition()
+    public String getMetricExposition(boolean includeDescriptor)
     {
-        return Metric.formatSingleValuedMetric(metricName, "counter", help, labels, value.toString());
+        return Metric.formatSingleValuedMetric(metricName, "counter", help, labels, value.toString(), includeDescriptor);
     }
 }

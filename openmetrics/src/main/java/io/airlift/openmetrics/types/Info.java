@@ -28,8 +28,8 @@ public record Info(String metricName, String value, Map<String, String> labels, 
     }
 
     @Override
-    public String getMetricExposition()
+    public String getMetricExposition(boolean includeDescriptor)
     {
-        return Metric.formatSingleValuedMetric(metricName, "info", help, labels, value);
+        return Metric.formatSingleValuedMetric(metricName, "info", help, labels, value, includeDescriptor);
     }
 }

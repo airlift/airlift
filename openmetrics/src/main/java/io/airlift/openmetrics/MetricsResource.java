@@ -44,11 +44,13 @@ import javax.management.ObjectName;
 import javax.management.ReflectionException;
 import javax.management.openmbean.CompositeData;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNull;
@@ -96,7 +98,7 @@ public class MetricsResource
             }
         }
         else {
-            body.append(managedMetricExpositions());
+            body.append(managedMetricExpositions(getManagedMetricsStream()));
             for (ObjectName metricObjectNames : allMetricsObjectNames) {
                 body.append(jmxMetricExpositions(metricObjectNames));
             }
@@ -331,11 +333,30 @@ public class MetricsResource
                 .flatMap(List::stream);
     }
 
-    private String managedMetricExpositions()
+    @VisibleForTesting
+    static String managedMetricExpositions(Stream<Metric> managedMetrics)
     {
         StringBuilder builder = new StringBuilder();
+        Map<String, List<Metric>> metricFamilies = managedMetrics
+                .collect(Collectors.groupingBy(
+                        Metric::metricName,
+                        LinkedHashMap::new,
+                        Collectors.toList()));
 
-        getManagedMetricsStream().forEach(metric -> builder.append(metric.getMetricExposition()));
+        // Only include metric descriptor once per metric family
+        metricFamilies.forEach((metricName, metricFamily) -> {
+            Class<?> clazz = metricFamily.get(0).getClass();
+            Optional<Metric> classMismatch = metricFamily.stream()
+                    .filter(c -> c.getClass() != clazz)
+                    .findFirst();
+            if (classMismatch.isPresent()) {
+                log.warn("Metric family %s contains mixed metric types, found %s and %s", metricName, clazz.getSimpleName(), classMismatch.orElseThrow().getClass().getSimpleName());
+            }
+            for (int i = 0; i < metricFamily.size(); i++) {
+                boolean includeDescriptor = i == 0;
+                builder.append(metricFamily.get(i).getMetricExposition(includeDescriptor));
+            }
+        });
 
         return builder.toString();
     }

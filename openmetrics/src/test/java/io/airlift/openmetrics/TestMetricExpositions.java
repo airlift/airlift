@@ -52,6 +52,12 @@ public class TestMetricExpositions
         BigCounter bigCounter = new BigCounter("metric_name", BigInteger.ZERO, ImmutableMap.of(), "metric_help");
         assertThat(counter.getMetricExposition()).isEqualTo(bigCounter.getMetricExposition());
         assertThat(counter.getMetricExposition()).isEqualTo(expected);
+
+        String expectedWithoutDescriptor = """
+                metric_name 0
+                """;
+        assertThat(counter.getMetricExposition(false)).isEqualTo(bigCounter.getMetricExposition(false));
+        assertThat(counter.getMetricExposition(false)).isEqualTo(expectedWithoutDescriptor);
     }
 
     @Test
@@ -67,6 +73,12 @@ public class TestMetricExpositions
         BigCounter bigCounter = new BigCounter("metric_name", BigInteger.ZERO, ImmutableMap.of("type", "cavendish"), "metric_help");
         assertThat(counter.getMetricExposition()).isEqualTo(bigCounter.getMetricExposition());
         assertThat(counter.getMetricExposition()).isEqualTo(expected);
+
+        String expectedWithoutDescriptor = """
+                metric_name{type="cavendish"} 0
+                """;
+        assertThat(counter.getMetricExposition(false)).isEqualTo(bigCounter.getMetricExposition(false));
+        assertThat(counter.getMetricExposition(false)).isEqualTo(expectedWithoutDescriptor);
     }
 
     @Test
@@ -78,7 +90,13 @@ public class TestMetricExpositions
                 metric_name 0.0
                 """;
 
-        assertThat(new Gauge("metric_name", 0.0, ImmutableMap.of(), "metric_help").getMetricExposition()).isEqualTo(expected);
+        Gauge gauge = new Gauge("metric_name", 0.0, ImmutableMap.of(), "metric_help");
+        assertThat(gauge.getMetricExposition()).isEqualTo(expected);
+
+        String expectedWithoutDescriptor = """
+                metric_name 0.0
+                """;
+        assertThat(gauge.getMetricExposition(false)).isEqualTo(expectedWithoutDescriptor);
     }
 
     @Test
@@ -90,7 +108,13 @@ public class TestMetricExpositions
                 metric_name{type="cavendish"} 0.0
                 """;
 
-        assertThat(new Gauge("metric_name", 0.0, ImmutableMap.of("type", "cavendish"), "metric_help").getMetricExposition()).isEqualTo(expected);
+        Gauge gauge = new Gauge("metric_name", 0.0, ImmutableMap.of("type", "cavendish"), "metric_help");
+        assertThat(gauge.getMetricExposition()).isEqualTo(expected);
+
+        String expectedWithoutDescriptor = """
+                metric_name{type="cavendish"} 0.0
+                """;
+        assertThat(gauge.getMetricExposition(false)).isEqualTo(expectedWithoutDescriptor);
     }
 
     @Test
@@ -102,7 +126,14 @@ public class TestMetricExpositions
                 metric_name banana
                 """;
 
-        assertThat(new Info("metric_name", "banana", ImmutableMap.of(), "metric_help").getMetricExposition()).isEqualTo(expected);
+        Info info = new Info("metric_name", "banana", ImmutableMap.of(), "metric_help");
+        assertThat(info.getMetricExposition()).isEqualTo(expected);
+
+        String expectedWithoutDescriptor = """
+                metric_name banana
+                """;
+        assertThat(info.getMetricExposition(false)).isEqualTo(expectedWithoutDescriptor);
+
     }
 
     @Test
@@ -114,7 +145,13 @@ public class TestMetricExpositions
                 metric_name{type="cavendish"} banana
                 """;
 
-        assertThat(new Info("metric_name", "banana", ImmutableMap.of("type", "cavendish"), "metric_help").getMetricExposition()).isEqualTo(expected);
+        Info info = new Info("metric_name", "banana", ImmutableMap.of("type", "cavendish"), "metric_help");
+        assertThat(info.getMetricExposition()).isEqualTo(expected);
+
+        String expectedWithoutDescriptor = """
+                metric_name{type="cavendish"} banana
+                """;
+        assertThat(info.getMetricExposition(false)).isEqualTo(expectedWithoutDescriptor);
     }
 
     @Test
@@ -129,7 +166,16 @@ public class TestMetricExpositions
                 metric_name{quantile="0.5"} 0.25
                 """;
 
-        assertThat(new Summary("metric_name", 10L, 2.0, 3.0, ImmutableMap.of(0.5, 0.25), ImmutableMap.of(), "metric_help").getMetricExposition()).isEqualTo(expected);
+        Summary summary = new Summary("metric_name", 10L, 2.0, 3.0, ImmutableMap.of(0.5, 0.25), ImmutableMap.of(), "metric_help");
+        assertThat(summary.getMetricExposition()).isEqualTo(expected);
+
+        String expectedWithoutDescriptor = """
+                metric_name_count 10
+                metric_name_sum 2.0
+                metric_name_created 3.0
+                metric_name{quantile="0.5"} 0.25
+                """;
+        assertThat(summary.getMetricExposition(false)).isEqualTo(expectedWithoutDescriptor);
     }
 
     @Test
@@ -144,7 +190,16 @@ public class TestMetricExpositions
                 metric_name{fruit="apple",quantile="0.5"} 0.25
                 """;
 
-        assertThat(new Summary("metric_name", 10L, 2.0, 3.0, ImmutableMap.of(0.5, 0.25), ImmutableMap.of("fruit", "apple"), "metric_help").getMetricExposition()).isEqualTo(expected);
+        Summary summary = new Summary("metric_name", 10L, 2.0, 3.0, ImmutableMap.of(0.5, 0.25), ImmutableMap.of("fruit", "apple"), "metric_help");
+        assertThat(summary.getMetricExposition()).isEqualTo(expected);
+
+        String expectedWithoutDescriptor = """
+                metric_name_count{fruit="apple"} 10
+                metric_name_sum{fruit="apple"} 2.0
+                metric_name_created{fruit="apple"} 3.0
+                metric_name{fruit="apple",quantile="0.5"} 0.25
+                """;
+        assertThat(summary.getMetricExposition(false)).isEqualTo(expectedWithoutDescriptor);
     }
 
     @Test
@@ -185,6 +240,8 @@ public class TestMetricExpositions
         CompositeData compositeData = createMemoryUsageCompositeData(100L, 200L, 1000L);
         CompositeMetric compositeMetric = CompositeMetric.from("metric_name", compositeData, ImmutableMap.of("type", "cavendish"), "metric_help");
         assertThat(compositeMetric.getMetricExposition()).isEqualTo(expected);
+        // includeDescriptor does not apply recursively to sub-metrics
+        assertThat(compositeMetric.getMetricExposition(false)).isEqualTo(expected);
     }
 
     private CompositeData createMemoryUsageCompositeData(long used, long committed, long max)
@@ -219,6 +276,7 @@ public class TestMetricExpositions
         TabularData tabularData = createTestTabularData();
         CompositeMetric compositeMetric = CompositeMetric.from("metric_name", tabularData, ImmutableMap.of(), "metric_help");
         assertThat(compositeMetric.getMetricExposition()).isEqualTo(expected);
+        assertThat(compositeMetric.getMetricExposition(false)).isEqualTo(expected);
     }
 
     @Test
