@@ -13,7 +13,6 @@
  */
 package io.airlift.openmetrics.types;
 
-import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -25,22 +24,15 @@ import javax.management.openmbean.TabularData;
 import javax.management.openmbean.TabularType;
 
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 
 public record CompositeMetric(String metricName, Map<String, String> labels, String help, List<Metric> subMetrics)
         implements Metric
 {
-    private static final Splitter SPLITTER = Splitter.on('\n')
-            .omitEmptyStrings()
-            .trimResults()
-            .limit(3);
-
     public CompositeMetric
     {
         requireNonNull(metricName, "metricName is null");
@@ -92,47 +84,12 @@ public record CompositeMetric(String metricName, Map<String, String> labels, Str
     @Override
     public String getMetricExposition()
     {
-        if (subMetrics.isEmpty()) {
-            return "";
-        }
+        throw new UnsupportedOperationException("CompositeMetric container does not support metric exposition, use getMetricExposition on subMetrics instead");
+    }
 
-        Map<String, List<Metric>> metricsByName = subMetrics.stream()
-                .collect(Collectors.groupingBy(
-                        Metric::metricName,
-                        LinkedHashMap::new,
-                        Collectors.toList()));
-        StringBuilder exposition = new StringBuilder();
-
-        for (Map.Entry<String, List<Metric>> entry : metricsByName.entrySet()) {
-            List<Metric> metrics = entry.getValue();
-
-            if (metrics.isEmpty()) {
-                continue;
-            }
-            String typeLine = null;
-            String helpLine = null;
-            for (String line : SPLITTER.split(metrics.getFirst().getMetricExposition())) {
-                if (line.startsWith("# TYPE")) {
-                    typeLine = line;
-                }
-                else if (line.startsWith("# HELP")) {
-                    helpLine = line;
-                }
-            }
-            if (typeLine != null) {
-                exposition.append(typeLine).append('\n');
-            }
-            if (helpLine != null) {
-                exposition.append(helpLine).append('\n');
-            }
-            for (Metric metric : metrics) {
-                for (String line : SPLITTER.split(metric.getMetricExposition())) {
-                    if (!line.startsWith("#") && !line.isEmpty()) {
-                        exposition.append(line).append('\n');
-                    }
-                }
-            }
-        }
-        return exposition.toString();
+    @Override
+    public String getMetricDescriptor()
+    {
+        throw new UnsupportedOperationException("CompositeMetric container does not support metric descriptor, use getMetricDescriptor on subMetrics instead");
     }
 }

@@ -46,14 +46,21 @@ import javax.management.ObjectName;
 import javax.management.ReflectionException;
 import javax.management.openmbean.CompositeData;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toList;
 
 @Path("/metrics")
 public class MetricsResource
@@ -91,19 +98,21 @@ public class MetricsResource
     @Produces(OPENMETRICS_CONTENT_TYPE)
     public String getMetrics(@QueryParam("name[]") List<String> filter)
     {
-        StringBuilder body = new StringBuilder();
+        List<Metric> metrics = new ArrayList<>();
         Supplier<List<Metric>> managedMetrics = Suppliers.memoize(this::getManagedMetrics);
         if (filter != null && !filter.isEmpty()) {
             for (String metricName : filter) {
-                toMetricExposition(managedMetrics, metricName).ifPresent(body::append);
+                findMetric(managedMetrics, metricName).ifPresent(metrics::add);
             }
         }
         else {
-            managedMetrics.get().forEach(metric -> body.append(metric.getMetricExposition()));
+            metrics.addAll(managedMetrics.get());
             for (ObjectName metricObjectNames : allMetricsObjectNames) {
-                mbeanServer.queryNames(metricObjectNames, null).forEach(objectName -> inferAttributesForObjectName(body, objectName));
+                mbeanServer.queryNames(metricObjectNames, null).forEach(objectName -> metrics.addAll(inferAttributesForObjectName(objectName)));
             }
         }
+        StringBuilder body = new StringBuilder();
+        metricExpositions(body, metrics);
         body.append("# EOF\n");
         return body.toString();
     }
@@ -183,7 +192,7 @@ public class MetricsResource
         return metricName;
     }
 
-    private Optional<String> toMetricExposition(Supplier<List<Metric>> managedMetricsSupplier, String metricName)
+    private Optional<Metric> findMetric(Supplier<List<Metric>> managedMetricsSupplier, String metricName)
     {
         if (metricName.startsWith("JMX_")) {
             final String jmxMetricName = metricName.substring(4);
@@ -192,7 +201,6 @@ public class MetricsResource
                 return objectNamesFromMetricName(jmxMetricName).stream()
                         .map(objectName -> getMetric(objectName, attributeName, jmxMetricName, ""))
                         .flatMap(Optional::stream)
-                        .map(Metric::getMetricExposition)
                         .findFirst();
             }
             catch (MalformedObjectNameException e) {
@@ -204,8 +212,7 @@ public class MetricsResource
             return managedMetricsSupplier.get()
                     .stream()
                     .filter(metric -> metric.metricName().equals(metricName))
-                    .findFirst()
-                    .map(Metric::getMetricExposition);
+                    .findFirst();
         }
     }
 
@@ -225,8 +232,9 @@ public class MetricsResource
         }
     }
 
-    private void inferAttributesForObjectName(StringBuilder expositions, ObjectName objectName)
+    private List<Metric> inferAttributesForObjectName(ObjectName objectName)
     {
+        List<Metric> metrics = new ArrayList<>();
         try {
             MBeanInfo mbeanInfo = mbeanServer.getMBeanInfo(objectName);
             for (MBeanAttributeInfo mBeanAttributeInfo : mbeanInfo.getAttributes()) {
@@ -234,7 +242,7 @@ public class MetricsResource
                 String description = mBeanAttributeInfo.getDescription();
                 try {
                     getMetric(objectName, attributeName, mBeanNameToMetricName(objectName, attributeName), description)
-                            .ifPresent(value -> expositions.append(value.getMetricExposition()));
+                            .ifPresent(metrics::add);
                 }
                 catch (RuntimeException e) {
                     log.debug(e, "Unable to get Metric for ObjectName %s and Attribute %s, skipping", objectName.getCanonicalName(), attributeName);
@@ -244,6 +252,7 @@ public class MetricsResource
         catch (InstanceNotFoundException | IntrospectionException | ReflectionException e) {
             log.debug(e, "Unable to get MBeanInfo for object %s, skipping", objectName.getCanonicalName());
         }
+        return metrics;
     }
 
     @VisibleForTesting
@@ -322,5 +331,37 @@ public class MetricsResource
                 .map(entry -> getMetricsRecursively(entry.getKey(), entry.getValue()))
                 .flatMap(List::stream)
                 .collect(toImmutableList());
+    }
+
+    /**
+     * Only include metric descriptor once per metric family per openmetrics spec:
+     * <a href="https://prometheus.io/docs/specs/om/open_metrics_spec_2_0/#abnf">...</a>
+     */
+    @VisibleForTesting
+    static void metricExpositions(StringBuilder builder, List<Metric> metrics)
+    {
+        // CompositeMetric should have at most one level of nesting, see CompositeMetric#from
+        List<Metric> flattenedMetrics = metrics.stream()
+                .flatMap(metric -> metric instanceof CompositeMetric compositeMetric ?
+                        compositeMetric.subMetrics().stream() :
+                        Stream.of(metric))
+                .collect(toImmutableList());
+        Map<String, List<Metric>> metricFamilies = flattenedMetrics.stream()
+                .collect(groupingBy(
+                        Metric::metricName,
+                        LinkedHashMap::new,
+                        toList()));
+
+        metricFamilies.forEach((metricName, metricFamily) -> {
+            Set<Class<?>> metricTypes = metricFamily.stream()
+                    .map(Metric::getClass)
+                    .collect(toImmutableSet());
+            checkState(metricTypes.size() == 1, "Metric family %s contains mixed metric types: %s", metricName, metricTypes);
+
+            builder.append(metricFamily.getFirst().getMetricDescriptor());
+            for (int i = 0; i < metricFamily.size(); i++) {
+                builder.append(metricFamily.get(i).getMetricExposition());
+            }
+        });
     }
 }
