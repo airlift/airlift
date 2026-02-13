@@ -44,13 +44,16 @@ import javax.management.ObjectName;
 import javax.management.ReflectionException;
 import javax.management.openmbean.CompositeData;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static java.util.Objects.requireNonNull;
 
 @Path("/metrics")
@@ -96,7 +99,7 @@ public class MetricsResource
             }
         }
         else {
-            getManagedMetricsStream().forEach(metric -> body.append(metric.getMetricExposition()));
+            managedMetricExpositions(body, getManagedMetrics());
             for (ObjectName metricObjectNames : allMetricsObjectNames) {
                 mbeanServer.queryNames(metricObjectNames, null).forEach(objectName -> inferAttributesForObjectName(body, objectName));
             }
@@ -198,8 +201,9 @@ public class MetricsResource
             }
         }
         else {
-            Stream<Metric> metricStream = getManagedMetricsStream();
-            return metricStream
+            List<Metric> managedMetrics = getManagedMetrics();
+            return managedMetrics
+                    .stream()
                     .filter(metric -> metric.metricName().equals(metricName))
                     .findFirst()
                     .map(Metric::getMetricExposition);
@@ -311,12 +315,38 @@ public class MetricsResource
         return Optional.empty();
     }
 
-    private Stream<Metric> getManagedMetricsStream()
+    private List<Metric> getManagedMetrics()
     {
         Map<String, ManagedClass> managedClasses = this.mbeanExporter.getManagedClasses();
 
         return managedClasses.entrySet().stream()
                 .map(entry -> getMetricsRecursively(entry.getKey(), entry.getValue()))
-                .flatMap(List::stream);
+                .flatMap(List::stream)
+                .collect(toImmutableList());
+    }
+
+    @VisibleForTesting
+    static void managedMetricExpositions(StringBuilder builder, List<Metric> managedMetrics)
+    {
+        Map<String, List<Metric>> metricFamilies = managedMetrics.stream()
+                .collect(Collectors.groupingBy(
+                        Metric::metricName,
+                        LinkedHashMap::new,
+                        Collectors.toList()));
+
+        // Only include metric descriptor once per metric family per openmetrics spec:
+        // https://prometheus.io/docs/specs/om/open_metrics_spec_2_0/#abnf
+        metricFamilies.forEach((metricName, metricFamily) -> {
+            Set<Class<?>> metricTypes = metricFamily.stream()
+                    .map(Metric::getClass)
+                    .collect(toImmutableSet());
+            if (metricTypes.size() > 1) {
+                log.warn("Metric family %s contains mixed metric types", metricName);
+            }
+            for (int i = 0; i < metricFamily.size(); i++) {
+                boolean includeDescriptor = i == 0;
+                builder.append(metricFamily.get(i).getMetricExposition(includeDescriptor));
+            }
+        });
     }
 }

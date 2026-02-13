@@ -36,8 +36,8 @@ public record Counter(String metricName, long value, Map<String, String> labels,
     }
 
     @Override
-    public String getMetricExposition()
+    public String getMetricExposition(boolean includeDescriptor)
     {
-        return Metric.formatSingleValuedMetric(metricName, "counter", help, labels, Long.toString(value));
+        return Metric.formatSingleValuedMetric(metricName, "counter", help, labels, Long.toString(value), includeDescriptor);
     }
 }

@@ -27,13 +27,21 @@ public interface Metric
 
     String metricName();
 
-    String getMetricExposition();
+    String getMetricExposition(boolean includeDescriptor);
 
-    static String formatSingleValuedMetric(String name, String type, String help, Map<String, String> labels, String value)
+    default String getMetricExposition()
     {
-        return TYPE_LINE_FORMAT.formatted(name, type) +
-                (Strings.isNullOrEmpty(help) ? "" : HELP_LINE_FORMAT.formatted(name, help)) +
-                VALUE_LINE_FORMAT.formatted(formatNameWithLabels(name, labels), value);
+        return getMetricExposition(true);
+    }
+
+    static String formatSingleValuedMetric(String name, String type, String help, Map<String, String> labels, String value, boolean includeDescriptor)
+    {
+        if (includeDescriptor) {
+            return TYPE_LINE_FORMAT.formatted(name, type) +
+                    (Strings.isNullOrEmpty(help) ? "" : HELP_LINE_FORMAT.formatted(name, help)) +
+                    VALUE_LINE_FORMAT.formatted(formatNameWithLabels(name, labels), value);
+        }
+        return VALUE_LINE_FORMAT.formatted(formatNameWithLabels(name, labels), value);
     }
 
     static String formatNameWithLabels(String name, Map<String, String> labels)

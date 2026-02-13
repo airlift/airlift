@@ -81,7 +81,7 @@ public record CompositeMetric(String metricName, Map<String, String> labels, Str
     }
 
     @Override
-    public String getMetricExposition()
+    public String getMetricExposition(boolean includeDescriptor)
     {
         if (subMetrics.isEmpty()) {
             return "";

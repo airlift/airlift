@@ -53,12 +53,15 @@ public record Summary(String metricName, Long count, Double sum, Double created,
     }
 
     @Override
-    public String getMetricExposition()
+    public String getMetricExposition(boolean includeDescriptor)
     {
-        StringBuilder stringBuilder = new StringBuilder(TYPE_LINE_FORMAT.formatted(metricName, "summary"));
+        StringBuilder stringBuilder = new StringBuilder();
+        if (includeDescriptor) {
+            stringBuilder.append(TYPE_LINE_FORMAT.formatted(metricName, "summary"));
 
-        if (help != null && !help.isEmpty()) {
-            stringBuilder.append(HELP_LINE_FORMAT.formatted(metricName, help));
+            if (help != null && !help.isEmpty()) {
+                stringBuilder.append(HELP_LINE_FORMAT.formatted(metricName, help));
+            }
         }
 
         if (count != null) {
