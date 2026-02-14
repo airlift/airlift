@@ -24,6 +24,7 @@ import io.airlift.mcp.sessions.ForSessionCaching;
 import io.airlift.mcp.sessions.MemorySessionController;
 import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.sessions.SessionId;
+import io.modelcontextprotocol.json.TypeRef;
 import io.modelcontextprotocol.spec.HttpHeaders;
 import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema;
@@ -58,6 +59,7 @@ import org.junit.jupiter.api.TestInstance;
 
 import java.io.IOException;
 import java.net.URI;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -92,6 +94,7 @@ import static io.airlift.mcp.TestingIdentityMapper.IDENTITY_HEADER;
 import static io.airlift.mcp.model.Constants.MCP_SESSION_ID;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_CANCELLED;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INTERNAL_ERROR;
+import static io.airlift.mcp.tasks.TaskContextMapper.FROM_SESSION;
 import static io.modelcontextprotocol.spec.McpSchema.ErrorCodes.RESOURCE_NOT_FOUND;
 import static io.modelcontextprotocol.spec.McpSchema.LoggingLevel.ALERT;
 import static io.modelcontextprotocol.spec.McpSchema.LoggingLevel.DEBUG;
@@ -143,6 +146,7 @@ public abstract class TestMcp
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
                 .withSessions(binding -> binding.to((mode == DATABASE_SESSIONS) ? TestingDatabaseSessionController.class : MemorySessionController.class).in(SINGLETON))
                 .addIcon("google", binding -> binding.toInstance(new Icon("https://www.gstatic.com/images/branding/searchlogo/ico/favicon.ico")))
+                .withTaskContextMapper(binding -> binding.toInstance(FROM_SESSION))
                 .withAllInClass(TestingEndpoints.class)
                 .build());
         closer.register(testingServer);
@@ -295,7 +299,7 @@ public abstract class TestMcp
         ListToolsResult listToolsResult = client1.mcpClient().listTools();
         assertThat(listToolsResult.tools())
                 .extracting(Tool::name)
-                .containsExactlyInAnyOrder("add", "throws", "addThree", "addFirstTwoAndAllThree", "progress", "log", "setVersion", "sleep", "elicitation", "sampling", "roots");
+                .containsExactlyInAnyOrder("add", "throws", "addThree", "addFirstTwoAndAllThree", "progress", "log", "setVersion", "sleep", "elicitation", "sampling", "roots", "task");
 
         CallToolResult callToolResult = client1.mcpClient().callTool(new CallToolRequest("add", ImmutableMap.of("a", 1, "b", 2)));
         assertThat(callToolResult.content())
@@ -659,6 +663,41 @@ public abstract class TestMcp
     public void testElicitation()
     {
         CallToolResult callToolResult = client1.mcpClient().callTool(new CallToolRequest("elicitation", ImmutableMap.of()));
+        assertThat(callToolResult.content())
+                .hasSize(1)
+                .first()
+                .asInstanceOf(type(TextContent.class))
+                .extracting(TextContent::text)
+                .isEqualTo("Hello, " + client1.name() + " " + client1.name() + "sky!");
+    }
+
+    @Test
+    public void testElicitationFromTask()
+            throws InterruptedException
+    {
+        CallToolRequest callToolRequest = CallToolRequest.builder()
+                .task(McpSchema.TaskMetadata.builder().ttl(Duration.ofDays(1)).build())
+                .name("task")
+                .build();
+
+        String taskId = client1.mcpClient().callToolTask(callToolRequest).task().taskId();
+
+        boolean done = false;
+        while (!done) {
+            McpSchema.GetTaskResult task = client1.mcpClient().getTask(taskId);
+            switch (task.status()) {
+                case WORKING -> {}  // do nothing
+                case INPUT_REQUIRED -> client1.mcpClient().getTaskResult(taskId, new TypeRef<CallToolResult>() {});
+                case FAILED, CANCELLED -> fail("Task " + taskId + " should not have failed or been cancelled");
+                case COMPLETED -> done = true;
+            }
+
+            if (!done) {
+                SECONDS.sleep(1);
+            }
+        }
+
+        CallToolResult callToolResult = client1.mcpClient().getTaskResult(taskId, new TypeRef<>() {});
         assertThat(callToolResult.content())
                 .hasSize(1)
                 .first()

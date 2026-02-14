@@ -27,9 +27,6 @@ variations of MCP servers defined by the standard. This module supports:
 - Elicitation [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/client/elicitation)
 - Sampling [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/client/sampling)
 - Roots [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/client/roots)
-
-This module does not currently support:
-
 - Tasks [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/basic/utilities/tasks)
 
 This module currently supports these MCP extensions:
@@ -236,6 +233,7 @@ To enable session support use the `withSessions()` method of the `McpModule`. Fo
 resilient implementation of [SessionController](src/main/java/io/airlift/mcp/sessions/SessionController.java) should be used. For testing, an in-memory implementation is provided:
 [MemorySessionController](src/main/java/io/airlift/mcp/sessions/MemorySessionController.java).
 
+<<<<<<< HEAD
 ## Apps
 
 see: [McpApp](src/main/java/io/airlift/mcp/McpApp.java)
@@ -246,3 +244,39 @@ automatically create the MCP UI resource. You can refer to the same MCP app URI 
 `resourceUri` and `sourcePath` are the same. `sourcePath` refers to the path in your application of the compiled/built
 app HTML file. See the examples for more details: [MapApp](src/test/java/io/airlift/mcp/MapApp.java) 
 and [DebugApp](src/test/java/io/airlift/mcp/DebugApp.java).
+=======
+## Tasks
+
+When [sessions](#sessions) are enabled, Airlift MCP servers can also support MCP [tasks](https://modelcontextprotocol.io/specification/2025-11-25/basic/utilities/tasks).
+
+### TaskContextId
+
+Tasks are long-running processes that may outlive a given session (if desired). Thus, tasks are tied to a `TaskContextId` rather than a `SessionId`.
+If you don't need a higher level of isolation for tasks  you can simply use the current `SessionId` as the `TaskContextId`. All `SessionId`s are, by
+definition, valid `TaskContextId`s. Bear in mind, however, that standard sessions have a limited lifetime.
+
+To create a `TaskContextId` use `createTaskContext()` from the [TaskController](src/main/java/io/airlift/mcp/tasks/TaskController.java). 
+You must store this `TaskContextId` in a DB, etc. and associate it with the current `McpIdentity` so that it can be returned by your `TaskContextMapper` (see below).
+You should also periodically call `TaskController.validateTaskContext()` for any task contexts you create so that task context maintenance
+can run.
+
+### TaskContextMapper
+
+Regardless of how you choose to create `TaskContextId`s, you must implement a `TaskContextMapper` that maps from your application's
+identity type to a `TaskContextId`s. Bind your `TaskContextMapper` via the `McpModule`. Use `TaskContextMapper.FROM_SESSION` if you want to 
+use the current session as the task context (again, standard sessions have a limited lifetime).
+
+### Managing tasks
+
+MCP tools can be declared to support tasks via the `execution` attribute of `McpTool`. To start a task as the result of a tool,
+access the [Tasks](src/main/java/io/airlift/mcp/tasks/Tasks.java) instance for the request via `McpRequestContext.tasks()` (`McpRequestContext`
+can be an argument to any tool/prompt/etc. method) and use the `createTask()` method to create a task which should be returned as part 
+of the `CallToolResult` per the MCP spec. Airlift manages the lifecycle of the task, but it is your application's responsibility to implement 
+the actual work of the task. Use the methods of `Tasks` to set server-to-client requests, read responses from the client, etc. Ultimately, 
+when the task is complete, call `completeTask` to mark the task as finished.
+
+### Cancellation
+
+Any task related operations should, ideally, be wrapped in `Tasks`'s `executeCancellable()` method so that they can react
+to cancellation (via `InterruptedException`). If this isn't possible, you can check for cancellation via polling the task state.
+>>>>>>> e09006b44 (General support for MCP tasks)

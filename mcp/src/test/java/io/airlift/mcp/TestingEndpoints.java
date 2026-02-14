@@ -1,22 +1,25 @@
 package io.airlift.mcp;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
+import io.airlift.log.Logger;
 import io.airlift.mcp.handler.PromptEntry;
 import io.airlift.mcp.handler.ResourceEntry;
 import io.airlift.mcp.handler.ToolEntry;
 import io.airlift.mcp.model.CallToolResult;
 import io.airlift.mcp.model.CompleteRequest.CompleteArgument;
 import io.airlift.mcp.model.CompleteRequest.CompleteContext;
-import io.airlift.mcp.model.Constants;
 import io.airlift.mcp.model.Content.TextContent;
 import io.airlift.mcp.model.CreateMessageRequest;
 import io.airlift.mcp.model.CreateMessageResult;
 import io.airlift.mcp.model.ElicitRequestForm;
 import io.airlift.mcp.model.ElicitResult;
+import io.airlift.mcp.model.JsonRpcErrorDetail;
+import io.airlift.mcp.model.JsonRpcRequest;
 import io.airlift.mcp.model.JsonRpcResponse;
 import io.airlift.mcp.model.JsonSchemaBuilder;
 import io.airlift.mcp.model.LoggingLevel;
@@ -28,7 +31,11 @@ import io.airlift.mcp.model.ResourceTemplateValues;
 import io.airlift.mcp.model.Role;
 import io.airlift.mcp.model.Root;
 import io.airlift.mcp.model.StructuredContentResult;
+import io.airlift.mcp.model.Task;
 import io.airlift.mcp.model.Tool;
+import io.airlift.mcp.tasks.TaskFacade;
+import io.airlift.mcp.tasks.TaskMessageBuilder;
+import io.airlift.mcp.tasks.Tasks;
 
 import java.time.Duration;
 import java.util.List;
@@ -38,10 +45,16 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.mcp.McpException.exception;
+import static io.airlift.mcp.model.Constants.METHOD_ELICITATION_CREATE;
+import static io.airlift.mcp.model.Constants.METHOD_SAMPLING_CREATE_MESSAGE;
 import static io.airlift.mcp.model.ElicitResult.Action.ACCEPT;
+import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
+import static io.airlift.mcp.tasks.TaskConditions.hasResponseWithId;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.joining;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -49,11 +62,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SuppressWarnings({"unused", "FieldCanBeLocal"})
 public class TestingEndpoints
 {
+    private static final Logger log = Logger.get(TestingEndpoints.class);
+
     private final McpServer mcpServer;
     private final Set<ToolEntry> tools;
     private final Set<PromptEntry> prompts;
     private final Set<ResourceEntry> resources;
     private final SleepToolController sleepToolController;
+    private final ObjectMapper objectMapper;
     private volatile String example2Content = "This is the content of file://example2.txt";
     private volatile String example1Content = "This is the content of file://example1.txt";
 
@@ -63,7 +79,8 @@ public class TestingEndpoints
             Set<ToolEntry> tools,
             Set<PromptEntry> prompts,
             Set<ResourceEntry> resources,
-            SleepToolController sleepToolController)
+            SleepToolController sleepToolController,
+            ObjectMapper objectMapper)
     {
         this.mcpServer = requireNonNull(mcpServer, "mcpServer is null");
 
@@ -71,6 +88,7 @@ public class TestingEndpoints
         this.prompts = ImmutableSet.copyOf(prompts);
         this.resources = ImmutableSet.copyOf(resources);
         this.sleepToolController = requireNonNull(sleepToolController, "sleepToolController is null");
+        this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
     }
 
     @McpTool(name = "add", description = "Add two numbers", icons = "google")
@@ -219,7 +237,9 @@ public class TestingEndpoints
                                 firstTool.tool().inputSchema(),
                                 firstTool.tool().outputSchema(),
                                 firstTool.tool().annotations(),
-                                firstTool.tool().icons());
+                                firstTool.tool().icons(),
+                                firstTool.tool().execution(),
+                                firstTool.tool().meta());
                         mcpServer.addTool(alteredTool, firstTool.toolHandler());
                     }
 
@@ -307,12 +327,17 @@ public class TestingEndpoints
         ElicitRequestForm elicitRequest = new ElicitRequestForm("Who are you?", elicitation);
         JsonRpcResponse<ElicitResult> response;
         try {
-            response = requestContext.serverToClientRequest(Constants.METHOD_ELICITATION_CREATE, elicitRequest, ElicitResult.class, Duration.ofMinutes(5), Duration.ofSeconds(30));
+            response = requestContext.serverToClientRequest(METHOD_ELICITATION_CREATE, elicitRequest, ElicitResult.class, Duration.ofMinutes(5), Duration.ofSeconds(30));
         }
         catch (InterruptedException | TimeoutException e) {
             throw new RuntimeException(e);
         }
         ElicitResult elicitResult = response.result().orElseThrow();
+        return processElicitResult(elicitResult);
+    }
+
+    private static String processElicitResult(ElicitResult elicitResult)
+    {
         if (elicitResult.action() != ACCEPT) {
             return elicitResult.action().toJsonValue();
         }
@@ -331,7 +356,7 @@ public class TestingEndpoints
         CreateMessageRequest createMessageRequest = new CreateMessageRequest(Role.USER, new TextContent("Are you sure?"), 100);
         JsonRpcResponse<CreateMessageResult> response;
         try {
-            response = requestContext.serverToClientRequest(Constants.METHOD_SAMPLING_CREATE_MESSAGE, createMessageRequest, CreateMessageResult.class, Duration.ofMinutes(5), Duration.ofSeconds(1));
+            response = requestContext.serverToClientRequest(METHOD_SAMPLING_CREATE_MESSAGE, createMessageRequest, CreateMessageResult.class, Duration.ofMinutes(5), Duration.ofSeconds(1));
         }
         catch (InterruptedException | TimeoutException e) {
             throw new RuntimeException(e);
@@ -351,6 +376,41 @@ public class TestingEndpoints
         }
 
         return "Response: unknown";
+    }
+
+    @McpTool(name = "task", description = "Test task with elicitation")
+    public Task testTask(McpRequestContext requestContext)
+    {
+        Tasks tasks = requestContext.tasks();
+
+        TaskFacade task = tasks.createTask(Optional.of(Duration.ofMillis(100)), Optional.empty());
+        newVirtualThreadPerTaskExecutor().execute(() -> tasks.executeCancellable(task.taskId(), () -> {
+            try {
+                Thread.sleep(1000);
+
+                ObjectNode elicitation = new JsonSchemaBuilder("elicitation").build(Optional.empty(), Person.class);
+                ElicitRequestForm elicitRequest = new ElicitRequestForm("Who are you?", elicitation);
+                JsonRpcRequest<ElicitRequestForm> rpcRequest = TaskMessageBuilder.builder(task.taskId()).buildRequest(METHOD_ELICITATION_CREATE, elicitRequest, ElicitRequestForm.class);
+                tasks.setTaskMessage(task.taskId(), rpcRequest, Optional.empty());
+
+                TaskFacade updatedTask = tasks.blockUntil(task.taskId(), Duration.ofMinutes(5), Duration.ofSeconds(1), hasResponseWithId(rpcRequest.id()));
+                ElicitResult elicitResult = updatedTask.extractResponse(rpcRequest.id(), ElicitResult.class, objectMapper)
+                        .orElseThrow(() -> new AssertionError("Response does not exist"));
+                String resultText = processElicitResult(elicitResult);
+                JsonRpcResponse<CallToolResult> response = TaskMessageBuilder.builder(task).buildResponse(new CallToolResult(new TextContent(resultText)), CallToolResult.class);
+                tasks.completeTask(task.taskId(), response, Optional.empty());
+            }
+            catch (InterruptedException | TimeoutException _) {
+                log.info("Task was interrupted or timed out: %s", task.taskId());
+            }
+            catch (Exception e) {
+                JsonRpcResponse<?> error = TaskMessageBuilder.builder(task).buildError(new JsonRpcErrorDetail(INVALID_REQUEST, firstNonNull(e.getMessage(), "Unknown error")));
+                tasks.completeTask(task.taskId(), error, Optional.of("Failed to get elicitation response"));
+                throw new RuntimeException(e);
+            }
+        }));
+
+        return task.toTask();
     }
 
     @McpTool(name = "roots", description = "List roots")

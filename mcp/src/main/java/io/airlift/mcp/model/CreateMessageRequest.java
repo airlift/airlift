@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalDouble;
+import java.util.OptionalInt;
 
 import static java.util.Locale.ROOT;
 import static java.util.Objects.requireNonNull;
@@ -21,8 +22,9 @@ public record CreateMessageRequest(
         int maxTokens,
         Optional<List<String>> stopSequences,
         Optional<Map<String, Object>> metadata,
-        Optional<Map<String, Object>> meta)
-        implements Meta
+        Optional<Map<String, Object>> meta,
+        OptionalInt ttl)
+        implements Meta, TaskMetadata
 {
     public CreateMessageRequest
     {
@@ -34,27 +36,28 @@ public record CreateMessageRequest(
         stopSequences = requireNonNullElse(stopSequences, Optional.empty());
         metadata = requireNonNullElse(metadata, Optional.empty());
         meta = requireNonNullElse(meta, Optional.empty());
+        ttl = requireNonNullElse(ttl, OptionalInt.empty());
     }
 
     public CreateMessageRequest(List<SamplingMessage> messages, int maxTokens)
     {
-        this(messages, Optional.empty(), Optional.empty(), Optional.empty(), OptionalDouble.empty(), maxTokens, Optional.empty(), Optional.empty(), Optional.empty());
+        this(messages, Optional.empty(), Optional.empty(), Optional.empty(), OptionalDouble.empty(), maxTokens, Optional.empty(), Optional.empty(), Optional.empty(), OptionalInt.empty());
     }
 
     public CreateMessageRequest(SamplingMessage messages, int maxTokens)
     {
-        this(ImmutableList.of(messages), Optional.empty(), Optional.empty(), Optional.empty(), OptionalDouble.empty(), maxTokens, Optional.empty(), Optional.empty(), Optional.empty());
+        this(ImmutableList.of(messages), Optional.empty(), Optional.empty(), Optional.empty(), OptionalDouble.empty(), maxTokens, Optional.empty(), Optional.empty(), Optional.empty(), OptionalInt.empty());
     }
 
     public CreateMessageRequest(Role role, Content content, int maxTokens)
     {
-        this(ImmutableList.of(new SamplingMessage(role, content)), Optional.empty(), Optional.empty(), Optional.empty(), OptionalDouble.empty(), maxTokens, Optional.empty(), Optional.empty(), Optional.empty());
+        this(ImmutableList.of(new SamplingMessage(role, content)), Optional.empty(), Optional.empty(), Optional.empty(), OptionalDouble.empty(), maxTokens, Optional.empty(), Optional.empty(), Optional.empty(), OptionalInt.empty());
     }
 
     @Override
     public CreateMessageRequest withMeta(Map<String, Object> meta)
     {
-        return new CreateMessageRequest(messages, modelPreferences, systemPrompt, includeContext, temperature, maxTokens, stopSequences, metadata, Optional.of(meta));
+        return new CreateMessageRequest(messages, modelPreferences, systemPrompt, includeContext, temperature, maxTokens, stopSequences, metadata, Optional.of(meta), ttl);
     }
 
     public record SamplingMessage(Role role, Content content)

@@ -32,7 +32,7 @@ public record InitializeRequest(
         return new InitializeRequest(protocolVersion, capabilities, clientInfo, Optional.of(meta));
     }
 
-    public record ClientCapabilities(Optional<ListChanged> roots, Optional<Sampling> sampling, Optional<Elicitation> elicitation, Optional<Map<String, Object>> experimental)
+    public record ClientCapabilities(Optional<ListChanged> roots, Optional<Sampling> sampling, Optional<Elicitation> elicitation, Optional<ClientTaskCapabilities> tasks, Optional<Map<String, Object>> experimental)
             implements Experimental
     {
         public ClientCapabilities
@@ -40,6 +40,7 @@ public record InitializeRequest(
             roots = requireNonNullElse(roots, Optional.empty());
             sampling = requireNonNullElse(sampling, Optional.empty());
             elicitation = requireNonNullElse(elicitation, Optional.empty());
+            tasks = requireNonNullElse(tasks, Optional.empty());
             experimental = requireNonNullElse(experimental, Optional.empty());
         }
     }
@@ -47,4 +48,39 @@ public record InitializeRequest(
     public record Sampling() {}
 
     public record Elicitation() {}
+
+    public record TaskSampling(Optional<Property> createMessage)
+    {
+        public TaskSampling
+        {
+            createMessage = requireNonNullElse(createMessage, Optional.empty());
+        }
+    }
+
+    public record TaskElicitation(Optional<Property> create)
+    {
+        public TaskElicitation
+        {
+            create = requireNonNullElse(create, Optional.empty());
+        }
+    }
+
+    public record ClientTaskRequests(Optional<TaskElicitation> elicitation, Optional<TaskSampling> sampling)
+    {
+        public ClientTaskRequests
+        {
+            elicitation = requireNonNullElse(elicitation, Optional.empty());
+            sampling = requireNonNullElse(sampling, Optional.empty());
+        }
+    }
+
+    public record ClientTaskCapabilities(Optional<Property> cancel, Optional<Property> list, Optional<ClientTaskRequests> requests)
+    {
+        public ClientTaskCapabilities
+        {
+            cancel = requireNonNullElse(cancel, Optional.empty());
+            list = requireNonNullElse(list, Optional.empty());
+            requests = requireNonNullElse(requests, Optional.empty());
+        }
+    }
 }

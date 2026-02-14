@@ -3,7 +3,6 @@ package io.airlift.mcp;
 import com.google.common.io.Closer;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.pool.HikariPool;
-import jakarta.annotation.PreDestroy;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import java.io.Closeable;
@@ -44,7 +43,6 @@ public class TestingDatabaseServer
         });
     }
 
-    @PreDestroy
     @Override
     public void close()
             throws IOException

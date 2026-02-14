@@ -19,7 +19,10 @@ import io.airlift.mcp.model.Content;
 import io.airlift.mcp.model.JsonSchemaBuilder;
 import io.airlift.mcp.model.StructuredContent;
 import io.airlift.mcp.model.StructuredContentResult;
+import io.airlift.mcp.model.Task;
 import io.airlift.mcp.model.Tool;
+import io.airlift.mcp.model.Tool.Execution;
+import io.airlift.mcp.model.ToolExecution;
 import io.airlift.mcp.model.UiToolVisibility;
 
 import java.lang.reflect.Method;
@@ -80,6 +83,9 @@ public class ToolHandlerProvider
         else if (CallToolResult.class.isAssignableFrom(method.getReturnType())) {
             returnType = ReturnType.CALL_TOOL_RESULT;
         }
+        else if (Task.class.isAssignableFrom(method.getReturnType())) {
+            returnType = ReturnType.TASK;
+        }
         else if (StructuredContentResult.class.isAssignableFrom(method.getReturnType())) {
             returnType = ReturnType.STRUCTURED_RESULT;
         }
@@ -112,6 +118,7 @@ public class ToolHandlerProvider
         CONTENT,
         STRUCTURED,
         STRUCTURED_RESULT,
+        TASK,
     }
 
     @Override
@@ -133,8 +140,9 @@ public class ToolHandlerProvider
             return switch (returnType) {
                 case VOID -> new CallToolResult(ImmutableList.of());
                 case CONTENT -> new CallToolResult(mapToContent(result));
-                case STRUCTURED -> new CallToolResult(ImmutableList.of(mapToContent(result)), Optional.of(new StructuredContent<>(result)), false, Optional.empty());
+                case STRUCTURED -> new CallToolResult(Optional.of(ImmutableList.of(mapToContent(result))), Optional.of(new StructuredContent<>(result)), Optional.empty(), Optional.of(false), Optional.empty());
                 case CALL_TOOL_RESULT -> (CallToolResult) result;
+                case TASK -> new CallToolResult((Task) result);
                 case STRUCTURED_RESULT -> mapStructuredContentResult((StructuredContentResult<?>) result);
             };
         };
@@ -144,13 +152,16 @@ public class ToolHandlerProvider
 
     private CallToolResult mapStructuredContentResult(StructuredContentResult<?> result)
     {
-        return new CallToolResult(result.content(), result.structuredContent().map(StructuredContent::new), result.isError(), Optional.empty());
+        return new CallToolResult(Optional.of(result.content()), result.structuredContent().map(StructuredContent::new), Optional.empty(), Optional.of(result.isError()), Optional.empty());
     }
 
     private Tool buildTool(McpTool tool, Method method, List<MethodParameter> parameters)
     {
         Optional<String> description = tool.description().isEmpty() ? Optional.empty() : Optional.of(tool.description());
         Optional<String> title = tool.title().isEmpty() ? Optional.empty() : Optional.of(tool.title());
+        boolean isToolResult = CallToolResult.class.isAssignableFrom(method.getReturnType());
+        boolean isTaskResult = Task.class.isAssignableFrom(method.getReturnType());
+        ToolExecution execution = tool.execution();
 
         Tool.ToolAnnotations toolAnnotations = new Tool.ToolAnnotations(
                 title,
@@ -160,7 +171,7 @@ public class ToolHandlerProvider
                 tool.openWorldHint().toJsonValue());
 
         Optional<ObjectNode> outputSchema;
-        if (CallToolResult.class.isAssignableFrom(method.getReturnType())) {
+        if (isToolResult || isTaskResult) {
             outputSchema = Optional.empty();
         }
         else if (StructuredContentResult.class.isAssignableFrom(method.getReturnType())) {
@@ -178,7 +189,14 @@ public class ToolHandlerProvider
         JsonSchemaBuilder jsonSchemaBuilder = new JsonSchemaBuilder("Tool: " + tool.name());
         ObjectNode jsonSchema = jsonSchemaBuilder.build(description, parameters);
 
-        return applyApp(new Tool(tool.name(), description, title, jsonSchema, outputSchema, toolAnnotations), tool);
+        if (isTaskResult) {
+            execution = switch (execution) {
+                case UNDEFINED, REQUIRED -> ToolExecution.REQUIRED;
+                case FORBIDDEN, OPTIONAL -> throw exception(INVALID_PARAMS, "Tool %s returns a Task, but has execution %s. Tools that return a Task must have execution set to REQUIRED or UNDEFINED.".formatted(tool.name(), execution));
+            };
+        }
+
+        return applyApp(new Tool(tool.name(), description, title, jsonSchema, outputSchema, toolAnnotations, Optional.empty(), Optional.of(new Execution(execution)), Optional.empty()), tool);
     }
 
     private Tool applyApp(Tool tool, McpTool mcpTool)

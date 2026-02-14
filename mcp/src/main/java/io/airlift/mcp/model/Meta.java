@@ -7,7 +7,9 @@ import java.util.Optional;
 
 public interface Meta
 {
-    @JsonProperty("_meta")
+    String META_FIELD_NAME = "_meta";
+
+    @JsonProperty(META_FIELD_NAME)
     Optional<Map<String, Object>> meta();
 
     Object withMeta(Map<String, Object> meta);
