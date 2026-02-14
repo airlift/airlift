@@ -42,7 +42,7 @@ public final class EchoServlet
 
     private int responseStatusCode = 200;
     private final ListMultimap<String, String> responseHeaders = ArrayListMultimap.create();
-    private String responseBody;
+    private byte[] responseByte;
 
     @Override
     protected void service(HttpServletRequest request, HttpServletResponse response)
@@ -87,8 +87,8 @@ public final class EchoServlet
             response.sendRedirect(request.getParameter("redirect"));
         }
 
-        if (responseBody != null) {
-            response.getOutputStream().write(responseBody.getBytes(UTF_8));
+        if (responseByte != null) {
+            response.getOutputStream().write(responseByte);
         }
     }
 
@@ -129,6 +129,11 @@ public final class EchoServlet
 
     public void setResponseBody(String responseBody)
     {
-        this.responseBody = responseBody;
+        responseByte = responseBody.getBytes(UTF_8);
+    }
+
+    public void setResponseByte(byte[] responseByte)
+    {
+        this.responseByte = responseByte;
     }
 }

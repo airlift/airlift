@@ -96,7 +96,8 @@ public class TestHttpClientConfig
                 .setTcpKeepAliveIdleTime(null)
                 .setStrictEventOrdering(false)
                 .setUseVirtualThreads(false)
-                .setTrackMemoryAllocations(false));
+                .setTrackMemoryAllocations(false)
+                .setPreserveContentDecoderFactories(false));
     }
 
     @Test
@@ -153,6 +154,7 @@ public class TestHttpClientConfig
                 .put("http-client.strict-event-ordering", "true")
                 .put("http-client.use-virtual-threads", "true")
                 .put("http-client.track-memory-allocations", "true")
+                .put("http-client.preserve-content-decoder-factories", "true")
                 .build();
 
         HttpClientConfig expected = new HttpClientConfig()
@@ -205,7 +207,8 @@ public class TestHttpClientConfig
                 .setTcpKeepAliveIdleTime(new Duration(1, MINUTES))
                 .setStrictEventOrdering(true)
                 .setUseVirtualThreads(true)
-                .setTrackMemoryAllocations(true);
+                .setTrackMemoryAllocations(true)
+                .setPreserveContentDecoderFactories(true);
 
         ConfigAssertions.assertFullMapping(properties, expected);
     }
