@@ -2,6 +2,7 @@ package io.airlift.mcp.internal;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Stopwatch;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.mcp.McpRequestContext;
@@ -30,6 +31,7 @@ import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 
 import static com.google.common.base.Throwables.getRootCause;
 import static io.airlift.mcp.McpException.exception;
@@ -58,6 +60,7 @@ class InternalRequestContext
     private final HttpServletRequest request;
     private final MessageWriter messageWriter;
     private final Optional<Object> progressToken;
+    private final Supplier<LoggingLevel> loggingLevelSupplier;
 
     InternalRequestContext(ObjectMapper objectMapper, Optional<SessionController> sessionController, HttpServletRequest request, MessageWriter messageWriter, Optional<Object> progressToken)
     {
@@ -66,6 +69,13 @@ class InternalRequestContext
         this.request = requireNonNull(request, "request is null");
         this.messageWriter = requireNonNull(messageWriter, "messageWriter is null");
         this.progressToken = requireNonNull(progressToken, "progressToken is null");
+
+        loggingLevelSupplier = Suppliers.memoize(() -> {
+            SessionController localSessionController = sessionController.orElseThrow(() -> new IllegalStateException("Sessions not enabled"));
+            SessionId sessionId = requireSessionId(request);
+
+            return localSessionController.getSessionValue(sessionId, LOGGING_LEVEL).orElseThrow(() -> exception("Session is invalid"));
+        });
     }
 
     @Override
@@ -96,11 +106,7 @@ class InternalRequestContext
     @Override
     public void sendLog(LoggingLevel level, Optional<String> logger, Optional<Object> data)
     {
-        SessionController localSessionController = sessionController.orElseThrow(() -> new IllegalStateException("Sessions not enabled"));
-        SessionId sessionId = requireSessionId(request);
-
-        LoggingLevel sessionLoggingLevel = localSessionController.getSessionValue(sessionId, LOGGING_LEVEL)
-                .orElseThrow(() -> exception("Session is invalid"));
+        LoggingLevel sessionLoggingLevel = loggingLevelSupplier.get();
         if (level.level() >= sessionLoggingLevel.level()) {
             LoggingMessageNotification logNotification = new LoggingMessageNotification(level, logger, data);
             sendMessage(NOTIFICATION_MESSAGE, Optional.of(logNotification));
@@ -120,6 +126,7 @@ class InternalRequestContext
         SessionController localSessionController = sessionController.orElseThrow(() -> new IllegalStateException("Sessions not enabled"));
         SessionId sessionId = requireSessionId(request);
 
+        // ClientCapabilities are cached via CachingSessionController
         return localSessionController.getSessionValue(sessionId, CLIENT_CAPABILITIES)
                 .orElseThrow(() -> exception("Session does not contain client capabilities"));
     }
