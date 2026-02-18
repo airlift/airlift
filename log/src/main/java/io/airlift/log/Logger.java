@@ -323,14 +323,12 @@ public class Logger
 
     private String formatMessage(String format, String level, Object[] args)
     {
-        String message;
         try {
-            message = format(format, args);
+            return format(format, args);
         }
         catch (IllegalFormatException e) {
             logger.log(SEVERE, format("Invalid format string while trying to log: %s '%s' %s", level, format, asList(args)), e);
-            message = format("'%s' %s", format, asList(args));
+            return format("'%s' %s", format, asList(args));
         }
-        return message;
     }
 }
