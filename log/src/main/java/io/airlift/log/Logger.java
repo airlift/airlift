@@ -115,6 +115,9 @@ public class Logger
     @FormatMethod
     public void debug(Throwable exception, String format, Object... args)
     {
+        if (!logger.isLoggable(FINE)) {
+            return;
+        }
         logger.log(FINE, formatMessage(format, "DEBUG", args), exception);
     }
 
@@ -144,6 +147,10 @@ public class Logger
     @FormatMethod
     public void info(String format, Object... args)
     {
+        // Avoid potentially expensive formatMessage call if log level is disabled
+        if (!logger.isLoggable(INFO)) {
+            return;
+        }
         logger.log(INFO, formatMessage(format, "INFO", args));
     }
 
@@ -185,6 +192,10 @@ public class Logger
     @FormatMethod
     public void warn(Throwable exception, String format, Object... args)
     {
+        // Avoid potentially expensive formatMessage call if log level is disabled
+        if (!logger.isLoggable(WARNING)) {
+            return;
+        }
         logger.log(WARNING, formatMessage(format, "WARN", args), exception);
     }
 
@@ -245,6 +256,10 @@ public class Logger
     @FormatMethod
     public void error(Throwable exception, String format, Object... args)
     {
+        // Avoid potentially expensive formatMessage call if log level is disabled
+        if (!logger.isLoggable(SEVERE)) {
+            return;
+        }
         logger.log(SEVERE, formatMessage(format, "ERROR", args), exception);
     }
 
@@ -260,6 +275,10 @@ public class Logger
      */
     public void error(Throwable exception)
     {
+        // Avoid potentially expensive getMessage call if log level is disabled
+        if (!logger.isLoggable(SEVERE)) {
+            return;
+        }
         logger.log(SEVERE, exception.getMessage(), exception);
     }
 
