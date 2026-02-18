@@ -724,8 +724,6 @@ public abstract class AbstractHttpClientTest
                     .build();
 
             StringResponse response = client.execute(request, createStringResponseHandler());
-            Thread.sleep(1000);
-
             String body = response.getBody();
             assertThat(body).isEqualTo("");
             assertThat(server.servlet().getRequestHeaders().containsKey(HeaderName.of(ACCEPT_ENCODING))).isTrue();
