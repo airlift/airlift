@@ -35,15 +35,9 @@ public record Summary(String metricName, Long count, Double sum, Double created,
                         .build(), labels, help);
     }
 
-    public Summary(String metricName, Long count, Double sum, Double created, Map<Double, Double> quantiles, Map<String, String> labels, String help)
+    public Summary
     {
-        this.metricName = requireNonNull(metricName, "metricName is null");
-        this.count = count;
-        this.sum = sum;
-        this.created = created;
-        this.quantiles = quantiles;
-        this.labels = labels;
-        this.help = help;
+        requireNonNull(metricName, "metricName is null");
     }
 
     @Override

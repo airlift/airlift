@@ -20,12 +20,9 @@ import static java.util.Objects.requireNonNull;
 public record Gauge(String metricName, double value, Map<String, String> labels, String help)
         implements Metric
 {
-    public Gauge(String metricName, double value, Map<String, String> labels, String help)
+    public Gauge
     {
-        this.metricName = requireNonNull(metricName, "metricName is null");
-        this.value = value;
-        this.labels = labels;
-        this.help = help;
+        requireNonNull(metricName, "metricName is null");
     }
 
     public static Gauge from(String metricName, Number value, Map<String, String> labels, String help)
