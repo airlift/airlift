@@ -21,12 +21,10 @@ import static java.util.Objects.requireNonNull;
 public record BigCounter(String metricName, BigInteger value, Map<String, String> labels, String help)
         implements Metric
 {
-    public BigCounter(String metricName, BigInteger value, Map<String, String> labels, String help)
+    public BigCounter
     {
-        this.metricName = requireNonNull(metricName, "metricName is null");
-        this.value = requireNonNull(value, "value is null");
-        this.labels = labels;
-        this.help = help;
+        requireNonNull(metricName, "metricName is null");
+        requireNonNull(value, "value is null");
     }
 
     @Override
