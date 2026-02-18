@@ -14,6 +14,8 @@
 package io.airlift.openmetrics.types;
 
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableMap;
+import io.airlift.stats.labeled.LabelSet;
 
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -27,6 +29,8 @@ public interface Metric
 
     String metricName();
 
+    LabelSet labels();
+
     String getMetricExposition(boolean includeDescriptor);
 
     default String getMetricExposition()
@@ -34,7 +38,7 @@ public interface Metric
         return getMetricExposition(true);
     }
 
-    static String formatSingleValuedMetric(String name, String type, String help, Map<String, String> labels, String value, boolean includeDescriptor)
+    static String formatSingleValuedMetric(String name, String type, String help, ImmutableMap<String, String> labels, String value, boolean includeDescriptor)
     {
         if (!includeDescriptor) {
             return VALUE_LINE_FORMAT.formatted(formatNameWithLabels(name, labels), value);

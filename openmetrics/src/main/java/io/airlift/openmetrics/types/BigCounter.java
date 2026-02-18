@@ -13,12 +13,14 @@
  */
 package io.airlift.openmetrics.types;
 
+import io.airlift.stats.labeled.LabelSet;
+
 import java.math.BigInteger;
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
 
-public record BigCounter(String metricName, BigInteger value, Map<String, String> labels, String help)
+public record BigCounter(String metricName, BigInteger value, LabelSet labels, String help)
         implements Metric
 {
     public BigCounter
@@ -28,9 +30,14 @@ public record BigCounter(String metricName, BigInteger value, Map<String, String
         requireNonNull(labels, "labels is null");
     }
 
+    public BigCounter(String metricName, BigInteger value, Map<String, String> labels, String help)
+    {
+        this(metricName, value, LabelSet.fromLabels(labels), help);
+    }
+
     @Override
     public String getMetricExposition(boolean includeDescriptor)
     {
-        return Metric.formatSingleValuedMetric(metricName, "counter", help, labels, value.toString(), includeDescriptor);
+        return Metric.formatSingleValuedMetric(metricName, "counter", help, labels.asMap(), value.toString(), includeDescriptor);
     }
 }
