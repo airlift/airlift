@@ -33,6 +33,13 @@ import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
+/**
+ * FullJsonResponseHandler is a {@link ResponseHandler} that creates a JSON entity from the response bytes when Content-Type
+ * is application/json. In contrast to {@link StreamingJsonResponseHandler} it always buffers a whole response, materializing
+ * it to a byte[]. This allows for retrieval of the response bytes if decoding JSON fails, but at the same time does
+ * data copying which sits in Jetty client buffers. If the response is rather large and debugabillity can be sacrified,
+ * {@link StreamingJsonResponseHandler} should be used instead.
+ */
 public class FullJsonResponseHandler<T>
         implements ResponseHandler<JsonResponse<T>, RuntimeException>
 {

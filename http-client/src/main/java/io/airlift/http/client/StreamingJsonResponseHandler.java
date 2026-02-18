@@ -11,6 +11,13 @@ import static io.airlift.http.client.ResponseHandlerUtils.getResponseBytes;
 import static io.airlift.http.client.ResponseHandlerUtils.getResponseStream;
 import static java.util.Objects.requireNonNull;
 
+/**
+ * StreamingJsonResponseHandler is a {@link ResponseHandler} that creates a JSON entity from the response bytes when Content-Type
+ * is application/json. In contrast to {@link FullJsonResponseHandler} it always reads data directly from an InputStream
+ * exposed by the Jetty HttpClient. Once Jetty is upgraded to 12.1.7 this will use a new listener that exposes an InputStream
+ * reading directly from Jetty's pooled response buffers, thus avoiding data copying and materialization. This makes it harder
+ * to diagnose errors during decoding as the response bytes are not buffered and available for inspection.
+ */
 public class StreamingJsonResponseHandler<T>
         implements ResponseHandler<JsonResponse<T>, RuntimeException>
 {
