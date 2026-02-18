@@ -115,9 +115,7 @@ public class Logger
     @FormatMethod
     public void debug(Throwable exception, String format, Object... args)
     {
-        if (logger.isLoggable(FINE)) {
-            logger.log(FINE, formatMessage(format, "DEBUG", args), exception);
-        }
+        logger.log(FINE, formatMessage(format, "DEBUG", args), exception);
     }
 
     /**
@@ -146,9 +144,7 @@ public class Logger
     @FormatMethod
     public void info(String format, Object... args)
     {
-        if (logger.isLoggable(INFO)) {
-            logger.log(INFO, formatMessage(format, "INFO", args));
-        }
+        logger.log(INFO, formatMessage(format, "INFO", args));
     }
 
     /**
@@ -189,9 +185,7 @@ public class Logger
     @FormatMethod
     public void warn(Throwable exception, String format, Object... args)
     {
-        if (logger.isLoggable(WARNING)) {
-            logger.log(WARNING, formatMessage(format, "WARN", args), exception);
-        }
+        logger.log(WARNING, formatMessage(format, "WARN", args), exception);
     }
 
     /**
@@ -251,9 +245,7 @@ public class Logger
     @FormatMethod
     public void error(Throwable exception, String format, Object... args)
     {
-        if (logger.isLoggable(SEVERE)) {
-            logger.log(SEVERE, formatMessage(format, "ERROR", args), exception);
-        }
+        logger.log(SEVERE, formatMessage(format, "ERROR", args), exception);
     }
 
     /**
@@ -268,9 +260,7 @@ public class Logger
      */
     public void error(Throwable exception)
     {
-        if (logger.isLoggable(SEVERE)) {
-            logger.log(SEVERE, exception.getMessage(), exception);
-        }
+        logger.log(SEVERE, exception.getMessage(), exception);
     }
 
     /**
