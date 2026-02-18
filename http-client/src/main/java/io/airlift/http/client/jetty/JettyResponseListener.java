@@ -35,9 +35,12 @@ class JettyResponseListener<T, E extends Exception>
         else {
             // TODO it would be better to return response data as InputStream based on Jetty chunks, without any data copying
             // There is no such builtin Jetty response listener to use, see https://github.com/jetty/jetty.project/issues/14373.
-            // Doing so would also require removal of data buffering in e.g. `JsonResponseHandler` which is used for error reporting.
+            // Doing so would also require removal of data buffering in e.g. `JsonResponseHandler` which is used for error reporting
+            // or using new StreamingJsonResponseHandler that decodes JSON directly from the Response InputStream.
             // Perhaps buffering for errors could be done only on retries?
-            future.completed(result.getResponse(), getContent());
+            // Once Jetty 12.1.7 is released https://github.com/jetty/jetty.project/commit/78780b988954bb73c061ec3719059a2a87c371de
+            // can be leveraged to avoid copying data by calling takeContentAsInputStream()
+            future.completed(result.getResponse(), getContentAsInputStream());
         }
     }
 }

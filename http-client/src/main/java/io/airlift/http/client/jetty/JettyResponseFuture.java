@@ -13,6 +13,7 @@ import io.opentelemetry.semconv.NetworkAttributes;
 import io.opentelemetry.semconv.incubating.HttpIncubatingAttributes;
 import org.eclipse.jetty.client.Response;
 
+import java.io.InputStream;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongSupplier;
@@ -88,7 +89,7 @@ class JettyResponseFuture<T, E extends Exception>
         }
     }
 
-    void completed(Response response, byte[] content)
+    void completed(Response response, InputStream content)
     {
         if (state.get() == JettyAsyncHttpState.CANCELED) {
             return;
@@ -119,7 +120,7 @@ class JettyResponseFuture<T, E extends Exception>
         span.end();
     }
 
-    private T processResponse(Response response, byte[] content)
+    private T processResponse(Response response, InputStream content)
             throws E
     {
         // this time will not include the data fetching portion of the response,
