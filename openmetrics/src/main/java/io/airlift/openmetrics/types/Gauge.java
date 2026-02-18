@@ -13,17 +13,24 @@
  */
 package io.airlift.openmetrics.types;
 
+import io.airlift.stats.labeled.LabelSet;
+
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
 
-public record Gauge(String metricName, double value, Map<String, String> labels, String help)
+public record Gauge(String metricName, double value, LabelSet labels, String help)
         implements Metric
 {
     public Gauge
     {
         requireNonNull(metricName, "metricName is null");
         requireNonNull(labels, "labels is null");
+    }
+
+    public Gauge(String metricName, double value, Map<String, String> labels, String help)
+    {
+        this(metricName, value, LabelSet.fromLabels(labels), help);
     }
 
     public static Gauge from(String metricName, Number value, Map<String, String> labels, String help)
@@ -34,6 +41,6 @@ public record Gauge(String metricName, double value, Map<String, String> labels,
     @Override
     public String getMetricExposition(boolean includeDescriptor)
     {
-        return Metric.formatSingleValuedMetric(metricName, "gauge", help, labels, Double.toString(value), includeDescriptor);
+        return Metric.formatSingleValuedMetric(metricName, "gauge", help, labels.asMap(), Double.toString(value), includeDescriptor);
     }
 }
