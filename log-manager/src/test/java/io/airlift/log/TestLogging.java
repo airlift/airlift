@@ -89,18 +89,26 @@ public class TestLogging
         logging.setLevel("testPropagatesLevels", Level.ERROR);
         assertThat(logger.isDebugEnabled()).isFalse();
         assertThat(logger.isInfoEnabled()).isFalse();
+        assertThat(logger.isWarnEnabled()).isFalse();
+        assertThat(logger.isErrorEnabled()).isTrue();
 
         logging.setLevel("testPropagatesLevels", Level.WARN);
         assertThat(logger.isDebugEnabled()).isFalse();
         assertThat(logger.isInfoEnabled()).isFalse();
+        assertThat(logger.isWarnEnabled()).isTrue();
+        assertThat(logger.isErrorEnabled()).isTrue();
 
         logging.setLevel("testPropagatesLevels", Level.INFO);
         assertThat(logger.isDebugEnabled()).isFalse();
         assertThat(logger.isInfoEnabled()).isTrue();
+        assertThat(logger.isWarnEnabled()).isTrue();
+        assertThat(logger.isErrorEnabled()).isTrue();
 
         logging.setLevel("testPropagatesLevels", Level.DEBUG);
         assertThat(logger.isDebugEnabled()).isTrue();
         assertThat(logger.isInfoEnabled()).isTrue();
+        assertThat(logger.isWarnEnabled()).isTrue();
+        assertThat(logger.isErrorEnabled()).isTrue();
     }
 
     @Test

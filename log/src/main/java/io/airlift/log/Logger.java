@@ -292,6 +292,16 @@ public class Logger
         return logger.isLoggable(INFO);
     }
 
+    public boolean isWarnEnabled()
+    {
+        return logger.isLoggable(WARNING);
+    }
+
+    public boolean isErrorEnabled()
+    {
+        return logger.isLoggable(SEVERE);
+    }
+
     private String formatMessage(String format, String level, Object[] args)
     {
         String message;
