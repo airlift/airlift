@@ -22,12 +22,9 @@ import static java.util.Objects.requireNonNull;
 public record Counter(String metricName, long value, Map<String, String> labels, String help)
         implements Metric
 {
-    public Counter(String metricName, long value, Map<String, String> labels, String help)
+    public Counter
     {
-        this.metricName = requireNonNull(metricName, "metricName is null");
-        this.value = value;
-        this.labels = labels;
-        this.help = help;
+        requireNonNull(metricName, "metricName is null");
     }
 
     public static Counter from(String metricName, CounterStat counterStat, Map<String, String> labels, String help)
