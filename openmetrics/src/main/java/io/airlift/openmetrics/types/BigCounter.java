@@ -13,27 +13,32 @@
  */
 package io.airlift.openmetrics.types;
 
-import com.google.common.collect.ImmutableMap;
+import io.airlift.stats.labeled.LabelSet;
 
 import java.math.BigInteger;
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
 
-public record BigCounter(String metricName, BigInteger value, Map<String, String> labels, String help)
+public record BigCounter(String metricName, BigInteger value, LabelSet labels, String help)
         implements Metric
 {
     public BigCounter
     {
         requireNonNull(metricName, "metricName is null");
         requireNonNull(value, "value is null");
-        labels = ImmutableMap.copyOf(labels);
+        requireNonNull(labels, "labels is null");
+    }
+
+    public BigCounter(String metricName, BigInteger value, Map<String, String> labels, String help)
+    {
+        this(metricName, value, LabelSet.fromLabels(labels), help);
     }
 
     @Override
     public String getMetricExposition()
     {
-        return Metric.formatSingleValuedMetric(metricName, labels, value.toString());
+        return Metric.formatSingleValuedMetric(metricName, labels.asMap(), value.toString());
     }
 
     @Override

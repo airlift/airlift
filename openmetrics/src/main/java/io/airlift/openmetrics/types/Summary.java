@@ -15,12 +15,13 @@ package io.airlift.openmetrics.types;
 
 import com.google.common.collect.ImmutableMap;
 import io.airlift.stats.TimeDistribution;
+import io.airlift.stats.labeled.LabelSet;
 
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
 
-public record Summary(String metricName, Long count, Double sum, Double created, Map<Double, Double> quantiles, Map<String, String> labels, String help)
+public record Summary(String metricName, Long count, Double sum, Double created, Map<Double, Double> quantiles, LabelSet labels, String help)
         implements Metric
 {
     public static Summary from(String metricName, TimeDistribution timeDistribution, Map<String, String> labels, String help)
@@ -44,7 +45,12 @@ public record Summary(String metricName, Long count, Double sum, Double created,
     public Summary
     {
         requireNonNull(metricName, "metricName is null");
-        labels = ImmutableMap.copyOf(labels);
+        requireNonNull(labels, "labels is null");
+    }
+
+    public Summary(String metricName, Long count, Double sum, Double created, Map<Double, Double> quantiles, Map<String, String> labels, String help)
+    {
+        this(metricName, count, sum, created, quantiles, LabelSet.fromLabels(labels), help);
     }
 
     @Override
@@ -53,7 +59,7 @@ public record Summary(String metricName, Long count, Double sum, Double created,
         StringBuilder stringBuilder = new StringBuilder();
         if (count != null) {
             stringBuilder
-                    .append(Metric.formatNameWithLabels(metricName + "_count", labels))
+                    .append(Metric.formatNameWithLabels(metricName + "_count", labels.asMap()))
                     .append(' ')
                     .append(count)
                     .append('\n');
@@ -61,7 +67,7 @@ public record Summary(String metricName, Long count, Double sum, Double created,
 
         if (sum != null) {
             stringBuilder
-                    .append(Metric.formatNameWithLabels(metricName + "_sum", labels))
+                    .append(Metric.formatNameWithLabels(metricName + "_sum", labels.asMap()))
                     .append(' ')
                     .append(sum)
                     .append('\n');
@@ -69,7 +75,7 @@ public record Summary(String metricName, Long count, Double sum, Double created,
 
         if (created != null) {
             stringBuilder
-                    .append(Metric.formatNameWithLabels(metricName + "_created", labels))
+                    .append(Metric.formatNameWithLabels(metricName + "_created", labels.asMap()))
                     .append(' ')
                     .append(created)
                     .append('\n');
@@ -77,7 +83,8 @@ public record Summary(String metricName, Long count, Double sum, Double created,
 
         if (quantiles != null) {
             for (Map.Entry<Double, Double> quantile : quantiles.entrySet()) {
-                Map<String, String> quantileLabels = new ImmutableMap.Builder<String, String>().putAll(labels)
+                Map<String, String> quantileLabels = new ImmutableMap.Builder<String, String>()
+                        .putAll(labels.asMap())
                         .put("quantile", String.valueOf(quantile.getKey())).buildOrThrow();
                 stringBuilder
                         .append(Metric.formatNameWithLabels(metricName, quantileLabels))

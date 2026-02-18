@@ -14,6 +14,7 @@
 package io.airlift.openmetrics.types;
 
 import com.google.common.base.Strings;
+import io.airlift.stats.labeled.LabelSet;
 
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -24,6 +25,8 @@ public sealed interface Metric
     String metricName();
 
     String getMetricExposition();
+
+    LabelSet labels();
 
     String getMetricDescriptor();
 

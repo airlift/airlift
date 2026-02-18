@@ -13,31 +13,36 @@
  */
 package io.airlift.openmetrics.types;
 
-import com.google.common.collect.ImmutableMap;
 import io.airlift.stats.CounterStat;
+import io.airlift.stats.labeled.LabelSet;
 
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
 
-public record Counter(String metricName, long value, Map<String, String> labels, String help)
+public record Counter(String metricName, long value, LabelSet labels, String help)
         implements Metric
 {
     public Counter
     {
         requireNonNull(metricName, "metricName is null");
-        labels = ImmutableMap.copyOf(labels);
+        requireNonNull(labels, "labels is null");
+    }
+
+    public Counter(String metricName, long value, Map<String, String> labels, String help)
+    {
+        this(metricName, value, LabelSet.fromLabels(labels), help);
     }
 
     public static Counter from(String metricName, CounterStat counterStat, Map<String, String> labels, String help)
     {
-        return new Counter(metricName, counterStat.getTotalCount(), labels, help);
+        return new Counter(metricName, counterStat.getTotalCount(), LabelSet.fromLabels(labels), help);
     }
 
     @Override
     public String getMetricExposition()
     {
-        return Metric.formatSingleValuedMetric(metricName, labels, Long.toString(value));
+        return Metric.formatSingleValuedMetric(metricName, labels.asMap(), Long.toString(value));
     }
 
     @Override
