@@ -236,7 +236,7 @@ public class Logger
      */
     public void error(String message)
     {
-        logger.severe(message);
+        logger.log(SEVERE, message);
     }
 
     /**
