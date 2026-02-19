@@ -18,13 +18,11 @@ import com.google.common.collect.ImmutableMap;
 import io.airlift.stats.labeled.LabelSet;
 
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public interface Metric
 {
     String HELP_LINE_FORMAT = "# HELP %s %s\n";
     String TYPE_LINE_FORMAT = "# TYPE %s %s\n";
-    String NAME_WITH_LABELS_LINE_FORMAT = "%s{%s}";
     String VALUE_LINE_FORMAT = "%s %s\n";
 
     String metricName();
@@ -48,16 +46,38 @@ public interface Metric
         return VALUE_LINE_FORMAT.formatted(formatNameWithLabels(name, labels), value);
     }
 
-    static String formatNameWithLabels(String name, Map<String, String> labels)
+    static String formatNameWithLabels(String name, ImmutableMap<String, String> labels)
     {
         if (labels.isEmpty()) {
             return name;
         }
-        return NAME_WITH_LABELS_LINE_FORMAT.formatted(
-                name,
-                labels.entrySet().stream()
-                        .sorted(Map.Entry.comparingByKey())
-                        .map(e -> "%s=\"%s\"".formatted(e.getKey(), e.getValue()))
-                        .collect(Collectors.joining(",")));
+
+        // Assuming each label key and value are 2 characters each, safe under-estimate
+        StringBuilder stringBuilder = new StringBuilder(name.length() + 4 * labels.size());
+        stringBuilder.append(name).append("{");
+
+        boolean firstLabel = true;
+        for (Map.Entry<String, String> entry : labels.entrySet()) {
+            if (!firstLabel) {
+                stringBuilder.append(",");
+            }
+            stringBuilder.append(entry.getKey()).append("=\"");
+
+            String value = entry.getValue();
+            for (int i = 0; i < value.length(); i++) {
+                char c = value.charAt(i);
+                switch (c) {
+                    case '\\' -> stringBuilder.append("\\\\");
+                    case '\"' -> stringBuilder.append("\\\"");
+                    case '\n' -> stringBuilder.append("\\n");
+                    default -> stringBuilder.append(c);
+                }
+            }
+
+            stringBuilder.append("\"");
+            firstLabel = false;
+        }
+
+        return stringBuilder.append("}").toString();
     }
 }

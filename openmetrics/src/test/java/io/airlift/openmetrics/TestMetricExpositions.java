@@ -40,6 +40,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TestMetricExpositions
 {
     @Test
+    public void testMetricLabelEscaping()
+    {
+        String expected = """
+                # TYPE metric_name counter
+                # HELP metric_name metric_help
+                metric_name{a="\\"hello\\"",b="world\\"",c="good\\"bye"} 0
+                """;
+
+        Counter counter = new Counter(
+                "metric_name",
+                0,
+                ImmutableMap.of("a", "\"hello\"", "b", "world\"", "c", "good\"bye"),
+                "metric_help");
+        assertThat(counter.getMetricExposition()).isEqualTo(expected);
+    }
+
+    @Test
     public void testCounterExposition()
     {
         String expected =
