@@ -42,16 +42,35 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TestMetricExpositions
 {
     @Test
+    public void testMetricLabelEscaping()
+    {
+        String expected = """
+                # TYPE metric_name counter
+                # HELP metric_name metric_help
+                metric_name{a="back\\\\slash",b="new\\nline",c="\\"quoted\\""} 0
+                """;
+
+        Counter counter = new Counter(
+                "metric_name",
+                0,
+                ImmutableMap.of("a", "back\\slash", "b", "new\nline", "c", "\"quoted\""),
+                "metric_help");
+        assertThat(getMetricExpositionWithDescriptor(counter)).isEqualTo(expected);
+    }
+
+    @Test
     public void testCounterExposition()
     {
         String expected =
                 """
                 # TYPE metric_name counter
-                # HELP metric_name metric_help
+                # HELP metric_name metric_help\\nmultiline
                 metric_name 0
                 """;
 
-        Counter counter = new Counter("metric_name", 0, ImmutableMap.of(), "metric_help");
+        Counter counter = new Counter("metric_name", 0, ImmutableMap.of(), """
+        metric_help
+        multiline""");
         BigCounter bigCounter = new BigCounter("metric_name", BigInteger.ZERO, ImmutableMap.of(), "metric_help");
         assertThat(counter.getMetricExposition()).isEqualTo(bigCounter.getMetricExposition());
         assertThat(getMetricExpositionWithDescriptor(counter)).isEqualTo(expected);
