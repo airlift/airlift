@@ -44,7 +44,7 @@ public sealed interface Metric
             output.append("# HELP ")
                     .append(metricName)
                     .append(' ')
-                    .append(help)
+                    .append(escape(help))
                     .append('\n');
         }
         return output.toString();
@@ -57,7 +57,22 @@ public sealed interface Metric
         }
         return name + labels.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
-                .map(e -> e.getKey() + "=\"" + e.getValue() + "\"")
+                .map(e -> e.getKey() + "=\"" + escape(e.getValue()) + "\"")
                 .collect(Collectors.joining(",", "{", "}"));
+    }
+
+    private static String escape(String value)
+    {
+        StringBuilder builder = new StringBuilder(value.length());
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            switch (c) {
+                case '\\' -> builder.append("\\\\");
+                case '\"' -> builder.append("\\\"");
+                case '\n' -> builder.append("\\n");
+                default -> builder.append(c);
+            }
+        }
+        return builder.toString();
     }
 }
