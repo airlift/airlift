@@ -73,7 +73,7 @@ public record Summary(String metricName, Long count, Double sum, Double created,
 
         if (quantiles != null) {
             for (Map.Entry<Double, Double> quantile : quantiles.entrySet()) {
-                Map<String, String> quantileLabels = new ImmutableMap.Builder<String, String>().putAll(labels.asMap())
+                ImmutableMap<String, String> quantileLabels = new ImmutableMap.Builder<String, String>().putAll(labels.asMap())
                         .put("quantile", String.valueOf(quantile.getKey())).buildOrThrow();
                 stringBuilder.append(VALUE_LINE_FORMAT.formatted(Metric.formatNameWithLabels(metricName, quantileLabels), quantile.getValue()));
             }
