@@ -26,7 +26,6 @@ import io.opentelemetry.semconv.incubating.DeploymentIncubatingAttributes;
 import io.opentelemetry.semconv.incubating.HostIncubatingAttributes;
 import io.opentelemetry.semconv.incubating.OsIncubatingAttributes;
 import io.opentelemetry.semconv.incubating.ProcessIncubatingAttributes;
-import io.opentelemetry.semconv.incubating.ServiceIncubatingAttributes;
 
 import java.util.Set;
 
@@ -87,7 +86,7 @@ public class OpenTelemetryModule
         AttributesBuilder attributes = Attributes.builder()
                 .put(ServiceAttributes.SERVICE_NAME, serviceName)
                 .put(ServiceAttributes.SERVICE_VERSION, serviceVersion)
-                .put(ServiceIncubatingAttributes.SERVICE_INSTANCE_ID, nodeInfo.getNodeId())
+                .put(ServiceAttributes.SERVICE_INSTANCE_ID, nodeInfo.getNodeId())
                 .put(DeploymentIncubatingAttributes.DEPLOYMENT_ENVIRONMENT_NAME, nodeInfo.getEnvironment())
                 .put(ProcessIncubatingAttributes.PROCESS_RUNTIME_NAME, System.getProperty("java.runtime.name"))
                 .put(ProcessIncubatingAttributes.PROCESS_RUNTIME_VERSION, System.getProperty("java.runtime.version"))
