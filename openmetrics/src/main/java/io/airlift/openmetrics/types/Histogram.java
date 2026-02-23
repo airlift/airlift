@@ -67,10 +67,10 @@ public record Histogram(
         StringBuilder sb = new StringBuilder();
 
         if (includeDescriptor) {
-            sb.append(TYPE_LINE_FORMAT.formatted(metricName, "histogram"));
+            Metric.typeLineFormat(sb, metricName, "histogram");
 
             if (help.isPresent() && !help.orElseThrow().isEmpty()) {
-                sb.append(HELP_LINE_FORMAT.formatted(metricName, help.orElseThrow()));
+                Metric.helpLineFormat(sb, metricName, help.orElseThrow());
             }
         }
 
@@ -80,15 +80,14 @@ public record Histogram(
         for (int i = 0; i < bucketBounds.length; i++) {
             cumulativeCount += bucketCounts[i].sum();
             ImmutableMap<String, String> bucketLabels = generateBucketLabels(String.valueOf(bucketBounds[i]));
-            sb.append(VALUE_LINE_FORMAT.formatted(Metric.formatNameWithLabels(metricBucketPrefix, bucketLabels), cumulativeCount));
+            Metric.valueLineFormat(sb, Metric.formatNameWithLabels(metricBucketPrefix, bucketLabels), String.valueOf(cumulativeCount));
         }
-        sb.append(VALUE_LINE_FORMAT.formatted(Metric.formatNameWithLabels(metricBucketPrefix, generateBucketLabels("+Inf")), count));
-
-        sb.append(VALUE_LINE_FORMAT.formatted(Metric.formatNameWithLabels(metricName + "_count", labels.asMap()), count));
-        sb.append(VALUE_LINE_FORMAT.formatted(Metric.formatNameWithLabels(metricName + "_sum", labels.asMap()), sum));
+        Metric.valueLineFormat(sb, Metric.formatNameWithLabels(metricBucketPrefix, generateBucketLabels("+Inf")), String.valueOf(count));
+        Metric.valueLineFormat(sb, Metric.formatNameWithLabels(metricName + "_count", labels.asMap()), String.valueOf(count));
+        Metric.valueLineFormat(sb, Metric.formatNameWithLabels(metricName + "_sum", labels.asMap()), String.valueOf(sum));
 
         if (created.isPresent()) {
-            sb.append(VALUE_LINE_FORMAT.formatted(Metric.formatNameWithLabels(metricName + "_created", labels.asMap()), created.orElseThrow()));
+            Metric.valueLineFormat(sb, Metric.formatNameWithLabels(metricName + "_created", labels.asMap()), String.valueOf(created.orElseThrow()));
         }
 
         return sb.toString();
