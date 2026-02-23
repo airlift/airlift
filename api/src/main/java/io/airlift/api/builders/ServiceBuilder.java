@@ -7,13 +7,14 @@ import io.airlift.api.model.ModelServiceMetadata;
 import io.airlift.api.validation.ValidatorException;
 
 import java.lang.reflect.Method;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
+import static java.util.Comparator.comparing;
 import static java.util.Objects.requireNonNull;
 
 public class ServiceBuilder
@@ -31,12 +32,12 @@ public class ServiceBuilder
 
     public static ServiceBuilder serviceBuilder(Class<?> serviceClass)
     {
-        return new ServiceBuilder(serviceClass, new HashMap<>(), MethodBuilder::methodBuilder);
+        return new ServiceBuilder(serviceClass, new LinkedHashMap<>(), MethodBuilder::methodBuilder);
     }
 
     public static ServiceBuilder serviceBuilder(Class<?> serviceClass, Function<Method, MethodBuilder> methodSupplier)
     {
-        return new ServiceBuilder(serviceClass, new HashMap<>(), methodSupplier);
+        return new ServiceBuilder(serviceClass, new LinkedHashMap<>(), methodSupplier);
     }
 
     public static ServiceBuilder serviceBuilder(Class<?> serviceClass, ServiceBuilder from)
@@ -75,6 +76,7 @@ public class ServiceBuilder
 
         ModelServiceMetadata metadata = ModelServiceMetadata.map(apiService);
         List<ModelMethod> methods = Stream.of(serviceClass.getDeclaredMethods())
+                .sorted(comparing(Method::getName).thenComparing(Method::toGenericString))
                 .flatMap(method -> methodBuilder.apply(method).build().stream())
                 .collect(toImmutableList());
         return new ModelService(metadata, serviceClass, methods);

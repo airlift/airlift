@@ -4,14 +4,14 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 @SuppressWarnings({"checkstyle:MethodName", "checkstyle:ParameterName", "checkstyle:MemberName"})
 public class SecurityRequirement
 {
-    private final Map<String, List<String>> map = new HashMap<>();
+    private final Map<String, List<String>> map = new LinkedHashMap<>();
 
     @JsonValue
     public Map<String, List<String>> getMap()
