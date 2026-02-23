@@ -25,7 +25,7 @@ import org.glassfish.jersey.server.model.Parameter;
 import org.glassfish.jersey.server.spi.internal.ValueParamProvider;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -106,7 +106,7 @@ class SpecialApiTypeValueParamProvider
             return existingResponseHeaders;
         }
 
-        Multimap<String, String> multimap = Multimaps.newMultimap(new HashMap<>(), ArrayList::new);
+        Multimap<String, String> multimap = Multimaps.newMultimap(new LinkedHashMap<>(), ArrayList::new);
         ApiResponseHeaders responseHeaders = () -> multimap;
         containerRequest.setProperty(ApiResponseHeaders.class.getName(), responseHeaders);
         return responseHeaders;

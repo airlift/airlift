@@ -2,13 +2,13 @@ package io.airlift.api.openapi.models;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @SuppressWarnings({"checkstyle:MethodName", "checkstyle:ParameterName", "checkstyle:MemberName"})
 public class Paths
 {
-    private final Map<String, PathItem> paths = new HashMap<>();
+    private final Map<String, PathItem> paths = new LinkedHashMap<>();
 
     @JsonValue
     public Map<String, PathItem> getPaths()

@@ -2,13 +2,13 @@ package io.airlift.api.openapi.models;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @SuppressWarnings({"checkstyle:MethodName", "checkstyle:ParameterName", "checkstyle:MemberName"})
 public class ServerVariables
 {
-    private final Map<String, ServerVariable> serverVariables = new HashMap<>();
+    private final Map<String, ServerVariable> serverVariables = new LinkedHashMap<>();
 
     @JsonValue
     public Map<String, ServerVariable> getServerVariables()

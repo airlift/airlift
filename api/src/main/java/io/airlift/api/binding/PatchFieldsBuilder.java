@@ -8,8 +8,8 @@ import io.airlift.api.ApiPatch;
 
 import java.io.InputStream;
 import java.lang.reflect.Type;
-import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -34,7 +34,7 @@ public class PatchFieldsBuilder
             jsonParser.disable(JsonParser.Feature.AUTO_CLOSE_SOURCE);
             TreeNode treeNode = jsonParser.readValueAsTree();
 
-            Map<String, Function<Type, Object>> fields = new HashMap<>();
+            Map<String, Function<Type, Object>> fields = new LinkedHashMap<>();
             buildFields(treeNode, fields);
 
             return new ApiPatch<>(fields);

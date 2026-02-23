@@ -26,6 +26,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -52,7 +53,7 @@ class SchemaBuilder
 
     SchemaBuilder(boolean enumsAsStrings)
     {
-        this(TAG_MODEL_DEFINITIONS, new HashMap<>(), enumsAsStrings, new HashMap<>(), new HashMap<>());
+        this(TAG_MODEL_DEFINITIONS, new LinkedHashMap<>(), enumsAsStrings, new LinkedHashMap<>(), new LinkedHashMap<>());
     }
 
     private SchemaBuilder(String schemaTag, Map<SchemaKey, Schema<?>> schemas, boolean enumsAsStrings, Map<Type, ModelResource> typeToResourceCache, Map<String, Schema<?>> allOfSchemas)
@@ -204,7 +205,7 @@ class SchemaBuilder
         // parent. See the buildResourceSchema() method and the line "if (mode.isAllOf())".
         // However, recursive references may exist to these sub-schemas and the schemas may not
         // have been added anywhere else. So, add in any missing referenced allOf schemas here.
-        HashMap<String, Schema<?>> localAllOfSchemas = new HashMap<>(allOfSchemas);
+        HashMap<String, Schema<?>> localAllOfSchemas = new LinkedHashMap<>(allOfSchemas);
         // remove any allOf schemas that are already included
         schemas.values().stream().map(Schema::getName).forEach(localAllOfSchemas::remove);
         // add the missing schemas

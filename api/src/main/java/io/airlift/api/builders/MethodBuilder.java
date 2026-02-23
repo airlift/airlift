@@ -51,8 +51,8 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -131,12 +131,12 @@ public class MethodBuilder
 
     public static MethodBuilder methodBuilder(Method method)
     {
-        return new MethodBuilder(method, new HashMap<>(), ResourceBuilder::resourceBuilder, new HashMap<>());
+        return new MethodBuilder(method, new LinkedHashMap<>(), ResourceBuilder::resourceBuilder, new LinkedHashMap<>());
     }
 
     public static MethodBuilder methodBuilder(Method method, Function<Type, ResourceBuilder> resourceBuilderSupplier)
     {
-        return new MethodBuilder(method, new HashMap<>(), resourceBuilderSupplier, new HashMap<>());
+        return new MethodBuilder(method, new LinkedHashMap<>(), resourceBuilderSupplier, new LinkedHashMap<>());
     }
 
     public static MethodBuilder methodBuilder(Method method, MethodBuilder from)
@@ -280,7 +280,7 @@ public class MethodBuilder
 
     private Set<ModelResponse> buildResponses(Metadata metadata, Parameters parameters)
     {
-        Set<Class<?>> responseClasses = new HashSet<>(ImmutableSet.copyOf(metadata.responses));
+        Set<Class<?>> responseClasses = new LinkedHashSet<>(ImmutableSet.copyOf(metadata.responses));
         responseClasses.add(ApiBadRequest.class);
         responseClasses.add(ApiUnauthorized.class);
         responseClasses.add(ApiForbidden.class);

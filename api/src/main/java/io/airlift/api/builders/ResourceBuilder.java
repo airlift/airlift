@@ -30,8 +30,8 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -99,7 +99,7 @@ public class ResourceBuilder
 
     public static ResourceBuilder resourceBuilder(Type resource)
     {
-        return new ResourceBuilder(resource, new HashMap<>(), new RecursionChecker());
+        return new ResourceBuilder(resource, new LinkedHashMap<>(), new RecursionChecker());
     }
 
     public static ResourceBuilder resourceBuilder(Type resource, ResourceBuilder from)

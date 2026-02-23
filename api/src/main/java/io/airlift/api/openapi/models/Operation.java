@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -27,7 +27,7 @@ public class Operation
     // https://claude.ai/chat/e32e2c16-53d8-4c86-a6b1-8654d5da1149
     public static class MapWrapper
     {
-        private final Map<String, Object> properties = new HashMap<>();
+        private final Map<String, Object> properties = new LinkedHashMap<>();
 
         @JsonAnyGetter
         public Map<String, Object> getProperties()
