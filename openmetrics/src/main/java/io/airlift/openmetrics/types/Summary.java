@@ -52,30 +52,30 @@ public record Summary(String metricName, Long count, Double sum, Double created,
     {
         StringBuilder stringBuilder = new StringBuilder();
         if (includeDescriptor) {
-            stringBuilder.append(TYPE_LINE_FORMAT.formatted(metricName, "summary"));
+            Metric.typeLineFormat(stringBuilder, metricName, "summary");
 
             if (help != null && !help.isEmpty()) {
-                stringBuilder.append(HELP_LINE_FORMAT.formatted(metricName, help));
+                Metric.helpLineFormat(stringBuilder, metricName, help);
             }
         }
 
         if (count != null) {
-            stringBuilder.append(VALUE_LINE_FORMAT.formatted(Metric.formatNameWithLabels(metricName + "_count", labels.asMap()), count));
+            Metric.valueLineFormat(stringBuilder, Metric.formatNameWithLabels(metricName + "_count", labels.asMap()), String.valueOf(count));
         }
 
         if (sum != null) {
-            stringBuilder.append(VALUE_LINE_FORMAT.formatted(Metric.formatNameWithLabels(metricName + "_sum", labels.asMap()), sum));
+            Metric.valueLineFormat(stringBuilder, Metric.formatNameWithLabels(metricName + "_sum", labels.asMap()), String.valueOf(sum));
         }
 
         if (created != null) {
-            stringBuilder.append(VALUE_LINE_FORMAT.formatted(Metric.formatNameWithLabels(metricName + "_created", labels.asMap()), created));
+            Metric.valueLineFormat(stringBuilder, Metric.formatNameWithLabels(metricName + "_created", labels.asMap()), String.valueOf(created));
         }
 
         if (quantiles != null) {
             for (Map.Entry<Double, Double> quantile : quantiles.entrySet()) {
                 ImmutableMap<String, String> quantileLabels = new ImmutableMap.Builder<String, String>().putAll(labels.asMap())
                         .put("quantile", String.valueOf(quantile.getKey())).buildOrThrow();
-                stringBuilder.append(VALUE_LINE_FORMAT.formatted(Metric.formatNameWithLabels(metricName, quantileLabels), quantile.getValue()));
+                Metric.valueLineFormat(stringBuilder, Metric.formatNameWithLabels(metricName, quantileLabels), String.valueOf(quantile.getValue()));
             }
         }
 

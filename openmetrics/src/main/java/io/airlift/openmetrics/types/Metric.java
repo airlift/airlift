@@ -21,10 +21,6 @@ import java.util.Map;
 
 public interface Metric
 {
-    String HELP_LINE_FORMAT = "# HELP %s %s\n";
-    String TYPE_LINE_FORMAT = "# TYPE %s %s\n";
-    String VALUE_LINE_FORMAT = "%s %s\n";
-
     String metricName();
 
     LabelSet labels();
@@ -38,12 +34,17 @@ public interface Metric
 
     static String formatSingleValuedMetric(String name, String type, String help, ImmutableMap<String, String> labels, String value, boolean includeDescriptor)
     {
+        StringBuilder stringBuilder = new StringBuilder();
         if (!includeDescriptor) {
-            return VALUE_LINE_FORMAT.formatted(formatNameWithLabels(name, labels), value);
+            valueLineFormat(stringBuilder, formatNameWithLabels(name, labels), value);
+            return stringBuilder.toString();
         }
-        return TYPE_LINE_FORMAT.formatted(name, type) +
-                (Strings.isNullOrEmpty(help) ? "" : HELP_LINE_FORMAT.formatted(name, help)) +
-                VALUE_LINE_FORMAT.formatted(formatNameWithLabels(name, labels), value);
+        typeLineFormat(stringBuilder, name, type);
+        if (!Strings.isNullOrEmpty(help)) {
+            helpLineFormat(stringBuilder, name, help);
+        }
+        valueLineFormat(stringBuilder, formatNameWithLabels(name, labels), value);
+        return stringBuilder.toString();
     }
 
     static String formatNameWithLabels(String name, ImmutableMap<String, String> labels)
@@ -79,5 +80,31 @@ public interface Metric
         }
 
         return stringBuilder.append("}").toString();
+    }
+
+    static void valueLineFormat(StringBuilder stringBuilder, String name, String value)
+    {
+        stringBuilder.append(name)
+                .append(" ")
+                .append(value)
+                .append("\n");
+    }
+
+    static void typeLineFormat(StringBuilder stringBuilder, String name, String type)
+    {
+        stringBuilder.append("# TYPE ")
+                .append(name)
+                .append(" ")
+                .append(type)
+                .append("\n");
+    }
+
+    static void helpLineFormat(StringBuilder stringBuilder, String name, String help)
+    {
+        stringBuilder.append("# HELP ")
+                .append(name)
+                .append(" ")
+                .append(help)
+                .append("\n");
     }
 }
