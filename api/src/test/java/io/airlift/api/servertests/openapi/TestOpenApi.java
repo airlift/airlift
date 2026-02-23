@@ -1,12 +1,11 @@
 package io.airlift.api.servertests.openapi;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.io.Resources;
 import io.airlift.api.openapi.OpenApiMetadata;
 import io.airlift.api.servertests.ServerTestBase;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
-import jakarta.ws.rs.core.HttpHeaders;
-import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.UriBuilder;
 import org.junit.jupiter.api.Test;
 
@@ -16,6 +15,7 @@ import java.util.Optional;
 import static io.airlift.api.openapi.OpenApiMetadata.SecurityScheme.BEARER_ACCESS_TOKEN;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestOpenApi
@@ -30,16 +30,16 @@ public class TestOpenApi
 
     @Test
     public void testOpenApiJson()
+            throws Exception
     {
         URI uri = UriBuilder.fromUri(baseUri).path("/public/openapi/v1/json").build();
-        Request request = prepareGet()
-                .setUri(uri)
-                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-                .build();
+        Request request = prepareGet().setUri(uri).build();
         StringResponse response = httpClient.execute(request, createStringResponseHandler());
 
         assertThat(response.getStatusCode()).isEqualTo(200);
-        assertThat(response.getBody()).contains("\"openapi\" : \"3.0.1\"");
-        assertThat(response.getBody()).contains("\"name\" : \"Standard Service\"");
+
+        String actual = response.getBody();
+        String expected = Resources.toString(Resources.getResource("openapi/dummy.json"), UTF_8);
+        assertThat(actual.strip()).isEqualTo(expected.strip());
     }
 }

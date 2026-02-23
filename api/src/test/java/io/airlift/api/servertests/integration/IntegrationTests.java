@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Closer;
+import com.google.common.io.Resources;
 import com.google.common.reflect.TypeToken;
 import io.airlift.api.ApiFilter;
 import io.airlift.api.ApiFilterList;
@@ -28,6 +29,7 @@ import io.airlift.http.client.FullJsonResponseHandler.JsonResponse;
 import io.airlift.http.client.HttpClientConfig;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.StreamingResponse;
+import io.airlift.http.client.StringResponseHandler.StringResponse;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.json.JsonCodec;
 import io.airlift.json.JsonCodecFactory;
@@ -60,8 +62,10 @@ import static io.airlift.http.client.Request.Builder.prepareDelete;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.Request.Builder.preparePatch;
 import static io.airlift.http.client.Request.Builder.preparePost;
+import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
 import static io.airlift.json.JsonCodec.jsonCodec;
 import static io.airlift.json.JsonCodec.mapJsonCodec;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.ThreadLocalRandom.current;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
@@ -254,6 +258,21 @@ public class IntegrationTests
         JsonResponse<StringResult> result = call(preparePost(), UriBuilder.fromUri(testingServer.baseUri()).path(BASE_PATH).path("test:recursive").build(), STRING_RESULT_CODEC, Optional.of(recursiveDetail), Optional.of(RECURSIVE_DETAIL_CODEC));
         assertThat(result.getStatusCode()).isEqualTo(200);
         assertThat(result.getValue().message()).isEqualTo("Recursive: me, sub");
+    }
+
+    @Test
+    public void testOpenApiJson()
+            throws IOException
+    {
+        URI uri = UriBuilder.fromUri(testingServer.baseUri()).path("public/openapi/v1/json").build();
+        Request request = prepareGet().setUri(uri).build();
+        StringResponse response = httpClient.execute(request, createStringResponseHandler());
+
+        assertThat(response.getStatusCode()).isEqualTo(200);
+
+        String actual = response.getBody();
+        String expected = Resources.toString(Resources.getResource("openapi/widget.json"), UTF_8);
+        assertThat(actual.strip()).isEqualTo(expected.strip());
     }
 
     private static Stream<Arguments> testPaginationArguments()

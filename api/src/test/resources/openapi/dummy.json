@@ -1,0 +1,173 @@
+{
+  "openapi" : "3.0.1",
+  "info" : {
+    "title" : "test",
+    "version" : "v1"
+  },
+  "security" : [ {
+    "accessToken" : [ ]
+  } ],
+  "tags" : [ {
+    "name" : "Standard Service",
+    "description" : "Does standard things"
+  }, {
+    "name" : "About",
+    "description" : "test\n\n<a href=\"/public/openapi/v1/json\" style=\"text-decoration: none !important\" download=\"openApi.json\">⬇️ Download OpenAPI specification</a>\n"
+  }, {
+    "name" : "Model Definitions",
+    "description" : ""
+  }, {
+    "name" : "Responses",
+    "description" : ""
+  } ],
+  "paths" : {
+    "/public/api/v1/dummy" : {
+      "get" : {
+        "tags" : [ "Standard Service" ],
+        "description" : "Get things",
+        "operationId" : "getDummy",
+        "parameters" : [ ],
+        "responses" : {
+          "200" : {
+            "description" : "Success",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Dummy"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "ApiBadRequest",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BadRequest"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "ApiUnauthorized",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Unauthorized"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "ApiForbidden",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Forbidden"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "ApiNotFound",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NotFound"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components" : {
+    "securitySchemes" : {
+      "accessToken" : {
+        "type" : "http",
+        "name" : "Authorization",
+        "in" : "header",
+        "scheme" : "bearer",
+        "bearerFormat" : "Access token"
+      }
+    },
+    "schemas" : {
+      "Dummy" : {
+        "description" : "A dummy resource for testing",
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "BadRequest" : {
+        "properties" : {
+          "message" : {
+            "type" : "string",
+            "description" : "Description of the error"
+          },
+          "fields" : {
+            "type" : "array",
+            "description" : "Any fields/values that are invalid or incorrect",
+            "items" : {
+              "type" : "string",
+              "description" : "Any fields/values that are invalid or incorrect"
+            }
+          }
+        },
+        "description" : "Invalid request",
+        "x-tags" : [ "Responses" ]
+      },
+      "Unauthorized" : {
+        "properties" : {
+          "message" : {
+            "type" : "string",
+            "description" : ""
+          }
+        },
+        "description" : "Authorization failed",
+        "x-tags" : [ "Responses" ]
+      },
+      "Forbidden" : {
+        "properties" : {
+          "message" : {
+            "type" : "string",
+            "description" : ""
+          }
+        },
+        "description" : "Authorization failed",
+        "x-tags" : [ "Responses" ]
+      },
+      "NotFound" : {
+        "required" : [ "message" ],
+        "properties" : {
+          "message" : {
+            "type" : "string",
+            "description" : "Name of the resource"
+          },
+          "description" : {
+            "type" : "string",
+            "description" : "Violation description"
+          },
+          "fields" : {
+            "type" : "array",
+            "description" : "Any fields/values that weren't found",
+            "items" : {
+              "type" : "string",
+              "description" : "Any fields/values that weren't found"
+            }
+          }
+        },
+        "description" : "A resource or required component was not found",
+        "x-tags" : [ "Responses" ]
+      }
+    }
+  },
+  "x-tagGroups" : [ {
+    "name" : "Help",
+    "tags" : [ "About" ]
+  }, {
+    "name" : "Services",
+    "tags" : [ "Standard Service" ]
+  }, {
+    "name" : "Models",
+    "tags" : [ "Model Definitions", "Responses" ]
+  } ]
+}
