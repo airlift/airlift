@@ -349,20 +349,26 @@ class SchemaBuilder
         Discriminator discriminator = new Discriminator().propertyName(polyResource.key());
         schema.discriminator(discriminator);
 
-        // need to use asRef(schema) because it hasn't been added yet
-        Schema<?> mainSchemaAsRef = asRef(schema);
-
         polyResource.subResources().forEach(subResource -> {
             // build the sub-resource but don't save it
             Schema<?> allOfSchema = buildBasicOrResourceSchema(subResource, allOfMode(mode));
 
-            // create the sub-schema which will have allOf refs to the main schema and the contents of the allOf schema
+            // create the sub-schema using only subtype-specific fields.
+            // Keeping a ref to the parent schema here creates recursive definitions in downstream TS generators.
             Schema<?> subSchema = newNamedSchema(schemaName(subResource, mode, Optional.of(schema.getName())));
-            subSchema.addAllOfItem(mainSchemaAsRef);
-            subSchema.addAllOfItem(allOfSchema);
+            subSchema.addAllOfItem(asRef(allOfSchema));
+
+            schema.addOneOfItem(asRef(subSchema));
 
             // add a mapping in the discriminator - always use the subresource name and not the OpenAPI override
             discriminator.mapping(subResource.name(), asRef(subSchema).get$ref());
+
+            if (mode.isAllOf()) {
+                // we don't save allOf/of schemas. They get merged with the parent.
+                // However, keep track of them in case there are recursive references to them
+                // that need to be added prior to building.
+                allOfSchemas.put(subSchema.getName(), subSchema);
+            }
 
             // save the sub-schema
             schemas.put(new SchemaKey(Optional.of(schema.getName()), subResource.containerType(), subResource.resourceType(), mode), subSchema);

@@ -819,72 +819,19 @@
       },
       "DetailNameAndAge" : {
         "allOf" : [ {
-          "$ref" : "#/components/schemas/Detail"
-        }, {
-          "required" : [ "age", "name" ],
-          "properties" : {
-            "name" : {
-              "type" : "string",
-              "description" : "A name"
-            },
-            "age" : {
-              "format" : "int32",
-              "type" : "integer",
-              "description" : "An age",
-              "nullable" : false
-            }
-          },
-          "description" : "A name and an age",
-          "x-tags" : [ "Model Definitions" ]
+          "$ref" : "#/components/schemas/NameAndAge"
         } ],
         "x-tags" : [ "Model Definitions" ]
       },
       "DetailSchedule" : {
         "allOf" : [ {
-          "$ref" : "#/components/schemas/Detail"
-        }, {
-          "required" : [ "endDate", "name", "startDate" ],
-          "properties" : {
-            "name" : {
-              "type" : "string",
-              "description" : "A schedule name"
-            },
-            "startDate" : {
-              "format" : "date-time",
-              "type" : "string",
-              "description" : "Start date"
-            },
-            "endDate" : {
-              "format" : "date-time",
-              "type" : "string",
-              "description" : "End date"
-            }
-          },
-          "description" : "A schedule",
-          "x-tags" : [ "Model Definitions" ]
+          "$ref" : "#/components/schemas/Schedule"
         } ],
         "x-tags" : [ "Model Definitions" ]
       },
       "DetailRecursiveDetail" : {
         "allOf" : [ {
-          "$ref" : "#/components/schemas/Detail"
-        }, {
-          "required" : [ "name", "nested" ],
-          "properties" : {
-            "name" : {
-              "type" : "string",
-              "description" : "Name"
-            },
-            "nested" : {
-              "type" : "array",
-              "description" : "Nested resource (read only)",
-              "items" : {
-                "$ref" : "#/components/schemas/RecursiveDetail"
-              }
-            }
-          },
-          "description" : "A resource containing a list of itself (read only)",
-          "x-tags" : [ "Model Definitions" ]
+          "$ref" : "#/components/schemas/RecursiveDetail"
         } ],
         "x-tags" : [ "Model Definitions" ]
       },
@@ -896,6 +843,13 @@
           }
         },
         "description" : "A polymorphic resource example",
+        "oneOf" : [ {
+          "$ref" : "#/components/schemas/DetailNameAndAge"
+        }, {
+          "$ref" : "#/components/schemas/DetailSchedule"
+        }, {
+          "$ref" : "#/components/schemas/DetailRecursiveDetail"
+        } ],
         "discriminator" : {
           "propertyName" : "typeKey",
           "mapping" : {
@@ -997,72 +951,19 @@
       },
       "DetailResultNameAndAge" : {
         "allOf" : [ {
-          "$ref" : "#/components/schemas/DetailResult"
-        }, {
-          "required" : [ "age", "name" ],
-          "properties" : {
-            "name" : {
-              "type" : "string",
-              "description" : "A name"
-            },
-            "age" : {
-              "format" : "int32",
-              "type" : "integer",
-              "description" : "An age",
-              "nullable" : false
-            }
-          },
-          "description" : "A name and an age",
-          "x-tags" : [ "Model Definitions" ]
+          "$ref" : "#/components/schemas/NameAndAge"
         } ],
         "x-tags" : [ "Model Definitions" ]
       },
       "DetailResultSchedule" : {
         "allOf" : [ {
-          "$ref" : "#/components/schemas/DetailResult"
-        }, {
-          "required" : [ "endDate", "name", "startDate" ],
-          "properties" : {
-            "name" : {
-              "type" : "string",
-              "description" : "A schedule name"
-            },
-            "startDate" : {
-              "format" : "date-time",
-              "type" : "string",
-              "description" : "Start date"
-            },
-            "endDate" : {
-              "format" : "date-time",
-              "type" : "string",
-              "description" : "End date"
-            }
-          },
-          "description" : "A schedule",
-          "x-tags" : [ "Model Definitions" ]
+          "$ref" : "#/components/schemas/Schedule"
         } ],
         "x-tags" : [ "Model Definitions" ]
       },
       "DetailResultRecursiveDetail" : {
         "allOf" : [ {
-          "$ref" : "#/components/schemas/DetailResult"
-        }, {
-          "required" : [ "name", "nested" ],
-          "properties" : {
-            "name" : {
-              "type" : "string",
-              "description" : "Name"
-            },
-            "nested" : {
-              "type" : "array",
-              "description" : "Nested resource (read only)",
-              "items" : {
-                "$ref" : "#/components/schemas/RecursiveDetail"
-              }
-            }
-          },
-          "description" : "A resource containing a list of itself (read only)",
-          "x-tags" : [ "Model Definitions" ]
+          "$ref" : "#/components/schemas/RecursiveDetail"
         } ],
         "x-tags" : [ "Model Definitions" ]
       },
@@ -1082,6 +983,13 @@
           }
         },
         "description" : "Detail result instance",
+        "oneOf" : [ {
+          "$ref" : "#/components/schemas/DetailResultNameAndAge"
+        }, {
+          "$ref" : "#/components/schemas/DetailResultSchedule"
+        }, {
+          "$ref" : "#/components/schemas/DetailResultRecursiveDetail"
+        } ],
         "discriminator" : {
           "propertyName" : "typeKey",
           "mapping" : {
