@@ -1,0 +1,26 @@
+test:deepRecursive|public|1|POST|resource(test|RESOURCE|message|BASIC|java.lang.String)|resource(deepRecursiveResource|RESOURCE)|[]|[]|[400|401|403|409]
+
+Metadata:
+POST
+io.airlift.api.servertests.integration.testingserver.external.PublicWidgetApi
+deepRecursiveTest
+public/api/v1/test:deepRecursive
+
+
+Return:
+ModelResource[type=class io.airlift.api.servertests.integration.testingserver.external.StringResult, name=test, openApiName=Optional.empty, description=Used to return strings from test methods, components=[ModelResource[type=class java.lang.String, name=message, openApiName=Optional[String], description=, components=[], resourceType=BASIC, containerType=class java.lang.String, modifiers=[], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional.empty, enumDescriptions=Optional.empty]], resourceType=RESOURCE, containerType=class io.airlift.api.servertests.integration.testingserver.external.StringResult, modifiers=[], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional.empty, enumDescriptions=Optional.empty]
+
+Parameter(s):
+none
+
+Optional Parameter(s):
+none
+
+Body:
+ModelResource[type=interface io.airlift.api.servertests.integration.testingserver.external.DeepRecursiveResource, name=deepRecursiveResource, openApiName=Optional.empty, description=A deep recursive polymorphic resource, components=[], resourceType=RESOURCE, containerType=interface io.airlift.api.servertests.integration.testingserver.external.DeepRecursiveResource, modifiers=[], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional[ModelPolyResource[key=typeKey, subResources=[ModelResource[type=class io.airlift.api.servertests.integration.testingserver.external.DeepRecursiveResource$Leaf, name=leaf, openApiName=Optional.empty, description=Leaf deep recursive resource, components=[ModelResource[type=class java.lang.String, name=name, openApiName=Optional[String], description=Name, components=[], resourceType=BASIC, containerType=class java.lang.String, modifiers=[], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional.empty, enumDescriptions=Optional.empty]], resourceType=RESOURCE, containerType=class io.airlift.api.servertests.integration.testingserver.external.DeepRecursiveResource$Leaf, modifiers=[], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional.empty, enumDescriptions=Optional.empty], ModelResource[type=class io.airlift.api.servertests.integration.testingserver.external.DeepRecursiveResource$Branch, name=branch, openApiName=Optional.empty, description=Branch deep recursive resource, components=[ModelResource[type=class java.lang.String, name=name, openApiName=Optional[String], description=Name, components=[], resourceType=BASIC, containerType=class java.lang.String, modifiers=[], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional.empty, enumDescriptions=Optional.empty], ModelResource[type=interface io.airlift.api.servertests.integration.testingserver.external.DeepRecursiveResource, name=nestedResources, openApiName=Optional[deepRecursiveResource], description=Nested resources, components=[], resourceType=LIST, containerType=java.util.List<io.airlift.api.servertests.integration.testingserver.external.DeepRecursiveResource>, modifiers=[READ_ONLY], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional[ModelPolyResource[key=typeKey, subResources=[ModelResource[type=class io.airlift.api.servertests.integration.testingserver.external.DeepRecursiveResource$Leaf, name=leaf, openApiName=Optional.empty, description=Leaf deep recursive resource, components=[ModelResource[type=class java.lang.String, name=name, openApiName=Optional[String], description=Name, components=[], resourceType=BASIC, containerType=class java.lang.String, modifiers=[], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional.empty, enumDescriptions=Optional.empty]], resourceType=RESOURCE, containerType=class io.airlift.api.servertests.integration.testingserver.external.DeepRecursiveResource$Leaf, modifiers=[], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional.empty, enumDescriptions=Optional.empty], ModelResource[type=class io.airlift.api.servertests.integration.testingserver.external.DeepRecursiveResource$Branch, name=branch, openApiName=Optional.empty, description=Branch deep recursive resource, components=[], resourceType=RESOURCE, containerType=class io.airlift.api.servertests.integration.testingserver.external.DeepRecursiveResource$Branch, modifiers=[RECURSIVE_REFERENCE], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional.empty, enumDescriptions=Optional.empty]]]], enumDescriptions=Optional.empty]], resourceType=RESOURCE, containerType=class io.airlift.api.servertests.integration.testingserver.external.DeepRecursiveResource$Branch, modifiers=[TOP_LEVEL_READ_ONLY], quotas=[], limitedValues=[], supportsIdLookup=Optional.empty, polyResource=Optional.empty, enumDescriptions=Optional.empty]]]], enumDescriptions=Optional.empty]
+
+Response(s):
+400
+401
+403
+409

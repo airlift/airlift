@@ -268,6 +268,76 @@
         }
       }
     },
+    "/public/api/v1/test:deepRecursive" : {
+      "post" : {
+        "tags" : [ "Widget Service" ],
+        "description" : "Test of deep recursive polymorphic resources",
+        "operationId" : "deeprecursiveTest",
+        "parameters" : [ ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DeepRecursiveResource"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Success",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Test"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "ApiBadRequest",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BadRequest"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "ApiUnauthorized",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Unauthorized"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "ApiForbidden",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Forbidden"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "ApiAlreadyExists",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Exists"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/public/api/v1/widget/{widgetId}" : {
       "get" : {
         "tags" : [ "Widget Service" ],
@@ -926,6 +996,52 @@
         "description" : "Something amazing",
         "x-tags" : [ "Model Definitions" ]
       },
+      "DeepRecursiveResourceLeaf" : {
+        "allOf" : [ {
+          "$ref" : "#/components/schemas/Leaf"
+        } ],
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "DeepRecursiveResourceLeaf2" : {
+        "allOf" : [ {
+          "$ref" : "#/components/schemas/Leaf"
+        } ],
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "DeepRecursiveResourceBranch" : {
+        "allOf" : [ {
+          "$ref" : "#/components/schemas/Branch"
+        } ],
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "DeepRecursiveResourceBranch2" : {
+        "allOf" : [ {
+          "$ref" : "#/components/schemas/Branch"
+        } ],
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "DeepRecursiveResource" : {
+        "required" : [ "typeKey" ],
+        "properties" : {
+          "typeKey" : {
+            "type" : "string"
+          }
+        },
+        "description" : "A deep recursive polymorphic resource",
+        "oneOf" : [ {
+          "$ref" : "#/components/schemas/DeepRecursiveResourceLeaf"
+        }, {
+          "$ref" : "#/components/schemas/DeepRecursiveResourceBranch2"
+        } ],
+        "discriminator" : {
+          "propertyName" : "typeKey",
+          "mapping" : {
+            "leaf" : "#/components/schemas/DeepRecursiveResourceLeaf",
+            "branch" : "#/components/schemas/DeepRecursiveResourceBranch2"
+          }
+        },
+        "x-tags" : [ "Model Definitions" ]
+      },
       "NotFound" : {
         "required" : [ "message" ],
         "properties" : {
@@ -1131,6 +1247,54 @@
           }
         },
         "description" : "A resource containing a list of itself (read only)",
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "Leaf" : {
+        "required" : [ "name" ],
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "description" : "Name"
+          }
+        },
+        "description" : "Leaf deep recursive resource",
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "Branch" : {
+        "required" : [ "name", "nestedResources" ],
+        "properties" : {
+          "name" : {
+            "type" : "string",
+            "description" : "Name"
+          },
+          "nestedResources" : {
+            "type" : "array",
+            "description" : "Nested resources (read only)",
+            "items" : {
+              "required" : [ "typeKey" ],
+              "properties" : {
+                "typeKey" : {
+                  "type" : "string"
+                }
+              },
+              "description" : "Nested resources (read only)",
+              "oneOf" : [ {
+                "$ref" : "#/components/schemas/DeepRecursiveResourceLeaf2"
+              }, {
+                "$ref" : "#/components/schemas/DeepRecursiveResourceBranch"
+              } ],
+              "discriminator" : {
+                "propertyName" : "typeKey",
+                "mapping" : {
+                  "leaf" : "#/components/schemas/DeepRecursiveResourceLeaf2",
+                  "branch" : "#/components/schemas/DeepRecursiveResourceBranch"
+                }
+              },
+              "x-tags" : [ "Model Definitions" ]
+            }
+          }
+        },
+        "description" : "Branch deep recursive resource (read only)",
         "x-tags" : [ "Model Definitions" ]
       }
     }

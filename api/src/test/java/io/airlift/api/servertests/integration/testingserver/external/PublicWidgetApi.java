@@ -129,4 +129,12 @@ public class PublicWidgetApi
 
         return new StringResult("Recursive: %s, %s".formatted(recursiveDetail.name(), recursiveDetail.items().getFirst().recursiveDetails().getFirst().name()));
     }
+
+    @ApiCustom(verb = "deepRecursive", type = CREATE, description = "Test of deep recursive polymorphic resources", quotas = "DEEP_RECURSIVE")
+    public StringResult deepRecursiveTest(@Context Request request, DeepRecursiveResource deepRecursiveResource)
+    {
+        quotaController.recordQuotaUsage(request, "DEEP_RECURSIVE");
+
+        return new StringResult("Deep recursive: " + deepRecursiveResource.getClass().getSimpleName());
+    }
 }
