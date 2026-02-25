@@ -96,6 +96,20 @@ public class ObjectMapperProvider
         jsonFactoryBuilder.enable(StreamReadFeature.USE_FAST_BIG_NUMBER_PARSER);
         jsonFactoryBuilder.enable(StreamReadFeature.USE_FAST_DOUBLE_PARSER);
 
+        /*
+         * When multiple threads deserialize JSON responses concurrently,
+         * Jackson's default behavior of interning field names causes severe lock contention
+         * on the JVM's global String pool. This manifests as threads blocked waiting at
+         * InternCache.intern.
+         *
+         * Disabling INTERN_FIELD_NAMES eliminates this contention with minimal performance
+         * impact - field name deduplication becomes slightly less memory-efficient, but the
+         * elimination of lock contention far outweighs this cost in high-concurrency scenarios.
+         *
+         * See: https://github.com/FasterXML/jackson-core/issues/332.
+         */
+        jsonFactoryBuilder.disable(JsonFactory.Feature.INTERN_FIELD_NAMES);
+
         jsonFactoryBuilder.recyclerPool(JsonRecyclerPools.threadLocalPool());
 
         jsonFactory = jsonFactoryBuilder.build();
