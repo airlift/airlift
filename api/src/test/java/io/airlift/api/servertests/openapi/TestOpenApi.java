@@ -6,6 +6,8 @@ import io.airlift.api.openapi.OpenApiMetadata;
 import io.airlift.api.servertests.ServerTestBase;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
+import io.swagger.v3.parser.OpenAPIV3Parser;
+import io.swagger.v3.parser.core.models.SwaggerParseResult;
 import jakarta.ws.rs.core.UriBuilder;
 import org.junit.jupiter.api.Test;
 
@@ -28,6 +30,12 @@ public class TestOpenApi
         super(DummyService.class, builder -> builder.withOpenApiMetadata(OPEN_API_METADATA));
     }
 
+    public static void validateOpenApiJson(String json)
+    {
+        SwaggerParseResult result = new OpenAPIV3Parser().readContents(json);
+        assertThat(result.getMessages()).isEmpty();
+    }
+
     @Test
     public void testOpenApiJson()
             throws Exception
@@ -39,6 +47,8 @@ public class TestOpenApi
         assertThat(response.getStatusCode()).isEqualTo(200);
 
         String actual = response.getBody();
+        validateOpenApiJson(actual);
+
         String expected = Resources.toString(Resources.getResource("openapi/dummy.json"), UTF_8);
         assertThat(actual.strip()).isEqualTo(expected.strip());
     }

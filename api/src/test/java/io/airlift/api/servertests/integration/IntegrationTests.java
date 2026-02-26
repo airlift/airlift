@@ -33,6 +33,8 @@ import io.airlift.http.client.StringResponseHandler.StringResponse;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.json.JsonCodec;
 import io.airlift.json.JsonCodecFactory;
+import io.swagger.v3.parser.OpenAPIV3Parser;
+import io.swagger.v3.parser.core.models.SwaggerParseResult;
 import jakarta.ws.rs.core.UriBuilder;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -262,7 +264,7 @@ public class IntegrationTests
 
     @Test
     public void testOpenApiJson()
-            throws IOException
+            throws Exception
     {
         URI uri = UriBuilder.fromUri(testingServer.baseUri()).path("public/openapi/v1/json").build();
         Request request = prepareGet().setUri(uri).build();
@@ -273,6 +275,9 @@ public class IntegrationTests
         String actual = response.getBody();
         String expected = Resources.toString(Resources.getResource("openapi/widget.json"), UTF_8);
         assertThat(actual.strip()).isEqualTo(expected.strip());
+
+        SwaggerParseResult result = new OpenAPIV3Parser().readLocation(uri.toString(), null, null);
+        assertThat(result.getMessages()).isEmpty();
     }
 
     private static Stream<Arguments> testPaginationArguments()

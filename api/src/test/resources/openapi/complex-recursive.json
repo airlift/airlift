@@ -1,0 +1,1384 @@
+{
+  "openapi" : "3.0.1",
+  "info" : {
+    "title" : "test",
+    "version" : "v1"
+  },
+  "tags" : [ {
+    "name" : "Complex Service",
+    "description" : "Has complex recursive poly resources"
+  }, {
+    "name" : "About",
+    "description" : "test\n\n<a href=\"/public/openapi/v1/json\" style=\"text-decoration: none !important\" download=\"openApi.json\">⬇️ Download OpenAPI specification</a>\n"
+  }, {
+    "name" : "Model Definitions",
+    "description" : ""
+  }, {
+    "name" : "Responses",
+    "description" : ""
+  } ],
+  "paths" : {
+    "/public/api/v1/poly" : {
+      "post" : {
+        "tags" : [ "Complex Service" ],
+        "description" : "dummy\n\n**BETA API:** This API is subject to incompatible changes, or even removal, in the future.",
+        "operationId" : "createPoly",
+        "parameters" : [ ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/Poly"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "Success"
+          },
+          "400" : {
+            "description" : "ApiBadRequest",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BadRequest"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "ApiUnauthorized",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Unauthorized"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "ApiForbidden",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Forbidden"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "ApiAlreadyExists",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Exists"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/public/api/v1/transformLiveTableSchemaUpdate" : {
+      "put" : {
+        "tags" : [ "Complex Service" ],
+        "description" : "dummy\n\n**BETA API:** This API is subject to incompatible changes, or even removal, in the future.",
+        "operationId" : "updateTransformLiveTableSchemaUpdate",
+        "parameters" : [ ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TransformLiveTableSchemaUpdate"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "Success"
+          },
+          "400" : {
+            "description" : "ApiBadRequest",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BadRequest"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "ApiUnauthorized",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Unauthorized"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "ApiForbidden",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Forbidden"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "ApiAlreadyExists",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Exists"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "ApiNotFound",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NotFound"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "BadRequest" : {
+        "properties" : {
+          "message" : {
+            "type" : "string",
+            "description" : "Description of the error"
+          },
+          "fields" : {
+            "type" : "array",
+            "description" : "Any fields/values that are invalid or incorrect",
+            "items" : {
+              "type" : "string",
+              "description" : "Any fields/values that are invalid or incorrect"
+            }
+          }
+        },
+        "description" : "Invalid request",
+        "x-tags" : [ "Responses" ]
+      },
+      "Unauthorized" : {
+        "properties" : {
+          "message" : {
+            "type" : "string",
+            "description" : ""
+          }
+        },
+        "description" : "Authorization failed",
+        "x-tags" : [ "Responses" ]
+      },
+      "Forbidden" : {
+        "properties" : {
+          "message" : {
+            "type" : "string",
+            "description" : ""
+          }
+        },
+        "description" : "Authorization failed",
+        "x-tags" : [ "Responses" ]
+      },
+      "Exists" : {
+        "properties" : {
+          "message" : {
+            "type" : "string",
+            "description" : ""
+          }
+        },
+        "description" : "Already exists",
+        "x-tags" : [ "Responses" ]
+      },
+      "NewTypePropertiesNewIngestProperties" : {
+        "allOf" : [ {
+          "$ref" : "#/components/schemas/NewTypeProperties"
+        }, {
+          "required" : [ "flushIntervalSeconds", "partitionMaxBytesPerSec", "startStrategy", "topicName" ],
+          "properties" : {
+            "topicName" : {
+              "type" : "string",
+              "description" : "dummy"
+            },
+            "startStrategy" : {
+              "type" : "string",
+              "description" : "dummy",
+              "enum" : [ "Earliest", "Latest" ]
+            },
+            "partitionMaxBytesPerSec" : {
+              "format" : "int64",
+              "type" : "integer",
+              "description" : "dummy",
+              "nullable" : false
+            },
+            "flushIntervalSeconds" : {
+              "format" : "int64",
+              "type" : "integer",
+              "description" : "dummy",
+              "nullable" : false
+            }
+          },
+          "description" : "dummy",
+          "x-tags" : [ "Model Definitions" ]
+        } ],
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "NewTypePropertiesNewFileIngestProperties" : {
+        "allOf" : [ {
+          "$ref" : "#/components/schemas/NewTypeProperties"
+        }, {
+          "required" : [ "fileFormat", "pollingIntervalInMinutes" ],
+          "properties" : {
+            "pathSuffix" : {
+              "type" : "string",
+              "description" : "dummy"
+            },
+            "fileFormat" : {
+              "type" : "string",
+              "description" : "dummy",
+              "enum" : [ "Json", "Csv" ]
+            },
+            "pollingIntervalInMinutes" : {
+              "format" : "int32",
+              "type" : "integer",
+              "description" : "dummy",
+              "nullable" : false
+            },
+            "csvParameters" : {
+              "required" : [ "delimiter", "escapeChar", "numHeaderLinesToExclude", "quoteChar" ],
+              "properties" : {
+                "delimiter" : {
+                  "type" : "string",
+                  "description" : "dummy",
+                  "enum" : [ "Comma", "Tab", "Pipe", "Semicolon" ]
+                },
+                "quoteChar" : {
+                  "type" : "string",
+                  "description" : "dummy",
+                  "enum" : [ "DoubleQuote", "SingleQuote" ]
+                },
+                "escapeChar" : {
+                  "type" : "string",
+                  "description" : "dummy",
+                  "enum" : [ "DoubleQuote", "Backslash" ]
+                },
+                "numHeaderLinesToExclude" : {
+                  "format" : "int32",
+                  "type" : "integer",
+                  "description" : "dummy",
+                  "nullable" : false
+                }
+              },
+              "description" : "dummy",
+              "x-tags" : [ "Model Definitions" ]
+            }
+          },
+          "description" : "dummy",
+          "x-tags" : [ "Model Definitions" ]
+        } ],
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "NewTypePropertiesNewIngestJsonTransformProperties" : {
+        "allOf" : [ {
+          "$ref" : "#/components/schemas/NewTypeProperties"
+        }, {
+          "required" : [ "userDefinedSchema" ],
+          "properties" : {
+            "userDefinedSchema" : {
+              "type" : "array",
+              "description" : "dummy",
+              "items" : {
+                "required" : [ "fieldParserConfig", "trinoColumnName", "trinoType" ],
+                "properties" : {
+                  "trinoColumnName" : {
+                    "type" : "string",
+                    "description" : "dummy"
+                  },
+                  "fieldParserConfig" : {
+                    "required" : [ "pointer" ],
+                    "properties" : {
+                      "pointer" : {
+                        "type" : "string",
+                        "description" : "dummy"
+                      },
+                      "parseParameters" : {
+                        "type" : "object",
+                        "description" : "dummy",
+                        "additionalProperties" : {
+                          "type" : "string",
+                          "description" : "dummy"
+                        }
+                      }
+                    },
+                    "description" : "dummy",
+                    "x-tags" : [ "Model Definitions" ]
+                  },
+                  "trinoType" : {
+                    "required" : [ "typeId" ],
+                    "properties" : {
+                      "typeId" : {
+                        "type" : "string",
+                        "description" : "dummy",
+                        "enum" : [ "Boolean", "Integer", "Bigint", "Real", "Double", "Decimal", "Date", "Time", "Timestamp", "TimestampTz", "Varchar", "Uuid", "Varbinary", "Row", "Array", "Map" ]
+                      },
+                      "typeParameters" : {
+                        "type" : "object",
+                        "description" : "dummy",
+                        "additionalProperties" : {
+                          "type" : "string",
+                          "description" : "dummy"
+                        }
+                      }
+                    },
+                    "description" : "dummy",
+                    "x-tags" : [ "Model Definitions" ]
+                  },
+                  "nestedColumns" : {
+                    "type" : "array",
+                    "description" : "dummy",
+                    "items" : {
+                      "$ref" : "#/components/schemas/NewJsonIngestColumn"
+                    }
+                  }
+                },
+                "description" : "dummy",
+                "x-tags" : [ "Model Definitions" ]
+              }
+            },
+            "userDefinedPartitionSpec" : {
+              "type" : "array",
+              "description" : "dummy",
+              "items" : {
+                "required" : [ "transformType", "trinoColumnName" ],
+                "properties" : {
+                  "trinoColumnName" : {
+                    "type" : "string",
+                    "description" : "dummy"
+                  },
+                  "transformType" : {
+                    "type" : "string",
+                    "description" : "dummy"
+                  },
+                  "bucketCount" : {
+                    "format" : "int32",
+                    "type" : "integer",
+                    "description" : "dummy",
+                    "nullable" : false
+                  },
+                  "truncateWidth" : {
+                    "format" : "int32",
+                    "type" : "integer",
+                    "description" : "dummy",
+                    "nullable" : false
+                  }
+                },
+                "description" : "dummy",
+                "x-tags" : [ "Model Definitions" ]
+              }
+            },
+            "sortColumnName" : {
+              "type" : "string",
+              "description" : "dummy"
+            }
+          },
+          "description" : "dummy",
+          "x-tags" : [ "Model Definitions" ]
+        } ],
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "NewTypePropertiesNewIngestSchemaRegistryTransformProperties" : {
+        "allOf" : [ {
+          "$ref" : "#/components/schemas/NewTypeProperties"
+        }, {
+          "required" : [ "schemaRegistryId", "subjectName" ],
+          "properties" : {
+            "schemaRegistryId" : {
+              "type" : "string",
+              "description" : "dummy"
+            },
+            "subjectName" : {
+              "type" : "string",
+              "description" : "dummy"
+            },
+            "userDefinedPartitionSpec" : {
+              "type" : "array",
+              "description" : "dummy",
+              "items" : {
+                "required" : [ "transformType", "trinoColumnName" ],
+                "properties" : {
+                  "trinoColumnName" : {
+                    "type" : "string",
+                    "description" : "dummy"
+                  },
+                  "transformType" : {
+                    "type" : "string",
+                    "description" : "dummy"
+                  },
+                  "bucketCount" : {
+                    "format" : "int32",
+                    "type" : "integer",
+                    "description" : "dummy",
+                    "nullable" : false
+                  },
+                  "truncateWidth" : {
+                    "format" : "int32",
+                    "type" : "integer",
+                    "description" : "dummy",
+                    "nullable" : false
+                  }
+                },
+                "description" : "dummy",
+                "x-tags" : [ "Model Definitions" ]
+              }
+            },
+            "sortColumnName" : {
+              "type" : "string",
+              "description" : "dummy"
+            }
+          },
+          "description" : "dummy",
+          "x-tags" : [ "Model Definitions" ]
+        } ],
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "NewTypePropertiesNewJsonIngestColumn" : {
+        "allOf" : [ {
+          "$ref" : "#/components/schemas/NewTypeProperties"
+        }, {
+          "required" : [ "fieldParserConfig", "trinoColumnName", "trinoType" ],
+          "properties" : {
+            "trinoColumnName" : {
+              "type" : "string",
+              "description" : "dummy"
+            },
+            "fieldParserConfig" : {
+              "required" : [ "pointer" ],
+              "properties" : {
+                "pointer" : {
+                  "type" : "string",
+                  "description" : "dummy"
+                },
+                "parseParameters" : {
+                  "type" : "object",
+                  "description" : "dummy",
+                  "additionalProperties" : {
+                    "type" : "string",
+                    "description" : "dummy"
+                  }
+                }
+              },
+              "description" : "dummy",
+              "x-tags" : [ "Model Definitions" ]
+            },
+            "trinoType" : {
+              "required" : [ "typeId" ],
+              "properties" : {
+                "typeId" : {
+                  "type" : "string",
+                  "description" : "dummy",
+                  "enum" : [ "Boolean", "Integer", "Bigint", "Real", "Double", "Decimal", "Date", "Time", "Timestamp", "TimestampTz", "Varchar", "Uuid", "Varbinary", "Row", "Array", "Map" ]
+                },
+                "typeParameters" : {
+                  "type" : "object",
+                  "description" : "dummy",
+                  "additionalProperties" : {
+                    "type" : "string",
+                    "description" : "dummy"
+                  }
+                }
+              },
+              "description" : "dummy",
+              "x-tags" : [ "Model Definitions" ]
+            },
+            "nestedColumns" : {
+              "type" : "array",
+              "description" : "dummy",
+              "items" : {
+                "$ref" : "#/components/schemas/NewJsonIngestColumn"
+              }
+            }
+          },
+          "description" : "dummy",
+          "x-tags" : [ "Model Definitions" ]
+        } ],
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "NewTypeProperties" : {
+        "required" : [ "typeKey" ],
+        "properties" : {
+          "typeKey" : {
+            "type" : "string"
+          }
+        },
+        "description" : "dummy",
+        "discriminator" : {
+          "propertyName" : "typeKey",
+          "mapping" : {
+            "newIngestProperties" : "#/components/schemas/NewTypePropertiesNewIngestProperties",
+            "newFileIngestProperties" : "#/components/schemas/NewTypePropertiesNewFileIngestProperties",
+            "newIngestJsonTransformProperties" : "#/components/schemas/NewTypePropertiesNewIngestJsonTransformProperties",
+            "newIngestSchemaRegistryTransformProperties" : "#/components/schemas/NewTypePropertiesNewIngestSchemaRegistryTransformProperties",
+            "newJsonIngestColumn" : "#/components/schemas/NewTypePropertiesNewJsonIngestColumn"
+          }
+        },
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "Poly" : {
+        "required" : [ "schemaName", "tableName", "typeProperties" ],
+        "properties" : {
+          "description" : {
+            "type" : "string",
+            "description" : "dummy"
+          },
+          "schemaName" : {
+            "type" : "string",
+            "description" : "dummy"
+          },
+          "tableName" : {
+            "type" : "string",
+            "description" : "dummy"
+          },
+          "dataRetentionDays" : {
+            "format" : "int64",
+            "type" : "integer",
+            "description" : "dummy",
+            "nullable" : false
+          },
+          "typeProperties" : {
+            "$ref" : "#/components/schemas/NewTypeProperties"
+          }
+        },
+        "description" : "dummy",
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "NotFound" : {
+        "required" : [ "message" ],
+        "properties" : {
+          "message" : {
+            "type" : "string",
+            "description" : "Name of the resource"
+          },
+          "description" : {
+            "type" : "string",
+            "description" : "Violation description"
+          },
+          "fields" : {
+            "type" : "array",
+            "description" : "Any fields/values that weren't found",
+            "items" : {
+              "type" : "string",
+              "description" : "Any fields/values that weren't found"
+            }
+          }
+        },
+        "description" : "A resource or required component was not found",
+        "x-tags" : [ "Responses" ]
+      },
+      "UpdatedJsonIngestColumnNewJsonIngestColumnInSchemaUpdate2" : {
+        "allOf" : [ {
+          "$ref" : "#/components/schemas/UpdatedJsonIngestColumn"
+        }, {
+          "required" : [ "fieldParserConfig", "nestedColumns", "trinoColumnName", "trinoType" ],
+          "properties" : {
+            "trinoColumnName" : {
+              "type" : "string",
+              "description" : "dummy"
+            },
+            "fieldParserConfig" : {
+              "required" : [ "pointer" ],
+              "properties" : {
+                "pointer" : {
+                  "type" : "string",
+                  "description" : "dummy"
+                },
+                "parseParameters" : {
+                  "type" : "object",
+                  "description" : "dummy",
+                  "additionalProperties" : {
+                    "type" : "string",
+                    "description" : "dummy"
+                  }
+                }
+              },
+              "description" : "dummy",
+              "x-tags" : [ "Model Definitions" ]
+            },
+            "trinoType" : {
+              "required" : [ "typeId" ],
+              "properties" : {
+                "typeId" : {
+                  "type" : "string",
+                  "description" : "dummy",
+                  "enum" : [ "Boolean", "Integer", "Bigint", "Real", "Double", "Decimal", "Date", "Time", "Timestamp", "TimestampTz", "Varchar", "Uuid", "Varbinary", "Row", "Array", "Map" ]
+                },
+                "typeParameters" : {
+                  "type" : "object",
+                  "description" : "dummy",
+                  "additionalProperties" : {
+                    "type" : "string",
+                    "description" : "dummy"
+                  }
+                }
+              },
+              "description" : "dummy",
+              "x-tags" : [ "Model Definitions" ]
+            },
+            "nestedColumns" : {
+              "type" : "array",
+              "description" : "dummy",
+              "items" : {
+                "$ref" : "#/components/schemas/NewJsonIngestColumnInSchemaUpdate"
+              }
+            }
+          },
+          "description" : "dummy",
+          "x-tags" : [ "Model Definitions" ]
+        } ],
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "UpdatedJsonIngestColumnExistingJsonIngestColumn2" : {
+        "allOf" : [ {
+          "$ref" : "#/components/schemas/UpdatedJsonIngestColumn"
+        }, {
+          "required" : [ "columnId", "fieldParserConfig", "trinoColumnName", "trinoType" ],
+          "properties" : {
+            "columnId" : {
+              "format" : "int32",
+              "type" : "integer",
+              "description" : "dummy",
+              "nullable" : false
+            },
+            "trinoColumnName" : {
+              "type" : "string",
+              "description" : "dummy"
+            },
+            "fieldParserConfig" : {
+              "required" : [ "pointer" ],
+              "properties" : {
+                "pointer" : {
+                  "type" : "string",
+                  "description" : "dummy"
+                },
+                "parseParameters" : {
+                  "type" : "object",
+                  "description" : "dummy",
+                  "additionalProperties" : {
+                    "type" : "string",
+                    "description" : "dummy"
+                  }
+                }
+              },
+              "description" : "dummy",
+              "x-tags" : [ "Model Definitions" ]
+            },
+            "trinoType" : {
+              "required" : [ "typeId" ],
+              "properties" : {
+                "typeId" : {
+                  "type" : "string",
+                  "description" : "dummy",
+                  "enum" : [ "Boolean", "Integer", "Bigint", "Real", "Double", "Decimal", "Date", "Time", "Timestamp", "TimestampTz", "Varchar", "Uuid", "Varbinary", "Row", "Array", "Map" ]
+                },
+                "typeParameters" : {
+                  "type" : "object",
+                  "description" : "dummy",
+                  "additionalProperties" : {
+                    "type" : "string",
+                    "description" : "dummy"
+                  }
+                }
+              },
+              "description" : "dummy",
+              "x-tags" : [ "Model Definitions" ]
+            },
+            "nestedColumns" : {
+              "type" : "array",
+              "description" : "dummy",
+              "items" : {
+                "required" : [ "typeKey" ],
+                "properties" : {
+                  "typeKey" : {
+                    "type" : "string"
+                  }
+                },
+                "description" : "dummy",
+                "discriminator" : {
+                  "propertyName" : "typeKey",
+                  "mapping" : {
+                    "newJsonIngestColumnInSchemaUpdate" : "#/components/schemas/UpdatedJsonIngestColumnNewJsonIngestColumnInSchemaUpdate2",
+                    "existingJsonIngestColumn" : "#/components/schemas/UpdatedJsonIngestColumnExistingJsonIngestColumn"
+                  }
+                },
+                "x-tags" : [ "Model Definitions" ]
+              }
+            }
+          },
+          "description" : "dummy",
+          "x-tags" : [ "Model Definitions" ]
+        } ],
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "NewSchemaNewJsonSchema" : {
+        "allOf" : [ {
+          "$ref" : "#/components/schemas/NewSchema"
+        }, {
+          "required" : [ "columns" ],
+          "properties" : {
+            "columns" : {
+              "type" : "array",
+              "description" : "dummy",
+              "items" : {
+                "required" : [ "typeKey" ],
+                "properties" : {
+                  "typeKey" : {
+                    "type" : "string"
+                  }
+                },
+                "description" : "dummy",
+                "discriminator" : {
+                  "propertyName" : "typeKey",
+                  "mapping" : {
+                    "newJsonIngestColumnInSchemaUpdate" : "#/components/schemas/UpdatedJsonIngestColumnNewJsonIngestColumnInSchemaUpdate",
+                    "existingJsonIngestColumn" : "#/components/schemas/UpdatedJsonIngestColumnExistingJsonIngestColumn2"
+                  }
+                },
+                "x-tags" : [ "Model Definitions" ]
+              }
+            },
+            "sortColumnName" : {
+              "type" : "string",
+              "description" : "dummy"
+            }
+          },
+          "description" : "New schema for a JSON transform live table",
+          "x-tags" : [ "Model Definitions" ]
+        } ],
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "NewSchema" : {
+        "required" : [ "typeKey" ],
+        "properties" : {
+          "typeKey" : {
+            "type" : "string"
+          }
+        },
+        "description" : "dummy",
+        "discriminator" : {
+          "propertyName" : "typeKey",
+          "mapping" : {
+            "newJsonSchema" : "#/components/schemas/NewSchemaNewJsonSchema"
+          }
+        },
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "TransformLiveTableSchemaUpdate" : {
+        "required" : [ "newSchema", "syncToken", "transformLiveTableSchemaUpdateId" ],
+        "properties" : {
+          "syncToken" : {
+            "type" : "string",
+            "description" : "Used to ensure consistency for resource updates. A syncToken that is returned\nfrom the server is valid until the resource is updated when a new syncToken will\nbe generated. Only the latest version of the object is maintained.\n (read only)"
+          },
+          "transformLiveTableSchemaUpdateId" : {
+            "type" : "string",
+            "description" : "dummy"
+          },
+          "newSchema" : {
+            "$ref" : "#/components/schemas/NewSchema"
+          }
+        },
+        "description" : "dummy",
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "NewIngestProperties" : {
+        "required" : [ "flushIntervalSeconds", "partitionMaxBytesPerSec", "startStrategy", "topicName" ],
+        "properties" : {
+          "topicName" : {
+            "type" : "string",
+            "description" : "dummy"
+          },
+          "startStrategy" : {
+            "type" : "string",
+            "description" : "dummy",
+            "enum" : [ "Earliest", "Latest" ]
+          },
+          "partitionMaxBytesPerSec" : {
+            "format" : "int64",
+            "type" : "integer",
+            "description" : "dummy",
+            "nullable" : false
+          },
+          "flushIntervalSeconds" : {
+            "format" : "int64",
+            "type" : "integer",
+            "description" : "dummy",
+            "nullable" : false
+          }
+        },
+        "description" : "dummy",
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "CsvParameters" : {
+        "required" : [ "delimiter", "escapeChar", "numHeaderLinesToExclude", "quoteChar" ],
+        "properties" : {
+          "delimiter" : {
+            "type" : "string",
+            "description" : "dummy",
+            "enum" : [ "Comma", "Tab", "Pipe", "Semicolon" ]
+          },
+          "quoteChar" : {
+            "type" : "string",
+            "description" : "dummy",
+            "enum" : [ "DoubleQuote", "SingleQuote" ]
+          },
+          "escapeChar" : {
+            "type" : "string",
+            "description" : "dummy",
+            "enum" : [ "DoubleQuote", "Backslash" ]
+          },
+          "numHeaderLinesToExclude" : {
+            "format" : "int32",
+            "type" : "integer",
+            "description" : "dummy",
+            "nullable" : false
+          }
+        },
+        "description" : "dummy",
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "NewFileIngestProperties" : {
+        "required" : [ "fileFormat", "pollingIntervalInMinutes" ],
+        "properties" : {
+          "pathSuffix" : {
+            "type" : "string",
+            "description" : "dummy"
+          },
+          "fileFormat" : {
+            "type" : "string",
+            "description" : "dummy",
+            "enum" : [ "Json", "Csv" ]
+          },
+          "pollingIntervalInMinutes" : {
+            "format" : "int32",
+            "type" : "integer",
+            "description" : "dummy",
+            "nullable" : false
+          },
+          "csvParameters" : {
+            "required" : [ "delimiter", "escapeChar", "numHeaderLinesToExclude", "quoteChar" ],
+            "properties" : {
+              "delimiter" : {
+                "type" : "string",
+                "description" : "dummy",
+                "enum" : [ "Comma", "Tab", "Pipe", "Semicolon" ]
+              },
+              "quoteChar" : {
+                "type" : "string",
+                "description" : "dummy",
+                "enum" : [ "DoubleQuote", "SingleQuote" ]
+              },
+              "escapeChar" : {
+                "type" : "string",
+                "description" : "dummy",
+                "enum" : [ "DoubleQuote", "Backslash" ]
+              },
+              "numHeaderLinesToExclude" : {
+                "format" : "int32",
+                "type" : "integer",
+                "description" : "dummy",
+                "nullable" : false
+              }
+            },
+            "description" : "dummy",
+            "x-tags" : [ "Model Definitions" ]
+          }
+        },
+        "description" : "dummy",
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "JsonParserConfig" : {
+        "required" : [ "pointer" ],
+        "properties" : {
+          "pointer" : {
+            "type" : "string",
+            "description" : "dummy"
+          },
+          "parseParameters" : {
+            "type" : "object",
+            "description" : "dummy",
+            "additionalProperties" : {
+              "type" : "string",
+              "description" : "dummy"
+            }
+          }
+        },
+        "description" : "dummy",
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "Type" : {
+        "required" : [ "typeId" ],
+        "properties" : {
+          "typeId" : {
+            "type" : "string",
+            "description" : "dummy",
+            "enum" : [ "Boolean", "Integer", "Bigint", "Real", "Double", "Decimal", "Date", "Time", "Timestamp", "TimestampTz", "Varchar", "Uuid", "Varbinary", "Row", "Array", "Map" ]
+          },
+          "typeParameters" : {
+            "type" : "object",
+            "description" : "dummy",
+            "additionalProperties" : {
+              "type" : "string",
+              "description" : "dummy"
+            }
+          }
+        },
+        "description" : "dummy",
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "NewJsonIngestColumn" : {
+        "required" : [ "fieldParserConfig", "trinoColumnName", "trinoType" ],
+        "properties" : {
+          "trinoColumnName" : {
+            "type" : "string",
+            "description" : "dummy"
+          },
+          "fieldParserConfig" : {
+            "required" : [ "pointer" ],
+            "properties" : {
+              "pointer" : {
+                "type" : "string",
+                "description" : "dummy"
+              },
+              "parseParameters" : {
+                "type" : "object",
+                "description" : "dummy",
+                "additionalProperties" : {
+                  "type" : "string",
+                  "description" : "dummy"
+                }
+              }
+            },
+            "description" : "dummy",
+            "x-tags" : [ "Model Definitions" ]
+          },
+          "trinoType" : {
+            "required" : [ "typeId" ],
+            "properties" : {
+              "typeId" : {
+                "type" : "string",
+                "description" : "dummy",
+                "enum" : [ "Boolean", "Integer", "Bigint", "Real", "Double", "Decimal", "Date", "Time", "Timestamp", "TimestampTz", "Varchar", "Uuid", "Varbinary", "Row", "Array", "Map" ]
+              },
+              "typeParameters" : {
+                "type" : "object",
+                "description" : "dummy",
+                "additionalProperties" : {
+                  "type" : "string",
+                  "description" : "dummy"
+                }
+              }
+            },
+            "description" : "dummy",
+            "x-tags" : [ "Model Definitions" ]
+          },
+          "nestedColumns" : {
+            "type" : "array",
+            "description" : "dummy",
+            "items" : {
+              "$ref" : "#/components/schemas/NewJsonIngestColumn"
+            }
+          }
+        },
+        "description" : "dummy",
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "PartitionColumn" : {
+        "required" : [ "transformType", "trinoColumnName" ],
+        "properties" : {
+          "trinoColumnName" : {
+            "type" : "string",
+            "description" : "dummy"
+          },
+          "transformType" : {
+            "type" : "string",
+            "description" : "dummy"
+          },
+          "bucketCount" : {
+            "format" : "int32",
+            "type" : "integer",
+            "description" : "dummy",
+            "nullable" : false
+          },
+          "truncateWidth" : {
+            "format" : "int32",
+            "type" : "integer",
+            "description" : "dummy",
+            "nullable" : false
+          }
+        },
+        "description" : "dummy",
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "NewIngestJsonTransformProperties" : {
+        "required" : [ "userDefinedSchema" ],
+        "properties" : {
+          "userDefinedSchema" : {
+            "type" : "array",
+            "description" : "dummy",
+            "items" : {
+              "required" : [ "fieldParserConfig", "trinoColumnName", "trinoType" ],
+              "properties" : {
+                "trinoColumnName" : {
+                  "type" : "string",
+                  "description" : "dummy"
+                },
+                "fieldParserConfig" : {
+                  "required" : [ "pointer" ],
+                  "properties" : {
+                    "pointer" : {
+                      "type" : "string",
+                      "description" : "dummy"
+                    },
+                    "parseParameters" : {
+                      "type" : "object",
+                      "description" : "dummy",
+                      "additionalProperties" : {
+                        "type" : "string",
+                        "description" : "dummy"
+                      }
+                    }
+                  },
+                  "description" : "dummy",
+                  "x-tags" : [ "Model Definitions" ]
+                },
+                "trinoType" : {
+                  "required" : [ "typeId" ],
+                  "properties" : {
+                    "typeId" : {
+                      "type" : "string",
+                      "description" : "dummy",
+                      "enum" : [ "Boolean", "Integer", "Bigint", "Real", "Double", "Decimal", "Date", "Time", "Timestamp", "TimestampTz", "Varchar", "Uuid", "Varbinary", "Row", "Array", "Map" ]
+                    },
+                    "typeParameters" : {
+                      "type" : "object",
+                      "description" : "dummy",
+                      "additionalProperties" : {
+                        "type" : "string",
+                        "description" : "dummy"
+                      }
+                    }
+                  },
+                  "description" : "dummy",
+                  "x-tags" : [ "Model Definitions" ]
+                },
+                "nestedColumns" : {
+                  "type" : "array",
+                  "description" : "dummy",
+                  "items" : {
+                    "$ref" : "#/components/schemas/NewJsonIngestColumn"
+                  }
+                }
+              },
+              "description" : "dummy",
+              "x-tags" : [ "Model Definitions" ]
+            }
+          },
+          "userDefinedPartitionSpec" : {
+            "type" : "array",
+            "description" : "dummy",
+            "items" : {
+              "required" : [ "transformType", "trinoColumnName" ],
+              "properties" : {
+                "trinoColumnName" : {
+                  "type" : "string",
+                  "description" : "dummy"
+                },
+                "transformType" : {
+                  "type" : "string",
+                  "description" : "dummy"
+                },
+                "bucketCount" : {
+                  "format" : "int32",
+                  "type" : "integer",
+                  "description" : "dummy",
+                  "nullable" : false
+                },
+                "truncateWidth" : {
+                  "format" : "int32",
+                  "type" : "integer",
+                  "description" : "dummy",
+                  "nullable" : false
+                }
+              },
+              "description" : "dummy",
+              "x-tags" : [ "Model Definitions" ]
+            }
+          },
+          "sortColumnName" : {
+            "type" : "string",
+            "description" : "dummy"
+          }
+        },
+        "description" : "dummy",
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "NewIngestSchemaRegistryTransformProperties" : {
+        "required" : [ "schemaRegistryId", "subjectName" ],
+        "properties" : {
+          "schemaRegistryId" : {
+            "type" : "string",
+            "description" : "dummy"
+          },
+          "subjectName" : {
+            "type" : "string",
+            "description" : "dummy"
+          },
+          "userDefinedPartitionSpec" : {
+            "type" : "array",
+            "description" : "dummy",
+            "items" : {
+              "required" : [ "transformType", "trinoColumnName" ],
+              "properties" : {
+                "trinoColumnName" : {
+                  "type" : "string",
+                  "description" : "dummy"
+                },
+                "transformType" : {
+                  "type" : "string",
+                  "description" : "dummy"
+                },
+                "bucketCount" : {
+                  "format" : "int32",
+                  "type" : "integer",
+                  "description" : "dummy",
+                  "nullable" : false
+                },
+                "truncateWidth" : {
+                  "format" : "int32",
+                  "type" : "integer",
+                  "description" : "dummy",
+                  "nullable" : false
+                }
+              },
+              "description" : "dummy",
+              "x-tags" : [ "Model Definitions" ]
+            }
+          },
+          "sortColumnName" : {
+            "type" : "string",
+            "description" : "dummy"
+          }
+        },
+        "description" : "dummy",
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "NewJsonIngestColumnInSchemaUpdate" : {
+        "required" : [ "fieldParserConfig", "nestedColumns", "trinoColumnName", "trinoType" ],
+        "properties" : {
+          "trinoColumnName" : {
+            "type" : "string",
+            "description" : "dummy"
+          },
+          "fieldParserConfig" : {
+            "required" : [ "pointer" ],
+            "properties" : {
+              "pointer" : {
+                "type" : "string",
+                "description" : "dummy"
+              },
+              "parseParameters" : {
+                "type" : "object",
+                "description" : "dummy",
+                "additionalProperties" : {
+                  "type" : "string",
+                  "description" : "dummy"
+                }
+              }
+            },
+            "description" : "dummy",
+            "x-tags" : [ "Model Definitions" ]
+          },
+          "trinoType" : {
+            "required" : [ "typeId" ],
+            "properties" : {
+              "typeId" : {
+                "type" : "string",
+                "description" : "dummy",
+                "enum" : [ "Boolean", "Integer", "Bigint", "Real", "Double", "Decimal", "Date", "Time", "Timestamp", "TimestampTz", "Varchar", "Uuid", "Varbinary", "Row", "Array", "Map" ]
+              },
+              "typeParameters" : {
+                "type" : "object",
+                "description" : "dummy",
+                "additionalProperties" : {
+                  "type" : "string",
+                  "description" : "dummy"
+                }
+              }
+            },
+            "description" : "dummy",
+            "x-tags" : [ "Model Definitions" ]
+          },
+          "nestedColumns" : {
+            "type" : "array",
+            "description" : "dummy",
+            "items" : {
+              "$ref" : "#/components/schemas/NewJsonIngestColumnInSchemaUpdate"
+            }
+          }
+        },
+        "description" : "dummy",
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "ExistingJsonIngestColumn" : {
+        "required" : [ "columnId", "fieldParserConfig", "trinoColumnName", "trinoType" ],
+        "properties" : {
+          "columnId" : {
+            "format" : "int32",
+            "type" : "integer",
+            "description" : "dummy",
+            "nullable" : false
+          },
+          "trinoColumnName" : {
+            "type" : "string",
+            "description" : "dummy"
+          },
+          "fieldParserConfig" : {
+            "required" : [ "pointer" ],
+            "properties" : {
+              "pointer" : {
+                "type" : "string",
+                "description" : "dummy"
+              },
+              "parseParameters" : {
+                "type" : "object",
+                "description" : "dummy",
+                "additionalProperties" : {
+                  "type" : "string",
+                  "description" : "dummy"
+                }
+              }
+            },
+            "description" : "dummy",
+            "x-tags" : [ "Model Definitions" ]
+          },
+          "trinoType" : {
+            "required" : [ "typeId" ],
+            "properties" : {
+              "typeId" : {
+                "type" : "string",
+                "description" : "dummy",
+                "enum" : [ "Boolean", "Integer", "Bigint", "Real", "Double", "Decimal", "Date", "Time", "Timestamp", "TimestampTz", "Varchar", "Uuid", "Varbinary", "Row", "Array", "Map" ]
+              },
+              "typeParameters" : {
+                "type" : "object",
+                "description" : "dummy",
+                "additionalProperties" : {
+                  "type" : "string",
+                  "description" : "dummy"
+                }
+              }
+            },
+            "description" : "dummy",
+            "x-tags" : [ "Model Definitions" ]
+          },
+          "nestedColumns" : {
+            "type" : "array",
+            "description" : "dummy",
+            "items" : {
+              "required" : [ "typeKey" ],
+              "properties" : {
+                "typeKey" : {
+                  "type" : "string"
+                }
+              },
+              "description" : "dummy",
+              "discriminator" : {
+                "propertyName" : "typeKey",
+                "mapping" : {
+                  "newJsonIngestColumnInSchemaUpdate" : "#/components/schemas/UpdatedJsonIngestColumnNewJsonIngestColumnInSchemaUpdate2",
+                  "existingJsonIngestColumn" : "#/components/schemas/UpdatedJsonIngestColumnExistingJsonIngestColumn"
+                }
+              },
+              "x-tags" : [ "Model Definitions" ]
+            }
+          }
+        },
+        "description" : "dummy",
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "UpdatedJsonIngestColumn" : {
+        "required" : [ "typeKey" ],
+        "properties" : {
+          "typeKey" : {
+            "type" : "string"
+          }
+        },
+        "description" : "dummy",
+        "discriminator" : {
+          "propertyName" : "typeKey",
+          "mapping" : {
+            "newJsonIngestColumnInSchemaUpdate" : "#/components/schemas/UpdatedJsonIngestColumnNewJsonIngestColumnInSchemaUpdate",
+            "existingJsonIngestColumn" : "#/components/schemas/UpdatedJsonIngestColumnExistingJsonIngestColumn2"
+          }
+        },
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "NewJsonSchema" : {
+        "required" : [ "columns" ],
+        "properties" : {
+          "columns" : {
+            "type" : "array",
+            "description" : "dummy",
+            "items" : {
+              "required" : [ "typeKey" ],
+              "properties" : {
+                "typeKey" : {
+                  "type" : "string"
+                }
+              },
+              "description" : "dummy",
+              "discriminator" : {
+                "propertyName" : "typeKey",
+                "mapping" : {
+                  "newJsonIngestColumnInSchemaUpdate" : "#/components/schemas/UpdatedJsonIngestColumnNewJsonIngestColumnInSchemaUpdate",
+                  "existingJsonIngestColumn" : "#/components/schemas/UpdatedJsonIngestColumnExistingJsonIngestColumn2"
+                }
+              },
+              "x-tags" : [ "Model Definitions" ]
+            }
+          },
+          "sortColumnName" : {
+            "type" : "string",
+            "description" : "dummy"
+          }
+        },
+        "description" : "New schema for a JSON transform live table",
+        "x-tags" : [ "Model Definitions" ]
+      }
+    }
+  },
+  "x-tagGroups" : [ {
+    "name" : "Help",
+    "tags" : [ "About" ]
+  }, {
+    "name" : "Services",
+    "tags" : [ "Complex Service" ]
+  }, {
+    "name" : "Models",
+    "tags" : [ "Model Definitions", "Responses" ]
+  } ]
+}

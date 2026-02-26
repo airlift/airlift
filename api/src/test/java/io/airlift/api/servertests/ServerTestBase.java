@@ -39,6 +39,7 @@ public class ServerTestBase
     protected final JettyHttpClient httpClient = new JettyHttpClient("testing", new HttpClientConfig());
     protected final Map<String, AtomicInteger> counters = new ConcurrentHashMap<>();
     protected ObjectMapper objectMapper;
+    protected Injector injector;
 
     public ServerTestBase()
     {
@@ -79,7 +80,7 @@ public class ServerTestBase
                 .put("node.environment", "testing");
 
         Bootstrap app = new Bootstrap(modules.build());
-        Injector injector = app
+        injector = app
                 .setRequiredConfigurationProperties(serverProperties.build())
                 .quiet()
                 .doNotInitializeLogging()

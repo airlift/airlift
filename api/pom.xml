@@ -20,11 +20,24 @@
         <dep.commons-fileupload2.version>2.0.0-M5</dep.commons-fileupload2.version>
         <dep.apache.httpcore.version>4.4.16</dep.apache.httpcore.version>
         <dep.apache.httpmime.version>4.5.14</dep.apache.httpmime.version>
+        <dep.swagger.version>2.1.38</dep.swagger.version>
     </properties>
 
     <!-- TODO move these to airbase -->
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>io.swagger.parser.v3</groupId>
+                <artifactId>swagger-parser-core</artifactId>
+                <version>${dep.swagger.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.swagger.parser.v3</groupId>
+                <artifactId>swagger-parser-v3</artifactId>
+                <version>${dep.swagger.version}</version>
+            </dependency>
+
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-fileupload2-core</artifactId>
@@ -176,6 +189,18 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>testing</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.swagger.parser.v3</groupId>
+            <artifactId>swagger-parser-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.swagger.parser.v3</groupId>
+            <artifactId>swagger-parser-v3</artifactId>
             <scope>test</scope>
         </dependency>
 
