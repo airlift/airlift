@@ -20,13 +20,11 @@ import java.util.function.Function;
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
 
-/**
- * Provides a ThreadLocal cache with a maximum cache size per thread.
- * Values must not be null.
- *
- * @param <K> cache key type
- * @param <V> cache value type
- */
+/// Provides a ThreadLocal cache with a maximum cache size per thread.
+/// Values must not be null.
+///
+/// @param <K> cache key type
+/// @param <V> cache value type
 public final class ThreadLocalCache<K, V>
 {
     @SuppressWarnings("ThreadLocalNotStaticFinal")

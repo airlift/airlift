@@ -40,9 +40,7 @@ public interface McpRequestContext
         throw new UnsupportedOperationException();
     }
 
-    /**
-     * Sends a server-to-client request and waits for the response until given timeout.
-     */
+    /// Sends a server-to-client request and waits for the response until given timeout.
     <R> JsonRpcResponse<R> serverToClientRequest(String method, Object params, Class<R> responseType, Duration timeout, Duration pollInterval)
             throws InterruptedException, TimeoutException;
 

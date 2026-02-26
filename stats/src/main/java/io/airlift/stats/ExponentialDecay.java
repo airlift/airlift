@@ -39,9 +39,7 @@ public final class ExponentialDecay
         return 1.0 / seconds;
     }
 
-    /**
-     * Compute the alpha decay factor such that the weight of an entry with age 'targetAgeInSeconds' is targetWeight'
-     */
+    /// Compute the alpha decay factor such that the weight of an entry with age 'targetAgeInSeconds' is targetWeight'
     public static double computeAlpha(double targetWeight, long targetAgeInSeconds)
     {
         checkArgument(targetAgeInSeconds > 0, "targetAgeInSeconds must be > 0");
@@ -50,9 +48,7 @@ public final class ExponentialDecay
         return -Math.log(targetWeight) / targetAgeInSeconds;
     }
 
-    /**
-     * Compute the forward-decay multiplier (inverse of the decay factor)
-     */
+    /// Compute the forward-decay multiplier (inverse of the decay factor)
     public static double weight(double alpha, long now, long landmark)
     {
         return Math.exp(alpha * (now - landmark));

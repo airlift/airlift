@@ -33,9 +33,7 @@ import static java.lang.Double.isInfinite;
 import static java.lang.Double.isNaN;
 import static java.util.Objects.requireNonNull;
 
-/**
- * This class is NOT thread safe.
- */
+/// This class is NOT thread safe.
 public class TDigest
 {
     public static final double DEFAULT_COMPRESSION = 100;

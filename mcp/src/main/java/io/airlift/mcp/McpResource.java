@@ -21,10 +21,8 @@ public @interface McpResource
 
     String description() default "";
 
-    /**
-     * Names of icons for this tool. Icons must be bound
-     * via {@link McpModule.Builder#addIcon(String, Consumer)}.
-     */
+    /// Names of icons for this tool. Icons must be bound
+    /// via [McpModule.Builder#addIcon(String, Consumer)].
     String[] icons() default {};
 
     long size() default -1;

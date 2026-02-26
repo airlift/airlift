@@ -36,30 +36,25 @@ final class DoubleArrays
     private static final int QUICKSORT_NO_REC = 16;
     private static final int QUICKSORT_MEDIAN_OF_9 = 128;
 
-    /**
-     * Sorts the specified range of elements according to the natural ascending
-     * order using indirect quicksort.
-     *
-     * <p>
-     * The sorting algorithm is a tuned quicksort adapted from Jon L. Bentley and M.
-     * Douglas McIlroy, &ldquo;Engineering a Sort Function&rdquo;, <i>Software:
-     * Practice and Experience</i>, 23(11), pages 1249&minus;1265, 1993.
-     *
-     * <p>
-     * This method implement an <em>indirect</em> sort. The elements of {@code perm}
-     * (which must be exactly the numbers in the interval {@code [0..perm.length)})
-     * will be permuted so that {@code x[perm[i]] &le; x[perm[i + 1]]}.
-     *
-     * <p>
-     * Note that this implementation does not allocate any object, contrarily to the
-     * implementation used to sort primitive types in {@link java.util.Arrays},
-     * which switches to mergesort on large inputs.
-     *
-     * @param perm a permutation array indexing {@code x}.
-     * @param x the array to be sorted.
-     * @param from the index of the first element (inclusive) to be sorted.
-     * @param to the index of the last element (exclusive) to be sorted.
-     */
+    /// Sorts the specified range of elements according to the natural ascending
+    /// order using indirect quicksort.
+    ///
+    /// The sorting algorithm is a tuned quicksort adapted from Jon L. Bentley and M.
+    /// Douglas McIlroy, &ldquo;Engineering a Sort Function&rdquo;, _Software:
+    /// Practice and Experience_, 23(11), pages 1249&minus;1265, 1993.
+    ///
+    /// This method implement an _indirect_ sort. The elements of `perm`
+    /// (which must be exactly the numbers in the interval `[0..perm.length)`)
+    /// will be permuted so that `x[perm[i]] &le; x[perm[i + 1]]`.
+    ///
+    /// Note that this implementation does not allocate any object, contrarily to the
+    /// implementation used to sort primitive types in [java.util.Arrays],
+    /// which switches to mergesort on large inputs.
+    ///
+    /// @param perm a permutation array indexing `x`.
+    /// @param x the array to be sorted.
+    /// @param from the index of the first element (inclusive) to be sorted.
+    /// @param to the index of the last element (exclusive) to be sorted.
     @SuppressWarnings("checkstyle:InnerAssignment")
     public static void quickSortIndirect(final int[] perm, final double[] x, final int from, final int to)
     {

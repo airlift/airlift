@@ -11,23 +11,15 @@ import java.lang.annotation.Target;
 @Documented
 public @interface ApiDeprecated
 {
-    /**
-     * Documentation on why it's deprecated, etc.
-     */
+    /// Documentation on why it's deprecated, etc.
     String information();
 
-    /**
-     * optional - date of deprecation - see DeprecationValidator.dateFormatters for accepted date/time formats
-     */
+    /// optional - date of deprecation - see DeprecationValidator.dateFormatters for accepted date/time formats
     String deprecationDate() default "";
 
-    /**
-     * optional - class that contains the new implementation (newImplementationMethod must also be specified)
-     */
+    /// optional - class that contains the new implementation (newImplementationMethod must also be specified)
     Class<?> newImplementationClass() default Object.class;
 
-    /**
-     * optional - method name of the new implementation (newImplementationClass must also be specified)
-     */
+    /// optional - method name of the new implementation (newImplementationClass must also be specified)
     String newImplementationMethod() default "";
 }

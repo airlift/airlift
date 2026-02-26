@@ -28,9 +28,7 @@ import static com.google.common.base.Strings.repeat;
 import static java.lang.Math.max;
 import static java.util.stream.Collectors.toCollection;
 
-/**
- * A utility for outputting columnar text
- */
+/// A utility for outputting columnar text
 class ColumnPrinter
 {
     private static final int DEFAULT_MARGIN = 2;

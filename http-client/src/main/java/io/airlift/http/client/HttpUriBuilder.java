@@ -21,9 +21,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
 
-/**
- * An RFC-3986-compatible HTTP URI builder
- */
+/// An RFC-3986-compatible HTTP URI builder
 public class HttpUriBuilder
 {
     private String scheme;
@@ -110,9 +108,7 @@ public class HttpUriBuilder
         return this;
     }
 
-    /**
-     * Replace the current path with the given unencoded path
-     */
+    /// Replace the current path with the given unencoded path
     public HttpUriBuilder replacePath(String path)
     {
         requireNonNull(path, "path is null");
@@ -125,12 +121,10 @@ public class HttpUriBuilder
         return this;
     }
 
-    /**
-     * Append an unencoded path.
-     * <p>
-     * All reserved characters except '/' will be percent-encoded. '/' are considered as path separators and
-     * appended verbatim.
-     */
+    /// Append an unencoded path.
+    ///
+    /// All reserved characters except '/' will be percent-encoded. '/' are considered as path separators and
+    /// appended verbatim.
     public HttpUriBuilder appendPath(String path)
     {
         requireNonNull(path, "path is null");
@@ -282,9 +276,7 @@ public class HttpUriBuilder
         return builder.toString();
     }
 
-    /**
-     * input must be an ASCII string representing a percent-encoded UTF-8 byte sequence
-     */
+    /// input must be an ASCII string representing a percent-encoded UTF-8 byte sequence
     private static String percentDecode(String encoded)
     {
         return URLDecoder.decode(encoded, UTF_8);

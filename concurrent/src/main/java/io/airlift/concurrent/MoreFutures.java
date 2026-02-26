@@ -44,33 +44,26 @@ public final class MoreFutures
 {
     private MoreFutures() {}
 
-    /**
-     * Transforms a ListenableFuture&lt;T&gt; to ListenableFuture&lt;Void&gt;.
-     */
+    /// Transforms a ListenableFuture&lt;T&gt; to ListenableFuture&lt;Void&gt;.
     public static <T> ListenableFuture<Void> asVoid(ListenableFuture<T> future)
     {
         return Futures.transform(future, MoreFutures::toVoid, directExecutor());
     }
 
-    /**
-     * Converts a value to Void.
-     *
-     * This is useful for providing named fluent style Future transforms to Void values.
-     * <p>
-     * Example:
-     * <pre>
-     * ListenableFuture&lt;Void&gt; voidFuture = FluentFuture.from(future)
-     *         .transform(MoreFutures::toVoid, directExecutor())
-     * </pre>
-     */
+    /// Converts a value to Void.
+    /// This is useful for providing named fluent style Future transforms to Void values.
+    ///
+    /// Example:
+    /// <pre>
+    /// ListenableFuture&lt;Void&gt; voidFuture = FluentFuture.from(future)
+    ///         .transform(MoreFutures::toVoid, directExecutor())
+    /// </pre>
     public static <T> Void toVoid(T value)
     {
         return null;
     }
 
-    /**
-     * Cancels the destination Future if the source Future is cancelled.
-     */
+    /// Cancels the destination Future if the source Future is cancelled.
     public static <X, Y> void propagateCancellation(ListenableFuture<? extends X> source, Future<? extends Y> destination, boolean mayInterruptIfRunning)
     {
         source.addListener(() -> {
@@ -80,11 +73,9 @@ public final class MoreFutures
         }, directExecutor());
     }
 
-    /**
-     * Mirrors all results of the source Future to the destination Future.
-     * <p>
-     * This also propagates cancellations from the destination Future back to the source Future.
-     */
+    /// Mirrors all results of the source Future to the destination Future.
+    ///
+    /// This also propagates cancellations from the destination Future back to the source Future.
     public static <T> void mirror(ListenableFuture<? extends T> source, SettableFuture<? super T> destination, boolean mayInterruptIfRunning)
     {
         FutureCallback<T> callback = new FutureCallback<>()
@@ -105,9 +96,7 @@ public final class MoreFutures
         propagateCancellation(destination, source, mayInterruptIfRunning);
     }
 
-    /**
-     * Attempts to unwrap a throwable that has been wrapped in a {@link CompletionException}.
-     */
+    /// Attempts to unwrap a throwable that has been wrapped in a [CompletionException].
     public static Throwable unwrapCompletionException(Throwable throwable)
     {
         if (throwable instanceof CompletionException) {
@@ -116,18 +105,14 @@ public final class MoreFutures
         return throwable;
     }
 
-    /**
-     * Returns a future that can not be completed or canceled.
-     */
+    /// Returns a future that can not be completed or canceled.
     @Deprecated
     public static <V> CompletableFuture<V> unmodifiableFuture(CompletableFuture<V> future)
     {
         return unmodifiableFuture(future, false);
     }
 
-    /**
-     * Returns a future that can not be completed or optionally canceled.
-     */
+    /// Returns a future that can not be completed or optionally canceled.
     @Deprecated
     public static <V> CompletableFuture<V> unmodifiableFuture(CompletableFuture<V> future, boolean propagateCancel)
     {
@@ -153,9 +138,7 @@ public final class MoreFutures
         return unmodifiableFuture;
     }
 
-    /**
-     * Returns a failed future containing the specified throwable.
-     */
+    /// Returns a failed future containing the specified throwable.
     @Deprecated
     public static <V> CompletableFuture<V> failedFuture(Throwable throwable)
     {
@@ -165,24 +148,20 @@ public final class MoreFutures
         return future;
     }
 
-    /**
-     * Waits for the value from the future. If the future is failed, the exception
-     * is thrown directly if unchecked or wrapped in a RuntimeException. If the
-     * thread is interrupted, the thread interruption flag is set and the original
-     * InterruptedException is wrapped in a RuntimeException and thrown.
-     */
+    /// Waits for the value from the future. If the future is failed, the exception
+    /// is thrown directly if unchecked or wrapped in a RuntimeException. If the
+    /// thread is interrupted, the thread interruption flag is set and the original
+    /// InterruptedException is wrapped in a RuntimeException and thrown.
     public static <V> V getFutureValue(Future<V> future)
     {
         return getFutureValue(future, RuntimeException.class);
     }
 
-    /**
-     * Waits for the value from the future. If the future is failed, the exception
-     * is thrown directly if it is an instance of the specified exception type or
-     * unchecked, or it is wrapped in a RuntimeException. If the thread is
-     * interrupted, the thread interruption flag is set and the original
-     * InterruptedException is wrapped in a RuntimeException and thrown.
-     */
+    /// Waits for the value from the future. If the future is failed, the exception
+    /// is thrown directly if it is an instance of the specified exception type or
+    /// unchecked, or it is wrapped in a RuntimeException. If the thread is
+    /// interrupted, the thread interruption flag is set and the original
+    /// InterruptedException is wrapped in a RuntimeException and thrown.
     public static <V, E extends Exception> V getFutureValue(Future<V> future, Class<E> exceptionType)
             throws E
     {
@@ -204,11 +183,9 @@ public final class MoreFutures
         }
     }
 
-    /**
-     * Gets the current value of the future without waiting. If the future
-     * value is null, an empty Optional is still returned, and in this case the caller
-     * must check the future directly for the null value.
-     */
+    /// Gets the current value of the future without waiting. If the future
+    /// value is null, an empty Optional is still returned, and in this case the caller
+    /// must check the future directly for the null value.
     public static <T> Optional<T> tryGetFutureValue(Future<T> future)
     {
         requireNonNull(future, "future is null");
@@ -219,28 +196,24 @@ public final class MoreFutures
         return tryGetFutureValue(future, 0, MILLISECONDS);
     }
 
-    /**
-     * Waits for the the value from the future for the specified time.  If the future
-     * value is null, an empty Optional is still returned, and in this case the caller
-     * must check the future directly for the null value.  If the future is failed,
-     * the exception is thrown directly if unchecked or wrapped in a RuntimeException.
-     * If the thread is interrupted, the thread interruption flag is set and the original
-     * InterruptedException is wrapped in a RuntimeException and thrown.
-     */
+    /// Waits for the the value from the future for the specified time.  If the future
+    /// value is null, an empty Optional is still returned, and in this case the caller
+    /// must check the future directly for the null value.  If the future is failed,
+    /// the exception is thrown directly if unchecked or wrapped in a RuntimeException.
+    /// If the thread is interrupted, the thread interruption flag is set and the original
+    /// InterruptedException is wrapped in a RuntimeException and thrown.
     public static <V> Optional<V> tryGetFutureValue(Future<V> future, int timeout, TimeUnit timeUnit)
     {
         return tryGetFutureValue(future, timeout, timeUnit, RuntimeException.class);
     }
 
-    /**
-     * Waits for the the value from the future for the specified time.  If the future
-     * value is null, an empty Optional is still returned, and in this case the caller
-     * must check the future directly for the null value.  If the future is failed,
-     * the exception is thrown directly if it is an instance of the specified exception
-     * type or unchecked, or it is wrapped in a RuntimeException. If the thread is
-     * interrupted, the thread interruption flag is set and the original
-     * InterruptedException is wrapped in a RuntimeException and thrown.
-     */
+    /// Waits for the the value from the future for the specified time.  If the future
+    /// value is null, an empty Optional is still returned, and in this case the caller
+    /// must check the future directly for the null value.  If the future is failed,
+    /// the exception is thrown directly if it is an instance of the specified exception
+    /// type or unchecked, or it is wrapped in a RuntimeException. If the thread is
+    /// interrupted, the thread interruption flag is set and the original
+    /// InterruptedException is wrapped in a RuntimeException and thrown.
     public static <V, E extends Exception> Optional<V> tryGetFutureValue(Future<V> future, int timeout, TimeUnit timeUnit, Class<E> exceptionType)
             throws E
     {
@@ -268,11 +241,9 @@ public final class MoreFutures
         return Optional.empty();
     }
 
-    /**
-     * Returns the result of the input {@link Future}, which must have already completed.
-     * <p>
-     * Similar to Futures{@link Futures#getDone(Future)}, but does not throw checked exceptions.
-     */
+    /// Returns the result of the input [Future], which must have already completed.
+    ///
+    /// Similar to Futures[Futures#getDone(Future)], but does not throw checked exceptions.
     public static <T> T getDone(Future<T> future)
     {
         requireNonNull(future, "future is null");
@@ -280,9 +251,7 @@ public final class MoreFutures
         return getFutureValue(future);
     }
 
-    /**
-     * Checks that the completed future completed successfully.
-     */
+    /// Checks that the completed future completed successfully.
     public static void checkSuccess(Future<?> future, String errorMessage)
     {
         requireNonNull(future, "future is null");
@@ -296,10 +265,8 @@ public final class MoreFutures
         }
     }
 
-    /**
-     * Creates a future that completes when the first future completes either normally
-     * or exceptionally. Cancellation of the future propagates to the supplied futures.
-     */
+    /// Creates a future that completes when the first future completes either normally
+    /// or exceptionally. Cancellation of the future propagates to the supplied futures.
     public static <V> ListenableFuture<V> whenAnyComplete(Iterable<? extends ListenableFuture<? extends V>> futures)
     {
         requireNonNull(futures, "futures is null");
@@ -312,15 +279,13 @@ public final class MoreFutures
         return firstCompletedFuture;
     }
 
-    /**
-     * Creates a future that completes when the first future completes either normally
-     * or exceptionally. All other futures are cancelled when one completes.
-     * Cancellation of the returned future propagates to the supplied futures.
-     * <p>
-     * It is critical for the performance of this function that
-     * {@code guava.concurrent.generate_cancellation_cause} is false,
-     * which is the default since Guava v20.
-     */
+    /// Creates a future that completes when the first future completes either normally
+    /// or exceptionally. All other futures are cancelled when one completes.
+    /// Cancellation of the returned future propagates to the supplied futures.
+    ///
+    /// It is critical for the performance of this function that
+    /// `guava.concurrent.generate_cancellation_cause` is false,
+    /// which is the default since Guava v20.
     public static <V> ListenableFuture<V> whenAnyCompleteCancelOthers(Iterable<? extends ListenableFuture<? extends V>> futures)
     {
         requireNonNull(futures, "futures is null");
@@ -338,22 +303,18 @@ public final class MoreFutures
         return anyComplete;
     }
 
-    /**
-     * Creates a future that completes when the first future completes either normally
-     * or exceptionally. Cancellation of the future does not propagate to the supplied
-     * futures.
-     */
+    /// Creates a future that completes when the first future completes either normally
+    /// or exceptionally. Cancellation of the future does not propagate to the supplied
+    /// futures.
     @Deprecated
     public static <V> CompletableFuture<V> firstCompletedFuture(Iterable<? extends CompletionStage<? extends V>> futures)
     {
         return firstCompletedFuture(futures, false);
     }
 
-    /**
-     * Creates a future that completes when the first future completes either normally
-     * or exceptionally. Cancellation of the future will optionally propagate to the
-     * supplied futures.
-     */
+    /// Creates a future that completes when the first future completes either normally
+    /// or exceptionally. Cancellation of the future will optionally propagate to the
+    /// supplied futures.
     @Deprecated
     public static <V> CompletableFuture<V> firstCompletedFuture(Iterable<? extends CompletionStage<? extends V>> futures, boolean propagateCancel)
     {
@@ -386,14 +347,12 @@ public final class MoreFutures
         return future;
     }
 
-    /**
-     * Returns an unmodifiable future that is completed when all of the given
-     * futures complete. If any of the given futures complete exceptionally, then the
-     * returned future also does so immediately, with a CompletionException holding this exception
-     * as its cause. Otherwise, the results of the given futures are reflected in the
-     * returned future as a list of results matching the input order. If no futures are
-     * provided, returns a future completed with an empty list.
-     */
+    /// Returns an unmodifiable future that is completed when all of the given
+    /// futures complete. If any of the given futures complete exceptionally, then the
+    /// returned future also does so immediately, with a CompletionException holding this exception
+    /// as its cause. Otherwise, the results of the given futures are reflected in the
+    /// returned future as a list of results matching the input order. If no futures are
+    /// provided, returns a future completed with an empty list.
     @Deprecated
     public static <V> CompletableFuture<List<V>> allAsList(List<CompletableFuture<? extends V>> futures)
     {
@@ -414,11 +373,9 @@ public final class MoreFutures
                         .collect(Collectors.<V>toList())));
     }
 
-    /**
-     * Returns a new future that is completed when the supplied future completes or
-     * when the timeout expires.  If the timeout occurs or the returned CompletableFuture
-     * is canceled, the supplied future will be canceled.
-     */
+    /// Returns a new future that is completed when the supplied future completes or
+    /// when the timeout expires.  If the timeout occurs or the returned CompletableFuture
+    /// is canceled, the supplied future will be canceled.
     public static <T> ListenableFuture<T> addTimeout(ListenableFuture<T> future, Callable<T> onTimeout, Duration timeout, ScheduledExecutorService executorService)
     {
         AsyncFunction<TimeoutException, T> timeoutHandler = timeoutException -> {
@@ -434,11 +391,9 @@ public final class MoreFutures
                 .catchingAsync(TimeoutException.class, timeoutHandler, directExecutor());
     }
 
-    /**
-     * Returns a new future that is completed when the supplied future completes or
-     * when the timeout expires.  If the timeout occurs or the returned CompletableFuture
-     * is canceled, the supplied future will be canceled.
-     */
+    /// Returns a new future that is completed when the supplied future completes or
+    /// when the timeout expires.  If the timeout occurs or the returned CompletableFuture
+    /// is canceled, the supplied future will be canceled.
     @Deprecated
     public static <T> CompletableFuture<T> addTimeout(CompletableFuture<T> future, Callable<T> onTimeout, Duration timeout, ScheduledExecutorService executorService)
     {
@@ -465,10 +420,8 @@ public final class MoreFutures
         return futureWithTimeout;
     }
 
-    /**
-     * Converts a ListenableFuture to a CompletableFuture. Cancellation of the
-     * CompletableFuture will be propagated to the ListenableFuture.
-     */
+    /// Converts a ListenableFuture to a CompletableFuture. Cancellation of the
+    /// CompletableFuture will be propagated to the ListenableFuture.
     public static <V> CompletableFuture<V> toCompletableFuture(ListenableFuture<V> listenableFuture)
     {
         requireNonNull(listenableFuture, "listenableFuture is null");
@@ -499,10 +452,8 @@ public final class MoreFutures
         return future;
     }
 
-    /**
-     * Converts a CompletableFuture to a ListenableFuture. Cancellation of the
-     * ListenableFuture will be propagated to the CompletableFuture.
-     */
+    /// Converts a CompletableFuture to a ListenableFuture. Cancellation of the
+    /// ListenableFuture will be propagated to the CompletableFuture.
     public static <V> ListenableFuture<V> toListenableFuture(CompletableFuture<V> completableFuture)
     {
         requireNonNull(completableFuture, "completableFuture is null");
@@ -520,18 +471,14 @@ public final class MoreFutures
         return future;
     }
 
-    /**
-     * Invokes the callback if the future completes successfully. Note, this uses the direct
-     * executor, so the callback should not be resource intensive.
-     */
+    /// Invokes the callback if the future completes successfully. Note, this uses the direct
+    /// executor, so the callback should not be resource intensive.
     public static <T> void addSuccessCallback(ListenableFuture<T> future, Consumer<T> successCallback)
     {
         addSuccessCallback(future, successCallback, directExecutor());
     }
 
-    /**
-     * Invokes the callback, using the specified executor, if the future completes successfully.
-     */
+    /// Invokes the callback, using the specified executor, if the future completes successfully.
     public static <T> void addSuccessCallback(ListenableFuture<T> future, Consumer<T> successCallback, Executor executor)
     {
         requireNonNull(future, "future is null");
@@ -551,18 +498,14 @@ public final class MoreFutures
         Futures.addCallback(future, callback, executor);
     }
 
-    /**
-     * Invokes the callback if the future completes successfully. Note, this uses the direct
-     * executor, so the callback should not be resource intensive.
-     */
+    /// Invokes the callback if the future completes successfully. Note, this uses the direct
+    /// executor, so the callback should not be resource intensive.
     public static <T> void addSuccessCallback(ListenableFuture<T> future, Runnable successCallback)
     {
         addSuccessCallback(future, successCallback, directExecutor());
     }
 
-    /**
-     * Invokes the callback, using the specified executor, if the future completes successfully.
-     */
+    /// Invokes the callback, using the specified executor, if the future completes successfully.
     public static <T> void addSuccessCallback(ListenableFuture<T> future, Runnable successCallback, Executor executor)
     {
         requireNonNull(successCallback, "successCallback is null");
@@ -570,18 +513,14 @@ public final class MoreFutures
         addSuccessCallback(future, t -> successCallback.run(), executor);
     }
 
-    /**
-     * Invokes the callback if the future fails. Note, this uses the direct
-     * executor, so the callback should not be resource intensive.
-     */
+    /// Invokes the callback if the future fails. Note, this uses the direct
+    /// executor, so the callback should not be resource intensive.
     public static <T> void addExceptionCallback(ListenableFuture<T> future, Consumer<Throwable> exceptionCallback)
     {
         addExceptionCallback(future, exceptionCallback, directExecutor());
     }
 
-    /**
-     * Invokes the callback, using the specified executor, if the future fails.
-     */
+    /// Invokes the callback, using the specified executor, if the future fails.
     public static <T> void addExceptionCallback(ListenableFuture<T> future, Consumer<Throwable> exceptionCallback, Executor executor)
     {
         requireNonNull(future, "future is null");
@@ -601,18 +540,14 @@ public final class MoreFutures
         Futures.addCallback(future, callback, executor);
     }
 
-    /**
-     * Invokes the callback if the future fails. Note, this uses the direct
-     * executor, so the callback should not be resource intensive.
-     */
+    /// Invokes the callback if the future fails. Note, this uses the direct
+    /// executor, so the callback should not be resource intensive.
     public static <T> void addExceptionCallback(ListenableFuture<T> future, Runnable exceptionCallback)
     {
         addExceptionCallback(future, exceptionCallback, directExecutor());
     }
 
-    /**
-     * Invokes the callback, using the specified executor, if the future fails.
-     */
+    /// Invokes the callback, using the specified executor, if the future fails.
     public static <T> void addExceptionCallback(ListenableFuture<T> future, Runnable exceptionCallback, Executor executor)
     {
         requireNonNull(exceptionCallback, "exceptionCallback is null");
@@ -620,13 +555,11 @@ public final class MoreFutures
         addExceptionCallback(future, t -> exceptionCallback.run(), executor);
     }
 
-    /**
-     * Same as {@link com.google.common.util.concurrent.Futures#allAsList(ListenableFuture[])}, but additionally cancels any remaining component Futures
-     * if the result has already failed.
-     *
-     * @param futures futures to combine
-     * @return a future that provides a list of the results of the component futures
-     */
+    /// Same as [com.google.common.util.concurrent.Futures#allAsList(ListenableFuture[])], but additionally cancels any remaining component Futures
+    /// if the result has already failed.
+    ///
+    /// @param futures futures to combine
+    /// @return a future that provides a list of the results of the component futures
     public static <V> ListenableFuture<List<V>> allAsListWithCancellationOnFailure(Iterable<? extends ListenableFuture<? extends V>> futures)
     {
         List<ListenableFuture<? extends V>> futuresSnapshot = ImmutableList.copyOf(futures);

@@ -14,9 +14,7 @@ import java.util.concurrent.TimeoutException;
 
 import static java.util.Objects.requireNonNull;
 
-/**
- * Converts an Executor into a minimalistic ExecutorService
- */
+/// Converts an Executor into a minimalistic ExecutorService
 public class ExecutorServiceAdapter
         implements ExecutorService
 {

@@ -335,9 +335,7 @@ public final class Request
             return this;
         }
 
-        /**
-         * @deprecated Use {@link #setMaxResponseContentLength(DataSize)} instead
-         */
+        /// @deprecated Use [#setMaxResponseContentLength(DataSize)] instead
         @Deprecated
         @CanIgnoreReturnValue
         public Builder setMaxContentLength(DataSize maxContentLength)

@@ -23,24 +23,21 @@ import java.util.function.Predicate;
 import static io.airlift.configuration.ConfigurationAwareModule.combine;
 import static java.util.Objects.requireNonNull;
 
-/**
- * ConditionalModule is not preferable to using buildConfigObject directly.
- * For example,
- * <pre>
- * install(conditionalModule(
- *         SomeConfig.class,
- *         config -> config.getSomeOption().equals("x"),
- *         binder -> binder.bind(String.class).toInstance("X")));
- * </pre>
- *
- * can be replaced with:
- * <pre>
- * SomeConfig testConfig = buildConfigObject(SomeConfig.class);
- * if (testConfig.getSomeOption().equals("x")) {
- *         binder.bind(String.class).toInstance("X");
- * }
- * </pre>
- */
+/// ConditionalModule is not preferable to using buildConfigObject directly.
+/// For example,
+/// <pre>
+/// install(conditionalModule(
+///         SomeConfig.class,
+///         config -> config.getSomeOption().equals("x"),
+///         binder -> binder.bind(String.class).toInstance("X")));
+/// </pre>
+/// can be replaced with:
+/// <pre>
+/// SomeConfig testConfig = buildConfigObject(SomeConfig.class);
+/// if (testConfig.getSomeOption().equals("x")) {
+///         binder.bind(String.class).toInstance("X");
+/// }
+/// </pre>
 public class ConditionalModule<T>
         extends AbstractConfigurationAwareModule
 {

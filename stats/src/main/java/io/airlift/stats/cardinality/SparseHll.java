@@ -34,9 +34,7 @@ import static io.airlift.stats.cardinality.Utils.numberOfLeadingZeros;
 import static java.lang.Math.toIntExact;
 import static java.util.Comparator.comparingInt;
 
-/**
- * This class is NOT thread safe.
- */
+/// This class is NOT thread safe.
 final class SparseHll
         implements HllInstance
 {
@@ -205,9 +203,7 @@ final class SparseHll
         return indexBitLength;
     }
 
-    /**
-     * Returns a index of the entry if found. Otherwise, it returns -(insertionPoint + 1)
-     */
+    /// Returns a index of the entry if found. Otherwise, it returns -(insertionPoint + 1)
     private int searchBucket(int bucketIndex)
     {
         int low = 0;

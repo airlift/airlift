@@ -20,28 +20,25 @@ import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
 
-/**
- * SwitchModule is not preferable to using buildConfigObject directly.
- * For example,
- * <pre>
- * install(switchModule(
- *     SomeConfig.class,
- *     SomeConfig::getSomeOption,
- *     value -> switch (value) {
- *         case "x" -> binder -> binder.bind(String.class).toInstance("X");
- *         default -> throw new IllegalArgumentException("Unsupported value: " + value);
- * }));
- * </pre>
- *
- * can be replaced with:
- * <pre>
- * SomeConfig someConfig = buildConfigObject(SomeConfig.class);
- * switch (someConfig.getSomeOption()) {
- *     case "x" -> binder.bind(String.class).toInstance("X");
- *     default -> throw new IllegalArgumentException("Unsupported value: " + someConfig.getSomeOption());
- * }
- * </pre>
- */
+/// SwitchModule is not preferable to using buildConfigObject directly.
+/// For example,
+/// <pre>
+/// install(switchModule(
+///     SomeConfig.class,
+///     SomeConfig::getSomeOption,
+///     value -> switch (value) {
+///         case "x" -> binder -> binder.bind(String.class).toInstance("X");
+///         default -> throw new IllegalArgumentException("Unsupported value: " + value);
+/// }));
+/// </pre>
+/// can be replaced with:
+/// <pre>
+/// SomeConfig someConfig = buildConfigObject(SomeConfig.class);
+/// switch (someConfig.getSomeOption()) {
+///     case "x" -> binder.bind(String.class).toInstance("X");
+///     default -> throw new IllegalArgumentException("Unsupported value: " + someConfig.getSomeOption());
+/// }
+/// </pre>
 public class SwitchModule<T>
         extends AbstractConfigurationAwareModule
 {

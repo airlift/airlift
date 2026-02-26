@@ -27,11 +27,9 @@ public interface HttpClient
 
     <T, E extends Exception> HttpResponseFuture<T> executeAsync(Request request, ResponseHandler<T, E> responseHandler);
 
-    /**
-     * Executes the given request and returns a response stream.
-     * <p>
-     * <b>Note:</b> {@link Request#getMaxResponseContentLength} is ignored.
-     */
+    /// Executes the given request and returns a response stream.
+    ///
+    /// **Note:** [Request#getMaxResponseContentLength] is ignored.
     StreamingResponse executeStreaming(Request request);
 
     RequestStats getStats();
@@ -44,9 +42,7 @@ public interface HttpClient
     interface HttpResponseFuture<T>
             extends ListenableFuture<T>
     {
-        /**
-         * State for diagnostics.  Do not rely on values from this method.
-         */
+        /// State for diagnostics.  Do not rely on values from this method.
         String getState();
     }
 }

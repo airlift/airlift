@@ -33,10 +33,8 @@ import static com.google.common.io.ByteStreams.newDataOutput;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
-/**
- * ASN.1 DER encoder methods necessary to process PEM files and to write a certificate signing request.
- * NOTE: this API is only present for the two mentioned use cases, and is subject to change without warning.
- */
+/// ASN.1 DER encoder methods necessary to process PEM files and to write a certificate signing request.
+/// NOTE: this API is only present for the two mentioned use cases, and is subject to change without warning.
 public final class DerUtils
 {
     private static final DateTimeFormatter UTC_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyMMddHHmmssX")
@@ -53,17 +51,13 @@ public final class DerUtils
 
     private DerUtils() {}
 
-    /**
-     * Encodes a sequence of encoded values.
-     */
+    /// Encodes a sequence of encoded values.
     public static byte[] encodeSequence(byte[]... encodedValues)
     {
         return encodeConstructed(SEQUENCE_TAG, encodedValues);
     }
 
-    /**
-     * Decodes a sequence of encoded values.
-     */
+    /// Decodes a sequence of encoded values.
     public static List<byte[]> decodeSequence(byte[] sequence)
     {
         int index = 0;
@@ -96,9 +90,7 @@ public final class DerUtils
         return elements.build();
     }
 
-    /**
-     * Decodes a optional element of a sequence.
-     */
+    /// Decodes a optional element of a sequence.
     public static byte[] decodeSequenceOptionalElement(byte[] element)
     {
         int index = 0;
@@ -115,10 +107,8 @@ public final class DerUtils
         return Arrays.copyOfRange(element, index, index + length);
     }
 
-    /**
-     * Encodes a bit string padded with the specified number of bits.
-     * The encoding is a byte containing the padBits followed by the value bytes.
-     */
+    /// Encodes a bit string padded with the specified number of bits.
+    /// The encoding is a byte containing the padBits followed by the value bytes.
     public static byte[] encodeBitString(int padBits, byte[] value)
     {
         checkArgument(padBits >= 0 && padBits < 8, "Invalid pad bits");
@@ -132,60 +122,46 @@ public final class DerUtils
         return out.toByteArray();
     }
 
-    /**
-     * Encodes an integer.
-     */
+    /// Encodes an integer.
     public static byte[] encodeBooleanTrue()
     {
         return new byte[] {BOOLEAN_TAG, 0x01, (byte) 0xFF};
     }
 
-    /**
-     * Encodes an integer.
-     */
+    /// Encodes an integer.
     public static byte[] encodeInteger(long value)
     {
         return encodeInteger(BigInteger.valueOf(value));
     }
 
-    /**
-     * Encodes an integer.
-     */
+    /// Encodes an integer.
     public static byte[] encodeInteger(BigInteger value)
     {
         return encodeTag(INTEGER_TAG, value.toByteArray());
     }
 
-    /**
-     * Encodes an octet string.
-     */
+    /// Encodes an octet string.
     public static byte[] encodeOctetString(byte[] value)
     {
         return encodeTag(OCTET_STRING_TAG, value);
     }
 
-    /**
-     * Encodes an octet string.
-     */
+    /// Encodes an octet string.
     public static byte[] encodeUtcTime(String value)
     {
         return encodeTag(UTC_TIME_TAG, value.getBytes(UTF_8));
     }
 
-    /**
-     * Encodes an octet string.
-     */
+    /// Encodes an octet string.
     public static byte[] encodeUtcTime(Instant value)
     {
         String utcTime = UTC_TIME_FORMATTER.format(value);
         return encodeTag(UTC_TIME_TAG, utcTime.getBytes(UTF_8));
     }
 
-    /**
-     * Encodes the length of a DER value.  The encoding of a 7bit value is simply the value.  Values needing more than 7bits
-     * are encoded as a lead byte with the high bit set and containing the number of value bytes.  Then the following bytes
-     * encode the length using the least number of bytes possible.
-     */
+    /// Encodes the length of a DER value.  The encoding of a 7bit value is simply the value.  Values needing more than 7bits
+    /// are encoded as a lead byte with the high bit set and containing the number of value bytes.  Then the following bytes
+    /// encode the length using the least number of bytes possible.
     public static byte[] encodeLength(int length)
     {
         if (length < 128) {
@@ -261,9 +237,7 @@ public final class DerUtils
         }
     }
 
-    /**
-     * Encode an OID number part.  The encoding is a big endian varint.
-     */
+    /// Encode an OID number part.  The encoding is a big endian varint.
     private static void writeOidPart(ByteArrayOutputStream out, final int number)
     {
         if (number < 128) {

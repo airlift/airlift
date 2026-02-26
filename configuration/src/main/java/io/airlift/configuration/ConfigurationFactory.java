@@ -124,9 +124,7 @@ public class ConfigurationFactory
         return properties;
     }
 
-    /**
-     * Marks the specified property as consumed.
-     */
+    /// Marks the specified property as consumed.
     public void consumeProperty(ConfigPropertyMetadata property)
     {
         requireNonNull(property, "property is null");
@@ -138,31 +136,25 @@ public class ConfigurationFactory
         return ImmutableSortedSet.copyOf(usedProperties);
     }
 
-    /**
-     * Registers all configuration classes in the module, so they can be part
-     * of configuration inspection.
-     *
-     * @return A collection of Guice errors encountered
-     */
+    /// Registers all configuration classes in the module, so they can be part
+    /// of configuration inspection.
+    ///
+    /// @return A collection of Guice errors encountered
     public Collection<Message> registerConfigurationClasses(Module module)
     {
         return registerConfigurationClasses(ImmutableList.of(module));
     }
 
-    /**
-     * Returns names of all configuration properties that were seen during the configuration
-     */
+    /// Returns names of all configuration properties that were seen during the configuration
     public Set<String> getAllSeenProperties()
     {
         return allSeenProperties;
     }
 
-    /**
-     * Registers all configuration classes in the modules, so they can be part
-     * of configuration inspection.
-     *
-     * @return A collection of Guice errors encountered
-     */
+    /// Registers all configuration classes in the modules, so they can be part
+    /// of configuration inspection.
+    ///
+    /// @return A collection of Guice errors encountered
     @SuppressWarnings("deprecation")
     public Collection<Message> registerConfigurationClasses(Collection<? extends Module> modules)
     {
@@ -319,9 +311,7 @@ public class ConfigurationFactory
         return build(configClass, Optional.ofNullable(prefix), ConfigDefaults.noDefaults()).instance();
     }
 
-    /**
-     * This is used by the configuration provider
-     */
+    /// This is used by the configuration provider
     <T> T build(ConfigurationProvider<T> configurationProvider)
     {
         requireNonNull(configurationProvider, "configurationProvider");

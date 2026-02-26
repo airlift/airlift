@@ -76,12 +76,9 @@ public class Schema<T>
         this.name = name;
     }
 
-    /**
-     * returns the discriminator property from a AllOfSchema instance.
-     *
-     * @return Discriminator discriminator
-     **/
-
+    /// returns the discriminator property from a AllOfSchema instance.
+    ///
+    /// @return Discriminator discriminator
     @JsonProperty
     public Discriminator getDiscriminator()
     {
@@ -240,12 +237,9 @@ public class Schema<T>
         return this;
     }
 
-    /**
-     * returns the allOf property from a ComposedSchema instance.
-     *
-     * @return List&lt;Schema&gt; allOf
-     **/
-
+    /// returns the allOf property from a ComposedSchema instance.
+    ///
+    /// @return List&lt;Schema&gt; allOf
     @JsonProperty
     public List<Schema> getAllOf()
     {

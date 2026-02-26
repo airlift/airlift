@@ -18,9 +18,7 @@ package io.airlift.log;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-/**
- * An OutputStream that writes contents to a Logger upon each call to flush()
- */
+/// An OutputStream that writes contents to a Logger upon each call to flush()
 class LoggingOutputStream
         extends ByteArrayOutputStream
 {
@@ -31,9 +29,7 @@ class LoggingOutputStream
         this.logger = logger;
     }
 
-    /**
-     * write the current buffer contents to the underlying logger.
-     */
+    /// write the current buffer contents to the underlying logger.
     @Override
     public synchronized void flush()
             throws IOException

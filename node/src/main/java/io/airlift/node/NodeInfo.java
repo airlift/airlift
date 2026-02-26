@@ -190,124 +190,100 @@ public class NodeInfo
         }
     }
 
-    /**
-     * The environment in which this server is running.
-     */
+    /// The environment in which this server is running.
     @Managed
     public String getEnvironment()
     {
         return environment;
     }
 
-    /**
-     * The pool of which this server is a member.
-     */
+    /// The pool of which this server is a member.
     @Managed
     public String getPool()
     {
         return pool;
     }
 
-    /**
-     * The unique id of the deployment slot in which this binary is running.  This id should
-     * represent the physical deployment location and should not change.
-     */
+    /// The unique id of the deployment slot in which this binary is running.  This id should
+    /// represent the physical deployment location and should not change.
     @Managed
     public String getNodeId()
     {
         return nodeId;
     }
 
-    /**
-     * Location of this JavaVM.
-     */
+    /// Location of this JavaVM.
     @Managed
     public String getLocation()
     {
         return location;
     }
 
-    /**
-     * Binary this JavaVM is running.
-     */
+    /// Binary this JavaVM is running.
     @Managed
     public String getBinarySpec()
     {
         return binarySpec;
     }
 
-    /**
-     * Configuration this JavaVM is running.
-     */
+    /// Configuration this JavaVM is running.
     @Managed
     public String getConfigSpec()
     {
         return configSpec;
     }
 
-    /**
-     * The unique id of this Java VM instance.  This id will change every time the VM is restarted.
-     */
+    /// The unique id of this Java VM instance.  This id will change every time the VM is restarted.
     @Managed
     public String getInstanceId()
     {
         return instanceId;
     }
 
-    /**
-     * The internal network address the server should use when announcing its location to other machines.
-     * This address should available to all machines within the environment, but may not be globally routable.
-     * If this is not set, the following algorithm is used to choose the public address:
-     * <p>
-     * <ol>
-     * <li>InetAddress.getLocalHost() if good IPv4</li>
-     * <li>First good IPv4 address of an up network interface</li>
-     * <li>First good IPv6 address of an up network interface</li>
-     * <li>InetAddress.getLocalHost()</li>
-     * </ol>
-     * An address is considered good if it is not a loopback address, a multicast address, or an any-local-address address.
-     */
+    /// The internal network address the server should use when announcing its location to other machines.
+    /// This address should available to all machines within the environment, but may not be globally routable.
+    /// If this is not set, the following algorithm is used to choose the public address:
+    ///
+    /// <ol>
+    ///   - InetAddress.getLocalHost() if good IPv4
+    ///   - First good IPv4 address of an up network interface
+    ///   - First good IPv6 address of an up network interface
+    ///   - InetAddress.getLocalHost()
+    /// </ol>
+    /// An address is considered good if it is not a loopback address, a multicast address, or an any-local-address address.
     @Managed
     public String getInternalAddress()
     {
         return internalAddress;
     }
 
-    /**
-     * The address to use when contacting this server from an external network.  If possible, ip address should be globally
-     * routable.  The address is returned as a string because the name may not be resolvable from the local machine.
-     * <p>
-     * If this is not set, the internal address is used.
-     */
+    /// The address to use when contacting this server from an external network.  If possible, ip address should be globally
+    /// routable.  The address is returned as a string because the name may not be resolvable from the local machine.
+    ///
+    /// If this is not set, the internal address is used.
     @Managed
     public String getExternalAddress()
     {
         return externalAddress;
     }
 
-    /**
-     * The IP address the server should use when binding a server socket.
-     * <p>
-     * If this is not set, this will be the IPv4 any local address (e.g., 0.0.0.0).
-     */
+    /// The IP address the server should use when binding a server socket.
+    ///
+    /// If this is not set, this will be the IPv4 any local address (e.g., 0.0.0.0).
     @Managed
     public InetAddress getBindIp()
     {
         return bindIp;
     }
 
-    /**
-     * The time this server was started.
-     */
+    /// The time this server was started.
     @Managed
     public long getStartTime()
     {
         return startTime;
     }
 
-    /**
-     * Annotations describing this server and/or the environment in which it is running.
-     */
+    /// Annotations describing this server and/or the environment in which it is running.
     public Map<String, String> getAnnotations()
     {
         return annotations;

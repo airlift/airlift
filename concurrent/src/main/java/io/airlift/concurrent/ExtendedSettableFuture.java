@@ -32,13 +32,11 @@ public final class ExtendedSettableFuture<V>
         return super.setException(throwable);
     }
 
-    /**
-     * Sets this current future with the result of the delegate.
-     * <p>
-     * Values and exceptions are both propagated to this Future.
-     * If this Future is cancelled, than the delegate will also be cancelled
-     * with the same interrupt flag.
-     */
+    /// Sets this current future with the result of the delegate.
+    ///
+    /// Values and exceptions are both propagated to this Future.
+    /// If this Future is cancelled, than the delegate will also be cancelled
+    /// with the same interrupt flag.
     public void setAsync(ListenableFuture<? extends V> delegate)
     {
         delegate.addListener(() -> {
@@ -68,9 +66,7 @@ public final class ExtendedSettableFuture<V>
         }, directExecutor());
     }
 
-    /**
-     * @return true if the Future was interrupted when cancelled.
-     */
+    /// @return true if the Future was interrupted when cancelled.
     @VisibleForTesting
     boolean checkWasInterrupted()
     {

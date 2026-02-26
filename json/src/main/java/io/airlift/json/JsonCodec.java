@@ -116,21 +116,17 @@ public class JsonCodec<T>
         this.javaType = mapper.getTypeFactory().constructType(type);
     }
 
-    /**
-     * Gets the type this codec supports.
-     */
+    /// Gets the type this codec supports.
     public Type getType()
     {
         return type;
     }
 
-    /**
-     * Converts the specified json string into an instance of type T.
-     *
-     * @param json the json string to parse
-     * @return parsed response; never null
-     * @throws IllegalArgumentException if the json string can not be converted to the type T
-     */
+    /// Converts the specified json string into an instance of type T.
+    ///
+    /// @param json the json string to parse
+    /// @return parsed response; never null
+    /// @throws IllegalArgumentException if the json string can not be converted to the type T
     public T fromJson(String json)
             throws IllegalArgumentException
     {
@@ -144,13 +140,11 @@ public class JsonCodec<T>
         }
     }
 
-    /**
-     * Converts the specified instance to json.
-     *
-     * @param instance the instance to convert to json
-     * @return json string
-     * @throws IllegalArgumentException if the specified instance can not be converted to json
-     */
+    /// Converts the specified instance to json.
+    ///
+    /// @param instance the instance to convert to json
+    /// @return json string
+    /// @throws IllegalArgumentException if the specified instance can not be converted to json
     public String toJson(T instance)
             throws IllegalArgumentException
     {
@@ -162,14 +156,12 @@ public class JsonCodec<T>
         }
     }
 
-    /**
-     * Converts the specified instance to optional json string with a length limit. Returns Optional.empty() if length limit is exceeded.
-     *
-     * @param instance the instance to convert to json
-     * @param lengthLimit the maximum length of the serialized string in characters
-     * @return json string
-     * @throws IllegalArgumentException if the specified instance can not be converted to json
-     */
+    /// Converts the specified instance to optional json string with a length limit. Returns Optional.empty() if length limit is exceeded.
+    ///
+    /// @param instance the instance to convert to json
+    /// @param lengthLimit the maximum length of the serialized string in characters
+    /// @return json string
+    /// @throws IllegalArgumentException if the specified instance can not be converted to json
     public Optional<String> toJsonWithLengthLimit(T instance, int lengthLimit)
     {
         try (StringWriter stringWriter = new StringWriter();
@@ -185,13 +177,11 @@ public class JsonCodec<T>
         }
     }
 
-    /**
-     * Coverts the specified json bytes (UTF-8) into an instance of type T.
-     *
-     * @param json the json bytes (UTF-8) to parse
-     * @return parsed response; never null
-     * @throws IllegalArgumentException if the json bytes can not be converted to the type T
-     */
+    /// Coverts the specified json bytes (UTF-8) into an instance of type T.
+    ///
+    /// @param json the json bytes (UTF-8) to parse
+    /// @return parsed response; never null
+    /// @throws IllegalArgumentException if the json bytes can not be converted to the type T
     public T fromJson(byte[] json)
             throws IllegalArgumentException
     {
@@ -205,13 +195,11 @@ public class JsonCodec<T>
         }
     }
 
-    /**
-     * Converts the specified instance to json.
-     *
-     * @param instance the instance to convert to json
-     * @return json bytes (UTF-8)
-     * @throws IllegalArgumentException if the specified instance can not be converted to json
-     */
+    /// Converts the specified instance to json.
+    ///
+    /// @param instance the instance to convert to json
+    /// @return json bytes (UTF-8)
+    /// @throws IllegalArgumentException if the specified instance can not be converted to json
     public byte[] toJsonBytes(T instance)
             throws IllegalArgumentException
     {
@@ -223,13 +211,11 @@ public class JsonCodec<T>
         }
     }
 
-    /**
-     * Coverts the specified {@link InputStream} (UTF-8) into an instance of type T.
-     *
-     * @param json the json stream (UTF-8) to parse
-     * @return parsed response; never null
-     * @throws IllegalArgumentException if the json bytes can not be converted to the type T
-     */
+    /// Coverts the specified [InputStream] (UTF-8) into an instance of type T.
+    ///
+    /// @param json the json stream (UTF-8) to parse
+    /// @return parsed response; never null
+    /// @throws IllegalArgumentException if the json bytes can not be converted to the type T
     public T fromJson(InputStream json)
             throws IllegalArgumentException
     {
@@ -243,13 +229,11 @@ public class JsonCodec<T>
         }
     }
 
-    /**
-     * Coverts the specified {@link Reader} into an instance of type T.
-     *
-     * @param json the json character stream to parse
-     * @return parsed response; never null
-     * @throws IllegalArgumentException if the json characters can not be converted to the type T
-     */
+    /// Coverts the specified [Reader] into an instance of type T.
+    ///
+    /// @param json the json character stream to parse
+    /// @return parsed response; never null
+    /// @throws IllegalArgumentException if the json characters can not be converted to the type T
     public T fromJson(Reader json)
             throws IllegalArgumentException
     {

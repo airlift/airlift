@@ -25,9 +25,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-/**
- * This class constructs and reloads an SslContextFactory.Server instance on a schedule.
- */
+/// This class constructs and reloads an SslContextFactory.Server instance on a schedule.
 final class ReloadableSslContextFactoryProvider
 {
     private static final Logger log = Logger.get(ReloadableSslContextFactoryProvider.class);
@@ -170,9 +168,7 @@ final class ReloadableSslContextFactoryProvider
         }
     }
 
-    /**
-     * Returns the SslContextFactory.Server instance being managed by this instance.
-     */
+    /// Returns the SslContextFactory.Server instance being managed by this instance.
     public SslContextFactory.Server getSslContextFactory()
     {
         return sslContextFactory;

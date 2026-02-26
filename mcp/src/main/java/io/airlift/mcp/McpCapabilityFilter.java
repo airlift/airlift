@@ -7,9 +7,7 @@ import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.model.Tool;
 
-/**
- * Filter for controlling access to MCP capabilities based on authenticated identity.
- */
+/// Filter for controlling access to MCP capabilities based on authenticated identity.
 public interface McpCapabilityFilter
 {
     boolean isAllowed(Authenticated<?> identity, Tool tool);

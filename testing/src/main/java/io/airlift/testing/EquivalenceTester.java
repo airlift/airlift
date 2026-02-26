@@ -15,12 +15,9 @@
  */
 package io.airlift.testing;
 
-/**
- * Derived from http://code.google.com/p/kawala
- * <p>
- * Licensed under Apache License, Version 2.0
- */
-
+/// Derived from http://code.google.com/p/kawala
+///
+/// Licensed under Apache License, Version 2.0
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
@@ -47,12 +44,10 @@ import static io.airlift.testing.EquivalenceTester.EquivalenceFailureType.NOT_RE
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
-/**
- * Equivalence tester streamlining tests of {@link #equals(Object)} and {@link #hashCode} methods. Using this tester makes it
- * easy to verify that {@link #equals(Object)} is indeed an <a href="http://en.wikipedia.org/wiki/Equivalence_relation">equivalence
- * relation</a> (reflexive, symmetric and transitive). It also verifies that equality between two objects implies hash
- * code equality, as required by the {@link #hashCode()} contract.
- */
+/// Equivalence tester streamlining tests of [#equals(Object)] and [#hashCode] methods. Using this tester makes it
+/// easy to verify that [#equals(Object)] is indeed an <a href="http://en.wikipedia.org/wiki/Equivalence_relation">equivalence
+/// relation</a> (reflexive, symmetric and transitive). It also verifies that equality between two objects implies hash
+/// code equality, as required by the [#hashCode()] contract.
 public final class EquivalenceTester
 {
     private EquivalenceTester() {}

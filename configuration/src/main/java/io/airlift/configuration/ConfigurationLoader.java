@@ -46,13 +46,11 @@ public final class ConfigurationLoader
         return ImmutableSortedMap.copyOf(result);
     }
 
-    /**
-     * Loads properties from the given file
-     *
-     * @param path file path
-     * @return properties
-     * @throws IOException errors
-     */
+    /// Loads properties from the given file
+    ///
+    /// @param path file path
+    /// @return properties
+    /// @throws IOException errors
     public static Map<String, String> loadPropertiesFrom(String path)
             throws IOException
     {

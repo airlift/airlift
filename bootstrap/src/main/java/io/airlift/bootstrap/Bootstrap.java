@@ -61,17 +61,15 @@ import static java.lang.Boolean.parseBoolean;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
-/**
- * Entry point for an application built using the platform codebase.
- * <p>
- * This class will:
- * <ul>
- * <li>load, validate and bind configurations</li>
- * <li>initialize logging</li>
- * <li>set up bootstrap management</li>
- * <li>create an Guice injector</li>
- * </ul>
- */
+/// Entry point for an application built using the platform codebase.
+///
+/// This class will:
+///
+///   - load, validate and bind configurations
+///   - initialize logging
+///   - set up bootstrap management
+///   - create an Guice injector
+///
 public class Bootstrap
 {
     private final String name;
@@ -218,9 +216,7 @@ public class Bootstrap
         return this;
     }
 
-    /**
-     * Validate configuration and return used properties.
-     */
+    /// Validate configuration and return used properties.
     public Set<ConfigPropertyMetadata> configure()
     {
         checkState(state == State.UNINITIALIZED, "Already configured");

@@ -38,16 +38,14 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElseGet;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
-/**
- * Size constrained queue that utilizes a dynamic element size function. To prevent
- * starvation for adding large elements, the queue will only block new elements if
- * the total size has already been reached or exceeded. This means in the normal
- * case, the queue should be no larger than the max size plus the size of one element.
- * Callers also have the additional option to force insert further elements without
- * regard for size constraints. In the current implementation, elements are required
- * to have positive sizes (they cannot have zero size). This implementation is designed
- * to closely mirror the method signatures of {@link java.util.concurrent.BlockingQueue}.
- */
+/// Size constrained queue that utilizes a dynamic element size function. To prevent
+/// starvation for adding large elements, the queue will only block new elements if
+/// the total size has already been reached or exceeded. This means in the normal
+/// case, the queue should be no larger than the max size plus the size of one element.
+/// Callers also have the additional option to force insert further elements without
+/// regard for size constraints. In the current implementation, elements are required
+/// to have positive sizes (they cannot have zero size). This implementation is designed
+/// to closely mirror the method signatures of [java.util.concurrent.BlockingQueue].
 @ThreadSafe
 public class DynamicSizeBoundQueue<T>
 {
@@ -78,10 +76,8 @@ public class DynamicSizeBoundQueue<T>
         return maxSize;
     }
 
-    /**
-     * Gets the current size of the queue. The size is guaranteed to be no larger than max size plus
-     * the size of one element if {@link DynamicSizeBoundQueue#forcePut(Object)} is not used.
-     */
+    /// Gets the current size of the queue. The size is guaranteed to be no larger than max size plus
+    /// the size of one element if [DynamicSizeBoundQueue#forcePut(Object)] is not used.
     public long getSize()
     {
         return size.get();
@@ -130,12 +126,10 @@ public class DynamicSizeBoundQueue<T>
         return true;
     }
 
-    /**
-     * Version of {@link java.util.concurrent.atomic.AtomicLong#getAndAdd} that throws {@link ArithmeticException}
-     * on numeric overflow. This is slightly less efficient than the normal getAndAdd (which often has intrinsic
-     * support). If this ever becomes a performance bottleneck, it is possible to use the original getAndAdd if
-     * the caller can guarantee no risk of numeric overflow.
-     */
+    /// Version of [AtomicLong#getAndAdd] that throws [ArithmeticException]
+    /// on numeric overflow. This is slightly less efficient than the normal getAndAdd (which often has intrinsic
+    /// support). If this ever becomes a performance bottleneck, it is possible to use the original getAndAdd if
+    /// the caller can guarantee no risk of numeric overflow.
     private static long getAndAddOverflowChecked(AtomicLong atomicLong, long delta)
     {
         return atomicLong.getAndAccumulate(delta, Math::addExact);
@@ -176,10 +170,8 @@ public class DynamicSizeBoundQueue<T>
         }
     }
 
-    /**
-     * Enqueue the element if there is space, otherwise returns a ListenableFuture that will complete
-     * when space becomes available for the element. If a future is returned, the element was not inserted.
-     */
+    /// Enqueue the element if there is space, otherwise returns a ListenableFuture that will complete
+    /// when space becomes available for the element. If a future is returned, the element was not inserted.
     public Optional<ListenableFuture<Void>> offerWithBackoff(T element)
     {
         long elementSize = elementSizeFunction.applyAsLong(element);
@@ -194,11 +186,9 @@ public class DynamicSizeBoundQueue<T>
         return Optional.of(Futures.nonCancellationPropagating(future));
     }
 
-    /**
-     * Insert without regard to the max size (potentially exceeding the max limit). This can throw an
-     * {@link IllegalStateException} if the forced element triggers a numeric overflow, in which case
-     * the element is not inserted.
-     */
+    /// Insert without regard to the max size (potentially exceeding the max limit). This can throw an
+    /// [IllegalStateException] if the forced element triggers a numeric overflow, in which case
+    /// the element is not inserted.
     public void forcePut(T element)
     {
         long elementSize = elementSizeFunction.applyAsLong(element);

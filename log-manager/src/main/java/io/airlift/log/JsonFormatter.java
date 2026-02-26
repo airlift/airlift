@@ -68,9 +68,7 @@ public class JsonFormatter
         }
     }
 
-    /**
-     * Creates a minimalistic log line using JsonGenerator and avoiding the codecs and object mapper so that at least we get a json parseable log line
-     */
+    /// Creates a minimalistic log line using JsonGenerator and avoiding the codecs and object mapper so that at least we get a json parseable log line
     @VisibleForTesting
     String minimalJsonErrorLogLine(JsonRecord jsonRecord, Exception exception)
     {

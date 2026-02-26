@@ -34,9 +34,7 @@ import static io.airlift.stats.cardinality.Utils.computeValue;
 import static io.airlift.stats.cardinality.Utils.linearCounting;
 import static io.airlift.stats.cardinality.Utils.numberOfBuckets;
 
-/**
- * This class is NOT thread safe.
- */
+/// This class is NOT thread safe.
 final class DenseHll
         implements HllInstance
 {
@@ -413,9 +411,7 @@ final class DenseHll
         }
     }
 
-    /**
-     * Returns "this" for chaining
-     */
+    /// Returns "this" for chaining
     public DenseHll mergeWith(DenseHll other)
     {
         if (indexBitLength != other.indexBitLength) {
@@ -481,9 +477,7 @@ final class DenseHll
         return this;
     }
 
-    /**
-     * Returns "this" for chaining
-     */
+    /// Returns "this" for chaining
     public DenseHll mergeWith(SparseHll other)
     {
         if (indexBitLength != other.getIndexBitLength()) {

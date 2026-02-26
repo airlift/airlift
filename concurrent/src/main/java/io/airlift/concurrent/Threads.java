@@ -10,17 +10,15 @@ public final class Threads
 {
     private Threads() {}
 
-    /**
-     * Creates a {@link ThreadFactory} that creates named threads
-     * using the specified naming format and passing current thread's
-     * context class loader.
-     *
-     * @param nameFormat a {@link String#format(String, Object...)}-compatible
-     * format string, to which a string will be supplied as the single
-     * parameter. This string will be unique to this instance of the
-     * ThreadFactory and will be assigned sequentially.
-     * @return the created ThreadFactory
-     */
+    /// Creates a [ThreadFactory] that creates named threads
+    /// using the specified naming format and passing current thread's
+    /// context class loader.
+    ///
+    /// @param nameFormat a [String#format(String, Object...)]-compatible
+    /// format string, to which a string will be supplied as the single
+    /// parameter. This string will be unique to this instance of the
+    /// ThreadFactory and will be assigned sequentially.
+    /// @return the created ThreadFactory
     public static ThreadFactory threadsNamed(String nameFormat)
     {
         return new ThreadFactoryBuilder()
@@ -29,14 +27,12 @@ public final class Threads
                 .build();
     }
 
-    /**
-     * Creates a {@link ThreadFactory} that creates named daemon threads.
-     * using the specified naming format and passing current thread's context
-     * class loader.
-     *
-     * @param nameFormat see {@link #threadsNamed(String)}
-     * @return the created ThreadFactory
-     */
+    /// Creates a [ThreadFactory] that creates named daemon threads.
+    /// using the specified naming format and passing current thread's context
+    /// class loader.
+    ///
+    /// @param nameFormat see [#threadsNamed(String)]
+    /// @return the created ThreadFactory
     public static ThreadFactory daemonThreadsNamed(String nameFormat)
     {
         return new ThreadFactoryBuilder()
@@ -46,14 +42,12 @@ public final class Threads
                 .build();
     }
 
-    /**
-     * Creates a {@link ThreadFactory} that creates named virtual threads.
-     * using the specified naming format and passing current thread's context
-     * class loader.
-     *
-     * @param nameFormat see {@link #threadsNamed(String)}
-     * @return the created ThreadFactory
-     */
+    /// Creates a [ThreadFactory] that creates named virtual threads.
+    /// using the specified naming format and passing current thread's context
+    /// class loader.
+    ///
+    /// @param nameFormat see [#threadsNamed(String)]
+    /// @return the created ThreadFactory
     public static ThreadFactory virtualThreadsNamed(String nameFormat)
     {
         return new ThreadFactoryBuilder()

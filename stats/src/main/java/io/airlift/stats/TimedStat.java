@@ -24,9 +24,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * @deprecated Replaced by {@link TimeStat}
- */
+/// @deprecated Replaced by [TimeStat]
 @Deprecated
 public class TimedStat
 {

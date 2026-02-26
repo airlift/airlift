@@ -253,9 +253,7 @@ public class BufferedHandler
         }
     }
 
-    /**
-     * INVARIANT: Once {@link BufferedHandler#terminalMessage} has been dequeued, no further records will be dequeued.
-     */
+    /// INVARIANT: Once [BufferedHandler#terminalMessage] has been dequeued, no further records will be dequeued.
     @GuardedBy("queueDrainLock")
     @Nullable
     private MessageAndSource queuePollFirst()
@@ -418,11 +416,9 @@ public class BufferedHandler
         flushMessageOutputSafe();
     }
 
-    /**
-     * Requests a full flush of all currently queued messages from the background thread. If the handler has already been closed,
-     * The returned {@link ListenableFuture} will already be completed as no more background log processing can occur. Otherwise,
-     * the returned future will complete when the background flush has completed.
-     */
+    /// Requests a full flush of all currently queued messages from the background thread. If the handler has already been closed,
+    /// The returned [ListenableFuture] will already be completed as no more background log processing can occur. Otherwise,
+    /// the returned future will complete when the background flush has completed.
     public ListenableFuture<Void> requestFullFlush()
     {
         if (inputClosed.get()) {

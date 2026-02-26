@@ -15,11 +15,9 @@ package io.airlift.spi.secrets;
 
 public interface SecretProvider
 {
-    /**
-     * Resolves and returns the secret value for the given key.
-     *
-     * @return resolved secret value
-     * @throws RuntimeException if key cannot be resolved.
-     */
+    /// Resolves and returns the secret value for the given key.
+    ///
+    /// @return resolved secret value
+    /// @throws RuntimeException if key cannot be resolved.
     String resolveSecretValue(String key);
 }

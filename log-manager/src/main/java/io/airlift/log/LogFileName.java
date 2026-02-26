@@ -45,16 +45,13 @@ final class LogFileName
     private final Optional<String> slug;
     private final boolean compressed;
 
-    /**
-     * Attempts to parse a log file name that is part of the history files for the master log file.
-     *
-     * New: mainName-yyyyMMdd.HHmmss.compressExtension
-     * Legacy: mainName-yyyyMMdd.HHmmss-counter.compressExtension
-     *
-     * @param masterLogFileName the main file of the logger
-     * @param historyFileName the history file name to parse
-     * @return a present value if the file name is part of the history set
-     */
+    /// Attempts to parse a log file name that is part of the history files for the master log file.
+    /// New: mainName-yyyyMMdd.HHmmss.compressExtension
+    /// Legacy: mainName-yyyyMMdd.HHmmss-counter.compressExtension
+    ///
+    /// @param masterLogFileName the main file of the logger
+    /// @param historyFileName the history file name to parse
+    /// @return a present value if the file name is part of the history set
     public static Optional<LogFileName> parseHistoryLogFileName(String masterLogFileName, String historyFileName)
     {
         requireNonNull(masterLogFileName, "masterLogFileName is null");

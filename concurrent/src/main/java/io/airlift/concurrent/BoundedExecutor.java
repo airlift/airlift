@@ -13,20 +13,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
 
-/**
- * Guarantees that no more than maxThreads will be used to execute tasks submitted
- * through {@link #execute(Runnable) execute()}.
- * <p>
- * There are a few interesting properties:
- * <ul>
- * <li>Multiple BoundedExecutors over a single coreExecutor will have fair sharing
- * of the coreExecutor threads proportional to their relative maxThread counts, but
- * can use less if not as active.</li>
- * <li>Tasks submitted to a BoundedExecutor is guaranteed to have those tasks
- * handed to threads in that order.</li>
- * <li>Will not encounter starvation</li>
- * </ul>
- */
+/// Guarantees that no more than maxThreads will be used to execute tasks submitted
+/// through [execute()][#execute(Runnable)].
+///
+/// There are a few interesting properties:
+///
+///   - Multiple BoundedExecutors over a single coreExecutor will have fair sharing
+///     of the coreExecutor threads proportional to their relative maxThread counts, but
+///     can use less if not as active.
+///   - Tasks submitted to a BoundedExecutor is guaranteed to have those tasks
+///     handed to threads in that order.
+///   - Will not encounter starvation
+///
 @ThreadSafe
 public class BoundedExecutor
         implements Executor

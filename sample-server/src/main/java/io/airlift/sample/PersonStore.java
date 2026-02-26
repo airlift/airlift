@@ -48,9 +48,7 @@ public class PersonStore
         return persons.get(id);
     }
 
-    /**
-     * @return true if the entry was created for the first time
-     */
+    /// @return true if the entry was created for the first time
     public boolean put(String id, Person person)
     {
         requireNonNull(id, "id must not be null");
@@ -59,9 +57,7 @@ public class PersonStore
         return persons.put(id, person) == null;
     }
 
-    /**
-     * @return true if the entry was removed
-     */
+    /// @return true if the entry was removed
     public boolean delete(String id)
     {
         requireNonNull(id, "id must not be null");

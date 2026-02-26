@@ -11,12 +11,10 @@ import static java.lang.Math.min;
 import static java.lang.Math.toIntExact;
 import static java.util.Objects.requireNonNull;
 
-/**
- * An InputStream wrapper that enforces the input stream size to be within a given limit.
- * If the limit is exceeded, an IOException is thrown.
- * <p>
- * <b>Thread-safety:</b> the class is not thread-safe.
- */
+/// An InputStream wrapper that enforces the input stream size to be within a given limit.
+/// If the limit is exceeded, an IOException is thrown.
+///
+/// **Thread-safety:** the class is not thread-safe.
 class ThrowingLimitingInputStream
         extends InputStream
 {
