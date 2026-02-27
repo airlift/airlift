@@ -20,4 +20,6 @@ public @interface ApiPolyResource
     String description();
 
     String[] quotas() default {};
+
+    ApiOpenApiTrait[] openApiTraits() default {};
 }

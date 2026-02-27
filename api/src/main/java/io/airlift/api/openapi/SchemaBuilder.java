@@ -34,6 +34,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
+import static io.airlift.api.ApiOpenApiTrait.USE_ONE_OF_DISCRIMINATORS;
 import static io.airlift.api.internals.Strings.capitalize;
 import static io.airlift.api.model.ModelResourceModifier.IS_UNWRAPPED;
 import static io.airlift.api.model.ModelResourceModifier.MULTIPART_RESOURCE_IS_FIRST_ITEM;
@@ -48,27 +49,27 @@ class SchemaBuilder
     private final boolean enumsAsStrings;
     private final String schemaTag;
     private final Map<Type, ModelResource> typeToResourceCache;
-    private final Map<String, Schema<?>> allOfSchemas;
+    private final Map<String, Schema<?>> ofSchemas;
 
     SchemaBuilder(boolean enumsAsStrings)
     {
         this(TAG_MODEL_DEFINITIONS, new LinkedHashMap<>(), enumsAsStrings, new LinkedHashMap<>(), new LinkedHashMap<>());
     }
 
-    private SchemaBuilder(String schemaTag, Map<SchemaKey, Schema<?>> schemas, boolean enumsAsStrings, Map<Type, ModelResource> typeToResourceCache, Map<String, Schema<?>> allOfSchemas)
+    private SchemaBuilder(String schemaTag, Map<SchemaKey, Schema<?>> schemas, boolean enumsAsStrings, Map<Type, ModelResource> typeToResourceCache, Map<String, Schema<?>> ofSchemas)
     {
         this.schemaTag = requireNonNull(schemaTag, "schemaTag is null");
         // don't copy
         this.schemas = requireNonNull(schemas, "schemas is null");
         this.enumsAsStrings = enumsAsStrings;
         this.typeToResourceCache = requireNonNull(typeToResourceCache, "typeToResourceCache is null");  // don't copy
-        this.allOfSchemas = requireNonNull(allOfSchemas, "allOfSchemas is null");  // don't copy
+        this.ofSchemas = requireNonNull(ofSchemas, "ofSchemas is null");  // don't copy
     }
 
     @SuppressWarnings("SameParameterValue")
     SchemaBuilder withSchemaTag(String schemaTag)
     {
-        return new SchemaBuilder(schemaTag, schemas, enumsAsStrings, typeToResourceCache, allOfSchemas);
+        return new SchemaBuilder(schemaTag, schemas, enumsAsStrings, typeToResourceCache, ofSchemas);
     }
 
     private record SchemaKey(Optional<String> parent, Type containerType, ModelResourceType resourceType, BuildSchemaMode mode)
@@ -86,24 +87,24 @@ class SchemaBuilder
     {
         STANDARD(""),
         PATCH("Patch"),
-        ALL_OF(""),
-        ALL_OF_PATCH("");
+        OF(""),
+        OF_PATCH("");
 
         private final String suffix;
 
         boolean isStandard()
         {
-            return (this == STANDARD) || (this == ALL_OF);
+            return (this == STANDARD) || (this == OF);
         }
 
         boolean isPartialPatch()
         {
-            return (this == PATCH) || (this == ALL_OF_PATCH);
+            return (this == PATCH) || (this == OF_PATCH);
         }
 
-        boolean isAllOf()
+        boolean isOf()
         {
-            return (this == ALL_OF) || (this == ALL_OF_PATCH);
+            return (this == OF) || (this == OF_PATCH);
         }
 
         BuildSchemaMode(String suffix)
@@ -200,15 +201,15 @@ class SchemaBuilder
     {
         List<Schema<?>> localSchemas = new ArrayList<>(schemas.values());
 
-        // allOf schemas do not add the sub-schema to the main schema list because they get merged with the
-        // parent. See the buildResourceSchema() method and the line "if (mode.isAllOf())".
+        // of/allOf schemas do not add the sub-schema to the main schema list because they get merged with the
+        // parent. See the buildResourceSchema() method and the line "if (mode.isOf())".
         // However, recursive references may exist to these sub-schemas and the schemas may not
-        // have been added anywhere else. So, add in any missing referenced allOf schemas here.
-        Map<String, Schema<?>> localAllOfSchemas = new LinkedHashMap<>(allOfSchemas);
-        // remove any allOf schemas that are already included
-        schemas.values().stream().map(Schema::getName).forEach(localAllOfSchemas::remove);
+        // have been added anywhere else. So, add in any missing referenced allOf/of schemas here.
+        Map<String, Schema<?>> localOfSchemas = new LinkedHashMap<>(ofSchemas);
+        // remove any allOf/of schemas that are already included
+        schemas.values().stream().map(Schema::getName).forEach(localOfSchemas::remove);
         // add the missing schemas
-        localSchemas.addAll(localAllOfSchemas.values());
+        localSchemas.addAll(localOfSchemas.values());
 
         return localSchemas;
     }
@@ -305,11 +306,11 @@ class SchemaBuilder
                 .filter(component -> mode.isStandard() || !ModelResourceModifier.hasReadOnly(component.modifiers()))
                 .forEach(component -> buildComponentSchema(mode, schema, component)));
 
-        if (mode.isAllOf()) {
-            // we don't save allOf schemas. They get merged with the parent.
+        if (mode.isOf()) {
+            // we don't save allOf/of schemas. They get merged with the parent.
             // However, keep track of them in case there are recursive references to them
             // that need to be added prior to building.
-            allOfSchemas.put(schema.getName(), schema);
+            ofSchemas.put(schema.getName(), schema);
             return schema;
         }
 
@@ -320,7 +321,7 @@ class SchemaBuilder
     private void buildComponentSchema(BuildSchemaMode mode, Schema<?> schema, ModelResource component)
     {
         if (component.modifiers().contains(IS_UNWRAPPED)) {
-            buildResourceSchema(schema, component, allOfMode(mode));
+            buildResourceSchema(schema, component, ofMode(mode));
         }
         else {
             Schema<?> componentSchema = buildSchema(component, mode);
@@ -340,6 +341,16 @@ class SchemaBuilder
 
     private void buildPolySchema(Schema<?> schema, ModelPolyResource polyResource, BuildSchemaMode mode)
     {
+        if (polyResource.openApiTraits().contains(USE_ONE_OF_DISCRIMINATORS)) {
+            buildSimplePolySchema(schema, polyResource, mode);
+        }
+        else {
+            buildAllOfPolySchema(schema, polyResource, mode);
+        }
+    }
+
+    private void buildAllOfPolySchema(Schema<?> schema, ModelPolyResource polyResource, BuildSchemaMode mode)
+    {
         // add the discriminator key property to the main schema
         schema.addProperty(polyResource.key(), new StringSchema());
         schema.addRequiredItem(polyResource.key());
@@ -353,7 +364,7 @@ class SchemaBuilder
 
         polyResource.subResources().forEach(subResource -> {
             // build the sub-resource but don't save it
-            Schema<?> allOfSchema = buildBasicOrResourceSchema(subResource, allOfMode(mode));
+            Schema<?> allOfSchema = buildBasicOrResourceSchema(subResource, ofMode(mode));
 
             // create the sub-schema which will have allOf refs to the main schema and the contents of the allOf schema
             Schema<?> subSchema = newNamedSchema(schemaName(subResource, mode, Optional.of(schema.getName())));
@@ -363,8 +374,35 @@ class SchemaBuilder
             // add a mapping in the discriminator - always use the subresource name and not the OpenAPI override
             discriminator.mapping(subResource.name(), asRef(subSchema).get$ref());
 
+            ofSchemas.put(subSchema.getName(), subSchema);
+
             // save the sub-schema
             schemas.put(new SchemaKey(Optional.of(schema.getName()), subResource.containerType(), subResource.resourceType(), mode), subSchema);
+        });
+    }
+
+    @SuppressWarnings("rawtypes")
+    private void buildSimplePolySchema(Schema<?> schema, ModelPolyResource polyResource, BuildSchemaMode mode)
+    {
+        // add the discriminator to the main schema
+        Discriminator discriminator = new Discriminator().propertyName(polyResource.key());
+        schema.discriminator(discriminator);
+
+        polyResource.subResources().forEach(subResource -> {
+            Schema<?> ofSchema = buildBasicOrResourceSchema(subResource, ofMode(mode));
+
+            // per OpenApi requirements, the first property of the sub-schema must be the discriminator key property as an enum with a single value of the sub-resource name.
+            LinkedHashMap<String, Schema> properties = (ofSchema.getProperties() != null) ? new LinkedHashMap<>(ofSchema.getProperties()) : new LinkedHashMap<>();
+            properties.putFirst(polyResource.key(), new StringSchema().addEnumItem(subResource.name()));
+            ofSchema.setProperties(properties);
+            ofSchema.addRequiredItem(polyResource.key());
+
+            // add a mapping in the discriminator - always use the sub-resource name and not the OpenAPI override
+            discriminator.mapping(subResource.name(), asRef(ofSchema).get$ref());
+            schema.addOneOfItem(asRef(ofSchema));
+
+            // save the sub-schema
+            schemas.put(new SchemaKey(Optional.of(schema.getName()), subResource.containerType(), subResource.resourceType(), mode), ofSchema);
         });
     }
 
@@ -373,12 +411,12 @@ class SchemaBuilder
         return new Schema<>().name(name).tags(ImmutableList.of(schemaTag));
     }
 
-    private BuildSchemaMode allOfMode(BuildSchemaMode currentMode)
+    private BuildSchemaMode ofMode(BuildSchemaMode currentMode)
     {
         return switch (currentMode) {
-            case STANDARD -> BuildSchemaMode.ALL_OF;
-            case PATCH -> BuildSchemaMode.ALL_OF_PATCH;
-            case ALL_OF, ALL_OF_PATCH -> currentMode;
+            case STANDARD -> BuildSchemaMode.OF;
+            case PATCH -> BuildSchemaMode.OF_PATCH;
+            case OF, OF_PATCH -> currentMode;
         };
     }
 

@@ -14,13 +14,8 @@ import io.airlift.api.ApiPolyResource;
 import io.airlift.api.ApiResource;
 import io.airlift.api.ApiResourceVersion;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Stream;
-
-import static com.google.common.collect.ImmutableList.toImmutableList;
 
 @ApiResource(name = "transformLiveTableSchemaUpdate", description = "dummy")
 public record TransformLiveTableSchemaUpdate(
@@ -38,16 +33,5 @@ public record TransformLiveTableSchemaUpdate(
                 implements NewSchema
         {
         }
-    }
-
-    private static <I, O> List<O> listTransform(Collection<? extends I> list, Function<I, O> transformFunction)
-    {
-        return listTransform(list.stream(), transformFunction);
-    }
-
-    private static <I, O> List<O> listTransform(Stream<? extends I> stream, Function<I, O> transformFunction)
-    {
-        return stream.map(transformFunction)
-                .collect(toImmutableList());
     }
 }

@@ -313,7 +313,7 @@ public class ResourceBuilder
                 .collect(toImmutableList());
 
         return new ModelResource(clazz, apiPolyResource.name(), openApiName(apiPolyResource.openApiAlternateName()), apiPolyResource.description(), ImmutableList.of(), RESOURCE, ImmutableSet.of(), ImmutableSet.copyOf(apiPolyResource.quotas()))
-                .withPolyResource(new ModelPolyResource(apiPolyResource.key(), subResources));
+                .withPolyResource(new ModelPolyResource(apiPolyResource.key(), subResources, ImmutableSet.copyOf(apiPolyResource.openApiTraits())));
     }
 
     private ModelResource throwInvalid(Type type, Optional<String> name)

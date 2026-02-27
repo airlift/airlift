@@ -20,7 +20,7 @@ import static io.airlift.json.JsonCodec.jsonCodec;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TestComplexRecursive
+public class TestRecursive
         extends ServerTestBase
 {
     private static final JsonCodec<OpenAPI> OPEN_API_CODEC = jsonCodec(OpenAPI.class);
@@ -28,9 +28,12 @@ public class TestComplexRecursive
     private final OpenApiProvider openApiProvider;
     private final Collection<ModelServiceType> modelServiceTypes;
 
-    public TestComplexRecursive()
+    public TestRecursive()
     {
-        super(ComplexRecursiveService.class, builder -> builder.withOpenApiMetadata(new OpenApiMetadata(Optional.empty(), ImmutableList.of())));
+        super(builder -> builder
+                .addApi(apiBuilder -> apiBuilder.add(ComplexRecursiveService.class))
+                .addApi(apiBuilder -> apiBuilder.add(SimpleRecursiveService.class))
+                .withOpenApiMetadata(new OpenApiMetadata(Optional.empty(), ImmutableList.of())));
 
         openApiProvider = injector.getInstance(OpenApiProvider.class);
         modelServiceTypes = injector.getInstance(Key.get(new TypeLiteral<>() {}));
@@ -40,13 +43,35 @@ public class TestComplexRecursive
     public void testOpenApiForComplexRecursive()
             throws Exception
     {
-        ModelServiceType modelServiceType = modelServiceTypes.iterator().next();
+        ModelServiceType modelServiceType = modelServiceTypes.stream()
+                .filter(type -> type.id().equals("public"))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("ModelServiceType not found"));
+
         OpenAPI openAPI = openApiProvider.build(modelServiceType, _ -> true);
         String json = OPEN_API_CODEC.toJson(openAPI);
 
         validateOpenApiJson(json);
 
         String expectedJson = Resources.toString(Resources.getResource("openapi/complex-recursive.json"), UTF_8);
+        assertThat(json).isEqualTo(expectedJson.strip());
+    }
+
+    @Test
+    public void testOpenApiForSimpleRecursive()
+            throws Exception
+    {
+        ModelServiceType modelServiceType = modelServiceTypes.stream()
+                .filter(type -> type.id().equals("simple"))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("ModelServiceType not found"));
+
+        OpenAPI openAPI = openApiProvider.build(modelServiceType, _ -> true);
+        String json = OPEN_API_CODEC.toJson(openAPI);
+
+        validateOpenApiJson(json);
+
+        String expectedJson = Resources.toString(Resources.getResource("openapi/simple-recursive.json"), UTF_8);
         assertThat(json).isEqualTo(expectedJson.strip());
     }
 }

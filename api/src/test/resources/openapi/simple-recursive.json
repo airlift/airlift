@@ -1,0 +1,336 @@
+{
+  "openapi" : "3.0.1",
+  "info" : {
+    "title" : "test",
+    "version" : "v1"
+  },
+  "tags" : [ {
+    "name" : "Simple Service",
+    "description" : "Has simple recursive poly resources"
+  }, {
+    "name" : "About",
+    "description" : "test\n\n<a href=\"/simple/openapi/v1/json\" style=\"text-decoration: none !important\" download=\"openApi.json\">⬇️ Download OpenAPI specification</a>\n"
+  }, {
+    "name" : "Model Definitions",
+    "description" : ""
+  }, {
+    "name" : "Responses",
+    "description" : ""
+  } ],
+  "paths" : {
+    "/simple/api/v1/simple" : {
+      "post" : {
+        "tags" : [ "Simple Service" ],
+        "description" : "dummy\n\n**BETA API:** This API is subject to incompatible changes, or even removal, in the future.",
+        "operationId" : "createSimple",
+        "parameters" : [ ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/Simple"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "Success"
+          },
+          "400" : {
+            "description" : "ApiBadRequest",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/BadRequest"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "ApiUnauthorized",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Unauthorized"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "ApiForbidden",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Forbidden"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "ApiAlreadyExists",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Exists"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "BadRequest" : {
+        "properties" : {
+          "message" : {
+            "type" : "string",
+            "description" : "Description of the error"
+          },
+          "fields" : {
+            "type" : "array",
+            "description" : "Any fields/values that are invalid or incorrect",
+            "items" : {
+              "type" : "string",
+              "description" : "Any fields/values that are invalid or incorrect"
+            }
+          }
+        },
+        "description" : "Invalid request",
+        "x-tags" : [ "Responses" ]
+      },
+      "Exists" : {
+        "properties" : {
+          "message" : {
+            "type" : "string",
+            "description" : ""
+          }
+        },
+        "description" : "Already exists",
+        "x-tags" : [ "Responses" ]
+      },
+      "Forbidden" : {
+        "properties" : {
+          "message" : {
+            "type" : "string",
+            "description" : ""
+          }
+        },
+        "description" : "Authorization failed",
+        "x-tags" : [ "Responses" ]
+      },
+      "NameAndAge" : {
+        "required" : [ "age", "detailId", "name", "syncToken", "typeKey" ],
+        "properties" : {
+          "typeKey" : {
+            "type" : "string",
+            "enum" : [ "nameAndAge" ]
+          },
+          "detailId" : {
+            "type" : "string",
+            "description" : "dummy"
+          },
+          "syncToken" : {
+            "type" : "string",
+            "description" : "dummy"
+          },
+          "name" : {
+            "type" : "string",
+            "description" : "dummy"
+          },
+          "age" : {
+            "format" : "int32",
+            "type" : "integer",
+            "description" : "dummy",
+            "nullable" : false
+          }
+        },
+        "description" : "dummy",
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "NameAndAge2" : {
+        "required" : [ "age", "detailId", "name", "syncToken", "typeKey" ],
+        "properties" : {
+          "typeKey" : {
+            "type" : "string",
+            "enum" : [ "nameAndAge" ]
+          },
+          "detailId" : {
+            "type" : "string",
+            "description" : "dummy"
+          },
+          "syncToken" : {
+            "type" : "string",
+            "description" : "dummy"
+          },
+          "name" : {
+            "type" : "string",
+            "description" : "dummy"
+          },
+          "age" : {
+            "format" : "int32",
+            "type" : "integer",
+            "description" : "dummy",
+            "nullable" : false
+          }
+        },
+        "description" : "dummy",
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "RecursiveDetail" : {
+        "required" : [ "detailId", "name", "nested", "syncToken", "typeKey" ],
+        "properties" : {
+          "typeKey" : {
+            "type" : "string",
+            "enum" : [ "recursiveDetail" ]
+          },
+          "detailId" : {
+            "type" : "string",
+            "description" : "dummy"
+          },
+          "syncToken" : {
+            "type" : "string",
+            "description" : "dummy"
+          },
+          "name" : {
+            "type" : "string",
+            "description" : "dummy"
+          },
+          "nested" : {
+            "type" : "array",
+            "description" : "dummy",
+            "items" : {
+              "description" : "dummy",
+              "oneOf" : [ {
+                "$ref" : "#/components/schemas/NameAndAge2"
+              }, {
+                "$ref" : "#/components/schemas/Schedule2"
+              }, {
+                "$ref" : "#/components/schemas/RecursiveDetail"
+              } ],
+              "discriminator" : {
+                "propertyName" : "typeKey",
+                "mapping" : {
+                  "nameAndAge" : "#/components/schemas/NameAndAge2",
+                  "schedule" : "#/components/schemas/Schedule2",
+                  "recursiveDetail" : "#/components/schemas/RecursiveDetail"
+                }
+              },
+              "x-tags" : [ "Model Definitions" ]
+            }
+          }
+        },
+        "description" : "dummy",
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "Schedule" : {
+        "required" : [ "detailId", "endDate", "name", "startDate", "syncToken", "typeKey" ],
+        "properties" : {
+          "typeKey" : {
+            "type" : "string",
+            "enum" : [ "schedule" ]
+          },
+          "detailId" : {
+            "type" : "string",
+            "description" : "dummy"
+          },
+          "syncToken" : {
+            "type" : "string",
+            "description" : "dummy"
+          },
+          "name" : {
+            "type" : "string",
+            "description" : "dummy"
+          },
+          "startDate" : {
+            "format" : "date-time",
+            "type" : "string",
+            "description" : "dummy"
+          },
+          "endDate" : {
+            "format" : "date-time",
+            "type" : "string",
+            "description" : "dummy"
+          }
+        },
+        "description" : "dummy",
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "Schedule2" : {
+        "required" : [ "detailId", "endDate", "name", "startDate", "syncToken", "typeKey" ],
+        "properties" : {
+          "typeKey" : {
+            "type" : "string",
+            "enum" : [ "schedule" ]
+          },
+          "detailId" : {
+            "type" : "string",
+            "description" : "dummy"
+          },
+          "syncToken" : {
+            "type" : "string",
+            "description" : "dummy"
+          },
+          "name" : {
+            "type" : "string",
+            "description" : "dummy"
+          },
+          "startDate" : {
+            "format" : "date-time",
+            "type" : "string",
+            "description" : "dummy"
+          },
+          "endDate" : {
+            "format" : "date-time",
+            "type" : "string",
+            "description" : "dummy"
+          }
+        },
+        "description" : "dummy",
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "Simple" : {
+        "description" : "dummy",
+        "oneOf" : [ {
+          "$ref" : "#/components/schemas/NameAndAge"
+        }, {
+          "$ref" : "#/components/schemas/Schedule"
+        }, {
+          "$ref" : "#/components/schemas/RecursiveDetail"
+        } ],
+        "discriminator" : {
+          "propertyName" : "typeKey",
+          "mapping" : {
+            "nameAndAge" : "#/components/schemas/NameAndAge",
+            "schedule" : "#/components/schemas/Schedule",
+            "recursiveDetail" : "#/components/schemas/RecursiveDetail"
+          }
+        },
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "Unauthorized" : {
+        "properties" : {
+          "message" : {
+            "type" : "string",
+            "description" : ""
+          }
+        },
+        "description" : "Authorization failed",
+        "x-tags" : [ "Responses" ]
+      }
+    }
+  },
+  "x-tagGroups" : [ {
+    "name" : "Help",
+    "tags" : [ "About" ]
+  }, {
+    "name" : "Services",
+    "tags" : [ "Simple Service" ]
+  }, {
+    "name" : "Models",
+    "tags" : [ "Model Definitions", "Responses" ]
+  } ]
+}
