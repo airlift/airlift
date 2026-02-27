@@ -91,6 +91,7 @@ public class HttpServerConfig
     private DataSize maxRequestHeaderSize;
     private DataSize maxResponseHeaderSize;
     private DataSize outputBufferSize;
+    private boolean http2Enabled = true;
     private int http2MaxConcurrentStreams = 16384;
     private DataSize http2InitialSessionReceiveWindowSize = DataSize.of(16, MEGABYTE);
     private DataSize http2InitialStreamReceiveWindowSize = DataSize.of(16, MEGABYTE);
@@ -408,6 +409,19 @@ public class HttpServerConfig
     public HttpServerConfig setOutputBufferSize(DataSize outputBufferSize)
     {
         this.outputBufferSize = outputBufferSize;
+        return this;
+    }
+
+    public boolean isHttp2Enabled()
+    {
+        return http2Enabled;
+    }
+
+    @Config("http-server.http2.enabled")
+    @ConfigDescription("Enable the HTTP/2 transport")
+    public HttpServerConfig setHttp2Enabled(boolean http2Enabled)
+    {
+        this.http2Enabled = http2Enabled;
         return this;
     }
 
