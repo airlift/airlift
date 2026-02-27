@@ -748,27 +748,7 @@
     }
   },
   "components" : {
-    "securitySchemes" : {
-      "accessToken" : {
-        "type" : "http",
-        "name" : "Authorization",
-        "in" : "header",
-        "scheme" : "bearer",
-        "bearerFormat" : "Access token"
-      }
-    },
     "schemas" : {
-      "Test" : {
-        "required" : [ "message" ],
-        "properties" : {
-          "message" : {
-            "type" : "string",
-            "description" : ""
-          }
-        },
-        "description" : "Used to return strings from test methods",
-        "x-tags" : [ "Model Definitions" ]
-      },
       "BadRequest" : {
         "properties" : {
           "message" : {
@@ -787,35 +767,23 @@
         "description" : "Invalid request",
         "x-tags" : [ "Responses" ]
       },
-      "Unauthorized" : {
+      "Detail" : {
+        "required" : [ "typeKey" ],
         "properties" : {
-          "message" : {
-            "type" : "string",
-            "description" : ""
+          "typeKey" : {
+            "type" : "string"
           }
         },
-        "description" : "Authorization failed",
-        "x-tags" : [ "Responses" ]
-      },
-      "Forbidden" : {
-        "properties" : {
-          "message" : {
-            "type" : "string",
-            "description" : ""
+        "description" : "A polymorphic resource example",
+        "discriminator" : {
+          "propertyName" : "typeKey",
+          "mapping" : {
+            "nameAndAge" : "#/components/schemas/DetailNameAndAge",
+            "schedule" : "#/components/schemas/DetailSchedule",
+            "recursiveDetail" : "#/components/schemas/DetailRecursiveDetail"
           }
         },
-        "description" : "Authorization failed",
-        "x-tags" : [ "Responses" ]
-      },
-      "Exists" : {
-        "properties" : {
-          "message" : {
-            "type" : "string",
-            "description" : ""
-          }
-        },
-        "description" : "Already exists",
-        "x-tags" : [ "Responses" ]
+        "x-tags" : [ "Model Definitions" ]
       },
       "DetailNameAndAge" : {
         "allOf" : [ {
@@ -835,6 +803,126 @@
             }
           },
           "description" : "A name and an age",
+          "x-tags" : [ "Model Definitions" ]
+        } ],
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "DetailRecursiveDetail" : {
+        "allOf" : [ {
+          "$ref" : "#/components/schemas/Detail"
+        }, {
+          "required" : [ "name", "nested" ],
+          "properties" : {
+            "name" : {
+              "type" : "string",
+              "description" : "Name"
+            },
+            "nested" : {
+              "type" : "array",
+              "description" : "Nested resource (read only)",
+              "items" : {
+                "$ref" : "#/components/schemas/RecursiveDetail"
+              }
+            }
+          },
+          "description" : "A resource containing a list of itself (read only)",
+          "x-tags" : [ "Model Definitions" ]
+        } ],
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "DetailResult" : {
+        "required" : [ "detailId", "syncToken", "typeKey" ],
+        "properties" : {
+          "detailId" : {
+            "type" : "string",
+            "description" : "ID"
+          },
+          "syncToken" : {
+            "type" : "string",
+            "description" : "Used to ensure consistency for resource updates. A syncToken that is returned\nfrom the server is valid until the resource is updated when a new syncToken will\nbe generated. Only the latest version of the object is maintained.\n (read only)"
+          },
+          "typeKey" : {
+            "type" : "string"
+          }
+        },
+        "description" : "Detail result instance",
+        "discriminator" : {
+          "propertyName" : "typeKey",
+          "mapping" : {
+            "nameAndAge" : "#/components/schemas/DetailResultNameAndAge",
+            "schedule" : "#/components/schemas/DetailResultSchedule",
+            "recursiveDetail" : "#/components/schemas/DetailResultRecursiveDetail"
+          }
+        },
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "DetailResultNameAndAge" : {
+        "allOf" : [ {
+          "$ref" : "#/components/schemas/DetailResult"
+        }, {
+          "required" : [ "age", "name" ],
+          "properties" : {
+            "name" : {
+              "type" : "string",
+              "description" : "A name"
+            },
+            "age" : {
+              "format" : "int32",
+              "type" : "integer",
+              "description" : "An age",
+              "nullable" : false
+            }
+          },
+          "description" : "A name and an age",
+          "x-tags" : [ "Model Definitions" ]
+        } ],
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "DetailResultRecursiveDetail" : {
+        "allOf" : [ {
+          "$ref" : "#/components/schemas/DetailResult"
+        }, {
+          "required" : [ "name", "nested" ],
+          "properties" : {
+            "name" : {
+              "type" : "string",
+              "description" : "Name"
+            },
+            "nested" : {
+              "type" : "array",
+              "description" : "Nested resource (read only)",
+              "items" : {
+                "$ref" : "#/components/schemas/RecursiveDetail"
+              }
+            }
+          },
+          "description" : "A resource containing a list of itself (read only)",
+          "x-tags" : [ "Model Definitions" ]
+        } ],
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "DetailResultSchedule" : {
+        "allOf" : [ {
+          "$ref" : "#/components/schemas/DetailResult"
+        }, {
+          "required" : [ "endDate", "name", "startDate" ],
+          "properties" : {
+            "name" : {
+              "type" : "string",
+              "description" : "A schedule name"
+            },
+            "startDate" : {
+              "format" : "date-time",
+              "type" : "string",
+              "description" : "Start date"
+            },
+            "endDate" : {
+              "format" : "date-time",
+              "type" : "string",
+              "description" : "End date"
+            }
+          },
+          "description" : "A schedule",
           "x-tags" : [ "Model Definitions" ]
         } ],
         "x-tags" : [ "Model Definitions" ]
@@ -865,82 +953,41 @@
         } ],
         "x-tags" : [ "Model Definitions" ]
       },
-      "DetailRecursiveDetail" : {
-        "allOf" : [ {
-          "$ref" : "#/components/schemas/Detail"
-        }, {
-          "required" : [ "name", "nested" ],
-          "properties" : {
-            "name" : {
-              "type" : "string",
-              "description" : "Name"
-            },
-            "nested" : {
-              "type" : "array",
-              "description" : "Nested resource (read only)",
-              "items" : {
-                "$ref" : "#/components/schemas/RecursiveDetail"
-              }
-            }
-          },
-          "description" : "A resource containing a list of itself (read only)",
-          "x-tags" : [ "Model Definitions" ]
-        } ],
-        "x-tags" : [ "Model Definitions" ]
-      },
-      "Detail" : {
-        "required" : [ "typeKey" ],
+      "Exists" : {
         "properties" : {
-          "typeKey" : {
-            "type" : "string"
+          "message" : {
+            "type" : "string",
+            "description" : ""
           }
         },
-        "description" : "A polymorphic resource example",
-        "discriminator" : {
-          "propertyName" : "typeKey",
-          "mapping" : {
-            "nameAndAge" : "#/components/schemas/DetailNameAndAge",
-            "schedule" : "#/components/schemas/DetailSchedule",
-            "recursiveDetail" : "#/components/schemas/DetailRecursiveDetail"
+        "description" : "Already exists",
+        "x-tags" : [ "Responses" ]
+      },
+      "Forbidden" : {
+        "properties" : {
+          "message" : {
+            "type" : "string",
+            "description" : ""
           }
         },
-        "x-tags" : [ "Model Definitions" ]
+        "description" : "Authorization failed",
+        "x-tags" : [ "Responses" ]
       },
-      "Widget" : {
-        "required" : [ "attributes", "manufactureDate", "name", "size", "syncToken", "widgetId" ],
+      "NameAndAge" : {
+        "required" : [ "age", "name" ],
         "properties" : {
-          "widgetId" : {
-            "type" : "string",
-            "description" : "Widget id (read only)"
-          },
-          "syncToken" : {
-            "type" : "string",
-            "description" : "Used to ensure consistency for resource updates. A syncToken that is returned\nfrom the server is valid until the resource is updated when a new syncToken will\nbe generated. Only the latest version of the object is maintained.\n (read only)"
-          },
-          "size" : {
-            "type" : "string",
-            "description" : "Widget size\n<ul><li><code>\"Small\"</code>: A small widget</li>\n<li><code>\"Huge\"</code>: A large widget</li>\n<li><code>\"Large\"</code>: A huge widget</li></ul>\n",
-            "enum" : [ "Small", "Huge", "Large" ]
-          },
           "name" : {
             "type" : "string",
-            "description" : "Item name"
+            "description" : "A name"
           },
-          "manufactureDate" : {
-            "format" : "date-time",
-            "type" : "string",
-            "description" : "Date the item exited the factory (read only)"
-          },
-          "attributes" : {
-            "type" : "object",
-            "description" : "Bag 'o' stuff",
-            "additionalProperties" : {
-              "type" : "string",
-              "description" : "Bag 'o' stuff"
-            }
+          "age" : {
+            "format" : "int32",
+            "type" : "integer",
+            "description" : "An age",
+            "nullable" : false
           }
         },
-        "description" : "Something amazing",
+        "description" : "A name and an age",
         "x-tags" : [ "Model Definitions" ]
       },
       "NewWidget" : {
@@ -995,103 +1042,6 @@
         "description" : "A resource or required component was not found",
         "x-tags" : [ "Responses" ]
       },
-      "DetailResultNameAndAge" : {
-        "allOf" : [ {
-          "$ref" : "#/components/schemas/DetailResult"
-        }, {
-          "required" : [ "age", "name" ],
-          "properties" : {
-            "name" : {
-              "type" : "string",
-              "description" : "A name"
-            },
-            "age" : {
-              "format" : "int32",
-              "type" : "integer",
-              "description" : "An age",
-              "nullable" : false
-            }
-          },
-          "description" : "A name and an age",
-          "x-tags" : [ "Model Definitions" ]
-        } ],
-        "x-tags" : [ "Model Definitions" ]
-      },
-      "DetailResultSchedule" : {
-        "allOf" : [ {
-          "$ref" : "#/components/schemas/DetailResult"
-        }, {
-          "required" : [ "endDate", "name", "startDate" ],
-          "properties" : {
-            "name" : {
-              "type" : "string",
-              "description" : "A schedule name"
-            },
-            "startDate" : {
-              "format" : "date-time",
-              "type" : "string",
-              "description" : "Start date"
-            },
-            "endDate" : {
-              "format" : "date-time",
-              "type" : "string",
-              "description" : "End date"
-            }
-          },
-          "description" : "A schedule",
-          "x-tags" : [ "Model Definitions" ]
-        } ],
-        "x-tags" : [ "Model Definitions" ]
-      },
-      "DetailResultRecursiveDetail" : {
-        "allOf" : [ {
-          "$ref" : "#/components/schemas/DetailResult"
-        }, {
-          "required" : [ "name", "nested" ],
-          "properties" : {
-            "name" : {
-              "type" : "string",
-              "description" : "Name"
-            },
-            "nested" : {
-              "type" : "array",
-              "description" : "Nested resource (read only)",
-              "items" : {
-                "$ref" : "#/components/schemas/RecursiveDetail"
-              }
-            }
-          },
-          "description" : "A resource containing a list of itself (read only)",
-          "x-tags" : [ "Model Definitions" ]
-        } ],
-        "x-tags" : [ "Model Definitions" ]
-      },
-      "DetailResult" : {
-        "required" : [ "detailId", "syncToken", "typeKey" ],
-        "properties" : {
-          "detailId" : {
-            "type" : "string",
-            "description" : "ID"
-          },
-          "syncToken" : {
-            "type" : "string",
-            "description" : "Used to ensure consistency for resource updates. A syncToken that is returned\nfrom the server is valid until the resource is updated when a new syncToken will\nbe generated. Only the latest version of the object is maintained.\n (read only)"
-          },
-          "typeKey" : {
-            "type" : "string"
-          }
-        },
-        "description" : "Detail result instance",
-        "discriminator" : {
-          "propertyName" : "typeKey",
-          "mapping" : {
-            "nameAndAge" : "#/components/schemas/DetailResultNameAndAge",
-            "schedule" : "#/components/schemas/DetailResultSchedule",
-            "recursiveDetail" : "#/components/schemas/DetailResultRecursiveDetail"
-          }
-        },
-        "x-tags" : [ "Model Definitions" ]
-      },
       "PaginatedWidget" : {
         "properties" : {
           "nextPageToken" : {
@@ -1106,49 +1056,6 @@
             }
           }
         },
-        "x-tags" : [ "Model Definitions" ]
-      },
-      "WidgetPatch" : {
-        "properties" : {
-          "size" : {
-            "type" : "string",
-            "description" : "Widget size\n<ul><li><code>\"Small\"</code>: A small widget</li>\n<li><code>\"Huge\"</code>: A large widget</li>\n<li><code>\"Large\"</code>: A huge widget</li></ul>\n",
-            "enum" : [ "Small", "Huge", "Large" ]
-          },
-          "name" : {
-            "type" : "string",
-            "description" : "Item name"
-          },
-          "attributes" : {
-            "type" : "object",
-            "description" : "Bag 'o' stuff",
-            "additionalProperties" : {
-              "type" : "string",
-              "description" : "Bag 'o' stuff"
-            }
-          }
-        },
-        "description" : "Something amazing",
-        "x-tags" : [ "Model Definitions" ]
-      },
-      "RecursiveItem" : {
-        "required" : [ "qty", "recursiveDetails" ],
-        "properties" : {
-          "qty" : {
-            "format" : "int32",
-            "type" : "integer",
-            "description" : "qty",
-            "nullable" : false
-          },
-          "recursiveDetails" : {
-            "type" : "array",
-            "description" : "recursive",
-            "items" : {
-              "$ref" : "#/components/schemas/Recursive"
-            }
-          }
-        },
-        "description" : "items (read only)",
         "x-tags" : [ "Model Definitions" ]
       },
       "Recursive" : {
@@ -1169,21 +1076,42 @@
         "description" : "Recursive resource test",
         "x-tags" : [ "Model Definitions" ]
       },
-      "NameAndAge" : {
-        "required" : [ "age", "name" ],
+      "RecursiveDetail" : {
+        "required" : [ "name", "nested" ],
         "properties" : {
           "name" : {
             "type" : "string",
-            "description" : "A name"
+            "description" : "Name"
           },
-          "age" : {
-            "format" : "int32",
-            "type" : "integer",
-            "description" : "An age",
-            "nullable" : false
+          "nested" : {
+            "type" : "array",
+            "description" : "Nested resource (read only)",
+            "items" : {
+              "$ref" : "#/components/schemas/RecursiveDetail"
+            }
           }
         },
-        "description" : "A name and an age",
+        "description" : "A resource containing a list of itself (read only)",
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "RecursiveItem" : {
+        "required" : [ "qty", "recursiveDetails" ],
+        "properties" : {
+          "qty" : {
+            "format" : "int32",
+            "type" : "integer",
+            "description" : "qty",
+            "nullable" : false
+          },
+          "recursiveDetails" : {
+            "type" : "array",
+            "description" : "recursive",
+            "items" : {
+              "$ref" : "#/components/schemas/Recursive"
+            }
+          }
+        },
+        "description" : "items (read only)",
         "x-tags" : [ "Model Definitions" ]
       },
       "Schedule" : {
@@ -1207,22 +1135,85 @@
         "description" : "A schedule",
         "x-tags" : [ "Model Definitions" ]
       },
-      "RecursiveDetail" : {
-        "required" : [ "name", "nested" ],
+      "Test" : {
+        "required" : [ "message" ],
         "properties" : {
+          "message" : {
+            "type" : "string",
+            "description" : ""
+          }
+        },
+        "description" : "Used to return strings from test methods",
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "Unauthorized" : {
+        "properties" : {
+          "message" : {
+            "type" : "string",
+            "description" : ""
+          }
+        },
+        "description" : "Authorization failed",
+        "x-tags" : [ "Responses" ]
+      },
+      "Widget" : {
+        "required" : [ "attributes", "manufactureDate", "name", "size", "syncToken", "widgetId" ],
+        "properties" : {
+          "widgetId" : {
+            "type" : "string",
+            "description" : "Widget id (read only)"
+          },
+          "syncToken" : {
+            "type" : "string",
+            "description" : "Used to ensure consistency for resource updates. A syncToken that is returned\nfrom the server is valid until the resource is updated when a new syncToken will\nbe generated. Only the latest version of the object is maintained.\n (read only)"
+          },
+          "size" : {
+            "type" : "string",
+            "description" : "Widget size\n<ul><li><code>\"Small\"</code>: A small widget</li>\n<li><code>\"Huge\"</code>: A large widget</li>\n<li><code>\"Large\"</code>: A huge widget</li></ul>\n",
+            "enum" : [ "Small", "Huge", "Large" ]
+          },
           "name" : {
             "type" : "string",
-            "description" : "Name"
+            "description" : "Item name"
           },
-          "nested" : {
-            "type" : "array",
-            "description" : "Nested resource (read only)",
-            "items" : {
-              "$ref" : "#/components/schemas/RecursiveDetail"
+          "manufactureDate" : {
+            "format" : "date-time",
+            "type" : "string",
+            "description" : "Date the item exited the factory (read only)"
+          },
+          "attributes" : {
+            "type" : "object",
+            "description" : "Bag 'o' stuff",
+            "additionalProperties" : {
+              "type" : "string",
+              "description" : "Bag 'o' stuff"
             }
           }
         },
-        "description" : "A resource containing a list of itself (read only)",
+        "description" : "Something amazing",
+        "x-tags" : [ "Model Definitions" ]
+      },
+      "WidgetPatch" : {
+        "properties" : {
+          "size" : {
+            "type" : "string",
+            "description" : "Widget size\n<ul><li><code>\"Small\"</code>: A small widget</li>\n<li><code>\"Huge\"</code>: A large widget</li>\n<li><code>\"Large\"</code>: A huge widget</li></ul>\n",
+            "enum" : [ "Small", "Huge", "Large" ]
+          },
+          "name" : {
+            "type" : "string",
+            "description" : "Item name"
+          },
+          "attributes" : {
+            "type" : "object",
+            "description" : "Bag 'o' stuff",
+            "additionalProperties" : {
+              "type" : "string",
+              "description" : "Bag 'o' stuff"
+            }
+          }
+        },
+        "description" : "Something amazing",
         "x-tags" : [ "Model Definitions" ]
       }
     }

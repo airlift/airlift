@@ -25,7 +25,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -205,7 +204,7 @@ class SchemaBuilder
         // parent. See the buildResourceSchema() method and the line "if (mode.isAllOf())".
         // However, recursive references may exist to these sub-schemas and the schemas may not
         // have been added anywhere else. So, add in any missing referenced allOf schemas here.
-        HashMap<String, Schema<?>> localAllOfSchemas = new LinkedHashMap<>(allOfSchemas);
+        Map<String, Schema<?>> localAllOfSchemas = new LinkedHashMap<>(allOfSchemas);
         // remove any allOf schemas that are already included
         schemas.values().stream().map(Schema::getName).forEach(localAllOfSchemas::remove);
         // add the missing schemas

@@ -63,6 +63,12 @@ public class OpenAPI
         return servers;
     }
 
+    public OpenAPI setComponents(Components components)
+    {
+        this.components = components;
+        return this;
+    }
+
     public OpenAPI schema(String name, Schema schema)
     {
         if (components == null) {

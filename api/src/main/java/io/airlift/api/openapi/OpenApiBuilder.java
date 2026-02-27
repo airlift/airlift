@@ -17,6 +17,7 @@ import io.airlift.api.openapi.SchemaBuilder.BuildSchemaMode;
 import io.airlift.api.openapi.models.ApiResponse;
 import io.airlift.api.openapi.models.ApiResponses;
 import io.airlift.api.openapi.models.ArraySchema;
+import io.airlift.api.openapi.models.Components;
 import io.airlift.api.openapi.models.Content;
 import io.airlift.api.openapi.models.HeaderParameter;
 import io.airlift.api.openapi.models.Info;
@@ -46,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -125,6 +127,7 @@ class OpenApiBuilder
         };
     }
 
+    @SuppressWarnings("rawtypes")
     OpenAPI build()
     {
         OpenAPI openAPI = new OpenAPI();
@@ -145,7 +148,12 @@ class OpenApiBuilder
             openAPI.security(ImmutableList.of(new SecurityRequirement().addList(security.getKey())));
         });
 
-        schemaBuilder.build().forEach(schema -> openAPI.schema(schema.getName(), schema));
+        Map<String, Schema> schemas = new TreeMap<>();
+        schemaBuilder.build().forEach(schema -> schemas.put(schema.getName(), schema));
+
+        Components components = new Components();
+        components.schemas(schemas);
+        openAPI.setComponents(components);
 
         return openAPI;
     }

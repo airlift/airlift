@@ -83,20 +83,7 @@
     }
   },
   "components" : {
-    "securitySchemes" : {
-      "accessToken" : {
-        "type" : "http",
-        "name" : "Authorization",
-        "in" : "header",
-        "scheme" : "bearer",
-        "bearerFormat" : "Access token"
-      }
-    },
     "schemas" : {
-      "Dummy" : {
-        "description" : "A dummy resource for testing",
-        "x-tags" : [ "Model Definitions" ]
-      },
       "BadRequest" : {
         "properties" : {
           "message" : {
@@ -115,15 +102,9 @@
         "description" : "Invalid request",
         "x-tags" : [ "Responses" ]
       },
-      "Unauthorized" : {
-        "properties" : {
-          "message" : {
-            "type" : "string",
-            "description" : ""
-          }
-        },
-        "description" : "Authorization failed",
-        "x-tags" : [ "Responses" ]
+      "Dummy" : {
+        "description" : "A dummy resource for testing",
+        "x-tags" : [ "Model Definitions" ]
       },
       "Forbidden" : {
         "properties" : {
@@ -156,6 +137,16 @@
           }
         },
         "description" : "A resource or required component was not found",
+        "x-tags" : [ "Responses" ]
+      },
+      "Unauthorized" : {
+        "properties" : {
+          "message" : {
+            "type" : "string",
+            "description" : ""
+          }
+        },
+        "description" : "Authorization failed",
         "x-tags" : [ "Responses" ]
       }
     }
