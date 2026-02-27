@@ -244,12 +244,10 @@ public class NodeInfo
     /// This address should available to all machines within the environment, but may not be globally routable.
     /// If this is not set, the following algorithm is used to choose the public address:
     ///
-    /// <ol>
-    ///   - InetAddress.getLocalHost() if good IPv4
-    ///   - First good IPv4 address of an up network interface
-    ///   - First good IPv6 address of an up network interface
-    ///   - InetAddress.getLocalHost()
-    /// </ol>
+    /// 1. InetAddress.getLocalHost() if good IPv4
+    /// 2. First good IPv4 address of an up network interface
+    /// 3. First good IPv6 address of an up network interface
+    /// 4. InetAddress.getLocalHost()
     /// An address is considered good if it is not a loopback address, a multicast address, or an any-local-address address.
     @Managed
     public String getInternalAddress()

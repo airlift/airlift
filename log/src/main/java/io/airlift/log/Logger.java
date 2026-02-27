@@ -74,9 +74,9 @@ public class Logger
     /// Logs a message at DEBUG level.
     ///
     /// Usage example:
-    /// <pre>
-    ///    logger.debug("value is %s (%d ms)", value, time);
-    /// </pre>
+    /// ```
+    /// logger.debug("value is %s (%d ms)", value, time);
+    /// ```
     /// If the format string is invalid or the arguments are insufficient, an error will be logged and execution
     /// will continue.
     ///
@@ -91,9 +91,9 @@ public class Logger
     /// Logs a message at DEBUG level.
     ///
     /// Usage example:
-    /// <pre>
-    ///    logger.debug(e, "value is %s (%d ms)", value, time);
-    /// </pre>
+    /// ```
+    /// logger.debug(e, "value is %s (%d ms)", value, time);
+    /// ```
     /// If the format string is invalid or the arguments are insufficient, an error will be logged and execution
     /// will continue.
     ///
@@ -120,9 +120,9 @@ public class Logger
     /// Logs a message at INFO level.
     ///
     /// Usage example:
-    /// <pre>
-    ///    logger.info("value is %s (%d ms)", value, time);
-    /// </pre>
+    /// ```
+    /// logger.info("value is %s (%d ms)", value, time);
+    /// ```
     /// If the format string is invalid or the arguments are insufficient, an error will be logged and execution
     /// will continue.
     ///
@@ -158,9 +158,9 @@ public class Logger
     /// Logs a message at WARN level.
     ///
     /// Usage example:
-    /// <pre>
-    ///    logger.warn(e, "something bad happened when connecting to %s:%d", host, port);
-    /// </pre>
+    /// ```
+    /// logger.warn(e, "something bad happened when connecting to %s:%d", host, port);
+    /// ```
     /// If the format string is invalid or the arguments are insufficient, an error will be logged and execution
     /// will continue.
     ///
@@ -180,9 +180,9 @@ public class Logger
     /// Logs a message at WARN level.
     ///
     /// Usage example:
-    /// <pre>
-    ///    logger.warn("something bad happened when connecting to %s:%d", host, port);
-    /// </pre>
+    /// ```
+    /// logger.warn("something bad happened when connecting to %s:%d", host, port);
+    /// ```
     /// If the format string is invalid or the arguments are insufficient, an error will be logged and execution
     /// will continue.
     ///
@@ -214,9 +214,9 @@ public class Logger
     /// Logs a message at ERROR level.
     ///
     /// Usage example:
-    /// <pre>
-    ///    logger.error(e, "something really bad happened when connecting to %s:%d", host, port);
-    /// </pre>
+    /// ```
+    /// logger.error(e, "something really bad happened when connecting to %s:%d", host, port);
+    /// ```
     /// If the format string is invalid or the arguments are insufficient, an error will be logged and execution
     /// will continue.
     ///
@@ -236,9 +236,9 @@ public class Logger
     /// Logs a message at ERROR level. The value of `exception.getMessage()` will be used as the log message.
     ///
     /// Usage example:
-    /// <pre>
-    ///    logger.error(e);
-    /// </pre>
+    /// ```
+    /// logger.error(e);
+    /// ```
     ///
     /// @param exception an exception associated with the error being logged
     public void error(Throwable exception)
@@ -253,9 +253,9 @@ public class Logger
     /// Logs a message at ERROR level.
     ///
     /// Usage example:
-    /// <pre>
-    ///    logger.error("something really bad happened when connecting to %s:%d", host, port);
-    /// </pre>
+    /// ```
+    /// logger.error("something really bad happened when connecting to %s:%d", host, port);
+    /// ```
     /// If the format string is invalid or the arguments are insufficient, an error will be logged and execution
     /// will continue.
     ///

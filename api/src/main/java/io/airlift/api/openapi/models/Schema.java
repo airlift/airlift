@@ -239,7 +239,7 @@ public class Schema<T>
 
     /// returns the allOf property from a ComposedSchema instance.
     ///
-    /// @return List&lt;Schema&gt; allOf
+    /// @return `List<Schema>` allOf
     @JsonProperty
     public List<Schema> getAllOf()
     {

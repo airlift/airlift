@@ -40,12 +40,12 @@ final class DoubleArrays
     /// order using indirect quicksort.
     ///
     /// The sorting algorithm is a tuned quicksort adapted from Jon L. Bentley and M.
-    /// Douglas McIlroy, &ldquo;Engineering a Sort Function&rdquo;, _Software:
-    /// Practice and Experience_, 23(11), pages 1249&minus;1265, 1993.
+    /// Douglas McIlroy, "Engineering a Sort Function", _Software:
+    /// Practice and Experience_, 23(11), pages 1249-1265, 1993.
     ///
     /// This method implement an _indirect_ sort. The elements of `perm`
     /// (which must be exactly the numbers in the interval `[0..perm.length)`)
-    /// will be permuted so that `x[perm[i]] &le; x[perm[i + 1]]`.
+    /// will be permuted so that `x[perm[i]] <= x[perm[i + 1]]`.
     ///
     /// Note that this implementation does not allocate any object, contrarily to the
     /// implementation used to sort primitive types in [java.util.Arrays],

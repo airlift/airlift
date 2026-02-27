@@ -56,10 +56,7 @@ import static java.lang.Math.random;
 /// statistically representative sample, exponentially biased towards newer
 /// entries.
 ///
-/// @see <a href="http://www.research.att.com/people/Cormode_Graham/library/publications/CormodeShkapenyukSrivastavaXu09.pdf">
-/// Cormode et al. Forward Decay: A Practical Time Decay Model for Streaming
-/// Systems. ICDE '09: Proceedings of the 2009 IEEE International Conference on
-/// Data Engineering (2009)</a>
+/// @see [Cormode et al. Forward Decay: A Practical Time Decay Model for Streaming Systems. ICDE '09: Proceedings of the 2009 IEEE International Conference on Data Engineering (2009)](http://www.research.att.com/people/Cormode_Graham/library/publications/CormodeShkapenyukSrivastavaXu09.pdf)
 final class ExponentiallyDecayingSample
 {
     private static final long RESCALE_THRESHOLD = TimeUnit.HOURS.toNanos(1);

@@ -45,8 +45,8 @@ import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 /// Equivalence tester streamlining tests of [#equals(Object)] and [#hashCode] methods. Using this tester makes it
-/// easy to verify that [#equals(Object)] is indeed an <a href="http://en.wikipedia.org/wiki/Equivalence_relation">equivalence
-/// relation</a> (reflexive, symmetric and transitive). It also verifies that equality between two objects implies hash
+/// easy to verify that [#equals(Object)] is indeed an [equivalence
+/// relation](http://en.wikipedia.org/wiki/Equivalence_relation) (reflexive, symmetric and transitive). It also verifies that equality between two objects implies hash
 /// code equality, as required by the [#hashCode()] contract.
 public final class EquivalenceTester
 {

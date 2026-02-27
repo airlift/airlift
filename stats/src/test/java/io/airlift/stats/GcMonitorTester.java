@@ -22,9 +22,7 @@ import java.util.concurrent.ThreadLocalRandom;
 /// Manual tester for GcMonitor.
 ///
 /// Test should always be run with:
-/// <pre>
 /// `-Xmx1g -Xms1g`
-/// </pre>
 /// All GC algorithms should be tested:
 ///
 ///   - Serial: `-XX:+UseSerialGC`

@@ -44,7 +44,7 @@ public final class MoreFutures
 {
     private MoreFutures() {}
 
-    /// Transforms a ListenableFuture&lt;T&gt; to ListenableFuture&lt;Void&gt;.
+    /// Transforms a `ListenableFuture<T>` to `ListenableFuture<Void>`.
     public static <T> ListenableFuture<Void> asVoid(ListenableFuture<T> future)
     {
         return Futures.transform(future, MoreFutures::toVoid, directExecutor());
@@ -54,10 +54,10 @@ public final class MoreFutures
     /// This is useful for providing named fluent style Future transforms to Void values.
     ///
     /// Example:
-    /// <pre>
-    /// ListenableFuture&lt;Void&gt; voidFuture = FluentFuture.from(future)
+    /// ```
+    /// ListenableFuture<Void> voidFuture = FluentFuture.from(future)
     ///         .transform(MoreFutures::toVoid, directExecutor())
-    /// </pre>
+    /// ```
     public static <T> Void toVoid(T value)
     {
         return null;

@@ -56,8 +56,11 @@ public class AsyncSemaphore<T, R>
     /// trying to load multiple related entities concurrently:
     ///
     /// For example:
-    /// <pre>
-    /// `List<Integer> userIds = Lists.of(1, 2, 3);ListenableFuture<List<UserInfo>> future = processAll(ids, client::getUserInfoById, 2, executor);List<UserInfo> userInfos = future.get(...);`</pre>
+    /// ```
+    /// List<Integer> userIds = Lists.of(1, 2, 3);
+    /// ListenableFuture<List<UserInfo>> future = processAll(ids, client::getUserInfoById, 2, executor);
+    /// List<UserInfo> userInfos = future.get(...);
+    /// ```
     ///
     /// @param tasks tasks to process
     /// @param submitter task submitter
@@ -93,8 +96,11 @@ public class AsyncSemaphore<T, R>
     /// trying to run multiple related entities concurrently:
     ///
     /// For example:
-    /// <pre>
-    /// `List<Integer> userIds = Lists.of(1, 2, 3);ListenableFuture<List<UserInfo>> future = processAllToCompletion(ids, client::getUserInfoById, 2, executor);List<UserInfo> userInfos = future.get(...);`</pre>
+    /// ```
+    /// List<Integer> userIds = Lists.of(1, 2, 3);
+    /// ListenableFuture<List<UserInfo>> future = processAllToCompletion(ids, client::getUserInfoById, 2, executor);
+    /// List<UserInfo> userInfos = future.get(...);
+    /// ```
     ///
     /// @param tasks tasks to process
     /// @param submitter task submitter
