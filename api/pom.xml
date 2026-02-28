@@ -16,11 +16,15 @@
     <properties>
         <air.main.basedir>${project.parent.basedir}</air.main.basedir>
 
+        <air.compiler.fail-warnings>false</air.compiler.fail-warnings>
+
         <!-- TODO move these to airbase -->
         <dep.commons-fileupload2.version>2.0.0-M5</dep.commons-fileupload2.version>
         <dep.apache.httpcore.version>4.4.16</dep.apache.httpcore.version>
         <dep.apache.httpmime.version>4.5.14</dep.apache.httpmime.version>
         <dep.swagger.version>2.1.38</dep.swagger.version>
+        <dep.openapi-generator-maven-plugin.version>7.7.0</dep.openapi-generator-maven-plugin.version>
+        <dep.jackson-databind-nullable.version>0.2.6</dep.jackson-databind-nullable.version>
     </properties>
 
     <!-- TODO move these to airbase -->
@@ -72,6 +76,12 @@
                         <artifactId>commons-logging</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+
+            <dependency>
+                <groupId>org.openapitools</groupId>
+                <artifactId>jackson-databind-nullable</artifactId>
+                <version>${dep.jackson-databind-nullable.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -175,6 +185,12 @@
         </dependency>
 
         <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>bootstrap</artifactId>
             <scope>test</scope>
@@ -239,5 +255,126 @@
             <artifactId>junit-jupiter-params</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.openapitools</groupId>
+            <artifactId>jackson-databind-nullable</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.openapitools</groupId>
+                <artifactId>openapi-generator-maven-plugin</artifactId>
+                <version>${dep.openapi-generator-maven-plugin.version}</version>
+                <configuration>
+                    <generatorName>java</generatorName>
+                    <configOptions>
+                        <sourceFolder>src/main/java</sourceFolder>
+                        <useJakartaEe>true</useJakartaEe>
+                    </configOptions>
+                    <output>${project.build.directory}/generated-test-sources/annotations</output>
+                    <generateApiDocumentation>false</generateApiDocumentation>
+                    <generateApiTests>false</generateApiTests>
+                    <generateModelDocumentation>false</generateModelDocumentation>
+                    <generateModelTests>false</generateModelTests>
+                    <apiPackage>io.sirlift.api.generated</apiPackage>
+                    <modelPackage>io.sirlift.api.generated.models</modelPackage>
+                    <invokerPackage>io.sirlift.api.generated.client</invokerPackage>
+                    <library>native</library>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>complex-recursive-test</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <phase>generate-test-sources</phase>
+                        <configuration>
+                            <inputSpec>${project.basedir}/src/test/resources/openapi/complex-recursive.json</inputSpec>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>simple-recursive-test</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <phase>generate-test-sources</phase>
+                        <configuration>
+                            <inputSpec>${project.basedir}/src/test/resources/openapi/simple-recursive.json</inputSpec>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>add-test-source</id>
+                        <goals>
+                            <goal>add-test-source</goal>
+                        </goals>
+                        <phase>generate-test-sources</phase>
+                        <configuration>
+                            <sources>
+                                <source>${project.build.directory}/generated-test-sources/annotations/src/main/java</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <excludePackageNames>io.sirlift.api.generated,io.sirlift.api.generated.client,io.sirlift.api.generated.models</excludePackageNames>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <!--
+        Error-prone can't deal with the generated OpenApi code and there isn't a good way to exclude it other than this:
+
+        Don't generate code during error-prone compilation and exclude TestRecursive.java which references the generated code.
+    -->
+    <profiles>
+        <profile>
+            <id>errorprone-compiler</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.openapitools</groupId>
+                        <artifactId>openapi-generator-maven-plugin</artifactId>
+                        <version>${dep.openapi-generator-maven-plugin.version}</version>
+                        <configuration>
+                            <skip>true</skip>
+                        </configuration>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <!--suppress MavenModelInspection -->
+                        <configuration combine.children="merge">
+                            <excludes>
+                                <exclude>**/TestRecursive.java</exclude>
+                            </excludes>
+                            <testExcludes>
+                                <testExclude>**/TestRecursive.java</testExclude>
+                            </testExcludes>
+                            <incrementalExcludes>
+                                <incrementalExclude>**/TestRecursive.java</incrementalExclude>
+                            </incrementalExcludes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

@@ -10,6 +10,11 @@ import io.airlift.api.openapi.OpenApiProvider;
 import io.airlift.api.openapi.models.OpenAPI;
 import io.airlift.api.servertests.ServerTestBase;
 import io.airlift.json.JsonCodec;
+import io.sirlift.api.generated.ComplexServiceApi;
+import io.sirlift.api.generated.SimpleServiceApi;
+import io.sirlift.api.generated.client.ApiClient;
+import io.sirlift.api.generated.models.Poly;
+import io.sirlift.api.generated.models.Simple;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
@@ -73,5 +78,22 @@ public class TestRecursive
 
         String expectedJson = Resources.toString(Resources.getResource("openapi/simple-recursive.json"), UTF_8);
         assertThat(json).isEqualTo(expectedJson.strip());
+    }
+
+    @Test
+    public void testGeneratedClient()
+            throws Exception
+    {
+        ApiClient apiClient = new ApiClient();
+        apiClient.setHost(baseUri.getHost());
+        apiClient.setPort(baseUri.getPort());
+
+        Poly poly = objectMapper.convertValue(TestModels.TEST_POLY_TEST, Poly.class);
+        ComplexServiceApi complexServiceApi = new ComplexServiceApi(apiClient);
+        complexServiceApi.createPoly(poly);
+
+        Simple simple = objectMapper.convertValue(TestModels.TEST_SIMPLE_RECURSIVE, Simple.class);
+        SimpleServiceApi simpleServiceApi = new SimpleServiceApi(apiClient);
+        simpleServiceApi.createSimple(simple);
     }
 }

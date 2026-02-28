@@ -4,6 +4,9 @@ import io.airlift.api.ApiCreate;
 import io.airlift.api.ApiService;
 import io.airlift.api.ApiTrait;
 
+import static io.airlift.api.servertests.openapi.recursive.TestModels.TEST_SIMPLE_RECURSIVE;
+import static org.assertj.core.api.Assertions.assertThat;
+
 @SuppressWarnings("unused")
 @ApiService(type = SimpleServiceType.class, name = "simple", description = "Has simple recursive poly resources")
 public class SimpleRecursiveService
@@ -11,6 +14,6 @@ public class SimpleRecursiveService
     @ApiCreate(description = "dummy", traits = ApiTrait.BETA)
     public void create(SimpleRecursive simpleRecursive)
     {
-        // NOP
+        assertThat(simpleRecursive).isEqualTo(TEST_SIMPLE_RECURSIVE);
     }
 }
