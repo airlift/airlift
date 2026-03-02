@@ -7,8 +7,7 @@ final class RequestCancelledException
 
     private RequestCancelledException()
     {
-        super(
-                "Request was cancelled",
+        super("Request was cancelled",
                 /* cause */ null,
                 /* enable suppression */ false,
                 /* writable stack trace */ false);

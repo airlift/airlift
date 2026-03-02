@@ -437,8 +437,15 @@ public class ConfigurationMetadata<T>
         private final InjectionPointMetaData injectionPoint;
         private final Set<InjectionPointMetaData> legacyInjectionPoints;
 
-        public AttributeMetadata(Class<?> configClass, String name, String description, boolean securitySensitive, boolean hidden, Method getter,
-                InjectionPointMetaData injectionPoint, Set<InjectionPointMetaData> legacyInjectionPoints)
+        public AttributeMetadata(
+                Class<?> configClass,
+                String name,
+                String description,
+                boolean securitySensitive,
+                boolean hidden,
+                Method getter,
+                InjectionPointMetaData injectionPoint,
+                Set<InjectionPointMetaData> legacyInjectionPoints)
         {
             requireNonNull(configClass);
             requireNonNull(name);
@@ -584,9 +591,12 @@ public class ConfigurationMetadata<T>
             }
 
             if (this.injectionPoint != null) {
-                throw Problems.exceptionFor("Trying to set current property twice: '%s' on method [%s] and '%s' on method [%s]",
-                        this.injectionPoint.getProperty(), this.injectionPoint.getSetter().toGenericString(),
-                        injectionPointMetaData.getProperty(), injectionPointMetaData.getSetter().toGenericString());
+                throw Problems.exceptionFor(
+                        "Trying to set current property twice: '%s' on method [%s] and '%s' on method [%s]",
+                        this.injectionPoint.getProperty(),
+                        this.injectionPoint.getSetter().toGenericString(),
+                        injectionPointMetaData.getProperty(),
+                        injectionPointMetaData.getSetter().toGenericString());
             }
 
             this.injectionPoint = injectionPointMetaData;
@@ -721,7 +731,9 @@ public class ConfigurationMetadata<T>
             }
             else {
                 problems.addError("@LegacyConfig property '%s' on method [%s] is replaced by @Config property of same name on method [%s]",
-                        property, method.toGenericString(), setterName);
+                        property,
+                        method.toGenericString(),
+                        setterName);
             }
         }
         return setters;

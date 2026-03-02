@@ -682,16 +682,16 @@ public class TestMoreFutures
 
         assertFailure(
                 () -> checkSuccess(immediateFailedFuture(new IllegalStateException("some failure")), "msg"),
-                expect(
-                        IllegalArgumentException.class, "msg",
+                expect(IllegalArgumentException.class,
+                        "msg",
                         expect(IllegalStateException.class, "some failure")));
 
         assertFailure(
                 () -> checkSuccess(immediateFailedFuture(new IOException("some failure")), "msg"),
                 expect(
                         IllegalArgumentException.class, "msg",
-                        expect(
-                                RuntimeException.class, "java.io.IOException: some failure",
+                        expect(RuntimeException.class,
+                                "java.io.IOException: some failure",
                                 expect(IOException.class, "some failure"))));
 
         assertFailure(() -> checkSuccess(SettableFuture.create(), "msg"), expect(IllegalArgumentException.class, "future not done yet"));

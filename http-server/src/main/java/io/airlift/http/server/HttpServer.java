@@ -159,9 +159,9 @@ public class HttpServer
             threadPool.setVirtualThreadsExecutor(virtualExecutor);
         }
 
-        int maxBufferSize = toIntExact(max(max(
-                toSafeBytes(config.getMaxRequestHeaderSize()).orElse(8192),
-                toSafeBytes(config.getMaxResponseHeaderSize()).orElse(8192)),
+        int maxBufferSize = toIntExact(max(
+                max(toSafeBytes(config.getMaxRequestHeaderSize()).orElse(8192),
+                        toSafeBytes(config.getMaxResponseHeaderSize()).orElse(8192)),
                 toSafeBytes(config.getOutputBufferSize()).orElse(32768)));
 
         server = new Server(threadPool, new ScheduledExecutorScheduler(name + "-scheduler", false), createByteBufferPool(maxBufferSize, config));
@@ -407,7 +407,8 @@ public class HttpServer
                 .build());
     }
 
-    private static ServletContextHandler createServletContext(Servlet servlet,
+    private static ServletContextHandler createServletContext(
+            Servlet servlet,
             Set<HttpResourceBinding> resources,
             Set<Filter> filters,
             Set<String> connectorNames,

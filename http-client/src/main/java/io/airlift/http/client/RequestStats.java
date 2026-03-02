@@ -45,7 +45,8 @@ public class RequestStats
     @Inject
     public RequestStats() {}
 
-    public void recordResponseReceived(String method,
+    public void recordResponseReceived(
+            String method,
             int responseCode,
             long requestSizeInBytes,
             long responseSizeInBytes,

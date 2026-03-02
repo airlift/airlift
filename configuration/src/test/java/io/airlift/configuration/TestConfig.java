@@ -120,7 +120,8 @@ public class TestConfig
     public void testConfigDefaults()
     {
         Injector injector = createInjector(ImmutableMap.of(), createModule(
-                Key.get(Config1.class), Config1.class,
+                Key.get(Config1.class),
+                Config1.class,
                 null,
                 new StringOptionDefaults("default string")));
 
@@ -132,7 +133,8 @@ public class TestConfig
     public void testConfigDefaultsWithAnnotationType()
     {
         Injector injector = createInjector(ImmutableMap.of(), createModule(
-                Key.get(Config1.class, MyAnnotation.class), Config1.class,
+                Key.get(Config1.class, MyAnnotation.class),
+                Config1.class,
                 null,
                 new StringOptionDefaults("default string")));
 
@@ -144,7 +146,8 @@ public class TestConfig
     public void testConfigDefaultsWithAnnotationObject()
     {
         Injector injector = createInjector(ImmutableMap.of(), createModule(
-                Key.get(Config1.class, named("boo")), Config1.class,
+                Key.get(Config1.class, named("boo")),
+                Config1.class,
                 null,
                 new StringOptionDefaults("default string")));
 
@@ -156,7 +159,8 @@ public class TestConfig
     public void testConfigDefaultsOverride()
     {
         Injector injector = createInjector(ImmutableMap.of(), createModule(
-                Key.get(Config1.class), Config1.class,
+                Key.get(Config1.class),
+                Config1.class,
                 null,
                 new StringOptionDefaults("default string"),
                 new StringOptionDefaults("another default string"),
@@ -170,7 +174,8 @@ public class TestConfig
     public void testPropertiesOverrideDefaults()
     {
         Injector injector = createInjector(properties, createModule(
-                Key.get(Config1.class), Config1.class,
+                Key.get(Config1.class),
+                Config1.class,
                 null,
                 new StringOptionDefaults("default string"),
                 new StringOptionDefaults("another default string"),

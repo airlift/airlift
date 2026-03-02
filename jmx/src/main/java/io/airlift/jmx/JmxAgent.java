@@ -49,7 +49,9 @@ public class JmxAgent
             if (existingRegistryPort != registryPort) {
                 throw new RuntimeException(format(
                         "System property '%s=%s' does match configured RMI registry port %s",
-                        JMX_REGISTRY_PORT, existingRegistryPort, registryPort));
+                        JMX_REGISTRY_PORT,
+                        existingRegistryPort,
+                        registryPort));
             }
             if (existingRegistryPort.equals(0)) {
                 throw new RuntimeException(format(
@@ -64,7 +66,9 @@ public class JmxAgent
         if (!Objects.equals(existingServerPort, configuredServerPort)) {
             throw new RuntimeException(format(
                     "System property '%s=%s' does match configured RMI server port %s",
-                    JMX_SERVER_PORT, existingServerPort, configuredServerPort));
+                    JMX_SERVER_PORT,
+                    existingServerPort,
+                    configuredServerPort));
         }
         if (configuredServerPort != null && !configuredServerPort.equals(0)) {
             serverPort = configuredServerPort;

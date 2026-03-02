@@ -89,7 +89,8 @@ public class NodeInfo
                 config.getPreferIpv6Address());
     }
 
-    public NodeInfo(String environment,
+    public NodeInfo(
+            String environment,
             String pool,
             String nodeId,
             String internalAddress,
@@ -120,7 +121,8 @@ public class NodeInfo
     }
 
     @VisibleForTesting
-    NodeInfo(String environment,
+    NodeInfo(
+            String environment,
             String pool,
             String nodeId,
             String internalAddress,

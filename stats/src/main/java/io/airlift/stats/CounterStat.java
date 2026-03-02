@@ -130,7 +130,8 @@ public final class CounterStat
         private final DecayCounterSnapshot fifteenMinute;
 
         @JsonCreator
-        public CounterStatSnapshot(@JsonProperty("totalCount") long totalCount,
+        public CounterStatSnapshot(
+                @JsonProperty("totalCount") long totalCount,
                 @JsonProperty("oneMinute") DecayCounterSnapshot oneMinute,
                 @JsonProperty("fiveMinute") DecayCounterSnapshot fiveMinute,
                 @JsonProperty("fifteenMinute") DecayCounterSnapshot fifteenMinute)

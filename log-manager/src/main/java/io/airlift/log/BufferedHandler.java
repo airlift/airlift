@@ -81,8 +81,7 @@ public class BufferedHandler
 
     public BufferedHandler(MessageOutput messageOutput, Formatter formatter, ErrorManager errorManager)
     {
-        this(
-                messageOutput,
+        this(messageOutput,
                 formatter,
                 BufferedHandler::defaultFormatDropSummary,
                 errorManager,

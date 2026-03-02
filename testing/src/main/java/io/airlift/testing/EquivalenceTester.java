@@ -184,7 +184,8 @@ public final class EquivalenceTester
                         }
                         try {
                             if (!doesCompareReturn0(primary, secondary)) {
-                                errors.add(new PairCheckFailure(COMPARE_NOT_EQUAL,
+                                errors.add(new PairCheckFailure(
+                                        COMPARE_NOT_EQUAL,
                                         classNumber,
                                         primaryElementNumber,
                                         primary,
@@ -198,7 +199,8 @@ public final class EquivalenceTester
                         }
                         try {
                             if (!doesCompareReturn0(secondary, primary)) {
-                                errors.add(new PairCheckFailure(COMPARE_NOT_EQUAL,
+                                errors.add(new PairCheckFailure(
+                                        COMPARE_NOT_EQUAL,
                                         classNumber,
                                         secondaryElementNumber,
                                         secondary,
@@ -241,7 +243,8 @@ public final class EquivalenceTester
                                 }
                             }
                             catch (ClassCastException e) {
-                                errors.add(new PairCheckFailure(COMPARE_CLASS_CAST_EXCEPTION,
+                                errors.add(new PairCheckFailure(
+                                        COMPARE_CLASS_CAST_EXCEPTION,
                                         primaryClassNumber,
                                         primaryElementNumber,
                                         primary,
@@ -255,7 +258,8 @@ public final class EquivalenceTester
                                 }
                             }
                             catch (ClassCastException e) {
-                                errors.add(new PairCheckFailure(COMPARE_CLASS_CAST_EXCEPTION,
+                                errors.add(new PairCheckFailure(
+                                        COMPARE_CLASS_CAST_EXCEPTION,
                                         secondaryClassNumber,
                                         secondaryElementNumber,
                                         secondary,

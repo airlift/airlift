@@ -73,7 +73,8 @@ class LifeCycleMethods
         if (method.isAnnotationPresent(annotationClass)) {
             if (!usedSet.contains(method.getName())) {
                 if (method.getParameterTypes().length != 0) {
-                    throw new UnsupportedOperationException(format("@PostConstruct/@PreDestroy methods cannot have arguments: %s",
+                    throw new UnsupportedOperationException(format(
+                            "@PostConstruct/@PreDestroy methods cannot have arguments: %s",
                             method.getDeclaringClass().getName() + "." + method.getName() + "(...)"));
                 }
 

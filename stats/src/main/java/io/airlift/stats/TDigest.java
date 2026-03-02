@@ -70,8 +70,7 @@ public class TDigest
 
     public TDigest(double compression)
     {
-        this(
-                compression,
+        this(compression,
                 Double.POSITIVE_INFINITY,
                 Double.NEGATIVE_INFINITY,
                 0,

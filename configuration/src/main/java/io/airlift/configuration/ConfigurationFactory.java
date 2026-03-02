@@ -421,11 +421,17 @@ public class ConfigurationFactory
                     propertyName = prefix + propertyName;
                 }
                 problems.addError("Invalid configuration property %s: %s (for class %s.%s)",
-                        propertyName, violation.getMessage(), configClass.getName(), violation.getPropertyPath());
+                        propertyName,
+                        violation.getMessage(),
+                        configClass.getName(),
+                        violation.getPropertyPath());
             }
             else {
                 problems.addError("Invalid configuration property with prefix '%s': %s (for class %s.%s)",
-                        prefix, violation.getMessage(), configClass.getName(), violation.getPropertyPath());
+                        prefix,
+                        violation.getMessage(),
+                        configClass.getName(),
+                        violation.getPropertyPath());
             }
         }
         problems.throwIfHasErrors();
@@ -572,7 +578,8 @@ public class ConfigurationFactory
         TypeToken<?> propertyType = TypeToken.of(injectionPoint.getSetter().getGenericParameterTypes()[0]);
         Object finalValue = coerce(propertyType, value);
         if (finalValue == null) {
-            throw new InvalidConfigurationException(format("Invalid value '%s' for type %s (property '%s') in order to call [%s]",
+            throw new InvalidConfigurationException(format(
+                    "Invalid value '%s' for type %s (property '%s') in order to call [%s]",
                     printableValue,
                     propertyType.getType().getTypeName(),
                     name,

@@ -308,7 +308,8 @@ final class SparseHll
     {
         checkState(numberOfEntries <= entries.length,
                 "Expected number of hashes (%s) larger than array length (%s)",
-                numberOfEntries, entries.length);
+                numberOfEntries,
+                entries.length);
 
         checkState(Ordering.from(comparingInt(e -> decodeBucketIndex((Integer) e)))
                         .isOrdered(Ints.asList(Arrays.copyOf(entries, numberOfEntries))),
