@@ -204,9 +204,10 @@ class OpenApiBuilder
     {
         List<TagGroup> tagGroups = new ArrayList<>();
 
-        String about = """
+        String about =
+                """
                 %s
-                
+
                 <a href="%s" style="text-decoration: none !important" download="openApi.json">⬇️ Download OpenAPI specification</a>
                 """.formatted(serviceType.description(), jsonUriBuilder(metadata, serviceType.id(), serviceType.version(), JsonUriMode.EXTERNAL));
         ServiceDetail descriptionServiceDetail = new ServiceDetail(SECTION_HELP, "About", about);
@@ -381,7 +382,8 @@ class OpenApiBuilder
     private String parameterDescription(ModelResource resource)
     {
         return resource.supportsIdLookup()
-                .map(modifier -> """
+                .map(modifier ->
+                        """
                         - %s
                         - This parameter can be looked up using `%s` instead of its Id. Use `%s%svalue` instead of an Id to lookup/search using the `value`. `value` must be encoded ([see RFC](https://www.rfc-editor.org/rfc/rfc3986#section-2.2) including `=`)
                         """.formatted(resource.description(), modifier.prefix(), modifier.prefix(), ApiIdSupportsLookup.LOOKUP_SEPARATOR))

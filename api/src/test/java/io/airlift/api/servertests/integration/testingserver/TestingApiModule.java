@@ -22,7 +22,8 @@ public class TestingApiModule
     @Override
     public void configure(Binder binder)
     {
-        ServiceDetail serviceDetail = new ServiceDetail(SECTION_HELP, "API Builder", """
+        ServiceDetail serviceDetail = new ServiceDetail(SECTION_HELP, "API Builder",
+                """
                 Markdown is supported for service details:
 
                 ```

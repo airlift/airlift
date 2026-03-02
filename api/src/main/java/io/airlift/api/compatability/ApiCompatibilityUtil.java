@@ -62,7 +62,8 @@ public class ApiCompatibilityUtil
             }
             String currentSpec = methodSpec(service, modelMethod);
             if (!currentSpec.equals(specFromFile)) {
-                throw new IllegalStateException("""
+                throw new IllegalStateException(
+                        """
                         API change detected.
 
                         The spec has changed from it's previous specification. Published APIs should not change. Instead consider

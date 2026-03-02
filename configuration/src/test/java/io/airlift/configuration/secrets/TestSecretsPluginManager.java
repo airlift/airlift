@@ -44,12 +44,13 @@ final class TestSecretsPluginManager
     {
         Path configPluginDirectory = Files.createTempDirectory("config-plugins");
         SecretsPluginManager configurationPluginManager = new SecretsPluginManager(
-                new TomlConfiguration(Toml.parse("""
-                secrets-plugins-dir="%s"
-                
-                [resolver-1]
-                secrets-provider.name="unknown"
-                """.formatted(configPluginDirectory.toAbsolutePath()))));
+                new TomlConfiguration(Toml.parse(
+                        """
+                        secrets-plugins-dir="%s"
+
+                        [resolver-1]
+                        secrets-provider.name="unknown"
+                        """.formatted(configPluginDirectory.toAbsolutePath()))));
 
         assertThatThrownBy(configurationPluginManager::load)
                 .hasMessageContaining("Secret provider 'unknown' is not registered");
@@ -61,9 +62,10 @@ final class TestSecretsPluginManager
     {
         Path configPluginDirectory = Files.createTempDirectory("config-plugins");
         SecretsPluginManager configurationPluginManager = new SecretsPluginManager(
-                new TomlConfiguration(Toml.parse("""
-                secrets-plugins-dir="%s"
-                """.formatted(configPluginDirectory.toAbsolutePath()))));
+                new TomlConfiguration(Toml.parse(
+                        """
+                        secrets-plugins-dir="%s"
+                        """.formatted(configPluginDirectory.toAbsolutePath()))));
 
         configurationPluginManager.installPlugins();
         configurationPluginManager.load();
@@ -77,12 +79,13 @@ final class TestSecretsPluginManager
     {
         Path configPluginDirectory = Files.createTempDirectory("config-plugins");
         SecretsPluginManager configurationPluginManager = new SecretsPluginManager(
-                new TomlConfiguration(Toml.parse("""
-                secrets-plugins-dir="%s"
-                
-                [resolver-1]
-                secrets-provider.name="%s"
-                """.formatted(configPluginDirectory.toAbsolutePath(), secretProviderName))));
+                new TomlConfiguration(Toml.parse(
+                        """
+                        secrets-plugins-dir="%s"
+
+                        [resolver-1]
+                        secrets-provider.name="%s"
+                        """.formatted(configPluginDirectory.toAbsolutePath(), secretProviderName))));
 
         assertThatThrownBy(() -> configurationPluginManager.installSecretsPlugin(() -> ImmutableList.of(new SecretProviderFactory() {
             @Override

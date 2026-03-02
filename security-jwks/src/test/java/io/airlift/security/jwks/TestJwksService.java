@@ -36,8 +36,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public class TestJwksService
 {
     private static final String EMPTY_KEYS = "{ \"keys\": [] }";
-    private static final String TEST_JWKS_RESPONSE = """
-            \
+    private static final String TEST_JWKS_RESPONSE =
+            """
             {
               "keys": [
                 {
