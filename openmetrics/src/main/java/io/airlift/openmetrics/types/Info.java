@@ -17,7 +17,8 @@ import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
 
-public record Info(String metricName, String value, Map<String, String> labels, String help) implements Metric
+public record Info(String metricName, String value, Map<String, String> labels, String help)
+        implements Metric
 {
     public Info(String metricName, String value, Map<String, String> labels, String help)
     {
