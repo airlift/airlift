@@ -13,6 +13,4 @@ public record NewerThing(
         @ApiDescription("the name") String name,
         @ApiDescription("the quantity") int qty,
         @ApiDescription("the optional code") Optional<String> code,
-        @ApiDescription("the optional setting") Optional<String> setting)
-{
-}
+        @ApiDescription("the optional setting") Optional<String> setting) {}

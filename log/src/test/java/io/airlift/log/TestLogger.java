@@ -320,15 +320,11 @@ public class TestLogger
         }
 
         @Override
-        public void flush()
-        {
-        }
+        public void flush() {}
 
         @Override
         public void close()
-                throws SecurityException
-        {
-        }
+                throws SecurityException {}
 
         public LogRecord takeRecord()
         {

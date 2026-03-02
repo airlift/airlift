@@ -6,6 +6,4 @@ import io.airlift.api.ApiResource;
 
 @ApiResource(name = "a", description = "b")
 @ApiReadOnly
-public record ReadOnlyResource(@ApiDescription("a") String hey)
-{
-}
+public record ReadOnlyResource(@ApiDescription("a") String hey) {}

@@ -10,7 +10,5 @@ public class BadServiceWithStreamResponse2
 {
     @SuppressWarnings("unused")
     @ApiUpdate(description = "streaming")
-    public void test(ApiTextStreamResponse<Food> dummy)
-    {
-    }
+    public void test(ApiTextStreamResponse<Food> dummy) {}
 }

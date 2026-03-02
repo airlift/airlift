@@ -17,14 +17,10 @@ public class NoopLogger
         implements HttpClientLogger
 {
     @Override
-    public void log(RequestInfo requestInfo, ResponseInfo responseInfo)
-    {
-    }
+    public void log(RequestInfo requestInfo, ResponseInfo responseInfo) {}
 
     @Override
-    public void close()
-    {
-    }
+    public void close() {}
 
     @Override
     public int getQueueSize()

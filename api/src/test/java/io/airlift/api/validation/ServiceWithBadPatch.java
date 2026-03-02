@@ -10,7 +10,5 @@ import io.airlift.api.ServiceType;
 public class ServiceWithBadPatch
 {
     @ApiUpdate(description = "dummy")
-    public void create(ApiPatch<String> noGood)
-    {
-    }
+    public void create(ApiPatch<String> noGood) {}
 }

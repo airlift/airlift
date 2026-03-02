@@ -8,7 +8,5 @@ import io.airlift.api.ServiceType;
 public class ServiceWithAllTypes
 {
     @ApiCreate(description = "all types", quotas = "yep")
-    public void createAllTypes(ResourceWithAllTypes ignore)
-    {
-    }
+    public void createAllTypes(ResourceWithAllTypes ignore) {}
 }

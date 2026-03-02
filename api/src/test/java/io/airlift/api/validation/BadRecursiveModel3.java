@@ -9,7 +9,5 @@ import java.util.List;
 public record BadRecursiveModel3(@ApiDescription("inner") List<Inner> child)
 {
     @ApiResource(name = "inner", description = "A model that references itself")
-    public record Inner(@ApiDescription("parent") BadRecursiveModel3 parent)
-    {
-    }
+    public record Inner(@ApiDescription("parent") BadRecursiveModel3 parent) {}
 }

@@ -38,9 +38,7 @@ public class StandardService
     }
 
     @ApiUpdate(description = "Update things")
-    public void updateThings(@ApiParameter ThingId thingId, Thing thing)
-    {
-    }
+    public void updateThings(@ApiParameter ThingId thingId, Thing thing) {}
 
     @ApiCreate(description = "Create things", quotas = "dummy")
     public void createThings(@Context Request request)

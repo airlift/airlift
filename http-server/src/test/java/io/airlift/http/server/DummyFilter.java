@@ -30,9 +30,7 @@ class DummyFilter
         implements Filter
 {
     @Override
-    public void init(FilterConfig filterConfig)
-    {
-    }
+    public void init(FilterConfig filterConfig) {}
 
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain chain)
@@ -50,7 +48,5 @@ class DummyFilter
     }
 
     @Override
-    public void destroy()
-    {
-    }
+    public void destroy() {}
 }

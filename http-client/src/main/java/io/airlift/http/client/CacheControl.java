@@ -60,9 +60,7 @@ public class CacheControl
     private List<String> noCacheFields;
     private List<String> privateFields;
 
-    public CacheControl()
-    {
-    }
+    public CacheControl() {}
 
     public Map<String, String> getCacheExtension()
     {

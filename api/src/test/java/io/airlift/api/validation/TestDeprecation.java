@@ -50,7 +50,5 @@ public class TestDeprecation
 
     @SuppressWarnings("unused")
     @ApiDeprecated(information = "", deprecationDate = "1994-11-06")
-    private void deprecated()
-    {
-    }
+    private void deprecated() {}
 }

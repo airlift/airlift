@@ -76,9 +76,7 @@ public final class EquivalenceTester
     {
         private final List<List<T>> equivalenceClasses = new ArrayList<>();
 
-        private EquivalenceCheck()
-        {
-        }
+        private EquivalenceCheck() {}
 
         @SafeVarargs
         public final EquivalenceCheck<T> addEquivalentGroup(T value, T... moreValues)
@@ -297,9 +295,7 @@ public final class EquivalenceTester
             return comparable.compareTo(e2) != 0;
         }
 
-        private static class OtherClass
-        {
-        }
+        private static class OtherClass {}
     }
 
     @SafeVarargs
@@ -323,9 +319,7 @@ public final class EquivalenceTester
 
     public static class InitialComparisonCheck
     {
-        private InitialComparisonCheck()
-        {
-        }
+        private InitialComparisonCheck() {}
 
         @SafeVarargs
         public final <T extends Comparable<T>> ComparisonCheck<T> addLesserGroup(T value, T... moreValues)
@@ -347,9 +341,7 @@ public final class EquivalenceTester
     {
         private final EquivalenceCheck<T> equivalence = new EquivalenceCheck<>();
 
-        private ComparisonCheck()
-        {
-        }
+        private ComparisonCheck() {}
 
         @SafeVarargs
         public final ComparisonCheck<T> addGreaterGroup(T value, T... moreValues)

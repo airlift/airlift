@@ -390,9 +390,7 @@ public class TestEquivalenceTester
         }
     }
 
-    static class NotComparable
-    {
-    }
+    static class NotComparable {}
 
     @Test
     public void compareToAgainstNull()

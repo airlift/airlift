@@ -34,9 +34,7 @@ public class StatusResponseHandler
         return statusResponseHandler;
     }
 
-    private StatusResponseHandler()
-    {
-    }
+    private StatusResponseHandler() {}
 
     @Override
     public StatusResponse handleException(Request request, Exception exception)

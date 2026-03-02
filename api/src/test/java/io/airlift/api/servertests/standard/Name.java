@@ -5,6 +5,4 @@ import io.airlift.api.ApiResource;
 import io.airlift.api.ApiResourceVersion;
 
 @ApiResource(name = "name", description = "foo")
-public record Name(ApiResourceVersion syncToken, @ApiDescription("dummy") NameId nameId)
-{
-}
+public record Name(ApiResourceVersion syncToken, @ApiDescription("dummy") NameId nameId) {}

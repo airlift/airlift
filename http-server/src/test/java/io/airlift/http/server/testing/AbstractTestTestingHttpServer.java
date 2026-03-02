@@ -373,9 +373,7 @@ public abstract class AbstractTestTestingHttpServer
         private String contentTypeHeader;
 
         @Override
-        public synchronized void init(ServletConfig config)
-        {
-        }
+        public synchronized void init(ServletConfig config) {}
 
         public synchronized int getCallCount()
         {
@@ -413,8 +411,6 @@ public abstract class AbstractTestTestingHttpServer
         }
 
         @Override
-        public void destroy()
-        {
-        }
+        public void destroy() {}
     }
 }

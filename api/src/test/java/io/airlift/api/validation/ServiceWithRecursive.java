@@ -8,7 +8,5 @@ import io.airlift.api.ServiceType;
 public class ServiceWithRecursive
 {
     @ApiCreate(description = "create recursive", quotas = "rec")
-    public void createRecursive(RecursiveModel recursiveModel)
-    {
-    }
+    public void createRecursive(RecursiveModel recursiveModel) {}
 }
