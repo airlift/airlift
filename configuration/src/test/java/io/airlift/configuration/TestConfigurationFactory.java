@@ -776,7 +776,7 @@ public class TestConfigurationFactory
     {
         public enum Value
         {
-            VALUE, VALUE_WITH_UNDERSCORES;
+            VALUE, VALUE_WITH_UNDERSCORES
         }
 
         private Value value;
