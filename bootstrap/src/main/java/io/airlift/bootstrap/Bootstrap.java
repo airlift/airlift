@@ -389,8 +389,7 @@ public class Bootstrap
     {
         ConfigurationInspector configurationInspector = new ConfigurationInspector();
 
-        ColumnPrinter columnPrinter = new ColumnPrinter(
-                "PROPERTY", "DEFAULT", "RUNTIME", "DESCRIPTION");
+        ColumnPrinter columnPrinter = new ColumnPrinter("PROPERTY", "DEFAULT", "RUNTIME", "DESCRIPTION");
 
         for (ConfigRecord<?> record : configurationInspector.inspect(configurationFactory)) {
             for (ConfigAttribute attribute : record.getAttributes()) {
