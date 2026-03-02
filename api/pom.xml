@@ -24,7 +24,7 @@
         <dep.apache.httpmime.version>4.5.14</dep.apache.httpmime.version>
         <dep.swagger.version>2.1.38</dep.swagger.version>
         <dep.openapi-generator-maven-plugin.version>7.7.0</dep.openapi-generator-maven-plugin.version>
-        <dep.jackson-databind-nullable.version>0.2.6</dep.jackson-databind-nullable.version>
+        <dep.jackson-databind-nullable.version>0.2.9</dep.jackson-databind-nullable.version>
     </properties>
 
     <!-- TODO move these to airbase -->
