@@ -8,7 +8,5 @@ import io.airlift.api.ServiceType;
 public class FoodServiceValid
 {
     @ApiCreate(description = "Create food")
-    public void createFood(FoodCreateRequest food)
-    {
-    }
+    public void createFood(FoodCreateRequest food) {}
 }

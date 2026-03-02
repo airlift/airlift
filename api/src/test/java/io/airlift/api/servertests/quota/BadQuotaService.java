@@ -8,7 +8,5 @@ import io.airlift.api.ServiceType;
 public class BadQuotaService
 {
     @ApiCreate(description = "dummy")
-    public void missing()
-    {
-    }
+    public void missing() {}
 }

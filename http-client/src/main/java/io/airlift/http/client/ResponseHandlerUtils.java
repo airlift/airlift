@@ -10,9 +10,7 @@ import static com.google.common.base.Throwables.throwIfUnchecked;
 
 public final class ResponseHandlerUtils
 {
-    private ResponseHandlerUtils()
-    {
-    }
+    private ResponseHandlerUtils() {}
 
     public static RuntimeException propagate(Request request, Throwable exception)
     {

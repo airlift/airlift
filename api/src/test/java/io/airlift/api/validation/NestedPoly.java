@@ -12,7 +12,5 @@ public sealed interface NestedPoly
     @ApiResource(name = "notOk", description = "ok")
     @ApiReadOnly
     record Hi(@ApiDescription("hi") String hi)
-            implements NestedPoly
-    {
-    }
+            implements NestedPoly {}
 }

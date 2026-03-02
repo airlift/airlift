@@ -7,7 +7,5 @@ import io.airlift.api.ApiUpdate;
 public class ResourceService
 {
     @ApiUpdate(description = "no version update")
-    public void update(ResourceWithoutVersion ignore)
-    {
-    }
+    public void update(ResourceWithoutVersion ignore) {}
 }

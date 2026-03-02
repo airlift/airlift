@@ -13,7 +13,5 @@ public sealed interface PolyInPoly
     @ApiResource(name = "ok", description = "ok")
     @ApiReadOnly
     record HasNested(@ApiReadOnly @ApiDescription("hi") List<NestedPoly> nestedPolys)
-            implements PolyInPoly
-    {
-    }
+            implements PolyInPoly {}
 }

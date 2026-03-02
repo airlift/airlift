@@ -65,9 +65,10 @@ final class TestBootstrapWithSecretsProvider
     {
         Path configurationPluginDirectory = Files.createTempDirectory(null);
 
-        File configurationResolverFile = createConfigurationResolverFile("""
+        File configurationResolverFile = createConfigurationResolverFile(
+                """
                 secrets-plugins-dir="%s
-                
+
                 [env]
                 secrets-provider.name="env"
                 """.formatted(configurationPluginDirectory));
@@ -89,9 +90,10 @@ final class TestBootstrapWithSecretsProvider
     {
         Path configurationPluginDirectory = Files.createTempDirectory(null);
 
-        File configurationResolverFile = createConfigurationResolverFile("""
+        File configurationResolverFile = createConfigurationResolverFile(
+                """
                 secrets-plugins-dir="%s
-                
+
                 [multi]
                 secrets-provider.name="env"
                 """.formatted(configurationPluginDirectory));

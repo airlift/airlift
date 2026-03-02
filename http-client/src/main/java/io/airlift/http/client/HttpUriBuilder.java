@@ -42,9 +42,7 @@ public class HttpUriBuilder
     private static final byte[] ALLOWED_PATH_CHARS = Bytes.concat(PCHAR, new byte[] {'/', '&'});
     private static final byte[] ALLOWED_QUERY_CHARS = Bytes.concat(PCHAR, new byte[] {'/', '?'});
 
-    private HttpUriBuilder()
-    {
-    }
+    private HttpUriBuilder() {}
 
     private HttpUriBuilder(URI previous)
     {

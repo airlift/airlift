@@ -80,7 +80,8 @@ public class ResourceBuilder
             ApiId.class,
             ApiResourceVersion.class);
 
-    private static final Map<Class<?>, String> definedDescriptions = ImmutableMap.of(ApiResourceVersion.class, """
+    private static final Map<Class<?>, String> definedDescriptions = ImmutableMap.of(ApiResourceVersion.class,
+            """
             Used to ensure consistency for resource updates. A syncToken that is returned
             from the server is valid until the resource is updated when a new syncToken will
             be generated. Only the latest version of the object is maintained.

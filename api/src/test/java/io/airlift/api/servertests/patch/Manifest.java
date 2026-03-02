@@ -13,6 +13,4 @@ import java.util.Optional;
 public record Manifest(
         @ApiDescription("name") String name,
         @ApiReadOnly @ApiDescription("dummy") Optional<Instant> creation,
-        @ApiDescription("dummy") List<String> codes)
-{
-}
+        @ApiDescription("dummy") List<String> codes) {}

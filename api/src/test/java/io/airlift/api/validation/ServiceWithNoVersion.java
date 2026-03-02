@@ -10,12 +10,8 @@ import io.airlift.api.ServiceType;
 public class ServiceWithNoVersion
 {
     @ApiUpdate(description = "dummy")
-    public void update(NoVersionResource bad)
-    {
-    }
+    public void update(NoVersionResource bad) {}
 
     @ApiUpdate(description = "dummy")
-    public void update2(@ApiParameter ThingId id, NoVersionResource bad)
-    {
-    }
+    public void update2(@ApiParameter ThingId id, NoVersionResource bad) {}
 }

@@ -27,14 +27,10 @@ public class QuotaService
     }
 
     @ApiCustom(type = ApiType.CREATE, verb = "shouldThrow", description = "goodBeta", traits = ApiTrait.BETA)
-    public void shouldWarnButNotThrow()
-    {
-    }
+    public void shouldWarnButNotThrow() {}
 
     @ApiCreate(description = "void", quotas = "dummy")
-    public void addVoid()
-    {
-    }
+    public void addVoid() {}
 
     @ApiCreate(description = "good")
     public void addCorrectly(@Context Request request, @ApiParameter QuotaId ignore, QuotaResource ignore2)
@@ -55,9 +51,7 @@ public class QuotaService
     }
 
     @ApiCustom(type = ApiType.CREATE, verb = "badly", description = "bad")
-    public void addIncorrectly(@ApiParameter QuotaId ignore, QuotaResource ignore2)
-    {
-    }
+    public void addIncorrectly(@ApiParameter QuotaId ignore, QuotaResource ignore2) {}
 
     @ApiCustom(type = ApiType.CREATE, verb = "unspecified", description = "bad")
     public void addUnspecifiedQuota(@Context Request request, @ApiParameter QuotaId ignore, QuotaResource ignore2)

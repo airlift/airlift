@@ -54,106 +54,121 @@ public class TestingDatabaseSessionController
 {
     private static final Logger log = Logger.get(TestingDatabaseSessionController.class);
 
-    private static final String CREATE_TABLES_SQL = """
-            CREATE TABLE IF NOT EXISTS sessions
-            (
-                session_id VARCHAR(36) PRIMARY KEY,
-                created_at TIMESTAMP NOT NULL DEFAULT now(),
-                updated_at TIMESTAMP NOT NULL DEFAULT now(),
-                ttl_ms BIGINT NULL
-            );
-            
-            CREATE TABLE IF NOT EXISTS session_values
-            (
-                session_id VARCHAR(36) NOT NULL,
-                type VARCHAR(255) NOT NULL,
-                name VARCHAR(255) NOT NULL,
-                value JSONB NOT NULL,
-                PRIMARY KEY (session_id, type, name),
-                FOREIGN KEY (session_id) REFERENCES sessions (session_id) ON DELETE CASCADE
-            );
-            """;
+    private static final String CREATE_TABLES_SQL =
+    """
+    CREATE TABLE IF NOT EXISTS sessions
+    (
+        session_id VARCHAR(36) PRIMARY KEY,
+        created_at TIMESTAMP NOT NULL DEFAULT now(),
+        updated_at TIMESTAMP NOT NULL DEFAULT now(),
+        ttl_ms BIGINT NULL
+    );
 
-    private static final String DELETE_STALE_SESSIONS_SQL = """
-            DELETE FROM sessions
-            WHERE ttl_ms IS NOT NULL
-              AND (created_at + (ttl_ms || ' milliseconds')::INTERVAL) < now()
-            """;
+    CREATE TABLE IF NOT EXISTS session_values
+    (
+        session_id VARCHAR(36) NOT NULL,
+        type VARCHAR(255) NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        value JSONB NOT NULL,
+        PRIMARY KEY (session_id, type, name),
+        FOREIGN KEY (session_id) REFERENCES sessions (session_id) ON DELETE CASCADE
+    );
+    """;
 
-    private static final String UPDATE_SESSION_SQL = """
-            UPDATE sessions
-            SET updated_at = now()
-            WHERE session_id = ?
-            """;
+    private static final String DELETE_STALE_SESSIONS_SQL =
+    """
+    DELETE FROM sessions
+    WHERE ttl_ms IS NOT NULL
+      AND (created_at + (ttl_ms || ' milliseconds')::INTERVAL) < now()
+    """;
 
-    private static final String VALIDATE_SESSION_SQL = """
-            SELECT 1 FROM sessions WHERE session_id = ?
-            """;
+    private static final String UPDATE_SESSION_SQL =
+    """
+    UPDATE sessions
+    SET updated_at = now()
+    WHERE session_id = ?
+    """;
 
-    private static final String DELETE_SESSION_SQL = """
-            DELETE FROM sessions WHERE session_id = ?
-            """;
+    private static final String VALIDATE_SESSION_SQL =
+    """
+    SELECT 1 FROM sessions WHERE session_id = ?
+    """;
 
-    private static final String SELECT_VALUE_SQL = """
-            SELECT value FROM session_values WHERE session_id = ? AND type = ? AND name = ?
-            """;
+    private static final String DELETE_SESSION_SQL =
+    """
+    DELETE FROM sessions WHERE session_id = ?
+    """;
+
+    private static final String SELECT_VALUE_SQL =
+    """
+    SELECT value FROM session_values WHERE session_id = ? AND type = ? AND name = ?
+    """;
 
     private static final String SELECT_VALUE_FOR_UPDATE_SQL = SELECT_VALUE_SQL + " FOR UPDATE";
 
-    private static final String SET_VALUE_SQL = """
-            INSERT INTO session_values (session_id, type, name, value)
-            SELECT ?, ?, ?, ?::jsonb
-            WHERE EXISTS (SELECT 1 FROM sessions WHERE session_id = ?)
-            ON CONFLICT (session_id, type, name) DO UPDATE
-                SET value = EXCLUDED.value
-            """;
+    private static final String SET_VALUE_SQL =
+    """
+    INSERT INTO session_values (session_id, type, name, value)
+    SELECT ?, ?, ?, ?::jsonb
+    WHERE EXISTS (SELECT 1 FROM sessions WHERE session_id = ?)
+    ON CONFLICT (session_id, type, name) DO UPDATE
+        SET value = EXCLUDED.value
+    """;
 
-    private static final String INSERT_VALUE_IF_NOT_EXISTS_SQL = """
-            INSERT INTO session_values (session_id, type, name, value)
-            VALUES (?, ?, ?, ?::jsonb)
-            ON CONFLICT DO NOTHING
-            """;
+    private static final String INSERT_VALUE_IF_NOT_EXISTS_SQL =
+    """
+    INSERT INTO session_values (session_id, type, name, value)
+    VALUES (?, ?, ?, ?::jsonb)
+    ON CONFLICT DO NOTHING
+    """;
 
-    private static final String UPDATE_VALUE_SQL = """
-            UPDATE session_values
-            SET value = ?::jsonb
-            WHERE session_id = ? AND type = ? AND name = ?
-            """;
+    private static final String UPDATE_VALUE_SQL =
+    """
+    UPDATE session_values
+    SET value = ?::jsonb
+    WHERE session_id = ? AND type = ? AND name = ?
+    """;
 
-    private static final String DELETE_VALUE_SQL = """
-            DELETE FROM session_values
-            WHERE session_id = ? AND type = ? AND name = ?
-            """;
+    private static final String DELETE_VALUE_SQL =
+    """
+    DELETE FROM session_values
+    WHERE session_id = ? AND type = ? AND name = ?
+    """;
 
-    private static final String CREATE_SESSION_SQL = """
-            INSERT INTO sessions (session_id, ttl_ms) VALUES (?, ?)
-            """;
+    private static final String CREATE_SESSION_SQL =
+    """
+    INSERT INTO sessions (session_id, ttl_ms) VALUES (?, ?)
+    """;
 
-    private static final String LIST_VALUES_SQL = """
-            SELECT name, value
-            FROM session_values
-            WHERE (session_id = ? AND type = ?)
-              AND (name > ? OR ? IS NULL)
-            ORDER BY name
-            LIMIT ?
-            """;
+    private static final String LIST_VALUES_SQL =
+    """
+    SELECT name, value
+    FROM session_values
+    WHERE (session_id = ? AND type = ?)
+      AND (name > ? OR ? IS NULL)
+    ORDER BY name
+    LIMIT ?
+    """;
 
-    private static final String GET_SESSIONS_SQL = """
-            SELECT session_id FROM sessions
-            """;
+    private static final String GET_SESSIONS_SQL =
+    """
+    SELECT session_id FROM sessions
+    """;
 
-    private static final String LIST_SESSIONS_SQL = """
-            SELECT session_id FROM sessions
-            WHERE (session_id > ? OR ? IS NULL)
-            ORDER BY session_id
-            LIMIT ?
-            """;
+    private static final String LIST_SESSIONS_SQL =
+    """
+    SELECT session_id FROM sessions
+    WHERE (session_id > ? OR ? IS NULL)
+    ORDER BY session_id
+    LIMIT ?
+    """;
 
     private static final String LISTEN_SQL = "LISTEN mcp_internal_session_channel";
 
-    private static final String NOTIFY_SQL = """
-            NOTIFY mcp_internal_session_channel, '%s'
-            """;
+    private static final String NOTIFY_SQL =
+    """
+    NOTIFY mcp_internal_session_channel, '%s'
+    """;
 
     private final TestingDatabaseServer database;
     private final ObjectMapper objectMapper;

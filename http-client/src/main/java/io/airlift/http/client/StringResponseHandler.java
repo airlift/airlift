@@ -40,9 +40,7 @@ public class StringResponseHandler
         return STRING_RESPONSE_HANDLER;
     }
 
-    private StringResponseHandler()
-    {
-    }
+    private StringResponseHandler() {}
 
     @Override
     public StringResponse handleException(Request request, Exception exception)

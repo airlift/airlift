@@ -10,6 +10,4 @@ public record BoxedOptionals(
         @ApiDescription("bool") Optional<Boolean> boxedBoolean,
         @ApiDescription("int") Optional<Integer> boxedInt,
         @ApiDescription("long") Optional<Long> boxedLong,
-        @ApiDescription("double") Optional<Double> boxedDouble)
-{
-}
+        @ApiDescription("double") Optional<Double> boxedDouble) {}

@@ -12,6 +12,4 @@ public record Item(
         ApiResourceVersion syncToken,
         @ApiReadOnly @ApiDescription("id") ItemId itemId,
         @ApiDescription("name") String name,
-        @ApiDescription("state") Optional<ItemState> state)
-{
-}
+        @ApiDescription("state") Optional<ItemState> state) {}

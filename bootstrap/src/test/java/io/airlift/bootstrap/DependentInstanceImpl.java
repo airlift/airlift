@@ -21,9 +21,7 @@ public class DependentInstanceImpl
         implements DependentBoundInstance
 {
     @Inject
-    public DependentInstanceImpl()
-    {
-    }
+    public DependentInstanceImpl() {}
 
     @Override
     public void postDependentBoundInstance()

@@ -32,9 +32,7 @@ public class Schema<T>
     private Discriminator discriminator;
     private List<String> tags;
 
-    public Schema()
-    {
-    }
+    public Schema() {}
 
     protected Schema(String type, String format)
     {

@@ -43,7 +43,8 @@ public class TestJwksDecoder
     @Test
     public void testReadRsaKeys()
     {
-        Map<String, PublicKey> keys = decodeKeys("""                
+        Map<String, PublicKey> keys = decodeKeys(
+                """
                 {
                   "keys": [
                     {
@@ -73,7 +74,8 @@ public class TestJwksDecoder
     @Test
     public void testNoKeyId()
     {
-        Map<String, PublicKey> keys = decodeKeys("""
+        Map<String, PublicKey> keys = decodeKeys(
+                """
                 {
                   "keys": [
                     {
@@ -99,7 +101,8 @@ public class TestJwksDecoder
     @Test
     public void testRsaNoModulus()
     {
-        Map<String, PublicKey> keys = decodeKeys("""
+        Map<String, PublicKey> keys = decodeKeys(
+                """
                 {
                   "keys": [
                     {
@@ -117,7 +120,8 @@ public class TestJwksDecoder
     @Test
     public void testRsaNoExponent()
     {
-        Map<String, PublicKey> keys = decodeKeys("""                
+        Map<String, PublicKey> keys = decodeKeys(
+                """
                 {
                   "keys": [
                     {
@@ -135,7 +139,8 @@ public class TestJwksDecoder
     @Test
     public void testRsaInvalidModulus()
     {
-        Map<String, PublicKey> keys = decodeKeys("""                
+        Map<String, PublicKey> keys = decodeKeys(
+                """
                 {
                   "keys": [
                     {
@@ -154,7 +159,8 @@ public class TestJwksDecoder
     @Test
     public void testRsaInvalidExponent()
     {
-        Map<String, PublicKey> keys = decodeKeys("""                
+        Map<String, PublicKey> keys = decodeKeys(
+                """
                 {
                   "keys": [
                     {
@@ -208,7 +214,8 @@ public class TestJwksDecoder
     @Test
     public void testEcKey()
     {
-        Map<String, PublicKey> keys = decodeKeys("""
+        Map<String, PublicKey> keys = decodeKeys(
+                """
                 {
                   "keys": [
                     {
@@ -227,7 +234,8 @@ public class TestJwksDecoder
     @Test
     public void testEcInvalidCurve()
     {
-        Map<String, PublicKey> keys = decodeKeys("""
+        Map<String, PublicKey> keys = decodeKeys(
+                """
                 \
                 {
                   "keys": [
@@ -246,7 +254,8 @@ public class TestJwksDecoder
     @Test
     public void testEcInvalidX()
     {
-        Map<String, PublicKey> keys = decodeKeys("""
+        Map<String, PublicKey> keys = decodeKeys(
+                """
                 \
                 {
                   "keys": [
@@ -265,7 +274,8 @@ public class TestJwksDecoder
     @Test
     public void testEcInvalidY()
     {
-        Map<String, PublicKey> keys = decodeKeys("""
+        Map<String, PublicKey> keys = decodeKeys(
+                """
                 \
                 {
                   "keys": [

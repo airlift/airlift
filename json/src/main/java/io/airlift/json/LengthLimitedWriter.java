@@ -45,7 +45,5 @@ class LengthLimitedWriter
 
     // this needs to extend IOException so that Jackson doesn't wrap it
     public static class LengthLimitExceededException
-            extends IOException
-    {
-    }
+            extends IOException {}
 }

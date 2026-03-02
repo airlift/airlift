@@ -43,9 +43,7 @@ public class RequestStats
     private final DistributionStat writtenBytes = new DistributionStat();
 
     @Inject
-    public RequestStats()
-    {
-    }
+    public RequestStats() {}
 
     public void recordResponseReceived(String method,
             int responseCode,

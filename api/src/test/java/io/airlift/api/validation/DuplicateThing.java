@@ -13,6 +13,4 @@ public record DuplicateThing(
         ApiResourceVersion version,
         @ApiDescription("id") ThingId thingId,
         @ApiDescription("original name") String name,
-        @ApiDescription("original description") String description)
-{
-}
+        @ApiDescription("original description") String description) {}

@@ -14,7 +14,8 @@ public record AcceptableListResource(
         @ApiDescription("strings") List<String> stringList,
         @ApiDescription("enums") List<Enum> enumList)
 {
-    public enum Enum {
+    public enum Enum
+    {
         ABC,
         DEF
     }

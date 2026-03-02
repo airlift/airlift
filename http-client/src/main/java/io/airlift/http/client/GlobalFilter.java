@@ -26,6 +26,4 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Target({FIELD, PARAMETER, METHOD})
 @Retention(RUNTIME)
 @BindingAnnotation
-@interface GlobalFilter
-{
-}
+@interface GlobalFilter {}

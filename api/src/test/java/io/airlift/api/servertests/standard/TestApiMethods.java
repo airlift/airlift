@@ -103,15 +103,16 @@ public class TestApiMethods
     @Test
     public void testUpdateWithInvalidThingId()
     {
-        String thingInvalidJsonStringified = """
-                {
-                  "syncToken" : "1",
-                  "thingId" : 123,
-                  "name" : "dummy",
-                  "qty" : 10,
-                  "code" : "code"
-                }
-                """;
+        String thingInvalidJsonStringified =
+        """
+        {
+          "syncToken" : "1",
+          "thingId" : 123,
+          "name" : "dummy",
+          "qty" : 10,
+          "code" : "code"
+        }
+        """;
 
         URI uri = UriBuilder.fromUri(baseUri).path("public/api/v1/thing/{thingId}").build(new ThingId("12345"));
         Request request = preparePut()
@@ -127,15 +128,16 @@ public class TestApiMethods
     @Test
     public void testUpdateWithInvalidSyncToken()
     {
-        String thingInvalidJsonStringified = """
-                {
-                  "syncToken" : 1,
-                  "thingId" : "12345",
-                  "name" : "dummy",
-                  "qty" : 10,
-                  "code" : "code"
-                }
-                """;
+        String thingInvalidJsonStringified =
+        """
+        {
+          "syncToken" : 1,
+          "thingId" : "12345",
+          "name" : "dummy",
+          "qty" : 10,
+          "code" : "code"
+        }
+        """;
 
         URI uri = UriBuilder.fromUri(baseUri).path("public/api/v1/thing/{thingId}").build(new ThingId("12345"));
         Request request = preparePut()
@@ -295,15 +297,16 @@ public class TestApiMethods
     public void testPolyResourcesWithBadKey()
             throws JsonProcessingException
     {
-        String badJson = """
-                {
-                  "poly": {
-                    "typeKey": "thisAintOneOfEm",
-                    "name": "one",
-                    "value": "1"
-                  }
-                }
-                """;
+        String badJson =
+        """
+        {
+          "poly": {
+            "typeKey": "thisAintOneOfEm",
+            "name": "one",
+            "value": "1"
+          }
+        }
+        """;
 
         URI uri = UriBuilder.fromUri(baseUri).path("public/api/v1/poly").build();
 

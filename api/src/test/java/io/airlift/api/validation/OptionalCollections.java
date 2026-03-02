@@ -16,7 +16,8 @@ public record OptionalCollections(
         @ApiReadOnly @ApiDescription("map") Optional<Map<String, String>> optionalMap,
         @ApiReadOnly @ApiDescription("enum") Optional<List<Enum>> optionalEnumList)
 {
-    public enum Enum {
+    public enum Enum
+    {
         ABC,
         DEF
     }

@@ -346,7 +346,8 @@ public class TestJsonCodec
                 }\
                 """);
 
-        assertThat(JsonCodec.jsonCodec(LegacyRecordAdditionalGetter.class).toJson(new LegacyRecordAdditionalGetter("my value"))).isEqualTo("""
+        assertThat(JsonCodec.jsonCodec(LegacyRecordAdditionalGetter.class).toJson(new LegacyRecordAdditionalGetter("my value"))).isEqualTo(
+                """
                 {
                   "foo" : "not really a foo value",
                   "bar" : "there is no bar field in the record",

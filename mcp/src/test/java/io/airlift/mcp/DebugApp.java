@@ -68,9 +68,7 @@ public class DebugApp
             boolean includeMeta,
             Optional<String> largeInput,
             boolean simulateError,
-            int delayMs)
-    {
-    }
+            int delayMs) {}
 
     @PreDestroy
     public void cleanup()
@@ -81,9 +79,7 @@ public class DebugApp
         }
     }
 
-    public record DebugStructuredContent(DebugInput config, String timestamp, int counter, OptionalInt largeInputLength)
-    {
-    }
+    public record DebugStructuredContent(DebugInput config, String timestamp, int counter, OptionalInt largeInputLength) {}
 
     @McpTool(
             name = "debug-tool",
@@ -126,9 +122,7 @@ public class DebugApp
         return callToolResult;
     }
 
-    public record RefreshResult(String timestamp, int counter)
-    {
-    }
+    public record RefreshResult(String timestamp, int counter) {}
 
     @McpTool(
             name = "debug-refresh",
@@ -146,13 +140,9 @@ public class DebugApp
         return new CallToolResult(ImmutableList.of(textContent), Optional.of(structuredContent), false);
     }
 
-    public record LogPayload(@JsonValue Map<String, Object> payload)
-    {
-    }
+    public record LogPayload(@JsonValue Map<String, Object> payload) {}
 
-    public record Logged(boolean logged, String logFile)
-    {
-    }
+    public record Logged(boolean logged, String logFile) {}
 
     @McpTool(
             name = "debug-log",

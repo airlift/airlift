@@ -39,7 +39,8 @@ public class TestSpanSerialization
         String json = codec.toJson(Span.wrap(context));
         SpanContext decoded = codec.fromJson(json).getSpanContext();
 
-        assertThat(json).isEqualTo("""
+        assertThat(json).isEqualTo(
+                """
                 {
                   "traceparent" : "00-414e5e5043a0436f80ad0891b7c2d2da-31388bfaf867482b-01",
                   "tracestate" : "test=oops,hello=world,abc=xyz"

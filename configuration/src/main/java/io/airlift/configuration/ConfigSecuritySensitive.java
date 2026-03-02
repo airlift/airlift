@@ -26,6 +26,4 @@ import java.lang.annotation.Target;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-public @interface ConfigSecuritySensitive
-{
-}
+public @interface ConfigSecuritySensitive {}

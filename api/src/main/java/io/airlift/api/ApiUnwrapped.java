@@ -14,6 +14,4 @@ import java.lang.annotation.Target;
 @Documented
 @JsonUnwrapped
 @JacksonAnnotationsInside
-public @interface ApiUnwrapped
-{
-}
+public @interface ApiUnwrapped {}

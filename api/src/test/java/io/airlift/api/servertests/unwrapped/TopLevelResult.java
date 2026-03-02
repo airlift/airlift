@@ -11,6 +11,4 @@ public record TopLevelResult(
         @ApiDescription("unused") TopLevelId topId,
         @ApiDescription("unused") String name,
         @ApiDescription("unused") int age,
-        @ApiUnwrapped ChildLevel childLevel)
-{
-}
+        @ApiUnwrapped ChildLevel childLevel) {}

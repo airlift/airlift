@@ -12,6 +12,4 @@ public record ChildLevel(
         @ApiDescription("unused") Instant timestamp,
         @ApiDescription("unused") double rate,
         @ApiDescription("Maybe a number") Optional<Integer> scale,
-        @ApiUnwrapped ChildChildLevel childChild)
-{
-}
+        @ApiUnwrapped ChildChildLevel childChild) {}

@@ -12,6 +12,4 @@ public record Thing(
         @ApiDescription("the id") ThingId thingId,
         @ApiDescription("the name") String name,
         @ApiDescription("the quantity") int qty,
-        @ApiDescription("the optional code") Optional<String> code)
-{
-}
+        @ApiDescription("the optional code") Optional<String> code) {}

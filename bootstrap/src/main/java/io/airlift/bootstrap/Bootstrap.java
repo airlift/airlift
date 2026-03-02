@@ -77,7 +77,8 @@ public class Bootstrap
     private final String name;
     private final Logger log;
 
-    private enum State { UNINITIALIZED, CONFIGURED, INITIALIZED }
+    private enum State
+    { UNINITIALIZED, CONFIGURED, INITIALIZED }
 
     private final List<Module> modules;
 

@@ -5,6 +5,4 @@ import io.airlift.api.ApiResource;
 import io.airlift.api.ApiResourceVersion;
 
 @ApiResource(name = "streamer", description = "something")
-public record StreamingResource(@ApiDescription("dummy") StreamingResourceId streamerId, ApiResourceVersion syncToken, @ApiDescription("ok") String something)
-{
-}
+public record StreamingResource(@ApiDescription("dummy") StreamingResourceId streamerId, ApiResourceVersion syncToken, @ApiDescription("ok") String something) {}

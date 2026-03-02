@@ -163,9 +163,7 @@ public class McpModule
         private Optional<Consumer<LinkedBindingBuilder<McpCapabilityFilter>>> capabilityFilterBinding = Optional.empty();
         private Consumer<LinkedBindingBuilder<McpCancellationHandler>> cancellationHandlerBinding = binder -> binder.toInstance(McpCancellationHandler.DEFAULT);
 
-        private Builder()
-        {
-        }
+        private Builder() {}
 
         public Builder withMetadata(McpMetadata metadata)
         {
