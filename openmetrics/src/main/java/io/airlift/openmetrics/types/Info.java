@@ -23,6 +23,7 @@ public record Info(String metricName, String value, Map<String, String> labels, 
     {
         requireNonNull(metricName, "metricName is null");
         requireNonNull(value, "value is null");
+        requireNonNull(labels, "labels is null");
     }
 
     @Override
