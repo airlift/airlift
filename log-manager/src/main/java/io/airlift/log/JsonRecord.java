@@ -45,8 +45,7 @@ public class JsonRecord
             Context context,
             Map<String, String> logAnnotations)
     {
-        this(
-                timestamp,
+        this(timestamp,
                 level,
                 thread,
                 loggerName,

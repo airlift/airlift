@@ -57,8 +57,7 @@ public class TestingHttpServer
             Set<ServerFeature> serverFeatures)
             throws IOException
     {
-        this(
-                name,
+        this(name,
                 httpServerInfo,
                 nodeInfo,
                 config,

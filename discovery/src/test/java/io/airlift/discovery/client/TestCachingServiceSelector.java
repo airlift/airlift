@@ -59,7 +59,8 @@ public class TestCachingServiceSelector
     @Test
     public void testBasics()
     {
-        CachingServiceSelector serviceSelector = new CachingServiceSelector("type",
+        CachingServiceSelector serviceSelector = new CachingServiceSelector(
+                "type",
                 new ServiceSelectorConfig().setPool("pool"),
                 new InMemoryDiscoveryClient(nodeInfo),
                 executor);
@@ -71,7 +72,8 @@ public class TestCachingServiceSelector
     @Test
     public void testNotStartedEmpty()
     {
-        CachingServiceSelector serviceSelector = new CachingServiceSelector("type",
+        CachingServiceSelector serviceSelector = new CachingServiceSelector(
+                "type",
                 new ServiceSelectorConfig().setPool("pool"),
                 new InMemoryDiscoveryClient(nodeInfo),
                 executor);
@@ -82,7 +84,8 @@ public class TestCachingServiceSelector
     @Test
     public void testStartedEmpty()
     {
-        CachingServiceSelector serviceSelector = new CachingServiceSelector("type",
+        CachingServiceSelector serviceSelector = new CachingServiceSelector(
+                "type",
                 new ServiceSelectorConfig().setPool("pool"),
                 new InMemoryDiscoveryClient(nodeInfo),
                 executor);
@@ -101,7 +104,8 @@ public class TestCachingServiceSelector
         discoveryClient.addDiscoveredService(DIFFERENT_TYPE);
         discoveryClient.addDiscoveredService(DIFFERENT_POOL);
 
-        CachingServiceSelector serviceSelector = new CachingServiceSelector("apple",
+        CachingServiceSelector serviceSelector = new CachingServiceSelector(
+                "apple",
                 new ServiceSelectorConfig().setPool("pool"),
                 discoveryClient,
                 executor);
@@ -119,7 +123,8 @@ public class TestCachingServiceSelector
         discoveryClient.addDiscoveredService(DIFFERENT_TYPE);
         discoveryClient.addDiscoveredService(DIFFERENT_POOL);
 
-        CachingServiceSelector serviceSelector = new CachingServiceSelector("apple",
+        CachingServiceSelector serviceSelector = new CachingServiceSelector(
+                "apple",
                 new ServiceSelectorConfig().setPool("pool"),
                 discoveryClient,
                 executor);

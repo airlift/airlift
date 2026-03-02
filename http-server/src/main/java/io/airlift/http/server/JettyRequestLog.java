@@ -108,7 +108,8 @@ public class JettyRequestLog
             }
         }
 
-        String line = String.join("\t",
+        String line = String.join(
+                "\t",
                 ISO_FORMATTER.format(Instant.ofEpochMilli(Request.getTimeStamp(request))), // Request timeout
                 Request.getRemoteAddr(request), // Client address
                 request.getMethod(), // HTTP method

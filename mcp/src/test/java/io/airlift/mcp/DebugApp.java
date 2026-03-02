@@ -87,7 +87,8 @@ public class DebugApp
             app = @McpApp(
                     resourceUri = "ui://debug-tool/mcp-app.html",
                     sourcePath = "debug-app.html"))
-    public CallToolResult debugApp(@McpDefaultValue("text") ContentType contentType,
+    public CallToolResult debugApp(
+            @McpDefaultValue("text") ContentType contentType,
             @McpDefaultValue("true") boolean multipleBlocks,
             @McpDefaultValue("true") boolean includeStructuredContent,
             @McpDefaultValue("true") boolean includeMeta,

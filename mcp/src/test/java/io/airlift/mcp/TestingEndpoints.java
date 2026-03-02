@@ -163,7 +163,8 @@ public class TestingEndpoints
     {
         assertThat(testingIdentity.name()).isEqualTo("Mr. Tester");
 
-        return new CallToolResult(ImmutableList.of(new TextContent(String.valueOf(a + b + c))),
+        return new CallToolResult(
+                ImmutableList.of(new TextContent(String.valueOf(a + b + c))),
                 Optional.empty(),
                 false);
     }

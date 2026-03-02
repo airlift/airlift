@@ -1048,12 +1048,14 @@ public class QuantileDigest
         }
 
         checkState(Math.abs(sum.get() - weightedCount) < ZERO_WEIGHT_THRESHOLD,
-                "Computed weight (%s) doesn't match summary (%s)", sum.get(),
+                "Computed weight (%s) doesn't match summary (%s)",
+                sum.get(),
                 weightedCount);
 
         checkState(nodeCount.get() == getNodeCount(),
                 "Actual node count (%s) doesn't match summary (%s)",
-                nodeCount.get(), getNodeCount());
+                nodeCount.get(),
+                getNodeCount());
     }
 
     private void validateStructure(int node, Set<Integer> freeNodes)
@@ -1116,7 +1118,8 @@ public class QuantileDigest
 
             for (int node : entry.getValue()) {
                 if (levels[node] == 0) {
-                    builder.append(String.format("\t\t%s [label=\"%s:[%s]@%s\\n%s\", shape=rect, style=filled,color=%s];\n",
+                    builder.append(String.format(
+                            "\t\t%s [label=\"%s:[%s]@%s\\n%s\", shape=rect, style=filled,color=%s];\n",
                             idFor(node),
                             node,
                             lowerBound(node),
@@ -1125,7 +1128,8 @@ public class QuantileDigest
                             counts[node] > 0 ? "salmon2" : "white"));
                 }
                 else {
-                    builder.append(String.format("\t\t%s [label=\"%s:[%s..%s]@%s\\n%s\", shape=rect, style=filled,color=%s];\n",
+                    builder.append(String.format(
+                            "\t\t%s [label=\"%s:[%s..%s]@%s\\n%s\", shape=rect, style=filled,color=%s];\n",
                             idFor(node),
                             node,
                             lowerBound(node),

@@ -38,7 +38,8 @@ public class TestRequestBuilder
         assertThat(request.getBodyGenerator()).isEqualTo(NULL_BODY_GENERATOR);
         assertThat(request.getUri()).isEqualTo(URI.create("http://example.com"));
         assertThat(request.getHeaders()).isEqualTo(ImmutableListMultimap.of(
-                "newheader", "withvalue", "anotherheader", "anothervalue"));
+                "newheader", "withvalue",
+                "anotherheader", "anothervalue"));
         assertThat(request.isFollowRedirects()).isFalse();
     }
 

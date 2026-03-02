@@ -35,7 +35,8 @@ public class TestConditionalModule
             };
         };
 
-        Supplier<Module> moduleXElseZ = () -> ConditionalModule.conditionalModule(SomeConfig.class,
+        Supplier<Module> moduleXElseZ = () -> ConditionalModule.conditionalModule(
+                SomeConfig.class,
                 config -> config.getSomeOption().equals("x"),
                 binder -> binder.bind(String.class).toInstance("X"),
                 binder -> binder.bind(String.class).toInstance("Z"));
@@ -70,7 +71,8 @@ public class TestConditionalModule
                 }
             };
         };
-        Supplier<Module> moduleXElseZ = () -> ConditionalModule.conditionalModule(SomeConfig.class,
+        Supplier<Module> moduleXElseZ = () -> ConditionalModule.conditionalModule(
+                SomeConfig.class,
                 "prefix",
                 config -> config.getSomeOption().equals("x"),
                 binder -> binder.bind(String.class).toInstance("X"),

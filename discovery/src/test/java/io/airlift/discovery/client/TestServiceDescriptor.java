@@ -40,12 +40,14 @@ public class TestServiceDescriptor
     public void testJsonDecode()
             throws Exception
     {
-        ServiceDescriptor expected = new ServiceDescriptor(UUID.fromString("12345678-1234-1234-1234-123456789012"),
+        ServiceDescriptor expected = new ServiceDescriptor(
+                UUID.fromString("12345678-1234-1234-1234-123456789012"),
                 "node",
                 "type",
                 "pool",
                 "location",
-                ServiceState.RUNNING, ImmutableMap.of("a", "apple", "b", "banana"));
+                ServiceState.RUNNING,
+                ImmutableMap.of("a", "apple", "b", "banana"));
 
         String json = Resources.toString(Resources.getResource("service-descriptor.json"), UTF_8);
         ServiceDescriptor actual = serviceDescriptorCodec.fromJson(json);
@@ -56,12 +58,14 @@ public class TestServiceDescriptor
     @Test
     public void testToString()
     {
-        assertThat(new ServiceDescriptor(UUID.fromString("12345678-1234-1234-1234-123456789012"),
+        assertThat(new ServiceDescriptor(
+                UUID.fromString("12345678-1234-1234-1234-123456789012"),
                 "node",
                 "type",
                 "pool",
                 "location",
-                ServiceState.RUNNING, ImmutableMap.of("a", "apple", "b", "banana"))).isNotNull();
+                ServiceState.RUNNING,
+                ImmutableMap.of("a", "apple", "b", "banana"))).isNotNull();
     }
 
     @Test

@@ -238,7 +238,8 @@ public class TestQuantileDigest
         // should have no compressions with so few values and the allowed error
         assertThat(digest.getConfidenceFactor()).isEqualTo(0.0);
 
-        assertThat(digest.getHistogram(asList(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L))).isEqualTo(asList(new QuantileDigest.Bucket(0, Double.NaN),
+        assertThat(digest.getHistogram(asList(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L))).isEqualTo(asList(
+                new QuantileDigest.Bucket(0, Double.NaN),
                 new QuantileDigest.Bucket(1, 0),
                 new QuantileDigest.Bucket(1, 1),
                 new QuantileDigest.Bucket(1, 2),
@@ -250,7 +251,8 @@ public class TestQuantileDigest
                 new QuantileDigest.Bucket(1, 8),
                 new QuantileDigest.Bucket(1, 9)));
 
-        assertThat(digest.getHistogram(asList(7L, 10L))).isEqualTo(asList(new QuantileDigest.Bucket(7, 3),
+        assertThat(digest.getHistogram(asList(7L, 10L))).isEqualTo(asList(
+                new QuantileDigest.Bucket(7, 3),
                 new QuantileDigest.Bucket(3, 8)));
 
         // test some edge conditions
@@ -295,7 +297,8 @@ public class TestQuantileDigest
         expected.addFirst(new QuantileDigest.Bucket(0, Double.NaN));
         assertThat(digest.getHistogram(bucketUpperBounds, middleFunction)).isEqualTo(expected);
 
-        assertThat(digest.getHistogram(asList(doubleToSortableLong(7), doubleToSortableLong(10)), middleFunction)).isEqualTo(asList(new QuantileDigest.Bucket(17, -2.0),
+        assertThat(digest.getHistogram(asList(doubleToSortableLong(7), doubleToSortableLong(10)), middleFunction)).isEqualTo(asList(
+                new QuantileDigest.Bucket(17, -2.0),
                 new QuantileDigest.Bucket(3, 8)));
 
         // edge cases
@@ -397,8 +400,10 @@ public class TestQuantileDigest
         int targetAgeInSeconds = (int) (QuantileDigest.RESCALE_THRESHOLD_SECONDS - 1);
 
         TestingTicker ticker = new TestingTicker();
-        QuantileDigest digest = new QuantileDigest(1,
-                ExponentialDecay.computeAlpha(0.5, targetAgeInSeconds), ticker);
+        QuantileDigest digest = new QuantileDigest(
+                1,
+                ExponentialDecay.computeAlpha(0.5, targetAgeInSeconds),
+                ticker);
 
         addAll(digest, asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9));
         ticker.increment(targetAgeInSeconds, TimeUnit.SECONDS);
@@ -425,8 +430,10 @@ public class TestQuantileDigest
     {
         TestingTicker ticker = new TestingTicker();
 
-        QuantileDigest digest = new QuantileDigest(0.01,
-                ExponentialDecay.computeAlpha(QuantileDigest.ZERO_WEIGHT_THRESHOLD, 60), ticker);
+        QuantileDigest digest = new QuantileDigest(
+                0.01,
+                ExponentialDecay.computeAlpha(QuantileDigest.ZERO_WEIGHT_THRESHOLD, 60),
+                ticker);
 
         addRange(digest, 1, 10);
 
@@ -448,7 +455,8 @@ public class TestQuantileDigest
         TestingTicker ticker = new TestingTicker();
         int targetAgeInSeconds = (int) (QuantileDigest.RESCALE_THRESHOLD_SECONDS);
 
-        QuantileDigest digest = new QuantileDigest(0.01,
+        QuantileDigest digest = new QuantileDigest(
+                0.01,
                 ExponentialDecay.computeAlpha(QuantileDigest.ZERO_WEIGHT_THRESHOLD / 2, targetAgeInSeconds),
                 ticker);
 

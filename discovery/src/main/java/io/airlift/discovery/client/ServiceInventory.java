@@ -64,7 +64,8 @@ public class ServiceInventory
     private ScheduledFuture<?> scheduledFuture;
 
     @Inject
-    public ServiceInventory(ServiceInventoryConfig config,
+    public ServiceInventory(
+            ServiceInventoryConfig config,
             NodeInfo nodeInfo,
             JsonCodec<ServiceDescriptorsRepresentation> serviceDescriptorsCodec,
             @ForDiscoveryClient HttpClient httpClient)

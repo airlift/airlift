@@ -104,7 +104,8 @@ public class TestFullJsonResponseHandler
     @Test
     public void testMissingContentType()
     {
-        JsonResponse<User> response = handler.handle(null,
+        JsonResponse<User> response = handler.handle(
+                null,
                 new TestingResponse(OK, ImmutableListMultimap.<String, String>of(), "hello".getBytes(UTF_8)));
 
         assertThat(response.hasValue()).isFalse();

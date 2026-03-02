@@ -101,7 +101,8 @@ public class TestHttpServiceSelectorBinder
                 binder -> discoveryBinder(binder).bindHttpSelector("apple"));
 
         InMemoryDiscoveryClient discoveryClient = injector.getInstance(InMemoryDiscoveryClient.class);
-        discoveryClient.announce(ImmutableSet.of(serviceAnnouncement("apple").addProperty("http", "fake://server-http").build(),
+        discoveryClient.announce(ImmutableSet.of(
+                serviceAnnouncement("apple").addProperty("http", "fake://server-http").build(),
                 serviceAnnouncement("apple").addProperty("https", "fake://server-https").build()));
 
         HttpServiceSelector selector = injector.getInstance(Key.get(HttpServiceSelector.class, serviceType("apple")));

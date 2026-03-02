@@ -48,7 +48,8 @@ public class MapApp
                             "https://*.openstreetmap.org", // OSM map tiles (covers tile.openstreetmap.org)
                             "https://cesium.com",
                             "https://*.cesium.com"}))
-    public CallToolResult mapTool(@McpDefaultValue("Lisbon, Portugal") @McpDescription("Optional label to display on the map") Optional<String> label,
+    public CallToolResult mapTool(
+            @McpDefaultValue("Lisbon, Portugal") @McpDescription("Optional label to display on the map") Optional<String> label,
             @McpDefaultValue("-9.2298") @McpDescription("Western longitude (-180 to 180)") double west,
             @McpDefaultValue("38.6914") @McpDescription("Southern latitude (-90 to 90)") double south,
             @McpDefaultValue("-9.0863") @McpDescription("Eastern longitude (-180 to 180)") double east,

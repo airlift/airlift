@@ -91,7 +91,8 @@ public class TestingHttpClient
                     return responseHandler.handleException(request, (Exception) e);
                 }
                 finally {
-                    stats.recordResponseReceived(request.getMethod(),
+                    stats.recordResponseReceived(
+                            request.getMethod(),
                             0,
                             0,
                             0,
@@ -99,7 +100,8 @@ public class TestingHttpClient
                             Duration.nanosSince(responseStart));
                 }
             }
-            stats.recordResponseReceived(request.getMethod(),
+            stats.recordResponseReceived(
+                    request.getMethod(),
                     0,
                     0,
                     0,
@@ -118,7 +120,8 @@ public class TestingHttpClient
         }
         finally {
             state.set("DONE");
-            stats.recordResponseReceived(request.getMethod(),
+            stats.recordResponseReceived(
+                    request.getMethod(),
                     response.getStatusCode(),
                     response.getBytesRead(),
                     response.getBytesRead(),

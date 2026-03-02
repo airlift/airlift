@@ -594,8 +594,10 @@ final class DenseHll
             }
         }
 
-        checkState(zeroDeltas == baselineCount, "baselineCount (%s) doesn't match number of zero deltas (%s)",
-                baselineCount, zeroDeltas);
+        checkState(zeroDeltas == baselineCount,
+                "baselineCount (%s) doesn't match number of zero deltas (%s)",
+                baselineCount,
+                zeroDeltas);
 
         Set<Integer> overflows = new HashSet<>();
         for (int i = 0; i < this.overflows; i++) {
@@ -605,10 +607,13 @@ final class DenseHll
             checkState(overflowValues[i] > 0, "Overflow at %s for bucket %s is 0", i, bucket);
             checkState(getDelta(bucket) == MAX_DELTA,
                     "delta in bucket %s is less than MAX_DELTA (%s < %s) even though there's an associated overflow entry",
-                    bucket, getDelta(bucket), MAX_DELTA);
+                    bucket,
+                    getDelta(bucket),
+                    MAX_DELTA);
         }
 
-        checkState(overflows.size() == this.overflows, "Duplicate overflow buckets: %s",
+        checkState(overflows.size() == this.overflows,
+                "Duplicate overflow buckets: %s",
                 Ints.asList(Arrays.copyOf(overflowBuckets, this.overflows)));
     }
 }

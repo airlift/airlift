@@ -374,13 +374,16 @@ public class JettyHttpClient
 
         this.monitoredQueuedThreadPoolMBean = new MonitoredQueuedThreadPoolMBean((MonitoredQueuedThreadPool) httpClient.getExecutor());
 
-        this.activeConnectionsPerDestination = new ConnectionPoolDistribution(httpClient,
+        this.activeConnectionsPerDestination = new ConnectionPoolDistribution(
+                httpClient,
                 (distribution, connectionPool) -> distribution.add(connectionPool.getActiveConnectionCount()));
 
-        this.idleConnectionsPerDestination = new ConnectionPoolDistribution(httpClient,
+        this.idleConnectionsPerDestination = new ConnectionPoolDistribution(
+                httpClient,
                 (distribution, connectionPool) -> distribution.add(connectionPool.getIdleConnectionCount()));
 
-        this.queuedRequestsPerDestination = new DestinationDistribution(httpClient,
+        this.queuedRequestsPerDestination = new DestinationDistribution(
+                httpClient,
                 (distribution, destination) -> distribution.add(destination.getHttpExchanges().size()));
 
         this.currentQueuedTime = new RequestDistribution(httpClient, (distribution, listener, now) -> {
@@ -1057,7 +1060,8 @@ public class JettyHttpClient
                     checkArgument(
                             value.compareTo(this.maxResponseContentLength) <= 0,
                             "Request's maxResponseContentLength (%s) must be less than or equal to maxResponseContentLength (%s)",
-                            value, this.maxResponseContentLength);
+                            value,
+                            this.maxResponseContentLength);
                     return value;
                 })
                 .orElse(this.maxResponseContentLength);
@@ -1308,7 +1312,8 @@ public class JettyHttpClient
         Duration responseProcessingTime = Duration.nanosSince(responseStart);
         Duration requestProcessingTime = new Duration(responseStart - requestStart, NANOSECONDS);
 
-        requestStats.recordResponseReceived(request.getMethod(),
+        requestStats.recordResponseReceived(
+                request.getMethod(),
                 response.getStatusCode(),
                 requestBytes,
                 response.getBytesRead(),

@@ -43,7 +43,8 @@ public class TestServiceInventory
     public void testNullServiceInventory()
     {
         try (JettyHttpClient httpClient = new JettyHttpClient()) {
-            ServiceInventory serviceInventory = new ServiceInventory(new ServiceInventoryConfig(),
+            ServiceInventory serviceInventory = new ServiceInventory(
+                    new ServiceInventoryConfig(),
                     new NodeInfo("test"),
                     JsonCodec.jsonCodec(ServiceDescriptorsRepresentation.class),
                     httpClient);
@@ -62,7 +63,8 @@ public class TestServiceInventory
             ServiceInventoryConfig serviceInventoryConfig = new ServiceInventoryConfig()
                     .setServiceInventoryUri(Resources.getResource("service-inventory.json").toURI());
 
-            ServiceInventory serviceInventory = new ServiceInventory(serviceInventoryConfig,
+            ServiceInventory serviceInventory = new ServiceInventory(
+                    serviceInventoryConfig,
                     new NodeInfo("test"),
                     JsonCodec.jsonCodec(ServiceDescriptorsRepresentation.class),
                     httpClient);
@@ -109,7 +111,8 @@ public class TestServiceInventory
             ServiceInventoryConfig serviceInventoryConfig = new ServiceInventoryConfig()
                     .setServiceInventoryUri(server.getURI());
 
-            ServiceInventory serviceInventory = new ServiceInventory(serviceInventoryConfig,
+            ServiceInventory serviceInventory = new ServiceInventory(
+                    serviceInventoryConfig,
                     new NodeInfo("test"),
                     JsonCodec.jsonCodec(ServiceDescriptorsRepresentation.class),
                     httpClient);
