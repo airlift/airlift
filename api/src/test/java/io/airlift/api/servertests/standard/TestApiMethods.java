@@ -103,7 +103,8 @@ public class TestApiMethods
     @Test
     public void testUpdateWithInvalidThingId()
     {
-        String thingInvalidJsonStringified = """
+        String thingInvalidJsonStringified =
+                """
                 {
                   "syncToken" : "1",
                   "thingId" : 123,
@@ -127,7 +128,8 @@ public class TestApiMethods
     @Test
     public void testUpdateWithInvalidSyncToken()
     {
-        String thingInvalidJsonStringified = """
+        String thingInvalidJsonStringified =
+                """
                 {
                   "syncToken" : 1,
                   "thingId" : "12345",
@@ -295,7 +297,8 @@ public class TestApiMethods
     public void testPolyResourcesWithBadKey()
             throws JsonProcessingException
     {
-        String badJson = """
+        String badJson =
+                """
                 {
                   "poly": {
                     "typeKey": "thisAintOneOfEm",

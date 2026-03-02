@@ -42,7 +42,8 @@ public class TestMetricExpositions
     @Test
     public void testCounterExposition()
     {
-        String expected = """
+        String expected =
+                """
                 # TYPE metric_name counter
                 # HELP metric_name metric_help
                 metric_name 0
@@ -57,7 +58,8 @@ public class TestMetricExpositions
     @Test
     public void testCounterExpositionLabels()
     {
-        String expected = """
+        String expected =
+                """
                 # TYPE metric_name counter
                 # HELP metric_name metric_help
                 metric_name{type="cavendish"} 0
@@ -72,7 +74,8 @@ public class TestMetricExpositions
     @Test
     public void testGaugeExposition()
     {
-        String expected = """
+        String expected =
+                """
                 # TYPE metric_name gauge
                 # HELP metric_name metric_help
                 metric_name 0.0
@@ -84,7 +87,8 @@ public class TestMetricExpositions
     @Test
     public void testGaugeExpositionLabels()
     {
-        String expected = """
+        String expected =
+                """
                 # TYPE metric_name gauge
                 # HELP metric_name metric_help
                 metric_name{type="cavendish"} 0.0
@@ -96,7 +100,8 @@ public class TestMetricExpositions
     @Test
     public void testInfoExposition()
     {
-        String expected = """
+        String expected =
+                """
                 # TYPE metric_name info
                 # HELP metric_name metric_help
                 metric_name banana
@@ -108,7 +113,8 @@ public class TestMetricExpositions
     @Test
     public void testInfoExpositionLabels()
     {
-        String expected = """
+        String expected =
+                """
                 # TYPE metric_name info
                 # HELP metric_name metric_help
                 metric_name{type="cavendish"} banana
@@ -120,7 +126,8 @@ public class TestMetricExpositions
     @Test
     public void testSummaryExposition()
     {
-        String expected = """
+        String expected =
+                """
                 # TYPE metric_name summary
                 # HELP metric_name metric_help
                 metric_name_count 10
@@ -135,7 +142,8 @@ public class TestMetricExpositions
     @Test
     public void testSummaryExpositionLabels()
     {
-        String expected = """
+        String expected =
+                """
                 # TYPE metric_name summary
                 # HELP metric_name metric_help
                 metric_name_count{fruit="apple"} 10
@@ -150,7 +158,8 @@ public class TestMetricExpositions
     @Test
     public void testCompositeMetricExposition()
     {
-        String expected = """
+        String expected =
+                """
                 # TYPE metric_name_committed gauge
                 # HELP metric_name_committed metric_help
                 metric_name_committed 200.0
@@ -170,7 +179,8 @@ public class TestMetricExpositions
     @Test
     public void testCompositeMetricExpositionLabels()
     {
-        String expected = """
+        String expected =
+                """
                 # TYPE metric_name_committed gauge
                 # HELP metric_name_committed metric_help
                 metric_name_committed{type="cavendish"} 200.0
@@ -209,7 +219,8 @@ public class TestMetricExpositions
     @Test
     public void testTabularDataExposition()
     {
-        String expected = """
+        String expected =
+                """
                 # TYPE metric_name_value gauge
                 # HELP metric_name_value metric_help
                 metric_name_value{region="us-east",zone="1a"} 100.0
@@ -224,7 +235,8 @@ public class TestMetricExpositions
     @Test
     public void testTabularDataExpositionLabels()
     {
-        String expected = """
+        String expected =
+                """
                 # TYPE metric_name_value gauge
                 # HELP metric_name_value metric_help
                 metric_name_value{region="us-east",type="cavendish",zone="1a"} 100.0

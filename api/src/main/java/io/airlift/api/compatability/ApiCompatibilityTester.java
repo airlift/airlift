@@ -153,15 +153,16 @@ public final class ApiCompatibilityTester
         if (!errors.isEmpty()) {
             errors.forEach(log::error);
 
-            log.error("""
-                    
-                    
+            log.error(
+                    """
+
+
                     !!!! API Compatibility errors found. See log above for details. !!!!
-                    
+
                     If the errors are due to new APIs detected you must run with %s
                     defined via -D%s=true. Run with this defined _two_ times to
                     eliminate this error and ensure that the new compatability files are committed to git.
-                    
+
                     """.formatted(newFileCreationPropertyName, newFileCreationPropertyName));
 
             errorHandler.accept(errors);
