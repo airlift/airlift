@@ -15,12 +15,13 @@ package io.airlift.openmetrics.types;
 
 import com.google.common.collect.ImmutableMap;
 import io.airlift.stats.TimeDistribution;
+import io.airlift.stats.labeled.LabelSet;
 
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
 
-public record Summary(String metricName, Long count, Double sum, Double created, Map<Double, Double> quantiles, Map<String, String> labels, String help)
+public record Summary(String metricName, Long count, Double sum, Double created, Map<Double, Double> quantiles, LabelSet labels, String help)
         implements Metric
 {
     public static Summary from(String metricName, TimeDistribution timeDistribution, Map<String, String> labels, String help)
@@ -35,43 +36,46 @@ public record Summary(String metricName, Long count, Double sum, Double created,
                         .build(), labels, help);
     }
 
+    public Summary
+    {
+        requireNonNull(metricName, "metricName is null");
+        requireNonNull(labels, "labels is null");
+    }
+
     public Summary(String metricName, Long count, Double sum, Double created, Map<Double, Double> quantiles, Map<String, String> labels, String help)
     {
-        this.metricName = requireNonNull(metricName, "metricName is null");
-        this.count = count;
-        this.sum = sum;
-        this.created = created;
-        this.quantiles = quantiles;
-        this.labels = labels;
-        this.help = help;
+        this(metricName, count, sum, created, quantiles, LabelSet.fromLabels(labels), help);
     }
 
     @Override
-    public String getMetricExposition()
+    public String getMetricExposition(boolean includeDescriptor)
     {
-        StringBuilder stringBuilder = new StringBuilder(TYPE_LINE_FORMAT.formatted(metricName, "summary"));
+        StringBuilder stringBuilder = new StringBuilder();
+        if (includeDescriptor) {
+            Metric.typeLineFormat(stringBuilder, metricName, "summary");
 
-        if (help != null && !help.isEmpty()) {
-            stringBuilder.append(HELP_LINE_FORMAT.formatted(metricName, help));
+            if (help != null && !help.isEmpty()) {
+                Metric.helpLineFormat(stringBuilder, metricName, help);
+            }
         }
 
         if (count != null) {
-            stringBuilder.append(VALUE_LINE_FORMAT.formatted(Metric.formatNameWithLabels(metricName + "_count", labels), count));
+            Metric.valueLineFormat(stringBuilder, Metric.formatNameWithLabels(metricName + "_count", labels.asMap()), String.valueOf(count));
         }
 
         if (sum != null) {
-            stringBuilder.append(VALUE_LINE_FORMAT.formatted(Metric.formatNameWithLabels(metricName + "_sum", labels), sum));
+            Metric.valueLineFormat(stringBuilder, Metric.formatNameWithLabels(metricName + "_sum", labels.asMap()), String.valueOf(sum));
         }
 
         if (created != null) {
-            stringBuilder.append(VALUE_LINE_FORMAT.formatted(Metric.formatNameWithLabels(metricName + "_created", labels), created));
+            Metric.valueLineFormat(stringBuilder, Metric.formatNameWithLabels(metricName + "_created", labels.asMap()), String.valueOf(created));
         }
 
         if (quantiles != null) {
             for (Map.Entry<Double, Double> quantile : quantiles.entrySet()) {
-                Map<String, String> quantileLabels = new ImmutableMap.Builder<String, String>().putAll(labels)
+                ImmutableMap<String, String> quantileLabels = new ImmutableMap.Builder<String, String>().putAll(labels.asMap())
                         .put("quantile", String.valueOf(quantile.getKey())).buildOrThrow();
-                stringBuilder.append(VALUE_LINE_FORMAT.formatted(Metric.formatNameWithLabels(metricName, quantileLabels), quantile.getValue()));
+                Metric.valueLineFormat(stringBuilder, Metric.formatNameWithLabels(metricName, quantileLabels), String.valueOf(quantile.getValue()));
             }
         }
 

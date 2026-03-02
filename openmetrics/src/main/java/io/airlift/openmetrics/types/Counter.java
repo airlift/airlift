@@ -14,30 +14,40 @@
 package io.airlift.openmetrics.types;
 
 import io.airlift.stats.CounterStat;
+import io.airlift.stats.labeled.LabelSet;
+import io.airlift.stats.labeled.LabeledCounterStat;
 
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
 
-public record Counter(String metricName, long value, Map<String, String> labels, String help)
+public record Counter(String metricName, long value, LabelSet labels, String help)
         implements Metric
 {
+    public Counter
+    {
+        requireNonNull(metricName, "metricName is null");
+        requireNonNull(labels, "labels is null");
+    }
+
     public Counter(String metricName, long value, Map<String, String> labels, String help)
     {
-        this.metricName = requireNonNull(metricName, "metricName is null");
-        this.value = value;
-        this.labels = labels;
-        this.help = help;
+        this(metricName, value, LabelSet.fromLabels(labels), help);
     }
 
     public static Counter from(String metricName, CounterStat counterStat, Map<String, String> labels, String help)
     {
-        return new Counter(metricName, counterStat.getTotalCount(), labels, help);
+        return new Counter(metricName, counterStat.getTotalCount(), LabelSet.fromLabels(labels), help);
+    }
+
+    public static Counter fromLabeledCounterStat(LabeledCounterStat.CounterStat labeledCounterStat)
+    {
+        return new Counter(labeledCounterStat.metricName(), labeledCounterStat.getCount(), labeledCounterStat.labels(), labeledCounterStat.description());
     }
 
     @Override
-    public String getMetricExposition()
+    public String getMetricExposition(boolean includeDescriptor)
     {
-        return Metric.formatSingleValuedMetric(metricName, "counter", help, labels, Long.toString(value));
+        return Metric.formatSingleValuedMetric(metricName, "counter", help, labels.asMap(), Long.toString(value), includeDescriptor);
     }
 }

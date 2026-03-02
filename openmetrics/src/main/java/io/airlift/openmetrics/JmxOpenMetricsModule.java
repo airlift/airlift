@@ -15,6 +15,12 @@ package io.airlift.openmetrics;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import io.airlift.stats.labeled.GlobalLabeledStatRegistry;
+import io.airlift.stats.labeled.LabeledStatConfig;
+import io.airlift.stats.labeled.LabeledStatRegistry;
+import org.weakref.jmx.MBeanExporter;
 
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
@@ -27,7 +33,15 @@ public class JmxOpenMetricsModule
     {
         binder.disableCircularProxies();
 
+        configBinder(binder).bindConfig(LabeledStatConfig.class);
         configBinder(binder).bindConfig(MetricsConfig.class);
         jaxrsBinder(binder).bind(MetricsResource.class);
+    }
+
+    @Provides
+    @Singleton
+    public LabeledStatRegistry createLabeledStatRegistry(MBeanExporter mBeanExporter, LabeledStatConfig statConfig)
+    {
+        return new GlobalLabeledStatRegistry(mBeanExporter, statConfig);
     }
 }

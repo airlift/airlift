@@ -13,19 +13,25 @@
  */
 package io.airlift.openmetrics.types;
 
+import io.airlift.stats.labeled.LabelSet;
+import io.airlift.stats.labeled.LabeledGaugeStat;
+
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
 
-public record Gauge(String metricName, double value, Map<String, String> labels, String help)
+public record Gauge(String metricName, double value, LabelSet labels, String help)
         implements Metric
 {
+    public Gauge
+    {
+        requireNonNull(metricName, "metricName is null");
+        requireNonNull(labels, "labels is null");
+    }
+
     public Gauge(String metricName, double value, Map<String, String> labels, String help)
     {
-        this.metricName = requireNonNull(metricName, "metricName is null");
-        this.value = value;
-        this.labels = labels;
-        this.help = help;
+        this(metricName, value, LabelSet.fromLabels(labels), help);
     }
 
     public static Gauge from(String metricName, Number value, Map<String, String> labels, String help)
@@ -33,9 +39,14 @@ public record Gauge(String metricName, double value, Map<String, String> labels,
         return new Gauge(metricName, value.doubleValue(), labels, help);
     }
 
-    @Override
-    public String getMetricExposition()
+    public static Gauge fromLabeledGaugeStat(LabeledGaugeStat.GaugeStat labeledGaugeStat)
     {
-        return Metric.formatSingleValuedMetric(metricName, "gauge", help, labels, Double.toString(value));
+        return new Gauge(labeledGaugeStat.metricName(), labeledGaugeStat.getValue(), labeledGaugeStat.labels(), labeledGaugeStat.description());
+    }
+
+    @Override
+    public String getMetricExposition(boolean includeDescriptor)
+    {
+        return Metric.formatSingleValuedMetric(metricName, "gauge", help, labels.asMap(), Double.toString(value), includeDescriptor);
     }
 }
