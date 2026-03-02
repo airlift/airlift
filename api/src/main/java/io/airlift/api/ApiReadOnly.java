@@ -9,6 +9,4 @@ import java.lang.annotation.Target;
 @Target({ElementType.RECORD_COMPONENT, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-public @interface ApiReadOnly
-{
-}
+public @interface ApiReadOnly {}

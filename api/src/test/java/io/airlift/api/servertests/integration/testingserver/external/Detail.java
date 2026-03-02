@@ -15,22 +15,16 @@ public sealed interface Detail
 
     @ApiResource(name = "nameAndAge", description = "A name and an age")
     record NameAndAge(@ApiDescription("A name") String name, @ApiDescription("An age") int age)
-            implements Detail
-    {
-    }
+            implements Detail {}
 
     @ApiResource(name = "schedule", description = "A schedule")
     record Schedule(@ApiDescription("A schedule name") String name, @ApiDescription("Start date") Instant startDate, @ApiDescription("End date") Instant endDate)
-            implements Detail
-    {
-    }
+            implements Detail {}
 
     @ApiResource(name = "recursiveDetail", description = "A resource containing a list of itself")
     @ApiReadOnly
     record Recursive(
             @ApiDescription("Name") String name,
             @ApiReadOnly @ApiDescription("Nested resource") List<Recursive> nested)
-            implements Detail
-    {
-    }
+            implements Detail {}
 }

@@ -9,6 +9,4 @@ import java.util.Optional;
 public record NewThing(
         @ApiDescription("the name") String name,
         @ApiDescription("the quantity") int qty,
-        @ApiDescription("the optional code") Optional<String> code)
-{
-}
+        @ApiDescription("the optional code") Optional<String> code) {}

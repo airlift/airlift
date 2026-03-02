@@ -17,9 +17,7 @@ package io.airlift.discovery.client;
 
 public final class ServiceTypes
 {
-    private ServiceTypes()
-    {
-    }
+    private ServiceTypes() {}
 
     public static ServiceType serviceType(String type)
     {

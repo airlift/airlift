@@ -25,9 +25,7 @@ import java.util.Map;
 public class StackTraceMBean
 {
     @Inject
-    public StackTraceMBean()
-    {
-    }
+    public StackTraceMBean() {}
 
     @Managed
     public List<String> getStackTrace()

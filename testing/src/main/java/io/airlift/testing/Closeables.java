@@ -9,9 +9,7 @@ import static java.util.Objects.requireNonNull;
 
 public final class Closeables
 {
-    private Closeables()
-    {
-    }
+    private Closeables() {}
 
     /**
      * @deprecated Usage of this method is discouraged, as it may hide real problems.

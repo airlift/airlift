@@ -10,7 +10,5 @@ import io.airlift.api.ServiceType;
 public class ServiceWithMultiPartForm
 {
     @ApiUpdate(description = "get the new thing")
-    public void updateThing(ApiMultiPartForm<Thing> multiPartThing)
-    {
-    }
+    public void updateThing(ApiMultiPartForm<Thing> multiPartThing) {}
 }

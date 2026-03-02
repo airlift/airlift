@@ -857,9 +857,7 @@ public class TestConfigurationMetadata
     }
 
     public static class SetterSubConfigClass
-            extends SetterConfigClass
-    {
-    }
+            extends SetterConfigClass {}
 
     public static class SetterSensitiveClass
     {
@@ -934,9 +932,7 @@ public class TestConfigurationMetadata
     public static class SetterNoGetterConfigClass
     {
         @Config("value")
-        public void setValue(String value)
-        {
-        }
+        public void setValue(String value) {}
     }
 
     public abstract static class AbstractClass
@@ -959,9 +955,7 @@ public class TestConfigurationMetadata
     {
         private String value;
 
-        public NotPublicClass()
-        {
-        }
+        public NotPublicClass() {}
 
         public String getValue()
         {
@@ -1000,9 +994,7 @@ public class TestConfigurationMetadata
     {
         private String value;
 
-        NotPublicConstructorClass()
-        {
-        }
+        NotPublicConstructorClass() {}
 
         public String getValue()
         {
@@ -1016,9 +1008,7 @@ public class TestConfigurationMetadata
         }
     }
 
-    public static class NoConfigMethodsClass
-    {
-    }
+    public static class NoConfigMethodsClass {}
 
     public static class GetterAndSetterAnnotatedClass
     {
@@ -1103,14 +1093,10 @@ public class TestConfigurationMetadata
 
     public static class GetterNoReturnClass
     {
-        public void getValue()
-        {
-        }
+        public void getValue() {}
 
         @Config("value")
-        public void setValue(String value)
-        {
-        }
+        public void setValue(String value) {}
     }
 
     public static class GetterNoSetterClass
@@ -1137,9 +1123,7 @@ public class TestConfigurationMetadata
             this.value = value;
         }
 
-        public void setValue(Object value)
-        {
-        }
+        public void setValue(Object value) {}
     }
 
     public static class GetterPrivateSetterClass
@@ -1177,14 +1161,10 @@ public class TestConfigurationMetadata
 
     public static class IsMethodNoReturnClass
     {
-        public void isValue()
-        {
-        }
+        public void isValue() {}
 
         @Config("value")
-        public void setValue(boolean value)
-        {
-        }
+        public void setValue(boolean value) {}
     }
 
     public static class IsMethodNoSetterClass
@@ -1211,9 +1191,7 @@ public class TestConfigurationMetadata
             this.value = value;
         }
 
-        public void setValue(Object value)
-        {
-        }
+        public void setValue(Object value) {}
     }
 
     public static class IsMethodPrivateSetterClass
@@ -1241,9 +1219,7 @@ public class TestConfigurationMetadata
         }
 
         @Config("value")
-        public void setValue()
-        {
-        }
+        public void setValue() {}
     }
 
     public static class NotJavaBeanClass

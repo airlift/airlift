@@ -142,11 +142,7 @@ public class TestJsonMapper
         }
     }
 
-    private record ExamplePojo(String value)
-    {
-    }
+    private record ExamplePojo(String value) {}
 
-    private record OtherExamplePojo(String value, String value2)
-    {
-    }
+    private record OtherExamplePojo(String value, String value2) {}
 }

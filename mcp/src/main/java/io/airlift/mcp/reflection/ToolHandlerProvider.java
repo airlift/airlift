@@ -106,7 +106,8 @@ public class ToolHandlerProvider
         this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
     }
 
-    private enum ReturnType {
+    private enum ReturnType
+    {
         VOID,
         CALL_TOOL_RESULT,
         CONTENT,

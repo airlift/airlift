@@ -8,6 +8,4 @@ import io.airlift.api.ApiResourceVersion;
 public record Thing(
         ApiResourceVersion syncToken,
         @ApiDescription("the id") ThingId thingId,
-        @ApiDescription("the name") String name)
-{
-}
+        @ApiDescription("the name") String name) {}

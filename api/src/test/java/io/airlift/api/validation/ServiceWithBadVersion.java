@@ -9,7 +9,5 @@ import io.airlift.api.ServiceType;
 public class ServiceWithBadVersion
 {
     @ApiCreate(description = "dummy")
-    public void create(BadVersionResource bad)
-    {
-    }
+    public void create(BadVersionResource bad) {}
 }

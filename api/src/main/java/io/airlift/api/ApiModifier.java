@@ -1,5 +1,3 @@
 package io.airlift.api;
 
-public record ApiModifier(boolean enabled)
-{
-}
+public record ApiModifier(boolean enabled) {}

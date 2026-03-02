@@ -23,14 +23,10 @@ public class SimpleBaseImpl
         implements SimpleBase
 {
     @Override
-    public void foo()
-    {
-    }
+    public void foo() {}
 
     @Override
-    public void bar()
-    {
-    }
+    public void bar() {}
 
     @PostConstruct
     public void postSimpleBaseImpl()

@@ -59,9 +59,7 @@ public record ResourceWithAllTypes(
 
     @ApiResource(name = "name", description = "A name")
     @ApiReadOnly
-    public record SimpleResource(@ApiDescription("A name") String name)
-    {
-    }
+    public record SimpleResource(@ApiDescription("A name") String name) {}
 
     public static class SimpleId
             extends ApiStringId<SimpleResource>

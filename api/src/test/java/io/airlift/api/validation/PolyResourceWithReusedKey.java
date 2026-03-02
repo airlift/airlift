@@ -10,14 +10,10 @@ public sealed interface PolyResourceWithReusedKey
     @SuppressWarnings("unused")
     @ApiResource(name = "ok", description = "ok")
     record ItsOk(@ApiDescription("hi") String ok)
-            implements PolyResourceWithReusedKey
-    {
-    }
+            implements PolyResourceWithReusedKey {}
 
     @SuppressWarnings("unused")
     @ApiResource(name = "notOk", description = "ok")
     record ItsNotOk(@ApiDescription("hi") String ok, @ApiDescription("hi") String dontReuse)
-            implements PolyResourceWithReusedKey
-    {
-    }
+            implements PolyResourceWithReusedKey {}
 }

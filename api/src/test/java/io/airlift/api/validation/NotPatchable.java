@@ -10,7 +10,5 @@ import java.util.List;
 public record NotPatchable(ApiResourceVersion syncToken, @ApiDescription("dummy") ThingId thingId, @ApiDescription("dummy") List<Internal> internals)
 {
     @ApiResource(name = "internal", description = "dummy")
-    public record Internal(@ApiDescription("dummy") String name)
-    {
-    }
+    public record Internal(@ApiDescription("dummy") String name) {}
 }

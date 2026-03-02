@@ -8,6 +8,4 @@ import java.util.Map;
 
 @ApiReadOnly
 @ApiResource(name = "package", openApiAlternateName = "packageFields", description = "dummy")
-public record Fields(@ApiDescription("dummy") Map<String, String> fields)
-{
-}
+public record Fields(@ApiDescription("dummy") Map<String, String> fields) {}

@@ -151,7 +151,5 @@ public final class DecayCounter
         return alpha;
     }
 
-    public record DecayCounterSnapshot(double count, double rate)
-    {
-    }
+    public record DecayCounterSnapshot(double count, double rate) {}
 }

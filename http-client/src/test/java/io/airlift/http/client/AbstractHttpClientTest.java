@@ -1270,9 +1270,7 @@ public abstract class AbstractHttpClientTest
     }
 
     private static class CustomError
-            extends Error
-    {
-    }
+            extends Error {}
 
     public static class CapturedException
             extends Exception

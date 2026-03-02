@@ -32,9 +32,7 @@ public class ExecutedInstance
     private final CountDownLatch endLatch = new CountDownLatch(1);
 
     @Inject
-    public ExecutedInstance()
-    {
-    }
+    public ExecutedInstance() {}
 
     @PostConstruct
     public void startExecution()

@@ -11,13 +11,9 @@ public sealed interface PolyType
 {
     @ApiResource(name = "typeOne", description = "dummy")
     record TypeOne(@ApiDescription("dummy") String name, @ApiDescription("dummy") String value)
-            implements PolyType
-    {
-    }
+            implements PolyType {}
 
     @ApiResource(name = "typeTwo", description = "dummy")
     record TypeTwo(@ApiDescription("dummy") Instant timestamp, @ApiDescription("dummy") int qty)
-            implements PolyType
-    {
-    }
+            implements PolyType {}
 }

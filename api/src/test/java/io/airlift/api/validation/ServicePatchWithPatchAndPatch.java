@@ -11,7 +11,5 @@ import io.airlift.api.ServiceType;
 public class ServicePatchWithPatchAndPatch
 {
     @ApiCustom(verb = "boom", type = ApiType.UPDATE, description = "dummy")
-    public void create(ApiPatch<Thing> patch, ApiPatch<Thing> patchParameter)
-    {
-    }
+    public void create(ApiPatch<Thing> patch, ApiPatch<Thing> patchParameter) {}
 }

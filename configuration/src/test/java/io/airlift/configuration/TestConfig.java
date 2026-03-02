@@ -58,9 +58,7 @@ public class TestConfig
     @Retention(RUNTIME)
     @Target({FIELD, PARAMETER, METHOD})
     @BindingAnnotation
-    public @interface MyAnnotation
-    {
-    }
+    public @interface MyAnnotation {}
 
     private final Map<String, String> properties = ImmutableMap.<String, String>builder()
             .put("stringOption", "a string")

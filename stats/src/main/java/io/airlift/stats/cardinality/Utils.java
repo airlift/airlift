@@ -17,9 +17,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 final class Utils
 {
-    private Utils()
-    {
-    }
+    private Utils() {}
 
     public static double alpha(int indexBitLength)
     {

@@ -6,9 +6,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 public final class ExponentialDecay
 {
-    private ExponentialDecay()
-    {
-    }
+    private ExponentialDecay() {}
 
     public static double all()
     {

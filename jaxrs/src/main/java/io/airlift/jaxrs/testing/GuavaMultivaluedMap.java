@@ -17,9 +17,7 @@ public class GuavaMultivaluedMap<K, V>
 {
     private final ListMultimap<K, V> multimap = ArrayListMultimap.create();
 
-    public GuavaMultivaluedMap()
-    {
-    }
+    public GuavaMultivaluedMap() {}
 
     public GuavaMultivaluedMap(Multimap<K, V> multimap)
     {

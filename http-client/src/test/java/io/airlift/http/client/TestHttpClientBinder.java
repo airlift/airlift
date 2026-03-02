@@ -318,37 +318,27 @@ public class TestHttpClientBinder
     @Retention(RUNTIME)
     @Target(ElementType.PARAMETER)
     @BindingAnnotation
-    public @interface FooClient
-    {
-    }
+    public @interface FooClient {}
 
     @Retention(RUNTIME)
     @Target(ElementType.PARAMETER)
     @BindingAnnotation
-    public @interface FooAlias1
-    {
-    }
+    public @interface FooAlias1 {}
 
     @Retention(RUNTIME)
     @Target(ElementType.PARAMETER)
     @BindingAnnotation
-    public @interface FooAlias2
-    {
-    }
+    public @interface FooAlias2 {}
 
     @Retention(RUNTIME)
     @Target(ElementType.PARAMETER)
     @BindingAnnotation
-    public @interface FooAlias3
-    {
-    }
+    public @interface FooAlias3 {}
 
     @Retention(RUNTIME)
     @Target(ElementType.PARAMETER)
     @BindingAnnotation
-    public @interface BarClient
-    {
-    }
+    public @interface BarClient {}
 
     public static class AnotherHttpRequestFilter
             implements HttpRequestFilter

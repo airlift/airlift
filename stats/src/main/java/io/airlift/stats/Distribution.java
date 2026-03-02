@@ -218,7 +218,5 @@ public class Distribution
             double p99,
             double min,
             double max,
-            double avg)
-    {
-    }
+            double avg) {}
 }

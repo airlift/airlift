@@ -767,9 +767,7 @@ public class ConfigurationFactory
         validatorFactory.close();
     }
 
-    private record ConfigurationHolder<T>(T instance, Problems problems)
-    {
-    }
+    private record ConfigurationHolder<T>(T instance, Problems problems) {}
 
     private class ConfigurationProviderConsumer
             implements Consumer<ConfigurationProvider<?>>
