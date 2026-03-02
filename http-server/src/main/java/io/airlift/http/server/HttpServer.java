@@ -349,18 +349,18 @@ public class HttpServer
         long maxOffHeapMemory = config.getMaxDirectMemory().map(DataSize::toBytes).orElse(0L); // Use default heuristics for max off heap memory
 
         ArrayByteBufferPool pool = config.isTrackMemoryAllocations() ?
-                new ArrayByteBufferPool.Tracking(
-                    0,
-                    maxBufferSize,
-                    Integer.MAX_VALUE,
-                    maxHeapMemory,
-                    maxOffHeapMemory) :
-                new ArrayByteBufferPool.Quadratic(
-                    0,
-                    maxBufferSize,
-                    Integer.MAX_VALUE,
-                    maxHeapMemory,
-                    maxOffHeapMemory);
+                    new ArrayByteBufferPool.Tracking(
+                        0,
+                        maxBufferSize,
+                        Integer.MAX_VALUE,
+                        maxHeapMemory,
+                        maxOffHeapMemory) :
+                    new ArrayByteBufferPool.Quadratic(
+                        0,
+                        maxBufferSize,
+                        Integer.MAX_VALUE,
+                        maxHeapMemory,
+                        maxOffHeapMemory);
 
         pool.setStatisticsEnabled(true);
         return pool;
