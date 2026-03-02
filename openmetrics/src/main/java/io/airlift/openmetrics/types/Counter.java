@@ -25,6 +25,7 @@ public record Counter(String metricName, long value, Map<String, String> labels,
     public Counter
     {
         requireNonNull(metricName, "metricName is null");
+        requireNonNull(labels, "labels is null");
     }
 
     public static Counter from(String metricName, CounterStat counterStat, Map<String, String> labels, String help)

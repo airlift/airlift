@@ -23,6 +23,7 @@ public record Gauge(String metricName, double value, Map<String, String> labels,
     public Gauge
     {
         requireNonNull(metricName, "metricName is null");
+        requireNonNull(labels, "labels is null");
     }
 
     public static Gauge from(String metricName, Number value, Map<String, String> labels, String help)

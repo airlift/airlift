@@ -25,6 +25,7 @@ public record BigCounter(String metricName, BigInteger value, Map<String, String
     {
         requireNonNull(metricName, "metricName is null");
         requireNonNull(value, "value is null");
+        requireNonNull(labels, "labels is null");
     }
 
     @Override

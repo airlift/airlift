@@ -43,6 +43,7 @@ public record CompositeMetric(String metricName, Map<String, String> labels, Str
     {
         requireNonNull(metricName, "metricName is null");
         requireNonNull(subMetrics, "subMetrics is null");
+        requireNonNull(labels, "labels is null");
     }
 
     public static CompositeMetric from(String metricName, Object value, Map<String, String> labels, String help)
