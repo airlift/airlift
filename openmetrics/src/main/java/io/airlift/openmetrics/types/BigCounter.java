@@ -13,6 +13,8 @@
  */
 package io.airlift.openmetrics.types;
 
+import com.google.common.collect.ImmutableMap;
+
 import java.math.BigInteger;
 import java.util.Map;
 
@@ -25,6 +27,7 @@ public record BigCounter(String metricName, BigInteger value, Map<String, String
     {
         requireNonNull(metricName, "metricName is null");
         requireNonNull(value, "value is null");
+        labels = ImmutableMap.copyOf(labels);
     }
 
     @Override

@@ -13,6 +13,8 @@
  */
 package io.airlift.openmetrics.types;
 
+import com.google.common.collect.ImmutableMap;
+
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
@@ -23,6 +25,7 @@ public record Gauge(String metricName, double value, Map<String, String> labels,
     public Gauge
     {
         requireNonNull(metricName, "metricName is null");
+        labels = ImmutableMap.copyOf(labels);
     }
 
     public static Gauge from(String metricName, Number value, Map<String, String> labels, String help)
