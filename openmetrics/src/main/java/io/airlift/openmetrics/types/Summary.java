@@ -44,6 +44,7 @@ public record Summary(String metricName, Long count, Double sum, Double created,
     public Summary
     {
         requireNonNull(metricName, "metricName is null");
+        labels = ImmutableMap.copyOf(labels);
     }
 
     @Override

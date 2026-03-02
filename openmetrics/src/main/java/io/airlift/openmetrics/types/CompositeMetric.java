@@ -15,6 +15,7 @@ package io.airlift.openmetrics.types;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
@@ -43,6 +44,7 @@ public record CompositeMetric(String metricName, Map<String, String> labels, Str
     {
         requireNonNull(metricName, "metricName is null");
         requireNonNull(subMetrics, "subMetrics is null");
+        labels = ImmutableMap.copyOf(labels);
     }
 
     public static CompositeMetric from(String metricName, Object value, Map<String, String> labels, String help)

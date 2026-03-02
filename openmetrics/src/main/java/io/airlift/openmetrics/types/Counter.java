@@ -13,6 +13,7 @@
  */
 package io.airlift.openmetrics.types;
 
+import com.google.common.collect.ImmutableMap;
 import io.airlift.stats.CounterStat;
 
 import java.util.Map;
@@ -25,6 +26,7 @@ public record Counter(String metricName, long value, Map<String, String> labels,
     public Counter
     {
         requireNonNull(metricName, "metricName is null");
+        labels = ImmutableMap.copyOf(labels);
     }
 
     public static Counter from(String metricName, CounterStat counterStat, Map<String, String> labels, String help)

@@ -13,6 +13,8 @@
  */
 package io.airlift.openmetrics.types;
 
+import com.google.common.collect.ImmutableMap;
+
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
@@ -24,6 +26,7 @@ public record Info(String metricName, String value, Map<String, String> labels, 
     {
         requireNonNull(metricName, "metricName is null");
         requireNonNull(value, "value is null");
+        labels = ImmutableMap.copyOf(labels);
     }
 
     @Override
