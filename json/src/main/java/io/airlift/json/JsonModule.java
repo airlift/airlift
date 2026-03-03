@@ -32,10 +32,18 @@ public class JsonModule
         // NOTE: this MUST NOT be a singleton because ObjectMappers are mutable.  This means
         // one component could reconfigure the mapper and break all other components
         binder.bind(JsonMapper.class).toProvider(JsonMapperProvider.class);
-
-        // For backward compatibility with the usage sites that depends on ObjectMapper
-        binder.bind(ObjectMapper.class).toProvider(JsonMapperProvider.class);
+        bindDeprecatedProvider(binder);
 
         binder.bind(JsonCodecFactory.class).in(Scopes.SINGLETON);
+    }
+
+    @SuppressWarnings("deprecation")
+    private static void bindDeprecatedProvider(Binder binder)
+    {
+        // NOTE: this MUST NOT be a singleton because ObjectMappers are mutable.  This means
+        // one component could reconfigure the mapper and break all other components
+
+        // For backward compatibility with the usage sites that depends on ObjectMapper
+        binder.bind(ObjectMapper.class).toProvider(ObjectMapperProvider.class);
     }
 }
