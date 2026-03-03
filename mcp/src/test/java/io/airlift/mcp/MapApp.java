@@ -2,7 +2,7 @@ package io.airlift.mcp;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import io.airlift.mcp.model.CallToolResult;
@@ -25,12 +25,12 @@ import static java.util.Objects.requireNonNull;
 // this class ported from server.ts with help from Claude
 public class MapApp
 {
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
 
     @Inject
-    public MapApp(ObjectMapper objectMapper)
+    public MapApp(JsonMapper jsonMapper)
     {
-        this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
+        this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
     }
 
     @McpTool(
@@ -123,7 +123,7 @@ public class MapApp
         }
 
         try (InputStream is = conn.getInputStream()) {
-            return objectMapper.readValue(is, new TypeReference<>() {});
+            return jsonMapper.readValue(is, new TypeReference<>() {});
         }
     }
 }

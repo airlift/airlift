@@ -1,7 +1,6 @@
 package io.airlift.mcp.reflection;
 
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.base.Suppliers;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
@@ -53,16 +52,16 @@ public class MethodInvoker
 {
     private final String methodName;
     private final List<MethodParameter> parameters;
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
     private final Supplier<MethodHandle> methodHandle;
 
     // instance is a Provider to avoid a circular dependency problem with `McpServer` implementations
     @Inject
-    public MethodInvoker(Provider<?> instance, Method method, List<MethodParameter> parameters, ObjectMapper objectMapper)
+    public MethodInvoker(Provider<?> instance, Method method, List<MethodParameter> parameters, JsonMapper jsonMapper)
     {
         this.methodName = method.getName();
         this.parameters = ImmutableList.copyOf(parameters);
-        this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
+        this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
 
         try {
             MethodType methodType = MethodType.methodType(method.getReturnType(), method.getParameterTypes());
@@ -220,8 +219,7 @@ public class MethodInvoker
         }
 
         if (objectParameter.rawType().isRecord() || Optional.class.isAssignableFrom(objectParameter.rawType()) || objectParameter.rawType().isEnum()) {
-            JavaType javaType = objectMapper.getTypeFactory().constructType(objectParameter.genericType());
-            return objectMapper.convertValue(value, javaType);
+            return jsonMapper.convertValue(value, jsonMapper.constructType(objectParameter.genericType()));
         }
 
         return value;

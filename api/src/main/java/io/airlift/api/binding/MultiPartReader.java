@@ -1,6 +1,6 @@
 package io.airlift.api.binding;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.TypeToken;
 import io.airlift.api.ApiMultiPart.ApiMultiPartForm;
@@ -37,12 +37,12 @@ class MultiPartReader
     private static final ValidationContext validationContext = new ValidationContext();
 
     private final Class<?> resourceType;
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
     private final boolean resourceIsFirstItem;
 
-    MultiPartReader(Type type, ObjectMapper objectMapper)
+    MultiPartReader(Type type, JsonMapper jsonMapper)
     {
-        this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
+        this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
         resourceType = validationContext.extractGenericParameterAsClass(type, 0);
         checkArgument(resourceType.isRecord(), "type is not a record: %s", resourceType);
         resourceIsFirstItem = TypeToken.of(type).isSubtypeOf(ApiMultiPartFormWithResource.class);
@@ -57,7 +57,7 @@ class MultiPartReader
 
             if (resourceIsFirstItem && itemIterator.hasNext()) {
                 FileItemInput itemInput = itemIterator.next();
-                Object resource = objectMapper.readValue(itemInput.getInputStream(), resourceType);
+                Object resource = jsonMapper.readValue(itemInput.getInputStream(), resourceType);
                 return new ApiMultiPartFormWithResource<>(resource, itemInputIterator(itemIterator));
             }
 

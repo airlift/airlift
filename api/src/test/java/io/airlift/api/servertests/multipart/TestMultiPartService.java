@@ -1,11 +1,11 @@
 package io.airlift.api.servertests.multipart;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.io.Resources;
 import io.airlift.api.servertests.ServerTestBase;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
-import io.airlift.json.ObjectMapperProvider;
+import io.airlift.json.JsonMapperProvider;
 import jakarta.ws.rs.core.UriBuilder;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
@@ -40,10 +40,10 @@ public class TestMultiPartService
     public void testMultiPartService()
             throws IOException
     {
-        ObjectMapper objectMapper = new ObjectMapperProvider().get();
+        JsonMapper jsonMapper = new JsonMapperProvider().get();
 
         MultipartEntityBuilder builder = MultipartEntityBuilder.create();
-        builder.addTextBody("part", objectMapper.writeValueAsString(MultiPartService.THE_PART), ContentType.APPLICATION_JSON);
+        builder.addTextBody("part", jsonMapper.writeValueAsString(MultiPartService.THE_PART), ContentType.APPLICATION_JSON);
         builder.addBinaryBody("file", testFile);
         HttpEntity entity = builder.build();
 

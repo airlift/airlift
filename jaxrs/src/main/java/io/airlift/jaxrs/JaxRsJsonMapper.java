@@ -1,7 +1,7 @@
 package io.airlift.jaxrs;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.jakarta.rs.json.JacksonJsonProvider;
 import com.google.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -23,13 +23,13 @@ import static com.fasterxml.jackson.jakarta.rs.cfg.JakartaRSFeature.ADD_NO_SNIFF
 @Provider
 @Consumes({MediaType.APPLICATION_JSON, "text/json"})
 @Produces({MediaType.APPLICATION_JSON, "text/json"})
-public class JsonMapper
+public class JaxRsJsonMapper
         extends JacksonJsonProvider
 {
     @Inject
-    public JsonMapper(ObjectMapper objectMapper)
+    public JaxRsJsonMapper(JsonMapper jsonMapper)
     {
-        super(objectMapper);
+        super(jsonMapper);
         enable(ADD_NO_SNIFF_HEADER);
         enable(INCLUDE_SOURCE_IN_LOCATION);
     }

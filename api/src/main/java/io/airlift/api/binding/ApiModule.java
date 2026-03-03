@@ -1,7 +1,7 @@
 package io.airlift.api.binding;
 
 import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -305,13 +305,14 @@ public class ApiModule
     static class SerializationValidator
     {
         @Inject
-        SerializationValidator(ResourceSerializationValidator validator, ObjectMapper objectMapper)
+        SerializationValidator(ResourceSerializationValidator validator, JsonMapper jsonMapper)
         {
             requireNonNull(validator, "validator is null");
-            requireNonNull(objectMapper, "objectMapper is null");
-
-            objectMapper.disable(FAIL_ON_UNWRAPPED_TYPE_IDENTIFIERS);
-            validator.validateSerialization(objectMapper);
+            jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null")
+                    .rebuild()
+                    .disable(FAIL_ON_UNWRAPPED_TYPE_IDENTIFIERS)
+                    .build();
+            validator.validateSerialization(jsonMapper);
         }
     }
 

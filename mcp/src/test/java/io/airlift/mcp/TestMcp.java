@@ -1,6 +1,6 @@
 package io.airlift.mcp;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -118,7 +118,7 @@ public abstract class TestMcp
     private final TestingClient client2;
     private final String baseUri;
     private final HttpClient httpClient;
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
     private final TestingServer testingServer;
     private final Supplier<Set<SessionId>> sessionIdsSupplier;
     private final Consumer<SessionId> sessionDeleter;
@@ -153,7 +153,7 @@ public abstract class TestMcp
         client2 = buildClient(closer, baseUri, "Client 2");
 
         httpClient = testingServer.httpClient();
-        objectMapper = testingServer.injector().getInstance(ObjectMapper.class);
+        jsonMapper = testingServer.injector().getInstance(JsonMapper.class);
 
         SessionController sessionController = testingServer.injector().getInstance(Key.get(SessionController.class, ForSessionCaching.class));
 
@@ -202,7 +202,7 @@ public abstract class TestMcp
         io.airlift.mcp.model.CallToolRequest callToolRequest = new io.airlift.mcp.model.CallToolRequest("add", ImmutableMap.of("a", 1, "b", 2));
         JsonRpcRequest<?> rpcRequest = JsonRpcRequest.buildRequest(1, "tools/call", callToolRequest);
 
-        JsonCodecFactory jsonCodecFactory = new JsonCodecFactory(objectMapper);
+        JsonCodecFactory jsonCodecFactory = new JsonCodecFactory(jsonMapper);
 
         URI uri = testingServer.injector().getInstance(HttpServerInfo.class).getHttpUri().resolve("/mcp");
 
@@ -400,7 +400,7 @@ public abstract class TestMcp
     public void testGetMcpReturns405()
     {
         URI uri = testingServer.injector().getInstance(HttpServerInfo.class).getHttpUri().resolve("/mcp");
-        JsonCodecFactory jsonCodecFactory = new JsonCodecFactory(objectMapper);
+        JsonCodecFactory jsonCodecFactory = new JsonCodecFactory(jsonMapper);
 
         Request request = prepareGet()
                 .setUri(uri)

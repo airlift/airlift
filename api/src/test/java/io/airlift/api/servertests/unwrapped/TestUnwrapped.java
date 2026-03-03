@@ -31,7 +31,7 @@ public class TestUnwrapped
     {
         super(UnwrappedService.class);
 
-        jsonCodecFactory = new JsonCodecFactory(objectMapper);
+        jsonCodecFactory = new JsonCodecFactory(jsonMapper);
     }
 
     @Test
@@ -40,15 +40,15 @@ public class TestUnwrapped
     {
         Instant now = Instant.now();
         TopLevel topLevel = new TopLevel("topLevel", 123, new ChildLevel(now, 456, Optional.of(40), new ChildChildLevel(true)));
-        String json = objectMapper.writeValueAsString(topLevel);
+        String json = jsonMapper.writeValueAsString(topLevel);
         assertThat(json).isEqualTo("{\"name\":\"topLevel\",\"age\":123,\"timestamp\":\"%s\",\"rate\":456.0,\"scale\":40,\"flag\":true}".formatted(now));
-        TopLevel readTopLevel = objectMapper.readerFor(TopLevel.class).readValue(json);
+        TopLevel readTopLevel = jsonMapper.readerFor(TopLevel.class).readValue(json);
         assertThat(readTopLevel).isEqualTo(topLevel);
 
         ChildLevel childLevel = new ChildLevel(now, 45.54, Optional.empty(), new ChildChildLevel(false));
-        json = objectMapper.writeValueAsString(childLevel);
+        json = jsonMapper.writeValueAsString(childLevel);
         assertThat(json).isEqualTo("{\"timestamp\":\"%s\",\"rate\":45.54,\"flag\":false}".formatted(now));
-        ChildLevel readChildLevel = objectMapper.readerFor(ChildLevel.class).readValue(json);
+        ChildLevel readChildLevel = jsonMapper.readerFor(ChildLevel.class).readValue(json);
         assertThat(readChildLevel).isEqualTo(childLevel);
     }
 

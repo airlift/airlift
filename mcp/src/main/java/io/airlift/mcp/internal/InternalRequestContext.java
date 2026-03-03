@@ -1,6 +1,6 @@
 package io.airlift.mcp.internal;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
@@ -55,16 +55,16 @@ class InternalRequestContext
 {
     private static final Duration PING_THRESHOLD = Duration.ofSeconds(15);
 
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
     private final Optional<SessionController> sessionController;
     private final HttpServletRequest request;
     private final MessageWriter messageWriter;
     private final Optional<Object> progressToken;
     private final Supplier<LoggingLevel> loggingLevelSupplier;
 
-    InternalRequestContext(ObjectMapper objectMapper, Optional<SessionController> sessionController, HttpServletRequest request, MessageWriter messageWriter, Optional<Object> progressToken)
+    InternalRequestContext(JsonMapper jsonMapper, Optional<SessionController> sessionController, HttpServletRequest request, MessageWriter messageWriter, Optional<Object> progressToken)
     {
-        this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
+        this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
         this.sessionController = requireNonNull(sessionController, "sessionController is null");
         this.request = requireNonNull(request, "request is null");
         this.messageWriter = requireNonNull(messageWriter, "messageWriter is null");
@@ -154,7 +154,7 @@ class InternalRequestContext
                 try {
                     if (rpcResponse.result().isPresent()) {
                         Object result = rpcResponse.result().orElseThrow();
-                        R convertedValue = objectMapper.convertValue(result, responseType);
+                        R convertedValue = jsonMapper.convertValue(result, responseType);
                         return new JsonRpcResponse<>(rpcResponse.id(), Optional.empty(), Optional.of(convertedValue));
                     }
                     return rpcResponse;
@@ -251,7 +251,7 @@ class InternalRequestContext
     private void internalSendRequest(JsonRpcRequest<?> rpcRequest)
     {
         try {
-            String json = objectMapper.writeValueAsString(rpcRequest);
+            String json = jsonMapper.writeValueAsString(rpcRequest);
             messageWriter.writeMessage(json);
             messageWriter.flushMessages();
         }

@@ -1,13 +1,13 @@
 package io.airlift.mcp;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import io.airlift.json.JsonMapperProvider;
 import io.airlift.json.JsonSubType;
-import io.airlift.json.ObjectMapperProvider;
 import io.airlift.log.Logger;
 import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.GetPromptRequest;
@@ -46,14 +46,14 @@ public class TestSerializationEdgeCases
 {
     private static final Logger log = Logger.get(TestSerializationEdgeCases.class);
 
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
 
     public TestSerializationEdgeCases()
     {
         JsonSubType jsonSubType = McpModule.buildJsonSubType();
-        ObjectMapperProvider objectMapperProvider = new ObjectMapperProvider()
+        JsonMapperProvider jsonMapperProvider = new JsonMapperProvider()
                 .withJsonSubTypes(ImmutableSet.of(jsonSubType));
-        objectMapper = objectMapperProvider.get();
+        jsonMapper = jsonMapperProvider.get();
     }
 
     @Test
@@ -114,7 +114,7 @@ public class TestSerializationEdgeCases
         if (CallToolRequest.class.isAssignableFrom(rawType) || GetPromptRequest.class.isAssignableFrom(rawType)) {
             // sometimes arguments are not provided for CallToolRequest/GetPromptRequest
             try {
-                objectMapper.readerFor(rawType).readValue("{\"name\":\"example\"}");
+                jsonMapper.readerFor(rawType).readValue("{\"name\":\"example\"}");
             }
             catch (JsonProcessingException e) {
                 fail(e);
@@ -165,7 +165,7 @@ public class TestSerializationEdgeCases
         }
 
         if (ObjectNode.class.isAssignableFrom(rawType)) {
-            ObjectNode typeNode = objectMapper.createObjectNode();
+            ObjectNode typeNode = jsonMapper.createObjectNode();
             typeNode.put("type", "string");
             return typeNode;
         }
@@ -212,8 +212,8 @@ public class TestSerializationEdgeCases
         cache.put(componentType, value);
 
         try {
-            String json = objectMapper.writeValueAsString(value);
-            Object deserialized = objectMapper.readerFor(rawType(componentType)).readValue(json);
+            String json = jsonMapper.writeValueAsString(value);
+            Object deserialized = jsonMapper.readerFor(rawType(componentType)).readValue(json);
 
             if ((deserialized instanceof Optional<?> optional) && optional.isEmpty()) {
                 assertThat(value).isNull();

@@ -1,6 +1,6 @@
 package io.airlift.api.servertests;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Closer;
@@ -38,7 +38,7 @@ public class ServerTestBase
     protected final URI baseUri;
     protected final JettyHttpClient httpClient = new JettyHttpClient("testing", new HttpClientConfig());
     protected final Map<String, AtomicInteger> counters = new ConcurrentHashMap<>();
-    protected ObjectMapper objectMapper;
+    protected JsonMapper jsonMapper;
     protected Injector injector;
 
     public ServerTestBase()
@@ -92,7 +92,7 @@ public class ServerTestBase
                 .host("localhost")
                 .build();
 
-        objectMapper = injector.getInstance(ObjectMapper.class);
+        jsonMapper = injector.getInstance(JsonMapper.class);
     }
 
     @AfterAll

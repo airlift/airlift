@@ -1,7 +1,7 @@
 package io.airlift.api.validation;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -36,25 +36,25 @@ public class ResourceSerializationValidator
         this.resourceClasses = requireNonNull(resourceClasses, "resourceClasses is null");
     }
 
-    public void validateSerialization(ObjectMapper objectMapper)
+    public void validateSerialization(JsonMapper jsonMapper)
     {
         ValidationContext validationContext = new ValidationContext();
-        resourceClasses.forEach(resourceClass -> validateSerialization(validationContext, objectMapper, resourceClass));
+        resourceClasses.forEach(resourceClass -> validateSerialization(validationContext, jsonMapper, resourceClass));
     }
 
-    private void validateSerialization(ValidationContext validationContext, ObjectMapper objectMapper, Class<?> resourceClass)
+    private void validateSerialization(ValidationContext validationContext, JsonMapper jsonMapper, Class<?> resourceClass)
     {
         Object instance = getDefaultRecord(validationContext, resourceClass, resourceClass);
         String json;
         try {
-            json = objectMapper.writeValueAsString(instance);
+            json = jsonMapper.writeValueAsString(instance);
         }
         catch (JsonProcessingException e) {
             throw new ValidatorException("Could not serialize Resource %s. Error: %s".formatted(resourceClass.getName(), e.getMessage()));
         }
         Object readInstance;
         try {
-            readInstance = objectMapper.readValue(json, resourceClass);
+            readInstance = jsonMapper.readValue(json, resourceClass);
         }
         catch (JsonProcessingException e) {
             throw new ValidatorException("Could not deserialize Resource %s. Error: %s".formatted(resourceClass.getName(), e.getMessage()));

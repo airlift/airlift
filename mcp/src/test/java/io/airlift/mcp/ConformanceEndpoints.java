@@ -1,7 +1,7 @@
 package io.airlift.mcp;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -47,12 +47,12 @@ public class ConformanceEndpoints
     private static final String TEST_IMAGE_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==";
     private static final String TEST_AUDIO_BASE64 = "UklGRiYAAABXQVZFZm10IBAAAAABAAEAQB8AAAB9AAACABAAZGF0YQIAAAA=";
 
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
 
     @Inject
-    public ConformanceEndpoints(ObjectMapper objectMapper)
+    public ConformanceEndpoints(JsonMapper jsonMapper)
     {
-        this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
+        this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
     }
 
     @McpTool(name = "test_simple_text", description = "Tests simple text content response")
@@ -143,7 +143,7 @@ public class ConformanceEndpoints
     private String mapToJson(Optional<Map<String, Object>> map)
     {
         try {
-            return objectMapper.writeValueAsString(map.orElseGet(ImmutableMap::of));
+            return jsonMapper.writeValueAsString(map.orElseGet(ImmutableMap::of));
         }
         catch (JsonProcessingException e) {
             throw new RuntimeException(e);
@@ -173,7 +173,7 @@ public class ConformanceEndpoints
             throws JsonProcessingException
     {
         String id = values.templateValues().get("id");
-        String json = objectMapper.writeValueAsString(ImmutableMap.of("id", id, "templateTest", true, "data", "Data for ID: " + id));
+        String json = jsonMapper.writeValueAsString(ImmutableMap.of("id", id, "templateTest", true, "data", "Data for ID: " + id));
         return new ResourceContents("template", readResourceRequest.uri(), "application/json", json);
     }
 

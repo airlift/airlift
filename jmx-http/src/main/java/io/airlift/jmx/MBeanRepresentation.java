@@ -17,7 +17,7 @@ package io.airlift.jmx;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
@@ -47,7 +47,7 @@ public class MBeanRepresentation
     private final List<AttributeRepresentation> attributes;
     private final List<OperationRepresentation> operations;
 
-    public MBeanRepresentation(MBeanServer mbeanServer, ObjectName objectName, ObjectMapper objectMapper)
+    public MBeanRepresentation(MBeanServer mbeanServer, ObjectName objectName, JsonMapper jsonMapper)
             throws JMException
     {
         this.objectName = objectName;
@@ -79,7 +79,7 @@ public class MBeanRepresentation
             }
 
             Object attributeValue = attribute.getValue();
-            AttributeRepresentation attributeRepresentation = new AttributeRepresentation(attributeInfo, attributeValue, objectMapper);
+            AttributeRepresentation attributeRepresentation = new AttributeRepresentation(attributeInfo, attributeValue, jsonMapper);
             attributes.add(attributeRepresentation);
         }
         this.attributes = attributes.build();
@@ -141,9 +141,9 @@ public class MBeanRepresentation
         private final Map<String, Object> descriptor;
         private final Object value;
 
-        private AttributeRepresentation(MBeanAttributeInfo attributeInfo, Object value, ObjectMapper objectMapper)
+        private AttributeRepresentation(MBeanAttributeInfo attributeInfo, Object value, JsonMapper jsonMapper)
         {
-            if (canSerialize(value, objectMapper)) {
+            if (canSerialize(value, jsonMapper)) {
                 this.value = value;
                 readable = attributeInfo.isReadable();
                 writable = attributeInfo.isWritable();
@@ -161,7 +161,7 @@ public class MBeanRepresentation
             descriptor = toMap(attributeInfo.getDescriptor());
         }
 
-        private static boolean canSerialize(Object value, ObjectMapper objectMapper)
+        private static boolean canSerialize(Object value, JsonMapper jsonMapper)
         {
             if (value == null) {
                 return true;
@@ -171,7 +171,7 @@ public class MBeanRepresentation
             // the only good way to check if something can be serialized it to serialize it
             // We could save off the serialized data but it looks wrong when pretty printing is enabled
             try {
-                objectMapper.writeValue(nullOutputStream(), value);
+                jsonMapper.writeValue(nullOutputStream(), value);
                 return true;
             }
             catch (Exception e) {

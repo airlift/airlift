@@ -15,8 +15,8 @@
  */
 package io.airlift.jaxrs;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.net.HttpHeaders;
 import com.google.common.reflect.TypeToken;
 import io.airlift.jaxrs.testing.GuavaMultivaluedMap;
@@ -37,9 +37,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 
-public class TestJsonMapper
+public class TestJaxRsJsonMapper
 {
-    private static final JsonMapper jsonMapper = new JsonMapper(new ObjectMapper());
+    private static final JaxRsJsonMapper jsonMapper = new JaxRsJsonMapper(new JsonMapper());
 
     @Test
     public void testSuccess()

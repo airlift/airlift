@@ -88,11 +88,11 @@ public class TestRecursive
         apiClient.setHost(baseUri.getHost());
         apiClient.setPort(baseUri.getPort());
 
-        Poly poly = objectMapper.convertValue(TestModels.TEST_POLY_TEST, Poly.class);
+        Poly poly = jsonMapper.convertValue(TestModels.TEST_POLY_TEST, Poly.class);
         ComplexServiceApi complexServiceApi = new ComplexServiceApi(apiClient);
         complexServiceApi.createPoly(poly);
 
-        Simple simple = objectMapper.convertValue(TestModels.TEST_SIMPLE_RECURSIVE, Simple.class);
+        Simple simple = jsonMapper.convertValue(TestModels.TEST_SIMPLE_RECURSIVE, Simple.class);
         SimpleServiceApi simpleServiceApi = new SimpleServiceApi(apiClient);
         simpleServiceApi.createSimple(simple);
     }

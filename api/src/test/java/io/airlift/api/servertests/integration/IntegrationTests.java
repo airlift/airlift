@@ -1,6 +1,6 @@
 package io.airlift.api.servertests.integration;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Closer;
@@ -104,8 +104,8 @@ public class IntegrationTests
         internalController = testingServer.injector().getInstance(InternalController.class);
 
         // must use injected object mapper which has polymorphic type handling
-        ObjectMapper objectMapper = testingServer.injector().getInstance(ObjectMapper.class);
-        JsonCodecFactory jsonCodecFactory = new JsonCodecFactory(objectMapper);
+        JsonMapper jsonMapper = testingServer.injector().getInstance(JsonMapper.class);
+        JsonCodecFactory jsonCodecFactory = new JsonCodecFactory(jsonMapper);
         detailCodec = jsonCodecFactory.jsonCodec(Detail.class);
     }
 

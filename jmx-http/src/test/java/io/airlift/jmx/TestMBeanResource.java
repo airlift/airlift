@@ -12,8 +12,8 @@ import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.http.server.testing.TestingHttpServer;
 import io.airlift.http.server.testing.TestingHttpServerModule;
 import io.airlift.jaxrs.JaxrsModule;
+import io.airlift.json.JsonMapperProvider;
 import io.airlift.json.JsonModule;
-import io.airlift.json.ObjectMapperProvider;
 import io.airlift.node.testing.TestingNodeModule;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -137,7 +137,7 @@ public class TestMBeanResource
         assertThat(response.getStatusCode()).as(response.getBody()).isEqualTo(200);
         assertContentType(response, JSON_UTF_8);
 
-        return new ObjectMapperProvider().get().readTree(response.getBody());
+        return new JsonMapperProvider().get().readTree(response.getBody());
     }
 
     private URI uriFor(String path)

@@ -17,7 +17,7 @@ package io.airlift.json;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
 import io.airlift.json.LengthLimitedWriter.LengthLimitExceededException;
@@ -38,22 +38,23 @@ import static java.util.Objects.requireNonNull;
 
 public class JsonCodec<T>
 {
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapperProvider().get()
-            .copy()
-            .enable(INDENT_OUTPUT);
+    private static final JsonMapper JSON_MAPPER = new JsonMapperProvider().get()
+            .rebuild()
+            .enable(INDENT_OUTPUT)
+            .build();
 
     public static <T> JsonCodec<T> jsonCodec(Class<T> type)
     {
         requireNonNull(type, "type is null");
 
-        return new JsonCodec<>(OBJECT_MAPPER, type);
+        return new JsonCodec<>(JSON_MAPPER, type);
     }
 
     public static <T> JsonCodec<T> jsonCodec(TypeToken<T> type)
     {
         requireNonNull(type, "type is null");
 
-        return new JsonCodec<>(OBJECT_MAPPER, type.getType());
+        return new JsonCodec<>(JSON_MAPPER, type.getType());
     }
 
     public static <T> JsonCodec<List<T>> listJsonCodec(Class<T> type)
@@ -64,7 +65,7 @@ public class JsonCodec<T>
                 .where(new TypeParameter<>() {}, type)
                 .getType();
 
-        return new JsonCodec<>(OBJECT_MAPPER, listType);
+        return new JsonCodec<>(JSON_MAPPER, listType);
     }
 
     public static <T> JsonCodec<List<T>> listJsonCodec(JsonCodec<T> type)
@@ -75,7 +76,7 @@ public class JsonCodec<T>
                 .where(new TypeParameter<>() {}, type.getTypeToken())
                 .getType();
 
-        return new JsonCodec<>(OBJECT_MAPPER, listType);
+        return new JsonCodec<>(JSON_MAPPER, listType);
     }
 
     public static <K, V> JsonCodec<Map<K, V>> mapJsonCodec(Class<K> keyType, Class<V> valueType)
@@ -88,7 +89,7 @@ public class JsonCodec<T>
                 .where(new TypeParameter<>() {}, valueType)
                 .getType();
 
-        return new JsonCodec<>(OBJECT_MAPPER, mapType);
+        return new JsonCodec<>(JSON_MAPPER, mapType);
     }
 
     public static <K, V> JsonCodec<Map<K, V>> mapJsonCodec(Class<K> keyType, JsonCodec<V> valueType)
@@ -101,18 +102,18 @@ public class JsonCodec<T>
                 .where(new TypeParameter<>() {}, valueType.getTypeToken())
                 .getType();
 
-        return new JsonCodec<>(OBJECT_MAPPER, mapType);
+        return new JsonCodec<>(JSON_MAPPER, mapType);
     }
 
-    private final ObjectMapper mapper;
+    private final JsonMapper mapper;
     private final Type type;
     private final JavaType javaType;
 
-    JsonCodec(ObjectMapper mapper, Type type)
+    JsonCodec(JsonMapper mapper, Type type)
     {
         this.mapper = mapper;
         this.type = type;
-        this.javaType = mapper.getTypeFactory().constructType(type);
+        this.javaType = mapper.constructType(type);
     }
 
     /**

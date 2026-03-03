@@ -31,7 +31,6 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.KeyDeserializer;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.Module;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -51,10 +50,10 @@ import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
 
-public class ObjectMapperProvider
-        implements Provider<ObjectMapper>
+public class JsonMapperProvider
+        implements Provider<JsonMapper>
 {
-    private final JsonFactory jsonFactory;
+    private final JsonMapper.Builder jsonMapper;
 
     private Map<Class<?>, JsonSerializer<?>> keySerializers;
     private Map<Class<?>, KeyDeserializer> keyDeserializers;
@@ -63,20 +62,17 @@ public class ObjectMapperProvider
 
     private final Set<JsonSubType> jsonSubTypes = new HashSet<>();
 
-    private final Set<Module> modules = new HashSet<>();
-
-    @Inject
-    public ObjectMapperProvider()
+    public JsonMapperProvider()
     {
         this(new JsonFactoryBuilder());
     }
 
-    public ObjectMapperProvider(JsonFactory jsonFactory)
+    public JsonMapperProvider(JsonFactory jsonFactory)
     {
         this(new JsonFactoryBuilder(requireNonNull(jsonFactory, "jsonFactory is null")));
     }
 
-    private ObjectMapperProvider(JsonFactoryBuilder jsonFactoryBuilder)
+    private JsonMapperProvider(JsonFactoryBuilder jsonFactoryBuilder)
     {
         // Disable the length limit, caller will be responsible for validating the input length
         jsonFactoryBuilder.streamReadConstraints(StreamReadConstraints
@@ -109,20 +105,48 @@ public class ObjectMapperProvider
          * See: https://github.com/FasterXML/jackson-core/issues/332.
          */
         jsonFactoryBuilder.disable(JsonFactory.Feature.INTERN_FIELD_NAMES);
-
         jsonFactoryBuilder.recyclerPool(JsonRecyclerPools.threadLocalPool());
 
-        jsonFactory = jsonFactoryBuilder.build();
+        jsonMapper = JsonMapper.builder(jsonFactoryBuilder.build());
 
-        modules.add(new Jdk8Module());
-        modules.add(new JavaTimeModule());
-        modules.add(new GuavaModule());
-        modules.add(new ParameterNamesModule());
-        modules.add(new RecordAutoDetectModule());
+        // ignore unknown fields (for backwards compatibility)
+        jsonMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+
+        // do not allow converting a float to an integer
+        jsonMapper.disable(DeserializationFeature.ACCEPT_FLOAT_AS_INT);
+
+        // use ISO dates
+        jsonMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+        // When serialization fails in the middle, it's better to return a truncated (invalid) JSON
+        // than something that could be interpreted as a valid (but incorrect) result.
+        // This is especially applicable to server endpoints that return JSON responses.
+        jsonMapper.disable(JsonGenerator.Feature.AUTO_CLOSE_JSON_CONTENT);
+
+        // Skip fields that are null or absent (Optional) when serializing objects.
+        // This only applies to mapped object fields, not containers like Map or List.
+        jsonMapper.defaultPropertyInclusion(JsonInclude.Value.construct(JsonInclude.Include.NON_ABSENT, JsonInclude.Include.ALWAYS));
+
+        // disable auto detection of json properties... all properties must be explicit
+        jsonMapper.disable(MapperFeature.AUTO_DETECT_CREATORS);
+        jsonMapper.disable(MapperFeature.AUTO_DETECT_FIELDS);
+        jsonMapper.disable(MapperFeature.AUTO_DETECT_SETTERS);
+        jsonMapper.disable(MapperFeature.AUTO_DETECT_GETTERS);
+        jsonMapper.disable(MapperFeature.AUTO_DETECT_IS_GETTERS);
+        jsonMapper.disable(MapperFeature.USE_GETTERS_AS_SETTERS);
+        jsonMapper.disable(MapperFeature.CAN_OVERRIDE_ACCESS_MODIFIERS);
+        jsonMapper.disable(MapperFeature.INFER_PROPERTY_MUTATORS);
+        jsonMapper.disable(MapperFeature.ALLOW_FINAL_FIELDS_AS_MUTATORS);
+
+        jsonMapper.addModule(new Jdk8Module());
+        jsonMapper.addModule(new JavaTimeModule());
+        jsonMapper.addModule(new GuavaModule());
+        jsonMapper.addModule(new ParameterNamesModule());
+        jsonMapper.addModule(new RecordAutoDetectModule());
 
         try {
             getClass().getClassLoader().loadClass("org.joda.time.DateTime");
-            modules.add(new JodaModule());
+            jsonMapper.addModule(new JodaModule());
         }
         catch (ClassNotFoundException ignored) {
         }
@@ -134,7 +158,7 @@ public class ObjectMapperProvider
         this.jsonSerializers = ImmutableMap.copyOf(jsonSerializers);
     }
 
-    public ObjectMapperProvider withJsonSerializers(Map<Class<?>, JsonSerializer<?>> jsonSerializers)
+    public JsonMapperProvider withJsonSerializers(Map<Class<?>, JsonSerializer<?>> jsonSerializers)
     {
         setJsonSerializers(jsonSerializers);
         return this;
@@ -146,7 +170,7 @@ public class ObjectMapperProvider
         this.jsonDeserializers = ImmutableMap.copyOf(jsonDeserializers);
     }
 
-    public ObjectMapperProvider withJsonDeserializers(Map<Class<?>, JsonDeserializer<?>> jsonDeserializers)
+    public JsonMapperProvider withJsonDeserializers(Map<Class<?>, JsonDeserializer<?>> jsonDeserializers)
     {
         setJsonDeserializers(jsonDeserializers);
         return this;
@@ -158,7 +182,7 @@ public class ObjectMapperProvider
         this.keySerializers = keySerializers;
     }
 
-    public ObjectMapperProvider withKeySerializers(@JsonKeySerde Map<Class<?>, JsonSerializer<?>> keySerializers)
+    public JsonMapperProvider withKeySerializers(@JsonKeySerde Map<Class<?>, JsonSerializer<?>> keySerializers)
     {
         setKeySerializers(keySerializers);
         return this;
@@ -170,7 +194,7 @@ public class ObjectMapperProvider
         this.keyDeserializers = keyDeserializers;
     }
 
-    public ObjectMapperProvider withKeyDeserializers(@JsonKeySerde Map<Class<?>, KeyDeserializer> keyDeserializers)
+    public JsonMapperProvider withKeyDeserializers(@JsonKeySerde Map<Class<?>, KeyDeserializer> keyDeserializers)
     {
         setKeyDeserializers(keyDeserializers);
         return this;
@@ -179,10 +203,10 @@ public class ObjectMapperProvider
     @Inject(optional = true)
     public void setModules(Set<Module> modules)
     {
-        this.modules.addAll(modules);
+        modules.forEach(jsonMapper::addModule);
     }
 
-    public ObjectMapperProvider withModules(Set<Module> modules)
+    public JsonMapperProvider withModules(Set<Module> modules)
     {
         setModules(modules);
         return this;
@@ -194,46 +218,15 @@ public class ObjectMapperProvider
         this.jsonSubTypes.addAll(jsonSubTypes);
     }
 
-    public ObjectMapperProvider withJsonSubTypes(Set<JsonSubType> jsonSubTypes)
+    public JsonMapperProvider withJsonSubTypes(Set<JsonSubType> jsonSubTypes)
     {
         setJsonSubTypes(jsonSubTypes);
         return this;
     }
 
     @Override
-    public ObjectMapper get()
+    public JsonMapper get()
     {
-        JsonMapper.Builder objectMapper = JsonMapper.builder(jsonFactory);
-
-        // ignore unknown fields (for backwards compatibility)
-        objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-
-        // do not allow converting a float to an integer
-        objectMapper.disable(DeserializationFeature.ACCEPT_FLOAT_AS_INT);
-
-        // use ISO dates
-        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-
-        // When serialization fails in the middle, it's better to return a truncated (invalid) JSON
-        // than something that could be interpreted as a valid (but incorrect) result.
-        // This is especially applicable to server endpoints that return JSON responses.
-        objectMapper.disable(JsonGenerator.Feature.AUTO_CLOSE_JSON_CONTENT);
-
-        // Skip fields that are null or absent (Optional) when serializing objects.
-        // This only applies to mapped object fields, not containers like Map or List.
-        objectMapper.defaultPropertyInclusion(JsonInclude.Value.construct(JsonInclude.Include.NON_ABSENT, JsonInclude.Include.ALWAYS));
-
-        // disable auto detection of json properties... all properties must be explicit
-        objectMapper.disable(MapperFeature.AUTO_DETECT_CREATORS);
-        objectMapper.disable(MapperFeature.AUTO_DETECT_FIELDS);
-        objectMapper.disable(MapperFeature.AUTO_DETECT_SETTERS);
-        objectMapper.disable(MapperFeature.AUTO_DETECT_GETTERS);
-        objectMapper.disable(MapperFeature.AUTO_DETECT_IS_GETTERS);
-        objectMapper.disable(MapperFeature.USE_GETTERS_AS_SETTERS);
-        objectMapper.disable(MapperFeature.CAN_OVERRIDE_ACCESS_MODIFIERS);
-        objectMapper.disable(MapperFeature.INFER_PROPERTY_MUTATORS);
-        objectMapper.disable(MapperFeature.ALLOW_FINAL_FIELDS_AS_MUTATORS);
-
         if (jsonSerializers != null || jsonDeserializers != null || keySerializers != null || keyDeserializers != null) {
             SimpleModule module = new SimpleModule(getClass().getName(), new Version(1, 0, 0, null, null, null));
             if (jsonSerializers != null) {
@@ -256,16 +249,15 @@ public class ObjectMapperProvider
                     module.addKeyDeserializer(entry.getKey(), entry.getValue());
                 }
             }
-            modules.add(module);
+            jsonMapper.addModule(module);
         }
 
         for (JsonSubType jsonSubType : jsonSubTypes) {
-            modules.addAll(jsonSubType.modules());
+            jsonSubType.modules()
+                    .forEach(jsonMapper::addModule);
         }
 
-        objectMapper.addModules(modules);
-
-        return objectMapper.build();
+        return jsonMapper.build();
     }
 
     //

@@ -23,8 +23,8 @@ import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.deser.std.StdScalarDeserializer;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
@@ -61,7 +61,7 @@ public class TestJsonModule
             .setNotes("sweet!")
             .setNameList(superDuper("d*a*i*n"));
 
-    private ObjectMapper objectMapper;
+    private JsonMapper jsonMapper;
 
     @BeforeAll
     public void setUp()
@@ -71,7 +71,7 @@ public class TestJsonModule
                     jsonBinder(binder).addSerializerBinding(SuperDuperNameList.class).toInstance(ToStringSerializer.instance);
                     jsonBinder(binder).addDeserializerBinding(SuperDuperNameList.class).to(SuperDuperNameListDeserializer.class);
                 });
-        objectMapper = injector.getInstance(ObjectMapper.class);
+        jsonMapper = injector.getInstance(JsonMapper.class);
     }
 
     @Test
@@ -90,8 +90,8 @@ public class TestJsonModule
             throws Exception
     {
         assertThat(CAR).isEqualTo(CAR);
-        String json = objectMapper.writeValueAsString(CAR);
-        Car actual = objectMapper.readValue(json, Car.class);
+        String json = jsonMapper.writeValueAsString(CAR);
+        Car actual = jsonMapper.readValue(json, Car.class);
         assertThat(actual).isEqualTo(CAR);
     }
 
@@ -121,8 +121,8 @@ public class TestJsonModule
     {
         ImmutableList<Integer> list = ImmutableList.of(3, 5, 8);
 
-        String json = objectMapper.writeValueAsString(list);
-        List<Integer> actual = objectMapper.readValue(json, new TypeReference<>() {});
+        String json = jsonMapper.writeValueAsString(list);
+        List<Integer> actual = jsonMapper.readValue(json, new TypeReference<>() {});
 
         assertThat(actual).isEqualTo(list);
     }
@@ -137,7 +137,7 @@ public class TestJsonModule
         data.put("unknown", "bogus");
 
         // Jackson should deserialize the object correctly with the extra unknown data
-        assertThat(objectMapper.readValue(objectMapper.writeValueAsString(data), Car.class)).isEqualTo(CAR);
+        assertThat(jsonMapper.readValue(jsonMapper.writeValueAsString(data), Car.class)).isEqualTo(CAR);
     }
 
     @Test
@@ -145,7 +145,7 @@ public class TestJsonModule
             throws Exception
     {
         NoJsonPropertiesInJsonCreator value = new NoJsonPropertiesInJsonCreator("first value", "second value");
-        NoJsonPropertiesInJsonCreator mapped = objectMapper.readValue(objectMapper.writeValueAsString(value), NoJsonPropertiesInJsonCreator.class);
+        NoJsonPropertiesInJsonCreator mapped = jsonMapper.readValue(jsonMapper.writeValueAsString(value), NoJsonPropertiesInJsonCreator.class);
         assertThat(mapped.getFirst()).isEqualTo("first value");
         assertThat(mapped.getSecond()).isEqualTo("second value");
     }
@@ -155,14 +155,14 @@ public class TestJsonModule
             throws Exception
     {
         JsonValueAndStaticFactoryMethod value = JsonValueAndStaticFactoryMethod.valueOf("some value");
-        JsonValueAndStaticFactoryMethod mapped = objectMapper.readValue(objectMapper.writeValueAsString(value), JsonValueAndStaticFactoryMethod.class);
+        JsonValueAndStaticFactoryMethod mapped = jsonMapper.readValue(jsonMapper.writeValueAsString(value), JsonValueAndStaticFactoryMethod.class);
         assertThat(mapped.getValue()).isEqualTo("some value");
     }
 
     private Map<String, Object> createCarMap()
             throws IOException
     {
-        return objectMapper.readValue(objectMapper.writeValueAsString(CAR), new TypeReference<>() {});
+        return jsonMapper.readValue(jsonMapper.writeValueAsString(CAR), new TypeReference<>() {});
     }
 
     public static class Car

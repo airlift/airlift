@@ -1,7 +1,7 @@
 package io.airlift.mcp;
 
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
@@ -40,13 +40,13 @@ public class DebugApp
 {
     private final AtomicInteger callCounter = new AtomicInteger();
     private final File logFile;
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
 
     @Inject
-    public DebugApp(ObjectMapper objectMapper)
+    public DebugApp(JsonMapper jsonMapper)
             throws IOException
     {
-        this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
+        this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
 
         logFile = File.createTempFile("debug-app-log", ".txt");
     }
@@ -203,7 +203,7 @@ public class DebugApp
     {
         try {
             Map<String, Object> data = ImmutableMap.of("timestamp", timestamp, "type", type, "payload", payload);
-            Files.writeString(logFile.toPath(), objectMapper.writeValueAsString(data), APPEND);
+            Files.writeString(logFile.toPath(), jsonMapper.writeValueAsString(data), APPEND);
         }
         catch (IOException e) {
             throw new UncheckedIOException(e);

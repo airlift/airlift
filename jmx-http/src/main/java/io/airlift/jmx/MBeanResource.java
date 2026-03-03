@@ -15,7 +15,7 @@
  */
 package io.airlift.jmx;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
 import com.google.inject.Inject;
@@ -39,13 +39,13 @@ import static java.util.Objects.requireNonNull;
 public class MBeanResource
 {
     private final MBeanServer mbeanServer;
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
 
     @Inject
-    public MBeanResource(MBeanServer mbeanServer, ObjectMapper objectMapper)
+    public MBeanResource(MBeanServer mbeanServer, JsonMapper jsonMapper)
     {
         this.mbeanServer = mbeanServer;
-        this.objectMapper = objectMapper;
+        this.jsonMapper = jsonMapper;
     }
 
     @GET
@@ -64,7 +64,7 @@ public class MBeanResource
     {
         ImmutableList.Builder<MBeanRepresentation> mbeans = ImmutableList.builder();
         for (ObjectName objectName : mbeanServer.queryNames(ObjectName.WILDCARD, null)) {
-            mbeans.add(new MBeanRepresentation(mbeanServer, objectName, objectMapper));
+            mbeans.add(new MBeanRepresentation(mbeanServer, objectName, jsonMapper));
         }
 
         return mbeans.build();
@@ -77,7 +77,7 @@ public class MBeanResource
             throws JMException
     {
         requireNonNull(objectName, "objectName is null");
-        return new MBeanRepresentation(mbeanServer, objectName, objectMapper);
+        return new MBeanRepresentation(mbeanServer, objectName, jsonMapper);
     }
 
     @GET

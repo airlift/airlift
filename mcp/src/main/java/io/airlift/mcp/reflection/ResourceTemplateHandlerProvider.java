@@ -1,6 +1,6 @@
 package io.airlift.mcp.reflection;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
@@ -39,7 +39,7 @@ public class ResourceTemplateHandlerProvider
     private final boolean resultIsSingleContent;
     private final List<String> icons;
     private Injector injector;
-    private ObjectMapper objectMapper;
+    private JsonMapper jsonMapper;
 
     public ResourceTemplateHandlerProvider(McpResourceTemplate mcpResourceTemplate, Class<?> clazz, Method method, List<MethodParameter> parameters)
     {
@@ -67,9 +67,9 @@ public class ResourceTemplateHandlerProvider
     }
 
     @Inject
-    public void setObjectMapper(ObjectMapper objectMapper)
+    public void setJsonMapper(JsonMapper jsonMapper)
     {
-        this.objectMapper = objectMapper;
+        this.jsonMapper = jsonMapper;
     }
 
     @Override
@@ -77,7 +77,7 @@ public class ResourceTemplateHandlerProvider
     {
         Provider<?> instance = injector.getProvider(clazz);
         IconHelper iconHelper = injector.getInstance(IconHelper.class);
-        MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper);
+        MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, jsonMapper);
 
         ResourceTemplateHandler resourceTemplateHandler = (requestContext, sourceResourceTemplate, readResourceRequest, resourceTemplateValues) -> {
             Object result = methodInvoker.builder(requestContext)

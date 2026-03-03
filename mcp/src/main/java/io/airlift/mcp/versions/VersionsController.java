@@ -1,7 +1,7 @@
 package io.airlift.mcp.versions;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableMap;
@@ -52,15 +52,15 @@ public class VersionsController
 
     private final Optional<SessionController> sessionController;
     private final McpServer mcpServer;
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
     private final Cache<String, String> resourceVersionsCache;
 
     @Inject
-    public VersionsController(Optional<SessionController> sessionController, McpServer mcpServer, ObjectMapper objectMapper, McpConfig mcpConfig)
+    public VersionsController(Optional<SessionController> sessionController, McpServer mcpServer, JsonMapper jsonMapper, McpConfig mcpConfig)
     {
         this.sessionController = requireNonNull(sessionController, "sessionController is null");
         this.mcpServer = requireNonNull(mcpServer, "mcpServer is null");
-        this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
+        this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
 
         resourceVersionsCache = CacheBuilder.newBuilder()
                 .expireAfterWrite(mcpConfig.getResourceSubscriptionCachePeriod().toJavaTime())
@@ -226,7 +226,7 @@ public class VersionsController
     private <T> String asJson(T item)
     {
         try {
-            return objectMapper.writeValueAsString(item);
+            return jsonMapper.writeValueAsString(item);
         }
         catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);

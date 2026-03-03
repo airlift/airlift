@@ -1,6 +1,6 @@
 package io.airlift.mcp.internal;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
@@ -108,7 +108,7 @@ public class InternalMcpServer
     private final Map<URI, ResourceEntry> resources = new ConcurrentHashMap<>();
     private final Map<UriTemplate, ResourceTemplateEntry> resourceTemplates = new ConcurrentHashMap<>();
     private final Map<String, CompletionEntry> completions = new ConcurrentHashMap<>();
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
     private final McpMetadata metadata;
     private final LifeCycleManager lifeCycleManager;
     private final PaginationUtil paginationUtil;
@@ -120,7 +120,7 @@ public class InternalMcpServer
 
     @Inject
     InternalMcpServer(
-            ObjectMapper objectMapper,
+            JsonMapper jsonMapper,
             McpMetadata metadata,
             LifeCycleManager lifeCycleManager,
             Optional<SessionController> sessionController,
@@ -136,7 +136,7 @@ public class InternalMcpServer
             Provider<VersionsController> versionsController,
             McpCapabilityFilter capabilityFilter)
     {
-        this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
+        this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
         this.lifeCycleManager = requireNonNull(lifeCycleManager, "lifeCycleManager is null");
         this.paginationUtil = requireNonNull(paginationUtil, "paginationUtil is null");
@@ -419,7 +419,7 @@ public class InternalMcpServer
             return new CallToolResult(ImmutableList.of(new TextContent("Tool not allowed: " + callToolRequest.name())), Optional.empty(), true);
         }
 
-        McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, progressToken(callToolRequest));
+        McpRequestContext requestContext = new InternalRequestContext(jsonMapper, sessionController, request, messageWriter, progressToken(callToolRequest));
         try {
             return toolEntry.toolHandler().callTool(requestContext, callToolRequest);
         }
@@ -439,7 +439,7 @@ public class InternalMcpServer
             throw new McpClientException(exception(INVALID_PARAMS, "Prompt not allowed: " + getPromptRequest.name()));
         }
 
-        McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, progressToken(getPromptRequest));
+        McpRequestContext requestContext = new InternalRequestContext(jsonMapper, sessionController, request, messageWriter, progressToken(getPromptRequest));
         return promptEntry.promptHandler().getPrompt(requestContext, getPromptRequest);
     }
 
@@ -447,7 +447,7 @@ public class InternalMcpServer
     {
         updateRequestSpan(request, span -> span.setAttribute(MCP_RESOURCE_URI, readResourceRequest.uri()));
 
-        McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, progressToken(readResourceRequest));
+        McpRequestContext requestContext = new InternalRequestContext(jsonMapper, sessionController, request, messageWriter, progressToken(readResourceRequest));
 
         List<ResourceContents> resourceContents = readResourceContents(requestContext, readResourceRequest, Optional.of(authenticated))
                 .orElseThrow(() -> exception(RESOURCE_NOT_FOUND, "Resource not found: " + readResourceRequest.uri()));
@@ -476,7 +476,7 @@ public class InternalMcpServer
             return new CompleteResult(new CompleteCompletion(ImmutableList.of(), OptionalInt.empty(), OptionalBoolean.UNDEFINED));
         }
 
-        McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, progressToken(completeRequest));
+        McpRequestContext requestContext = new InternalRequestContext(jsonMapper, sessionController, request, messageWriter, progressToken(completeRequest));
 
         return completionEntry.handler().complete(requestContext, completeRequest);
     }
@@ -490,7 +490,7 @@ public class InternalMcpServer
         }
 
         SessionId sessionId = requireSessionId(request);
-        McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, progressToken(subscribeRequest));
+        McpRequestContext requestContext = new InternalRequestContext(jsonMapper, sessionController, request, messageWriter, progressToken(subscribeRequest));
 
         versionsController.get().resourcesSubscribe(sessionId, authenticated, requestContext, subscribeRequest);
 
@@ -511,7 +511,7 @@ public class InternalMcpServer
     void reconcileVersions(HttpServletRequest request, Authenticated<?> identity, InternalMessageWriter messageWriter)
     {
         SessionId sessionId = requireSessionId(request);
-        McpRequestContext requestContext = new InternalRequestContext(objectMapper, sessionController, request, messageWriter, Optional.empty());
+        McpRequestContext requestContext = new InternalRequestContext(jsonMapper, sessionController, request, messageWriter, Optional.empty());
 
         versionsController.get().reconcileVersions(sessionId, identity, requestContext);
     }
