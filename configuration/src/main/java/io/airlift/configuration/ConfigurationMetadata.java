@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Multimap;
 import com.google.inject.ConfigurationException;
+import io.airlift.configuration.Config.Encoding;
 import jakarta.validation.Constraint;
 
 import java.lang.annotation.Annotation;
@@ -269,14 +270,16 @@ public class ConfigurationMetadata<T>
             return null;
         }
 
-        String propertyName = configMethod.getAnnotation(Config.class).value();
-        final boolean securitySensitive = configMethod.isAnnotationPresent(ConfigSecuritySensitive.class);
-        final boolean hidden = configMethod.isAnnotationPresent(ConfigHidden.class);
+        Config config = configMethod.getAnnotation(Config.class);
+        String propertyName = config.value();
+        Encoding encoding = config.encoding();
+        boolean securitySensitive = configMethod.isAnnotationPresent(ConfigSecuritySensitive.class);
+        boolean hidden = configMethod.isAnnotationPresent(ConfigHidden.class);
 
         // determine the attribute name
         String attributeName = configMethod.getName().substring(3);
 
-        AttributeMetaDataBuilder builder = new AttributeMetaDataBuilder(configClass, attributeName, securitySensitive, hidden);
+        AttributeMetaDataBuilder builder = new AttributeMetaDataBuilder(configClass, attributeName, encoding, securitySensitive, hidden);
 
         if (configMethod.isAnnotationPresent(ConfigDescription.class)) {
             builder.setDescription(configMethod.getAnnotation(ConfigDescription.class).value());
@@ -429,6 +432,7 @@ public class ConfigurationMetadata<T>
     {
         private final Class<?> configClass;
         private final String name;
+        private final Encoding encoding;
         private final String description;
         private final boolean securitySensitive;
         private final boolean hidden;
@@ -437,8 +441,16 @@ public class ConfigurationMetadata<T>
         private final InjectionPointMetaData injectionPoint;
         private final Set<InjectionPointMetaData> legacyInjectionPoints;
 
-        public AttributeMetadata(Class<?> configClass, String name, String description, boolean securitySensitive, boolean hidden, Method getter,
-                InjectionPointMetaData injectionPoint, Set<InjectionPointMetaData> legacyInjectionPoints)
+        public AttributeMetadata(
+                Class<?> configClass,
+                String name,
+                Encoding encoding,
+                String description,
+                boolean securitySensitive,
+                boolean hidden,
+                Method getter,
+                InjectionPointMetaData injectionPoint,
+                Set<InjectionPointMetaData> legacyInjectionPoints)
         {
             requireNonNull(configClass);
             requireNonNull(name);
@@ -448,6 +460,7 @@ public class ConfigurationMetadata<T>
 
             this.configClass = configClass;
             this.name = name;
+            this.encoding = encoding;
             this.description = description;
             this.securitySensitive = securitySensitive;
             this.hidden = hidden;
@@ -465,6 +478,11 @@ public class ConfigurationMetadata<T>
         public String getName()
         {
             return name;
+        }
+
+        public Encoding getEncoding()
+        {
+            return encoding;
         }
 
         public String getDescription()
@@ -540,7 +558,7 @@ public class ConfigurationMetadata<T>
     {
         private final Class<?> configClass;
         private final String name;
-
+        private final Encoding encoding;
         private String description;
         private Method getter;
         private InjectionPointMetaData injectionPoint;
@@ -548,7 +566,7 @@ public class ConfigurationMetadata<T>
         private final boolean securitySensitive;
         private final boolean hidden;
 
-        public AttributeMetaDataBuilder(Class<?> configClass, String name, boolean securitySensitive, boolean hidden)
+        public AttributeMetaDataBuilder(Class<?> configClass, String name, Encoding encoding, boolean securitySensitive, boolean hidden)
         {
             requireNonNull(configClass);
             requireNonNull(name);
@@ -556,6 +574,7 @@ public class ConfigurationMetadata<T>
 
             this.configClass = configClass;
             this.name = name;
+            this.encoding = encoding;
             this.securitySensitive = securitySensitive;
             this.hidden = hidden;
         }
@@ -599,7 +618,7 @@ public class ConfigurationMetadata<T>
                 return null;
             }
 
-            return new AttributeMetadata(configClass, name, description, securitySensitive, hidden, getter, injectionPoint, legacyInjectionPoints);
+            return new AttributeMetadata(configClass, name, encoding, description, securitySensitive, hidden, getter, injectionPoint, legacyInjectionPoints);
         }
     }
 
