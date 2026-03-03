@@ -105,7 +105,7 @@ public class IntegrationTests
 
         // must use injected object mapper which has polymorphic type handling
         ObjectMapper objectMapper = testingServer.injector().getInstance(ObjectMapper.class);
-        JsonCodecFactory jsonCodecFactory = new JsonCodecFactory(() -> objectMapper);
+        JsonCodecFactory jsonCodecFactory = new JsonCodecFactory(objectMapper);
         detailCodec = jsonCodecFactory.jsonCodec(Detail.class);
     }
 

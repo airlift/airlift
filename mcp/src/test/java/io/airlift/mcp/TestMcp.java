@@ -202,7 +202,7 @@ public abstract class TestMcp
         io.airlift.mcp.model.CallToolRequest callToolRequest = new io.airlift.mcp.model.CallToolRequest("add", ImmutableMap.of("a", 1, "b", 2));
         JsonRpcRequest<?> rpcRequest = JsonRpcRequest.buildRequest(1, "tools/call", callToolRequest);
 
-        JsonCodecFactory jsonCodecFactory = new JsonCodecFactory(() -> objectMapper);
+        JsonCodecFactory jsonCodecFactory = new JsonCodecFactory(objectMapper);
 
         URI uri = testingServer.injector().getInstance(HttpServerInfo.class).getHttpUri().resolve("/mcp");
 
@@ -400,7 +400,7 @@ public abstract class TestMcp
     public void testGetMcpReturns405()
     {
         URI uri = testingServer.injector().getInstance(HttpServerInfo.class).getHttpUri().resolve("/mcp");
-        JsonCodecFactory jsonCodecFactory = new JsonCodecFactory(() -> objectMapper);
+        JsonCodecFactory jsonCodecFactory = new JsonCodecFactory(objectMapper);
 
         Request request = prepareGet()
                 .setUri(uri)
