@@ -29,8 +29,10 @@ public class JsonModule
     {
         binder.disableCircularProxies();
 
-        // NOTE: this MUST NOT be a singleton because ObjectMappers are mutable.  This means
-        // one component could reconfigure the mapper and break all other components
+        // NOTE: this MUST NOT be a singleton because ObjectMappers are mutable. This means
+        // one component could reconfigure the mapper and break all other components.
+        // When updated to Jackson 3.x this is no longer a case since the JsonMapper instances
+        // are immutable.
         binder.bind(JsonMapper.class).toProvider(JsonMapperProvider.class);
         bindDeprecatedProvider(binder);
 
@@ -40,8 +42,10 @@ public class JsonModule
     @SuppressWarnings("deprecation")
     private static void bindDeprecatedProvider(Binder binder)
     {
-        // NOTE: this MUST NOT be a singleton because ObjectMappers are mutable.  This means
-        // one component could reconfigure the mapper and break all other components
+        // NOTE: this MUST NOT be a singleton because ObjectMappers are mutable. This means
+        // one component could reconfigure the mapper and break all other components.
+        // When updated to Jackson 3.x this is no longer a case since the JsonMapper instances
+        // are immutable.
 
         // For backward compatibility with the usage sites that depends on ObjectMapper
         binder.bind(ObjectMapper.class).toProvider(ObjectMapperProvider.class);
