@@ -2,11 +2,10 @@ package io.airlift.api.binding;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.TreeNode;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 import io.airlift.api.ApiUnwrapped;
 
 import java.io.IOException;
@@ -36,23 +35,21 @@ class UnwrappedDeserializer
     public Object deserialize(JsonParser parser, DeserializationContext context)
             throws IOException
     {
-        ObjectMapper objectMapper = (ObjectMapper) parser.getCodec();
-
-        TreeNode tree = parser.readValueAsTree();
+        JsonNode tree = parser.readValueAsTree();
 
         RecordComponent[] recordComponents = clazz.getRecordComponents();
         Object[] arguments = new Object[recordComponents.length];
 
         for (int i = 0; i < recordComponents.length; ++i) {
             RecordComponent recordComponent = recordComponents[i];
-            JavaType javaType = objectMapper.getTypeFactory().constructType(recordComponent.getGenericType());
+            JavaType javaType = context.constructType(recordComponent.getGenericType());
 
             Object value;
             if (recordComponent.isAnnotationPresent(ApiUnwrapped.class)) {
-                value = objectMapper.treeToValue(tree, javaType);
+                value = context.readTreeAsValue(tree, javaType);
             }
             else {
-                TreeNode componentNode = tree.get(recordComponent.getName());
+                JsonNode componentNode = tree.get(recordComponent.getName());
 
                 if (componentNode == null) {
                     if (Optional.class.isAssignableFrom(recordComponent.getType())) {
@@ -63,7 +60,7 @@ class UnwrappedDeserializer
                     }
                 }
                 else {
-                    value = objectMapper.treeToValue(componentNode, javaType);
+                    value = context.readTreeAsValue(componentNode, javaType);
                 }
             }
             arguments[i] = value;

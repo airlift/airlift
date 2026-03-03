@@ -1,7 +1,7 @@
 package io.airlift.mcp.internal;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableMap;
@@ -119,7 +119,7 @@ public class InternalFilter
     private final McpMetadata metadata;
     private final McpIdentityMapper identityMapper;
     private final InternalMcpServer mcpServer;
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
     private final ErrorHandler errorHandler;
     private final Optional<SessionController> sessionController;
     private final boolean httpGetEventsEnabled;
@@ -133,7 +133,7 @@ public class InternalFilter
             McpMetadata metadata,
             McpIdentityMapper identityMapper,
             InternalMcpServer mcpServer,
-            ObjectMapper objectMapper,
+            JsonMapper jsonMapper,
             ErrorHandler errorHandler,
             Optional<SessionController> sessionController,
             CancellationController cancellationController,
@@ -142,7 +142,7 @@ public class InternalFilter
         this.metadata = requireNonNull(metadata, "metadata is null");
         this.identityMapper = requireNonNull(identityMapper, "identityMapper is null");
         this.mcpServer = requireNonNull(mcpServer, "mcpServer is null");
-        this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
+        this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
         this.errorHandler = requireNonNull(errorHandler, "errorHandler is null");
         this.sessionController = requireNonNull(sessionController, "sessionController is null");
         this.cancellationController = requireNonNull(cancellationController, "cancellationController is null");
@@ -225,7 +225,7 @@ public class InternalFilter
         Stopwatch pingStopwatch = Stopwatch.createStarted();
 
         InternalMessageWriter messageWriter = new InternalMessageWriter(response);
-        InternalRequestContext requestContext = new InternalRequestContext(objectMapper, Optional.of(sessionController), request, messageWriter, Optional.empty());
+        InternalRequestContext requestContext = new InternalRequestContext(jsonMapper, Optional.of(sessionController), request, messageWriter, Optional.empty());
 
         Optional.ofNullable(request.getHeader(HEADER_LAST_EVENT_ID))
                 .ifPresent(lastEventId -> replaySentMessages(sessionController, sessionId, lastEventId, messageWriter));
@@ -400,7 +400,7 @@ public class InternalFilter
         response.setStatus(SC_OK);
 
         JsonRpcResponse<?> rpcResponse = new JsonRpcResponse<>(rpcRequest.id(), Optional.empty(), Optional.of(result));
-        messageWriter.write(objectMapper.writeValueAsString(rpcResponse));
+        messageWriter.write(jsonMapper.writeValueAsString(rpcResponse));
         messageWriter.flushMessages();
     }
 
@@ -445,7 +445,7 @@ public class InternalFilter
     private <T> T convertParams(JsonRpcRequest<?> rpcRequest, Class<T> clazz)
     {
         Object value = rpcRequest.params().map(v -> (Object) v).orElseGet(ImmutableMap::of);
-        return objectMapper.convertValue(value, clazz);
+        return jsonMapper.convertValue(value, clazz);
     }
 
     private boolean isMcpRequest(HttpServletRequest request)
@@ -459,14 +459,14 @@ public class InternalFilter
     private Object deserializeJsonRpcMessage(String json)
             throws Exception
     {
-        JsonNode tree = objectMapper.readTree(json);
+        JsonNode tree = jsonMapper.readTree(json);
 
         if (tree.has("method")) {
-            return objectMapper.convertValue(tree, JsonRpcRequest.class);
+            return jsonMapper.convertValue(tree, JsonRpcRequest.class);
         }
 
         if (tree.has("result") || tree.has("error")) {
-            return objectMapper.convertValue(tree, JsonRpcResponse.class);
+            return jsonMapper.convertValue(tree, JsonRpcResponse.class);
         }
 
         throw exception(PARSE_ERROR, "Cannot deserialize JsonRpcMessage: " + json);

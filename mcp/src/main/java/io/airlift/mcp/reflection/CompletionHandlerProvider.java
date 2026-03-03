@@ -1,6 +1,6 @@
 package io.airlift.mcp.reflection;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
@@ -42,7 +42,7 @@ public class CompletionHandlerProvider
     private final Method method;
     private final List<MethodParameter> parameters;
     private Injector injector;
-    private ObjectMapper objectMapper;
+    private JsonMapper jsonMapper;
 
     public CompletionHandlerProvider(McpPromptCompletion mcpPromptCompletion, Class<?> clazz, Method method, List<MethodParameter> parameters)
     {
@@ -71,9 +71,9 @@ public class CompletionHandlerProvider
     }
 
     @Inject
-    public void setObjectMapper(ObjectMapper objectMapper)
+    public void setJsonMapper(JsonMapper jsonMapper)
     {
-        this.objectMapper = objectMapper;
+        this.jsonMapper = jsonMapper;
     }
 
     @SuppressWarnings("unchecked")
@@ -81,7 +81,7 @@ public class CompletionHandlerProvider
     public CompletionEntry get()
     {
         Provider<?> instance = injector.getProvider(clazz);
-        MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper);
+        MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, jsonMapper);
 
         CompleteContext emptyContext = new CompleteContext(ImmutableMap.of());
         CompleteResult emptyResult = new CompleteResult(new CompleteCompletion(ImmutableList.of(), OptionalInt.empty(), OptionalBoolean.UNDEFINED));

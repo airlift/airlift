@@ -1,6 +1,6 @@
 package io.airlift.mcp.reflection;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -59,7 +59,7 @@ public class ToolHandlerProvider
     private final List<String> icons;
     private final Consumer<Provider<ResourceEntry>> resourceHandlerConsumer;
     private Injector injector;
-    private ObjectMapper objectMapper;
+    private JsonMapper jsonMapper;
 
     public ToolHandlerProvider(McpTool mcpTool, Class<?> clazz, Method method, List<MethodParameter> parameters, Map<String, AppContent> apps, Consumer<Provider<ResourceEntry>> resourceHandlerConsumer)
     {
@@ -101,9 +101,9 @@ public class ToolHandlerProvider
     }
 
     @Inject
-    public void setObjectMapper(ObjectMapper objectMapper)
+    public void setJsonMapper(JsonMapper jsonMapper)
     {
-        this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
+        this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
     }
 
     private enum ReturnType
@@ -119,7 +119,7 @@ public class ToolHandlerProvider
     public ToolEntry get()
     {
         Provider<?> instance = injector.getProvider(clazz);
-        MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper);
+        MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, jsonMapper);
         IconHelper iconHelper = injector.getInstance(IconHelper.class);
 
         ToolHandler toolHandler = (requestContext, toolRequest) -> {

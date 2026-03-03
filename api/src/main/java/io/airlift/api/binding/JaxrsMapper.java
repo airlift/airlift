@@ -1,15 +1,15 @@
 package io.airlift.api.binding;
 
 import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.InvalidNullException;
 import com.fasterxml.jackson.databind.exc.InvalidTypeIdException;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.base.Throwables;
 import com.google.inject.Inject;
 import io.airlift.api.ApiPatch;
-import io.airlift.jaxrs.JsonMapper;
+import io.airlift.jaxrs.JaxRsJsonMapper;
 import jakarta.annotation.Priority;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.Produces;
@@ -45,19 +45,19 @@ public class JaxrsMapper
 {
     private static final Pattern BAD_POLY_TYPE = Pattern.compile("(No binding was made for property name \")(.*)(\" and value \")(.*)(\". Double check the addBinding\\(\\) or addPermittedSubClassBindings\\(\\).)");
 
-    private final JsonMapper jsonMapper;
+    private final JaxRsJsonMapper jaxRsJsonMapper;
     private final PatchFieldsBuilder patchFieldsBuilder;
 
     @Inject
-    public JaxrsMapper(ObjectMapper objectMapper, PatchFieldsBuilder patchFieldsBuilder)
+    public JaxrsMapper(JsonMapper jsonMapper, PatchFieldsBuilder patchFieldsBuilder)
     {
         this.patchFieldsBuilder = requireNonNull(patchFieldsBuilder, "patchFieldsBuilder is null");
-        jsonMapper = new JsonMapper(objectMapper);
-
-        objectMapper.enable(FAIL_ON_NULL_FOR_PRIMITIVES);
-        objectMapper.enable(FAIL_ON_NULL_CREATOR_PROPERTIES);
-        objectMapper.enable(FAIL_ON_NUMBERS_FOR_ENUMS);
-        objectMapper.disable(FAIL_ON_UNWRAPPED_TYPE_IDENTIFIERS);
+        jaxRsJsonMapper = new JaxRsJsonMapper(jsonMapper.rebuild()
+                .enable(FAIL_ON_NULL_FOR_PRIMITIVES)
+                .enable(FAIL_ON_NULL_CREATOR_PROPERTIES)
+                .enable(FAIL_ON_NUMBERS_FOR_ENUMS)
+                .disable(FAIL_ON_UNWRAPPED_TYPE_IDENTIFIERS)
+                .build());
     }
 
     @Override
@@ -69,14 +69,14 @@ public class JaxrsMapper
     @Override
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType)
     {
-        return jsonMapper.isWriteable(type, genericType, annotations, mediaType);
+        return jaxRsJsonMapper.isWriteable(type, genericType, annotations, mediaType);
     }
 
     @Override
     public void writeTo(Object o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
             throws IOException, WebApplicationException
     {
-        jsonMapper.writeTo(o, type, genericType, annotations, mediaType, httpHeaders, entityStream);
+        jaxRsJsonMapper.writeTo(o, type, genericType, annotations, mediaType, httpHeaders, entityStream);
     }
 
     @Override
@@ -88,7 +88,7 @@ public class JaxrsMapper
                 return patchFieldsBuilder.buildPatchFields(entityStream);
             }
 
-            return jsonMapper.readFrom(type, genericType, annotations, mediaType, httpHeaders, entityStream);
+            return jaxRsJsonMapper.readFrom(type, genericType, annotations, mediaType, httpHeaders, entityStream);
         }
         catch (IOException e) {
             return mapException(e);

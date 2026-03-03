@@ -14,18 +14,18 @@
 package io.airlift.json.subtype;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
 import com.fasterxml.jackson.databind.exc.InvalidTypeIdException;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import io.airlift.json.JsonCodec;
 import io.airlift.json.JsonCodecFactory;
+import io.airlift.json.JsonMapperProvider;
 import io.airlift.json.JsonModule;
 import io.airlift.json.JsonSubType;
-import io.airlift.json.ObjectMapperProvider;
 import io.airlift.json.subtype.Employee.Manager;
 import io.airlift.json.subtype.Employee.Programmer;
 import io.airlift.json.subtype.Part.Container;
@@ -58,9 +58,9 @@ public class TestJsonSubType
                 .add(Manager.class)
                 .build();
         Injector injector = Guice.createInjector(new JsonModule(), binder -> jsonSubTypeBinder(binder).bindJsonSubType(jsonSubType));
-        ObjectMapper objectMapper = injector.getInstance(ObjectMapper.class);
+        JsonMapper jsonMapper = injector.getInstance(JsonMapper.class);
 
-        internalTest(objectMapper);
+        internalTest(jsonMapper);
     }
 
     @Test
@@ -73,9 +73,9 @@ public class TestJsonSubType
                 .add(Manager.class, "bar")
                 .build();
         Injector injector = Guice.createInjector(new JsonModule(), binder -> jsonSubTypeBinder(binder).bindJsonSubType(jsonSubType));
-        ObjectMapper objectMapper = injector.getInstance(ObjectMapper.class);
+        JsonMapper jsonMapper = injector.getInstance(JsonMapper.class);
 
-        internalTest(objectMapper);
+        internalTest(jsonMapper);
     }
 
     @Test
@@ -87,9 +87,9 @@ public class TestJsonSubType
                 .addPermittedSubClasses()
                 .build();
         Injector injector = Guice.createInjector(new JsonModule(), binder -> jsonSubTypeBinder(binder).bindJsonSubType(jsonSubType));
-        ObjectMapper objectMapper = injector.getInstance(ObjectMapper.class);
+        JsonMapper jsonMapper = injector.getInstance(JsonMapper.class);
 
-        internalTest(objectMapper);
+        internalTest(jsonMapper);
     }
 
     @Test
@@ -101,17 +101,17 @@ public class TestJsonSubType
                 .addPermittedSubClasses(clazz -> "xxx__" + clazz.getName() + "__XXX")
                 .build();
         Injector injector = Guice.createInjector(new JsonModule(), binder -> jsonSubTypeBinder(binder).bindJsonSubType(jsonSubType));
-        ObjectMapper objectMapper = injector.getInstance(ObjectMapper.class);
+        JsonMapper jsonMapper = injector.getInstance(JsonMapper.class);
 
-        internalTest(objectMapper);
+        internalTest(jsonMapper);
     }
 
     @Test
     public void testFailsWithoutSubClassBindings()
     {
-        ObjectMapper objectMapper = new ObjectMapperProvider().get();
+        JsonMapper jsonMapper = new JsonMapperProvider().get();
 
-        assertThatThrownBy(() -> internalTest(objectMapper))
+        assertThatThrownBy(() -> internalTest(jsonMapper))
                 .isInstanceOf(InvalidDefinitionException.class);
     }
 
@@ -123,9 +123,9 @@ public class TestJsonSubType
                 .add(Programmer.class)
                 .build();
         Injector injector = Guice.createInjector(new JsonModule(), binder -> jsonSubTypeBinder(binder).bindJsonSubType(jsonSubType));
-        ObjectMapper objectMapper = injector.getInstance(ObjectMapper.class);
+        JsonMapper jsonMapper = injector.getInstance(JsonMapper.class);
 
-        assertThatThrownBy(() -> internalTest(objectMapper))
+        assertThatThrownBy(() -> internalTest(jsonMapper))
                 .isInstanceOf(InvalidTypeIdException.class);
     }
 
@@ -141,21 +141,21 @@ public class TestJsonSubType
                 .build();
 
         Injector injector = Guice.createInjector(new JsonModule(), binder -> jsonSubTypeBinder(binder).bindJsonSubType(jsonSubType));
-        ObjectMapper objectMapper = injector.getInstance(ObjectMapper.class);
+        JsonMapper jsonMapper = injector.getInstance(JsonMapper.class);
 
-        internalTest(objectMapper);
+        internalTest(jsonMapper);
 
-        JsonCodecFactory codecFactory = new JsonCodecFactory(objectMapper);
+        JsonCodecFactory codecFactory = new JsonCodecFactory(jsonMapper);
         JsonCodec<Part> jsonCodec = codecFactory.jsonCodec(Part.class);
 
-        String item1Json = objectMapper.writeValueAsString(item1);
-        String item2Json = objectMapper.writeValueAsString(item2);
-        String containerJson = objectMapper.writeValueAsString(container);
+        String item1Json = jsonMapper.writeValueAsString(item1);
+        String item2Json = jsonMapper.writeValueAsString(item2);
+        String containerJson = jsonMapper.writeValueAsString(container);
 
         for (int i = 0; i < 2; ++i) {
-            Part deserializedItem1 = (i == 0) ? objectMapper.readValue(item1Json, Part.class) : jsonCodec.fromJson(item1Json);
-            Part deserializedItem2 = (i == 0) ? objectMapper.readValue(item2Json, Part.class) : jsonCodec.fromJson(item2Json);
-            Part deserializedContainer = (i == 0) ? objectMapper.readValue(containerJson, Part.class) : jsonCodec.fromJson(containerJson);
+            Part deserializedItem1 = (i == 0) ? jsonMapper.readValue(item1Json, Part.class) : jsonCodec.fromJson(item1Json);
+            Part deserializedItem2 = (i == 0) ? jsonMapper.readValue(item2Json, Part.class) : jsonCodec.fromJson(item2Json);
+            Part deserializedContainer = (i == 0) ? jsonMapper.readValue(containerJson, Part.class) : jsonCodec.fromJson(containerJson);
 
             assertThat(deserializedItem1).isInstanceOf(Item.class);
             assertThat(deserializedItem2).isInstanceOf(Item.class);
@@ -177,9 +177,9 @@ public class TestJsonSubType
                 .add(Manager.class)
                 .build();
 
-        ObjectMapperProvider objectMapperProvider = new ObjectMapperProvider().withJsonSubTypes(ImmutableSet.of(jsonSubType));
+        JsonMapperProvider jsonMapperProvider = new JsonMapperProvider().withJsonSubTypes(ImmutableSet.of(jsonSubType));
 
-        internalTest(objectMapperProvider.get());
+        internalTest(jsonMapperProvider.get());
     }
 
     @Test
@@ -191,18 +191,18 @@ public class TestJsonSubType
                 .add(Programmer.class)
                 .add(Manager.class)
                 .build();
-        ObjectMapper objectMapper1 = new ObjectMapperProvider().withJsonSubTypes(ImmutableSet.of(jsonSubType1)).get();
-        String programmer1Json = objectMapper1.writeValueAsString(programmer1);
-        String manager1Json = objectMapper1.writeValueAsString(manager1);
+        JsonMapper jsonMapper1 = new JsonMapperProvider().withJsonSubTypes(ImmutableSet.of(jsonSubType1)).get();
+        String programmer1Json = jsonMapper1.writeValueAsString(programmer1);
+        String manager1Json = jsonMapper1.writeValueAsString(manager1);
 
         JsonSubType jsonSubType2 = JsonSubType.builder()
                 .forBase(Employee.class, "category")
                 .add(Programmer.class)
                 .add(Manager.class)
                 .build();
-        ObjectMapper objectMapper2 = new ObjectMapperProvider().withJsonSubTypes(ImmutableSet.of(jsonSubType2)).get();
-        String programmer2Json = objectMapper2.writeValueAsString(programmer1);
-        String manager2Json = objectMapper2.writeValueAsString(manager1);
+        JsonMapper jsonMapper2 = new JsonMapperProvider().withJsonSubTypes(ImmutableSet.of(jsonSubType2)).get();
+        String programmer2Json = jsonMapper2.writeValueAsString(programmer1);
+        String manager2Json = jsonMapper2.writeValueAsString(manager1);
 
         assertThat(programmer1Json).isEqualTo("{\"name\":\"Joe\",\"type\":\"Programmer\"}");
         assertThat(manager1Json).isEqualTo("{\"name\":\"Jane\",\"reports\":[{\"name\":\"Joe\",\"type\":\"Programmer\"},{\"name\":\"Rachel\",\"type\":\"Programmer\"}],\"type\":\"Manager\"}");
@@ -211,31 +211,31 @@ public class TestJsonSubType
         assertThat(manager2Json).isEqualTo("{\"name\":\"Jane\",\"reports\":[{\"name\":\"Joe\",\"category\":\"Programmer\"},{\"name\":\"Rachel\",\"category\":\"Programmer\"}],\"category\":\"Manager\"}");
     }
 
-    private static void internalTest(ObjectMapper objectMapper)
+    private static void internalTest(JsonMapper jsonMapper)
             throws JsonProcessingException
     {
-        internalTest(objectMapper, false);
-        internalTest(objectMapper, true);
+        internalTest(jsonMapper, false);
+        internalTest(jsonMapper, true);
     }
 
-    private static void internalTest(ObjectMapper objectMapper, boolean writeWithCodec)
+    private static void internalTest(JsonMapper jsonMapper, boolean writeWithCodec)
             throws JsonProcessingException
     {
-        JsonCodecFactory codecFactory = new JsonCodecFactory(objectMapper);
+        JsonCodecFactory codecFactory = new JsonCodecFactory(jsonMapper);
         JsonCodec<Employee> jsonCodec = codecFactory.jsonCodec(Employee.class);
 
-        String programmer1Json = writeWithCodec ? jsonCodec.toJson(programmer1) : objectMapper.writeValueAsString(programmer1);
-        String programmer2Json = writeWithCodec ? jsonCodec.toJson(programmer2) : objectMapper.writeValueAsString(programmer2);
-        String programmer3Json = writeWithCodec ? jsonCodec.toJson(programmer3) : objectMapper.writeValueAsString(programmer3);
-        String manager1Json = writeWithCodec ? jsonCodec.toJson(manager1) : objectMapper.writeValueAsString(manager1);
-        String manager2Json = writeWithCodec ? jsonCodec.toJson(manager2) : objectMapper.writeValueAsString(manager2);
+        String programmer1Json = writeWithCodec ? jsonCodec.toJson(programmer1) : jsonMapper.writeValueAsString(programmer1);
+        String programmer2Json = writeWithCodec ? jsonCodec.toJson(programmer2) : jsonMapper.writeValueAsString(programmer2);
+        String programmer3Json = writeWithCodec ? jsonCodec.toJson(programmer3) : jsonMapper.writeValueAsString(programmer3);
+        String manager1Json = writeWithCodec ? jsonCodec.toJson(manager1) : jsonMapper.writeValueAsString(manager1);
+        String manager2Json = writeWithCodec ? jsonCodec.toJson(manager2) : jsonMapper.writeValueAsString(manager2);
 
         for (int i = 0; i < 2; ++i) {
-            Employee deserializedProgrammer1 = (i == 0) ? objectMapper.readValue(programmer1Json, Employee.class) : jsonCodec.fromJson(programmer1Json);
-            Employee deserializedProgrammer2 = (i == 0) ? objectMapper.readValue(programmer2Json, Employee.class) : jsonCodec.fromJson(programmer2Json);
-            Employee deserializedProgrammer3 = (i == 0) ? objectMapper.readValue(programmer3Json, Employee.class) : jsonCodec.fromJson(programmer3Json);
-            Employee deserializedManager1 = (i == 0) ? objectMapper.readValue(manager1Json, Employee.class) : jsonCodec.fromJson(manager1Json);
-            Employee deserializedManager2 = (i == 0) ? objectMapper.readValue(manager2Json, Employee.class) : jsonCodec.fromJson(manager2Json);
+            Employee deserializedProgrammer1 = (i == 0) ? jsonMapper.readValue(programmer1Json, Employee.class) : jsonCodec.fromJson(programmer1Json);
+            Employee deserializedProgrammer2 = (i == 0) ? jsonMapper.readValue(programmer2Json, Employee.class) : jsonCodec.fromJson(programmer2Json);
+            Employee deserializedProgrammer3 = (i == 0) ? jsonMapper.readValue(programmer3Json, Employee.class) : jsonCodec.fromJson(programmer3Json);
+            Employee deserializedManager1 = (i == 0) ? jsonMapper.readValue(manager1Json, Employee.class) : jsonCodec.fromJson(manager1Json);
+            Employee deserializedManager2 = (i == 0) ? jsonMapper.readValue(manager2Json, Employee.class) : jsonCodec.fromJson(manager2Json);
 
             assertThat(deserializedProgrammer1).isInstanceOf(Programmer.class);
             assertThat(deserializedProgrammer2).isInstanceOf(Programmer.class);

@@ -1,11 +1,11 @@
 package io.airlift.mcp.model;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.TypeLiteral;
-import io.airlift.json.ObjectMapperProvider;
+import io.airlift.json.JsonMapperProvider;
 import io.airlift.mcp.McpDefaultValue;
 import io.airlift.mcp.McpDescription;
 import io.airlift.mcp.reflection.MethodParameter;
@@ -30,7 +30,7 @@ import static java.util.Objects.requireNonNull;
 
 public class JsonSchemaBuilder
 {
-    private static final ObjectMapper objectMapper = new ObjectMapperProvider().get();
+    private static final JsonMapper jsonMapper = new JsonMapperProvider().get();
 
     private static final Map<Class<?>, String> primitiveTypes = ImmutableMap.<Class<?>, String>builder()
             .put(String.class, "string")
@@ -97,13 +97,13 @@ public class JsonSchemaBuilder
 
     private ObjectNode buildStandard(Optional<String> description, Class<?> rawType, Optional<String> defaultValue)
     {
-        ObjectNode typeNode = objectMapper.createObjectNode();
+        ObjectNode typeNode = jsonMapper.createObjectNode();
         typeNode.put("type", primitiveType(rawType));
         description.ifPresent(value -> typeNode.put("description", value));
         applyDefaultValue(rawType, defaultValue, typeNode);
 
         if (rawType.isEnum()) {
-            ArrayNode enumValues = objectMapper.createArrayNode();
+            ArrayNode enumValues = jsonMapper.createArrayNode();
             Stream.of(rawType.getEnumConstants())
                     .map(String::valueOf)
                     .forEach(enumValues::add);
@@ -116,7 +116,7 @@ public class JsonSchemaBuilder
     private void applyDefaultValue(Class<?> rawType, Optional<String> defaultValue, ObjectNode typeNode)
     {
         try {
-            defaultValue.ifPresent(value -> typeNode.putPOJO("default", objectMapper.convertValue(value, rawType)));
+            defaultValue.ifPresent(value -> typeNode.putPOJO("default", jsonMapper.convertValue(value, rawType)));
         }
         catch (Exception e) {
             throw exception("Failed to convert default value: " + e.getMessage());
@@ -226,7 +226,7 @@ public class JsonSchemaBuilder
         Class<?> rawType = TypeLiteral.get(genericType).getRawType();
         ObjectNode objectNode = convertType("[]", Optional.empty(), genericType, rawType, Optional.empty());
 
-        ObjectNode typeNode = objectMapper.createObjectNode();
+        ObjectNode typeNode = jsonMapper.createObjectNode();
         typeNode.put("type", "array");
         typeNode.set("items", objectNode);
         description.ifPresent(value -> typeNode.put("description", value));
@@ -235,10 +235,10 @@ public class JsonSchemaBuilder
 
     private ObjectNode buildMap(Optional<String> description, Type valueType)
     {
-        ObjectNode additionalPropertiesNode = objectMapper.createObjectNode();
+        ObjectNode additionalPropertiesNode = jsonMapper.createObjectNode();
         additionalPropertiesNode.put("type", valueType.equals(Object.class) ? "object" : "string");
 
-        ObjectNode typeNode = objectMapper.createObjectNode();
+        ObjectNode typeNode = jsonMapper.createObjectNode();
         typeNode.put("type", "object");
         typeNode.set("additionalProperties", additionalPropertiesNode);
         description.ifPresent(value -> typeNode.put("description", value));
@@ -248,11 +248,11 @@ public class JsonSchemaBuilder
 
     private ObjectNode buildObject(Optional<String> description, BiConsumer<ObjectNode, ArrayNode> propertiesConsumer)
     {
-        ArrayNode requiredNode = objectMapper.createArrayNode();
-        ObjectNode propertiesNode = objectMapper.createObjectNode();
+        ArrayNode requiredNode = jsonMapper.createArrayNode();
+        ObjectNode propertiesNode = jsonMapper.createObjectNode();
         propertiesConsumer.accept(propertiesNode, requiredNode);
 
-        ObjectNode objectNode = objectMapper.createObjectNode();
+        ObjectNode objectNode = jsonMapper.createObjectNode();
         objectNode.put("$schema", "https://json-schema.org/draft/2020-12/schema");
         description.ifPresent(value -> objectNode.put("description", value));
         objectNode.put("type", "object");

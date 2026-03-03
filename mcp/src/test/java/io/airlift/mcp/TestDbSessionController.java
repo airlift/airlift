@@ -1,6 +1,6 @@
 package io.airlift.mcp;
 
-import io.airlift.json.ObjectMapperProvider;
+import io.airlift.json.JsonMapperProvider;
 import io.airlift.mcp.sessions.SessionController;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.TestInstance;
@@ -19,7 +19,7 @@ public class TestDbSessionController
     public TestDbSessionController()
     {
         testingDatabaseServer = new TestingDatabaseServer();
-        sessionController = new TestingDatabaseSessionController(testingDatabaseServer, new ObjectMapperProvider().get(), new McpConfig());
+        sessionController = new TestingDatabaseSessionController(testingDatabaseServer, new JsonMapperProvider().get(), new McpConfig());
         sessionController.initialize();
     }
 

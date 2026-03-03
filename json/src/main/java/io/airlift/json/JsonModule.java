@@ -16,6 +16,7 @@
 package io.airlift.json;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
@@ -30,7 +31,10 @@ public class JsonModule
 
         // NOTE: this MUST NOT be a singleton because ObjectMappers are mutable.  This means
         // one component could reconfigure the mapper and break all other components
-        binder.bind(ObjectMapper.class).toProvider(ObjectMapperProvider.class);
+        binder.bind(JsonMapper.class).toProvider(JsonMapperProvider.class);
+
+        // For backward compatibility with the usage sites that depends on ObjectMapper
+        binder.bind(ObjectMapper.class).toProvider(JsonMapperProvider.class);
 
         binder.bind(JsonCodecFactory.class).in(Scopes.SINGLETON);
     }

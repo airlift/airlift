@@ -1,6 +1,6 @@
 package io.airlift.api.validation;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Guice;
@@ -236,9 +236,9 @@ public class TestConforming
         builder.addPolyResource(RecursiveResourceBase.class);
         Module module = builder.build();
         Injector injector = Guice.createInjector(module, new JsonModule());
-        ObjectMapper objectMapper = injector.getInstance(ObjectMapper.class);
+        JsonMapper jsonMapper = injector.getInstance(JsonMapper.class);
 
         ResourceSerializationValidator serializationValidator = new ResourceSerializationValidator(ImmutableSet.of(RecursiveResource.class));
-        serializationValidator.validateSerialization(objectMapper);
+        serializationValidator.validateSerialization(jsonMapper);
     }
 }

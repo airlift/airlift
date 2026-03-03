@@ -1,6 +1,6 @@
 package io.airlift.mcp.reflection;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
@@ -44,7 +44,7 @@ public class PromptHandlerProvider
     private final boolean isGetPromptResult;
     private final List<String> icons;
     private Injector injector;
-    private ObjectMapper objectMapper;
+    private JsonMapper jsonMapper;
 
     public PromptHandlerProvider(McpPrompt mcpPrompt, Class<?> clazz, Method method, List<MethodParameter> parameters)
     {
@@ -67,9 +67,9 @@ public class PromptHandlerProvider
     }
 
     @Inject
-    public void setObjectMapper(ObjectMapper objectMapper)
+    public void setJsonMapper(JsonMapper jsonMapper)
     {
-        this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
+        this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
     }
 
     @Override
@@ -77,7 +77,7 @@ public class PromptHandlerProvider
     {
         Provider<?> instance = injector.getProvider(clazz);
         IconHelper iconHelper = injector.getInstance(IconHelper.class);
-        MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, objectMapper);
+        MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, jsonMapper);
 
         PromptHandler promptHandler = (requestContext, promptRequest) -> {
             Object result = methodInvoker.builder(requestContext)

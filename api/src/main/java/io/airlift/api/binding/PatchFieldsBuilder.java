@@ -2,7 +2,7 @@ package io.airlift.api.binding;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.TreeNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.inject.Inject;
 import io.airlift.api.ApiPatch;
 
@@ -18,18 +18,18 @@ import static java.util.Objects.requireNonNull;
 
 public class PatchFieldsBuilder
 {
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
 
     @Inject
-    public PatchFieldsBuilder(ObjectMapper objectMapper)
+    public PatchFieldsBuilder(JsonMapper jsonMapper)
     {
-        this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
+        this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
     }
 
     public <T> ApiPatch<T> buildPatchFields(InputStream entityStream)
     {
         try {
-            JsonParser jsonParser = objectMapper.createParser(entityStream);
+            JsonParser jsonParser = jsonMapper.createParser(entityStream);
             // Do not close underlying stream after mapping
             jsonParser.disable(JsonParser.Feature.AUTO_CLOSE_SOURCE);
             TreeNode treeNode = jsonParser.readValueAsTree();
@@ -52,7 +52,7 @@ public class PatchFieldsBuilder
             TreeNode child = node.get(name);
             fields.put(name, type -> {
                 try {
-                    return objectMapper.treeToValue(child, objectMapper.getTypeFactory().constructType(type));
+                    return jsonMapper.treeToValue(child, jsonMapper.constructType(type));
                 }
                 catch (Exception e) {
                     throw badRequest("Could not construct value for: " + name);

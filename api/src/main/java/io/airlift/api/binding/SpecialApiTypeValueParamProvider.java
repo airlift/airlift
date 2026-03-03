@@ -1,6 +1,6 @@
 package io.airlift.api.binding;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -50,13 +50,13 @@ class SpecialApiTypeValueParamProvider
         implements ValueParamProvider
 {
     private final Map<Class<? extends ApiId<?, ?>>, ApiIdLookup<? extends ApiId<?, ?>>> idLookups;
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
 
     @Inject
-    SpecialApiTypeValueParamProvider(Map<Class<? extends ApiId<?, ?>>, ApiIdLookup<? extends ApiId<?, ?>>> idLookups, ObjectMapper objectMapper)
+    SpecialApiTypeValueParamProvider(Map<Class<? extends ApiId<?, ?>>, ApiIdLookup<? extends ApiId<?, ?>>> idLookups, JsonMapper jsonMapper)
     {
         this.idLookups = ImmutableMap.copyOf(idLookups);
-        this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
+        this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
     }
 
     @Override
@@ -85,7 +85,7 @@ class SpecialApiTypeValueParamProvider
             return containerRequest -> readId(containerRequest, resourceId, parameter.getRawType(), parameter.getAnnotation(ApiParameter.class));
         }
         if (ApiMultiPart.class.isAssignableFrom(parameter.getRawType())) {
-            return new MultiPartReader(parameter.getType(), objectMapper);
+            return new MultiPartReader(parameter.getType(), jsonMapper);
         }
         if (ApiResponseHeaders.class.isAssignableFrom(parameter.getRawType())) {
             return this::responseHeaders;

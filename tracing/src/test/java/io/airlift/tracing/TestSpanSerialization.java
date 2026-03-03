@@ -2,7 +2,7 @@ package io.airlift.tracing;
 
 import io.airlift.json.JsonCodec;
 import io.airlift.json.JsonCodecFactory;
-import io.airlift.json.ObjectMapperProvider;
+import io.airlift.json.JsonMapperProvider;
 import io.airlift.tracing.SpanSerialization.SpanDeserializer;
 import io.airlift.tracing.SpanSerialization.SpanSerializer;
 import io.opentelemetry.api.OpenTelemetry;
@@ -58,7 +58,7 @@ public class TestSpanSerialization
         OpenTelemetry openTelemetry = OpenTelemetry.propagating(
                 ContextPropagators.create(W3CTraceContextPropagator.getInstance()));
 
-        return new JsonCodecFactory(new ObjectMapperProvider()
+        return new JsonCodecFactory(new JsonMapperProvider()
                 .withJsonSerializers(Map.of(Span.class, new SpanSerializer(openTelemetry)))
                 .withJsonDeserializers(Map.of(Span.class, new SpanDeserializer(openTelemetry)))
                 .get())

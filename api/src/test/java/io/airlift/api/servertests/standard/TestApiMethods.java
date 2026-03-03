@@ -54,7 +54,7 @@ public class TestApiMethods
         super(StandardService.class, builder -> builder.addIdLookupBinding(LookupId.class, binding -> binding.to(LookupHandler.class)));
 
         // we need to use the injected object mapper which has all the Poly resource modules
-        JsonCodecFactory jsonCodecFactory = new JsonCodecFactory(objectMapper);
+        JsonCodecFactory jsonCodecFactory = new JsonCodecFactory(jsonMapper);
         polyResourceJsonCodec = jsonCodecFactory.jsonCodec(PolyResource.class);
         polyResourceResultJsonCodec = jsonCodecFactory.jsonCodec(PolyResourceResult.class);
     }

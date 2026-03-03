@@ -1,7 +1,7 @@
 package io.airlift.mcp.internal;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.inject.Inject;
 import io.airlift.log.Logger;
 import io.airlift.mcp.ErrorHandler;
@@ -39,12 +39,12 @@ public class InternalErrorHandler
 {
     private static final Logger log = Logger.get(InternalErrorHandler.class);
 
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
 
     @Inject
-    public InternalErrorHandler(ObjectMapper objectMapper)
+    public InternalErrorHandler(JsonMapper jsonMapper)
     {
-        this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
+        this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
     }
 
     @Override
@@ -101,7 +101,7 @@ public class InternalErrorHandler
         JsonRpcResponse<?> rpcResponse = new JsonRpcResponse<>(requestId, Optional.of(error), Optional.empty());
         String rpcResponseJson;
         try {
-            rpcResponseJson = objectMapper.writeValueAsString(rpcResponse);
+            rpcResponseJson = jsonMapper.writeValueAsString(rpcResponse);
         }
         catch (JsonProcessingException e) {
             log.error(e, "Failed to serialize error response: %s", rpcResponse);

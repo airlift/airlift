@@ -1,7 +1,7 @@
 package io.airlift.mcp;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -171,17 +171,17 @@ public class TestingDatabaseSessionController
             """;
 
     private final TestingDatabaseServer database;
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
     private final ExecutorService executorService;
     private final Cache<String, Signal> signals;
     private final AtomicReference<Instant> lastStaleSessionCleanup = new AtomicReference<>(Instant.now());
     private final Duration sessionTimeout;
 
     @Inject
-    public TestingDatabaseSessionController(TestingDatabaseServer database, ObjectMapper objectMapper, McpConfig mcpConfig)
+    public TestingDatabaseSessionController(TestingDatabaseServer database, JsonMapper jsonMapper, McpConfig mcpConfig)
     {
         this.database = requireNonNull(database, "database is null");
-        this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
+        this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
 
         executorService = Executors.newSingleThreadExecutor(Threads.daemonThreadsNamed("testing-session-controller-%s"));
 
@@ -286,7 +286,7 @@ public class TestingDatabaseSessionController
                 result = updater.apply(currentValue);
 
                 if (result.isPresent()) {
-                    String newValueJson = objectMapper.writeValueAsString(result.orElseThrow());
+                    String newValueJson = jsonMapper.writeValueAsString(result.orElseThrow());
 
                     if (currentValue.isEmpty()) {
                         PreparedStatement preparedStatement = connection.prepareStatement(INSERT_VALUE_IF_NOT_EXISTS_SQL);
@@ -335,7 +335,7 @@ public class TestingDatabaseSessionController
 
         String json;
         try {
-            json = objectMapper.writeValueAsString(value);
+            json = jsonMapper.writeValueAsString(value);
         }
         catch (JsonProcessingException e) {
             throw new RuntimeException(e);
@@ -534,7 +534,7 @@ public class TestingDatabaseSessionController
     private <T> T mapJson(Class<T> type, String json)
     {
         try {
-            return objectMapper.readValue(json, type);
+            return jsonMapper.readValue(json, type);
         }
         catch (Exception e) {
             throw new RuntimeException(e);
