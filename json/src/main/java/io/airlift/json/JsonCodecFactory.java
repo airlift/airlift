@@ -30,8 +30,7 @@ import static java.util.Objects.requireNonNull;
 
 public class JsonCodecFactory
 {
-    private final Provider<ObjectMapper> objectMapperProvider;
-    private final boolean prettyPrint;
+    private final ObjectMapper objectMapper;
 
     public JsonCodecFactory()
     {
@@ -41,39 +40,38 @@ public class JsonCodecFactory
     @Inject
     public JsonCodecFactory(Provider<ObjectMapper> objectMapperProvider)
     {
-        this(objectMapperProvider, false);
+        this(objectMapperProvider.get());
     }
 
-    public JsonCodecFactory(Provider<ObjectMapper> objectMapperProvider, boolean prettyPrint)
+    public JsonCodecFactory(ObjectMapper objectMapper)
     {
-        this.objectMapperProvider = objectMapperProvider;
-        this.prettyPrint = prettyPrint;
+        this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
     }
 
     public JsonCodecFactory prettyPrint()
     {
-        return new JsonCodecFactory(objectMapperProvider, true);
+        return new JsonCodecFactory(objectMapper.copy().enable(INDENT_OUTPUT));
     }
 
     public <T> JsonCodec<T> jsonCodec(Class<T> type)
     {
         requireNonNull(type, "type is null");
 
-        return new JsonCodec<>(createObjectMapper(), type);
+        return new JsonCodec<>(objectMapper, type);
     }
 
     public <T> JsonCodec<T> jsonCodec(Type type)
     {
         requireNonNull(type, "type is null");
 
-        return new JsonCodec<>(createObjectMapper(), type);
+        return new JsonCodec<>(objectMapper, type);
     }
 
     public <T> JsonCodec<T> jsonCodec(TypeToken<T> type)
     {
         requireNonNull(type, "type is null");
 
-        return new JsonCodec<>(createObjectMapper(), type.getType());
+        return new JsonCodec<>(objectMapper, type.getType());
     }
 
     public <T> JsonCodec<List<T>> listJsonCodec(Class<T> type)
@@ -84,7 +82,7 @@ public class JsonCodecFactory
                 .where(new TypeParameter<>() {}, type)
                 .getType();
 
-        return new JsonCodec<>(createObjectMapper(), listType);
+        return new JsonCodec<>(objectMapper, listType);
     }
 
     public <T> JsonCodec<List<T>> listJsonCodec(JsonCodec<T> type)
@@ -95,7 +93,7 @@ public class JsonCodecFactory
                 .where(new TypeParameter<>() {}, type.getTypeToken())
                 .getType();
 
-        return new JsonCodec<>(createObjectMapper(), listType);
+        return new JsonCodec<>(objectMapper, listType);
     }
 
     public <K, V> JsonCodec<Map<K, V>> mapJsonCodec(Class<K> keyType, Class<V> valueType)
@@ -108,7 +106,7 @@ public class JsonCodecFactory
                 .where(new TypeParameter<>() {}, valueType)
                 .getType();
 
-        return new JsonCodec<>(createObjectMapper(), mapType);
+        return new JsonCodec<>(objectMapper, mapType);
     }
 
     public <K, V> JsonCodec<Map<K, V>> mapJsonCodec(Class<K> keyType, JsonCodec<V> valueType)
@@ -121,11 +119,6 @@ public class JsonCodecFactory
                 .where(new TypeParameter<>() {}, valueType.getTypeToken())
                 .getType();
 
-        return new JsonCodec<>(createObjectMapper(), mapType);
-    }
-
-    private ObjectMapper createObjectMapper()
-    {
-        return objectMapperProvider.get().configure(INDENT_OUTPUT, prettyPrint);
+        return new JsonCodec<>(objectMapper, mapType);
     }
 }
