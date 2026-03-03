@@ -34,23 +34,30 @@ public class JsonCodecFactory
 
     public JsonCodecFactory()
     {
-        this(new ObjectMapperProvider());
+        this(new ObjectMapperProvider().get());
     }
 
     @Inject
-    public JsonCodecFactory(Provider<ObjectMapper> objectMapperProvider)
-    {
-        this(objectMapperProvider.get());
-    }
-
     public JsonCodecFactory(ObjectMapper objectMapper)
     {
         this.objectMapper = requireNonNull(objectMapper, "objectMapper is null");
     }
 
+    @Deprecated
+    public JsonCodecFactory(Provider<ObjectMapper> objectMapperProvider)
+    {
+        this(objectMapperProvider.get());
+    }
+
+    @Deprecated
+    public JsonCodecFactory(Provider<ObjectMapper> objectMapperProvider, boolean prettyPrint)
+    {
+        this(withPrettyPrint(objectMapperProvider.get(), prettyPrint));
+    }
+
     public JsonCodecFactory prettyPrint()
     {
-        return new JsonCodecFactory(objectMapper.copy().enable(INDENT_OUTPUT));
+        return new JsonCodecFactory(withPrettyPrint(objectMapper, true));
     }
 
     public <T> JsonCodec<T> jsonCodec(Class<T> type)
@@ -120,5 +127,13 @@ public class JsonCodecFactory
                 .getType();
 
         return new JsonCodec<>(objectMapper, mapType);
+    }
+
+    private static ObjectMapper withPrettyPrint(ObjectMapper mapper, boolean prettyPrint)
+    {
+        if (!prettyPrint) {
+            return mapper;
+        }
+        return mapper.copy().enable(INDENT_OUTPUT);
     }
 }

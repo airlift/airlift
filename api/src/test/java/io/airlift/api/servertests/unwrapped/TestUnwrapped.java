@@ -31,7 +31,7 @@ public class TestUnwrapped
     {
         super(UnwrappedService.class);
 
-        jsonCodecFactory = new JsonCodecFactory(() -> objectMapper);
+        jsonCodecFactory = new JsonCodecFactory(objectMapper);
     }
 
     @Test

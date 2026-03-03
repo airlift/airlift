@@ -60,7 +60,8 @@ public class TestSpanSerialization
 
         return new JsonCodecFactory(new ObjectMapperProvider()
                 .withJsonSerializers(Map.of(Span.class, new SpanSerializer(openTelemetry)))
-                .withJsonDeserializers(Map.of(Span.class, new SpanDeserializer(openTelemetry))))
+                .withJsonDeserializers(Map.of(Span.class, new SpanDeserializer(openTelemetry)))
+                .get())
                 .prettyPrint()
                 .jsonCodec(Span.class);
     }

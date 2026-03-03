@@ -145,7 +145,7 @@ public class TestJsonSubType
 
         internalTest(objectMapper);
 
-        JsonCodecFactory codecFactory = new JsonCodecFactory(() -> objectMapper);
+        JsonCodecFactory codecFactory = new JsonCodecFactory(objectMapper);
         JsonCodec<Part> jsonCodec = codecFactory.jsonCodec(Part.class);
 
         String item1Json = objectMapper.writeValueAsString(item1);
@@ -221,7 +221,7 @@ public class TestJsonSubType
     private static void internalTest(ObjectMapper objectMapper, boolean writeWithCodec)
             throws JsonProcessingException
     {
-        JsonCodecFactory codecFactory = new JsonCodecFactory(() -> objectMapper);
+        JsonCodecFactory codecFactory = new JsonCodecFactory(objectMapper);
         JsonCodec<Employee> jsonCodec = codecFactory.jsonCodec(Employee.class);
 
         String programmer1Json = writeWithCodec ? jsonCodec.toJson(programmer1) : objectMapper.writeValueAsString(programmer1);
