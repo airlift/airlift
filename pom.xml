@@ -99,7 +99,11 @@
         <dep.airlift.version>408-SNAPSHOT</dep.airlift.version>
         <dep.brotli4j.version>1.20.0</dep.brotli4j.version>
         <dep.bouncycastle.version>1.83</dep.bouncycastle.version>
+<<<<<<< HEAD
         <dep.mcp.sdk.version>1.0.0</dep.mcp.sdk.version>
+=======
+        <dep.mcp.sdk.version>0.18.0-SNAPSHOT</dep.mcp.sdk.version>
+>>>>>>> 4df72312a (General support for MCP tasks)
         <dep.jersey.version>4.0.2</dep.jersey.version>
         <dep.jjwt.version>0.13.0</dep.jjwt.version>
     </properties>

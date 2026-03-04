@@ -20,6 +20,7 @@ public record Tool(
         Optional<ObjectNode> outputSchema,
         ToolAnnotations annotations,
         Optional<List<Icon>> icons,
+        Optional<Execution> execution,
         Optional<Map<String, Object>> meta)
         implements Meta
 {
@@ -34,6 +35,7 @@ public record Tool(
         outputSchema = requireNonNullElse(outputSchema, Optional.empty());
         requireNonNull(annotations, "annotations is null");
         icons = requireNonNullElse(icons, Optional.empty());
+        execution = requireNonNullElse(execution, Optional.empty());
         meta = requireNonNullElse(meta, Optional.empty());
 
         validateName(name);
@@ -41,18 +43,18 @@ public record Tool(
 
     public Tool(String name, Optional<String> description, Optional<String> title, ObjectNode inputSchema, Optional<ObjectNode> outputSchema, ToolAnnotations annotations, Optional<List<Icon>> icons)
     {
-        this(name, description, title, inputSchema, outputSchema, annotations, icons, Optional.empty());
+        this(name, description, title, inputSchema, outputSchema, annotations, icons, Optional.empty(), Optional.empty());
     }
 
     public Tool(String name, Optional<String> description, Optional<String> title, ObjectNode inputSchema, Optional<ObjectNode> outputSchema, ToolAnnotations annotations)
     {
-        this(name, description, title, inputSchema, outputSchema, annotations, Optional.empty(), Optional.empty());
+        this(name, description, title, inputSchema, outputSchema, annotations, Optional.empty(), Optional.empty(), Optional.empty());
     }
 
     @Override
     public Tool withMeta(Map<String, Object> meta)
     {
-        return new Tool(name, description, title, inputSchema, outputSchema, annotations, icons, Optional.of(meta));
+        return new Tool(name, description, title, inputSchema, outputSchema, annotations, icons, execution, Optional.of(meta));
     }
 
     public static void validateName(String name)
@@ -66,12 +68,30 @@ public record Tool(
 
     public Tool withIcons(Optional<List<Icon>> icons)
     {
-        return new Tool(name, description, title, inputSchema, outputSchema, annotations, icons, meta);
+        return new Tool(name, description, title, inputSchema, outputSchema, annotations, icons, execution, meta);
     }
 
     public Tool withoutIcons()
     {
-        return new Tool(name, description, title, inputSchema, outputSchema, annotations, Optional.empty(), meta);
+        return new Tool(name, description, title, inputSchema, outputSchema, annotations, Optional.empty(), execution, meta);
+    }
+
+    public Tool withoutExecution()
+    {
+        return new Tool(name, description, title, inputSchema, outputSchema, annotations, icons, Optional.empty(), meta);
+    }
+
+    public record Execution(ToolExecution taskSupport)
+    {
+        public Execution
+        {
+            requireNonNull(taskSupport, "taskSupport is null");
+        }
+    }
+
+    public Tool withAdjustedExecution()
+    {
+        return execution.map(thisExecution -> ((thisExecution.taskSupport == ToolExecution.UNDEFINED) || thisExecution.taskSupport == ToolExecution.FORBIDDEN) ? withoutExecution() : this).orElse(this);
     }
 
     public record ToolAnnotations(
