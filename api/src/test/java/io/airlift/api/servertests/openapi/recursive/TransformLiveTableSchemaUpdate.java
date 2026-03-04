@@ -30,8 +30,6 @@ public record TransformLiveTableSchemaUpdate(
         record NewJsonSchema(
                 @ApiDescription("dummy") List<UpdatedJsonIngestColumn> columns,
                 @ApiDescription("dummy") Optional<String> sortColumnName)
-                implements NewSchema
-        {
-        }
+                implements NewSchema {}
     }
 }

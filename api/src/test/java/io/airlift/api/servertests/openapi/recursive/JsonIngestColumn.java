@@ -44,7 +44,5 @@ public record JsonIngestColumn(
     @ApiResource(name = "jsonParserConfig", description = "dummy")
     public record JsonParserConfig(
             @ApiDescription("dummy") String pointer,
-            @ApiDescription("dummy") Optional<Map<String, String>> parseParameters)
-    {
-    }
+            @ApiDescription("dummy") Optional<Map<String, String>> parseParameters) {}
 }
