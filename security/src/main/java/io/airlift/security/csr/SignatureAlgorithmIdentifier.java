@@ -144,9 +144,7 @@ public final class SignatureAlgorithmIdentifier
                 .toString();
     }
 
-    /**
-     * Encode an OID number part.  The encoding is a big endian varint.
-     */
+    /// Encode an OID number part.  The encoding is a big endian varint.
     private static void writePart(OutputStream out, final int number)
             throws IOException
     {

@@ -34,12 +34,10 @@ import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static io.airlift.concurrent.MoreFutures.allAsListWithCancellationOnFailure;
 import static java.util.Objects.requireNonNull;
 
-/**
- * Guarantees that no more than maxPermits of tasks will be run concurrently.
- * The class will rely on the ListenableFuture returned by the submitter function to determine
- * when a task has been completed. The submitter function NEEDS to be thread-safe and is recommended
- * to do the bulk of its work asynchronously.
- */
+/// Guarantees that no more than maxPermits of tasks will be run concurrently.
+/// The class will rely on the ListenableFuture returned by the submitter function to determine
+/// when a task has been completed. The submitter function NEEDS to be thread-safe and is recommended
+/// to do the bulk of its work asynchronously.
 @ThreadSafe
 public class AsyncSemaphore<T, R>
 {
@@ -50,31 +48,29 @@ public class AsyncSemaphore<T, R>
     private final Executor submitExecutor;
     private final Function<T, ListenableFuture<R>> submitter;
 
-    /**
-     * Process a list of tasks as a single unit
-     * (similar to {@link com.google.common.util.concurrent.Futures#allAsList(ListenableFuture[])})
-     * with limiting the number of tasks running in parallel.
-     * <p>
-     * This method may be useful for limiting the number of concurrent requests sent to a remote server when
-     * trying to load multiple related entities concurrently:
-     * <p>
-     * For example:
-     * <pre>{@code
-     * List<Integer> userIds = Lists.of(1, 2, 3);
-     * ListenableFuture<List<UserInfo>> future = processAll(ids, client::getUserInfoById, 2, executor);
-     * List<UserInfo> userInfos = future.get(...);
-     * }</pre>
-     *
-     * @param tasks tasks to process
-     * @param submitter task submitter
-     * @param maxConcurrency maximum number of tasks allowed to run in parallel
-     * @param submitExecutor task submission executor
-     * @return {@link ListenableFuture} containing a list of values returned by the {@code tasks}.
-     * The order of elements in the list matches the order of {@code tasks}.
-     * If the result future is cancelled all the remaining tasks are cancelled (submitted tasks will be cancelled, pending tasks will not be submitted).
-     * If any of the submitted tasks fails or are cancelled, the result future is too.
-     * If any of the submitted tasks fails or are cancelled, the remaining tasks are cancelled.
-     */
+    /// Process a list of tasks as a single unit
+    /// (similar to [com.google.common.util.concurrent.Futures#allAsList(ListenableFuture[])])
+    /// with limiting the number of tasks running in parallel.
+    ///
+    /// This method may be useful for limiting the number of concurrent requests sent to a remote server when
+    /// trying to load multiple related entities concurrently:
+    ///
+    /// For example:
+    /// ```
+    /// List<Integer> userIds = Lists.of(1, 2, 3);
+    /// ListenableFuture<List<UserInfo>> future = processAll(ids, client::getUserInfoById, 2, executor);
+    /// List<UserInfo> userInfos = future.get(...);
+    /// ```
+    ///
+    /// @param tasks tasks to process
+    /// @param submitter task submitter
+    /// @param maxConcurrency maximum number of tasks allowed to run in parallel
+    /// @param submitExecutor task submission executor
+    /// @return [ListenableFuture] containing a list of values returned by the `tasks`.
+    /// The order of elements in the list matches the order of `tasks`.
+    /// If the result future is cancelled all the remaining tasks are cancelled (submitted tasks will be cancelled, pending tasks will not be submitted).
+    /// If any of the submitted tasks fails or are cancelled, the result future is too.
+    /// If any of the submitted tasks fails or are cancelled, the remaining tasks are cancelled.
     public static <T, R> ListenableFuture<List<R>> processAll(List<T> tasks, Function<T, ListenableFuture<R>> submitter, int maxConcurrency, Executor submitExecutor)
     {
         SettableFuture<List<R>> resultFuture = SettableFuture.create();
@@ -92,31 +88,29 @@ public class AsyncSemaphore<T, R>
         return resultFuture;
     }
 
-    /**
-     * Process a list of tasks as a single unit
-     * (similar to {@link com.google.common.util.concurrent.Futures#successfulAsList(ListenableFuture[])})
-     * with limiting the number of tasks running in parallel.
-     * <p>
-     * This method may be useful for limiting the number of concurrent requests sent to a remote server when
-     * trying to run multiple related entities concurrently:
-     * <p>
-     * For example:
-     * <pre>{@code
-     * List<Integer> userIds = Lists.of(1, 2, 3);
-     * ListenableFuture<List<UserInfo>> future = processAllToCompletion(ids, client::getUserInfoById, 2, executor);
-     * List<UserInfo> userInfos = future.get(...);
-     * }</pre>
-     *
-     * @param tasks tasks to process
-     * @param submitter task submitter
-     * @param maxConcurrency maximum number of tasks allowed to run in parallel
-     * @param submitExecutor task submission executor
-     * @return {@link ListenableFuture} containing a list of values returned by the {@code tasks}.
-     * The order of elements in the list matches the order of {@code tasks}.
-     * If the result future is cancelled all the remaining tasks are cancelled (submitted tasks will be cancelled, pending tasks will not be submitted).
-     * If any of the submitted tasks fails or are cancelled, the remaining tasks will continue to execute.
-     * If any of the submitted tasks fails or are cancelled, the remaining pending tasks are cancelled.
-     */
+    /// Process a list of tasks as a single unit
+    /// (similar to [com.google.common.util.concurrent.Futures#successfulAsList(ListenableFuture[])])
+    /// with limiting the number of tasks running in parallel.
+    ///
+    /// This method may be useful for limiting the number of concurrent requests sent to a remote server when
+    /// trying to run multiple related entities concurrently:
+    ///
+    /// For example:
+    /// ```
+    /// List<Integer> userIds = Lists.of(1, 2, 3);
+    /// ListenableFuture<List<UserInfo>> future = processAllToCompletion(ids, client::getUserInfoById, 2, executor);
+    /// List<UserInfo> userInfos = future.get(...);
+    /// ```
+    ///
+    /// @param tasks tasks to process
+    /// @param submitter task submitter
+    /// @param maxConcurrency maximum number of tasks allowed to run in parallel
+    /// @param submitExecutor task submission executor
+    /// @return [ListenableFuture] containing a list of values returned by the `tasks`.
+    /// The order of elements in the list matches the order of `tasks`.
+    /// If the result future is cancelled all the remaining tasks are cancelled (submitted tasks will be cancelled, pending tasks will not be submitted).
+    /// If any of the submitted tasks fails or are cancelled, the remaining tasks will continue to execute.
+    /// If any of the submitted tasks fails or are cancelled, the remaining pending tasks are cancelled.
     public static <T, R> ListenableFuture<List<R>> processAllToCompletion(List<T> tasks, Function<T, ListenableFuture<R>> submitter, int maxConcurrency, Executor submitExecutor)
     {
         SettableFuture<List<R>> resultFuture = SettableFuture.create();

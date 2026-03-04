@@ -51,13 +51,11 @@ import static io.airlift.configuration.ConfigurationUtils.replaceEnvironmentVari
 import static io.airlift.log.Format.TEXT;
 import static java.util.Objects.requireNonNull;
 
-/**
- * Initializes the logging subsystem.
- * <p>
- * java.util.Logging, System.out and System.err are tunneled through the logging system.
- * <p>
- * System.out and System.err are assigned to loggers named "stdout" and "stderr", respectively.
- */
+/// Initializes the logging subsystem.
+///
+/// java.util.Logging, System.out and System.err are tunneled through the logging system.
+///
+/// System.out and System.err are assigned to loggers named "stdout" and "stderr", respectively.
 public class Logging
 {
     private static final Logger log = Logger.get(Logging.class);
@@ -80,14 +78,12 @@ public class Logging
     private final SettableFuture<MBeanExporter> mBeanExporterAvailableFuture = SettableFuture.create();
     private final SettableFuture<List<MBeanExport>> mBeanExportsFuture = SettableFuture.create();
 
-    /**
-     * Sets up default logging:
-     * <p>
-     * - INFO level
-     * - Log entries are written to stderr
-     *
-     * @return the logging system singleton
-     */
+    /// Sets up default logging:
+    ///
+    /// - INFO level
+    /// - Log entries are written to stderr
+    ///
+    /// @return the logging system singleton
     public static synchronized Logging initialize()
     {
         if (instance == null) {

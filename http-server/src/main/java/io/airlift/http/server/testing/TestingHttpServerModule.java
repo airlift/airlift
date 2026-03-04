@@ -38,9 +38,7 @@ public class TestingHttpServerModule
     private final String name;
     private final int httpPort;
 
-    /**
-     * @deprecated use {@link #TestingHttpServerModule(String, int)} or {@link #TestingHttpServerModule(String)} instead
-     */
+    /// @deprecated use [#TestingHttpServerModule(String, int)] or [#TestingHttpServerModule(String)] instead
     @Deprecated(forRemoval = true)
     public TestingHttpServerModule()
     {

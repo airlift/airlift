@@ -13,11 +13,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Executor;
 
-/**
- * For IP address literals this SocketAddressResolver implementation does not dispatch the address resolution
- * to the executor. Under high load this helps offloading the executor, which may be shared by multiple different
- * HTTP clients.
- */
+/// For IP address literals this SocketAddressResolver implementation does not dispatch the address resolution
+/// to the executor. Under high load this helps offloading the executor, which may be shared by multiple different
+/// HTTP clients.
 class JettyAsyncSocketAddressResolver
         extends SocketAddressResolver.Async
 {

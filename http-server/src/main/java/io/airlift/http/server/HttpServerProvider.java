@@ -32,10 +32,8 @@ import static com.google.common.base.Throwables.throwIfUnchecked;
 import static io.airlift.http.server.BinderUtils.qualifiedKey;
 import static java.util.Objects.requireNonNull;
 
-/**
- * Provides an instance of a Jetty server ready to be configured with
- * com.google.inject.servlet.ServletModule
- */
+/// Provides an instance of a Jetty server ready to be configured with
+/// com.google.inject.servlet.ServletModule
 public class HttpServerProvider
         implements Provider<HttpServer>
 {

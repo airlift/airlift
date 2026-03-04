@@ -14,17 +14,15 @@ import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.ElementType.TYPE_USE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-/**
- * The annotated element must represent a file location which exists.
- * Supported types are:
- * <ul>
- *     <li>{@code Path}</li>
- *     <li>{@code File}</li>
- *     <li>{@code String}</li>
- * </ul>
- * <p>
- * Note that constraint message is ignored as it's created by {@code FileExistsValidator}.
- */
+/// The annotated element must represent a file location which exists.
+/// Supported types are:
+///
+///   - `Path`
+///   - `File`
+///   - `String`
+///
+///
+/// Note that constraint message is ignored as it's created by `FileExistsValidator`.
 @Target({FIELD, METHOD, PARAMETER, ANNOTATION_TYPE, TYPE_USE})
 @Retention(RUNTIME)
 @Constraint(validatedBy = FileExistsValidator.class)

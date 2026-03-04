@@ -49,15 +49,13 @@ import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-/**
- * Monitor GC events via JMX. GC events are divided into major and minor using
- * the OpenJDK naming convention for gcAction.  Also, application time is calculated
- * using the assumption that major collections stop the application.
- * <p>
- * Major and minor GCs are logged to standard logging system, which makes it
- * easy to debug the full log stream. TimeStats are exported for major, minor,
- * and application time.
- */
+/// Monitor GC events via JMX. GC events are divided into major and minor using
+/// the OpenJDK naming convention for gcAction.  Also, application time is calculated
+/// using the assumption that major collections stop the application.
+///
+/// Major and minor GCs are logged to standard logging system, which makes it
+/// easy to debug the full log stream. TimeStats are exported for major, minor,
+/// and application time.
 public class JmxGcMonitor
         implements GcMonitor
 {

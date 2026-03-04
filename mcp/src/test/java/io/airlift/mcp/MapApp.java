@@ -95,9 +95,7 @@ public class MapApp
     private volatile long lastNominatimRequest;
     private static final long NOMINATIM_RATE_LIMIT_MS = 1100; // 1.1 seconds to be safe
 
-    /**
-     * Query Nominatim geocoding API with rate limiting
-     */
+    /// Query Nominatim geocoding API with rate limiting
     private List<NominatimResult> geocodeWithNominatim(String query)
             throws Exception
     {

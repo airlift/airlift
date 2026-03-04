@@ -98,9 +98,7 @@ public final class DecayCounter
         count = 0;
     }
 
-    /**
-     * This is a hack to work around limitations in Jmxutils.
-     */
+    /// This is a hack to work around limitations in Jmxutils.
     @Deprecated
     public synchronized void resetTo(DecayCounter counter)
     {

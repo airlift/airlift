@@ -37,27 +37,25 @@ import static io.airlift.configuration.ConfigBinder.configBinder;
 import static java.util.Objects.requireNonNull;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
-/**
- * Provides a fully configured instance of an HTTP server,
- * ready to use with Guice.
- * <p>
- * Features:
- * <ul>
- * <li>HTTP/HTTPS</li>
- * <li>Basic Auth</li>
- * <li>Request logging</li>
- * <li>JMX</li>
- * </ul>
- * Configuration options are provided via {@link HttpServerConfig}
- * <p>
- * To enable JMX, an {@link javax.management.MBeanServer} must be bound elsewhere
- * <p>
- * To enable HTTPS, {@link HttpServerConfig#isHttpsEnabled()} must return true
- * and {@link HttpsConfig#getKeystorePath()}
- * and {@link HttpsConfig#getKeystorePassword()} must return the path to
- * the keystore containing the SSL cert and the password to the keystore, respectively.
- * The HTTPS port is specified via {@link HttpsConfig#getHttpsPort()}.
- */
+/// Provides a fully configured instance of an HTTP server,
+/// ready to use with Guice.
+///
+/// Features:
+///
+///   - HTTP/HTTPS
+///   - Basic Auth
+///   - Request logging
+///   - JMX
+///
+/// Configuration options are provided via [HttpServerConfig]
+///
+/// To enable JMX, an [javax.management.MBeanServer] must be bound elsewhere
+///
+/// To enable HTTPS, [HttpServerConfig#isHttpsEnabled()] must return true
+/// and [HttpsConfig#getKeystorePath()]
+/// and [HttpsConfig#getKeystorePassword()] must return the path to
+/// the keystore containing the SSL cert and the password to the keystore, respectively.
+/// The HTTPS port is specified via [HttpsConfig#getHttpsPort()].
 public class HttpServerModule
         extends AbstractConfigurationAwareModule
 {

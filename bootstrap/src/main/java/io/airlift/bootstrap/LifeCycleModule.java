@@ -33,9 +33,7 @@ import static com.google.inject.matcher.Matchers.any;
 import static java.util.Objects.requireNonNull;
 import static org.weakref.jmx.guice.ExportBinder.newExporter;
 
-/**
- * Guice module for binding the LifeCycle manager
- */
+/// Guice module for binding the LifeCycle manager
 public class LifeCycleModule
         implements Module
 {

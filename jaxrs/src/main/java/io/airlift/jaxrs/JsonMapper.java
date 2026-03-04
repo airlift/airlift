@@ -34,12 +34,10 @@ public class JsonMapper
         enable(INCLUDE_SOURCE_IN_LOCATION);
     }
 
-    /**
-     * Throws JsonParsingException only when Jakarta-RS container calls to deserialize given JSON value
-     * Need to distinguish between:
-     * - JsonProcessingException due to Jakarta-RS deserialization
-     * - JsonProcessingException due to operation happening in resource body
-     */
+    /// Throws JsonParsingException only when Jakarta-RS container calls to deserialize given JSON value
+    /// Need to distinguish between:
+    /// - JsonProcessingException due to Jakarta-RS deserialization
+    /// - JsonProcessingException due to operation happening in resource body
     @Override
     public Object readFrom(Class<Object> type, Type genericType, Annotation[] annotations, MediaType mediaType, MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
             throws IOException

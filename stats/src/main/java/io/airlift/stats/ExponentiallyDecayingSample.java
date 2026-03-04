@@ -51,17 +51,12 @@ import static java.lang.Math.floor;
 import static java.lang.Math.min;
 import static java.lang.Math.random;
 
-/**
- * An exponentially-decaying random sample of {@code long}s. Uses Cormode et
- * al's forward-decaying priority reservoir sampling method to produce a
- * statistically representative sample, exponentially biased towards newer
- * entries.
- *
- * @see <a href="http://www.research.att.com/people/Cormode_Graham/library/publications/CormodeShkapenyukSrivastavaXu09.pdf">
- * Cormode et al. Forward Decay: A Practical Time Decay Model for Streaming
- * Systems. ICDE '09: Proceedings of the 2009 IEEE International Conference on
- * Data Engineering (2009)</a>
- */
+/// An exponentially-decaying random sample of `long`s. Uses Cormode et
+/// al's forward-decaying priority reservoir sampling method to produce a
+/// statistically representative sample, exponentially biased towards newer
+/// entries.
+///
+/// @see [Cormode et al. Forward Decay: A Practical Time Decay Model for Streaming Systems. ICDE '09: Proceedings of the 2009 IEEE International Conference on Data Engineering (2009)](http://www.research.att.com/people/Cormode_Graham/library/publications/CormodeShkapenyukSrivastavaXu09.pdf)
 final class ExponentiallyDecayingSample
 {
     private static final long RESCALE_THRESHOLD = TimeUnit.HOURS.toNanos(1);
@@ -73,13 +68,11 @@ final class ExponentiallyDecayingSample
     private volatile long startTime;
     private final AtomicLong nextScaleTime = new AtomicLong(0);
 
-    /**
-     * Creates a new {@link ExponentiallyDecayingSample}.
-     *
-     * @param reservoirSize the number of samples to keep in the sampling reservoir
-     * @param alpha the exponential decay factor; the higher this is, the more
-     * biased the sample will be towards newer values
-     */
+    /// Creates a new [ExponentiallyDecayingSample].
+    ///
+    /// @param reservoirSize the number of samples to keep in the sampling reservoir
+    /// @param alpha the exponential decay factor; the higher this is, the more
+    /// biased the sample will be towards newer values
     public ExponentiallyDecayingSample(int reservoirSize, double alpha)
     {
         this.values = new ConcurrentSkipListMap<>();
@@ -107,12 +100,10 @@ final class ExponentiallyDecayingSample
         update(value, tick());
     }
 
-    /**
-     * Adds an old value with a fixed timestamp to the sample.
-     *
-     * @param value the value to be added
-     * @param timestamp the epoch timestamp of {@code value} in seconds
-     */
+    /// Adds an old value with a fixed timestamp to the sample.
+    ///
+    /// @param value the value to be added
+    /// @param timestamp the epoch timestamp of `value` in seconds
     public void update(long value, long timestamp)
     {
         lockForRegularUsage();

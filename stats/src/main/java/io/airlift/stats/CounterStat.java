@@ -26,13 +26,11 @@ import java.util.concurrent.atomic.LongAdder;
 
 import static java.util.Objects.requireNonNull;
 
-/**
- * Event statistics.
- * <p>
- * <em>Thread-safety:</em> instances of {@code CounterStat} are thread-safe. However,
- * there is no consistency guarantee when using {@link #reset} or {@link #resetTo} concurrently
- * with {@link #update} or {@link #merge}.
- */
+/// Event statistics.
+///
+/// _Thread-safety:_ instances of `CounterStat` are thread-safe. However,
+/// there is no consistency guarantee when using [#reset] or [#resetTo] concurrently
+/// with [#update] or [#merge].
 @ThreadSafe
 public final class CounterStat
 {
@@ -58,13 +56,11 @@ public final class CounterStat
         count.add(counterStat.getTotalCount());
     }
 
-    /**
-     * Resets counters.
-     * <p>
-     * Note: this method is guaranteed to obliterate effect of previous {@link #update} or {@link #merge}
-     * invocations. When it invoked concurrently with {@link #update} or {@link #merge}, the result is
-     * indeterminate.
-     */
+    /// Resets counters.
+    ///
+    /// Note: this method is guaranteed to obliterate effect of previous [#update] or [#merge]
+    /// invocations. When it invoked concurrently with [#update] or [#merge], the result is
+    /// indeterminate.
     @Managed
     public void reset()
     {
@@ -74,9 +70,7 @@ public final class CounterStat
         count.reset();
     }
 
-    /**
-     * This is a hack to work around limitations in Jmxutils.
-     */
+    /// This is a hack to work around limitations in Jmxutils.
     @Deprecated
     public void resetTo(CounterStat counterStat)
     {

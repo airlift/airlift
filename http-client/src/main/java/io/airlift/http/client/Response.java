@@ -52,9 +52,7 @@ public interface Response
     InputStream getInputStream()
             throws IOException;
 
-    /**
-     * Returns number of bytes read via {@link #getContent()} or {@link #getInputStream()}.
-     */
+    /// Returns number of bytes read via [#getContent()] or [#getInputStream()].
     long getBytesRead();
 
     @Beta

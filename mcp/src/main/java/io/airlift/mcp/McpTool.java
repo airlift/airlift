@@ -20,10 +20,8 @@ public @interface McpTool
 
     String title() default "";
 
-    /**
-     * Names of icons for this tool. Icons must be bound
-     * via {@link McpModule.Builder#addIcon(String, Consumer)}.
-     */
+    /// Names of icons for this tool. Icons must be bound
+    /// via [McpModule.Builder#addIcon(String, Consumer)].
     String[] icons() default {};
 
     OptionalBoolean readOnlyHint() default UNDEFINED;

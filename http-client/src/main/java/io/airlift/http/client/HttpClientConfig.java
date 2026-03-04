@@ -94,11 +94,9 @@ public class HttpClientConfig
     private boolean strictEventOrdering;
     private boolean useVirtualThreads;
 
-    /**
-     * This property is initialized with Jetty's default excluded ciphers list.
-     *
-     * @see org.eclipse.jetty.util.ssl.SslContextFactory#SslContextFactory(boolean)
-     */
+    /// This property is initialized with Jetty's default excluded ciphers list.
+    ///
+    /// @see org.eclipse.jetty.util.ssl.SslContextFactory#SslContextFactory(boolean)
     private List<String> excludedCipherSuites = ImmutableList.of("^.*_(MD5|SHA|SHA1)$", "^TLS_RSA_.*$", "^SSL_.*$", "^.*_NULL_.*$", "^.*_anon_.*$");
 
     private int selectorCount = 2;

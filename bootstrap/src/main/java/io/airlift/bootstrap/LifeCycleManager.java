@@ -35,9 +35,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
-/**
- * Manages PostConstruct and PreDestroy life cycles
- */
+/// Manages PostConstruct and PreDestroy life cycles
 public final class LifeCycleManager
 {
     private final String name;
@@ -48,11 +46,9 @@ public final class LifeCycleManager
     private final LifeCycleMethodsMap methodsMap;
     private final AtomicReference<Thread> shutdownHook = new AtomicReference<>();
 
-    /**
-     * Provides a mechanism to handle exceptions raised from {@link PreDestroy} methods in
-     * whatever way makes the most sense. Implementations should not raise exceptions of
-     * their own
-     */
+    /// Provides a mechanism to handle exceptions raised from [PreDestroy] methods in
+    /// whatever way makes the most sense. Implementations should not raise exceptions of
+    /// their own
     private interface LifeCycleStopFailureHandler
     {
         void handlePreDestroyException(Class<?> klass, Method method, Exception exception);
@@ -67,11 +63,9 @@ public final class LifeCycleManager
         STOPPED
     }
 
-    /**
-     * @param managedInstances list of objects that have life cycle annotations
-     * @param methodsMap existing or new methods map
-     * @throws LifeCycleStartException exceptions starting instances (depending on mode)
-     */
+    /// @param managedInstances list of objects that have life cycle annotations
+    /// @param methodsMap existing or new methods map
+    /// @throws LifeCycleStartException exceptions starting instances (depending on mode)
     public LifeCycleManager(String name, List<Object> managedInstances, LifeCycleMethodsMap methodsMap)
             throws LifeCycleStartException
     {
@@ -90,19 +84,15 @@ public final class LifeCycleManager
         return managedInstances.size();
     }
 
-    /**
-     * Returns the number of managed instances
-     *
-     * @return qty
-     */
+    /// Returns the number of managed instances
+    ///
+    /// @return qty
     public int size()
     {
         return managedInstances.size();
     }
 
-    /**
-     * Start the life cycle - all instances will have their {@link PostConstruct} method(s) called
-     */
+    /// Start the life cycle - all instances will have their [PostConstruct] method(s) called
     public void start()
             throws LifeCycleStartException
     {
@@ -135,14 +125,12 @@ public final class LifeCycleManager
         }
     }
 
-    /**
-     * Stop the lifecycle - all instances will have their {@link PreDestroy} method(s) called
-     * and any exceptions raised will be collected and thrown in a wrapped {@link LifeCycleStopException} as
-     * suppressed exceptions. Those failures will not be logged and are the responsibility of the caller to
-     * handle appropriately.
-     *
-     * @throws LifeCycleStopException If any failure occurs during the clean up process
-     */
+    /// Stop the lifecycle - all instances will have their [PreDestroy] method(s) called
+    /// and any exceptions raised will be collected and thrown in a wrapped [LifeCycleStopException] as
+    /// suppressed exceptions. Those failures will not be logged and are the responsibility of the caller to
+    /// handle appropriately.
+    ///
+    /// @throws LifeCycleStopException If any failure occurs during the clean up process
     @Managed
     public void stopWithoutFailureLogging()
             throws LifeCycleStopException
@@ -158,14 +146,12 @@ public final class LifeCycleManager
         }
     }
 
-    /**
-     * Stop the life cycle - all instances will have their {@link PreDestroy} method(s) called
-     * and any exceptions raised will be immediately logged. If any such exceptions occur, a single
-     * {@link LifeCycleStopException} will be raised at the end of processing which will <b>not</b>
-     * contain any reference to exceptions already logged.
-     *
-     * @throws LifeCycleStopException If any failure occurs during the clean up process
-     */
+    /// Stop the life cycle - all instances will have their [PreDestroy] method(s) called
+    /// and any exceptions raised will be immediately logged. If any such exceptions occur, a single
+    /// [LifeCycleStopException] will be raised at the end of processing which will **not**
+    /// contain any reference to exceptions already logged.
+    ///
+    /// @throws LifeCycleStopException If any failure occurs during the clean up process
     @Managed
     public void stop()
             throws LifeCycleStopException
@@ -181,10 +167,8 @@ public final class LifeCycleManager
         }
     }
 
-    /**
-     * Stop the life cycle - all instances will have their {@link PreDestroy} method(s) called and any
-     * exceptions raised will be passed to the provided {@link LifeCycleStopFailureHandler} to collect.
-     */
+    /// Stop the life cycle - all instances will have their [PreDestroy] method(s) called and any
+    /// exceptions raised will be passed to the provided [LifeCycleStopFailureHandler] to collect.
     private void stop(LifeCycleStopFailureHandler handler)
     {
         if (!state.compareAndSet(State.STARTED, State.STOPPING)) {
@@ -215,13 +199,11 @@ public final class LifeCycleManager
         }
     }
 
-    /**
-     * Add an additional managed instance
-     *
-     * @param instance instance to add
-     * @throws LifeCycleStartException errors during {@link PostConstruct} method invocation
-     * @throws IllegalStateException if the life cycle has been stopped
-     */
+    /// Add an additional managed instance
+    ///
+    /// @param instance instance to add
+    /// @throws LifeCycleStartException errors during [PostConstruct] method invocation
+    /// @throws IllegalStateException if the life cycle has been stopped
     public void addInstance(Object instance)
             throws LifeCycleStartException
     {
@@ -284,9 +266,7 @@ public final class LifeCycleManager
         }
     }
 
-    /**
-     * Unwraps {@link InvocationTargetException} instances to their underlying cause, otherwise returns the provided Exception
-     */
+    /// Unwraps [InvocationTargetException] instances to their underlying cause, otherwise returns the provided Exception
     private static Exception unwrapInvocationTargetException(Exception e)
     {
         return (e instanceof InvocationTargetException && e.getCause() instanceof Exception exception) ? exception : e;

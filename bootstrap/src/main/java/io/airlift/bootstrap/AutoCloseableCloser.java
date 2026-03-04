@@ -9,9 +9,7 @@ import static com.google.common.base.Throwables.throwIfInstanceOf;
 import static com.google.common.base.Throwables.throwIfUnchecked;
 import static java.util.Objects.requireNonNull;
 
-/**
- * This class is inspired by com.google.common.io.Closer
- */
+/// This class is inspired by com.google.common.io.Closer
 public final class AutoCloseableCloser
         implements AutoCloseable
 {

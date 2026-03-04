@@ -19,22 +19,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-/**
- * Manual tester for GcMonitor.
- * <p>
- * Test should always be run with:
- * <pre>
- * {@code   -Xmx1g -Xms1g}
- * </pre>
- * All GC algorithms should be tested:
- * <ul>
- * <li>Serial: {@code -XX:+UseSerialGC }</li>
- * <li>Parallel: {@code -XX:+UseParallelGC}</li>
- * <li>G1: {@code -XX:+UseG1GC}</li>
- * <li>Z: {@code -XX:+UseZGC -XX:+ZGenerational}</li>
- * </ul>
- * Verifying stopped time in GC log to the stopped time from GCMonitor.
- */
+/// Manual tester for GcMonitor.
+///
+/// Test should always be run with:
+/// `-Xmx1g -Xms1g`
+/// All GC algorithms should be tested:
+///
+///   - Serial: `-XX:+UseSerialGC`
+///   - Parallel: `-XX:+UseParallelGC`
+///   - G1: `-XX:+UseG1GC`
+///   - Z: `-XX:+UseZGC -XX:+ZGenerational`
+///
+/// Verifying stopped time in GC log to the stopped time from GCMonitor.
 public final class GcMonitorTester
 {
     private static final List<byte[]> VALUES = new ArrayList<>();

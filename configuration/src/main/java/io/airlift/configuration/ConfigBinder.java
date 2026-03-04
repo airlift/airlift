@@ -210,18 +210,14 @@ public class ConfigBinder
         binder.bindConfigDefaults(new ConfigDefaultsHolder<>(key, configDefaults));
     }
 
-    /**
-     * Binds default values for all the instances of given config class for the current binder
-     */
+    /// Binds default values for all the instances of given config class for the current binder
     public <T> void bindConfigGlobalDefaults(Class<T> configClass, ConfigDefaults<T> configDefaults)
     {
         Key<T> key = Key.get(configClass, GlobalDefaults.class);
         binder.bindConfigDefaults(new ConfigDefaultsHolder<>(key, configDefaults));
     }
 
-    /**
-     * Binds a configuration binding listener that can create additional config bindings.
-     */
+    /// Binds a configuration binding listener that can create additional config bindings.
     public void bindConfigurationBindingListener(ConfigurationBindingListener configurationBindingListener)
     {
         binder.bindConfigurationBindingListener(configurationBindingListener);

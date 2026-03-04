@@ -34,25 +34,23 @@ import static io.airlift.stats.ExponentialDecay.weight;
 import static io.airlift.stats.QuantileDigest.MiddleFunction.DEFAULT;
 import static java.lang.String.format;
 
-/**
- * Implements http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.132.7343, a data structure
- * for approximating quantiles by trading off error with memory requirements.
- * <p>
- * The size of the digest is adjusted dynamically to achieve the error bound and requires
- * O(log2(U) / maxError) space, where <em>U</em> is the number of bits needed to represent the
- * domain of the values added to the digest. The error is defined as the discrepancy between the
- * real rank of the value returned in a quantile query and the rank corresponding to the queried
- * quantile.
- * <p>
- * Thus, for a query for quantile <em>q</em> that returns value <em>v</em>, the error is
- * |rank(v) - q * N| / N, where N is the number of elements added to the digest and rank(v) is the
- * real rank of <em>v</em>
- * <p>
- * This class also supports exponential decay. The implementation is based on the ideas laid out
- * in http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.159.3978
- * <p>
- * This class is NOT thread safe.
- */
+/// Implements http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.132.7343, a data structure
+/// for approximating quantiles by trading off error with memory requirements.
+///
+/// The size of the digest is adjusted dynamically to achieve the error bound and requires
+/// O(log2(U) / maxError) space, where _U_ is the number of bits needed to represent the
+/// domain of the values added to the digest. The error is defined as the discrepancy between the
+/// real rank of the value returned in a quantile query and the rank corresponding to the queried
+/// quantile.
+///
+/// Thus, for a query for quantile _q_ that returns value _v_, the error is
+/// |rank(v) - q * N| / N, where N is the number of elements added to the digest and rank(v) is the
+/// real rank of _v_
+///
+/// This class also supports exponential decay. The implementation is based on the ideas laid out
+/// in http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.159.3978
+///
+/// This class is NOT thread safe.
 public class QuantileDigest
 {
     private static final int MAX_BITS = 64;
@@ -92,23 +90,21 @@ public class QuantileDigest
         FORWARD, REVERSE
     }
 
-    /**
-     * <p>Create a QuantileDigest with a maximum error guarantee of "maxError" and no decay.
-     *
-     * @param maxError the max error tolerance
-     */
+    ///
+    /// Create a QuantileDigest with a maximum error guarantee of "maxError" and no decay.
+    ///
+    /// @param maxError the max error tolerance
     public QuantileDigest(double maxError)
     {
         this(maxError, 0.0);
     }
 
-    /**
-     * <p>Create a QuantileDigest with a maximum error guarantee of "maxError" and exponential decay
-     * with factor "alpha".</p>
-     *
-     * @param maxError the max error tolerance
-     * @param alpha the exponential decay factor
-     */
+    ///
+    /// Create a QuantileDigest with a maximum error guarantee of "maxError" and exponential decay
+    /// with factor "alpha".
+    ///
+    /// @param maxError the max error tolerance
+    /// @param alpha the exponential decay factor
     public QuantileDigest(double maxError, double alpha)
     {
         this(maxError, alpha, alpha == 0.0 ? noOpTicker() : Ticker.systemTicker());
@@ -249,9 +245,7 @@ public class QuantileDigest
         add(value, 1);
     }
 
-    /**
-     * Adds a value to this digest. The value must be {@code >= 0}
-     */
+    /// Adds a value to this digest. The value must be `>= 0`
     public void add(long value, double weight)
     {
         checkArgument(weight > 0, "weight must be > 0");
@@ -301,12 +295,10 @@ public class QuantileDigest
         compress();
     }
 
-    /**
-     * Get a lower bound on the quantiles for the given proportions. A returned q quantile is guaranteed to be within
-     * the q - maxError and q quantiles.
-     * <p>
-     * The input list of quantile proportions must be sorted in increasing order, and each value must be in the range [0, 1]
-     */
+    /// Get a lower bound on the quantiles for the given proportions. A returned q quantile is guaranteed to be within
+    /// the q - maxError and q quantiles.
+    ///
+    /// The input list of quantile proportions must be sorted in increasing order, and each value must be in the range [0, 1]
     public List<Long> getQuantilesLowerBound(List<Double> quantiles)
     {
         checkArgument(Ordering.natural().isOrdered(quantiles), "quantiles must be sorted in increasing order");
@@ -352,12 +344,10 @@ public class QuantileDigest
         return builder.build().reverse();
     }
 
-    /**
-     * Get an upper bound on the quantiles for the given proportions. A returned q quantile is guaranteed to be within
-     * the q and q + maxError quantiles.
-     * <p>
-     * The input list of quantile proportions must be sorted in increasing order, and each value must be in the range [0, 1]
-     */
+    /// Get an upper bound on the quantiles for the given proportions. A returned q quantile is guaranteed to be within
+    /// the q and q + maxError quantiles.
+    ///
+    /// The input list of quantile proportions must be sorted in increasing order, and each value must be in the range [0, 1]
     public List<Long> getQuantilesUpperBound(List<Double> quantiles)
     {
         checkArgument(Ordering.natural().isOrdered(quantiles), "quantiles must be sorted in increasing order");
@@ -406,9 +396,7 @@ public class QuantileDigest
         return getQuantilesUpperBound(quantiles);
     }
 
-    /**
-     * Gets the value at the specified quantile +/- maxError. The quantile must be in the range [0, 1]
-     */
+    /// Gets the value at the specified quantile +/- maxError. The quantile must be in the range [0, 1]
     public long getQuantile(double quantile)
     {
         return getQuantiles(ImmutableList.of(quantile)).getFirst();
@@ -424,9 +412,7 @@ public class QuantileDigest
         return getQuantilesUpperBound(ImmutableList.of(quantile)).getFirst();
     }
 
-    /**
-     * Number (decayed) of elements added to this quantile digest
-     */
+    /// Number (decayed) of elements added to this quantile digest
     public double getCount()
     {
         return weightedCount / weight(alpha, TimeUnit.NANOSECONDS.toSeconds(ticker.read()), landmarkInSeconds);
@@ -870,10 +856,8 @@ public class QuantileDigest
         return node;
     }
 
-    /**
-     * Remove the node if possible or set its count to 0 if it has children and
-     * it needs to be kept around
-     */
+    /// Remove the node if possible or set its count to 0 if it has children and
+    /// it needs to be kept around
     private int tryRemove(int node)
     {
         checkArgument(node != -1, "node is -1");
@@ -974,9 +958,7 @@ public class QuantileDigest
         return callback.process(node);
     }
 
-    /**
-     * Computes the maximum error of the current digest
-     */
+    /// Computes the maximum error of the current digest
     public double getConfidenceFactor()
     {
         return computeMaxPathWeight(root) * 1.0 / weightedCount;
@@ -1012,10 +994,8 @@ public class QuantileDigest
         }
     }
 
-    /**
-     * Computes the max "weight" of any path starting at node and ending at a leaf in the
-     * hypothetical complete tree. The weight is the sum of counts in the ancestors of a given node
-     */
+    /// Computes the max "weight" of any path starting at node and ending at a leaf in the
+    /// hypothetical complete tree. The weight is the sum of counts in the ancestors of a given node
     private double computeMaxPathWeight(int node)
     {
         if (node == -1 || levels[node] == 0) {
@@ -1167,17 +1147,13 @@ public class QuantileDigest
         return String.format("node_%x", node);
     }
 
-    /**
-     * Convert a java long (two's complement representation) to a 64-bit lexicographically-sortable binary
-     */
+    /// Convert a java long (two's complement representation) to a 64-bit lexicographically-sortable binary
     private static long longToBits(long value)
     {
         return value ^ 0x8000_0000_0000_0000L;
     }
 
-    /**
-     * Convert a 64-bit lexicographically-sortable binary to a java long (two's complement representation)
-     */
+    /// Convert a 64-bit lexicographically-sortable binary to a java long (two's complement representation)
     private static long bitsToLong(long bits)
     {
         return bits ^ 0x8000_0000_0000_0000L;
@@ -1287,10 +1263,8 @@ public class QuantileDigest
 
     private interface Callback
     {
-        /**
-         * @param node the node to process
-         * @return true if processing should continue
-         */
+        /// @param node the node to process
+        /// @return true if processing should continue
         boolean process(int node);
     }
 

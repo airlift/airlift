@@ -34,10 +34,8 @@ import java.util.List;
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
 
-/**
- * Serves files from a given folder on the classpath through jetty.
- * Intended to serve a couple of static files e.g. for javascript or HTML.
- */
+/// Serves files from a given folder on the classpath through jetty.
+/// Intended to serve a couple of static files e.g. for javascript or HTML.
 // Forked from https://github.com/NessComputing/components-ness-httpserver/
 public class ClassPathResourceFilter
         extends HttpFilter
