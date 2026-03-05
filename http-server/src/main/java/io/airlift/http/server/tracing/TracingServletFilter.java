@@ -1,6 +1,7 @@
 package io.airlift.http.server.tracing;
 
 import com.google.inject.Inject;
+import io.airlift.tracing.TracingEnabledConfig;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
@@ -49,12 +50,14 @@ public final class TracingServletFilter
 
     private final TextMapPropagator propagator;
     private final Tracer tracer;
+    private final boolean enabled;
 
     @Inject
-    public TracingServletFilter(OpenTelemetry openTelemetry, Tracer tracer)
+    public TracingServletFilter(OpenTelemetry openTelemetry, Tracer tracer, TracingEnabledConfig config)
     {
         this.propagator = openTelemetry.getPropagators().getTextMapPropagator();
         this.tracer = requireNonNull(tracer, "tracer is null");
+        this.enabled = config.isEnabled();
     }
 
     public static void updateRequestSpan(HttpServletRequest request, Consumer<Span> spanConsumer)
@@ -68,6 +71,10 @@ public final class TracingServletFilter
     public void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws IOException, ServletException
     {
+        if (!enabled) {
+            chain.doFilter(request, response);
+            return;
+        }
         Context parent = propagator.extract(Context.root(), request, ServletTextMapGetter.INSTANCE);
         String method = request.getMethod().toUpperCase(ENGLISH);
 
