@@ -22,6 +22,7 @@ import io.airlift.discovery.client.AnnouncementHttpServerInfo;
 import io.airlift.http.server.HttpServer.ClientCertificate;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.http.server.tracing.TracingServletFilter;
+import io.airlift.tracing.TracingEnabledConfig;
 import jakarta.annotation.Nullable;
 import jakarta.servlet.Filter;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -103,6 +104,7 @@ public class HttpServerModule
         newSetBinder(binder, qualifiedKey(HttpResourceBinding.class));
         newOptionalBinder(binder, qualifiedKey(SslContextFactory.Server.class));
         configBinder(binder).bindConfig(qualifiedKey(HttpServerConfig.class), HttpServerConfig.class, configPrefix);
+        configBinder(binder).bindConfig(TracingEnabledConfig.class);
         newOptionalBinder(binder, qualifiedKey(HttpsConfig.class));
 
         binder.bind(qualifiedKey(AnnouncementHttpServerInfo.class))
