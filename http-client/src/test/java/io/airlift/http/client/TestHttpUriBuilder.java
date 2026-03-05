@@ -286,7 +286,7 @@ public class TestHttpUriBuilder
                 .replacePath("/a/b")
                 .build())
                 .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContaining("host starts with a bracket");
+                .hasMessageContaining("host starts with a bracket");
 
         // TODO: assertThat(uri.toASCIIString()).isEqualTo("http://[FEDC:BA98:7654:3210:FEDC:BA98:7654:3210]:8081/a/b");
     }

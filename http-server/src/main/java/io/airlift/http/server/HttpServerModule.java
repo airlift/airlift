@@ -110,8 +110,8 @@ public class HttpServerModule
                 .in(SINGLETON);
 
         binder.bind(qualifiedKey(HttpServerInfo.class))
-                    .toProvider(new HttpServerInfoProvider(qualifier))
-                    .in(SINGLETON);
+                .toProvider(new HttpServerInfoProvider(qualifier))
+                .in(SINGLETON);
 
         if (buildConfigObject(qualifiedKey(HttpServerConfig.class), HttpServerConfig.class, configPrefix).isHttpsEnabled()) {
             configBinder(binder).bindConfig(qualifiedKey(HttpsConfig.class), HttpsConfig.class, configPrefix);
