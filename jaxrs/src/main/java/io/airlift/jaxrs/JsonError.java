@@ -9,6 +9,8 @@ import static java.util.Objects.requireNonNull;
 
 public record JsonError(String code, String message)
 {
+    private static final JsonCodec<JsonError> ERROR_CODEC = jsonCodec(JsonError.class);
+
     private static final CharMatcher MATCHER = CharMatcher.inRange('A', 'Z')
             .or(CharMatcher.is('_'))
             .precomputed();
@@ -22,6 +24,6 @@ public record JsonError(String code, String message)
 
     public static JsonCodec<JsonError> codec()
     {
-        return jsonCodec(JsonError.class);
+        return ERROR_CODEC;
     }
 }
