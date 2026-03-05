@@ -6,10 +6,12 @@ import com.google.common.io.CountingInputStream;
 import io.airlift.http.client.HeaderName;
 import io.airlift.http.client.HttpVersion;
 import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.util.Iterator;
 import java.util.function.LongSupplier;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
@@ -94,11 +96,13 @@ class JettyResponse
     private static ListMultimap<HeaderName, String> toHeadersMap(HttpFields headers)
     {
         ImmutableListMultimap.Builder<HeaderName, String> builder = ImmutableListMultimap.builder();
-        for (String name : headers.getFieldNamesCollection()) {
-            for (String value : headers.getValuesList(name)) {
-                builder.put(HeaderName.of(name), value);
-            }
+        Iterator<HttpField> iterator = headers.iterator();
+
+        while (iterator.hasNext()) {
+            HttpField header = iterator.next();
+            builder.putAll(HeaderName.of(header.getName()), header.getValue());
         }
+
         return builder.build();
     }
 }
