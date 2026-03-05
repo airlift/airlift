@@ -1,7 +1,9 @@
 package io.airlift.tracing;
 
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.inject.Injector;
 import io.airlift.bootstrap.Bootstrap;
+import io.airlift.json.JsonMapperProvider;
 import io.airlift.node.testing.TestingNodeModule;
 import io.opentelemetry.api.trace.Tracer;
 import org.junit.jupiter.api.Test;
@@ -15,7 +17,8 @@ public class TestTracingModule
     {
         Injector injector = new Bootstrap(
                 new TestingNodeModule(),
-                new TracingModule("testService", "testVersion"))
+                new TracingModule("testService", "testVersion"),
+                binder -> binder.bind(JsonMapper.class).toProvider(new JsonMapperProvider()))
                 .quiet()
                 .initialize();
 
@@ -32,7 +35,8 @@ public class TestTracingModule
     {
         Injector injector = new Bootstrap(
                 new TestingNodeModule(),
-                new TracingModule("testService", "testVersion"))
+                new TracingModule("testService", "testVersion"),
+                binder -> binder.bind(JsonMapper.class).toProvider(new JsonMapperProvider()))
                 .setRequiredConfigurationProperty("tracing.enabled", "true")
                 .quiet()
                 .initialize();

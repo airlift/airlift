@@ -15,6 +15,7 @@
  */
 package io.airlift.http.server;
 
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.net.MediaType;
 import com.google.inject.BindingAnnotation;
@@ -28,6 +29,7 @@ import io.airlift.http.client.HttpUriBuilder;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
 import io.airlift.http.client.jetty.JettyHttpClient;
+import io.airlift.json.JsonMapperProvider;
 import io.airlift.log.Logging;
 import io.airlift.node.NodeInfo;
 import io.airlift.node.testing.TestingNodeModule;
@@ -111,7 +113,10 @@ public class TestHttpServerModule
                 new HttpServerModule(),
                 new TestingNodeModule(),
                 new TracingModule("airlift.http-server", "1.0"),
-                binder -> binder.bind(Servlet.class).to(DummyServlet.class));
+                binder -> {
+                    binder.bind(Servlet.class).to(DummyServlet.class);
+                    binder.bind(JsonMapper.class).toProvider(new JsonMapperProvider());
+                });
 
         Injector injector = app
                 .setRequiredConfigurationProperties(properties)
@@ -138,6 +143,7 @@ public class TestHttpServerModule
                 new TestingNodeModule(),
                 new TracingModule("airlift.http-server", "1.0"),
                 binder -> {
+                    binder.bind(JsonMapper.class).toProvider(new JsonMapperProvider());
                     binder.bind(Key.get(Servlet.class, Internal.class)).to(DummyServlet.class);
                     binder.bind(Servlet.class).to(DummyServlet.class);
                     // Bind real MBeanServer so we can test exposing multiple servers via JMX
@@ -175,7 +181,10 @@ public class TestHttpServerModule
                 new HttpServerModule(),
                 new TestingNodeModule(),
                 new TracingModule("airlift.http-server", "1.0"),
-                binder -> binder.bind(Servlet.class).to(DummyServlet.class));
+                binder -> {
+                    binder.bind(Servlet.class).to(DummyServlet.class);
+                    binder.bind(JsonMapper.class).toProvider(new JsonMapperProvider());
+                });
 
         Injector injector = app
                 .setRequiredConfigurationProperties(properties)
@@ -221,6 +230,7 @@ public class TestHttpServerModule
                 new TracingModule("airlift.http-server", "1.0"),
                 binder -> {
                     binder.bind(Servlet.class).to(DummyServlet.class);
+                    binder.bind(JsonMapper.class).toProvider(new JsonMapperProvider());
                     newSetBinder(binder, Filter.class).addBinding().to(DummyFilter.class).in(Scopes.SINGLETON);
                     httpServerBinder(binder).bindResource("/", "webapp/user").withWelcomeFile("user-welcome.txt");
                     httpServerBinder(binder).bindResource("/", "webapp/user2");
