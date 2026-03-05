@@ -71,7 +71,7 @@ public class TestThrowingResource
                 assertThatThrownBy(() -> client.execute(request, createJsonResponseHandler(jsonCodec(JsonNode.class))))
                         .hasMessageMatching(
                                 """
-                                Unable to create class com.fasterxml.jackson.databind.JsonNode from JSON response: <\\{("id":"dummy-id")?>""")
+                                Unable to create \\[simple type, class com.fasterxml.jackson.databind.JsonNode\\] from JSON response: <\\{("id":"dummy-id")?>""")
                         .hasStackTraceContaining("Unexpected end-of-input: expected close marker for Object");
             }
         }
