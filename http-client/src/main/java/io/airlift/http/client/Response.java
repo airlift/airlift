@@ -16,11 +16,15 @@
 package io.airlift.http.client;
 
 import com.google.common.annotations.Beta;
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 import jakarta.annotation.Nullable;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Iterator;
 import java.util.List;
 
 import static java.util.Objects.requireNonNull;
@@ -79,5 +83,19 @@ public interface Response
         {
             requireNonNull(inputStream, "inputStream is null");
         }
+    }
+
+    // Used to bridge Jetty's HttpField with HeaderName
+    static ListMultimap<HeaderName, String> toHeadersMap(HttpFields headers)
+    {
+        ImmutableListMultimap.Builder<HeaderName, String> builder = ImmutableListMultimap.builder();
+        Iterator<HttpField> iterator = headers.iterator();
+
+        while (iterator.hasNext()) {
+            HttpField header = iterator.next();
+            builder.putAll(HeaderName.of(header.getValue()), header.getValue());
+        }
+
+        return builder.build();
     }
 }
