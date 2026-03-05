@@ -11,7 +11,9 @@ import static io.airlift.api.ApiOpenApiTrait.USE_ONE_OF_DISCRIMINATORS;
 
 @ApiPolyResource(key = "typeKey", name = "simple", description = "dummy", openApiTraits = USE_ONE_OF_DISCRIMINATORS)
 public sealed interface SimpleRecursive
-        permits SimpleRecursive.NameAndAge, SimpleRecursive.Schedule, SimpleRecursive.RecursiveDetail
+        permits SimpleRecursive.NameAndAge,
+                SimpleRecursive.RecursiveDetail,
+                SimpleRecursive.Schedule
 {
     @ApiResource(name = "nameAndAge", description = "dummy")
     record NameAndAge(
