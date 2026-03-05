@@ -2,11 +2,11 @@ package io.airlift.tracing;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import com.fasterxml.jackson.databind.type.MapType;
 import com.google.inject.Inject;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
@@ -51,7 +51,6 @@ public final class SpanSerialization
     public static class SpanDeserializer
             extends StdDeserializer<Span>
     {
-        private static final TypeReference<Map<String, String>> MAP_TYPE = new TypeReference<>() {};
         private final TextMapPropagator propagator;
 
         @Inject
@@ -65,7 +64,8 @@ public final class SpanSerialization
         public Span deserialize(JsonParser jsonParser, DeserializationContext deserializationContext)
                 throws IOException
         {
-            Map<String, String> map = jsonParser.readValueAs(MAP_TYPE);
+            MapType mapType = deserializationContext.getTypeFactory().constructMapType(Map.class, String.class, String.class);
+            Map<String, String> map = deserializationContext.readValue(jsonParser, mapType);
             Context context = propagator.extract(Context.root(), map, MapTextMapGetter.INSTANCE);
             return Span.fromContext(context);
         }
