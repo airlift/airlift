@@ -575,13 +575,12 @@ public class ConfigurationFactory
         }
 
         // coerce the property value to the final type
-        TypeToken<?> propertyType = TypeToken.of(injectionPoint.getSetter().getGenericParameterTypes()[0]);
-        Object finalValue = coerce(propertyType, value);
+        Object finalValue = coerce(injectionPoint.getPropertyType(), value);
         if (finalValue == null) {
             throw new InvalidConfigurationException(format(
                     "Invalid value '%s' for type %s (property '%s') in order to call [%s]",
                     printableValue,
-                    propertyType.getType().getTypeName(),
+                    injectionPoint.getPropertyType().getType().getTypeName(),
                     name,
                     injectionPoint.getSetter().toGenericString()));
         }
