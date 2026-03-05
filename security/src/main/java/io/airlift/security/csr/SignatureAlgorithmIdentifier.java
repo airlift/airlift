@@ -163,6 +163,6 @@ public final class SignatureAlgorithmIdentifier
             int part = (number >>> shiftSize) & 0x7F | 0x80;
             out.write(part);
         }
-        out.write(number & 0x7f);
+        out.write(number & 0x7F);
     }
 }

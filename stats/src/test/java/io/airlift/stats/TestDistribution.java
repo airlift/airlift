@@ -12,12 +12,12 @@ public class TestDistribution
         Distribution distribution = new Distribution(0.1);
 
         distribution.add(10);
-        assertThat(distribution.getCount()).isEqualTo(1D);
-        assertThat(distribution.getAvg()).isEqualTo(10D);
+        assertThat(distribution.getCount()).isEqualTo(1d);
+        assertThat(distribution.getAvg()).isEqualTo(10d);
 
         distribution.reset();
 
-        assertThat(distribution.getCount()).isEqualTo(0D);
+        assertThat(distribution.getCount()).isEqualTo(0d);
         assertThat(distribution.getAvg()).isNaN();
     }
 

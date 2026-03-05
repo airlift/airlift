@@ -31,8 +31,8 @@ import static java.util.concurrent.Executors.newCachedThreadPool;
 public class TestingSocksProxy
         implements Closeable
 {
-    private static final int SOCKS_4_SUCCESS = 0x5a;
-    private static final int SOCKS_4_FAILED = 0x5b;
+    private static final int SOCKS_4_SUCCESS = 0x5A;
+    private static final int SOCKS_4_FAILED = 0x5B;
 
     private static final int SOCKS_5_ADDRESS_V4 = 0x01;
     private static final int SOCKS_5_ADDRESS_DOMAIN = 0x03;
