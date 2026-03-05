@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.base.Suppliers;
 import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
+import com.google.errorprone.annotations.ThreadSafe;
 import io.airlift.json.LengthLimitedWriter.LengthLimitExceededException;
 
 import java.io.IOException;
@@ -40,6 +41,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
+@ThreadSafe
 public class JsonCodec<T>
 {
     private static final JsonMapper JSON_MAPPER = new JsonMapperProvider().get()
