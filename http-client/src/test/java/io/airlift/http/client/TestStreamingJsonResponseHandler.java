@@ -44,10 +44,13 @@ class TestStreamingJsonResponseHandler
         JsonResponse.JsonValue<User> value = (JsonResponse.JsonValue<User>) response;
         assertThat(value.jsonValue()).isEqualTo(user);
         assertThat(value.statusCode()).isEqualTo(OK.code());
+        assertThat(value.statusCode()).isEqualTo(response.statusCode());
+        assertThat(value.exception()).isEmpty();
         assertThat(value.request()).isEqualTo(REQUEST);
         assertThat(value.bytesRead()).isEqualTo(34);
-        assertThat(value.headers().asMap())
+        assertThat(response.headers().asMap())
                 .containsEntry(HeaderName.of("Content-Type"), List.of(JSON_UTF_8.toString()));
+        assertThat(value.headers()).isEqualTo(response.headers());
     }
 
     @Test
@@ -61,6 +64,11 @@ class TestStreamingJsonResponseHandler
 
         JsonResponse.Exception<User> exception = (JsonResponse.Exception<User>) response;
         assertThat(exception.request()).isEqualTo(REQUEST);
+        assertThat(exception.statusCode()).isEqualTo(response.statusCode());
+        assertThat(response.exception()).contains(exception.throwable());
+        assertThat(response.headers().asMap())
+                .containsEntry(HeaderName.of("Content-Type"), List.of(JSON_UTF_8.toString()));
+        assertThat(response.headers()).isEqualTo(exception.headers());
         assertThat(exception.throwable())
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Invalid JSON bytes for [simple type, class io.airlift.http.client.TestStreamingJsonResponseHandler$User]");
@@ -81,6 +89,8 @@ class TestStreamingJsonResponseHandler
                 .isInstanceOf(JsonResponse.Exception.class);
 
         JsonResponse.Exception<User> exception = (JsonResponse.Exception<User>) response;
+        assertThat(response.exception()).contains(exception.throwable());
+        assertThat(response.headers()).isEqualTo(exception.headers());
 
         assertThat(exception.throwable())
                 .isInstanceOf(IllegalArgumentException.class)
@@ -103,8 +113,11 @@ class TestStreamingJsonResponseHandler
         assertThat(bytes.responseBytes()).isEqualTo("hello".getBytes(UTF_8));
         assertThat(bytes.stringValue()).isEqualTo("hello");
         assertThat(bytes.statusCode()).isEqualTo(OK.code());
+        assertThat(bytes.statusCode()).isEqualTo(response.statusCode());
         assertThat(bytes.request()).isEqualTo(REQUEST);
         assertThat(bytes.charset()).isEqualTo(UTF_8);
+        assertThat(response.exception()).contains(bytes.throwable());
+        assertThat(response.headers()).isEqualTo(bytes.headers());
         assertThat(bytes.throwable())
                 .isInstanceOf(UnexpectedResponseException.class)
                 .hasMessageContaining("Expected server to response with application/json but got text/plain; charset=utf-8");
@@ -125,10 +138,15 @@ class TestStreamingJsonResponseHandler
         assertThat(bytes.responseBytes()).isEqualTo("hello".getBytes(UTF_8));
         assertThat(bytes.stringValue()).isEqualTo("hello");
         assertThat(bytes.statusCode()).isEqualTo(OK.code());
+        assertThat(bytes.statusCode()).isEqualTo(response.statusCode());
         assertThat(bytes.charset()).isEqualTo(UTF_8);
+        assertThat(response.headers()).isEqualTo(bytes.headers());
+        assertThat(response.headers().asMap())
+                .doesNotContainEntry(HeaderName.of("Content-Type"), List.of(JSON_UTF_8.toString()));
         assertThat(bytes.throwable())
                 .isInstanceOf(UnexpectedResponseException.class)
                 .hasMessageContaining("Content-Type is not set for response");
+        assertThat(response.exception()).contains(bytes.throwable());
     }
 
     @Test
@@ -144,11 +162,14 @@ class TestStreamingJsonResponseHandler
 
         assertThat(response).isInstanceOf(JsonResponse.Exception.class);
         assertThat(response.request()).isEqualTo(REQUEST);
+        assertThat(response.headers().asMap())
+                .containsEntry(HeaderName.of("Content-Type"), List.of(JSON_UTF_8.toString()));
         JsonResponse.Exception<User> exception = (JsonResponse.Exception<User>) response;
 
         assertThat(exception.throwable())
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Invalid JSON bytes for [simple type, class io.airlift.http.client.TestStreamingJsonResponseHandler$User]");
+        assertThat(response.exception()).contains(exception.throwable());
     }
 
     public record User(String name, int age)

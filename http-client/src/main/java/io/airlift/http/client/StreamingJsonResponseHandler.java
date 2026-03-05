@@ -1,5 +1,6 @@
 package io.airlift.http.client;
 
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.io.CountingInputStream;
 import com.google.common.net.MediaType;
 import io.airlift.json.JsonCodec;
@@ -39,7 +40,7 @@ public class StreamingJsonResponseHandler<T>
     public JsonResponse<T> handleException(Request request, Exception exception)
             throws RuntimeException
     {
-        return new JsonResponse.Exception<>(request, -1, exception);
+        return new JsonResponse.Exception<>(request, -1, ImmutableListMultimap.of(), exception);
     }
 
     @Override
@@ -73,7 +74,7 @@ public class StreamingJsonResponseHandler<T>
                     new UnexpectedResponseException("Expected server to response with application/json but got " + contentType, request, response));
         }
         catch (Exception e) {
-            return new JsonResponse.Exception<>(request, statusCode, e);
+            return new JsonResponse.Exception<>(request, statusCode, response.getHeaders(), e);
         }
     }
 }

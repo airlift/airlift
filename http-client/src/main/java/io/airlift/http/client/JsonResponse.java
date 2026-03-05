@@ -5,6 +5,7 @@ import com.google.common.net.MediaType;
 
 import java.nio.charset.Charset;
 import java.util.Collection;
+import java.util.Optional;
 
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -14,9 +15,21 @@ public sealed interface JsonResponse<T>
 {
     T jsonValue();
 
+    Optional<Throwable> exception();
+
     Request request();
 
-    record JsonValue<T>(Request request, int statusCode, Multimap<HeaderName, String> headers, T jsonValue, long bytesRead)
+    Multimap<HeaderName, String> headers();
+
+    default String getHeader(String name)
+    {
+        Collection<String> values = headers().get(HeaderName.of(name));
+        return values.isEmpty() ? null : values.stream().findFirst().orElse(null);
+    }
+
+    int statusCode();
+
+    record JsonValue<T>(@Override Request request, @Override int statusCode, @Override Multimap<HeaderName, String> headers, @Override T jsonValue, long bytesRead)
             implements JsonResponse<T>
     {
         public JsonValue
@@ -25,9 +38,15 @@ public sealed interface JsonResponse<T>
             requireNonNull(headers, "request is null");
             requireNonNull(jsonValue, "jsonValue is null");
         }
+
+        @Override
+        public Optional<Throwable> exception()
+        {
+            return Optional.empty();
+        }
     }
 
-    record Exception<T>(Request request, int statusCode, Throwable throwable)
+    record Exception<T>(@Override Request request, @Override int statusCode, @Override Multimap<HeaderName, String> headers, Throwable throwable)
             implements JsonResponse<T>
     {
         public Exception
@@ -41,9 +60,15 @@ public sealed interface JsonResponse<T>
         {
             throw new IllegalStateException("Response does not contain a JSON value", throwable);
         }
+
+        @Override
+        public Optional<Throwable> exception()
+        {
+            return Optional.of(throwable);
+        }
     }
 
-    record NonJsonBytes<T>(Request request, int statusCode, Multimap<HeaderName, String> headers, byte[] responseBytes, Throwable throwable)
+    record NonJsonBytes<T>(@Override Request request, @Override int statusCode, @Override Multimap<HeaderName, String> headers, byte[] responseBytes, Throwable throwable)
             implements JsonResponse<T>
     {
         public NonJsonBytes
@@ -58,6 +83,12 @@ public sealed interface JsonResponse<T>
         public T jsonValue()
         {
             throw new IllegalStateException("Could not decode response to JSON", throwable);
+        }
+
+        @Override
+        public Optional<Throwable> exception()
+        {
+            return Optional.of(throwable);
         }
 
         public String stringValue()
@@ -76,12 +107,6 @@ public sealed interface JsonResponse<T>
                 }
             }
             return UTF_8;
-        }
-
-        public String getHeader(String name)
-        {
-            Collection<String> values = headers.get(HeaderName.of(name));
-            return values.isEmpty() ? null : values.stream().findFirst().orElse(null);
         }
     }
 }
