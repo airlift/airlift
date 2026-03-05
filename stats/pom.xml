@@ -12,10 +12,6 @@
     <name>stats</name>
     <description>Airlift - Statistics</description>
 
-    <properties>
-        <air.main.basedir>${project.parent.basedir}</air.main.basedir>
-    </properties>
-
     <dependencies>
 
         <dependency>

@@ -12,10 +12,6 @@
     <name>tracing</name>
     <description>Airlift - Application tracing</description>
 
-    <properties>
-        <air.main.basedir>${project.parent.basedir}</air.main.basedir>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>

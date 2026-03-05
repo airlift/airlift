@@ -12,10 +12,6 @@
     <name>http-client</name>
     <description>Airlift - HTTP client</description>
 
-    <properties>
-        <air.main.basedir>${project.parent.basedir}</air.main.basedir>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>ch.qos.logback</groupId>

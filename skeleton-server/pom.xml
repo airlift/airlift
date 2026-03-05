@@ -12,7 +12,6 @@
     <description>Airlift - Skeleton server</description>
 
     <properties>
-        <air.main.basedir>${project.parent.basedir}</air.main.basedir>
         <air.test.jvm.additional-arguments>-Djdk.attach.allowAttachSelf=true</air.test.jvm.additional-arguments>
         <main-class>io.airlift.skeleton.Main</main-class>
     </properties>

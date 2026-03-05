@@ -12,10 +12,6 @@
     <name>security-jwks</name>
     <description>Airlift - JWKS security utilities</description>
 
-    <properties>
-        <air.main.basedir>${project.parent.basedir}</air.main.basedir>
-    </properties>
-
     <dependencies>
 
         <dependency>
