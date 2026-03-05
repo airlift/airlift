@@ -158,7 +158,7 @@ class TestStreamingJsonResponseHandler
         assertThatThrownBy(response::jsonValue)
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Response does not contain a JSON value")
-                .hasStackTraceContaining("Invalid JSON bytes for [simple type, class io.airlift.http.client.TestStreamingJsonResponseHandler$User]");
+                .hasStackTraceContaining("Invalid JSON stream for [simple type, class io.airlift.http.client.TestStreamingJsonResponseHandler$User]");
 
         assertThat(response).isInstanceOf(JsonResponse.Exception.class);
         assertThat(response.request()).isEqualTo(REQUEST);
@@ -168,7 +168,7 @@ class TestStreamingJsonResponseHandler
 
         assertThat(exception.throwable())
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Invalid JSON bytes for [simple type, class io.airlift.http.client.TestStreamingJsonResponseHandler$User]");
+                .hasMessageContaining("Invalid JSON stream for [simple type, class io.airlift.http.client.TestStreamingJsonResponseHandler$User]");
         assertThat(response.exception()).contains(exception.throwable());
     }
 
