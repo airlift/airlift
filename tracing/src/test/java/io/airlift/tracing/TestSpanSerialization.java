@@ -1,5 +1,6 @@
 package io.airlift.tracing;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import io.airlift.json.JsonCodec;
 import io.airlift.json.JsonCodecFactory;
 import io.airlift.json.JsonMapperProvider;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
+import static java.util.Objects.requireNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestSpanSerialization
@@ -23,7 +25,7 @@ public class TestSpanSerialization
     @Test
     public void testSerialization()
     {
-        JsonCodec<Span> codec = createSpanJsonCodec();
+        JsonCodec<Span> codec = createCodec(Span.class);
 
         String traceId = "414e5e5043a0436f80ad0891b7c2d2da";
         String spanId = "31388bfaf867482b";
@@ -53,7 +55,33 @@ public class TestSpanSerialization
         assertThat(decoded.getTraceState()).isEqualTo(traceState);
     }
 
-    private static JsonCodec<Span> createSpanJsonCodec()
+    @Test
+    public void testNestedSerialization()
+    {
+        JsonCodec<NestedSpan> codec = createCodec(NestedSpan.class);
+
+        String traceId = "414e5e5043a0436f80ad0891b7c2d2da";
+        String spanId = "31388bfaf867482b";
+        TraceFlags traceFlags = TraceFlags.getSampled();
+        TraceState traceState = TraceState.builder()
+                .put("abc", "xyz")
+                .put("hello", "world")
+                .put("test", "oops")
+                .build();
+
+        SpanContext context = SpanContext.create(traceId, spanId, traceFlags, traceState);
+
+        NestedSpan nested = new NestedSpan(Span.wrap(context), "outer field");
+        NestedSpan decoded = codec.fromJson(codec.toJson(nested));
+
+        assertThat(decoded.inner.getSpanContext().isValid()).isTrue();
+        assertThat(decoded.inner.getSpanContext().getTraceId()).isEqualTo(traceId);
+        assertThat(decoded.inner.getSpanContext().getSpanId()).isEqualTo(spanId);
+        assertThat(decoded.inner.getSpanContext().getTraceFlags()).isEqualTo(traceFlags);
+        assertThat(decoded.inner.getSpanContext().getTraceState()).isEqualTo(traceState);
+    }
+
+    private static <T> JsonCodec<T> createCodec(Class<T> clazz)
     {
         OpenTelemetry openTelemetry = OpenTelemetry.propagating(
                 ContextPropagators.create(W3CTraceContextPropagator.getInstance()));
@@ -61,8 +89,21 @@ public class TestSpanSerialization
         return new JsonCodecFactory(new JsonMapperProvider()
                 .withJsonSerializers(Map.of(Span.class, new SpanSerializer(openTelemetry)))
                 .withJsonDeserializers(Map.of(Span.class, new SpanDeserializer(openTelemetry)))
-                .get())
+                .get()
+                .rebuild()
+                // This makes sure that serde correctly handles deserialization for nested POJO
+                .configure(DeserializationFeature.FAIL_ON_TRAILING_TOKENS, true)
+                .build())
                 .prettyPrint()
-                .jsonCodec(Span.class);
+                .jsonCodec(clazz);
+    }
+
+    public record NestedSpan(Span inner, String outer)
+    {
+        public NestedSpan
+        {
+            requireNonNull(inner, "inner is null");
+            requireNonNull(outer, "outer is null");
+        }
     }
 }

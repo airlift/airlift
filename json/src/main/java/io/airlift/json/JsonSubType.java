@@ -264,7 +264,7 @@ public class JsonSubType
         public B deserialize(JsonParser p, DeserializationContext ctxt)
                 throws IOException
         {
-            TreeNode treeNode = p.readValueAsTree();
+            TreeNode treeNode = ctxt.readTree(p);
             TreeNode propertyNode = treeNode.get(propertyName);
 
             String propertyValue = ((propertyNode != null) && propertyNode.isValueNode()) ? ((ValueNode) propertyNode).textValue() : null;
