@@ -207,16 +207,16 @@
               "oneOf" : [ {
                 "$ref" : "#/components/schemas/NameAndAge2"
               }, {
-                "$ref" : "#/components/schemas/Schedule2"
-              }, {
                 "$ref" : "#/components/schemas/RecursiveDetail"
+              }, {
+                "$ref" : "#/components/schemas/Schedule"
               } ],
               "discriminator" : {
                 "propertyName" : "typeKey",
                 "mapping" : {
                   "nameAndAge" : "#/components/schemas/NameAndAge2",
-                  "schedule" : "#/components/schemas/Schedule2",
-                  "recursiveDetail" : "#/components/schemas/RecursiveDetail"
+                  "recursiveDetail" : "#/components/schemas/RecursiveDetail",
+                  "schedule" : "#/components/schemas/Schedule"
                 }
               },
               "x-tags" : [ "Model Definitions" ]
@@ -297,16 +297,16 @@
         "oneOf" : [ {
           "$ref" : "#/components/schemas/NameAndAge"
         }, {
-          "$ref" : "#/components/schemas/Schedule"
-        }, {
           "$ref" : "#/components/schemas/RecursiveDetail"
+        }, {
+          "$ref" : "#/components/schemas/Schedule2"
         } ],
         "discriminator" : {
           "propertyName" : "typeKey",
           "mapping" : {
             "nameAndAge" : "#/components/schemas/NameAndAge",
-            "schedule" : "#/components/schemas/Schedule",
-            "recursiveDetail" : "#/components/schemas/RecursiveDetail"
+            "recursiveDetail" : "#/components/schemas/RecursiveDetail",
+            "schedule" : "#/components/schemas/Schedule2"
           }
         },
         "x-tags" : [ "Model Definitions" ]
