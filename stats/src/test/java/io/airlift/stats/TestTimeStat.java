@@ -122,10 +122,10 @@ public class TestTimeStat
 
         stat.reset();
 
-        assertThat(stat.getAllTime().getCount()).isEqualTo(0D);
-        assertThat(stat.getOneMinute().getCount()).isEqualTo(0D);
-        assertThat(stat.getFiveMinutes().getCount()).isEqualTo(0D);
-        assertThat(stat.getFifteenMinutes().getCount()).isEqualTo(0D);
+        assertThat(stat.getAllTime().getCount()).isEqualTo(0d);
+        assertThat(stat.getOneMinute().getCount()).isEqualTo(0d);
+        assertThat(stat.getFiveMinutes().getCount()).isEqualTo(0d);
+        assertThat(stat.getFifteenMinutes().getCount()).isEqualTo(0d);
 
         assertThat(stat.getAllTime().getAvg()).isNaN();
         assertThat(stat.getOneMinute().getAvg()).isNaN();
