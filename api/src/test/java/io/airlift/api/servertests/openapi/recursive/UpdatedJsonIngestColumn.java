@@ -30,9 +30,7 @@ public sealed interface UpdatedJsonIngestColumn
             @ApiDescription("dummy") JsonIngestColumn.JsonParserConfig fieldParserConfig,
             @ApiDescription("dummy") JsonIngestColumn.Type trinoType,
             @ApiDescription("dummy") List<NewJsonIngestColumn> nestedColumns)
-            implements UpdatedJsonIngestColumn
-    {
-    }
+            implements UpdatedJsonIngestColumn {}
 
     @ApiResource(name = "existingJsonIngestColumn", description = "dummy")
     record ExistingJsonIngestColumn(
