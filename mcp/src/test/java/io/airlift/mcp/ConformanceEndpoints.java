@@ -1,8 +1,5 @@
 package io.airlift.mcp;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
@@ -27,6 +24,9 @@ import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.ResourceTemplateValues;
 import io.airlift.mcp.model.Role;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.time.Duration;
 import java.util.List;
@@ -145,7 +145,7 @@ public class ConformanceEndpoints
         try {
             return jsonMapper.writeValueAsString(map.orElseGet(ImmutableMap::of));
         }
-        catch (JsonProcessingException e) {
+        catch (JacksonException e) {
             throw new RuntimeException(e);
         }
     }
@@ -170,7 +170,7 @@ public class ConformanceEndpoints
 
     @McpResourceTemplate(name = "template", uriTemplate = "test://template/{id}/data", mimeType = "application/json", description = "A resource template with parameter substitution")
     public ResourceContents resourceTemplate(ReadResourceRequest readResourceRequest, ResourceTemplateValues values)
-            throws JsonProcessingException
+            throws JacksonException
     {
         String id = values.templateValues().get("id");
         String json = jsonMapper.writeValueAsString(ImmutableMap.of("id", id, "templateTest", true, "data", "Data for ID: " + id));

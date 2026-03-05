@@ -1,7 +1,5 @@
 package io.airlift.mcp.versions;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableMap;
@@ -22,8 +20,8 @@ import io.airlift.mcp.model.ResourcesUpdatedNotification;
 import io.airlift.mcp.model.SubscribeRequest;
 import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.sessions.SessionId;
+import tools.jackson.databind.json.JsonMapper;
 
-import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -225,11 +223,6 @@ public class VersionsController
 
     private <T> String asJson(T item)
     {
-        try {
-            return jsonMapper.writeValueAsString(item);
-        }
-        catch (JsonProcessingException e) {
-            throw new UncheckedIOException(e);
-        }
+        return jsonMapper.writeValueAsString(item);
     }
 }

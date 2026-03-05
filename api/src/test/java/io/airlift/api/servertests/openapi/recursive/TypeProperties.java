@@ -16,18 +16,14 @@ public sealed interface TypeProperties
             @ApiDescription("dummy") String topicName,
             @ApiDescription("dummy") StartStrategy startStrategy,
             @ApiDescription("dummy") Long partitionMaxBytesPerSec)
-            implements TypeProperties
-    {
-    }
+            implements TypeProperties {}
 
     @ApiResource(name = "csvParameters", description = "dummy")
     record CsvParameters(
             @ApiDescription("dummy") CsvDelimiter delimiter,
             @ApiDescription("dummy") CsvQuoteChar quoteChar,
             @ApiDescription("dummy") CsvEscapeChar escapeChar,
-            @ApiDescription("dummy") int numHeaderLinesToExclude)
-    {
-    }
+            @ApiDescription("dummy") int numHeaderLinesToExclude) {}
 
     @ApiResource(name = "fileIngestProperties", description = "dummy")
     record FileIngestProperties(
@@ -35,17 +31,13 @@ public sealed interface TypeProperties
             @ApiDescription("dummy") FileFormat fileFormat,
             @ApiDescription("dummy") int pollingIntervalInMinutes,
             @ApiDescription("dummy") Optional<CsvParameters> csvParameters)
-            implements TypeProperties
-    {
-    }
+            implements TypeProperties {}
 
     @ApiResource(name = "ingestJsonTransformProperties", description = "dummy")
     record IngestJsonTransformProperties(
             @ApiDescription("dummy") Optional<List<PartitionColumn>> userDefinedPartitionSpec,
             @ApiDescription("dummy") Optional<String> sortColumnName)
-            implements TypeProperties
-    {
-    }
+            implements TypeProperties {}
 
     @ApiResource(name = "ingestSchemaRegistryTransformProperties", description = "dummy")
     record IngestSchemaRegistryTransformProperties(
@@ -53,8 +45,7 @@ public sealed interface TypeProperties
             @ApiDescription("dummy") String subjectName,
             @ApiDescription("dummy") Optional<List<TypeProperties.PartitionColumn>> userDefinedPartitionSpec,
             @ApiDescription("dummy") Optional<String> sortColumnName)
-            implements TypeProperties
-    {}
+            implements TypeProperties {}
 
     enum StartStrategy
     {
@@ -93,7 +84,5 @@ public sealed interface TypeProperties
             @ApiDescription("dummy") String trinoColumnName,
             @ApiDescription("dummy") String transformType,
             @ApiDescription("dummy") Optional<Integer> bucketCount,
-            @ApiDescription("dummy") Optional<Integer> truncateWidth)
-    {
-    }
+            @ApiDescription("dummy") Optional<Integer> truncateWidth) {}
 }

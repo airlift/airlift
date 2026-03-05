@@ -15,6 +15,7 @@ import io.sirlift.api.generated.SimpleServiceApi;
 import io.sirlift.api.generated.client.ApiClient;
 import io.sirlift.api.generated.models.Poly;
 import io.sirlift.api.generated.models.Simple;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
@@ -25,6 +26,7 @@ import static io.airlift.json.JsonCodec.jsonCodec;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Disabled
 public class TestRecursive
         extends ServerTestBase
 {

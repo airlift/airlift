@@ -1,7 +1,7 @@
 package io.airlift.mcp.model;
 
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.airlift.json.JsonMapperProvider;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.Optional;
 

@@ -1,6 +1,5 @@
 package io.airlift.mcp.internal;
 
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
@@ -71,6 +70,7 @@ import io.airlift.mcp.versions.VersionsController;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.glassfish.jersey.uri.UriTemplate;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.net.URI;
 import java.time.Duration;
