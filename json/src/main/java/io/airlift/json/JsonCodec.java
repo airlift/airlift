@@ -143,11 +143,8 @@ public class JsonCodec<T>
         try {
             return reader.get().readValue(json);
         }
-        catch (MismatchedInputException e) {
-            throw mapMismatchedInputException(e, "string", type);
-        }
-        catch (IOException e) {
-            throw new IllegalArgumentException(format("Invalid JSON string for %s", type), e);
+        catch (Exception e) {
+            throw mapException(e, "string", type);
         }
     }
 
@@ -205,11 +202,8 @@ public class JsonCodec<T>
         try {
             return reader.get().readValue(json);
         }
-        catch (MismatchedInputException e) {
-            throw mapMismatchedInputException(e, "bytes", type);
-        }
-        catch (IOException e) {
-            throw new IllegalArgumentException(format("Invalid JSON bytes for %s", type), e);
+        catch (Exception e) {
+            throw mapException(e, "bytes", type);
         }
     }
 
@@ -244,11 +238,8 @@ public class JsonCodec<T>
         try {
             return reader.get().readValue(json);
         }
-        catch (MismatchedInputException e) {
-            throw mapMismatchedInputException(e, "stream", type);
-        }
-        catch (IOException e) {
-            throw new IllegalArgumentException(format("Invalid JSON bytes for %s", type), e);
+        catch (Exception e) {
+            throw mapException(e, "stream", type);
         }
     }
 
@@ -265,18 +256,18 @@ public class JsonCodec<T>
         try {
             return reader.get().readValue(json);
         }
-        catch (MismatchedInputException e) {
-            throw mapMismatchedInputException(e, "reader", type);
-        }
-        catch (IOException e) {
-            throw new IllegalArgumentException(format("Invalid JSON characters for %s", type), e);
+        catch (Exception e) {
+            throw mapException(e, "characters", type);
         }
     }
 
-    private static IllegalArgumentException mapMismatchedInputException(MismatchedInputException e, String source, Type type)
+    private static IllegalArgumentException mapException(Exception e, String source, Type type)
     {
-        if (e.getMessage() != null && e.getMessage().contains("TRAILING_TOKEN")) {
+        if (e instanceof MismatchedInputException mismatchedInputException && mismatchedInputException.getMessage() != null && mismatchedInputException.getMessage().contains("TRAILING_TOKEN")) {
             return new IllegalArgumentException("Found characters after the expected end of input");
+        }
+        if (e instanceof IllegalArgumentException illegalArgumentException) {
+            throw illegalArgumentException;
         }
         return new IllegalArgumentException(format("Invalid JSON %s for %s", source, type), e);
     }
