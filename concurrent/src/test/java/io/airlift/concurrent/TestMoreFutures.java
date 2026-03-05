@@ -689,7 +689,8 @@ public class TestMoreFutures
         assertFailure(
                 () -> checkSuccess(immediateFailedFuture(new IOException("some failure")), "msg"),
                 expect(
-                        IllegalArgumentException.class, "msg",
+                        IllegalArgumentException.class,
+                        "msg",
                         expect(RuntimeException.class,
                                 "java.io.IOException: some failure",
                                 expect(IOException.class, "some failure"))));

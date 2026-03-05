@@ -354,11 +354,11 @@ public class NodeInfo
 
         List<InetAddress> goodAddresses = networkAddresses.getAddresses();
         return searchOrder.stream()
-            .map(source -> source.apply(goodAddresses))
-            .filter(Optional::isPresent)                        // select only valid results
-            .findFirst()
-            .orElse(Optional.empty())                     // we could not find any source
-            .orElseGet(InetAddress::getLoopbackAddress);        // it is most likely that this is a disconnected developer machine
+                .map(source -> source.apply(goodAddresses))
+                .filter(Optional::isPresent)                    // select only valid results
+                .findFirst()
+                .orElse(Optional.empty())                       // we could not find any source
+                .orElseGet(InetAddress::getLoopbackAddress);    // it is most likely that this is a disconnected developer machine
     }
 
     private static Optional<InetAddress> findIpv4address(List<InetAddress> candidates)

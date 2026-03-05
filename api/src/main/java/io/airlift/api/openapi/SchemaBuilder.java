@@ -427,8 +427,8 @@ class SchemaBuilder
             description += " (read only)";    // Swagger UI removes read only fields which is not what we want
         }
         return description + modelResource.enumDescriptions().map(enumDescriptions ->
-                        enumDescriptions.entrySet().stream()
-                                .map(entry -> "<li><code>\"%s\"</code>: %s</li>".formatted(entry.getKey(), entry.getValue()))
-                                .collect(joining("\n", "\n<ul>", "</ul>\n"))).orElse("");
+                enumDescriptions.entrySet().stream()
+                        .map(entry -> "<li><code>\"%s\"</code>: %s</li>".formatted(entry.getKey(), entry.getValue()))
+                        .collect(joining("\n", "\n<ul>", "</ul>\n"))).orElse("");
     }
 }

@@ -43,8 +43,7 @@ public sealed interface UpdatedJsonIngestColumn
     {
         public ExistingJsonIngestColumn(JsonIngestColumn jsonIngestColumn)
         {
-            this(
-                    jsonIngestColumn.columnId(),
+            this(jsonIngestColumn.columnId(),
                     jsonIngestColumn.trinoColumnName(),
                     jsonIngestColumn.fieldParserConfig(),
                     jsonIngestColumn.trinoType(),
