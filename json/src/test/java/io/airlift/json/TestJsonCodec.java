@@ -277,22 +277,22 @@ public class TestJsonCodec
         String jsonWithTrailingContent = json + " trailer";
         assertThatThrownBy(() -> codec.fromJson(jsonWithTrailingContent))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Invalid JSON string for [simple type, class io.airlift.json.ImmutablePerson]")
+                .hasMessage("Invalid JSON string for class io.airlift.json.ImmutablePerson")
                 .hasStackTraceContaining("Unrecognized token 'trailer': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')");
 
         assertThatThrownBy(() -> codec.fromJson(jsonWithTrailingContent.getBytes(UTF_8)))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Invalid JSON bytes for [simple type, class io.airlift.json.ImmutablePerson]")
+                .hasMessage("Invalid JSON bytes for class io.airlift.json.ImmutablePerson")
                 .hasStackTraceContaining("Unrecognized token 'trailer': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')");
 
         assertThatThrownBy(() -> codec.fromJson(new ByteArrayInputStream(jsonWithTrailingContent.getBytes(UTF_8))))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Invalid JSON bytes for [simple type, class io.airlift.json.ImmutablePerson]")
+                .hasMessage("Invalid JSON bytes for class io.airlift.json.ImmutablePerson")
                 .hasStackTraceContaining("Unrecognized token 'trailer': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')");
 
         assertThatThrownBy(() -> codec.fromJson(Reader.of(jsonWithTrailingContent)))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Invalid JSON characters for [simple type, class io.airlift.json.ImmutablePerson]")
+                .hasMessage("Invalid JSON characters for class io.airlift.json.ImmutablePerson")
                 .hasStackTraceContaining("Unrecognized token 'trailer': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')");
 
         String jsonWithTrailingJsonContent = json + " \"valid json value\"";

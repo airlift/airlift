@@ -42,7 +42,7 @@ public class TestJsonResponseHandler
         catch (IllegalArgumentException e) {
             assertThat(e.getMessage()).isEqualTo(format("Unable to create %s from JSON response: <%s>", User.class, json));
             assertThat(e).hasCauseInstanceOf(IllegalArgumentException.class);
-            assertThat(e).hasStackTraceContaining("Invalid JSON bytes for [simple type, class io.airlift.http.client.TestFullJsonResponseHandler$User]");
+            assertThat(e).hasStackTraceContaining("Invalid JSON bytes for class io.airlift.http.client.TestFullJsonResponseHandler$User");
         }
     }
 

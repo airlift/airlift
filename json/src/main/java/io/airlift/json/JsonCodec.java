@@ -17,7 +17,10 @@ package io.airlift.json;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.google.common.base.Suppliers;
 import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
 import io.airlift.json.LengthLimitedWriter.LengthLimitExceededException;
@@ -30,6 +33,7 @@ import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -105,15 +109,16 @@ public class JsonCodec<T>
         return new JsonCodec<>(JSON_MAPPER, mapType);
     }
 
-    private final JsonMapper mapper;
     private final Type type;
-    private final JavaType javaType;
+    private final Supplier<ObjectWriter> writer;
+    private final Supplier<ObjectReader> reader;
 
     JsonCodec(JsonMapper mapper, Type type)
     {
-        this.mapper = mapper;
+        JavaType javaType = mapper.constructType(type);
         this.type = type;
-        this.javaType = mapper.constructType(type);
+        this.writer = Suppliers.memoize(() -> mapper.writerFor(javaType));
+        this.reader = Suppliers.memoize(() -> mapper.readerFor(javaType));
     }
 
     /**
@@ -134,13 +139,13 @@ public class JsonCodec<T>
     public T fromJson(String json)
             throws IllegalArgumentException
     {
-        try (JsonParser parser = mapper.createParser(json)) {
-            T value = mapper.readerFor(javaType).readValue(parser);
+        try (JsonParser parser = reader.get().createParser(json)) {
+            T value = reader.get().readValue(parser);
             checkArgument(parser.nextToken() == null, "Found characters after the expected end of input");
             return value;
         }
         catch (IOException e) {
-            throw new IllegalArgumentException(format("Invalid JSON string for %s", javaType), e);
+            throw new IllegalArgumentException(format("Invalid JSON string for %s", type), e);
         }
     }
 
@@ -155,7 +160,7 @@ public class JsonCodec<T>
             throws IllegalArgumentException
     {
         try {
-            return mapper.writerFor(javaType).writeValueAsString(instance);
+            return writer.get().writeValueAsString(instance);
         }
         catch (IOException e) {
             throw new IllegalArgumentException(format("%s could not be converted to JSON", instance.getClass().getName()), e);
@@ -174,7 +179,7 @@ public class JsonCodec<T>
     {
         try (StringWriter stringWriter = new StringWriter();
                 LengthLimitedWriter lengthLimitedWriter = new LengthLimitedWriter(stringWriter, lengthLimit)) {
-            mapper.writeValue(lengthLimitedWriter, instance);
+            writer.get().writeValue(lengthLimitedWriter, instance);
             return Optional.of(stringWriter.getBuffer().toString());
         }
         catch (LengthLimitExceededException e) {
@@ -195,13 +200,13 @@ public class JsonCodec<T>
     public T fromJson(byte[] json)
             throws IllegalArgumentException
     {
-        try (JsonParser parser = mapper.createParser(json)) {
-            T value = mapper.readerFor(javaType).readValue(parser);
+        try (JsonParser parser = reader.get().createParser(json)) {
+            T value = reader.get().readValue(parser);
             checkArgument(parser.nextToken() == null, "Found characters after the expected end of input");
             return value;
         }
         catch (IOException e) {
-            throw new IllegalArgumentException(format("Invalid JSON bytes for %s", javaType), e);
+            throw new IllegalArgumentException(format("Invalid JSON bytes for %s", type), e);
         }
     }
 
@@ -216,7 +221,7 @@ public class JsonCodec<T>
             throws IllegalArgumentException
     {
         try {
-            return mapper.writerFor(javaType).writeValueAsBytes(instance);
+            return writer.get().writeValueAsBytes(instance);
         }
         catch (IOException e) {
             throw new IllegalArgumentException(format("%s could not be converted to JSON", instance.getClass().getName()), e);
@@ -233,13 +238,13 @@ public class JsonCodec<T>
     public T fromJson(InputStream json)
             throws IllegalArgumentException
     {
-        try (JsonParser parser = mapper.createParser(json)) {
-            T value = mapper.readerFor(javaType).readValue(parser);
+        try (JsonParser parser = reader.get().createParser(json)) {
+            T value = reader.get().readValue(parser);
             checkArgument(parser.nextToken() == null, "Found characters after the expected end of input");
             return value;
         }
         catch (IOException e) {
-            throw new IllegalArgumentException(format("Invalid JSON bytes for %s", javaType), e);
+            throw new IllegalArgumentException(format("Invalid JSON bytes for %s", type), e);
         }
     }
 
@@ -253,13 +258,13 @@ public class JsonCodec<T>
     public T fromJson(Reader json)
             throws IllegalArgumentException
     {
-        try (JsonParser parser = mapper.createParser(json)) {
-            T value = mapper.readerFor(javaType).readValue(parser);
+        try (JsonParser parser = reader.get().createParser(json)) {
+            T value = reader.get().readValue(parser);
             checkArgument(parser.nextToken() == null, "Found characters after the expected end of input");
             return value;
         }
         catch (IOException e) {
-            throw new IllegalArgumentException(format("Invalid JSON characters for %s", javaType), e);
+            throw new IllegalArgumentException(format("Invalid JSON characters for %s", type), e);
         }
     }
 
