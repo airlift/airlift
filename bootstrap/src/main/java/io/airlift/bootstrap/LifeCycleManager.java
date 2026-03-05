@@ -110,13 +110,6 @@ public final class LifeCycleManager
             throw new LifeCycleStartException("Lifecycle '%s' already starting".formatted(name));
         }
 
-        for (Object obj : managedInstances) {
-            LifeCycleMethods methods = methodsMap.get(obj.getClass());
-            if (!methods.hasFor(PreDestroy.class)) {
-                managedInstances.remove(obj);   // remove reference to instances that aren't needed anymore
-            }
-        }
-
         Thread thread = new Thread(() -> {
             try {
                 stop();
