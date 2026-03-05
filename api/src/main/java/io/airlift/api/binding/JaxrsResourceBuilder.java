@@ -20,9 +20,9 @@ import jakarta.ws.rs.core.MediaType;
 import org.glassfish.jersey.server.model.Resource;
 import org.glassfish.jersey.server.model.ResourceMethod;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
 import static io.airlift.api.internals.Mappers.MethodPathMode.FOR_BINDING;
@@ -40,7 +40,7 @@ import static java.util.Objects.requireNonNull;
 class JaxrsResourceBuilder
 {
     private static final Logger log = Logger.get(JaxrsResourceBuilder.class);
-    private static final Set<ModelMethod> alreadyLogged = new HashSet<>();
+    private static final Set<ModelMethod> alreadyLogged = ConcurrentHashMap.newKeySet();
 
     private final Binder binder;
     private final JaxrsBinder jaxrsBinder;
