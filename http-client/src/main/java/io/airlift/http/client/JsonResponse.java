@@ -1,10 +1,11 @@
 package io.airlift.http.client;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
 import com.google.common.net.MediaType;
 
 import java.nio.charset.Charset;
-import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
@@ -21,10 +22,9 @@ public sealed interface JsonResponse<T>
 
     Multimap<HeaderName, String> headers();
 
-    default String getHeader(String name)
+    default List<String> getHeader(String name)
     {
-        Collection<String> values = headers().get(HeaderName.of(name));
-        return values.isEmpty() ? null : values.stream().findFirst().orElse(null);
+        return ImmutableList.copyOf(headers().get(HeaderName.of(name)));
     }
 
     int statusCode();
@@ -98,7 +98,9 @@ public sealed interface JsonResponse<T>
 
         public Charset charset()
         {
-            String value = getHeader(CONTENT_TYPE);
+            String value = getHeader(CONTENT_TYPE).stream()
+                    .findFirst()
+                    .orElse(null);
             if (value != null) {
                 try {
                     return MediaType.parse(value).charset().or(UTF_8);
