@@ -71,7 +71,7 @@ class TestStreamingJsonResponseHandler
         assertThat(response.headers()).isEqualTo(exception.headers());
         assertThat(exception.throwable())
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Invalid JSON bytes for class io.airlift.http.client.TestStreamingJsonResponseHandler$User");
+                .hasMessageContaining("Invalid JSON stream for class io.airlift.http.client.TestStreamingJsonResponseHandler$User");
     }
 
     @Test
@@ -94,7 +94,7 @@ class TestStreamingJsonResponseHandler
 
         assertThat(exception.throwable())
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Invalid JSON bytes for class io.airlift.http.client.TestStreamingJsonResponseHandler$User");
+                .hasMessageContaining("Invalid JSON stream for class io.airlift.http.client.TestStreamingJsonResponseHandler$User");
     }
 
     @Test
