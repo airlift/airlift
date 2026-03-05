@@ -287,7 +287,7 @@ public class TestJsonCodec
 
         assertThatThrownBy(() -> codec.fromJson(new ByteArrayInputStream(jsonWithTrailingContent.getBytes(UTF_8))))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Invalid JSON bytes for [simple type, class io.airlift.json.ImmutablePerson]")
+                .hasMessage("Invalid JSON stream for [simple type, class io.airlift.json.ImmutablePerson]")
                 .hasStackTraceContaining("Unrecognized token 'trailer': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')");
 
         assertThatThrownBy(() -> codec.fromJson(Reader.of(jsonWithTrailingContent)))
