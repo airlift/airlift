@@ -12,10 +12,6 @@
     <name>opentelemetry</name>
     <description>Airlift - OpenTelemetry instrumentation</description>
 
-    <properties>
-        <air.main.basedir>${project.parent.basedir}</air.main.basedir>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>com.google.guava</groupId>

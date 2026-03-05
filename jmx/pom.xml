@@ -13,7 +13,6 @@
     <description>Airlift - JMX support</description>
 
     <properties>
-        <air.main.basedir>${project.parent.basedir}</air.main.basedir>
         <air.test.jvm.additional-arguments>-Djdk.attach.allowAttachSelf=true</air.test.jvm.additional-arguments>
     </properties>
 

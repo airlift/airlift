@@ -12,10 +12,6 @@
     <name>packaging</name>
     <description>Airlift - Application packaging</description>
 
-    <properties>
-        <air.main.basedir>${project.parent.basedir}</air.main.basedir>
-    </properties>
-
     <build>
         <plugins>
             <plugin>

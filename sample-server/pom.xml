@@ -12,7 +12,6 @@
     <description>Airlift - Sample application</description>
 
     <properties>
-        <air.main.basedir>${project.parent.basedir}</air.main.basedir>
         <main-class>io.airlift.sample.Main</main-class>
     </properties>
 

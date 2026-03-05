@@ -12,10 +12,6 @@
     <name>secrets-spi</name>
     <description>Airlift - Secrets SPI</description>
 
-    <properties>
-        <air.main.basedir>${project.parent.basedir}</air.main.basedir>
-    </properties>
-
     <dependencies />
 
     <build>
