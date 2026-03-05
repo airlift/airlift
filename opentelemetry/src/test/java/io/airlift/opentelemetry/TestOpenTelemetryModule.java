@@ -2,6 +2,7 @@ package io.airlift.opentelemetry;
 
 import com.google.inject.Injector;
 import io.airlift.bootstrap.Bootstrap;
+import io.airlift.node.NodeConfig;
 import io.airlift.node.NodeInfo;
 import io.airlift.node.testing.TestingNodeModule;
 import io.opentelemetry.api.common.Attributes;
@@ -11,6 +12,7 @@ import io.opentelemetry.sdk.metrics.data.LongPointData;
 import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.opentelemetry.sdk.metrics.export.MetricReader;
 import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
+import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporter;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.opentelemetry.sdk.trace.SpanProcessor;
@@ -141,5 +143,27 @@ public class TestOpenTelemetryModule
                 entry(ServiceAttributes.SERVICE_NAME, "testService"),
                 entry(ServiceAttributes.SERVICE_VERSION, "testVersion"),
                 entry(DeploymentIncubatingAttributes.DEPLOYMENT_ENVIRONMENT_NAME, environment));
+    }
+
+    @Test
+    void testCreateResource()
+    {
+        NodeConfig nodeConfig = new NodeConfig()
+                .setEnvironment("test")
+                .setNodeInternalAddress("test-node");
+        NodeInfo nodeInfo = new NodeInfo(nodeConfig);
+
+        OpenTelemetryConfig config = new OpenTelemetryConfig();
+        config.setSamplingRatio(0.5);
+        config.setResourceAttributes("custom.attribute=value1,another.attribute=value2");
+
+        OpenTelemetryModule module = new OpenTelemetryModule("my-service", "1.0");
+        Resource resource = module.createResource(nodeInfo, config);
+        assertThat(resource.getAttributes().asMap()).contains(
+                entry(ServiceAttributes.SERVICE_NAME, "my-service"),
+                entry(ServiceAttributes.SERVICE_VERSION, "1.0"),
+                entry(DeploymentIncubatingAttributes.DEPLOYMENT_ENVIRONMENT_NAME, "test"),
+                entry(stringKey("custom.attribute"), "value1"),
+                entry(stringKey("another.attribute"), "value2"));
     }
 }
