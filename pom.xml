@@ -37,6 +37,7 @@
     <modules>
         <!-- components -->
         <module>api</module>
+        <module>api-maven-plugin</module>
         <module>api-testing</module>
 
         <!-- bom -->
