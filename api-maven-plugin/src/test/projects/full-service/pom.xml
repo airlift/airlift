@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>io.airlift.test</groupId>
+    <artifactId>full-service</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+    <name>full-service</name>
+    <description>Test project for api-maven-plugin OpenAPI generation integration tests</description>
+
+    <properties>
+        <maven.compiler.source>22</maven.compiler.source>
+        <maven.compiler.target>22</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <it-plugin.version>@project.version@</it-plugin.version>
+        <dep.airlift.version>@project.version@</dep.airlift.version>
+        <dep.jackson.version>2.18.4</dep.jackson.version>
+        <dep.openapi-generator-maven-plugin.version>7.7.0</dep.openapi-generator-maven-plugin.version>
+    </properties>
+
+    <dependencies>
+        <!-- Airlift API for annotations -->
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>api</artifactId>
+            <version>${dep.airlift.version}</version>
+        </dependency>
+
+        <!-- Jackson for JSON serialization -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>${dep.jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${dep.jackson.version}</version>
+        </dependency>
+
+        <!-- Guava -->
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>33.4.0-jre</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Step 1: Compile service classes first -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <release>22</release>
+                </configuration>
+            </plugin>
+
+            <!-- Step 2: Generate OpenAPI from service classes -->
+            <plugin>
+                <groupId>io.airlift</groupId>
+                <artifactId>api-maven-plugin</artifactId>
+                <version>${it-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>generate-openapi</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>generate-openapi</goal>
+                        </goals>
+                        <configuration>
+                            <serviceClasses>
+                                <serviceClass>io.airlift.test.WidgetService</serviceClass>
+                                <serviceClass>io.airlift.test.ItemService</serviceClass>
+                            </serviceClasses>
+                            <serviceTypeClass>io.airlift.test.TestServiceType</serviceTypeClass>
+                            <outputFile>${project.build.directory}/openapi.json</outputFile>
+                            <prettyPrint>true</prettyPrint>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Step 3: Consume generated OpenAPI with standard OpenAPI Generator -->
+            <plugin>
+                <groupId>org.openapitools</groupId>
+                <artifactId>openapi-generator-maven-plugin</artifactId>
+                <version>${dep.openapi-generator-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>generate-standard-java-client</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${project.build.directory}/openapi.json</inputSpec>
+                            <generatorName>java</generatorName>
+                            <library>native</library>
+                            <apiPackage>io.airlift.test.generated.api</apiPackage>
+                            <modelPackage>io.airlift.test.generated.models</modelPackage>
+                            <invokerPackage>io.airlift.test.generated.client</invokerPackage>
+                            <output>${project.build.directory}/openapi-test-client</output>
+                            <generateApiDocumentation>false</generateApiDocumentation>
+                            <generateApiTests>false</generateApiTests>
+                            <generateModelDocumentation>false</generateModelDocumentation>
+                            <generateModelTests>false</generateModelTests>
+                            <configOptions>
+                                <sourceFolder>/</sourceFolder>
+                                <useJakartaEe>true</useJakartaEe>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
