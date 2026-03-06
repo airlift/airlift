@@ -268,6 +268,25 @@ public class TestLogger
         assertLog(Level.SEVERE, String.format("'%s' [%s]", format, param), exception);
     }
 
+    @Test
+    public void testCallerClassCaptured()
+    {
+        MockHandler newHandler = new MockHandler();
+        java.util.logging.Logger newJulLogger = java.util.logging.Logger.getLogger(this.getClass().getName());
+        newJulLogger.setUseParentHandlers(false);
+        newJulLogger.addHandler(newHandler);
+
+        Logger newLogger = Logger.get();
+        newLogger.info("Who am I?");
+
+        LogRecord record = newHandler.takeRecord();
+        assertThat(record.getLoggerName())
+                .isEqualTo("io.airlift.log.TestLogger")
+                .isEqualTo(this.getClass().getName());
+
+        assertThat(record.getMessage()).isEqualTo("Who am I?");
+    }
+
     private void assertLog(Level level, String message, Throwable exception)
     {
         LogRecord record = handler.takeRecord();

@@ -19,6 +19,7 @@ import com.google.errorprone.annotations.FormatMethod;
 
 import java.util.IllegalFormatException;
 
+import static java.lang.StackWalker.Option.RETAIN_CLASS_REFERENCE;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
@@ -45,6 +46,16 @@ public class Logger
     public static Logger get(Class<?> clazz)
     {
         return get(clazz.getName());
+    }
+
+    /**
+     * Gets a logger named after a caller class' fully qualified name.
+     *
+     * @return the named logger
+     */
+    public static Logger get()
+    {
+        return get(StackWalker.getInstance(RETAIN_CLASS_REFERENCE).getCallerClass());
     }
 
     /**
