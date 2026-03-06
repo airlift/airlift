@@ -37,6 +37,7 @@
     <modules>
         <!-- components -->
         <module>api</module>
+        <module>api-testing</module>
 
         <!-- bom -->
         <module>bom</module>
@@ -117,6 +118,12 @@
             <dependency>
                 <groupId>io.airlift</groupId>
                 <artifactId>api</artifactId>
+                <version>${dep.airlift.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>api-testing</artifactId>
                 <version>${dep.airlift.version}</version>
             </dependency>
 

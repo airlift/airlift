@@ -7,6 +7,8 @@ import io.airlift.api.ApiResource;
 import java.util.List;
 import java.util.Optional;
 
+import static java.util.Objects.requireNonNull;
+
 @SuppressWarnings("unused")
 @ApiResource(name = "poly", description = "dummy")
 public record PolyTest(
@@ -27,6 +29,13 @@ public record PolyTest(
                 @ApiDescription("dummy") Long flushIntervalSeconds)
                 implements NewTypeProperties
         {
+            public NewIngestProperties
+            {
+                requireNonNull(topicName, "topicName is null");
+                requireNonNull(startStrategy, "startStrategy is null");
+                requireNonNull(partitionMaxBytesPerSec, "partitionMaxBytesPerSec is null");
+                requireNonNull(flushIntervalSeconds, "flushIntervalSeconds is null");
+            }
         }
 
         @ApiResource(name = "newFileIngestProperties", description = "dummy")
@@ -37,6 +46,12 @@ public record PolyTest(
                 @ApiDescription("dummy") Optional<TypeProperties.CsvParameters> csvParameters)
                 implements NewTypeProperties
         {
+            public NewFileIngestProperties
+            {
+                requireNonNull(pathSuffix, "pathSuffix is null");
+                requireNonNull(fileFormat, "fileFormat is null");
+                requireNonNull(csvParameters, "csvParameters is null");
+            }
         }
 
         @ApiResource(name = "newIngestJsonTransformProperties", description = "dummy")
@@ -47,6 +62,12 @@ public record PolyTest(
                 @ApiDescription("dummy") Optional<String> sortColumnName)
                 implements NewTypeProperties
         {
+            public NewIngestJsonTransformProperties
+            {
+                requireNonNull(userDefinedSchema, "userDefinedSchema is null");
+                requireNonNull(userDefinedPartitionSpec, "userDefinedPartitionSpec is null");
+                requireNonNull(sortColumnName, "sortColumnName is null");
+            }
         }
 
         @ApiResource(name = "newIngestSchemaRegistryTransformProperties", description = "dummy")
@@ -58,6 +79,13 @@ public record PolyTest(
                 @ApiDescription("dummy") Optional<String> sortColumnName)
                 implements NewTypeProperties
         {
+            public NewIngestSchemaRegistryTransformProperties
+            {
+                requireNonNull(schemaRegistryId, "schemaRegistryId is null");
+                requireNonNull(subjectName, "subjectName is null");
+                requireNonNull(userDefinedPartitionSpec, "userDefinedPartitionSpec is null");
+                requireNonNull(sortColumnName, "sortColumnName is null");
+            }
         }
 
         @ApiResource(name = "newJsonIngestColumn", description = "dummy")
@@ -68,6 +96,13 @@ public record PolyTest(
                 @ApiDescription("dummy") Optional<List<NewJsonIngestColumn>> nestedColumns)
                 implements NewTypeProperties
         {
+            public NewJsonIngestColumn
+            {
+                requireNonNull(trinoColumnName, "trinoColumnName is null");
+                requireNonNull(fieldParserConfig, "fieldParserConfig is null");
+                requireNonNull(trinoType, "trinoType is null");
+                requireNonNull(nestedColumns, "nestedColumns is null");
+            }
         }
     }
 }
