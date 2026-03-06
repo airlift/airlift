@@ -24,7 +24,7 @@
 
         <openapitools.jackson.version>2.18.6</openapitools.jackson.version>
         <openapitools.jackson-databind-nullable.version>0.2.6</openapitools.jackson-databind-nullable.version>
-        <openapitools.jakarta-annotation.version>2.1.1</openapitools.jakarta-annotation.version>
+        <openapitools.jakarta-annotation.version>3.0.0</openapitools.jakarta-annotation.version>
     </properties>
 
     <dependencies>
