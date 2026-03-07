@@ -184,10 +184,8 @@ public class DebugApp
                 case text -> content.add(new TextContent("Debug text content" + suffix));
                 case image -> content.add(new ImageContent(BLUE_PNG_1X1, "image/png"));
                 case audio -> content.add(new AudioContent(SILENT_WAV, "audio/wav"));
-                case resource ->
-                        content.add(new EmbeddedResource(new ResourceContents("resource", "debug://embedded-resource" + suffix.replace(" ", "-"), "text/plain", "Embedded resource content" + suffix), Optional.empty()));
-                case resourceLink ->
-                        content.add(new Content.ResourceLink("Linked Resource" + suffix, "debug://linked-resource" + suffix.replace(" ", "-"), Optional.empty(), "text/plain", OptionalLong.empty(), Optional.empty()));
+                case resource -> content.add(new EmbeddedResource(new ResourceContents("resource", "debug://embedded-resource" + suffix.replace(" ", "-"), "text/plain", "Embedded resource content" + suffix), Optional.empty()));
+                case resourceLink -> content.add(new Content.ResourceLink("Linked Resource" + suffix, "debug://linked-resource" + suffix.replace(" ", "-"), Optional.empty(), "text/plain", OptionalLong.empty(), Optional.empty()));
                 case mixed -> {
                     content.add(new TextContent("Mixed content: text block"));
                     content.add(new ImageContent(BLUE_PNG_1X1, "image/png"));

@@ -415,10 +415,8 @@ class OpenApiBuilder
         return metadata.security().map(securityScheme -> {
             SecurityScheme accessTokenSecurityScheme = new SecurityScheme();
             return switch (securityScheme) {
-                case BEARER_ACCESS_TOKEN ->
-                        Map.entry("accessToken", accessTokenSecurityScheme.type(SecurityScheme.Type.HTTP).name("Authorization").in(SecurityScheme.In.HEADER).scheme("bearer").bearerFormat("Access token"));
-                case BEARER_JWT ->
-                        Map.entry("bearer", accessTokenSecurityScheme.type(SecurityScheme.Type.HTTP).name("Authorization").in(SecurityScheme.In.HEADER).scheme("bearer").bearerFormat("JWT"));
+                case BEARER_ACCESS_TOKEN -> Map.entry("accessToken", accessTokenSecurityScheme.type(SecurityScheme.Type.HTTP).name("Authorization").in(SecurityScheme.In.HEADER).scheme("bearer").bearerFormat("Access token"));
+                case BEARER_JWT -> Map.entry("bearer", accessTokenSecurityScheme.type(SecurityScheme.Type.HTTP).name("Authorization").in(SecurityScheme.In.HEADER).scheme("bearer").bearerFormat("JWT"));
                 case BASIC -> Map.entry("Basic", accessTokenSecurityScheme.scheme("basic"));
             };
         });
