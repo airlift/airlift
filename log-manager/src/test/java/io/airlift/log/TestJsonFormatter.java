@@ -3,6 +3,7 @@ package io.airlift.log;
 import com.google.common.collect.ImmutableMap;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanId;
+import io.opentelemetry.api.trace.TraceFlags;
 import io.opentelemetry.api.trace.TraceId;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
@@ -134,11 +135,12 @@ public class TestJsonFormatter
 
             String traceId = span.getSpanContext().getTraceId();
             String spanId = span.getSpanContext().getSpanId();
-            String traceFlags = span.getSpanContext().getTraceFlags().asHex();
+            TraceFlags traceFlags = span.getSpanContext().getTraceFlags();
 
             assertThat(TraceId.isValid(traceId)).isTrue();
             assertThat(SpanId.isValid(spanId)).isTrue();
-            assertThat(traceFlags).isEqualTo("01");
+            assertThat(traceFlags.isSampled()).isTrue();
+            assertThat(traceFlags.isTraceIdRandom()).isTrue();
 
             LogRecord record = new LogRecord(Level.DEBUG.toJulLevel(), "Test Log Message");
 
@@ -154,7 +156,7 @@ public class TestJsonFormatter
 
             assertThat(jsonMap.get("traceId")).isEqualTo(traceId);
             assertThat(jsonMap.get("spanId")).isEqualTo(spanId);
-            assertThat(jsonMap.get("traceFlags")).isEqualTo(traceFlags);
+            assertThat(jsonMap.get("traceFlags")).isEqualTo(traceFlags.asHex());
         }
     }
 
