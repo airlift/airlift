@@ -326,8 +326,8 @@ public class MetricsResource
     {
         Map<String, ManagedClass> managedClasses = this.mbeanExporter.getManagedClasses();
 
-        return managedClasses.keySet().stream()
-                .map(objectName -> getMetricsRecursively(objectName, managedClasses.get(objectName)))
+        return managedClasses.entrySet().stream()
+                .map(entry -> getMetricsRecursively(entry.getKey(), entry.getValue()))
                 .flatMap(List::stream);
     }
 
