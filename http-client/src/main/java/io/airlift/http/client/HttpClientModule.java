@@ -28,6 +28,7 @@ import com.google.inject.TypeLiteral;
 import io.airlift.configuration.ConfigDefaults;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.node.NodeInfo;
+import io.airlift.tracing.TracingEnabledConfig;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.api.trace.TracerProvider;
@@ -68,6 +69,7 @@ public class HttpClientModule
 
         // bind the configuration
         configBinder(binder).bindConfig(HttpClientConfig.class, annotation, name);
+        configBinder(binder).bindConfig(TracingEnabledConfig.class);
 
         // Allow users to bind their own SslContextFactory, pulling a globally-bound
         // SslContextFactory if one is not bound with the specific annotation
@@ -136,6 +138,7 @@ public class HttpClientModule
         public HttpClient get()
         {
             HttpClientConfig config = injector.getInstance(Key.get(HttpClientConfig.class, annotation));
+            TracingEnabledConfig tracingEnabledConfig = injector.getInstance(TracingEnabledConfig.class);
             Optional<String> environment = Optional.ofNullable(nodeInfo).map(NodeInfo::getEnvironment);
             Optional<SslContextFactory.Client> sslContextFactoryAnnotated = injector.getInstance(Key.get(new TypeLiteral<>() {}, annotation));
             Optional<SslContextFactory.Client> sslContextFactoryGlobal = injector.getInstance(Key.get(new TypeLiteral<>() {}));
@@ -151,7 +154,7 @@ public class HttpClientModule
                     .addAll(injector.getInstance(Key.get(new TypeLiteral<Set<HttpStatusListener>>() {}, annotation)))
                     .build();
 
-            return new JettyHttpClient(name, config, ImmutableList.copyOf(filters), openTelemetry, tracer, environment, sslContextFactory, httpStatusListeners);
+            return new JettyHttpClient(name, config, tracingEnabledConfig, ImmutableList.copyOf(filters), openTelemetry, tracer, environment, sslContextFactory, httpStatusListeners);
         }
     }
 }
