@@ -107,9 +107,9 @@ public sealed interface JsonResponse<T>
 
         public Charset charset()
         {
-            String value = getHeader(CONTENT_TYPE).stream()
-                    .findFirst()
-                    .orElse(null);
+            List<String> values = getHeader(CONTENT_TYPE);
+            String value = values.isEmpty() ? null : values.getFirst();
+
             if (value != null) {
                 try {
                     return MediaType.parse(value).charset().or(UTF_8);
