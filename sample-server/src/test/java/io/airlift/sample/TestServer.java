@@ -42,6 +42,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
+import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 import static io.airlift.http.client.JsonResponseHandler.createJsonResponseHandler;
 import static io.airlift.http.client.Request.Builder.prepareDelete;
 import static io.airlift.http.client.Request.Builder.prepareGet;
@@ -52,7 +53,6 @@ import static io.airlift.http.client.StatusResponseHandler.createStatusResponseH
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
 import static io.airlift.json.JsonCodec.listJsonCodec;
 import static io.airlift.json.JsonCodec.mapJsonCodec;
-import static jakarta.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static java.net.HttpURLConnection.HTTP_BAD_METHOD;
 import static java.net.HttpURLConnection.HTTP_CREATED;
@@ -235,7 +235,7 @@ public class TestServer
                 createStringResponseHandler());
 
         assertThat(response.getStatusCode()).isEqualTo(HTTP_OK);
-        assertThat(response.getHeader(CONTENT_TYPE)).isEqualTo("application/vnd.sun.wadl+xml");
+        assertThat(response.getHeader(CONTENT_TYPE)).hasValue("application/vnd.sun.wadl+xml");
         assertThat(response.getBody()).startsWith("<?xml ").contains("<application ");
     }
 

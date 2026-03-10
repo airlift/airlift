@@ -24,9 +24,10 @@ import jakarta.annotation.Nullable;
 
 import java.nio.charset.Charset;
 import java.util.List;
+import java.util.Optional;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
+import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 import static io.airlift.http.client.ResponseHandlerUtils.getResponseBytes;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
 import static java.lang.String.format;
@@ -67,7 +68,7 @@ public class FullJsonResponseHandler<T>
     public JsonResponse<T> handle(Request request, Response response)
     {
         byte[] bytes = getResponseBytes(request, response);
-        String contentType = response.getHeader(CONTENT_TYPE);
+        String contentType = response.getHeader(CONTENT_TYPE).orElse(null);
         if ((contentType == null) || !MediaType.parse(contentType).is(MEDIA_TYPE_JSON)) {
             return new JsonResponse<>(response.getStatusCode(), response.getHeaders(), bytes);
         }
@@ -123,16 +124,34 @@ public class FullJsonResponseHandler<T>
             return statusCode;
         }
 
+        /**
+         * Use {@link FullJsonResponseHandler.JsonResponse#getHeader(HeaderName)}
+         */
         @Nullable
+        @Deprecated
         public String getHeader(String name)
         {
-            List<String> values = getHeaders().get(HeaderName.of(name));
-            return values.isEmpty() ? null : values.getFirst();
+            return getHeader(HeaderName.of(name)).orElse(null);
         }
 
+        public Optional<String> getHeader(HeaderName name)
+        {
+            List<String> values = getHeaders().get(name);
+            return values.isEmpty() ? Optional.empty() : Optional.ofNullable(values.getFirst());
+        }
+
+        public List<String> getHeaders(HeaderName name)
+        {
+            return headers.get(name);
+        }
+
+        /**
+         * Use {@link FullJsonResponseHandler.JsonResponse#getHeaders(HeaderName)}
+         */
+        @Deprecated
         public List<String> getHeaders(String name)
         {
-            return headers.get(HeaderName.of(name));
+            return getHeaders(HeaderName.of(name));
         }
 
         public ListMultimap<HeaderName, String> getHeaders()
@@ -196,15 +215,16 @@ public class FullJsonResponseHandler<T>
 
         private Charset getCharset()
         {
-            String value = getHeader(CONTENT_TYPE);
-            if (value != null) {
-                try {
-                    return MediaType.parse(value).charset().or(UTF_8);
-                }
-                catch (RuntimeException ignored) {
-                }
+            try {
+                return getHeader(CONTENT_TYPE)
+                        .map(MediaType::parse)
+                        .map(MediaType::charset)
+                        .flatMap(optional -> optional.toJavaUtil())
+                        .orElse(UTF_8);
             }
-            return UTF_8;
+            catch (RuntimeException e) {
+                return UTF_8;
+            }
         }
     }
 }

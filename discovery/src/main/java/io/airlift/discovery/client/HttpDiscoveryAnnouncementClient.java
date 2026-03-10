@@ -17,7 +17,6 @@ package io.airlift.discovery.client;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.io.CharStreams;
-import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.inject.Inject;
@@ -44,6 +43,7 @@ import java.util.function.Supplier;
 
 import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
+import static io.airlift.http.client.HeaderNames.CACHE_CONTROL;
 import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
 import static io.airlift.http.client.JsonBodyGenerator.jsonBodyGenerator;
 import static io.airlift.http.client.Request.Builder.prepareDelete;
@@ -187,14 +187,11 @@ public class HttpDiscoveryAnnouncementClient
 
     private static Duration extractMaxAge(Response response)
     {
-        String header = response.getHeader(HttpHeaders.CACHE_CONTROL);
-        if (header != null) {
-            CacheControl cacheControl = CacheControl.valueOf(header);
-            if (cacheControl.getMaxAge() > 0) {
-                return new Duration(cacheControl.getMaxAge(), TimeUnit.SECONDS);
-            }
-        }
-        return DEFAULT_DELAY;
+        return response.getHeader(CACHE_CONTROL)
+                .map(CacheControl::valueOf)
+                .filter(control -> control.getMaxAge() > 0)
+                .map(control -> new Duration(control.getMaxAge(), TimeUnit.SECONDS))
+                .orElse(DEFAULT_DELAY);
     }
 
     private static class DiscoveryResponseHandler<T>

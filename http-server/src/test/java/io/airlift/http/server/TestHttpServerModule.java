@@ -54,10 +54,10 @@ import java.util.Map;
 
 import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
-import static com.google.common.net.HttpHeaders.LOCATION;
 import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
+import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
+import static io.airlift.http.client.HeaderNames.LOCATION;
 import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
@@ -279,10 +279,9 @@ public class TestHttpServerModule
         HttpUriBuilder uriBuilder = uriBuilderFrom(baseUri);
         StringResponse response = client.execute(prepareGet().setUri(uriBuilder.appendPath(path).build()).build(), createStringResponseHandler());
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK.code());
-        String contentType = response.getHeader(CONTENT_TYPE);
-        assertThat(contentType).as(CONTENT_TYPE + " header is absent").isNotNull();
-        MediaType mediaType = MediaType.parse(contentType);
-        assertThat(PLAIN_TEXT_UTF_8.is(mediaType)).as("Expected text/plain but got " + mediaType).isTrue();
+        assertThat(response.getHeader(CONTENT_TYPE))
+                .as(CONTENT_TYPE + " header is present")
+                .hasValueSatisfying(value -> assertThat(PLAIN_TEXT_UTF_8.is(MediaType.parse(value))).isTrue());
         assertThat(response.getBody().trim()).isEqualTo(contents);
     }
 
@@ -296,8 +295,8 @@ public class TestHttpServerModule
                         .build(),
                 createStringResponseHandler());
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.TEMPORARY_REDIRECT.code());
-        assertThat(response.getHeader(LOCATION)).isEqualTo(redirect);
-        assertThat(response.getHeader(CONTENT_TYPE)).as(CONTENT_TYPE + " header should be absent").isNull();
+        assertThat(response.getHeader(LOCATION)).hasValue(redirect);
+        assertThat(response.getHeader(CONTENT_TYPE)).as(CONTENT_TYPE + " header should be absent").isEmpty();
         assertThat(response.getBody()).as("Response body").isEqualTo("");
     }
 
