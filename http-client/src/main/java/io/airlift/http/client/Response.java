@@ -18,7 +18,6 @@ package io.airlift.http.client;
 import com.google.common.annotations.Beta;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
-import jakarta.annotation.Nullable;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 
@@ -26,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
 
@@ -35,16 +35,33 @@ public interface Response
 
     int getStatusCode();
 
-    @Nullable
-    default String getHeader(String name)
+    default Optional<String> getHeader(HeaderName name)
     {
         List<String> values = getHeaders(name);
-        return values.isEmpty() ? null : values.getFirst();
+        return values.isEmpty() ? Optional.empty() : Optional.of(values.getFirst());
     }
 
+    /**
+     * @deprecated Use {@link #getHeader(HeaderName)} instead
+     */
+    @Deprecated
+    default String getHeader(String name)
+    {
+        return getHeader(HeaderName.of(name)).orElse(null);
+    }
+
+    /**
+     * @deprecated Use {@link #getHeaders(HeaderName)} instead
+     */
+    @Deprecated
     default List<String> getHeaders(String name)
     {
         return getHeaders().get(HeaderName.of(name));
+    }
+
+    default List<String> getHeaders(HeaderName name)
+    {
+        return getHeaders().get(name);
     }
 
     ListMultimap<HeaderName, String> getHeaders();

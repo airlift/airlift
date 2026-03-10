@@ -7,7 +7,7 @@ import io.airlift.json.JsonCodec;
 
 import java.io.InputStream;
 
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
+import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 import static io.airlift.http.client.ResponseHandlerUtils.getResponseBytes;
 import static io.airlift.http.client.ResponseHandlerUtils.getResponseStream;
 import static java.util.Objects.requireNonNull;
@@ -50,7 +50,7 @@ public class StreamingJsonResponseHandler<T>
         int statusCode = response.getStatusCode();
 
         try {
-            String contentType = response.getHeader(CONTENT_TYPE);
+            String contentType = response.getHeader(CONTENT_TYPE).orElse(null);
             if (contentType == null) {
                 return new JsonResponse.NonJsonBytes<>(
                         request,

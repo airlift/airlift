@@ -62,16 +62,29 @@ public class UnexpectedResponseException
         return statusCode;
     }
 
+    @Deprecated
     @Nullable
     public String getHeader(String name)
     {
-        List<String> values = getHeaders().get(HeaderName.of(name));
+        return getHeader(HeaderName.of(name));
+    }
+
+    @Nullable
+    public String getHeader(HeaderName name)
+    {
+        List<String> values = getHeaders().get(name);
         return values.isEmpty() ? null : values.getFirst();
     }
 
+    @Deprecated
     public List<String> getHeaders(String name)
     {
-        return headers.get(HeaderName.of(name));
+        return getHeaders(HeaderName.of(name));
+    }
+
+    public List<String> getHeaders(HeaderName name)
+    {
+        return headers.get(name);
     }
 
     public ListMultimap<HeaderName, String> getHeaders()

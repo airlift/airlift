@@ -61,6 +61,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
+import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
@@ -343,8 +344,9 @@ public abstract class AbstractTestTestingHttpServer
         HttpUriBuilder uriBuilder = uriBuilderFrom(baseUri);
         StringResponseHandler.StringResponse data = client.execute(prepareGet().setUri(uriBuilder.appendPath(path).build()).build(), createStringResponseHandler());
         assertThat(data.getStatusCode()).isEqualTo(HttpStatus.OK.code());
-        MediaType contentType = MediaType.parse(data.getHeader(HttpHeaders.CONTENT_TYPE));
-        assertThat(PLAIN_TEXT_UTF_8.is(contentType)).as("Expected text/plain but got " + contentType).isTrue();
+        assertThat(data.getHeader(CONTENT_TYPE))
+                .as(CONTENT_TYPE + " header is present")
+                .hasValueSatisfying(value -> assertThat(PLAIN_TEXT_UTF_8.is(MediaType.parse(value))).isTrue());
         assertThat(data.getBody().trim()).isEqualTo(contents);
     }
 

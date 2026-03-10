@@ -1,5 +1,6 @@
 package io.airlift.jaxrs.testing;
 
+import io.airlift.http.client.HeaderName;
 import io.airlift.http.client.HttpStatus;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
@@ -15,9 +16,9 @@ import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 
+import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
-import static jakarta.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -39,7 +40,7 @@ public class TestJaxrsTestingHttpProcessor
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK.code());
         assertThat(response.getBody()).isEqualTo("Got xyz");
-        assertThat(response.getHeader("X-Test-Out")).isEqualTo("Got abc");
+        assertThat(response.getHeader(HeaderName.of("X-Test-Out"))).hasValue("Got abc");
     }
 
     @Test
@@ -80,7 +81,7 @@ public class TestJaxrsTestingHttpProcessor
         StringResponse response = HTTP_CLIENT.execute(request, createStringResponseHandler());
 
         assertThat(response.getStatusCode()).isEqualTo(HTTP_OK);
-        assertThat(response.getHeader(CONTENT_TYPE)).isEqualTo("application/vnd.sun.wadl+xml");
+        assertThat(response.getHeader(CONTENT_TYPE)).hasValue("application/vnd.sun.wadl+xml");
         assertThat(response.getBody()).startsWith("<?xml ").contains("<application ");
     }
 

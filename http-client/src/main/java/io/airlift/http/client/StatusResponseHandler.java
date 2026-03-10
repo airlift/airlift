@@ -21,6 +21,7 @@ import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import jakarta.annotation.Nullable;
 
 import java.util.List;
+import java.util.Optional;
 
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
 
@@ -64,16 +65,34 @@ public class StatusResponseHandler
             return statusCode;
         }
 
+        /**
+         * @deprecated Use {@link #getHeader(HeaderName)} instead
+         */
+        @Deprecated
         @Nullable
         public String getHeader(String name)
         {
-            List<String> values = getHeaders().get(HeaderName.of(name));
-            return values.isEmpty() ? null : values.getFirst();
+            return getHeader(HeaderName.of(name)).orElse(null);
         }
 
+        public Optional<String> getHeader(HeaderName name)
+        {
+            List<String> values = getHeaders().get(name);
+            return values.isEmpty() ? Optional.empty() : Optional.ofNullable(values.getFirst());
+        }
+
+        /**
+         * @deprecated Use {@link #getHeaders(HeaderName)} instead
+         */
+        @Deprecated
         public List<String> getHeaders(String name)
         {
-            return headers.get(HeaderName.of(name));
+            return getHeaders(HeaderName.of(name));
+        }
+
+        public List<String> getHeaders(HeaderName name)
+        {
+            return headers.get(name);
         }
 
         public ListMultimap<HeaderName, String> getHeaders()

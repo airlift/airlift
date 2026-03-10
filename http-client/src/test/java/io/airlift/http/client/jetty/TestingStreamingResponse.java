@@ -5,12 +5,12 @@ import com.google.common.io.Closer;
 import io.airlift.http.client.HeaderName;
 import io.airlift.http.client.HttpVersion;
 import io.airlift.http.client.StreamingResponse;
-import jakarta.annotation.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -68,14 +68,13 @@ public class TestingStreamingResponse
     }
 
     @Override
-    @Nullable
-    public String getHeader(String name)
+    public Optional<String> getHeader(HeaderName name)
     {
         return delegate.getHeader(name);
     }
 
     @Override
-    public List<String> getHeaders(String name)
+    public List<String> getHeaders(HeaderName name)
     {
         return delegate.getHeaders(name);
     }
