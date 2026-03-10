@@ -24,7 +24,6 @@ import java.io.Closeable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -44,7 +43,7 @@ public final class LifeCycleManager
     private final Logger log;
     private final AtomicReference<State> state = new AtomicReference<>(State.LATENT);
     private final ConcurrentWeakIdentitySet startedInstances = new ConcurrentWeakIdentitySet();
-    private final Queue<Object> managedInstances = new ConcurrentLinkedQueue<>();
+    private final Queue<Object> preDestroyInstances = new ConcurrentLinkedQueue<>();
     private final LifeCycleMethodsMap methodsMap;
     private final AtomicReference<Thread> shutdownHook = new AtomicReference<>();
 
@@ -85,19 +84,19 @@ public final class LifeCycleManager
     }
 
     @Managed
-    public long getManagedInstanceCount()
+    public long getPreDestroyInstancesCount()
     {
-        return managedInstances.size();
+        return preDestroyInstances.size();
     }
 
     /**
-     * Returns the number of managed instances
+     * Returns the number of pre-destroy instances
      *
      * @return qty
      */
     public int size()
     {
-        return managedInstances.size();
+        return preDestroyInstances.size();
     }
 
     /**
@@ -123,8 +122,8 @@ public final class LifeCycleManager
 
         state.set(State.STARTED);
 
-        if (!managedInstances.isEmpty()) {
-            log.debug("Lifecycle started with %d managed instance(s)", managedInstances.size());
+        if (!preDestroyInstances.isEmpty()) {
+            log.debug("Lifecycle started with %d managed instance(s)", preDestroyInstances.size());
         }
     }
 
@@ -195,16 +194,13 @@ public final class LifeCycleManager
 
         log.debug("Lifecycle stopping...", name);
 
-        List<Object> reversedInstances = new ArrayList<>(managedInstances);
-        Collections.reverse(reversedInstances);
-
-        for (Object obj : reversedInstances) {
+        for (Object obj : new ArrayList<>(preDestroyInstances).reversed()) {
             stopInstance(obj, handler);
         }
 
         state.set(State.STOPPED);
-        if (!managedInstances.isEmpty()) {
-            log.debug("Lifecycle stopped with %d managed instance(s)", managedInstances.size());
+        if (!preDestroyInstances.isEmpty()) {
+            log.debug("Lifecycle stopped with %d managed instance(s)", preDestroyInstances.size());
         }
     }
 
@@ -256,7 +252,7 @@ public final class LifeCycleManager
         }
 
         if (methods.hasFor(PreDestroy.class)) {
-            managedInstances.add(obj);
+            preDestroyInstances.add(obj);
         }
 
         for (Method postConstruct : methods.methodsFor(PostConstruct.class)) {
