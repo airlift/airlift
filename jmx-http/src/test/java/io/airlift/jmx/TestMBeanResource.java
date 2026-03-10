@@ -28,10 +28,11 @@ import java.lang.management.ManagementFactory;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.common.net.MediaType.HTML_UTF_8;
 import static com.google.common.net.MediaType.JSON_UTF_8;
+import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StringResponseHandler.StringResponse;
@@ -156,7 +157,12 @@ public class TestMBeanResource
 
     private static void assertContentType(StringResponse response, MediaType type)
     {
-        String contentType = response.getHeader(CONTENT_TYPE);
-        assertThat(MediaType.parse(contentType).is(type.withoutParameters())).as(contentType).isTrue();
+        Optional<MediaType> contentType = response.getHeader(CONTENT_TYPE)
+                .map(MediaType::parse);
+
+        assertThat(contentType).hasValueSatisfying(value -> {
+            assertThat(type.is(value)).isTrue();
+            assertThat(value.is(type.withoutParameters())).isTrue();
+        });
     }
 }

@@ -18,6 +18,7 @@ package io.airlift.http.server;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.net.HostAndPort;
+import io.airlift.http.client.HeaderName;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.HttpClient.HttpResponseFuture;
 import io.airlift.http.client.HttpClientConfig;
@@ -79,9 +80,9 @@ import static com.google.common.base.Throwables.throwIfUnchecked;
 import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
 import static com.google.common.io.Resources.getResource;
-import static com.google.common.net.HttpHeaders.X_FORWARDED_FOR;
-import static com.google.common.net.HttpHeaders.X_FORWARDED_HOST;
-import static com.google.common.net.HttpHeaders.X_FORWARDED_PROTO;
+import static io.airlift.http.client.HeaderNames.X_FORWARDED_FOR;
+import static io.airlift.http.client.HeaderNames.X_FORWARDED_HOST;
+import static io.airlift.http.client.HeaderNames.X_FORWARDED_PROTO;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
@@ -102,6 +103,8 @@ import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
 @Execution(SAME_THREAD)
 public class TestHttpServerProvider
 {
+    private static final HeaderName X_PROTOCOL_HEADER = HeaderName.of("X-Protocol");
+
     private HttpServer server;
     private File tempDir;
     private File logFile;
@@ -210,14 +213,14 @@ public class TestHttpServerProvider
             StatusResponse response = httpClient.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStatusResponseHandler());
 
             assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_OK);
-            assertThat(response.getHeader("X-Protocol")).isEqualTo("HTTP/1.1");
+            assertThat(response.getHeader(X_PROTOCOL_HEADER)).hasValue("HTTP/1.1");
         }
 
         try (JettyHttpClient httpClient = new JettyHttpClient(new HttpClientConfig().setHttp2Enabled(true))) {
             StatusResponse response = httpClient.execute(prepareGet().setUri(httpServerInfo.getHttpUri()).build(), createStatusResponseHandler());
 
             assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_OK);
-            assertThat(response.getHeader("X-Protocol")).isEqualTo("HTTP/2.0");
+            assertThat(response.getHeader(X_PROTOCOL_HEADER)).hasValue("HTTP/2.0");
         }
     }
 
@@ -254,7 +257,7 @@ public class TestHttpServerProvider
         StatusResponse response = httpClient.execute(prepareGet().setUri(uri).build(), createStatusResponseHandler());
 
         assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_OK);
-        assertThat(response.getHeader("X-Protocol")).isEqualTo("HTTP/1.1");
+        assertThat(response.getHeader(X_PROTOCOL_HEADER)).hasValue("HTTP/1.1");
     }
 
     @Test

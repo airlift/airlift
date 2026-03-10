@@ -280,9 +280,24 @@ public final class Request
         }
 
         @CanIgnoreReturnValue
+        public Builder setHeader(HeaderName name, String value)
+        {
+            this.headers.removeAll(name.toString());
+            this.headers.put(name.toString(), value);
+            return this;
+        }
+
+        @CanIgnoreReturnValue
         public Builder addHeader(String name, String value)
         {
             this.headers.put(name, value);
+            return this;
+        }
+
+        @CanIgnoreReturnValue
+        public Builder addHeader(HeaderName name, String value)
+        {
+            this.headers.put(name.toString(), value);
             return this;
         }
 
