@@ -260,7 +260,7 @@ public class NodeInfo
      * The internal network address the server should use when announcing its location to other machines.
      * This address should available to all machines within the environment, but may not be globally routable.
      * If this is not set, the following algorithm is used to choose the public address:
-     * <p>
+     *
      * <ol>
      * <li>InetAddress.getLocalHost() if good IPv4</li>
      * <li>First good IPv4 address of an up network interface</li>
