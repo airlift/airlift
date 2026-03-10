@@ -32,6 +32,7 @@ import java.util.Optional;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.lang.String.CASE_INSENSITIVE_ORDER;
+import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
 
 public final class Request
@@ -71,7 +72,7 @@ public final class Request
 
         this.httpVersion = requireNonNull(httpVersion, "httpVersion is null");
         this.uri = validateUri(uri);
-        this.method = method;
+        this.method = method.toUpperCase(ENGLISH);
         this.headers.putAll(headers);
         this.requestTimeout = requireNonNull(requestTimeout, "requestTimeout is null");
         this.idleTimeout = requireNonNull(idleTimeout, "idleTimeout is null");
