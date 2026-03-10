@@ -44,7 +44,7 @@ public final class LifeCycleManager
     private final Logger log;
     private final AtomicReference<State> state = new AtomicReference<>(State.LATENT);
     private final ConcurrentWeakIdentitySet startedInstances = new ConcurrentWeakIdentitySet();
-    private final Queue<Object> managedInstances = new ConcurrentLinkedQueue<>();
+    private final Queue<Object> stoppableInstances = new ConcurrentLinkedQueue<>();
     private final LifeCycleMethodsMap methodsMap;
     private final AtomicReference<Thread> shutdownHook = new AtomicReference<>();
 
@@ -87,7 +87,7 @@ public final class LifeCycleManager
     @Managed
     public long getManagedInstanceCount()
     {
-        return managedInstances.size();
+        return stoppableInstances.size();
     }
 
     /**
@@ -97,7 +97,7 @@ public final class LifeCycleManager
      */
     public int size()
     {
-        return managedInstances.size();
+        return stoppableInstances.size();
     }
 
     /**
@@ -123,8 +123,8 @@ public final class LifeCycleManager
 
         state.set(State.STARTED);
 
-        if (!managedInstances.isEmpty()) {
-            log.debug("Lifecycle started with %d managed instance(s)", managedInstances.size());
+        if (!stoppableInstances.isEmpty()) {
+            log.debug("Lifecycle started with %d managed instance(s)", stoppableInstances.size());
         }
     }
 
@@ -195,7 +195,7 @@ public final class LifeCycleManager
 
         log.debug("Lifecycle stopping...", name);
 
-        List<Object> reversedInstances = new ArrayList<>(managedInstances);
+        List<Object> reversedInstances = new ArrayList<>(stoppableInstances);
         Collections.reverse(reversedInstances);
 
         for (Object obj : reversedInstances) {
@@ -203,8 +203,8 @@ public final class LifeCycleManager
         }
 
         state.set(State.STOPPED);
-        if (!managedInstances.isEmpty()) {
-            log.debug("Lifecycle stopped with %d managed instance(s)", managedInstances.size());
+        if (!stoppableInstances.isEmpty()) {
+            log.debug("Lifecycle stopped with %d managed instance(s)", stoppableInstances.size());
         }
     }
 
@@ -256,7 +256,7 @@ public final class LifeCycleManager
         }
 
         if (methods.hasFor(PreDestroy.class)) {
-            managedInstances.add(obj);
+            stoppableInstances.add(obj);
         }
 
         for (Method postConstruct : methods.methodsFor(PostConstruct.class)) {
