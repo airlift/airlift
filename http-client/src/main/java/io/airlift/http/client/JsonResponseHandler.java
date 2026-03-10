@@ -22,7 +22,7 @@ import io.airlift.json.JsonCodec;
 
 import java.util.Set;
 
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
+import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 import static io.airlift.http.client.ResponseHandlerUtils.getResponseBytes;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
 import static java.nio.charset.StandardCharsets.UTF_8;

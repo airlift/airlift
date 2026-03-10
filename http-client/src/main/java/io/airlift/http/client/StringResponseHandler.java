@@ -25,7 +25,7 @@ import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Optional;
 
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
+import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 import static io.airlift.http.client.ResponseHandlerUtils.getResponseBytes;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -85,15 +85,28 @@ public class StringResponseHandler
         }
 
         @Nullable
+        @Deprecated
         public String getHeader(String name)
         {
-            List<String> values = getHeaders().get(HeaderName.of(name));
+            return getHeader(HeaderName.of(name));
+        }
+
+        @Nullable
+        public String getHeader(HeaderName name)
+        {
+            List<String> values = getHeaders().get(name);
             return values.isEmpty() ? null : values.getFirst();
         }
 
+        @Deprecated
         public List<String> getHeaders(String name)
         {
-            return headers.get(HeaderName.of(name));
+            return getHeaders(HeaderName.of(name));
+        }
+
+        public List<String> getHeaders(HeaderName name)
+        {
+            return headers.get(name);
         }
 
         public ListMultimap<HeaderName, String> getHeaders()

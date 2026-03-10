@@ -8,9 +8,9 @@ import org.junit.jupiter.api.Test;
 import java.net.URI;
 import java.util.List;
 
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.common.net.MediaType.JSON_UTF_8;
 import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
+import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 import static io.airlift.http.client.HttpStatus.INTERNAL_SERVER_ERROR;
 import static io.airlift.http.client.HttpStatus.OK;
 import static io.airlift.http.client.Request.Builder.prepareGet;
@@ -49,7 +49,7 @@ class TestStreamingJsonResponseHandler
         assertThat(value.request()).isEqualTo(REQUEST);
         assertThat(value.bytesRead()).isEqualTo(34);
         assertThat(response.headers().asMap())
-                .containsEntry(HeaderName.of("Content-Type"), List.of(JSON_UTF_8.toString()));
+                .containsEntry(CONTENT_TYPE, List.of(JSON_UTF_8.toString()));
         assertThat(value.headers()).isEqualTo(response.headers());
     }
 

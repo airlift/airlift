@@ -26,7 +26,7 @@ import java.nio.charset.Charset;
 import java.util.List;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
+import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 import static io.airlift.http.client.ResponseHandlerUtils.getResponseBytes;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
 import static java.lang.String.format;
@@ -124,15 +124,28 @@ public class FullJsonResponseHandler<T>
         }
 
         @Nullable
+        @Deprecated
         public String getHeader(String name)
         {
-            List<String> values = getHeaders().get(HeaderName.of(name));
+            return getHeader(HeaderName.of(name));
+        }
+
+        @Nullable
+        public String getHeader(HeaderName name)
+        {
+            List<String> values = getHeaders().get(name);
             return values.isEmpty() ? null : values.getFirst();
         }
 
+        public List<String> getHeaders(HeaderName name)
+        {
+            return headers.get(name);
+        }
+
+        @Deprecated
         public List<String> getHeaders(String name)
         {
-            return headers.get(HeaderName.of(name));
+            return getHeaders(HeaderName.of(name));
         }
 
         public ListMultimap<HeaderName, String> getHeaders()

@@ -32,15 +32,27 @@ public interface Response
     int getStatusCode();
 
     @Nullable
-    default String getHeader(String name)
+    default String getHeader(HeaderName name)
     {
         List<String> values = getHeaders(name);
         return values.isEmpty() ? null : values.getFirst();
     }
 
+    @Deprecated // Use getHeader(HeaderName) instead
+    default String getHeader(String name)
+    {
+        return getHeader(HeaderName.of(name));
+    }
+
+    @Deprecated // Use getHeaders(HeaderName) instead
     default List<String> getHeaders(String name)
     {
         return getHeaders().get(HeaderName.of(name));
+    }
+
+    default List<String> getHeaders(HeaderName name)
+    {
+        return getHeaders().get(name);
     }
 
     ListMultimap<HeaderName, String> getHeaders();

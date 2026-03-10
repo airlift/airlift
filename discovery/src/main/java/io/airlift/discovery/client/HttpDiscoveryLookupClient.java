@@ -43,6 +43,8 @@ import java.util.function.Supplier;
 
 import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static io.airlift.discovery.client.DiscoveryAnnouncementClient.DEFAULT_DELAY;
+import static io.airlift.http.client.HeaderNames.CACHE_CONTROL;
+import static io.airlift.http.client.HeaderNames.ETAG;
 import static io.airlift.http.client.HttpStatus.NOT_MODIFIED;
 import static io.airlift.http.client.HttpStatus.OK;
 import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
@@ -128,7 +130,7 @@ public class HttpDiscoveryLookupClient
             public ServiceDescriptors handle(Request request, Response response)
             {
                 Duration maxAge = extractMaxAge(response);
-                String eTag = response.getHeader(HttpHeaders.ETAG);
+                String eTag = response.getHeader(ETAG);
 
                 if (NOT_MODIFIED.code() == response.getStatusCode() && serviceDescriptors != null) {
                     return new ServiceDescriptors(serviceDescriptors, maxAge, eTag);
@@ -162,7 +164,7 @@ public class HttpDiscoveryLookupClient
 
     private Duration extractMaxAge(Response response)
     {
-        String header = response.getHeader(HttpHeaders.CACHE_CONTROL);
+        String header = response.getHeader(CACHE_CONTROL);
         if (header != null) {
             CacheControl cacheControl = CacheControl.valueOf(header);
             if (cacheControl.getMaxAge() > 0) {
