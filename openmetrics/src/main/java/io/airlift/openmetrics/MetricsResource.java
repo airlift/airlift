@@ -96,9 +96,9 @@ public class MetricsResource
             }
         }
         else {
-            body.append(managedMetricExpositions());
+            getManagedMetricsStream().forEach(metric -> body.append(metric.getMetricExposition()));
             for (ObjectName metricObjectNames : allMetricsObjectNames) {
-                body.append(jmxMetricExpositions(metricObjectNames));
+                mbeanServer.queryNames(metricObjectNames, null).forEach(objectName -> inferAttributesForObjectName(body, objectName));
             }
         }
         body.append("# EOF\n");
@@ -222,9 +222,8 @@ public class MetricsResource
         }
     }
 
-    private String inferAttributesForObjectName(ObjectName objectName)
+    private void inferAttributesForObjectName(StringBuilder expositions, ObjectName objectName)
     {
-        StringBuilder expositions = new StringBuilder();
         try {
             MBeanInfo mbeanInfo = mbeanServer.getMBeanInfo(objectName);
             for (MBeanAttributeInfo mBeanAttributeInfo : mbeanInfo.getAttributes()) {
@@ -242,7 +241,6 @@ public class MetricsResource
         catch (InstanceNotFoundException | IntrospectionException | ReflectionException e) {
             log.debug(e, "Unable to get MBeanInfo for object %s, skipping", objectName.getCanonicalName());
         }
-        return expositions.toString();
     }
 
     @VisibleForTesting
@@ -313,15 +311,6 @@ public class MetricsResource
         return Optional.empty();
     }
 
-    private String jmxMetricExpositions(ObjectName initialObjectName)
-    {
-        StringBuilder stringBuilder = new StringBuilder();
-
-        mbeanServer.queryNames(initialObjectName, null).forEach(objectName -> stringBuilder.append(inferAttributesForObjectName(objectName)));
-
-        return stringBuilder.toString();
-    }
-
     private Stream<Metric> getManagedMetricsStream()
     {
         Map<String, ManagedClass> managedClasses = this.mbeanExporter.getManagedClasses();
@@ -329,14 +318,5 @@ public class MetricsResource
         return managedClasses.entrySet().stream()
                 .map(entry -> getMetricsRecursively(entry.getKey(), entry.getValue()))
                 .flatMap(List::stream);
-    }
-
-    private String managedMetricExpositions()
-    {
-        StringBuilder builder = new StringBuilder();
-
-        getManagedMetricsStream().forEach(metric -> builder.append(metric.getMetricExposition()));
-
-        return builder.toString();
     }
 }
