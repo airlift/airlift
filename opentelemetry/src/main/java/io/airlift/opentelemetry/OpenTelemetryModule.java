@@ -38,6 +38,7 @@ import static com.google.common.base.StandardSystemProperty.OS_VERSION;
 import static com.google.common.base.Strings.nullToEmpty;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static io.airlift.configuration.ConfigBinder.configBinder;
+import static io.opentelemetry.sdk.trace.samplers.Sampler.alwaysOn;
 import static io.opentelemetry.sdk.trace.samplers.Sampler.parentBased;
 import static io.opentelemetry.sdk.trace.samplers.Sampler.traceIdRatioBased;
 import static java.lang.String.format;
@@ -105,7 +106,7 @@ public class OpenTelemetryModule
     public SdkTracerProvider createTracerProvider(Resource resource, Set<SpanProcessor> spanProcessors, OpenTelemetryConfig config)
     {
         return SdkTracerProvider.builder()
-                .setSampler(parentBased(traceIdRatioBased(config.getSamplingRatio())))
+                .setSampler(parentBased(config.getSamplingRatio() == 1.0 ? alwaysOn() : traceIdRatioBased(config.getSamplingRatio())))
                 .addSpanProcessor(SpanProcessor.composite(spanProcessors))
                 .setResource(resource)
                 .build();
