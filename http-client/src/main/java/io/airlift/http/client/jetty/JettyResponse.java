@@ -13,7 +13,6 @@ import org.eclipse.jetty.http.HttpHeader;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.function.LongSupplier;
 
@@ -101,10 +100,7 @@ class JettyResponse
     private static ListMultimap<HeaderName, String> toHeadersMap(HttpFields headers)
     {
         ImmutableListMultimap.Builder<HeaderName, String> builder = ImmutableListMultimap.builder();
-        Iterator<HttpField> iterator = headers.iterator();
-
-        while (iterator.hasNext()) {
-            HttpField header = iterator.next();
+        for (HttpField header : headers) {
             HeaderName headerName = JETTY_HEADER_MAPPING.get(header.getHeader());
             if (headerName == null) {
                 headerName = HeaderName.of(header);
