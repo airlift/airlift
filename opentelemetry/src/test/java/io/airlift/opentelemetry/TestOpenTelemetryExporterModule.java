@@ -1,9 +1,12 @@
 package io.airlift.opentelemetry;
 
+import io.opentelemetry.exporter.otlp.http.logs.OtlpHttpLogRecordExporter;
 import io.opentelemetry.exporter.otlp.http.metrics.OtlpHttpMetricExporter;
 import io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporter;
+import io.opentelemetry.exporter.otlp.logs.OtlpGrpcLogRecordExporter;
 import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporter;
 import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
+import io.opentelemetry.sdk.logs.export.LogRecordExporter;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import org.junit.jupiter.api.Test;
@@ -26,6 +29,9 @@ final class TestOpenTelemetryExporterModule
 
         MetricExporter metricExporter = OpenTelemetryExporterModule.createMetricExporter(config);
         assertThat(metricExporter).isInstanceOf(OtlpGrpcMetricExporter.class);
+
+        LogRecordExporter logRecordExporter = OpenTelemetryExporterModule.createLogRecordExporter(config);
+        assertThat(logRecordExporter).isInstanceOf(OtlpGrpcLogRecordExporter.class);
     }
 
     @Test
@@ -40,5 +46,8 @@ final class TestOpenTelemetryExporterModule
 
         MetricExporter metricExporter = OpenTelemetryExporterModule.createMetricExporter(config);
         assertThat(metricExporter).isInstanceOf(OtlpHttpMetricExporter.class);
+
+        LogRecordExporter logRecordExporter = OpenTelemetryExporterModule.createLogRecordExporter(config);
+        assertThat(logRecordExporter).isInstanceOf(OtlpHttpLogRecordExporter.class);
     }
 }

@@ -3,10 +3,15 @@ package io.airlift.opentelemetry;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.multibindings.ProvidesIntoSet;
+import io.opentelemetry.exporter.otlp.http.logs.OtlpHttpLogRecordExporter;
 import io.opentelemetry.exporter.otlp.http.metrics.OtlpHttpMetricExporter;
 import io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporter;
+import io.opentelemetry.exporter.otlp.logs.OtlpGrpcLogRecordExporter;
 import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporter;
 import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
+import io.opentelemetry.sdk.logs.LogRecordProcessor;
+import io.opentelemetry.sdk.logs.export.BatchLogRecordProcessor;
+import io.opentelemetry.sdk.logs.export.LogRecordExporter;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import io.opentelemetry.sdk.metrics.export.MetricReader;
 import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
@@ -58,6 +63,24 @@ public class OpenTelemetryExporterModule
                     .setEndpoint(config.getEndpoint())
                     .build();
             case HTTP_PROTOBUF -> OtlpHttpMetricExporter.builder()
+                    .setEndpoint(config.getEndpoint())
+                    .build();
+        };
+    }
+
+    @ProvidesIntoSet
+    public static LogRecordProcessor createLogRecordProcessor(OpenTelemetryExporterConfig config)
+    {
+        return BatchLogRecordProcessor.builder(createLogRecordExporter(config)).build();
+    }
+
+    static LogRecordExporter createLogRecordExporter(OpenTelemetryExporterConfig config)
+    {
+        return switch (config.getProtocol()) {
+            case GRPC -> OtlpGrpcLogRecordExporter.builder()
+                    .setEndpoint(config.getEndpoint())
+                    .build();
+            case HTTP_PROTOBUF -> OtlpHttpLogRecordExporter.builder()
                     .setEndpoint(config.getEndpoint())
                     .build();
         };
