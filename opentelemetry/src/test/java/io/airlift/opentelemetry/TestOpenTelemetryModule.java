@@ -4,13 +4,19 @@ import com.google.inject.Injector;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.node.NodeInfo;
 import io.airlift.node.testing.TestingNodeModule;
+import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.logs.Severity;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.sdk.logs.LogRecordProcessor;
+import io.opentelemetry.sdk.logs.data.LogRecordData;
+import io.opentelemetry.sdk.logs.export.SimpleLogRecordProcessor;
 import io.opentelemetry.sdk.metrics.data.LongPointData;
 import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.opentelemetry.sdk.metrics.export.MetricReader;
 import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
+import io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricExporter;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.opentelemetry.sdk.trace.SpanProcessor;
@@ -102,6 +108,42 @@ public class TestOpenTelemetryModule
                 .build().asMap());
 
         assertThat(span.getResource().getAttributes().asMap()).contains(
+                entry(ServiceAttributes.SERVICE_NAME, "testService"),
+                entry(ServiceAttributes.SERVICE_VERSION, "testVersion"),
+                entry(DeploymentIncubatingAttributes.DEPLOYMENT_ENVIRONMENT_NAME, environment));
+    }
+
+    @Test
+    void testCustomLogRecordProcessor()
+    {
+        @SuppressWarnings("resource")
+        InMemoryLogRecordExporter exporter = InMemoryLogRecordExporter.create();
+
+        Injector injector = new Bootstrap(
+                new TestingNodeModule(),
+                new OpenTelemetryModule("testService", "testVersion"),
+                binder -> newSetBinder(binder, LogRecordProcessor.class).addBinding()
+                        .toInstance(SimpleLogRecordProcessor.create(exporter)))
+                .quiet()
+                .initialize();
+
+        OpenTelemetry openTelemetry = injector.getInstance(OpenTelemetry.class);
+        String environment = injector.getInstance(NodeInfo.class).getEnvironment();
+
+        openTelemetry.getLogsBridge()
+                .get("test-logger")
+                .logRecordBuilder()
+                .setSeverity(Severity.INFO)
+                .setBody("test log message")
+                .emit();
+
+        assertThat(exporter.getFinishedLogRecordItems()).hasSize(1);
+        LogRecordData logRecord = exporter.getFinishedLogRecordItems().stream().collect(onlyElement());
+
+        assertThat(logRecord.getBodyValue().asString()).isEqualTo("test log message");
+        assertThat(logRecord.getSeverity()).isEqualTo(Severity.INFO);
+
+        assertThat(logRecord.getResource().getAttributes().asMap()).contains(
                 entry(ServiceAttributes.SERVICE_NAME, "testService"),
                 entry(ServiceAttributes.SERVICE_VERSION, "testVersion"),
                 entry(DeploymentIncubatingAttributes.DEPLOYMENT_ENVIRONMENT_NAME, environment));

@@ -15,6 +15,9 @@ import io.opentelemetry.api.trace.TracerProvider;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
+import io.opentelemetry.sdk.logs.LogRecordProcessor;
+import io.opentelemetry.sdk.logs.SdkLoggerProvider;
+import io.opentelemetry.sdk.logs.SdkLoggerProviderBuilder;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.metrics.SdkMeterProviderBuilder;
 import io.opentelemetry.sdk.metrics.export.MetricReader;
@@ -62,20 +65,28 @@ public class OpenTelemetryModule
     {
         newSetBinder(binder, SpanProcessor.class);
         newSetBinder(binder, MetricReader.class);
+        newSetBinder(binder, LogRecordProcessor.class);
         configBinder(binder).bindConfig(OpenTelemetryConfig.class);
     }
 
     @Provides
     @Singleton
-    public OpenTelemetry createOpenTelemetry(Set<SpanProcessor> spanProcessors, Set<MetricReader> metricReaders, SdkTracerProvider tracerProvider, SdkMeterProvider meterProvider)
+    public OpenTelemetry createOpenTelemetry(
+            Set<SpanProcessor> spanProcessors,
+            Set<MetricReader> metricReaders,
+            Set<LogRecordProcessor> logRecordProcessors,
+            SdkTracerProvider tracerProvider,
+            SdkMeterProvider meterProvider,
+            SdkLoggerProvider loggerProvider)
     {
-        if (spanProcessors.isEmpty() && metricReaders.isEmpty()) {
+        if (spanProcessors.isEmpty() && metricReaders.isEmpty() && logRecordProcessors.isEmpty()) {
             return OpenTelemetry.noop();
         }
 
         return OpenTelemetrySdk.builder()
                 .setTracerProvider(tracerProvider)
                 .setMeterProvider(meterProvider)
+                .setLoggerProvider(loggerProvider)
                 .setPropagators(ContextPropagators.create(W3CTraceContextPropagator.getInstance()))
                 .build();
     }
@@ -129,6 +140,16 @@ public class OpenTelemetryModule
         SdkMeterProviderBuilder builder = SdkMeterProvider.builder()
                 .setResource(resource);
         metricReaders.forEach(builder::registerMetricReader);
+        return builder.build();
+    }
+
+    @Provides
+    @Singleton
+    public SdkLoggerProvider createLoggerProvider(Resource resource, Set<LogRecordProcessor> logRecordProcessors)
+    {
+        SdkLoggerProviderBuilder builder = SdkLoggerProvider.builder()
+                .setResource(resource);
+        logRecordProcessors.forEach(builder::addLogRecordProcessor);
         return builder.build();
     }
 
