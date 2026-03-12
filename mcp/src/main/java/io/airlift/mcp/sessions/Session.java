@@ -17,8 +17,8 @@ public interface Session
 
     /**
      * @return {@code true} if the session is valid, {@code false} otherwise. Important,
-     * if sessions are not enabled in the server this method also returns {@code false}. Always
-     * check this method before using the session object to avoid exceptions.
+     *         if sessions are not enabled in the server this method also returns {@code false}. Always
+     *         check this method before using the session object to avoid exceptions.
      */
     boolean isValid();
 
@@ -43,7 +43,7 @@ public interface Session
 
     /**
      * @return the value associated with the given key in the session, or {@link Optional#empty()}
-     * if the key is not present in the session or if the session is invalid
+     *         if the key is not present in the session or if the session is invalid
      */
     <T> Optional<T> getValue(SessionValueKey<T> key);
 

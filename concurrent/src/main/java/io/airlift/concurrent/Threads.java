@@ -16,9 +16,9 @@ public final class Threads
      * context class loader.
      *
      * @param nameFormat a {@link String#format(String, Object...)}-compatible
-     * format string, to which a string will be supplied as the single
-     * parameter. This string will be unique to this instance of the
-     * ThreadFactory and will be assigned sequentially.
+     *         format string, to which a string will be supplied as the single
+     *         parameter. This string will be unique to this instance of the
+     *         ThreadFactory and will be assigned sequentially.
      * @return the created ThreadFactory
      */
     public static ThreadFactory threadsNamed(String nameFormat)

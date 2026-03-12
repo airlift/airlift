@@ -58,9 +58,9 @@ import static java.lang.Math.random;
  * entries.
  *
  * @see <a href="http://www.research.att.com/people/Cormode_Graham/library/publications/CormodeShkapenyukSrivastavaXu09.pdf">
- * Cormode et al. Forward Decay: A Practical Time Decay Model for Streaming
- * Systems. ICDE '09: Proceedings of the 2009 IEEE International Conference on
- * Data Engineering (2009)</a>
+ *         Cormode et al. Forward Decay: A Practical Time Decay Model for Streaming
+ *         Systems. ICDE '09: Proceedings of the 2009 IEEE International Conference on
+ *         Data Engineering (2009)</a>
  */
 final class ExponentiallyDecayingSample
 {
@@ -78,7 +78,7 @@ final class ExponentiallyDecayingSample
      *
      * @param reservoirSize the number of samples to keep in the sampling reservoir
      * @param alpha the exponential decay factor; the higher this is, the more
-     * biased the sample will be towards newer values
+     *         biased the sample will be towards newer values
      */
     public ExponentiallyDecayingSample(int reservoirSize, double alpha)
     {

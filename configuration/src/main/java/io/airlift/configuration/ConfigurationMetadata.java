@@ -647,7 +647,7 @@ public class ConfigurationMetadata<T>
      *
      * @param configClass the class to analyze
      * @return a map that associates a concrete method to the actual method tagged
-     * (which may belong to a different class in class hierarchy)
+     *         (which may belong to a different class in class hierarchy)
      */
     private static Collection<Method> findAnnotatedMethods(Class<?> configClass, Multimap<String, Method> methods, Class<? extends java.lang.annotation.Annotation> annotation)
     {
