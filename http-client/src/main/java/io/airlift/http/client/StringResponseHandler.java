@@ -21,12 +21,13 @@ import com.google.common.net.MediaType;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
 import jakarta.annotation.Nullable;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Optional;
 
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
-import static io.airlift.http.client.ResponseHandlerUtils.getResponseBytes;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -51,14 +52,17 @@ public class StringResponseHandler
     @Override
     public StringResponse handle(Request request, Response response)
     {
-        byte[] bytes = getResponseBytes(request, response);
+        try (InputStream stream = response.getInputStream()) {
+            Charset charset = Optional.ofNullable(response.getHeader(CONTENT_TYPE))
+                    .map(MediaType::parse)
+                    .flatMap(mediaType -> mediaType.charset().toJavaUtil())
+                    .orElse(UTF_8);
 
-        Charset charset = Optional.ofNullable(response.getHeader(CONTENT_TYPE))
-                .map(MediaType::parse)
-                .flatMap(mediaType -> mediaType.charset().toJavaUtil())
-                .orElse(UTF_8);
-
-        return new StringResponse(response.getStatusCode(), response.getHeaders(), new String(bytes, charset));
+            return new StringResponse(response.getStatusCode(), response.getHeaders(), new String(stream.readAllBytes(), charset));
+        }
+        catch (IOException e) {
+            throw propagate(request, e);
+        }
     }
 
     public static class StringResponse

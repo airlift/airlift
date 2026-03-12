@@ -22,12 +22,13 @@ import io.airlift.http.client.FullJsonResponseHandler.JsonResponse;
 import io.airlift.json.JsonCodec;
 import jakarta.annotation.Nullable;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.List;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
-import static io.airlift.http.client.ResponseHandlerUtils.getResponseBytes;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -66,12 +67,17 @@ public class FullJsonResponseHandler<T>
     @Override
     public JsonResponse<T> handle(Request request, Response response)
     {
-        byte[] bytes = getResponseBytes(request, response);
-        String contentType = response.getHeader(CONTENT_TYPE);
-        if ((contentType == null) || !MediaType.parse(contentType).is(MEDIA_TYPE_JSON)) {
-            return new JsonResponse<>(response.getStatusCode(), response.getHeaders(), bytes);
+        try (InputStream stream = response.getInputStream()) {
+            byte[] bytes = stream.readAllBytes();
+            String contentType = response.getHeader(CONTENT_TYPE);
+            if ((contentType == null) || !MediaType.parse(contentType).is(MEDIA_TYPE_JSON)) {
+                return new JsonResponse<>(response.getStatusCode(), response.getHeaders(), bytes);
+            }
+            return new JsonResponse<>(response.getStatusCode(), response.getHeaders(), jsonCodec, bytes);
         }
-        return new JsonResponse<>(response.getStatusCode(), response.getHeaders(), jsonCodec, bytes);
+        catch (IOException e) {
+            throw propagate(request, e);
+        }
     }
 
     public static class JsonResponse<T>

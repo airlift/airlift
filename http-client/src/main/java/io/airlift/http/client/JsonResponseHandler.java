@@ -20,10 +20,11 @@ import com.google.common.net.MediaType;
 import com.google.common.primitives.Ints;
 import io.airlift.json.JsonCodec;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Set;
 
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
-import static io.airlift.http.client.ResponseHandlerUtils.getResponseBytes;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -65,32 +66,37 @@ public class JsonResponseHandler<T>
     @Override
     public T handle(Request request, Response response)
     {
-        if (!successfulResponseCodes.contains(response.getStatusCode())) {
-            throw new UnexpectedResponseException(
-                    String.format("Expected response code to be %s, but was %d", successfulResponseCodes, response.getStatusCode()),
-                    request,
-                    response);
-        }
+        try (InputStream stream = response.getInputStream()) {
+            if (!successfulResponseCodes.contains(response.getStatusCode())) {
+                throw new UnexpectedResponseException(
+                        String.format("Expected response code to be %s, but was %d", successfulResponseCodes, response.getStatusCode()),
+                        request,
+                        response);
+            }
 
-        String contentType = response.getHeader(CONTENT_TYPE);
-        if (contentType == null) {
-            throw new UnexpectedResponseException("Content-Type is not set for response", request, response);
-        }
-        if (!MediaType.parse(contentType).is(MEDIA_TYPE_JSON)) {
-            throw new UnexpectedResponseException("Expected application/json response from server but got " + contentType, request, response);
-        }
+            String contentType = response.getHeader(CONTENT_TYPE);
+            if (contentType == null) {
+                throw new UnexpectedResponseException("Content-Type is not set for response", request, response);
+            }
+            if (!MediaType.parse(contentType).is(MEDIA_TYPE_JSON)) {
+                throw new UnexpectedResponseException("Expected application/json response from server but got " + contentType, request, response);
+            }
 
-        // TODO avoid buffering whole response before invoking the JSON codec.
-        // When response is an InputStream this requires additional data copy and increases peak memory usage.
-        // The data buffering is used only for error reporting, so perhaps it can be applied only on a retry.
-        byte[] bytes = getResponseBytes(request, response);
+            // TODO avoid buffering whole response before invoking the JSON codec.
+            // When response is an InputStream this requires additional data copy and increases peak memory usage.
+            // The data buffering is used only for error reporting, so perhaps it can be applied only on a retry.
+            byte[] bytes = stream.readAllBytes();
 
-        try {
-            return jsonCodec.fromJson(bytes);
+            try {
+                return jsonCodec.fromJson(bytes);
+            }
+            catch (IllegalArgumentException e) {
+                String json = new String(bytes, UTF_8);
+                throw new IllegalArgumentException(String.format("Unable to create %s from JSON response: <%s>", jsonCodec.getType(), json), e);
+            }
         }
-        catch (IllegalArgumentException e) {
-            String json = new String(bytes, UTF_8);
-            throw new IllegalArgumentException(String.format("Unable to create %s from JSON response: <%s>", jsonCodec.getType(), json), e);
+        catch (IOException e) {
+            throw propagate(request, e);
         }
     }
 }

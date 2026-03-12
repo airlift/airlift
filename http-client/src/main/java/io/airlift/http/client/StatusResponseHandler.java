@@ -20,6 +20,8 @@ import com.google.common.collect.ListMultimap;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import jakarta.annotation.Nullable;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
@@ -45,7 +47,12 @@ public class StatusResponseHandler
     @Override
     public StatusResponse handle(Request request, Response response)
     {
-        return new StatusResponse(response.getStatusCode(), response.getHeaders());
+        try (InputStream _ = response.getInputStream()) {
+            return new StatusResponse(response.getStatusCode(), response.getHeaders());
+        }
+        catch (IOException e) {
+            throw propagate(request, e);
+        }
     }
 
     public static class StatusResponse
