@@ -19,7 +19,7 @@ public class TestHeaderName
     @Test
     public void testToString()
     {
-        assertThat(HeaderName.of("FOO").toString()).isEqualTo("FOO");
+        assertThat(HeaderName.of("FOO").toString()).isEqualTo("foo");
         assertThat(HeaderName.of("foo").toString()).isEqualTo("foo");
     }
 }
