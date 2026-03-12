@@ -27,6 +27,7 @@ import static java.util.Objects.requireNonNull;
 public class HttpUriBuilder
 {
     private String scheme;
+    private String userInfo;
     private String host;
     private int port = -1;
     private String path = ""; // decoded path
@@ -47,6 +48,7 @@ public class HttpUriBuilder
     private HttpUriBuilder(URI previous)
     {
         scheme = previous.getScheme();
+        userInfo = previous.getRawUserInfo();
         host = previous.getHost();
         port = previous.getPort();
         path = percentDecode(previous.getRawPath());
@@ -72,6 +74,12 @@ public class HttpUriBuilder
         requireNonNull(scheme, "scheme is null");
 
         this.scheme = scheme;
+        return this;
+    }
+
+    public HttpUriBuilder userInfo(String userInfo)
+    {
+        this.userInfo = userInfo;
         return this;
     }
 
@@ -191,6 +199,10 @@ public class HttpUriBuilder
         StringBuilder builder = new StringBuilder();
         builder.append(scheme);
         builder.append("://");
+        if (userInfo != null) {
+            builder.append(userInfo);
+            builder.append('@');
+        }
         if (host != null) {
             builder.append(host);
         }
