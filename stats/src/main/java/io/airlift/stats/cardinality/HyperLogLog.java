@@ -67,7 +67,7 @@ public class HyperLogLog
      * Adds a value that has already been hashed to the set of values tracked by this HyperLogLog instance.
      *
      * @param hash The hash should be the 64 least significant bits of the murmur3_128 hash of the value.
-     * For example: io.airlift.slice.Murmur3.hash64(value).
+     *         For example: io.airlift.slice.Murmur3.hash64(value).
      */
     public void addHash(long hash)
     {

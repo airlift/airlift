@@ -70,10 +70,10 @@ public class AsyncSemaphore<T, R>
      * @param maxConcurrency maximum number of tasks allowed to run in parallel
      * @param submitExecutor task submission executor
      * @return {@link ListenableFuture} containing a list of values returned by the {@code tasks}.
-     * The order of elements in the list matches the order of {@code tasks}.
-     * If the result future is cancelled all the remaining tasks are cancelled (submitted tasks will be cancelled, pending tasks will not be submitted).
-     * If any of the submitted tasks fails or are cancelled, the result future is too.
-     * If any of the submitted tasks fails or are cancelled, the remaining tasks are cancelled.
+     *         The order of elements in the list matches the order of {@code tasks}.
+     *         If the result future is cancelled all the remaining tasks are cancelled (submitted tasks will be cancelled, pending tasks will not be submitted).
+     *         If any of the submitted tasks fails or are cancelled, the result future is too.
+     *         If any of the submitted tasks fails or are cancelled, the remaining tasks are cancelled.
      */
     public static <T, R> ListenableFuture<List<R>> processAll(List<T> tasks, Function<T, ListenableFuture<R>> submitter, int maxConcurrency, Executor submitExecutor)
     {
@@ -112,10 +112,10 @@ public class AsyncSemaphore<T, R>
      * @param maxConcurrency maximum number of tasks allowed to run in parallel
      * @param submitExecutor task submission executor
      * @return {@link ListenableFuture} containing a list of values returned by the {@code tasks}.
-     * The order of elements in the list matches the order of {@code tasks}.
-     * If the result future is cancelled all the remaining tasks are cancelled (submitted tasks will be cancelled, pending tasks will not be submitted).
-     * If any of the submitted tasks fails or are cancelled, the remaining tasks will continue to execute.
-     * If any of the submitted tasks fails or are cancelled, the remaining pending tasks are cancelled.
+     *         The order of elements in the list matches the order of {@code tasks}.
+     *         If the result future is cancelled all the remaining tasks are cancelled (submitted tasks will be cancelled, pending tasks will not be submitted).
+     *         If any of the submitted tasks fails or are cancelled, the remaining tasks will continue to execute.
+     *         If any of the submitted tasks fails or are cancelled, the remaining pending tasks are cancelled.
      */
     public static <T, R> ListenableFuture<List<R>> processAllToCompletion(List<T> tasks, Function<T, ListenableFuture<R>> submitter, int maxConcurrency, Executor submitExecutor)
     {

@@ -67,7 +67,7 @@ public interface SessionController
 
     /**
      * @return the value associated with the given key in the session, or {@link Optional#empty()}
-     * if the key is not present in the session or if the session ID is invalid
+     *         if the key is not present in the session or if the session ID is invalid
      */
     <T> Optional<T> getSessionValue(SessionId sessionId, SessionValueKey<T> key);
 
