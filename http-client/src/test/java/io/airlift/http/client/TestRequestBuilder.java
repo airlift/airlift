@@ -38,8 +38,8 @@ public class TestRequestBuilder
         assertThat(request.getBodyGenerator()).isEqualTo(NULL_BODY_GENERATOR);
         assertThat(request.getUri()).isEqualTo(URI.create("http://example.com"));
         assertThat(request.getHeaders()).isEqualTo(ImmutableListMultimap.of(
-                "newheader", "withvalue",
-                "anotherheader", "anothervalue"));
+                HeaderName.of("newheader"), "withvalue",
+                HeaderName.of("anotherheader"), "anothervalue"));
         assertThat(request.isFollowRedirects()).isFalse();
     }
 
@@ -62,8 +62,8 @@ public class TestRequestBuilder
     {
         return prepareGet()
                 .setUri(URI.create("http://example.com"))
-                .addHeader("newheader", "withvalue")
-                .addHeader("anotherheader", "anothervalue")
+                .addHeader(HeaderName.of("newheader"), "withvalue")
+                .addHeader(HeaderName.of("anotherheader"), "anothervalue")
                 .setBodyGenerator(NULL_BODY_GENERATOR)
                 .setFollowRedirects(false)
                 .build();

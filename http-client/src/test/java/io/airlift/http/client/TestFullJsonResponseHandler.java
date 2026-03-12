@@ -106,7 +106,7 @@ public class TestFullJsonResponseHandler
     {
         JsonResponse<User> response = handler.handle(
                 null,
-                new TestingResponse(OK, ImmutableListMultimap.<String, String>of(), "hello".getBytes(UTF_8)));
+                new TestingResponse(OK, ImmutableListMultimap.of(), "hello".getBytes(UTF_8)));
 
         assertThat(response.hasValue()).isFalse();
         assertThat(response.getException()).isNull();

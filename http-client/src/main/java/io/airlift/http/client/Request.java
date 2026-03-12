@@ -31,7 +31,6 @@ import java.util.Optional;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
-import static java.lang.String.CASE_INSENSITIVE_ORDER;
 import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
 
@@ -40,10 +39,7 @@ public final class Request
     private final Optional<HttpVersion> httpVersion;
     private final URI uri;
     private final String method;
-    private final ListMultimap<String, String> headers = MultimapBuilder
-            .treeKeys(CASE_INSENSITIVE_ORDER)
-            .arrayListValues()
-            .build();
+    private final ListMultimap<HeaderName, String> headers = MultimapBuilder.hashKeys().arrayListValues().build();
     private final Optional<Duration> requestTimeout;
     private final Optional<Duration> idleTimeout;
     private final BodyGenerator bodyGenerator;
@@ -55,7 +51,7 @@ public final class Request
             Optional<HttpVersion> httpVersion,
             URI uri,
             String method,
-            ListMultimap<String, String> headers,
+            ListMultimap<HeaderName, String> headers,
             Optional<Duration> requestTimeout,
             Optional<Duration> idleTimeout,
             BodyGenerator bodyGenerator,
@@ -102,7 +98,16 @@ public final class Request
         return method;
     }
 
+    /**
+     * Use {@link Request#getHeader(HeaderName)} instead
+     */
+    @Deprecated
     public String getHeader(String name)
+    {
+        return getHeader(HeaderName.of(name));
+    }
+
+    public String getHeader(HeaderName name)
     {
         List<String> values = headers.get(name);
         if (!values.isEmpty()) {
@@ -111,7 +116,7 @@ public final class Request
         return null;
     }
 
-    public ListMultimap<String, String> getHeaders()
+    public ListMultimap<HeaderName, String> getHeaders()
     {
         return headers;
     }
@@ -249,7 +254,7 @@ public final class Request
 
         private URI uri;
         private String method;
-        private final ListMultimap<String, String> headers = ArrayListMultimap.create();
+        private final ListMultimap<HeaderName, String> headers = ArrayListMultimap.create();
         private BodyGenerator bodyGenerator;
         private SpanBuilder spanBuilder;
         private Optional<HttpVersion> version = Optional.empty();
@@ -275,35 +280,40 @@ public final class Request
         @CanIgnoreReturnValue
         public Builder setHeader(String name, String value)
         {
-            this.headers.removeAll(name);
-            this.headers.put(name, value);
+            HeaderName headerName = HeaderName.of(name);
+            this.headers.removeAll(headerName);
+            this.headers.put(headerName, value);
             return this;
         }
 
         @CanIgnoreReturnValue
         public Builder setHeader(HeaderName name, String value)
         {
-            this.headers.removeAll(name.toString());
-            this.headers.put(name.toString(), value);
+            this.headers.removeAll(name);
+            this.headers.put(name, value);
             return this;
         }
 
+        /**
+         * Use {@link Builder#addHeader(HeaderName, String)} instead
+         */
+        @Deprecated
         @CanIgnoreReturnValue
         public Builder addHeader(String name, String value)
         {
-            this.headers.put(name, value);
+            this.headers.put(HeaderName.of(name), value);
             return this;
         }
 
         @CanIgnoreReturnValue
         public Builder addHeader(HeaderName name, String value)
         {
-            this.headers.put(name.toString(), value);
+            this.headers.put(name, value);
             return this;
         }
 
         @CanIgnoreReturnValue
-        public Builder addHeaders(Multimap<String, String> headers)
+        public Builder addHeaders(Multimap<HeaderName, String> headers)
         {
             this.headers.putAll(headers);
             return this;

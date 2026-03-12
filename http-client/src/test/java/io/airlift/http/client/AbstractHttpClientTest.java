@@ -138,9 +138,9 @@ public abstract class AbstractHttpClientTest
             URI uri = server.baseURI().resolve("/road/to/nowhere?query");
             Request request = prepareGet()
                     .setUri(uri)
-                    .addHeader("foo", "bar")
-                    .addHeader("dupe", "first")
-                    .addHeader("dupe", "second")
+                    .addHeader(FOO_HEADER, "bar")
+                    .addHeader(DUPE_HEADER, "first")
+                    .addHeader(DUPE_HEADER, "second")
                     .build();
 
             for (int i = 0; i < 100_000; i++) {
@@ -264,18 +264,18 @@ public abstract class AbstractHttpClientTest
             URI uri = server.baseURI().resolve("/road/to/nowhere");
             Request request = prepareDelete()
                     .setUri(uri)
-                    .addHeader("foo", "bar")
-                    .addHeader("dupe", "first")
-                    .addHeader("dupe", "second")
+                    .addHeader(FOO_HEADER, "bar")
+                    .addHeader(DUPE_HEADER, "first")
+                    .addHeader(DUPE_HEADER, "second")
                     .build();
 
             int statusCode = executeRequest(server, request, createStatusResponseHandler()).getStatusCode();
             assertThat(statusCode).isEqualTo(200);
             assertThat(server.servlet().getRequestMethod()).isEqualTo("DELETE");
             assertThat(server.servlet().getRequestUri()).isEqualTo(uri);
-            assertThat(server.servlet().getRequestHeaders(HeaderName.of("foo"))).isEqualTo(ImmutableList.of("bar"));
-            assertThat(server.servlet().getRequestHeaders(HeaderName.of("dupe"))).isEqualTo(ImmutableList.of("first", "second"));
-            assertThat(server.servlet().getRequestHeaders(HeaderName.of("x-custom-filter"))).isEqualTo(ImmutableList.of("custom value"));
+            assertThat(server.servlet().getRequestHeaders(FOO_HEADER)).isEqualTo(ImmutableList.of("bar"));
+            assertThat(server.servlet().getRequestHeaders(DUPE_HEADER)).isEqualTo(ImmutableList.of("first", "second"));
+            assertThat(server.servlet().getRequestHeaders(X_CUSTOM_FILTER_HEADER)).isEqualTo(ImmutableList.of("custom value"));
             assertThat(server.statusCounts().count(200)).isEqualTo(1);
         }
     }
@@ -306,9 +306,9 @@ public abstract class AbstractHttpClientTest
             URI uri = server.baseURI().resolve("/road/to/nowhere?query");
             Request request = prepareGet()
                     .setUri(uri)
-                    .addHeader("foo", "bar")
-                    .addHeader("dupe", "first")
-                    .addHeader("dupe", "second")
+                    .addHeader(FOO_HEADER, "bar")
+                    .addHeader(DUPE_HEADER, "first")
+                    .addHeader(DUPE_HEADER, "second")
                     .build();
 
             int statusCode = executeRequest(server, request, createStatusResponseHandler()).getStatusCode();
@@ -404,9 +404,9 @@ public abstract class AbstractHttpClientTest
             URI uri = server.baseURI().resolve("/road/to/nowhere");
             Request request = preparePost()
                     .setUri(uri)
-                    .addHeader("foo", "bar")
-                    .addHeader("dupe", "first")
-                    .addHeader("dupe", "second")
+                    .addHeader(FOO_HEADER, "bar")
+                    .addHeader(DUPE_HEADER, "first")
+                    .addHeader(DUPE_HEADER, "second")
                     .build();
 
             int statusCode = executeRequest(server, request, createStatusResponseHandler()).getStatusCode();
@@ -428,9 +428,9 @@ public abstract class AbstractHttpClientTest
             URI uri = server.baseURI().resolve("/road/to/nowhere");
             Request request = preparePut()
                     .setUri(uri)
-                    .addHeader("foo", "bar")
-                    .addHeader("dupe", "first")
-                    .addHeader("dupe", "second")
+                    .addHeader(FOO_HEADER, "bar")
+                    .addHeader(DUPE_HEADER, "first")
+                    .addHeader(DUPE_HEADER, "second")
                     .build();
 
             int statusCode = executeRequest(server, request, createStatusResponseHandler()).getStatusCode();
@@ -453,9 +453,9 @@ public abstract class AbstractHttpClientTest
             byte[] body = {1, 2, 5};
             Request request = preparePut()
                     .setUri(uri)
-                    .addHeader("foo", "bar")
-                    .addHeader("dupe", "first")
-                    .addHeader("dupe", "second")
+                    .addHeader(FOO_HEADER, "bar")
+                    .addHeader(DUPE_HEADER, "first")
+                    .addHeader(DUPE_HEADER, "second")
                     .setBodyGenerator(StaticBodyGenerator.createStaticBodyGenerator(body))
                     .build();
 
@@ -643,8 +643,8 @@ public abstract class AbstractHttpClientTest
         try (CloseableTestHttpServer server = newServer()) {
             Request request = prepareGet()
                     .setUri(server.baseURI())
-                    .addHeader("X-Test", "xtest1")
-                    .addHeader("X-Test", "xtest2")
+                    .addHeader(X_TEST_HEADER, "xtest1")
+                    .addHeader(X_TEST_HEADER, "xtest2")
                     .setHeader(USER_AGENT, "testagent")
                     .addHeader(AUTHORIZATION, basic)
                     .addHeader(AUTHORIZATION, bearer)

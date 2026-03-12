@@ -11,6 +11,7 @@ import com.google.common.reflect.TypeToken;
 import com.google.inject.Key;
 import com.google.inject.Module;
 import io.airlift.http.client.FullJsonResponseHandler;
+import io.airlift.http.client.HeaderName;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.Request;
 import io.airlift.http.server.HttpServerInfo;
@@ -78,6 +79,8 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.inject.Scopes.SINGLETON;
 import static io.airlift.http.client.FullJsonResponseHandler.createFullJsonResponseHandler;
+import static io.airlift.http.client.HeaderNames.ACCEPT;
+import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 import static io.airlift.http.client.JsonBodyGenerator.jsonBodyGenerator;
 import static io.airlift.http.client.Request.Builder.prepareDelete;
 import static io.airlift.http.client.Request.Builder.prepareGet;
@@ -208,7 +211,7 @@ public abstract class TestMcp
 
         // missing proper Accept header
         Request request = preparePost().setUri(uri)
-                .addHeader("Content-Type", "application/json")
+                .addHeader(CONTENT_TYPE, "application/json")
                 .addHeader(IDENTITY_HEADER, EXPECTED_IDENTITY)
                 .setBodyGenerator(jsonBodyGenerator(jsonCodecFactory.jsonCodec(new TypeToken<JsonRpcRequest<?>>() {}), rpcRequest))
                 .build();
@@ -220,8 +223,8 @@ public abstract class TestMcp
 
         // nonsensical object in body
         request = preparePost().setUri(uri)
-                .addHeader("Content-Type", "application/json")
-                .addHeader("Accept", "application/json, text/event-stream")
+                .addHeader(CONTENT_TYPE, "application/json")
+                .addHeader(ACCEPT, "application/json, text/event-stream")
                 .addHeader(IDENTITY_HEADER, "Mr. Tester")
                 .setBodyGenerator(jsonBodyGenerator(jsonCodecFactory.jsonCodec(new TypeToken<>() {}), new io.airlift.mcp.model.ListToolsResult(ImmutableList.of())))
                 .build();
@@ -404,7 +407,7 @@ public abstract class TestMcp
 
         Request request = prepareGet()
                 .setUri(uri)
-                .addHeader("Accept", "application/json,text/event-stream")
+                .addHeader(ACCEPT, "application/json,text/event-stream")
                 .build();
 
         var response = httpClient.execute(request, createFullJsonResponseHandler(jsonCodecFactory.jsonCodec(new TypeToken<>() {})));
@@ -412,7 +415,7 @@ public abstract class TestMcp
 
         request = prepareGet()
                 .setUri(uri)
-                .addHeader("Accept", "application/json,text/event-stream")
+                .addHeader(ACCEPT, "application/json,text/event-stream")
                 .addHeader(IDENTITY_HEADER, EXPECTED_IDENTITY)
                 .build();
 
@@ -494,7 +497,7 @@ public abstract class TestMcp
 
         Request request = prepareDelete()
                 .setUri(URI.create(baseUri + "/mcp"))
-                .addHeader(HttpHeaders.MCP_SESSION_ID, clientSessionId.id())
+                .addHeader(HeaderName.of(HttpHeaders.MCP_SESSION_ID), clientSessionId.id())
                 .addHeader(IDENTITY_HEADER, EXPECTED_IDENTITY)
                 .build();
         httpClient.execute(request, createStatusResponseHandler());
@@ -602,10 +605,10 @@ public abstract class TestMcp
             // can't know which session it is - try em all
             sessionIdsSupplier.get().forEach(sessionId -> {
                 Request request = preparePost().setUri(uri)
-                        .addHeader("Content-Type", "application/json")
-                        .addHeader("Accept", "application/json, text/event-stream")
+                        .addHeader(CONTENT_TYPE, "application/json")
+                        .addHeader(ACCEPT, "application/json, text/event-stream")
                         .addHeader(IDENTITY_HEADER, EXPECTED_IDENTITY)
-                        .addHeader(MCP_SESSION_ID, sessionId.id())
+                        .addHeader(HeaderName.of(MCP_SESSION_ID), sessionId.id())
                         .setBodyGenerator(jsonBodyGenerator(jsonCodec(new TypeToken<>() {
                         }), jsonRpcRequest))
                         .build();

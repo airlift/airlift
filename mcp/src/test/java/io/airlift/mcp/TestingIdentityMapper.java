@@ -1,6 +1,7 @@
 package io.airlift.mcp;
 
 import com.google.common.collect.ImmutableList;
+import io.airlift.http.client.HeaderName;
 import jakarta.servlet.http.HttpServletRequest;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
@@ -17,14 +18,14 @@ public class TestingIdentityMapper
     public static final String EXPECTED_IDENTITY = "Mr. Tester";
     public static final String ANOTHER_IDENTITY = "Mrs. Other Tester";
     public static final String ERRORED_IDENTITY = "Bad Actor";
-    public static final String IDENTITY_HEADER = "X-Testing-Identity";
+    public static final HeaderName IDENTITY_HEADER = HeaderName.of("X-Testing-Identity");
 
     @Override
     public McpIdentity map(HttpServletRequest request)
     {
-        String authHeader = request.getHeader(IDENTITY_HEADER);
+        String authHeader = request.getHeader(IDENTITY_HEADER.toString());
         if (isNullOrEmpty(authHeader)) {
-            return unauthenticated("Empty or missing identity header", ImmutableList.of(IDENTITY_HEADER));
+            return unauthenticated("Empty or missing identity header", ImmutableList.of(IDENTITY_HEADER.toString()));
         }
         if (authHeader.equals(ERRORED_IDENTITY)) {
             return error(exception(INTERNAL_ERROR, "This identity cannot catch a break"));
