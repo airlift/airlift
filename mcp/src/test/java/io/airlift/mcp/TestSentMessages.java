@@ -3,6 +3,7 @@ package io.airlift.mcp;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Closer;
 import com.google.inject.Key;
+import io.airlift.http.client.HeaderName;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.StreamingResponse;
 import io.airlift.http.server.HttpServerInfo;
@@ -34,6 +35,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import static com.google.common.base.Throwables.getRootCause;
 import static com.google.inject.Scopes.SINGLETON;
+import static io.airlift.http.client.HeaderNames.ACCEPT;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.mcp.TestingClient.buildClient;
 import static io.airlift.mcp.TestingIdentityMapper.EXPECTED_IDENTITY;
@@ -167,10 +169,10 @@ public class TestSentMessages
 
         Request.Builder builder = prepareGet()
                 .setUri(uri)
-                .addHeader("Accept", "application/json,text/event-stream")
+                .addHeader(ACCEPT, "application/json,text/event-stream")
                 .addHeader(IDENTITY_HEADER, EXPECTED_IDENTITY)
-                .addHeader(MCP_SESSION_ID, sessionId.id());
-        lastMessageId.ifPresent(id -> builder.addHeader(HEADER_LAST_EVENT_ID, id));
+                .addHeader(HeaderName.of(MCP_SESSION_ID), sessionId.id());
+        lastMessageId.ifPresent(id -> builder.addHeader(HeaderName.of(HEADER_LAST_EVENT_ID), id));
         Request request = builder.build();
 
         try (StreamingResponse streamingResponse = testingServer.httpClient().executeStreaming(request)) {

@@ -18,6 +18,7 @@ import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableSet;
 import io.airlift.http.client.ByteBufferBodyGenerator;
 import io.airlift.http.client.FileBodyGenerator;
+import io.airlift.http.client.HeaderName;
 import io.airlift.http.client.HttpStatus;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.Response;
@@ -49,6 +50,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.google.common.collect.MoreCollectors.onlyElement;
+import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 
 public class JaxrsTestingHttpProcessor
         implements TestingHttpClient.Processor
@@ -88,11 +90,15 @@ public class JaxrsTestingHttpProcessor
             throws Exception
     {
         // prepare request to jax-rs resource
-        MultivaluedMap<String, Object> requestHeaders = new MultivaluedHashMap<>();
-        for (Map.Entry<String, String> entry : request.getHeaders().entries()) {
+        MultivaluedMap<HeaderName, Object> requestHeaders = new MultivaluedHashMap<>();
+        for (Map.Entry<HeaderName, String> entry : request.getHeaders().entries()) {
             requestHeaders.add(entry.getKey(), entry.getValue());
         }
-        Invocation.Builder invocationBuilder = client.target(request.getUri()).request().headers(requestHeaders);
+        Invocation.Builder invocationBuilder = client.target(request.getUri()).request();
+        requestHeaders
+                .forEach((headerName, values) -> values
+                        .forEach(value -> invocationBuilder.header(headerName.toString(), value)));
+
         Invocation invocation;
         if (request.getBodyGenerator() == null) {
             invocation = invocationBuilder.build(request.getMethod());
@@ -108,7 +114,7 @@ public class JaxrsTestingHttpProcessor
                     }
                 }
             };
-            Entity<byte[]> entity = Entity.entity(bytes, (String) requestHeaders.get("Content-Type").stream().collect(onlyElement()));
+            Entity<byte[]> entity = Entity.entity(bytes, (String) requestHeaders.get(CONTENT_TYPE).stream().collect(onlyElement()));
             invocation = invocationBuilder.build(request.getMethod(), entity);
         }
 
@@ -136,10 +142,10 @@ public class JaxrsTestingHttpProcessor
         }
 
         // process response from jax-rs resource
-        ImmutableListMultimap.Builder<String, String> responseHeaders = ImmutableListMultimap.builder();
+        ImmutableListMultimap.Builder<HeaderName, String> responseHeaders = ImmutableListMultimap.builder();
         for (Map.Entry<String, List<String>> headerEntry : result.getStringHeaders().entrySet()) {
             for (String value : headerEntry.getValue()) {
-                responseHeaders.put(headerEntry.getKey(), value);
+                responseHeaders.put(HeaderName.of(headerEntry.getKey()), value);
             }
         }
 

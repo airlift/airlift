@@ -110,7 +110,7 @@ public interface Response
 
         while (iterator.hasNext()) {
             HttpField header = iterator.next();
-            builder.putAll(HeaderName.of(header.getValue()), header.getValue());
+            builder.putAll(HeaderName.of(header), header.getValue());
         }
 
         return builder.build();

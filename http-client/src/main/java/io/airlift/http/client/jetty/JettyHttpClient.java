@@ -967,7 +967,7 @@ public class JettyHttpClient
     {
         Context context = Context.current().with(span);
         Request.Builder builder = Request.Builder.fromRequest(request);
-        propagator.inject(context, builder, Request.Builder::addHeader);
+        propagator.inject(context, builder, (carrier, headerName, value) -> carrier.addHeader(HeaderName.of(headerName), value));
         return builder.build();
     }
 
@@ -984,7 +984,7 @@ public class JettyHttpClient
         });
 
         jettyRequest.method(finalRequest.getMethod());
-        jettyRequest.headers(headers -> finalRequest.getHeaders().forEach(headers::add));
+        jettyRequest.headers(headers -> finalRequest.getHeaders().forEach(((headerName, values) -> headers.add(headerName.toString(), values))));
         BodyGenerator bodyGenerator = finalRequest.getBodyGenerator();
         if (bodyGenerator != null) {
             switch (bodyGenerator) {
