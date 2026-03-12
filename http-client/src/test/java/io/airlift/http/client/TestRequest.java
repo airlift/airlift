@@ -109,17 +109,17 @@ public class TestRequest
                 .setHeader("ALLUPPERCASE", "upper")
                 .build();
 
-        assertThat(request.getHeader("mixedHeader")).contains("mixed");
-        assertThat(request.getHeader("mixedheader")).contains("mixed");
-        assertThat(request.getHeader("MIXEDHEADER")).contains("mixed");
+        assertThat(request.getHeader(HeaderName.of("mixedHeader"))).contains("mixed");
+        assertThat(request.getHeader(HeaderName.of("mixedheader"))).contains("mixed");
+        assertThat(request.getHeader(HeaderName.of("MIXEDHEADER"))).contains("mixed");
 
-        assertThat(request.getHeader("alllowercase")).contains("lower");
-        assertThat(request.getHeader("ALLLOWERCASE")).contains("lower");
-        assertThat(request.getHeader("AllLowercase")).contains("lower");
+        assertThat(request.getHeader(HeaderName.of("alllowercase"))).contains("lower");
+        assertThat(request.getHeader(HeaderName.of("ALLLOWERCASE"))).contains("lower");
+        assertThat(request.getHeader(HeaderName.of("AllLowercase"))).contains("lower");
 
-        assertThat(request.getHeader("alluppercase")).contains("upper");
-        assertThat(request.getHeader("ALLUPPERCASE")).contains("upper");
-        assertThat(request.getHeader("AllUppercase")).contains("upper");
+        assertThat(request.getHeader(HeaderName.of("alluppercase"))).contains("upper");
+        assertThat(request.getHeader(HeaderName.of("ALLUPPERCASE"))).contains("upper");
+        assertThat(request.getHeader(HeaderName.of("AllUppercase"))).contains("upper");
     }
 
     private static URI createUriA()
@@ -132,21 +132,21 @@ public class TestRequest
         return URI.create("http://example.net");
     }
 
-    private static ListMultimap<String, String> createHeadersA()
+    private static ListMultimap<HeaderName, String> createHeadersA()
     {
-        return ImmutableListMultimap.<String, String>builder()
-                .put("foo", "bar")
-                .put("abc", "xyz")
+        return ImmutableListMultimap.<HeaderName, String>builder()
+                .put(HeaderName.of("foo"), "bar")
+                .put(HeaderName.of("abc"), "xyz")
                 .build();
     }
 
-    private static ListMultimap<String, String> createHeadersB()
+    private static ListMultimap<HeaderName, String> createHeadersB()
     {
-        return ImmutableListMultimap.<String, String>builder()
-                .put("foo", "bar")
-                .put("abc", "xyz")
-                .put("qqq", "www")
-                .put("foo", "zzz")
+        return ImmutableListMultimap.<HeaderName, String>builder()
+                .put(HeaderName.of("foo"), "bar")
+                .put(HeaderName.of("abc"), "xyz")
+                .put(HeaderName.of("qqq"), "www")
+                .put(HeaderName.of("foo"), "zzz")
                 .build();
     }
 

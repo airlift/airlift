@@ -51,7 +51,7 @@ public record TestingClient(String name, McpSyncClient mcpClient, BlockingQueue<
     public static TestingClient buildClient(Closer closer, String baseUri, String name, String idToken)
     {
         HttpClientStreamableHttpTransport clientTransport = HttpClientStreamableHttpTransport.builder(baseUri)
-                .customizeRequest(builder -> builder.header(IDENTITY_HEADER, idToken))
+                .customizeRequest(builder -> builder.header(IDENTITY_HEADER.toString(), idToken))
                 .build();
 
         return buildClient(closer, name, clientTransport);

@@ -57,7 +57,7 @@ public class TestJsonResponseHandler
     @Test
     public void testMissingContentType()
     {
-        assertThatThrownBy(() -> handler.handle(null, new TestingResponse(OK, ImmutableListMultimap.<String, String>of(), "hello".getBytes(UTF_8))))
+        assertThatThrownBy(() -> handler.handle(null, new TestingResponse(OK, ImmutableListMultimap.of(), "hello".getBytes(UTF_8))))
                 .isInstanceOf(UnexpectedResponseException.class)
                 .hasMessageContaining("Content-Type is not set for response");
     }

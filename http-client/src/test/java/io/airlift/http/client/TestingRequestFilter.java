@@ -24,7 +24,7 @@ public class TestingRequestFilter
     public Request filterRequest(Request request)
     {
         return fromRequest(request)
-                .addHeader("x-custom-filter", "custom value")
+                .addHeader(HeaderName.of("x-custom-filter"), "custom value")
                 .build();
     }
 }
