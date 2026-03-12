@@ -19,7 +19,6 @@ import io.airlift.spi.secrets.SecretProvider;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -66,15 +65,11 @@ public class SecretsResolver
 
     private String resolveConfiguration(String configurationValue)
     {
-        StringBuilder replacedPropertyValue = new StringBuilder();
-        Matcher matcher = PATTERN.matcher(configurationValue);
-        while (matcher.find()) {
-            String secretProviderName = matcher.group(1).toLowerCase(ENGLISH);
-            String keyName = matcher.group(2);
-            matcher.appendReplacement(replacedPropertyValue, quoteReplacement(resolveSecret(secretProviderName, keyName)));
-        }
-        matcher.appendTail(replacedPropertyValue);
-        return replacedPropertyValue.toString();
+        return PATTERN.matcher(configurationValue).replaceAll(match -> {
+            String secretProviderName = match.group(1).toLowerCase(ENGLISH);
+            String keyName = match.group(2);
+            return quoteReplacement(resolveSecret(secretProviderName, keyName));
+        });
     }
 
     public String resolveSecret(String secretProviderName, String keyName)

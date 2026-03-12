@@ -1,6 +1,5 @@
 package io.airlift.http.client;
 
-import com.google.common.base.Ascii;
 import com.google.common.base.Splitter;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.ListMultimap;
@@ -16,7 +15,6 @@ import java.util.Map;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.Streams.stream;
-import static java.lang.Character.forDigit;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
@@ -39,6 +37,7 @@ public class HttpUriBuilder
             '-', '.', '_', '~', '!', '$', '\'', '(', ')', '*', '+', ',', ';', '=', ':', '@',
     };
 
+    private static final char[] HEX_DIGITS = "0123456789ABCDEF".toCharArray();
     private static final byte[] ALLOWED_PATH_CHARS = Bytes.concat(PCHAR, new byte[] {'/', '&'});
     private static final byte[] ALLOWED_QUERY_CHARS = Bytes.concat(PCHAR, new byte[] {'/', '?'});
 
@@ -272,8 +271,8 @@ public class HttpUriBuilder
             }
             else {
                 builder.append('%');
-                builder.append(Ascii.toUpperCase(forDigit((b >>> 4) & 0xF, 16)));
-                builder.append(Ascii.toUpperCase(forDigit(b & 0xF, 16)));
+                builder.append(HEX_DIGITS[(b >>> 4) & 0xF]);
+                builder.append(HEX_DIGITS[b & 0xF]);
             }
         }
 

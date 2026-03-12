@@ -1,5 +1,6 @@
 package io.airlift.api.servertests;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -92,7 +93,11 @@ public class ServerTestBase
                 .host("localhost")
                 .build();
 
-        jsonMapper = injector.getInstance(JsonMapper.class);
+        jsonMapper = injector.getInstance(JsonMapper.class)
+                .rebuild()
+                // https://github.com/OpenAPITools/openapi-generator/issues/23146
+                .disable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
+                .build();
     }
 
     @AfterAll

@@ -1,15 +1,19 @@
 package io.airlift.http.client.jetty;
 
 import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.CountingInputStream;
 import io.airlift.http.client.HeaderName;
 import io.airlift.http.client.HttpVersion;
 import org.eclipse.jetty.client.Response;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.util.Map;
 import java.util.function.LongSupplier;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
@@ -17,6 +21,8 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 class JettyResponse
         implements io.airlift.http.client.Response
 {
+    private static final Map<HttpHeader, HeaderName> JETTY_HEADER_MAPPING = buildJettyHeaderMapping();
+
     private final Response response;
     private final Content content;
     private final InputStream inputStream;
@@ -94,11 +100,23 @@ class JettyResponse
     private static ListMultimap<HeaderName, String> toHeadersMap(HttpFields headers)
     {
         ImmutableListMultimap.Builder<HeaderName, String> builder = ImmutableListMultimap.builder();
-        for (String name : headers.getFieldNamesCollection()) {
-            for (String value : headers.getValuesList(name)) {
-                builder.put(HeaderName.of(name), value);
+        for (HttpField header : headers) {
+            HeaderName headerName = JETTY_HEADER_MAPPING.get(header.getHeader());
+            if (headerName == null) {
+                headerName = HeaderName.of(header);
             }
+            builder.putAll(headerName, header.getValue());
         }
+
         return builder.build();
+    }
+
+    private static Map<HttpHeader, HeaderName> buildJettyHeaderMapping()
+    {
+        ImmutableMap.Builder<HttpHeader, HeaderName> headers = ImmutableMap.builderWithExpectedSize(HttpHeader.values().length);
+        for (HttpHeader header : HttpHeader.values()) {
+            headers.put(header, HeaderName.of(header.asString()));
+        }
+        return headers.build();
     }
 }

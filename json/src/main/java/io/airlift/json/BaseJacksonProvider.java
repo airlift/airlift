@@ -90,6 +90,9 @@ public abstract class BaseJacksonProvider<V, U extends BaseJacksonProvider<V, U>
         // use ISO dates
         jsonMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
+        // Fail if there are trailing tokens after entity was read and mapped
+        jsonMapper.enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
+
         // When serialization fails in the middle, it's better to return a truncated (invalid) JSON
         // than something that could be interpreted as a valid (but incorrect) result.
         // This is especially applicable to server endpoints that return JSON responses.

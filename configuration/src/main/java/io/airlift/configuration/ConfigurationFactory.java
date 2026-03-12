@@ -85,6 +85,18 @@ import static java.util.function.Function.identity;
 public class ConfigurationFactory
         implements Closeable
 {
+    private static final ClassValue<Map<String, Method>> STRING_FACTORY_METHODS = new ClassValue<>()
+    {
+        @Override
+        protected Map<String, Method> computeValue(Class<?> type)
+        {
+            return stream(type.getMethods())
+                    .filter(method -> Modifier.isStatic(method.getModifiers()))
+                    .filter(ConfigurationFactory::acceptsSingleStringParameter)
+                    .collect(toImmutableMap(Method::getName, identity()));
+        }
+    };
+
     private static final Splitter VALUE_SPLITTER = Splitter.on(",").omitEmptyStrings().trimResults();
     private static final LoadingCache<Class<?>, ConfigurationMetadata<?>> METADATA_CACHE = CacheBuilder.newBuilder()
             .build(CacheLoader.from(ConfigurationMetadata::getConfigurationMetadata));
@@ -575,13 +587,12 @@ public class ConfigurationFactory
         }
 
         // coerce the property value to the final type
-        TypeToken<?> propertyType = TypeToken.of(injectionPoint.getSetter().getGenericParameterTypes()[0]);
-        Object finalValue = coerce(propertyType, value);
+        Object finalValue = coerce(injectionPoint.getPropertyType(), value);
         if (finalValue == null) {
             throw new InvalidConfigurationException(format(
                     "Invalid value '%s' for type %s (property '%s') in order to call [%s]",
                     printableValue,
-                    propertyType.getType().getTypeName(),
+                    injectionPoint.getPropertyType().getType().getTypeName(),
                     name,
                     injectionPoint.getSetter().toGenericString()));
         }
@@ -635,11 +646,7 @@ public class ConfigurationFactory
             return null;
         }
 
-        Map<String, Method> stringAcceptingMethods = stream(type.getRawType().getMethods())
-                .filter(method -> Modifier.isStatic(method.getModifiers()))
-                .filter(ConfigurationFactory::acceptsSingleStringParameter)
-                .collect(toImmutableMap(Method::getName, identity()));
-
+        Map<String, Method> stringAcceptingMethods = STRING_FACTORY_METHODS.get(type.getRawType());
         // Look for a static fromString(String) methods. This is used in preference
         // to the built-in valueOf() method for enums.
         if (stringAcceptingMethods.get("fromString") instanceof Method fromString) {

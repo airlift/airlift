@@ -69,13 +69,13 @@ public class TestingStreamingResponse
 
     @Override
     @Nullable
-    public String getHeader(String name)
+    public String getHeader(HeaderName name)
     {
         return delegate.getHeader(name);
     }
 
     @Override
-    public List<String> getHeaders(String name)
+    public List<String> getHeaders(HeaderName name)
     {
         return delegate.getHeaders(name);
     }

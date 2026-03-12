@@ -23,7 +23,7 @@ import io.airlift.json.JsonCodec;
 import java.io.InputStream;
 import java.util.Set;
 
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
+import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 
 public class DefaultingJsonResponseHandler<T>
         implements ResponseHandler<T, RuntimeException>

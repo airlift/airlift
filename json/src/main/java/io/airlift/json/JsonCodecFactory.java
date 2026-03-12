@@ -131,12 +131,9 @@ public class JsonCodecFactory
 
     private static JsonMapper withPrettyPrint(JsonMapper mapper, boolean prettyPrint)
     {
-        if (!prettyPrint) {
-            return mapper;
-        }
         return mapper
                 .rebuild()
-                .configure(INDENT_OUTPUT, true)
+                .configure(INDENT_OUTPUT, prettyPrint)
                 .build();
     }
 }

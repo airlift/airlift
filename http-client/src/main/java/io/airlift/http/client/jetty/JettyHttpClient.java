@@ -21,6 +21,7 @@ import io.airlift.http.client.StreamingResponse;
 import io.airlift.http.client.jetty.HttpClientLogger.RequestInfo;
 import io.airlift.http.client.jetty.HttpClientLogger.ResponseInfo;
 import io.airlift.security.pem.PemReader;
+import io.airlift.tracing.TracingEnabledConfig;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 import io.opentelemetry.api.OpenTelemetry;
@@ -122,7 +123,6 @@ import static io.opentelemetry.api.common.AttributeKey.stringKey;
 import static java.lang.Math.max;
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
-import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -153,6 +153,7 @@ public class JettyHttpClient
     private final Duration idleTimeout;
     private final boolean recordRequestComplete;
     private final boolean logEnabled;
+    private final boolean tracingEnabled;
     private final MonitoredQueuedThreadPoolMBean monitoredQueuedThreadPoolMBean;
     private final ConnectionStats connectionStats;
     private final RequestStats stats = new RequestStats();
@@ -187,51 +188,56 @@ public class JettyHttpClient
 
     public JettyHttpClient(String name, HttpClientConfig config)
     {
-        this(name, config, ImmutableList.of());
+        this(name, config, new TracingEnabledConfig(), ImmutableList.of());
     }
 
     public JettyHttpClient(
             String name,
             HttpClientConfig config,
+            TracingEnabledConfig tracingEnabledConfig,
             Iterable<? extends HttpRequestFilter> requestFilters)
     {
-        this(name, config, requestFilters, Optional.empty(), Optional.empty());
+        this(name, config, tracingEnabledConfig, requestFilters, Optional.empty(), Optional.empty());
     }
 
     public JettyHttpClient(
             String name,
             HttpClientConfig config,
+            TracingEnabledConfig tracingEnabledConfig,
             Iterable<? extends HttpRequestFilter> requestFilters,
             Iterable<? extends HttpStatusListener> httpStatusListeners)
     {
-        this(name, config, requestFilters, NOOP_OPEN_TELEMETRY, NOOP_TRACER, Optional.empty(), Optional.empty(), httpStatusListeners);
+        this(name, config, tracingEnabledConfig, requestFilters, NOOP_OPEN_TELEMETRY, NOOP_TRACER, Optional.empty(), Optional.empty(), httpStatusListeners);
     }
 
     public JettyHttpClient(
             String name,
             HttpClientConfig config,
+            TracingEnabledConfig tracingEnabledConfig,
             Iterable<? extends HttpRequestFilter> requestFilters,
             Optional<String> environment,
             Optional<SslContextFactory.Client> maybeSslContextFactory)
     {
-        this(name, config, requestFilters, NOOP_OPEN_TELEMETRY, NOOP_TRACER, environment, maybeSslContextFactory);
+        this(name, config, tracingEnabledConfig, requestFilters, NOOP_OPEN_TELEMETRY, NOOP_TRACER, environment, maybeSslContextFactory);
     }
 
     public JettyHttpClient(
             String name,
             HttpClientConfig config,
+            TracingEnabledConfig tracingEnabledConfig,
             Iterable<? extends HttpRequestFilter> requestFilters,
             OpenTelemetry openTelemetry,
             Tracer tracer,
             Optional<String> environment,
             Optional<SslContextFactory.Client> maybeSslContextFactory)
     {
-        this(name, config, requestFilters, openTelemetry, tracer, environment, maybeSslContextFactory, ImmutableList.of());
+        this(name, config, tracingEnabledConfig, requestFilters, openTelemetry, tracer, environment, maybeSslContextFactory, ImmutableList.of());
     }
 
     public JettyHttpClient(
             String name,
             HttpClientConfig config,
+            TracingEnabledConfig tracingEnabledConfig,
             Iterable<? extends HttpRequestFilter> requestFilters,
             OpenTelemetry openTelemetry,
             Tracer tracer,
@@ -242,6 +248,7 @@ public class JettyHttpClient
         this.name = requireNonNull(name, "name is null");
         this.propagator = openTelemetry.getPropagators().getTextMapPropagator();
         this.tracer = requireNonNull(tracer, "tracer is null");
+        this.tracingEnabled = tracingEnabledConfig.isEnabled();
 
         requireNonNull(config, "config is null");
         requireNonNull(requestFilters, "requestFilters is null");
@@ -951,14 +958,13 @@ public class JettyHttpClient
 
     private Span startSpan(Request request)
     {
-        String method = request.getMethod().toUpperCase(ENGLISH);
         int port = normalizePort(request.getUri().getScheme(), request.getUri().getPort());
         return request.getSpanBuilder()
-                .orElseGet(() -> tracer.spanBuilder(name + " " + method))
+                .orElseGet(() -> tracer.spanBuilder(name + " " + request.getMethod()))
                 .setSpanKind(SpanKind.CLIENT)
                 .setAttribute(CLIENT_NAME, name)
                 .setAttribute(UrlAttributes.URL_FULL, request.getUri().toString())
-                .setAttribute(HttpAttributes.HTTP_REQUEST_METHOD, method)
+                .setAttribute(HttpAttributes.HTTP_REQUEST_METHOD, request.getMethod())
                 .setAttribute(ServerAttributes.SERVER_ADDRESS, request.getUri().getHost())
                 .setAttribute(ServerAttributes.SERVER_PORT, (long) port)
                 .startSpan();
@@ -967,6 +973,9 @@ public class JettyHttpClient
     @SuppressWarnings("DataFlowIssue")
     private Request injectTracing(Request request, Span span)
     {
+        if (!tracingEnabled) {
+            return request;
+        }
         Context context = Context.current().with(span);
         Request.Builder builder = Request.Builder.fromRequest(request);
         propagator.inject(context, builder, Request.Builder::addHeader);

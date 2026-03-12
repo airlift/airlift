@@ -8,7 +8,7 @@ import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Optional;
 
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
+import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
@@ -22,9 +22,15 @@ public sealed interface JsonResponse<T>
 
     Multimap<HeaderName, String> headers();
 
+    default List<String> getHeader(HeaderName name)
+    {
+        return ImmutableList.copyOf(headers().get(name));
+    }
+
+    @Deprecated
     default List<String> getHeader(String name)
     {
-        return ImmutableList.copyOf(headers().get(HeaderName.of(name)));
+        return getHeader(HeaderName.of(name));
     }
 
     int statusCode();
@@ -98,9 +104,9 @@ public sealed interface JsonResponse<T>
 
         public Charset charset()
         {
-            String value = getHeader(CONTENT_TYPE).stream()
-                    .findFirst()
-                    .orElse(null);
+            List<String> values = getHeader(CONTENT_TYPE);
+            String value = values.isEmpty() ? null : values.getFirst();
+
             if (value != null) {
                 try {
                     return MediaType.parse(value).charset().or(UTF_8);
