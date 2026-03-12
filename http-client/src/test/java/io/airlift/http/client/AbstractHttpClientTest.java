@@ -951,6 +951,33 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
+    public void testCancelSyncExecute()
+            throws Exception
+    {
+        RequestLifecycleHandler lifecycleHandler = RequestLifecycleHandler.create();
+        HttpServlet servlet = new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response)
+                    throws IOException
+            {
+                lifecycleHandler.cancel();
+                response.getWriter().write("everything is fine");
+            }
+        };
+
+        try (TestingHttpServer server = new TestingHttpServer(keystore, servlet);
+                JettyHttpClient client = new JettyHttpClient(createClientConfig())) {
+            Request request = prepareGet()
+                    .setUri(server.baseURI().resolve("/a/path"))
+                    .build();
+            assertThatThrownBy(() -> client.execute(request, lifecycleHandler, createStringResponseHandler()))
+                    .hasSameClassAs(new RuntimeException())
+                    .hasMessage("io.airlift.http.client.jetty.RequestCancelledException: Request was cancelled");
+        }
+    }
+
+    @Test
     public void testCancelAsyncExecute()
             throws Exception
     {
