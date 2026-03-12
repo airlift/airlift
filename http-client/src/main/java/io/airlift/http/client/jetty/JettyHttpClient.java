@@ -122,7 +122,6 @@ import static io.opentelemetry.api.common.AttributeKey.stringKey;
 import static java.lang.Math.max;
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
-import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -951,14 +950,13 @@ public class JettyHttpClient
 
     private Span startSpan(Request request)
     {
-        String method = request.getMethod().toUpperCase(ENGLISH);
         int port = normalizePort(request.getUri().getScheme(), request.getUri().getPort());
         return request.getSpanBuilder()
-                .orElseGet(() -> tracer.spanBuilder(name + " " + method))
+                .orElseGet(() -> tracer.spanBuilder(name + " " + request.getMethod()))
                 .setSpanKind(SpanKind.CLIENT)
                 .setAttribute(CLIENT_NAME, name)
                 .setAttribute(UrlAttributes.URL_FULL, request.getUri().toString())
-                .setAttribute(HttpAttributes.HTTP_REQUEST_METHOD, method)
+                .setAttribute(HttpAttributes.HTTP_REQUEST_METHOD, request.getMethod())
                 .setAttribute(ServerAttributes.SERVER_ADDRESS, request.getUri().getHost())
                 .setAttribute(ServerAttributes.SERVER_PORT, (long) port)
                 .startSpan();
@@ -969,7 +967,7 @@ public class JettyHttpClient
     {
         Context context = Context.current().with(span);
         Request.Builder builder = Request.Builder.fromRequest(request);
-        propagator.inject(context, builder, Request.Builder::addHeader);
+        propagator.inject(context, builder, (carrier, headerName, value) -> carrier.addHeader(HeaderName.of(headerName), value));
         return builder.build();
     }
 
@@ -986,7 +984,7 @@ public class JettyHttpClient
         });
 
         jettyRequest.method(finalRequest.getMethod());
-        jettyRequest.headers(headers -> finalRequest.getHeaders().forEach(headers::add));
+        jettyRequest.headers(headers -> finalRequest.getHeaders().forEach(((headerName, values) -> headers.add(headerName.toString(), values))));
         BodyGenerator bodyGenerator = finalRequest.getBodyGenerator();
         if (bodyGenerator != null) {
             switch (bodyGenerator) {

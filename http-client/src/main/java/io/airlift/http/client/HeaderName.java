@@ -1,23 +1,28 @@
 package io.airlift.http.client;
 
+import org.eclipse.jetty.http.HttpField;
+
 import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
 
 public final class HeaderName
 {
-    private final String original;
     private final String lowerCase;
 
     public static HeaderName of(String value)
     {
-        return new HeaderName(value);
+        return new HeaderName(value.toLowerCase(ENGLISH));
     }
 
-    private HeaderName(String value)
+    // Visible only to the Response interface
+    static HeaderName of(HttpField httpField)
     {
-        requireNonNull(value, "value is null");
-        this.original = value;
-        this.lowerCase = value.toLowerCase(ENGLISH);
+        return new HeaderName(httpField.getLowerCaseName());
+    }
+
+    private HeaderName(String lowerCase)
+    {
+        this.lowerCase = requireNonNull(lowerCase, "lowerCase is null");
     }
 
     @Override
@@ -42,6 +47,6 @@ public final class HeaderName
     @Override
     public String toString()
     {
-        return original;
+        return lowerCase;
     }
 }

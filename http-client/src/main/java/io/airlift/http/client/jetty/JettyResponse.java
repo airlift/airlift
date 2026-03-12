@@ -1,18 +1,17 @@
 package io.airlift.http.client.jetty;
 
-import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.CountingInputStream;
 import io.airlift.http.client.HeaderName;
 import io.airlift.http.client.HttpVersion;
 import org.eclipse.jetty.client.Response;
-import org.eclipse.jetty.http.HttpFields;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.function.LongSupplier;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static io.airlift.http.client.Response.toHeadersMap;
 
 class JettyResponse
         implements io.airlift.http.client.Response
@@ -89,16 +88,5 @@ class JettyResponse
                 .add("statusCode", getStatusCode())
                 .add("headers", getHeaders())
                 .toString();
-    }
-
-    private static ListMultimap<HeaderName, String> toHeadersMap(HttpFields headers)
-    {
-        ImmutableListMultimap.Builder<HeaderName, String> builder = ImmutableListMultimap.builder();
-        for (String name : headers.getFieldNamesCollection()) {
-            for (String value : headers.getValuesList(name)) {
-                builder.put(HeaderName.of(name), value);
-            }
-        }
-        return builder.build();
     }
 }

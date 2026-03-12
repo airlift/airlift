@@ -22,7 +22,7 @@ import io.airlift.json.JsonCodec;
 
 import java.util.Set;
 
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
+import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 import static io.airlift.http.client.ResponseHandlerUtils.getResponseBytes;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -72,7 +72,7 @@ public class JsonResponseHandler<T>
                     response);
         }
 
-        String contentType = response.getHeader(CONTENT_TYPE);
+        String contentType = response.getHeader(CONTENT_TYPE).orElse(null);
         if (contentType == null) {
             throw new UnexpectedResponseException("Content-Type is not set for response", request, response);
         }

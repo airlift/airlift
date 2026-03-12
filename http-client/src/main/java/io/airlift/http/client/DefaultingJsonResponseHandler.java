@@ -21,9 +21,10 @@ import com.google.common.primitives.Ints;
 import io.airlift.json.JsonCodec;
 
 import java.io.InputStream;
+import java.util.Optional;
 import java.util.Set;
 
-import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
+import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 
 public class DefaultingJsonResponseHandler<T>
         implements ResponseHandler<T, RuntimeException>
@@ -65,14 +66,14 @@ public class DefaultingJsonResponseHandler<T>
     @Override
     public T handle(Request request, Response response)
     {
-        if (!successfulResponseCodes.contains(response.getStatusCode())) {
-            return defaultValue;
-        }
-        String contentType = response.getHeader(CONTENT_TYPE);
-        if (contentType != null && !MediaType.parse(contentType).is(MEDIA_TYPE_JSON)) {
-            return defaultValue;
-        }
         try (InputStream inputStream = response.getInputStream()) {
+            if (!successfulResponseCodes.contains(response.getStatusCode())) {
+                return defaultValue;
+            }
+            Optional<String> contentType = response.getHeader(CONTENT_TYPE);
+            if (contentType.isPresent() && !MediaType.parse(contentType.orElseThrow()).is(MEDIA_TYPE_JSON)) {
+                return defaultValue;
+            }
             return jsonCodec.fromJson(inputStream);
         }
         catch (Exception e) {

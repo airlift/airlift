@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
 import java.net.URI;
 import java.util.function.Predicate;
 
-import static com.google.common.net.HttpHeaders.AUTHORIZATION;
+import static io.airlift.http.client.HeaderNames.AUTHORIZATION;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static org.assertj.core.api.Assertions.assertThat;
 

@@ -29,7 +29,11 @@ public final class ResponseHandlerUtils
         try {
             return switch (response.getContent()) {
                 case Response.BytesContent(byte[] bytes) -> bytes;
-                case Response.InputStreamContent(InputStream inputStream) -> inputStream.readAllBytes();
+                case Response.InputStreamContent(InputStream inputStream) -> {
+                    try (inputStream) {
+                        yield inputStream.readAllBytes();
+                    }
+                }
             };
         }
         catch (IOException e) {
@@ -37,6 +41,10 @@ public final class ResponseHandlerUtils
         }
     }
 
+    /**
+     * Important: it is required to call {@link InputStream#close()}
+     * to release retained chunks.
+     */
     public static InputStream getResponseStream(Response response)
     {
         return switch (response.getContent()) {

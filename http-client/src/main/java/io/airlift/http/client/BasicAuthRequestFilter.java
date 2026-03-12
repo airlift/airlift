@@ -17,7 +17,7 @@ import java.util.Base64;
 import java.util.function.Predicate;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.net.HttpHeaders.AUTHORIZATION;
+import static io.airlift.http.client.HeaderNames.AUTHORIZATION;
 import static io.airlift.http.client.Request.Builder.fromRequest;
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.util.Objects.requireNonNull;

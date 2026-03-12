@@ -107,9 +107,9 @@ public final class EchoServlet
         return ImmutableListMultimap.copyOf(requestHeaders);
     }
 
-    public List<String> getRequestHeaders(String name)
+    public List<String> getRequestHeaders(HeaderName name)
     {
-        return requestHeaders.get(HeaderName.of(name));
+        return requestHeaders.get(name);
     }
 
     public byte[] getRequestBytes()
