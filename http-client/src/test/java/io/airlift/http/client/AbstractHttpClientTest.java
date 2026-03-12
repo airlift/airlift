@@ -1044,7 +1044,7 @@ public abstract class AbstractHttpClientTest
                     .build();
             assertThatThrownBy(() -> executeRequest(server, limitedRequest, createStringResponseHandler()))
                     .satisfies(throwable -> {
-                        if (Strings.nullToEmpty(throwable.getMessage()).startsWith("Failed reading response from server")) {
+                        if (Strings.nullToEmpty(throwable.getMessage()).startsWith("Failed communicating with server")) {
                             assertThat(throwable)
                                     .hasStackTraceContaining("InputStream exceeded maximum length of 3071");
                         }

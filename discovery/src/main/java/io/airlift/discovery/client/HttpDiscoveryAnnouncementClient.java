@@ -16,7 +16,6 @@
 package io.airlift.discovery.client;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.io.CharStreams;
 import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -32,7 +31,7 @@ import io.airlift.node.NodeInfo;
 import io.airlift.units.Duration;
 
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
@@ -129,8 +128,8 @@ public class HttpDiscoveryAnnouncementClient
 
     private static String getBodyForError(Response response)
     {
-        try {
-            return CharStreams.toString(new InputStreamReader(response.getInputStream(), UTF_8));
+        try (InputStream stream = response.getInputStream()) {
+            return new String(stream.readAllBytes(), UTF_8);
         }
         catch (IOException e) {
             return "(error getting body)";
