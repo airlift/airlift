@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.fasterxml.jackson.databind.type.MapType;
 import com.google.inject.Inject;
@@ -52,19 +53,22 @@ public final class SpanSerialization
             extends StdDeserializer<Span>
     {
         private final TextMapPropagator propagator;
+        private final MapType mapType;
 
         @Inject
-        public SpanDeserializer(OpenTelemetry openTelemetry)
+        public SpanDeserializer(OpenTelemetry openTelemetry, JsonMapper jsonMapper)
         {
             super(Span.class);
             this.propagator = openTelemetry.getPropagators().getTextMapPropagator();
+            this.mapType = requireNonNull(jsonMapper, "jsonMapper is null")
+                    .getTypeFactory()
+                    .constructMapType(Map.class, String.class, String.class);
         }
 
         @Override
         public Span deserialize(JsonParser jsonParser, DeserializationContext deserializationContext)
                 throws IOException
         {
-            MapType mapType = deserializationContext.getTypeFactory().constructMapType(Map.class, String.class, String.class);
             Map<String, String> map = deserializationContext.readValue(jsonParser, mapType);
             Context context = propagator.extract(Context.root(), map, MapTextMapGetter.INSTANCE);
             return Span.fromContext(context);
