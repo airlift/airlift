@@ -1,6 +1,8 @@
 package io.airlift.http.server.tracing;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
+import io.airlift.http.server.HttpTracingConfig;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
@@ -29,14 +31,21 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.base.Strings.nullToEmpty;
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
 import static com.google.common.net.HttpHeaders.CONTENT_LENGTH;
 import static com.google.common.net.HttpHeaders.USER_AGENT;
+import static io.opentelemetry.semconv.HttpAttributes.HTTP_REQUEST_HEADER;
+import static io.opentelemetry.semconv.HttpAttributes.HTTP_RESPONSE_HEADER;
+import static java.util.Collections.list;
 import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
+import static java.util.function.Function.identity;
 import static org.eclipse.jetty.ee11.servlet.ServletContextRequest.SSL_CIPHER_SUITE;
 import static org.eclipse.jetty.ee11.servlet.ServletContextRequest.SSL_SESSION_ID;
 
@@ -49,12 +58,22 @@ public final class TracingServletFilter
 
     private final TextMapPropagator propagator;
     private final Tracer tracer;
+    private final Map<String, AttributeKey<List<String>>> tracingRequestHeaderKeys;
+    private final Map<String, AttributeKey<List<String>>> tracingResponseHeaderKeys;
 
     @Inject
-    public TracingServletFilter(OpenTelemetry openTelemetry, Tracer tracer)
+    public TracingServletFilter(OpenTelemetry openTelemetry, Tracer tracer, HttpTracingConfig config)
     {
         this.propagator = openTelemetry.getPropagators().getTextMapPropagator();
         this.tracer = requireNonNull(tracer, "tracer is null");
+        this.tracingRequestHeaderKeys = config.getTracingRequestHeaders().stream()
+                .map(TracingServletFilter::normalizeHeaderName)
+                .distinct()
+                .collect(toImmutableMap(identity(), name -> HTTP_REQUEST_HEADER.getAttributeKey(normalizeHeaderName(name))));
+        this.tracingResponseHeaderKeys = config.getTracingResponseHeaders().stream()
+                .map(TracingServletFilter::normalizeHeaderName)
+                .distinct()
+                .collect(toImmutableMap(identity(), name -> HTTP_RESPONSE_HEADER.getAttributeKey(normalizeHeaderName(name))));
     }
 
     public static void updateRequestSpan(HttpServletRequest request, Consumer<Span> spanConsumer)
@@ -108,12 +127,19 @@ public final class TracingServletFilter
             spanBuilder.setAttribute(UserAgentAttributes.USER_AGENT_ORIGINAL, userAgent);
         }
 
+        for (Map.Entry<String, AttributeKey<List<String>>> entry : tracingRequestHeaderKeys.entrySet()) {
+            List<String> values = list(request.getHeaders(entry.getKey()));
+            if (!values.isEmpty()) {
+                spanBuilder.setAttribute(entry.getValue(), values);
+            }
+        }
+
         Span span = spanBuilder.startSpan();
         // Add to request attributes for TracingFilter to be able to update Span attributes
         request.setAttribute(REQUEST_SPAN, span);
 
         try (Scope ignored = span.makeCurrent()) {
-            chain.doFilter(request, new TracingHttpServletResponse(response, span));
+            chain.doFilter(request, new TracingHttpServletResponse(response, tracingResponseHeaderKeys, span));
         }
         catch (Throwable t) {
             span.setStatus(StatusCode.ERROR, t.getMessage());
@@ -169,10 +195,12 @@ public final class TracingServletFilter
             extends HttpServletResponseWrapper
     {
         private final Span span;
+        private final Map<String, AttributeKey<List<String>>> responseHeaders;
 
-        public TracingHttpServletResponse(HttpServletResponse delegate, Span span)
+        public TracingHttpServletResponse(HttpServletResponse delegate, Map<String, AttributeKey<List<String>>> responseHeaders, Span span)
         {
             super(delegate);
+            this.responseHeaders = requireNonNull(responseHeaders, "responseHeaders is null");
             this.span = requireNonNull(span, "span is null");
         }
 
@@ -204,37 +232,69 @@ public final class TracingServletFilter
         @Override
         public void setHeader(String name, String value)
         {
+            super.setHeader(name, value);
+
             if (name.equalsIgnoreCase(CONTENT_LENGTH)) {
                 span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, Long.parseLong(value));
             }
-            super.setHeader(name, value);
+
+            updateResponseHeaderAttributes(name);
         }
 
         @Override
         public void addHeader(String name, String value)
         {
+            super.addHeader(name, value);
+
             if (name.equalsIgnoreCase(CONTENT_LENGTH)) {
                 span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, Long.parseLong(value));
             }
-            super.addHeader(name, value);
+
+            updateResponseHeaderAttributes(name);
         }
 
         @Override
         public void setIntHeader(String name, int value)
         {
+            super.setIntHeader(name, value);
+
             if (name.equalsIgnoreCase(CONTENT_LENGTH)) {
                 span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, value);
             }
-            super.setIntHeader(name, value);
+
+            updateResponseHeaderAttributes(name);
         }
 
         @Override
         public void addIntHeader(String name, int value)
         {
+            super.addIntHeader(name, value);
+
             if (name.equalsIgnoreCase(CONTENT_LENGTH)) {
                 span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, value);
             }
-            super.addIntHeader(name, value);
+
+            updateResponseHeaderAttributes(name);
+        }
+
+        private void updateResponseHeaderAttributes(String headerName)
+        {
+            String normalizedHeaderName = normalizeHeaderName(headerName);
+
+            if (headerName.equalsIgnoreCase(CONTENT_LENGTH)) {
+                return;
+            }
+
+            AttributeKey<List<String>> responseAttribute = responseHeaders.get(normalizedHeaderName);
+            if (responseAttribute == null) {
+                return;
+            }
+
+            List<String> values = ImmutableList.copyOf(super.getHeaders(normalizedHeaderName));
+            if (values.isEmpty()) {
+                return;
+            }
+            span.setAttribute(responseAttribute, values);
         }
 
         @Override
@@ -250,5 +310,10 @@ public final class TracingServletFilter
             span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, length);
             super.setContentLengthLong(length);
         }
+    }
+
+    private static String normalizeHeaderName(String headerName)
+    {
+        return headerName.toLowerCase(ENGLISH);
     }
 }

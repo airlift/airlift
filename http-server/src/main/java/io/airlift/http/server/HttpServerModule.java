@@ -21,7 +21,6 @@ import io.airlift.configuration.AbstractConfigurationAwareModule;
 import io.airlift.discovery.client.AnnouncementHttpServerInfo;
 import io.airlift.http.server.HttpServer.ClientCertificate;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
-import io.airlift.http.server.tracing.TracingServletFilter;
 import jakarta.annotation.Nullable;
 import jakarta.servlet.Filter;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -98,8 +97,9 @@ public class HttpServerModule
         newExporter(binder).export(qualifiedKey(HttpServer.class)).withGeneratedName();
         newSetBinder(binder, qualifiedKey(ServerFeature.class));
         newSetBinder(binder, qualifiedKey(Filter.class)).addBinding()
-                .to(TracingServletFilter.class)
+                .toProvider(new TracingServletFilterProvider(qualifier))
                 .in(SINGLETON);
+        configBinder(binder).bindConfig(qualifiedKey(HttpTracingConfig.class), HttpTracingConfig.class, configPrefix);
         newSetBinder(binder, qualifiedKey(HttpResourceBinding.class));
         newOptionalBinder(binder, qualifiedKey(SslContextFactory.Server.class));
         configBinder(binder).bindConfig(qualifiedKey(HttpServerConfig.class), HttpServerConfig.class, configPrefix);
