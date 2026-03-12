@@ -32,6 +32,7 @@ import java.util.Optional;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.lang.String.CASE_INSENSITIVE_ORDER;
+import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
 
 public final class Request
@@ -267,7 +268,7 @@ public final class Request
         @CanIgnoreReturnValue
         public Builder setMethod(String method)
         {
-            this.method = method;
+            this.method = method.toUpperCase(ENGLISH);
             return this;
         }
 

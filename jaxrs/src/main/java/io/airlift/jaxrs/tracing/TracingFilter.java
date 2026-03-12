@@ -18,13 +18,13 @@ public final class TracingFilter
     // Same as TracingServletFilter.REQUEST_SPAN
     static final String REQUEST_SPAN = "airlift.trace-span";
 
-    private final String className;
-    private final String methodName;
+    private final String codeFunctionName;
 
     public TracingFilter(String className, String methodName)
     {
-        this.className = requireNonNull(className, "className is null");
-        this.methodName = requireNonNull(methodName, "methodName is null");
+        requireNonNull(className, "className is null");
+        requireNonNull(methodName, "methodName is null");
+        this.codeFunctionName = className + "." + methodName;
     }
 
     @Override
@@ -45,7 +45,7 @@ public final class TracingFilter
         if (requestContext.getProperty(REQUEST_SPAN) instanceof Span span) {
             span.updateName(requestContext.getMethod() + " " + route);
             span.setAttribute(HttpAttributes.HTTP_ROUTE, route);
-            span.setAttribute(CodeAttributes.CODE_FUNCTION_NAME, className + "." + methodName);
+            span.setAttribute(CodeAttributes.CODE_FUNCTION_NAME, codeFunctionName);
         }
     }
 
