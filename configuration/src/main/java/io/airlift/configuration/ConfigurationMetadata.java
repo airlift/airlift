@@ -19,6 +19,7 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.Multimap;
+import com.google.common.reflect.TypeToken;
 import com.google.inject.ConfigurationException;
 import jakarta.validation.Constraint;
 
@@ -297,7 +298,7 @@ public class ConfigurationMetadata<T>
         }
 
         // Add the injection point for the current setter/property
-        builder.addInjectionPoint(InjectionPointMetaData.newCurrent(configClass, propertyName, configMethod));
+        builder.addInjectionPoint(InjectionPointMetaData.newCurrent(configClass, propertyName, TypeToken.of(configMethod.getGenericParameterTypes()[0]), configMethod));
 
         // Add injection points for legacy setters/properties
         for (InjectionPointMetaData injectionPoint : findLegacySetters(methods, propertyName, attributeName)) {
@@ -348,28 +349,31 @@ public class ConfigurationMetadata<T>
     {
         private final Class<?> configClass;
         private final String property;
+        private final TypeToken<?> propertyType;
         private final Method setter;
         private final boolean current;
 
-        public static InjectionPointMetaData newCurrent(Class<?> configClass, String property, Method setter)
+        public static InjectionPointMetaData newCurrent(Class<?> configClass, String property, TypeToken<?> propertyType, Method setter)
         {
-            return new InjectionPointMetaData(configClass, property, setter, true);
+            return new InjectionPointMetaData(configClass, property, propertyType, setter, true);
         }
 
-        public static InjectionPointMetaData newLegacy(Class<?> configClass, String property, Method setter)
+        public static InjectionPointMetaData newLegacy(Class<?> configClass, String property, TypeToken<?> propertyType, Method setter)
         {
-            return new InjectionPointMetaData(configClass, property, setter, false);
+            return new InjectionPointMetaData(configClass, property, propertyType, setter, false);
         }
 
-        private InjectionPointMetaData(Class<?> configClass, String property, Method setter, boolean current)
+        private InjectionPointMetaData(Class<?> configClass, String property, TypeToken<?> propertyType, Method setter, boolean current)
         {
             requireNonNull(configClass);
             requireNonNull(property);
+            requireNonNull(propertyType);
             requireNonNull(setter);
             checkArgument(!property.isEmpty());
 
             this.configClass = configClass;
             this.property = property;
+            this.propertyType = propertyType;
             this.setter = setter;
             this.current = current;
         }
@@ -382,6 +386,11 @@ public class ConfigurationMetadata<T>
         public String getProperty()
         {
             return this.property;
+        }
+
+        public TypeToken<?> getPropertyType()
+        {
+            return propertyType;
         }
 
         public Method getSetter()
@@ -727,7 +736,7 @@ public class ConfigurationMetadata<T>
             }
 
             if (!property.equals(propertyName)) {
-                setters.add(InjectionPointMetaData.newLegacy(configClass, property, method));
+                setters.add(InjectionPointMetaData.newLegacy(configClass, property, TypeToken.of(method.getGenericParameterTypes()[0]), method));
             }
             else {
                 problems.addError("@LegacyConfig property '%s' on method [%s] is replaced by @Config property of same name on method [%s]",

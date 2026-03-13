@@ -17,9 +17,9 @@ public record JsonError(String code, String message)
 
     public JsonError
     {
-        verify(MATCHER.matchesAllOf(code), "Error code must only contain uppercase letters and underscores: %s", code);
         requireNonNull(code, "code is null");
         requireNonNull(message, "message is null");
+        verify(MATCHER.matchesAllOf(code), "Error code must only contain uppercase letters and underscores: %s", code);
     }
 
     public static JsonCodec<JsonError> codec()
