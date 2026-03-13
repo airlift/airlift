@@ -65,14 +65,14 @@ public class DefaultingJsonResponseHandler<T>
     @Override
     public T handle(Request request, Response response)
     {
+        if (!successfulResponseCodes.contains(response.getStatusCode())) {
+            return defaultValue;
+        }
+        String contentType = response.getHeader(CONTENT_TYPE);
+        if (contentType != null && !MediaType.parse(contentType).is(MEDIA_TYPE_JSON)) {
+            return defaultValue;
+        }
         try (InputStream inputStream = response.getInputStream()) {
-            if (!successfulResponseCodes.contains(response.getStatusCode())) {
-                return defaultValue;
-            }
-            String contentType = response.getHeader(CONTENT_TYPE);
-            if (contentType != null && !MediaType.parse(contentType).is(MEDIA_TYPE_JSON)) {
-                return defaultValue;
-            }
             return jsonCodec.fromJson(inputStream);
         }
         catch (Exception e) {

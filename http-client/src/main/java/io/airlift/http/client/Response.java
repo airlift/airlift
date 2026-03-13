@@ -48,12 +48,7 @@ public interface Response
     @Beta
     Content getContent();
 
-    /**
-     * Important: it is required to call {@link InputStream#close()}
-     * to release retained chunks.
-     *
-     * TODO: eventually will be deprecated in favor of {@link Response#getContent()}
-     */
+    // TODO eventually deprecate in favor of getContent()
     InputStream getInputStream()
             throws IOException;
 
