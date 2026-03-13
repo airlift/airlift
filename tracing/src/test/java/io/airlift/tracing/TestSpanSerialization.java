@@ -1,5 +1,6 @@
 package io.airlift.tracing;
 
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.airlift.json.JsonCodec;
 import io.airlift.json.JsonCodecFactory;
 import io.airlift.json.JsonMapperProvider;
@@ -60,7 +61,7 @@ public class TestSpanSerialization
 
         return new JsonCodecFactory(new JsonMapperProvider()
                 .withJsonSerializers(Map.of(Span.class, new SpanSerializer(openTelemetry)))
-                .withJsonDeserializers(Map.of(Span.class, new SpanDeserializer(openTelemetry)))
+                .withJsonDeserializers(Map.of(Span.class, new SpanDeserializer(new JsonMapper(), openTelemetry)))
                 .get())
                 .prettyPrint()
                 .jsonCodec(Span.class);

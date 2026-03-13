@@ -15,10 +15,10 @@
  */
 package io.airlift.json;
 
-import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.base.Suppliers;
 import com.google.common.reflect.TypeParameter;
@@ -37,7 +37,6 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT;
-import static com.google.common.base.Preconditions.checkArgument;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
@@ -141,14 +140,11 @@ public class JsonCodec<T>
     public T fromJson(String json)
             throws IllegalArgumentException
     {
-        ObjectReader objectReader = reader.get();
-        try (JsonParser parser = objectReader.createParser(json)) {
-            T value = objectReader.readValue(parser);
-            checkArgument(parser.nextToken() == null, "Found characters after the expected end of input");
-            return value;
+        try {
+            return reader.get().readValue(json);
         }
-        catch (IOException e) {
-            throw new IllegalArgumentException(format("Invalid JSON string for %s", type), e);
+        catch (Exception e) {
+            throw mapException(e, "string", type);
         }
     }
 
@@ -203,14 +199,11 @@ public class JsonCodec<T>
     public T fromJson(byte[] json)
             throws IllegalArgumentException
     {
-        ObjectReader objectReader = reader.get();
-        try (JsonParser parser = objectReader.createParser(json)) {
-            T value = objectReader.readValue(parser);
-            checkArgument(parser.nextToken() == null, "Found characters after the expected end of input");
-            return value;
+        try {
+            return reader.get().readValue(json);
         }
-        catch (IOException e) {
-            throw new IllegalArgumentException(format("Invalid JSON bytes for %s", type), e);
+        catch (Exception e) {
+            throw mapException(e, "bytes", type);
         }
     }
 
@@ -242,14 +235,11 @@ public class JsonCodec<T>
     public T fromJson(InputStream json)
             throws IllegalArgumentException
     {
-        ObjectReader objectReader = reader.get();
-        try (JsonParser parser = objectReader.createParser(json)) {
-            T value = objectReader.readValue(parser);
-            checkArgument(parser.nextToken() == null, "Found characters after the expected end of input");
-            return value;
+        try {
+            return reader.get().readValue(json);
         }
-        catch (IOException e) {
-            throw new IllegalArgumentException(format("Invalid JSON bytes for %s", type), e);
+        catch (Exception e) {
+            throw mapException(e, "stream", type);
         }
     }
 
@@ -263,15 +253,23 @@ public class JsonCodec<T>
     public T fromJson(Reader json)
             throws IllegalArgumentException
     {
-        ObjectReader objectReader = reader.get();
-        try (JsonParser parser = objectReader.createParser(json)) {
-            T value = objectReader.readValue(parser);
-            checkArgument(parser.nextToken() == null, "Found characters after the expected end of input");
-            return value;
+        try {
+            return reader.get().readValue(json);
         }
-        catch (IOException e) {
-            throw new IllegalArgumentException(format("Invalid JSON characters for %s", type), e);
+        catch (Exception e) {
+            throw mapException(e, "characters", type);
         }
+    }
+
+    private static IllegalArgumentException mapException(Exception e, String source, Type type)
+    {
+        if (e instanceof MismatchedInputException mismatchedInputException && mismatchedInputException.getMessage() != null && mismatchedInputException.getMessage().contains("TRAILING_TOKEN")) {
+            return new IllegalArgumentException("Found characters after the expected end of input");
+        }
+        if (e instanceof IllegalArgumentException illegalArgumentException) {
+            throw illegalArgumentException;
+        }
+        return new IllegalArgumentException(format("Invalid JSON %s for %s", source, type), e);
     }
 
     @SuppressWarnings("unchecked")
