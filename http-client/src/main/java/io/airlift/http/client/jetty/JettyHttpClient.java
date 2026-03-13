@@ -669,13 +669,13 @@ public class JettyHttpClient
         try {
             InternalResponse<T> internalResponse = internalExecute(request, OptionalLong.of(getMaxResponseContentLength(request).toBytes()), responseHandler::handleException, span);
             return switch (internalResponse) {
-                case InternalExceptionResponse<T> response -> response.exceptionResponse;
-                case InternalStandardResponse<T> response -> {
+                case InternalExceptionResponse(T exceptionResponse) -> exceptionResponse;
+                case InternalStandardResponse(JettyResponse jettyResponse, Runnable completionHandler) -> {
                     try {
-                        yield responseHandler.handle(request, response.jettyResponse);
+                        yield responseHandler.handle(request, jettyResponse);
                     }
                     finally {
-                        response.completionHandler.run();
+                        completionHandler.run();
                     }
                 }
             };
@@ -711,50 +711,50 @@ public class JettyHttpClient
         };
 
         return switch (internalExecute(request, OptionalLong.empty(), exceptionHandler, span)) {
-            case InternalExceptionResponse<StreamingResponse> response -> response.exceptionResponse;
-            case InternalStandardResponse<StreamingResponse> response -> new StreamingResponse()
+            case InternalExceptionResponse(StreamingResponse exceptionResponse) -> exceptionResponse;
+            case InternalStandardResponse(JettyResponse jettyResponse, Runnable completionHandler) -> new StreamingResponse()
             {
                 @Override
                 public io.airlift.http.client.HttpVersion getHttpVersion()
                 {
-                    return response.jettyResponse.getHttpVersion();
+                    return jettyResponse.getHttpVersion();
                 }
 
                 @Override
                 public int getStatusCode()
                 {
-                    return response.jettyResponse.getStatusCode();
+                    return jettyResponse.getStatusCode();
                 }
 
                 @Override
                 public ListMultimap<HeaderName, String> getHeaders()
                 {
-                    return response.jettyResponse.getHeaders();
+                    return jettyResponse.getHeaders();
                 }
 
                 @Override
                 public Content getContent()
                 {
-                    return response.jettyResponse.getContent();
+                    return jettyResponse.getContent();
                 }
 
                 @Override
                 public InputStream getInputStream()
                 {
-                    return response.jettyResponse.getInputStream();
+                    return jettyResponse.getInputStream();
                 }
 
                 @Override
                 public long getBytesRead()
                 {
-                    return response.jettyResponse.getBytesRead();
+                    return jettyResponse.getBytesRead();
                 }
 
                 @Override
                 public void close()
                 {
                     try {
-                        response.completionHandler.run();
+                        completionHandler.run();
                     }
                     finally {
                         span.end();
