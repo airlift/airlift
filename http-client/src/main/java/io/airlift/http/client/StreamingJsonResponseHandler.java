@@ -8,6 +8,8 @@ import io.airlift.json.JsonCodec;
 import java.io.InputStream;
 
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
+import static io.airlift.http.client.ResponseHandlerUtils.getResponseBytes;
+import static io.airlift.http.client.ResponseHandlerUtils.getResponseStream;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -47,19 +49,19 @@ public class StreamingJsonResponseHandler<T>
     {
         int statusCode = response.getStatusCode();
 
-        try (InputStream stream = response.getInputStream()) {
+        try {
             String contentType = response.getHeader(CONTENT_TYPE);
             if (contentType == null) {
                 return new JsonResponse.NonJsonBytes<>(
                         request,
                         statusCode,
                         response.getHeaders(),
-                        stream.readAllBytes(),
+                        getResponseBytes(request, response),
                         new UnexpectedResponseException("Content-Type is not set for response", request, response));
             }
 
             if (MediaType.parse(contentType).is(MEDIA_TYPE_JSON)) {
-                try (CountingInputStream countingInputStream = new CountingInputStream(stream)) {
+                try (InputStream stream = getResponseStream(response); CountingInputStream countingInputStream = new CountingInputStream(stream)) {
                     return new JsonResponse.JsonValue<>(request, statusCode, response.getHeaders(), codec.fromJson(countingInputStream), countingInputStream.getCount());
                 }
             }
@@ -68,7 +70,7 @@ public class StreamingJsonResponseHandler<T>
                     request,
                     statusCode,
                     response.getHeaders(),
-                    stream.readAllBytes(),
+                    getResponseBytes(request, response),
                     new UnexpectedResponseException("Expected server to response with application/json but got " + contentType, request, response));
         }
         catch (Exception e) {
