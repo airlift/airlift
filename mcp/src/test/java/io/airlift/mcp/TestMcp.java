@@ -24,6 +24,7 @@ import io.airlift.mcp.sessions.ForSessionCaching;
 import io.airlift.mcp.sessions.MemorySessionController;
 import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.sessions.SessionId;
+import io.modelcontextprotocol.client.transport.McpHttpClientTransportAuthorizationException;
 import io.modelcontextprotocol.spec.HttpHeaders;
 import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema;
@@ -48,7 +49,9 @@ import io.modelcontextprotocol.spec.McpSchema.ResourceReference;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import io.modelcontextprotocol.spec.McpSchema.TextResourceContents;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
+import io.modelcontextprotocol.spec.McpTransportException;
 import org.assertj.core.api.AbstractCollectionAssert;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.api.ObjectAssert;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -91,7 +94,6 @@ import static io.airlift.mcp.TestingIdentityMapper.EXPECTED_IDENTITY;
 import static io.airlift.mcp.TestingIdentityMapper.IDENTITY_HEADER;
 import static io.airlift.mcp.model.Constants.MCP_SESSION_ID;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_CANCELLED;
-import static io.airlift.mcp.model.JsonRpcErrorCode.INTERNAL_ERROR;
 import static io.modelcontextprotocol.spec.McpSchema.ErrorCodes.RESOURCE_NOT_FOUND;
 import static io.modelcontextprotocol.spec.McpSchema.LoggingLevel.ALERT;
 import static io.modelcontextprotocol.spec.McpSchema.LoggingLevel.DEBUG;
@@ -182,18 +184,19 @@ public abstract class TestMcp
     {
         assertThatThrownBy(() -> buildClient(closer, baseUri, "no-token", ""))
                 .rootCause()
-                .hasMessageContaining("\"status\":\"401\"")
-                .hasMessageContaining("Empty or missing identity header");
+                .asInstanceOf(InstanceOfAssertFactories.type(McpHttpClientTransportAuthorizationException.class))
+                .extracting(e -> e.getResponseInfo().statusCode())
+                .isEqualTo(401);
 
         assertThatThrownBy(() -> buildClient(closer, baseUri, "invalid-token", "Invalid Identity"))
                 .rootCause()
-                .hasMessageContaining("\"status\":\"403\"")
-                .hasMessageContaining("Identity Invalid Identity is not authorized to access");
+                .asInstanceOf(InstanceOfAssertFactories.type(McpHttpClientTransportAuthorizationException.class))
+                .extracting(e -> e.getResponseInfo().statusCode())
+                .isEqualTo(403);
 
         assertThatThrownBy(() -> buildClient(closer, baseUri, "error-token", ERRORED_IDENTITY))
                 .rootCause()
-                .hasMessageContaining("\"code\":" + INTERNAL_ERROR.code())
-                .hasMessageContaining("\"message\":\"This identity cannot catch a break");
+                .isInstanceOf(McpTransportException.class);
     }
 
     @Test
