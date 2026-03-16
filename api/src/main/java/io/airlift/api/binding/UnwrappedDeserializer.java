@@ -35,7 +35,7 @@ class UnwrappedDeserializer
     public Object deserialize(JsonParser parser, DeserializationContext context)
             throws IOException
     {
-        JsonNode tree = parser.readValueAsTree();
+        JsonNode tree = context.readTree(parser);
 
         RecordComponent[] recordComponents = clazz.getRecordComponents();
         Object[] arguments = new Object[recordComponents.length];
