@@ -215,9 +215,9 @@ public class JsonSubType
         }
 
         @Override
-        public void findAndAddVirtualProperties(MapperConfig<?> config, AnnotatedClass ac, List<BeanPropertyWriter> properties)
+        public void findAndAddVirtualProperties(MapperConfig<?> config, AnnotatedClass annotatedClass, List<BeanPropertyWriter> properties)
         {
-            String propertyValue = subClassPropertyValues.get(ac.getRawType());
+            String propertyValue = subClassPropertyValues.get(annotatedClass.getRawType());
             if (propertyValue == null) {
                 return;
             }
@@ -226,12 +226,12 @@ public class JsonSubType
 
             JavaType stringType = config.constructType(String.class);
 
-            AnnotatedMember member = new VirtualAnnotatedMember(ac, ac.getRawType(), propertyName, stringType);
+            AnnotatedMember member = new VirtualAnnotatedMember(annotatedClass, annotatedClass.getRawType(), propertyName, stringType);
             SimpleBeanPropertyDefinition propDef = SimpleBeanPropertyDefinition.construct(config, member, PropertyName.construct(propertyName));
             AttributePropertyWriter propertyWriter = new AttributePropertyWriter(propertyName, propDef, null, stringType)
             {
                 @Override
-                protected Object value(Object bean, JsonGenerator jgen, SerializerProvider prov)
+                protected Object value(Object bean, JsonGenerator generator, SerializerProvider provider)
                 {
                     return propertyValue;
                 }
@@ -261,10 +261,10 @@ public class JsonSubType
 
         @SuppressWarnings("unchecked")
         @Override
-        public B deserialize(JsonParser p, DeserializationContext ctxt)
+        public B deserialize(JsonParser parser, DeserializationContext context)
                 throws IOException
         {
-            TreeNode treeNode = ctxt.readTree(p);
+            TreeNode treeNode = context.readTree(parser);
             TreeNode propertyNode = treeNode.get(propertyName);
 
             String propertyValue = ((propertyNode != null) && propertyNode.isValueNode()) ? ((ValueNode) propertyNode).textValue() : null;
@@ -277,7 +277,7 @@ public class JsonSubType
                 throw new IllegalArgumentException("No binding was made for property name \"%s\" and value \"%s\". Double check the addBinding() or addPermittedSubClassBindings().".formatted(propertyName, propertyValue));
             }
 
-            return (B) p.getCodec().treeToValue(treeNode, subClass);
+            return (B) parser.getCodec().treeToValue(treeNode, subClass);
         }
     }
 }
