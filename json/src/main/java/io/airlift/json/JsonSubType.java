@@ -16,11 +16,11 @@ package io.airlift.json;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Value;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.TreeNode;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.PropertyName;
 import com.fasterxml.jackson.databind.SerializerProvider;
@@ -32,7 +32,6 @@ import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
 import com.fasterxml.jackson.databind.introspect.VirtualAnnotatedMember;
 import com.fasterxml.jackson.databind.jsontype.NamedType;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.node.ValueNode;
 import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
 import com.fasterxml.jackson.databind.ser.impl.AttributePropertyWriter;
 import com.fasterxml.jackson.databind.util.SimpleBeanPropertyDefinition;
@@ -264,10 +263,10 @@ public class JsonSubType
         public B deserialize(JsonParser parser, DeserializationContext context)
                 throws IOException
         {
-            TreeNode treeNode = context.readTree(parser);
-            TreeNode propertyNode = treeNode.get(propertyName);
+            JsonNode jsonNode = context.readTree(parser);
+            JsonNode propertyNode = jsonNode.get(propertyName);
 
-            String propertyValue = ((propertyNode != null) && propertyNode.isValueNode()) ? ((ValueNode) propertyNode).textValue() : null;
+            String propertyValue = ((propertyNode != null) && propertyNode.isValueNode()) ? propertyNode.textValue() : null;
             if (propertyValue == null) {
                 throw new IllegalArgumentException("JSON expected to have a property named \"%s\". Double check the addBinding() or addPermittedSubClassBindings()".formatted(propertyName));
             }
@@ -277,7 +276,7 @@ public class JsonSubType
                 throw new IllegalArgumentException("No binding was made for property name \"%s\" and value \"%s\". Double check the addBinding() or addPermittedSubClassBindings().".formatted(propertyName, propertyValue));
             }
 
-            return (B) parser.getCodec().treeToValue(treeNode, subClass);
+            return (B) context.readTreeAsValue(jsonNode, subClass);
         }
     }
 }
