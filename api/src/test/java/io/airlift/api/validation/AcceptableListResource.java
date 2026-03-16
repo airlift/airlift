@@ -17,6 +17,6 @@ public record AcceptableListResource(
     public enum Enum
     {
         ABC,
-        DEF
+        DEF,
     }
 }

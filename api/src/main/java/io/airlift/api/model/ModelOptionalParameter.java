@@ -15,7 +15,7 @@ public record ModelOptionalParameter(Location location, Type type, Collection<Me
     public enum Location
     {
         QUERY,
-        HEADER
+        HEADER,
     }
 
     public enum Metadata
