@@ -89,7 +89,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
@@ -995,7 +994,7 @@ public class JettyHttpClient
             switch (bodyGenerator) {
                 case StaticBodyGenerator generator -> jettyRequest.body(new BytesRequestContent(generator.getBody()));
                 case ByteBufferBodyGenerator generator -> jettyRequest.body(new ByteBufferRequestContent(generator.getByteBuffers()));
-                case FileBodyGenerator generator -> jettyRequest.body(fileContent(generator));
+                case FileBodyGenerator generator -> jettyRequest.body(new PathRequestContent(generator.getContentType().toString(), generator.getPath(), sizedByteBufferPool));
                 case StreamingBodyGenerator generator -> jettyRequest.body(new InputStreamRequestContent(generator.contentType(), generator.source(), sizedByteBufferPool));
             }
         }
@@ -1043,16 +1042,6 @@ public class JettyHttpClient
                                 e instanceof InterruptedException ||
                                 e instanceof IllegalArgumentException ||
                                 e instanceof IllegalStateException);
-    }
-
-    private static PathRequestContent fileContent(FileBodyGenerator bodyGenerator)
-    {
-        try {
-            return new PathRequestContent(bodyGenerator.getContentType().toString(), bodyGenerator.getPath());
-        }
-        catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
     }
 
     private DataSize getMaxResponseContentLength(Request request)
