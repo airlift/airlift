@@ -59,6 +59,7 @@ import static io.airlift.api.ApiOrderByDirection.DESCENDING;
 import static io.airlift.api.ApiPagination.DEFAULT_PAGE_SIZE;
 import static io.airlift.api.ApiPagination.PAGE_SIZE_QUERY_PARAMETER_NAME;
 import static io.airlift.api.ApiPagination.PAGE_TOKEN_QUERY_PARAMETER_NAME;
+import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 import static io.airlift.http.client.JsonBodyGenerator.jsonBodyGenerator;
 import static io.airlift.http.client.Request.Builder.prepareDelete;
 import static io.airlift.http.client.Request.Builder.prepareGet;
@@ -297,7 +298,7 @@ public class IntegrationTests
     {
         requestBuilder.setUri(uri);
         payload.ifPresent(body -> requestBuilder.setBodyGenerator(jsonBodyGenerator(payloadCodec.orElseThrow(), body)));
-        requestBuilder.setHeader("Content-Type", "application/json");
+        requestBuilder.setHeader(CONTENT_TYPE, "application/json");
         Request request = requestBuilder.build();
 
         return httpClient.execute(request, FullJsonResponseHandler.createFullJsonResponseHandler(responseCodec));

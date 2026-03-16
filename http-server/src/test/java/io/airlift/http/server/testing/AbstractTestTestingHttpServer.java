@@ -62,6 +62,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static com.google.common.net.MediaType.PLAIN_TEXT_UTF_8;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
+import static io.airlift.http.client.HeaderNames.X_FORWARDED_FOR;
+import static io.airlift.http.client.HeaderNames.X_FORWARDED_HOST;
 import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
@@ -289,7 +291,7 @@ public abstract class AbstractTestTestingHttpServer
                 for (int i = 0; i < 3; ++i) {
                     Request request = prepareGet()
                             .setUri(server.getBaseUrl())
-                            .setHeader(HttpHeaders.CONTENT_TYPE, (i > 1) ? finalContentType : contentType)
+                            .setHeader(CONTENT_TYPE, (i > 1) ? finalContentType : contentType)
                             .build();
                     client.execute(request, createStatusResponseHandler());
                 }
@@ -318,8 +320,8 @@ public abstract class AbstractTestTestingHttpServer
             try (HttpClient client = new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
                 Request request = prepareGet()
                         .setUri(server.getBaseUrl())
-                        .setHeader(HttpHeaders.X_FORWARDED_FOR, "129.0.0.1")
-                        .setHeader(HttpHeaders.X_FORWARDED_HOST, "localhost.localdomain")
+                        .setHeader(X_FORWARDED_FOR, "129.0.0.1")
+                        .setHeader(X_FORWARDED_HOST, "localhost.localdomain")
                         .build();
                 StringResponseHandler.StringResponse execute = client.execute(request, createStringResponseHandler());
                 assertThat(execute.getStatusCode()).isEqualTo(406);

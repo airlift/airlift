@@ -33,7 +33,7 @@ public class TestJaxrsTestingHttpProcessor
     {
         Request request = prepareGet()
                 .setUri(URI.create("http://fake.invalid/get-it/get/xyz"))
-                .setHeader("X-Test", "abc")
+                .setHeader(HeaderName.of("X-Test"), "abc")
                 .build();
 
         StringResponse response = HTTP_CLIENT.execute(request, createStringResponseHandler());

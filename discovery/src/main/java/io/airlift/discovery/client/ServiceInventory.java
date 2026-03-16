@@ -40,6 +40,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static io.airlift.concurrent.Threads.daemonThreadsNamed;
+import static io.airlift.http.client.HeaderNames.USER_AGENT;
 import static io.airlift.http.client.JsonResponseHandler.createJsonResponseHandler;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static java.nio.file.Files.newBufferedReader;
@@ -152,7 +153,7 @@ public class ServiceInventory
             if (serviceInventoryUri.getScheme().toLowerCase().startsWith("http")) {
                 Builder requestBuilder = prepareGet()
                         .setUri(serviceInventoryUri)
-                        .setHeader("User-Agent", nodeInfo.getNodeId());
+                        .setHeader(USER_AGENT, nodeInfo.getNodeId());
                 serviceDescriptorsRepresentation = httpClient.execute(requestBuilder.build(), createJsonResponseHandler(serviceDescriptorsCodec));
             }
             else {

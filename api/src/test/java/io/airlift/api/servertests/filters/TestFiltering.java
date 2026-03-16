@@ -3,7 +3,6 @@ package io.airlift.api.servertests.filters;
 import io.airlift.api.servertests.ServerTestBase;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
-import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.UriBuilder;
 import org.junit.jupiter.api.Test;
@@ -13,6 +12,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
+import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -51,7 +51,7 @@ public class TestFiltering
         URI uri = uriBuilder.build();
         Request request = prepareGet()
                 .setUri(uri)
-                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .setHeader(CONTENT_TYPE, MediaType.APPLICATION_JSON)
                 .build();
         StatusResponse response = httpClient.execute(request, createStatusResponseHandler());
         assertThat(response.getStatusCode()).isLessThanOrEqualTo(299);

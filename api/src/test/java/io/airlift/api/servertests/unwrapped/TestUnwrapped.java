@@ -6,7 +6,6 @@ import io.airlift.http.client.Request;
 import io.airlift.http.client.StatusResponseHandler;
 import io.airlift.json.JsonCodec;
 import io.airlift.json.JsonCodecFactory;
-import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.UriBuilder;
 import org.junit.jupiter.api.Test;
@@ -15,6 +14,7 @@ import java.net.URI;
 import java.time.Instant;
 import java.util.Optional;
 
+import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 import static io.airlift.http.client.JsonBodyGenerator.jsonBodyGenerator;
 import static io.airlift.http.client.JsonResponseHandler.createJsonResponseHandler;
 import static io.airlift.http.client.Request.Builder.prepareGet;
@@ -62,7 +62,7 @@ public class TestUnwrapped
         URI uri = UriBuilder.fromUri(baseUri).path("public/api/v1/top").build();
         Request request = preparePost()
                 .setUri(uri)
-                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .setHeader(CONTENT_TYPE, MediaType.APPLICATION_JSON)
                 .setBodyGenerator(jsonBodyGenerator(topLevelJsonCodec, topLevel)).build();
         StatusResponseHandler.StatusResponse response = httpClient.execute(request, createStatusResponseHandler());
         assertThat(response.getStatusCode()).isEqualTo(204);

@@ -104,9 +104,9 @@ public class TestRequest
         Request request = Request.builder()
                 .setMethod("GET")
                 .setUri(URI.create("http://example.com"))
-                .setHeader("mixedHeader", "mixed")
-                .setHeader("alllowercase", "lower")
-                .setHeader("ALLUPPERCASE", "upper")
+                .setHeader(HeaderName.of("mixedHeader"), "mixed")
+                .setHeader(HeaderName.of("alllowercase"), "lower")
+                .setHeader(HeaderName.of("ALLUPPERCASE"), "upper")
                 .build();
 
         assertThat(request.getHeader(HeaderName.of("mixedHeader"))).contains("mixed");
