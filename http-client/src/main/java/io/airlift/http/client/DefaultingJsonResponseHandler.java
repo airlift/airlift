@@ -24,13 +24,12 @@ import java.io.InputStream;
 import java.util.Optional;
 import java.util.Set;
 
+import static com.google.common.net.MediaType.JSON_UTF_8;
 import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 
 public class DefaultingJsonResponseHandler<T>
         implements ResponseHandler<T, RuntimeException>
 {
-    private static final MediaType MEDIA_TYPE_JSON = MediaType.create("application", "json");
-
     public static <T> DefaultingJsonResponseHandler<T> createDefaultingJsonResponseHandler(JsonCodec<T> jsonCodec, T defaultValue)
     {
         return new DefaultingJsonResponseHandler<>(jsonCodec, defaultValue);
@@ -70,7 +69,7 @@ public class DefaultingJsonResponseHandler<T>
             return defaultValue;
         }
         Optional<String> contentType = response.getHeader(CONTENT_TYPE);
-        if (contentType.isPresent() && !MediaType.parse(contentType.orElseThrow()).is(MEDIA_TYPE_JSON)) {
+        if (contentType.isPresent() && !MediaType.parse(contentType.orElseThrow()).is(JSON_UTF_8)) {
             return defaultValue;
         }
         try (InputStream inputStream = response.getInputStream()) {

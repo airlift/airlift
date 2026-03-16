@@ -7,6 +7,7 @@ import io.airlift.json.JsonCodec;
 
 import java.io.InputStream;
 
+import static com.google.common.net.MediaType.JSON_UTF_8;
 import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 import static io.airlift.http.client.ResponseHandlerUtils.getResponseBytes;
 import static io.airlift.http.client.ResponseHandlerUtils.getResponseStream;
@@ -22,8 +23,6 @@ import static java.util.Objects.requireNonNull;
 public class StreamingJsonResponseHandler<T>
         implements ResponseHandler<JsonResponse<T>, RuntimeException>
 {
-    private static final MediaType MEDIA_TYPE_JSON = MediaType.create("application", "json");
-
     private final JsonCodec<T> codec;
 
     public StreamingJsonResponseHandler(JsonCodec<T> codec)
@@ -60,7 +59,7 @@ public class StreamingJsonResponseHandler<T>
                         new UnexpectedResponseException("Content-Type is not set for response", request, response));
             }
 
-            if (MediaType.parse(contentType).is(MEDIA_TYPE_JSON)) {
+            if (MediaType.parse(contentType).is(JSON_UTF_8)) {
                 try (InputStream stream = getResponseStream(response); CountingInputStream countingInputStream = new CountingInputStream(stream)) {
                     return new JsonResponse.JsonValue<>(request, statusCode, response.getHeaders(), codec.fromJson(countingInputStream), countingInputStream.getCount());
                 }

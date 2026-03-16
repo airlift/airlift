@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static com.google.common.net.MediaType.JSON_UTF_8;
 import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 import static io.airlift.http.client.ResponseHandlerUtils.getResponseBytes;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
@@ -44,8 +45,6 @@ import static java.util.Objects.requireNonNull;
 public class FullJsonResponseHandler<T>
         implements ResponseHandler<JsonResponse<T>, RuntimeException>
 {
-    private static final MediaType MEDIA_TYPE_JSON = MediaType.create("application", "json");
-
     public static <T> FullJsonResponseHandler<T> createFullJsonResponseHandler(JsonCodec<T> jsonCodec)
     {
         return new FullJsonResponseHandler<>(jsonCodec);
@@ -69,7 +68,7 @@ public class FullJsonResponseHandler<T>
     {
         byte[] bytes = getResponseBytes(request, response);
         String contentType = response.getHeader(CONTENT_TYPE).orElse(null);
-        if ((contentType == null) || !MediaType.parse(contentType).is(MEDIA_TYPE_JSON)) {
+        if ((contentType == null) || !MediaType.parse(contentType).is(JSON_UTF_8)) {
             return new JsonResponse<>(response.getStatusCode(), response.getHeaders(), bytes);
         }
         return new JsonResponse<>(response.getStatusCode(), response.getHeaders(), jsonCodec, bytes);

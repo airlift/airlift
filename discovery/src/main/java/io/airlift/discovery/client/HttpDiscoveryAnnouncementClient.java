@@ -41,6 +41,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import static com.google.common.net.MediaType.JSON_UTF_8;
 import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static io.airlift.http.client.HeaderNames.CACHE_CONTROL;
@@ -54,7 +55,6 @@ import static java.util.Objects.requireNonNull;
 public class HttpDiscoveryAnnouncementClient
         implements DiscoveryAnnouncementClient
 {
-    private static final MediaType MEDIA_TYPE_JSON = MediaType.create("application", "json");
     private static final Logger log = Logger.get(HttpDiscoveryAnnouncementClient.class);
 
     private final Supplier<URI> discoveryServiceURI;
@@ -103,7 +103,7 @@ public class HttpDiscoveryAnnouncementClient
         Request request = preparePut()
                 .setUri(createAnnouncementLocation(uri, nodeInfo.getNodeId()))
                 .setHeader("User-Agent", nodeInfo.getNodeId())
-                .setHeader("Content-Type", MEDIA_TYPE_JSON.toString())
+                .setHeader("Content-Type", JSON_UTF_8.toString())
                 .setBodyGenerator(jsonBodyGenerator(announcementCodec, announcement))
                 .build();
         return httpClient.executeAsync(request, new DiscoveryResponseHandler<>("Announcement", uri)

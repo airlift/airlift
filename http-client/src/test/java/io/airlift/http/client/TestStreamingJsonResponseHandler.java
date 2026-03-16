@@ -120,7 +120,7 @@ class TestStreamingJsonResponseHandler
         assertThat(response.headers()).isEqualTo(bytes.headers());
         assertThat(bytes.throwable())
                 .isInstanceOf(UnexpectedResponseException.class)
-                .hasMessageContaining("Expected server to response with application/json but got text/plain; charset=utf-8");
+                .hasMessageContaining("Expected server to response with application/json; charset=utf-8 but got text/plain; charset=utf-8");
     }
 
     @Test
