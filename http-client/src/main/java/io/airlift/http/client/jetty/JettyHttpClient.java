@@ -995,7 +995,7 @@ public class JettyHttpClient
             switch (bodyGenerator) {
                 case StaticBodyGenerator generator -> jettyRequest.body(new BytesRequestContent(generator.getBody()));
                 case ByteBufferBodyGenerator generator -> jettyRequest.body(new ByteBufferRequestContent(generator.getByteBuffers()));
-                case FileBodyGenerator generator -> jettyRequest.body(fileContent(generator.getPath()));
+                case FileBodyGenerator generator -> jettyRequest.body(fileContent(generator));
                 case StreamingBodyGenerator generator -> jettyRequest.body(new InputStreamRequestContent(generator.contentType(), generator.source(), sizedByteBufferPool));
             }
         }
@@ -1045,10 +1045,10 @@ public class JettyHttpClient
                                 e instanceof IllegalStateException);
     }
 
-    private static PathRequestContent fileContent(Path path)
+    private static PathRequestContent fileContent(FileBodyGenerator bodyGenerator)
     {
         try {
-            return new PathRequestContent(path);
+            return new PathRequestContent(bodyGenerator.getContentType().toString(), bodyGenerator.getPath());
         }
         catch (IOException e) {
             throw new UncheckedIOException(e);
