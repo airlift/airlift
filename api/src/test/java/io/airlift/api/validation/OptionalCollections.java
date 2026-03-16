@@ -19,6 +19,6 @@ public record OptionalCollections(
     public enum Enum
     {
         ABC,
-        DEF
+        DEF,
     }
 }

@@ -63,7 +63,7 @@ public final class LifeCycleManager
         STARTING,
         STARTED,
         STOPPING,
-        STOPPED
+        STOPPED,
     }
 
     /**

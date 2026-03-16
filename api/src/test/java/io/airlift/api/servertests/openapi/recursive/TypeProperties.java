@@ -50,13 +50,13 @@ public sealed interface TypeProperties
     enum StartStrategy
     {
         Earliest,
-        Latest
+        Latest,
     }
 
     enum FileFormat
     {
         Json,
-        Csv
+        Csv,
     }
 
     enum CsvDelimiter
@@ -64,19 +64,19 @@ public sealed interface TypeProperties
         Comma,
         Tab,
         Pipe,
-        Semicolon
+        Semicolon,
     }
 
     enum CsvQuoteChar
     {
         DoubleQuote,
-        SingleQuote
+        SingleQuote,
     }
 
     enum CsvEscapeChar
     {
         DoubleQuote,
-        Backslash
+        Backslash,
     }
 
     @ApiResource(name = "partitionColumn", description = "dummy")

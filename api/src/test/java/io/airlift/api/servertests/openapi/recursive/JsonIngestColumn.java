@@ -37,7 +37,7 @@ public record JsonIngestColumn(
             Varbinary,
             Row,
             Array,
-            Map
+            Map,
         }
     }
 

@@ -33,7 +33,7 @@ class JettyResponseFuture<T, E extends Exception>
         PROCESSING_RESPONSE,
         DONE,
         FAILED,
-        CANCELED
+        CANCELED,
     }
 
     private final long requestStart = System.nanoTime();

@@ -58,7 +58,7 @@ public class DebugApp
         audio,
         resource,
         resourceLink,
-        mixed
+        mixed,
     }
 
     public record DebugInput(

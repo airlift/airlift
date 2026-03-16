@@ -136,7 +136,7 @@ public class ApiCompatibilityUtil
     private enum Mode
     {
         INPUT,
-        OUTPUT
+        OUTPUT,
     }
 
     private static String resourceData(ModelServiceType modelServiceType, ModelResource modelResource, Set<String> alreadyVisited, Mode mode)

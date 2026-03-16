@@ -195,7 +195,7 @@ public class NodeConfig
         HOSTNAME,
         FQDN,
         IP,
-        IP_ENCODED_AS_HOSTNAME
+        IP_ENCODED_AS_HOSTNAME,
     }
 
     @FileExists
