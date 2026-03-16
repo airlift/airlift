@@ -234,6 +234,11 @@ public final class Request
             return new Builder().setMethod("PATCH");
         }
 
+        public static Builder prepareOptions()
+        {
+            return new Builder().setMethod("OPTIONS");
+        }
+
         public static Builder fromRequest(Request request)
         {
             Builder builder = new Builder()
