@@ -1,5 +1,7 @@
 package io.airlift.http.client;
 
+import com.google.common.net.MediaType;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -7,6 +9,8 @@ import java.io.UncheckedIOException;
 import java.net.ConnectException;
 
 import static com.google.common.base.Throwables.throwIfUnchecked;
+import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public final class ResponseHandlerUtils
 {
@@ -35,6 +39,15 @@ public final class ResponseHandlerUtils
         catch (IOException e) {
             throw new UncheckedIOException("Failed reading response from server: " + urlFor(request), e);
         }
+    }
+
+    public static boolean isJsonUtf8Content(Response response)
+    {
+        return response.getHeader(CONTENT_TYPE)
+                .map(MediaType::parse)
+                // Empty charset is considered UTF-8
+                .map(type -> type.type().equals("application") && type.subtype().equals("json") && type.charset().toJavaUtil().map(UTF_8::equals).orElse(true))
+                .orElse(false);
     }
 
     public static InputStream getResponseStream(Response response)

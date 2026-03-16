@@ -51,7 +51,7 @@ public class TestJsonResponseHandler
     {
         assertThatThrownBy(() -> handler.handle(null, mockResponse(OK, PLAIN_TEXT_UTF_8, "hello")))
                 .isInstanceOf(UnexpectedResponseException.class)
-                .hasMessageContaining("Expected application/json response from server but got text/plain; charset=utf-8");
+                .hasMessageContaining("Expected application/json; charset=utf-8 response from server but got text/plain; charset=utf-8");
     }
 
     @Test
@@ -59,7 +59,7 @@ public class TestJsonResponseHandler
     {
         assertThatThrownBy(() -> handler.handle(null, new TestingResponse(OK, ImmutableListMultimap.of(), "hello".getBytes(UTF_8))))
                 .isInstanceOf(UnexpectedResponseException.class)
-                .hasMessageContaining("Content-Type is not set for response");
+                .hasMessageContaining("Expected application/json; charset=utf-8 response from server but got null");
     }
 
     @Test

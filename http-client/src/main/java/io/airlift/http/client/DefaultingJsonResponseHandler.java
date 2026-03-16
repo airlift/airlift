@@ -16,16 +16,13 @@
 package io.airlift.http.client;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.net.MediaType;
 import com.google.common.primitives.Ints;
 import io.airlift.json.JsonCodec;
 
 import java.io.InputStream;
-import java.util.Optional;
 import java.util.Set;
 
-import static com.google.common.net.MediaType.JSON_UTF_8;
-import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
+import static io.airlift.http.client.ResponseHandlerUtils.isJsonUtf8Content;
 
 public class DefaultingJsonResponseHandler<T>
         implements ResponseHandler<T, RuntimeException>
@@ -68,8 +65,7 @@ public class DefaultingJsonResponseHandler<T>
         if (!successfulResponseCodes.contains(response.getStatusCode())) {
             return defaultValue;
         }
-        Optional<String> contentType = response.getHeader(CONTENT_TYPE);
-        if (contentType.isPresent() && !MediaType.parse(contentType.orElseThrow()).is(JSON_UTF_8)) {
+        if (!isJsonUtf8Content(response)) {
             return defaultValue;
         }
         try (InputStream inputStream = response.getInputStream()) {
