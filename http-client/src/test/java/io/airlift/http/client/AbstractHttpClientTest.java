@@ -10,7 +10,6 @@ import io.airlift.http.client.HttpClient.HttpResponseFuture;
 import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
 import io.airlift.http.client.jetty.JettyHttpClient;
-import io.airlift.tracing.TracingEnabledConfig;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
 import jakarta.servlet.ServletException;
@@ -1481,7 +1480,7 @@ public abstract class AbstractHttpClientTest
 
         public JettyHttpClient createClient(HttpClientConfig config)
         {
-            return new JettyHttpClient(UUID.randomUUID().toString(), config, new TracingEnabledConfig(), ImmutableList.of(new TestingRequestFilter()), ImmutableSet.of(new TestingStatusListener(statusCounts)));
+            return new JettyHttpClient(UUID.randomUUID().toString(), config, ImmutableList.of(new TestingRequestFilter()), ImmutableSet.of(new TestingStatusListener(statusCounts)));
         }
     }
 

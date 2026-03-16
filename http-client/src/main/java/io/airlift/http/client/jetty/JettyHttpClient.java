@@ -21,23 +21,14 @@ import io.airlift.http.client.StreamingResponse;
 import io.airlift.http.client.jetty.HttpClientLogger.RequestInfo;
 import io.airlift.http.client.jetty.HttpClientLogger.ResponseInfo;
 import io.airlift.security.pem.PemReader;
-import io.airlift.tracing.TracingEnabledConfig;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
-import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.StatusCode;
-import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.api.trace.TracerProvider;
-import io.opentelemetry.context.Context;
-import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.semconv.HttpAttributes;
 import io.opentelemetry.semconv.NetworkAttributes;
-import io.opentelemetry.semconv.ServerAttributes;
-import io.opentelemetry.semconv.UrlAttributes;
 import io.opentelemetry.semconv.incubating.HttpIncubatingAttributes;
 import jakarta.annotation.PreDestroy;
 import jdk.net.ExtendedSocketOptions;
@@ -119,7 +110,6 @@ import static com.google.common.net.InetAddresses.isInetAddress;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
 import static io.airlift.node.AddressToHostname.tryDecodeHostnameToAddress;
 import static io.airlift.security.mtls.AutomaticMtls.addClientTrust;
-import static io.opentelemetry.api.common.AttributeKey.stringKey;
 import static java.lang.Math.max;
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
@@ -129,7 +119,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.eclipse.jetty.client.ConnectionPoolAccessor.getActiveConnections;
-import static org.eclipse.jetty.client.HttpClient.normalizePort;
 import static org.eclipse.jetty.http.HttpHeader.PROXY_AUTHORIZATION;
 
 public class JettyHttpClient
@@ -142,18 +131,12 @@ public class JettyHttpClient
 
     private static final AtomicLong NAME_COUNTER = new AtomicLong();
 
-    private static final OpenTelemetry NOOP_OPEN_TELEMETRY = OpenTelemetry.noop();
-    private static final Tracer NOOP_TRACER = TracerProvider.noop().get("noop");
-
-    private static final AttributeKey<String> CLIENT_NAME = stringKey("airlift.http.client_name");
-
     private final HttpClient httpClient;
     private final DataSize maxResponseContentLength;
     private final Duration requestTimeout;
     private final Duration idleTimeout;
     private final boolean recordRequestComplete;
     private final boolean logEnabled;
-    private final boolean tracingEnabled;
     private final MonitoredQueuedThreadPoolMBean monitoredQueuedThreadPoolMBean;
     private final ConnectionStats connectionStats;
     private final RequestStats stats = new RequestStats();
@@ -170,8 +153,6 @@ public class JettyHttpClient
     private final List<HttpRequestFilter> requestFilters;
     private final HttpStatusListeners httpStatusListeners;
     private final String name;
-    private final TextMapPropagator propagator;
-    private final Tracer tracer;
 
     private final HttpClientLogger requestLogger;
     private final JettyClientDiagnostics clientDiagnostics;
@@ -188,67 +169,45 @@ public class JettyHttpClient
 
     public JettyHttpClient(String name, HttpClientConfig config)
     {
-        this(name, config, new TracingEnabledConfig(), ImmutableList.of());
+        this(name, config, ImmutableList.of());
     }
 
     public JettyHttpClient(
             String name,
             HttpClientConfig config,
-            TracingEnabledConfig tracingEnabledConfig,
             Iterable<? extends HttpRequestFilter> requestFilters)
     {
-        this(name, config, tracingEnabledConfig, requestFilters, Optional.empty(), Optional.empty());
+        this(name, config, requestFilters, Optional.empty(), Optional.empty());
     }
 
     public JettyHttpClient(
             String name,
             HttpClientConfig config,
-            TracingEnabledConfig tracingEnabledConfig,
             Iterable<? extends HttpRequestFilter> requestFilters,
             Iterable<? extends HttpStatusListener> httpStatusListeners)
     {
-        this(name, config, tracingEnabledConfig, requestFilters, NOOP_OPEN_TELEMETRY, NOOP_TRACER, Optional.empty(), Optional.empty(), httpStatusListeners);
+        this(name, config, requestFilters, Optional.empty(), Optional.empty(), httpStatusListeners);
     }
 
     public JettyHttpClient(
             String name,
             HttpClientConfig config,
-            TracingEnabledConfig tracingEnabledConfig,
             Iterable<? extends HttpRequestFilter> requestFilters,
             Optional<String> environment,
             Optional<SslContextFactory.Client> maybeSslContextFactory)
     {
-        this(name, config, tracingEnabledConfig, requestFilters, NOOP_OPEN_TELEMETRY, NOOP_TRACER, environment, maybeSslContextFactory);
+        this(name, config, requestFilters, environment, maybeSslContextFactory, ImmutableList.of());
     }
 
     public JettyHttpClient(
             String name,
             HttpClientConfig config,
-            TracingEnabledConfig tracingEnabledConfig,
             Iterable<? extends HttpRequestFilter> requestFilters,
-            OpenTelemetry openTelemetry,
-            Tracer tracer,
-            Optional<String> environment,
-            Optional<SslContextFactory.Client> maybeSslContextFactory)
-    {
-        this(name, config, tracingEnabledConfig, requestFilters, openTelemetry, tracer, environment, maybeSslContextFactory, ImmutableList.of());
-    }
-
-    public JettyHttpClient(
-            String name,
-            HttpClientConfig config,
-            TracingEnabledConfig tracingEnabledConfig,
-            Iterable<? extends HttpRequestFilter> requestFilters,
-            OpenTelemetry openTelemetry,
-            Tracer tracer,
             Optional<String> environment,
             Optional<SslContextFactory.Client> maybeSslContextFactory,
             Iterable<? extends HttpStatusListener> httpStatusListeners)
     {
         this.name = requireNonNull(name, "name is null");
-        this.propagator = openTelemetry.getPropagators().getTextMapPropagator();
-        this.tracer = requireNonNull(tracer, "tracer is null");
-        this.tracingEnabled = tracingEnabledConfig.isEnabled();
 
         requireNonNull(config, "config is null");
         requireNonNull(requestFilters, "requestFilters is null");
@@ -668,18 +627,14 @@ public class JettyHttpClient
     public <T, E extends Exception> T execute(Request request, ResponseHandler<T, E> responseHandler)
             throws E
     {
-        request = applyRequestFilters(request);
-
-        Span span = startSpan(request);
-        request = injectTracing(request, span);
-
+        Request finalRequest = applyRequestFilters(request);
         try {
-            InternalResponse<T> internalResponse = internalExecute(request, OptionalLong.of(getMaxResponseContentLength(request).toBytes()), responseHandler::handleException, span);
+            InternalResponse<T> internalResponse = internalExecute(finalRequest, OptionalLong.of(getMaxResponseContentLength(finalRequest).toBytes()), responseHandler::handleException);
             return switch (internalResponse) {
                 case InternalExceptionResponse(T exceptionResponse) -> exceptionResponse;
                 case InternalStandardResponse(JettyResponse jettyResponse, Runnable completionHandler) -> {
                     try {
-                        yield responseHandler.handle(request, jettyResponse);
+                        yield responseHandler.handle(finalRequest, jettyResponse);
                     }
                     finally {
                         completionHandler.run();
@@ -688,46 +643,30 @@ public class JettyHttpClient
             };
         }
         catch (Throwable t) {
-            span.setStatus(StatusCode.ERROR, t.getMessage());
-            span.recordException(t, Attributes.of(EXCEPTION_ESCAPED, true));
+            finalRequest.getCurrentSpan().ifPresent(span -> {
+                span.setStatus(StatusCode.ERROR, t.getMessage());
+                span.recordException(t, Attributes.of(EXCEPTION_ESCAPED, true));
+            });
             throw t;
         }
         finally {
-            span.end();
+            finalRequest.getCurrentSpan().ifPresent(Span::end);
         }
     }
 
     @Override
     public StreamingResponse executeStreaming(Request request)
     {
-        request = applyRequestFilters(request);
+        Request finalRequest = applyRequestFilters(request);
+        ExceptionHandler<StreamingResponse, RuntimeException> exceptionHandler = (r, exception) -> {
+            finalRequest.getCurrentSpan().ifPresent(span -> {
+                span.setStatus(StatusCode.ERROR, exception.getMessage());
+                span.recordException(exception, Attributes.of(EXCEPTION_ESCAPED, true));
+            });
+            throw propagate(r, exception);
+        };
 
-        Span span;
-        ExceptionHandler<StreamingResponse, RuntimeException> exceptionHandler;
-
-        if (tracingEnabled) {
-            span = startSpan(request);
-            request = injectTracing(request, span);
-            exceptionHandler = (r, exception) -> {
-                try {
-                    span.setStatus(StatusCode.ERROR, exception.getMessage());
-                    span.recordException(exception, Attributes.of(EXCEPTION_ESCAPED, true));
-
-                    throw propagate(r, exception);
-                }
-                finally {
-                    span.end();
-                }
-            };
-        }
-        else {
-            span = Span.getInvalid();
-            exceptionHandler = (r, exception) -> {
-                throw propagate(r, exception);
-            };
-        }
-
-        return switch (internalExecute(request, OptionalLong.empty(), exceptionHandler, span)) {
+        return switch (internalExecute(finalRequest, OptionalLong.empty(), exceptionHandler)) {
             case InternalExceptionResponse(StreamingResponse exceptionResponse) -> exceptionResponse;
             case InternalStandardResponse(JettyResponse jettyResponse, Runnable completionHandler) -> new StreamingResponse()
             {
@@ -774,7 +713,7 @@ public class JettyHttpClient
                         completionHandler.run();
                     }
                     finally {
-                        span.end();
+                        finalRequest.getCurrentSpan().ifPresent(Span::end);
                     }
                 }
             };
@@ -810,7 +749,7 @@ public class JettyHttpClient
         }
     }
 
-    private <T, E extends Exception> InternalResponse<T> internalExecute(Request request, OptionalLong maxResponseContentLength, ExceptionHandler<T, E> exceptionHandler, Span span)
+    private <T, E extends Exception> InternalResponse<T> internalExecute(Request request, OptionalLong maxResponseContentLength, ExceptionHandler<T, E> exceptionHandler)
             throws E
     {
         long requestStart = System.nanoTime();
@@ -853,16 +792,18 @@ public class JettyHttpClient
             return new InternalExceptionResponse<>(exceptionHandler.handleException(request, new RuntimeException(cause)));
         }
 
-        // record attributes
-        span.setAttribute(HttpAttributes.HTTP_RESPONSE_STATUS_CODE, response.getStatus());
+        request.getCurrentSpan().ifPresent(span -> {
+            // record attributes
+            span.setAttribute(HttpAttributes.HTTP_RESPONSE_STATUS_CODE, response.getStatus());
 
-        // negotiated http version
-        span.setAttribute(NetworkAttributes.NETWORK_PROTOCOL_NAME, "HTTP"); // https://osi-model.com/application-layer/
-        span.setAttribute(NetworkAttributes.NETWORK_PROTOCOL_VERSION, getHttpVersion(response.getVersion()));
+            // negotiated http version
+            span.setAttribute(NetworkAttributes.NETWORK_PROTOCOL_NAME, "HTTP"); // https://osi-model.com/application-layer/
+            span.setAttribute(NetworkAttributes.NETWORK_PROTOCOL_VERSION, getHttpVersion(response.getVersion()));
 
-        if (request.getBodyGenerator() != null) {
-            span.setAttribute(HttpIncubatingAttributes.HTTP_REQUEST_BODY_SIZE, context.sizeListener().getBytes());
-        }
+            if (request.getBodyGenerator() != null) {
+                span.setAttribute(HttpIncubatingAttributes.HTTP_REQUEST_BODY_SIZE, context.sizeListener().getBytes());
+            }
+        });
 
         // process response
         long responseStart = System.nanoTime();
@@ -873,11 +814,11 @@ public class JettyHttpClient
                 inputStream = new ThrowingLimitingInputStream(inputStream, maxResponseContentLength.orElseThrow());
             }
             JettyResponse jettyResponse = new JettyResponse(response, inputStream);
-            Runnable completionHandler = buildCompletionHandler(request, listener, span, jettyResponse, context.sizeListener(), requestStart, responseStart);
+            Runnable completionHandler = buildCompletionHandler(request, listener, jettyResponse, context.sizeListener(), requestStart, responseStart);
             return new InternalStandardResponse<>(jettyResponse, completionHandler);
         }
         catch (Throwable e) {
-            Runnable completionHandler = buildCompletionHandler(request, listener, span, null, context.sizeListener(), requestStart, responseStart);
+            Runnable completionHandler = buildCompletionHandler(request, listener, null, context.sizeListener(), requestStart, responseStart);
             try {
                 throw propagate(request, e);
             }
@@ -887,7 +828,7 @@ public class JettyHttpClient
         }
     }
 
-    private Runnable buildCompletionHandler(Request request, InputStreamResponseListener listener, Span span, JettyResponse jettyResponse, RequestSizeListener requestSize, long requestStart, long responseStart)
+    private Runnable buildCompletionHandler(Request request, InputStreamResponseListener listener, JettyResponse jettyResponse, RequestSizeListener requestSize, long requestStart, long responseStart)
     {
         return () -> {
             IO.close(listener);
@@ -898,7 +839,7 @@ public class JettyHttpClient
                 catch (IOException ignored) {
                     // ignore errors closing the stream
                 }
-                span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, jettyResponse.getBytesRead());
+                request.getCurrentSpan().ifPresent(span -> span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, jettyResponse.getBytesRead()));
             }
             if (recordRequestComplete) {
                 recordRequestComplete(stats, request, requestSize.getBytes(), requestStart, jettyResponse, responseStart);
@@ -924,31 +865,11 @@ public class JettyHttpClient
         requireNonNull(request, "request is null");
         requireNonNull(responseHandler, "responseHandler is null");
 
-        try {
-            request = applyRequestFilters(request);
-        }
-        catch (RuntimeException e) {
-            startSpan(request)
-                    .setStatus(StatusCode.ERROR, e.getMessage())
-                    .recordException(e, Attributes.of(EXCEPTION_ESCAPED, true))
-                    .end();
-            return new FailedHttpResponseFuture<>(e);
-        }
+        Request finalRequest = applyRequestFilters(request);
+        RequestContext jettyRequest = buildRequestContext(finalRequest);
 
-        Span span;
-
-        if (tracingEnabled) {
-            span = startSpan(request);
-            request = injectTracing(request, span);
-        }
-        else {
-            span = Span.getInvalid();
-        }
-
-        RequestContext jettyRequest = buildRequestContext(request);
-
-        DataSize maxResponseContentLength = getMaxResponseContentLength(request);
-        JettyResponseFuture<T, E> future = new JettyResponseFuture<>(request, jettyRequest.request(), jettyRequest.sizeListener()::getBytes, responseHandler, span, stats, recordRequestComplete);
+        DataSize maxResponseContentLength = getMaxResponseContentLength(finalRequest);
+        JettyResponseFuture<T, E> future = new JettyResponseFuture<>(finalRequest, jettyRequest.request(), jettyRequest.sizeListener()::getBytes, responseHandler, stats, recordRequestComplete);
         JettyResponseListener<T, E> listener = new JettyResponseListener<>(jettyRequest.request(), future, Ints.saturatedCast(maxResponseContentLength.toBytes()));
 
         try {
@@ -971,29 +892,6 @@ public class JettyHttpClient
             request = requestFilter.filterRequest(request);
         }
         return request;
-    }
-
-    private Span startSpan(Request request)
-    {
-        int port = normalizePort(request.getUri().getScheme(), request.getUri().getPort());
-        return request.getSpanBuilder()
-                .orElseGet(() -> tracer.spanBuilder(name + " " + request.getMethod()))
-                .setSpanKind(SpanKind.CLIENT)
-                .setAttribute(CLIENT_NAME, name)
-                .setAttribute(UrlAttributes.URL_FULL, request.getUri().toString())
-                .setAttribute(HttpAttributes.HTTP_REQUEST_METHOD, request.getMethod())
-                .setAttribute(ServerAttributes.SERVER_ADDRESS, request.getUri().getHost())
-                .setAttribute(ServerAttributes.SERVER_PORT, (long) port)
-                .startSpan();
-    }
-
-    @SuppressWarnings("DataFlowIssue")
-    private Request injectTracing(Request request, Span span)
-    {
-        Context context = Context.current().with(span);
-        Request.Builder builder = Request.Builder.fromRequest(request);
-        propagator.inject(context, builder, (carrier, headerName, value) -> carrier.addHeader(HeaderName.of(headerName), value));
-        return builder.build();
     }
 
     private RequestContext buildRequestContext(Request finalRequest)

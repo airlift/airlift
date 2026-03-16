@@ -22,6 +22,7 @@ import com.google.common.collect.MultimapBuilder;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
+import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
 
 import java.net.URI;
@@ -45,6 +46,7 @@ public final class Request
     private final BodyGenerator bodyGenerator;
     private final Optional<DataSize> maxResponseContentLength;
     private final Optional<SpanBuilder> spanBuilder;
+    private final Optional<Span> currentSpan;
     private final boolean followRedirects;
 
     private Request(
@@ -57,6 +59,7 @@ public final class Request
             BodyGenerator bodyGenerator,
             Optional<DataSize> maxResponseContentLength,
             Optional<SpanBuilder> spanBuilder,
+            Optional<Span> currentSpan,
             boolean followRedirects)
     {
         requireNonNull(uri, "uri is null");
@@ -74,6 +77,7 @@ public final class Request
         this.idleTimeout = requireNonNull(idleTimeout, "idleTimeout is null");
         this.bodyGenerator = bodyGenerator;
         this.maxResponseContentLength = requireNonNull(maxResponseContentLength, "maxResponseContentLength is null");
+        this.currentSpan = requireNonNull(currentSpan, "currentSpan is null");
         this.spanBuilder = requireNonNull(spanBuilder, "spanBuilder is null");
         this.followRedirects = followRedirects;
     }
@@ -146,6 +150,11 @@ public final class Request
         return spanBuilder;
     }
 
+    public Optional<Span> getCurrentSpan()
+    {
+        return currentSpan;
+    }
+
     public boolean isFollowRedirects()
     {
         return followRedirects;
@@ -164,6 +173,7 @@ public final class Request
                 .add("maxResponseContentLength", maxResponseContentLength)
                 .add("bodyGenerator", bodyGenerator)
                 .add("spanBuilder", spanBuilder.isPresent() ? "present" : "empty")
+                .add("currentSpan", currentSpan.isPresent() ? "present" : "empty")
                 .add("followRedirects", followRedirects)
                 .toString();
     }
@@ -182,6 +192,7 @@ public final class Request
                 Objects.equals(idleTimeout, r.idleTimeout) &&
                 Objects.equals(maxResponseContentLength, r.maxResponseContentLength) &&
                 Objects.equals(bodyGenerator, r.bodyGenerator) &&
+                Objects.equals(currentSpan, r.currentSpan) &&
                 Objects.equals(spanBuilder, r.spanBuilder) &&
                 followRedirects == r.followRedirects;
     }
@@ -198,6 +209,7 @@ public final class Request
                 idleTimeout,
                 maxResponseContentLength,
                 bodyGenerator,
+                currentSpan,
                 spanBuilder,
                 followRedirects);
     }
@@ -241,6 +253,7 @@ public final class Request
 
         public static Builder fromRequest(Request request)
         {
+            // Note: currentSpan is never copied as it's always applied from the request filter
             Builder builder = new Builder()
                     .setUri(request.getUri())
                     .setMethod(request.getMethod())
@@ -262,6 +275,7 @@ public final class Request
         private final ListMultimap<HeaderName, String> headers = ArrayListMultimap.create();
         private BodyGenerator bodyGenerator;
         private SpanBuilder spanBuilder;
+        private Span currentSpan;
         private Optional<HttpVersion> version = Optional.empty();
         private boolean followRedirects = true;
         private Optional<Duration> requestTimeout = Optional.empty();
@@ -343,6 +357,13 @@ public final class Request
         }
 
         @CanIgnoreReturnValue
+        Builder setCurrentSpan(Span currentSpan)
+        {
+            this.currentSpan = currentSpan;
+            return this;
+        }
+
+        @CanIgnoreReturnValue
         public Builder setFollowRedirects(boolean followRedirects)
         {
             this.followRedirects = followRedirects;
@@ -399,6 +420,7 @@ public final class Request
                     bodyGenerator,
                     maxResponseContentLength,
                     Optional.ofNullable(spanBuilder),
+                    Optional.ofNullable(currentSpan),
                     followRedirects);
         }
     }

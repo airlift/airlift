@@ -42,7 +42,6 @@ class JettyResponseFuture<T, E extends Exception>
     private final org.eclipse.jetty.client.Request jettyRequest;
     private final LongSupplier requestSize;
     private final ResponseHandler<T, E> responseHandler;
-    private final Span span;
     private final RequestStats stats;
     private final boolean recordRequestComplete;
 
@@ -51,7 +50,6 @@ class JettyResponseFuture<T, E extends Exception>
             org.eclipse.jetty.client.Request jettyRequest,
             LongSupplier requestSize,
             ResponseHandler<T, E> responseHandler,
-            Span span,
             RequestStats stats,
             boolean recordRequestComplete)
     {
@@ -59,7 +57,6 @@ class JettyResponseFuture<T, E extends Exception>
         this.jettyRequest = requireNonNull(jettyRequest, "jettyRequest is null");
         this.requestSize = requireNonNull(requestSize, "requestSize is null");
         this.responseHandler = requireNonNull(responseHandler, "responseHandler is null");
-        this.span = requireNonNull(span, "span is null");
         this.stats = requireNonNull(stats, "stats is null");
         this.recordRequestComplete = recordRequestComplete;
     }
@@ -74,7 +71,7 @@ class JettyResponseFuture<T, E extends Exception>
     public boolean cancel(boolean mayInterruptIfRunning)
     {
         try {
-            span.setStatus(StatusCode.ERROR, "cancelled");
+            request.getCurrentSpan().ifPresent(span -> span.setStatus(StatusCode.ERROR, "cancelled"));
             stats.recordRequestCanceled();
             state.set(JettyAsyncHttpState.CANCELED);
             jettyRequest.abort(RequestCancelledException.INSTANCE);
@@ -85,7 +82,7 @@ class JettyResponseFuture<T, E extends Exception>
             return true;
         }
         finally {
-            span.end();
+            request.getCurrentSpan().ifPresent(Span::end);
         }
     }
 
@@ -95,14 +92,16 @@ class JettyResponseFuture<T, E extends Exception>
             return;
         }
 
-        span.setAttribute(HttpAttributes.HTTP_RESPONSE_STATUS_CODE, response.getStatus());
-        // negotiated http version
-        span.setAttribute(NetworkAttributes.NETWORK_PROTOCOL_NAME, "HTTP"); // https://osi-model.com/application-layer/
-        span.setAttribute(NetworkAttributes.NETWORK_PROTOCOL_VERSION, getHttpVersion(response.getVersion()));
+        request.getCurrentSpan().ifPresent(span -> {
+            span.setAttribute(HttpAttributes.HTTP_RESPONSE_STATUS_CODE, response.getStatus());
+            // negotiated http version
+            span.setAttribute(NetworkAttributes.NETWORK_PROTOCOL_NAME, "HTTP"); // https://osi-model.com/application-layer/
+            span.setAttribute(NetworkAttributes.NETWORK_PROTOCOL_VERSION, getHttpVersion(response.getVersion()));
 
-        if (request.getBodyGenerator() != null) {
-            span.setAttribute(HttpIncubatingAttributes.HTTP_REQUEST_SIZE, requestSize.getAsLong());
-        }
+            if (request.getBodyGenerator() != null) {
+                span.setAttribute(HttpIncubatingAttributes.HTTP_REQUEST_SIZE, requestSize.getAsLong());
+            }
+        });
 
         T value;
         try {
@@ -116,8 +115,10 @@ class JettyResponseFuture<T, E extends Exception>
         state.set(JettyAsyncHttpState.DONE);
         set(value);
 
-        span.setStatus(StatusCode.OK);
-        span.end();
+        request.getCurrentSpan().ifPresent(span -> {
+            span.setStatus(StatusCode.OK);
+            span.end();
+        });
     }
 
     private T processResponse(Response response, InputStream content)
@@ -136,7 +137,8 @@ class JettyResponseFuture<T, E extends Exception>
         }
         finally {
             if (jettyResponse != null) {
-                span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, jettyResponse.getBytesRead());
+                JettyResponse finalJettyResponse = jettyResponse;
+                request.getCurrentSpan().ifPresent(span -> span.setAttribute(HttpIncubatingAttributes.HTTP_RESPONSE_BODY_SIZE, finalJettyResponse.getBytesRead()));
             }
             if (recordRequestComplete) {
                 JettyHttpClient.recordRequestComplete(stats, request, requestSize.getAsLong(), requestStart, jettyResponse, responseStart);
@@ -187,8 +189,11 @@ class JettyResponseFuture<T, E extends Exception>
 
         setException(throwable);
 
-        span.setStatus(StatusCode.ERROR, throwable.getMessage());
-        span.recordException(throwable, Attributes.of(EXCEPTION_ESCAPED, true));
+        Throwable finalThrowable = throwable;
+        request.getCurrentSpan().ifPresent(span -> {
+            span.setStatus(StatusCode.ERROR, finalThrowable.getMessage());
+            span.recordException(finalThrowable, Attributes.of(EXCEPTION_ESCAPED, true));
+        });
     }
 
     @Override

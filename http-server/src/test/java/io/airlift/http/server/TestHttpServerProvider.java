@@ -33,7 +33,6 @@ import io.airlift.log.Logging;
 import io.airlift.node.NodeConfig;
 import io.airlift.node.NodeInfo;
 import io.airlift.testing.TempFile;
-import io.airlift.tracing.TracingEnabledConfig;
 import io.airlift.units.Duration;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -607,7 +606,7 @@ public class TestHttpServerProvider
 
     private JettyHttpClient createJettyClient(HttpClientConfig config)
     {
-        return new JettyHttpClient("test", config, new TracingEnabledConfig(), ImmutableList.of(), Optional.of(nodeInfo.getEnvironment()), Optional.empty());
+        return new JettyHttpClient("test", config, ImmutableList.of(), Optional.of(nodeInfo.getEnvironment()), Optional.empty());
     }
 
     private void createAndStartServer()
