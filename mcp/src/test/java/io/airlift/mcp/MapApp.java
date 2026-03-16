@@ -43,11 +43,13 @@ public class MapApp
                             "https://*.openstreetmap.org", // OSM tiles + Nominatim geocoding
                             "https://cesium.com",
                             "https://*.cesium.com",
-                            "https://__HOST__/dummy/test"}, // added just to test __HOST_ substitution
+                            "https://__HOST__/dummy/test", // added just to test __HOST_ substitution
+                    },
                     resourceDomains = {
                             "https://*.openstreetmap.org", // OSM map tiles (covers tile.openstreetmap.org)
                             "https://cesium.com",
-                            "https://*.cesium.com"}))
+                            "https://*.cesium.com",
+                    }))
     public CallToolResult mapTool(
             @McpDefaultValue("Lisbon, Portugal") @McpDescription("Optional label to display on the map") Optional<String> label,
             @McpDefaultValue("-9.2298") @McpDescription("Western longitude (-180 to 180)") double west,

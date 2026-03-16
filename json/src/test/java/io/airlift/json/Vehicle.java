@@ -19,7 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
         property = "@type")
 @JsonSubTypes({
         @JsonSubTypes.Type(value = Car.class, name = "car"),
-        @JsonSubTypes.Type(value = Truck.class, name = "truck")})
+        @JsonSubTypes.Type(value = Truck.class, name = "truck"),
+})
 public interface Vehicle
 {
     static void validateVehicleJsonCodec(JsonCodec<Vehicle> jsonCodec)
