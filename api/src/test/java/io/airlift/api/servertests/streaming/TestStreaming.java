@@ -11,6 +11,8 @@ import org.junit.jupiter.api.Test;
 import java.net.URI;
 import java.util.Optional;
 
+import static io.airlift.http.client.HeaderNames.CONTENT_DISPOSITION;
+import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
@@ -28,16 +30,16 @@ public class TestStreaming
     public void testStreaming()
     {
         StringResponse stringResponse = doRequest(Optional.empty());
-        assertThat(stringResponse.getHeader("Content-Type")).isEqualTo(MediaType.APPLICATION_OCTET_STREAM);
+        assertThat(stringResponse.getHeader(CONTENT_TYPE)).hasValue(MediaType.APPLICATION_OCTET_STREAM);
         assertThat(stringResponse.getBody()).isEqualTo("This is streaming bytes");
 
         stringResponse = doRequest(Optional.of("chars"));
-        assertThat(stringResponse.getHeader("Content-Type")).isEqualTo(MediaType.TEXT_PLAIN + ";charset=iso-8859-1");
+        assertThat(stringResponse.getHeader(CONTENT_TYPE)).hasValue(MediaType.TEXT_PLAIN + ";charset=iso-8859-1");
         assertThat(stringResponse.getBody()).isEqualTo("This is streaming chars");
 
         stringResponse = doRequest(Optional.of("output"));
-        assertThat(stringResponse.getHeader("Content-Type")).isEqualTo(MediaType.APPLICATION_OCTET_STREAM);
-        assertThat(stringResponse.getHeader("Content-Disposition")).isEqualTo("attachment; filename=\"foo.bar\"");
+        assertThat(stringResponse.getHeader(CONTENT_TYPE)).hasValue(MediaType.APPLICATION_OCTET_STREAM);
+        assertThat(stringResponse.getHeader(CONTENT_DISPOSITION)).hasValue("attachment; filename=\"foo.bar\"");
         assertThat(stringResponse.getBody()).isEqualTo("This is streaming output");
     }
 
@@ -46,7 +48,7 @@ public class TestStreaming
     {
         Request request = buildRequest(Optional.of("bad"));
         StatusResponse response = httpClient.execute(request, createStatusResponseHandler());
-        assertThat(response.getHeader("Content-Type")).isEqualTo("application/json");
+        assertThat(response.getHeader(CONTENT_TYPE)).hasValue("application/json");
         assertThat(response.getStatusCode()).isEqualTo(401);
     }
 
