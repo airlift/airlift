@@ -27,9 +27,9 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
-import static com.google.common.net.MediaType.JSON_UTF_8;
 import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 import static io.airlift.http.client.ResponseHandlerUtils.getResponseBytes;
+import static io.airlift.http.client.ResponseHandlerUtils.isJsonUtf8Content;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -67,8 +67,7 @@ public class FullJsonResponseHandler<T>
     public JsonResponse<T> handle(Request request, Response response)
     {
         byte[] bytes = getResponseBytes(request, response);
-        String contentType = response.getHeader(CONTENT_TYPE).orElse(null);
-        if ((contentType == null) || !MediaType.parse(contentType).is(JSON_UTF_8)) {
+        if (!isJsonUtf8Content(response)) {
             return new JsonResponse<>(response.getStatusCode(), response.getHeaders(), bytes);
         }
         return new JsonResponse<>(response.getStatusCode(), response.getHeaders(), jsonCodec, bytes);

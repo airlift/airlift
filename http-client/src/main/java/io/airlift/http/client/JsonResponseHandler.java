@@ -16,7 +16,6 @@
 package io.airlift.http.client;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.net.MediaType;
 import com.google.common.primitives.Ints;
 import io.airlift.json.JsonCodec;
 
@@ -25,6 +24,7 @@ import java.util.Set;
 import static com.google.common.net.MediaType.JSON_UTF_8;
 import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 import static io.airlift.http.client.ResponseHandlerUtils.getResponseBytes;
+import static io.airlift.http.client.ResponseHandlerUtils.isJsonUtf8Content;
 import static io.airlift.http.client.ResponseHandlerUtils.propagate;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -71,12 +71,8 @@ public class JsonResponseHandler<T>
                     response);
         }
 
-        String contentType = response.getHeader(CONTENT_TYPE).orElse(null);
-        if (contentType == null) {
-            throw new UnexpectedResponseException("Content-Type is not set for response", request, response);
-        }
-        if (!MediaType.parse(contentType).is(JSON_UTF_8)) {
-            throw new UnexpectedResponseException("Expected %s response from server but got %s".formatted(JSON_UTF_8, contentType), request, response);
+        if (!isJsonUtf8Content(response)) {
+            throw new UnexpectedResponseException("Expected %s response from server but got %s".formatted(JSON_UTF_8, response.getHeader(CONTENT_TYPE).orElse(null)), request, response);
         }
 
         // TODO avoid buffering whole response before invoking the JSON codec.

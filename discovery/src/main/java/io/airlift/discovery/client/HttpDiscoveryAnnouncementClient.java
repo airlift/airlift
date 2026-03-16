@@ -17,7 +17,6 @@ package io.airlift.discovery.client;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.io.CharStreams;
-import com.google.common.net.MediaType;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.inject.Inject;
 import io.airlift.http.client.CacheControl;

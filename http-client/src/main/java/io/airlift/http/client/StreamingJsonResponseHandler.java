@@ -2,7 +2,6 @@ package io.airlift.http.client;
 
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.io.CountingInputStream;
-import com.google.common.net.MediaType;
 import io.airlift.json.JsonCodec;
 
 import java.io.InputStream;
@@ -11,6 +10,7 @@ import static com.google.common.net.MediaType.JSON_UTF_8;
 import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 import static io.airlift.http.client.ResponseHandlerUtils.getResponseBytes;
 import static io.airlift.http.client.ResponseHandlerUtils.getResponseStream;
+import static io.airlift.http.client.ResponseHandlerUtils.isJsonUtf8Content;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -49,8 +49,7 @@ public class StreamingJsonResponseHandler<T>
         int statusCode = response.getStatusCode();
 
         try {
-            String contentType = response.getHeader(CONTENT_TYPE).orElse(null);
-            if (contentType == null) {
+            if (response.getHeader(CONTENT_TYPE).isEmpty()) {
                 return new JsonResponse.NonJsonBytes<>(
                         request,
                         statusCode,
@@ -59,7 +58,7 @@ public class StreamingJsonResponseHandler<T>
                         new UnexpectedResponseException("Content-Type is not set for response", request, response));
             }
 
-            if (MediaType.parse(contentType).is(JSON_UTF_8)) {
+            if (isJsonUtf8Content(response)) {
                 try (InputStream stream = getResponseStream(response); CountingInputStream countingInputStream = new CountingInputStream(stream)) {
                     return new JsonResponse.JsonValue<>(request, statusCode, response.getHeaders(), codec.fromJson(countingInputStream), countingInputStream.getCount());
                 }
@@ -70,7 +69,7 @@ public class StreamingJsonResponseHandler<T>
                     statusCode,
                     response.getHeaders(),
                     getResponseBytes(request, response),
-                    new UnexpectedResponseException("Expected server to response with application/json but got " + contentType, request, response));
+                    new UnexpectedResponseException("Expected server to response with %s but got %s".formatted(JSON_UTF_8, response.getHeader(CONTENT_TYPE).orElseThrow()), request, response));
         }
         catch (Exception e) {
             return new JsonResponse.Exception<>(request, statusCode, response.getHeaders(), e);
