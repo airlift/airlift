@@ -173,6 +173,7 @@ public class JettyHttpClient
 
     private final HttpClientLogger requestLogger;
     private final JettyClientDiagnostics clientDiagnostics;
+    private final ByteBufferPool.Sized sizedByteBufferPool;
 
     public JettyHttpClient()
     {
@@ -311,7 +312,11 @@ public class JettyHttpClient
         }
 
         int maxBufferSize = toIntExact(max(max(config.getMaxResponseContentLength().toBytes(), config.getRequestBufferSize().toBytes()), config.getResponseBufferSize().toBytes()));
-        httpClient.setByteBufferPool(createByteBufferPool(maxBufferSize, config));
+
+        ByteBufferPool byteBufferPool = createByteBufferPool(maxBufferSize, config);
+        this.sizedByteBufferPool = new ByteBufferPool.Sized(byteBufferPool, false, toIntExact(config.getResponseBufferSize().toBytes()));
+
+        httpClient.setByteBufferPool(byteBufferPool);
         httpClient.setExecutor(createExecutor(name, config.getMinThreads(), config.getMaxThreads(), config.isUseVirtualThreads()));
         httpClient.setScheduler(createScheduler(name, config.getTimeoutConcurrency(), config.getTimeoutThreads()));
         httpClient.setStrictEventOrdering(config.isStrictEventOrdering());
@@ -924,7 +929,7 @@ public class JettyHttpClient
 
         DataSize maxResponseContentLength = getMaxResponseContentLength(request);
         JettyResponseFuture<T, E> future = new JettyResponseFuture<>(request, jettyRequest.request(), jettyRequest.sizeListener()::getBytes, responseHandler, span, stats, recordRequestComplete);
-        JettyResponseListener<T, E> listener = new JettyResponseListener<>(jettyRequest.request(), future, Ints.saturatedCast(maxResponseContentLength.toBytes()));
+        JettyResponseListener<T, E> listener = new JettyResponseListener<>(sizedByteBufferPool, jettyRequest.request(), future, Ints.saturatedCast(maxResponseContentLength.toBytes()));
 
         try {
             return listener.send();
@@ -991,8 +996,7 @@ public class JettyHttpClient
                 case StaticBodyGenerator generator -> jettyRequest.body(new BytesRequestContent(generator.getBody()));
                 case ByteBufferBodyGenerator generator -> jettyRequest.body(new ByteBufferRequestContent(generator.getByteBuffers()));
                 case FileBodyGenerator generator -> jettyRequest.body(fileContent(generator.getPath()));
-                case StreamingBodyGenerator generator ->
-                        jettyRequest.body(new InputStreamRequestContent(generator.contentType(), generator.source(), new ByteBufferPool.Sized(httpClient.getByteBufferPool())));
+                case StreamingBodyGenerator generator -> jettyRequest.body(new InputStreamRequestContent(generator.contentType(), generator.source(), sizedByteBufferPool));
             }
         }
 
