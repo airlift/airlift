@@ -17,6 +17,7 @@ package io.airlift.discovery.client;
 
 import com.google.common.collect.Iterables;
 import com.google.common.io.Resources;
+import com.google.common.net.MediaType;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.json.JsonCodec;
 import io.airlift.node.NodeInfo;
@@ -146,7 +147,7 @@ public class TestServiceInventory
         protected void doGet(HttpServletRequest request, HttpServletResponse response)
                 throws IOException
         {
-            response.setHeader("Content-Type", "application/json");
+            response.setHeader("Content-Type", MediaType.JSON_UTF_8.toString());
             response.setStatus(200);
             response.getOutputStream().write(serviceInventory);
         }
