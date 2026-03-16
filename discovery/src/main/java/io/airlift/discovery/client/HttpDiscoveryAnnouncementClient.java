@@ -44,6 +44,8 @@ import static com.google.common.net.MediaType.JSON_UTF_8;
 import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static io.airlift.http.client.HeaderNames.CACHE_CONTROL;
+import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
+import static io.airlift.http.client.HeaderNames.USER_AGENT;
 import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
 import static io.airlift.http.client.JsonBodyGenerator.jsonBodyGenerator;
 import static io.airlift.http.client.Request.Builder.prepareDelete;
@@ -101,8 +103,8 @@ public class HttpDiscoveryAnnouncementClient
         Announcement announcement = new Announcement(nodeInfo.getEnvironment(), nodeInfo.getNodeId(), nodeInfo.getPool(), nodeInfo.getLocation(), services);
         Request request = preparePut()
                 .setUri(createAnnouncementLocation(uri, nodeInfo.getNodeId()))
-                .setHeader("User-Agent", nodeInfo.getNodeId())
-                .setHeader("Content-Type", JSON_UTF_8.toString())
+                .setHeader(USER_AGENT, nodeInfo.getNodeId())
+                .setHeader(CONTENT_TYPE, JSON_UTF_8.toString())
                 .setBodyGenerator(jsonBodyGenerator(announcementCodec, announcement))
                 .build();
         return httpClient.executeAsync(request, new DiscoveryResponseHandler<>("Announcement", uri)
@@ -146,7 +148,7 @@ public class HttpDiscoveryAnnouncementClient
 
         Request request = prepareDelete()
                 .setUri(createAnnouncementLocation(uri, nodeInfo.getNodeId()))
-                .setHeader("User-Agent", nodeInfo.getNodeId())
+                .setHeader(USER_AGENT, nodeInfo.getNodeId())
                 .build();
         return httpClient.executeAsync(request, new DiscoveryResponseHandler<>("Unannouncement", uri));
     }

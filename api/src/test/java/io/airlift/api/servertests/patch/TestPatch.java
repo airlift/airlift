@@ -7,7 +7,6 @@ import io.airlift.api.validation.ValidatorException;
 import io.airlift.http.client.FullJsonResponseHandler.JsonResponse;
 import io.airlift.http.client.Request;
 import io.airlift.json.JsonCodec;
-import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.UriBuilder;
 import org.junit.jupiter.api.Test;
@@ -17,6 +16,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import static io.airlift.http.client.FullJsonResponseHandler.createFullJsonResponseHandler;
+import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 import static io.airlift.http.client.Request.Builder.preparePatch;
 import static io.airlift.http.client.StaticBodyGenerator.createStaticBodyGenerator;
 import static io.airlift.json.JsonCodec.jsonCodec;
@@ -83,7 +83,7 @@ public class TestPatch
         URI uri = UriBuilder.fromUri(baseUri).path("public/api/v1/package").build();
         Request request = preparePatch()
                 .setUri(uri)
-                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .setHeader(CONTENT_TYPE, MediaType.APPLICATION_JSON)
                 .setBodyGenerator(createStaticBodyGenerator(json, StandardCharsets.UTF_8))
                 .build();
         return httpClient.execute(request, createFullJsonResponseHandler(FIELDS_JSON_CODEC));

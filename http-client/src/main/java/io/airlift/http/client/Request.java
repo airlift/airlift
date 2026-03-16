@@ -277,7 +277,11 @@ public final class Request
             return this;
         }
 
+        /**
+         * @deprecated Use {@link #setHeader(HeaderName, String)} instead.
+         */
         @CanIgnoreReturnValue
+        @Deprecated
         public Builder setHeader(String name, String value)
         {
             HeaderName headerName = HeaderName.of(name);

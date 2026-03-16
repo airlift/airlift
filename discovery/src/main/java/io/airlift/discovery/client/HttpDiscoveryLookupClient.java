@@ -16,7 +16,6 @@
 package io.airlift.discovery.client;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.net.HttpHeaders;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.inject.Inject;
 import io.airlift.http.client.CacheControl;
@@ -45,6 +44,7 @@ import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static io.airlift.discovery.client.DiscoveryAnnouncementClient.DEFAULT_DELAY;
 import static io.airlift.http.client.HeaderNames.CACHE_CONTROL;
 import static io.airlift.http.client.HeaderNames.ETAG;
+import static io.airlift.http.client.HeaderNames.USER_AGENT;
 import static io.airlift.http.client.HttpStatus.NOT_MODIFIED;
 import static io.airlift.http.client.HttpStatus.OK;
 import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
@@ -120,9 +120,9 @@ public class HttpDiscoveryLookupClient
 
         Builder requestBuilder = prepareGet()
                 .setUri(createServiceLocation(uri, type, Optional.ofNullable(pool)))
-                .setHeader("User-Agent", nodeInfo.getNodeId());
+                .setHeader(USER_AGENT, nodeInfo.getNodeId());
         if (serviceDescriptors != null && serviceDescriptors.getETag() != null) {
-            requestBuilder.setHeader(HttpHeaders.ETAG, serviceDescriptors.getETag());
+            requestBuilder.setHeader(ETAG, serviceDescriptors.getETag());
         }
         return httpClient.executeAsync(requestBuilder.build(), new DiscoveryResponseHandler<>(format("Lookup of %s", type), uri)
         {

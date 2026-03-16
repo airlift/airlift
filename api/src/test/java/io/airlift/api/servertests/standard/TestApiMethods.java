@@ -9,7 +9,6 @@ import io.airlift.http.client.StatusResponseHandler.StatusResponse;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
 import io.airlift.json.JsonCodec;
 import io.airlift.json.JsonCodecFactory;
-import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.UriBuilder;
 import org.junit.jupiter.api.Test;
@@ -23,6 +22,7 @@ import static io.airlift.api.internals.Strings.camelCase;
 import static io.airlift.api.servertests.standard.BaggageType.EXTRA_SOFT;
 import static io.airlift.api.servertests.standard.BaggageType.ULTRA_LUXURIOUS;
 import static io.airlift.api.servertests.standard.BaggageType.VERY_HARD;
+import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 import static io.airlift.http.client.HttpStatus.BAD_REQUEST;
 import static io.airlift.http.client.HttpStatus.NOT_FOUND;
 import static io.airlift.http.client.HttpStatus.NO_CONTENT;
@@ -92,7 +92,7 @@ public class TestApiMethods
         URI uri = UriBuilder.fromUri(baseUri).path("public/api/v1/thing/{thingId}").build(new ThingId("12345"));
         Request request = preparePut()
                 .setUri(uri)
-                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .setHeader(CONTENT_TYPE, MediaType.APPLICATION_JSON)
                 .setBodyGenerator(createStaticBodyGenerator(invalidJson.getBytes()))
                 .build();
         StringResponse response = httpClient.execute(request, createStringResponseHandler());
@@ -117,7 +117,7 @@ public class TestApiMethods
         URI uri = UriBuilder.fromUri(baseUri).path("public/api/v1/thing/{thingId}").build(new ThingId("12345"));
         Request request = preparePut()
                 .setUri(uri)
-                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .setHeader(CONTENT_TYPE, MediaType.APPLICATION_JSON)
                 .setBodyGenerator(createStaticBodyGenerator(thingInvalidJsonStringified.getBytes()))
                 .build();
         StringResponse response = httpClient.execute(request, createStringResponseHandler());
@@ -142,7 +142,7 @@ public class TestApiMethods
         URI uri = UriBuilder.fromUri(baseUri).path("public/api/v1/thing/{thingId}").build(new ThingId("12345"));
         Request request = preparePut()
                 .setUri(uri)
-                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .setHeader(CONTENT_TYPE, MediaType.APPLICATION_JSON)
                 .setBodyGenerator(createStaticBodyGenerator(thingInvalidJsonStringified.getBytes()))
                 .build();
         StringResponse response = httpClient.execute(request, createStringResponseHandler());
@@ -193,7 +193,7 @@ public class TestApiMethods
         NewThing neweThing = new NewThing("hey", 101, Optional.of("code"));
         Request request = preparePost()
                 .setUri(uri)
-                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .setHeader(CONTENT_TYPE, MediaType.APPLICATION_JSON)
                 .setBodyGenerator(jsonBodyGenerator(NEW_THING_JSON_CODEC, neweThing))
                 .build();
         StatusResponse response = httpClient.execute(request, createStatusResponseHandler());
@@ -276,7 +276,7 @@ public class TestApiMethods
         PolyType polyType = new PolyType.TypeOne("one", "1");
         Request request = preparePost()
                 .setUri(uri)
-                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .setHeader(CONTENT_TYPE, MediaType.APPLICATION_JSON)
                 .setBodyGenerator(jsonBodyGenerator(polyResourceJsonCodec, new PolyResource(polyType)))
                 .build();
         PolyResourceResult result = httpClient.execute(request, createJsonResponseHandler(polyResourceResultJsonCodec));
@@ -285,7 +285,7 @@ public class TestApiMethods
         polyType = new PolyType.TypeTwo(Instant.now(), 2);
         request = preparePost()
                 .setUri(uri)
-                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .setHeader(CONTENT_TYPE, MediaType.APPLICATION_JSON)
                 .setBodyGenerator(jsonBodyGenerator(polyResourceJsonCodec, new PolyResource(polyType)))
                 .build();
         result = httpClient.execute(request, createJsonResponseHandler(polyResourceResultJsonCodec));
@@ -312,7 +312,7 @@ public class TestApiMethods
 
         Request request = preparePost()
                 .setUri(uri)
-                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .setHeader(CONTENT_TYPE, MediaType.APPLICATION_JSON)
                 .setBodyGenerator(createStaticBodyGenerator(badJson, StandardCharsets.UTF_8))
                 .build();
         StringResponse response = httpClient.execute(request, createStringResponseHandler());
@@ -324,7 +324,7 @@ public class TestApiMethods
         URI uri = UriBuilder.fromUri(baseUri).path("public/api/v1/thing/{thingId}").build(thingId);
         Request request = preparePut()
                 .setUri(uri)
-                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .setHeader(CONTENT_TYPE, MediaType.APPLICATION_JSON)
                 .setBodyGenerator(jsonBodyGenerator(jsonCodec, thing))
                 .build();
         StatusResponse response = httpClient.execute(request, createStatusResponseHandler());

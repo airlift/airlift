@@ -18,6 +18,7 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.time.Instant;
 
+import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
 import static io.airlift.http.client.Request.Builder.preparePost;
 import static io.airlift.http.client.StaticBodyGenerator.createStaticBodyGenerator;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
@@ -86,7 +87,7 @@ public class TestMultiPartService
         URI uri = UriBuilder.fromUri(baseUri).path(path).build();
         Request request = preparePost()
                 .setUri(uri)
-                .setHeader("Content-Type", entity.getContentType().getValue())
+                .setHeader(CONTENT_TYPE, entity.getContentType().getValue())
                 .setBodyGenerator(createStaticBodyGenerator(content, UTF_8))
                 .build();
         return httpClient.execute(request, createStatusResponseHandler());

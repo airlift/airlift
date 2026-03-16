@@ -120,7 +120,7 @@ public class TestProgrammaticResource
         URI baseUri = injector.getInstance(TestingHttpServer.class).getBaseUrl();
         try (JettyHttpClient client = new JettyHttpClient(new HttpClientConfig())) {
             Request request = preparePost().setUri(baseUri)
-                    .setHeader("Content-Type", "application/json")
+                    .setHeader(CONTENT_TYPE, "application/json")
                     .setBodyGenerator(createStaticBodyGenerator("this ain't json", UTF_8))
                     .build();
 
