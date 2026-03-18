@@ -15,7 +15,6 @@ import io.airlift.mcp.McpEntities;
 import io.airlift.mcp.McpException;
 import io.airlift.mcp.McpIdentity.Authenticated;
 import io.airlift.mcp.McpRequestContext;
-import io.airlift.mcp.McpServer;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.ResourcesUpdatedNotification;
@@ -51,15 +50,15 @@ public class VersionsController
     private static final Logger log = Logger.get(VersionsController.class);
 
     private final Optional<SessionController> sessionController;
-    private final McpServer mcpServer;
+    private final McpEntities entities;
     private final JsonMapper jsonMapper;
     private final Cache<String, String> resourceVersionsCache;
 
     @Inject
-    public VersionsController(Optional<SessionController> sessionController, McpServer mcpServer, JsonMapper jsonMapper, McpConfig mcpConfig)
+    public VersionsController(Optional<SessionController> sessionController, McpEntities entities, JsonMapper jsonMapper, McpConfig mcpConfig)
     {
         this.sessionController = requireNonNull(sessionController, "sessionController is null");
-        this.mcpServer = requireNonNull(mcpServer, "mcpServer is null");
+        this.entities = requireNonNull(entities, "entities is null");
         this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
 
         resourceVersionsCache = CacheBuilder.newBuilder()
@@ -186,7 +185,7 @@ public class VersionsController
     {
         try {
             return resourceVersionsCache.get(uri, () -> {
-                Optional<List<ResourceContents>> resourceContents = mcpServer.entities(identity).readResourceContents(requestContext, new ReadResourceRequest(uri, Optional.empty()));
+                Optional<List<ResourceContents>> resourceContents = entities.readResourceContents(Optional.of(identity), requestContext, new ReadResourceRequest(uri, Optional.empty()));
                 if (required && resourceContents.isEmpty()) {
                     throw exception(RESOURCE_NOT_FOUND, "Resource not found: " + uri);
                 }
@@ -205,13 +204,12 @@ public class VersionsController
 
     private SystemListVersions buildSystemListVersions(Authenticated<?> identity)
     {
-        McpEntities entities = mcpServer.entities(identity);
-
+        Optional<Authenticated<?>> optionalAuthenticated = Optional.of(identity);
         return new SystemListVersions(
-                listHash(entities.tools().stream()),
-                listHash(entities.prompts().stream()),
-                listHash(entities.resources().stream()),
-                listHash(entities.resourceTemplates().stream()));
+                listHash(entities.tools(optionalAuthenticated).stream()),
+                listHash(entities.prompts(optionalAuthenticated).stream()),
+                listHash(entities.resources(optionalAuthenticated).stream()),
+                listHash(entities.resourceTemplates(optionalAuthenticated).stream()));
     }
 
     @SuppressWarnings("UnstableApiUsage")
