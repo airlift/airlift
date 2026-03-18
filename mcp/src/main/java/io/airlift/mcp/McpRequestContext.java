@@ -4,6 +4,7 @@ import io.airlift.mcp.model.InitializeRequest.ClientCapabilities;
 import io.airlift.mcp.model.JsonRpcResponse;
 import io.airlift.mcp.model.LoggingLevel;
 import io.airlift.mcp.model.Root;
+import io.airlift.mcp.sessions.Session;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.time.Duration;
@@ -14,6 +15,8 @@ import java.util.concurrent.TimeoutException;
 public interface McpRequestContext
 {
     HttpServletRequest request();
+
+    Session session();
 
     void sendProgress(double progress, double total, String message);
 

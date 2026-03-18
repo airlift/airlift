@@ -19,6 +19,7 @@ import io.airlift.mcp.model.Protocol;
 import io.airlift.mcp.model.Root;
 import io.airlift.mcp.sessions.BlockingResult;
 import io.airlift.mcp.sessions.BlockingResult.Fulfilled;
+import io.airlift.mcp.sessions.Session;
 import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.sessions.SessionId;
 import io.airlift.mcp.sessions.SessionValueKey;
@@ -61,8 +62,14 @@ class InternalRequestContext
     private final MessageWriter messageWriter;
     private final Optional<Object> progressToken;
     private final Supplier<LoggingLevel> loggingLevelSupplier;
+    private final Session session;
 
-    InternalRequestContext(JsonMapper jsonMapper, Optional<SessionController> sessionController, HttpServletRequest request, MessageWriter messageWriter, Optional<Object> progressToken)
+    InternalRequestContext(
+            JsonMapper jsonMapper,
+            Optional<SessionController> sessionController,
+            HttpServletRequest request,
+            MessageWriter messageWriter,
+            Optional<Object> progressToken)
     {
         this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
         this.sessionController = requireNonNull(sessionController, "sessionController is null");
@@ -76,12 +83,20 @@ class InternalRequestContext
 
             return localSessionController.getSessionValue(sessionId, LOGGING_LEVEL).orElseThrow(() -> exception("Session is invalid"));
         });
+
+        session = new InternalSession(sessionController, optionalSessionId(request).orElse(Session.NULL_SESSION_ID));
     }
 
     @Override
     public HttpServletRequest request()
     {
         return request;
+    }
+
+    @Override
+    public Session session()
+    {
+        return session;
     }
 
     @SuppressWarnings("SwitchStatementWithTooFewBranches")
