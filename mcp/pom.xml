@@ -44,11 +44,6 @@
 
         <dependency>
             <groupId>io.airlift</groupId>
-            <artifactId>bootstrap</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>io.airlift</groupId>
             <artifactId>concurrent</artifactId>
         </dependency>
 
@@ -124,7 +119,6 @@
             <artifactId>jetty-http</artifactId>
             <scope>runtime</scope>
         </dependency>
-
         <dependency>
             <groupId>com.github.docker-java</groupId>
             <artifactId>docker-java-api</artifactId>
@@ -136,6 +130,12 @@
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
             <version>${dep.hikari.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>bootstrap</artifactId>
             <scope>test</scope>
         </dependency>
 
