@@ -118,7 +118,7 @@ public class InternalFilter
 
     private final McpMetadata metadata;
     private final McpIdentityMapper identityMapper;
-    private final InternalMcpServer mcpServer;
+    private final InternalController internalController;
     private final JsonMapper jsonMapper;
     private final ErrorHandler errorHandler;
     private final Optional<SessionController> sessionController;
@@ -132,7 +132,7 @@ public class InternalFilter
     public InternalFilter(
             McpMetadata metadata,
             McpIdentityMapper identityMapper,
-            InternalMcpServer mcpServer,
+            InternalController internalController,
             JsonMapper jsonMapper,
             ErrorHandler errorHandler,
             Optional<SessionController> sessionController,
@@ -141,7 +141,7 @@ public class InternalFilter
     {
         this.metadata = requireNonNull(metadata, "metadata is null");
         this.identityMapper = requireNonNull(identityMapper, "identityMapper is null");
-        this.mcpServer = requireNonNull(mcpServer, "mcpServer is null");
+        this.internalController = requireNonNull(internalController, "mcpServer is null");
         this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
         this.errorHandler = requireNonNull(errorHandler, "errorHandler is null");
         this.sessionController = requireNonNull(sessionController, "sessionController is null");
@@ -242,7 +242,7 @@ public class InternalFilter
                 pingStopwatch.reset().start();
             };
 
-            mcpServer.reconcileVersions(request, authenticated, messageWriter);
+            internalController.reconcileVersions(request, authenticated, messageWriter);
 
             checkSaveSentMessages(sessionController, sessionId, messageWriter);
 
@@ -381,19 +381,19 @@ public class InternalFilter
         Protocol currentProtocol = protocol(sessionController, request);
 
         Object result = switch (rpcMethod) {
-            case METHOD_INITIALIZE -> mcpServer.initialize(request, response, authenticated, convertParams(rpcRequest, InitializeRequest.class));
-            case METHOD_TOOLS_LIST -> withManagement(request, authenticated, requestId, messageWriter, () -> mcpServer.listTools(currentProtocol, authenticated, convertParams(rpcRequest, ListRequest.class)));
-            case METHOD_TOOLS_CALL -> withManagement(request, authenticated, requestId, messageWriter, () -> mcpServer.callTool(request, authenticated, messageWriter, convertParams(rpcRequest, CallToolRequest.class)));
-            case METHOD_PROMPT_LIST -> withManagement(request, authenticated, requestId, messageWriter, () -> mcpServer.listPrompts(currentProtocol, authenticated, convertParams(rpcRequest, ListRequest.class)));
-            case METHOD_PROMPT_GET -> withManagement(request, authenticated, requestId, messageWriter, () -> mcpServer.getPrompt(request, authenticated, messageWriter, convertParams(rpcRequest, GetPromptRequest.class)));
-            case METHOD_RESOURCES_LIST -> withManagement(request, authenticated, requestId, messageWriter, () -> mcpServer.listResources(currentProtocol, authenticated, convertParams(rpcRequest, ListRequest.class)));
-            case METHOD_RESOURCES_TEMPLATES_LIST -> withManagement(request, authenticated, requestId, messageWriter, () -> mcpServer.listResourceTemplates(currentProtocol, authenticated, convertParams(rpcRequest, ListRequest.class)));
-            case METHOD_RESOURCES_READ -> withManagement(request, authenticated, requestId, messageWriter, () -> mcpServer.readResources(request, authenticated, messageWriter, convertParams(rpcRequest, ReadResourceRequest.class)));
+            case METHOD_INITIALIZE -> internalController.initialize(request, response, authenticated, convertParams(rpcRequest, InitializeRequest.class));
+            case METHOD_TOOLS_LIST -> withManagement(request, authenticated, requestId, messageWriter, () -> internalController.listTools(currentProtocol, authenticated, convertParams(rpcRequest, ListRequest.class)));
+            case METHOD_TOOLS_CALL -> withManagement(request, authenticated, requestId, messageWriter, () -> internalController.callTool(request, authenticated, messageWriter, convertParams(rpcRequest, CallToolRequest.class)));
+            case METHOD_PROMPT_LIST -> withManagement(request, authenticated, requestId, messageWriter, () -> internalController.listPrompts(currentProtocol, authenticated, convertParams(rpcRequest, ListRequest.class)));
+            case METHOD_PROMPT_GET -> withManagement(request, authenticated, requestId, messageWriter, () -> internalController.getPrompt(request, authenticated, messageWriter, convertParams(rpcRequest, GetPromptRequest.class)));
+            case METHOD_RESOURCES_LIST -> withManagement(request, authenticated, requestId, messageWriter, () -> internalController.listResources(currentProtocol, authenticated, convertParams(rpcRequest, ListRequest.class)));
+            case METHOD_RESOURCES_TEMPLATES_LIST -> withManagement(request, authenticated, requestId, messageWriter, () -> internalController.listResourceTemplates(currentProtocol, authenticated, convertParams(rpcRequest, ListRequest.class)));
+            case METHOD_RESOURCES_READ -> withManagement(request, authenticated, requestId, messageWriter, () -> internalController.readResources(request, authenticated, messageWriter, convertParams(rpcRequest, ReadResourceRequest.class)));
             case METHOD_PING -> ImmutableMap.of();
-            case METHOD_COMPLETION_COMPLETE -> mcpServer.completionComplete(request, authenticated, messageWriter, convertParams(rpcRequest, CompleteRequest.class));
-            case METHOD_LOGGING_SET_LEVEL -> mcpServer.setLoggingLevel(request, convertParams(rpcRequest, SetLevelRequest.class));
-            case METHOD_RESOURCES_SUBSCRIBE -> mcpServer.resourcesSubscribe(request, authenticated, messageWriter, convertParams(rpcRequest, SubscribeRequest.class));
-            case METHOD_RESOURCES_UNSUBSCRIBE -> mcpServer.resourcesUnsubscribe(request, convertParams(rpcRequest, SubscribeRequest.class));
+            case METHOD_COMPLETION_COMPLETE -> internalController.completionComplete(request, authenticated, messageWriter, convertParams(rpcRequest, CompleteRequest.class));
+            case METHOD_LOGGING_SET_LEVEL -> internalController.setLoggingLevel(request, convertParams(rpcRequest, SetLevelRequest.class));
+            case METHOD_RESOURCES_SUBSCRIBE -> internalController.resourcesSubscribe(request, authenticated, messageWriter, convertParams(rpcRequest, SubscribeRequest.class));
+            case METHOD_RESOURCES_UNSUBSCRIBE -> internalController.resourcesUnsubscribe(request, convertParams(rpcRequest, SubscribeRequest.class));
             default -> throw exception(METHOD_NOT_FOUND, "Unknown method: " + rpcRequest.method());
         };
 
@@ -420,7 +420,7 @@ public class InternalFilter
         }
 
         if (!httpGetEventsEnabled) {
-            mcpServer.reconcileVersions(request, authenticated, messageWriter);
+            internalController.reconcileVersions(request, authenticated, messageWriter);
         }
 
         return cancellationController.builder(requireSessionId(request), cancellationKey(requestId))
