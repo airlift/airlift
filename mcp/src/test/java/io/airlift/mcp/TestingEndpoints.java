@@ -49,7 +49,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SuppressWarnings({"unused", "FieldCanBeLocal"})
 public class TestingEndpoints
 {
-    private final McpServer mcpServer;
+    private final McpEntities entities;
     private final Set<ToolEntry> tools;
     private final Set<PromptEntry> prompts;
     private final Set<ResourceEntry> resources;
@@ -59,13 +59,13 @@ public class TestingEndpoints
 
     @Inject
     public TestingEndpoints(
-            McpServer mcpServer,
+            McpEntities entities,
             Set<ToolEntry> tools,
             Set<PromptEntry> prompts,
             Set<ResourceEntry> resources,
             SleepToolController sleepToolController)
     {
-        this.mcpServer = requireNonNull(mcpServer, "mcpServer is null");
+        this.entities = requireNonNull(entities, "entities is null");
 
         this.tools = ImmutableSet.copyOf(tools);
         this.prompts = ImmutableSet.copyOf(prompts);
@@ -221,7 +221,7 @@ public class TestingEndpoints
                                 firstTool.tool().outputSchema(),
                                 firstTool.tool().annotations(),
                                 firstTool.tool().icons());
-                        mcpServer.addTool(alteredTool, firstTool.toolHandler());
+                        entities.addTool(alteredTool, firstTool.toolHandler());
                     }
 
                     case "prompts" -> {
@@ -232,7 +232,7 @@ public class TestingEndpoints
                                 firstPrompt.prompt().role(),
                                 firstPrompt.prompt().arguments(),
                                 firstPrompt.prompt().icons());
-                        mcpServer.addPrompt(alteredPrompt, firstPrompt.promptHandler());
+                        entities.addPrompt(alteredPrompt, firstPrompt.promptHandler());
                     }
 
                     case "resources" -> {
@@ -245,7 +245,7 @@ public class TestingEndpoints
                                 firstResource.resource().size(),
                                 firstResource.resource().annotations(),
                                 firstResource.resource().icons());
-                        mcpServer.addResource(alteredResource, firstResource.handler());
+                        entities.addResource(alteredResource, firstResource.handler());
                     }
 
                     default -> throw new IllegalArgumentException("Unknown system session version name: " + name);

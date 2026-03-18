@@ -3,7 +3,7 @@ package io.airlift.mcp.internal;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import io.airlift.mcp.ErrorHandler;
-import io.airlift.mcp.McpServer;
+import io.airlift.mcp.McpEntities;
 import jakarta.servlet.Filter;
 
 import static com.google.inject.Scopes.SINGLETON;
@@ -16,9 +16,9 @@ public class InternalMcpModule
     @Override
     public void configure(Binder binder)
     {
-        binder.bind(InternalMcpServer.class).in(SINGLETON);
+        binder.bind(InternalController.class).in(SINGLETON);
         binder.bind(PaginationUtil.class).in(SINGLETON);
-        binder.bind(McpServer.class).to(InternalMcpServer.class).in(SINGLETON);
+        binder.bind(McpEntities.class).to(InternalController.class).in(SINGLETON);
 
         newSetBinder(binder, Filter.class).addBinding().to(InternalFilter.class).in(SINGLETON);
 
