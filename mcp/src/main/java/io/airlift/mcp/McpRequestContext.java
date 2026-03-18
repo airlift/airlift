@@ -1,5 +1,6 @@
 package io.airlift.mcp;
 
+import io.airlift.mcp.McpIdentity.Authenticated;
 import io.airlift.mcp.model.InitializeRequest.ClientCapabilities;
 import io.airlift.mcp.model.JsonRpcResponse;
 import io.airlift.mcp.model.LoggingLevel;
@@ -17,6 +18,8 @@ public interface McpRequestContext
     HttpServletRequest request();
 
     Session session();
+
+    Authenticated<?> identity();
 
     void sendProgress(double progress, double total, String message);
 
