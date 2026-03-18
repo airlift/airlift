@@ -1,5 +1,7 @@
 package io.airlift.http.client;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import org.eclipse.jetty.http.HttpField;
 
 import static java.util.Locale.ENGLISH;
@@ -9,6 +11,7 @@ public final class HeaderName
 {
     private final String lowerCase;
 
+    @JsonCreator
     public static HeaderName of(String value)
     {
         return new HeaderName(value.toLowerCase(ENGLISH));
@@ -45,6 +48,7 @@ public final class HeaderName
     }
 
     @Override
+    @JsonValue
     public String toString()
     {
         return lowerCase;
