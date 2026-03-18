@@ -5,6 +5,7 @@ import com.google.common.base.Stopwatch;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import io.airlift.mcp.McpIdentity.Authenticated;
 import io.airlift.mcp.McpRequestContext;
 import io.airlift.mcp.handler.MessageWriter;
 import io.airlift.mcp.model.InitializeRequest.ClientCapabilities;
@@ -24,6 +25,7 @@ import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.sessions.SessionId;
 import io.airlift.mcp.sessions.SessionValueKey;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -59,32 +61,90 @@ class InternalRequestContext
     private final JsonMapper jsonMapper;
     private final Optional<SessionController> sessionController;
     private final HttpServletRequest request;
+    private final HttpServletResponse response;
     private final MessageWriter messageWriter;
     private final Optional<Object> progressToken;
     private final Supplier<LoggingLevel> loggingLevelSupplier;
     private final Session session;
+    private final Authenticated<?> identity;
 
     InternalRequestContext(
             JsonMapper jsonMapper,
             Optional<SessionController> sessionController,
             HttpServletRequest request,
+            HttpServletResponse response,
             MessageWriter messageWriter,
-            Optional<Object> progressToken)
+            Authenticated<?> identity)
     {
-        this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
-        this.sessionController = requireNonNull(sessionController, "sessionController is null");
-        this.request = requireNonNull(request, "request is null");
-        this.messageWriter = requireNonNull(messageWriter, "messageWriter is null");
-        this.progressToken = requireNonNull(progressToken, "progressToken is null");
+        this(jsonMapper,
+                sessionController,
+                request,
+                response,
+                messageWriter,
+                Optional.empty(),
+                buildLoggingLevelSupplier(sessionController, request),
+                new InternalSession(sessionController, optionalSessionId(request).orElse(Session.NULL_SESSION_ID)),
+                identity);
+    }
 
-        loggingLevelSupplier = Suppliers.memoize(() -> {
+    private static Supplier<LoggingLevel> buildLoggingLevelSupplier(Optional<SessionController> sessionController, HttpServletRequest request)
+    {
+        return Suppliers.memoize(() -> {
             SessionController localSessionController = sessionController.orElseThrow(() -> new IllegalStateException("Sessions not enabled"));
             SessionId sessionId = requireSessionId(request);
 
             return localSessionController.getSessionValue(sessionId, LOGGING_LEVEL).orElseThrow(() -> exception("Session is invalid"));
         });
+    }
 
-        session = new InternalSession(sessionController, optionalSessionId(request).orElse(Session.NULL_SESSION_ID));
+    private InternalRequestContext(
+            JsonMapper jsonMapper,
+            Optional<SessionController> sessionController,
+            HttpServletRequest request,
+            HttpServletResponse response,
+            MessageWriter messageWriter,
+            Optional<Object> progressToken,
+            Supplier<LoggingLevel> loggingLevelSupplier,
+            Session session,
+            Authenticated<?> identity)
+    {
+        this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
+        this.sessionController = requireNonNull(sessionController, "sessionController is null");
+        this.request = requireNonNull(request, "request is null");
+        this.response = requireNonNull(response, "request is null");
+        this.messageWriter = requireNonNull(messageWriter, "messageWriter is null");
+        this.progressToken = requireNonNull(progressToken, "progressToken is null");
+        this.loggingLevelSupplier = requireNonNull(loggingLevelSupplier, "loggingLevelSupplier is null");
+        this.session = requireNonNull(session, "session is null");
+        this.identity = requireNonNull(identity, "identity is null");
+    }
+
+    InternalRequestContext withProgressToken(Optional<Object> progressToken)
+    {
+        return new InternalRequestContext(jsonMapper, sessionController, request, response, messageWriter, progressToken, loggingLevelSupplier, session, identity);
+    }
+
+    Protocol protocol()
+    {
+        return sessionController.flatMap(controller ->
+                        optionalSessionId(request).flatMap(sessionId -> controller.getSessionValue(sessionId, PROTOCOL)))
+                .orElse(LATEST_PROTOCOL);
+    }
+
+    HttpServletResponse response()
+    {
+        return response;
+    }
+
+    InternalRequestContext withSessonId(SessionId sessionId)
+    {
+        return new InternalRequestContext(jsonMapper, sessionController, request, response, messageWriter, progressToken, loggingLevelSupplier, new InternalSession(sessionController, sessionId), identity);
+    }
+
+    @Override
+    public Authenticated<?> identity()
+    {
+        return identity;
     }
 
     @Override
@@ -235,13 +295,6 @@ class InternalRequestContext
     {
         return Optional.ofNullable(request.getHeader(MCP_SESSION_ID))
                 .map(SessionId::new);
-    }
-
-    static Protocol protocol(Optional<SessionController> sessionController, HttpServletRequest request)
-    {
-        return sessionController.flatMap(controller ->
-                        optionalSessionId(request).flatMap(sessionId -> controller.getSessionValue(sessionId, PROTOCOL)))
-                .orElse(LATEST_PROTOCOL);
     }
 
     private List<Root> updateRoots(Duration timeout, Duration pollInterval, SessionId sessionId)

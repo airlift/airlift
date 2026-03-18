@@ -1,6 +1,5 @@
 package io.airlift.mcp;
 
-import io.airlift.mcp.McpIdentity.Authenticated;
 import io.airlift.mcp.handler.CompletionHandler;
 import io.airlift.mcp.handler.PromptHandler;
 import io.airlift.mcp.handler.ResourceHandler;
@@ -19,17 +18,17 @@ import java.util.Optional;
 
 public interface McpEntities
 {
-    List<Tool> tools(Optional<Authenticated<?>> identity);
+    List<Tool> tools(McpRequestContext requestContext);
 
-    List<Prompt> prompts(Optional<Authenticated<?>> identity);
+    List<Prompt> prompts(McpRequestContext requestContext);
 
-    List<Resource> resources(Optional<Authenticated<?>> identity);
+    List<Resource> resources(McpRequestContext requestContext);
 
-    List<ResourceTemplate> resourceTemplates(Optional<Authenticated<?>> identity);
+    List<ResourceTemplate> resourceTemplates(McpRequestContext requestContext);
 
-    List<CompleteReference> completions(Optional<Authenticated<?>> identity);
+    List<CompleteReference> completions(McpRequestContext requestContext);
 
-    Optional<List<ResourceContents>> readResourceContents(Optional<Authenticated<?>> identity, McpRequestContext requestContext, ReadResourceRequest readResourceRequest);
+    Optional<List<ResourceContents>> readResourceContents(McpRequestContext requestContext, ReadResourceRequest readResourceRequest);
 
     void addTool(Tool tool, ToolHandler toolHandler);
 

@@ -13,14 +13,11 @@ import io.airlift.log.Logger;
 import io.airlift.mcp.McpConfig;
 import io.airlift.mcp.McpEntities;
 import io.airlift.mcp.McpException;
-import io.airlift.mcp.McpIdentity.Authenticated;
 import io.airlift.mcp.McpRequestContext;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.ResourcesUpdatedNotification;
 import io.airlift.mcp.model.SubscribeRequest;
-import io.airlift.mcp.sessions.SessionController;
-import io.airlift.mcp.sessions.SessionId;
 
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
@@ -37,7 +34,6 @@ import static io.airlift.mcp.model.Constants.NOTIFICATION_PROMPTS_LIST_CHANGED;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_RESOURCES_LIST_CHANGED;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_RESOURCES_UPDATED;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_TOOLS_LIST_CHANGED;
-import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
 import static io.airlift.mcp.model.JsonRpcErrorCode.RESOURCE_NOT_FOUND;
 import static io.airlift.mcp.sessions.SessionValueKey.RESOURCE_VERSIONS;
 import static io.airlift.mcp.sessions.SessionValueKey.SYSTEM_LIST_VERSIONS;
@@ -49,15 +45,13 @@ public class VersionsController
 {
     private static final Logger log = Logger.get(VersionsController.class);
 
-    private final Optional<SessionController> sessionController;
     private final McpEntities entities;
     private final JsonMapper jsonMapper;
     private final Cache<String, String> resourceVersionsCache;
 
     @Inject
-    public VersionsController(Optional<SessionController> sessionController, McpEntities entities, JsonMapper jsonMapper, McpConfig mcpConfig)
+    public VersionsController(McpEntities entities, JsonMapper jsonMapper, McpConfig mcpConfig)
     {
-        this.sessionController = requireNonNull(sessionController, "sessionController is null");
         this.entities = requireNonNull(entities, "entities is null");
         this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
 
@@ -66,29 +60,27 @@ public class VersionsController
                 .build();
     }
 
-    public void initializeSessionVersions(SessionId sessionId, Authenticated<?> identity)
+    public void initializeSessionVersions(McpRequestContext requestContext)
     {
-        sessionController.ifPresent(controller -> controller.setSessionValue(sessionId, SYSTEM_LIST_VERSIONS, buildSystemListVersions(identity)));
+        if (requestContext.session().isValid()) {
+            requestContext.session().setValue(SYSTEM_LIST_VERSIONS, buildSystemListVersions(requestContext));
+        }
     }
 
-    public void resourcesSubscribe(SessionId sessionId, Authenticated<?> identity, McpRequestContext requestContext, SubscribeRequest subscribeRequest)
+    public void resourcesSubscribe(McpRequestContext requestContext, SubscribeRequest subscribeRequest)
     {
-        SessionController localSessionController = sessionController.orElseThrow(() -> exception(INVALID_REQUEST, "Sessions are not enabled"));
+        String version = readResourceVersion(requestContext, subscribeRequest.uri(), true);
 
-        String version = readResourceVersion(requestContext, identity, subscribeRequest.uri(), true);
-
-        localSessionController.computeSessionValue(sessionId, RESOURCE_VERSIONS, currentValue -> {
+        requestContext.session().computeValue(RESOURCE_VERSIONS, currentValue -> {
             ResourceVersions resourceVersions = currentValue.orElseGet(() -> new ResourceVersions(ImmutableMap.of()));
             ResourceVersions updatedVersions = resourceVersions.with(subscribeRequest.uri(), version);
             return Optional.of(updatedVersions);
         });
     }
 
-    public void resourcesUnsubscribe(SessionId sessionId, String uri)
+    public void resourcesUnsubscribe(McpRequestContext requestContext, String uri)
     {
-        SessionController localSessionController = sessionController.orElseThrow(() -> exception(INVALID_REQUEST, "Sessions are not enabled"));
-
-        localSessionController.computeSessionValue(sessionId, RESOURCE_VERSIONS, currentValue -> {
+        requestContext.session().computeValue(RESOURCE_VERSIONS, currentValue -> {
             ResourceVersions resourceVersions = currentValue.orElseGet(() -> new ResourceVersions(ImmutableMap.of()));
             ResourceVersions updatedVersions = resourceVersions.without(uri);
             return Optional.of(updatedVersions);
@@ -97,34 +89,36 @@ public class VersionsController
 
     private record Notification(String message, Optional<Object> params) {}
 
-    public void reconcileVersions(SessionId sessionId, Authenticated<?> identity, McpRequestContext requestContext)
+    public void reconcileVersions(McpRequestContext requestContext)
     {
-        sessionController.ifPresent(controller -> {
-            List<Notification> notifications = new ArrayList<>();
+        if (!requestContext.session().isValid()) {
+            return;
+        }
 
-            reconcileSystemListVersions(controller, identity, sessionId, notifications);
-            reconcileResourceSubscriptions(controller, identity, requestContext, sessionId, notifications);
+        List<Notification> notifications = new ArrayList<>();
 
-            // ideally, we'd send these messages before updating the session state, but that would require
-            // sending them inside of a DB transaction and that isn't ideal. So, we send them after updating the session state.
-            // There is a small chance that these messages fail to send and the client will miss the notifications.
-            notifications.forEach(notification -> requestContext.sendMessage(notification.message, notification.params));
-        });
+        reconcileSystemListVersions(requestContext, notifications);
+        reconcileResourceSubscriptions(requestContext, notifications);
+
+        // ideally, we'd send these messages before updating the session state, but that would require
+        // sending them inside of a DB transaction and that isn't ideal. So, we send them after updating the session state.
+        // There is a small chance that these messages fail to send and the client will miss the notifications.
+        notifications.forEach(notification -> requestContext.sendMessage(notification.message, notification.params));
     }
 
-    private void reconcileSystemListVersions(SessionController sessionController, Authenticated<?> identity, SessionId sessionId, List<Notification> notifications)
+    private void reconcileSystemListVersions(McpRequestContext requestContext, List<Notification> notifications)
     {
         // pre-check against current value which should be cached in memory via CachingSessionController
-        SystemListVersions currentSystemListVersions = buildSystemListVersions(identity);
-        Optional<SystemListVersions> sessionSystemListVersions = sessionController.getSessionValue(sessionId, SYSTEM_LIST_VERSIONS);
+        SystemListVersions currentSystemListVersions = buildSystemListVersions(requestContext);
+        Optional<SystemListVersions> sessionSystemListVersions = requestContext.session().getValue(SYSTEM_LIST_VERSIONS);
         boolean precheckHasChanges = !sessionSystemListVersions.map(currentSystemListVersions::equals).orElse(false);
 
         if (precheckHasChanges) {
             // now do it for real - this will also flush/reset the in-memory cached value in CachingSessionController
-            sessionController.computeSessionValue(sessionId, SYSTEM_LIST_VERSIONS, maybePreviousVersions -> {
+            requestContext.session().computeValue(SYSTEM_LIST_VERSIONS, maybePreviousVersions -> {
                 SystemListVersions previousVersions = maybePreviousVersions.orElseGet(() -> {
-                    log.warn("No current versions found for session %s", sessionId);
-                    return buildSystemListVersions(identity);
+                    log.warn("No current versions found for session %s", requestContext.session().sessionId());
+                    return buildSystemListVersions(requestContext);
                 });
 
                 if (!previousVersions.toolsVersion().equals(currentSystemListVersions.toolsVersion())) {
@@ -142,10 +136,10 @@ public class VersionsController
         }
     }
 
-    private void reconcileResourceSubscriptions(SessionController sessionController, Authenticated<?> identity, McpRequestContext requestContext, SessionId sessionId, List<Notification> notifications)
+    private void reconcileResourceSubscriptions(McpRequestContext requestContext, List<Notification> notifications)
     {
         // will likely be cached/in-memory via CachingSessionController
-        Map<String, String> currentSubscriptions = sessionController.getSessionValue(sessionId, RESOURCE_VERSIONS)
+        Map<String, String> currentSubscriptions = requestContext.session().getValue(RESOURCE_VERSIONS)
                 .map(ResourceVersions::uriToVersion)
                 .orElseGet(ImmutableMap::of);
 
@@ -155,19 +149,19 @@ public class VersionsController
                 .anyMatch(entry -> {
                     String uri = entry.getKey();
                     String oldVersion = entry.getValue();
-                    String newVersion = readResourceVersion(requestContext, identity, uri, false);
+                    String newVersion = readResourceVersion(requestContext, uri, false);
                     return !oldVersion.equals(newVersion);
                 });
 
         if (precheckHasChanges) {
             // now do it for real - this will also flush/reset the in-memory cached value in CachingSessionController
-            sessionController.computeSessionValue(sessionId, RESOURCE_VERSIONS, currentValue -> currentValue.map(resourceVersions -> {
+            requestContext.session().computeValue(RESOURCE_VERSIONS, currentValue -> currentValue.map(resourceVersions -> {
                 Map<String, String> updatedUriToVersion = resourceVersions.uriToVersion().entrySet()
                         .stream()
                         .map(entry -> {
                             String uri = entry.getKey();
                             String oldVersion = entry.getValue();
-                            String newVersion = readResourceVersion(requestContext, identity, uri, false);
+                            String newVersion = readResourceVersion(requestContext, uri, false);
 
                             if (!oldVersion.equals(newVersion)) {
                                 notifications.add(new Notification(NOTIFICATION_RESOURCES_UPDATED, Optional.of(new ResourcesUpdatedNotification(uri))));
@@ -181,11 +175,11 @@ public class VersionsController
         }
     }
 
-    private String readResourceVersion(McpRequestContext requestContext, Authenticated<?> identity, String uri, boolean required)
+    private String readResourceVersion(McpRequestContext requestContext, String uri, boolean required)
     {
         try {
             return resourceVersionsCache.get(uri, () -> {
-                Optional<List<ResourceContents>> resourceContents = entities.readResourceContents(Optional.of(identity), requestContext, new ReadResourceRequest(uri, Optional.empty()));
+                Optional<List<ResourceContents>> resourceContents = entities.readResourceContents(requestContext, new ReadResourceRequest(uri, Optional.empty()));
                 if (required && resourceContents.isEmpty()) {
                     throw exception(RESOURCE_NOT_FOUND, "Resource not found: " + uri);
                 }
@@ -202,14 +196,13 @@ public class VersionsController
         }
     }
 
-    private SystemListVersions buildSystemListVersions(Authenticated<?> identity)
+    private SystemListVersions buildSystemListVersions(McpRequestContext requestContext)
     {
-        Optional<Authenticated<?>> optionalAuthenticated = Optional.of(identity);
         return new SystemListVersions(
-                listHash(entities.tools(optionalAuthenticated).stream()),
-                listHash(entities.prompts(optionalAuthenticated).stream()),
-                listHash(entities.resources(optionalAuthenticated).stream()),
-                listHash(entities.resourceTemplates(optionalAuthenticated).stream()));
+                listHash(entities.tools(requestContext).stream()),
+                listHash(entities.prompts(requestContext).stream()),
+                listHash(entities.resources(requestContext).stream()),
+                listHash(entities.resourceTemplates(requestContext).stream()));
     }
 
     @SuppressWarnings("UnstableApiUsage")
