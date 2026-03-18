@@ -19,6 +19,11 @@
         </dependency>
 
         <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>com.google.errorprone</groupId>
             <artifactId>error_prone_annotations</artifactId>
             <optional>true</optional>
@@ -153,12 +158,6 @@
         </dependency>
 
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
             <groupId>io.airlift</groupId>
             <artifactId>bootstrap</artifactId>
             <scope>test</scope>
@@ -253,6 +252,5 @@
             <artifactId>junit-jupiter-params</artifactId>
             <scope>test</scope>
         </dependency>
-
     </dependencies>
 </project>
