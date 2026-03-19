@@ -612,8 +612,7 @@ public abstract class TestMcp
                         .addHeader(ACCEPT, "application/json, text/event-stream")
                         .addHeader(IDENTITY_HEADER, EXPECTED_IDENTITY)
                         .addHeader(HeaderName.of(MCP_SESSION_ID), sessionId.id())
-                        .setBodyGenerator(jsonBodyGenerator(jsonCodec(new TypeToken<>() {
-                        }), jsonRpcRequest))
+                        .setBodyGenerator(jsonBodyGenerator(jsonCodec(new TypeToken<>() {}), jsonRpcRequest))
                         .build();
                 httpClient.execute(request, createStatusResponseHandler());
             });

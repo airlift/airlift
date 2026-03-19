@@ -100,7 +100,8 @@ public class JsonSubType
             module.addDeserializer(baseClass, new Deserializer<>(propertyName, supplier));
             modules.add(module);
 
-            return new SubTypeSubBuilder<>() {
+            return new SubTypeSubBuilder<>()
+            {
                 @Override
                 public <T extends B> SubTypeSubBuilder<B> add(Class<T> subClass, String propertyValue)
                 {
