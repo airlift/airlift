@@ -1,0 +1,131 @@
+{{>licenseInfo}}
+package {{invokerPackage}};
+
+import io.airlift.http.client.HeaderName;
+import io.airlift.http.client.UnexpectedResponseException;
+import io.airlift.units.Duration;
+
+import java.net.ConnectException;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
+import java.net.URI;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
+
+import static java.util.Objects.requireNonNull;
+
+public class RetryPolicy
+{
+    private static final Duration DEFAULT_INITIAL_DELAY = new Duration(100, TimeUnit.MILLISECONDS);
+    private static final Duration DEFAULT_MAX_DELAY = new Duration(1, TimeUnit.SECONDS);
+    private static final int DEFAULT_MAX_RETRIES = 3;
+    private static final double BACKOFF_MULTIPLIER = 2.0;
+    private static final HeaderName RETRY_AFTER = HeaderName.of("Retry-After");
+    private static final Set<Integer> RETRYABLE_STATUS_CODES = Set.of(429, 502, 503, 504);
+
+    private final int maxRetries;
+    private final long initialDelayMs;
+    private final long maxDelayMs;
+
+    public RetryPolicy(int maxRetries, Duration initialDelay, Duration maxDelay)
+    {
+        this.maxRetries = maxRetries;
+        this.initialDelayMs = requireNonNull(initialDelay, "initialDelay is null").toMillis();
+        this.maxDelayMs = requireNonNull(maxDelay, "maxDelay is null").toMillis();
+    }
+
+    public static RetryPolicy withDefaults()
+    {
+        return new RetryPolicy(DEFAULT_MAX_RETRIES, DEFAULT_INITIAL_DELAY, DEFAULT_MAX_DELAY);
+    }
+
+    public static RetryPolicy disabled()
+    {
+        return new RetryPolicy(0, new Duration(0, TimeUnit.MILLISECONDS), new Duration(0, TimeUnit.MILLISECONDS));
+    }
+
+    public <T> T execute(String operationName, URI uri, Callable<T> operation)
+    {
+        RuntimeException lastException = null;
+        for (int attempt = 0; attempt <= maxRetries; attempt++) {
+            try {
+                return operation.call();
+            }
+            catch (RuntimeException e) {
+                lastException = e;
+                if (attempt >= maxRetries || !isRetryable(e)) {
+                    break;
+                }
+                sleep(getDelay(e, attempt));
+            }
+            catch (Exception e) {
+                throw new ApiException("%s call failed for URI %s".formatted(operationName, uri), e);
+            }
+        }
+        throw new ApiException(
+                "%s call failed for URI %s after %d attempts".formatted(operationName, uri, maxRetries + 1),
+                lastException);
+    }
+
+    static boolean isRetryable(RuntimeException e)
+    {
+        if (isNetworkError(e)) {
+            return true;
+        }
+        if (e instanceof UnexpectedResponseException ure) {
+            return RETRYABLE_STATUS_CODES.contains(ure.getStatusCode());
+        }
+        return false;
+    }
+
+    private static boolean isNetworkError(Throwable e)
+    {
+        if (e instanceof SocketException || e instanceof SocketTimeoutException || e instanceof ConnectException) {
+            return true;
+        }
+        return e.getCause() != null && isNetworkError(e.getCause());
+    }
+
+    long getDelay(RuntimeException e, int attempt)
+    {
+        if (e instanceof UnexpectedResponseException ure) {
+            long retryAfter = parseRetryAfterSeconds(ure);
+            if (retryAfter > 0) {
+                return Math.min(retryAfter * 1000, maxDelayMs);
+            }
+        }
+        return calculateDelay(attempt);
+    }
+
+    long calculateDelay(int attempt)
+    {
+        long delay = (long) (initialDelayMs * Math.pow(BACKOFF_MULTIPLIER, attempt));
+        return Math.min(delay, maxDelayMs);
+    }
+
+    private static long parseRetryAfterSeconds(UnexpectedResponseException e)
+    {
+        String value = e.getHeader(RETRY_AFTER);
+        if (value == null) {
+            return -1;
+        }
+        try {
+            return Long.parseLong(value.trim());
+        }
+        catch (NumberFormatException ignored) {
+            return -1;
+        }
+    }
+
+    private static void sleep(long millis)
+    {
+        try {
+            Thread.sleep(millis);
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Retry interrupted", e);
+        }
+    }
+}

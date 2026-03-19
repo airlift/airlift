@@ -1,0 +1,86 @@
+{{>licenseInfo}}
+package {{invokerPackage}};
+
+import io.airlift.configuration.Config;
+import io.airlift.units.Duration;
+import jakarta.validation.constraints.NotNull;
+
+import java.net.URI;
+import java.util.concurrent.TimeUnit;
+
+public class {{clientName}}ClientConfig
+{
+    private URI baseUri;
+{{#hasAuthMethods}}
+    private String apiKey;
+{{/hasAuthMethods}}
+    private int maxRetries = 3;
+    private Duration retryInitialDelay = new Duration(100, TimeUnit.MILLISECONDS);
+    private Duration retryMaxDelay = new Duration(1, TimeUnit.SECONDS);
+
+    @NotNull
+    public URI getBaseUri()
+    {
+        return baseUri;
+    }
+
+    @Config("{{clientNameLower}}.base-uri")
+    public {{clientName}}ClientConfig setBaseUri(URI baseUri)
+    {
+        this.baseUri = baseUri;
+        return this;
+    }
+{{#hasAuthMethods}}
+
+    @NotNull
+    public String getApiKey()
+    {
+        return apiKey;
+    }
+
+    @Config("{{clientNameLower}}.api-key")
+    public {{clientName}}ClientConfig setApiKey(String apiKey)
+    {
+        this.apiKey = apiKey;
+        return this;
+    }
+{{/hasAuthMethods}}
+
+    public int getMaxRetries()
+    {
+        return maxRetries;
+    }
+
+    @Config("{{clientNameLower}}.max-retries")
+    public {{clientName}}ClientConfig setMaxRetries(int maxRetries)
+    {
+        this.maxRetries = maxRetries;
+        return this;
+    }
+
+    @NotNull
+    public Duration getRetryInitialDelay()
+    {
+        return retryInitialDelay;
+    }
+
+    @Config("{{clientNameLower}}.retry-initial-delay")
+    public {{clientName}}ClientConfig setRetryInitialDelay(Duration retryInitialDelay)
+    {
+        this.retryInitialDelay = retryInitialDelay;
+        return this;
+    }
+
+    @NotNull
+    public Duration getRetryMaxDelay()
+    {
+        return retryMaxDelay;
+    }
+
+    @Config("{{clientNameLower}}.retry-max-delay")
+    public {{clientName}}ClientConfig setRetryMaxDelay(Duration retryMaxDelay)
+    {
+        this.retryMaxDelay = retryMaxDelay;
+        return this;
+    }
+}

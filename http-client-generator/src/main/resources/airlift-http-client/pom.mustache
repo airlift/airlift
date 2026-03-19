@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.airlift</groupId>
+        <artifactId>airbase</artifactId>
+        <version>{{#airbaseVersion}}{{airbaseVersion}}{{/airbaseVersion}}{{^airbaseVersion}}@project.parent.parent.version@{{/airbaseVersion}}</version>
+    </parent>
+
+    <groupId>{{groupId}}</groupId>
+    <artifactId>{{artifactId}}</artifactId>
+    <version>{{artifactVersion}}</version>
+    <packaging>jar</packaging>
+
+    <name>{{artifactId}}</name>
+    <description>{{#artifactDescription}}{{artifactDescription}}{{/artifactDescription}}{{^artifactDescription}}Generated Airlift HTTP client{{/artifactDescription}}</description>
+
+    <properties>
+        <dep.airlift.version>{{#airliftVersion}}{{airliftVersion}}{{/airliftVersion}}{{^airliftVersion}}@project.version@{{/airliftVersion}}</dep.airlift.version>
+        <!-- generated client classes are not properly formatted -->
+        <air.check.skip-checkstyle>true</air.check.skip-checkstyle>
+        <project.build.targetJdk>{{#javaVersion}}{{javaVersion}}{{/javaVersion}}{{^javaVersion}}@project.build.targetJdk@{{/javaVersion}}</project.build.targetJdk>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>bom</artifactId>
+                <version>${dep.airlift.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.inject</groupId>
+            <artifactId>guice</artifactId>
+            <classifier>classes</classifier>
+        </dependency>
+
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>configuration</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>http-client</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>json</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>units</artifactId>
+            <version>1.13</version>
+        </dependency>
+
+        <dependency>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
+        </dependency>
+    </dependencies>
+</project>
