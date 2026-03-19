@@ -6,10 +6,11 @@ import java.util.Map;
 
 public enum HttpStatus
 {
+    // 1xx
     CONTINUE(100, "Continue"),
     SWITCHING_PROTOCOLS(101, "Switching Protocols"),
     PROCESSING(102, "Processing"),
-
+    // 2xx
     OK(200, "OK"),
     CREATED(201, "Created"),
     ACCEPTED(202, "Accepted"),
@@ -19,7 +20,7 @@ public enum HttpStatus
     PARTIAL_CONTENT(206, "Partial Content"),
     MULTI_STATUS(207, "Multi-Status"),
     ALREADY_REPORTED(208, "Already Reported"),
-
+    // 3xx
     MULTIPLE_CHOICES(300, "Multiple Choices"),
     MOVED_PERMANENTLY(301, "Moved Permanently"),
     FOUND(302, "Found"),
@@ -28,7 +29,7 @@ public enum HttpStatus
     USE_PROXY(305, "Use Proxy"),
     TEMPORARY_REDIRECT(307, "Temporary Redirect"),
     PERMANENT_REDIRECT(308, "Permanent Redirect"),
-
+    // 4xx
     BAD_REQUEST(400, "Bad Request"),
     UNAUTHORIZED(401, "Unauthorized"),
     PAYMENT_REQUIRED(402, "Payment Required"),
@@ -57,7 +58,7 @@ public enum HttpStatus
     TOO_MANY_REQUESTS(429, "Too Many Requests"),
     REQUEST_HEADER_FIELDS_TOO_LARGE(431, "Request Header Fields Too Large"),
     UNAVAILABLE_FOR_LEGAL_REASONS(451, "Unavailable For Legal Reasons"),
-
+    // 5xx
     INTERNAL_SERVER_ERROR(500, "Internal Server Error"),
     NOT_IMPLEMENTED(501, "Not Implemented"),
     BAD_GATEWAY(502, "Bad Gateway"),
