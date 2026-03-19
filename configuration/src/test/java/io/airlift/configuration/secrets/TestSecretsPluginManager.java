@@ -87,7 +87,8 @@ final class TestSecretsPluginManager
                         secrets-provider.name="%s"
                         """.formatted(configPluginDirectory.toAbsolutePath(), secretProviderName))));
 
-        assertThatThrownBy(() -> configurationPluginManager.installSecretsPlugin(() -> ImmutableList.of(new SecretProviderFactory() {
+        assertThatThrownBy(() -> configurationPluginManager.installSecretsPlugin(() -> ImmutableList.of(new SecretProviderFactory()
+        {
             @Override
             public String getName()
             {

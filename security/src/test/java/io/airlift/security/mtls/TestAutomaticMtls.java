@@ -79,7 +79,8 @@ class TestAutomaticMtls
                 .isNotEqualTo(clientCert);
 
         HttpsServer server = HttpsServer.create(new InetSocketAddress(0), 0);
-        server.setHttpsConfigurator(new HttpsConfigurator(serverSSLContext) {
+        server.setHttpsConfigurator(new HttpsConfigurator(serverSSLContext)
+        {
             @Override
             public void configure(HttpsParameters params)
             {
