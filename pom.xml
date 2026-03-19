@@ -50,6 +50,7 @@
         <module>configuration-testing</module>
         <module>discovery</module>
         <module>http-client</module>
+        <module>http-client-generator</module>
         <module>http-server</module>
         <module>jaxrs</module>
         <module>jaxrs-testing</module>

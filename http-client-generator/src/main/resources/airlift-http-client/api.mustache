@@ -1,0 +1,205 @@
+{{>licenseInfo}}
+package {{package}};
+
+{{#imports}}
+import {{import}};
+{{/imports}}
+import {{invokerPackage}}.ApiException;
+import {{invokerPackage}}.For{{clientName}};
+import {{invokerPackage}}.RetryPolicy;
+import {{invokerPackage}}.{{clientName}}ClientConfig;
+
+import com.google.inject.Inject;
+import io.airlift.http.client.HttpClient;
+{{#x_uses_query_params}}
+import io.airlift.http.client.HttpUriBuilder;
+{{/x_uses_query_params}}
+import io.airlift.http.client.Request;
+import io.airlift.json.JsonCodec;
+
+import java.net.URI;
+{{#x_uses_list_codec}}
+import java.util.List;
+{{/x_uses_list_codec}}
+{{#x_uses_map_codec}}
+import java.util.Map;
+{{/x_uses_map_codec}}
+
+{{#x_has_bearer_auth}}
+import static io.airlift.http.client.HeaderNames.AUTHORIZATION;
+{{/x_has_bearer_auth}}
+{{#x_uses_body}}
+import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
+{{/x_uses_body}}
+import static io.airlift.http.client.HttpUriBuilder.uriBuilderFrom;
+{{#x_uses_body}}
+import static io.airlift.http.client.JsonBodyGenerator.jsonBodyGenerator;
+{{/x_uses_body}}
+{{#x_uses_json_response}}
+import static io.airlift.http.client.JsonResponseHandler.createJsonResponseHandler;
+{{/x_uses_json_response}}
+{{#x_uses_delete}}
+import static io.airlift.http.client.Request.Builder.prepareDelete;
+{{/x_uses_delete}}
+{{#x_uses_get}}
+import static io.airlift.http.client.Request.Builder.prepareGet;
+{{/x_uses_get}}
+{{#x_uses_patch}}
+import static io.airlift.http.client.Request.Builder.preparePatch;
+{{/x_uses_patch}}
+{{#x_uses_post}}
+import static io.airlift.http.client.Request.Builder.preparePost;
+{{/x_uses_post}}
+{{#x_uses_put}}
+import static io.airlift.http.client.Request.Builder.preparePut;
+{{/x_uses_put}}
+{{#x_uses_status_response}}
+import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
+{{/x_uses_status_response}}
+import static io.airlift.json.JsonCodec.jsonCodec;
+{{#x_uses_list_codec}}
+import static io.airlift.json.JsonCodec.listJsonCodec;
+{{/x_uses_list_codec}}
+{{#x_uses_map_codec}}
+import static io.airlift.json.JsonCodec.mapJsonCodec;
+{{/x_uses_map_codec}}
+import static java.util.Objects.requireNonNull;
+
+{{#operations}}
+public class {{classname}}
+{
+    private final HttpClient httpClient;
+    private final URI baseUri;
+{{#x_has_auth}}
+    private final String apiKey;
+{{/x_has_auth}}
+    private final RetryPolicy retryPolicy;
+
+{{#x_uses_body}}
+    private static final String JSON_CONTENT_TYPE = "application/json; charset=utf-8";
+
+{{/x_uses_body}}
+{{#x_codecs}}
+    private static final JsonCodec<{{{type}}}> {{name}} = {{{init}}};
+{{/x_codecs}}
+
+    @Inject
+{{#x_has_auth}}
+    public {{classname}}(@For{{clientName}} HttpClient httpClient, {{clientName}}ClientConfig config)
+    {
+        this(httpClient, config.getBaseUri(), config.getApiKey(),
+                new RetryPolicy(config.getMaxRetries(), config.getRetryInitialDelay(), config.getRetryMaxDelay()));
+    }
+
+    public {{classname}}(HttpClient httpClient, URI baseUri, String apiKey)
+    {
+        this(httpClient, baseUri, apiKey, RetryPolicy.withDefaults());
+    }
+
+    public {{classname}}(HttpClient httpClient, URI baseUri, String apiKey, RetryPolicy retryPolicy)
+    {
+        this.httpClient = requireNonNull(httpClient, "httpClient is null");
+        this.baseUri = requireNonNull(baseUri, "baseUri is null");
+        this.apiKey = requireNonNull(apiKey, "apiKey is null");
+        this.retryPolicy = requireNonNull(retryPolicy, "retryPolicy is null");
+    }
+{{/x_has_auth}}
+{{^x_has_auth}}
+    public {{classname}}(@For{{clientName}} HttpClient httpClient, {{clientName}}ClientConfig config)
+    {
+        this(httpClient, config.getBaseUri(),
+                new RetryPolicy(config.getMaxRetries(), config.getRetryInitialDelay(), config.getRetryMaxDelay()));
+    }
+
+    public {{classname}}(HttpClient httpClient, URI baseUri)
+    {
+        this(httpClient, baseUri, RetryPolicy.withDefaults());
+    }
+
+    public {{classname}}(HttpClient httpClient, URI baseUri, RetryPolicy retryPolicy)
+    {
+        this.httpClient = requireNonNull(httpClient, "httpClient is null");
+        this.baseUri = requireNonNull(baseUri, "baseUri is null");
+        this.retryPolicy = requireNonNull(retryPolicy, "retryPolicy is null");
+    }
+{{/x_has_auth}}
+
+{{#operation}}
+{{#vendorExtensions.x_returns_void}}
+    public void {{operationId}}({{#allParams}}{{{dataType}}} {{paramName}}{{^-last}}, {{/-last}}{{/allParams}})
+    {
+{{/vendorExtensions.x_returns_void}}
+{{^vendorExtensions.x_returns_void}}
+    public {{{returnType}}} {{operationId}}({{#allParams}}{{{dataType}}} {{paramName}}{{^-last}}, {{/-last}}{{/allParams}})
+    {
+{{/vendorExtensions.x_returns_void}}
+{{^hasQueryParams}}
+        URI uri = uriBuilderFrom(baseUri)
+                .appendPath("{{{path}}}"{{#pathParams}}
+                        .replace("{{=<% %>=}}{<%baseName%>}<%={{ }}=%>", String.valueOf({{paramName}})){{/pathParams}})
+                .build();
+{{/hasQueryParams}}
+{{#hasQueryParams}}
+        HttpUriBuilder uriBuilder = uriBuilderFrom(baseUri)
+                .appendPath("{{{path}}}"{{#pathParams}}
+                        .replace("{{=<% %>=}}{<%baseName%>}<%={{ }}=%>", String.valueOf({{paramName}})){{/pathParams}});
+{{#queryParams}}
+        if ({{paramName}} != null) {
+            uriBuilder.addParameter("{{baseName}}", String.valueOf({{paramName}}));
+        }
+{{/queryParams}}
+        URI uri = uriBuilder.build();
+{{/hasQueryParams}}
+
+{{^vendorExtensions.x_has_body}}
+        Request request = {{vendorExtensions.x_prepare_method}}
+                .setUri(uri)
+{{#hasAuthMethods}}
+{{#authMethods}}
+{{#isBasicBearer}}
+                .setHeader(AUTHORIZATION, "Bearer " + apiKey)
+{{/isBasicBearer}}
+{{#isApiKey}}
+{{#isKeyInHeader}}
+                .setHeader("{{keyParamName}}", apiKey)
+{{/isKeyInHeader}}
+{{/isApiKey}}
+{{/authMethods}}
+{{/hasAuthMethods}}
+                .build();
+{{/vendorExtensions.x_has_body}}
+{{#vendorExtensions.x_has_body}}
+        Request request = {{vendorExtensions.x_prepare_method}}
+                .setUri(uri)
+{{#hasAuthMethods}}
+{{#authMethods}}
+{{#isBasicBearer}}
+                .setHeader(AUTHORIZATION, "Bearer " + apiKey)
+{{/isBasicBearer}}
+{{#isApiKey}}
+{{#isKeyInHeader}}
+                .setHeader("{{keyParamName}}", apiKey)
+{{/isKeyInHeader}}
+{{/isApiKey}}
+{{/authMethods}}
+{{/hasAuthMethods}}
+                .setHeader(CONTENT_TYPE, JSON_CONTENT_TYPE)
+                .setBodyGenerator(jsonBodyGenerator({{vendorExtensions.x_request_codec}}, {{#bodyParam}}{{paramName}}{{/bodyParam}}))
+                .build();
+{{/vendorExtensions.x_has_body}}
+
+{{#vendorExtensions.x_returns_void}}
+        retryPolicy.execute("{{operationId}}", uri, () -> {
+            httpClient.execute(request, createStatusResponseHandler());
+            return null;
+        });
+{{/vendorExtensions.x_returns_void}}
+{{^vendorExtensions.x_returns_void}}
+        return retryPolicy.execute("{{operationId}}", uri, () ->
+                httpClient.execute(request, createJsonResponseHandler({{vendorExtensions.x_response_codec}})));
+{{/vendorExtensions.x_returns_void}}
+    }
+
+{{/operation}}
+}
+{{/operations}}

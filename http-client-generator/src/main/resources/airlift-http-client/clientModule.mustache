@@ -1,0 +1,33 @@
+{{>licenseInfo}}
+package {{invokerPackage}};
+
+{{#apiInfo}}
+{{#apis}}
+import {{package}}.{{classname}};
+{{/apis}}
+{{/apiInfo}}
+
+import com.google.inject.Binder;
+import com.google.inject.Module;
+import com.google.inject.Scopes;
+
+import static io.airlift.configuration.ConfigBinder.configBinder;
+import static io.airlift.http.client.HttpClientBinder.httpClientBinder;
+
+public class {{clientName}}ClientModule
+        implements Module
+{
+    @Override
+    public void configure(Binder binder)
+    {
+        configBinder(binder).bindConfig({{clientName}}ClientConfig.class);
+
+        httpClientBinder(binder).bindHttpClient("{{clientNameLower}}", For{{clientName}}.class);
+
+{{#apiInfo}}
+{{#apis}}
+        binder.bind({{classname}}.class).in(Scopes.SINGLETON);
+{{/apis}}
+{{/apiInfo}}
+    }
+}

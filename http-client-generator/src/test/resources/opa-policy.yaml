@@ -1,0 +1,86 @@
+openapi: 3.0.3
+info:
+  title: OPA Policy Query API
+  description: Open Policy Agent query endpoint modeled after Trino's OpaHttpClient
+  version: 1.0.0
+servers:
+  - url: https://opa.example.com
+paths:
+  /v1/data/{policyPath}:
+    post:
+      summary: Query an OPA policy
+      operationId: queryPolicy
+      tags:
+        - opa
+      parameters:
+        - name: policyPath
+          in: path
+          required: true
+          description: The policy path to query
+          schema:
+            type: string
+      requestBody:
+        description: Policy query input
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpaQuery'
+      responses:
+        '200':
+          description: Policy decision result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpaQueryResult'
+        '404':
+          description: Policy not found
+components:
+  schemas:
+    OpaQuery:
+      type: object
+      required:
+        - input
+      properties:
+        input:
+          $ref: '#/components/schemas/OpaQueryInput'
+    OpaQueryInput:
+      type: object
+      properties:
+        action:
+          $ref: '#/components/schemas/OpaAction'
+        resource:
+          $ref: '#/components/schemas/OpaResource'
+        context:
+          type: object
+          additionalProperties:
+            type: string
+          description: Additional context for the policy evaluation
+    OpaAction:
+      type: object
+      properties:
+        operation:
+          type: string
+          description: The operation being performed (e.g. SelectFromColumns, CreateTable)
+    OpaResource:
+      type: object
+      properties:
+        catalogName:
+          type: string
+        schemaName:
+          type: string
+        tableName:
+          type: string
+        columns:
+          type: array
+          items:
+            type: string
+    OpaQueryResult:
+      type: object
+      properties:
+        result:
+          type: boolean
+          description: Whether the policy allows the action
+        decision_id:
+          type: string
+          description: Unique identifier for this decision

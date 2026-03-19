@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>io.airlift.test</groupId>
+    <artifactId>widget-service</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+    <name>widget-service</name>
+    <description>End-to-end test: api-maven-plugin generates OpenAPI spec, http-client-generator produces Airlift HTTP client</description>
+
+    <properties>
+        <maven.compiler.source>22</maven.compiler.source>
+        <maven.compiler.target>22</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <dep.airlift.version>@project.version@</dep.airlift.version>
+        <dep.jackson.version>2.18.4</dep.jackson.version>
+        <dep.openapi-generator.version>7.14.0</dep.openapi-generator.version>
+        <dep.guice.version>5.1.0</dep.guice.version>
+    </properties>
+
+    <dependencies>
+        <!-- For compiling annotated service classes -->
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>api</artifactId>
+            <version>${dep.airlift.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>${dep.jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${dep.jackson.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>33.4.0-jre</version>
+        </dependency>
+
+        <!-- For compiling generated client code -->
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>http-client</artifactId>
+            <version>${dep.airlift.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>configuration</artifactId>
+            <version>${dep.airlift.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>json</artifactId>
+            <version>${dep.airlift.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.inject</groupId>
+            <artifactId>guice</artifactId>
+            <version>${dep.guice.version}</version>
+            <classifier>classes</classifier>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <release>22</release>
+                </configuration>
+            </plugin>
+
+            <!-- Step 1: Generate OpenAPI spec from annotated service classes -->
+            <plugin>
+                <groupId>io.airlift</groupId>
+                <artifactId>api-maven-plugin</artifactId>
+                <version>${dep.airlift.version}</version>
+                <executions>
+                    <execution>
+                        <id>generate-openapi</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>generate-openapi</goal>
+                        </goals>
+                        <configuration>
+                            <serviceClasses>
+                                <serviceClass>io.airlift.test.WidgetService</serviceClass>
+                                <serviceClass>io.airlift.test.ItemService</serviceClass>
+                            </serviceClasses>
+                            <serviceTypeClass>io.airlift.test.TestServiceType</serviceTypeClass>
+                            <outputFile>${project.build.directory}/openapi.json</outputFile>
+                            <prettyPrint>true</prettyPrint>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Step 2: Generate Airlift HTTP client from OpenAPI spec -->
+            <plugin>
+                <groupId>org.openapitools</groupId>
+                <artifactId>openapi-generator-maven-plugin</artifactId>
+                <version>${dep.openapi-generator.version}</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>io.airlift</groupId>
+                        <artifactId>http-client-generator</artifactId>
+                        <version>${dep.airlift.version}</version>
+                    </dependency>
+                </dependencies>
+                <executions>
+                    <execution>
+                        <id>generate-airlift-client</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${project.build.directory}/openapi.json</inputSpec>
+                            <generatorName>airlift-http-client</generatorName>
+                            <apiPackage>io.airlift.test.generated.api</apiPackage>
+                            <modelPackage>io.airlift.test.generated.model</modelPackage>
+                            <invokerPackage>io.airlift.test.generated</invokerPackage>
+                            <output>${project.build.directory}/generated-sources/openapi</output>
+                            <generateApiDocumentation>false</generateApiDocumentation>
+                            <generateApiTests>false</generateApiTests>
+                            <generateModelDocumentation>false</generateModelDocumentation>
+                            <generateModelTests>false</generateModelTests>
+                            <configOptions>
+                                <sourceFolder>/</sourceFolder>
+                                <projectName>widget-service</projectName>
+                                <groupId>io.airlift.test</groupId>
+                                <artifactId>widget-service-client</artifactId>
+                                <artifactVersion>1.0.0</artifactVersion>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

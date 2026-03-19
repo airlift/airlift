@@ -1,0 +1,80 @@
+{{>licenseInfo}}
+package {{package}};
+
+{{#models}}
+{{#model}}
+{{#isEnum}}
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+{{/isEnum}}
+{{^isEnum}}
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+{{/isEnum}}
+{{/model}}
+{{/models}}
+{{#imports}}
+import {{import}};
+{{/imports}}
+
+{{#models}}
+{{#model}}
+{{#isEnum}}
+
+/**
+ * {{description}}{{^description}}{{classname}}{{/description}}
+ */
+public enum {{classname}}
+{
+    {{#allowableValues}}
+    {{#enumVars}}
+    {{name}}({{{value}}}){{^-last}},{{/-last}}{{#-last}};{{/-last}}
+    {{/enumVars}}
+    {{/allowableValues}}
+
+    private final String value;
+
+    {{classname}}(String value)
+    {
+        this.value = value;
+    }
+
+    @JsonValue
+    public String getValue()
+    {
+        return value;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.valueOf(value);
+    }
+
+    @JsonCreator
+    public static {{classname}} fromValue(String value)
+    {
+        for ({{classname}} b : {{classname}}.values()) {
+            if (b.value.equals(value)) {
+                return b;
+            }
+        }
+        throw new IllegalArgumentException("Unexpected value '" + value + "'");
+    }
+}
+{{/isEnum}}
+{{^isEnum}}
+
+/**
+ * {{description}}{{^description}}{{classname}}{{/description}}
+ */
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public record {{classname}}(
+{{#vars}}
+        @JsonProperty("{{baseName}}") {{{datatypeWithEnum}}} {{name}}{{^-last}},{{/-last}}
+{{/vars}})
+{
+}
+{{/isEnum}}
+{{/model}}
+{{/models}}
