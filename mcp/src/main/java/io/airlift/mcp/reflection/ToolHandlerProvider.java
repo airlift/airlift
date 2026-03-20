@@ -15,6 +15,7 @@ import io.airlift.mcp.handler.ResourceEntry;
 import io.airlift.mcp.handler.ToolEntry;
 import io.airlift.mcp.handler.ToolHandler;
 import io.airlift.mcp.model.CallToolResult;
+import io.airlift.mcp.model.CompleteToolResult;
 import io.airlift.mcp.model.Content;
 import io.airlift.mcp.model.JsonSchemaBuilder;
 import io.airlift.mcp.model.StructuredContent;
@@ -132,9 +133,9 @@ public class ToolHandlerProvider
             }
 
             return switch (returnType) {
-                case VOID -> new CallToolResult(ImmutableList.of());
-                case CONTENT -> new CallToolResult(mapToContent(result));
-                case STRUCTURED -> new CallToolResult(ImmutableList.of(mapToContent(result)), Optional.of(new StructuredContent<>(result)), false, Optional.empty());
+                case VOID -> new CompleteToolResult(ImmutableList.of());
+                case CONTENT -> new CompleteToolResult(mapToContent(result));
+                case STRUCTURED -> new CompleteToolResult(ImmutableList.of(mapToContent(result)), Optional.of(new StructuredContent<>(result)), false, Optional.empty());
                 case CALL_TOOL_RESULT -> (CallToolResult) result;
                 case STRUCTURED_RESULT -> mapStructuredContentResult((StructuredContentResult<?>) result);
             };
@@ -145,7 +146,7 @@ public class ToolHandlerProvider
 
     private CallToolResult mapStructuredContentResult(StructuredContentResult<?> result)
     {
-        return new CallToolResult(result.content(), result.structuredContent().map(StructuredContent::new), result.isError(), Optional.empty());
+        return new CompleteToolResult(result.content(), result.structuredContent().map(StructuredContent::new), result.isError(), Optional.empty());
     }
 
     private Tool buildTool(McpTool tool, Method method, List<MethodParameter> parameters)

@@ -22,7 +22,7 @@ public record CreateMessageRequest(
         Optional<List<String>> stopSequences,
         Optional<Map<String, Object>> metadata,
         Optional<Map<String, Object>> meta)
-        implements Meta
+        implements Meta, InputRequest
 {
     public CreateMessageRequest
     {

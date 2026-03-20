@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import io.airlift.mcp.model.CallToolResult;
+import io.airlift.mcp.model.CompleteToolResult;
 import io.airlift.mcp.model.Content.TextContent;
 
 import java.io.InputStream;
@@ -61,7 +62,7 @@ public class MapApp
                 String.format("%.4f", east),
                 String.format("%.4f", north),
                 label.orElse(""));
-        return new CallToolResult(new TextContent(content))
+        return new CompleteToolResult(new TextContent(content))
                 .withMeta(ImmutableMap.of("viewUUID", UUID.randomUUID()));
     }
 

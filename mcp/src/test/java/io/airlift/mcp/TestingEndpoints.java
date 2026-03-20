@@ -11,6 +11,7 @@ import io.airlift.mcp.handler.ToolEntry;
 import io.airlift.mcp.model.CallToolResult;
 import io.airlift.mcp.model.CompleteRequest.CompleteArgument;
 import io.airlift.mcp.model.CompleteRequest.CompleteContext;
+import io.airlift.mcp.model.CompleteToolResult;
 import io.airlift.mcp.model.Constants;
 import io.airlift.mcp.model.Content.TextContent;
 import io.airlift.mcp.model.CreateMessageRequest;
@@ -163,7 +164,7 @@ public class TestingEndpoints
     {
         assertThat(testingIdentity.name()).isEqualTo("Mr. Tester");
 
-        return new CallToolResult(
+        return new CompleteToolResult(
                 ImmutableList.of(new TextContent(String.valueOf(a + b + c))),
                 Optional.empty(),
                 false);

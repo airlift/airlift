@@ -29,6 +29,7 @@ import io.airlift.mcp.model.CompleteReference.ResourceReference;
 import io.airlift.mcp.model.CompleteRequest;
 import io.airlift.mcp.model.CompleteResult;
 import io.airlift.mcp.model.CompleteResult.CompleteCompletion;
+import io.airlift.mcp.model.CompleteToolResult;
 import io.airlift.mcp.model.Content.TextContent;
 import io.airlift.mcp.model.GetPromptRequest;
 import io.airlift.mcp.model.GetPromptResult;
@@ -366,14 +367,14 @@ public class InternalController
         }
 
         if (!capabilityFilter.isAllowed(requestContext.identity(), toolEntry.tool())) {
-            return new CallToolResult(ImmutableList.of(new TextContent("Tool not allowed: " + callToolRequest.name())), Optional.empty(), true);
+            return new CompleteToolResult(ImmutableList.of(new TextContent("Tool not allowed: " + callToolRequest.name())), Optional.empty(), true);
         }
 
         try {
             return toolEntry.toolHandler().callTool(requestContext.withProgressToken(progressToken(callToolRequest)), callToolRequest);
         }
         catch (McpClientException mcpClientException) {
-            return new CallToolResult(ImmutableList.of(new TextContent(mcpClientException.unwrap().errorDetail().message())), Optional.empty(), true, Optional.empty());
+            return new CompleteToolResult(ImmutableList.of(new TextContent(mcpClientException.unwrap().errorDetail().message())), Optional.empty(), true, Optional.empty());
         }
     }
 

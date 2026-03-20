@@ -8,6 +8,7 @@ import io.airlift.mcp.McpIdentity.Authenticated;
 import io.airlift.mcp.model.CallToolResult;
 import io.airlift.mcp.model.CompleteReference;
 import io.airlift.mcp.model.CompleteRequest.CompleteArgument;
+import io.airlift.mcp.model.CompleteToolResult;
 import io.airlift.mcp.model.Content.TextContent;
 import io.airlift.mcp.model.GetPromptResult;
 import io.airlift.mcp.model.Prompt;
@@ -398,13 +399,13 @@ public class TestMcpCapabilityFiltering
         @McpTool(name = "public-tool", description = "Available to all")
         public CallToolResult publicTool()
         {
-            return new CallToolResult(ImmutableList.of(new TextContent("public")), Optional.empty(), false);
+            return new CompleteToolResult(ImmutableList.of(new TextContent("public")), Optional.empty(), false);
         }
 
         @McpTool(name = "admin-tool", description = "Admin only")
         public CallToolResult adminTool()
         {
-            return new CallToolResult(ImmutableList.of(new TextContent("admin")), Optional.empty(), false);
+            return new CompleteToolResult(ImmutableList.of(new TextContent("admin")), Optional.empty(), false);
         }
 
         @McpPrompt(name = "public-prompt", description = "Available to all")

@@ -9,6 +9,7 @@ import com.google.inject.Inject;
 import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.CallToolResult;
 import io.airlift.mcp.model.CompleteResult.CompleteCompletion;
+import io.airlift.mcp.model.CompleteToolResult;
 import io.airlift.mcp.model.Content;
 import io.airlift.mcp.model.Content.AudioContent;
 import io.airlift.mcp.model.Content.EmbeddedResource;
@@ -86,7 +87,7 @@ public class ConformanceEndpoints
                 new TextContent("Multiple content types test:"),
                 new ImageContent(TEST_IMAGE_BASE64, "image/png"),
                 new EmbeddedResource(new ResourceContents(Optional.empty(), "test://mixed-content-resource", "application/json", Optional.of("{ test: 'data', value: 123 }"), Optional.empty()), Optional.empty()));
-        return new CallToolResult(content);
+        return new CompleteToolResult(content);
     }
 
     @McpTool(name = "test_tool_with_logging", description = "Tests tool that emits log messages during execution")

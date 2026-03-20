@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import io.airlift.mcp.model.CallToolResult;
+import io.airlift.mcp.model.CompleteToolResult;
 import io.airlift.mcp.model.Content;
 import io.airlift.mcp.model.Content.AudioContent;
 import io.airlift.mcp.model.Content.EmbeddedResource;
@@ -103,13 +104,13 @@ public class DebugApp
 
         List<Content> content = buildContent(contentType, multipleBlocks);
 
-        CallToolResult callToolResult = new CallToolResult(content);
+        CompleteToolResult callToolResult = new CompleteToolResult(content);
 
         if (includeStructuredContent) {
             DebugInput debugInput = new DebugInput(contentType, multipleBlocks, includeStructuredContent, includeMeta, largeInput, simulateError, delayMs.orElse(0));
             DebugStructuredContent debugStructuredContent = new DebugStructuredContent(debugInput, Instant.now().toString(), callCounter.incrementAndGet(), largeInput.map(String::length).map(OptionalInt::of).orElse(OptionalInt.empty()));
             StructuredContent<DebugStructuredContent> structuredContent = new StructuredContent<>(debugStructuredContent);
-            callToolResult = new CallToolResult(content, Optional.of(structuredContent), false);
+            callToolResult = new CompleteToolResult(content, Optional.of(structuredContent), false);
         }
 
         if (includeMeta) {
@@ -117,7 +118,7 @@ public class DebugApp
         }
 
         if (simulateError) {
-            callToolResult = new CallToolResult(content, callToolResult.structuredContent(), true, callToolResult.meta());
+            callToolResult = new CompleteToolResult(content, callToolResult.structuredContent(), true, callToolResult.meta());
         }
 
         return callToolResult;
@@ -138,7 +139,7 @@ public class DebugApp
         TextContent textContent = new TextContent("Server timestamp: " + now);
         StructuredContent<RefreshResult> structuredContent = new StructuredContent<>(new RefreshResult(now.toString(), callCounter.get()));
 
-        return new CallToolResult(ImmutableList.of(textContent), Optional.of(structuredContent), false);
+        return new CompleteToolResult(ImmutableList.of(textContent), Optional.of(structuredContent), false);
     }
 
     public record LogPayload(@JsonValue Map<String, Object> payload) {}
@@ -159,7 +160,7 @@ public class DebugApp
         TextContent textContent = new TextContent("Logged to " + logFile.getAbsolutePath());
         StructuredContent<Logged> structuredContent = new StructuredContent<>(new Logged(true, logFile.getAbsolutePath()));
 
-        return new CallToolResult(ImmutableList.of(textContent), Optional.of(structuredContent), false);
+        return new CompleteToolResult(ImmutableList.of(textContent), Optional.of(structuredContent), false);
     }
 
     // Minimal 1x1 blue PNG (base64)
