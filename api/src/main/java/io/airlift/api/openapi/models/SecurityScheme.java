@@ -32,9 +32,7 @@ public class SecurityScheme
     public enum In
     {
         COOKIE("cookie"),
-
         HEADER("header"),
-
         QUERY("query");
 
         private final String value;
