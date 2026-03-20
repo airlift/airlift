@@ -18,9 +18,11 @@ package io.airlift.http.server;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.net.MediaType;
 import com.google.inject.BindingAnnotation;
+import com.google.inject.CreationException;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Scopes;
+import com.google.inject.TypeLiteral;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.http.client.HttpClient;
 import io.airlift.http.client.HttpStatus;
@@ -51,6 +53,7 @@ import java.lang.annotation.Target;
 import java.lang.management.ManagementFactory;
 import java.net.URI;
 import java.util.Map;
+import java.util.Set;
 
 import static com.google.common.io.MoreFiles.deleteRecursively;
 import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
@@ -70,6 +73,7 @@ import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static java.nio.file.Files.createTempDirectory;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
 
@@ -100,11 +104,12 @@ public class TestHttpServerModule
     }
 
     @Test
-    public void testCanConstructSingleServer()
+    public void testCanConstructSingleServerWithTracing()
     {
         Map<String, String> properties = new ImmutableMap.Builder<String, String>()
                 .put("http-server.http.port", "0")
                 .put("http-server.log.path", new File(tempDir, "http-request.log").getAbsolutePath())
+                .put("tracing.enabled", "true")
                 .build();
 
         Bootstrap app = new Bootstrap(
@@ -119,7 +124,59 @@ public class TestHttpServerModule
                 .initialize();
 
         HttpServer server = injector.getInstance(HttpServer.class);
+        Set<Filter> filters = injector.getInstance(Key.get(new TypeLiteral<>() {}));
         assertThat(server).isNotNull();
+        assertThat(filters).hasSize(1);
+    }
+
+    @Test
+    public void testCanConstructSingleServerWithoutTracing()
+    {
+        Map<String, String> properties = new ImmutableMap.Builder<String, String>()
+                .put("http-server.http.port", "0")
+                .put("http-server.log.path", new File(tempDir, "http-request.log").getAbsolutePath())
+                .put("tracing.enabled", "false")
+                .build();
+
+        Bootstrap app = new Bootstrap(
+                new HttpServerModule(),
+                new TestingNodeModule(),
+                binder -> binder.bind(Servlet.class).to(DummyServlet.class));
+
+        Injector injector = app
+                .setRequiredConfigurationProperties(properties)
+                .doNotInitializeLogging()
+                .initialize();
+
+        Set<Filter> filters = injector.getInstance(Key.get(new TypeLiteral<>() {}));
+        assertThat(filters).isEmpty();
+    }
+
+    @Test
+    public void testCannotConstructSingleServerWhenTracingMisconfigured()
+    {
+        Map<String, String> properties = new ImmutableMap.Builder<String, String>()
+                .put("http-server.http.port", "0")
+                .put("http-server.log.path", new File(tempDir, "http-request.log").getAbsolutePath())
+                .put("tracing.enabled", "true")
+                .build();
+
+        Bootstrap app = new Bootstrap(
+                new HttpServerModule(),
+                new TestingNodeModule(),
+                binder -> binder.bind(Servlet.class).to(DummyServlet.class));
+
+        assertThatThrownBy(() -> {
+            Injector injector = app
+                    .setRequiredConfigurationProperties(properties)
+                    .doNotInitializeLogging()
+                    .initialize();
+
+            Set<Filter> filters = injector.getInstance(Key.get(new TypeLiteral<>() {}));
+            assertThat(filters).isEmpty();
+        })
+                .isInstanceOf(CreationException.class)
+                .hasMessageContaining("Explicit bindings are required and Tracer is not explicitly bound.");
     }
 
     @Test

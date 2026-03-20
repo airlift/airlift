@@ -17,11 +17,13 @@ package io.airlift.http.server;
 
 import com.google.inject.Binder;
 import com.google.inject.Key;
+import com.google.inject.multibindings.Multibinder;
 import io.airlift.configuration.AbstractConfigurationAwareModule;
 import io.airlift.discovery.client.AnnouncementHttpServerInfo;
 import io.airlift.http.server.HttpServer.ClientCertificate;
 import io.airlift.http.server.HttpServerBinder.HttpResourceBinding;
 import io.airlift.http.server.tracing.TracingServletFilter;
+import io.airlift.tracing.TracingEnabledConfig;
 import jakarta.annotation.Nullable;
 import jakarta.servlet.Filter;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -97,11 +99,17 @@ public class HttpServerModule
         newOptionalBinder(binder, qualifiedKey(ClientCertificate.class)).setDefault().toInstance(ClientCertificate.NONE);
         newExporter(binder).export(qualifiedKey(HttpServer.class)).withGeneratedName();
         newSetBinder(binder, qualifiedKey(ServerFeature.class));
-        newSetBinder(binder, qualifiedKey(Filter.class)).addBinding()
-                .to(TracingServletFilter.class)
-                .in(SINGLETON);
+
         newSetBinder(binder, qualifiedKey(HttpResourceBinding.class));
         newOptionalBinder(binder, qualifiedKey(SslContextFactory.Server.class));
+        Multibinder<Filter> filterBinder = newSetBinder(binder, qualifiedKey(Filter.class));
+
+        if (buildConfigObject(TracingEnabledConfig.class).isEnabled()) {
+            filterBinder.addBinding()
+                    .to(TracingServletFilter.class)
+                    .in(SINGLETON);
+        }
+
         configBinder(binder).bindConfig(qualifiedKey(HttpServerConfig.class), HttpServerConfig.class, configPrefix);
         newOptionalBinder(binder, qualifiedKey(HttpsConfig.class));
 

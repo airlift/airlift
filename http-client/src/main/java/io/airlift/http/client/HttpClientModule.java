@@ -28,9 +28,9 @@ import com.google.inject.TypeLiteral;
 import io.airlift.configuration.ConfigDefaults;
 import io.airlift.http.client.jetty.JettyHttpClient;
 import io.airlift.node.NodeInfo;
+import io.airlift.tracing.TracingEnabledConfig;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.api.trace.TracerProvider;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import java.lang.annotation.Annotation;
@@ -68,6 +68,7 @@ public class HttpClientModule
 
         // bind the configuration
         configBinder(binder).bindConfig(HttpClientConfig.class, annotation, name);
+        configBinder(binder).bindConfig(TracingEnabledConfig.class);
 
         // Allow users to bind their own SslContextFactory, pulling a globally-bound
         // SslContextFactory if one is not bound with the specific annotation
@@ -99,8 +100,8 @@ public class HttpClientModule
         private final Class<? extends Annotation> annotation;
         private Injector injector;
         private NodeInfo nodeInfo;
-        private OpenTelemetry openTelemetry = OpenTelemetry.noop();
-        private Tracer tracer = TracerProvider.noop().get("noop");
+        private Optional<OpenTelemetry> openTelemetry = Optional.empty();
+        private Optional<Tracer> tracer = Optional.empty();
 
         private HttpClientProvider(String name, Class<? extends Annotation> annotation)
         {
@@ -121,15 +122,15 @@ public class HttpClientModule
         }
 
         @Inject(optional = true)
-        public void setOpenTelemetry(OpenTelemetry openTelemetry)
+        public void setOpenTelemetry(OpenTelemetry telemetry)
         {
-            this.openTelemetry = openTelemetry;
+            this.openTelemetry = Optional.of(telemetry);
         }
 
         @Inject(optional = true)
         public void setTracer(Tracer tracer)
         {
-            this.tracer = tracer;
+            this.tracer = Optional.of(tracer);
         }
 
         @Override
@@ -146,12 +147,19 @@ public class HttpClientModule
                     .addAll(injector.getInstance(Key.get(new TypeLiteral<Set<HttpRequestFilter>>() {}, annotation)))
                     .build();
 
+            if (injector.getInstance(TracingEnabledConfig.class).isEnabled() && openTelemetry.isPresent() && tracer.isPresent()) {
+                filters = ImmutableSet.<HttpRequestFilter>builderWithExpectedSize(filters.size() + 1)
+                        .addAll(filters)
+                        .add(new TracingRequestFilter(name, openTelemetry.orElseThrow(), tracer.orElseThrow()))
+                        .build();
+            }
+
             Set<HttpStatusListener> httpStatusListeners = ImmutableSet.<HttpStatusListener>builder()
                     .addAll(injector.getInstance(Key.get(new TypeLiteral<Set<HttpStatusListener>>() {}, GlobalFilter.class)))
                     .addAll(injector.getInstance(Key.get(new TypeLiteral<Set<HttpStatusListener>>() {}, annotation)))
                     .build();
 
-            return new JettyHttpClient(name, config, ImmutableList.copyOf(filters), openTelemetry, tracer, environment, sslContextFactory, httpStatusListeners);
+            return new JettyHttpClient(name, config, ImmutableList.copyOf(filters), environment, sslContextFactory, httpStatusListeners);
         }
     }
 }
