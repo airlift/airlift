@@ -82,6 +82,7 @@ public class McpModule
     private final Consumer<LinkedBindingBuilder<McpCancellationHandler>> cancellationHandlerBinding;
     private final Map<String, Consumer<LinkedBindingBuilder<Icon>>> icons;
     private final Set<String> serverIcons;
+    private final Optional<Consumer<LinkedBindingBuilder<McpMultiRoundTripEncoder>>> multiRoundTripEncoder;
 
     public static Builder builder()
     {
@@ -102,7 +103,8 @@ public class McpModule
             Optional<Consumer<LinkedBindingBuilder<McpCapabilityFilter>>> capabilityFilterBinding,
             Consumer<LinkedBindingBuilder<McpCancellationHandler>> cancellationHandlerBinding,
             Map<String, Consumer<LinkedBindingBuilder<Icon>>> icons,
-            Set<String> serverIcons)
+            Set<String> serverIcons,
+            Optional<Consumer<LinkedBindingBuilder<McpMultiRoundTripEncoder>>> multiRoundTripEncoder)
     {
         this.mode = requireNonNull(mode, "mode is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
@@ -118,6 +120,7 @@ public class McpModule
         this.cancellationHandlerBinding = requireNonNull(cancellationHandlerBinding, "cancellationHandlerBinding is null");
         this.icons = ImmutableMap.copyOf(icons);
         this.serverIcons = ImmutableSet.copyOf(serverIcons);
+        this.multiRoundTripEncoder = requireNonNull(multiRoundTripEncoder, "multiRoundTripEncoder is null");
     }
 
     public enum Mode
@@ -162,6 +165,7 @@ public class McpModule
         private Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding = Optional.empty();
         private Optional<Consumer<LinkedBindingBuilder<McpCapabilityFilter>>> capabilityFilterBinding = Optional.empty();
         private Consumer<LinkedBindingBuilder<McpCancellationHandler>> cancellationHandlerBinding = binder -> binder.toInstance(McpCancellationHandler.DEFAULT);
+        private Optional<Consumer<LinkedBindingBuilder<McpMultiRoundTripEncoder>>> multiRoundTripEncoder = Optional.empty();
 
         private Builder() {}
 
@@ -212,6 +216,14 @@ public class McpModule
             checkState(sessionControllerBinding.isPresent(), "Session controller binding is required for cancellation support");
 
             this.cancellationHandlerBinding = requireNonNull(cancellationHandlerBinding, "cancellationHandlerBinding is null");
+            return this;
+        }
+
+        public Builder withMultiRoundTripEncoder(Consumer<LinkedBindingBuilder<McpMultiRoundTripEncoder>> multiRoundTripEncoderBinding)
+        {
+            checkState(multiRoundTripEncoder.isEmpty(), "Multi-round trip encoder binding is already set");
+
+            multiRoundTripEncoder = Optional.of(multiRoundTripEncoderBinding);
             return this;
         }
 
@@ -283,7 +295,8 @@ public class McpModule
                     capabilityFilterBinding,
                     cancellationHandlerBinding,
                     icons.build(),
-                    serverIcons.build());
+                    serverIcons.build(),
+                    multiRoundTripEncoder);
         }
     }
 
@@ -309,10 +322,16 @@ public class McpModule
         bindCapabilityFilter(binder);
         bindCancellation(binder);
         bindIcons(binder);
+        bindMultiRoundTrip(binder);
 
         if (mode == STANDARD) {
             binder.install(new InternalMcpModule());
         }
+    }
+
+    private void bindMultiRoundTrip(Binder binder)
+    {
+        multiRoundTripEncoder.ifPresent(encoderBinding -> encoderBinding.accept(newOptionalBinder(binder, McpMultiRoundTripEncoder.class).setBinding()));
     }
 
     private void bindIdentityMapper(Binder binder)
