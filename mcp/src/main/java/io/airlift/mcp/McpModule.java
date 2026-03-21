@@ -4,7 +4,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Binder;
-import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Provider;
 import com.google.inject.binder.AnnotatedBindingBuilder;
@@ -21,6 +20,8 @@ import io.airlift.mcp.handler.ResourceEntry;
 import io.airlift.mcp.handler.ResourceTemplateEntry;
 import io.airlift.mcp.handler.ToolEntry;
 import io.airlift.mcp.internal.InternalMcpModule;
+import io.airlift.mcp.legacy.LegacyCancellationController;
+import io.airlift.mcp.legacy.sessions.LegacySessionController;
 import io.airlift.mcp.model.CompleteReference;
 import io.airlift.mcp.model.CompleteReference.PromptReference;
 import io.airlift.mcp.model.CompleteReference.ResourceReference;
@@ -39,9 +40,6 @@ import io.airlift.mcp.reflection.PromptHandlerProvider;
 import io.airlift.mcp.reflection.ResourceHandlerProvider;
 import io.airlift.mcp.reflection.ResourceTemplateHandlerProvider;
 import io.airlift.mcp.reflection.ToolHandlerProvider;
-import io.airlift.mcp.sessions.CachingSessionController;
-import io.airlift.mcp.sessions.ForSessionCaching;
-import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.versions.VersionsController;
 
 import java.util.Collection;
@@ -52,7 +50,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkState;
 import static com.google.inject.Scopes.SINGLETON;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
@@ -77,9 +74,7 @@ public class McpModule
     private final Set<Provider<ResourceEntry>> resources;
     private final Set<Provider<ResourceTemplateEntry>> resourceTemplates;
     private final Set<Provider<CompletionEntry>> completions;
-    private final Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding;
     private final Optional<Consumer<LinkedBindingBuilder<McpCapabilityFilter>>> capabilityFilterBinding;
-    private final Consumer<LinkedBindingBuilder<McpCancellationHandler>> cancellationHandlerBinding;
     private final Map<String, Consumer<LinkedBindingBuilder<Icon>>> icons;
     private final Set<String> serverIcons;
 
@@ -98,9 +93,7 @@ public class McpModule
             Set<Provider<ResourceEntry>> resources,
             Set<Provider<ResourceTemplateEntry>> resourceTemplates,
             Set<Provider<CompletionEntry>> completions,
-            Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding,
             Optional<Consumer<LinkedBindingBuilder<McpCapabilityFilter>>> capabilityFilterBinding,
-            Consumer<LinkedBindingBuilder<McpCancellationHandler>> cancellationHandlerBinding,
             Map<String, Consumer<LinkedBindingBuilder<Icon>>> icons,
             Set<String> serverIcons)
     {
@@ -113,9 +106,7 @@ public class McpModule
         this.resources = ImmutableSet.copyOf(resources);
         this.resourceTemplates = ImmutableSet.copyOf(resourceTemplates);
         this.completions = ImmutableSet.copyOf(completions);
-        this.sessionControllerBinding = requireNonNull(sessionControllerBinding, "sessionControllerBinding is null");
         this.capabilityFilterBinding = requireNonNull(capabilityFilterBinding, "capabilityFilterBinding is null");
-        this.cancellationHandlerBinding = requireNonNull(cancellationHandlerBinding, "cancellationHandlerBinding is null");
         this.icons = ImmutableMap.copyOf(icons);
         this.serverIcons = ImmutableSet.copyOf(serverIcons);
     }
@@ -159,9 +150,7 @@ public class McpModule
         private Optional<IdentityMapperBinding> identityMapperBinding = Optional.empty();
         private McpMetadata metadata = DEFAULT;
         private Mode mode = STANDARD;
-        private Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding = Optional.empty();
         private Optional<Consumer<LinkedBindingBuilder<McpCapabilityFilter>>> capabilityFilterBinding = Optional.empty();
-        private Consumer<LinkedBindingBuilder<McpCancellationHandler>> cancellationHandlerBinding = binder -> binder.toInstance(McpCancellationHandler.DEFAULT);
 
         private Builder() {}
 
@@ -192,26 +181,10 @@ public class McpModule
             return this;
         }
 
-        public Builder withSessions(Consumer<LinkedBindingBuilder<SessionController>> sessionControllerBinding)
-        {
-            checkArgument(this.sessionControllerBinding.isEmpty(), "Session controller binding is already set");
-
-            this.sessionControllerBinding = Optional.of(sessionControllerBinding);
-            return this;
-        }
-
         public Builder withCapabilityFilter(Consumer<LinkedBindingBuilder<McpCapabilityFilter>> filterBinding)
         {
             checkArgument(this.capabilityFilterBinding.isEmpty(), "Capability filter binding is already set");
             this.capabilityFilterBinding = Optional.of(filterBinding);
-            return this;
-        }
-
-        public Builder withCancellationHandler(Consumer<LinkedBindingBuilder<McpCancellationHandler>> cancellationHandlerBinding)
-        {
-            checkState(sessionControllerBinding.isPresent(), "Session controller binding is required for cancellation support");
-
-            this.cancellationHandlerBinding = requireNonNull(cancellationHandlerBinding, "cancellationHandlerBinding is null");
             return this;
         }
 
@@ -279,9 +252,7 @@ public class McpModule
                     localResources,
                     localResourceTemplates,
                     localCompletions,
-                    sessionControllerBinding,
                     capabilityFilterBinding,
-                    cancellationHandlerBinding,
                     icons.build(),
                     serverIcons.build());
         }
@@ -292,6 +263,7 @@ public class McpModule
     {
         binder.bind(McpMetadata.class).toInstance(metadata);
         binder.bind(VersionsController.class).in(SINGLETON);
+        binder.bind(LegacySessionController.class).in(SINGLETON);
 
         configBinder(binder).bindConfig(McpConfig.class);
 
@@ -305,7 +277,6 @@ public class McpModule
         bindJsonSubTypes(binder);
         bindIdentityMapper(binder);
         bindCompletions(binder);
-        bindSessions(binder);
         bindCapabilityFilter(binder);
         bindCancellation(binder);
         bindIcons(binder);
@@ -334,19 +305,7 @@ public class McpModule
 
     private void bindCancellation(Binder binder)
     {
-        binder.bind(CancellationController.class).in(SINGLETON);
-        cancellationHandlerBinding.accept(binder.bind(McpCancellationHandler.class));
-    }
-
-    private void bindSessions(Binder binder)
-    {
-        OptionalBinder<SessionController> sessionControllerBinder = newOptionalBinder(binder, SessionController.class);
-        OptionalBinder<SessionController> sessionControllerDelegateBinder = newOptionalBinder(binder, Key.get(SessionController.class, ForSessionCaching.class));
-
-        sessionControllerBinding.ifPresent(sessionControllerBinding -> {
-            sessionControllerBinding.accept(sessionControllerDelegateBinder.setBinding());
-            sessionControllerBinder.setDefault().to(CachingSessionController.class).in(SINGLETON);
-        });
+        binder.bind(LegacyCancellationController.class).in(SINGLETON);
     }
 
     private void bindCapabilityFilter(Binder binder)

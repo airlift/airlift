@@ -7,7 +7,6 @@ import com.google.inject.Provider;
 import com.google.inject.name.Named;
 import io.airlift.mcp.McpCapabilityFilter;
 import io.airlift.mcp.McpClientException;
-import io.airlift.mcp.McpConfig;
 import io.airlift.mcp.McpEntities;
 import io.airlift.mcp.McpMetadata;
 import io.airlift.mcp.McpRequestContext;
@@ -21,6 +20,9 @@ import io.airlift.mcp.handler.ResourceTemplateEntry;
 import io.airlift.mcp.handler.ResourceTemplateHandler;
 import io.airlift.mcp.handler.ToolEntry;
 import io.airlift.mcp.handler.ToolHandler;
+import io.airlift.mcp.legacy.sessions.LegacySession;
+import io.airlift.mcp.legacy.sessions.LegacySessionController;
+import io.airlift.mcp.legacy.sessions.LegacySessionId;
 import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.CallToolResult;
 import io.airlift.mcp.model.CompleteReference;
@@ -44,7 +46,6 @@ import io.airlift.mcp.model.ListRequest;
 import io.airlift.mcp.model.ListResourceTemplatesResult;
 import io.airlift.mcp.model.ListResourcesResult;
 import io.airlift.mcp.model.ListToolsResult;
-import io.airlift.mcp.model.LoggingLevel;
 import io.airlift.mcp.model.Meta;
 import io.airlift.mcp.model.OptionalBoolean;
 import io.airlift.mcp.model.Prompt;
@@ -60,13 +61,11 @@ import io.airlift.mcp.model.SubscribeListChanged;
 import io.airlift.mcp.model.SubscribeRequest;
 import io.airlift.mcp.model.Tool;
 import io.airlift.mcp.reflection.IconHelper;
-import io.airlift.mcp.sessions.SessionController;
-import io.airlift.mcp.sessions.SessionId;
 import io.airlift.mcp.versions.VersionsController;
+import jakarta.ws.rs.WebApplicationException;
 import org.glassfish.jersey.uri.UriTemplate;
 
 import java.net.URI;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -82,14 +81,17 @@ import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.McpModule.MCP_SERVER_ICONS;
 import static io.airlift.mcp.internal.InternalFilter.MCP_PROTOCOL_VERSION;
 import static io.airlift.mcp.internal.InternalFilter.MCP_RESOURCE_URI;
+import static io.airlift.mcp.legacy.sessions.LegacySessionController.requireSessionId;
+import static io.airlift.mcp.legacy.sessions.LegacySessionValueKey.CLIENT_CAPABILITIES;
+import static io.airlift.mcp.legacy.sessions.LegacySessionValueKey.LOGGING_LEVEL;
+import static io.airlift.mcp.legacy.sessions.LegacySessionValueKey.PROTOCOL;
 import static io.airlift.mcp.model.Constants.MCP_SESSION_ID;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
 import static io.airlift.mcp.model.JsonRpcErrorCode.RESOURCE_NOT_FOUND;
+import static io.airlift.mcp.model.LoggingLevel.INFO;
 import static io.airlift.mcp.model.Protocol.LATEST_PROTOCOL;
-import static io.airlift.mcp.sessions.SessionValueKey.CLIENT_CAPABILITIES;
-import static io.airlift.mcp.sessions.SessionValueKey.LOGGING_LEVEL;
-import static io.airlift.mcp.sessions.SessionValueKey.PROTOCOL;
+import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
 import static java.util.Objects.requireNonNull;
 
 public class InternalController
@@ -102,23 +104,21 @@ public class InternalController
     private final Map<String, CompletionEntry> completions = new ConcurrentHashMap<>();
     private final McpMetadata metadata;
     private final PaginationUtil paginationUtil;
-    private final Optional<SessionController> sessionController;
+    private final LegacySessionController sessionController;
     private final Provider<VersionsController> versionsController;
     private final McpCapabilityFilter capabilityFilter;
-    private final Duration sessionTimeout;
     private final Implementation serverImplementation;
 
     @Inject
     InternalController(
             McpMetadata metadata,
-            Optional<SessionController> sessionController,
+            LegacySessionController sessionController,
             Set<ToolEntry> tools,
             Set<PromptEntry> prompts,
             Set<ResourceEntry> resources,
             Set<ResourceTemplateEntry> resourceTemplates,
             Set<CompletionEntry> completions,
             PaginationUtil paginationUtil,
-            McpConfig mcpConfig,
             IconHelper iconHelper,
             @Named(MCP_SERVER_ICONS) Set<String> serverIcons,
             Provider<VersionsController> versionsController,
@@ -135,8 +135,6 @@ public class InternalController
         resources.forEach(resource -> addResource(resource.resource(), resource.handler()));
         resourceTemplates.forEach(resourceTemplate -> addResourceTemplate(resourceTemplate.resourceTemplate(), resourceTemplate.handler()));
         completions.forEach(completion -> addCompletion(completion.reference(), completion.handler()));
-
-        sessionTimeout = mcpConfig.getDefaultSessionTimeout().toJavaTime();
 
         serverImplementation = iconHelper.mapIcons(serverIcons).map(icons -> metadata.implementation().withAdditionalIcons(icons))
                 .orElse(metadata.implementation());
@@ -288,22 +286,20 @@ public class InternalController
 
         updateRequestSpan(requestContext.request(), span -> span.setAttribute(MCP_PROTOCOL_VERSION, protocol.value()));
 
-        boolean sessionsEnabled = sessionController.map(controller -> {
-            SessionId sessionId = controller.createSession(requestContext.identity(), Optional.of(sessionTimeout));
-            InternalRequestContext localRequestContext = requestContext.withSessonId(sessionId);
+        LegacySession session = sessionController.createSession();
+        InternalRequestContext localRequestContext = requestContext.withSession(session);
 
-            localRequestContext.response().addHeader(MCP_SESSION_ID, sessionId.id());
+        localRequestContext.response().addHeader(MCP_SESSION_ID, session.sessionId().id());
 
-            versionsController.get().initializeSessionVersions(localRequestContext);
+        versionsController.get().initializeSessionVersions(localRequestContext, session);
 
-            controller.setSessionValue(sessionId, LOGGING_LEVEL, LoggingLevel.INFO);
-            controller.setSessionValue(sessionId, CLIENT_CAPABILITIES, initializeRequest.capabilities());
-            controller.setSessionValue(sessionId, PROTOCOL, protocol);
+        session.setValue(LOGGING_LEVEL, INFO);
+        session.setValue(CLIENT_CAPABILITIES, initializeRequest.capabilities());
+        session.setValue(PROTOCOL, protocol);
 
-            updateRequestSpan(localRequestContext.request(), span -> span.setAttribute(MCP_SESSION_ID, sessionId.id()));
+        updateRequestSpan(localRequestContext.request(), span -> span.setAttribute(MCP_SESSION_ID, session.sessionId().id()));
 
-            return true;
-        }).orElse(false);
+        boolean sessionsEnabled = true; // TODO
 
         ServerCapabilities serverCapabilities = new ServerCapabilities(
                 completions.isEmpty() ? Optional.empty() : Optional.of(new CompletionCapabilities()),
@@ -403,7 +399,8 @@ public class InternalController
 
     Object setLoggingLevel(InternalRequestContext requestContext, SetLevelRequest setLevelRequest)
     {
-        requestContext.session().setValue(LOGGING_LEVEL, setLevelRequest.level());
+        LegacySession session = requireSession(requestContext);
+        session.setValue(LOGGING_LEVEL, setLevelRequest.level());
         return ImmutableMap.of();
     }
 
@@ -429,7 +426,7 @@ public class InternalController
             throw new McpClientException(exception(INVALID_PARAMS, "Resource access not allowed: " + subscribeRequest.uri()));
         }
 
-        versionsController.get().resourcesSubscribe(requestContext.withProgressToken(progressToken(subscribeRequest)), subscribeRequest);
+        versionsController.get().resourcesSubscribe(requestContext.withProgressToken(progressToken(subscribeRequest)), requireSession(requestContext), subscribeRequest);
 
         return ImmutableMap.of();
     }
@@ -438,14 +435,21 @@ public class InternalController
     {
         updateRequestSpan(requestContext.request(), span -> span.setAttribute(MCP_RESOURCE_URI, subscribeRequest.uri()));
 
-        versionsController.get().resourcesUnsubscribe(requestContext, subscribeRequest.uri());
+        versionsController.get().resourcesUnsubscribe(requireSession(requestContext), subscribeRequest.uri());
 
         return ImmutableMap.of();
     }
 
     void reconcileVersions(InternalRequestContext requestContext)
     {
-        versionsController.get().reconcileVersions(requestContext);
+        versionsController.get().reconcileVersions(requestContext, requireSession(requestContext));
+    }
+
+    private LegacySession requireSession(InternalRequestContext requestContext)
+    {
+        LegacySessionId sessionId = requireSessionId(requestContext.request());
+        return sessionController.session(sessionId)
+                .orElseThrow(() -> new WebApplicationException(NOT_FOUND));
     }
 
     private Optional<ResourceEntry> findResource(String uriString)

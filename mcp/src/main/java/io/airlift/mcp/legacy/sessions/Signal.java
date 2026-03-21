@@ -1,16 +1,16 @@
-package io.airlift.mcp.sessions;
+package io.airlift.mcp.legacy.sessions;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class Signal
+class Signal
 {
     private final Lock lock = new ReentrantLock();
     private final Condition condition = lock.newCondition();
 
-    public void signalAll()
+    void signalAll()
     {
         lock.lock();
         try {
@@ -21,7 +21,7 @@ public class Signal
         }
     }
 
-    public boolean waitForSignal(long timeout, TimeUnit unit)
+    boolean waitForSignal(long timeout, TimeUnit unit)
             throws InterruptedException
     {
         lock.lock();

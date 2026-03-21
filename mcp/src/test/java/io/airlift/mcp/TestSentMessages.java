@@ -2,18 +2,15 @@ package io.airlift.mcp;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Closer;
-import com.google.inject.Key;
 import io.airlift.http.client.HeaderName;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.StreamingResponse;
 import io.airlift.http.server.HttpServerInfo;
 import io.airlift.http.server.testing.TestingHttpServer;
 import io.airlift.mcp.SentMessages.SentMessage;
+import io.airlift.mcp.legacy.sessions.LegacySessionController;
+import io.airlift.mcp.legacy.sessions.LegacySessionId;
 import io.airlift.mcp.model.Icon;
-import io.airlift.mcp.sessions.ForSessionCaching;
-import io.airlift.mcp.sessions.MemorySessionController;
-import io.airlift.mcp.sessions.SessionController;
-import io.airlift.mcp.sessions.SessionId;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
@@ -52,7 +49,7 @@ public class TestSentMessages
     private final Closer closer = Closer.create();
     private final TestingClient client;
     private final TestingServer testingServer;
-    private final MemorySessionController sessionController;
+    private final LegacySessionController sessionController;
 
     public TestSentMessages()
     {
@@ -62,7 +59,6 @@ public class TestSentMessages
 
         testingServer = new TestingServer(properties, Optional.empty(), builder -> builder
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
-                .withSessions(binding -> binding.to(MemorySessionController.class).in(SINGLETON))
                 .addIcon("google", binding -> binding.toInstance(new Icon("https://www.gstatic.com/images/branding/searchlogo/ico/favicon.ico")))
                 .withAllInClass(TestingEndpoints.class)
                 .build());
@@ -72,7 +68,7 @@ public class TestSentMessages
 
         client = buildClient(closer, baseUri, "client");
 
-        sessionController = (MemorySessionController) testingServer.injector().getInstance(Key.get(SessionController.class, ForSessionCaching.class));
+        sessionController = testingServer.injector().getInstance(LegacySessionController.class);
     }
 
     @AfterAll
@@ -114,7 +110,7 @@ public class TestSentMessages
     public void testReplayEvents()
             throws Exception
     {
-        SessionId sessionId = sessionController.sessionIds().iterator().next();
+        LegacySessionId sessionId = sessionController.sessionIds().iterator().next();
 
         // will cause list change events on the next GET
         client.mcpClient().callTool(new CallToolRequest("setVersion", ImmutableMap.of("type", "SYSTEM", "name", "tools")));
@@ -163,7 +159,7 @@ public class TestSentMessages
         assertThat(replayedMessages).isEqualTo(messages.subList(1, messages.size()));
     }
 
-    private void eventStream(SessionId sessionId, Optional<String> lastMessageId, Queue<SentMessage> queue)
+    private void eventStream(LegacySessionId sessionId, Optional<String> lastMessageId, Queue<SentMessage> queue)
     {
         URI uri = testingServer.injector().getInstance(HttpServerInfo.class).getHttpUri().resolve("/mcp");
 

@@ -8,6 +8,10 @@ import com.google.common.collect.ImmutableMap;
 import io.airlift.mcp.McpIdentity.Authenticated;
 import io.airlift.mcp.McpRequestContext;
 import io.airlift.mcp.handler.MessageWriter;
+import io.airlift.mcp.legacy.sessions.LegacyBlockingResult;
+import io.airlift.mcp.legacy.sessions.LegacyBlockingResult.Fulfilled;
+import io.airlift.mcp.legacy.sessions.LegacySession;
+import io.airlift.mcp.legacy.sessions.LegacySessionValueKey;
 import io.airlift.mcp.model.InitializeRequest.ClientCapabilities;
 import io.airlift.mcp.model.JsonRpcErrorDetail;
 import io.airlift.mcp.model.JsonRpcRequest;
@@ -18,12 +22,6 @@ import io.airlift.mcp.model.LoggingMessageNotification;
 import io.airlift.mcp.model.ProgressNotification;
 import io.airlift.mcp.model.Protocol;
 import io.airlift.mcp.model.Root;
-import io.airlift.mcp.sessions.BlockingResult;
-import io.airlift.mcp.sessions.BlockingResult.Fulfilled;
-import io.airlift.mcp.sessions.Session;
-import io.airlift.mcp.sessions.SessionController;
-import io.airlift.mcp.sessions.SessionId;
-import io.airlift.mcp.sessions.SessionValueKey;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -38,7 +36,11 @@ import java.util.function.Supplier;
 
 import static com.google.common.base.Throwables.getRootCause;
 import static io.airlift.mcp.McpException.exception;
-import static io.airlift.mcp.model.Constants.MCP_SESSION_ID;
+import static io.airlift.mcp.legacy.sessions.LegacySessionValueKey.CLIENT_CAPABILITIES;
+import static io.airlift.mcp.legacy.sessions.LegacySessionValueKey.LOGGING_LEVEL;
+import static io.airlift.mcp.legacy.sessions.LegacySessionValueKey.PROTOCOL;
+import static io.airlift.mcp.legacy.sessions.LegacySessionValueKey.ROOTS;
+import static io.airlift.mcp.legacy.sessions.LegacySessionValueKey.serverToClientResponseKey;
 import static io.airlift.mcp.model.Constants.METHOD_PING;
 import static io.airlift.mcp.model.Constants.METHOD_ROOTS_LIST;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_MESSAGE;
@@ -46,11 +48,6 @@ import static io.airlift.mcp.model.Constants.NOTIFICATION_PROGRESS;
 import static io.airlift.mcp.model.JsonRpcRequest.buildNotification;
 import static io.airlift.mcp.model.JsonRpcRequest.buildRequest;
 import static io.airlift.mcp.model.Protocol.LATEST_PROTOCOL;
-import static io.airlift.mcp.sessions.SessionValueKey.CLIENT_CAPABILITIES;
-import static io.airlift.mcp.sessions.SessionValueKey.LOGGING_LEVEL;
-import static io.airlift.mcp.sessions.SessionValueKey.PROTOCOL;
-import static io.airlift.mcp.sessions.SessionValueKey.ROOTS;
-import static io.airlift.mcp.sessions.SessionValueKey.serverToClientResponseKey;
 import static java.util.Objects.requireNonNull;
 
 class InternalRequestContext
@@ -59,75 +56,68 @@ class InternalRequestContext
     private static final Duration PING_THRESHOLD = Duration.ofSeconds(15);
 
     private final JsonMapper jsonMapper;
-    private final Optional<SessionController> sessionController;
+    private final Optional<LegacySession> session;
     private final HttpServletRequest request;
     private final HttpServletResponse response;
     private final MessageWriter messageWriter;
     private final Optional<Object> progressToken;
     private final Supplier<LoggingLevel> loggingLevelSupplier;
-    private final Session session;
     private final Authenticated<?> identity;
 
     InternalRequestContext(
             JsonMapper jsonMapper,
-            Optional<SessionController> sessionController,
+            Optional<LegacySession> session,
             HttpServletRequest request,
             HttpServletResponse response,
             MessageWriter messageWriter,
             Authenticated<?> identity)
     {
         this(jsonMapper,
-                sessionController,
+                session,
                 request,
                 response,
                 messageWriter,
                 Optional.empty(),
-                buildLoggingLevelSupplier(sessionController, request),
-                new InternalSession(sessionController, optionalSessionId(request).orElse(Session.NULL_SESSION_ID)),
+                buildLoggingLevelSupplier(session),
                 identity);
     }
 
-    private static Supplier<LoggingLevel> buildLoggingLevelSupplier(Optional<SessionController> sessionController, HttpServletRequest request)
+    private static Supplier<LoggingLevel> buildLoggingLevelSupplier(Optional<LegacySession> session)
     {
         return Suppliers.memoize(() -> {
-            SessionController localSessionController = sessionController.orElseThrow(() -> new IllegalStateException("Sessions not enabled"));
-            SessionId sessionId = requireSessionId(request);
-
-            return localSessionController.getSessionValue(sessionId, LOGGING_LEVEL).orElseThrow(() -> exception("Session is invalid"));
+            LegacySession localSession = session.orElseThrow(() -> new IllegalStateException("Sessions not enabled"));
+            return localSession.getValue(LOGGING_LEVEL).orElseThrow(() -> exception("Session is invalid"));
         });
     }
 
     private InternalRequestContext(
             JsonMapper jsonMapper,
-            Optional<SessionController> sessionController,
+            Optional<LegacySession> session,
             HttpServletRequest request,
             HttpServletResponse response,
             MessageWriter messageWriter,
             Optional<Object> progressToken,
             Supplier<LoggingLevel> loggingLevelSupplier,
-            Session session,
             Authenticated<?> identity)
     {
         this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
-        this.sessionController = requireNonNull(sessionController, "sessionController is null");
+        this.session = requireNonNull(session, "session is null");
         this.request = requireNonNull(request, "request is null");
         this.response = requireNonNull(response, "request is null");
         this.messageWriter = requireNonNull(messageWriter, "messageWriter is null");
         this.progressToken = requireNonNull(progressToken, "progressToken is null");
         this.loggingLevelSupplier = requireNonNull(loggingLevelSupplier, "loggingLevelSupplier is null");
-        this.session = requireNonNull(session, "session is null");
         this.identity = requireNonNull(identity, "identity is null");
     }
 
     InternalRequestContext withProgressToken(Optional<Object> progressToken)
     {
-        return new InternalRequestContext(jsonMapper, sessionController, request, response, messageWriter, progressToken, loggingLevelSupplier, session, identity);
+        return new InternalRequestContext(jsonMapper, session, request, response, messageWriter, progressToken, loggingLevelSupplier, identity);
     }
 
     Protocol protocol()
     {
-        return sessionController.flatMap(controller ->
-                        optionalSessionId(request).flatMap(sessionId -> controller.getSessionValue(sessionId, PROTOCOL)))
+        return session.flatMap(localSession -> localSession.getValue(PROTOCOL))
                 .orElse(LATEST_PROTOCOL);
     }
 
@@ -136,9 +126,9 @@ class InternalRequestContext
         return response;
     }
 
-    InternalRequestContext withSessonId(SessionId sessionId)
+    InternalRequestContext withSession(LegacySession session)
     {
-        return new InternalRequestContext(jsonMapper, sessionController, request, response, messageWriter, progressToken, loggingLevelSupplier, new InternalSession(sessionController, sessionId), identity);
+        return new InternalRequestContext(jsonMapper, Optional.of(session), request, response, messageWriter, progressToken, loggingLevelSupplier, identity);
     }
 
     @Override
@@ -151,12 +141,6 @@ class InternalRequestContext
     public HttpServletRequest request()
     {
         return request;
-    }
-
-    @Override
-    public Session session()
-    {
-        return session;
     }
 
     @SuppressWarnings("SwitchStatementWithTooFewBranches")
@@ -198,11 +182,9 @@ class InternalRequestContext
     @Override
     public ClientCapabilities clientCapabilities()
     {
-        SessionController localSessionController = sessionController.orElseThrow(() -> new IllegalStateException("Sessions not enabled"));
-        SessionId sessionId = requireSessionId(request);
+        LegacySession localSession = session.orElseThrow(() -> new IllegalStateException("Sessions not enabled"));
 
-        // ClientCapabilities are cached via CachingSessionController
-        return localSessionController.getSessionValue(sessionId, CLIENT_CAPABILITIES)
+        return localSession.getValue(CLIENT_CAPABILITIES)
                 .orElseThrow(() -> exception("Session does not contain client capabilities"));
     }
 
@@ -211,18 +193,17 @@ class InternalRequestContext
     public <R> JsonRpcResponse<R> serverToClientRequest(String method, Object params, Class<R> responseType, Duration timeout, Duration pollInterval)
             throws InterruptedException, TimeoutException
     {
-        SessionController localSessionController = sessionController.orElseThrow(() -> new IllegalStateException("Sessions are not enabled"));
-        SessionId sessionId = requireSessionId(request);
+        LegacySession localSession = session.orElseThrow(() -> new IllegalStateException("Sessions not enabled"));
         String requestId = UUID.randomUUID().toString();
 
         internalSendRequest(buildRequest(requestId, method, params));
-        SessionValueKey<JsonRpcResponse> responseKey = serverToClientResponseKey(requestId);
+        LegacySessionValueKey<JsonRpcResponse> responseKey = serverToClientResponseKey(requestId);
 
         Stopwatch pingStopwatch = Stopwatch.createStarted();
 
         while (timeout.isPositive()) {
             Stopwatch stopwatch = Stopwatch.createStarted();
-            BlockingResult<JsonRpcResponse> blockingResult = localSessionController.blockUntil(sessionId, responseKey, pollInterval, Optional::isPresent);
+            LegacyBlockingResult<JsonRpcResponse> blockingResult = localSession.blockUntil(responseKey, pollInterval, Optional::isPresent);
             timeout = timeout.minus(stopwatch.elapsed());
 
             if (blockingResult instanceof Fulfilled<JsonRpcResponse>(var rpcResponse)) {
@@ -235,7 +216,7 @@ class InternalRequestContext
                     return rpcResponse;
                 }
                 finally {
-                    localSessionController.deleteSessionValue(sessionId, responseKey);
+                    localSession.deleteValue(responseKey);
                 }
             }
 
@@ -253,17 +234,16 @@ class InternalRequestContext
     public List<Root> requestRoots(Duration timeout, Duration pollInterval)
             throws InterruptedException, TimeoutException
     {
-        SessionController localSessionController = sessionController.orElseThrow(() -> new IllegalStateException("Sessions not enabled"));
-        SessionId sessionId = requireSessionId(request);
+        LegacySession localSession = session.orElseThrow(() -> new IllegalStateException("Sessions not enabled"));
 
-        Optional<List<Root>> maybeRoots = localSessionController.getSessionValue(sessionId, ROOTS)
+        Optional<List<Root>> maybeRoots = localSession.getValue(ROOTS)
                 .map(ListRootsResult::roots);
 
         try {
-            return maybeRoots.or(() -> localSessionController.getSessionValue(sessionId, CLIENT_CAPABILITIES).map(clientCapabilities -> {
+            return maybeRoots.or(() -> localSession.getValue(CLIENT_CAPABILITIES).map(clientCapabilities -> {
                 if (clientCapabilities.roots().isPresent()) {
                     try {
-                        return updateRoots(timeout, pollInterval, sessionId);
+                        return updateRoots(localSession, timeout, pollInterval);
                     }
                     catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
@@ -286,18 +266,7 @@ class InternalRequestContext
         }
     }
 
-    static SessionId requireSessionId(HttpServletRequest request)
-    {
-        return optionalSessionId(request).orElseThrow(() -> exception("Missing %s header in request".formatted(MCP_SESSION_ID)));
-    }
-
-    static Optional<SessionId> optionalSessionId(HttpServletRequest request)
-    {
-        return Optional.ofNullable(request.getHeader(MCP_SESSION_ID))
-                .map(SessionId::new);
-    }
-
-    private List<Root> updateRoots(Duration timeout, Duration pollInterval, SessionId sessionId)
+    private List<Root> updateRoots(LegacySession session, Duration timeout, Duration pollInterval)
             throws InterruptedException, TimeoutException
     {
         JsonRpcResponse<ListRootsResult> newRoots = serverToClientRequest(METHOD_ROOTS_LIST, ImmutableMap.of(), ListRootsResult.class, timeout, pollInterval);
@@ -309,7 +278,7 @@ class InternalRequestContext
 
         if (newRoots.result().isPresent()) {
             ListRootsResult listRootsResult = newRoots.result().orElseThrow();
-            sessionController.ifPresent(controller -> controller.setSessionValue(sessionId, ROOTS, listRootsResult));
+            session.setValue(ROOTS, listRootsResult);
             return listRootsResult.roots();
         }
 

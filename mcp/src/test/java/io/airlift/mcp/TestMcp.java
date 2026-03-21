@@ -1,15 +1,12 @@
 package io.airlift.mcp;
 
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.io.Closer;
 import com.google.common.reflect.TypeToken;
-import com.google.inject.Key;
-import com.google.inject.Module;
 import io.airlift.http.client.FullJsonResponseHandler;
 import io.airlift.http.client.HeaderName;
 import io.airlift.http.client.HttpClient;
@@ -18,13 +15,12 @@ import io.airlift.http.server.HttpServerInfo;
 import io.airlift.http.server.testing.TestingHttpServer;
 import io.airlift.json.JsonCodecFactory;
 import io.airlift.log.Logger;
+import io.airlift.mcp.legacy.LegacyCancellationController;
+import io.airlift.mcp.legacy.sessions.LegacySessionController;
+import io.airlift.mcp.legacy.sessions.LegacySessionId;
 import io.airlift.mcp.model.CancelledNotification;
 import io.airlift.mcp.model.Icon;
 import io.airlift.mcp.model.JsonRpcRequest;
-import io.airlift.mcp.sessions.ForSessionCaching;
-import io.airlift.mcp.sessions.MemorySessionController;
-import io.airlift.mcp.sessions.SessionController;
-import io.airlift.mcp.sessions.SessionId;
 import io.modelcontextprotocol.client.transport.McpHttpClientTransportAuthorizationException;
 import io.modelcontextprotocol.spec.HttpHeaders;
 import io.modelcontextprotocol.spec.McpError;
@@ -74,7 +70,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -90,7 +85,6 @@ import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.Request.Builder.preparePost;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static io.airlift.json.JsonCodec.jsonCodec;
-import static io.airlift.mcp.TestMcp.Mode.DATABASE_SESSIONS;
 import static io.airlift.mcp.TestingClient.buildClient;
 import static io.airlift.mcp.TestingIdentityMapper.ERRORED_IDENTITY;
 import static io.airlift.mcp.TestingIdentityMapper.EXPECTED_IDENTITY;
@@ -114,7 +108,7 @@ import static org.assertj.core.api.InstanceOfAssertFactories.type;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 
 @TestInstance(PER_CLASS)
-public abstract class TestMcp
+public class TestMcp
 {
     private static final Logger log = Logger.get(TestMcp.class);
 
@@ -125,28 +119,14 @@ public abstract class TestMcp
     private final HttpClient httpClient;
     private final JsonMapper jsonMapper;
     private final TestingServer testingServer;
-    private final Supplier<Set<SessionId>> sessionIdsSupplier;
-    private final Consumer<SessionId> sessionDeleter;
+    private final LegacySessionController sessionController;
 
-    public enum Mode
+    public TestMcp()
     {
-        MEMORY_SESSIONS,
-        DATABASE_SESSIONS,
-    }
-
-    protected TestMcp(Mode mode)
-    {
-        Module module = binder -> {
-            if (mode == DATABASE_SESSIONS) {
-                binder.bind(TestingDatabaseServer.class).in(SINGLETON);
-            }
-        };
-
         Map<String, String> properties = ImmutableMap.of("mcp.http-get-events.enabled", "false");
 
-        testingServer = new TestingServer(properties, Optional.of(module), builder -> builder
+        testingServer = new TestingServer(properties, Optional.empty(), builder -> builder
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
-                .withSessions(binding -> binding.to((mode == DATABASE_SESSIONS) ? TestingDatabaseSessionController.class : MemorySessionController.class).in(SINGLETON))
                 .addIcon("google", binding -> binding.toInstance(new Icon("https://www.gstatic.com/images/branding/searchlogo/ico/favicon.ico")))
                 .withAllInClass(TestingEndpoints.class)
                 .build());
@@ -160,13 +140,7 @@ public abstract class TestMcp
         httpClient = testingServer.httpClient();
         jsonMapper = testingServer.injector().getInstance(JsonMapper.class);
 
-        SessionController sessionController = testingServer.injector().getInstance(Key.get(SessionController.class, ForSessionCaching.class));
-
-        sessionIdsSupplier = switch (mode) {
-            case MEMORY_SESSIONS -> () -> ((MemorySessionController) sessionController).sessionIds();
-            case DATABASE_SESSIONS -> () -> ((TestingDatabaseSessionController) sessionController).sessionIds();
-        };
-        sessionDeleter = sessionController::deleteSession;
+        sessionController = testingServer.injector().getInstance(LegacySessionController.class);
     }
 
     @AfterAll
@@ -478,13 +452,13 @@ public abstract class TestMcp
     @Test
     public void testExpiredSession()
     {
-        Set<SessionId> preSessionIds = sessionIdsSupplier.get();
+        Set<LegacySessionId> preSessionIds = sessionController.sessionIds();
         TestingClient client = buildClient(closer, baseUri, "testExpiredSession");
-        Set<SessionId> postSessionIds = sessionIdsSupplier.get();
-        SessionId clientSessionId = Sets.difference(postSessionIds, preSessionIds).iterator().next();
+        Set<LegacySessionId> postSessionIds = sessionController.sessionIds();
+        LegacySessionId clientSessionId = Sets.difference(postSessionIds, preSessionIds).iterator().next();
 
         // simulate session expiring
-        sessionDeleter.accept(clientSessionId);
+        sessionController.deleteSession(clientSessionId);
 
         assertThatThrownBy(client.mcpClient()::listTools)
                 .hasMessageContaining("HTTP 404 Not Found");
@@ -493,10 +467,10 @@ public abstract class TestMcp
     @Test
     public void testDeleteSession()
     {
-        Set<SessionId> preSessionIds = sessionIdsSupplier.get();
+        Set<LegacySessionId> preSessionIds = sessionController.sessionIds();
         TestingClient client = buildClient(closer, baseUri, "testDeleteSession");
-        Set<SessionId> postSessionIds = sessionIdsSupplier.get();
-        SessionId clientSessionId = Sets.difference(postSessionIds, preSessionIds).iterator().next();
+        Set<LegacySessionId> postSessionIds = sessionController.sessionIds();
+        LegacySessionId clientSessionId = Sets.difference(postSessionIds, preSessionIds).iterator().next();
 
         Request request = prepareDelete()
                 .setUri(URI.create(baseUri + "/mcp"))
@@ -594,7 +568,7 @@ public abstract class TestMcp
             assertThat(sleepToolController.startedLatch().tryAcquire(threadQty, 5, SECONDS)).isTrue();
 
             // they should all be registered in the CancellationController
-            Collection<Object> activeRequestIds = testingServer.injector().getInstance(CancellationController.class).activeRequestIds();
+            Collection<Object> activeRequestIds = testingServer.injector().getInstance(LegacyCancellationController.class).activeRequestIds();
             assertThat(activeRequestIds).hasSize(threadQty);
 
             // choose a random run's request ID to cancel
@@ -606,7 +580,7 @@ public abstract class TestMcp
             JsonRpcRequest<CancelledNotification> jsonRpcRequest = JsonRpcRequest.buildNotification(NOTIFICATION_CANCELLED, cancelledNotification);
 
             // can't know which session it is - try em all
-            sessionIdsSupplier.get().forEach(sessionId -> {
+            sessionController.sessionIds().forEach(sessionId -> {
                 Request request = preparePost().setUri(uri)
                         .addHeader(CONTENT_TYPE, "application/json")
                         .addHeader(ACCEPT, "application/json, text/event-stream")

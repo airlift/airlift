@@ -2,9 +2,7 @@ package io.airlift.mcp;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Closer;
-import com.google.inject.Scopes;
 import io.airlift.http.server.testing.TestingHttpServer;
-import io.airlift.mcp.sessions.MemorySessionController;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -60,7 +58,6 @@ public class TestConformance
 
         TestingServer testingServer = closer.register(new TestingServer(ImmutableMap.of(), Optional.empty(), builder -> builder
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.toInstance((_) -> authenticated(new TestingIdentity("Mr. Tester"))))
-                .withSessions(binding -> binding.to(MemorySessionController.class).in(Scopes.SINGLETON))
                 .withAllInClass(ConformanceEndpoints.class)
                 .build()));
 

@@ -5,7 +5,6 @@ import io.airlift.mcp.model.InitializeRequest.ClientCapabilities;
 import io.airlift.mcp.model.JsonRpcResponse;
 import io.airlift.mcp.model.LoggingLevel;
 import io.airlift.mcp.model.Root;
-import io.airlift.mcp.sessions.Session;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.time.Duration;
@@ -16,8 +15,6 @@ import java.util.concurrent.TimeoutException;
 public interface McpRequestContext
 {
     HttpServletRequest request();
-
-    Session session();
 
     Authenticated<?> identity();
 
@@ -32,19 +29,9 @@ public interface McpRequestContext
         sendLog(level, Optional.empty(), Optional.of(message));
     }
 
-    default void sendLog(LoggingLevel level, Optional<String> logger, Optional<Object> data)
-    {
-        // only implemented when sessions are configured
+    void sendLog(LoggingLevel level, Optional<String> logger, Optional<Object> data);
 
-        throw new UnsupportedOperationException();
-    }
-
-    default ClientCapabilities clientCapabilities()
-    {
-        // only implemented when sessions are configured
-
-        throw new UnsupportedOperationException();
-    }
+    ClientCapabilities clientCapabilities();
 
     /**
      * Sends a server-to-client request and waits for the response until given timeout.

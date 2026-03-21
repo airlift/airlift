@@ -1,20 +1,20 @@
-package io.airlift.mcp.sessions;
+package io.airlift.mcp.legacy.sessions;
 
 import java.time.Duration;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 
-import static io.airlift.mcp.sessions.BlockingResult.EmptyFulfilled.EMPTY_FULFILLED;
+import static io.airlift.mcp.legacy.sessions.LegacyBlockingResult.EmptyFulfilled.EMPTY_FULFILLED;
 import static java.util.Objects.requireNonNull;
 
-public sealed interface BlockingResult<T>
+public sealed interface LegacyBlockingResult<T>
 {
     T get()
             throws Exception;
 
     record Fulfilled<T>(T value)
-            implements BlockingResult<T>
+            implements LegacyBlockingResult<T>
     {
         public Fulfilled
         {
@@ -29,7 +29,7 @@ public sealed interface BlockingResult<T>
     }
 
     record EmptyFulfilled()
-            implements BlockingResult<Object>
+            implements LegacyBlockingResult<Object>
     {
         static final EmptyFulfilled EMPTY_FULFILLED = new EmptyFulfilled();
 
@@ -42,7 +42,7 @@ public sealed interface BlockingResult<T>
     }
 
     record TimedOut(Duration timeout)
-            implements BlockingResult<Object>
+            implements LegacyBlockingResult<Object>
     {
         @Override
         public Object get()
@@ -52,15 +52,17 @@ public sealed interface BlockingResult<T>
         }
     }
 
-    static <T> BlockingResult<T> timedOut(Duration timeout)
+    @SuppressWarnings("unchecked")
+    static <T> LegacyBlockingResult<T> timedOut(Duration timeout)
     {
-        return (BlockingResult<T>) new TimedOut(timeout);
+        return (LegacyBlockingResult<T>) new TimedOut(timeout);
     }
 
-    static <T> BlockingResult<T> fulfilled(Optional<T> maybeValue)
+    @SuppressWarnings("unchecked")
+    static <T> LegacyBlockingResult<T> fulfilled(Optional<T> maybeValue)
     {
         if (maybeValue.isEmpty()) {
-            return (BlockingResult<T>) EMPTY_FULFILLED;
+            return (LegacyBlockingResult<T>) EMPTY_FULFILLED;
         }
         return new Fulfilled<>(maybeValue.orElseThrow());
     }

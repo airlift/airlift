@@ -1,16 +1,16 @@
-package io.airlift.mcp;
+package io.airlift.mcp.legacy;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Supplier;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import io.airlift.log.Logger;
-import io.airlift.mcp.sessions.BlockingResult.EmptyFulfilled;
-import io.airlift.mcp.sessions.BlockingResult.Fulfilled;
-import io.airlift.mcp.sessions.BlockingResult.TimedOut;
-import io.airlift.mcp.sessions.SessionController;
-import io.airlift.mcp.sessions.SessionId;
-import io.airlift.mcp.sessions.SessionValueKey;
+import io.airlift.mcp.McpConfig;
+import io.airlift.mcp.legacy.sessions.LegacyBlockingResult.EmptyFulfilled;
+import io.airlift.mcp.legacy.sessions.LegacyBlockingResult.Fulfilled;
+import io.airlift.mcp.legacy.sessions.LegacyBlockingResult.TimedOut;
+import io.airlift.mcp.legacy.sessions.LegacySession;
+import io.airlift.mcp.legacy.sessions.LegacySessionValueKey;
 import jakarta.annotation.PreDestroy;
 
 import java.time.Duration;
@@ -31,24 +31,18 @@ import static java.util.concurrent.Executors.newThreadPerTaskExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 @VisibleForTesting
-public class CancellationController
+public class LegacyCancellationController
 {
-    private static final Logger log = Logger.get(CancellationController.class);
+    private static final Logger log = Logger.get(LegacyCancellationController.class);
 
-    private final McpCancellationHandler cancellationHandler;
-    private final Optional<SessionController> sessionController;
     private final Set<Object> activeRequestIds = Sets.newConcurrentHashSet();
     private final Duration interval;
     private final ExecutorService executorService;
 
     @Inject
-    public CancellationController(McpCancellationHandler cancellationHandler, Optional<SessionController> sessionController, McpConfig mcpConfig)
+    public LegacyCancellationController(McpConfig mcpConfig)
     {
-        this.cancellationHandler = requireNonNull(cancellationHandler, "cancellationHandler is null");
-        this.sessionController = requireNonNull(sessionController, "sessionController is null");
-
         executorService = newThreadPerTaskExecutor(virtualThreadsNamed("CancellationController-%s"));
-
         interval = mcpConfig.getCancellationCheckInterval().toJavaTime();
     }
 
@@ -66,28 +60,24 @@ public class CancellationController
         }
     }
 
-    public <T> Builder<T> builder(SessionId sessionId, SessionValueKey<T> key)
+    public <T> Builder<T> builder(LegacySession session, LegacySessionValueKey<T> key)
     {
-        SessionController localSessionController = sessionController
-                .orElseThrow(() -> exception("SessionController is required for cancellations"));
-        return new Builder<>(localSessionController, sessionId, key);
+        return new Builder<>(session, key);
     }
 
     public class Builder<T>
     {
-        private final SessionController sessionController;
-        private final SessionId sessionId;
-        private final SessionValueKey<T> key;
+        private final LegacySession session;
+        private final LegacySessionValueKey<T> key;
 
         private Object requestId;
         private Predicate<Optional<T>> condition;
-        private BiConsumer<SessionId, SessionValueKey<T>> postCancellationAction = (_, _) -> {};
+        private BiConsumer<LegacySession, LegacySessionValueKey<T>> postCancellationAction = (_, _) -> {};
         private Function<Optional<T>, Optional<String>> reasonMapper = _ -> Optional.empty();
 
-        private Builder(SessionController sessionController, SessionId sessionId, SessionValueKey<T> key)
+        private Builder(LegacySession session, LegacySessionValueKey<T> key)
         {
-            this.sessionController = requireNonNull(sessionController, "sessionController is null");
-            this.sessionId = requireNonNull(sessionId, "sessionId is null");
+            this.session = requireNonNull(session, "session is null");
             this.key = requireNonNull(key, "key is null");
         }
 
@@ -103,7 +93,7 @@ public class CancellationController
             return this;
         }
 
-        public Builder<T> withPostCancellationAction(BiConsumer<SessionId, SessionValueKey<T>> postCancellationAction)
+        public Builder<T> withPostCancellationAction(BiConsumer<LegacySession, LegacySessionValueKey<T>> postCancellationAction)
         {
             this.postCancellationAction = requireNonNull(postCancellationAction, "postCancellationAction is null");
             return this;
@@ -120,7 +110,7 @@ public class CancellationController
             requireNonNull(requestId, "requestId is required");
             requireNonNull(condition, "condition is required");
 
-            return CancellationController.this.executeCancellable(this, supplier);
+            return LegacyCancellationController.this.executeCancellable(this, supplier);
         }
     }
 
@@ -150,7 +140,7 @@ public class CancellationController
         executorService.execute(() -> {
             try {
                 while (!isClosed.get()) {
-                    switch (builder.sessionController.blockUntil(builder.sessionId, builder.key, interval, builder.condition)) {
+                    switch (builder.session.blockUntil(builder.key, interval, builder.condition)) {
                         case Fulfilled<T>(var value) -> handleCancellation(builder, Optional.of(value), isClosed, activeThread);
                         case EmptyFulfilled _ -> handleCancellation(builder, Optional.empty(), isClosed, activeThread);
                         case TimedOut _ -> {}   // do nothing and iterate again
@@ -179,11 +169,12 @@ public class CancellationController
         try {
             if (activeRequestIds.contains(builder.requestId)) {
                 Optional<String> maybeReason = builder.reasonMapper.apply(value);
-                cancellationHandler.cancelRequest(activeThread, builder.requestId, maybeReason);
+                log.info("Cancelling request %s. Reason: %s".formatted(builder.requestId, maybeReason.orElse("No reason provided")));
+                activeThread.interrupt();
             }
         }
         finally {
-            builder.postCancellationAction.accept(builder.sessionId, builder.key);
+            builder.postCancellationAction.accept(builder.session, builder.key);
         }
     }
 }

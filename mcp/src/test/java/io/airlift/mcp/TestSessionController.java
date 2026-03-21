@@ -1,15 +1,14 @@
 package io.airlift.mcp;
 
-import io.airlift.mcp.McpIdentity.Authenticated;
-import io.airlift.mcp.sessions.BlockingResult;
-import io.airlift.mcp.sessions.BlockingResult.TimedOut;
-import io.airlift.mcp.sessions.SessionController;
-import io.airlift.mcp.sessions.SessionId;
-import io.airlift.mcp.sessions.SessionValueKey;
+import io.airlift.mcp.legacy.sessions.LegacyBlockingResult;
+import io.airlift.mcp.legacy.sessions.LegacyBlockingResult.TimedOut;
+import io.airlift.mcp.legacy.sessions.LegacySession;
+import io.airlift.mcp.legacy.sessions.LegacySessionController;
+import io.airlift.mcp.legacy.sessions.LegacySessionId;
+import io.airlift.mcp.legacy.sessions.LegacySessionValueKey;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -18,12 +17,14 @@ import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public abstract class TestSessionController
+public class TestSessionController
 {
     public record TypeA(String name) {}
 
@@ -33,34 +34,34 @@ public abstract class TestSessionController
     public void testListSessionValues()
     {
         int qty = 1000;
-        List<SessionValueKey<TypeA>> aKeys = IntStream.range(0, qty)
-                .mapToObj(i -> SessionValueKey.of("TypeA-" + i, TypeA.class))
+        List<LegacySessionValueKey<TypeA>> aKeys = IntStream.range(0, qty)
+                .mapToObj(i -> LegacySessionValueKey.of("TypeA-" + i, TypeA.class))
                 .collect(toImmutableList());
-        List<SessionValueKey<TypeB>> bKeys = IntStream.range(0, qty)
-                .mapToObj(i -> SessionValueKey.of("TypeB-" + i, TypeB.class))
+        List<LegacySessionValueKey<TypeB>> bKeys = IntStream.range(0, qty)
+                .mapToObj(i -> LegacySessionValueKey.of("TypeB-" + i, TypeB.class))
                 .collect(toImmutableList());
 
-        SessionController controller = sessionController();
-        SessionId sessionId = controller.createSession(new Authenticated<>("dummy"), Optional.empty());
+        LegacySessionController controller = new LegacySessionController(new McpConfig());
+        LegacySession session = controller.createSession();
 
-        aKeys.forEach(key -> controller.setSessionValue(sessionId, key, new TypeA(key.name())));
-        bKeys.forEach(key -> controller.setSessionValue(sessionId, key, new TypeB(key.name())));
+        aKeys.forEach(key -> session.setValue(key, new TypeA(key.name())));
+        bKeys.forEach(key -> session.setValue(key, new TypeB(key.name())));
 
         List<TypeA> aValues = aKeys.stream().map(key -> new TypeA(key.name())).collect(toImmutableList());
         List<TypeB> bValues = bKeys.stream().map(key -> new TypeB(key.name())).collect(toImmutableList());
 
-        assertThat(list(controller, sessionId, TypeA.class)).containsExactlyInAnyOrderElementsOf(aValues);
-        assertThat(list(controller, sessionId, TypeB.class)).containsExactlyInAnyOrderElementsOf(bValues);
+        assertThat(list(controller, session.sessionId(), TypeA.class)).containsExactlyInAnyOrderElementsOf(aValues);
+        assertThat(list(controller, session.sessionId(), TypeB.class)).containsExactlyInAnyOrderElementsOf(bValues);
     }
 
     @Test
     public void testConditions()
             throws InterruptedException
     {
-        SessionController controller = sessionController();
-        SessionId sessionId = controller.createSession(new Authenticated<>("dummy"), Optional.empty());
+        LegacySessionController controller = new LegacySessionController(new McpConfig());
+        LegacySession session = controller.createSession();
 
-        SessionValueKey<String> key = new SessionValueKey<>("key", String.class);
+        LegacySessionValueKey<String> key = new LegacySessionValueKey<>("key", String.class);
 
         Semaphore semaphore = new Semaphore(0);
 
@@ -69,20 +70,20 @@ public abstract class TestSessionController
         newVirtualThreadPerTaskExecutor().execute(() -> {
             try {
                 assertThat(semaphore.tryAcquire(5, TimeUnit.SECONDS)).isTrue();
-                controller.setSessionValue(sessionId, key, "value");
+                session.setValue(key, "value");
             }
             catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
         });
 
-        BlockingResult<String> blockingResult = controller.blockUntil(sessionId, key, Duration.ofSeconds(1), Optional::isPresent);
+        LegacyBlockingResult<String> blockingResult = session.blockUntil(key, Duration.ofSeconds(1), Optional::isPresent);
         assertThat(blockingResult).isInstanceOf(TimedOut.class);
 
         CountDownLatch latch1 = new CountDownLatch(1);
         Future<Void> future = newVirtualThreadPerTaskExecutor().submit(() -> {
             latch1.countDown();
-            controller.blockUntil(sessionId, key, Duration.ofSeconds(1), Optional::isPresent);
+            session.blockUntil(key, Duration.ofSeconds(1), Optional::isPresent);
             return null;
         });
 
@@ -97,13 +98,13 @@ public abstract class TestSessionController
         CountDownLatch latch2 = new CountDownLatch(1);
         future = newVirtualThreadPerTaskExecutor().submit(() -> {
             latch2.countDown();
-            controller.blockUntil(sessionId, key, Duration.ofSeconds(1), value -> value.filter("newValue"::equals).isPresent());
+            session.blockUntil(key, Duration.ofSeconds(1), value -> value.filter("newValue"::equals).isPresent());
             return null;
         });
 
         assertThat(latch1.await(5, TimeUnit.SECONDS)).isTrue();
-        TimeUnit.MILLISECONDS.sleep(50); // ensure the wait is in progress
-        controller.setSessionValue(sessionId, key, "newValue");
+        MILLISECONDS.sleep(50); // ensure the wait is in progress
+        session.setValue(key, "newValue");
 
         assertThat(future)
                 .succeedsWithin(5, TimeUnit.SECONDS);
@@ -113,13 +114,13 @@ public abstract class TestSessionController
         CountDownLatch latch3 = new CountDownLatch(1);
         future = newVirtualThreadPerTaskExecutor().submit(() -> {
             latch3.countDown();
-            controller.blockUntil(sessionId, key, Duration.ofSeconds(1), value -> value.filter("computed"::equals).isPresent());
+            session.blockUntil(key, Duration.ofSeconds(1), value -> value.filter("computed"::equals).isPresent());
             return null;
         });
 
         assertThat(latch1.await(5, TimeUnit.SECONDS)).isTrue();
-        TimeUnit.MILLISECONDS.sleep(50); // ensure the wait is in progress
-        Optional<String> computed = controller.computeSessionValue(sessionId, key, _ -> Optional.of("computed"));
+        MILLISECONDS.sleep(50); // ensure the wait is in progress
+        Optional<String> computed = session.computeValue(key, _ -> Optional.of("computed"));
         assertThat(computed).contains("computed");
 
         assertThat(future)
@@ -130,32 +131,56 @@ public abstract class TestSessionController
         CountDownLatch latch4 = new CountDownLatch(1);
         future = newVirtualThreadPerTaskExecutor().submit(() -> {
             latch4.countDown();
-            controller.blockUntil(sessionId, key, Duration.ofSeconds(1), Optional::isEmpty);
+            session.blockUntil(key, Duration.ofSeconds(1), Optional::isEmpty);
             return null;
         });
 
         assertThat(latch1.await(5, TimeUnit.SECONDS)).isTrue();
-        TimeUnit.MILLISECONDS.sleep(50); // ensure the wait is in progress
-        controller.deleteSessionValue(sessionId, key);
+        MILLISECONDS.sleep(50); // ensure the wait is in progress
+        session.deleteValue(key);
 
         assertThat(future)
                 .succeedsWithin(5, TimeUnit.SECONDS);
     }
 
-    protected abstract SessionController sessionController();
-
-    private <T> List<T> list(SessionController controller, SessionId sessionId, Class<T> type)
+    @Test
+    public void testCleanup()
+            throws InterruptedException
     {
-        int pageSize = 12;
+        // asserting that the following test code will execute faster than 100ms
+        Duration shortDuration = Duration.ofMillis(100);
 
-        List<T> results = new ArrayList<>();
-        Optional<String> lastName = Optional.empty();
-        do {
-            List<Map.Entry<String, T>> thisList = controller.listSessionValues(sessionId, type, pageSize, lastName);
-            thisList.forEach(entry -> results.add(entry.getValue()));
-            lastName = (thisList.size() < pageSize) ? Optional.empty() : Optional.of(thisList.getLast().getKey());
+        McpConfig config = new McpConfig().setDefaultSessionTimeout(new io.airlift.units.Duration(shortDuration.toMillis(), MILLISECONDS));
+
+        LegacySessionController controller = new LegacySessionController(config);
+        LegacySession session = controller.createSession();
+
+        for (int i = 0; i < 10; i++) {
+            // keep the session alive
+            controller.session(session.sessionId());
+
+            assertThat(session.isValid()).isTrue();
+
+            Thread.sleep(shortDuration.toMillis() / 2);
         }
-        while (lastName.isPresent());
-        return results;
+
+        Thread.sleep(shortDuration.toMillis() * 2);
+        assertThat(session.isValid()).isFalse();
+    }
+
+    private <T> List<T> list(LegacySessionController controller, LegacySessionId sessionId, Class<T> type)
+    {
+        Map<LegacySessionValueKey<?>, Object> sessionValues = controller.sessionValues(sessionId);
+        return sessionValues.entrySet()
+                .stream()
+                .flatMap(entry -> {
+                    LegacySessionValueKey<?> key = entry.getKey();
+                    if (key.type().equals(type)) {
+                        return Stream.of(entry.getValue());
+                    }
+                    return Stream.of();
+                })
+                .map(type::cast)
+                .collect(toImmutableList());
     }
 }
