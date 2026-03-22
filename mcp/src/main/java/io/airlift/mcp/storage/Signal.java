@@ -1,4 +1,4 @@
-package io.airlift.mcp.legacy.sessions;
+package io.airlift.mcp.storage;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;

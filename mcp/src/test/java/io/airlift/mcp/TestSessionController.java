@@ -1,64 +1,32 @@
 package io.airlift.mcp;
 
+import io.airlift.json.JsonMapperProvider;
 import io.airlift.mcp.legacy.sessions.LegacyBlockingResult;
 import io.airlift.mcp.legacy.sessions.LegacyBlockingResult.TimedOut;
 import io.airlift.mcp.legacy.sessions.LegacySession;
 import io.airlift.mcp.legacy.sessions.LegacySessionController;
-import io.airlift.mcp.legacy.sessions.LegacySessionId;
 import io.airlift.mcp.legacy.sessions.LegacySessionValueKey;
+import io.airlift.mcp.storage.MemoryStorage;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
-import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestSessionController
 {
-    public record TypeA(String name) {}
-
-    public record TypeB(String name) {}
-
-    @Test
-    public void testListSessionValues()
-    {
-        int qty = 1000;
-        List<LegacySessionValueKey<TypeA>> aKeys = IntStream.range(0, qty)
-                .mapToObj(i -> LegacySessionValueKey.of("TypeA-" + i, TypeA.class))
-                .collect(toImmutableList());
-        List<LegacySessionValueKey<TypeB>> bKeys = IntStream.range(0, qty)
-                .mapToObj(i -> LegacySessionValueKey.of("TypeB-" + i, TypeB.class))
-                .collect(toImmutableList());
-
-        LegacySessionController controller = new LegacySessionController(new McpConfig());
-        LegacySession session = controller.createSession();
-
-        aKeys.forEach(key -> session.setValue(key, new TypeA(key.name())));
-        bKeys.forEach(key -> session.setValue(key, new TypeB(key.name())));
-
-        List<TypeA> aValues = aKeys.stream().map(key -> new TypeA(key.name())).collect(toImmutableList());
-        List<TypeB> bValues = bKeys.stream().map(key -> new TypeB(key.name())).collect(toImmutableList());
-
-        assertThat(list(controller, session.sessionId(), TypeA.class)).containsExactlyInAnyOrderElementsOf(aValues);
-        assertThat(list(controller, session.sessionId(), TypeB.class)).containsExactlyInAnyOrderElementsOf(bValues);
-    }
-
     @Test
     public void testConditions()
             throws InterruptedException
     {
-        LegacySessionController controller = new LegacySessionController(new McpConfig());
+        LegacySessionController controller = new LegacySessionController(new McpConfig(), new MemoryStorage(), new JsonMapperProvider().get());
         LegacySession session = controller.createSession();
 
         LegacySessionValueKey<String> key = new LegacySessionValueKey<>("key", String.class);
@@ -152,7 +120,7 @@ public class TestSessionController
 
         McpConfig config = new McpConfig().setDefaultSessionTimeout(new io.airlift.units.Duration(shortDuration.toMillis(), MILLISECONDS));
 
-        LegacySessionController controller = new LegacySessionController(config);
+        LegacySessionController controller = new LegacySessionController(config, new MemoryStorage(), new JsonMapperProvider().get());
         LegacySession session = controller.createSession();
 
         for (int i = 0; i < 10; i++) {
@@ -166,21 +134,5 @@ public class TestSessionController
 
         Thread.sleep(shortDuration.toMillis() * 2);
         assertThat(session.isValid()).isFalse();
-    }
-
-    private <T> List<T> list(LegacySessionController controller, LegacySessionId sessionId, Class<T> type)
-    {
-        Map<LegacySessionValueKey<?>, Object> sessionValues = controller.sessionValues(sessionId);
-        return sessionValues.entrySet()
-                .stream()
-                .flatMap(entry -> {
-                    LegacySessionValueKey<?> key = entry.getKey();
-                    if (key.type().equals(type)) {
-                        return Stream.of(entry.getValue());
-                    }
-                    return Stream.of();
-                })
-                .map(type::cast)
-                .collect(toImmutableList());
     }
 }

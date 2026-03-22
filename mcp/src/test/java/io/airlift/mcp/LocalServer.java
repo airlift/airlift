@@ -12,6 +12,7 @@ import io.airlift.jaxrs.JaxrsModule;
 import io.airlift.json.JsonModule;
 import io.airlift.log.Logger;
 import io.airlift.mcp.model.Icon;
+import io.airlift.mcp.storage.MemoryStorage;
 import io.airlift.node.NodeModule;
 
 import java.util.Optional;
@@ -41,6 +42,7 @@ public class LocalServer
                 .withAllInClass(MapApp.class)
                 .withAllInClass(DebugApp.class)
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.toInstance((_) -> authenticated(new TestingIdentity("Mr. Tester"))))
+                .withStorage(binding -> binding.to(MemoryStorage.class).in(SINGLETON))
                 .addIcon("google", binding -> binding.toInstance(new Icon("https://www.gstatic.com/images/branding/searchlogo/ico/favicon.ico")))
                 .withServerIcons(ImmutableSet.of("google"))
                 .build();

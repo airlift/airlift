@@ -1,33 +1,36 @@
 package io.airlift.mcp.legacy.sessions;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
+import io.airlift.log.Logger;
+import io.airlift.mcp.storage.Storage;
 
+import java.io.UncheckedIOException;
 import java.time.Duration;
-import java.util.Map;
 import java.util.Optional;
-import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
 import static io.airlift.mcp.legacy.sessions.LegacyBlockingResult.fulfilled;
 import static io.airlift.mcp.legacy.sessions.LegacyBlockingResult.timedOut;
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 class LegacySessionImpl
         implements LegacySession
 {
-    private final LegacySessionId sessionId;
-    private final Map<LegacySessionValueKey<?>, Object> values;
-    private final Signal signal;
-    private final BooleanSupplier isValidProc;
+    private static final Logger log = Logger.get(LegacySessionImpl.class);
 
-    LegacySessionImpl(LegacySessionId sessionId, Map<LegacySessionValueKey<?>, Object> values, Signal signal, BooleanSupplier isValidProc)
+    private final LegacySessionId sessionId;
+    private final Storage storage;
+    private final JsonMapper jsonMapper;
+
+    LegacySessionImpl(LegacySessionId sessionId, Storage storage, JsonMapper jsonMapper)
     {
         this.sessionId = requireNonNull(sessionId, "sessionId is null");
-        this.values = requireNonNull(values, "values is null");     // do not copy
-        this.signal = requireNonNull(signal, "signal is null");
-        this.isValidProc = requireNonNull(isValidProc, "isValidProc is null");
+        this.storage = requireNonNull(storage, "storage is null");
+        this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
     }
 
     @Override
@@ -39,40 +42,38 @@ class LegacySessionImpl
     @Override
     public boolean isValid()
     {
-        return isValidProc.getAsBoolean();
+        return storage.groupExists(sessionId.id());
     }
 
     @Override
     public <T> Optional<T> getValue(LegacySessionValueKey<T> key)
     {
-        return Optional.ofNullable(values.get(key))
-                .map(key.type()::cast);
+        return storage.getValue(sessionId.id(), toKey(key))
+                .flatMap(json -> deserialize(key, json));
     }
 
     @Override
     public <T> void setValue(LegacySessionValueKey<T> key, T value)
     {
-        values.put(key, value);
-        signal.signalAll();
+        storage.setValue(sessionId.id(), toKey(key), serialize(value));
     }
 
     @Override
     public <T> void deleteValue(LegacySessionValueKey<T> key)
     {
-        values.remove(key);
-        signal.signalAll();
+        storage.deleteValue(sessionId.id(), toKey(key));
     }
 
     @Override
     public <T> Optional<T> computeValue(LegacySessionValueKey<T> key, UnaryOperator<Optional<T>> updater)
     {
-        Object computed = values.compute(key, (_, existingValue) -> {
-            Optional<T> existing = Optional.ofNullable(existingValue).map(key.type()::cast);
-            return updater.apply(existing).orElse(null);
+        Optional<String> computedValue = storage.computeValue(sessionId.id(), toKey(key), json -> {
+            Optional<T> currentValue = json.flatMap(jsonValue -> deserialize(key, jsonValue));
+            Optional<T> newValue = updater.apply(currentValue);
+            return newValue.map(this::serialize);
         });
-        signal.signalAll();
 
-        return Optional.ofNullable(computed).map(key.type()::cast);
+        return computedValue.flatMap(json -> deserialize(key, json));
     }
 
     @Override
@@ -94,7 +95,7 @@ class LegacySessionImpl
             }
 
             stopwatch.reset().start();
-            signal.waitForSignal(timeoutMsRemaining, MILLISECONDS);
+            storage.waitForSignal(sessionId.id(), Duration.ofMillis(timeoutMsRemaining));
             timeoutMsRemaining -= stopwatch.elapsed().toMillis();
         }
     }
@@ -102,6 +103,35 @@ class LegacySessionImpl
     @Override
     public void signalAll()
     {
-        signal.signalAll();
+        storage.signalAll(sessionId.id());
+    }
+
+    @VisibleForTesting
+    <T> Optional<T> deserialize(LegacySessionValueKey<T> key, String json)
+    {
+        try {
+            return Optional.of(jsonMapper.readValue(json, key.type()));
+        }
+        catch (Exception e) {
+            log.warn(e, "Failed to deserialize session value for key: %s, json: %s", key, json);
+        }
+
+        // if it's invalid just treat it like it's missing to avoid upgrade/compatiblity issues
+        return Optional.empty();
+    }
+
+    private static String toKey(LegacySessionValueKey<?> key)
+    {
+        return key.type().getName() + "|" + key.name();
+    }
+
+    private <T> String serialize(T value)
+    {
+        try {
+            return jsonMapper.writeValueAsString(value);
+        }
+        catch (JsonProcessingException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 }
