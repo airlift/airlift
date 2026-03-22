@@ -251,10 +251,6 @@ public final class LifeCycleManager
             return;
         }
 
-        if (methods.hasFor(PreDestroy.class)) {
-            preDestroyInstances.add(obj);
-        }
-
         for (Method postConstruct : methods.methodsFor(PostConstruct.class)) {
             log.debug("- invoke %s::%s()", postConstruct.getDeclaringClass().getName(), postConstruct.getName());
             try {
@@ -270,6 +266,10 @@ public final class LifeCycleManager
                 });
                 throw failure;
             }
+        }
+
+        if (methods.hasFor(PreDestroy.class)) {
+            preDestroyInstances.add(obj);
         }
     }
 
