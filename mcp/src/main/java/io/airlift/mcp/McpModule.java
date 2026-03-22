@@ -14,6 +14,7 @@ import com.google.inject.multibindings.OptionalBinder;
 import com.google.inject.name.Names;
 import io.airlift.json.JsonSubType;
 import io.airlift.json.JsonSubTypeBinder;
+import io.airlift.mcp.features.FeaturesModule;
 import io.airlift.mcp.handler.CompletionEntry;
 import io.airlift.mcp.handler.PromptEntry;
 import io.airlift.mcp.handler.ResourceEntry;
@@ -297,6 +298,8 @@ public class McpModule
         bindCapabilityFilter(binder);
         bindCancellation(binder);
         bindIcons(binder);
+
+        binder.install(new FeaturesModule());
 
         if (mode == STANDARD) {
             binder.install(new InternalMcpModule());

@@ -34,10 +34,11 @@ public interface Constants
     String NOTIFICATION_CANCELLED = "notifications/cancelled";
 
     String HEADER_SESSION_ID = "Mcp-Session-Id";
-    String HEADER_PROTOCOL_VERSION = "MCP-Protocol-Version";
     String HEADER_LAST_EVENT_ID = "Last-Event-ID";
 
     String MCP_IDENTITY_ATTRIBUTE = Constants.class.getName() + ".identity";
     String RPC_MESSAGE_ATTRIBUTE = Constants.class.getName() + ".message";
     String MESSAGE_WRITER_ATTRIBUTE = Constants.class.getName() + ".messageWriter";
+
+    String META_PROTOCOL_VERSION = "modelcontextprotocol.io/mcpProtocolVersion";
 }

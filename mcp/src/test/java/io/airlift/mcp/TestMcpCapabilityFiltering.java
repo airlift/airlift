@@ -130,9 +130,8 @@ public class TestMcpCapabilityFiltering
         // Verify public tool can be invoked, but admin cannot
         McpSchema.CallToolResult publicToolResult = client.mcpClient().callTool(new CallToolRequest("public-tool", ImmutableMap.of()));
         assertThat(publicToolResult.content()).hasSize(1);
-        McpSchema.CallToolResult adminToolResult = client.mcpClient().callTool(new CallToolRequest("admin-tool", ImmutableMap.of()));
-        assertThat(adminToolResult.content()).hasSize(1).containsOnly(new McpSchema.TextContent("Tool not allowed: admin-tool"));
-        assertThat(adminToolResult.isError()).isTrue();
+        assertThatThrownBy(() -> client.mcpClient().callTool(new CallToolRequest("admin-tool", ImmutableMap.of())))
+                .satisfies(e -> assertMcpError(e, INVALID_PARAMS, "Tool not allowed: admin-tool"));
 
         // Verify all tools are visible to admin
         TestingClient adminClient = TestingClient.buildClient(closer, baseUri, EXPECTED_IDENTITY, EXPECTED_IDENTITY);
@@ -144,7 +143,7 @@ public class TestMcpCapabilityFiltering
         publicToolResult = adminClient.mcpClient().callTool(new CallToolRequest("public-tool", ImmutableMap.of()));
         assertThat(publicToolResult.content()).hasSize(1);
 
-        adminToolResult = adminClient.mcpClient().callTool(new CallToolRequest("admin-tool", ImmutableMap.of()));
+        McpSchema.CallToolResult adminToolResult = adminClient.mcpClient().callTool(new CallToolRequest("admin-tool", ImmutableMap.of()));
         assertThat(adminToolResult.content()).hasSize(1);
     }
 

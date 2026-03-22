@@ -1,11 +1,14 @@
 package io.airlift.mcp;
 
 import io.airlift.mcp.McpIdentity.Authenticated;
+import io.airlift.mcp.legacy.sessions.LegacySession;
 import io.airlift.mcp.model.InitializeRequest.ClientCapabilities;
 import io.airlift.mcp.model.JsonRpcResponse;
 import io.airlift.mcp.model.LoggingLevel;
+import io.airlift.mcp.model.Protocol;
 import io.airlift.mcp.model.Root;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.time.Duration;
 import java.util.List;
@@ -16,7 +19,15 @@ public interface McpRequestContext
 {
     HttpServletRequest request();
 
+    HttpServletResponse response();
+
+    McpRequestContext withSession(LegacySession session);
+
     Authenticated<?> identity();
+
+    McpRequestContext withProgressToken(Optional<Object> progressToken);
+
+    Protocol protocol();
 
     void sendProgress(double progress, double total, String message);
 

@@ -1,6 +1,5 @@
-package io.airlift.mcp.internal;
+package io.airlift.mcp.features;
 
-import com.google.inject.Inject;
 import io.airlift.mcp.McpConfig;
 import io.airlift.mcp.model.PaginatedRequest;
 
@@ -13,17 +12,16 @@ import java.util.stream.Stream;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.util.Comparator.comparing;
 
-class PaginationUtil
+public class PaginationUtil
 {
     private final int pageSize;
 
-    @Inject
-    PaginationUtil(McpConfig mcpConfig)
+    public PaginationUtil(McpConfig mcpConfig)
     {
         pageSize = mcpConfig.getDefaultPageSize();
     }
 
-    <T, L> T paginate(PaginatedRequest request, List<L> items, Function<L, String> keyMapper, BiFunction<List<L>, Optional<String>, T> resultMapper)
+    public <T, L> T paginate(PaginatedRequest request, List<L> items, Function<L, String> keyMapper, BiFunction<List<L>, Optional<String>, T> resultMapper)
     {
         Stream<L> itemsStream = request.cursor()
                 .map(cursor -> items.stream()

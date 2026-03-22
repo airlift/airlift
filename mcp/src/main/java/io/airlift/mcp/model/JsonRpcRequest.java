@@ -21,6 +21,11 @@ public record JsonRpcRequest<T>(String jsonrpc, Object id, String method, Option
         params = requireNonNullElse(params, Optional.empty());
     }
 
+    public boolean isNotification()
+    {
+        return id == null;
+    }
+
     public static <T> JsonRpcRequest<T> buildRequest(Object id, String method, T params)
     {
         return new JsonRpcRequest<>(JSON_RPC_VERSION, id, method, Optional.of(params));

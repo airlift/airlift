@@ -60,12 +60,12 @@ public class LegacyCancellationController
         }
     }
 
-    public <T> Builder<T> builder(LegacySession session, LegacySessionValueKey<T> key)
+    public <T, R> Builder<T, R> builder(LegacySession session, LegacySessionValueKey<T> key)
     {
         return new Builder<>(session, key);
     }
 
-    public class Builder<T>
+    public class Builder<T, R>
     {
         private final LegacySession session;
         private final LegacySessionValueKey<T> key;
@@ -81,31 +81,31 @@ public class LegacyCancellationController
             this.key = requireNonNull(key, "key is null");
         }
 
-        public Builder<T> withRequestId(Object requestId)
+        public Builder<T, R> withRequestId(Object requestId)
         {
             this.requestId = requireNonNull(requestId, "requestId is null");
             return this;
         }
 
-        public Builder<T> withIsCancelledCondition(Predicate<Optional<T>> condition)
+        public Builder<T, R> withIsCancelledCondition(Predicate<Optional<T>> condition)
         {
             this.condition = requireNonNull(condition, "condition is null");
             return this;
         }
 
-        public Builder<T> withPostCancellationAction(BiConsumer<LegacySession, LegacySessionValueKey<T>> postCancellationAction)
+        public Builder<T, R> withPostCancellationAction(BiConsumer<LegacySession, LegacySessionValueKey<T>> postCancellationAction)
         {
             this.postCancellationAction = requireNonNull(postCancellationAction, "postCancellationAction is null");
             return this;
         }
 
-        public Builder<T> withReasonMapper(Function<Optional<T>, Optional<String>> reasonMapper)
+        public Builder<T, R> withReasonMapper(Function<Optional<T>, Optional<String>> reasonMapper)
         {
             this.reasonMapper = requireNonNull(reasonMapper, "reasonMapper is null");
             return this;
         }
 
-        public Object executeCancellable(Supplier<Object> supplier)
+        public R executeCancellable(Supplier<R> supplier)
         {
             requireNonNull(requestId, "requestId is required");
             requireNonNull(condition, "condition is required");
@@ -114,7 +114,7 @@ public class LegacyCancellationController
         }
     }
 
-    private <T> Object executeCancellable(Builder<T> builder, Supplier<Object> supplier)
+    private <T, R> R executeCancellable(Builder<T, R> builder, Supplier<R> supplier)
     {
         if (!activeRequestIds.add(builder.requestId)) {
             throw exception("Request is already being processed: " + builder.requestId);
@@ -131,7 +131,7 @@ public class LegacyCancellationController
         }
     }
 
-    private <T> Runnable startCancellationThread(Builder<T> builder)
+    private <T, R> Runnable startCancellationThread(Builder<T, R> builder)
     {
         Thread activeThread = Thread.currentThread();
 
@@ -162,7 +162,7 @@ public class LegacyCancellationController
         return () -> isClosed.set(true);
     }
 
-    private <T> void handleCancellation(Builder<T> builder, Optional<T> value, AtomicBoolean isClosed, Thread activeThread)
+    private <T, R> void handleCancellation(Builder<T, R> builder, Optional<T> value, AtomicBoolean isClosed, Thread activeThread)
     {
         isClosed.set(true);
 

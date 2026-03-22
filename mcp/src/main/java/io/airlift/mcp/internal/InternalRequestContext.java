@@ -110,23 +110,27 @@ class InternalRequestContext
         this.identity = requireNonNull(identity, "identity is null");
     }
 
-    InternalRequestContext withProgressToken(Optional<Object> progressToken)
+    @Override
+    public InternalRequestContext withProgressToken(Optional<Object> progressToken)
     {
         return new InternalRequestContext(jsonMapper, session, request, response, messageWriter, progressToken, loggingLevelSupplier, identity);
     }
 
-    Protocol protocol()
+    @Override
+    public Protocol protocol()
     {
         return session.flatMap(localSession -> localSession.getValue(PROTOCOL))
                 .orElse(LATEST_PROTOCOL);
     }
 
-    HttpServletResponse response()
+    @Override
+    public HttpServletResponse response()
     {
         return response;
     }
 
-    InternalRequestContext withSession(LegacySession session)
+    @Override
+    public InternalRequestContext withSession(LegacySession session)
     {
         return new InternalRequestContext(jsonMapper, Optional.of(session), request, response, messageWriter, progressToken, loggingLevelSupplier, identity);
     }
