@@ -3,6 +3,7 @@ package io.airlift.mcp;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Closer;
 import io.airlift.http.server.testing.TestingHttpServer;
+import io.airlift.mcp.storage.MemoryStorage;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -11,6 +12,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.util.List;
 import java.util.Optional;
 
+import static com.google.inject.Scopes.SINGLETON;
 import static io.airlift.mcp.McpIdentity.Authenticated.authenticated;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
@@ -59,6 +61,7 @@ public class TestConformance
         TestingServer testingServer = closer.register(new TestingServer(ImmutableMap.of(), Optional.empty(), builder -> builder
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.toInstance((_) -> authenticated(new TestingIdentity("Mr. Tester"))))
                 .withAllInClass(ConformanceEndpoints.class)
+                .withStorage(binding -> binding.to(MemoryStorage.class).in(SINGLETON))
                 .build()));
 
         mcpUri = testingServer.injector()

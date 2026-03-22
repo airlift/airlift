@@ -7,6 +7,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.io.Closer;
 import com.google.common.reflect.TypeToken;
+import com.google.inject.Module;
 import io.airlift.http.client.FullJsonResponseHandler;
 import io.airlift.http.client.HeaderName;
 import io.airlift.http.client.HttpClient;
@@ -21,6 +22,7 @@ import io.airlift.mcp.legacy.sessions.LegacySessionId;
 import io.airlift.mcp.model.CancelledNotification;
 import io.airlift.mcp.model.Icon;
 import io.airlift.mcp.model.JsonRpcRequest;
+import io.airlift.mcp.storage.Storage;
 import io.modelcontextprotocol.client.transport.McpHttpClientTransportAuthorizationException;
 import io.modelcontextprotocol.spec.HttpHeaders;
 import io.modelcontextprotocol.spec.McpError;
@@ -108,7 +110,7 @@ import static org.assertj.core.api.InstanceOfAssertFactories.type;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 
 @TestInstance(PER_CLASS)
-public class TestMcp
+public abstract class TestMcp
 {
     private static final Logger log = Logger.get(TestMcp.class);
 
@@ -121,12 +123,13 @@ public class TestMcp
     private final TestingServer testingServer;
     private final LegacySessionController sessionController;
 
-    public TestMcp()
+    protected TestMcp(Class<? extends Storage> storageClass, Optional<Module> additionalModule)
     {
         Map<String, String> properties = ImmutableMap.of("mcp.http-get-events.enabled", "false");
 
-        testingServer = new TestingServer(properties, Optional.empty(), builder -> builder
+        testingServer = new TestingServer(properties, additionalModule, builder -> builder
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
+                .withStorage(binding -> binding.to(storageClass).in(SINGLETON))
                 .addIcon("google", binding -> binding.toInstance(new Icon("https://www.gstatic.com/images/branding/searchlogo/ico/favicon.ico")))
                 .withAllInClass(TestingEndpoints.class)
                 .build());

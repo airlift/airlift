@@ -11,7 +11,6 @@ import io.airlift.http.client.HttpClient;
 import io.airlift.http.server.testing.TestingHttpServerModule;
 import io.airlift.jaxrs.JaxrsModule;
 import io.airlift.json.JsonModule;
-import io.airlift.mcp.storage.MemoryStorage;
 import io.airlift.node.NodeModule;
 
 import java.io.Closeable;
@@ -19,7 +18,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
-import static com.google.inject.Scopes.SINGLETON;
 import static io.airlift.http.client.HttpClientBinder.httpClientBinder;
 
 public class TestingServer
@@ -29,9 +27,7 @@ public class TestingServer
 
     public TestingServer(Map<String, String> properties, Optional<Module> additionalModule, Function<McpModule.Builder, Module> mcpModuleApplicator)
     {
-        Module mcpModule = mcpModuleApplicator.apply(
-                McpModule.builder()
-                        .withStorage(binding -> binding.to(MemoryStorage.class).in(SINGLETON)));
+        Module mcpModule = mcpModuleApplicator.apply(McpModule.builder());
 
         ImmutableList.Builder<com.google.inject.Module> modules = ImmutableList.<Module>builder()
                 .add(mcpModule)

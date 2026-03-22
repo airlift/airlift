@@ -11,6 +11,7 @@ import io.airlift.mcp.SentMessages.SentMessage;
 import io.airlift.mcp.legacy.sessions.LegacySessionController;
 import io.airlift.mcp.legacy.sessions.LegacySessionId;
 import io.airlift.mcp.model.Icon;
+import io.airlift.mcp.storage.MemoryStorage;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
@@ -59,6 +60,7 @@ public class TestSentMessages
 
         testingServer = new TestingServer(properties, Optional.empty(), builder -> builder
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
+                .withStorage(binding -> binding.to(MemoryStorage.class).in(SINGLETON))
                 .addIcon("google", binding -> binding.toInstance(new Icon("https://www.gstatic.com/images/branding/searchlogo/ico/favicon.ico")))
                 .withAllInClass(TestingEndpoints.class)
                 .build());

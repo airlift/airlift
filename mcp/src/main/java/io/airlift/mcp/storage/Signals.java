@@ -9,7 +9,7 @@ import java.util.concurrent.ExecutionException;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-class Signals
+public class Signals
 {
     private final Cache<String, Signal> signals;
 
@@ -20,7 +20,7 @@ class Signals
                 .build();
     }
 
-    void signalAll(String key)
+    public void signalAll(String key)
     {
         Signal signal = signals.getIfPresent(key);
         if (signal != null) {
@@ -28,7 +28,7 @@ class Signals
         }
     }
 
-    void waitForSignal(String key, Duration timeout)
+    public void waitForSignal(String key, Duration timeout)
             throws InterruptedException
     {
         try {
