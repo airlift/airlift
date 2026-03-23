@@ -1,4 +1,4 @@
-package io.airlift.mcp.internal;
+package io.airlift.mcp.operations;
 
 import com.google.common.collect.ImmutableList;
 import io.airlift.mcp.McpException;
@@ -17,14 +17,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static io.airlift.mcp.model.JsonRpcErrorCode.CONNECTION_CLOSED;
 import static java.util.Objects.requireNonNull;
 
-class InternalMessageWriter
+class MessageWriterImpl
         implements MessageWriter
 {
     private final HttpServletResponse response;
     private final AtomicBoolean hasBeenUpgraded = new AtomicBoolean();
     private final List<SentMessage> sentMessages = new CopyOnWriteArrayList<>();
 
-    InternalMessageWriter(HttpServletResponse response)
+    MessageWriterImpl(HttpServletResponse response)
     {
         this.response = requireNonNull(response, "response is null");
     }

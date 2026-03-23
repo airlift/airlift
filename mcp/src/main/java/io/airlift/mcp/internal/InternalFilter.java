@@ -2,91 +2,35 @@ package io.airlift.mcp.internal;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.google.common.base.Stopwatch;
-import com.google.common.base.Supplier;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
-import io.airlift.log.Logger;
-import io.airlift.mcp.CancellationController;
 import io.airlift.mcp.ErrorHandler;
-import io.airlift.mcp.McpConfig;
 import io.airlift.mcp.McpIdentity;
 import io.airlift.mcp.McpIdentity.Authenticated;
 import io.airlift.mcp.McpIdentityMapper;
 import io.airlift.mcp.McpMetadata;
-import io.airlift.mcp.SentMessages;
-import io.airlift.mcp.SentMessages.SentMessage;
-import io.airlift.mcp.model.CallToolRequest;
-import io.airlift.mcp.model.CancelledNotification;
-import io.airlift.mcp.model.CompleteRequest;
-import io.airlift.mcp.model.GetPromptRequest;
-import io.airlift.mcp.model.InitializeRequest;
 import io.airlift.mcp.model.JsonRpcRequest;
 import io.airlift.mcp.model.JsonRpcResponse;
-import io.airlift.mcp.model.ListRequest;
-import io.airlift.mcp.model.ReadResourceRequest;
-import io.airlift.mcp.model.SetLevelRequest;
-import io.airlift.mcp.model.SubscribeRequest;
-import io.airlift.mcp.sessions.SessionController;
-import io.airlift.mcp.sessions.SessionId;
-import io.airlift.mcp.sessions.SessionValueKey;
+import io.airlift.mcp.operations.Operations;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.ws.rs.WebApplicationException;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.time.Duration;
-import java.util.List;
-import java.util.Optional;
 import java.util.Set;
-import java.util.function.BiConsumer;
 
 import static com.google.common.net.HttpHeaders.WWW_AUTHENTICATE;
-import static io.airlift.http.server.tracing.TracingServletFilter.updateRequestSpan;
 import static io.airlift.mcp.McpException.exception;
-import static io.airlift.mcp.internal.InternalRequestContext.optionalSessionId;
-import static io.airlift.mcp.internal.InternalRequestContext.requireSessionId;
-import static io.airlift.mcp.model.Constants.HEADER_LAST_EVENT_ID;
-import static io.airlift.mcp.model.Constants.HEADER_SESSION_ID;
 import static io.airlift.mcp.model.Constants.MCP_IDENTITY_ATTRIBUTE;
-import static io.airlift.mcp.model.Constants.MESSAGE_WRITER_ATTRIBUTE;
-import static io.airlift.mcp.model.Constants.METHOD_COMPLETION_COMPLETE;
-import static io.airlift.mcp.model.Constants.METHOD_INITIALIZE;
-import static io.airlift.mcp.model.Constants.METHOD_LOGGING_SET_LEVEL;
-import static io.airlift.mcp.model.Constants.METHOD_PING;
-import static io.airlift.mcp.model.Constants.METHOD_PROMPT_GET;
-import static io.airlift.mcp.model.Constants.METHOD_PROMPT_LIST;
-import static io.airlift.mcp.model.Constants.METHOD_RESOURCES_LIST;
-import static io.airlift.mcp.model.Constants.METHOD_RESOURCES_READ;
-import static io.airlift.mcp.model.Constants.METHOD_RESOURCES_SUBSCRIBE;
-import static io.airlift.mcp.model.Constants.METHOD_RESOURCES_TEMPLATES_LIST;
-import static io.airlift.mcp.model.Constants.METHOD_RESOURCES_UNSUBSCRIBE;
-import static io.airlift.mcp.model.Constants.METHOD_TOOLS_CALL;
-import static io.airlift.mcp.model.Constants.METHOD_TOOLS_LIST;
-import static io.airlift.mcp.model.Constants.NOTIFICATION_CANCELLED;
-import static io.airlift.mcp.model.Constants.NOTIFICATION_INITIALIZED;
-import static io.airlift.mcp.model.Constants.NOTIFICATION_ROOTS_LIST_CHANGED;
 import static io.airlift.mcp.model.Constants.RPC_MESSAGE_ATTRIBUTE;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
-import static io.airlift.mcp.model.JsonRpcErrorCode.METHOD_NOT_FOUND;
 import static io.airlift.mcp.model.JsonRpcErrorCode.PARSE_ERROR;
-import static io.airlift.mcp.sessions.SessionValueKey.ROOTS;
-import static io.airlift.mcp.sessions.SessionValueKey.SENT_MESSAGES;
-import static io.airlift.mcp.sessions.SessionValueKey.cancellationKey;
-import static io.airlift.mcp.sessions.SessionValueKey.serverToClientResponseKey;
-import static io.opentelemetry.semconv.incubating.McpIncubatingAttributes.MCP_METHOD_NAME;
-import static io.opentelemetry.semconv.incubating.McpIncubatingAttributes.MCP_SESSION_ID;
-import static jakarta.servlet.http.HttpServletResponse.SC_ACCEPTED;
 import static jakarta.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
 import static jakarta.servlet.http.HttpServletResponse.SC_FORBIDDEN;
-import static jakarta.servlet.http.HttpServletResponse.SC_METHOD_NOT_ALLOWED;
 import static jakarta.servlet.http.HttpServletResponse.SC_NOT_FOUND;
-import static jakarta.servlet.http.HttpServletResponse.SC_OK;
 import static jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED;
 import static jakarta.ws.rs.HttpMethod.DELETE;
 import static jakarta.ws.rs.HttpMethod.GET;
@@ -94,7 +38,6 @@ import static jakarta.ws.rs.HttpMethod.POST;
 import static jakarta.ws.rs.core.HttpHeaders.ACCEPT;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static jakarta.ws.rs.core.MediaType.SERVER_SENT_EVENTS;
-import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Locale.ROOT;
 import static java.util.Objects.requireNonNull;
@@ -103,44 +46,27 @@ import static java.util.stream.Collectors.joining;
 public class InternalFilter
         extends HttpFilter
 {
-    private static final Logger log = Logger.get(InternalFilter.class);
-
     private static final Set<String> ALLOWED_HTTP_METHODS = ImmutableSet.of("GET", "POST", "DELETE");
+
     private final McpMetadata metadata;
     private final McpIdentityMapper identityMapper;
-    private final InternalController internalController;
     private final JsonMapper jsonMapper;
     private final ErrorHandler errorHandler;
-    private final Optional<SessionController> sessionController;
-    private final boolean httpGetEventsEnabled;
-    private final Duration streamingPingThreshold;
-    private final Duration streamingTimeout;
-    private final CancellationController cancellationController;
-    private final int maxResumableMessages;
+    private final Operations operations;
 
     @Inject
     public InternalFilter(
             McpMetadata metadata,
             McpIdentityMapper identityMapper,
-            InternalController internalController,
             JsonMapper jsonMapper,
             ErrorHandler errorHandler,
-            Optional<SessionController> sessionController,
-            CancellationController cancellationController,
-            McpConfig mcpConfig)
+            Operations operations)
     {
         this.metadata = requireNonNull(metadata, "metadata is null");
         this.identityMapper = requireNonNull(identityMapper, "identityMapper is null");
-        this.internalController = requireNonNull(internalController, "mcpServer is null");
         this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
         this.errorHandler = requireNonNull(errorHandler, "errorHandler is null");
-        this.sessionController = requireNonNull(sessionController, "sessionController is null");
-        this.cancellationController = requireNonNull(cancellationController, "cancellationController is null");
-
-        httpGetEventsEnabled = mcpConfig.isHttpGetEventsEnabled();
-        streamingPingThreshold = mcpConfig.getEventStreamingPingThreshold().toJavaTime();
-        streamingTimeout = mcpConfig.getEventStreamingTimeout().toJavaTime();
-        maxResumableMessages = mcpConfig.getMaxResumableMessages();
+        this.operations = requireNonNull(operations, "operations is null");
     }
 
     @Override
@@ -151,10 +77,6 @@ public class InternalFilter
             chain.doFilter(request, response);
             return;
         }
-
-        optionalSessionId(request)
-                .ifPresent(sessionId ->
-                        updateRequestSpan(request, span -> span.setAttribute(MCP_SESSION_ID, sessionId.id())));
 
         McpIdentity identity = identityMapper.map(request);
         try {
@@ -188,101 +110,15 @@ public class InternalFilter
 
         switch (request.getMethod().toUpperCase(ROOT)) {
             case POST -> handleMcpPostRequest(request, response, authenticated);
-            case GET -> handleMpcGetRequest(request, response, authenticated);
-            case DELETE -> handleMcpDeleteRequest(request, response);
+            case GET -> operations.handleRpcGetRequest(request, response, authenticated);
+            case DELETE -> operations.handleRcpDeleteRequest(request, response, authenticated);
             default -> response.setStatus(SC_NOT_FOUND);
         }
-    }
-
-    private void handleMpcGetRequest(HttpServletRequest request, HttpServletResponse response, Authenticated<?> authenticated)
-    {
-        boolean wasHandled = httpGetEventsEnabled && sessionController.map(controller -> {
-            handleEventStreaming(request, response, authenticated, controller);
-            return true;
-        }).orElse(false);
-
-        if (!wasHandled) {
-            response.setStatus(SC_METHOD_NOT_ALLOWED);
-        }
-    }
-
-    @SuppressWarnings("BusyWait")
-    private void handleEventStreaming(HttpServletRequest request, HttpServletResponse response, Authenticated<?> authenticated, SessionController sessionController)
-    {
-        SessionId sessionId = requireSessionId(request);
-
-        Stopwatch timeoutStopwatch = Stopwatch.createStarted();
-        Stopwatch pingStopwatch = Stopwatch.createStarted();
-
-        InternalMessageWriter messageWriter = new InternalMessageWriter(response);
-        InternalRequestContext requestContext = new InternalRequestContext(jsonMapper, Optional.of(sessionController), request, response, messageWriter, authenticated);
-
-        Optional.ofNullable(request.getHeader(HEADER_LAST_EVENT_ID))
-                .ifPresent(lastEventId -> replaySentMessages(sessionController, sessionId, lastEventId, messageWriter));
-
-        while (timeoutStopwatch.elapsed().compareTo(streamingTimeout) < 0) {
-            if (!sessionController.validateSession(sessionId)) {
-                log.warn(String.format("Session validation failed for %s", sessionId));
-                break;
-            }
-
-            BiConsumer<String, Optional<Object>> notifier = (method, params) -> {
-                requestContext.sendMessage(method, params);
-
-                pingStopwatch.reset().start();
-            };
-
-            internalController.reconcileVersions(requestContext);
-
-            checkSaveSentMessages(sessionController, sessionId, messageWriter);
-
-            if (pingStopwatch.elapsed().compareTo(streamingPingThreshold) >= 0) {
-                notifier.accept(METHOD_PING, Optional.empty());
-            }
-
-            try {
-                Thread.sleep(streamingPingThreshold.toMillis());
-            }
-            catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                log.info("Event streaming interrupted for session %s", sessionId);
-                break;
-            }
-        }
-    }
-
-    private void replaySentMessages(SessionController sessionController, SessionId sessionId, String lastEventId, InternalMessageWriter messageWriter)
-    {
-        sessionController.getSessionValue(sessionId, SENT_MESSAGES)
-                .ifPresent(sentMessages -> {
-                    boolean found = false;
-                    for (SentMessage sentMessage : sentMessages.messages()) {
-                        if (found) {
-                            log.info("Sending resumable messages to session %s", sessionId);
-                            messageWriter.internalWriteMessage(sentMessage.id(), sentMessage.data());
-                        }
-                        else {
-                            found = sentMessage.id().equals(lastEventId);
-                        }
-                    }
-                    messageWriter.flushMessages();
-                });
-    }
-
-    private void handleMcpDeleteRequest(HttpServletRequest request, HttpServletResponse response)
-    {
-        sessionController.ifPresentOrElse(controller -> {
-            controller.deleteSession(requireSessionId(request));
-            response.setStatus(SC_ACCEPTED);
-        }, () -> response.setStatus(SC_METHOD_NOT_ALLOWED));
     }
 
     private void handleMcpPostRequest(HttpServletRequest request, HttpServletResponse response, Authenticated<?> authenticated)
             throws Exception
     {
-        InternalMessageWriter messageWriter = new InternalMessageWriter(response);
-        request.setAttribute(MESSAGE_WRITER_ATTRIBUTE, messageWriter);
-
         String accept = request.getHeader(ACCEPT);
         if (accept == null || !(accept.contains(APPLICATION_JSON) && accept.contains(SERVER_SENT_EVENTS))) {
             throw exception(INVALID_REQUEST, "Both application/json and text/event-stream required in Accept header");
@@ -296,146 +132,24 @@ public class InternalFilter
 
             Object message = deserializeJsonRpcMessage(body);
             switch (message) {
-                case JsonRpcRequest<?> rpcRequest when (rpcRequest.id() != null) -> handleRpcRequest(request, response, authenticated, rpcRequest, messageWriter);
-                case JsonRpcRequest<?> rpcRequest -> handleRpcNotification(request, response, rpcRequest);
-                case JsonRpcResponse<?> rpcResponse -> handleRpcResponse(request, response, rpcResponse);
+                case JsonRpcRequest<?> rpcRequest when (rpcRequest.id() != null) -> {
+                    request.setAttribute(RPC_MESSAGE_ATTRIBUTE, rpcRequest);
+                    operations.handleRpcRequest(request, response, authenticated, rpcRequest);
+                }
+
+                case JsonRpcRequest<?> rpcRequest -> {
+                    request.setAttribute(RPC_MESSAGE_ATTRIBUTE, rpcRequest);
+                    operations.handleRpcNotification(request, response, authenticated, rpcRequest);
+                }
+
+                case JsonRpcResponse<?> rpcResponse -> {
+                    request.setAttribute(RPC_MESSAGE_ATTRIBUTE, rpcResponse);
+                    operations.handleRpcResponse(request, response, authenticated, rpcResponse);
+                }
+
                 default -> throw exception(SC_BAD_REQUEST, "The server accepts either requests or notifications");
             }
         }
-
-        sessionController.ifPresent(controller -> optionalSessionId(request)
-                .ifPresent(sessionId -> checkSaveSentMessages(controller, sessionId, messageWriter)));
-    }
-
-    private void checkSaveSentMessages(SessionController sessionController, SessionId sessionId, InternalMessageWriter messageWriter)
-    {
-        List<SentMessage> sentMessages = messageWriter.takeSentMessages();
-        if (sentMessages.isEmpty()) {
-            return;
-        }
-
-        sessionController.computeSessionValue(sessionId, SENT_MESSAGES, current -> {
-            SentMessages currentSentMessages = current.orElseGet(SentMessages::new);
-            return Optional.of(currentSentMessages.withAdditionalMessages(sentMessages, maxResumableMessages));
-        });
-    }
-
-    private void handleRpcResponse(HttpServletRequest request, HttpServletResponse response, JsonRpcResponse<?> rpcResponse)
-    {
-        log.debug("Processing MCP response: %s, session: %s", rpcResponse.id(), optionalSessionId(request).map(SessionId::id).orElse("-"));
-
-        sessionController.ifPresent(controller ->
-                controller.setSessionValue(requireSessionId(request), serverToClientResponseKey(rpcResponse.id()), rpcResponse));
-
-        response.setStatus(SC_ACCEPTED);
-    }
-
-    private void handleRpcNotification(HttpServletRequest request, HttpServletResponse response, JsonRpcRequest<?> rpcRequest)
-    {
-        log.debug("Processing MCP notification: %s, session: %s", rpcRequest.method(), request.getHeader(HEADER_SESSION_ID));
-
-        switch (rpcRequest.method()) {
-            case NOTIFICATION_INITIALIZED -> {} // ignore
-            case NOTIFICATION_CANCELLED -> handleRpcCancellation(request, convertParams(rpcRequest, CancelledNotification.class));
-            case NOTIFICATION_ROOTS_LIST_CHANGED -> handleRpcRootsChanged(request);
-            default -> log.warn("Unknown MCP notification method: %s", rpcRequest.method());
-        }
-
-        response.setStatus(SC_ACCEPTED);
-    }
-
-    private void handleRpcRootsChanged(HttpServletRequest request)
-    {
-        sessionController.ifPresent(controller -> {
-            SessionId sessionId = requireSessionId(request);
-            controller.deleteSessionValue(sessionId, ROOTS);
-
-            log.info("Handling roots/list_changed notification for session %s", sessionId);
-        });
-    }
-
-    private void handleRpcRequest(HttpServletRequest request, HttpServletResponse response, Authenticated<?> authenticated, JsonRpcRequest<?> rpcRequest, InternalMessageWriter messageWriter)
-            throws Exception
-    {
-        request.setAttribute(RPC_MESSAGE_ATTRIBUTE, rpcRequest);
-
-        String rpcMethod = rpcRequest.method();
-        Object requestId = rpcRequest.id();
-
-        updateRequestSpan(request, span -> span.setAttribute(MCP_METHOD_NAME, rpcMethod));
-
-        log.debug("Processing MCP request: %s, session: %s", rpcMethod, request.getHeader(HEADER_SESSION_ID));
-
-        validateSession(request, rpcRequest);
-
-        InternalRequestContext requestContext = new InternalRequestContext(jsonMapper, sessionController, request, response, messageWriter, authenticated);
-
-        Object result = switch (rpcMethod) {
-            case METHOD_INITIALIZE -> internalController.initialize(requestContext, convertParams(rpcRequest, InitializeRequest.class));
-            case METHOD_TOOLS_LIST -> withManagement(requestContext, requestId, () -> internalController.listTools(requestContext, convertParams(rpcRequest, ListRequest.class)));
-            case METHOD_TOOLS_CALL -> withManagement(requestContext, requestId, () -> internalController.callTool(requestContext, convertParams(rpcRequest, CallToolRequest.class)));
-            case METHOD_PROMPT_LIST -> withManagement(requestContext, requestId, () -> internalController.listPrompts(requestContext, convertParams(rpcRequest, ListRequest.class)));
-            case METHOD_PROMPT_GET -> withManagement(requestContext, requestId, () -> internalController.getPrompt(requestContext, convertParams(rpcRequest, GetPromptRequest.class)));
-            case METHOD_RESOURCES_LIST -> withManagement(requestContext, requestId, () -> internalController.listResources(requestContext, convertParams(rpcRequest, ListRequest.class)));
-            case METHOD_RESOURCES_TEMPLATES_LIST -> withManagement(requestContext, requestId, () -> internalController.listResourceTemplates(requestContext, convertParams(rpcRequest, ListRequest.class)));
-            case METHOD_RESOURCES_READ -> withManagement(requestContext, requestId, () -> internalController.readResources(requestContext, convertParams(rpcRequest, ReadResourceRequest.class)));
-            case METHOD_COMPLETION_COMPLETE -> internalController.completionComplete(requestContext, convertParams(rpcRequest, CompleteRequest.class));
-            case METHOD_LOGGING_SET_LEVEL -> internalController.setLoggingLevel(requestContext, convertParams(rpcRequest, SetLevelRequest.class));
-            case METHOD_RESOURCES_SUBSCRIBE -> internalController.resourcesSubscribe(requestContext, convertParams(rpcRequest, SubscribeRequest.class));
-            case METHOD_RESOURCES_UNSUBSCRIBE -> internalController.resourcesUnsubscribe(requestContext, convertParams(rpcRequest, SubscribeRequest.class));
-            case METHOD_PING -> ImmutableMap.of();
-            default -> throw exception(METHOD_NOT_FOUND, "Unknown method: " + rpcRequest.method());
-        };
-
-        response.setStatus(SC_OK);
-
-        JsonRpcResponse<?> rpcResponse = new JsonRpcResponse<>(rpcRequest.id(), Optional.empty(), Optional.of(result));
-        messageWriter.write(jsonMapper.writeValueAsString(rpcResponse));
-        messageWriter.flushMessages();
-    }
-
-    private void handleRpcCancellation(HttpServletRequest request, CancelledNotification cancelledNotification)
-    {
-        sessionController.ifPresent(controller -> {
-            SessionId sessionId = requireSessionId(request);
-            SessionValueKey<CancelledNotification> cancellationKey = cancellationKey(cancelledNotification.requestId());
-            controller.setSessionValue(sessionId, cancellationKey, cancelledNotification);
-        });
-    }
-
-    private Object withManagement(InternalRequestContext requestContext, Object requestId, Supplier<Object> supplier)
-    {
-        if (sessionController.isEmpty()) {
-            return supplier.get();
-        }
-
-        if (!httpGetEventsEnabled) {
-            internalController.reconcileVersions(requestContext);
-        }
-
-        return cancellationController.builder(requestContext.session().sessionId(), cancellationKey(requestId))
-                .withIsCancelledCondition(Optional::isPresent)
-                .withReasonMapper(cancellation -> cancellation.flatMap(CancelledNotification::reason))
-                .withRequestId(requestId)
-                .withPostCancellationAction((sessionId, key) -> sessionController.ifPresent(controller -> controller.deleteSessionValue(sessionId, key)))
-                .executeCancellable(supplier);
-    }
-
-    private void validateSession(HttpServletRequest request, JsonRpcRequest<?> rpcRequest)
-    {
-        if (!METHOD_INITIALIZE.equals(rpcRequest.method())) {
-            sessionController.ifPresent(controller -> {
-                if (!controller.validateSession(requireSessionId(request))) {
-                    throw new WebApplicationException(NOT_FOUND);
-                }
-            });
-        }
-    }
-
-    private <T> T convertParams(JsonRpcRequest<?> rpcRequest, Class<T> clazz)
-    {
-        Object value = rpcRequest.params().map(v -> (Object) v).orElseGet(ImmutableMap::of);
-        return jsonMapper.convertValue(value, clazz);
     }
 
     private boolean isMcpRequest(HttpServletRequest request)

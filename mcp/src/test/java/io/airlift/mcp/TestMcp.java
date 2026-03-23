@@ -20,6 +20,7 @@ import io.airlift.log.Logger;
 import io.airlift.mcp.model.CancelledNotification;
 import io.airlift.mcp.model.Icon;
 import io.airlift.mcp.model.JsonRpcRequest;
+import io.airlift.mcp.operations.LegacyCancellationController;
 import io.airlift.mcp.sessions.ForSessionCaching;
 import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.sessions.SessionId;
@@ -594,7 +595,7 @@ public abstract class TestMcp
             assertThat(sleepToolController.startedLatch().tryAcquire(threadQty, 5, SECONDS)).isTrue();
 
             // they should all be registered in the CancellationController
-            Collection<Object> activeRequestIds = testingServer.injector().getInstance(CancellationController.class).activeRequestIds();
+            Collection<Object> activeRequestIds = testingServer.injector().getInstance(LegacyCancellationController.class).activeRequestIds();
             assertThat(activeRequestIds).hasSize(threadQty);
 
             // choose a random run's request ID to cancel

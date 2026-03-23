@@ -1,4 +1,4 @@
-package io.airlift.mcp.versions;
+package io.airlift.mcp.operations;
 
 import static java.util.Objects.requireNonNull;
 

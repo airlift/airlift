@@ -33,6 +33,7 @@ import io.airlift.mcp.model.Content.TextContent;
 import io.airlift.mcp.model.Icon;
 import io.airlift.mcp.model.JsonRpcMessage;
 import io.airlift.mcp.model.JsonRpcMessageDeserializer;
+import io.airlift.mcp.operations.OperationsModule;
 import io.airlift.mcp.reflection.AppContent;
 import io.airlift.mcp.reflection.CompletionHandlerProvider;
 import io.airlift.mcp.reflection.IconHelper;
@@ -45,7 +46,6 @@ import io.airlift.mcp.sessions.CachingSessionController;
 import io.airlift.mcp.sessions.ForSessionCaching;
 import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.storage.StorageController;
-import io.airlift.mcp.versions.VersionsController;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -81,7 +81,6 @@ public class McpModule
     private final Set<Provider<CompletionEntry>> completions;
     private final Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding;
     private final Optional<Consumer<LinkedBindingBuilder<McpCapabilityFilter>>> capabilityFilterBinding;
-    private final Consumer<LinkedBindingBuilder<McpCancellationHandler>> cancellationHandlerBinding;
     private final Map<String, Consumer<LinkedBindingBuilder<Icon>>> icons;
     private final Set<String> serverIcons;
     private final Optional<Consumer<LinkedBindingBuilder<StorageController>>> storageControllerBinding;
@@ -102,7 +101,6 @@ public class McpModule
             Set<Provider<CompletionEntry>> completions,
             Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding,
             Optional<Consumer<LinkedBindingBuilder<McpCapabilityFilter>>> capabilityFilterBinding,
-            Consumer<LinkedBindingBuilder<McpCancellationHandler>> cancellationHandlerBinding,
             Map<String, Consumer<LinkedBindingBuilder<Icon>>> icons,
             Set<String> serverIcons,
             Optional<Consumer<LinkedBindingBuilder<StorageController>>> storageControllerBinding)
@@ -117,7 +115,6 @@ public class McpModule
         this.completions = ImmutableSet.copyOf(completions);
         this.sessionControllerBinding = requireNonNull(sessionControllerBinding, "sessionControllerBinding is null");
         this.capabilityFilterBinding = requireNonNull(capabilityFilterBinding, "capabilityFilterBinding is null");
-        this.cancellationHandlerBinding = requireNonNull(cancellationHandlerBinding, "cancellationHandlerBinding is null");
         this.icons = ImmutableMap.copyOf(icons);
         this.serverIcons = ImmutableSet.copyOf(serverIcons);
         this.storageControllerBinding = requireNonNull(storageControllerBinding, "storageControllerBinding is null");
@@ -157,7 +154,6 @@ public class McpModule
         private McpMetadata metadata = DEFAULT;
         private Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding = Optional.empty();
         private Optional<Consumer<LinkedBindingBuilder<McpCapabilityFilter>>> capabilityFilterBinding = Optional.empty();
-        private Consumer<LinkedBindingBuilder<McpCancellationHandler>> cancellationHandlerBinding = binder -> binder.toInstance(McpCancellationHandler.DEFAULT);
         private Optional<Consumer<LinkedBindingBuilder<StorageController>>> storageControllerBinding = Optional.empty();
 
         private Builder() {}
@@ -196,14 +192,6 @@ public class McpModule
         {
             checkArgument(this.capabilityFilterBinding.isEmpty(), "Capability filter binding is already set");
             this.capabilityFilterBinding = Optional.of(filterBinding);
-            return this;
-        }
-
-        public Builder withCancellationHandler(Consumer<LinkedBindingBuilder<McpCancellationHandler>> cancellationHandlerBinding)
-        {
-            checkState(sessionControllerBinding.isPresent(), "Session controller binding is required for cancellation support");
-
-            this.cancellationHandlerBinding = requireNonNull(cancellationHandlerBinding, "cancellationHandlerBinding is null");
             return this;
         }
 
@@ -280,7 +268,6 @@ public class McpModule
                     localCompletions,
                     sessionControllerBinding,
                     capabilityFilterBinding,
-                    cancellationHandlerBinding,
                     icons.build(),
                     serverIcons.build(),
                     storageControllerBinding);
@@ -291,7 +278,6 @@ public class McpModule
     public void configure(Binder binder)
     {
         binder.bind(McpMetadata.class).toInstance(metadata);
-        binder.bind(VersionsController.class).in(SINGLETON);
         storageControllerBinding.ifPresent(binding -> binding.accept(binder.bind(StorageController.class)));
 
         configBinder(binder).bindConfig(McpConfig.class);
@@ -312,10 +298,10 @@ public class McpModule
         bindCompletions(binder);
         bindSessions(binder);
         bindCapabilityFilter(binder);
-        bindCancellation(binder);
         bindIcons(binder);
 
         binder.install(new InternalMcpModule());
+        binder.install(new OperationsModule());
     }
 
     private void bindIdentityMapper(Binder binder)
@@ -333,12 +319,6 @@ public class McpModule
 
         Multibinder<String> serverIconsBinder = newSetBinder(binder, String.class, Names.named(MCP_SERVER_ICONS));
         serverIcons.forEach(iconName -> serverIconsBinder.addBinding().toInstance(iconName));
-    }
-
-    private void bindCancellation(Binder binder)
-    {
-        binder.bind(CancellationController.class).in(SINGLETON);
-        cancellationHandlerBinding.accept(binder.bind(McpCancellationHandler.class));
     }
 
     private void bindSessions(Binder binder)

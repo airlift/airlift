@@ -1,9 +1,13 @@
 package io.airlift.mcp;
 
+import io.airlift.mcp.handler.CompletionEntry;
 import io.airlift.mcp.handler.CompletionHandler;
+import io.airlift.mcp.handler.PromptEntry;
 import io.airlift.mcp.handler.PromptHandler;
+import io.airlift.mcp.handler.ResourceEntry;
 import io.airlift.mcp.handler.ResourceHandler;
 import io.airlift.mcp.handler.ResourceTemplateHandler;
+import io.airlift.mcp.handler.ToolEntry;
 import io.airlift.mcp.handler.ToolHandler;
 import io.airlift.mcp.model.CompleteReference;
 import io.airlift.mcp.model.Prompt;
@@ -20,13 +24,27 @@ public interface McpEntities
 {
     List<Tool> tools(McpRequestContext requestContext);
 
+    Optional<ToolEntry> toolEntry(McpRequestContext requestContext, String toolName);
+
+    void validateToolAllowed(McpRequestContext requestContext, String toolName);
+
     List<Prompt> prompts(McpRequestContext requestContext);
 
+    Optional<PromptEntry> promptEntry(McpRequestContext requestContext, String promptName);
+
+    void validatePromptAllowed(McpRequestContext requestContext, String promptName);
+
     List<Resource> resources(McpRequestContext requestContext);
+
+    Optional<ResourceEntry> resourceEntry(McpRequestContext requestContext, String uri);
+
+    void validateResourceAllowed(McpRequestContext requestContext, String uri);
 
     List<ResourceTemplate> resourceTemplates(McpRequestContext requestContext);
 
     List<CompleteReference> completions(McpRequestContext requestContext);
+
+    Optional<CompletionEntry> completionEntry(McpRequestContext requestContext, CompleteReference ref);
 
     Optional<List<ResourceContents>> readResourceContents(McpRequestContext requestContext, ReadResourceRequest readResourceRequest);
 

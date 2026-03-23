@@ -1,4 +1,4 @@
-package io.airlift.mcp.versions;
+package io.airlift.mcp.operations;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.json.JsonMapper;
@@ -41,16 +41,16 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Map.entry;
 import static java.util.Objects.requireNonNull;
 
-public class VersionsController
+public class LegacyVersionsController
 {
-    private static final Logger log = Logger.get(VersionsController.class);
+    private static final Logger log = Logger.get(LegacyVersionsController.class);
 
     private final McpEntities entities;
     private final JsonMapper jsonMapper;
     private final Cache<String, String> resourceVersionsCache;
 
     @Inject
-    public VersionsController(McpEntities entities, JsonMapper jsonMapper, McpConfig mcpConfig)
+    LegacyVersionsController(McpEntities entities, JsonMapper jsonMapper, McpConfig mcpConfig)
     {
         this.entities = requireNonNull(entities, "entities is null");
         this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");

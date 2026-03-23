@@ -7,9 +7,9 @@ import io.airlift.mcp.model.JsonRpcResponse;
 import io.airlift.mcp.model.ListRootsResult;
 import io.airlift.mcp.model.LoggingLevel;
 import io.airlift.mcp.model.Protocol;
+import io.airlift.mcp.operations.ResourceVersions;
+import io.airlift.mcp.operations.SystemListVersions;
 import io.airlift.mcp.storage.StorageKeyId;
-import io.airlift.mcp.versions.ResourceVersions;
-import io.airlift.mcp.versions.SystemListVersions;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;

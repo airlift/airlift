@@ -1,10 +1,11 @@
-package io.airlift.mcp;
+package io.airlift.mcp.operations;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Supplier;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import io.airlift.log.Logger;
+import io.airlift.mcp.McpConfig;
 import io.airlift.mcp.sessions.BlockingResult.EmptyFulfilled;
 import io.airlift.mcp.sessions.BlockingResult.Fulfilled;
 import io.airlift.mcp.sessions.BlockingResult.TimedOut;
@@ -30,21 +31,18 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.Executors.newThreadPerTaskExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-@VisibleForTesting
-public class CancellationController
+public class LegacyCancellationController
 {
-    private static final Logger log = Logger.get(CancellationController.class);
+    private static final Logger log = Logger.get(LegacyCancellationController.class);
 
-    private final McpCancellationHandler cancellationHandler;
     private final Optional<SessionController> sessionController;
     private final Set<Object> activeRequestIds = Sets.newConcurrentHashSet();
     private final Duration interval;
     private final ExecutorService executorService;
 
     @Inject
-    public CancellationController(McpCancellationHandler cancellationHandler, Optional<SessionController> sessionController, McpConfig mcpConfig)
+    LegacyCancellationController(Optional<SessionController> sessionController, McpConfig mcpConfig)
     {
-        this.cancellationHandler = requireNonNull(cancellationHandler, "cancellationHandler is null");
         this.sessionController = requireNonNull(sessionController, "sessionController is null");
 
         executorService = newThreadPerTaskExecutor(virtualThreadsNamed("CancellationController-%s"));
@@ -120,7 +118,7 @@ public class CancellationController
             requireNonNull(requestId, "requestId is required");
             requireNonNull(condition, "condition is required");
 
-            return CancellationController.this.executeCancellable(this, supplier);
+            return LegacyCancellationController.this.executeCancellable(this, supplier);
         }
     }
 
@@ -179,7 +177,8 @@ public class CancellationController
         try {
             if (activeRequestIds.contains(builder.requestId)) {
                 Optional<String> maybeReason = builder.reasonMapper.apply(value);
-                cancellationHandler.cancelRequest(activeThread, builder.requestId, maybeReason);
+                log.info("Cancelling request %s. Reason: %s".formatted(builder.requestId, maybeReason.orElse("No reason provided")));
+                activeThread.interrupt();
             }
         }
         finally {

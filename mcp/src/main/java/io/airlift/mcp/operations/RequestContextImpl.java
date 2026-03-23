@@ -1,4 +1,4 @@
-package io.airlift.mcp.internal;
+package io.airlift.mcp.operations;
 
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.base.Stopwatch;
@@ -53,7 +53,7 @@ import static io.airlift.mcp.sessions.SessionValueKey.ROOTS;
 import static io.airlift.mcp.sessions.SessionValueKey.serverToClientResponseKey;
 import static java.util.Objects.requireNonNull;
 
-class InternalRequestContext
+class RequestContextImpl
         implements McpRequestContext
 {
     private static final Duration PING_THRESHOLD = Duration.ofSeconds(15);
@@ -68,7 +68,7 @@ class InternalRequestContext
     private final Session session;
     private final Authenticated<?> identity;
 
-    InternalRequestContext(
+    RequestContextImpl(
             JsonMapper jsonMapper,
             Optional<SessionController> sessionController,
             HttpServletRequest request,
@@ -83,7 +83,7 @@ class InternalRequestContext
                 messageWriter,
                 Optional.empty(),
                 buildLoggingLevelSupplier(sessionController, request),
-                new InternalSession(sessionController, optionalSessionId(request).orElse(Session.NULL_SESSION_ID)),
+                new SessionImpl(sessionController, optionalSessionId(request).orElse(Session.NULL_SESSION_ID)),
                 identity);
     }
 
@@ -97,7 +97,7 @@ class InternalRequestContext
         });
     }
 
-    private InternalRequestContext(
+    private RequestContextImpl(
             JsonMapper jsonMapper,
             Optional<SessionController> sessionController,
             HttpServletRequest request,
@@ -119,9 +119,9 @@ class InternalRequestContext
         this.identity = requireNonNull(identity, "identity is null");
     }
 
-    InternalRequestContext withProgressToken(Optional<Object> progressToken)
+    RequestContextImpl withProgressToken(Optional<Object> progressToken)
     {
-        return new InternalRequestContext(jsonMapper, sessionController, request, response, messageWriter, progressToken, loggingLevelSupplier, session, identity);
+        return new RequestContextImpl(jsonMapper, sessionController, request, response, messageWriter, progressToken, loggingLevelSupplier, session, identity);
     }
 
     Protocol protocol()
@@ -136,9 +136,9 @@ class InternalRequestContext
         return response;
     }
 
-    InternalRequestContext withSessonId(SessionId sessionId)
+    RequestContextImpl withSessionId(SessionId sessionId)
     {
-        return new InternalRequestContext(jsonMapper, sessionController, request, response, messageWriter, progressToken, loggingLevelSupplier, new InternalSession(sessionController, sessionId), identity);
+        return new RequestContextImpl(jsonMapper, sessionController, request, response, messageWriter, progressToken, loggingLevelSupplier, new SessionImpl(sessionController, sessionId), identity);
     }
 
     @Override
