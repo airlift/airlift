@@ -53,7 +53,7 @@ public class TestingDatabaseStorageController
             (
                 group_id VARCHAR(36) NOT NULL,
                 key_id VARCHAR(255) NOT NULL,
-                value JSONB NOT NULL,
+                value TEXT NOT NULL,
                 PRIMARY KEY (group_id, key_id),
                 FOREIGN KEY (group_id) REFERENCES groups (group_id) ON DELETE CASCADE
             );
@@ -92,7 +92,7 @@ public class TestingDatabaseStorageController
     private static final String SET_VALUE_SQL =
             """
             INSERT INTO group_values (group_id, key_id, value)
-            SELECT ?, ?, ?::jsonb
+            SELECT ?, ?, ?
             WHERE EXISTS (SELECT 1 FROM groups WHERE group_id = ?)
             ON CONFLICT (group_id, key_id) DO UPDATE
                 SET value = EXCLUDED.value
@@ -101,14 +101,14 @@ public class TestingDatabaseStorageController
     private static final String INSERT_VALUE_IF_NOT_EXISTS_SQL =
             """
             INSERT INTO group_values (group_id, key_id, value)
-            VALUES (?, ?, ?::jsonb)
+            VALUES (?, ?, ?)
             ON CONFLICT DO NOTHING
             """;
 
     private static final String UPDATE_VALUE_SQL =
             """
             UPDATE group_values
-            SET value = ?::jsonb
+            SET value = ?
             WHERE group_id = ? AND key_id = ?
             """;
 
@@ -128,6 +128,15 @@ public class TestingDatabaseStorageController
             SELECT group_id FROM groups
             WHERE (group_id > ? OR ? IS NULL)
             ORDER BY group_id
+            LIMIT ?
+            """;
+
+    private static final String LIST_GROUP_KEYS_SQL =
+            """
+            SELECT key_id FROM group_values
+            WHERE (key_id > ? OR ? IS NULL)
+                AND (group_id = ?)
+            ORDER BY key_id
             LIMIT ?
             """;
 
@@ -223,6 +232,28 @@ public class TestingDatabaseStorageController
             while (resultSet.next()) {
                 String id = resultSet.getString(1);
                 results.add(new StorageGroupId(id));
+            }
+            return results;
+        });
+    }
+
+    @Override
+    public List<StorageKeyId> listGroupKeys(StorageGroupId groupId, Optional<StorageKeyId> cursor)
+    {
+        checkClean();
+
+        return database.withConnection(connection -> {
+            PreparedStatement preparedStatement = connection.prepareStatement(LIST_GROUP_KEYS_SQL);
+            preparedStatement.setString(1, cursor.map(StorageKeyId::key).orElse(null));
+            preparedStatement.setString(2, cursor.map(StorageKeyId::key).orElse(null));
+            preparedStatement.setString(3, groupId.group());
+            preparedStatement.setInt(4, PAGE_SIZE);
+            var resultSet = preparedStatement.executeQuery();
+
+            List<StorageKeyId> results = new ArrayList<>();
+            while (resultSet.next()) {
+                String id = resultSet.getString(1);
+                results.add(new StorageKeyId(id));
             }
             return results;
         });

@@ -128,6 +128,20 @@ public class MemoryStorageController
     }
 
     @Override
+    public List<StorageKeyId> listGroupKeys(StorageGroupId groupId, Optional<StorageKeyId> cursor)
+    {
+        clean();
+
+        cursor.ifPresent(_ -> {
+            throw new UnsupportedOperationException("listGroups with cursor is not supported");
+        });
+
+        return Optional.ofNullable(groups.get(groupId))
+                .map(group -> ImmutableList.copyOf(group.values.keySet()))
+                .orElse(ImmutableList.of());
+    }
+
+    @Override
     public Optional<String> getValue(StorageGroupId groupId, StorageKeyId keyId)
     {
         clean();

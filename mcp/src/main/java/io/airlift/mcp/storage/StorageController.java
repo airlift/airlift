@@ -21,6 +21,8 @@ public interface StorageController
 
     List<StorageGroupId> listGroups(Optional<StorageGroupId> cursor);
 
+    List<StorageKeyId> listGroupKeys(StorageGroupId groupId, Optional<StorageKeyId> cursor);
+
     Optional<String> getValue(StorageGroupId groupId, StorageKeyId keyId);
 
     boolean setValue(StorageGroupId groupId, StorageKeyId keyId, String value);
