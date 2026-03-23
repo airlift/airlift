@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Supplier;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
@@ -15,17 +14,11 @@ import io.airlift.mcp.McpEntities;
 import io.airlift.mcp.McpIdentity;
 import io.airlift.mcp.McpMetadata;
 import io.airlift.mcp.SentMessages;
-import io.airlift.mcp.handler.PromptEntry;
-import io.airlift.mcp.handler.ToolEntry;
 import io.airlift.mcp.model.CallToolRequest;
-import io.airlift.mcp.model.CallToolResult;
 import io.airlift.mcp.model.CancelledNotification;
 import io.airlift.mcp.model.CompleteReference;
 import io.airlift.mcp.model.CompleteRequest;
-import io.airlift.mcp.model.CompleteResult;
-import io.airlift.mcp.model.Content;
 import io.airlift.mcp.model.GetPromptRequest;
-import io.airlift.mcp.model.GetPromptResult;
 import io.airlift.mcp.model.Implementation;
 import io.airlift.mcp.model.InitializeRequest;
 import io.airlift.mcp.model.InitializeResult;
@@ -33,20 +26,13 @@ import io.airlift.mcp.model.InitializeResult.CompletionCapabilities;
 import io.airlift.mcp.model.JsonRpcRequest;
 import io.airlift.mcp.model.JsonRpcResponse;
 import io.airlift.mcp.model.ListChanged;
-import io.airlift.mcp.model.ListPromptsResult;
 import io.airlift.mcp.model.ListRequest;
-import io.airlift.mcp.model.ListResourceTemplatesResult;
-import io.airlift.mcp.model.ListResourcesResult;
-import io.airlift.mcp.model.ListToolsResult;
 import io.airlift.mcp.model.LoggingLevel;
 import io.airlift.mcp.model.Meta;
-import io.airlift.mcp.model.OptionalBoolean;
 import io.airlift.mcp.model.Prompt;
 import io.airlift.mcp.model.Protocol;
 import io.airlift.mcp.model.ReadResourceRequest;
-import io.airlift.mcp.model.ReadResourceResult;
 import io.airlift.mcp.model.Resource;
-import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.model.SetLevelRequest;
 import io.airlift.mcp.model.SubscribeListChanged;
@@ -64,11 +50,9 @@ import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
-import java.util.OptionalInt;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
-import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.http.server.tracing.TracingServletFilter.updateRequestSpan;
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.McpModule.MCP_SERVER_ICONS;
@@ -94,7 +78,6 @@ import static io.airlift.mcp.model.Constants.NOTIFICATION_INITIALIZED;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_ROOTS_LIST_CHANGED;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
 import static io.airlift.mcp.model.JsonRpcErrorCode.METHOD_NOT_FOUND;
-import static io.airlift.mcp.model.JsonRpcErrorCode.RESOURCE_NOT_FOUND;
 import static io.airlift.mcp.model.Protocol.LATEST_PROTOCOL;
 import static io.airlift.mcp.sessions.SessionValueKey.CLIENT_CAPABILITIES;
 import static io.airlift.mcp.sessions.SessionValueKey.LOGGING_LEVEL;
@@ -112,7 +95,7 @@ import static jakarta.servlet.http.HttpServletResponse.SC_OK;
 import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
 import static java.util.Objects.requireNonNull;
 
-class LegacyOperations
+public class LegacyOperations
         implements Operations
 {
     private static final Logger log = Logger.get(LegacyOperations.class);
@@ -127,12 +110,12 @@ class LegacyOperations
     private final int maxResumableMessages;
     private final LegacyVersionsController versionsController;
     private final Duration sessionTimeout;
+    private final OperationsCommon operationsCommon;
     private final McpEntities entities;
     private final Implementation serverImplementation;
-    private final PaginationUtil paginationUtil;
 
     @Inject
-    LegacyOperations(
+    public LegacyOperations(
             McpMetadata metadata,
             JsonMapper jsonMapper,
             Optional<SessionController> sessionController,
@@ -141,7 +124,8 @@ class LegacyOperations
             LegacyVersionsController versionsController,
             IconHelper iconHelper,
             @Named(MCP_SERVER_ICONS) Set<String> serverIcons,
-            McpEntities entities)
+            McpEntities entities,
+            OperationsCommon operationsCommon)
     {
         this.metadata = requireNonNull(metadata, "metadata is null");
         this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
@@ -149,6 +133,7 @@ class LegacyOperations
         this.cancellationController = requireNonNull(cancellationController, "cancellationController is null");
         this.versionsController = requireNonNull(versionsController, "versionsController is null");
         this.entities = requireNonNull(entities, "entities is null");
+        this.operationsCommon = requireNonNull(operationsCommon, "operationsCommon is null");
 
         httpGetEventsEnabled = mcpConfig.isHttpGetEventsEnabled();
         streamingPingThreshold = mcpConfig.getEventStreamingPingThreshold().toJavaTime();
@@ -158,8 +143,6 @@ class LegacyOperations
 
         serverImplementation = iconHelper.mapIcons(serverIcons).map(icons -> metadata.implementation().withAdditionalIcons(icons))
                 .orElse(metadata.implementation());
-
-        paginationUtil = new PaginationUtil(mcpConfig);
     }
 
     @Override
@@ -181,18 +164,18 @@ class LegacyOperations
         RequestContextImpl requestContext = new RequestContextImpl(jsonMapper, sessionController, request, response, messageWriter, authenticated);
 
         Object result = switch (method) {
-            case METHOD_INITIALIZE -> handleInitialize(requestContext, convertParams(rpcRequest, InitializeRequest.class));
-            case METHOD_TOOLS_LIST -> withManagement(requestContext, requestId, () -> handleListTools(requestContext, convertParams(rpcRequest, ListRequest.class)));
-            case METHOD_TOOLS_CALL -> withManagement(requestContext, requestId, () -> handleCallTool(requestContext, convertParams(rpcRequest, CallToolRequest.class)));
-            case METHOD_PROMPT_LIST -> withManagement(requestContext, requestId, () -> handleListPrompts(requestContext, convertParams(rpcRequest, ListRequest.class)));
-            case METHOD_PROMPT_GET -> withManagement(requestContext, requestId, () -> handleGetPrompt(requestContext, convertParams(rpcRequest, GetPromptRequest.class)));
-            case METHOD_RESOURCES_LIST -> withManagement(requestContext, requestId, () -> handleListResources(requestContext, convertParams(rpcRequest, ListRequest.class)));
-            case METHOD_RESOURCES_TEMPLATES_LIST -> withManagement(requestContext, requestId, () -> handleListResourceTemplates(requestContext, convertParams(rpcRequest, ListRequest.class)));
-            case METHOD_RESOURCES_READ -> withManagement(requestContext, requestId, () -> handleReadResources(requestContext, convertParams(rpcRequest, ReadResourceRequest.class)));
-            case METHOD_COMPLETION_COMPLETE -> handleCompletionComplete(requestContext, convertParams(rpcRequest, CompleteRequest.class));
-            case METHOD_LOGGING_SET_LEVEL -> handleSetLoggingLevel(requestContext, convertParams(rpcRequest, SetLevelRequest.class));
-            case METHOD_RESOURCES_SUBSCRIBE -> handleResourcesSubscribe(requestContext, convertParams(rpcRequest, SubscribeRequest.class));
-            case METHOD_RESOURCES_UNSUBSCRIBE -> handleResourcesUnsubscribe(requestContext, convertParams(rpcRequest, SubscribeRequest.class));
+            case METHOD_INITIALIZE -> handleInitialize(requestContext, operationsCommon.convertParams(rpcRequest, InitializeRequest.class));
+            case METHOD_TOOLS_LIST -> withManagement(requestContext, requestId, () -> operationsCommon.listTools(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class)));
+            case METHOD_TOOLS_CALL -> withManagement(requestContext, requestId, () -> operationsCommon.callTool(requestContext, operationsCommon.convertParams(rpcRequest, CallToolRequest.class)));
+            case METHOD_PROMPT_LIST -> withManagement(requestContext, requestId, () -> operationsCommon.listPrompts(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class)));
+            case METHOD_PROMPT_GET -> withManagement(requestContext, requestId, () -> operationsCommon.getPrompt(requestContext, operationsCommon.convertParams(rpcRequest, GetPromptRequest.class)));
+            case METHOD_RESOURCES_LIST -> withManagement(requestContext, requestId, () -> operationsCommon.listResources(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class)));
+            case METHOD_RESOURCES_TEMPLATES_LIST -> withManagement(requestContext, requestId, () -> operationsCommon.listResourceTemplates(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class)));
+            case METHOD_RESOURCES_READ -> withManagement(requestContext, requestId, () -> operationsCommon.readResources(requestContext, operationsCommon.convertParams(rpcRequest, ReadResourceRequest.class)));
+            case METHOD_COMPLETION_COMPLETE -> operationsCommon.completionComplete(requestContext, operationsCommon.convertParams(rpcRequest, CompleteRequest.class));
+            case METHOD_LOGGING_SET_LEVEL -> handleSetLoggingLevel(requestContext, operationsCommon.convertParams(rpcRequest, SetLevelRequest.class));
+            case METHOD_RESOURCES_SUBSCRIBE -> handleResourcesSubscribe(requestContext, operationsCommon.convertParams(rpcRequest, SubscribeRequest.class));
+            case METHOD_RESOURCES_UNSUBSCRIBE -> handleResourcesUnsubscribe(requestContext, operationsCommon.convertParams(rpcRequest, SubscribeRequest.class));
             case METHOD_PING -> ImmutableMap.of();
             default -> throw exception(METHOD_NOT_FOUND, "Unknown method: " + method);
         };
@@ -219,7 +202,7 @@ class LegacyOperations
 
         switch (rpcRequest.method()) {
             case NOTIFICATION_INITIALIZED -> {} // ignore
-            case NOTIFICATION_CANCELLED -> handleRpcCancellation(request, convertParams(rpcRequest, CancelledNotification.class));
+            case NOTIFICATION_CANCELLED -> handleRpcCancellation(request, operationsCommon.convertParams(rpcRequest, CancelledNotification.class));
             case NOTIFICATION_ROOTS_LIST_CHANGED -> handleRpcRootsChanged(request);
             default -> log.warn("Unknown MCP notification method: %s", rpcRequest.method());
         }
@@ -319,84 +302,6 @@ class LegacyOperations
         return new InitializeResult(protocol.value(), serverCapabilities, localImplementation, metadata.instructions());
     }
 
-    private ListToolsResult handleListTools(RequestContextImpl requestContext, ListRequest listRequest)
-    {
-        List<Tool> localTools = entities.tools(requestContext)
-                .stream()
-                .map(tool -> requestContext.protocol().supportsIcons() ? tool : tool.withoutIcons())
-                .collect(toImmutableList());
-        return paginationUtil.paginate(listRequest, localTools, Tool::name, ListToolsResult::new);
-    }
-
-    private CallToolResult handleCallTool(RequestContextImpl requestContext, CallToolRequest callToolRequest)
-    {
-        entities.validateToolAllowed(requestContext, callToolRequest.name());
-
-        ToolEntry toolEntry = entities.toolEntry(requestContext, callToolRequest.name())
-                .orElseThrow(() -> exception(INVALID_PARAMS, "Tool not found: " + callToolRequest.name()));
-
-        try {
-            return toolEntry.toolHandler().callTool(requestContext.withProgressToken(progressToken(callToolRequest)), callToolRequest);
-        }
-        catch (McpClientException mcpClientException) {
-            return new CallToolResult(ImmutableList.of(new Content.TextContent(mcpClientException.unwrap().errorDetail().message())), Optional.empty(), true, Optional.empty());
-        }
-    }
-
-    private ListPromptsResult handleListPrompts(RequestContextImpl requestContext, ListRequest listRequest)
-    {
-        List<Prompt> localPrompts = entities.prompts(requestContext)
-                .stream()
-                .map(prompt -> requestContext.protocol().supportsIcons() ? prompt : prompt.withoutIcons())
-                .collect(toImmutableList());
-        return paginationUtil.paginate(listRequest, localPrompts, Prompt::name, ListPromptsResult::new);
-    }
-
-    private GetPromptResult handleGetPrompt(RequestContextImpl requestContext, GetPromptRequest getPromptRequest)
-    {
-        entities.validatePromptAllowed(requestContext, getPromptRequest.name());
-
-        PromptEntry promptEntry = entities.promptEntry(requestContext, getPromptRequest.name())
-                .orElseThrow(() -> exception(INVALID_PARAMS, "Prompt not found: " + getPromptRequest.name()));
-
-        return promptEntry.promptHandler().getPrompt(requestContext.withProgressToken(progressToken(getPromptRequest)), getPromptRequest);
-    }
-
-    private ListResourcesResult handleListResources(RequestContextImpl requestContext, ListRequest listRequest)
-    {
-        List<Resource> localResources = entities.resources(requestContext)
-                .stream()
-                .map(resource -> requestContext.protocol().supportsIcons() ? resource : resource.withoutIcons())
-                .collect(toImmutableList());
-        return paginationUtil.paginate(listRequest, localResources, Resource::name, ListResourcesResult::new);
-    }
-
-    private ListResourceTemplatesResult handleListResourceTemplates(RequestContextImpl requestContext, ListRequest listRequest)
-    {
-        List<ResourceTemplate> localResourceTemplates = entities.resourceTemplates(requestContext)
-                .stream()
-                .map(resourceTemplate -> requestContext.protocol().supportsIcons() ? resourceTemplate : resourceTemplate.withoutIcons())
-                .collect(toImmutableList());
-        return paginationUtil.paginate(listRequest, localResourceTemplates, ResourceTemplate::name, ListResourceTemplatesResult::new);
-    }
-
-    private Object handleReadResources(RequestContextImpl requestContext, ReadResourceRequest readResourceRequest)
-    {
-        updateRequestSpan(requestContext.request(), span -> span.setAttribute(MCP_RESOURCE_URI, readResourceRequest.uri()));
-
-        List<ResourceContents> resourceContents = entities.readResourceContents(requestContext.withProgressToken(progressToken(readResourceRequest)), readResourceRequest)
-                .orElseThrow(() -> exception(RESOURCE_NOT_FOUND, "Resource not found: " + readResourceRequest.uri()));
-
-        return new ReadResourceResult(resourceContents);
-    }
-
-    private CompleteResult handleCompletionComplete(RequestContextImpl requestContext, CompleteRequest completeRequest)
-    {
-        return entities.completionEntry(requestContext, completeRequest.ref())
-                .map(completionEntry -> completionEntry.handler().complete(requestContext.withProgressToken(progressToken(completeRequest)), completeRequest))
-                .orElseGet(() -> new CompleteResult(new CompleteResult.CompleteCompletion(ImmutableList.of(), OptionalInt.empty(), OptionalBoolean.UNDEFINED)));
-    }
-
     private Object handleSetLoggingLevel(RequestContextImpl requestContext, SetLevelRequest setLevelRequest)
     {
         requestContext.session().setValue(LOGGING_LEVEL, setLevelRequest.level());
@@ -446,12 +351,6 @@ class LegacyOperations
 
             log.info("Handling roots/list_changed notification for session %s", sessionId);
         });
-    }
-
-    private <T> T convertParams(JsonRpcRequest<?> rpcRequest, Class<T> clazz)
-    {
-        Object value = rpcRequest.params().map(v -> (Object) v).orElseGet(ImmutableMap::of);
-        return jsonMapper.convertValue(value, clazz);
     }
 
     private Object withManagement(RequestContextImpl requestContext, Object requestId, Supplier<Object> supplier)

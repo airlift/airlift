@@ -33,7 +33,10 @@ import io.airlift.mcp.model.Content.TextContent;
 import io.airlift.mcp.model.Icon;
 import io.airlift.mcp.model.JsonRpcMessage;
 import io.airlift.mcp.model.JsonRpcMessageDeserializer;
+import io.airlift.mcp.operations.LegacyOperations;
+import io.airlift.mcp.operations.Operations;
 import io.airlift.mcp.operations.OperationsModule;
+import io.airlift.mcp.operations.SessionlessOperations;
 import io.airlift.mcp.reflection.AppContent;
 import io.airlift.mcp.reflection.CompletionHandlerProvider;
 import io.airlift.mcp.reflection.IconHelper;
@@ -84,6 +87,7 @@ public class McpModule
     private final Map<String, Consumer<LinkedBindingBuilder<Icon>>> icons;
     private final Set<String> serverIcons;
     private final Optional<Consumer<LinkedBindingBuilder<StorageController>>> storageControllerBinding;
+    private final Consumer<LinkedBindingBuilder<Operations>> operationsBinding;
 
     public static Builder builder()
     {
@@ -103,7 +107,8 @@ public class McpModule
             Optional<Consumer<LinkedBindingBuilder<McpCapabilityFilter>>> capabilityFilterBinding,
             Map<String, Consumer<LinkedBindingBuilder<Icon>>> icons,
             Set<String> serverIcons,
-            Optional<Consumer<LinkedBindingBuilder<StorageController>>> storageControllerBinding)
+            Optional<Consumer<LinkedBindingBuilder<StorageController>>> storageControllerBinding,
+            Consumer<LinkedBindingBuilder<Operations>> operationsBinding)
     {
         this.metadata = requireNonNull(metadata, "metadata is null");
         this.identityMapperBinding = requireNonNull(identityMapperBinding, "identityMapperBinding is null");
@@ -118,6 +123,7 @@ public class McpModule
         this.icons = ImmutableMap.copyOf(icons);
         this.serverIcons = ImmutableSet.copyOf(serverIcons);
         this.storageControllerBinding = requireNonNull(storageControllerBinding, "storageControllerBinding is null");
+        this.operationsBinding = requireNonNull(operationsBinding, "operationsBinding is null");
     }
 
     record IdentityMapperBinding(Class<?> identityType, Consumer<AnnotatedBindingBuilder<McpIdentityMapper>> identityMapperBinding)
@@ -155,6 +161,7 @@ public class McpModule
         private Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding = Optional.empty();
         private Optional<Consumer<LinkedBindingBuilder<McpCapabilityFilter>>> capabilityFilterBinding = Optional.empty();
         private Optional<Consumer<LinkedBindingBuilder<StorageController>>> storageControllerBinding = Optional.empty();
+        private Consumer<LinkedBindingBuilder<Operations>> operationsBinding = binding -> binding.to(SessionlessOperations.class).in(SINGLETON);
 
         private Builder() {}
 
@@ -185,6 +192,7 @@ public class McpModule
             checkArgument(this.sessionControllerBinding.isEmpty(), "Session controller binding is already set");
 
             this.sessionControllerBinding = Optional.of(sessionControllerBinding);
+            operationsBinding = binding -> binding.to(LegacyOperations.class).in(SINGLETON);
             return this;
         }
 
@@ -270,7 +278,8 @@ public class McpModule
                     capabilityFilterBinding,
                     icons.build(),
                     serverIcons.build(),
-                    storageControllerBinding);
+                    storageControllerBinding,
+                    operationsBinding);
         }
     }
 
@@ -279,6 +288,7 @@ public class McpModule
     {
         binder.bind(McpMetadata.class).toInstance(metadata);
         storageControllerBinding.ifPresent(binding -> binding.accept(binder.bind(StorageController.class)));
+        operationsBinding.accept(binder.bind(Operations.class));
 
         configBinder(binder).bindConfig(McpConfig.class);
 

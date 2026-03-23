@@ -153,8 +153,7 @@ class RequestContextImpl
         return request;
     }
 
-    @Override
-    public Session session()
+    Session session()
     {
         return session;
     }
@@ -198,12 +197,13 @@ class RequestContextImpl
     @Override
     public ClientCapabilities clientCapabilities()
     {
-        SessionController localSessionController = sessionController.orElseThrow(() -> new IllegalStateException("Sessions not enabled"));
-        SessionId sessionId = requireSessionId(request);
+        return sessionController.map(controller -> {
+            SessionId sessionId = requireSessionId(request);
 
-        // ClientCapabilities are cached via CachingSessionController
-        return localSessionController.getSessionValue(sessionId, CLIENT_CAPABILITIES)
-                .orElseThrow(() -> exception("Session does not contain client capabilities"));
+            // ClientCapabilities are cached via CachingSessionController
+            return controller.getSessionValue(sessionId, CLIENT_CAPABILITIES)
+                    .orElseThrow(() -> exception("Session does not contain client capabilities"));
+        }).orElse(ClientCapabilities.EMPTY);
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})

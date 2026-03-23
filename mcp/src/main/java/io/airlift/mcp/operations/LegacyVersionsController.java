@@ -41,7 +41,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Map.entry;
 import static java.util.Objects.requireNonNull;
 
-public class LegacyVersionsController
+class LegacyVersionsController
 {
     private static final Logger log = Logger.get(LegacyVersionsController.class);
 
@@ -60,26 +60,34 @@ public class LegacyVersionsController
                 .build();
     }
 
-    public void initializeSessionVersions(McpRequestContext requestContext)
+    void initializeSessionVersions(RequestContextImpl requestContext)
     {
         if (requestContext.session().isValid()) {
             requestContext.session().setValue(SYSTEM_LIST_VERSIONS, buildSystemListVersions(requestContext));
         }
     }
 
-    public void resourcesSubscribe(McpRequestContext requestContext, SubscribeRequest subscribeRequest)
+    void resourcesSubscribe(RequestContextImpl requestContext, SubscribeRequest subscribeRequest)
     {
         String version = readResourceVersion(requestContext, subscribeRequest.uri(), true);
 
-        requestContext.session().computeValue(RESOURCE_VERSIONS, currentValue -> {
+        if (!(requestContext instanceof RequestContextImpl internalRequestContext) || !internalRequestContext.session().isValid()) {
+            return;
+        }
+
+        internalRequestContext.session().computeValue(RESOURCE_VERSIONS, currentValue -> {
             ResourceVersions resourceVersions = currentValue.orElseGet(() -> new ResourceVersions(ImmutableMap.of()));
             ResourceVersions updatedVersions = resourceVersions.with(subscribeRequest.uri(), version);
             return Optional.of(updatedVersions);
         });
     }
 
-    public void resourcesUnsubscribe(McpRequestContext requestContext, String uri)
+    void resourcesUnsubscribe(RequestContextImpl requestContext, String uri)
     {
+        if (!requestContext.session().isValid()) {
+            return;
+        }
+
         requestContext.session().computeValue(RESOURCE_VERSIONS, currentValue -> {
             ResourceVersions resourceVersions = currentValue.orElseGet(() -> new ResourceVersions(ImmutableMap.of()));
             ResourceVersions updatedVersions = resourceVersions.without(uri);
@@ -89,7 +97,7 @@ public class LegacyVersionsController
 
     private record Notification(String message, Optional<Object> params) {}
 
-    public void reconcileVersions(McpRequestContext requestContext)
+    void reconcileVersions(RequestContextImpl requestContext)
     {
         if (!requestContext.session().isValid()) {
             return;
@@ -106,7 +114,7 @@ public class LegacyVersionsController
         notifications.forEach(notification -> requestContext.sendMessage(notification.message, notification.params));
     }
 
-    private void reconcileSystemListVersions(McpRequestContext requestContext, List<Notification> notifications)
+    private void reconcileSystemListVersions(RequestContextImpl requestContext, List<Notification> notifications)
     {
         // pre-check against current value which should be cached in memory via CachingSessionController
         SystemListVersions currentSystemListVersions = buildSystemListVersions(requestContext);
@@ -136,7 +144,7 @@ public class LegacyVersionsController
         }
     }
 
-    private void reconcileResourceSubscriptions(McpRequestContext requestContext, List<Notification> notifications)
+    private void reconcileResourceSubscriptions(RequestContextImpl requestContext, List<Notification> notifications)
     {
         // will likely be cached/in-memory via CachingSessionController
         Map<String, String> currentSubscriptions = requestContext.session().getValue(RESOURCE_VERSIONS)
