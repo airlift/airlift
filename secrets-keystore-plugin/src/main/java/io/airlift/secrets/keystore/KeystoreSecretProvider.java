@@ -21,6 +21,7 @@ import javax.crypto.spec.PBEKeySpec;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 
@@ -36,7 +37,9 @@ public class KeystoreSecretProvider
     {
         keystorePassword = config.getKeyStorePassword().toCharArray();
         keyStore = KeyStore.getInstance(config.getKeyStoreType());
-        keyStore.load(new FileInputStream(config.getKeyStoreFilePath()), keystorePassword);
+        try (InputStream stream = new FileInputStream(config.getKeyStoreFilePath())) {
+            keyStore.load(stream, keystorePassword);
+        }
     }
 
     @Override
