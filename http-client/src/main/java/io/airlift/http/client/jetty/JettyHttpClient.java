@@ -1159,6 +1159,15 @@ public class JettyHttpClient
     }
 
     @Managed
+    public String getLeakedBuffers()
+    {
+        if (httpClient.getByteBufferPool() instanceof ArrayByteBufferPool.Tracking tracking) {
+            return tracking.dumpLeaks();
+        }
+        return "n/a";
+    }
+
+    @Managed
     public String dump()
     {
         return httpClient.dump();

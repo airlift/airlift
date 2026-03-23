@@ -505,6 +505,15 @@ public class HttpServer
         return monitoredQueuedThreadPoolMBean;
     }
 
+    @Managed
+    public String getLeakedBuffers()
+    {
+        if (server.getByteBufferPool() instanceof ArrayByteBufferPool.Tracking tracking) {
+            return tracking.dumpLeaks();
+        }
+        return "n/a";
+    }
+
     @PostConstruct
     public void start()
             throws Exception
