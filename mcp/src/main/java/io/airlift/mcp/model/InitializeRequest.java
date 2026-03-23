@@ -35,6 +35,8 @@ public record InitializeRequest(
     public record ClientCapabilities(Optional<ListChanged> roots, Optional<Sampling> sampling, Optional<Elicitation> elicitation, Optional<Map<String, Object>> experimental)
             implements Experimental
     {
+        public static final ClientCapabilities EMPTY = new ClientCapabilities(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+
         public ClientCapabilities
         {
             roots = requireNonNullElse(roots, Optional.empty());

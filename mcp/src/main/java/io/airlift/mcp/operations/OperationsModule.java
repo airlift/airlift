@@ -13,8 +13,8 @@ public class OperationsModule
     @Override
     public void configure(Binder binder)
     {
-        binder.bind(Operations.class).to(LegacyOperations.class).in(SINGLETON);
         binder.bind(LegacyVersionsController.class).in(SINGLETON);
+        binder.bind(OperationsCommon.class).in(SINGLETON);
         newOptionalBinder(binder, ErrorHandler.class).setDefault().to(ErrorHandlerImpl.class);
 
         binder.bind(LegacyCancellationController.class).in(SINGLETON);

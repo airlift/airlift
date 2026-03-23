@@ -76,6 +76,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -91,6 +92,7 @@ import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.Request.Builder.preparePost;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static io.airlift.json.JsonCodec.jsonCodec;
+import static io.airlift.mcp.TestMcp.Mode.SESSIONLESS;
 import static io.airlift.mcp.TestingClient.buildClient;
 import static io.airlift.mcp.TestingIdentityMapper.ERRORED_IDENTITY;
 import static io.airlift.mcp.TestingIdentityMapper.EXPECTED_IDENTITY;
@@ -125,12 +127,13 @@ public abstract class TestMcp
     private final HttpClient httpClient;
     private final JsonMapper jsonMapper;
     private final TestingServer testingServer;
-    private final StandardSessionController sessionController;
+    private final Optional<StandardSessionController> sessionController;
 
     public enum Mode
     {
         STANDARD_SESSIONS,
         STANDARD_DATABASE_SESSIONS,
+        SESSIONLESS,
     }
 
     @SuppressWarnings("SwitchStatementWithTooFewBranches")
@@ -150,13 +153,19 @@ public abstract class TestMcp
             default -> MemoryStorageController.class;
         };
 
-        testingServer = new TestingServer(properties, Optional.of(module), builder -> builder
-                .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
-                .withStorage(binding -> binding.to(storageControllerClass).in(SINGLETON))
-                .withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON))
-                .addIcon("google", binding -> binding.toInstance(new Icon("https://www.gstatic.com/images/branding/searchlogo/ico/favicon.ico")))
-                .withAllInClass(TestingEndpoints.class)
-                .build());
+        Function<McpModule.Builder, Module> mcpModuleBuilder = builder -> {
+            builder = builder
+                    .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
+                    .withStorage(binding -> binding.to(storageControllerClass).in(SINGLETON))
+                    .addIcon("google", binding -> binding.toInstance(new Icon("https://www.gstatic.com/images/branding/searchlogo/ico/favicon.ico")))
+                    .withAllInClass(TestingEndpoints.class);
+            if (mode != Mode.SESSIONLESS) {
+                builder = builder.withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON));
+            }
+            return builder.build();
+        };
+
+        testingServer = new TestingServer(properties, Optional.of(module), mcpModuleBuilder);
         closer.register(testingServer);
 
         baseUri = testingServer.injector().getInstance(TestingHttpServer.class).getBaseUrl().toString();
@@ -167,7 +176,9 @@ public abstract class TestMcp
         httpClient = testingServer.httpClient();
         jsonMapper = testingServer.injector().getInstance(JsonMapper.class);
 
-        sessionController = (StandardSessionController) testingServer.injector().getInstance(Key.get(SessionController.class, ForSessionCaching.class));
+        sessionController = (mode == SESSIONLESS)
+                ? Optional.empty()
+                : Optional.of((StandardSessionController) testingServer.injector().getInstance(Key.get(SessionController.class, ForSessionCaching.class)));
     }
 
     @AfterAll
@@ -239,8 +250,29 @@ public abstract class TestMcp
     }
 
     @Test
+    public void testSessionless()
+    {
+        if (sessionController.isPresent()) {
+            return;
+        }
+
+        CallToolResult callToolResult = client1.mcpClient().callTool(new CallToolRequest("log", ImmutableMap.of()));
+        assertThat(callToolResult.isError()).isTrue();
+        assertThat(callToolResult.content())
+                .hasSize(1)
+                .first()
+                .asInstanceOf(type(TextContent.class))
+                .extracting(TextContent::text)
+                .isEqualTo("Sessions not enabled");
+    }
+
+    @Test
     public void testLogging()
     {
+        if (sessionController.isEmpty()) {
+            return;
+        }
+
         client1.mcpClient().setLoggingLevel(EMERGENCY);
         client2.mcpClient().setLoggingLevel(EMERGENCY);
 
@@ -479,13 +511,17 @@ public abstract class TestMcp
     @Test
     public void testExpiredSession()
     {
-        Set<SessionId> preSessionIds = sessionController.sessionIds();
+        if (sessionController.isEmpty()) {
+            return;
+        }
+
+        Set<SessionId> preSessionIds = sessionController.orElseThrow().sessionIds();
         TestingClient client = buildClient(closer, baseUri, "testExpiredSession");
-        Set<SessionId> postSessionIds = sessionController.sessionIds();
+        Set<SessionId> postSessionIds = sessionController.orElseThrow().sessionIds();
         SessionId clientSessionId = Sets.difference(postSessionIds, preSessionIds).iterator().next();
 
         // simulate session expiring
-        sessionController.deleteSession(clientSessionId);
+        sessionController.orElseThrow().deleteSession(clientSessionId);
 
         assertThatThrownBy(client.mcpClient()::listTools)
                 .hasMessageContaining("HTTP 404 Not Found");
@@ -494,9 +530,13 @@ public abstract class TestMcp
     @Test
     public void testDeleteSession()
     {
-        Set<SessionId> preSessionIds = sessionController.sessionIds();
+        if (sessionController.isEmpty()) {
+            return;
+        }
+
+        Set<SessionId> preSessionIds = sessionController.orElseThrow().sessionIds();
         TestingClient client = buildClient(closer, baseUri, "testDeleteSession");
-        Set<SessionId> postSessionIds = sessionController.sessionIds();
+        Set<SessionId> postSessionIds = sessionController.orElseThrow().sessionIds();
         SessionId clientSessionId = Sets.difference(postSessionIds, preSessionIds).iterator().next();
 
         Request request = prepareDelete()
@@ -514,6 +554,10 @@ public abstract class TestMcp
     public void testListChangeNotifications()
             throws InterruptedException
     {
+        if (sessionController.isEmpty()) {
+            return;
+        }
+
         TestingClient listChangeClient1 = buildClient(closer, baseUri, "ListChangeNotifications1");
         TestingClient listChangeClient2 = buildClient(closer, baseUri, "ListChangeNotifications2");
 
@@ -562,6 +606,10 @@ public abstract class TestMcp
     public void testCancellation()
             throws Exception
     {
+        if (sessionController.isEmpty()) {
+            return;
+        }
+
         SleepToolController sleepToolController = testingServer.injector().getInstance(SleepToolController.class);
         sleepToolController.reset();
 
@@ -607,7 +655,7 @@ public abstract class TestMcp
             JsonRpcRequest<CancelledNotification> jsonRpcRequest = JsonRpcRequest.buildNotification(NOTIFICATION_CANCELLED, cancelledNotification);
 
             // can't know which session it is - try em all
-            sessionController.sessionIds().forEach(sessionId -> {
+            sessionController.orElseThrow().sessionIds().forEach(sessionId -> {
                 Request request = preparePost().setUri(uri)
                         .addHeader(CONTENT_TYPE, "application/json")
                         .addHeader(ACCEPT, "application/json, text/event-stream")
@@ -664,6 +712,10 @@ public abstract class TestMcp
     @Test
     public void testElicitation()
     {
+        if (sessionController.isEmpty()) {
+            return;
+        }
+
         CallToolResult callToolResult = client1.mcpClient().callTool(new CallToolRequest("elicitation", ImmutableMap.of()));
         assertThat(callToolResult.content())
                 .hasSize(1)
@@ -676,6 +728,10 @@ public abstract class TestMcp
     @Test
     public void testRoots()
     {
+        if (sessionController.isEmpty()) {
+            return;
+        }
+
         CallToolResult callToolResult = client1.mcpClient().callTool(new CallToolRequest("roots", ImmutableMap.of()));
         assertThat(callToolResult.content())
                 .hasSize(1)
