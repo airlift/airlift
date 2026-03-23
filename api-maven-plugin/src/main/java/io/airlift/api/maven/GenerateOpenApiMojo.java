@@ -49,8 +49,7 @@ import java.util.Optional;
 import static io.airlift.api.builders.ApiBuilder.apiBuilder;
 import static io.airlift.api.maven.ServiceClassScanner.createClassLoader;
 
-@Mojo(
-        name = "generate-openapi",
+@Mojo(name = "generate-openapi",
         defaultPhase = LifecyclePhase.PROCESS_CLASSES,
         requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME,
         threadSafe = true)

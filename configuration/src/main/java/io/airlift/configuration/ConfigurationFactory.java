@@ -432,14 +432,16 @@ public class ConfigurationFactory
                 if (!prefix.isEmpty()) {
                     propertyName = prefix + propertyName;
                 }
-                problems.addError("Invalid configuration property %s: %s (for class %s.%s)",
+                problems.addError(
+                        "Invalid configuration property %s: %s (for class %s.%s)",
                         propertyName,
                         violation.getMessage(),
                         configClass.getName(),
                         violation.getPropertyPath());
             }
             else {
-                problems.addError("Invalid configuration property with prefix '%s': %s (for class %s.%s)",
+                problems.addError(
+                        "Invalid configuration property with prefix '%s': %s (for class %s.%s)",
                         prefix,
                         violation.getMessage(),
                         configClass.getName(),

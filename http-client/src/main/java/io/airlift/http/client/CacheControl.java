@@ -329,7 +329,8 @@ public class CacheControl
     @Override
     public int hashCode()
     {
-        return Objects.hash(maxAge,
+        return Objects.hash(
+                maxAge,
                 sMaxAge,
                 isPrivate,
                 noCache,

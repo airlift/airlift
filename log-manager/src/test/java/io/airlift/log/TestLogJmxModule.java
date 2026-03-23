@@ -10,7 +10,8 @@ public class TestLogJmxModule
     @Test
     public void testModule()
     {
-        Guice.createInjector(Stage.PRODUCTION,
+        Guice.createInjector(
+                Stage.PRODUCTION,
                 new TestingMBeanModule(),
                 new LogJmxModule());
     }
