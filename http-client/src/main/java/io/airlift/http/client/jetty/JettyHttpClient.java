@@ -1245,7 +1245,7 @@ public class JettyHttpClient
         if (finished == 0) {
             finished = now;
         }
-        return format("%s\t%.1f\t%.1f\t%.1f\t%.1f",
+        return "%s\t%.1f\t%.1f\t%.1f\t%.1f".formatted(
                 listener.getUri(),
                 nanosToMillis(requestStarted - created),
                 nanosToMillis(requestFinished - requestStarted),
