@@ -1144,13 +1144,15 @@ public class QuantileDigest
 
         for (int node : nodes) {
             if (lefts[node] != -1) {
-                builder.append(format("\t%s -> %s [style=\"%s\"];\n",
+                builder.append(format(
+                        "\t%s -> %s [style=\"%s\"];\n",
                         idFor(node),
                         idFor(lefts[node]),
                         levels[node] - levels[lefts[node]] == 1 ? "solid" : "dotted"));
             }
             if (rights[node] != -1) {
-                builder.append(format("\t%s -> %s [style=\"%s\"];\n",
+                builder.append(format(
+                        "\t%s -> %s [style=\"%s\"];\n",
                         idFor(node),
                         idFor(rights[node]),
                         levels[node] - levels[rights[node]] == 1 ? "solid" : "dotted"));

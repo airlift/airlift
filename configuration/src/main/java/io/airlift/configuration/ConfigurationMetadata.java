@@ -175,7 +175,8 @@ public class ConfigurationMetadata<T>
             }
 
             if (!legacyConfig.replacedBy().isEmpty()) {
-                problems.addError("@Config method [%s] has annotation claiming to be replaced by another property ('%s')",
+                problems.addError(
+                        "@Config method [%s] has annotation claiming to be replaced by another property ('%s')",
                         configMethod.toGenericString(),
                         legacyConfig.replacedBy());
                 isValid = false;
@@ -739,7 +740,8 @@ public class ConfigurationMetadata<T>
                 setters.add(InjectionPointMetaData.newLegacy(configClass, property, TypeToken.of(method.getGenericParameterTypes()[0]), method));
             }
             else {
-                problems.addError("@LegacyConfig property '%s' on method [%s] is replaced by @Config property of same name on method [%s]",
+                problems.addError(
+                        "@LegacyConfig property '%s' on method [%s] is replaced by @Config property of same name on method [%s]",
                         property,
                         method.toGenericString(),
                         setterName);

@@ -48,7 +48,8 @@ public class TestHeaderName
         JsonCodec<Map<String, String>> stringMapCodec = mapJsonCodec(String.class, String.class);
 
         String json = codec.toJson(ImmutableMap.of(ACCESS_CONTROL_ALLOW_PRIVATE_NETWORK, "yes"));
-        assertThat(json).isEqualToIgnoringWhitespace("""
+        assertThat(json).isEqualToIgnoringWhitespace(
+                """
                 {
                   "access-control-allow-private-network" : "yes"
                 }
