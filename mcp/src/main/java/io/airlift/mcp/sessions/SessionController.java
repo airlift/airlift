@@ -3,8 +3,6 @@ package io.airlift.mcp.sessions;
 import io.airlift.mcp.McpIdentity;
 
 import java.time.Duration;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
@@ -15,8 +13,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public interface SessionController
 {
-    Optional<Duration> FOREVER_TTL = Optional.empty();
-
     /**
      * <p>
      *     Create a new session and return its ID. {@code ttl} specifies the
@@ -103,22 +99,4 @@ public interface SessionController
      * @return {@code true} if the value was deleted, {@code false} if the session ID is invalid
      */
     <T> boolean deleteSessionValue(SessionId sessionId, SessionValueKey<T> key);
-
-    /**
-     * <p>
-     *     List all values of the given type, up to the given page size, starting after the given last name (if present).
-     *     The values are returned in ascending order by key name. If {@code cursor} is empty, the listing starts from the beginning.
-     * </p>
-     *
-     * <p>
-     *     Each value return is an entry of the key name and the value.
-     * </p>
-     */
-    <T> List<Map.Entry<String, T>> listSessionValues(SessionId sessionId, Class<T> type, int pageSize, Optional<String> cursor);
-
-    /**
-     * List all active sessions (except the system session), up to the given page size, starting after the given cursor (if present).
-     * The sessions are returned in ascending order by session ID. If {@code cursor} is empty, the listing starts from the beginning.
-     */
-    List<SessionId> listSessions(int pageSize, Optional<SessionId> cursor);
 }

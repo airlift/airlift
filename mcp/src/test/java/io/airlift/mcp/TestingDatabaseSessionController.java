@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.google.inject.Inject;
@@ -27,9 +26,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -41,7 +37,6 @@ import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
-import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.util.concurrent.MoreExecutors.shutdownAndAwaitTermination;
 import static io.airlift.mcp.sessions.SessionConditionUtil.waitForCondition;
 import static java.sql.Types.BIGINT;
@@ -140,27 +135,9 @@ public class TestingDatabaseSessionController
             INSERT INTO sessions (session_id, ttl_ms) VALUES (?, ?)
             """;
 
-    private static final String LIST_VALUES_SQL =
-            """
-            SELECT name, value
-            FROM session_values
-            WHERE (session_id = ? AND type = ?)
-              AND (name > ? OR ? IS NULL)
-            ORDER BY name
-            LIMIT ?
-            """;
-
     private static final String GET_SESSIONS_SQL =
             """
             SELECT session_id FROM sessions
-            """;
-
-    private static final String LIST_SESSIONS_SQL =
-            """
-            SELECT session_id FROM sessions
-            WHERE (session_id > ? OR ? IS NULL)
-            ORDER BY session_id
-            LIMIT ?
             """;
 
     private static final String LISTEN_SQL = "LISTEN mcp_internal_session_channel";
@@ -398,54 +375,6 @@ public class TestingDatabaseSessionController
                 // should never happen
                 throw new UncheckedExecutionException(e);
             }
-        });
-    }
-
-    @Override
-    public <T> List<Map.Entry<String, T>> listSessionValues(SessionId sessionId, Class<T> type, int pageSize, Optional<String> lastName)
-    {
-        checkClean();
-
-        return database.withConnection(connection -> {
-                    PreparedStatement preparedStatement = connection.prepareStatement(LIST_VALUES_SQL);
-                    preparedStatement.setString(1, sessionId.id());
-                    preparedStatement.setString(2, type.getName());
-                    preparedStatement.setString(3, lastName.orElse(null));
-                    preparedStatement.setString(4, lastName.orElse(null));
-                    preparedStatement.setInt(5, pageSize);
-                    var resultSet = preparedStatement.executeQuery();
-
-                    ImmutableList.Builder<Map.Entry<String, String>> results = ImmutableList.builder();
-                    while (resultSet.next()) {
-                        String name = resultSet.getString(1);
-                        String valueJson = resultSet.getString(2);
-                        results.add(Map.entry(name, valueJson));
-                    }
-                    return results.build();
-                })
-                .stream()
-                .map(entry -> Map.entry(entry.getKey(), mapJson(type, entry.getValue())))
-                .collect(toImmutableList());
-    }
-
-    @Override
-    public List<SessionId> listSessions(int pageSize, Optional<SessionId> cursor)
-    {
-        checkClean();
-
-        return database.withConnection(connection -> {
-            PreparedStatement preparedStatement = connection.prepareStatement(LIST_SESSIONS_SQL);
-            preparedStatement.setString(1, cursor.map(SessionId::id).orElse(null));
-            preparedStatement.setString(2, cursor.map(SessionId::id).orElse(null));
-            preparedStatement.setInt(3, pageSize);
-            var resultSet = preparedStatement.executeQuery();
-
-            List<SessionId> results = new ArrayList<>();
-            while (resultSet.next()) {
-                String id = resultSet.getString(1);
-                results.add(new SessionId(id));
-            }
-            return results;
         });
     }
 

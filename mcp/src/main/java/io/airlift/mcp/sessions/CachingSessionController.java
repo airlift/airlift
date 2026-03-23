@@ -8,8 +8,6 @@ import io.airlift.mcp.McpConfig;
 import io.airlift.mcp.McpIdentity;
 
 import java.time.Duration;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -130,18 +128,6 @@ public class CachingSessionController
         }
 
         return delegate.deleteSessionValue(sessionId, key);
-    }
-
-    @Override
-    public <T> List<Map.Entry<String, T>> listSessionValues(SessionId sessionId, Class<T> type, int pageSize, Optional<String> cursor)
-    {
-        return delegate.listSessionValues(sessionId, type, pageSize, cursor);
-    }
-
-    @Override
-    public List<SessionId> listSessions(int pageSize, Optional<SessionId> cursor)
-    {
-        return delegate.listSessions(pageSize, cursor);
     }
 
     private static <T> boolean isCacheable(SessionValueKey<T> key)
