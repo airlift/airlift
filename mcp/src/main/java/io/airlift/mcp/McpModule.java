@@ -63,7 +63,6 @@ import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.json.JsonBinder.jsonBinder;
 import static io.airlift.json.JsonSubTypeBinder.jsonSubTypeBinder;
 import static io.airlift.mcp.McpMetadata.DEFAULT;
-import static io.airlift.mcp.McpModule.Mode.STANDARD;
 import static io.airlift.mcp.reflection.ReflectionHelper.forAllInClass;
 import static java.util.Objects.requireNonNull;
 
@@ -72,7 +71,6 @@ public class McpModule
 {
     public static final String MCP_SERVER_ICONS = "mcp-server-icons";
 
-    private final Mode mode;
     private final McpMetadata metadata;
     private final IdentityMapperBinding identityMapperBinding;
     private final Set<Class<?>> classes;
@@ -94,7 +92,6 @@ public class McpModule
     }
 
     private McpModule(
-            Mode mode,
             McpMetadata metadata,
             IdentityMapperBinding identityMapperBinding,
             Set<Class<?>> classes,
@@ -110,7 +107,6 @@ public class McpModule
             Set<String> serverIcons,
             Optional<Consumer<LinkedBindingBuilder<StorageController>>> storageControllerBinding)
     {
-        this.mode = requireNonNull(mode, "mode is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
         this.identityMapperBinding = requireNonNull(identityMapperBinding, "identityMapperBinding is null");
         this.classes = ImmutableSet.copyOf(classes);
@@ -125,12 +121,6 @@ public class McpModule
         this.icons = ImmutableMap.copyOf(icons);
         this.serverIcons = ImmutableSet.copyOf(serverIcons);
         this.storageControllerBinding = requireNonNull(storageControllerBinding, "storageControllerBinding is null");
-    }
-
-    public enum Mode
-    {
-        STANDARD,
-        UNBOUND_IMPLEMENTATION,
     }
 
     record IdentityMapperBinding(Class<?> identityType, Consumer<AnnotatedBindingBuilder<McpIdentityMapper>> identityMapperBinding)
@@ -165,7 +155,6 @@ public class McpModule
         private final ImmutableSet.Builder<String> serverIcons = ImmutableSet.builder();
         private Optional<IdentityMapperBinding> identityMapperBinding = Optional.empty();
         private McpMetadata metadata = DEFAULT;
-        private Mode mode = STANDARD;
         private Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding = Optional.empty();
         private Optional<Consumer<LinkedBindingBuilder<McpCapabilityFilter>>> capabilityFilterBinding = Optional.empty();
         private Consumer<LinkedBindingBuilder<McpCancellationHandler>> cancellationHandlerBinding = binder -> binder.toInstance(McpCancellationHandler.DEFAULT);
@@ -183,12 +172,6 @@ public class McpModule
         {
             classes.add(clazz);
 
-            return this;
-        }
-
-        public Builder withMode(Mode mode)
-        {
-            this.mode = requireNonNull(mode, "mode is null");
             return this;
         }
 
@@ -287,7 +270,6 @@ public class McpModule
             IdentityMapperBinding localIdentityMapperBinding = identityMapperBinding.orElseThrow(() -> new IllegalStateException("Identity mapper binding is required"));
 
             return new McpModule(
-                    mode,
                     metadata,
                     localIdentityMapperBinding,
                     classesSet,
@@ -333,9 +315,7 @@ public class McpModule
         bindCancellation(binder);
         bindIcons(binder);
 
-        if (mode == STANDARD) {
-            binder.install(new InternalMcpModule());
-        }
+        binder.install(new InternalMcpModule());
     }
 
     private void bindIdentityMapper(Binder binder)
