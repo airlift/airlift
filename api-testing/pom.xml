@@ -23,7 +23,7 @@
         <dep.openapi-generator-maven-plugin.version>7.7.0</dep.openapi-generator-maven-plugin.version>
 
         <openapitools.jackson.version>2.21.2</openapitools.jackson.version>
-        <openapitools.jackson-databind-nullable.version>0.2.9</openapitools.jackson-databind-nullable.version>
+        <openapitools.jackson-databind-nullable.version>0.2.10</openapitools.jackson-databind-nullable.version>
         <openapitools.jakarta-annotation.version>3.0.0</openapitools.jakarta-annotation.version>
     </properties>
 
