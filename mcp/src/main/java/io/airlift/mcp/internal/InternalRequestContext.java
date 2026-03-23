@@ -111,7 +111,7 @@ class InternalRequestContext
         this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
         this.sessionController = requireNonNull(sessionController, "sessionController is null");
         this.request = requireNonNull(request, "request is null");
-        this.response = requireNonNull(response, "request is null");
+        this.response = requireNonNull(response, "response is null");
         this.messageWriter = requireNonNull(messageWriter, "messageWriter is null");
         this.progressToken = requireNonNull(progressToken, "progressToken is null");
         this.loggingLevelSupplier = requireNonNull(loggingLevelSupplier, "loggingLevelSupplier is null");
