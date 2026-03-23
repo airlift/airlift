@@ -1,6 +1,5 @@
-package io.airlift.mcp.internal;
+package io.airlift.mcp.operations;
 
-import com.google.inject.Inject;
 import io.airlift.mcp.McpConfig;
 import io.airlift.mcp.model.PaginatedRequest;
 
@@ -17,7 +16,6 @@ class PaginationUtil
 {
     private final int pageSize;
 
-    @Inject
     PaginationUtil(McpConfig mcpConfig)
     {
         pageSize = mcpConfig.getDefaultPageSize();

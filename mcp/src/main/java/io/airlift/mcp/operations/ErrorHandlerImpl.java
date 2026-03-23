@@ -1,4 +1,4 @@
-package io.airlift.mcp.internal;
+package io.airlift.mcp.operations;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.json.JsonMapper;
@@ -34,15 +34,15 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
-public class InternalErrorHandler
+public class ErrorHandlerImpl
         implements ErrorHandler
 {
-    private static final Logger log = Logger.get(InternalErrorHandler.class);
+    private static final Logger log = Logger.get(ErrorHandlerImpl.class);
 
     private final JsonMapper jsonMapper;
 
     @Inject
-    public InternalErrorHandler(JsonMapper jsonMapper)
+    public ErrorHandlerImpl(JsonMapper jsonMapper)
     {
         this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
     }
@@ -108,8 +108,8 @@ public class InternalErrorHandler
             throw new McpException(e, error);
         }
 
-        InternalMessageWriter messageWriter = (InternalMessageWriter) request.getAttribute(MESSAGE_WRITER_ATTRIBUTE);
-        if (messageWriter != null && messageWriter.hasBeenUpgraded()) {
+        MessageWriterImpl messageWriter = (MessageWriterImpl) request.getAttribute(MESSAGE_WRITER_ATTRIBUTE);
+        if ((messageWriter != null) && messageWriter.hasBeenUpgraded()) {
             messageWriter.write(rpcResponseJson);
             messageWriter.flushMessages();
         }

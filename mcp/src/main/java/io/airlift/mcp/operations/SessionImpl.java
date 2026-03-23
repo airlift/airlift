@@ -1,4 +1,4 @@
-package io.airlift.mcp.internal;
+package io.airlift.mcp.operations;
 
 import io.airlift.mcp.McpException;
 import io.airlift.mcp.sessions.BlockingResult;
@@ -17,7 +17,7 @@ import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
 import static java.util.Objects.requireNonNull;
 
-class InternalSession
+class SessionImpl
         implements Session
 {
     private static final Supplier<McpException> ERROR_SESSIONS_ARE_NOT_ENABLED = () -> exception(INVALID_REQUEST, "Sessions are not enabled");
@@ -25,7 +25,7 @@ class InternalSession
     private final Optional<SessionController> sessionController;
     private final SessionId sessionId;
 
-    InternalSession(Optional<SessionController> sessionController, SessionId sessionId)
+    SessionImpl(Optional<SessionController> sessionController, SessionId sessionId)
     {
         this.sessionController = requireNonNull(sessionController, "sessionController is null");
         this.sessionId = requireNonNull(sessionId, "sessionId is null");
