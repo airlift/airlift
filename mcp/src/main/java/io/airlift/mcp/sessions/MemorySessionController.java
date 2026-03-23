@@ -1,7 +1,6 @@
 package io.airlift.mcp.sessions;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import io.airlift.log.Logger;
@@ -9,8 +8,6 @@ import io.airlift.mcp.McpIdentity;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Comparator;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -20,7 +17,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
-import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.sessions.SessionConditionUtil.waitForCondition;
 import static java.util.Objects.requireNonNull;
@@ -198,29 +194,6 @@ public class MemorySessionController
             Session session = getSession(sessionId).orElseThrow(() -> exception("Session not found: " + sessionId));
             session.signal.waitForSignal(maxWait.toMillis(), MILLISECONDS);
         });
-    }
-
-    @Override
-    public <T> List<Map.Entry<String, T>> listSessionValues(SessionId sessionId, Class<T> type, int pageSize, Optional<String> cursor)
-    {
-        return getSession(sessionId).map(session -> session.typeMap(type).entrySet()
-                .stream()
-                .sorted(Map.Entry.comparingByKey())
-                .filter(entry -> cursor.isEmpty() || cursor.orElseThrow().compareTo(entry.getKey()) < 0)
-                .limit(pageSize)
-                .map(entry -> Map.entry(entry.getKey(), type.cast(entry.getValue())))
-                .collect(toImmutableList()))
-                .orElseGet(ImmutableList::of);
-    }
-
-    @Override
-    public List<SessionId> listSessions(int pageSize, Optional<SessionId> cursor)
-    {
-        return sessions.keySet().stream()
-                .sorted(Comparator.comparing(SessionId::id))
-                .filter(entry -> cursor.isEmpty() || cursor.orElseThrow().id().compareTo(entry.id()) < 0)
-                .limit(pageSize)
-                .collect(toImmutableList());
     }
 
     private Optional<Session> getSession(SessionId sessionId)

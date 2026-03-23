@@ -9,50 +9,17 @@ import io.airlift.mcp.sessions.SessionValueKey;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.IntStream;
 
-import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public abstract class TestSessionController
 {
-    public record TypeA(String name) {}
-
-    public record TypeB(String name) {}
-
-    @Test
-    public void testListSessionValues()
-    {
-        int qty = 1000;
-        List<SessionValueKey<TypeA>> aKeys = IntStream.range(0, qty)
-                .mapToObj(i -> SessionValueKey.of("TypeA-" + i, TypeA.class))
-                .collect(toImmutableList());
-        List<SessionValueKey<TypeB>> bKeys = IntStream.range(0, qty)
-                .mapToObj(i -> SessionValueKey.of("TypeB-" + i, TypeB.class))
-                .collect(toImmutableList());
-
-        SessionController controller = sessionController();
-        SessionId sessionId = controller.createSession(new Authenticated<>("dummy"), Optional.empty());
-
-        aKeys.forEach(key -> controller.setSessionValue(sessionId, key, new TypeA(key.name())));
-        bKeys.forEach(key -> controller.setSessionValue(sessionId, key, new TypeB(key.name())));
-
-        List<TypeA> aValues = aKeys.stream().map(key -> new TypeA(key.name())).collect(toImmutableList());
-        List<TypeB> bValues = bKeys.stream().map(key -> new TypeB(key.name())).collect(toImmutableList());
-
-        assertThat(list(controller, sessionId, TypeA.class)).containsExactlyInAnyOrderElementsOf(aValues);
-        assertThat(list(controller, sessionId, TypeB.class)).containsExactlyInAnyOrderElementsOf(bValues);
-    }
-
     @Test
     public void testConditions()
             throws InterruptedException
@@ -143,19 +110,4 @@ public abstract class TestSessionController
     }
 
     protected abstract SessionController sessionController();
-
-    private <T> List<T> list(SessionController controller, SessionId sessionId, Class<T> type)
-    {
-        int pageSize = 12;
-
-        List<T> results = new ArrayList<>();
-        Optional<String> lastName = Optional.empty();
-        do {
-            List<Map.Entry<String, T>> thisList = controller.listSessionValues(sessionId, type, pageSize, lastName);
-            thisList.forEach(entry -> results.add(entry.getValue()));
-            lastName = (thisList.size() < pageSize) ? Optional.empty() : Optional.of(thisList.getLast().getKey());
-        }
-        while (lastName.isPresent());
-        return results;
-    }
 }
