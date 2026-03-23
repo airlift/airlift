@@ -233,8 +233,8 @@ Currently, sessions are required for
 however that will likely change in a future version of the MCP spec.
 
 To enable session support use the `withSessions()` method of the `McpModule`. For Production, a DB-backed,
-resilient implementation of [SessionController](src/main/java/io/airlift/mcp/sessions/SessionController.java) should be used. For testing, an in-memory implementation is provided:
-[MemorySessionController](src/main/java/io/airlift/mcp/sessions/MemorySessionController.java).
+resilient implementation of [StorageController](src/main/java/io/airlift/mcp/storage/StorageController.java) should be used. For testing, an in-memory implementation is provided:
+[MemoryStorageController](src/main/java/io/airlift/mcp/storage/MemoryStorageController.java).
 
 ## Apps
 

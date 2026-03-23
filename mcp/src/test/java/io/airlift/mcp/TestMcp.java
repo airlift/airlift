@@ -1,7 +1,6 @@
 package io.airlift.mcp;
 
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -22,7 +21,6 @@ import io.airlift.mcp.model.CancelledNotification;
 import io.airlift.mcp.model.Icon;
 import io.airlift.mcp.model.JsonRpcRequest;
 import io.airlift.mcp.sessions.ForSessionCaching;
-import io.airlift.mcp.sessions.MemorySessionController;
 import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.sessions.SessionId;
 import io.airlift.mcp.sessions.StandardSessionController;
@@ -77,7 +75,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -127,42 +124,35 @@ public abstract class TestMcp
     private final HttpClient httpClient;
     private final JsonMapper jsonMapper;
     private final TestingServer testingServer;
-    private final Supplier<Set<SessionId>> sessionIdsSupplier;
-    private final Consumer<SessionId> sessionDeleter;
+    private final StandardSessionController sessionController;
 
     public enum Mode
     {
-        MEMORY_SESSIONS,
-        DATABASE_SESSIONS,
         STANDARD_SESSIONS,
         STANDARD_DATABASE_SESSIONS,
     }
 
+    @SuppressWarnings("SwitchStatementWithTooFewBranches")
     protected TestMcp(Mode mode)
     {
         Module module = binder -> {
             switch (mode) {
-                case MEMORY_SESSIONS -> {}
-                case DATABASE_SESSIONS -> binder.bind(TestingDatabaseServer.class).in(SINGLETON);
-                case STANDARD_SESSIONS -> binder.bind(StorageController.class).to(MemoryStorageController.class).in(SINGLETON);
-                case STANDARD_DATABASE_SESSIONS -> {
-                    binder.bind(TestingDatabaseServer.class).in(SINGLETON);
-                    binder.bind(StorageController.class).to(TestingDatabaseStorageController.class).in(SINGLETON);
-                }
+                case STANDARD_DATABASE_SESSIONS -> binder.bind(TestingDatabaseServer.class).in(SINGLETON);
+                default -> {}
             }
         };
 
         Map<String, String> properties = ImmutableMap.of("mcp.http-get-events.enabled", "false");
 
-        Class<? extends SessionController> sessionControllerClass = switch (mode) {
-            case MEMORY_SESSIONS -> MemorySessionController.class;
-            case DATABASE_SESSIONS -> TestingDatabaseSessionController.class;
-            case STANDARD_SESSIONS, STANDARD_DATABASE_SESSIONS -> StandardSessionController.class;
+        Class<? extends StorageController> storageControllerClass = switch (mode) {
+            case STANDARD_DATABASE_SESSIONS -> TestingDatabaseStorageController.class;
+            default -> MemoryStorageController.class;
         };
 
         testingServer = new TestingServer(properties, Optional.of(module), builder -> builder
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
-                .withSessions(binding -> binding.to(sessionControllerClass).in(SINGLETON))
+                .withStorage(binding -> binding.to(storageControllerClass).in(SINGLETON))
+                .withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON))
                 .addIcon("google", binding -> binding.toInstance(new Icon("https://www.gstatic.com/images/branding/searchlogo/ico/favicon.ico")))
                 .withAllInClass(TestingEndpoints.class)
                 .build());
@@ -176,14 +166,7 @@ public abstract class TestMcp
         httpClient = testingServer.httpClient();
         jsonMapper = testingServer.injector().getInstance(JsonMapper.class);
 
-        SessionController sessionController = testingServer.injector().getInstance(Key.get(SessionController.class, ForSessionCaching.class));
-
-        sessionIdsSupplier = switch (mode) {
-            case MEMORY_SESSIONS -> () -> ((MemorySessionController) sessionController).sessionIds();
-            case DATABASE_SESSIONS -> () -> ((TestingDatabaseSessionController) sessionController).sessionIds();
-            case STANDARD_SESSIONS, STANDARD_DATABASE_SESSIONS -> () -> ((StandardSessionController) sessionController).sessionIds();
-        };
-        sessionDeleter = sessionController::deleteSession;
+        sessionController = (StandardSessionController) testingServer.injector().getInstance(Key.get(SessionController.class, ForSessionCaching.class));
     }
 
     @AfterAll
@@ -495,13 +478,13 @@ public abstract class TestMcp
     @Test
     public void testExpiredSession()
     {
-        Set<SessionId> preSessionIds = sessionIdsSupplier.get();
+        Set<SessionId> preSessionIds = sessionController.sessionIds();
         TestingClient client = buildClient(closer, baseUri, "testExpiredSession");
-        Set<SessionId> postSessionIds = sessionIdsSupplier.get();
+        Set<SessionId> postSessionIds = sessionController.sessionIds();
         SessionId clientSessionId = Sets.difference(postSessionIds, preSessionIds).iterator().next();
 
         // simulate session expiring
-        sessionDeleter.accept(clientSessionId);
+        sessionController.deleteSession(clientSessionId);
 
         assertThatThrownBy(client.mcpClient()::listTools)
                 .hasMessageContaining("HTTP 404 Not Found");
@@ -510,9 +493,9 @@ public abstract class TestMcp
     @Test
     public void testDeleteSession()
     {
-        Set<SessionId> preSessionIds = sessionIdsSupplier.get();
+        Set<SessionId> preSessionIds = sessionController.sessionIds();
         TestingClient client = buildClient(closer, baseUri, "testDeleteSession");
-        Set<SessionId> postSessionIds = sessionIdsSupplier.get();
+        Set<SessionId> postSessionIds = sessionController.sessionIds();
         SessionId clientSessionId = Sets.difference(postSessionIds, preSessionIds).iterator().next();
 
         Request request = prepareDelete()
@@ -623,7 +606,7 @@ public abstract class TestMcp
             JsonRpcRequest<CancelledNotification> jsonRpcRequest = JsonRpcRequest.buildNotification(NOTIFICATION_CANCELLED, cancelledNotification);
 
             // can't know which session it is - try em all
-            sessionIdsSupplier.get().forEach(sessionId -> {
+            sessionController.sessionIds().forEach(sessionId -> {
                 Request request = preparePost().setUri(uri)
                         .addHeader(CONTENT_TYPE, "application/json")
                         .addHeader(ACCEPT, "application/json, text/event-stream")
