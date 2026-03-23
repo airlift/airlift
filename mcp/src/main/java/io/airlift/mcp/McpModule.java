@@ -44,6 +44,7 @@ import io.airlift.mcp.reflection.ToolHandlerProvider;
 import io.airlift.mcp.sessions.CachingSessionController;
 import io.airlift.mcp.sessions.ForSessionCaching;
 import io.airlift.mcp.sessions.SessionController;
+import io.airlift.mcp.storage.StorageController;
 import io.airlift.mcp.versions.VersionsController;
 
 import java.util.Collection;
@@ -85,6 +86,7 @@ public class McpModule
     private final Consumer<LinkedBindingBuilder<McpCancellationHandler>> cancellationHandlerBinding;
     private final Map<String, Consumer<LinkedBindingBuilder<Icon>>> icons;
     private final Set<String> serverIcons;
+    private final Optional<Consumer<LinkedBindingBuilder<StorageController>>> storageControllerBinding;
 
     public static Builder builder()
     {
@@ -105,7 +107,8 @@ public class McpModule
             Optional<Consumer<LinkedBindingBuilder<McpCapabilityFilter>>> capabilityFilterBinding,
             Consumer<LinkedBindingBuilder<McpCancellationHandler>> cancellationHandlerBinding,
             Map<String, Consumer<LinkedBindingBuilder<Icon>>> icons,
-            Set<String> serverIcons)
+            Set<String> serverIcons,
+            Optional<Consumer<LinkedBindingBuilder<StorageController>>> storageControllerBinding)
     {
         this.mode = requireNonNull(mode, "mode is null");
         this.metadata = requireNonNull(metadata, "metadata is null");
@@ -121,6 +124,7 @@ public class McpModule
         this.cancellationHandlerBinding = requireNonNull(cancellationHandlerBinding, "cancellationHandlerBinding is null");
         this.icons = ImmutableMap.copyOf(icons);
         this.serverIcons = ImmutableSet.copyOf(serverIcons);
+        this.storageControllerBinding = requireNonNull(storageControllerBinding, "storageControllerBinding is null");
     }
 
     public enum Mode
@@ -165,6 +169,7 @@ public class McpModule
         private Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding = Optional.empty();
         private Optional<Consumer<LinkedBindingBuilder<McpCapabilityFilter>>> capabilityFilterBinding = Optional.empty();
         private Consumer<LinkedBindingBuilder<McpCancellationHandler>> cancellationHandlerBinding = binder -> binder.toInstance(McpCancellationHandler.DEFAULT);
+        private Optional<Consumer<LinkedBindingBuilder<StorageController>>> storageControllerBinding = Optional.empty();
 
         private Builder() {}
 
@@ -197,6 +202,7 @@ public class McpModule
 
         public Builder withSessions(Consumer<LinkedBindingBuilder<SessionController>> sessionControllerBinding)
         {
+            checkState(storageControllerBinding.isPresent(), "Storage controller binding is required for session support");
             checkArgument(this.sessionControllerBinding.isEmpty(), "Session controller binding is already set");
 
             this.sessionControllerBinding = Optional.of(sessionControllerBinding);
@@ -215,6 +221,14 @@ public class McpModule
             checkState(sessionControllerBinding.isPresent(), "Session controller binding is required for cancellation support");
 
             this.cancellationHandlerBinding = requireNonNull(cancellationHandlerBinding, "cancellationHandlerBinding is null");
+            return this;
+        }
+
+        public Builder withStorage(Consumer<LinkedBindingBuilder<StorageController>> storageControllerBinding)
+        {
+            checkArgument(this.storageControllerBinding.isEmpty(), "Storage controller binding is already set");
+
+            this.storageControllerBinding = Optional.of(storageControllerBinding);
             return this;
         }
 
@@ -286,7 +300,8 @@ public class McpModule
                     capabilityFilterBinding,
                     cancellationHandlerBinding,
                     icons.build(),
-                    serverIcons.build());
+                    serverIcons.build(),
+                    storageControllerBinding);
         }
     }
 
@@ -295,6 +310,7 @@ public class McpModule
     {
         binder.bind(McpMetadata.class).toInstance(metadata);
         binder.bind(VersionsController.class).in(SINGLETON);
+        storageControllerBinding.ifPresent(binding -> binding.accept(binder.bind(StorageController.class)));
 
         configBinder(binder).bindConfig(McpConfig.class);
 

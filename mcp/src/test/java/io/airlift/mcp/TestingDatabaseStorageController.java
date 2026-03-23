@@ -34,7 +34,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class TestingDatabaseStorageController
         implements StorageController
 {
-    private static final Logger log = Logger.get(TestingDatabaseSessionController.class);
+    private static final Logger log = Logger.get(TestingDatabaseStorageController.class);
 
     private static final int PAGE_SIZE = 100;
 

@@ -4,7 +4,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Closer;
 import com.google.inject.Scopes;
 import io.airlift.http.server.testing.TestingHttpServer;
-import io.airlift.mcp.sessions.MemorySessionController;
+import io.airlift.mcp.sessions.StandardSessionController;
+import io.airlift.mcp.storage.MemoryStorageController;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -13,6 +14,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.util.List;
 import java.util.Optional;
 
+import static com.google.inject.Scopes.SINGLETON;
 import static io.airlift.mcp.McpIdentity.Authenticated.authenticated;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
@@ -60,7 +62,8 @@ public class TestConformance
 
         TestingServer testingServer = closer.register(new TestingServer(ImmutableMap.of(), Optional.empty(), builder -> builder
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.toInstance((_) -> authenticated(new TestingIdentity("Mr. Tester"))))
-                .withSessions(binding -> binding.to(MemorySessionController.class).in(Scopes.SINGLETON))
+                .withStorage(binding -> binding.to(MemoryStorageController.class).in(SINGLETON))
+                .withSessions(binding -> binding.to(StandardSessionController.class).in(Scopes.SINGLETON))
                 .withAllInClass(ConformanceEndpoints.class)
                 .build()));
 
