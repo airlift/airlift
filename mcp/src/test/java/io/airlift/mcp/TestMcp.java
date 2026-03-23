@@ -25,6 +25,9 @@ import io.airlift.mcp.sessions.ForSessionCaching;
 import io.airlift.mcp.sessions.MemorySessionController;
 import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.sessions.SessionId;
+import io.airlift.mcp.sessions.StandardSessionController;
+import io.airlift.mcp.storage.MemoryStorageController;
+import io.airlift.mcp.storage.StorageController;
 import io.modelcontextprotocol.client.transport.McpHttpClientTransportAuthorizationException;
 import io.modelcontextprotocol.spec.HttpHeaders;
 import io.modelcontextprotocol.spec.McpError;
@@ -90,7 +93,6 @@ import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.Request.Builder.preparePost;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static io.airlift.json.JsonCodec.jsonCodec;
-import static io.airlift.mcp.TestMcp.Mode.DATABASE_SESSIONS;
 import static io.airlift.mcp.TestingClient.buildClient;
 import static io.airlift.mcp.TestingIdentityMapper.ERRORED_IDENTITY;
 import static io.airlift.mcp.TestingIdentityMapper.EXPECTED_IDENTITY;
@@ -132,21 +134,35 @@ public abstract class TestMcp
     {
         MEMORY_SESSIONS,
         DATABASE_SESSIONS,
+        STANDARD_SESSIONS,
+        STANDARD_DATABASE_SESSIONS,
     }
 
     protected TestMcp(Mode mode)
     {
         Module module = binder -> {
-            if (mode == DATABASE_SESSIONS) {
-                binder.bind(TestingDatabaseServer.class).in(SINGLETON);
+            switch (mode) {
+                case MEMORY_SESSIONS -> {}
+                case DATABASE_SESSIONS -> binder.bind(TestingDatabaseServer.class).in(SINGLETON);
+                case STANDARD_SESSIONS -> binder.bind(StorageController.class).to(MemoryStorageController.class).in(SINGLETON);
+                case STANDARD_DATABASE_SESSIONS -> {
+                    binder.bind(TestingDatabaseServer.class).in(SINGLETON);
+                    binder.bind(StorageController.class).to(TestingDatabaseStorageController.class).in(SINGLETON);
+                }
             }
         };
 
         Map<String, String> properties = ImmutableMap.of("mcp.http-get-events.enabled", "false");
 
+        Class<? extends SessionController> sessionControllerClass = switch (mode) {
+            case MEMORY_SESSIONS -> MemorySessionController.class;
+            case DATABASE_SESSIONS -> TestingDatabaseSessionController.class;
+            case STANDARD_SESSIONS, STANDARD_DATABASE_SESSIONS -> StandardSessionController.class;
+        };
+
         testingServer = new TestingServer(properties, Optional.of(module), builder -> builder
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
-                .withSessions(binding -> binding.to((mode == DATABASE_SESSIONS) ? TestingDatabaseSessionController.class : MemorySessionController.class).in(SINGLETON))
+                .withSessions(binding -> binding.to(sessionControllerClass).in(SINGLETON))
                 .addIcon("google", binding -> binding.toInstance(new Icon("https://www.gstatic.com/images/branding/searchlogo/ico/favicon.ico")))
                 .withAllInClass(TestingEndpoints.class)
                 .build());
@@ -165,6 +181,7 @@ public abstract class TestMcp
         sessionIdsSupplier = switch (mode) {
             case MEMORY_SESSIONS -> () -> ((MemorySessionController) sessionController).sessionIds();
             case DATABASE_SESSIONS -> () -> ((TestingDatabaseSessionController) sessionController).sessionIds();
+            case STANDARD_SESSIONS, STANDARD_DATABASE_SESSIONS -> () -> ((StandardSessionController) sessionController).sessionIds();
         };
         sessionDeleter = sessionController::deleteSession;
     }
