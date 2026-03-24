@@ -16,7 +16,7 @@
     <properties>
         <air.compiler.fail-warnings>false</air.compiler.fail-warnings>
 
-        <dep.openapi-generator-maven-plugin.version>7.7.0</dep.openapi-generator-maven-plugin.version>
+        <dep.openapi-generator-maven-plugin.version>7.21.0</dep.openapi-generator-maven-plugin.version>
 
         <!-- TODO move these to airbase -->
         <!-- Note: duplicated in "api" module -->
