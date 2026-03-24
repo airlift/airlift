@@ -26,9 +26,6 @@ public class MainModule
     @Override
     public void configure(Binder binder)
     {
-        binder.requireExplicitBindings();
-        binder.disableCircularProxies();
-
         discoveryBinder(binder).bindHttpAnnouncement("skeleton");
     }
 }

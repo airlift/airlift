@@ -50,7 +50,6 @@ public class JaxrsModule
     @Override
     protected void setup(Binder binder)
     {
-        binder.disableCircularProxies();
         binder.bind(qualifiedKey(qualifier, Servlet.class))
                 .toProvider(new JaxrsServletProvider(qualifier));
         binder.bind(qualifiedKey(qualifier, ResourceConfig.class))

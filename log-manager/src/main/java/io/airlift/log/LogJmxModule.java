@@ -33,8 +33,6 @@ public class LogJmxModule
     @Override
     public void configure(Binder binder)
     {
-        binder.disableCircularProxies();
-
         binder.bind(LoggingMBean.class).in(Scopes.SINGLETON);
         newExporter(binder).export(LoggingMBean.class).as("io.airlift.log:name=Logging");
         binder.bind(LogExporter.class).asEagerSingleton();

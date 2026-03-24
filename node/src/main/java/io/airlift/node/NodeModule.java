@@ -28,8 +28,6 @@ public class NodeModule
     @Override
     public void configure(Binder binder)
     {
-        binder.disableCircularProxies();
-
         binder.bind(NodeInfo.class).in(Scopes.SINGLETON);
         configBinder(binder).bindConfig(NodeConfig.class);
         newExporter(binder).export(NodeInfo.class).withGeneratedName();

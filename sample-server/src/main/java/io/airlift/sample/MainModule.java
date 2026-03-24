@@ -30,8 +30,6 @@ public class MainModule
     @Override
     public void configure(Binder binder)
     {
-        binder.disableCircularProxies();
-
         binder.bind(PersonStore.class).in(Scopes.SINGLETON);
         newExporter(binder).export(PersonStore.class).withGeneratedName();
 

@@ -58,8 +58,6 @@ public class LifeCycleModule
     @Override
     public void configure(Binder binder)
     {
-        binder.disableCircularProxies();
-
         binder.bindListener(any(), this::provision);
 
         newExporter(binder).export(LifeCycleManager.class).withGeneratedName();
