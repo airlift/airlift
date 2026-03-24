@@ -15,13 +15,10 @@
 
     <properties>
         <air.compiler.fail-warnings>false</air.compiler.fail-warnings>
+        <!-- skip modernizer as generated code isn't modern enough -->
+        <air.check.skip-modernizer>true</air.check.skip-modernizer>
 
         <dep.openapi-generator-maven-plugin.version>7.21.0</dep.openapi-generator-maven-plugin.version>
-
-        <!-- TODO move these to airbase -->
-        <!-- Note: duplicated in "api" module -->
-        <dep.openapi-generator-maven-plugin.version>7.7.0</dep.openapi-generator-maven-plugin.version>
-
         <openapitools.jackson.version>2.21.2</openapitools.jackson.version>
         <openapitools.jackson-databind-nullable.version>0.2.10</openapitools.jackson-databind-nullable.version>
         <openapitools.jakarta-annotation.version>3.0.0</openapitools.jakarta-annotation.version>

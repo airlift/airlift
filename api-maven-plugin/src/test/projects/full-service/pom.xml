@@ -16,7 +16,7 @@
         <it-plugin.version>@project.version@</it-plugin.version>
         <dep.airlift.version>@project.version@</dep.airlift.version>
         <dep.jackson.version>2.18.4</dep.jackson.version>
-        <dep.openapi-generator-maven-plugin.version>7.7.0</dep.openapi-generator-maven-plugin.version>
+        <dep.openapi-generator-maven-plugin.version>7.21.0</dep.openapi-generator-maven-plugin.version>
         <api.serviceTypeClass>io.airlift.test.TestServiceType</api.serviceTypeClass>
         <api.outputFile>${project.build.directory}/openapi.json</api.outputFile>
         <api.prettyPrint>true</api.prettyPrint>
