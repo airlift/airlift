@@ -1,8 +1,5 @@
 package io.airlift.mcp.model;
 
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import io.airlift.json.JsonMapperProvider;
-
 import java.util.Optional;
 
 import static io.airlift.mcp.model.Constants.JSON_RPC_VERSION;
@@ -12,8 +9,6 @@ import static java.util.Objects.requireNonNullElse;
 public record JsonRpcRequest<T>(String jsonrpc, Object id, String method, Optional<T> params)
         implements JsonRpcMessage
 {
-    static final JsonMapper MAPPER = new JsonMapperProvider().get();
-
     public JsonRpcRequest
     {
         jsonrpc = requireNonNullElse(jsonrpc, "");

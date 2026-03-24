@@ -31,6 +31,8 @@ import io.airlift.mcp.model.Content.ImageContent;
 import io.airlift.mcp.model.Content.ResourceLink;
 import io.airlift.mcp.model.Content.TextContent;
 import io.airlift.mcp.model.Icon;
+import io.airlift.mcp.model.JsonRpcMessage;
+import io.airlift.mcp.model.JsonRpcMessageDeserializer;
 import io.airlift.mcp.reflection.AppContent;
 import io.airlift.mcp.reflection.CompletionHandlerProvider;
 import io.airlift.mcp.reflection.IconHelper;
@@ -57,6 +59,7 @@ import static com.google.inject.Scopes.SINGLETON;
 import static com.google.inject.multibindings.Multibinder.newSetBinder;
 import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
 import static io.airlift.configuration.ConfigBinder.configBinder;
+import static io.airlift.json.JsonBinder.jsonBinder;
 import static io.airlift.json.JsonSubTypeBinder.jsonSubTypeBinder;
 import static io.airlift.mcp.McpMetadata.DEFAULT;
 import static io.airlift.mcp.McpModule.Mode.STANDARD;
@@ -294,6 +297,10 @@ public class McpModule
         binder.bind(VersionsController.class).in(SINGLETON);
 
         configBinder(binder).bindConfig(McpConfig.class);
+
+        jsonBinder(binder)
+                .addDeserializerBinding(JsonRpcMessage.class)
+                .to(JsonRpcMessageDeserializer.class);
 
         newOptionalBinder(binder, ErrorHandler.class);
 
