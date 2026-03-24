@@ -31,7 +31,6 @@ import io.airlift.mcp.model.SubscribeRequest;
 import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.sessions.SessionId;
 import io.airlift.mcp.sessions.SessionValueKey;
-import io.opentelemetry.api.common.AttributeKey;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpFilter;
@@ -80,7 +79,8 @@ import static io.airlift.mcp.sessions.SessionValueKey.ROOTS;
 import static io.airlift.mcp.sessions.SessionValueKey.SENT_MESSAGES;
 import static io.airlift.mcp.sessions.SessionValueKey.cancellationKey;
 import static io.airlift.mcp.sessions.SessionValueKey.serverToClientResponseKey;
-import static io.opentelemetry.api.common.AttributeKey.stringKey;
+import static io.opentelemetry.semconv.incubating.McpIncubatingAttributes.MCP_METHOD_NAME;
+import static io.opentelemetry.semconv.incubating.McpIncubatingAttributes.MCP_SESSION_ID;
 import static jakarta.servlet.http.HttpServletResponse.SC_ACCEPTED;
 import static jakarta.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
 import static jakarta.servlet.http.HttpServletResponse.SC_FORBIDDEN;
@@ -106,14 +106,6 @@ public class InternalFilter
     private static final Logger log = Logger.get(InternalFilter.class);
 
     private static final Set<String> ALLOWED_HTTP_METHODS = ImmutableSet.of("GET", "POST", "DELETE");
-
-    // TODO - remove when the next rev of opentelemetry-semconv is released
-    // see: https://github.com/open-telemetry/semantic-conventions-java/pull/396/changes#diff-1c3840320c0c5bfe484b22e6db177a87b014591107c61f9d5763f92117ddf7ff
-    static final AttributeKey<String> MCP_METHOD_NAME = stringKey("mcp.method.name");
-    static final AttributeKey<String> MCP_PROTOCOL_VERSION = stringKey("mcp.protocol.version");
-    static final AttributeKey<String> MCP_RESOURCE_URI = stringKey("mcp.resource.uri");
-    static final AttributeKey<String> MCP_SESSION_ID = stringKey("mcp.session.id");
-
     private final McpMetadata metadata;
     private final McpIdentityMapper identityMapper;
     private final InternalController internalController;
