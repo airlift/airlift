@@ -89,8 +89,6 @@ public class HttpServerModule
     @Override
     protected void setup(Binder binder)
     {
-        binder.disableCircularProxies();
-
         binder.bind(qualifiedKey(HttpServer.class))
                 .toProvider(new HttpServerProvider(name, qualifier))
                 .in(SINGLETON);

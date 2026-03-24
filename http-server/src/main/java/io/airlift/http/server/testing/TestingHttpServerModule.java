@@ -61,8 +61,6 @@ public class TestingHttpServerModule
     @Override
     protected void setup(Binder binder)
     {
-        binder.disableCircularProxies();
-
         configBinder(binder).bindConfig(HttpServerConfig.class);
         configBinder(binder).bindConfigDefaults(HttpServerConfig.class, config -> config
                 .setHttpPort(httpPort));

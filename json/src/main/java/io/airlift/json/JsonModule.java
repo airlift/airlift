@@ -27,8 +27,6 @@ public class JsonModule
     @Override
     public void configure(Binder binder)
     {
-        binder.disableCircularProxies();
-
         // NOTE: this MUST NOT be a singleton because ObjectMappers are mutable. This means
         // one component could reconfigure the mapper and break all other components.
         // When updated to Jackson 3.x this is no longer a case since the JsonMapper instances

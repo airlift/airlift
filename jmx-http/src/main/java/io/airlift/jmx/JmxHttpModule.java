@@ -50,8 +50,6 @@ public class JmxHttpModule
     @Override
     public void configure(Binder binder)
     {
-        binder.disableCircularProxies();
-
         jaxrsBinder(binder).bind(MBeanResource.class);
         jsonBinder(binder).addSerializerBinding(InetAddress.class).toInstance(ToStringSerializer.instance);
         jsonBinder(binder).addSerializerBinding(ObjectName.class).toInstance(ToStringSerializer.instance);

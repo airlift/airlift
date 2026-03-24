@@ -25,8 +25,6 @@ public class JmxOpenMetricsModule
     @Override
     public void configure(Binder binder)
     {
-        binder.disableCircularProxies();
-
         configBinder(binder).bindConfig(MetricsConfig.class);
         jaxrsBinder(binder).bind(MetricsResource.class);
     }
