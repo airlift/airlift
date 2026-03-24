@@ -460,11 +460,11 @@ public class InternalFilter
         JsonNode tree = jsonMapper.readTree(json);
 
         if (tree.has("method")) {
-            return jsonMapper.convertValue(tree, JsonRpcRequest.class);
+            return jsonMapper.treeToValue(tree, JsonRpcRequest.class);
         }
 
         if (tree.has("result") || tree.has("error")) {
-            return jsonMapper.convertValue(tree, JsonRpcResponse.class);
+            return jsonMapper.treeToValue(tree, JsonRpcResponse.class);
         }
 
         throw exception(PARSE_ERROR, "Cannot deserialize JsonRpcMessage: " + json);
