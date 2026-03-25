@@ -27,6 +27,7 @@ import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.ResourceTemplateValues;
 import io.airlift.mcp.model.Role;
+import io.airlift.mcp.model.ToolContent;
 
 import java.time.Duration;
 import java.util.List;
@@ -86,7 +87,7 @@ public class ConformanceEndpoints
                 new TextContent("Multiple content types test:"),
                 new ImageContent(TEST_IMAGE_BASE64, "image/png"),
                 new EmbeddedResource(new ResourceContents(Optional.empty(), "test://mixed-content-resource", "application/json", Optional.of("{ test: 'data', value: 123 }"), Optional.empty()), Optional.empty()));
-        return new CallToolResult(content);
+        return new ToolContent(content);
     }
 
     @McpTool(name = "test_tool_with_logging", description = "Tests tool that emits log messages during execution")

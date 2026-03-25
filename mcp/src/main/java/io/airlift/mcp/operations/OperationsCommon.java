@@ -31,6 +31,7 @@ import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.model.Tool;
+import io.airlift.mcp.model.ToolContent;
 
 import java.util.List;
 import java.util.Optional;
@@ -85,7 +86,7 @@ public class OperationsCommon
             return toolEntry.toolHandler().callTool(requestContext.withProgressToken(progressToken(callToolRequest)), callToolRequest);
         }
         catch (McpClientException mcpClientException) {
-            return new CallToolResult(ImmutableList.of(new TextContent(mcpClientException.unwrap().errorDetail().message())), Optional.empty(), true, Optional.empty());
+            return new ToolContent(ImmutableList.of(new TextContent(mcpClientException.unwrap().errorDetail().message())), Optional.empty(), true, Optional.empty());
         }
     }
 

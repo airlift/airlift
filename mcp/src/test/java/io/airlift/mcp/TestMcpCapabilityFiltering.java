@@ -17,6 +17,7 @@ import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.model.ResourceTemplateValues;
 import io.airlift.mcp.model.Role;
 import io.airlift.mcp.model.Tool;
+import io.airlift.mcp.model.ToolContent;
 import io.airlift.mcp.sessions.StandardSessionController;
 import io.airlift.mcp.storage.MemoryStorageController;
 import io.modelcontextprotocol.spec.McpSchema;
@@ -404,13 +405,13 @@ public class TestMcpCapabilityFiltering
         @McpTool(name = "public-tool", description = "Available to all")
         public CallToolResult publicTool()
         {
-            return new CallToolResult(ImmutableList.of(new TextContent("public")), Optional.empty(), false);
+            return new ToolContent(ImmutableList.of(new TextContent("public")), Optional.empty(), false);
         }
 
         @McpTool(name = "admin-tool", description = "Admin only")
         public CallToolResult adminTool()
         {
-            return new CallToolResult(ImmutableList.of(new TextContent("admin")), Optional.empty(), false);
+            return new ToolContent(ImmutableList.of(new TextContent("admin")), Optional.empty(), false);
         }
 
         @McpPrompt(name = "public-prompt", description = "Available to all")

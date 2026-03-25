@@ -29,6 +29,7 @@ import io.airlift.mcp.model.Role;
 import io.airlift.mcp.model.Root;
 import io.airlift.mcp.model.StructuredContentResult;
 import io.airlift.mcp.model.Tool;
+import io.airlift.mcp.model.ToolContent;
 
 import java.time.Duration;
 import java.util.List;
@@ -163,7 +164,7 @@ public class TestingEndpoints
     {
         assertThat(testingIdentity.name()).isEqualTo("Mr. Tester");
 
-        return new CallToolResult(
+        return new ToolContent(
                 ImmutableList.of(new TextContent(String.valueOf(a + b + c))),
                 Optional.empty(),
                 false);
