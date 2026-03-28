@@ -1,4 +1,4 @@
-package io.airlift.mcp;
+package io.airlift.mcp.testing;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -11,6 +11,7 @@ import io.airlift.http.client.HttpClient;
 import io.airlift.http.server.testing.TestingHttpServerModule;
 import io.airlift.jaxrs.JaxrsModule;
 import io.airlift.json.JsonModule;
+import io.airlift.mcp.McpModule;
 import io.airlift.node.NodeModule;
 
 import java.io.Closeable;

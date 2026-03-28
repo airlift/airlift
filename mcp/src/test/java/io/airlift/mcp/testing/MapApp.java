@@ -1,10 +1,14 @@
-package io.airlift.mcp;
+package io.airlift.mcp.testing;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
+import io.airlift.mcp.McpApp;
+import io.airlift.mcp.McpDefaultValue;
+import io.airlift.mcp.McpDescription;
+import io.airlift.mcp.McpTool;
 import io.airlift.mcp.model.CallToolResult;
 import io.airlift.mcp.model.Content.TextContent;
 import io.airlift.mcp.model.ToolContent;

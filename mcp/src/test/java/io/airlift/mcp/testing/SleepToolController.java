@@ -1,4 +1,4 @@
-package io.airlift.mcp;
+package io.airlift.mcp.testing;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;

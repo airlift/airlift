@@ -1,4 +1,4 @@
-package io.airlift.mcp;
+package io.airlift.mcp.testing;
 
 import static java.util.Objects.requireNonNull;
 

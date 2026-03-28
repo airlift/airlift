@@ -1,10 +1,19 @@
-package io.airlift.mcp;
+package io.airlift.mcp.testing;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
+import io.airlift.mcp.McpDescription;
+import io.airlift.mcp.McpEntities;
+import io.airlift.mcp.McpPrompt;
+import io.airlift.mcp.McpPromptCompletion;
+import io.airlift.mcp.McpRequestContext;
+import io.airlift.mcp.McpResource;
+import io.airlift.mcp.McpResourceTemplate;
+import io.airlift.mcp.McpResourceTemplateCompletion;
+import io.airlift.mcp.McpTool;
 import io.airlift.mcp.handler.PromptEntry;
 import io.airlift.mcp.handler.ResourceEntry;
 import io.airlift.mcp.handler.ToolEntry;

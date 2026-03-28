@@ -1,4 +1,4 @@
-package io.airlift.mcp;
+package io.airlift.mcp.testing;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Closer;
@@ -13,8 +13,8 @@ import java.time.Duration;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import static io.airlift.mcp.TestingIdentityMapper.EXPECTED_IDENTITY;
-import static io.airlift.mcp.TestingIdentityMapper.IDENTITY_HEADER;
+import static io.airlift.mcp.testing.TestingIdentityMapper.EXPECTED_IDENTITY;
+import static io.airlift.mcp.testing.TestingIdentityMapper.IDENTITY_HEADER;
 import static io.modelcontextprotocol.spec.McpSchema.ElicitResult.Action.ACCEPT;
 import static java.util.Objects.requireNonNull;
 

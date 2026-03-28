@@ -10,6 +10,11 @@ import io.airlift.mcp.handler.ResourceEntry;
 import io.airlift.mcp.handler.ResourceTemplateEntry;
 import io.airlift.mcp.handler.ToolEntry;
 import io.airlift.mcp.model.Icon;
+import io.airlift.mcp.testing.TestingClient;
+import io.airlift.mcp.testing.TestingEndpoints;
+import io.airlift.mcp.testing.TestingIdentity;
+import io.airlift.mcp.testing.TestingIdentityMapper;
+import io.airlift.mcp.testing.TestingServer;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.ListPromptsResult;
 import io.modelcontextprotocol.spec.McpSchema.ListResourceTemplatesResult;
@@ -30,7 +35,7 @@ import java.util.stream.Stream;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.inject.Scopes.SINGLETON;
-import static io.airlift.mcp.TestingClient.buildClient;
+import static io.airlift.mcp.testing.TestingClient.buildClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 

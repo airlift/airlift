@@ -1,7 +1,9 @@
-package io.airlift.mcp;
+package io.airlift.mcp.testing;
 
 import com.google.common.collect.ImmutableList;
 import io.airlift.http.client.HeaderName;
+import io.airlift.mcp.McpIdentity;
+import io.airlift.mcp.McpIdentityMapper;
 import jakarta.servlet.http.HttpServletRequest;
 
 import static com.google.common.base.Strings.isNullOrEmpty;

@@ -1,4 +1,4 @@
-package io.airlift.mcp;
+package io.airlift.mcp.testing;
 
 import com.google.common.io.Closer;
 import com.zaxxer.hikari.HikariConfig;

@@ -1,4 +1,4 @@
-package io.airlift.mcp;
+package io.airlift.mcp.testing;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.json.JsonMapper;
@@ -6,6 +6,13 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
+import io.airlift.mcp.McpDescription;
+import io.airlift.mcp.McpPrompt;
+import io.airlift.mcp.McpPromptCompletion;
+import io.airlift.mcp.McpRequestContext;
+import io.airlift.mcp.McpResource;
+import io.airlift.mcp.McpResourceTemplate;
+import io.airlift.mcp.McpTool;
 import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.CallToolResult;
 import io.airlift.mcp.model.CompleteResult.CompleteCompletion;
