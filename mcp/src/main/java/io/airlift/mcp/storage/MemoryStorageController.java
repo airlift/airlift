@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.airlift.log.Logger;
 
+import java.net.URLEncoder;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -13,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
 public class MemoryStorageController
@@ -112,7 +114,6 @@ public class MemoryStorageController
         clean();
 
         groups.remove(groupId);
-        signalGroup(groupId);
     }
 
     @Override
@@ -158,7 +159,7 @@ public class MemoryStorageController
         return Optional.ofNullable(groups.get(groupId))
                 .map(group -> {
                     group.put(keyId, value);
-                    signalGroup(groupId);
+                    signalGroupAndKey(groupId, keyId);
                     return true;
                 })
                 .orElse(false);
@@ -172,7 +173,7 @@ public class MemoryStorageController
         return Optional.ofNullable(groups.get(groupId))
                 .map(group -> {
                     boolean result = group.delete(keyId);
-                    signalGroup(groupId);
+                    signalGroupAndKey(groupId, keyId);
                     return result;
                 })
                 .orElse(false);
@@ -186,18 +187,18 @@ public class MemoryStorageController
         return Optional.ofNullable(groups.get(groupId))
                 .flatMap(group -> {
                     Optional<String> computed = group.compute(keyId, updater);
-                    signalGroup(groupId);
+                    signalGroupAndKey(groupId, keyId);
                     return computed;
                 });
     }
 
     @Override
-    public boolean await(StorageGroupId groupId, Duration timeout)
+    public boolean await(StorageGroupId groupId, StorageKeyId keyId, Duration timeout)
             throws InterruptedException
     {
         clean();
 
-        return signals.waitForSignal(groupId.group(), timeout);
+        return signals.waitForSignal(groupAndKeySignalName(groupId, keyId), timeout);
     }
 
     private void clean()
@@ -218,8 +219,18 @@ public class MemoryStorageController
         }
     }
 
-    private void signalGroup(StorageGroupId groupId)
+    private void signalGroupAndKey(StorageGroupId groupId, StorageKeyId keyId)
     {
-        signals.signalAll(groupId.group());
+        signals.signalAll(groupAndKeySignalName(groupId, keyId));
+    }
+
+    private static String encodeSignalName(String name)
+    {
+        return URLEncoder.encode(name, UTF_8);
+    }
+
+    private static String groupAndKeySignalName(StorageGroupId groupId, StorageKeyId keyId)
+    {
+        return "%s,%s".formatted(encodeSignalName(groupId.group()), encodeSignalName(keyId.key()));
     }
 }

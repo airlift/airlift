@@ -31,6 +31,6 @@ public interface StorageController
 
     Optional<String> computeValue(StorageGroupId groupId, StorageKeyId keyId, UnaryOperator<Optional<String>> updater);
 
-    boolean await(StorageGroupId groupId, Duration timeout)
+    boolean await(StorageGroupId groupId, StorageKeyId keyId, Duration timeout)
             throws InterruptedException;
 }

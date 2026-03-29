@@ -63,7 +63,7 @@ public class StandardSessionController
     public <T> BlockingResult<T> blockUntil(SessionId sessionId, SessionValueKey<T> key, Duration timeout, Predicate<Optional<T>> condition)
             throws InterruptedException
     {
-        return waitForCondition(this, sessionId, key, timeout, condition, maxWait -> storageController.await(toGroupId(sessionId), maxWait));
+        return waitForCondition(this, sessionId, key, timeout, condition, maxWait -> storageController.await(toGroupId(sessionId), key.toKeyId(), maxWait));
     }
 
     @Override

@@ -12,6 +12,7 @@ import jakarta.annotation.PreDestroy;
 import org.postgresql.PGNotification;
 import org.postgresql.jdbc.PgConnection;
 
+import java.net.URLEncoder;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -29,6 +30,7 @@ import java.util.stream.Stream;
 
 import static com.google.common.util.concurrent.MoreExecutors.shutdownAndAwaitTermination;
 import static io.airlift.concurrent.Threads.virtualThreadsNamed;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -284,7 +286,7 @@ public class TestingDatabaseStorageController
             preparedStatement.setString(4, groupId.group());
             preparedStatement.executeUpdate();
 
-            postNotification(connection, groupId);
+            postNotification(connection, groupId, keyId);
 
             return true;
         });
@@ -302,7 +304,7 @@ public class TestingDatabaseStorageController
 
             internalDeleteValue(connection, groupId, keyId);
 
-            postNotification(connection, groupId);
+            postNotification(connection, groupId, keyId);
 
             return true;
         });
@@ -361,17 +363,17 @@ public class TestingDatabaseStorageController
                 hasRetried = true;
             }
 
-            postNotification(connection, groupId);
+            postNotification(connection, groupId, keyId);
 
             return result;
         });
     }
 
     @Override
-    public boolean await(StorageGroupId groupId, Duration timeout)
+    public boolean await(StorageGroupId groupId, StorageKeyId keyId, Duration timeout)
             throws InterruptedException
     {
-        return signals.waitForSignal(groupId.group(), timeout);
+        return signals.waitForSignal(groupAndKeySignalName(groupId, keyId), timeout);
     }
 
     private static void internalDeleteValue(Connection connection, StorageGroupId groupId, StorageKeyId keyId)
@@ -459,9 +461,20 @@ public class TestingDatabaseStorageController
         }
     }
 
-    private void postNotification(Connection connection, StorageGroupId groupId)
+    private void postNotification(Connection connection, StorageGroupId groupId, StorageKeyId keyId)
             throws SQLException
     {
-        connection.createStatement().execute(NOTIFY_SQL.formatted(groupId.group()));
+        String signalName = groupAndKeySignalName(groupId, keyId);
+        connection.createStatement().execute(NOTIFY_SQL.formatted(signalName));
+    }
+
+    private static String encodeSignalName(String name)
+    {
+        return URLEncoder.encode(name, UTF_8);
+    }
+
+    private static String groupAndKeySignalName(StorageGroupId groupId, StorageKeyId keyId)
+    {
+        return "%s,%s".formatted(encodeSignalName(groupId.group()), encodeSignalName(keyId.key()));
     }
 }

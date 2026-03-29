@@ -10,6 +10,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -53,23 +54,19 @@ public abstract class TestStorageController
 
         // wait for keyId to appear
 
-        newVirtualThreadPerTaskExecutor().execute(() -> {
-            try {
-                assertThat(semaphore.tryAcquire(5, TimeUnit.SECONDS)).isTrue();
-                controller.setValue(groupId, keyId, "value");
-            }
-            catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+        newVirtualThreadPerTaskExecutor().submit(() -> {
+            assertThat(semaphore.tryAcquire(5, TimeUnit.SECONDS)).isTrue();
+            controller.setValue(groupId, keyId, "value");
+            return null;
         });
 
-        boolean success = controller.await(groupId, Duration.ofSeconds(1));
+        boolean success = controller.await(groupId, keyId, Duration.ofSeconds(1));
         assertThat(success).isFalse();
 
         CountDownLatch latch1 = new CountDownLatch(1);
         Future<Void> future = newVirtualThreadPerTaskExecutor().submit(() -> {
             latch1.countDown();
-            controller.await(groupId, Duration.ofSeconds(1));
+            controller.await(groupId, keyId, Duration.ofSeconds(1));
             return null;
         });
 
@@ -84,7 +81,7 @@ public abstract class TestStorageController
         CountDownLatch latch2 = new CountDownLatch(1);
         future = newVirtualThreadPerTaskExecutor().submit(() -> {
             latch2.countDown();
-            controller.await(groupId, Duration.ofSeconds(1));
+            controller.await(groupId, keyId, Duration.ofSeconds(1));
             return null;
         });
 
@@ -100,7 +97,7 @@ public abstract class TestStorageController
         CountDownLatch latch4 = new CountDownLatch(1);
         future = newVirtualThreadPerTaskExecutor().submit(() -> {
             latch4.countDown();
-            controller.await(groupId, Duration.ofSeconds(1));
+            controller.await(groupId, keyId, Duration.ofSeconds(1));
             return null;
         });
 
@@ -110,6 +107,75 @@ public abstract class TestStorageController
 
         assertThat(future)
                 .succeedsWithin(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testAwaitWithCompetingKeys()
+            throws InterruptedException
+    {
+        StorageController controller = storageController();
+
+        StorageGroupId group1Id = controller.randomGroupId();
+        StorageGroupId group2Id = controller.randomGroupId();
+
+        controller.createGroup(group1Id, Duration.ofDays(1));
+        controller.createGroup(group2Id, Duration.ofDays(1));
+
+        StorageKeyId key1Id = new StorageKeyId("key1Id");
+        StorageKeyId key2Id = new StorageKeyId("key2Id");
+
+        Semaphore group1Key1Latch = new Semaphore(0);
+        Semaphore group1Key2Latch = new Semaphore(0);
+        Semaphore group2Key1Latch = new Semaphore(0);
+        Semaphore group2Key2Latch = new Semaphore(0);
+
+        try (ExecutorService executorService = newVirtualThreadPerTaskExecutor()) {
+            try {
+                CountDownLatch readyLatch = new CountDownLatch(4);
+
+                executorService.submit(() -> awaitWithKeyProc(controller, readyLatch, group1Id, key1Id, group1Key1Latch));
+                executorService.submit(() -> awaitWithKeyProc(controller, readyLatch, group1Id, key2Id, group1Key2Latch));
+                executorService.submit(() -> awaitWithKeyProc(controller, readyLatch, group2Id, key1Id, group2Key1Latch));
+                executorService.submit(() -> awaitWithKeyProc(controller, readyLatch, group2Id, key2Id, group2Key2Latch));
+
+                assertThat(readyLatch.await(5, TimeUnit.SECONDS)).isTrue();
+                // need a bit of time for controller.await() to get called
+                TimeUnit.SECONDS.sleep(1);
+
+                assertThat(group1Key1Latch.availablePermits()).isZero();
+                assertThat(group1Key2Latch.availablePermits()).isZero();
+                assertThat(group2Key1Latch.availablePermits()).isZero();
+                assertThat(group2Key2Latch.availablePermits()).isZero();
+
+                controller.setValue(group1Id, key1Id, "newValue");
+                assertThat(group1Key1Latch.tryAcquire(5, TimeUnit.SECONDS)).isTrue();
+                assertThat(group1Key2Latch.availablePermits()).isZero();
+                assertThat(group2Key1Latch.availablePermits()).isZero();
+                assertThat(group2Key2Latch.availablePermits()).isZero();
+
+                controller.setValue(group2Id, key1Id, "newValue");
+                assertThat(group1Key1Latch.availablePermits()).isZero();
+                assertThat(group1Key2Latch.availablePermits()).isZero();
+                assertThat(group2Key1Latch.tryAcquire(5, TimeUnit.SECONDS)).isTrue();
+                assertThat(group2Key2Latch.availablePermits()).isZero();
+            }
+            finally {
+                executorService.shutdownNow();
+            }
+        }
+    }
+
+    private static Object awaitWithKeyProc(StorageController controller, CountDownLatch readyLatch, StorageGroupId group, StorageKeyId key, Semaphore latch)
+            throws InterruptedException
+    {
+        readyLatch.countDown();
+
+        while (!Thread.currentThread().isInterrupted()) {
+            if (controller.await(group, key, Duration.ofDays(1))) {
+                latch.release();
+            }
+        }
+        return null;
     }
 
     protected abstract StorageController storageController();
