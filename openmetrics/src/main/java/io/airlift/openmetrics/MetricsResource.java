@@ -15,6 +15,8 @@ package io.airlift.openmetrics;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.CharMatcher;
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import io.airlift.log.Logger;
@@ -49,8 +51,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.util.Objects.requireNonNull;
 
 @Path("/metrics")
@@ -90,13 +92,14 @@ public class MetricsResource
     public String getMetrics(@QueryParam("name[]") List<String> filter)
     {
         StringBuilder body = new StringBuilder();
+        Supplier<List<Metric>> managedMetrics = Suppliers.memoize(this::getManagedMetrics);
         if (filter != null && !filter.isEmpty()) {
             for (String metricName : filter) {
-                toMetricExposition(metricName).ifPresent(body::append);
+                toMetricExposition(managedMetrics, metricName).ifPresent(body::append);
             }
         }
         else {
-            getManagedMetricsStream().forEach(metric -> body.append(metric.getMetricExposition()));
+            managedMetrics.get().forEach(metric -> body.append(metric.getMetricExposition()));
             for (ObjectName metricObjectNames : allMetricsObjectNames) {
                 mbeanServer.queryNames(metricObjectNames, null).forEach(objectName -> inferAttributesForObjectName(body, objectName));
             }
@@ -180,7 +183,7 @@ public class MetricsResource
         return metricName;
     }
 
-    private Optional<String> toMetricExposition(String metricName)
+    private Optional<String> toMetricExposition(Supplier<List<Metric>> managedMetricsSupplier, String metricName)
     {
         if (metricName.startsWith("JMX_")) {
             final String jmxMetricName = metricName.substring(4);
@@ -198,8 +201,8 @@ public class MetricsResource
             }
         }
         else {
-            Stream<Metric> metricStream = getManagedMetricsStream();
-            return metricStream
+            return managedMetricsSupplier.get()
+                    .stream()
                     .filter(metric -> metric.metricName().equals(metricName))
                     .findFirst()
                     .map(Metric::getMetricExposition);
@@ -311,12 +314,13 @@ public class MetricsResource
         return Optional.empty();
     }
 
-    private Stream<Metric> getManagedMetricsStream()
+    private List<Metric> getManagedMetrics()
     {
         Map<String, ManagedClass> managedClasses = this.mbeanExporter.getManagedClasses();
 
         return managedClasses.entrySet().stream()
                 .map(entry -> getMetricsRecursively(entry.getKey(), entry.getValue()))
-                .flatMap(List::stream);
+                .flatMap(List::stream)
+                .collect(toImmutableList());
     }
 }
