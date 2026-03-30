@@ -99,7 +99,7 @@
         <project.build.targetJdk>25</project.build.targetJdk>
 
         <dep.airlift.version>420-SNAPSHOT</dep.airlift.version>
-        <dep.brotli4j.version>1.21.0</dep.brotli4j.version>
+        <dep.brotli4j.version>1.22.0</dep.brotli4j.version>
         <dep.bouncycastle.version>1.83</dep.bouncycastle.version>
         <dep.mcp.sdk.version>1.1.1</dep.mcp.sdk.version>
         <dep.openapi-generator-maven-plugin.version>7.21.0</dep.openapi-generator-maven-plugin.version>
