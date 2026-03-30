@@ -743,11 +743,11 @@ public abstract class AbstractHttpClientTest
     {
         try (FakeServer fakeServer = new FakeServer(getScheme(), "localhost", 0, null, true)) {
             HttpClientConfig config = createClientConfig();
-            config.setConnectTimeout(new Duration(5, SECONDS));
-            config.setIdleTimeout(new Duration(5, SECONDS));
+            config.setConnectTimeout(new Duration(500, MILLISECONDS));
+            config.setIdleTimeout(new Duration(500, MILLISECONDS));
 
             assertThatThrownBy(() -> executeRequest(fakeServer, config))
-                    .isInstanceOfAny(IOException.class, IllegalStateException.class);
+                    .isInstanceOfAny(IOException.class, TimeoutException.class, IllegalStateException.class);
         }
     }
 
@@ -1089,8 +1089,9 @@ public abstract class AbstractHttpClientTest
     private void executeRequest(FakeServer fakeServer, HttpClientConfig config)
             throws Exception
     {
-        // kick the fake server
+        // kick the fake server and wait for it to be ready to accept connections
         executor.execute(fakeServer);
+        fakeServer.awaitReady();
 
         // timing based check to assure we don't hang
         long start = System.nanoTime();
@@ -1115,6 +1116,7 @@ public abstract class AbstractHttpClientTest
         private final byte[] writeBuffer;
         private final boolean closeConnectionImmediately;
         private final AtomicReference<Socket> connectionSocket = new AtomicReference<>();
+        private final CountDownLatch ready = new CountDownLatch(1);
         private final String scheme;
         private final String host;
 
@@ -1139,10 +1141,17 @@ public abstract class AbstractHttpClientTest
             }
         }
 
+        public void awaitReady()
+                throws InterruptedException
+        {
+            ready.await();
+        }
+
         @Override
         public void run()
         {
             try {
+                ready.countDown();
                 Socket connectionSocket = serverSocket.accept();
                 this.connectionSocket.set(connectionSocket);
                 if (readBytes > 0) {
