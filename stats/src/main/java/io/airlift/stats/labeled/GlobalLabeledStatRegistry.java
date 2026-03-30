@@ -13,6 +13,7 @@
  */
 package io.airlift.stats.labeled;
 
+import com.google.inject.Inject;
 import org.weakref.jmx.MBeanExporter;
 
 import static java.util.Objects.requireNonNull;
@@ -23,6 +24,7 @@ public class GlobalLabeledStatRegistry
     private final MBeanExporter exporter;
     private final int labeledStatMaxCardinality;
 
+    @Inject
     public GlobalLabeledStatRegistry(MBeanExporter mBeanExporter, LabeledStatConfig config)
     {
         this.exporter = requireNonNull(mBeanExporter, "mBeanExporter is null");

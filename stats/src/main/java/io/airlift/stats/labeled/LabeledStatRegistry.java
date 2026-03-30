@@ -17,8 +17,8 @@ import org.weakref.jmx.MBeanExporter;
 
 /**
  * A LabeledStatRegistry is a factory for constructing labeled stats
- * There exists a single implementation GlobalLabeledStatRegistry which is intended to be a singleton per JVM
- * In future could create several registry implementations within same process with different configuration
+ * There exists a single implementation GlobalLabeledStatRegistry which is intended to be a singleton per MBeanExporter
+ * In future could create several registry implementations with different configuration
  */
 public interface LabeledStatRegistry
 {

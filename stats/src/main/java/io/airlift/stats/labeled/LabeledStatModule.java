@@ -11,23 +11,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.airlift.openmetrics;
+package io.airlift.stats.labeled;
 
 import com.google.inject.Binder;
 import com.google.inject.Module;
-import io.airlift.stats.labeled.LabeledStatModule;
+import com.google.inject.Scopes;
 
 import static io.airlift.configuration.ConfigBinder.configBinder;
-import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
 
-public class JmxOpenMetricsModule
+public class LabeledStatModule
         implements Module
 {
     @Override
     public void configure(Binder binder)
     {
-        binder.install(new LabeledStatModule());
-        configBinder(binder).bindConfig(MetricsConfig.class);
-        jaxrsBinder(binder).bind(MetricsResource.class);
+        configBinder(binder).bindConfig(LabeledStatConfig.class);
+        binder.bind(LabeledStatRegistry.class).to(GlobalLabeledStatRegistry.class).in(Scopes.SINGLETON);
     }
 }
