@@ -12,6 +12,7 @@ import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
 import io.opentelemetry.sdk.logs.LogRecordProcessor;
 import io.opentelemetry.sdk.logs.export.BatchLogRecordProcessor;
 import io.opentelemetry.sdk.logs.export.LogRecordExporter;
+import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import io.opentelemetry.sdk.metrics.export.MetricReader;
 import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
@@ -32,9 +33,10 @@ public class OpenTelemetryExporterModule
     }
 
     @ProvidesIntoSet
-    public static SpanProcessor createSpanProcessor(OpenTelemetryExporterConfig config)
+    public static SpanProcessor createSpanProcessor(OpenTelemetryExporterConfig config, SdkMeterProvider meterProvider)
     {
-        BatchSpanProcessorBuilder builder = BatchSpanProcessor.builder(createSpanExporter(config));
+        BatchSpanProcessorBuilder builder = BatchSpanProcessor.builder(createSpanExporter(config))
+                .setMeterProvider(meterProvider);
         config.getMaxExportBatchSize().ifPresent(builder::setMaxExportBatchSize);
         return builder.build();
     }
@@ -72,9 +74,11 @@ public class OpenTelemetryExporterModule
     }
 
     @ProvidesIntoSet
-    public static LogRecordProcessor createLogRecordProcessor(OpenTelemetryExporterConfig config)
+    public static LogRecordProcessor createLogRecordProcessor(OpenTelemetryExporterConfig config, SdkMeterProvider meterProvider)
     {
-        return BatchLogRecordProcessor.builder(createLogRecordExporter(config)).build();
+        return BatchLogRecordProcessor.builder(createLogRecordExporter(config))
+                .setMeterProvider(meterProvider)
+                .build();
     }
 
     static LogRecordExporter createLogRecordExporter(OpenTelemetryExporterConfig config)
