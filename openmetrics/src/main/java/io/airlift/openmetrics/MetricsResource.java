@@ -52,7 +52,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static com.google.common.base.Preconditions.checkState;
@@ -70,7 +69,6 @@ public class MetricsResource
     private static final String ATTRIBUTE_SEPARATOR = "_ATTRIBUTE_";
     private static final String TYPE_SEPARATOR = "_TYPE_";
     private static final String NAME_SEPARATOR = "_NAME_";
-    private static final Pattern METRIC_NAME_PATTERN = Pattern.compile("[[a-zA-Z]][\\w_]*");
     private static final CharMatcher NON_ALLOWED_LABEL_CHARACTERS = CharMatcher
             .inRange('a', 'z')
             .or(CharMatcher.inRange('A', 'Z'))
@@ -184,12 +182,7 @@ public class MetricsResource
         metricNameBuilder.append(ATTRIBUTE_SEPARATOR)
                 .append(attributeName);
 
-        String metricName = sanitizeMetricName(metricNameBuilder.toString());
-
-        if (!METRIC_NAME_PATTERN.matcher(metricName).matches()) {
-            log.warn("Calculated metric name has invalid characters %s skipping", metricName);
-        }
-        return metricName;
+        return sanitizeMetricName(metricNameBuilder.toString());
     }
 
     private Optional<Metric> findMetric(Supplier<List<Metric>> managedMetricsSupplier, String metricName)
