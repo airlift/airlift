@@ -25,12 +25,13 @@ import javax.management.openmbean.TabularData;
 import javax.management.openmbean.TabularType;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
-import static java.util.stream.Collectors.groupingBy;
 
 public record CompositeMetric(String metricName, Map<String, String> labels, String help, List<Metric> subMetrics)
         implements Metric
@@ -96,8 +97,10 @@ public record CompositeMetric(String metricName, Map<String, String> labels, Str
         }
 
         Map<String, List<Metric>> metricsByName = subMetrics.stream()
-                .collect(groupingBy(Metric::metricName));
-
+                .collect(Collectors.groupingBy(
+                        Metric::metricName,
+                        LinkedHashMap::new,
+                        Collectors.toList()));
         StringBuilder exposition = new StringBuilder();
 
         for (Map.Entry<String, List<Metric>> entry : metricsByName.entrySet()) {
