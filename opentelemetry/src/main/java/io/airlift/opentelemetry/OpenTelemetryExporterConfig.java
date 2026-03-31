@@ -4,9 +4,11 @@ import io.airlift.configuration.Config;
 import io.airlift.configuration.LegacyConfig;
 import io.airlift.units.Duration;
 import io.airlift.units.MinDuration;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 public class OpenTelemetryExporterConfig
@@ -14,6 +16,7 @@ public class OpenTelemetryExporterConfig
     private String endpoint = "http://localhost:4317";
     private Protocol protocol = Protocol.GRPC;
     private Duration interval = new Duration(1, TimeUnit.MINUTES);
+    private Optional<@Min(1) Integer> maxExportBatchSize = Optional.empty();
 
     @NotNull
     @Pattern(regexp = "^(http|https)://.*$", message = "must start with http:// or https://")
@@ -70,6 +73,18 @@ public class OpenTelemetryExporterConfig
     public OpenTelemetryExporterConfig setInterval(Duration interval)
     {
         this.interval = interval;
+        return this;
+    }
+
+    public Optional<@Min(1) Integer> getMaxExportBatchSize()
+    {
+        return maxExportBatchSize;
+    }
+
+    @Config("otel.exporter.max-export-batch-size")
+    public OpenTelemetryExporterConfig setMaxExportBatchSize(Integer maxExportBatchSize)
+    {
+        this.maxExportBatchSize = Optional.ofNullable(maxExportBatchSize);
         return this;
     }
 }

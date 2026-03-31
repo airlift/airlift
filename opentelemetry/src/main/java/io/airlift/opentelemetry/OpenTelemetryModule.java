@@ -23,6 +23,8 @@ import io.opentelemetry.sdk.metrics.SdkMeterProviderBuilder;
 import io.opentelemetry.sdk.metrics.export.MetricReader;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.opentelemetry.sdk.trace.SdkTracerProviderBuilder;
+import io.opentelemetry.sdk.trace.SpanLimits;
 import io.opentelemetry.sdk.trace.SpanProcessor;
 import io.opentelemetry.semconv.ServiceAttributes;
 import io.opentelemetry.semconv.incubating.DeploymentIncubatingAttributes;
@@ -116,11 +118,15 @@ public class OpenTelemetryModule
     @Singleton
     public SdkTracerProvider createTracerProvider(Resource resource, Set<SpanProcessor> spanProcessors, OpenTelemetryConfig config)
     {
-        return SdkTracerProvider.builder()
+        SdkTracerProviderBuilder builder = SdkTracerProvider.builder()
                 .setSampler(parentBased(config.getSamplingRatio() == 1.0 ? alwaysOn() : traceIdRatioBased(config.getSamplingRatio())))
                 .addSpanProcessor(SpanProcessor.composite(spanProcessors))
-                .setResource(resource)
-                .build();
+                .setResource(resource);
+        config.getMaxAttributeValueLength().ifPresent(maxLength ->
+                builder.setSpanLimits(SpanLimits.builder()
+                        .setMaxAttributeValueLength(maxLength)
+                        .build()));
+        return builder.build();
     }
 
     @Provides
