@@ -18,7 +18,8 @@ import com.google.common.base.Strings;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public interface Metric
+public sealed interface Metric
+        permits BigCounter, CompositeMetric, Counter, Gauge, Info, Summary
 {
     String HELP_LINE_FORMAT = "# HELP %s %s\n";
     String TYPE_LINE_FORMAT = "# TYPE %s %s\n";
