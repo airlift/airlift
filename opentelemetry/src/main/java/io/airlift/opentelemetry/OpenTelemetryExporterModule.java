@@ -17,6 +17,7 @@ import io.opentelemetry.sdk.metrics.export.MetricReader;
 import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
 import io.opentelemetry.sdk.trace.SpanProcessor;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
+import io.opentelemetry.sdk.trace.export.BatchSpanProcessorBuilder;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 
 import static io.airlift.configuration.ConfigBinder.configBinder;
@@ -33,7 +34,9 @@ public class OpenTelemetryExporterModule
     @ProvidesIntoSet
     public static SpanProcessor createSpanProcessor(OpenTelemetryExporterConfig config)
     {
-        return BatchSpanProcessor.builder(createSpanExporter(config)).build();
+        BatchSpanProcessorBuilder builder = BatchSpanProcessor.builder(createSpanExporter(config));
+        config.getMaxExportBatchSize().ifPresent(builder::setMaxExportBatchSize);
+        return builder.build();
     }
 
     static SpanExporter createSpanExporter(OpenTelemetryExporterConfig config)

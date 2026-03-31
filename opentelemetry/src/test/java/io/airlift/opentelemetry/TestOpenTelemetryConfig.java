@@ -15,7 +15,8 @@ public class TestOpenTelemetryConfig
     public void testDefaults()
     {
         assertRecordedDefaults(recordDefaults(OpenTelemetryConfig.class)
-                .setSamplingRatio(1.0));
+                .setSamplingRatio(1.0)
+                .setMaxAttributeValueLength(null));
     }
 
     @Test
@@ -23,10 +24,12 @@ public class TestOpenTelemetryConfig
     {
         Map<String, String> properties = ImmutableMap.<String, String>builder()
                 .put("otel.tracing.sampling-ratio", "0.2")
+                .put("otel.tracing.max-attribute-value-length", "8192")
                 .buildOrThrow();
 
         OpenTelemetryConfig expected = new OpenTelemetryConfig()
-                .setSamplingRatio(0.2);
+                .setSamplingRatio(0.2)
+                .setMaxAttributeValueLength(8192);
 
         assertFullMapping(properties, expected);
     }

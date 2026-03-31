@@ -21,7 +21,8 @@ public class TestOpenTelemetryExporterConfig
         assertRecordedDefaults(recordDefaults(OpenTelemetryExporterConfig.class)
                 .setEndpoint("http://localhost:4317")
                 .setProtocol(GRPC)
-                .setInterval(new Duration(1, TimeUnit.MINUTES)));
+                .setInterval(new Duration(1, TimeUnit.MINUTES))
+                .setMaxExportBatchSize(null));
     }
 
     @Test
@@ -31,12 +32,14 @@ public class TestOpenTelemetryExporterConfig
                 .put("otel.exporter.endpoint", "http://example.com:1234")
                 .put("otel.exporter.protocol", "http/protobuf")
                 .put("otel.exporter.interval", "5m")
+                .put("otel.exporter.max-export-batch-size", "128")
                 .buildOrThrow();
 
         OpenTelemetryExporterConfig expected = new OpenTelemetryExporterConfig()
                 .setEndpoint("http://example.com:1234")
                 .setProtocol(HTTP_PROTOBUF)
-                .setInterval(new Duration(5, TimeUnit.MINUTES));
+                .setInterval(new Duration(5, TimeUnit.MINUTES))
+                .setMaxExportBatchSize(128);
 
         assertFullMapping(properties, expected);
     }
