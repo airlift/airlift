@@ -21,11 +21,6 @@ import java.util.stream.Collectors;
 public sealed interface Metric
         permits BigCounter, CompositeMetric, Counter, Gauge, Info, Summary
 {
-    String HELP_LINE_FORMAT = "# HELP %s %s\n";
-    String TYPE_LINE_FORMAT = "# TYPE %s %s\n";
-    String NAME_WITH_LABELS_LINE_FORMAT = "%s{%s}";
-    String VALUE_LINE_FORMAT = "%s %s\n";
-
     String metricName();
 
     String getMetricExposition();
@@ -34,15 +29,23 @@ public sealed interface Metric
 
     static String formatSingleValuedMetric(String name, Map<String, String> labels, String value)
     {
-        return VALUE_LINE_FORMAT.formatted(formatNameWithLabels(name, labels), value);
+        return formatNameWithLabels(name, labels) + ' ' + value + '\n';
     }
 
     static String formatMetricDescriptor(String metricName, String type, String help)
     {
         StringBuilder output = new StringBuilder();
-        output.append(TYPE_LINE_FORMAT.formatted(metricName, type));
+        output.append("# TYPE ")
+                .append(metricName)
+                .append(' ')
+                .append(type)
+                .append('\n');
         if (!Strings.isNullOrEmpty(help)) {
-            output.append(HELP_LINE_FORMAT.formatted(metricName, help));
+            output.append("# HELP ")
+                    .append(metricName)
+                    .append(' ')
+                    .append(help)
+                    .append('\n');
         }
         return output.toString();
     }
@@ -52,11 +55,9 @@ public sealed interface Metric
         if (labels.isEmpty()) {
             return name;
         }
-        return NAME_WITH_LABELS_LINE_FORMAT.formatted(
-                name,
-                labels.entrySet().stream()
-                        .sorted(Map.Entry.comparingByKey())
-                        .map(e -> "%s=\"%s\"".formatted(e.getKey(), e.getValue()))
-                        .collect(Collectors.joining(",")));
+        return name + labels.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(e -> e.getKey() + "=\"" + e.getValue() + "\"")
+                .collect(Collectors.joining(",", "{", "}"));
     }
 }

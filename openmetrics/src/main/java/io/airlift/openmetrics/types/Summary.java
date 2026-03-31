@@ -52,22 +52,38 @@ public record Summary(String metricName, Long count, Double sum, Double created,
     {
         StringBuilder stringBuilder = new StringBuilder();
         if (count != null) {
-            stringBuilder.append(VALUE_LINE_FORMAT.formatted(Metric.formatNameWithLabels(metricName + "_count", labels), count));
+            stringBuilder
+                    .append(Metric.formatNameWithLabels(metricName + "_count", labels))
+                    .append(' ')
+                    .append(count)
+                    .append('\n');
         }
 
         if (sum != null) {
-            stringBuilder.append(VALUE_LINE_FORMAT.formatted(Metric.formatNameWithLabels(metricName + "_sum", labels), sum));
+            stringBuilder
+                    .append(Metric.formatNameWithLabels(metricName + "_sum", labels))
+                    .append(' ')
+                    .append(sum)
+                    .append('\n');
         }
 
         if (created != null) {
-            stringBuilder.append(VALUE_LINE_FORMAT.formatted(Metric.formatNameWithLabels(metricName + "_created", labels), created));
+            stringBuilder
+                    .append(Metric.formatNameWithLabels(metricName + "_created", labels))
+                    .append(' ')
+                    .append(created)
+                    .append('\n');
         }
 
         if (quantiles != null) {
             for (Map.Entry<Double, Double> quantile : quantiles.entrySet()) {
                 Map<String, String> quantileLabels = new ImmutableMap.Builder<String, String>().putAll(labels)
                         .put("quantile", String.valueOf(quantile.getKey())).buildOrThrow();
-                stringBuilder.append(VALUE_LINE_FORMAT.formatted(Metric.formatNameWithLabels(metricName, quantileLabels), quantile.getValue()));
+                stringBuilder
+                        .append(Metric.formatNameWithLabels(metricName, quantileLabels))
+                        .append(' ')
+                        .append(quantile.getValue())
+                        .append('\n');
             }
         }
 
