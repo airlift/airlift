@@ -9,6 +9,7 @@ import io.airlift.mcp.reflection.MethodParameter.CompleteContextParameter;
 import io.airlift.mcp.reflection.MethodParameter.GetPromptRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.HttpRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.IdentityParameter;
+import io.airlift.mcp.reflection.MethodParameter.InputResponsesParameter;
 import io.airlift.mcp.reflection.MethodParameter.McpRequestContextParameter;
 import io.airlift.mcp.reflection.MethodParameter.ObjectParameter;
 import io.airlift.mcp.reflection.MethodParameter.ReadResourceRequestParameter;
@@ -27,6 +28,7 @@ public interface Predicates
     Predicate<MethodParameter> isIdentity = methodParameter -> methodParameter instanceof IdentityParameter;
     Predicate<MethodParameter> isGetPromptRequest = methodParameter -> methodParameter instanceof GetPromptRequestParameter;
     Predicate<MethodParameter> isCallToolRequest = methodParameter -> methodParameter instanceof CallToolRequestParameter;
+    Predicate<MethodParameter> isInputResponses = methodParameter -> methodParameter instanceof InputResponsesParameter;
     Predicate<MethodParameter> isReadResourceRequest = methodParameter -> methodParameter instanceof ReadResourceRequestParameter;
     Predicate<MethodParameter> isCompleteArgument = methodParameter -> methodParameter instanceof CompleteArgumentParameter;
     Predicate<MethodParameter> isCompleteContext = methodParameter -> methodParameter instanceof CompleteContextParameter;

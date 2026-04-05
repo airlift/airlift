@@ -31,6 +31,12 @@ public sealed interface MethodParameter
         public static final CallToolRequestParameter INSTANCE = new CallToolRequestParameter();
     }
 
+    record InputResponsesParameter()
+            implements MethodParameter
+    {
+        public static final InputResponsesParameter INSTANCE = new InputResponsesParameter();
+    }
+
     record SourceResourceParameter()
             implements MethodParameter
     {

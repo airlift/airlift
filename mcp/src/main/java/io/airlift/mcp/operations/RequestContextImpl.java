@@ -207,8 +207,7 @@ class RequestContextImpl
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
-    @Override
-    public <R> JsonRpcResponse<R> serverToClientRequest(String method, Object params, Class<R> responseType, Duration timeout, Duration pollInterval)
+    <R> JsonRpcResponse<R> serverToClientRequest(String method, Object params, Class<R> responseType, Duration timeout, Duration pollInterval)
             throws InterruptedException, TimeoutException
     {
         SessionController localSessionController = sessionController.orElseThrow(() -> new IllegalStateException("Sessions are not enabled"));
@@ -248,9 +247,7 @@ class RequestContextImpl
         throw new TimeoutException("Timed out waiting %s for client to respond".formatted(timeout));
     }
 
-    @SuppressWarnings("ThrowableNotThrown")
-    @Override
-    public List<Root> requestRoots(Duration timeout, Duration pollInterval)
+    List<Root> requestRoots(Duration timeout, Duration pollInterval)
             throws InterruptedException, TimeoutException
     {
         SessionController localSessionController = sessionController.orElseThrow(() -> new IllegalStateException("Sessions not enabled"));

@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import java.util.Optional;
 
+import static io.airlift.mcp.model.InputResponses.EMPTY;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 
@@ -28,14 +29,20 @@ public record CallToolRequest(String name, Map<String, Object> arguments, Option
         this(name, ImmutableMap.of(), Optional.empty(), Optional.empty(), Optional.empty());
     }
 
-    public Optional<InputResponses> asInputResponses()
+    public InputResponses asInputResponses()
     {
-        return inputResponses.map(responses -> new InputResponses(responses, requestState));
+        return inputResponses.map(responses -> new InputResponses(responses, requestState))
+                .orElse(EMPTY);
     }
 
     @Override
     public CallToolRequest withMeta(Map<String, Object> meta)
     {
         return new CallToolRequest(name, arguments, inputResponses, requestState, Optional.of(meta));
+    }
+
+    public CallToolRequest withInputResponses(InputResponses inputResponses)
+    {
+        return new CallToolRequest(name, arguments, Optional.of(inputResponses.inputResponses()), inputResponses.requestState(), meta);
     }
 }

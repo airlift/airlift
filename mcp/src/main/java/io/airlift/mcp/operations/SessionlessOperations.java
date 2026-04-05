@@ -10,6 +10,7 @@ import io.airlift.mcp.McpEntities;
 import io.airlift.mcp.McpIdentity;
 import io.airlift.mcp.McpMetadata;
 import io.airlift.mcp.model.CallToolRequest;
+import io.airlift.mcp.model.CallToolResult;
 import io.airlift.mcp.model.CompleteReference;
 import io.airlift.mcp.model.CompleteRequest;
 import io.airlift.mcp.model.GetPromptRequest;
@@ -27,6 +28,7 @@ import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.model.SubscribeListChanged;
 import io.airlift.mcp.model.Tool;
+import io.airlift.mcp.model.ToolContent;
 import io.airlift.mcp.reflection.IconHelper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -36,6 +38,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static io.airlift.http.server.tracing.TracingServletFilter.updateRequestSpan;
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.McpModule.MCP_SERVER_ICONS;
@@ -111,7 +114,7 @@ public class SessionlessOperations
         Object result = switch (method) {
             case METHOD_INITIALIZE -> handleInitialize(requestContext, operationsCommon.convertParams(rpcRequest, InitializeRequest.class));
             case METHOD_TOOLS_LIST -> operationsCommon.listTools(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class));
-            case METHOD_TOOLS_CALL -> operationsCommon.callTool(requestContext, operationsCommon.convertParams(rpcRequest, CallToolRequest.class));
+            case METHOD_TOOLS_CALL -> validateToolResult(operationsCommon.callTool(requestContext, operationsCommon.convertParams(rpcRequest, CallToolRequest.class)));
             case METHOD_PROMPT_LIST -> operationsCommon.listPrompts(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class));
             case METHOD_PROMPT_GET -> operationsCommon.getPrompt(requestContext, operationsCommon.convertParams(rpcRequest, GetPromptRequest.class));
             case METHOD_RESOURCES_LIST -> operationsCommon.listResources(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class));
@@ -132,6 +135,12 @@ public class SessionlessOperations
         catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    private CallToolResult validateToolResult(CallToolResult callToolResult)
+    {
+        checkArgument(callToolResult instanceof ToolContent, "Only ToolContent results are supported for sessionless tool calls");
+        return callToolResult;
     }
 
     private InitializeResult handleInitialize(RequestContextImpl requestContext, InitializeRequest initializeRequest)

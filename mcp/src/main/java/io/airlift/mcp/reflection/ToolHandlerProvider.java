@@ -40,6 +40,7 @@ import static io.airlift.mcp.model.JsonSchemaBuilder.isSupportedType;
 import static io.airlift.mcp.reflection.Predicates.isCallToolRequest;
 import static io.airlift.mcp.reflection.Predicates.isHttpRequestOrContext;
 import static io.airlift.mcp.reflection.Predicates.isIdentity;
+import static io.airlift.mcp.reflection.Predicates.isInputResponses;
 import static io.airlift.mcp.reflection.Predicates.isObject;
 import static io.airlift.mcp.reflection.Predicates.returnsAnything;
 import static io.airlift.mcp.reflection.ReflectionHelper.mapToContent;
@@ -71,7 +72,7 @@ public class ToolHandlerProvider
         icons = ImmutableList.copyOf(mcpTool.icons());
         this.resourceHandlerConsumer = requireNonNull(resourceHandlerConsumer, "resourceHandlerConsumer is null");
 
-        validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isObject).or(isCallToolRequest), returnsAnything);
+        validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isObject).or(isCallToolRequest).or(isInputResponses), returnsAnything);
 
         tool = buildTool(mcpTool, method, parameters);
 

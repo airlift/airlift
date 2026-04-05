@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Supplier;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
@@ -15,18 +16,32 @@ import io.airlift.mcp.McpIdentity;
 import io.airlift.mcp.McpMetadata;
 import io.airlift.mcp.SentMessages;
 import io.airlift.mcp.model.CallToolRequest;
+import io.airlift.mcp.model.CallToolResult;
 import io.airlift.mcp.model.CancelledNotification;
 import io.airlift.mcp.model.CompleteReference;
 import io.airlift.mcp.model.CompleteRequest;
+import io.airlift.mcp.model.Content.TextContent;
+import io.airlift.mcp.model.CreateMessageRequest;
+import io.airlift.mcp.model.CreateMessageResult;
+import io.airlift.mcp.model.ElicitRequestForm;
+import io.airlift.mcp.model.ElicitRequestUrl;
+import io.airlift.mcp.model.ElicitResult;
 import io.airlift.mcp.model.GetPromptRequest;
 import io.airlift.mcp.model.Implementation;
 import io.airlift.mcp.model.InitializeRequest;
 import io.airlift.mcp.model.InitializeResult;
 import io.airlift.mcp.model.InitializeResult.CompletionCapabilities;
+import io.airlift.mcp.model.InputRequest;
+import io.airlift.mcp.model.InputRequests;
+import io.airlift.mcp.model.InputResponse;
+import io.airlift.mcp.model.InputResponses;
+import io.airlift.mcp.model.JsonRpcErrorDetail;
 import io.airlift.mcp.model.JsonRpcRequest;
 import io.airlift.mcp.model.JsonRpcResponse;
 import io.airlift.mcp.model.ListChanged;
 import io.airlift.mcp.model.ListRequest;
+import io.airlift.mcp.model.ListRootsRequest;
+import io.airlift.mcp.model.ListRootsResult;
 import io.airlift.mcp.model.LoggingLevel;
 import io.airlift.mcp.model.Meta;
 import io.airlift.mcp.model.Prompt;
@@ -34,10 +49,12 @@ import io.airlift.mcp.model.Protocol;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceTemplate;
+import io.airlift.mcp.model.Root;
 import io.airlift.mcp.model.SetLevelRequest;
 import io.airlift.mcp.model.SubscribeListChanged;
 import io.airlift.mcp.model.SubscribeRequest;
 import io.airlift.mcp.model.Tool;
+import io.airlift.mcp.model.ToolContent;
 import io.airlift.mcp.reflection.IconHelper;
 import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.sessions.SessionId;
@@ -48,9 +65,12 @@ import jakarta.ws.rs.WebApplicationException;
 
 import java.io.UncheckedIOException;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 
 import static io.airlift.http.server.tracing.TracingServletFilter.updateRequestSpan;
@@ -61,6 +81,7 @@ import static io.airlift.mcp.model.Constants.HEADER_SESSION_ID;
 import static io.airlift.mcp.model.Constants.MCP_SESSION_ID;
 import static io.airlift.mcp.model.Constants.MESSAGE_WRITER_ATTRIBUTE;
 import static io.airlift.mcp.model.Constants.METHOD_COMPLETION_COMPLETE;
+import static io.airlift.mcp.model.Constants.METHOD_ELICITATION_CREATE;
 import static io.airlift.mcp.model.Constants.METHOD_INITIALIZE;
 import static io.airlift.mcp.model.Constants.METHOD_LOGGING_SET_LEVEL;
 import static io.airlift.mcp.model.Constants.METHOD_PING;
@@ -71,6 +92,8 @@ import static io.airlift.mcp.model.Constants.METHOD_RESOURCES_READ;
 import static io.airlift.mcp.model.Constants.METHOD_RESOURCES_SUBSCRIBE;
 import static io.airlift.mcp.model.Constants.METHOD_RESOURCES_TEMPLATES_LIST;
 import static io.airlift.mcp.model.Constants.METHOD_RESOURCES_UNSUBSCRIBE;
+import static io.airlift.mcp.model.Constants.METHOD_ROOTS_LIST;
+import static io.airlift.mcp.model.Constants.METHOD_SAMPLING_CREATE_MESSAGE;
 import static io.airlift.mcp.model.Constants.METHOD_TOOLS_CALL;
 import static io.airlift.mcp.model.Constants.METHOD_TOOLS_LIST;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_CANCELLED;
@@ -100,6 +123,8 @@ public class LegacyOperations
 {
     private static final Logger log = Logger.get(LegacyOperations.class);
 
+    private static final ToolContent TIMEOUT_TOOL_CONTENT = new ToolContent(ImmutableList.of(new TextContent("Timed out while processing tool call")), Optional.empty(), true);
+
     private final McpMetadata metadata;
     private final JsonMapper jsonMapper;
     private final Optional<SessionController> sessionController;
@@ -115,7 +140,7 @@ public class LegacyOperations
     private final Implementation serverImplementation;
 
     @Inject
-    public LegacyOperations(
+    LegacyOperations(
             McpMetadata metadata,
             JsonMapper jsonMapper,
             Optional<SessionController> sessionController,
@@ -166,7 +191,7 @@ public class LegacyOperations
         Object result = switch (method) {
             case METHOD_INITIALIZE -> handleInitialize(requestContext, operationsCommon.convertParams(rpcRequest, InitializeRequest.class));
             case METHOD_TOOLS_LIST -> withManagement(requestContext, requestId, () -> operationsCommon.listTools(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class)));
-            case METHOD_TOOLS_CALL -> withManagement(requestContext, requestId, () -> operationsCommon.callTool(requestContext, operationsCommon.convertParams(rpcRequest, CallToolRequest.class)));
+            case METHOD_TOOLS_CALL -> withManagement(requestContext, requestId, () -> internalCallTool(requestContext, operationsCommon.convertParams(rpcRequest, CallToolRequest.class)));
             case METHOD_PROMPT_LIST -> withManagement(requestContext, requestId, () -> operationsCommon.listPrompts(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class)));
             case METHOD_PROMPT_GET -> withManagement(requestContext, requestId, () -> operationsCommon.getPrompt(requestContext, operationsCommon.convertParams(rpcRequest, GetPromptRequest.class)));
             case METHOD_RESOURCES_LIST -> withManagement(requestContext, requestId, () -> operationsCommon.listResources(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class)));
@@ -256,6 +281,85 @@ public class LegacyOperations
     {
         return Optional.ofNullable(request.getHeader(MCP_SESSION_ID))
                 .map(SessionId::new);
+    }
+
+    private CallToolResult internalCallTool(RequestContextImpl requestContext, CallToolRequest callToolRequest)
+    {
+        CallToolResult callToolResult;
+
+        Stopwatch stopwatch = Stopwatch.createStarted();
+
+        while (true) {
+            callToolResult = operationsCommon.callTool(requestContext, callToolRequest);
+            if (!(callToolResult instanceof InputRequests(var inputRequests, var requestState))) {
+                break;
+            }
+
+            Map<String, InputResponse> inputResponses = new HashMap<>();
+            for (Map.Entry<String, InputRequest> entry : inputRequests.entrySet()) {
+                String key = entry.getKey();
+                InputRequest inputRequest = entry.getValue();
+
+                try {
+                    Class<? extends InputResponse> responseType = inputResponseType(inputRequest);
+
+                    Duration elapsed = stopwatch.elapsed();
+                    Duration thisTimeout = streamingTimeout.minus(elapsed);
+                    if (thisTimeout.isNegative()) {
+                        return TIMEOUT_TOOL_CONTENT;
+                    }
+
+                    JsonRpcResponse<?> response;
+                    if (inputRequest instanceof ListRootsRequest) {
+                        List<Root> roots = requestContext.requestRoots(thisTimeout, streamingPingThreshold);
+                        response = new JsonRpcResponse<>("", Optional.empty(), Optional.of(new ListRootsResult(roots, Optional.empty())));
+                    }
+                    else {
+                        response = requestContext.serverToClientRequest(inputRequestMethod(inputRequest), inputRequest, responseType, thisTimeout, streamingPingThreshold);
+                    }
+
+                    if (response.error().isPresent()) {
+                        JsonRpcErrorDetail errorDetail = response.error().orElseThrow();
+                        return new ToolContent(ImmutableList.of(new TextContent(errorDetail.toMessage())), Optional.empty(), true);
+                    }
+                    else {
+                        Object result = response.result().orElseThrow(() -> new IllegalStateException("Missing result in response for input request: " + key));
+                        inputResponses.put(key, responseType.cast(result));
+                    }
+                }
+                catch (InterruptedException _) {
+                    // TODO logging
+                    Thread.currentThread().interrupt();
+                    return new ToolContent(ImmutableList.of(new TextContent("Server is shutting down")), Optional.empty(), true);
+                }
+                catch (TimeoutException _) {
+                    // TODO logging
+                    return TIMEOUT_TOOL_CONTENT;
+                }
+            }
+
+            callToolRequest = callToolRequest.withInputResponses(new InputResponses(inputResponses, requestState));
+        }
+
+        return callToolResult;
+    }
+
+    private String inputRequestMethod(InputRequest inputRequest)
+    {
+        return switch (inputRequest) {
+            case CreateMessageRequest _ -> METHOD_SAMPLING_CREATE_MESSAGE;
+            case ElicitRequestForm _, ElicitRequestUrl _ -> METHOD_ELICITATION_CREATE;
+            case ListRootsRequest _ -> METHOD_ROOTS_LIST;
+        };
+    }
+
+    private Class<? extends InputResponse> inputResponseType(InputRequest inputRequest)
+    {
+        return switch (inputRequest) {
+            case CreateMessageRequest _ -> CreateMessageResult.class;
+            case ElicitRequestForm _, ElicitRequestUrl _ -> ElicitResult.class;
+            case ListRootsRequest _ -> ListRootsResult.class;
+        };
     }
 
     private InitializeResult handleInitialize(RequestContextImpl requestContext, InitializeRequest initializeRequest)

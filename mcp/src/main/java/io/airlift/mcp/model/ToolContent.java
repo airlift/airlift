@@ -1,6 +1,7 @@
 package io.airlift.mcp.model;
 
 import com.google.common.collect.ImmutableList;
+import io.airlift.mcp.model.Content.TextContent;
 
 import java.util.List;
 import java.util.Map;
@@ -22,6 +23,11 @@ public record ToolContent(List<Content> content, Optional<StructuredContent<?>> 
     public ToolContent(List<Content> content, Optional<StructuredContent<?>> structuredContent, boolean isError)
     {
         this(content, structuredContent, isError, Optional.empty());
+    }
+
+    public ToolContent(String content)
+    {
+        this(ImmutableList.of(new TextContent(content)), Optional.empty(), false, Optional.empty());
     }
 
     public ToolContent(Content content)

@@ -15,4 +15,23 @@ public record InputRequests(Map<String, InputRequest> inputRequests, Optional<St
         inputRequests = ImmutableMap.copyOf(inputRequests);
         requireNonNull(requestState, "requestState is null");
     }
+
+    public static InputRequests inputRequest(String key, InputRequest inputRequest)
+    {
+        return new InputRequests(Map.of(key, inputRequest), Optional.empty());
+    }
+
+    public InputRequests withInputRequest(String key, InputRequest inputRequest)
+    {
+        ImmutableMap<String, InputRequest> updatedInputRequests = ImmutableMap.<String, InputRequest>builder()
+                .putAll(inputRequests)
+                .put(key, inputRequest)
+                .build();
+        return new InputRequests(updatedInputRequests, requestState);
+    }
+
+    public InputRequests withRequestState(String requestState)
+    {
+        return new InputRequests(inputRequests, Optional.of(requestState));
+    }
 }

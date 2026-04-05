@@ -9,6 +9,7 @@ import io.airlift.mcp.model.CompleteRequest.CompleteContext;
 import io.airlift.mcp.model.Content;
 import io.airlift.mcp.model.Content.TextContent;
 import io.airlift.mcp.model.GetPromptRequest;
+import io.airlift.mcp.model.InputResponses;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceTemplate;
@@ -19,6 +20,7 @@ import io.airlift.mcp.reflection.MethodParameter.CompleteContextParameter;
 import io.airlift.mcp.reflection.MethodParameter.GetPromptRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.HttpRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.IdentityParameter;
+import io.airlift.mcp.reflection.MethodParameter.InputResponsesParameter;
 import io.airlift.mcp.reflection.MethodParameter.McpRequestContextParameter;
 import io.airlift.mcp.reflection.MethodParameter.ObjectParameter;
 import io.airlift.mcp.reflection.MethodParameter.ReadResourceRequestParameter;
@@ -46,7 +48,6 @@ import static io.airlift.mcp.reflection.ReflectionHelper.parseParameters;
 
 public interface ReflectionHelper
 {
-    @SuppressWarnings("SwitchStatementWithTooFewBranches")
     static void validate(Method method, List<MethodParameter> methodParameters, Predicate<MethodParameter> parameterPredicateChain, Predicate<Method> methodPredicateChain)
     {
         Function<MethodParameter, String> methodDebug = parameter -> switch (parameter) {
@@ -86,6 +87,10 @@ public interface ReflectionHelper
 
                     if (CallToolRequest.class.isAssignableFrom(parameter.getType())) {
                         return CallToolRequestParameter.INSTANCE;
+                    }
+
+                    if (InputResponses.class.isAssignableFrom(parameter.getType())) {
+                        return InputResponsesParameter.INSTANCE;
                     }
 
                     if (Resource.class.isAssignableFrom(parameter.getType())) {

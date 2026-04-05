@@ -22,4 +22,9 @@ public record JsonRpcErrorDetail(int code, String message, Optional<Object> data
     {
         this(errorCode.code(), message, Optional.of(data));
     }
+
+    public String toMessage()
+    {
+        return "Error " + code + ": " + message + (data.map(o -> " - " + o).orElse(""));
+    }
 }
