@@ -8,7 +8,7 @@ import java.util.Optional;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 
-public record CallToolRequest(String name, Map<String, Object> arguments, Optional<Map<String, Object>> meta)
+public record CallToolRequest(String name, Map<String, Object> arguments, Optional<Map<String, InputResponse>> inputResponses, Optional<String> requestState, Optional<Map<String, Object>> meta)
         implements Meta
 {
     public CallToolRequest
@@ -20,17 +20,22 @@ public record CallToolRequest(String name, Map<String, Object> arguments, Option
 
     public CallToolRequest(String name, Map<String, Object> arguments)
     {
-        this(name, arguments, Optional.empty());
+        this(name, arguments, Optional.empty(), Optional.empty(), Optional.empty());
     }
 
     public CallToolRequest(String name)
     {
-        this(name, ImmutableMap.of(), Optional.empty());
+        this(name, ImmutableMap.of(), Optional.empty(), Optional.empty(), Optional.empty());
+    }
+
+    public Optional<InputResponses> asInputResponses()
+    {
+        return inputResponses.map(responses -> new InputResponses(responses, requestState));
     }
 
     @Override
     public CallToolRequest withMeta(Map<String, Object> meta)
     {
-        return new CallToolRequest(name, arguments, Optional.of(meta));
+        return new CallToolRequest(name, arguments, inputResponses, requestState, Optional.of(meta));
     }
 }

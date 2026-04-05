@@ -7,7 +7,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 
 public record ElicitRequestUrl(Optional<String> mode, String elicitationId, String message, String url, Optional<Map<String, Object>> meta)
-        implements Meta
+        implements Meta, InputRequest
 {
     public ElicitRequestUrl
     {

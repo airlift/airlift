@@ -3,12 +3,14 @@ package io.airlift.mcp.model;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
+import java.util.Map;
 import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 
-public record CreateMessageResult(Role role, Content content, String model, Optional<StopReason> stopReason)
+public record CreateMessageResult(Role role, Content content, String model, Optional<StopReason> stopReason, Optional<Map<String, Object>> meta)
+        implements Meta, InputResponse
 {
     public CreateMessageResult
     {
@@ -16,6 +18,13 @@ public record CreateMessageResult(Role role, Content content, String model, Opti
         requireNonNull(content, "content is null");
         requireNonNull(model, "model is null");
         stopReason = requireNonNullElse(stopReason, Optional.empty());
+        meta = requireNonNullElse(meta, Optional.empty());
+    }
+
+    @Override
+    public CreateMessageResult withMeta(Map<String, Object> meta)
+    {
+        return new CreateMessageResult(role, content, model, stopReason, Optional.of(meta));
     }
 
     public enum StopReason
