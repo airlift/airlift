@@ -22,7 +22,12 @@ public class TestOpenTelemetryExporterConfig
                 .setEndpoint("http://localhost:4317")
                 .setProtocol(GRPC)
                 .setInterval(new Duration(1, TimeUnit.MINUTES))
-                .setMaxExportBatchSize(null));
+                .setSpanMaxExportBatchSize(null)
+                .setSpanMaxQueueSize(null)
+                .setSpanScheduleDelay(null)
+                .setLogMaxExportBatchSize(null)
+                .setLogMaxQueueSize(null)
+                .setLogScheduleDelay(null));
     }
 
     @Test
@@ -32,14 +37,24 @@ public class TestOpenTelemetryExporterConfig
                 .put("otel.exporter.endpoint", "http://example.com:1234")
                 .put("otel.exporter.protocol", "http/protobuf")
                 .put("otel.exporter.interval", "5m")
-                .put("otel.exporter.max-export-batch-size", "128")
+                .put("otel.exporter.span.max-export-batch-size", "128")
+                .put("otel.exporter.span.max-queue-size", "4096")
+                .put("otel.exporter.span.schedule-delay", "2s")
+                .put("otel.exporter.log.max-export-batch-size", "64")
+                .put("otel.exporter.log.max-queue-size", "1024")
+                .put("otel.exporter.log.schedule-delay", "5s")
                 .buildOrThrow();
 
         OpenTelemetryExporterConfig expected = new OpenTelemetryExporterConfig()
                 .setEndpoint("http://example.com:1234")
                 .setProtocol(HTTP_PROTOBUF)
                 .setInterval(new Duration(5, TimeUnit.MINUTES))
-                .setMaxExportBatchSize(128);
+                .setSpanMaxExportBatchSize(128)
+                .setSpanMaxQueueSize(4096)
+                .setSpanScheduleDelay(new Duration(2, TimeUnit.SECONDS))
+                .setLogMaxExportBatchSize(64)
+                .setLogMaxQueueSize(1024)
+                .setLogScheduleDelay(new Duration(5, TimeUnit.SECONDS));
 
         assertFullMapping(properties, expected);
     }
