@@ -9,6 +9,7 @@ import io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporter;
 import io.opentelemetry.exporter.otlp.logs.OtlpGrpcLogRecordExporter;
 import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporter;
 import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
+import io.opentelemetry.sdk.common.InternalTelemetryVersion;
 import io.opentelemetry.sdk.logs.LogRecordProcessor;
 import io.opentelemetry.sdk.logs.export.BatchLogRecordProcessor;
 import io.opentelemetry.sdk.logs.export.BatchLogRecordProcessorBuilder;
@@ -41,6 +42,7 @@ public class OpenTelemetryExporterModule
         config.getSpanMaxExportBatchSize().ifPresent(builder::setMaxExportBatchSize);
         config.getSpanMaxQueueSize().ifPresent(builder::setMaxQueueSize);
         config.getSpanScheduleDelay().ifPresent(delay -> builder.setScheduleDelay(delay.toJavaTime()));
+        builder.setInternalTelemetryVersion(InternalTelemetryVersion.LATEST);
         return builder.build();
     }
 
@@ -84,6 +86,7 @@ public class OpenTelemetryExporterModule
         config.getLogMaxExportBatchSize().ifPresent(builder::setMaxExportBatchSize);
         config.getLogMaxQueueSize().ifPresent(builder::setMaxQueueSize);
         config.getLogScheduleDelay().ifPresent(delay -> builder.setScheduleDelay(delay.toJavaTime()));
+        builder.setInternalTelemetryVersion(InternalTelemetryVersion.LATEST);
         return builder.build();
     }
 
