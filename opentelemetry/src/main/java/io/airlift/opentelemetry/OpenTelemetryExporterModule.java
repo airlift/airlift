@@ -11,6 +11,7 @@ import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporter;
 import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
 import io.opentelemetry.sdk.logs.LogRecordProcessor;
 import io.opentelemetry.sdk.logs.export.BatchLogRecordProcessor;
+import io.opentelemetry.sdk.logs.export.BatchLogRecordProcessorBuilder;
 import io.opentelemetry.sdk.logs.export.LogRecordExporter;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
@@ -37,7 +38,9 @@ public class OpenTelemetryExporterModule
     {
         BatchSpanProcessorBuilder builder = BatchSpanProcessor.builder(createSpanExporter(config))
                 .setMeterProvider(meterProvider);
-        config.getMaxExportBatchSize().ifPresent(builder::setMaxExportBatchSize);
+        config.getSpanMaxExportBatchSize().ifPresent(builder::setMaxExportBatchSize);
+        config.getSpanMaxQueueSize().ifPresent(builder::setMaxQueueSize);
+        config.getSpanScheduleDelay().ifPresent(delay -> builder.setScheduleDelay(delay.toJavaTime()));
         return builder.build();
     }
 
@@ -76,9 +79,12 @@ public class OpenTelemetryExporterModule
     @ProvidesIntoSet
     public static LogRecordProcessor createLogRecordProcessor(OpenTelemetryExporterConfig config, SdkMeterProvider meterProvider)
     {
-        return BatchLogRecordProcessor.builder(createLogRecordExporter(config))
-                .setMeterProvider(meterProvider)
-                .build();
+        BatchLogRecordProcessorBuilder builder = BatchLogRecordProcessor.builder(createLogRecordExporter(config))
+                .setMeterProvider(meterProvider);
+        config.getLogMaxExportBatchSize().ifPresent(builder::setMaxExportBatchSize);
+        config.getLogMaxQueueSize().ifPresent(builder::setMaxQueueSize);
+        config.getLogScheduleDelay().ifPresent(delay -> builder.setScheduleDelay(delay.toJavaTime()));
+        return builder.build();
     }
 
     static LogRecordExporter createLogRecordExporter(OpenTelemetryExporterConfig config)

@@ -16,7 +16,12 @@ public class OpenTelemetryExporterConfig
     private String endpoint = "http://localhost:4317";
     private Protocol protocol = Protocol.GRPC;
     private Duration interval = new Duration(1, TimeUnit.MINUTES);
-    private Optional<@Min(1) Integer> maxExportBatchSize = Optional.empty();
+    private Optional<@Min(1) Integer> spanMaxExportBatchSize = Optional.empty();
+    private Optional<@Min(1) Integer> spanMaxQueueSize = Optional.empty();
+    private Optional<@MinDuration("1ms") Duration> spanScheduleDelay = Optional.empty();
+    private Optional<@Min(1) Integer> logMaxExportBatchSize = Optional.empty();
+    private Optional<@Min(1) Integer> logMaxQueueSize = Optional.empty();
+    private Optional<@MinDuration("1ms") Duration> logScheduleDelay = Optional.empty();
 
     @NotNull
     @Pattern(regexp = "^(http|https)://.*$", message = "must start with http:// or https://")
@@ -76,15 +81,76 @@ public class OpenTelemetryExporterConfig
         return this;
     }
 
-    public Optional<@Min(1) Integer> getMaxExportBatchSize()
+    public Optional<@Min(1) Integer> getSpanMaxExportBatchSize()
     {
-        return maxExportBatchSize;
+        return spanMaxExportBatchSize;
     }
 
-    @Config("otel.exporter.max-export-batch-size")
-    public OpenTelemetryExporterConfig setMaxExportBatchSize(Integer maxExportBatchSize)
+    @Config("otel.exporter.span.max-export-batch-size")
+    @LegacyConfig("otel.exporter.max-export-batch-size")
+    public OpenTelemetryExporterConfig setSpanMaxExportBatchSize(Integer spanMaxExportBatchSize)
     {
-        this.maxExportBatchSize = Optional.ofNullable(maxExportBatchSize);
+        this.spanMaxExportBatchSize = Optional.ofNullable(spanMaxExportBatchSize);
+        return this;
+    }
+
+    public Optional<@Min(1) Integer> getSpanMaxQueueSize()
+    {
+        return spanMaxQueueSize;
+    }
+
+    @Config("otel.exporter.span.max-queue-size")
+    public OpenTelemetryExporterConfig setSpanMaxQueueSize(Integer spanMaxQueueSize)
+    {
+        this.spanMaxQueueSize = Optional.ofNullable(spanMaxQueueSize);
+        return this;
+    }
+
+    public Optional<@MinDuration("1ms") Duration> getSpanScheduleDelay()
+    {
+        return spanScheduleDelay;
+    }
+
+    @Config("otel.exporter.span.schedule-delay")
+    public OpenTelemetryExporterConfig setSpanScheduleDelay(Duration spanScheduleDelay)
+    {
+        this.spanScheduleDelay = Optional.ofNullable(spanScheduleDelay);
+        return this;
+    }
+
+    public Optional<@Min(1) Integer> getLogMaxExportBatchSize()
+    {
+        return logMaxExportBatchSize;
+    }
+
+    @Config("otel.exporter.log.max-export-batch-size")
+    public OpenTelemetryExporterConfig setLogMaxExportBatchSize(Integer logMaxExportBatchSize)
+    {
+        this.logMaxExportBatchSize = Optional.ofNullable(logMaxExportBatchSize);
+        return this;
+    }
+
+    public Optional<@Min(1) Integer> getLogMaxQueueSize()
+    {
+        return logMaxQueueSize;
+    }
+
+    @Config("otel.exporter.log.max-queue-size")
+    public OpenTelemetryExporterConfig setLogMaxQueueSize(Integer logMaxQueueSize)
+    {
+        this.logMaxQueueSize = Optional.ofNullable(logMaxQueueSize);
+        return this;
+    }
+
+    public Optional<@MinDuration("1ms") Duration> getLogScheduleDelay()
+    {
+        return logScheduleDelay;
+    }
+
+    @Config("otel.exporter.log.schedule-delay")
+    public OpenTelemetryExporterConfig setLogScheduleDelay(Duration logScheduleDelay)
+    {
+        this.logScheduleDelay = Optional.ofNullable(logScheduleDelay);
         return this;
     }
 }
