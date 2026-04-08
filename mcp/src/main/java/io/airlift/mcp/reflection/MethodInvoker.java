@@ -15,6 +15,8 @@ import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.CompleteRequest.CompleteArgument;
 import io.airlift.mcp.model.CompleteRequest.CompleteContext;
 import io.airlift.mcp.model.GetPromptRequest;
+import io.airlift.mcp.model.InputResponsable;
+import io.airlift.mcp.model.InputResponses;
 import io.airlift.mcp.model.JsonRpcErrorDetail;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.Resource;
@@ -27,6 +29,7 @@ import io.airlift.mcp.reflection.MethodParameter.CompleteContextParameter;
 import io.airlift.mcp.reflection.MethodParameter.GetPromptRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.HttpRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.IdentityParameter;
+import io.airlift.mcp.reflection.MethodParameter.InputResponsesParameter;
 import io.airlift.mcp.reflection.MethodParameter.McpRequestContextParameter;
 import io.airlift.mcp.reflection.MethodParameter.ObjectParameter;
 import io.airlift.mcp.reflection.MethodParameter.ReadResourceRequestParameter;
@@ -196,6 +199,7 @@ public class MethodInvoker
                                 case CompleteArgumentParameter _ -> completeArgument.orElseThrow(() -> new IllegalStateException("CompleteArgument is required"));
                                 case CompleteContextParameter _ -> completeContext.orElseThrow(() -> new IllegalStateException("CompleteContext is required"));
                                 case AllowIncompleteResultParameter _ -> new AllowIncompleteResult(allowIncompleteResult);
+                                case InputResponsesParameter _ -> inputResponses();
                                 case ObjectParameter objectParameter -> valueForObjectParameter(arguments, objectParameter);
                             })
                             .toArray();
@@ -217,6 +221,14 @@ public class MethodInvoker
                         default -> new McpException(rootCause, new JsonRpcErrorDetail(INTERNAL_ERROR, "Failed to invoke method: " + methodName));
                     };
                 }
+            }
+
+            private InputResponses inputResponses()
+            {
+                return callToolRequest.flatMap(InputResponsable::toInputResponses)
+                        .or(() -> getPromptRequest.flatMap(InputResponsable::toInputResponses))
+                        .or(() -> readResourceRequest.flatMap(InputResponsable::toInputResponses))
+                        .orElse(InputResponses.EMPTY);
             }
         };
     }

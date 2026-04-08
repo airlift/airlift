@@ -25,6 +25,7 @@ import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INTERNAL_ERROR;
 import static io.airlift.mcp.reflection.Predicates.isHttpRequestOrContext;
 import static io.airlift.mcp.reflection.Predicates.isIdentity;
+import static io.airlift.mcp.reflection.Predicates.isInputResponses;
 import static io.airlift.mcp.reflection.Predicates.isReadResourceRequest;
 import static io.airlift.mcp.reflection.Predicates.isSourceResource;
 import static io.airlift.mcp.reflection.Predicates.returnsReadResourceResponse;
@@ -58,7 +59,10 @@ public class ResourceHandlerProvider
         this.parameters = ImmutableList.copyOf(parameters);
         icons = ImmutableList.copyOf(mcpResource.icons());
 
-        validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isReadResourceRequest).or(isSourceResource), returnsResourceContents.or(returnsResourceContentsList).or(returnsReadResourceResult).or(returnsReadResourceResponse));
+        validate(method,
+                parameters,
+                isHttpRequestOrContext.or(isIdentity).or(isReadResourceRequest).or(isSourceResource).or(isInputResponses),
+                returnsResourceContents.or(returnsResourceContentsList).or(returnsReadResourceResult).or(returnsReadResourceResponse));
         resultType = determineResultType(method);
 
         resource = buildResource(

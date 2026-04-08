@@ -8,17 +8,20 @@ import com.google.inject.Inject;
 import io.airlift.mcp.handler.PromptEntry;
 import io.airlift.mcp.handler.ResourceEntry;
 import io.airlift.mcp.handler.ToolEntry;
+import io.airlift.mcp.model.CallToolResponse;
 import io.airlift.mcp.model.CallToolResult;
 import io.airlift.mcp.model.CompleteRequest.CompleteArgument;
 import io.airlift.mcp.model.CompleteRequest.CompleteContext;
-import io.airlift.mcp.model.Constants;
 import io.airlift.mcp.model.Content.TextContent;
 import io.airlift.mcp.model.CreateMessageRequest;
 import io.airlift.mcp.model.CreateMessageResult;
 import io.airlift.mcp.model.ElicitRequestForm;
 import io.airlift.mcp.model.ElicitResult;
-import io.airlift.mcp.model.JsonRpcResponse;
+import io.airlift.mcp.model.InputRequests;
+import io.airlift.mcp.model.InputResponses;
 import io.airlift.mcp.model.JsonSchemaBuilder;
+import io.airlift.mcp.model.ListRootsRequest;
+import io.airlift.mcp.model.ListRootsResult;
 import io.airlift.mcp.model.LoggingLevel;
 import io.airlift.mcp.model.Prompt;
 import io.airlift.mcp.model.ReadResourceRequest;
@@ -30,13 +33,11 @@ import io.airlift.mcp.model.Root;
 import io.airlift.mcp.model.StructuredContentResult;
 import io.airlift.mcp.model.Tool;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.mcp.McpException.exception;
@@ -298,73 +299,56 @@ public class TestingEndpoints
     public record Person(String firstName, String lastName) {}
 
     @McpTool(name = "elicitation", description = "Test elicitation")
-    public String elicitation(McpRequestContext requestContext)
+    public CallToolResponse elicitation(McpRequestContext requestContext, InputResponses inputResponses)
     {
         if (requestContext.clientCapabilities().elicitation().isEmpty()) {
             throw new RuntimeException("Client does not support elicitation");
         }
 
-        ObjectNode elicitation = new JsonSchemaBuilder("elicitation").build(Optional.empty(), Person.class);
-        ElicitRequestForm elicitRequest = new ElicitRequestForm("Who are you?", elicitation);
-        JsonRpcResponse<ElicitResult> response;
-        try {
-            response = requestContext.serverToClientRequest(Constants.METHOD_ELICITATION_CREATE, elicitRequest, ElicitResult.class, Duration.ofMinutes(5), Duration.ofSeconds(30));
-        }
-        catch (InterruptedException | TimeoutException e) {
-            throw new RuntimeException(e);
-        }
-        ElicitResult elicitResult = response.result().orElseThrow();
-        if (elicitResult.action() != ACCEPT) {
-            return elicitResult.action().toJsonValue();
-        }
-        return elicitResult.content()
-                .map(contentMap -> "Hello, " + contentMap.get("firstName") + " " + contentMap.get("lastName") + "!")
-                .orElse("No content");
+        return inputResponses.response("elicitation", ElicitResult.class)
+                .map(elicitResult -> {
+                    if (elicitResult.action() != ACCEPT) {
+                        return new CallToolResult(elicitResult.action().toJsonValue());
+                    }
+                    return (CallToolResponse) new CallToolResult(elicitResult.content()
+                            .map(contentMap -> "Hello, " + contentMap.get("firstName") + " " + contentMap.get("lastName") + "!")
+                            .orElse("No content"));
+                })
+                .orElseGet(() -> {
+                    ObjectNode elicitation = new JsonSchemaBuilder("elicitation").build(Optional.empty(), Person.class);
+                    return new InputRequests("elicitation", new ElicitRequestForm("Who are you?", elicitation));
+                });
     }
 
     @McpTool(name = "sampling", description = "Test sampling")
-    public String sampling(McpRequestContext requestContext)
+    public CallToolResponse sampling(McpRequestContext requestContext, InputResponses inputResponses)
     {
         if (requestContext.clientCapabilities().sampling().isEmpty()) {
             throw new RuntimeException("Client does not support sampling");
         }
 
-        CreateMessageRequest createMessageRequest = new CreateMessageRequest(Role.USER, new TextContent("Are you sure?"), 100);
-        JsonRpcResponse<CreateMessageResult> response;
-        try {
-            response = requestContext.serverToClientRequest(Constants.METHOD_SAMPLING_CREATE_MESSAGE, createMessageRequest, CreateMessageResult.class, Duration.ofMinutes(5), Duration.ofSeconds(1));
-        }
-        catch (InterruptedException | TimeoutException e) {
-            throw new RuntimeException(e);
-        }
+        return inputResponses.response("sampling", CreateMessageResult.class)
+                .map(createMessageResult -> {
+                    if (createMessageResult.stopReason().isPresent()) {
+                        return new CallToolResult("Stopped: " + createMessageResult.stopReason().orElseThrow().toJsonValue());
+                    }
 
-        if (response.error().isPresent()) {
-            return response.error().orElseThrow().message();
-        }
+                    if (createMessageResult.content() instanceof TextContent(var text, _)) {
+                        return new CallToolResult("Response: " + text);
+                    }
 
-        CreateMessageResult createMessageResult = response.result().orElseThrow();
-        if (createMessageResult.stopReason().isPresent()) {
-            return "Stopped: " + createMessageResult.stopReason().orElseThrow().toJsonValue();
-        }
-
-        if (createMessageResult.content() instanceof TextContent(var text, _)) {
-            return "Response: " + text;
-        }
-
-        return "Response: unknown";
+                    return (CallToolResponse) new CallToolResult("Response: unknown");
+                })
+                .orElseGet(() -> new InputRequests("sampling", new CreateMessageRequest(Role.USER, new TextContent("Are you sure?"), 100)));
     }
 
     @McpTool(name = "roots", description = "List roots")
-    public String listRoots(McpRequestContext requestContext)
+    public CallToolResponse listRoots(McpRequestContext requestContext, InputResponses inputResponses)
     {
-        try {
-            return requestContext.requestRoots(Duration.ofMinutes(1), Duration.ofSeconds(30))
-                    .stream()
-                    .map(Root::uri)
-                    .collect(joining(", "));
-        }
-        catch (InterruptedException | TimeoutException e) {
-            throw new RuntimeException(e);
-        }
+        return inputResponses.response("roots", ListRootsResult.class)
+                .map(result -> (CallToolResponse) new CallToolResult(result.roots().stream()
+                        .map(Root::uri)
+                        .collect(joining(", "))))
+                .orElseGet(() -> new InputRequests("roots", new ListRootsRequest()));
     }
 }

@@ -188,7 +188,7 @@ class LegacyVersionsController
     {
         try {
             return resourceVersionsCache.get(uri, () -> {
-                Optional<ReadResourceResult> maybeResourceContents = entities.readResourceContents(requestContext, new ReadResourceRequest(uri, Optional.empty()), false)
+                Optional<ReadResourceResult> maybeResourceContents = entities.readResourceContents(requestContext, new ReadResourceRequest(uri), false)
                         .map(ReadResourceResult.class::cast);   // cast must succeed due to passing false for allowIncompleteResult
                 if (required && maybeResourceContents.isEmpty()) {
                     throw exception(RESOURCE_NOT_FOUND, "Resource not found: " + uri);

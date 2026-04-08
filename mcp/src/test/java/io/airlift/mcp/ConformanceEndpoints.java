@@ -7,6 +7,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import io.airlift.mcp.model.CallToolRequest;
+import io.airlift.mcp.model.CallToolResponse;
 import io.airlift.mcp.model.CallToolResult;
 import io.airlift.mcp.model.CompleteResult.CompleteCompletion;
 import io.airlift.mcp.model.Content;
@@ -20,7 +21,8 @@ import io.airlift.mcp.model.ElicitRequestForm;
 import io.airlift.mcp.model.ElicitResult;
 import io.airlift.mcp.model.GetPromptResult;
 import io.airlift.mcp.model.GetPromptResult.PromptMessage;
-import io.airlift.mcp.model.JsonRpcResponse;
+import io.airlift.mcp.model.InputRequests;
+import io.airlift.mcp.model.InputResponses;
 import io.airlift.mcp.model.JsonSchemaBuilder;
 import io.airlift.mcp.model.OptionalBoolean;
 import io.airlift.mcp.model.ReadResourceRequest;
@@ -28,16 +30,12 @@ import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.ResourceTemplateValues;
 import io.airlift.mcp.model.Role;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
-import java.util.concurrent.TimeoutException;
 
 import static io.airlift.mcp.McpException.exception;
-import static io.airlift.mcp.model.Constants.METHOD_ELICITATION_CREATE;
-import static io.airlift.mcp.model.Constants.METHOD_SAMPLING_CREATE_MESSAGE;
 import static io.airlift.mcp.model.LoggingLevel.INFO;
 import static java.util.Objects.requireNonNull;
 
@@ -118,26 +116,30 @@ public class ConformanceEndpoints
     }
 
     @McpTool(name = "test_sampling", description = "Tests server-initiated sampling (LLM completion request)")
-    public String testSampling(McpRequestContext requestContext, @McpDescription("The prompt to send to the LLM") String prompt)
-            throws InterruptedException, TimeoutException
+    public CallToolResponse testSampling(@McpDescription("The prompt to send to the LLM") String prompt, InputResponses inputResponses)
     {
-        CreateMessageRequest createMessageRequest = new CreateMessageRequest(Role.USER, new TextContent(prompt), 100);
-        JsonRpcResponse<CreateMessageResult> response = requestContext.serverToClientRequest(METHOD_SAMPLING_CREATE_MESSAGE, createMessageRequest, CreateMessageResult.class, Duration.ofMinutes(1), Duration.ofSeconds(1));
-        String responseText = response.result().map(messageResult -> (messageResult.content() instanceof TextContent textContent) ? textContent.text() : "No response").orElse("No response");
-        return "LLM response: " + responseText;
+        return inputResponses.response("sampling", CreateMessageResult.class)
+                .map(messageResult -> {
+                    String responseText = (messageResult.content() instanceof TextContent textContent) ? textContent.text() : "No response";
+                    return (CallToolResponse) new CallToolResult("LLM response: " + responseText);
+                })
+                .orElseGet(() -> {
+                    CreateMessageRequest createMessageRequest = new CreateMessageRequest(Role.USER, new TextContent(prompt), 100);
+                    return new InputRequests("sampling", createMessageRequest);
+                });
     }
 
     public record TestElicitation(String response) {}
 
     @McpTool(name = "test_elicitation", description = "Tests server-initiated elicitation (user input request)")
-    public String testElicitation(McpRequestContext requestContext, @McpDescription("The message to show the user") String message)
-            throws InterruptedException, TimeoutException
+    public CallToolResponse testElicitation(@McpDescription("The message to show the user") String message, InputResponses inputResponses)
     {
-        ObjectNode schema = new JsonSchemaBuilder("testElicitation").build(Optional.of("User's response"), TestElicitation.class);
-        ElicitRequestForm elicitRequestForm = new ElicitRequestForm(message, schema);
-        JsonRpcResponse<ElicitResult> response = requestContext.serverToClientRequest(METHOD_ELICITATION_CREATE, elicitRequestForm, ElicitResult.class, Duration.ofMinutes(5), Duration.ofSeconds(1));
-        return response.result().map(result -> "User response: action=%s, content=%s".formatted(result.action(), mapToJson(result.content())))
-                .orElse("No response");
+        return inputResponses.response("elicitation", ElicitResult.class)
+                .map(result -> (CallToolResponse) new CallToolResult("User response: action=%s, content=%s".formatted(result.action(), mapToJson(result.content()))))
+                .orElseGet(() -> {
+                    ObjectNode schema = new JsonSchemaBuilder("testElicitation").build(Optional.of("User's response"), TestElicitation.class);
+                    return new InputRequests("elicitation", new ElicitRequestForm(message, schema));
+                });
     }
 
     private String mapToJson(Optional<Map<String, Object>> map)
