@@ -1,7 +1,9 @@
 package io.airlift.mcp.reflection;
 
 import io.airlift.mcp.model.CompleteResult.CompleteCompletion;
+import io.airlift.mcp.model.GetPromptResponse;
 import io.airlift.mcp.model.GetPromptResult;
+import io.airlift.mcp.model.ReadResourceResponse;
 import io.airlift.mcp.model.ReadResourceResult;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.reflection.MethodParameter.CallToolRequestParameter;
@@ -41,6 +43,7 @@ public interface Predicates
     Predicate<Method> returnsAnything = _ -> true;
     Predicate<Method> returnsResourceContents = method -> method.getReturnType().equals(ResourceContents.class);
     Predicate<Method> returnsReadResourceResult = method -> method.getReturnType().equals(ReadResourceResult.class);
+    Predicate<Method> returnsReadResourceResponse = method -> method.getReturnType().equals(ReadResourceResponse.class);
     Predicate<Method> returnsCompleteCompletion = method -> method.getReturnType().equals(CompleteCompletion.class);
     Predicate<Method> returnsResourceContentsList = method -> listArgument(method.getGenericReturnType())
             .map(t -> t.equals(ResourceContents.class))
@@ -50,4 +53,5 @@ public interface Predicates
             .orElse(false);
     Predicate<Method> returnsString = method -> method.getReturnType().equals(String.class);
     Predicate<Method> returnsGetPromptResult = method -> method.getReturnType().equals(GetPromptResult.class);
+    Predicate<Method> returnsGetPromptResponse = method -> method.getReturnType().equals(GetPromptResponse.class);
 }

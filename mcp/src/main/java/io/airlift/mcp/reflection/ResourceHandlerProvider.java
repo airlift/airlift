@@ -9,6 +9,7 @@ import io.airlift.mcp.McpResource;
 import io.airlift.mcp.handler.ResourceEntry;
 import io.airlift.mcp.handler.ResourceHandler;
 import io.airlift.mcp.model.Annotations;
+import io.airlift.mcp.model.ReadResourceResponse;
 import io.airlift.mcp.model.ReadResourceResult;
 import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceContents;
@@ -26,11 +27,13 @@ import static io.airlift.mcp.reflection.Predicates.isHttpRequestOrContext;
 import static io.airlift.mcp.reflection.Predicates.isIdentity;
 import static io.airlift.mcp.reflection.Predicates.isReadResourceRequest;
 import static io.airlift.mcp.reflection.Predicates.isSourceResource;
+import static io.airlift.mcp.reflection.Predicates.returnsReadResourceResponse;
 import static io.airlift.mcp.reflection.Predicates.returnsReadResourceResult;
 import static io.airlift.mcp.reflection.Predicates.returnsResourceContents;
 import static io.airlift.mcp.reflection.Predicates.returnsResourceContentsList;
 import static io.airlift.mcp.reflection.ReflectionHelper.validate;
 import static io.airlift.mcp.reflection.ResourceHandlerProvider.ResultType.CONTENT_LIST;
+import static io.airlift.mcp.reflection.ResourceHandlerProvider.ResultType.READ_RESOURCE_RESPONSE;
 import static io.airlift.mcp.reflection.ResourceHandlerProvider.ResultType.READ_RESOURCE_RESULT;
 import static io.airlift.mcp.reflection.ResourceHandlerProvider.ResultType.SINGLE_CONTENT;
 import static java.lang.Double.isNaN;
@@ -55,7 +58,7 @@ public class ResourceHandlerProvider
         this.parameters = ImmutableList.copyOf(parameters);
         icons = ImmutableList.copyOf(mcpResource.icons());
 
-        validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isReadResourceRequest).or(isSourceResource), returnsResourceContents.or(returnsResourceContentsList).or(returnsReadResourceResult));
+        validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isReadResourceRequest).or(isSourceResource), returnsResourceContents.or(returnsResourceContentsList).or(returnsReadResourceResult).or(returnsReadResourceResponse));
         resultType = determineResultType(method);
 
         resource = buildResource(
@@ -103,6 +106,7 @@ public class ResourceHandlerProvider
         SINGLE_CONTENT,
         CONTENT_LIST,
         READ_RESOURCE_RESULT,
+        READ_RESOURCE_RESPONSE,
     }
 
     static ResultType determineResultType(Method method)
@@ -116,11 +120,14 @@ public class ResourceHandlerProvider
         if (returnsReadResourceResult.test(method)) {
             return READ_RESOURCE_RESULT;
         }
+        if (returnsReadResourceResponse.test(method)) {
+            return READ_RESOURCE_RESPONSE;
+        }
         throw new IllegalArgumentException("Method %s does not have a valid return type".formatted(method.getName()));
     }
 
     @SuppressWarnings("unchecked")
-    static ReadResourceResult mapResult(Method method, Object result, ResultType resultType)
+    static ReadResourceResponse mapResult(Method method, Object result, ResultType resultType)
     {
         if (result == null) {
             throw exception(INTERNAL_ERROR, "ResourceHandler %s returned null".formatted(method.getName()));
@@ -129,6 +136,7 @@ public class ResourceHandlerProvider
         return switch (resultType) {
             case CONTENT_LIST -> new ReadResourceResult((List<ResourceContents>) result);
             case READ_RESOURCE_RESULT -> (ReadResourceResult) result;
+            case READ_RESOURCE_RESPONSE -> (ReadResourceResponse) result;
             case SINGLE_CONTENT -> new ReadResourceResult(ImmutableList.of((ResourceContents) result));
         };
     }

@@ -11,6 +11,7 @@ import io.airlift.mcp.handler.ResourceEntry;
 import io.airlift.mcp.handler.ResourceHandler;
 import io.airlift.mcp.model.OptionalBoolean;
 import io.airlift.mcp.model.ReadResourceRequest;
+import io.airlift.mcp.model.ReadResourceResponse;
 import io.airlift.mcp.model.ReadResourceResult;
 import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceContents;
@@ -96,7 +97,7 @@ public class AppResourceHandlerProvider
     }
 
     @Override
-    public ReadResourceResult readResource(McpRequestContext requestContext, Resource sourceResource, ReadResourceRequest readResourceRequest, boolean allowIncompleteResult)
+    public ReadResourceResponse readResource(McpRequestContext requestContext, Resource sourceResource, ReadResourceRequest readResourceRequest, boolean allowIncompleteResult)
     {
         return requireNonNull(resourceContentsSupplier, "resourceContents is null").get();
     }

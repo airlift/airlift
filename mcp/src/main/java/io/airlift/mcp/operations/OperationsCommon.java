@@ -10,12 +10,13 @@ import io.airlift.mcp.McpEntities;
 import io.airlift.mcp.handler.PromptEntry;
 import io.airlift.mcp.handler.ToolEntry;
 import io.airlift.mcp.model.CallToolRequest;
+import io.airlift.mcp.model.CallToolResponse;
 import io.airlift.mcp.model.CallToolResult;
 import io.airlift.mcp.model.CompleteRequest;
 import io.airlift.mcp.model.CompleteResult;
 import io.airlift.mcp.model.Content.TextContent;
 import io.airlift.mcp.model.GetPromptRequest;
-import io.airlift.mcp.model.GetPromptResult;
+import io.airlift.mcp.model.GetPromptResponse;
 import io.airlift.mcp.model.JsonRpcRequest;
 import io.airlift.mcp.model.ListPromptsResult;
 import io.airlift.mcp.model.ListRequest;
@@ -72,7 +73,7 @@ public class OperationsCommon
         return paginationUtil.paginate(listRequest, localTools, Tool::name, ListToolsResult::new);
     }
 
-    CallToolResult callTool(RequestContextImpl requestContext, CallToolRequest callToolRequest)
+    CallToolResponse callTool(RequestContextImpl requestContext, CallToolRequest callToolRequest)
     {
         entities.validateToolAllowed(requestContext, callToolRequest.name());
 
@@ -96,7 +97,7 @@ public class OperationsCommon
         return paginationUtil.paginate(listRequest, localPrompts, Prompt::name, ListPromptsResult::new);
     }
 
-    GetPromptResult getPrompt(RequestContextImpl requestContext, GetPromptRequest getPromptRequest)
+    GetPromptResponse getPrompt(RequestContextImpl requestContext, GetPromptRequest getPromptRequest)
     {
         entities.validatePromptAllowed(requestContext, getPromptRequest.name());
 

@@ -9,6 +9,7 @@ import io.airlift.mcp.McpPrompt;
 import io.airlift.mcp.handler.PromptEntry;
 import io.airlift.mcp.handler.PromptHandler;
 import io.airlift.mcp.model.Content;
+import io.airlift.mcp.model.GetPromptResponse;
 import io.airlift.mcp.model.GetPromptResult;
 import io.airlift.mcp.model.GetPromptResult.PromptMessage;
 import io.airlift.mcp.model.JsonRpcErrorCode;
@@ -27,6 +28,7 @@ import static io.airlift.mcp.reflection.Predicates.isGetPromptRequest;
 import static io.airlift.mcp.reflection.Predicates.isHttpRequestOrContext;
 import static io.airlift.mcp.reflection.Predicates.isIdentity;
 import static io.airlift.mcp.reflection.Predicates.isString;
+import static io.airlift.mcp.reflection.Predicates.returnsGetPromptResponse;
 import static io.airlift.mcp.reflection.Predicates.returnsGetPromptResult;
 import static io.airlift.mcp.reflection.Predicates.returnsString;
 import static io.airlift.mcp.reflection.ReflectionHelper.mapToContent;
@@ -41,10 +43,17 @@ public class PromptHandlerProvider
     private final Method method;
     private final List<MethodParameter> parameters;
     private final Role role;
-    private final boolean isGetPromptResult;
+    private final ResultType resultType;
     private final List<String> icons;
     private Injector injector;
     private JsonMapper jsonMapper;
+
+    private enum ResultType
+    {
+        STRING,
+        GET_PROMPT_RESULT,
+        GET_PROMPT_RESPONSE
+    }
 
     public PromptHandlerProvider(McpPrompt mcpPrompt, Class<?> clazz, Method method, List<MethodParameter> parameters)
     {
@@ -54,10 +63,18 @@ public class PromptHandlerProvider
         this.role = mcpPrompt.role();
         icons = ImmutableList.copyOf(mcpPrompt.icons());
 
-        validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isString).or(isGetPromptRequest), returnsString.or(returnsGetPromptResult));
+        validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isString).or(isGetPromptRequest), returnsString.or(returnsGetPromptResult).or(returnsGetPromptResponse));
 
         prompt = buildPrompt(mcpPrompt, parameters);
-        isGetPromptResult = GetPromptResult.class.isAssignableFrom(method.getReturnType());
+        if (returnsGetPromptResult.test(method)) {
+            resultType = ResultType.GET_PROMPT_RESULT;
+        }
+        else if (returnsGetPromptResponse.test(method)) {
+            resultType = ResultType.GET_PROMPT_RESPONSE;
+        }
+        else {
+            resultType = ResultType.STRING;
+        }
     }
 
     @Inject
@@ -88,12 +105,16 @@ public class PromptHandlerProvider
                 throw exception(JsonRpcErrorCode.INTERNAL_ERROR, "Prompt %s returned null".formatted(method.getName()));
             }
 
-            if (isGetPromptResult) {
-                return (GetPromptResult) result;
-            }
+            return switch (resultType) {
+                case STRING -> {
+                    Content content = mapToContent(result);
+                    yield new GetPromptResult(prompt.description(), ImmutableList.of(new PromptMessage(role, content)));
+                }
 
-            Content content = mapToContent(result);
-            return new GetPromptResult(prompt.description(), ImmutableList.of(new PromptMessage(role, content)));
+                case GET_PROMPT_RESULT -> (GetPromptResult) result;
+
+                case GET_PROMPT_RESPONSE -> (GetPromptResponse) result;
+            };
         };
 
         return new PromptEntry(prompt.withIcons(iconHelper.mapIcons(icons)), promptHandler);

@@ -14,6 +14,7 @@ import io.airlift.mcp.McpTool;
 import io.airlift.mcp.handler.ResourceEntry;
 import io.airlift.mcp.handler.ToolEntry;
 import io.airlift.mcp.handler.ToolHandler;
+import io.airlift.mcp.model.CallToolResponse;
 import io.airlift.mcp.model.CallToolResult;
 import io.airlift.mcp.model.Content;
 import io.airlift.mcp.model.JsonSchemaBuilder;
@@ -77,6 +78,9 @@ public class ToolHandlerProvider
         if (void.class.equals(method.getReturnType())) {
             returnType = ReturnType.VOID;
         }
+        else if (CallToolResponse.class.isAssignableFrom(method.getReturnType())) {
+            returnType = ReturnType.CALL_TOOL_RESPONSE;
+        }
         else if (CallToolResult.class.isAssignableFrom(method.getReturnType())) {
             returnType = ReturnType.CALL_TOOL_RESULT;
         }
@@ -113,6 +117,7 @@ public class ToolHandlerProvider
         CONTENT,
         STRUCTURED,
         STRUCTURED_RESULT,
+        CALL_TOOL_RESPONSE,
     }
 
     @Override
@@ -136,6 +141,7 @@ public class ToolHandlerProvider
                 case CONTENT -> new CallToolResult(mapToContent(result));
                 case STRUCTURED -> new CallToolResult(ImmutableList.of(mapToContent(result)), Optional.of(new StructuredContent<>(result)), false, Optional.empty());
                 case CALL_TOOL_RESULT -> (CallToolResult) result;
+                case CALL_TOOL_RESPONSE -> (CallToolResponse) result;
                 case STRUCTURED_RESULT -> mapStructuredContentResult((StructuredContentResult<?>) result);
             };
         };

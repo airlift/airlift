@@ -23,6 +23,7 @@ import static io.airlift.mcp.reflection.Predicates.isIdentity;
 import static io.airlift.mcp.reflection.Predicates.isReadResourceRequest;
 import static io.airlift.mcp.reflection.Predicates.isResourceTemplateValues;
 import static io.airlift.mcp.reflection.Predicates.isSourceResourceTemplate;
+import static io.airlift.mcp.reflection.Predicates.returnsReadResourceResponse;
 import static io.airlift.mcp.reflection.Predicates.returnsReadResourceResult;
 import static io.airlift.mcp.reflection.Predicates.returnsResourceContents;
 import static io.airlift.mcp.reflection.Predicates.returnsResourceContentsList;
@@ -51,7 +52,7 @@ public class ResourceTemplateHandlerProvider
         this.parameters = ImmutableList.copyOf(parameters);
         icons = ImmutableList.copyOf(mcpResourceTemplate.icons());
 
-        validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isReadResourceRequest).or(isSourceResourceTemplate).or(isResourceTemplateValues), returnsResourceContents.or(returnsResourceContentsList).or(returnsReadResourceResult));
+        validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isReadResourceRequest).or(isSourceResourceTemplate).or(isResourceTemplateValues), returnsResourceContents.or(returnsResourceContentsList).or(returnsReadResourceResult).or(returnsReadResourceResponse));
         resultType = determineResultType(method);
 
         this.resourceTemplate = buildResourceTemplate(
