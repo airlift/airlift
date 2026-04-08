@@ -3,11 +3,12 @@ package io.airlift.mcp.model;
 import java.util.Map;
 import java.util.Optional;
 
+import static io.airlift.mcp.model.Constants.METHOD_ELICITATION_CREATE;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 
 public record ElicitRequestUrl(Optional<String> mode, String elicitationId, String message, String url, Optional<Map<String, Object>> meta)
-        implements Meta
+        implements Meta, InputRequest
 {
     public ElicitRequestUrl
     {
@@ -21,6 +22,18 @@ public record ElicitRequestUrl(Optional<String> mode, String elicitationId, Stri
     public ElicitRequestUrl(String elicitationId, String message, String url)
     {
         this(Optional.of("url"), elicitationId, message, url, Optional.empty());
+    }
+
+    @Override
+    public String methodName()
+    {
+        return METHOD_ELICITATION_CREATE;
+    }
+
+    @Override
+    public Class<? extends InputResponse> responseType()
+    {
+        return ElicitResult.class;
     }
 
     @Override

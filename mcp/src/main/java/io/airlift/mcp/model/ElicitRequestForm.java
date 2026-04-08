@@ -5,11 +5,12 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.Map;
 import java.util.Optional;
 
+import static io.airlift.mcp.model.Constants.METHOD_ELICITATION_CREATE;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 
 public record ElicitRequestForm(Optional<String> mode, String message, ObjectNode requestedSchema, Optional<Map<String, Object>> meta)
-        implements Meta
+        implements Meta, InputRequest
 {
     public ElicitRequestForm
     {
@@ -22,6 +23,18 @@ public record ElicitRequestForm(Optional<String> mode, String message, ObjectNod
     public ElicitRequestForm(String message, ObjectNode requestedSchema)
     {
         this(Optional.of("form"), message, requestedSchema, Optional.empty());
+    }
+
+    @Override
+    public String methodName()
+    {
+        return METHOD_ELICITATION_CREATE;
+    }
+
+    @Override
+    public Class<? extends InputResponse> responseType()
+    {
+        return ElicitResult.class;
     }
 
     @Override

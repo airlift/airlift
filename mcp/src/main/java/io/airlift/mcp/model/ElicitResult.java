@@ -10,7 +10,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 
 public record ElicitResult(Action action, Optional<Map<String, Object>> content, Optional<Map<String, Object>> meta)
-        implements Meta
+        implements Meta, InputResponse
 {
     public ElicitResult
     {
