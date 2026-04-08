@@ -15,11 +15,11 @@
  */
 package io.airlift.json;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 public class JsonModule
         implements Module
@@ -27,24 +27,14 @@ public class JsonModule
     @Override
     public void configure(Binder binder)
     {
-        // NOTE: this MUST NOT be a singleton because ObjectMappers are mutable. This means
-        // one component could reconfigure the mapper and break all other components.
-        // When updated to Jackson 3.x this is no longer a case since the JsonMapper instances
-        // are immutable.
-        binder.bind(JsonMapper.class).toProvider(JsonMapperProvider.class);
+        binder.bind(JsonMapper.class).toProvider(JsonMapperProvider.class).in(Scopes.SINGLETON);
         bindDeprecatedProvider(binder);
-
         binder.bind(JsonCodecFactory.class).in(Scopes.SINGLETON);
     }
 
     @SuppressWarnings("deprecation")
     private static void bindDeprecatedProvider(Binder binder)
     {
-        // NOTE: this MUST NOT be a singleton because ObjectMappers are mutable. This means
-        // one component could reconfigure the mapper and break all other components.
-        // When updated to Jackson 3.x this is no longer a case since the JsonMapper instances
-        // are immutable.
-
         // For backward compatibility with the usage sites that depends on ObjectMapper
         binder.bind(ObjectMapper.class).toProvider(ObjectMapperProvider.class);
     }

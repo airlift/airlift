@@ -1,7 +1,5 @@
 package io.airlift.mcp.operations;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableMap;
@@ -18,8 +16,8 @@ import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.ResourcesUpdatedNotification;
 import io.airlift.mcp.model.SubscribeRequest;
+import tools.jackson.databind.json.JsonMapper;
 
-import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -225,11 +223,6 @@ class LegacyVersionsController
 
     private <T> String asJson(T item)
     {
-        try {
-            return jsonMapper.writeValueAsString(item);
-        }
-        catch (JsonProcessingException e) {
-            throw new UncheckedIOException(e);
-        }
+        return jsonMapper.writeValueAsString(item);
     }
 }

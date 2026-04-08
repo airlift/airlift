@@ -1,7 +1,5 @@
 package io.airlift.mcp.sessions;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import io.airlift.log.Logger;
@@ -9,8 +7,9 @@ import io.airlift.mcp.McpConfig;
 import io.airlift.mcp.McpIdentity;
 import io.airlift.mcp.storage.StorageController;
 import io.airlift.mcp.storage.StorageGroupId;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 
-import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.Set;
@@ -112,12 +111,7 @@ public class StandardSessionController
 
     private <T> String serialize(T value)
     {
-        try {
-            return jsonMapper.writeValueAsString(value);
-        }
-        catch (JsonProcessingException e) {
-            throw new UncheckedIOException(e);
-        }
+        return jsonMapper.writeValueAsString(value);
     }
 
     private <T> Optional<T> deserialize(Class<T> type, String value)
@@ -125,7 +119,7 @@ public class StandardSessionController
         try {
             return Optional.of(jsonMapper.readValue(value, type));
         }
-        catch (JsonProcessingException e) {
+        catch (JacksonException e) {
             log.warn(e, "Failed to deserialize session value: %s", value);
         }
         // treat it as an old format value and return empty, which will cause the value to be overwritten on the next update

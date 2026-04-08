@@ -15,33 +15,34 @@
  */
 package io.airlift.json;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.base.Suppliers;
 import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
-import com.google.errorprone.annotations.ThreadSafe;
 import io.airlift.json.LengthLimitedWriter.LengthLimitExceededException;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.exc.JacksonIOException;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.ObjectWriter;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringWriter;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import static com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT;
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
+import static tools.jackson.databind.SerializationFeature.INDENT_OUTPUT;
 
-@ThreadSafe
 public class JsonCodec<T>
 {
     private static final JsonMapper JSON_MAPPER = new JsonMapperProvider().get()
@@ -118,7 +119,7 @@ public class JsonCodec<T>
     JsonCodec(JsonMapper mapper, Type type)
     {
         JavaType javaType = mapper.constructType(type);
-        this.type = mapper.constructType(type);
+        this.type = javaType;
         this.writer = Suppliers.memoize(() -> mapper.writerFor(javaType));
         this.reader = Suppliers.memoize(() -> mapper.readerFor(javaType));
     }
@@ -147,7 +148,7 @@ public class JsonCodec<T>
             checkArgument(parser.nextToken() == null, "Found characters after the expected end of input");
             return value;
         }
-        catch (IOException e) {
+        catch (JacksonException e) {
             throw new IllegalArgumentException(format("Invalid JSON string for %s", type), e);
         }
     }
@@ -165,7 +166,7 @@ public class JsonCodec<T>
         try {
             return writer.get().writeValueAsString(instance);
         }
-        catch (IOException e) {
+        catch (JacksonException e) {
             throw new IllegalArgumentException(format("%s could not be converted to JSON", instance.getClass().getName()), e);
         }
     }
@@ -185,8 +186,11 @@ public class JsonCodec<T>
             writer.get().writeValue(lengthLimitedWriter, instance);
             return Optional.of(stringWriter.getBuffer().toString());
         }
-        catch (LengthLimitExceededException e) {
-            return Optional.empty();
+        catch (JacksonException e) {
+            if (e.getCause() instanceof LengthLimitExceededException) {
+                return Optional.empty();
+            }
+            throw e;
         }
         catch (IOException e) {
             throw new IllegalArgumentException(format("%s could not be converted to JSON", instance.getClass().getName()), e);
@@ -209,7 +213,10 @@ public class JsonCodec<T>
             checkArgument(parser.nextToken() == null, "Found characters after the expected end of input");
             return value;
         }
-        catch (IOException e) {
+        catch (JacksonIOException e) {
+            throw new IllegalArgumentException(format("Invalid JSON bytes for %s", type), e.getCause());
+        }
+        catch (JacksonException | UncheckedIOException e) {
             throw new IllegalArgumentException(format("Invalid JSON bytes for %s", type), e);
         }
     }
@@ -227,7 +234,10 @@ public class JsonCodec<T>
         try {
             return writer.get().writeValueAsBytes(instance);
         }
-        catch (IOException e) {
+        catch (JacksonIOException e) {
+            throw new IllegalArgumentException(format("%s could not be converted to JSON", instance.getClass().getName()), e.getCause());
+        }
+        catch (JacksonException e) {
             throw new IllegalArgumentException(format("%s could not be converted to JSON", instance.getClass().getName()), e);
         }
     }
@@ -248,7 +258,10 @@ public class JsonCodec<T>
             checkArgument(parser.nextToken() == null, "Found characters after the expected end of input");
             return value;
         }
-        catch (IOException e) {
+        catch (JacksonIOException e) {
+            throw new IllegalArgumentException(format("Invalid JSON bytes for %s", type), e.getCause());
+        }
+        catch (JacksonException | UncheckedIOException e) {
             throw new IllegalArgumentException(format("Invalid JSON bytes for %s", type), e);
         }
     }
@@ -269,7 +282,7 @@ public class JsonCodec<T>
             checkArgument(parser.nextToken() == null, "Found characters after the expected end of input");
             return value;
         }
-        catch (IOException e) {
+        catch (JacksonException | UncheckedIOException e) {
             throw new IllegalArgumentException(format("Invalid JSON characters for %s", type), e);
         }
     }

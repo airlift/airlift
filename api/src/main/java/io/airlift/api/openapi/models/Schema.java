@@ -334,7 +334,7 @@ public class Schema<T>
         return this;
     }
 
-    @JsonProperty
+    @JsonProperty("$ref")
     public String get$ref()
     {
         return $ref;

@@ -6,10 +6,12 @@ import io.airlift.api.openapi.OpenApiMetadata;
 import io.airlift.api.servertests.ServerTestBase;
 import io.airlift.http.client.Request;
 import io.airlift.http.client.StringResponseHandler.StringResponse;
+import io.airlift.json.JsonMapperProvider;
 import io.swagger.v3.parser.OpenAPIV3Parser;
 import io.swagger.v3.parser.core.models.SwaggerParseResult;
 import jakarta.ws.rs.core.UriBuilder;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.net.URI;
 import java.util.Optional;
@@ -50,6 +52,9 @@ public class TestOpenApi
         validateOpenApiJson(actual);
 
         String expected = Resources.toString(Resources.getResource("openapi/dummy.json"), UTF_8);
-        assertThat(actual.strip()).isEqualTo(expected.strip());
+
+        JsonMapper mapper = new JsonMapperProvider().get();
+        // Schema can have different order of fields
+        assertThat(mapper.readTree(actual)).isEqualTo(mapper.readTree(expected));
     }
 }
