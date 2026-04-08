@@ -82,10 +82,11 @@ public class ResourceTemplateHandlerProvider
         IconHelper iconHelper = injector.getInstance(IconHelper.class);
         MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, jsonMapper);
 
-        ResourceTemplateHandler resourceTemplateHandler = (requestContext, sourceResourceTemplate, readResourceRequest, resourceTemplateValues) -> {
+        ResourceTemplateHandler resourceTemplateHandler = (requestContext, sourceResourceTemplate, readResourceRequest, resourceTemplateValues, allowIncompleteResult) -> {
             Object result = methodInvoker.builder(requestContext)
                     .withReadResourceTemplateRequest(sourceResourceTemplate, readResourceRequest)
                     .withResourceTemplateValues(resourceTemplateValues)
+                    .withAllowIncompleteResult(allowIncompleteResult)
                     .invoke();
             return mapResult(method, result, resultType);
         };

@@ -46,7 +46,7 @@ public interface McpEntities
 
     Optional<CompletionEntry> completionEntry(McpRequestContext requestContext, CompleteReference ref);
 
-    Optional<ReadResourceResult> readResourceContents(McpRequestContext requestContext, ReadResourceRequest readResourceRequest);
+    Optional<ReadResourceResult> readResourceContents(McpRequestContext requestContext, ReadResourceRequest readResourceRequest, boolean allowIncompleteResult);
 
     void addTool(Tool tool, ToolHandler toolHandler);
 

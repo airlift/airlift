@@ -239,7 +239,7 @@ public class InternalEntities
     }
 
     @Override
-    public Optional<ReadResourceResult> readResourceContents(McpRequestContext requestContext, ReadResourceRequest readResourceRequest)
+    public Optional<ReadResourceResult> readResourceContents(McpRequestContext requestContext, ReadResourceRequest readResourceRequest, boolean allowIncompleteResult)
     {
         if (!capabilityFilter.isAllowed(requestContext.identity(), readResourceRequest.uri())) {
             throw new McpClientException(exception(INVALID_PARAMS, "Resource access not allowed: " + readResourceRequest.uri()));
@@ -263,8 +263,8 @@ public class InternalEntities
         }
 
         return findResource(readResourceRequest.uri())
-                .map(readResourceEntry -> readResourceEntry.handler().readResource(requestContext, readResourceEntry.resource(), readResourceRequest))
-                .or(() -> findResourceTemplate(readResourceRequest.uri()).map(match -> match.entry.handler().readResourceTemplate(requestContext, match.entry.resourceTemplate(), readResourceRequest, match.values)));
+                .map(readResourceEntry -> readResourceEntry.handler().readResource(requestContext, readResourceEntry.resource(), readResourceRequest, allowIncompleteResult))
+                .or(() -> findResourceTemplate(readResourceRequest.uri()).map(match -> match.entry.handler().readResourceTemplate(requestContext, match.entry.resourceTemplate(), readResourceRequest, match.values, allowIncompleteResult)));
     }
 
     private Optional<ResourceEntry> findResource(String uriString)

@@ -128,7 +128,7 @@ public class OperationsCommon
     {
         updateRequestSpan(requestContext.request(), span -> span.setAttribute(MCP_RESOURCE_URI, readResourceRequest.uri()));
 
-        return entities.readResourceContents(requestContext.withProgressToken(progressToken(readResourceRequest)), readResourceRequest)
+        return entities.readResourceContents(requestContext.withProgressToken(progressToken(readResourceRequest)), readResourceRequest, true)
                 .orElseThrow(() -> exception(RESOURCE_NOT_FOUND, "Resource not found: " + readResourceRequest.uri()));
     }
 

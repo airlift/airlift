@@ -96,7 +96,7 @@ public class AppResourceHandlerProvider
     }
 
     @Override
-    public ReadResourceResult readResource(McpRequestContext requestContext, Resource sourceResource, ReadResourceRequest readResourceRequest)
+    public ReadResourceResult readResource(McpRequestContext requestContext, Resource sourceResource, ReadResourceRequest readResourceRequest, boolean allowIncompleteResult)
     {
         return requireNonNull(resourceContentsSupplier, "resourceContents is null").get();
     }

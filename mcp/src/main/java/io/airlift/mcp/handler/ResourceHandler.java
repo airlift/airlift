@@ -7,5 +7,5 @@ import io.airlift.mcp.model.Resource;
 
 public interface ResourceHandler
 {
-    ReadResourceResult readResource(McpRequestContext requestContext, Resource sourceResource, ReadResourceRequest readResourceRequest);
+    ReadResourceResult readResource(McpRequestContext requestContext, Resource sourceResource, ReadResourceRequest readResourceRequest, boolean allowIncompleteResult);
 }

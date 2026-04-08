@@ -188,7 +188,7 @@ class LegacyVersionsController
     {
         try {
             return resourceVersionsCache.get(uri, () -> {
-                Optional<ReadResourceResult> maybeResourceContents = entities.readResourceContents(requestContext, new ReadResourceRequest(uri, Optional.empty()));
+                Optional<ReadResourceResult> maybeResourceContents = entities.readResourceContents(requestContext, new ReadResourceRequest(uri, Optional.empty()), false);
                 if (required && maybeResourceContents.isEmpty()) {
                     throw exception(RESOURCE_NOT_FOUND, "Resource not found: " + uri);
                 }

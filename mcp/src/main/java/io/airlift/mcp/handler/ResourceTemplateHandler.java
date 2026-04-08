@@ -8,5 +8,5 @@ import io.airlift.mcp.model.ResourceTemplateValues;
 
 public interface ResourceTemplateHandler
 {
-    ReadResourceResult readResourceTemplate(McpRequestContext requestContext, ResourceTemplate sourceResourceTemplate, ReadResourceRequest readResourceRequest, ResourceTemplateValues resourceTemplateValues);
+    ReadResourceResult readResourceTemplate(McpRequestContext requestContext, ResourceTemplate sourceResourceTemplate, ReadResourceRequest readResourceRequest, ResourceTemplateValues resourceTemplateValues, boolean allowIncompleteResult);
 }
