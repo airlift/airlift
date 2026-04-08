@@ -12,8 +12,8 @@ import io.airlift.mcp.handler.ToolHandler;
 import io.airlift.mcp.model.CompleteReference;
 import io.airlift.mcp.model.Prompt;
 import io.airlift.mcp.model.ReadResourceRequest;
+import io.airlift.mcp.model.ReadResourceResult;
 import io.airlift.mcp.model.Resource;
-import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.model.Tool;
 
@@ -46,7 +46,7 @@ public interface McpEntities
 
     Optional<CompletionEntry> completionEntry(McpRequestContext requestContext, CompleteReference ref);
 
-    Optional<List<ResourceContents>> readResourceContents(McpRequestContext requestContext, ReadResourceRequest readResourceRequest);
+    Optional<ReadResourceResult> readResourceContents(McpRequestContext requestContext, ReadResourceRequest readResourceRequest);
 
     void addTool(Tool tool, ToolHandler toolHandler);
 

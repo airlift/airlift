@@ -2,6 +2,7 @@ package io.airlift.mcp.reflection;
 
 import io.airlift.mcp.model.CompleteResult.CompleteCompletion;
 import io.airlift.mcp.model.GetPromptResult;
+import io.airlift.mcp.model.ReadResourceResult;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.reflection.MethodParameter.CallToolRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.CompleteArgumentParameter;
@@ -39,6 +40,7 @@ public interface Predicates
 
     Predicate<Method> returnsAnything = _ -> true;
     Predicate<Method> returnsResourceContents = method -> method.getReturnType().equals(ResourceContents.class);
+    Predicate<Method> returnsReadResourceResult = method -> method.getReturnType().equals(ReadResourceResult.class);
     Predicate<Method> returnsCompleteCompletion = method -> method.getReturnType().equals(CompleteCompletion.class);
     Predicate<Method> returnsResourceContentsList = method -> listArgument(method.getGenericReturnType())
             .map(t -> t.equals(ResourceContents.class))
