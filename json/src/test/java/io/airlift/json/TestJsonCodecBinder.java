@@ -18,9 +18,15 @@ package io.airlift.json;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
+import com.google.inject.Key;
 import com.google.inject.Scopes;
+import com.google.inject.TypeLiteral;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+import java.util.Map;
+
+import static io.airlift.json.JsonCodec.listJsonCodec;
 import static io.airlift.json.JsonCodecBinder.jsonCodecBinder;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -37,6 +43,17 @@ public class TestJsonCodecBinder
         });
 
         assertThat(injector.getInstance(Dummy.class).getCodec()).isNotNull();
+    }
+
+    @Test
+    public void testMapListJsonCodec()
+    {
+        Injector injector = Guice.createInjector(binder -> {
+            jsonCodecBinder(binder).bindMapJsonCodec(String.class, listJsonCodec(Dummy.class));
+        });
+
+        assertThat(injector.getInstance(Key.get(new TypeLiteral<JsonCodec<Map<String, List<Dummy>>>>() {})))
+                .isNotNull();
     }
 
     private static class Dummy

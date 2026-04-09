@@ -67,7 +67,7 @@ public class JsonCodecBinder
     {
         requireNonNull(type, "type is null");
 
-        ParameterizedTypeImpl listType = new ParameterizedTypeImpl(null, List.class, type.getType());
+        ParameterizedTypeImpl listType = new ParameterizedTypeImpl(null, List.class, type.getTypeToken().getType());
         binder.bind(getJsonCodecKey(listType)).toProvider(new JsonCodecProvider(listType)).in(Scopes.SINGLETON);
     }
 
@@ -85,7 +85,7 @@ public class JsonCodecBinder
         requireNonNull(keyType, "keyType is null");
         requireNonNull(valueType, "valueType is null");
 
-        ParameterizedTypeImpl mapType = new ParameterizedTypeImpl(null, Map.class, keyType, valueType.getType());
+        ParameterizedTypeImpl mapType = new ParameterizedTypeImpl(null, Map.class, keyType, valueType.getTypeToken().getType());
         binder.bind(getJsonCodecKey(mapType)).toProvider(new JsonCodecProvider(mapType)).in(Scopes.SINGLETON);
     }
 
