@@ -20,7 +20,7 @@
         <dep.classgraph.version>4.8.184</dep.classgraph.version>
         <dep.takari-plugin-testing.version>3.1.1</dep.takari-plugin-testing.version>
         <dep.swagger-parser.version>2.1.39</dep.swagger-parser.version>
-        <dep.swagger-models.version>2.2.46</dep.swagger-models.version>
+        <dep.swagger-models.version>2.2.47</dep.swagger-models.version>
     </properties>
 
     <dependencies>
