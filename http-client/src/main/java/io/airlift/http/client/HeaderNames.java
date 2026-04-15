@@ -29,6 +29,7 @@ public final class HeaderNames
     public static final HeaderName ALT_SVC = HeaderName.of(HttpHeaders.ALT_SVC);
     public static final HeaderName AUTHORIZATION = HeaderName.of(HttpHeaders.AUTHORIZATION);
     public static final HeaderName CACHE_CONTROL = HeaderName.of(HttpHeaders.CACHE_CONTROL);
+    public static final HeaderName CDN_CACHE_CONTROL = HeaderName.of(HttpHeaders.CDN_CACHE_CONTROL);
     public static final HeaderName CDN_LOOP = HeaderName.of(HttpHeaders.CDN_LOOP);
     public static final HeaderName CONNECTION = HeaderName.of(HttpHeaders.CONNECTION);
     public static final HeaderName CONTENT_DISPOSITION = HeaderName.of(HttpHeaders.CONTENT_DISPOSITION);

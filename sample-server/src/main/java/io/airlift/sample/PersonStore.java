@@ -22,7 +22,6 @@ import com.google.inject.Inject;
 
 import java.util.Collection;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
 
 import static java.util.Objects.requireNonNull;
 
@@ -36,7 +35,7 @@ public class PersonStore
         requireNonNull(config, "config must not be null");
 
         Cache<String, Person> personCache = CacheBuilder.newBuilder()
-                .expireAfterWrite(config.getTtl().toMillis(), TimeUnit.MILLISECONDS)
+                .expireAfterWrite(config.getTtl().toJavaTime())
                 .build();
         persons = personCache.asMap();
     }
