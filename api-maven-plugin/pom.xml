@@ -15,7 +15,7 @@
 
     <properties>
         <air.main.basedir>${project.parent.basedir}</air.main.basedir>
-        <dep.maven-plugin-api.version>3.9.14</dep.maven-plugin-api.version>
+        <dep.maven-plugin-api.version>3.9.15</dep.maven-plugin-api.version>
         <dep.maven-plugin-annotations.version>3.15.2</dep.maven-plugin-annotations.version>
         <dep.classgraph.version>4.8.184</dep.classgraph.version>
         <dep.takari-plugin-testing.version>3.1.1</dep.takari-plugin-testing.version>
