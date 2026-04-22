@@ -9,6 +9,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 
 public record CreateMessageResult(Role role, Content content, String model, Optional<StopReason> stopReason)
+        implements InputResponse
 {
     public CreateMessageResult
     {

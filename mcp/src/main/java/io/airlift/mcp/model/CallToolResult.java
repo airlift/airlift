@@ -1,16 +1,18 @@
 package io.airlift.mcp.model;
 
 import com.google.common.collect.ImmutableList;
+import io.airlift.mcp.model.Content.TextContent;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static io.airlift.mcp.model.ResultType.COMPLETE;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 
 public record CallToolResult(List<Content> content, Optional<StructuredContent<?>> structuredContent, boolean isError, Optional<Map<String, Object>> meta)
-        implements Meta
+        implements CallToolResponse
 {
     public CallToolResult
     {
@@ -32,6 +34,17 @@ public record CallToolResult(List<Content> content, Optional<StructuredContent<?
     public CallToolResult(List<Content> content)
     {
         this(content, Optional.empty(), false, Optional.empty());
+    }
+
+    public CallToolResult(String texContent)
+    {
+        this(ImmutableList.of(new TextContent(texContent)), Optional.empty(), false, Optional.empty());
+    }
+
+    @Override
+    public Optional<ResultType> resultType()
+    {
+        return Optional.of(COMPLETE);
     }
 
     @Override

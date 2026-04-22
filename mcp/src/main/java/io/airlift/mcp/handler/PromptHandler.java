@@ -2,9 +2,9 @@ package io.airlift.mcp.handler;
 
 import io.airlift.mcp.McpRequestContext;
 import io.airlift.mcp.model.GetPromptRequest;
-import io.airlift.mcp.model.GetPromptResult;
+import io.airlift.mcp.model.GetPromptResponse;
 
 public interface PromptHandler
 {
-    GetPromptResult getPrompt(McpRequestContext requestContext, GetPromptRequest getPromptRequest);
+    GetPromptResponse getPrompt(McpRequestContext requestContext, GetPromptRequest getPromptRequest);
 }

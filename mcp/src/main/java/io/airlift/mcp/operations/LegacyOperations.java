@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Supplier;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
@@ -15,10 +16,14 @@ import io.airlift.mcp.McpIdentity;
 import io.airlift.mcp.McpMetadata;
 import io.airlift.mcp.SentMessages;
 import io.airlift.mcp.model.CallToolRequest;
+import io.airlift.mcp.model.CallToolResponse;
+import io.airlift.mcp.model.CallToolResult;
 import io.airlift.mcp.model.CancelledNotification;
 import io.airlift.mcp.model.CompleteReference;
 import io.airlift.mcp.model.CompleteRequest;
+import io.airlift.mcp.model.Content.TextContent;
 import io.airlift.mcp.model.GetPromptRequest;
+import io.airlift.mcp.model.GetPromptResponse;
 import io.airlift.mcp.model.Implementation;
 import io.airlift.mcp.model.InitializeRequest;
 import io.airlift.mcp.model.InitializeResult;
@@ -32,6 +37,7 @@ import io.airlift.mcp.model.Meta;
 import io.airlift.mcp.model.Prompt;
 import io.airlift.mcp.model.Protocol;
 import io.airlift.mcp.model.ReadResourceRequest;
+import io.airlift.mcp.model.ReadResourceResponse;
 import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.model.SetLevelRequest;
@@ -110,12 +116,13 @@ public class LegacyOperations
     private final int maxResumableMessages;
     private final LegacyVersionsController versionsController;
     private final Duration sessionTimeout;
+    private final MrtrEmulator mrtrEmulator;
     private final OperationsCommon operationsCommon;
     private final McpEntities entities;
     private final Implementation serverImplementation;
 
     @Inject
-    public LegacyOperations(
+    LegacyOperations(
             McpMetadata metadata,
             JsonMapper jsonMapper,
             Optional<SessionController> sessionController,
@@ -125,7 +132,8 @@ public class LegacyOperations
             IconHelper iconHelper,
             @Named(MCP_SERVER_ICONS) Set<String> serverIcons,
             McpEntities entities,
-            OperationsCommon operationsCommon)
+            OperationsCommon operationsCommon,
+            MrtrEmulator mrtrEmulator)
     {
         this.metadata = requireNonNull(metadata, "metadata is null");
         this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
@@ -134,6 +142,7 @@ public class LegacyOperations
         this.versionsController = requireNonNull(versionsController, "versionsController is null");
         this.entities = requireNonNull(entities, "entities is null");
         this.operationsCommon = requireNonNull(operationsCommon, "operationsCommon is null");
+        this.mrtrEmulator = requireNonNull(mrtrEmulator, "mrtrEmulator is null");
 
         httpGetEventsEnabled = mcpConfig.isHttpGetEventsEnabled();
         streamingPingThreshold = mcpConfig.getEventStreamingPingThreshold().toJavaTime();
@@ -166,12 +175,12 @@ public class LegacyOperations
         Object result = switch (method) {
             case METHOD_INITIALIZE -> handleInitialize(requestContext, operationsCommon.convertParams(rpcRequest, InitializeRequest.class));
             case METHOD_TOOLS_LIST -> withManagement(requestContext, requestId, () -> operationsCommon.listTools(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class)));
-            case METHOD_TOOLS_CALL -> withManagement(requestContext, requestId, () -> operationsCommon.callTool(requestContext, operationsCommon.convertParams(rpcRequest, CallToolRequest.class)));
+            case METHOD_TOOLS_CALL -> withManagement(requestContext, requestId, () -> internalCallTool(requestContext, operationsCommon.convertParams(rpcRequest, CallToolRequest.class)));
             case METHOD_PROMPT_LIST -> withManagement(requestContext, requestId, () -> operationsCommon.listPrompts(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class)));
-            case METHOD_PROMPT_GET -> withManagement(requestContext, requestId, () -> operationsCommon.getPrompt(requestContext, operationsCommon.convertParams(rpcRequest, GetPromptRequest.class)));
+            case METHOD_PROMPT_GET -> withManagement(requestContext, requestId, () -> internalGetPrompt(requestContext, operationsCommon.convertParams(rpcRequest, GetPromptRequest.class)));
             case METHOD_RESOURCES_LIST -> withManagement(requestContext, requestId, () -> operationsCommon.listResources(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class)));
             case METHOD_RESOURCES_TEMPLATES_LIST -> withManagement(requestContext, requestId, () -> operationsCommon.listResourceTemplates(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class)));
-            case METHOD_RESOURCES_READ -> withManagement(requestContext, requestId, () -> operationsCommon.readResources(requestContext, operationsCommon.convertParams(rpcRequest, ReadResourceRequest.class)));
+            case METHOD_RESOURCES_READ -> withManagement(requestContext, requestId, () -> internalReadResources(requestContext, operationsCommon.convertParams(rpcRequest, ReadResourceRequest.class)));
             case METHOD_COMPLETION_COMPLETE -> operationsCommon.completionComplete(requestContext, operationsCommon.convertParams(rpcRequest, CompleteRequest.class));
             case METHOD_LOGGING_SET_LEVEL -> handleSetLoggingLevel(requestContext, operationsCommon.convertParams(rpcRequest, SetLevelRequest.class));
             case METHOD_RESOURCES_SUBSCRIBE -> handleResourcesSubscribe(requestContext, operationsCommon.convertParams(rpcRequest, SubscribeRequest.class));
@@ -468,5 +477,28 @@ public class LegacyOperations
         optionalSessionId(request)
                 .ifPresent(sessionId ->
                         updateRequestSpan(request, span -> span.setAttribute(MCP_SESSION_ID, sessionId.id())));
+    }
+
+    private CallToolResponse internalCallTool(RequestContextImpl requestContext, CallToolRequest callToolRequest)
+    {
+        MrtrEmulator.ErrorFactory<CallToolRequest, CallToolResponse> errorFactory = (_, errorDetail, _) ->
+                new CallToolResult(ImmutableList.of(new TextContent(errorDetail.toMessage())), Optional.empty(), true);
+        return mrtrEmulator.emulateMrtr(requestContext, callToolRequest, errorFactory, operationsCommon::callTool);
+    }
+
+    private GetPromptResponse internalGetPrompt(RequestContextImpl requestContext, GetPromptRequest getPromptRequest)
+    {
+        MrtrEmulator.ErrorFactory<GetPromptRequest, GetPromptResponse> errorFactory = (_, errorDetail, _) -> {
+            throw exception(errorDetail.code(), errorDetail.message(), errorDetail.data());
+        };
+        return mrtrEmulator.emulateMrtr(requestContext, getPromptRequest, errorFactory, operationsCommon::getPrompt);
+    }
+
+    private ReadResourceResponse internalReadResources(RequestContextImpl requestContext, ReadResourceRequest readResourceRequest)
+    {
+        MrtrEmulator.ErrorFactory<ReadResourceRequest, ReadResourceResponse> errorFactory = (_, errorDetail, _) -> {
+            throw exception(errorDetail.code(), errorDetail.message(), errorDetail.data());
+        };
+        return mrtrEmulator.emulateMrtr(requestContext, readResourceRequest, errorFactory, operationsCommon::readResources);
     }
 }

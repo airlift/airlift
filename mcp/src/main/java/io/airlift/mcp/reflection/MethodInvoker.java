@@ -10,21 +10,26 @@ import com.google.inject.Provider;
 import io.airlift.mcp.McpClientException;
 import io.airlift.mcp.McpException;
 import io.airlift.mcp.McpRequestContext;
+import io.airlift.mcp.model.AllowIncompleteResult;
 import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.CompleteRequest.CompleteArgument;
 import io.airlift.mcp.model.CompleteRequest.CompleteContext;
 import io.airlift.mcp.model.GetPromptRequest;
+import io.airlift.mcp.model.InputResponsable;
+import io.airlift.mcp.model.InputResponses;
 import io.airlift.mcp.model.JsonRpcErrorDetail;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.model.ResourceTemplateValues;
+import io.airlift.mcp.reflection.MethodParameter.AllowIncompleteResultParameter;
 import io.airlift.mcp.reflection.MethodParameter.CallToolRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.CompleteArgumentParameter;
 import io.airlift.mcp.reflection.MethodParameter.CompleteContextParameter;
 import io.airlift.mcp.reflection.MethodParameter.GetPromptRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.HttpRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.IdentityParameter;
+import io.airlift.mcp.reflection.MethodParameter.InputResponsesParameter;
 import io.airlift.mcp.reflection.MethodParameter.McpRequestContextParameter;
 import io.airlift.mcp.reflection.MethodParameter.ObjectParameter;
 import io.airlift.mcp.reflection.MethodParameter.ReadResourceRequestParameter;
@@ -91,6 +96,8 @@ public class MethodInvoker
 
         Builder withCompleteContext(CompleteContext completeContext);
 
+        Builder withAllowIncompleteResult(boolean allowIncompleteResult);
+
         Object invoke();
     }
 
@@ -107,6 +114,7 @@ public class MethodInvoker
             private Optional<ResourceTemplateValues> resourceTemplateValues = Optional.empty();
             private Optional<CompleteArgument> completeArgument = Optional.empty();
             private Optional<CompleteContext> completeContext = Optional.empty();
+            private boolean allowIncompleteResult = true;
 
             @Override
             public Builder withArguments(Map<String, Object> arguments)
@@ -167,6 +175,13 @@ public class MethodInvoker
             }
 
             @Override
+            public Builder withAllowIncompleteResult(boolean allowIncompleteResult)
+            {
+                this.allowIncompleteResult = allowIncompleteResult;
+                return this;
+            }
+
+            @Override
             public Object invoke()
             {
                 try {
@@ -183,6 +198,8 @@ public class MethodInvoker
                                 case IdentityParameter _ -> retrieveIdentityValue(requestContext.request());
                                 case CompleteArgumentParameter _ -> completeArgument.orElseThrow(() -> new IllegalStateException("CompleteArgument is required"));
                                 case CompleteContextParameter _ -> completeContext.orElseThrow(() -> new IllegalStateException("CompleteContext is required"));
+                                case AllowIncompleteResultParameter _ -> new AllowIncompleteResult(allowIncompleteResult);
+                                case InputResponsesParameter _ -> inputResponses();
                                 case ObjectParameter objectParameter -> valueForObjectParameter(arguments, objectParameter);
                             })
                             .toArray();
@@ -204,6 +221,14 @@ public class MethodInvoker
                         default -> new McpException(rootCause, new JsonRpcErrorDetail(INTERNAL_ERROR, "Failed to invoke method: " + methodName));
                     };
                 }
+            }
+
+            private InputResponses inputResponses()
+            {
+                return callToolRequest.flatMap(InputResponsable::toInputResponses)
+                        .or(() -> getPromptRequest.flatMap(InputResponsable::toInputResponses))
+                        .or(() -> readResourceRequest.flatMap(InputResponsable::toInputResponses))
+                        .orElse(InputResponses.EMPTY);
             }
         };
     }

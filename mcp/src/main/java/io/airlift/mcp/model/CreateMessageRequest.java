@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalDouble;
 
+import static io.airlift.mcp.model.Constants.METHOD_SAMPLING_CREATE_MESSAGE;
 import static java.util.Locale.ROOT;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
@@ -22,7 +23,7 @@ public record CreateMessageRequest(
         Optional<List<String>> stopSequences,
         Optional<Map<String, Object>> metadata,
         Optional<Map<String, Object>> meta)
-        implements Meta
+        implements Meta, InputRequest
 {
     public CreateMessageRequest
     {
@@ -49,6 +50,18 @@ public record CreateMessageRequest(
     public CreateMessageRequest(Role role, Content content, int maxTokens)
     {
         this(ImmutableList.of(new SamplingMessage(role, content)), Optional.empty(), Optional.empty(), Optional.empty(), OptionalDouble.empty(), maxTokens, Optional.empty(), Optional.empty(), Optional.empty());
+    }
+
+    @Override
+    public String methodName()
+    {
+        return METHOD_SAMPLING_CREATE_MESSAGE;
+    }
+
+    @Override
+    public Class<? extends InputResponse> responseType()
+    {
+        return CreateMessageResult.class;
     }
 
     @Override

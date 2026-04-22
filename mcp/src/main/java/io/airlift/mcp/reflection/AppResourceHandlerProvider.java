@@ -11,11 +11,12 @@ import io.airlift.mcp.handler.ResourceEntry;
 import io.airlift.mcp.handler.ResourceHandler;
 import io.airlift.mcp.model.OptionalBoolean;
 import io.airlift.mcp.model.ReadResourceRequest;
+import io.airlift.mcp.model.ReadResourceResponse;
+import io.airlift.mcp.model.ReadResourceResult;
 import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceContents;
 
 import java.net.URI;
-import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
@@ -37,7 +38,7 @@ public class AppResourceHandlerProvider
     private final Supplier<String> contentSupplier;
     private final int contentLength;
     private volatile String host;
-    private volatile Supplier<List<ResourceContents>> resourceContentsSupplier;
+    private volatile Supplier<ReadResourceResult> resourceContentsSupplier;
 
     public AppResourceHandlerProvider(McpApp app, String name, Optional<String> description, Supplier<String> contentSupplier, int contentLength)
     {
@@ -90,13 +91,13 @@ public class AppResourceHandlerProvider
         ImmutableMap.Builder<String, Object> meta = ImmutableMap.builder();
         meta.put("ui", uiMeta.build());
 
-        this.resourceContentsSupplier = () -> ImmutableList.of(new ResourceContents(resource.uri(), resource.uri(), resource.mimeType(), contentSupplier.get()).withMeta(meta.build()));
+        this.resourceContentsSupplier = () -> new ReadResourceResult(ImmutableList.of(new ResourceContents(resource.uri(), resource.uri(), resource.mimeType(), contentSupplier.get()).withMeta(meta.build())));
 
         return new ResourceEntry(resource, this);
     }
 
     @Override
-    public List<ResourceContents> readResource(McpRequestContext requestContext, Resource sourceResource, ReadResourceRequest readResourceRequest)
+    public ReadResourceResponse readResource(McpRequestContext requestContext, Resource sourceResource, ReadResourceRequest readResourceRequest, boolean allowIncompleteResult)
     {
         return requireNonNull(resourceContentsSupplier, "resourceContents is null").get();
     }

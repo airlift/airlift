@@ -15,7 +15,7 @@ import io.airlift.mcp.McpEntities;
 import io.airlift.mcp.McpException;
 import io.airlift.mcp.McpRequestContext;
 import io.airlift.mcp.model.ReadResourceRequest;
-import io.airlift.mcp.model.ResourceContents;
+import io.airlift.mcp.model.ReadResourceResult;
 import io.airlift.mcp.model.ResourcesUpdatedNotification;
 import io.airlift.mcp.model.SubscribeRequest;
 
@@ -188,12 +188,13 @@ class LegacyVersionsController
     {
         try {
             return resourceVersionsCache.get(uri, () -> {
-                Optional<List<ResourceContents>> resourceContents = entities.readResourceContents(requestContext, new ReadResourceRequest(uri, Optional.empty()));
-                if (required && resourceContents.isEmpty()) {
+                Optional<ReadResourceResult> maybeResourceContents = entities.readResourceContents(requestContext, new ReadResourceRequest(uri), false)
+                        .map(ReadResourceResult.class::cast);   // cast must succeed due to passing false for allowIncompleteResult
+                if (required && maybeResourceContents.isEmpty()) {
                     throw exception(RESOURCE_NOT_FOUND, "Resource not found: " + uri);
                 }
-                return resourceContents
-                        .map(contents -> listHash(contents.stream()))
+                return maybeResourceContents
+                        .map(resourceContents -> listHash(resourceContents.contents().stream()))
                         .orElse("");
             });
         }

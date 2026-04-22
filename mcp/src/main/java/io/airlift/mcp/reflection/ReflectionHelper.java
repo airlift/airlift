@@ -3,22 +3,26 @@ package io.airlift.mcp.reflection;
 import io.airlift.mcp.McpDefaultValue;
 import io.airlift.mcp.McpDescription;
 import io.airlift.mcp.McpRequestContext;
+import io.airlift.mcp.model.AllowIncompleteResult;
 import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.CompleteRequest.CompleteArgument;
 import io.airlift.mcp.model.CompleteRequest.CompleteContext;
 import io.airlift.mcp.model.Content;
 import io.airlift.mcp.model.Content.TextContent;
 import io.airlift.mcp.model.GetPromptRequest;
+import io.airlift.mcp.model.InputResponses;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.model.ResourceTemplateValues;
+import io.airlift.mcp.reflection.MethodParameter.AllowIncompleteResultParameter;
 import io.airlift.mcp.reflection.MethodParameter.CallToolRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.CompleteArgumentParameter;
 import io.airlift.mcp.reflection.MethodParameter.CompleteContextParameter;
 import io.airlift.mcp.reflection.MethodParameter.GetPromptRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.HttpRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.IdentityParameter;
+import io.airlift.mcp.reflection.MethodParameter.InputResponsesParameter;
 import io.airlift.mcp.reflection.MethodParameter.McpRequestContextParameter;
 import io.airlift.mcp.reflection.MethodParameter.ObjectParameter;
 import io.airlift.mcp.reflection.MethodParameter.ReadResourceRequestParameter;
@@ -114,6 +118,14 @@ public interface ReflectionHelper
 
                     if (CompleteContext.class.isAssignableFrom(parameter.getType())) {
                         return CompleteContextParameter.INSTANCE;
+                    }
+
+                    if (AllowIncompleteResult.class.isAssignableFrom(parameter.getType())) {
+                        return AllowIncompleteResultParameter.INSTANCE;
+                    }
+
+                    if (InputResponses.class.isAssignableFrom(parameter.getType())) {
+                        return InputResponsesParameter.INSTANCE;
                     }
 
                     Optional<String> description = Optional.ofNullable(parameter.getAnnotation(McpDescription.class)).map(McpDescription::value);

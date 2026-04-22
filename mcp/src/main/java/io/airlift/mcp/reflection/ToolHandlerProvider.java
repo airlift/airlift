@@ -14,6 +14,7 @@ import io.airlift.mcp.McpTool;
 import io.airlift.mcp.handler.ResourceEntry;
 import io.airlift.mcp.handler.ToolEntry;
 import io.airlift.mcp.handler.ToolHandler;
+import io.airlift.mcp.model.CallToolResponse;
 import io.airlift.mcp.model.CallToolResult;
 import io.airlift.mcp.model.Content;
 import io.airlift.mcp.model.JsonSchemaBuilder;
@@ -39,6 +40,7 @@ import static io.airlift.mcp.model.JsonSchemaBuilder.isSupportedType;
 import static io.airlift.mcp.reflection.Predicates.isCallToolRequest;
 import static io.airlift.mcp.reflection.Predicates.isHttpRequestOrContext;
 import static io.airlift.mcp.reflection.Predicates.isIdentity;
+import static io.airlift.mcp.reflection.Predicates.isInputResponses;
 import static io.airlift.mcp.reflection.Predicates.isObject;
 import static io.airlift.mcp.reflection.Predicates.returnsAnything;
 import static io.airlift.mcp.reflection.ReflectionHelper.mapToContent;
@@ -70,12 +72,15 @@ public class ToolHandlerProvider
         icons = ImmutableList.copyOf(mcpTool.icons());
         this.resourceHandlerConsumer = requireNonNull(resourceHandlerConsumer, "resourceHandlerConsumer is null");
 
-        validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isObject).or(isCallToolRequest), returnsAnything);
+        validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isObject).or(isCallToolRequest).or(isInputResponses), returnsAnything);
 
         tool = buildTool(mcpTool, method, parameters);
 
         if (void.class.equals(method.getReturnType())) {
             returnType = ReturnType.VOID;
+        }
+        else if (CallToolResponse.class.isAssignableFrom(method.getReturnType())) {
+            returnType = ReturnType.CALL_TOOL_RESPONSE;
         }
         else if (CallToolResult.class.isAssignableFrom(method.getReturnType())) {
             returnType = ReturnType.CALL_TOOL_RESULT;
@@ -113,6 +118,7 @@ public class ToolHandlerProvider
         CONTENT,
         STRUCTURED,
         STRUCTURED_RESULT,
+        CALL_TOOL_RESPONSE,
     }
 
     @Override
@@ -136,6 +142,7 @@ public class ToolHandlerProvider
                 case CONTENT -> new CallToolResult(mapToContent(result));
                 case STRUCTURED -> new CallToolResult(ImmutableList.of(mapToContent(result)), Optional.of(new StructuredContent<>(result)), false, Optional.empty());
                 case CALL_TOOL_RESULT -> (CallToolResult) result;
+                case CALL_TOOL_RESPONSE -> (CallToolResponse) result;
                 case STRUCTURED_RESULT -> mapStructuredContentResult((StructuredContentResult<?>) result);
             };
         };

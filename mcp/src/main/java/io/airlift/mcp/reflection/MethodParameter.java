@@ -73,6 +73,18 @@ public sealed interface MethodParameter
         public static final CompleteContextParameter INSTANCE = new CompleteContextParameter();
     }
 
+    record AllowIncompleteResultParameter()
+            implements MethodParameter
+    {
+        public static final AllowIncompleteResultParameter INSTANCE = new AllowIncompleteResultParameter();
+    }
+
+    record InputResponsesParameter()
+            implements MethodParameter
+    {
+        public static final InputResponsesParameter INSTANCE = new InputResponsesParameter();
+    }
+
     record ObjectParameter(
             String name,
             Class<?> rawType,

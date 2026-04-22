@@ -18,5 +18,6 @@ public class OperationsModule
         newOptionalBinder(binder, ErrorHandler.class).setDefault().to(ErrorHandlerImpl.class);
 
         binder.bind(LegacyCancellationController.class).in(SINGLETON);
+        binder.bind(MrtrEmulator.class).in(SINGLETON);
     }
 }

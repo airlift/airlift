@@ -18,10 +18,11 @@ import io.airlift.mcp.handler.ToolHandler;
 import io.airlift.mcp.model.CompleteReference;
 import io.airlift.mcp.model.CompleteReference.PromptReference;
 import io.airlift.mcp.model.CompleteReference.ResourceReference;
+import io.airlift.mcp.model.InputRequests;
 import io.airlift.mcp.model.Prompt;
 import io.airlift.mcp.model.ReadResourceRequest;
+import io.airlift.mcp.model.ReadResourceResponse;
 import io.airlift.mcp.model.Resource;
-import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.model.ResourceTemplateValues;
 import io.airlift.mcp.model.Tool;
@@ -239,7 +240,7 @@ public class InternalEntities
     }
 
     @Override
-    public Optional<List<ResourceContents>> readResourceContents(McpRequestContext requestContext, ReadResourceRequest readResourceRequest)
+    public Optional<ReadResourceResponse> readResourceContents(McpRequestContext requestContext, ReadResourceRequest readResourceRequest, boolean allowIncompleteResult)
     {
         if (!capabilityFilter.isAllowed(requestContext.identity(), readResourceRequest.uri())) {
             throw new McpClientException(exception(INVALID_PARAMS, "Resource access not allowed: " + readResourceRequest.uri()));
@@ -263,8 +264,14 @@ public class InternalEntities
         }
 
         return findResource(readResourceRequest.uri())
-                .map(readResourceEntry -> readResourceEntry.handler().readResource(requestContext, readResourceEntry.resource(), readResourceRequest))
-                .or(() -> findResourceTemplate(readResourceRequest.uri()).map(match -> match.entry.handler().readResourceTemplate(requestContext, match.entry.resourceTemplate(), readResourceRequest, match.values)));
+                .map(readResourceEntry -> readResourceEntry.handler().readResource(requestContext, readResourceEntry.resource(), readResourceRequest, allowIncompleteResult))
+                .or(() -> findResourceTemplate(readResourceRequest.uri()).map(match -> match.entry.handler().readResourceTemplate(requestContext, match.entry.resourceTemplate(), readResourceRequest, match.values, allowIncompleteResult)))
+                .filter(response -> {
+                    if (!allowIncompleteResult && (response instanceof InputRequests)) {
+                        throw new McpClientException(exception(INVALID_PARAMS, "Incomplete resource result not allowed: " + readResourceRequest.uri()));
+                    }
+                    return true;
+                });
     }
 
     private Optional<ResourceEntry> findResource(String uriString)

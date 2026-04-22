@@ -10,12 +10,13 @@ import io.airlift.mcp.McpEntities;
 import io.airlift.mcp.handler.PromptEntry;
 import io.airlift.mcp.handler.ToolEntry;
 import io.airlift.mcp.model.CallToolRequest;
+import io.airlift.mcp.model.CallToolResponse;
 import io.airlift.mcp.model.CallToolResult;
 import io.airlift.mcp.model.CompleteRequest;
 import io.airlift.mcp.model.CompleteResult;
 import io.airlift.mcp.model.Content.TextContent;
 import io.airlift.mcp.model.GetPromptRequest;
-import io.airlift.mcp.model.GetPromptResult;
+import io.airlift.mcp.model.GetPromptResponse;
 import io.airlift.mcp.model.JsonRpcRequest;
 import io.airlift.mcp.model.ListPromptsResult;
 import io.airlift.mcp.model.ListRequest;
@@ -26,9 +27,8 @@ import io.airlift.mcp.model.Meta;
 import io.airlift.mcp.model.OptionalBoolean;
 import io.airlift.mcp.model.Prompt;
 import io.airlift.mcp.model.ReadResourceRequest;
-import io.airlift.mcp.model.ReadResourceResult;
+import io.airlift.mcp.model.ReadResourceResponse;
 import io.airlift.mcp.model.Resource;
-import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.model.Tool;
 
@@ -74,7 +74,7 @@ public class OperationsCommon
         return paginationUtil.paginate(listRequest, localTools, Tool::name, ListToolsResult::new);
     }
 
-    CallToolResult callTool(RequestContextImpl requestContext, CallToolRequest callToolRequest)
+    CallToolResponse callTool(RequestContextImpl requestContext, CallToolRequest callToolRequest)
     {
         entities.validateToolAllowed(requestContext, callToolRequest.name());
 
@@ -98,7 +98,7 @@ public class OperationsCommon
         return paginationUtil.paginate(listRequest, localPrompts, Prompt::name, ListPromptsResult::new);
     }
 
-    GetPromptResult getPrompt(RequestContextImpl requestContext, GetPromptRequest getPromptRequest)
+    GetPromptResponse getPrompt(RequestContextImpl requestContext, GetPromptRequest getPromptRequest)
     {
         entities.validatePromptAllowed(requestContext, getPromptRequest.name());
 
@@ -126,14 +126,12 @@ public class OperationsCommon
         return paginationUtil.paginate(listRequest, localResourceTemplates, ResourceTemplate::name, ListResourceTemplatesResult::new);
     }
 
-    Object readResources(RequestContextImpl requestContext, ReadResourceRequest readResourceRequest)
+    ReadResourceResponse readResources(RequestContextImpl requestContext, ReadResourceRequest readResourceRequest)
     {
         updateRequestSpan(requestContext.request(), span -> span.setAttribute(MCP_RESOURCE_URI, readResourceRequest.uri()));
 
-        List<ResourceContents> resourceContents = entities.readResourceContents(requestContext.withProgressToken(progressToken(readResourceRequest)), readResourceRequest)
+        return entities.readResourceContents(requestContext.withProgressToken(progressToken(readResourceRequest)), readResourceRequest, true)
                 .orElseThrow(() -> exception(RESOURCE_NOT_FOUND, "Resource not found: " + readResourceRequest.uri()));
-
-        return new ReadResourceResult(resourceContents);
     }
 
     CompleteResult completionComplete(RequestContextImpl requestContext, CompleteRequest completeRequest)

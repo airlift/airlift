@@ -9,7 +9,7 @@ import java.util.Optional;
 import static java.util.Objects.requireNonNullElse;
 
 public record ListRootsResult(List<Root> roots, Optional<Map<String, Object>> meta)
-        implements Meta
+        implements Meta, InputResponse
 {
     public ListRootsResult
     {

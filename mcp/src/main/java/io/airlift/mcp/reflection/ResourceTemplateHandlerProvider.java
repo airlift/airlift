@@ -11,6 +11,7 @@ import io.airlift.mcp.handler.ResourceTemplateHandler;
 import io.airlift.mcp.model.Annotations;
 import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.model.Role;
+import io.airlift.mcp.reflection.ResourceHandlerProvider.ResultType;
 
 import java.lang.reflect.Method;
 import java.util.List;
@@ -19,12 +20,16 @@ import java.util.OptionalDouble;
 
 import static io.airlift.mcp.reflection.Predicates.isHttpRequestOrContext;
 import static io.airlift.mcp.reflection.Predicates.isIdentity;
+import static io.airlift.mcp.reflection.Predicates.isInputResponses;
 import static io.airlift.mcp.reflection.Predicates.isReadResourceRequest;
 import static io.airlift.mcp.reflection.Predicates.isResourceTemplateValues;
 import static io.airlift.mcp.reflection.Predicates.isSourceResourceTemplate;
+import static io.airlift.mcp.reflection.Predicates.returnsReadResourceResponse;
+import static io.airlift.mcp.reflection.Predicates.returnsReadResourceResult;
 import static io.airlift.mcp.reflection.Predicates.returnsResourceContents;
 import static io.airlift.mcp.reflection.Predicates.returnsResourceContentsList;
 import static io.airlift.mcp.reflection.ReflectionHelper.validate;
+import static io.airlift.mcp.reflection.ResourceHandlerProvider.determineResultType;
 import static io.airlift.mcp.reflection.ResourceHandlerProvider.mapResult;
 import static java.lang.Double.isNaN;
 import static java.util.Objects.requireNonNull;
@@ -36,8 +41,8 @@ public class ResourceTemplateHandlerProvider
     private final Class<?> clazz;
     private final Method method;
     private final List<MethodParameter> parameters;
-    private final boolean resultIsSingleContent;
     private final List<String> icons;
+    private final ResultType resultType;
     private Injector injector;
     private JsonMapper jsonMapper;
 
@@ -48,8 +53,11 @@ public class ResourceTemplateHandlerProvider
         this.parameters = ImmutableList.copyOf(parameters);
         icons = ImmutableList.copyOf(mcpResourceTemplate.icons());
 
-        validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isReadResourceRequest).or(isSourceResourceTemplate).or(isResourceTemplateValues), returnsResourceContents.or(returnsResourceContentsList));
-        this.resultIsSingleContent = returnsResourceContents.test(method);
+        validate(method,
+                parameters,
+                isHttpRequestOrContext.or(isIdentity).or(isReadResourceRequest).or(isSourceResourceTemplate).or(isResourceTemplateValues).or(isInputResponses),
+                returnsResourceContents.or(returnsResourceContentsList).or(returnsReadResourceResult).or(returnsReadResourceResponse));
+        resultType = determineResultType(method);
 
         this.resourceTemplate = buildResourceTemplate(
                 mcpResourceTemplate.name(),
@@ -79,12 +87,13 @@ public class ResourceTemplateHandlerProvider
         IconHelper iconHelper = injector.getInstance(IconHelper.class);
         MethodInvoker methodInvoker = new MethodInvoker(instance, method, parameters, jsonMapper);
 
-        ResourceTemplateHandler resourceTemplateHandler = (requestContext, sourceResourceTemplate, readResourceRequest, resourceTemplateValues) -> {
+        ResourceTemplateHandler resourceTemplateHandler = (requestContext, sourceResourceTemplate, readResourceRequest, resourceTemplateValues, allowIncompleteResult) -> {
             Object result = methodInvoker.builder(requestContext)
                     .withReadResourceTemplateRequest(sourceResourceTemplate, readResourceRequest)
                     .withResourceTemplateValues(resourceTemplateValues)
+                    .withAllowIncompleteResult(allowIncompleteResult)
                     .invoke();
-            return mapResult(method, result, resultIsSingleContent);
+            return mapResult(method, result, resultType);
         };
 
         return new ResourceTemplateEntry(resourceTemplate.withIcons(iconHelper.mapIcons(icons)), resourceTemplateHandler);
