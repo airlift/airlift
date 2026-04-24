@@ -9,6 +9,7 @@ import io.modelcontextprotocol.spec.McpClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
 
 import java.io.Closeable;
+import java.net.http.HttpRequest;
 import java.time.Duration;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -51,7 +52,7 @@ public record TestingClient(String name, McpSyncClient mcpClient, BlockingQueue<
     public static TestingClient buildClient(Closer closer, String baseUri, String name, String idToken)
     {
         HttpClientStreamableHttpTransport clientTransport = HttpClientStreamableHttpTransport.builder(baseUri)
-                .customizeRequest(builder -> builder.header(IDENTITY_HEADER.toString(), idToken))
+                .requestBuilder(HttpRequest.newBuilder().header(IDENTITY_HEADER.toString(), idToken))
                 .build();
 
         return buildClient(closer, name, clientTransport);

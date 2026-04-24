@@ -102,7 +102,7 @@
         <dep.airlift.version>424-SNAPSHOT</dep.airlift.version>
         <dep.brotli4j.version>1.22.0</dep.brotli4j.version>
         <dep.bouncycastle.version>1.84</dep.bouncycastle.version>
-        <dep.mcp.sdk.version>1.1.1</dep.mcp.sdk.version>
+        <dep.mcp.sdk.version>1.1.2</dep.mcp.sdk.version>
         <dep.openapi-generator-maven-plugin.version>7.21.0</dep.openapi-generator-maven-plugin.version>
         <dep.jersey.version>4.0.2</dep.jersey.version>
         <dep.jjwt.version>0.13.0</dep.jjwt.version>
