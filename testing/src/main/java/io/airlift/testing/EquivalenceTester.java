@@ -15,9 +15,9 @@
  */
 package io.airlift.testing;
 
-/**
+/*
  * Derived from http://code.google.com/p/kawala
- * <p>
+ *
  * Licensed under Apache License, Version 2.0
  */
 
