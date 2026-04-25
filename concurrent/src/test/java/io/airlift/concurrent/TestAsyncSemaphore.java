@@ -201,7 +201,7 @@ public class TestAsyncSemaphore
         AtomicInteger failureCount = new AtomicInteger();
         AtomicInteger concurrency = new AtomicInteger();
         CountDownLatch completionLatch = new CountDownLatch(1000);
-        AsyncSemaphore<Runnable, Void> asyncSemaphore = new AsyncSemaphore<>(2, executor, task -> {
+        AsyncSemaphore<Runnable, Void> asyncSemaphore = new AsyncSemaphore<>(2, executor, _ -> {
             throw assertFailedConcurrency(concurrency);
         });
 
@@ -238,7 +238,7 @@ public class TestAsyncSemaphore
         CountDownLatch startLatch = new CountDownLatch(1);
         CountDownLatch completionLatch = new CountDownLatch(100);
 
-        AsyncSemaphore<Runnable, Void> asyncSemaphore = new AsyncSemaphore<>(2, executor, task -> {
+        AsyncSemaphore<Runnable, Void> asyncSemaphore = new AsyncSemaphore<>(2, executor, _ -> {
             throw assertFailedConcurrency(concurrency);
         });
 
@@ -276,7 +276,7 @@ public class TestAsyncSemaphore
     public void testNoStackOverflow()
             throws Exception
     {
-        AsyncSemaphore<Object, Void> asyncSemaphore = new AsyncSemaphore<>(1, executor, object -> Futures.immediateFuture(null));
+        AsyncSemaphore<Object, Void> asyncSemaphore = new AsyncSemaphore<>(1, executor, _ -> Futures.immediateFuture(null));
 
         List<ListenableFuture<Void>> futures = new ArrayList<>();
         for (int i = 0; i < 1000; i++) {
@@ -297,7 +297,7 @@ public class TestAsyncSemaphore
             throws Exception
     {
         for (int concurrency : testedConcurrency()) {
-            ListenableFuture<List<Object>> result = AsyncSemaphore.processAll(ImmutableList.of(), (i) -> immediateCancelledFuture(), concurrency, directExecutor());
+            ListenableFuture<List<Object>> result = AsyncSemaphore.processAll(ImmutableList.of(), _ -> immediateCancelledFuture(), concurrency, directExecutor());
             assertThat(result).isDone();
             assertThat(result.get()).isEqualTo(ImmutableList.of());
         }
@@ -308,7 +308,7 @@ public class TestAsyncSemaphore
             throws Exception
     {
         for (int concurrency : testedConcurrency()) {
-            ListenableFuture<List<Object>> result = AsyncSemaphore.processAllToCompletion(ImmutableList.of(), (i) -> immediateCancelledFuture(), concurrency, directExecutor());
+            ListenableFuture<List<Object>> result = AsyncSemaphore.processAllToCompletion(ImmutableList.of(), _ -> immediateCancelledFuture(), concurrency, directExecutor());
             assertThat(result).isDone();
             assertThat(result.get()).isEqualTo(ImmutableList.of());
         }
@@ -320,7 +320,7 @@ public class TestAsyncSemaphore
     {
         for (int concurrency : testedConcurrency()) {
             SettableFuture<String> future = SettableFuture.create();
-            ListenableFuture<List<String>> result = AsyncSemaphore.processAll(ImmutableList.of(1), (i) -> future, concurrency, directExecutor());
+            ListenableFuture<List<String>> result = AsyncSemaphore.processAll(ImmutableList.of(1), _ -> future, concurrency, directExecutor());
             assertThat(result).isNotDone();
             future.set("value");
             assertThat(result).isDone();
@@ -334,7 +334,7 @@ public class TestAsyncSemaphore
     {
         for (int concurrency : testedConcurrency()) {
             SettableFuture<String> future = SettableFuture.create();
-            ListenableFuture<List<String>> result = AsyncSemaphore.processAllToCompletion(ImmutableList.of(1), (i) -> future, concurrency, directExecutor());
+            ListenableFuture<List<String>> result = AsyncSemaphore.processAllToCompletion(ImmutableList.of(1), _ -> future, concurrency, directExecutor());
             assertThat(result).isNotDone();
             future.set("value");
             assertThat(result).isDone();

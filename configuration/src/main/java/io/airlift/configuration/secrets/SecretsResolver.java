@@ -44,7 +44,7 @@ public class SecretsResolver
 
     public Map<String, String> getResolvedConfiguration(Map<String, String> properties)
     {
-        return getResolvedConfiguration(properties, (propertyKey, throwable) -> {
+        return getResolvedConfiguration(properties, (_, throwable) -> {
             throw new RuntimeException(throwable.getMessage());
         });
     }

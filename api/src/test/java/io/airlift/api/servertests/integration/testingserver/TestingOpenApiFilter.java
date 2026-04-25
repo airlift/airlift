@@ -13,7 +13,7 @@ public class TestingOpenApiFilter
     public Predicate<Method> filterForRequest(ContainerRequestContext containerRequestContext)
     {
         if (containerRequestContext.getUriInfo().getRequestUri().getHost().equals("0.0.0.0")) {
-            return ignore -> true;
+            return _ -> true;
         }
         return this;
     }

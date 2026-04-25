@@ -53,7 +53,7 @@ public class TestThreadLocalCache
     @Test
     public void testDisallowsNulls()
     {
-        assertThatThrownBy(() -> new ThreadLocalCache<>(10, key -> null).get("foo"))
+        assertThatThrownBy(() -> new ThreadLocalCache<>(10, _ -> null).get("foo"))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageMatching("loader returned null value");
     }

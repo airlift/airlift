@@ -138,7 +138,7 @@ public final class MoreFutures
             onCancelFunction = future::cancel;
         }
         else {
-            onCancelFunction = mayInterrupt -> false;
+            onCancelFunction = _ -> false;
         }
 
         UnmodifiableCompletableFuture<V> unmodifiableFuture = new UnmodifiableCompletableFuture<>(onCancelFunction);
@@ -401,14 +401,14 @@ public final class MoreFutures
 
         // Eagerly propagate exceptions, rather than waiting for all the futures to complete first (default behavior)
         for (CompletableFuture<? extends V> future : futures) {
-            future.whenComplete((v, throwable) -> {
+            future.whenComplete((_, throwable) -> {
                 if (throwable != null) {
                     allDoneFuture.completeExceptionally(throwable);
                 }
             });
         }
 
-        return unmodifiableFuture(allDoneFuture.thenApply(v ->
+        return unmodifiableFuture(allDoneFuture.thenApply(_ ->
                 futures.stream()
                         .map(CompletableFuture::join)
                         .collect(Collectors.<V>toList())));
@@ -421,7 +421,7 @@ public final class MoreFutures
      */
     public static <T> ListenableFuture<T> addTimeout(ListenableFuture<T> future, Callable<T> onTimeout, Duration timeout, ScheduledExecutorService executorService)
     {
-        AsyncFunction<TimeoutException, T> timeoutHandler = timeoutException -> {
+        AsyncFunction<TimeoutException, T> timeoutHandler = _ -> {
             try {
                 return immediateFuture(onTimeout.call());
             }
@@ -460,7 +460,7 @@ public final class MoreFutures
         ScheduledFuture<?> timeoutTaskFuture = executorService.schedule(new TimeoutFutureTask<>(futureWithTimeout, onTimeout, future), timeout.toMillis(), MILLISECONDS);
 
         // when future completes, cancel the timeout task
-        future.whenCompleteAsync((value, exception) -> timeoutTaskFuture.cancel(false), executorService);
+        future.whenCompleteAsync((_, _) -> timeoutTaskFuture.cancel(false), executorService);
 
         return futureWithTimeout;
     }
@@ -567,7 +567,7 @@ public final class MoreFutures
     {
         requireNonNull(successCallback, "successCallback is null");
 
-        addSuccessCallback(future, t -> successCallback.run(), executor);
+        addSuccessCallback(future, _ -> successCallback.run(), executor);
     }
 
     /**
@@ -617,7 +617,7 @@ public final class MoreFutures
     {
         requireNonNull(exceptionCallback, "exceptionCallback is null");
 
-        addExceptionCallback(future, t -> exceptionCallback.run(), executor);
+        addExceptionCallback(future, _ -> exceptionCallback.run(), executor);
     }
 
     /**

@@ -92,7 +92,7 @@ public class TestBootstrap
     @Test
     public void testUserErrorsReported()
     {
-        Bootstrap bootstrap = new Bootstrap(binder -> {
+        Bootstrap bootstrap = new Bootstrap(_ -> {
             throw new RuntimeException("happy user error");
         });
 
@@ -108,7 +108,7 @@ public class TestBootstrap
     @Test
     public void testUserErrorsReportedWithConfigurationProblem()
     {
-        Bootstrap bootstrap = new Bootstrap(binder -> {
+        Bootstrap bootstrap = new Bootstrap(_ -> {
             throw new RuntimeException("happy user error");
         })
                 .setRequiredConfigurationProperty("test-required", "foo");

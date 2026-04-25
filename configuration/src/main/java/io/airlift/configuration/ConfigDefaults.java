@@ -8,7 +8,7 @@ public interface ConfigDefaults<T>
 {
     static <T> ConfigDefaults<T> noDefaults()
     {
-        return config -> {};
+        return _ -> {};
     }
 
     static <T> ConfigDefaults<T> configDefaults(List<? extends ConfigDefaults<T>> configDefaults)

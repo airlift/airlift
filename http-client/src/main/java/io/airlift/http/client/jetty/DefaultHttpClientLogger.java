@@ -121,7 +121,7 @@ class DefaultHttpClientLogger
         // This method recovers them so that they aren't orphaned
 
         File logPathFile = new File(logPath).getParentFile();
-        File[] tempFiles = logPathFile.listFiles((directory, name) -> name.endsWith(TEMP_FILE_EXTENSION));
+        File[] tempFiles = logPathFile.listFiles((_, name) -> name.endsWith(TEMP_FILE_EXTENSION));
 
         if (tempFiles != null) {
             for (File tempFile : tempFiles) {

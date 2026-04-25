@@ -69,8 +69,8 @@ public class JmxGcMonitor
 
     private final Logger log = Logger.get(JmxGcMonitor.class);
 
-    private final NotificationListener notificationListener = (notification, ignored) -> onNotification(notification);
-    private final NotificationListener zgcNotificationListener = (notification, ignored) -> onZgcNotification(notification);
+    private final NotificationListener notificationListener = (notification, _) -> onNotification(notification);
+    private final NotificationListener zgcNotificationListener = (notification, _) -> onZgcNotification(notification);
 
     private final AtomicLong majorGcCount = new AtomicLong();
     private final AtomicLong majorGcTime = new AtomicLong();

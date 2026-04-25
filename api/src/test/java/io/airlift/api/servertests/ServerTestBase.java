@@ -43,7 +43,7 @@ public class ServerTestBase
 
     public ServerTestBase()
     {
-        this(Optional.empty(), ignore -> {});
+        this(Optional.empty(), _ -> {});
     }
 
     protected ServerTestBase(Consumer<ApiModule.Builder> builderConsumer)
@@ -53,7 +53,7 @@ public class ServerTestBase
 
     protected ServerTestBase(Class<?> serviceClass)
     {
-        this(serviceClass, ignore -> {});
+        this(serviceClass, _ -> {});
     }
 
     protected ServerTestBase(Class<?> serviceClass, Consumer<ApiModule.Builder> builderConsumer)

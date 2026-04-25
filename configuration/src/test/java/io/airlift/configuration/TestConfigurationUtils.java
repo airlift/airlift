@@ -44,7 +44,7 @@ public class TestConfigurationUtils
                 .build();
 
         List<String> errors = new ArrayList<>();
-        Map<String, String> actual = replaceEnvironmentVariables(original, environment, (key, error) -> errors.add(error));
+        Map<String, String> actual = replaceEnvironmentVariables(original, environment, (_, error) -> errors.add(error));
 
         Map<String, String> expected = ImmutableMap.<String, String>builder()
                 .put("apple", "apple-value")

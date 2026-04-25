@@ -115,7 +115,7 @@ final class TestSecretsResolver
 
         ImmutableList.Builder<String> errorMessages = ImmutableList.builder();
 
-        assertThat(secretsResolver.getResolvedConfiguration(ImmutableMap.of("key", "${resolver:key}"), (propertyKey, throwable) -> errorMessages.add(throwable.getMessage()))).isEmpty();
+        assertThat(secretsResolver.getResolvedConfiguration(ImmutableMap.of("key", "${resolver:key}"), (_, throwable) -> errorMessages.add(throwable.getMessage()))).isEmpty();
 
         assertThat(errorMessages.build()).isEqualTo(ImmutableList.of("Invalid key: key"));
     }

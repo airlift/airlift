@@ -204,7 +204,7 @@ public class AirliftHttpClientCodegen
             if (!returnsVoid) {
                 String codecName = toCodecName(operation.returnType, operation.returnContainer, operation.returnBaseType);
                 operation.vendorExtensions.put("x_response_codec", codecName);
-                codecs.computeIfAbsent(codecName, k -> buildCodecEntry(
+                codecs.computeIfAbsent(codecName, _ -> buildCodecEntry(
                         codecName,
                         operation.returnType,
                         operation.returnContainer,
@@ -215,7 +215,7 @@ public class AirliftHttpClientCodegen
                 String bodyType = operation.bodyParam.dataType;
                 String codecName = toCodecName(bodyType, null, null);
                 operation.vendorExtensions.put("x_request_codec", codecName);
-                codecs.computeIfAbsent(codecName, k -> buildCodecEntry(codecName, bodyType, null, null));
+                codecs.computeIfAbsent(codecName, _ -> buildCodecEntry(codecName, bodyType, null, null));
             }
         }
 
