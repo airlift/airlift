@@ -294,24 +294,25 @@ public class TestingSocksProxy
             // field 5: destination address of
             byte[] address;
             switch (addressType) {
-                case SOCKS_5_ADDRESS_V4:
+                case SOCKS_5_ADDRESS_V4 -> {
                     // 4 bytes for IPv4 address
                     address = new byte[4];
                     sourceInput.readFully(address);
-                    break;
-                case SOCKS_5_ADDRESS_DOMAIN:
+                }
+                case SOCKS_5_ADDRESS_DOMAIN -> {
                     // 1 byte of name length followed by the name for Domain name
                     address = new byte[sourceInput.read()];
                     sourceInput.readFully(address);
-                    break;
-                case SOCKS_5_ADDRESS_V6:
+                }
+                case SOCKS_5_ADDRESS_V6 -> {
                     // 16 bytes for IPv6 address
                     address = new byte[16];
                     sourceInput.readFully(address);
-                    break;
-                default:
+                }
+                default -> {
                     // unknown address type, terminate connection
                     return;
+                }
             }
 
             // field 6: port number in a network byte order, 2 bytes
@@ -326,15 +327,11 @@ public class TestingSocksProxy
             Socket targetSocket;
             try {
                 switch (addressType) {
-                    case SOCKS_5_ADDRESS_V4:
-                    case SOCKS_5_ADDRESS_V6:
-                        targetSocket = new Socket(InetAddress.getByAddress(address), port);
-                        break;
-                    case SOCKS_5_ADDRESS_DOMAIN:
-                        targetSocket = new Socket(new String(address, StandardCharsets.US_ASCII), port);
-                        break;
-                    default:
+                    case SOCKS_5_ADDRESS_V4, SOCKS_5_ADDRESS_V6 -> targetSocket = new Socket(InetAddress.getByAddress(address), port);
+                    case SOCKS_5_ADDRESS_DOMAIN -> targetSocket = new Socket(new String(address, StandardCharsets.US_ASCII), port);
+                    default -> {
                         return;
+                    }
                 }
             }
             catch (IOException e) {

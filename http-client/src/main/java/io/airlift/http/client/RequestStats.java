@@ -60,21 +60,11 @@ public class RequestStats
 
         allResponse.update(1);
         switch (familyForStatusCode(responseCode)) {
-            case INFORMATIONAL:
-                informationalResponse.update(1);
-                break;
-            case SUCCESSFUL:
-                successfulResponse.update(1);
-                break;
-            case REDIRECTION:
-                redirectionResponse.update(1);
-                break;
-            case CLIENT_ERROR:
-                clientErrorResponse.update(1);
-                break;
-            case SERVER_ERROR:
-                serverErrorResponse.update(1);
-                break;
+            case INFORMATIONAL -> informationalResponse.update(1);
+            case SUCCESSFUL -> successfulResponse.update(1);
+            case REDIRECTION -> redirectionResponse.update(1);
+            case CLIENT_ERROR -> clientErrorResponse.update(1);
+            case SERVER_ERROR -> serverErrorResponse.update(1);
         }
     }
 
