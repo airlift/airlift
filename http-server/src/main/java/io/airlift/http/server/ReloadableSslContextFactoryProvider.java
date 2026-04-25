@@ -65,17 +65,12 @@ final class ReloadableSslContextFactoryProvider
         sslContextFactory.setSecureRandomAlgorithm(config.getSecureRandomAlgorithm());
         sslContextFactory.setRenegotiationAllowed(false);
         switch (clientCertificate) {
-            case NONE:
+            case NONE -> {
                 // no changes
-                break;
-            case REQUESTED:
-                sslContextFactory.setWantClientAuth(true);
-                break;
-            case REQUIRED:
-                sslContextFactory.setNeedClientAuth(true);
-                break;
-            default:
-                throw new IllegalArgumentException("Unsupported client certificate value: " + clientCertificate);
+            }
+            case REQUESTED -> sslContextFactory.setWantClientAuth(true);
+            case REQUIRED -> sslContextFactory.setNeedClientAuth(true);
+            default -> throw new IllegalArgumentException("Unsupported client certificate value: " + clientCertificate);
         }
         sslContextFactory.setSslSessionTimeout(toIntExact(config.getSslSessionTimeout().roundTo(SECONDS)));
         sslContextFactory.setSslSessionCacheSize(config.getSslSessionCacheSize());
