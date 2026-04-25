@@ -140,7 +140,7 @@ public final class LifeCycleManager
             throws LifeCycleStopException
     {
         List<Exception> failures = new ArrayList<>();
-        stop((klass, method, exception) -> failures.add(exception));
+        stop((_, _, exception) -> failures.add(exception));
         if (!failures.isEmpty()) {
             LifeCycleStopException stopException = new LifeCycleStopException();
             for (Exception e : failures) {

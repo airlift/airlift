@@ -98,7 +98,7 @@ public abstract class AbstractHttpClientTest
     private static final int DEFAULT_MIN_GZIP_SIZE = 32; // org.eclipse.jetty.compression.gzip.GzipCompression.DEFAULT_MIN_GZIP_SIZE
     private static final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
 
-    public static final String LARGE_CONTENT = IntStream.range(0, 10_000_000).mapToObj(ignore -> "hello").collect(Collectors.joining());
+    public static final String LARGE_CONTENT = IntStream.range(0, 10_000_000).mapToObj(_ -> "hello").collect(Collectors.joining());
     protected final Optional<String> keystore;
 
     protected AbstractHttpClientTest()

@@ -42,7 +42,7 @@ public abstract class ApiId<RESOURCE, INTERNALID>
 
         //noinspection rawtypes
         Class<? extends ApiId> clazz = getClass();
-        internalIdCtor = CONSTRUCTORS.computeIfAbsent(clazz, __ -> validateAndGetInternalConstructor(clazz));
+        internalIdCtor = CONSTRUCTORS.computeIfAbsent(clazz, _ -> validateAndGetInternalConstructor(clazz));
     }
 
     @JsonIgnore

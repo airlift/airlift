@@ -45,7 +45,7 @@ public class OpenApiResource
     public OpenApiResource(Collection<ModelServiceType> modelServiceTypes, OpenApiProvider openApiProvider, OpenApiFilter openApiFilter, OpenApiMetadata openApiMetadata)
     {
         // pre-build services as a validation that there are no OpenApi build errors
-        modelServiceTypes.forEach(serviceType -> openApiProvider.build(serviceType, ignore -> true));
+        modelServiceTypes.forEach(serviceType -> openApiProvider.build(serviceType, _ -> true));
 
         serviceTypes = modelServiceTypes
                 .stream()

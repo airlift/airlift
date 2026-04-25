@@ -58,10 +58,10 @@ public class TestHttpClientBinder
     @Test
     public void testGlobalStatusListenerBinding()
     {
-        HttpStatusListener globalListener1 = ignore -> {};
-        HttpStatusListener globalListener2 = ignore -> {};
-        HttpStatusListener listener1 = ignore -> {};
-        HttpStatusListener listener2 = ignore -> {};
+        HttpStatusListener globalListener1 = _ -> {};
+        HttpStatusListener globalListener2 = _ -> {};
+        HttpStatusListener listener1 = _ -> {};
+        HttpStatusListener listener2 = _ -> {};
 
         Injector injector = new Bootstrap(
                 binder -> {

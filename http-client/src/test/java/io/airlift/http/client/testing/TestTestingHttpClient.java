@@ -25,7 +25,7 @@ public class TestTestingHttpClient
 
         RuntimeException expectedException = new RuntimeException("test exception");
 
-        HttpResponseFuture<String> future = new TestingHttpClient(input -> {
+        HttpResponseFuture<String> future = new TestingHttpClient(_ -> {
             throw expectedException;
         }).executeAsync(request, new CaptureExceptionResponseHandler());
 

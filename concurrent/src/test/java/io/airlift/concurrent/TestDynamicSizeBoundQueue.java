@@ -204,7 +204,7 @@ public class TestDynamicSizeBoundQueue
     @Test
     public void testNegativeElementSizes()
     {
-        DynamicSizeBoundQueue<String> queue = new DynamicSizeBoundQueue<>(1, ignored -> -1L);
+        DynamicSizeBoundQueue<String> queue = new DynamicSizeBoundQueue<>(1, _ -> -1L);
 
         // All forms of insertion should fail if the element size is negative
         assertThatThrownBy(() -> queue.offer("a")).isInstanceOf(IllegalArgumentException.class);
@@ -220,7 +220,7 @@ public class TestDynamicSizeBoundQueue
     public void testUnstableElementSize()
     {
         AtomicLong elementSizeToReport = new AtomicLong();
-        DynamicSizeBoundQueue<String> queue = new DynamicSizeBoundQueue<>(3, ignored -> elementSizeToReport.get());
+        DynamicSizeBoundQueue<String> queue = new DynamicSizeBoundQueue<>(3, _ -> elementSizeToReport.get());
 
         elementSizeToReport.set(1);
         assertThat(queue.offer("a")).isTrue();
@@ -256,7 +256,7 @@ public class TestDynamicSizeBoundQueue
     @Test
     public void testNullElement()
     {
-        DynamicSizeBoundQueue<String> queue = new DynamicSizeBoundQueue<>(1, value -> 1);
+        DynamicSizeBoundQueue<String> queue = new DynamicSizeBoundQueue<>(1, _ -> 1);
         assertThatThrownBy(() -> queue.offer(null))
                 .as("Queue does not permit null elements, even if the element size function does")
                 .isInstanceOf(NullPointerException.class);

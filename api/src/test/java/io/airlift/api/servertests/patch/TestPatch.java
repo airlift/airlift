@@ -59,13 +59,13 @@ public class TestPatch
         Something oldValue = new Something("first", 1);
         Something newValue = new Something("second", 2);
 
-        assertThat(ApiPatch.apply(oldValue, ImmutableSet.of(), (name, type) -> null)).isEqualTo(oldValue);
-        assertThat(ApiPatch.apply(oldValue, ImmutableSet.of("name", "qty"), (name, type) -> switch (name) {
+        assertThat(ApiPatch.apply(oldValue, ImmutableSet.of(), (_, _) -> null)).isEqualTo(oldValue);
+        assertThat(ApiPatch.apply(oldValue, ImmutableSet.of("name", "qty"), (name, _) -> switch (name) {
             case "name" -> newValue.name;
             case "qty" -> newValue.qty;
             default -> throw new IllegalArgumentException();
         })).isEqualTo(newValue);
-        assertThat(ApiPatch.apply(oldValue, ImmutableSet.of("name"), (name, type) -> newValue.name)).isEqualTo(new Something(newValue.name, oldValue.qty));
+        assertThat(ApiPatch.apply(oldValue, ImmutableSet.of("name"), (_, _) -> newValue.name)).isEqualTo(new Something(newValue.name, oldValue.qty));
     }
 
     @Test

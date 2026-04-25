@@ -23,12 +23,12 @@ public class TestFilter
     @Override
     public void filter(ContainerRequestContext requestContext)
     {
-        counters.computeIfAbsent("request", ignore -> new AtomicInteger()).incrementAndGet();
+        counters.computeIfAbsent("request", _ -> new AtomicInteger()).incrementAndGet();
     }
 
     @Override
     public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext)
     {
-        counters.computeIfAbsent("response", ignore -> new AtomicInteger()).incrementAndGet();
+        counters.computeIfAbsent("response", _ -> new AtomicInteger()).incrementAndGet();
     }
 }

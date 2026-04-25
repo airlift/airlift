@@ -210,7 +210,7 @@ public class ApiModule
 
         public Module build()
         {
-            Consumer<AnnotatedBindingBuilder<OpenApiFilter>> localFilterBinding = (openApiFilterBinding != null) ? openApiFilterBinding : binding -> binding.toInstance(ignore -> _ -> true);
+            Consumer<AnnotatedBindingBuilder<OpenApiFilter>> localFilterBinding = (openApiFilterBinding != null) ? openApiFilterBinding : binding -> binding.toInstance(_ -> _ -> true);
             OpenApiExtensionFilter localExtensionFilter = (extensionFilter != null) ? extensionFilter : (_, _, operation) -> operation;
 
             return new ApiModule(

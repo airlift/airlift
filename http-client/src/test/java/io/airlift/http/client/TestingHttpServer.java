@@ -50,7 +50,7 @@ public class TestingHttpServer
     public TestingHttpServer(Optional<String> keystore, Servlet servlet)
             throws Exception
     {
-        this(keystore, servlet, httpConfiguration -> {}, Optional.empty());
+        this(keystore, servlet, _ -> {}, Optional.empty());
     }
 
     public TestingHttpServer(Optional<String> keystore, Servlet servlet, Consumer<HttpConfiguration> configurationDecorator, Optional<Handler.Wrapper> additionalHandle)
@@ -81,7 +81,7 @@ public class TestingHttpServer
         }
 
         connector.setIdleTimeout(30000);
-        connector.setName(keystore.map(path -> "https").orElse("http"));
+        connector.setName(keystore.map(_ -> "https").orElse("http"));
 
         server.addConnector(connector);
 

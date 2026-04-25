@@ -30,7 +30,7 @@ public class BasicAuthRequestFilter
 
     public BasicAuthRequestFilter(String user, String password)
     {
-        this(request -> true, user, password);
+        this(_ -> true, user, password);
     }
 
     public BasicAuthRequestFilter(Predicate<Request> requestMatcher, String user, String password)

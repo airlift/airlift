@@ -17,7 +17,7 @@ public final class ConfigurationUtils
 
     public static Map<String, String> replaceEnvironmentVariables(Map<String, String> properties)
     {
-        return replaceEnvironmentVariables(properties, System.getenv(), (k, v) -> {});
+        return replaceEnvironmentVariables(properties, System.getenv(), (_, _) -> {});
     }
 
     public static Map<String, String> replaceEnvironmentVariables(

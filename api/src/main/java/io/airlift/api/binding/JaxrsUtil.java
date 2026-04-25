@@ -79,7 +79,7 @@ public class JaxrsUtil
     {
         Method handlingMethod = resourceMethod.getInvocable().getHandlingMethod();
 
-        return cache.computeIfAbsent(handlingMethod, ignore -> modelServices.services()
+        return cache.computeIfAbsent(handlingMethod, _ -> modelServices.services()
                 .stream()
                 .flatMap(modelService -> findApiService(handlingMethod, modelService).stream())
                 .findFirst());
