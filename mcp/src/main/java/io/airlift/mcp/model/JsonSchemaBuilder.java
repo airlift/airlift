@@ -3,59 +3,113 @@ package io.airlift.mcp.model;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.collect.ImmutableMap;
-import com.google.inject.TypeLiteral;
+import com.github.victools.jsonschema.generator.FieldScope;
+import com.github.victools.jsonschema.generator.Option;
+import com.github.victools.jsonschema.generator.OptionPreset;
+import com.github.victools.jsonschema.generator.SchemaGenerator;
+import com.github.victools.jsonschema.generator.SchemaGeneratorConfig;
+import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
+import com.github.victools.jsonschema.generator.SchemaVersion;
+import com.google.common.collect.ImmutableSet;
 import io.airlift.json.JsonMapperProvider;
-import io.airlift.mcp.McpDefaultValue;
 import io.airlift.mcp.McpDescription;
 import io.airlift.mcp.reflection.MethodParameter;
 import io.airlift.mcp.reflection.MethodParameter.ObjectParameter;
 
 import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.RecordComponent;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalDouble;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 import static io.airlift.mcp.reflection.ReflectionHelper.listArgument;
-import static io.airlift.mcp.reflection.ReflectionHelper.optionalArgument;
 import static java.util.Objects.requireNonNull;
 
 public class JsonSchemaBuilder
 {
-    private static final JsonMapper jsonMapper = new JsonMapperProvider().get();
+    private static final JsonMapper defaultJsonMapper = new JsonMapperProvider().get();
 
-    private static final Map<Class<?>, String> primitiveTypes = ImmutableMap.<Class<?>, String>builder()
-            .put(String.class, "string")
-            .put(Integer.class, "integer")
-            .put(int.class, "integer")
-            .put(Boolean.class, "boolean")
-            .put(boolean.class, "boolean")
-            .put(BigInteger.class, "number")
-            .put(BigDecimal.class, "number")
-            .put(Short.class, "number")
-            .put(short.class, "number")
-            .put(Long.class, "number")
-            .put(long.class, "number")
-            .put(Double.class, "number")
-            .put(double.class, "number")
-            .put(Float.class, "number")
-            .put(float.class, "number")
+    private static final SchemaGenerator defaultGenerator;
+
+    static {
+        defaultGenerator = buildGenerator(defaultJsonMapper);
+    }
+
+    private static SchemaGenerator buildGenerator(JsonMapper mapper)
+    {
+        SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(SchemaVersion.DRAFT_2020_12, OptionPreset.PLAIN_JSON)
+                .withObjectMapper(mapper)
+                .without(Option.SCHEMA_VERSION_INDICATOR);
+        configBuilder.forFields()
+                .withDescriptionResolver(JsonSchemaBuilder::findDescription)
+                .withRequiredCheck(target -> {
+                    boolean isOptional = Optional.class.equals(target.getDeclaredType().getErasedType());
+                    boolean isOptionalInt = OptionalInt.class.equals(target.getDeclaredType().getErasedType());
+                    boolean isOptionalLong = OptionalLong.class.equals(target.getDeclaredType().getErasedType());
+                    boolean isOptionalDouble = OptionalDouble.class.equals(target.getDeclaredType().getErasedType());
+                    return !isOptional && !isOptionalInt && !isOptionalLong && !isOptionalDouble;
+                });
+        SchemaGeneratorConfig config = configBuilder.build();
+        return new SchemaGenerator(config);
+    }
+
+    private static String findDescription(FieldScope target)
+    {
+        McpDescription mcpDescription = target.getAnnotation(McpDescription.class);
+        if ((mcpDescription == null) && (target.getRawMember().getDeclaringClass().getRecordComponents() != null)) {
+            mcpDescription = Stream.of(target.getRawMember().getDeclaringClass().getRecordComponents())
+                    .filter(component -> component.getName().equals(target.getName()))
+                    .findFirst()
+                    .flatMap(component -> Optional.ofNullable(component.getAnnotation(McpDescription.class)))
+                    .orElse(null);
+        }
+        return (mcpDescription != null) ? mcpDescription.value() : null;
+    }
+
+    private static final Set<Class<?>> primitiveTypes = ImmutableSet.<Class<?>>builder()
+            .add(String.class)
+            .add(Integer.class)
+            .add(int.class)
+            .add(Boolean.class)
+            .add(boolean.class)
+            .add(BigInteger.class)
+            .add(BigDecimal.class)
+            .add(Short.class)
+            .add(short.class)
+            .add(Long.class)
+            .add(long.class)
+            .add(Double.class)
+            .add(double.class)
+            .add(Float.class)
+            .add(float.class)
             .build();
 
-    private final String exceptionContext;
-    private final List<Class<?>> parents = new ArrayList<>();
+    private final JsonMapper jsonMapper;
+    private final SchemaGenerator generator;
 
-    public JsonSchemaBuilder(String exceptionContext)
+    public JsonSchemaBuilder()
     {
-        this.exceptionContext = requireNonNull(exceptionContext, "exceptionContext is null");
+        this(defaultJsonMapper, defaultGenerator);
+    }
+
+    public JsonSchemaBuilder(JsonMapper jsonMapper)
+    {
+        this(jsonMapper, buildGenerator(jsonMapper));
+    }
+
+    private JsonSchemaBuilder(JsonMapper jsonMapper, SchemaGenerator generator)
+    {
+        this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
+        this.generator = requireNonNull(generator, "generator is null");
     }
 
     public ObjectNode build(Optional<String> description, List<MethodParameter> parameters)
@@ -63,25 +117,9 @@ public class JsonSchemaBuilder
         return buildObject(description, (properties, required) -> parameters.stream()
                 .flatMap(methodParameter -> (methodParameter instanceof ObjectParameter objectParameter) ? Stream.of(objectParameter) : Stream.empty())
                 .forEach(objectParameter -> {
-                    ObjectNode typeNode;
-                    Class<?> rawType = objectParameter.rawType();
-                    if (Optional.class.isAssignableFrom(rawType)) {
-                        Type genericType = optionalArgument(objectParameter.genericType())
-                                .orElseThrow(() -> exception("Optional record component isn't fully declared: " + objectParameter.name()));
-                        rawType = TypeLiteral.get(genericType).getRawType();
-                    }
-                    if (rawType.isRecord()) {
-                        if (objectParameter.defaultValue().isPresent()) {
-                            throw exception("Default values for record types aren't supported: " + objectParameter.name());
-                        }
-                        typeNode = buildObject(objectParameter.description(), (objectProperties, objectRequired) ->
-                                buildRecord(objectParameter.rawType(), objectProperties, objectRequired));
-                    }
-                    else {
-                        typeNode = buildStandard(objectParameter.description(), rawType, objectParameter.defaultValue());
-                    }
-
-                    properties.set(objectParameter.name(), typeNode);
+                    ObjectNode objectNode = generator.generateSchema(objectParameter.genericType());
+                    objectParameter.description().ifPresent(value -> objectNode.put("description", value));
+                    properties.set(objectParameter.name(), objectNode);
 
                     if (objectParameter.required()) {
                         required.add(objectParameter.name());
@@ -89,83 +127,23 @@ public class JsonSchemaBuilder
                 }));
     }
 
-    public ObjectNode build(Optional<String> description, Class<?> recordType)
+    public ObjectNode build(Class<?> type)
     {
-        return buildObject(description, (objectProperties, objectRequried) ->
-                buildRecord(recordType, objectProperties, objectRequried));
+        return build(Optional.empty(), type);
     }
 
-    private ObjectNode buildStandard(Optional<String> description, Class<?> rawType, Optional<String> defaultValue)
+    public ObjectNode build(Optional<String> description, Class<?> type)
     {
-        ObjectNode typeNode = jsonMapper.createObjectNode();
-        typeNode.put("type", primitiveType(rawType));
-        description.ifPresent(value -> typeNode.put("description", value));
-        applyDefaultValue(rawType, defaultValue, typeNode);
-
-        if (rawType.isEnum()) {
-            ArrayNode enumValues = jsonMapper.createArrayNode();
-            Stream.of(rawType.getEnumConstants())
-                    .map(String::valueOf)
-                    .forEach(enumValues::add);
-            typeNode.set("enum", enumValues);
-        }
-
-        return typeNode;
-    }
-
-    private void applyDefaultValue(Class<?> rawType, Optional<String> defaultValue, ObjectNode typeNode)
-    {
-        try {
-            defaultValue.ifPresent(value -> typeNode.putPOJO("default", jsonMapper.convertValue(value, rawType)));
-        }
-        catch (Exception e) {
-            throw exception("Failed to convert default value: " + e.getMessage());
-        }
-    }
-
-    private void buildRecord(Class<?> recordType, ObjectNode properties, ArrayNode required)
-    {
-        if (parents.contains(recordType)) {
-            throw exception("Recursive type detected. Chain: " + parents);
-        }
-        parents.add(recordType);
-
-        try {
-            RecordComponent[] recordComponents = recordType.getRecordComponents();
-            for (RecordComponent recordComponent : recordComponents) {
-                Class<?> rawType;
-                Type genericType;
-                String name = recordComponent.getName();
-
-                if (Optional.class.isAssignableFrom(recordComponent.getType())) {
-                    genericType = optionalArgument(recordComponent.getGenericType())
-                            .orElseThrow(() -> exception("Optional record component isn't fully declared: " + name));
-                    rawType = TypeLiteral.get(genericType).getRawType();
-                }
-                else {
-                    required.add(name);
-                    rawType = recordComponent.getType();
-                    genericType = recordComponent.getGenericType();
-                }
-
-                Optional<String> description = Optional.ofNullable(recordComponent.getAnnotation(McpDescription.class))
-                        .map(McpDescription::value);
-                Optional<String> defaultValue = Optional.ofNullable(recordComponent.getAnnotation(McpDefaultValue.class))
-                        .map(McpDefaultValue::value);
-                ObjectNode typeNode = convertType(name, description, genericType, rawType, defaultValue);
-
-                properties.set(name, typeNode);
-            }
-        }
-        finally {
-            parents.removeLast();
-        }
+        ObjectNode objectNode = generator.generateSchema(type);
+        description.ifPresent(value -> objectNode.put("description", value));
+        addSchemaVersion(objectNode);
+        return objectNode;
     }
 
     public static boolean isPrimitiveType(Type type)
     {
         if (type instanceof Class<?> rawType) {
-            return primitiveTypes.containsKey(rawType);
+            return primitiveTypes.contains(rawType);
         }
         return false;
     }
@@ -173,7 +151,7 @@ public class JsonSchemaBuilder
     public static boolean isSupportedType(Type type)
     {
         if (type instanceof Class<?> rawType) {
-            return primitiveTypes.containsKey(rawType)
+            return primitiveTypes.contains(rawType)
                     || rawType.isRecord()
                     || (Map.class.isAssignableFrom(rawType) && isSupportedMap(type))
                     || (Collection.class.isAssignableFrom(rawType) && listArgument(type).map(JsonSchemaBuilder::isSupportedType).orElse(false));
@@ -188,64 +166,6 @@ public class JsonSchemaBuilder
                 && (parameterizedType.getActualTypeArguments()[1].equals(String.class) || parameterizedType.getActualTypeArguments()[1].equals(Object.class));
     }
 
-    private ObjectNode convertType(String name, Optional<String> description, Type genericType, Class<?> rawType, Optional<String> defaultValue)
-    {
-        ObjectNode typeNode;
-        if (rawType.isRecord()) {
-            if (defaultValue.isPresent()) {
-                throw exception("Default values for record types aren't supported: " + name);
-            }
-            typeNode = buildObject(description, (objectProperties, objectRequired) ->
-                    buildRecord(rawType, objectProperties, objectRequired));
-        }
-        else if (Map.class.isAssignableFrom(rawType)) {
-            if (!isSupportedMap(genericType)) {
-                throw exception("Map types for JSON schema must be Map<String, String> or Map<String, Object>");
-            }
-            if (defaultValue.isPresent()) {
-                throw exception("Default values for map types aren't supported: " + name);
-            }
-            typeNode = buildMap(description, ((ParameterizedType) genericType).getActualTypeArguments()[1]);
-        }
-        else if (Collection.class.isAssignableFrom(rawType)) {
-            Type collectionType = listArgument(genericType)
-                    .orElseThrow(() -> exception("Collection record component isn't fully declared: " + name));
-            if (defaultValue.isPresent()) {
-                throw exception("Default values for collection types aren't supported: " + name);
-            }
-            typeNode = buildArray(description, collectionType);
-        }
-        else {
-            typeNode = buildStandard(description, rawType, defaultValue);
-        }
-        return typeNode;
-    }
-
-    private ObjectNode buildArray(Optional<String> description, Type genericType)
-    {
-        Class<?> rawType = TypeLiteral.get(genericType).getRawType();
-        ObjectNode objectNode = convertType("[]", Optional.empty(), genericType, rawType, Optional.empty());
-
-        ObjectNode typeNode = jsonMapper.createObjectNode();
-        typeNode.put("type", "array");
-        typeNode.set("items", objectNode);
-        description.ifPresent(value -> typeNode.put("description", value));
-        return typeNode;
-    }
-
-    private ObjectNode buildMap(Optional<String> description, Type valueType)
-    {
-        ObjectNode additionalPropertiesNode = jsonMapper.createObjectNode();
-        additionalPropertiesNode.put("type", valueType.equals(Object.class) ? "object" : "string");
-
-        ObjectNode typeNode = jsonMapper.createObjectNode();
-        typeNode.put("type", "object");
-        typeNode.set("additionalProperties", additionalPropertiesNode);
-        description.ifPresent(value -> typeNode.put("description", value));
-
-        return typeNode;
-    }
-
     private ObjectNode buildObject(Optional<String> description, BiConsumer<ObjectNode, ArrayNode> propertiesConsumer)
     {
         ArrayNode requiredNode = jsonMapper.createArrayNode();
@@ -253,7 +173,7 @@ public class JsonSchemaBuilder
         propertiesConsumer.accept(propertiesNode, requiredNode);
 
         ObjectNode objectNode = jsonMapper.createObjectNode();
-        objectNode.put("$schema", "https://json-schema.org/draft/2020-12/schema");
+        addSchemaVersion(objectNode);
         description.ifPresent(value -> objectNode.put("description", value));
         objectNode.put("type", "object");
         objectNode.set("properties", propertiesNode);
@@ -261,17 +181,8 @@ public class JsonSchemaBuilder
         return objectNode;
     }
 
-    private String primitiveType(Class<?> rawType)
+    private static void addSchemaVersion(ObjectNode objectNode)
     {
-        if (rawType.isEnum()) {
-            return primitiveType(String.class);
-        }
-        return Optional.ofNullable(primitiveTypes.get(rawType))
-                .orElseThrow(() -> exception("Unsupported primitive type: " + rawType));
-    }
-
-    private RuntimeException exception(String message)
-    {
-        return new IllegalArgumentException(message + " at " + exceptionContext);
+        objectNode.put("$schema", "https://json-schema.org/draft/2020-12/schema");
     }
 }

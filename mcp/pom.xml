@@ -18,9 +18,15 @@
         <dep.docker-java.version>3.7.1</dep.docker-java.version>
         <dep.hikari.version>7.0.2</dep.hikari.version>
         <dep.postgresql.version>42.7.11</dep.postgresql.version>
+        <dep.jsonschema-generator.version>4.38.0</dep.jsonschema-generator.version>
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>com.fasterxml</groupId>
+            <artifactId>classmate</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
@@ -29,6 +35,12 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.victools</groupId>
+            <artifactId>jsonschema-generator</artifactId>
+            <version>${dep.jsonschema-generator.version}</version>
         </dependency>
 
         <dependency>
@@ -124,6 +136,7 @@
             <artifactId>jetty-http</artifactId>
             <scope>runtime</scope>
         </dependency>
+
         <dependency>
             <groupId>com.github.docker-java</groupId>
             <artifactId>docker-java-api</artifactId>
@@ -166,26 +179,12 @@
             <groupId>io.modelcontextprotocol.sdk</groupId>
             <artifactId>mcp-core</artifactId>
             <scope>test</scope>
-            <!-- mcp-core and mcp-json-jackson2 depend on mcp-json, but mcp-core shades it -->
-            <exclusions>
-                <exclusion>
-                    <groupId>io.modelcontextprotocol.sdk</groupId>
-                    <artifactId>mcp-json</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>
             <groupId>io.modelcontextprotocol.sdk</groupId>
             <artifactId>mcp-json-jackson2</artifactId>
             <scope>test</scope>
-            <!-- mcp-core and mcp-json-jackson2 depend on mcp-json, but mcp-core shades it -->
-            <exclusions>
-                <exclusion>
-                    <groupId>io.modelcontextprotocol.sdk</groupId>
-                    <artifactId>mcp-json</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>
@@ -233,53 +232,4 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>shade</id>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <phase>package</phase>
-                        <configuration>
-                            <createDependencyReducedPom>false</createDependencyReducedPom>
-                            <artifactSet>
-                                <includes>
-                                    <include>io.modelcontextprotocol.sdk:*</include>
-                                </includes>
-                            </artifactSet>
-                            <filters>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <exclude>**/module-info.class</exclude>
-                                        <exclude>META-INF/*.SF</exclude>
-                                        <exclude>META-INF/*.DSA</exclude>
-                                        <exclude>META-INF/*.RSA</exclude>
-                                        <exclude>META-INF/maven/**</exclude>
-                                        <exclude>META-INF/LICENSE</exclude>
-                                        <exclude>META-INF/LICENSE.*</exclude>
-                                        <exclude>META-INF/NOTICE</exclude>
-                                        <exclude>META-INF/NOTICE.*</exclude>
-                                        <exclude>META-INF/MANIFEST.*</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
-                            <relocations>
-                                <relocation>
-                                    <pattern>io.modelcontextprotocol</pattern>
-                                    <shadedPattern>io.airlift.mcp.shaded.io.modelcontextprotocol</shadedPattern>
-                                </relocation>
-                            </relocations>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
 </project>

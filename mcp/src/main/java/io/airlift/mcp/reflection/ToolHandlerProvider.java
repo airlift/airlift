@@ -165,18 +165,18 @@ public class ToolHandlerProvider
             outputSchema = Optional.empty();
         }
         else if (StructuredContentResult.class.isAssignableFrom(method.getReturnType())) {
-            JsonSchemaBuilder jsonSchemaBuilder = new JsonSchemaBuilder("Tool (return): " + tool.name());
+            JsonSchemaBuilder jsonSchemaBuilder = new JsonSchemaBuilder();
             outputSchema = Optional.of(jsonSchemaBuilder.build(description, requiredArgument(method.getGenericReturnType())));
         }
         else if (method.getReturnType().isRecord()) {
-            JsonSchemaBuilder jsonSchemaBuilder = new JsonSchemaBuilder("Tool (return): " + tool.name());
+            JsonSchemaBuilder jsonSchemaBuilder = new JsonSchemaBuilder();
             outputSchema = Optional.of(jsonSchemaBuilder.build(description, method.getReturnType()));
         }
         else {
             outputSchema = Optional.empty();
         }
 
-        JsonSchemaBuilder jsonSchemaBuilder = new JsonSchemaBuilder("Tool: " + tool.name());
+        JsonSchemaBuilder jsonSchemaBuilder = new JsonSchemaBuilder();
         ObjectNode jsonSchema = jsonSchemaBuilder.build(description, parameters);
 
         return applyApp(new Tool(tool.name(), description, title, jsonSchema, outputSchema, toolAnnotations), tool);

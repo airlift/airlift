@@ -304,7 +304,7 @@ public class TestingEndpoints
             throw new RuntimeException("Client does not support elicitation");
         }
 
-        ObjectNode elicitation = new JsonSchemaBuilder("elicitation").build(Optional.empty(), Person.class);
+        ObjectNode elicitation = new JsonSchemaBuilder().build(Person.class);
         ElicitRequestForm elicitRequest = new ElicitRequestForm("Who are you?", elicitation);
         JsonRpcResponse<ElicitResult> response;
         try {
