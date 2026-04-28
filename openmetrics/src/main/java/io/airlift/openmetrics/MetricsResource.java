@@ -24,10 +24,15 @@ import io.airlift.node.NodeInfo;
 import io.airlift.openmetrics.types.CompositeMetric;
 import io.airlift.openmetrics.types.Counter;
 import io.airlift.openmetrics.types.Gauge;
+import io.airlift.openmetrics.types.Histogram;
 import io.airlift.openmetrics.types.Metric;
 import io.airlift.openmetrics.types.Summary;
 import io.airlift.stats.CounterStat;
 import io.airlift.stats.TimeDistribution;
+import io.airlift.stats.labeled.LabelSet;
+import io.airlift.stats.labeled.LabeledCounterStat;
+import io.airlift.stats.labeled.LabeledGaugeStat;
+import io.airlift.stats.labeled.LabeledHistogramStat;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
@@ -47,6 +52,7 @@ import javax.management.ReflectionException;
 import javax.management.openmbean.CompositeData;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -256,6 +262,10 @@ public class MetricsResource
 
     private List<Metric> getMetricsRecursively(String prefix, ManagedClass managedClass)
     {
+        Optional<Metric> metricFromManagedClass = getMetricFromManagedClass(managedClass);
+        if (metricFromManagedClass.isPresent()) {
+            return metricFromManagedClass.stream().collect(toImmutableList());
+        }
         String metricName = sanitizeMetricName(prefix);
 
         ImmutableList.Builder<Metric> metrics = ImmutableList.builder();
@@ -295,25 +305,37 @@ public class MetricsResource
         return metrics.build();
     }
 
-    private Optional<Metric> getMetricFromTarget(ManagedClass managedClass, String metricName, String description)
+    private Optional<Object> getTarget(ManagedClass managedClass)
     {
-        Object target;
         try {
-            target = managedClass.getTarget();
+            return Optional.of(managedClass.getTarget());
         }
         catch (IllegalStateException ignored) {
             return Optional.empty();
         }
+    }
 
-        if (target instanceof CounterStat counterStat) {
-            return Optional.of(Counter.from(metricName, counterStat, labels, description));
-        }
+    private Optional<Metric> getMetricFromTarget(ManagedClass managedClass, String metricName, String description)
+    {
+        return getTarget(managedClass).flatMap(t -> switch (t) {
+            case CounterStat counterStat ->
+                    Optional.of(Counter.from(metricName, counterStat, labels, description));
+            case TimeDistribution timeDistribution ->
+                    Optional.of(Summary.from(metricName, timeDistribution, labels, description));
+            // Labeled stats are guaranteed to be registered as a top-level managed class
+            // if labeled stats are nested within another managed class, ignore them
+            default -> Optional.empty();
+        });
+    }
 
-        if (target instanceof TimeDistribution timeDistribution) {
-            return Optional.of(Summary.from(metricName, timeDistribution, labels, description));
-        }
-
-        return Optional.empty();
+    private Optional<Metric> getMetricFromManagedClass(ManagedClass managedClass)
+    {
+        return getTarget(managedClass).flatMap(t -> switch (t) {
+            case LabeledCounterStat.Value labeledCounterStat -> Optional.of(Counter.fromLabeledCounterStat(labels, labeledCounterStat));
+            case LabeledGaugeStat.Value labeledGaugeStat -> Optional.of(Gauge.fromLabeledGaugeStat(labels, labeledGaugeStat));
+            case LabeledHistogramStat.Value labeledHistogramStat -> Optional.of(Histogram.fromLabeledHistogramStat(labels, labeledHistogramStat));
+            default -> Optional.empty();
+        });
     }
 
     private List<Metric> getManagedMetrics()
@@ -352,6 +374,7 @@ public class MetricsResource
             checkState(metricTypes.size() == 1, "Metric family %s contains mixed metric types: %s", metricName, metricTypes);
 
             builder.append(metricFamily.getFirst().getMetricDescriptor());
+            metricFamily.sort(Comparator.comparing(Metric::labels, LabelSet.LABEL_SET_COMPARATOR));
             for (int i = 0; i < metricFamily.size(); i++) {
                 builder.append(metricFamily.get(i).getMetricExposition());
             }

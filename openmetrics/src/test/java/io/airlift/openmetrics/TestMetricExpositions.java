@@ -21,6 +21,9 @@ import io.airlift.openmetrics.types.Gauge;
 import io.airlift.openmetrics.types.Info;
 import io.airlift.openmetrics.types.Metric;
 import io.airlift.openmetrics.types.Summary;
+import io.airlift.stats.labeled.LabelSet;
+import io.airlift.stats.labeled.LabeledCounterStat;
+import io.airlift.stats.labeled.LabeledGaugeStat;
 import org.junit.jupiter.api.Test;
 
 import javax.management.openmbean.CompositeData;
@@ -305,6 +308,23 @@ public class TestMetricExpositions
         catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Test
+    public void testCommonLabelsAreMergedIntoLabeledStats()
+    {
+        Map<String, String> commonLabels = ImmutableMap.of("env", "prod", "host", "node1");
+        LabelSet statLabels = LabelSet.fromLabels(ImmutableMap.of("method", "GET"));
+
+        LabeledCounterStat.Value counterStat = new LabeledCounterStat.Value("requests_total", "Total requests", statLabels);
+        counterStat.increment();
+        Counter counter = Counter.fromLabeledCounterStat(commonLabels, counterStat);
+        assertThat(counter.getMetricExposition()).isEqualTo("requests_total{env=\"prod\",host=\"node1\",method=\"GET\"} 1\n");
+
+        LabeledGaugeStat.Value gaugeStat = new LabeledGaugeStat.Value("active_connections", "Active connections", statLabels);
+        gaugeStat.setValue(2);
+        Gauge gauge = Gauge.fromLabeledGaugeStat(commonLabels, gaugeStat);
+        assertThat(gauge.getMetricExposition()).isEqualTo("active_connections{env=\"prod\",host=\"node1\",method=\"GET\"} 2.0\n");
     }
 
     private String metricExpositions(List<Metric> metrics)

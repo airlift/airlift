@@ -17,27 +17,32 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import io.airlift.stats.labeled.LabelSet;
 
 import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.CompositeType;
 import javax.management.openmbean.TabularData;
 import javax.management.openmbean.TabularType;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
 
-public record CompositeMetric(String metricName, Map<String, String> labels, String help, List<Metric> subMetrics)
+public record CompositeMetric(String metricName, LabelSet labels, String help, List<Metric> subMetrics)
         implements Metric
 {
     public CompositeMetric
     {
         requireNonNull(metricName, "metricName is null");
         requireNonNull(subMetrics, "subMetrics is null");
-        labels = ImmutableMap.copyOf(labels);
+        requireNonNull(labels, "labels is null");
+    }
+
+    public CompositeMetric(String metricName, Map<String, String> labels, String help, List<Metric> subMetrics)
+    {
+        this(metricName, LabelSet.fromLabels(labels), help, ImmutableList.copyOf(subMetrics));
     }
 
     public static CompositeMetric from(String metricName, Object value, Map<String, String> labels, String help)
@@ -65,14 +70,15 @@ public record CompositeMetric(String metricName, Map<String, String> labels, Str
 
                 for (Object entry : tabularData.values()) {
                     if (entry instanceof CompositeData compositeData) {
-                        Map<String, String> rowLabels = new HashMap<>(labels);
+                        ImmutableMap.Builder<String, String> rowLabels = ImmutableMap.<String, String>builder()
+                                .putAll(labels);
                         for (String indexName : indexNames) {
                             if (compositeData.containsKey(indexName)) {
                                 rowLabels.put(indexName, compositeData.get(indexName).toString());
                             }
                         }
                         for (String itemName : Sets.difference(compositeData.getCompositeType().keySet(), indexNames)) {
-                            extractMetrics(compositeData.get(itemName), prefix + "_" + itemName, rowLabels, help, metrics);
+                            extractMetrics(compositeData.get(itemName), prefix + "_" + itemName, rowLabels.buildOrThrow(), help, metrics);
                         }
                     }
                 }

@@ -13,19 +13,25 @@
  */
 package io.airlift.openmetrics.types;
 
-import com.google.common.collect.ImmutableMap;
+import io.airlift.stats.labeled.LabelSet;
+import io.airlift.stats.labeled.LabeledGaugeStat;
 
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
 
-public record Gauge(String metricName, double value, Map<String, String> labels, String help)
+public record Gauge(String metricName, double value, LabelSet labels, String help)
         implements Metric
 {
     public Gauge
     {
         requireNonNull(metricName, "metricName is null");
-        labels = ImmutableMap.copyOf(labels);
+        requireNonNull(labels, "labels is null");
+    }
+
+    public Gauge(String metricName, double value, Map<String, String> labels, String help)
+    {
+        this(metricName, value, LabelSet.fromLabels(labels), help);
     }
 
     public static Gauge from(String metricName, Number value, Map<String, String> labels, String help)
@@ -33,10 +39,16 @@ public record Gauge(String metricName, double value, Map<String, String> labels,
         return new Gauge(metricName, value.doubleValue(), labels, help);
     }
 
+    public static Gauge fromLabeledGaugeStat(Map<String, String> commonLabels, LabeledGaugeStat.Value labeledGaugeStat)
+    {
+        LabelSet mergedLabels = LabelSet.fromLabels(commonLabels, labeledGaugeStat.labels().asMap());
+        return new Gauge(labeledGaugeStat.metricName(), labeledGaugeStat.getValue(), mergedLabels, labeledGaugeStat.description());
+    }
+
     @Override
     public String getMetricExposition()
     {
-        return Metric.formatSingleValuedMetric(metricName, labels, Double.toString(value));
+        return Metric.formatSingleValuedMetric(metricName, labels.asMap(), Double.toString(value));
     }
 
     @Override
