@@ -21,7 +21,7 @@
         <dep.commons-fileupload2.version>2.0.0-M5</dep.commons-fileupload2.version>
         <dep.apache.httpcore.version>4.4.16</dep.apache.httpcore.version>
         <dep.apache.httpmime.version>4.5.14</dep.apache.httpmime.version>
-        <dep.swagger.version>2.1.40</dep.swagger.version>
+        <dep.swagger.version>2.1.41</dep.swagger.version>
         <dep.jackson-databind-nullable.version>0.2.10</dep.jackson-databind-nullable.version>
         <dep.exec-maven-plugin.version>3.6.3</dep.exec-maven-plugin.version>
     </properties>
