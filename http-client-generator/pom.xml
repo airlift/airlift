@@ -15,7 +15,7 @@
 
     <properties>
         <air.main.basedir>${project.parent.basedir}</air.main.basedir>
-        <dep.openapi-generator.version>7.21.0</dep.openapi-generator.version>
+        <dep.openapi-generator.version>7.22.0</dep.openapi-generator.version>
         <dep.takari-plugin-testing.version>3.1.1</dep.takari-plugin-testing.version>
     </properties>
 
