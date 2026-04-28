@@ -19,7 +19,12 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public sealed interface Metric
-        permits BigCounter, CompositeMetric, Counter, Gauge, Info, Summary
+        permits BigCounter,
+                CompositeMetric,
+                Counter,
+                Gauge,
+                Info,
+                Summary
 {
     String metricName();
 

@@ -44,7 +44,8 @@ public class TestMetricExpositions
     @Test
     public void testMetricLabelEscaping()
     {
-        String expected = """
+        String expected =
+                """
                 # TYPE metric_name counter
                 # HELP metric_name metric_help
                 metric_name{a="back\\\\slash",b="new\\nline",c="\\"quoted\\""} 0
@@ -68,9 +69,10 @@ public class TestMetricExpositions
                 metric_name 0
                 """;
 
-        Counter counter = new Counter("metric_name", 0, ImmutableMap.of(), """
-        metric_help
-        multiline""");
+        Counter counter = new Counter("metric_name", 0, ImmutableMap.of(),
+                """
+                metric_help
+                multiline""");
         BigCounter bigCounter = new BigCounter("metric_name", BigInteger.ZERO, ImmutableMap.of(), "metric_help");
         assertThat(counter.getMetricExposition()).isEqualTo(bigCounter.getMetricExposition());
         assertThat(getMetricExpositionWithDescriptor(counter)).isEqualTo(expected);
@@ -132,7 +134,6 @@ public class TestMetricExpositions
 
         Info info = new Info("metric_name", "banana", ImmutableMap.of(), "metric_help");
         assertThat(getMetricExpositionWithDescriptor(info)).isEqualTo(expected);
-
     }
 
     @Test

@@ -378,8 +378,10 @@ class AirliftHttpClientCodegenIntegrationTest
             List<String> options = List.of(
                     "-proc:none",
                     "-implicit:none",
-                    "-d", classesDir.toString(),
-                    "-classpath", classpath);
+                    "-d",
+                    classesDir.toString(),
+                    "-classpath",
+                    classpath);
 
             JavaCompiler.CompilationTask task = compiler.getTask(
                     null,

@@ -343,7 +343,8 @@ public class TestLogger
 
         @Override
         public void close()
-                throws SecurityException {}
+                throws SecurityException
+        {}
 
         public LogRecord takeRecord()
         {

@@ -61,7 +61,7 @@ public class TestConformance
         nodeContainer = closer.register(new TestingNodeContainer());
 
         TestingServer testingServer = closer.register(new TestingServer(ImmutableMap.of(), Optional.empty(), builder -> builder
-                .withIdentityMapper(TestingIdentity.class, binding -> binding.toInstance((_) -> authenticated(new TestingIdentity("Mr. Tester"))))
+                .withIdentityMapper(TestingIdentity.class, binding -> binding.toInstance(_ -> authenticated(new TestingIdentity("Mr. Tester"))))
                 .withStorage(binding -> binding.to(MemoryStorageController.class).in(SINGLETON))
                 .withSessions(binding -> binding.to(StandardSessionController.class).in(Scopes.SINGLETON))
                 .withAllInClass(ConformanceEndpoints.class)

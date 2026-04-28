@@ -36,20 +36,20 @@ public class TestMetricsResource
     public void testNestedCompositeMetricExposition()
     {
         String expected =
-            """
-            # TYPE metric_name_count gauge
-            # HELP metric_name_count metric_help
-            metric_name_count 10.0
-            # TYPE metric_name_nested_committed gauge
-            # HELP metric_name_nested_committed metric_help
-            metric_name_nested_committed 1.0
-            # TYPE metric_name_nested_max gauge
-            # HELP metric_name_nested_max metric_help
-            metric_name_nested_max 1.0
-            # TYPE metric_name_nested_used gauge
-            # HELP metric_name_nested_used metric_help
-            metric_name_nested_used 1.0
-            """;
+                """
+                # TYPE metric_name_count gauge
+                # HELP metric_name_count metric_help
+                metric_name_count 10.0
+                # TYPE metric_name_nested_committed gauge
+                # HELP metric_name_nested_committed metric_help
+                metric_name_nested_committed 1.0
+                # TYPE metric_name_nested_max gauge
+                # HELP metric_name_nested_max metric_help
+                metric_name_nested_max 1.0
+                # TYPE metric_name_nested_used gauge
+                # HELP metric_name_nested_used metric_help
+                metric_name_nested_used 1.0
+                """;
 
         CompositeData topLevel = createNestedCompositeData(10, 1, 1, 1);
         CompositeMetric compositeMetric = CompositeMetric.from("metric_name", topLevel, ImmutableMap.of(), "metric_help");
@@ -65,15 +65,16 @@ public class TestMetricsResource
         Counter counterTwo = new Counter("test_metric", 12, ImmutableMap.of("a", "456", "b", "789"), "Help text two");
 
         String metricExpositions = metricExpositions(ImmutableList.of(counterOne, gauge, counterTwo));
-        assertThat(metricExpositions).isEqualTo("""
-            # TYPE test_metric counter
-            # HELP test_metric Help text one
-            test_metric{a="123",b="456"} 42
-            test_metric{a="456",b="789"} 12
-            # TYPE another_metric gauge
-            # HELP another_metric Help text
-            another_metric{a="456",b="789"} 1.0
-            """);
+        assertThat(metricExpositions).isEqualTo(
+                """
+                # TYPE test_metric counter
+                # HELP test_metric Help text one
+                test_metric{a="123",b="456"} 42
+                test_metric{a="456",b="789"} 12
+                # TYPE another_metric gauge
+                # HELP another_metric Help text
+                another_metric{a="456",b="789"} 1.0
+                """);
     }
 
     @Test
@@ -85,20 +86,21 @@ public class TestMetricsResource
         CompositeMetric compositeMetricTwo = CompositeMetric.from("metric_name", compositeDataTwo, ImmutableMap.of("a", "2"), "metric_help");
 
         String metricExpositions = metricExpositions(ImmutableList.of(compositeMetricOne, compositeMetricTwo));
-        assertThat(metricExpositions).isEqualTo("""
-            # TYPE metric_name_committed gauge
-            # HELP metric_name_committed metric_help
-            metric_name_committed{a="1"} 100.0
-            metric_name_committed{a="2"} 200.0
-            # TYPE metric_name_max gauge
-            # HELP metric_name_max metric_help
-            metric_name_max{a="1"} 1000.0
-            metric_name_max{a="2"} 2000.0
-            # TYPE metric_name_used gauge
-            # HELP metric_name_used metric_help
-            metric_name_used{a="1"} 100.0
-            metric_name_used{a="2"} 200.0
-            """);
+        assertThat(metricExpositions).isEqualTo(
+                """
+                # TYPE metric_name_committed gauge
+                # HELP metric_name_committed metric_help
+                metric_name_committed{a="1"} 100.0
+                metric_name_committed{a="2"} 200.0
+                # TYPE metric_name_max gauge
+                # HELP metric_name_max metric_help
+                metric_name_max{a="1"} 1000.0
+                metric_name_max{a="2"} 2000.0
+                # TYPE metric_name_used gauge
+                # HELP metric_name_used metric_help
+                metric_name_used{a="1"} 100.0
+                metric_name_used{a="2"} 200.0
+                """);
     }
 
     @Test
@@ -125,12 +127,13 @@ public class TestMetricsResource
         CompositeMetric compositeMetric = new CompositeMetric("test_metric", ImmutableMap.of(), "Help text", ImmutableList.of(subMetric));
 
         String metricExpositions = metricExpositions(ImmutableList.of(counter, compositeMetric));
-        assertThat(metricExpositions).isEqualToIgnoringWhitespace("""
-            # TYPE test_metric.abc counter
-            # HELP test_metric.abc Help text
-            test_metric.abc 42
-            test_metric.abc 12
-            """);
+        assertThat(metricExpositions).isEqualToIgnoringWhitespace(
+                """
+                # TYPE test_metric.abc counter
+                # HELP test_metric.abc Help text
+                test_metric.abc 42
+                test_metric.abc 12
+                """);
     }
 
     private String metricExpositions(List<Metric> metrics)

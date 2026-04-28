@@ -89,10 +89,10 @@ public class TestHttpClientBinder
     @Test
     public void testGlobalFilterBinding()
     {
-        HttpRequestFilter globalFilter1 = (r) -> r;
-        HttpRequestFilter globalFilter2 = (r) -> r;
-        HttpRequestFilter filter1 = (r) -> r;
-        HttpRequestFilter filter2 = (r) -> r;
+        HttpRequestFilter globalFilter1 = r -> r;
+        HttpRequestFilter globalFilter2 = r -> r;
+        HttpRequestFilter filter1 = r -> r;
+        HttpRequestFilter filter2 = r -> r;
         Injector injector = new Bootstrap(
                 binder -> {
                     httpClientBinder(binder)

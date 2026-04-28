@@ -275,7 +275,8 @@ class SchemaBuilder
             }
 
             name = builder.toString();
-        } while (usedNames.contains(name));
+        }
+        while (usedNames.contains(name));
 
         return name;
     }

@@ -22,7 +22,8 @@ public class Operation
     private ApiResponses responses;
     private Boolean deprecated;
     private List<SecurityRequirement> security;
-    @JsonUnwrapped public MapWrapper extensions;
+    @JsonUnwrapped
+    public MapWrapper extensions;
 
     // https://claude.ai/chat/e32e2c16-53d8-4c86-a6b1-8654d5da1149
     public static class MapWrapper

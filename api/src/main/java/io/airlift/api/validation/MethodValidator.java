@@ -47,7 +47,7 @@ public interface MethodValidator
     Logger log = Logger.get(MethodValidator.class);
 
     Map<ApiType, Collection<Class<?>>> ALLOWED_PARAMETER_TYPES = ImmutableMap.of(
-            ApiType.GET, ImmutableSet.of(ApiFilter.class, ApiFilterList.class, ApiModifier.class, ApiHeader.class/*, ApiOrderBy.class*/),
+            ApiType.GET, ImmutableSet.of(ApiFilter.class, ApiFilterList.class, ApiModifier.class, ApiHeader.class /*, ApiOrderBy.class*/),
             ApiType.LIST, ImmutableSet.of(ApiPagination.class, ApiFilter.class, ApiFilterList.class, ApiModifier.class, ApiHeader.class, ApiOrderBy.class),
             ApiType.CREATE, ImmutableSet.of(ApiValidateOnly.class, ApiModifier.class, ApiHeader.class),
             ApiType.UPDATE, ImmutableSet.of(ApiValidateOnly.class, ApiFilter.class, ApiFilterList.class, ApiModifier.class, ApiHeader.class, ApiOrderBy.class),

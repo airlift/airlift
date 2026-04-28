@@ -122,7 +122,8 @@ public class TestMcpPagination
             R results = resultsSupplier.apply(nextCursor);
             mapper.apply(results).forEach(queriedNames::add);
             nextCursor = nextCursorMapper.apply(results);
-        } while (nextCursor != null);
+        }
+        while (nextCursor != null);
 
         assertThat(queriedNames).containsExactlyInAnyOrderElementsOf(expected);
 

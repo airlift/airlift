@@ -217,7 +217,7 @@ class OpenApiBuilder
                 .peek(serviceDetail -> orderedSections.add(serviceDetail.section()))
                 .collect(Collectors.groupingBy(ServiceDetail::section));
 
-        bySection.forEach((section, serviceDetails) ->
+        bySection.forEach((_, serviceDetails) ->
                 serviceDetails.forEach(serviceDetail -> tags.add(new Tag().name(serviceDetail.label()).description(serviceDetail.description()))));
 
         orderedSections.forEach(sectionName -> {
