@@ -9,7 +9,7 @@
     </parent>
 
     <artifactId>airlift</artifactId>
-    <version>424-SNAPSHOT</version>
+    <version>424</version>
     <packaging>pom</packaging>
 
     <name>airlift</name>
@@ -80,7 +80,7 @@
     <scm>
         <connection>scm:git:git://github.com/airlift/airlift.git</connection>
         <developerConnection>scm:git:git@github.com:airlift/airlift.git</developerConnection>
-        <tag>HEAD</tag>
+        <tag>424</tag>
         <url>https://github.com/airlift/airlift/tree/master</url>
     </scm>
 
@@ -99,7 +99,7 @@
 
         <project.build.targetJdk>25</project.build.targetJdk>
 
-        <dep.airlift.version>424-SNAPSHOT</dep.airlift.version>
+        <dep.airlift.version>424</dep.airlift.version>
         <dep.brotli4j.version>1.23.0</dep.brotli4j.version>
         <dep.bouncycastle.version>1.84</dep.bouncycastle.version>
         <dep.mcp.sdk.version>1.1.2</dep.mcp.sdk.version>
