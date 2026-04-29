@@ -133,7 +133,7 @@ public class ConformanceEndpoints
     public String testElicitation(McpRequestContext requestContext, @McpDescription("The message to show the user") String message)
             throws InterruptedException, TimeoutException
     {
-        ObjectNode schema = new JsonSchemaBuilder("testElicitation").build(Optional.of("User's response"), TestElicitation.class);
+        ObjectNode schema = new JsonSchemaBuilder().build(Optional.of("User's response"), TestElicitation.class);
         ElicitRequestForm elicitRequestForm = new ElicitRequestForm(message, schema);
         JsonRpcResponse<ElicitResult> response = requestContext.serverToClientRequest(METHOD_ELICITATION_CREATE, elicitRequestForm, ElicitResult.class, Duration.ofMinutes(5), Duration.ofSeconds(1));
         return response.result().map(result -> "User response: action=%s, content=%s".formatted(result.action(), mapToJson(result.content())))
