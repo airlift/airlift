@@ -22,8 +22,8 @@ import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.opentelemetry.sdk.trace.SpanProcessor;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
+import io.opentelemetry.semconv.DeploymentAttributes;
 import io.opentelemetry.semconv.ServiceAttributes;
-import io.opentelemetry.semconv.incubating.DeploymentIncubatingAttributes;
 import org.junit.jupiter.api.Test;
 
 import static com.google.common.collect.MoreCollectors.onlyElement;
@@ -110,7 +110,7 @@ public class TestOpenTelemetryModule
         assertThat(span.getResource().getAttributes().asMap()).contains(
                 entry(ServiceAttributes.SERVICE_NAME, "testService"),
                 entry(ServiceAttributes.SERVICE_VERSION, "testVersion"),
-                entry(DeploymentIncubatingAttributes.DEPLOYMENT_ENVIRONMENT_NAME, environment));
+                entry(DeploymentAttributes.DEPLOYMENT_ENVIRONMENT_NAME, environment));
     }
 
     @Test
@@ -146,7 +146,7 @@ public class TestOpenTelemetryModule
         assertThat(logRecord.getResource().getAttributes().asMap()).contains(
                 entry(ServiceAttributes.SERVICE_NAME, "testService"),
                 entry(ServiceAttributes.SERVICE_VERSION, "testVersion"),
-                entry(DeploymentIncubatingAttributes.DEPLOYMENT_ENVIRONMENT_NAME, environment));
+                entry(DeploymentAttributes.DEPLOYMENT_ENVIRONMENT_NAME, environment));
     }
 
     @Test
@@ -182,6 +182,6 @@ public class TestOpenTelemetryModule
         assertThat(metric.getResource().getAttributes().asMap()).contains(
                 entry(ServiceAttributes.SERVICE_NAME, "testService"),
                 entry(ServiceAttributes.SERVICE_VERSION, "testVersion"),
-                entry(DeploymentIncubatingAttributes.DEPLOYMENT_ENVIRONMENT_NAME, environment));
+                entry(DeploymentAttributes.DEPLOYMENT_ENVIRONMENT_NAME, environment));
     }
 }

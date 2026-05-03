@@ -26,8 +26,8 @@ import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.SdkTracerProviderBuilder;
 import io.opentelemetry.sdk.trace.SpanLimits;
 import io.opentelemetry.sdk.trace.SpanProcessor;
+import io.opentelemetry.semconv.DeploymentAttributes;
 import io.opentelemetry.semconv.ServiceAttributes;
-import io.opentelemetry.semconv.incubating.DeploymentIncubatingAttributes;
 import io.opentelemetry.semconv.incubating.HostIncubatingAttributes;
 import io.opentelemetry.semconv.incubating.OsIncubatingAttributes;
 import io.opentelemetry.semconv.incubating.ProcessIncubatingAttributes;
@@ -101,7 +101,7 @@ public class OpenTelemetryModule
                 .put(ServiceAttributes.SERVICE_NAME, serviceName)
                 .put(ServiceAttributes.SERVICE_VERSION, serviceVersion)
                 .put(ServiceAttributes.SERVICE_INSTANCE_ID, nodeInfo.getNodeId())
-                .put(DeploymentIncubatingAttributes.DEPLOYMENT_ENVIRONMENT_NAME, nodeInfo.getEnvironment())
+                .put(DeploymentAttributes.DEPLOYMENT_ENVIRONMENT_NAME, nodeInfo.getEnvironment())
                 .put(ProcessIncubatingAttributes.PROCESS_RUNTIME_NAME, System.getProperty("java.runtime.name"))
                 .put(ProcessIncubatingAttributes.PROCESS_RUNTIME_VERSION, System.getProperty("java.runtime.version"))
                 .put(ProcessIncubatingAttributes.PROCESS_RUNTIME_DESCRIPTION, processRuntime())
