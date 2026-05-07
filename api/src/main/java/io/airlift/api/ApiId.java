@@ -80,7 +80,9 @@ public abstract class ApiId<RESOURCE, INTERNALID>
     @SuppressWarnings("rawtypes")
     private Optional<Constructor<?>> validateAndGetInternalConstructor(Class<? extends ApiId> clazz)
     {
-        if (ApiEnumId.class.isAssignableFrom(clazz) || ApiStringId.class.isAssignableFrom(clazz)) {
+        if (ApiEnumId.class.isAssignableFrom(clazz) ||
+                ApiStringId.class.isAssignableFrom(clazz) ||
+                ApiUuidId.class.isAssignableFrom(clazz)) {
             return Optional.empty();
         }
 

@@ -13,6 +13,7 @@ import io.airlift.api.ApiStreamResponse.ApiByteStreamResponse;
 import io.airlift.api.ApiStreamResponse.ApiOutputStreamResponse;
 import io.airlift.api.ApiStreamResponse.ApiTextStreamResponse;
 import io.airlift.api.ApiStringId;
+import io.airlift.api.ApiUuidId;
 import io.airlift.api.model.ModelResource;
 import io.airlift.log.Logger;
 import jakarta.ws.rs.core.MediaType;
@@ -25,6 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -135,6 +137,9 @@ public class ValidationContext
             if (parameterizedType.getRawType().equals(ApiStringId.class) && (index == 1)) {
                 return String.class;
             }
+            if (parameterizedType.getRawType().equals(ApiUuidId.class) && (index == 1)) {
+                return UUID.class;
+            }
 
             if (parameterizedType.getActualTypeArguments().length <= index) {
                 throw new ValidatorException("%s does not have expected (%d) number of parameters".formatted(type, index + 1));
@@ -213,7 +218,7 @@ public class ValidationContext
             throw new ValidatorException("ID's resource type parameter is not a valid resource type: %s".formatted(resourceType));
         }
 
-        if (!ApiEnumId.class.isAssignableFrom(idClass)) {
+        if (!ApiEnumId.class.isAssignableFrom(idClass) && !ApiStringId.class.isAssignableFrom(idClass) && !ApiUuidId.class.isAssignableFrom(idClass)) {
             Class<?> internalIdType = extractGenericParameterAsClass(idClass.getGenericSuperclass(), 1);
             try {
                 internalIdType.getConstructor(String.class);

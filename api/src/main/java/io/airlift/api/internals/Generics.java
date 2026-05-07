@@ -3,10 +3,12 @@ package io.airlift.api.internals;
 import com.google.common.reflect.TypeResolver;
 import com.google.common.reflect.TypeToken;
 import io.airlift.api.ApiStringId;
+import io.airlift.api.ApiUuidId;
 import io.airlift.api.validation.ValidatorException;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.UUID;
 
 public interface Generics
 {
@@ -17,6 +19,9 @@ public interface Generics
         if (type instanceof ParameterizedType parameterizedType) {
             if (parameterizedType.getRawType().equals(ApiStringId.class) && (index == 1)) {
                 return String.class;
+            }
+            if (parameterizedType.getRawType().equals(ApiUuidId.class) && (index == 1)) {
+                return UUID.class;
             }
 
             if (parameterizedType.getActualTypeArguments().length <= index) {

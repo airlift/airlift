@@ -12,17 +12,25 @@ import io.airlift.api.binding.PolyResourceModule;
 import io.airlift.api.builders.ApiBuilder;
 import io.airlift.api.model.ModelApi;
 import io.airlift.api.model.ModelResource;
+import io.airlift.api.model.ModelResourceType;
 import io.airlift.api.model.ModelServiceMetadata;
 import io.airlift.api.model.ModelServiceType;
 import io.airlift.api.model.ModelServices;
+import io.airlift.api.responses.ApiBadRequest;
 import io.airlift.json.JsonModule;
+import jakarta.ws.rs.WebApplicationException;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 import static io.airlift.api.builders.ResourceBuilder.resourceBuilder;
 import static io.airlift.api.internals.Mappers.buildHeaderName;
+import static io.airlift.api.model.ModelResourceModifier.OPTIONAL;
 import static io.airlift.api.model.ModelResourceModifier.RECURSIVE_REFERENCE;
+import static io.airlift.api.model.ModelResourceType.BASIC;
+import static io.airlift.api.model.ModelResourceType.LIST;
 import static io.airlift.api.validation.ResourceValidator.validateResource;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -146,6 +154,35 @@ public class TestConforming
         ModelApi modelApi = ApiBuilder.apiBuilder().add(ServiceWithAllTypes.class).build();
         Module module = ApiModule.builder().addApi(modelApi).build();
         Guice.createInjector(module, new JsonModule());
+
+        ModelResource allTypes = resourceBuilder(ResourceWithAllTypes.class).build();
+        assertIdComponent(allTypes, "nameId", ResourceWithAllTypes.SimpleId.class, BASIC, false);
+        assertIdComponent(allTypes, "listOfNameIds", ResourceWithAllTypes.SimpleId.class, LIST, false);
+        assertIdComponent(allTypes, "maybeNameIds", ResourceWithAllTypes.SimpleId.class, LIST, true);
+        assertIdComponent(allTypes, "maybeNameId", ResourceWithAllTypes.SimpleId.class, BASIC, true);
+        assertIdComponent(allTypes, "uuidId", ResourceWithAllTypes.SimpleUuidId.class, BASIC, false);
+        assertIdComponent(allTypes, "listOfUuidIds", ResourceWithAllTypes.SimpleUuidId.class, LIST, false);
+        assertIdComponent(allTypes, "maybeUuidIds", ResourceWithAllTypes.SimpleUuidId.class, LIST, true);
+        assertIdComponent(allTypes, "maybeUuidId", ResourceWithAllTypes.SimpleUuidId.class, BASIC, true);
+    }
+
+    @Test
+    public void testApiUuidId()
+    {
+        UUID uuid = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        ResourceWithAllTypes.SimpleUuidId id = new ResourceWithAllTypes.SimpleUuidId(uuid);
+
+        assertThat(id).hasToString(uuid.toString());
+        assertThat(id.value()).isEqualTo(uuid);
+        assertThat(id.toInternal()).isEqualTo(uuid);
+        assertThat(new ResourceWithAllTypes.SimpleUuidId().toInternal()).isEqualTo(new UUID(0L, 0L));
+        assertThat(new ResourceWithAllTypes.SimpleUuidId(uuid.toString()).toInternal()).isEqualTo(uuid);
+        assertThatThrownBy(() -> new ResourceWithAllTypes.SimpleUuidId((UUID) null))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("id is null");
+        assertThatThrownBy(() -> new ResourceWithAllTypes.SimpleUuidId("invalid").toInternal())
+                .isInstanceOfSatisfying(WebApplicationException.class, exception -> assertThat(exception.getResponse().getEntity())
+                        .isEqualTo(new ApiBadRequest(Optional.of("Invalid id: invalid"), Optional.of(ImmutableList.of("id")))));
     }
 
     @Test
@@ -240,5 +277,22 @@ public class TestConforming
 
         ResourceSerializationValidator serializationValidator = new ResourceSerializationValidator(ImmutableSet.of(RecursiveResource.class));
         serializationValidator.validateSerialization(jsonMapper);
+    }
+
+    private static void assertIdComponent(ModelResource resource, String name, Class<?> type, ModelResourceType resourceType, boolean optional)
+    {
+        ModelResource component = resource.components().stream()
+                .filter(candidate -> candidate.name().equals(name))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(component.type()).isEqualTo(type);
+        assertThat(component.resourceType()).isEqualTo(resourceType);
+        if (optional) {
+            assertThat(component.modifiers()).contains(OPTIONAL);
+        }
+        else {
+            assertThat(component.modifiers()).doesNotContain(OPTIONAL);
+        }
     }
 }
