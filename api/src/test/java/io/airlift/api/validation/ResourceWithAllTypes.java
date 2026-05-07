@@ -5,6 +5,7 @@ import io.airlift.api.ApiDescription;
 import io.airlift.api.ApiReadOnly;
 import io.airlift.api.ApiResource;
 import io.airlift.api.ApiStringId;
+import io.airlift.api.ApiUuidId;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -44,9 +45,14 @@ public record ResourceWithAllTypes(
         @ApiDescription("A type") Set<SimpleResource> sSimpleResource,
         @ApiDescription("A type") Optional<SimpleResource> oSimpleResource,
         @ApiDescription("A type") Optional<UUID> oUuid,
+        @ApiDescription("A type") SimpleId nameId,
         @ApiDescription("A type") List<SimpleId> listOfNameIds,
         @ApiDescription("A type") Optional<List<SimpleId>> maybeNameIds,
         @ApiDescription("A type") Optional<SimpleId> maybeNameId,
+        @ApiDescription("A type") SimpleUuidId uuidId,
+        @ApiDescription("A type") List<SimpleUuidId> listOfUuidIds,
+        @ApiDescription("A type") Optional<List<SimpleUuidId>> maybeUuidIds,
+        @ApiDescription("A type") Optional<SimpleUuidId> maybeUuidId,
         @ApiDescription("A type") PolyInPoly pp,
         @ApiDescription("A type") Optional<PolyInPoly> ppo)
 {
@@ -61,6 +67,10 @@ public record ResourceWithAllTypes(
     @ApiReadOnly
     public record SimpleResource(@ApiDescription("A name") String name) {}
 
+    @ApiResource(name = "uuid", description = "A UUID")
+    @ApiReadOnly
+    public record UuidResource(@ApiDescription("A UUID") UUID uuid) {}
+
     public static class SimpleId
             extends ApiStringId<SimpleResource>
     {
@@ -71,6 +81,26 @@ public record ResourceWithAllTypes(
 
         @JsonCreator
         public SimpleId(String id)
+        {
+            super(id);
+        }
+    }
+
+    public static class SimpleUuidId
+            extends ApiUuidId<UuidResource>
+    {
+        public SimpleUuidId()
+        {
+            super(defaultUuidValue());
+        }
+
+        public SimpleUuidId(UUID id)
+        {
+            super(id);
+        }
+
+        @JsonCreator
+        public SimpleUuidId(String id)
         {
             super(id);
         }
