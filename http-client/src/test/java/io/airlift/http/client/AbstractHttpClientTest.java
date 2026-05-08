@@ -17,6 +17,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpResponseException;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.parallel.Execution;
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.File;
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -51,6 +53,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -838,6 +841,104 @@ public abstract class AbstractHttpClientTest
     }
 
     @Test
+    @Timeout(30)
+    public void testEarlyServerResponseIsDelivered()
+            throws Exception
+    {
+        // The server commits a final response without reading the upload body and
+        // tears down the exchange. The already-received response must still reach
+        // the caller even though the upload could not finish.
+        try (CloseableTestHttpServer server = newServerWithServlet(new EarlyResponseServlet())) {
+            Request request = rejectingUploadRequest(server);
+            StatusResponse response = executeRequest(server, request, createStatusResponseHandler());
+            assertThat(response.getStatusCode()).isEqualTo(503);
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    public void testSharedConnectionStaysUsableAfterEarlyResponse()
+            throws Exception
+    {
+        // Pinning the pool to a single connection forces the second request to either
+        // reuse the same connection (HTTP/2 multiplexing) or use one freshly opened
+        // by the pool after the previous one was closed (HTTP/1.1 abort path).
+        HttpClientConfig config = createClientConfig().setMaxConnectionsPerServer(1);
+        try (CloseableTestHttpServer server = newServerWithServlet(new EarlyResponseServlet())) {
+            Request rejected = rejectingUploadRequest(server);
+            Request regular = prepareGet()
+                    .setUri(server.baseURI())
+                    .build();
+
+            assertThat(executeRequest(server, config, rejected, createStatusResponseHandler()).getStatusCode()).isEqualTo(503);
+            assertThat(executeRequest(server, config, regular, createStatusResponseHandler()).getStatusCode()).isEqualTo(200);
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    public void testEarlyServerResponseAbortsUploadEarly()
+            throws Exception
+    {
+        // The Expect header makes the client withhold the body until the server
+        // acknowledges it; on a non-acknowledging early response the body source
+        // must not be read at all, so the upload never goes on the wire.
+        AtomicLong bytesPulled = new AtomicLong();
+        InputStream source = new CountingInputStream(new ByteArrayInputStream(new byte[8 * 1024 * 1024]), bytesPulled);
+        try (CloseableTestHttpServer server = newServerWithServlet(new EarlyResponseServlet())) {
+            Request request = preparePost()
+                    .setUri(server.baseURI())
+                    .addHeader(HeaderNames.EXPECT, HttpHeaderValue.CONTINUE.asString())
+                    .setBodyGenerator(streamingBodyGenerator(source))
+                    .build();
+            StatusResponse response = executeRequest(server, request, createStatusResponseHandler());
+            assertThat(response.getStatusCode()).isEqualTo(503);
+        }
+        assertThat(bytesPulled.get()).isZero();
+    }
+
+    @Test
+    @Timeout(30)
+    public void testEarlyServerResponseLimitsUploadBuffering()
+            throws Exception
+    {
+        // Without Expect: 100-continue the client starts streaming the body
+        // immediately, so some bytes go on the wire before the server's early
+        // response can stop the upload. The amount must still be bounded by
+        // socket and protocol buffers — not the whole body. The exchange may
+        // succeed (503 delivered) or fail depending on how the underlying
+        // transport tears the connection down; that is not what this test asserts.
+        int bodySize = 32 * 1024 * 1024;
+        AtomicLong bytesPulled = new AtomicLong();
+        InputStream source = new CountingInputStream(new ByteArrayInputStream(new byte[bodySize]), bytesPulled);
+        try (CloseableTestHttpServer server = newServerWithServlet(new EarlyResponseServlet())) {
+            Request request = preparePost()
+                    .setUri(server.baseURI())
+                    .setBodyGenerator(streamingBodyGenerator(source))
+                    .build();
+            try {
+                executeRequest(server, request, createStatusResponseHandler());
+            }
+            catch (Exception ignored) {
+                // Some transports surface the early-response teardown as a request failure.
+            }
+        }
+        assertThat(bytesPulled.get()).isLessThan(bodySize);
+    }
+
+    protected static Request rejectingUploadRequest(CloseableTestHttpServer server)
+    {
+        // The Expect header makes the client withhold the body until the server
+        // acknowledges it, so a non-acknowledging early response deterministically
+        // exercises the post-headers request-side abort path on every transport.
+        return preparePost()
+                .setUri(server.baseURI())
+                .addHeader(HeaderNames.EXPECT, HttpHeaderValue.CONTINUE.asString())
+                .setBodyGenerator(streamingBodyGenerator(new ByteArrayInputStream(new byte[1024 * 1024])))
+                .build();
+    }
+
+    @Test
     public void testHttpProtocolUsed()
             throws Exception
     {
@@ -1501,6 +1602,70 @@ public abstract class AbstractHttpClientTest
         }
         catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    protected CloseableTestHttpServer newServerWithServlet(HttpServlet servlet)
+    {
+        try {
+            return new CloseableTestHttpServer(getScheme(), new TestingHttpServer(keystore, servlet), HashMultiset.create(), new EchoServlet());
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static final class CountingInputStream
+            extends FilterInputStream
+    {
+        private final AtomicLong bytesRead;
+
+        CountingInputStream(InputStream in, AtomicLong bytesRead)
+        {
+            super(in);
+            this.bytesRead = requireNonNull(bytesRead, "bytesRead is null");
+        }
+
+        @Override
+        public int read()
+                throws IOException
+        {
+            int b = super.read();
+            if (b >= 0) {
+                bytesRead.incrementAndGet();
+            }
+            return b;
+        }
+
+        @Override
+        public int read(byte[] buffer, int offset, int length)
+                throws IOException
+        {
+            int n = super.read(buffer, offset, length);
+            if (n > 0) {
+                bytesRead.addAndGet(n);
+            }
+            return n;
+        }
+    }
+
+    public static final class EarlyResponseServlet
+            extends HttpServlet
+    {
+        @Override
+        protected void service(HttpServletRequest request, HttpServletResponse response)
+                throws IOException
+        {
+            // Reject any upload without reading the body. The early non-acknowledging
+            // response aborts the in-flight request and lets the test inspect how
+            // much of the upload was actually streamed before the abort kicked in.
+            if ("POST".equals(request.getMethod())) {
+                response.setStatus(503);
+                response.getOutputStream().print("rejected");
+                return;
+            }
+            response.setStatus(200);
+            response.getOutputStream().print("ok");
         }
     }
 
