@@ -149,6 +149,14 @@ public class TestConforming
     }
 
     @Test
+    public void testAllowedObjectContainers()
+    {
+        ModelApi modelApi = ApiBuilder.apiBuilder().add(ServiceWithObject.class).build();
+        Module module = ApiModule.builder().addApi(modelApi).build();
+        Guice.createInjector(module, new JsonModule());
+    }
+
+    @Test
     public void testBadLookup()
     {
         ModelApi modelApi = ApiBuilder.apiBuilder().add(ServiceWithBadLookup.class).build();

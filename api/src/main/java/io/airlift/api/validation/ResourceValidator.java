@@ -32,6 +32,7 @@ import static io.airlift.api.internals.Generics.validateMap;
 import static io.airlift.api.internals.Mappers.buildResourceId;
 import static io.airlift.api.internals.Mappers.resourceFromPossibleId;
 import static io.airlift.api.internals.Strings.capitalize;
+import static io.airlift.api.model.ModelResourceModifier.IS_ANY_OBJECT;
 import static io.airlift.api.model.ModelResourceModifier.IS_MULTIPART_FORM;
 import static io.airlift.api.model.ModelResourceModifier.IS_STREAMING_RESPONSE;
 import static io.airlift.api.model.ModelResourceModifier.IS_UNWRAPPED;
@@ -102,7 +103,7 @@ public interface ResourceValidator
             case LIST -> {
                 Type targetType = modelResource.type();
 
-                if (!state.contains(PARENT_IS_READ_ONLY) && !state.contains(IS_RESULT_RESOURCE)) {
+                if (!modelResource.modifiers().contains(IS_ANY_OBJECT) && !state.contains(PARENT_IS_READ_ONLY) && !state.contains(IS_RESULT_RESOURCE)) {
                     if (!(targetType instanceof Class<?> clazz) || (!String.class.isAssignableFrom(clazz) && !ApiId.class.isAssignableFrom(clazz) && !clazz.isEnum() && !clazz.isAnnotationPresent(ApiResource.class) && !clazz.isAnnotationPresent(ApiPolyResource.class))) {
                         throw new ValidatorException("Collections that are not read only must be Collection<String> or Collection<? extends ApiAbstractId> or Collection<? extends Enum> or a collection of resources. %s is not".formatted(targetType));
                     }
@@ -121,12 +122,14 @@ public interface ResourceValidator
             }
 
             case MAP -> {
-                if (modelResource.modifiers().contains(OPTIONAL)) {
-                    Type type = extractGenericParameter(modelResource.containerType(), 0);
-                    validateMap(type);
-                }
-                else {
-                    validateMap(modelResource.containerType());
+                if (!modelResource.modifiers().contains(IS_ANY_OBJECT)) {
+                    if (modelResource.modifiers().contains(OPTIONAL)) {
+                        Type type = extractGenericParameter(modelResource.containerType(), 0);
+                        validateMap(type);
+                    }
+                    else {
+                        validateMap(modelResource.containerType());
+                    }
                 }
             }
 
