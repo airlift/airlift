@@ -186,6 +186,23 @@ public class TestConforming
     }
 
     @Test
+    public void testAllowedObjectContainers()
+    {
+        // service whose type carries ALLOW_OBJECT_ELEMENTS may declare List<Object> / Map<String, Object> fields
+        ModelApi modelApi = ApiBuilder.apiBuilder().add(ServiceWithObjectField.class).build();
+        Module module = ApiModule.builder().addApi(modelApi).build();
+        Guice.createInjector(module, new JsonModule());
+    }
+
+    @Test
+    public void testObjectContainerWithoutTrait()
+    {
+        // service whose type lacks ALLOW_OBJECT_ELEMENTS must reject List<Object> / Map<String, Object>
+        ModelServices services = ApiBuilder.apiBuilder().add(ServiceWithObjectFieldNoTrait.class).build().modelServices();
+        assertThat(services.errors()).anyMatch(s -> s.contains("ALLOW_OBJECT_ELEMENTS"));
+    }
+
+    @Test
     public void testBadLookup()
     {
         ModelApi modelApi = ApiBuilder.apiBuilder().add(ServiceWithBadLookup.class).build();

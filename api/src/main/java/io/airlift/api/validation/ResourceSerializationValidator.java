@@ -133,6 +133,9 @@ public class ResourceSerializationValidator
 
     private Object internalGetDefaultValue(ValidationContext validationContext, Class<?> clazz, Type type)
     {
+        if (Object.class.equals(clazz)) {
+            return "any";
+        }
         if (boolean.class.isAssignableFrom(clazz) || Boolean.class.isAssignableFrom(clazz)) {
             return true;
         }
