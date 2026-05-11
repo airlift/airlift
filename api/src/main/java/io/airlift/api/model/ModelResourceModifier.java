@@ -15,7 +15,8 @@ public enum ModelResourceModifier
     IS_STREAMING_RESPONSE,
     IS_MULTIPART_FORM,
     MULTIPART_RESOURCE_IS_FIRST_ITEM,
-    RECURSIVE_REFERENCE;
+    RECURSIVE_REFERENCE,
+    IS_ANY_OBJECT;
 
     public static boolean hasReadOnly(Collection<ModelResourceModifier> modifiers)
     {

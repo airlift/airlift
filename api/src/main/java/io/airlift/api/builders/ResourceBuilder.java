@@ -46,6 +46,7 @@ import static io.airlift.api.internals.Generics.typeResolver;
 import static io.airlift.api.internals.Mappers.openApiName;
 import static io.airlift.api.model.ModelResourceModifier.HAS_RESOURCE_ID;
 import static io.airlift.api.model.ModelResourceModifier.HAS_VERSION;
+import static io.airlift.api.model.ModelResourceModifier.IS_ANY_OBJECT;
 import static io.airlift.api.model.ModelResourceModifier.IS_MULTIPART_FORM;
 import static io.airlift.api.model.ModelResourceModifier.IS_STREAMING_RESPONSE;
 import static io.airlift.api.model.ModelResourceModifier.IS_UNWRAPPED;
@@ -151,6 +152,12 @@ public class ResourceBuilder
         if (typeToken.isSubtypeOf(Collection.class)) {
             Type targetType = extractGenericParameter(typeToken.getType(), 0);
 
+            if (Object.class.equals(targetType)) {
+                return anyObjectLeafResource()
+                        .asResourceType(ModelResourceType.LIST)
+                        .withContainerType(resource);
+            }
+
             recursionChecker.pushRecursionAllowed(true);
             try {
                 return internalBuildAndAdd(componentName, targetType)
@@ -163,6 +170,13 @@ public class ResourceBuilder
         }
 
         if (typeToken.isSubtypeOf(Map.class)) {
+            Type keyType = extractGenericParameter(typeToken.getType(), 0);
+            Type valueType = extractGenericParameter(typeToken.getType(), 1);
+            if (String.class.equals(keyType) && Object.class.equals(valueType)) {
+                return anyObjectLeafResource()
+                        .asResourceType(ModelResourceType.MAP)
+                        .withContainerType(resource);
+            }
             return new ModelResource(String.class, String.class.getSimpleName(), "n/a", ImmutableList.of(), ModelResourceType.MAP).withContainerType(resource);
         }
 
@@ -339,5 +353,10 @@ public class ResourceBuilder
     private Class<?> unboxIfNeeded(Class<?> clazz)
     {
         return supportedBoxedResourceTypes.getOrDefault(clazz, clazz);
+    }
+
+    private static ModelResource anyObjectLeafResource()
+    {
+        return new ModelResource(Object.class, Object.class.getSimpleName(), "n/a", ImmutableList.of(), ModelResourceType.BASIC).withModifier(IS_ANY_OBJECT);
     }
 }

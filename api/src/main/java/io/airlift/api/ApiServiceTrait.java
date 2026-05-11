@@ -7,4 +7,5 @@ public enum ApiServiceTrait
     QUOTAS_REQUIRED,
     ENUMS_AS_STRINGS,
     DESCRIPTIONS_REQUIRED,
+    ALLOW_OBJECT_ELEMENTS,
 }

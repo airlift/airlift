@@ -36,6 +36,7 @@ import java.util.stream.Stream;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static io.airlift.api.ApiOpenApiTrait.USE_ONE_OF_DISCRIMINATORS;
 import static io.airlift.api.internals.Strings.capitalize;
+import static io.airlift.api.model.ModelResourceModifier.IS_ANY_OBJECT;
 import static io.airlift.api.model.ModelResourceModifier.IS_UNWRAPPED;
 import static io.airlift.api.model.ModelResourceModifier.MULTIPART_RESOURCE_IS_FIRST_ITEM;
 import static io.airlift.api.model.ModelResourceModifier.RECURSIVE_REFERENCE;
@@ -149,7 +150,9 @@ class SchemaBuilder
                 case LIST -> asList(modelResource, buildSchema(asResource(removeContainer(modelResource)), mode));
                 case MAP -> new MapSchema().description(adjustedDescription(modelResource)).additionalProperties(buildSchema(asResource(removeContainer(modelResource)), mode));
                 case PAGINATED_RESULT -> buildPaginatedSchema(modelResource);
-                default -> buildBasicOrResourceSchema(modelResource, mode);
+                default -> modelResource.modifiers().contains(IS_ANY_OBJECT)
+                        ? new Schema<>().type("object").description(adjustedDescription(modelResource))
+                        : buildBasicOrResourceSchema(modelResource, mode);
             };
         }
         else {

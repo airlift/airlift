@@ -24,6 +24,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import static io.airlift.api.ApiResourceVersion.PUBLIC_NAME;
+import static io.airlift.api.ApiServiceTrait.ALLOW_OBJECT_ELEMENTS;
 import static io.airlift.api.ApiServiceTrait.DESCRIPTIONS_REQUIRED;
 import static io.airlift.api.binding.JaxrsUtil.isApiResource;
 import static io.airlift.api.builders.ResourceBuilder.isBasic;
@@ -32,6 +33,7 @@ import static io.airlift.api.internals.Generics.validateMap;
 import static io.airlift.api.internals.Mappers.buildResourceId;
 import static io.airlift.api.internals.Mappers.resourceFromPossibleId;
 import static io.airlift.api.internals.Strings.capitalize;
+import static io.airlift.api.model.ModelResourceModifier.IS_ANY_OBJECT;
 import static io.airlift.api.model.ModelResourceModifier.IS_MULTIPART_FORM;
 import static io.airlift.api.model.ModelResourceModifier.IS_STREAMING_RESPONSE;
 import static io.airlift.api.model.ModelResourceModifier.IS_UNWRAPPED;
@@ -100,9 +102,11 @@ public interface ResourceValidator
 
         switch (modelResource.resourceType()) {
             case LIST -> {
-                Type targetType = modelResource.type();
-
-                if (!state.contains(PARENT_IS_READ_ONLY) && !state.contains(IS_RESULT_RESOURCE)) {
+                if (modelResource.modifiers().contains(IS_ANY_OBJECT)) {
+                    requireAllowObjectElementsTrait(service, modelResource);
+                }
+                else if (!state.contains(PARENT_IS_READ_ONLY) && !state.contains(IS_RESULT_RESOURCE)) {
+                    Type targetType = modelResource.type();
                     if (!(targetType instanceof Class<?> clazz) || (!String.class.isAssignableFrom(clazz) && !ApiId.class.isAssignableFrom(clazz) && !clazz.isEnum() && !clazz.isAnnotationPresent(ApiResource.class) && !clazz.isAnnotationPresent(ApiPolyResource.class))) {
                         throw new ValidatorException("Collections that are not read only must be Collection<String> or Collection<? extends ApiAbstractId> or Collection<? extends Enum> or a collection of resources. %s is not".formatted(targetType));
                     }
@@ -115,13 +119,16 @@ public interface ResourceValidator
                     throw new ValidatorException("%s cannot be used in collections".formatted(ApiStreamResponse.class));
                 }
 
-                if (isApiResource(targetType)) {
+                if (isApiResource(modelResource.type())) {
                     validateDeclaredResource(context, service, modelResource, state);
                 }
             }
 
             case MAP -> {
-                if (modelResource.modifiers().contains(OPTIONAL)) {
+                if (modelResource.modifiers().contains(IS_ANY_OBJECT)) {
+                    requireAllowObjectElementsTrait(service, modelResource);
+                }
+                else if (modelResource.modifiers().contains(OPTIONAL)) {
                     Type type = extractGenericParameter(modelResource.containerType(), 0);
                     validateMap(type);
                 }
@@ -315,5 +322,12 @@ TODO why this?
             throw new ValidatorException("\"%s %s\" is not a valid resource type".formatted(type, name.orElseThrow()));
         }
         throw new ValidatorException("%s is not a valid resource type".formatted(type));
+    }
+
+    private static void requireAllowObjectElementsTrait(ModelServiceMetadata service, ModelResource modelResource)
+    {
+        if (!service.type().serviceTraits().contains(ALLOW_OBJECT_ELEMENTS)) {
+            throw new ValidatorException("%s requires service trait %s".formatted(modelResource.containerType(), ALLOW_OBJECT_ELEMENTS));
+        }
     }
 }
