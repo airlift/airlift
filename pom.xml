@@ -106,7 +106,7 @@
         <dep.openapi-generator-maven-plugin.version>7.21.0</dep.openapi-generator-maven-plugin.version>
         <dep.jersey.version>4.0.2</dep.jersey.version>
         <dep.jjwt.version>0.13.0</dep.jjwt.version>
-        <dep.classmate.version>1.7.1</dep.classmate.version>
+        <dep.classmate.version>1.7.3</dep.classmate.version>
     </properties>
 
     <dependencyManagement>
