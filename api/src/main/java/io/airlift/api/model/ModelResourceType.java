@@ -7,4 +7,5 @@ public enum ModelResourceType
     LIST,
     PAGINATED_RESULT,
     MAP,
+    JSON,
 }

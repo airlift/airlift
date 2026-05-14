@@ -33,6 +33,7 @@ import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_NULL
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES;
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_NUMBERS_FOR_ENUMS;
 import static com.fasterxml.jackson.databind.SerializationFeature.FAIL_ON_UNWRAPPED_TYPE_IDENTIFIERS;
+import static io.airlift.api.internals.ApiJsonTypes.isApiJsonType;
 import static io.airlift.api.responses.ApiException.badRequest;
 import static java.util.Objects.requireNonNull;
 
@@ -63,7 +64,7 @@ public class JaxrsMapper
     @Override
     public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType)
     {
-        return JaxrsUtil.isApiResource(type) || ApiPatch.class.isAssignableFrom(type);
+        return JaxrsUtil.isApiResource(type) || isApiJsonType(type) || ApiPatch.class.isAssignableFrom(type);
     }
 
     @Override

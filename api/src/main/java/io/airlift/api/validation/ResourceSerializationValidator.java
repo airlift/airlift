@@ -2,10 +2,15 @@ package io.airlift.api.validation;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import io.airlift.api.ApiId;
+import io.airlift.api.ApiJson;
+import io.airlift.api.ApiJsonList;
+import io.airlift.api.ApiJsonNode;
+import io.airlift.api.ApiJsonObject;
 import io.airlift.api.ApiPatch;
 import io.airlift.api.ApiPolyResource;
 
@@ -24,6 +29,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+import static io.airlift.api.internals.ApiJsonTypes.isApiJsonType;
 import static java.util.Objects.requireNonNull;
 
 public class ResourceSerializationValidator
@@ -72,6 +78,9 @@ public class ResourceSerializationValidator
 
         if (!clazz.isRecord()) {
             throw new ValidatorException("Resource %s is not a record".formatted(clazz.getName()));
+        }
+        if (isApiJsonType(clazz)) {
+            return getDefaultApiJson(clazz);
         }
 
         validationContext.addValidatingResources(type);
@@ -215,6 +224,20 @@ public class ResourceSerializationValidator
             catch (Exception e) {
                 throw new ValidatorException("Could not create default value for ApiAbstractId %s".formatted(clazz.getName()));
             }
+        }
+        throw new ValidatorException("Could not create default value for %s".formatted(clazz.getName()));
+    }
+
+    private ApiJson<?> getDefaultApiJson(Class<?> clazz)
+    {
+        if (ApiJsonNode.class.isAssignableFrom(clazz)) {
+            return new ApiJsonNode(JsonNodeFactory.instance.objectNode().put("field", "value"));
+        }
+        if (ApiJsonObject.class.isAssignableFrom(clazz)) {
+            return new ApiJsonObject(JsonNodeFactory.instance.objectNode().put("field", "value"));
+        }
+        if (ApiJsonList.class.isAssignableFrom(clazz)) {
+            return new ApiJsonList(JsonNodeFactory.instance.arrayNode().add("value"));
         }
         throw new ValidatorException("Could not create default value for %s".formatted(clazz.getName()));
     }

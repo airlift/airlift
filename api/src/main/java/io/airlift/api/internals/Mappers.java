@@ -113,6 +113,10 @@ public interface Mappers
     static String buildResourceName(Type resourceType)
     {
         Class<?> resourceClass = TypeToken.of(resourceType).getRawType();
+        if (ApiJsonTypes.isApiJsonType(resourceClass)) {
+            return ApiJsonTypes.apiJsonResourceName(resourceClass);
+        }
+
         ApiPolyResource apiPolyResource = resourceClass.getAnnotation(ApiPolyResource.class);
         if (apiPolyResource != null) {
             return apiPolyResource.name();

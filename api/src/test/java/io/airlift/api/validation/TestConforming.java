@@ -1,12 +1,31 @@
 package io.airlift.api.validation;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.IntNode;
+import com.fasterxml.jackson.databind.node.NullNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
+import io.airlift.api.ApiDescription;
+import io.airlift.api.ApiFilter;
+import io.airlift.api.ApiGet;
+import io.airlift.api.ApiJsonNode;
+import io.airlift.api.ApiList;
+import io.airlift.api.ApiOrderBy;
+import io.airlift.api.ApiParameter;
+import io.airlift.api.ApiPolyResource;
+import io.airlift.api.ApiResource;
+import io.airlift.api.ApiService;
 import io.airlift.api.ApiServiceTrait;
+import io.airlift.api.ApiStringId;
+import io.airlift.api.ServiceType;
 import io.airlift.api.binding.ApiModule;
 import io.airlift.api.binding.PolyResourceModule;
 import io.airlift.api.builders.ApiBuilder;
@@ -203,12 +222,180 @@ public class TestConforming
     }
 
     @Test
+    public void testJsonNodeIdResourceDisallowed()
+    {
+        ModelServices services = ApiBuilder.apiBuilder().add(ServiceWithJsonNodeIdParameter.class).build().modelServices();
+        assertThat(services.errors()).anyMatch(error -> error.contains("ApiJson types cannot be used as API path parameters"));
+    }
+
+    @Test
+    public void testResourceWithJsonNodeFieldCanHaveIdParameter()
+    {
+        ModelServices services = ApiBuilder.apiBuilder().add(ServiceWithJsonNodeFieldIdParameter.class).build().modelServices();
+        assertThat(services.errors()).isEmpty();
+    }
+
+    @Test
+    public void testJsonNodeIdFieldDisallowed()
+    {
+        ValidationContext validationContext = new ValidationContext();
+        validateResource(validationContext, METADATA, resourceBuilder(ResourceWithJsonNodeIdField.class).build());
+        assertThat(validationContext.errors()).anyMatch(error -> error.contains("ApiJson types cannot be used as API ID fields"));
+    }
+
+    @Test
+    public void testJsonNodeFilterFieldDisallowed()
+    {
+        ModelServices services = ApiBuilder.apiBuilder().add(ServiceWithJsonNodeFilter.class).build().modelServices();
+        assertThat(services.errors()).anyMatch(error -> error.contains("ApiJson field json cannot be used as an API query parameter"));
+    }
+
+    @Test
+    public void testJsonNodeOrderByFieldDisallowed()
+    {
+        ModelServices services = ApiBuilder.apiBuilder().add(ServiceWithJsonNodeOrderBy.class).build().modelServices();
+        assertThat(services.errors()).anyMatch(error -> error.contains("ApiJson field json cannot be used as an API query parameter"));
+    }
+
+    @Test
+    public void testJsonNodeFilterFieldInPolyResourceDisallowed()
+    {
+        ModelServices services = ApiBuilder.apiBuilder().add(ServiceWithPolyJsonNodeFilter.class).build().modelServices();
+        assertThat(services.errors()).anyMatch(error -> error.contains("ApiJson field json cannot be used as an API query parameter"));
+    }
+
+    @Test
+    public void testRawJacksonNodeFieldsDisallowed()
+    {
+        assertJacksonNodeResourceTypeDisallowed(ResourceWithJacksonJsonNodeField.class);
+        assertJacksonNodeResourceTypeDisallowed(ResourceWithObjectNodeField.class);
+        assertJacksonNodeResourceTypeDisallowed(ResourceWithArrayNodeField.class);
+        assertJacksonNodeResourceTypeDisallowed(ResourceWithTextNodeField.class);
+        assertJacksonNodeResourceTypeDisallowed(ResourceWithIntNodeField.class);
+        assertJacksonNodeResourceTypeDisallowed(ResourceWithNullNodeField.class);
+    }
+
+    private static void assertJacksonNodeResourceTypeDisallowed(Class<?> resourceType)
+    {
+        assertThatThrownBy(() -> resourceBuilder(resourceType).build())
+                .isInstanceOf(ValidatorException.class)
+                .hasMessageContaining("not a valid resource type");
+    }
+
+    @Test
     public void testBadLookup()
     {
         ModelApi modelApi = ApiBuilder.apiBuilder().add(ServiceWithBadLookup.class).build();
         Module module = ApiModule.builder().addApi(modelApi).build();
         assertThatThrownBy(() -> Guice.createInjector(module)).hasMessageContaining("There are Ids used in service methods that are annotated with ApiIdSupportsLookup but missing a binding of ApiIdLookup");
     }
+
+    @ApiService(type = ServiceType.class, name = "json node id service", description = "json node id")
+    public static class ServiceWithJsonNodeIdParameter
+    {
+        @ApiGet(description = "json node id")
+        public ResourceWithAllTypes get(@ApiParameter JsonNodeId id)
+        {
+            return null;
+        }
+    }
+
+    public static class JsonNodeId
+            extends ApiStringId<ApiJsonNode>
+    {
+        @JsonCreator
+        public JsonNodeId(String id)
+        {
+            super(id);
+        }
+    }
+
+    @ApiService(type = ServiceType.class, name = "json node field id service", description = "json node field id")
+    public static class ServiceWithJsonNodeFieldIdParameter
+    {
+        @ApiGet(description = "json node field id")
+        public ResourceWithJsonNodeFieldWithId get(@ApiParameter JsonNodeFieldResourceId id)
+        {
+            return null;
+        }
+    }
+
+    public static class JsonNodeFieldResourceId
+            extends ApiStringId<ResourceWithJsonNodeFieldWithId>
+    {
+        @JsonCreator
+        public JsonNodeFieldResourceId(String id)
+        {
+            super(id);
+        }
+    }
+
+    @ApiResource(name = "jsonNodeFieldWithId", description = "json node field with id")
+    public record ResourceWithJsonNodeFieldWithId(
+            @ApiDescription("id") JsonNodeFieldResourceId jsonNodeFieldWithIdId,
+            @ApiDescription("json") ApiJsonNode json) {}
+
+    @ApiResource(name = "jsonNodeIdField", description = "json node id field")
+    public record ResourceWithJsonNodeIdField(@ApiDescription("id") JsonNodeId jsonId) {}
+
+    @ApiService(type = ServiceType.class, name = "json node filter service", description = "json node filter")
+    public static class ServiceWithJsonNodeFilter
+    {
+        @ApiList(description = "json node filter")
+        public List<ResourceWithJsonNodeField> list(@ApiParameter ApiFilter json)
+        {
+            return null;
+        }
+    }
+
+    @ApiService(type = ServiceType.class, name = "json node order by service", description = "json node order by")
+    public static class ServiceWithJsonNodeOrderBy
+    {
+        @ApiList(description = "json node order by")
+        public List<ResourceWithJsonNodeField> list(@ApiParameter(allowedValues = "json") ApiOrderBy orderBy)
+        {
+            return null;
+        }
+    }
+
+    @ApiService(type = ServiceType.class, name = "poly json node filter service", description = "poly json node filter")
+    public static class ServiceWithPolyJsonNodeFilter
+    {
+        @ApiList(description = "poly json node filter")
+        public List<PolyResourceWithJsonNodeField> list(@ApiParameter ApiFilter json)
+        {
+            return null;
+        }
+    }
+
+    @ApiPolyResource(key = "type", name = "polyJsonNodeField", description = "poly json node field")
+    public sealed interface PolyResourceWithJsonNodeField
+    {
+        @ApiResource(name = "polyJsonNode", description = "poly json node")
+        record PolyJsonNode(@ApiDescription("json") ApiJsonNode json)
+                implements PolyResourceWithJsonNodeField {}
+    }
+
+    @ApiResource(name = "jsonNodeField", description = "json node field")
+    public record ResourceWithJsonNodeField(@ApiDescription("json") ApiJsonNode json) {}
+
+    @ApiResource(name = "jacksonJsonNodeField", description = "jackson json node field")
+    public record ResourceWithJacksonJsonNodeField(@ApiDescription("json") JsonNode json) {}
+
+    @ApiResource(name = "objectNodeField", description = "object node field")
+    public record ResourceWithObjectNodeField(@ApiDescription("object") ObjectNode object) {}
+
+    @ApiResource(name = "arrayNodeField", description = "array node field")
+    public record ResourceWithArrayNodeField(@ApiDescription("array") ArrayNode array) {}
+
+    @ApiResource(name = "textNodeField", description = "text node field")
+    public record ResourceWithTextNodeField(@ApiDescription("text") TextNode text) {}
+
+    @ApiResource(name = "intNodeField", description = "int node field")
+    public record ResourceWithIntNodeField(@ApiDescription("int") IntNode integer) {}
+
+    @ApiResource(name = "nullNodeField", description = "null node field")
+    public record ResourceWithNullNodeField(@ApiDescription("null") NullNode nullNode) {}
 
     @Test
     public void testPolyResourceWithReusedKey()

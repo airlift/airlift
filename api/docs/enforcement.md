@@ -24,10 +24,15 @@ etc. will cause the application to abort. Note: all errors are reported (i.e. th
     - Enumerations
     - Other API resources
     - `ApiId` subclasses
-  - `Optional` of basic types 
+  - _JSON Types_
+    - `ApiJsonNode` for arbitrary JSON values
+    - `ApiJsonObject` for JSON objects
+    - `ApiJsonList` for JSON arrays
+    - Raw Jackson tree types such as `JsonNode`, `ObjectNode`, and `ArrayNode` must be wrapped in the corresponding `ApiJson` type
+  - `Optional` of basic or JSON types
   - `ApiResourceVersion`
-  - Collections (List, Set, etc.) may only be `? extends Collection<String>`, `? extends Collection<? extends ApiId>`, `? extends Collection<? extends Enum>` or `? extends Collection<? is a resource>`.
-  - `Map<String, String>`
+  - Collections (List, Set, etc.) may only be `? extends Collection<String>`, `? extends Collection<? extends ApiId>`, `? extends Collection<? extends Enum>`, `Collection<ApiJsonNode>`, `Collection<ApiJsonObject>`, `Collection<ApiJsonList>`, or collections whose element type is an API resource.
+  - Maps may only be `Map<String, String>`, `Map<String, ApiJsonNode>`, `Map<String, ApiJsonObject>`, or `Map<String, ApiJsonList>`
 - Must be annotated with `@ApiResource` - `@ApiResource` requires both a resource name and a publicly displayable description
 - Each component/field of the record must have an `@ApiDescription` annotation (except `ApiResourceVersion`) with a publicly displayable description of the component/field
 - Components/fields that cannot be updated should be annotated with `@ApiReadOnly`
@@ -36,6 +41,8 @@ etc. will cause the application to abort. Note: all errors are reported (i.e. th
   - Fields must be named to match the associated resource. E.g. if the `ApiId` is for a resource named `foo` the field must be named `fooId`.
   - Collections of `ApiId` must end with the id name plus `s`. For example: `myResourceIds`.
   - Optionals of `ApiId` must end with the id name. For example: `optionalResourceId`.
+- `ApiJson` types cannot be used as API ID targets or path parameters
+- Fields whose names are exposed as query parameters via `ApiFilter`, `ApiFilterList`, or `ApiOrderBy` cannot be `ApiJson` types
 - Enumerations must be capitalized camel case
 - Resource names must be unique for generating the [OpenApi](openapi.md) spec. By default, the
 `@ApiResource` name attribute is used. If this value is not unique, use the `openApiAlternateName` attribute to 

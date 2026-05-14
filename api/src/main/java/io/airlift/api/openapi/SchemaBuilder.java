@@ -1,5 +1,8 @@
 package io.airlift.api.openapi;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.reflect.TypeToken;
 import io.airlift.api.ApiId;
@@ -35,6 +38,8 @@ import java.util.stream.Stream;
 
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static io.airlift.api.ApiOpenApiTrait.USE_ONE_OF_DISCRIMINATORS;
+import static io.airlift.api.internals.ApiJsonTypes.isApiJsonType;
+import static io.airlift.api.internals.ApiJsonTypes.jacksonJsonType;
 import static io.airlift.api.internals.Strings.capitalize;
 import static io.airlift.api.model.ModelResourceModifier.IS_ANY_OBJECT;
 import static io.airlift.api.model.ModelResourceModifier.IS_UNWRAPPED;
@@ -150,6 +155,7 @@ class SchemaBuilder
                 case LIST -> asList(modelResource, buildSchema(asResource(removeContainer(modelResource)), mode));
                 case MAP -> new MapSchema().description(adjustedDescription(modelResource)).additionalProperties(buildSchema(asResource(removeContainer(modelResource)), mode));
                 case PAGINATED_RESULT -> buildPaginatedSchema(modelResource);
+                case JSON -> buildApiJsonSchema(modelResource);
                 default -> modelResource.modifiers().contains(IS_ANY_OBJECT)
                         ? new Schema<>().type("object").description(adjustedDescription(modelResource))
                         : buildBasicOrResourceSchema(modelResource, mode);
@@ -291,7 +297,9 @@ class SchemaBuilder
 
     private Schema<?> buildBasicOrResourceSchema(ModelResource modelResource, BuildSchemaMode mode)
     {
-        return buildBasicSchema(modelResource).orElseGet(() -> buildResourceSchema(modelResource, mode));
+        return buildBasicSchema(modelResource)
+                .or(() -> buildApiJsonSchemaIfPresent(modelResource))
+                .orElseGet(() -> buildResourceSchema(modelResource, mode));
     }
 
     private Schema<?> buildResourceSchema(ModelResource modelResource, BuildSchemaMode mode)
@@ -341,6 +349,34 @@ class SchemaBuilder
         Optional<Schema<?>> schema = buildBasicSchema(TypeToken.of(modelResource.type()).getRawType());
         schema.ifPresent(s -> s.description(adjustedDescription(modelResource)));
         return schema;
+    }
+
+    private Optional<Schema<?>> buildApiJsonSchemaIfPresent(ModelResource modelResource)
+    {
+        return Optional.of(modelResource)
+                .filter(resource -> isApiJsonType(resource.type()))
+                .map(this::buildApiJsonSchema);
+    }
+
+    private Schema<?> buildApiJsonSchema(ModelResource modelResource)
+    {
+        Schema<?> schema = buildApiJsonSchema(TypeToken.of(modelResource.type()).getRawType());
+        return schema.description(adjustedDescription(modelResource));
+    }
+
+    private static Schema<?> buildApiJsonSchema(Class<?> clazz)
+    {
+        Class<?> jsonType = jacksonJsonType(clazz);
+        if (ObjectNode.class.isAssignableFrom(jsonType)) {
+            return new MapSchema().additionalProperties(true);
+        }
+        if (ArrayNode.class.isAssignableFrom(jsonType)) {
+            return new ArraySchema().items(new Schema<>());
+        }
+        if (JsonNode.class.isAssignableFrom(jsonType)) {
+            return new Schema<>().nullable(true);
+        }
+        throw new IllegalArgumentException("Unsupported ApiJson type: " + clazz.getName());
     }
 
     private void buildPolySchema(Schema<?> schema, ModelPolyResource polyResource, BuildSchemaMode mode)
