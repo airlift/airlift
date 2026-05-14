@@ -28,6 +28,7 @@ import static io.airlift.api.ApiServiceTrait.ALLOW_OBJECT_ELEMENTS;
 import static io.airlift.api.ApiServiceTrait.DESCRIPTIONS_REQUIRED;
 import static io.airlift.api.binding.JaxrsUtil.isApiResource;
 import static io.airlift.api.builders.ResourceBuilder.isBasic;
+import static io.airlift.api.internals.ApiJsonTypes.isApiJsonType;
 import static io.airlift.api.internals.Generics.extractGenericParameter;
 import static io.airlift.api.internals.Generics.validateMap;
 import static io.airlift.api.internals.Mappers.buildResourceId;
@@ -107,8 +108,8 @@ public interface ResourceValidator
                 }
                 else if (!state.contains(PARENT_IS_READ_ONLY) && !state.contains(IS_RESULT_RESOURCE)) {
                     Type targetType = modelResource.type();
-                    if (!(targetType instanceof Class<?> clazz) || (!String.class.isAssignableFrom(clazz) && !ApiId.class.isAssignableFrom(clazz) && !clazz.isEnum() && !clazz.isAnnotationPresent(ApiResource.class) && !clazz.isAnnotationPresent(ApiPolyResource.class))) {
-                        throw new ValidatorException("Collections that are not read only must be Collection<String> or Collection<? extends ApiAbstractId> or Collection<? extends Enum> or a collection of resources. %s is not".formatted(targetType));
+                    if (!isAllowedCollectionType(targetType)) {
+                        throw new ValidatorException("Collections that are not read only must contain strings, API IDs, enums, ApiJson types, or resources. %s is not".formatted(targetType));
                     }
                 }
 
@@ -155,6 +156,20 @@ public interface ResourceValidator
 
             case RESOURCE -> validateDeclaredResource(context, service, modelResource, state);
         }
+    }
+
+    private static boolean isAllowedCollectionType(Type type)
+    {
+        if (!(type instanceof Class<?> clazz)) {
+            return false;
+        }
+
+        return String.class.isAssignableFrom(clazz) ||
+                ApiId.class.isAssignableFrom(clazz) ||
+                clazz.isEnum() ||
+                clazz.isAnnotationPresent(ApiResource.class) ||
+                clazz.isAnnotationPresent(ApiPolyResource.class) ||
+                isApiJsonType(clazz);
     }
 
     private static void validateDeclaredResource(ValidationContext context, ModelServiceMetadata service, ModelResource modelResource, ResourceValidationState state)
@@ -273,7 +288,12 @@ TODO why this?
         }
 
         else if (ApiId.class.isAssignableFrom(rawType)) {
-            String id = buildResourceId(resourceFromPossibleId(rawType));
+            Type resourceType = resourceFromPossibleId(rawType);
+            if (isApiJsonType(resourceType)) {
+                throw new ValidatorException("ApiJson types cannot be used as API ID fields");
+            }
+
+            String id = buildResourceId(resourceType);
             if (isCollection || isOptional) {
                 String idSuffix = isCollection ? (id + "s") : id;
                 String capitalizedIdSuffix = capitalize(idSuffix);

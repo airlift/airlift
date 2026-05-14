@@ -69,6 +69,7 @@ import static io.airlift.api.ApiPagination.DEFAULT_PAGE_SIZE;
 import static io.airlift.api.ApiPagination.PAGE_SIZE_QUERY_PARAMETER_NAME;
 import static io.airlift.api.ApiPagination.PAGE_TOKEN_QUERY_PARAMETER_NAME;
 import static io.airlift.api.ApiValidateOnly.VALIDATE_ONLY_PARAMETER_NAME;
+import static io.airlift.api.internals.ApiJsonTypes.isApiJsonType;
 import static io.airlift.api.internals.Generics.extractGenericParameter;
 import static io.airlift.api.internals.Mappers.buildHeaderName;
 import static io.airlift.api.internals.Mappers.openApiName;
@@ -328,7 +329,12 @@ public class MethodBuilder
             }
             if (apiParameter != null) {
                 if (ApiId.class.isAssignableFrom(parameter.getType())) {
-                    ModelResource modelResource = resourceBuilder.apply(resourceFromPossibleId(parameter.getType())).build();
+                    Type resourceType = resourceFromPossibleId(parameter.getType());
+                    if (isApiJsonType(resourceType)) {
+                        throw new ValidatorException("ApiJson types cannot be used as API path parameters");
+                    }
+
+                    ModelResource modelResource = resourceBuilder.apply(resourceType).build();
 
                     if (apiParameter.allowedValues().length > 0) {
                         modelResource = modelResource.withLimitedValues(ImmutableSet.copyOf(apiParameter.allowedValues()));

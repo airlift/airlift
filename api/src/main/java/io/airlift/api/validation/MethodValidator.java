@@ -29,18 +29,24 @@ import jakarta.ws.rs.core.Context;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.lang.reflect.Type;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
 import static io.airlift.api.builders.MethodBuilder.OPTIONAL_PARAMETER_MAP;
+import static io.airlift.api.internals.ApiJsonTypes.isApiJsonType;
+import static io.airlift.api.model.ModelOptionalParameter.Location.QUERY;
 import static io.airlift.api.model.ModelOptionalParameter.Metadata.MULTIPLE_ALLOWED;
 import static io.airlift.api.model.ModelOptionalParameter.Metadata.REQUIRES_ALLOWED_VALUES;
 import static io.airlift.api.model.ModelResourceModifier.HAS_RESOURCE_ID;
 import static io.airlift.api.model.ModelResourceModifier.HAS_VERSION;
 import static io.airlift.api.model.ModelResourceModifier.PATCH;
+import static io.airlift.api.model.ModelResourceType.JSON;
 import static java.util.function.Predicate.not;
+import static java.util.stream.Collectors.toUnmodifiableSet;
 
 public interface MethodValidator
 {
@@ -105,7 +111,63 @@ public interface MethodValidator
             }
         }
 
+        validateApiJsonResourcesNotUsedAsQueryParameters(modelMethod);
         validateQuotas(modelMethod, serviceTraits);
+    }
+
+    private static void validateApiJsonResourcesNotUsedAsQueryParameters(ModelMethod modelMethod)
+    {
+        Set<String> apiJsonResourceNames = Stream.concat(Stream.of(modelMethod.returnType()), modelMethod.requestBody().stream())
+                .flatMap(resource -> apiJsonResourceNames(resource, new HashSet<>()))
+                .collect(toUnmodifiableSet());
+        if (apiJsonResourceNames.isEmpty()) {
+            return;
+        }
+
+        Set<String> queryParameterNames = modelMethod.optionalParameters().stream()
+                .flatMap(MethodValidator::resourceQueryParameterNames)
+                .collect(toUnmodifiableSet());
+
+        apiJsonResourceNames.stream()
+                .filter(queryParameterNames::contains)
+                .findFirst()
+                .ifPresent(name -> {
+                    throw new ValidatorException("ApiJson field %s cannot be used as an API query parameter".formatted(name));
+                });
+    }
+
+    private static Stream<String> apiJsonResourceNames(ModelResource modelResource, Set<Type> visited)
+    {
+        if ((modelResource.resourceType() == JSON) ||
+                (((modelResource.resourceType() == ModelResourceType.LIST) ||
+                        (modelResource.resourceType() == ModelResourceType.MAP)) &&
+                        isApiJsonType(modelResource.type()))) {
+            return Stream.of(modelResource.name());
+        }
+        if (!visited.add(modelResource.type())) {
+            return Stream.empty();
+        }
+
+        Stream<ModelResource> directComponents = modelResource.components().stream();
+        Stream<ModelResource> polySubResources = modelResource.polyResource().stream()
+                .flatMap(polyResource -> polyResource.subResources().stream());
+
+        return Stream.concat(directComponents, polySubResources)
+                .flatMap(component -> apiJsonResourceNames(component, visited));
+    }
+
+    private static Stream<String> resourceQueryParameterNames(ModelOptionalParameter optionalParameter)
+    {
+        if (optionalParameter.location() != QUERY) {
+            return Stream.empty();
+        }
+        if (optionalParameter.type().equals(ApiFilter.class) || optionalParameter.type().equals(ApiFilterList.class)) {
+            return optionalParameter.externalParameters().stream().map(ModelOptionalParameter.ExternalParameter::name);
+        }
+        if (optionalParameter.type().equals(ApiOrderBy.class)) {
+            return optionalParameter.limitedValues().stream();
+        }
+        return Stream.empty();
     }
 
     private static void validateOptionalParameter(ModelMethod method, Parameter parameter, Collection<Class<?>> allowedParameterTypes, ApiParameter apiParameter)

@@ -18,7 +18,6 @@ import io.airlift.api.model.ModelResource;
 import io.airlift.log.Logger;
 import jakarta.ws.rs.core.MediaType;
 
-import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.net.URI;
 import java.util.Collection;
@@ -26,13 +25,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.google.common.base.Throwables.getRootCause;
 import static com.google.common.base.Throwables.getStackTraceAsString;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
+import static io.airlift.api.internals.Generics.extractGenericParameter;
 import static io.airlift.api.internals.Generics.typeResolver;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM_TYPE;
 import static jakarta.ws.rs.core.MediaType.TEXT_PLAIN_TYPE;
@@ -116,11 +115,7 @@ public class ValidationContext
 
     public Class<?> extractGenericParameterAsClass(Type type, int index)
     {
-        Type parameter = extractGenericParameter(type, index);
-        if (parameter instanceof Class<?> clazz) {
-            return clazz;
-        }
-        throw new ValidatorException("Expected %s's type argument to be a class".formatted(type));
+        return genericParameterAsClass(extractGenericParameter(type, index));
     }
 
     public Class<?> genericParameterAsClass(Type parameter)
@@ -129,24 +124,6 @@ public class ValidationContext
             return clazz;
         }
         throw new ValidatorException("Expected type %s to be a class".formatted(parameter));
-    }
-
-    public Type extractGenericParameter(Type type, int index)
-    {
-        if (type instanceof ParameterizedType parameterizedType) {
-            if (parameterizedType.getRawType().equals(ApiStringId.class) && (index == 1)) {
-                return String.class;
-            }
-            if (parameterizedType.getRawType().equals(ApiUuidId.class) && (index == 1)) {
-                return UUID.class;
-            }
-
-            if (parameterizedType.getActualTypeArguments().length <= index) {
-                throw new ValidatorException("%s does not have expected (%d) number of parameters".formatted(type, index + 1));
-            }
-            return typeResolver.resolveType(parameterizedType.getActualTypeArguments()[index]);
-        }
-        throw new ValidatorException("Expected %s to be parameterized type".formatted(type));
     }
 
     public static boolean isForcedReadOnly(Type type)

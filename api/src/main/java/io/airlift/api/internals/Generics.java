@@ -10,6 +10,8 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.UUID;
 
+import static io.airlift.api.internals.ApiJsonTypes.isApiJsonType;
+
 public interface Generics
 {
     TypeResolver typeResolver = new TypeResolver();
@@ -38,8 +40,9 @@ public interface Generics
 
         Type keyType = extractGenericParameter(typeToken.getType(), 0);
         Type valueType = extractGenericParameter(typeToken.getType(), 1);
-        if (!(keyType.equals(String.class)) || !(valueType.equals(String.class))) {
-            throw new ValidatorException("Maps in resources must be Map<String, String>. %s is not".formatted(typeToken.getType()));
+        if (keyType.equals(String.class) && (valueType.equals(String.class) || isApiJsonType(valueType))) {
+            return;
         }
+        throw new ValidatorException("Maps in resources must be Map<String, String>, Map<String, ApiJsonNode>, Map<String, ApiJsonObject>, or Map<String, ApiJsonList>. %s is not".formatted(typeToken.getType()));
     }
 }

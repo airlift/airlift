@@ -2,6 +2,9 @@ package io.airlift.api.validation;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import io.airlift.api.ApiDescription;
+import io.airlift.api.ApiJsonList;
+import io.airlift.api.ApiJsonNode;
+import io.airlift.api.ApiJsonObject;
 import io.airlift.api.ApiReadOnly;
 import io.airlift.api.ApiResource;
 import io.airlift.api.ApiStringId;
@@ -27,6 +30,12 @@ public record ResourceWithAllTypes(
         @ApiDescription("A type") LocalDate localDate,
         @ApiDescription("A type") BigDecimal bigDecimal,
         @ApiDescription("A type") UUID uuid,
+        @ApiDescription("A type") ApiJsonNode json,
+        @ApiDescription("A type") ApiJsonObject jsonObject,
+        @ApiDescription("A type") ApiJsonList jsonList,
+        @ApiDescription("A type") Map<String, ApiJsonNode> jsonMap,
+        @ApiDescription("A type") List<ApiJsonNode> jsonNodeList,
+        @ApiDescription("A type") Optional<ApiJsonNode> oJson,
         @ApiDescription("A type") Stuff e,
         @ApiDescription("A type") Map<String, String> m,
         @ApiDescription("A type") List<Stuff> le,

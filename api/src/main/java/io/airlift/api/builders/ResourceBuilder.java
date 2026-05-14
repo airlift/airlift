@@ -41,6 +41,9 @@ import java.util.stream.Stream;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
+import static io.airlift.api.internals.ApiJsonTypes.apiJsonResourceDescription;
+import static io.airlift.api.internals.ApiJsonTypes.apiJsonResourceName;
+import static io.airlift.api.internals.ApiJsonTypes.isApiJsonType;
 import static io.airlift.api.internals.Generics.extractGenericParameter;
 import static io.airlift.api.internals.Generics.typeResolver;
 import static io.airlift.api.internals.Mappers.openApiName;
@@ -172,7 +175,12 @@ public class ResourceBuilder
         if (typeToken.isSubtypeOf(Map.class)) {
             Type keyType = extractGenericParameter(typeToken.getType(), 0);
             Type valueType = extractGenericParameter(typeToken.getType(), 1);
-            if (String.class.equals(keyType) && Object.class.equals(valueType)) {
+            if (keyType.equals(String.class) && (valueType.equals(String.class) || isApiJsonType(valueType))) {
+                return internalBuildAndAdd(componentName, valueType)
+                        .asResourceType(ModelResourceType.MAP)
+                        .withContainerType(resource);
+            }
+            if (keyType.equals(String.class) && valueType.equals(Object.class)) {
                 return anyObjectLeafResource()
                         .asResourceType(ModelResourceType.MAP)
                         .withContainerType(resource);
@@ -190,6 +198,15 @@ public class ResourceBuilder
                 }
             }
             return modelResource;
+        }
+
+        if (isApiJsonType(typeToken.getType())) {
+            return new ModelResource(
+                    typeToken.getRawType(),
+                    apiJsonResourceName(typeToken.getType()),
+                    apiJsonResourceDescription(typeToken.getType()),
+                    ImmutableList.of(),
+                    ModelResourceType.JSON);
         }
 
         if (typeToken.isSubtypeOf(ApiStreamResponse.class)) {
