@@ -50,6 +50,7 @@ import io.airlift.mcp.sessions.ForSessionCaching;
 import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.storage.StorageController;
 
+import java.lang.annotation.Annotation;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -88,6 +89,7 @@ public class McpModule
     private final Set<String> serverIcons;
     private final Optional<Consumer<LinkedBindingBuilder<StorageController>>> storageControllerBinding;
     private final Consumer<LinkedBindingBuilder<Operations>> operationsBinding;
+    private final Optional<Class<? extends Annotation>> filterBindingAnnotation;
 
     public static Builder builder()
     {
@@ -108,7 +110,8 @@ public class McpModule
             Map<String, Consumer<LinkedBindingBuilder<Icon>>> icons,
             Set<String> serverIcons,
             Optional<Consumer<LinkedBindingBuilder<StorageController>>> storageControllerBinding,
-            Consumer<LinkedBindingBuilder<Operations>> operationsBinding)
+            Consumer<LinkedBindingBuilder<Operations>> operationsBinding,
+            Optional<Class<? extends Annotation>> filterBindingAnnotation)
     {
         this.metadata = requireNonNull(metadata, "metadata is null");
         this.identityMapperBinding = requireNonNull(identityMapperBinding, "identityMapperBinding is null");
@@ -124,6 +127,7 @@ public class McpModule
         this.serverIcons = ImmutableSet.copyOf(serverIcons);
         this.storageControllerBinding = requireNonNull(storageControllerBinding, "storageControllerBinding is null");
         this.operationsBinding = requireNonNull(operationsBinding, "operationsBinding is null");
+        this.filterBindingAnnotation = requireNonNull(filterBindingAnnotation, "filterBindingAnnotation is null");
     }
 
     record IdentityMapperBinding(Class<?> identityType, Consumer<AnnotatedBindingBuilder<McpIdentityMapper>> identityMapperBinding)
@@ -162,6 +166,7 @@ public class McpModule
         private Optional<Consumer<LinkedBindingBuilder<McpCapabilityFilter>>> capabilityFilterBinding = Optional.empty();
         private Optional<Consumer<LinkedBindingBuilder<StorageController>>> storageControllerBinding = Optional.empty();
         private Consumer<LinkedBindingBuilder<Operations>> operationsBinding = binding -> binding.to(SessionlessOperations.class).in(SINGLETON);
+        private Optional<Class<? extends Annotation>> filterBindingAnnotation = Optional.empty();
 
         private Builder() {}
 
@@ -200,6 +205,13 @@ public class McpModule
         {
             checkArgument(this.capabilityFilterBinding.isEmpty(), "Capability filter binding is already set");
             this.capabilityFilterBinding = Optional.of(filterBinding);
+            return this;
+        }
+
+        public Builder withHttpServerBinding(Class<? extends Annotation> annotation)
+        {
+            checkState(filterBindingAnnotation.isEmpty(), "HTTP server binding annotation is already set");
+            filterBindingAnnotation = Optional.of(requireNonNull(annotation, "annotation is null"));
             return this;
         }
 
@@ -279,7 +291,8 @@ public class McpModule
                     icons.build(),
                     serverIcons.build(),
                     storageControllerBinding,
-                    operationsBinding);
+                    operationsBinding,
+                    filterBindingAnnotation);
         }
     }
 
@@ -310,7 +323,7 @@ public class McpModule
         bindCapabilityFilter(binder);
         bindIcons(binder);
 
-        binder.install(new InternalMcpModule());
+        binder.install(new InternalMcpModule(filterBindingAnnotation));
         binder.install(new OperationsModule());
     }
 
