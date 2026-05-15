@@ -16,16 +16,35 @@ package io.airlift.openmetrics;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 
+import java.lang.annotation.Annotation;
+import java.util.Optional;
+
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
+import static java.util.Objects.requireNonNull;
 
 public class JmxOpenMetricsModule
         implements Module
 {
+    private final Optional<Class<? extends Annotation>> annotation;
+
+    public JmxOpenMetricsModule()
+    {
+        this.annotation = Optional.empty();
+    }
+
+    public JmxOpenMetricsModule(Class<? extends Annotation> annotation)
+    {
+        this.annotation = Optional.of(requireNonNull(annotation, "annotation is null"));
+    }
+
     @Override
     public void configure(Binder binder)
     {
         configBinder(binder).bindConfig(MetricsConfig.class);
-        jaxrsBinder(binder).bind(MetricsResource.class);
+        annotation
+                .map(value -> jaxrsBinder(binder, value))
+                .orElseGet(() -> jaxrsBinder(binder))
+                .bind(MetricsResource.class);
     }
 }
