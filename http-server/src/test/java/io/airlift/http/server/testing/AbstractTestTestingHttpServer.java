@@ -18,7 +18,10 @@ package io.airlift.http.server.testing;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.net.HttpHeaders;
 import com.google.common.net.MediaType;
+import com.google.inject.BindingAnnotation;
 import com.google.inject.Injector;
+import com.google.inject.Key;
+import com.google.inject.TypeLiteral;
 import io.airlift.bootstrap.Bootstrap;
 import io.airlift.bootstrap.LifeCycleManager;
 import io.airlift.http.client.HttpClient;
@@ -54,6 +57,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
 import java.io.IOException;
+import java.lang.annotation.Retention;
 import java.net.URI;
 import java.util.Optional;
 import java.util.Set;
@@ -70,6 +74,7 @@ import static io.airlift.http.client.StatusResponseHandler.createStatusResponseH
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
 import static io.airlift.http.server.HttpServerBinder.httpServerBinder;
 import static io.airlift.http.server.ServerFeature.VIRTUAL_THREADS;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.abort;
@@ -272,6 +277,44 @@ public abstract class AbstractTestTestingHttpServer
         }
     }
 
+    @Test
+    public void testQualifiedGuiceInjectionWithFilters()
+    {
+        skipUnlessJdkHasVirtualThreads();
+        DummyServlet servlet = new DummyServlet();
+        DummyFilter filter = new DummyFilter();
+
+        Bootstrap app = new Bootstrap(
+                new TestingNodeModule(),
+                new TestingHttpServerModule(getClass().getName(), 0, TestServer.class, "test-server"),
+                binder -> {
+                    binder.bind(Key.get(Servlet.class, TestServer.class)).toInstance(servlet);
+                    newSetBinder(binder, Key.get(Filter.class, TestServer.class)).addBinding().toInstance(filter);
+                    httpServerBinder(binder, TestServer.class).withFeatures(serverFeatures);
+                });
+
+        Injector injector = app
+                .doNotInitializeLogging()
+                .initialize();
+
+        assertThat(injector.getExistingBinding(Key.get(new TypeLiteral<Set<Filter>>() {}))).isNull();
+        assertThat(injector.getExistingBinding(Key.get(new TypeLiteral<Set<Filter>>() {}, TestServer.class))).isNotNull();
+
+        LifeCycleManager lifeCycleManager = injector.getInstance(LifeCycleManager.class);
+        TestingHttpServer server = injector.getInstance(Key.get(TestingHttpServer.class, TestServer.class));
+
+        try (HttpClient client = new JettyHttpClient(new HttpClientConfig().setConnectTimeout(new Duration(1, SECONDS)))) {
+            StatusResponse response = client.execute(prepareGet().setUri(server.getBaseUrl()).build(), createStatusResponseHandler());
+
+            assertThat(response.getStatusCode()).isEqualTo(HttpServletResponse.SC_OK);
+            assertThat(servlet.getCallCount()).isEqualTo(1);
+            assertThat(filter.getCallCount()).isEqualTo(1);
+        }
+        finally {
+            lifeCycleManager.stop();
+        }
+    }
+
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     @Test
     public void testHeaderCaseSensitivity()
@@ -417,4 +460,8 @@ public abstract class AbstractTestTestingHttpServer
         @Override
         public void destroy() {}
     }
+
+    @Retention(RUNTIME)
+    @BindingAnnotation
+    private @interface TestServer {}
 }
