@@ -169,20 +169,13 @@ public class LegacyOperations
 
         Object result = switch (method) {
             case METHOD_INITIALIZE -> handleInitialize(requestContext, operationsCommon.convertParams(rpcRequest, InitializeRequest.class));
-            case METHOD_TOOLS_LIST ->
-                    withManagement(requestContext, requestId, () -> operationsCommon.listTools(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class)));
-            case METHOD_TOOLS_CALL ->
-                    withManagement(requestContext, requestId, () -> operationsCommon.callTool(requestContext, operationsCommon.convertParams(rpcRequest, CallToolRequest.class)));
-            case METHOD_PROMPT_LIST ->
-                    withManagement(requestContext, requestId, () -> operationsCommon.listPrompts(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class)));
-            case METHOD_PROMPT_GET ->
-                    withManagement(requestContext, requestId, () -> operationsCommon.getPrompt(requestContext, operationsCommon.convertParams(rpcRequest, GetPromptRequest.class)));
-            case METHOD_RESOURCES_LIST ->
-                    withManagement(requestContext, requestId, () -> operationsCommon.listResources(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class)));
-            case METHOD_RESOURCES_TEMPLATES_LIST ->
-                    withManagement(requestContext, requestId, () -> operationsCommon.listResourceTemplates(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class)));
-            case METHOD_RESOURCES_READ ->
-                    withManagement(requestContext, requestId, () -> operationsCommon.readResources(requestContext, operationsCommon.convertParams(rpcRequest, ReadResourceRequest.class)));
+            case METHOD_TOOLS_LIST -> withManagement(requestContext, requestId, () -> operationsCommon.listTools(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class)));
+            case METHOD_TOOLS_CALL -> withManagement(requestContext, requestId, () -> operationsCommon.callTool(requestContext, operationsCommon.convertParams(rpcRequest, CallToolRequest.class)));
+            case METHOD_PROMPT_LIST -> withManagement(requestContext, requestId, () -> operationsCommon.listPrompts(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class)));
+            case METHOD_PROMPT_GET -> withManagement(requestContext, requestId, () -> operationsCommon.getPrompt(requestContext, operationsCommon.convertParams(rpcRequest, GetPromptRequest.class)));
+            case METHOD_RESOURCES_LIST -> withManagement(requestContext, requestId, () -> operationsCommon.listResources(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class)));
+            case METHOD_RESOURCES_TEMPLATES_LIST -> withManagement(requestContext, requestId, () -> operationsCommon.listResourceTemplates(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class)));
+            case METHOD_RESOURCES_READ -> withManagement(requestContext, requestId, () -> operationsCommon.readResources(requestContext, operationsCommon.convertParams(rpcRequest, ReadResourceRequest.class)));
             case METHOD_COMPLETION_COMPLETE -> operationsCommon.completionComplete(requestContext, operationsCommon.convertParams(rpcRequest, CompleteRequest.class));
             case METHOD_LOGGING_SET_LEVEL -> handleSetLoggingLevel(requestContext, operationsCommon.convertParams(rpcRequest, SetLevelRequest.class));
             case METHOD_RESOURCES_SUBSCRIBE -> handleResourcesSubscribe(requestContext, operationsCommon.convertParams(rpcRequest, SubscribeRequest.class));

@@ -28,6 +28,7 @@ import io.airlift.mcp.model.ResourceTemplateValues;
 import io.airlift.mcp.model.Role;
 import io.airlift.mcp.model.StructuredContentResult;
 import io.airlift.mcp.model.Tool;
+import io.airlift.mcp.operations.LegacyServerToClientRequest;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.time.Duration;
@@ -49,6 +50,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TestingEndpoints
 {
     private final McpEntities entities;
+    private final LegacyServerToClientRequest serverToClientRequest;
     private final Set<ToolEntry> tools;
     private final Set<PromptEntry> prompts;
     private final Set<ResourceEntry> resources;
@@ -64,9 +66,11 @@ public class TestingEndpoints
             Set<PromptEntry> prompts,
             Set<ResourceEntry> resources,
             SleepToolController sleepToolController,
-            McpIdentitySupplier<TestingIdentity> testingIdentitySupplier)
+            McpIdentitySupplier<TestingIdentity> testingIdentitySupplier,
+            LegacyServerToClientRequest serverToClientRequest)
     {
         this.entities = requireNonNull(entities, "entities is null");
+        this.serverToClientRequest = requireNonNull(serverToClientRequest, "serverToClientRequest is null");
 
         this.tools = ImmutableSet.copyOf(tools);
         this.prompts = ImmutableSet.copyOf(prompts);
@@ -313,7 +317,7 @@ public class TestingEndpoints
         ElicitRequestForm elicitRequest = new ElicitRequestForm("Who are you?", elicitation);
         JsonRpcResponse<ElicitResult> response;
         try {
-            response = requestContext.serverToClientRequest(Constants.METHOD_ELICITATION_CREATE, elicitRequest, ElicitResult.class, Duration.ofMinutes(5), Duration.ofSeconds(30));
+            response = serverToClientRequest.serverToClientRequest(requestContext, Constants.METHOD_ELICITATION_CREATE, elicitRequest, ElicitResult.class, Duration.ofMinutes(5), Duration.ofSeconds(30));
         }
         catch (InterruptedException | TimeoutException e) {
             throw new RuntimeException(e);
@@ -337,7 +341,7 @@ public class TestingEndpoints
         CreateMessageRequest createMessageRequest = new CreateMessageRequest(Role.USER, new TextContent("Are you sure?"), 100);
         JsonRpcResponse<CreateMessageResult> response;
         try {
-            response = requestContext.serverToClientRequest(Constants.METHOD_SAMPLING_CREATE_MESSAGE, createMessageRequest, CreateMessageResult.class, Duration.ofMinutes(5), Duration.ofSeconds(1));
+            response = serverToClientRequest.serverToClientRequest(requestContext, Constants.METHOD_SAMPLING_CREATE_MESSAGE, createMessageRequest, CreateMessageResult.class, Duration.ofMinutes(5), Duration.ofSeconds(1));
         }
         catch (InterruptedException | TimeoutException e) {
             throw new RuntimeException(e);
