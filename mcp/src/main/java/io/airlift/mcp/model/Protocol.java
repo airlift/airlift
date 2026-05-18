@@ -10,8 +10,8 @@ import static java.util.Objects.requireNonNull;
 
 public enum Protocol
 {
-    PROTOCOL_MCP_2025_06_18("2025-06-18", false),
-    PROTOCOL_MCP_2025_11_25("2025-11-25", true);
+    PROTOCOL_MCP_2025_06_18("2025-06-18"),
+    PROTOCOL_MCP_2025_11_25("2025-11-25");
 
     public static final Protocol LATEST_PROTOCOL = PROTOCOL_MCP_2025_11_25;
 
@@ -19,7 +19,6 @@ public enum Protocol
             .collect(toImmutableMap(Protocol::value, Function.identity()));
 
     private final String value;
-    private final boolean supportsIcons;
 
     public static Optional<Protocol> of(String value)
     {
@@ -31,14 +30,8 @@ public enum Protocol
         return value;
     }
 
-    public boolean supportsIcons()
-    {
-        return supportsIcons;
-    }
-
-    Protocol(String value, boolean supportsIcons)
+    Protocol(String value)
     {
         this.value = requireNonNull(value, "value is null");
-        this.supportsIcons = supportsIcons;
     }
 }

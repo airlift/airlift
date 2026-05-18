@@ -79,6 +79,7 @@ import static io.airlift.mcp.model.Constants.NOTIFICATION_ROOTS_LIST_CHANGED;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
 import static io.airlift.mcp.model.JsonRpcErrorCode.METHOD_NOT_FOUND;
 import static io.airlift.mcp.model.Protocol.LATEST_PROTOCOL;
+import static io.airlift.mcp.operations.OperationsCommon.supportsIcons;
 import static io.airlift.mcp.sessions.SessionValueKey.CLIENT_CAPABILITIES;
 import static io.airlift.mcp.sessions.SessionValueKey.LOGGING_LEVEL;
 import static io.airlift.mcp.sessions.SessionValueKey.PROTOCOL;
@@ -297,7 +298,7 @@ public class LegacyOperations
                 tools.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(sessionsEnabled)),
                 Optional.empty());
 
-        Implementation localImplementation = protocol.supportsIcons() ? serverImplementation : serverImplementation.simpleForm();
+        Implementation localImplementation = supportsIcons(protocol) ? serverImplementation : serverImplementation.simpleForm();
 
         return new InitializeResult(protocol.value(), serverCapabilities, localImplementation, metadata.instructions());
     }
