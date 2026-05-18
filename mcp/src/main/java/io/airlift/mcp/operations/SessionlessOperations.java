@@ -10,6 +10,7 @@ import io.airlift.mcp.McpEntities;
 import io.airlift.mcp.McpIdentity;
 import io.airlift.mcp.McpMetadata;
 import io.airlift.mcp.McpMetadataMapper;
+import io.airlift.mcp.messages.MessageWriter;
 import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.CompleteReference;
 import io.airlift.mcp.model.CompleteRequest;
@@ -40,6 +41,7 @@ import java.util.Set;
 import static io.airlift.http.server.tracing.TracingServletFilter.updateRequestSpan;
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.McpModule.MCP_SERVER_ICONS;
+import static io.airlift.mcp.messages.MessageWriter.newMessageWriter;
 import static io.airlift.mcp.model.Constants.HEADER_SESSION_ID;
 import static io.airlift.mcp.model.Constants.MESSAGE_WRITER_ATTRIBUTE;
 import static io.airlift.mcp.model.Constants.METHOD_COMPLETION_COMPLETE;
@@ -105,7 +107,7 @@ public class SessionlessOperations
 
         log.debug("Processing MCP request: %s, session: %s", method, request.getHeader(HEADER_SESSION_ID));
 
-        MessageWriterImpl messageWriter = new MessageWriterImpl(response);
+        MessageWriter messageWriter = newMessageWriter(response);
         request.setAttribute(MESSAGE_WRITER_ATTRIBUTE, messageWriter);
 
         RequestContextImpl requestContext = new RequestContextImpl(jsonMapper, Optional.empty(), request, response, messageWriter, authenticated);
@@ -129,7 +131,7 @@ public class SessionlessOperations
         try {
             JsonRpcResponse<?> rpcResponse = new JsonRpcResponse<>(requestId, Optional.empty(), Optional.of(result));
             messageWriter.write(jsonMapper.writeValueAsString(rpcResponse));
-            messageWriter.flushMessages();
+            messageWriter.flush();
         }
         catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);
