@@ -7,7 +7,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.mcp.McpIdentity.Authenticated;
 import io.airlift.mcp.McpRequestContext;
-import io.airlift.mcp.handler.MessageWriter;
+import io.airlift.mcp.messages.MessageWriter;
 import io.airlift.mcp.model.InitializeRequest.ClientCapabilities;
 import io.airlift.mcp.model.JsonRpcErrorDetail;
 import io.airlift.mcp.model.JsonRpcRequest;
@@ -321,7 +321,7 @@ class RequestContextImpl
         try {
             String json = jsonMapper.writeValueAsString(rpcRequest);
             messageWriter.writeMessage(json);
-            messageWriter.flushMessages();
+            messageWriter.flush();
         }
         catch (IOException e) {
             throw exception(e);

@@ -1,4 +1,4 @@
-package io.airlift.mcp;
+package io.airlift.mcp.messages;
 
 import com.google.common.collect.ImmutableList;
 

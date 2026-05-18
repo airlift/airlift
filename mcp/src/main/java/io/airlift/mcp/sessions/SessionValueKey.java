@@ -1,6 +1,6 @@
 package io.airlift.mcp.sessions;
 
-import io.airlift.mcp.SentMessages;
+import io.airlift.mcp.messages.SentMessages;
 import io.airlift.mcp.model.CancelledNotification;
 import io.airlift.mcp.model.InitializeRequest.ClientCapabilities;
 import io.airlift.mcp.model.JsonRpcResponse;
