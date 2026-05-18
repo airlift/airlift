@@ -56,6 +56,7 @@ import static io.airlift.mcp.model.Constants.NOTIFICATION_INITIALIZED;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_ROOTS_LIST_CHANGED;
 import static io.airlift.mcp.model.JsonRpcErrorCode.METHOD_NOT_FOUND;
 import static io.airlift.mcp.model.Protocol.LATEST_PROTOCOL;
+import static io.airlift.mcp.operations.OperationsCommon.supportsIcons;
 import static io.opentelemetry.semconv.incubating.McpIncubatingAttributes.MCP_METHOD_NAME;
 import static io.opentelemetry.semconv.incubating.McpIncubatingAttributes.MCP_PROTOCOL_VERSION;
 import static jakarta.servlet.http.HttpServletResponse.SC_ACCEPTED;
@@ -155,7 +156,7 @@ public class SessionlessOperations
                 tools.isEmpty() ? Optional.empty() : Optional.of(new ListChanged(false)),
                 Optional.empty());
 
-        Implementation localImplementation = protocol.supportsIcons() ? serverImplementation : serverImplementation.simpleForm();
+        Implementation localImplementation = supportsIcons(protocol) ? serverImplementation : serverImplementation.simpleForm();
 
         return new InitializeResult(protocol.value(), serverCapabilities, localImplementation, metadata.instructions());
     }

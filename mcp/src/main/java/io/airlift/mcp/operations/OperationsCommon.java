@@ -25,6 +25,7 @@ import io.airlift.mcp.model.ListToolsResult;
 import io.airlift.mcp.model.Meta;
 import io.airlift.mcp.model.OptionalBoolean;
 import io.airlift.mcp.model.Prompt;
+import io.airlift.mcp.model.Protocol;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.ReadResourceResult;
 import io.airlift.mcp.model.Resource;
@@ -41,6 +42,7 @@ import static io.airlift.http.server.tracing.TracingServletFilter.updateRequestS
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
 import static io.airlift.mcp.model.JsonRpcErrorCode.RESOURCE_NOT_FOUND;
+import static io.airlift.mcp.model.Protocol.PROTOCOL_MCP_2025_06_18;
 import static io.opentelemetry.semconv.incubating.McpIncubatingAttributes.MCP_RESOURCE_URI;
 import static java.util.Objects.requireNonNull;
 
@@ -59,6 +61,11 @@ public class OperationsCommon
         paginationUtil = new PaginationUtil(mcpConfig);
     }
 
+    static boolean supportsIcons(Protocol protocol)
+    {
+        return protocol != PROTOCOL_MCP_2025_06_18;
+    }
+
     <T> T convertParams(JsonRpcRequest<?> rpcRequest, Class<T> clazz)
     {
         Object value = rpcRequest.params().map(v -> (Object) v).orElseGet(ImmutableMap::of);
@@ -69,7 +76,7 @@ public class OperationsCommon
     {
         List<Tool> localTools = entities.tools(requestContext)
                 .stream()
-                .map(tool -> requestContext.protocol().supportsIcons() ? tool : tool.withoutIcons())
+                .map(tool -> supportsIcons(requestContext.protocol()) ? tool : tool.withoutIcons())
                 .collect(toImmutableList());
         return paginationUtil.paginate(listRequest, localTools, Tool::name, ListToolsResult::new);
     }
@@ -93,7 +100,7 @@ public class OperationsCommon
     {
         List<Prompt> localPrompts = entities.prompts(requestContext)
                 .stream()
-                .map(prompt -> requestContext.protocol().supportsIcons() ? prompt : prompt.withoutIcons())
+                .map(prompt -> supportsIcons(requestContext.protocol()) ? prompt : prompt.withoutIcons())
                 .collect(toImmutableList());
         return paginationUtil.paginate(listRequest, localPrompts, Prompt::name, ListPromptsResult::new);
     }
@@ -112,7 +119,7 @@ public class OperationsCommon
     {
         List<Resource> localResources = entities.resources(requestContext)
                 .stream()
-                .map(resource -> requestContext.protocol().supportsIcons() ? resource : resource.withoutIcons())
+                .map(resource -> supportsIcons(requestContext.protocol()) ? resource : resource.withoutIcons())
                 .collect(toImmutableList());
         return paginationUtil.paginate(listRequest, localResources, Resource::name, ListResourcesResult::new);
     }
@@ -121,7 +128,7 @@ public class OperationsCommon
     {
         List<ResourceTemplate> localResourceTemplates = entities.resourceTemplates(requestContext)
                 .stream()
-                .map(resourceTemplate -> requestContext.protocol().supportsIcons() ? resourceTemplate : resourceTemplate.withoutIcons())
+                .map(resourceTemplate -> supportsIcons(requestContext.protocol()) ? resourceTemplate : resourceTemplate.withoutIcons())
                 .collect(toImmutableList());
         return paginationUtil.paginate(listRequest, localResourceTemplates, ResourceTemplate::name, ListResourceTemplatesResult::new);
     }
