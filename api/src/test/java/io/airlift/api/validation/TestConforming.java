@@ -174,9 +174,12 @@ public class TestConforming
         ModelServices services = ApiBuilder.apiBuilder().add(ServiceWithStreamResponse.class).build().modelServices();
         assertThat(services.errors()).hasSize(0);
 
+        services = ApiBuilder.apiBuilder().add(ServiceWithCreateStreamResponse.class).build().modelServices();
+        assertThat(services.errors()).hasSize(0);
+
         services = ApiBuilder.apiBuilder().add(BadServiceWithStreamResponse1.class).build().modelServices();
         assertThat(services.errors()).hasSize(1).first()
-                .matches(s -> s.startsWith("ApiStreamResponse is only allowed for @ApiGet"));
+                .matches(s -> s.startsWith("ApiStreamResponse is only allowed for @ApiGet or @ApiCreate"));
 
         services = ApiBuilder.apiBuilder().add(BadServiceWithStreamResponse2.class).build().modelServices();
         assertThat(services.errors()).anyMatch(s -> s.startsWith("ApiStreamResponse cannot be a parameter"));

@@ -11,11 +11,15 @@ import org.junit.jupiter.api.Test;
 import java.net.URI;
 import java.util.Optional;
 
+import static io.airlift.http.client.HeaderNames.ACCEPT;
 import static io.airlift.http.client.HeaderNames.CONTENT_DISPOSITION;
 import static io.airlift.http.client.HeaderNames.CONTENT_TYPE;
+import static io.airlift.http.client.JsonBodyGenerator.jsonBodyGenerator;
 import static io.airlift.http.client.Request.Builder.prepareGet;
+import static io.airlift.http.client.Request.Builder.preparePost;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static io.airlift.http.client.StringResponseHandler.createStringResponseHandler;
+import static io.airlift.json.JsonCodec.jsonCodec;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class TestStreaming
@@ -41,6 +45,23 @@ public class TestStreaming
         assertThat(stringResponse.getHeader(CONTENT_TYPE)).hasValue(MediaType.APPLICATION_OCTET_STREAM);
         assertThat(stringResponse.getHeader(CONTENT_DISPOSITION)).hasValue("attachment; filename=\"foo.bar\"");
         assertThat(stringResponse.getBody()).isEqualTo("This is streaming output");
+    }
+
+    @Test
+    public void testStreamingPost()
+    {
+        URI uri = UriBuilder.fromUri(baseUri).path("public/api/v1/streamer:post").build();
+        Request request = preparePost()
+                .setUri(uri)
+                .setHeader(ACCEPT, MediaType.TEXT_PLAIN)
+                .setHeader(CONTENT_TYPE, MediaType.APPLICATION_JSON)
+                .setBodyGenerator(jsonBodyGenerator(jsonCodec(StreamingRequest.class), new StreamingRequest("payload")))
+                .build();
+
+        StringResponse stringResponse = httpClient.execute(request, createStringResponseHandler());
+        assertThat(stringResponse.getStatusCode()).isEqualTo(200);
+        assertThat(stringResponse.getHeader(CONTENT_TYPE)).hasValue(MediaType.TEXT_PLAIN + ";charset=iso-8859-1");
+        assertThat(stringResponse.getBody()).isEqualTo("This is streaming post: payload");
     }
 
     @Test
