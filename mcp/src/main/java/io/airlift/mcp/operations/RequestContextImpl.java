@@ -188,8 +188,7 @@ class RequestContextImpl
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
-    @Override
-    public <R> JsonRpcResponse<R> serverToClientRequest(String method, Object params, Class<R> responseType, Duration timeout, Duration pollInterval)
+    <R> JsonRpcResponse<R> serverToClientRequest(String method, Object params, Class<R> responseType, Duration timeout, Duration pollInterval)
             throws InterruptedException, TimeoutException
     {
         SessionController localSessionController = sessionController.orElseThrow(() -> new IllegalStateException("Sessions are not enabled"));
