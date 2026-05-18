@@ -20,8 +20,6 @@ public interface McpRequestContext
 
     void sendProgress(double progress, double total, String message);
 
-    void sendPing();
-
     void sendMessage(String method, Optional<Object> params);
 
     ClientCapabilities clientCapabilities();
