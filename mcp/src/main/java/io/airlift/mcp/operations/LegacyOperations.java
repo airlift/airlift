@@ -53,7 +53,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.BiConsumer;
 
 import static io.airlift.http.server.tracing.TracingServletFilter.updateRequestSpan;
 import static io.airlift.mcp.McpException.exception;
@@ -104,12 +103,13 @@ public class LegacyOperations
 {
     private static final Logger log = Logger.get(LegacyOperations.class);
 
+    private static final Duration EVENT_STREAMING_SLEEP = Duration.ofSeconds(15);
+
     private final McpMetadata metadata;
     private final JsonMapper jsonMapper;
     private final Optional<SessionController> sessionController;
     private final LegacyCancellationController cancellationController;
     private final boolean httpGetEventsEnabled;
-    private final Duration streamingPingThreshold;
     private final Duration streamingTimeout;
     private final int maxResumableMessages;
     private final LegacyVersionsController versionsController;
@@ -140,7 +140,6 @@ public class LegacyOperations
         this.operationsCommon = requireNonNull(operationsCommon, "operationsCommon is null");
 
         httpGetEventsEnabled = mcpConfig.isHttpGetEventsEnabled();
-        streamingPingThreshold = mcpConfig.getEventStreamingPingThreshold().toJavaTime();
         streamingTimeout = mcpConfig.getEventStreamingTimeout().toJavaTime();
         maxResumableMessages = mcpConfig.getMaxResumableMessages();
         sessionTimeout = mcpConfig.getDefaultSessionTimeout().toJavaTime();
@@ -381,7 +380,6 @@ public class LegacyOperations
         SessionId sessionId = requireSessionId(request);
 
         Stopwatch timeoutStopwatch = Stopwatch.createStarted();
-        Stopwatch pingStopwatch = Stopwatch.createStarted();
 
         ResumableMessageWriter messageWriter = MessageWriter.newResumableMessageWriter(response);
         RequestContextImpl requestContext = new RequestContextImpl(jsonMapper, Optional.of(sessionController), request, response, messageWriter, authenticated);
@@ -395,22 +393,13 @@ public class LegacyOperations
                 break;
             }
 
-            BiConsumer<String, Optional<Object>> notifier = (method, params) -> {
-                requestContext.sendMessage(method, params);
-
-                pingStopwatch.reset().start();
-            };
-
             versionsController.reconcileVersions(requestContext);
 
             checkSaveSentMessages(sessionController, sessionId, messageWriter);
 
-            if (pingStopwatch.elapsed().compareTo(streamingPingThreshold) >= 0) {
-                notifier.accept(METHOD_PING, Optional.empty());
-            }
-
             try {
-                Thread.sleep(streamingPingThreshold.toMillis());
+                Thread.sleep(EVENT_STREAMING_SLEEP.toMillis());
+                requestContext.sendMessage(METHOD_PING, Optional.empty());
             }
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();

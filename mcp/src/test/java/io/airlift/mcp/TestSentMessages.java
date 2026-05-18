@@ -27,7 +27,6 @@ import java.io.InputStreamReader;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
@@ -58,11 +57,7 @@ public class TestSentMessages
 
     public TestSentMessages()
     {
-        // implicitly disable pings
-        Map<String, String> properties = ImmutableMap.of(
-                "mcp.event-streaming.ping-threshold", "7d");
-
-        testingServer = new TestingServer(properties, Optional.empty(), builder -> builder
+        testingServer = new TestingServer(ImmutableMap.of(), Optional.empty(), builder -> builder
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
                 .withStorage(binding -> binding.to(MemoryStorageController.class).in(SINGLETON))
                 .withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON))

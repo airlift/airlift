@@ -39,7 +39,6 @@ import java.util.function.Supplier;
 import static com.google.common.base.Throwables.getRootCause;
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.model.Constants.MCP_SESSION_ID;
-import static io.airlift.mcp.model.Constants.METHOD_PING;
 import static io.airlift.mcp.model.Constants.METHOD_ROOTS_LIST;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_MESSAGE;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_PROGRESS;
@@ -56,8 +55,6 @@ import static java.util.Objects.requireNonNull;
 class RequestContextImpl
         implements McpRequestContext
 {
-    private static final Duration PING_THRESHOLD = Duration.ofSeconds(15);
-
     private final JsonMapper jsonMapper;
     private final Optional<SessionController> sessionController;
     private final HttpServletRequest request;
@@ -172,12 +169,6 @@ class RequestContextImpl
     }
 
     @Override
-    public void sendPing()
-    {
-        sendMessage(METHOD_PING, Optional.empty());
-    }
-
-    @Override
     public void sendLog(LoggingLevel level, Optional<String> logger, Optional<Object> data)
     {
         LoggingLevel sessionLoggingLevel = loggingLevelSupplier.get();
@@ -218,8 +209,6 @@ class RequestContextImpl
         internalSendRequest(buildRequest(requestId, method, params));
         SessionValueKey<JsonRpcResponse> responseKey = serverToClientResponseKey(requestId);
 
-        Stopwatch pingStopwatch = Stopwatch.createStarted();
-
         while (timeout.isPositive()) {
             Stopwatch stopwatch = Stopwatch.createStarted();
             BlockingResult<JsonRpcResponse> blockingResult = localSessionController.blockUntil(sessionId, responseKey, pollInterval, Optional::isPresent);
@@ -237,11 +226,6 @@ class RequestContextImpl
                 finally {
                     localSessionController.deleteSessionValue(sessionId, responseKey);
                 }
-            }
-
-            if (pingStopwatch.elapsed().compareTo(PING_THRESHOLD) >= 0) {
-                sendPing();
-                pingStopwatch.reset().start();
             }
         }
 
