@@ -1,8 +1,10 @@
 package io.airlift.api.servertests.streaming;
 
+import com.google.inject.Inject;
 import io.airlift.api.ApiCustom;
 import io.airlift.api.ApiGet;
 import io.airlift.api.ApiParameter;
+import io.airlift.api.ApiQuotaController;
 import io.airlift.api.ApiResponseHeaders;
 import io.airlift.api.ApiService;
 import io.airlift.api.ApiStreamResponse.ApiByteStreamResponse;
@@ -10,18 +12,30 @@ import io.airlift.api.ApiStreamResponse.ApiOutputStreamResponse;
 import io.airlift.api.ApiStreamResponse.ApiTextStreamResponse;
 import io.airlift.api.ServiceType;
 import io.airlift.api.responses.ApiException;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.Request;
 
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.function.Consumer;
 
+import static io.airlift.api.ApiType.CREATE;
 import static io.airlift.api.ApiType.GET;
 import static io.airlift.api.ApiType.LIST;
+import static java.util.Objects.requireNonNull;
 
 @ApiService(type = ServiceType.class, name = "streaming", description = "Does streaming things")
 public class StreamingService
 {
+    private final ApiQuotaController quotaController;
+
+    @Inject
+    public StreamingService(ApiQuotaController quotaController)
+    {
+        this.quotaController = requireNonNull(quotaController, "quotaController is null");
+    }
+
     @ApiGet(description = "streaming")
     public ApiByteStreamResponse<StreamingResource> streamBytes()
     {
@@ -48,6 +62,13 @@ public class StreamingService
 
         responseHeaders.headers().put("Content-Disposition", "attachment; filename=\"foo.bar\"");
         return new ApiOutputStreamResponse<>(consumer);
+    }
+
+    @ApiCustom(type = CREATE, verb = "post", description = "yep", quotas = "STREAMING")
+    public ApiTextStreamResponse<StreamingResource> streamPost(@Context Request request, StreamingRequest streamingRequest)
+    {
+        quotaController.recordQuotaUsage(request, "STREAMING");
+        return new ApiTextStreamResponse<>("This is streaming post: " + streamingRequest.something());
     }
 
     @ApiCustom(type = LIST, verb = "bad", description = "bad")

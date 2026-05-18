@@ -421,7 +421,7 @@ public class MethodBuilder
     private ModelResource buildResultResource(Method method, ApiType apiType)
     {
         boolean allowVoidResult = (apiType != ApiType.GET) && (apiType != ApiType.LIST);
-        boolean allowStreamingResult = (apiType == ApiType.GET);
+        boolean allowStreamingResult = (apiType == ApiType.GET) || (apiType == ApiType.CREATE);
 
         Type resource = method.getGenericReturnType();
 
@@ -447,7 +447,7 @@ public class MethodBuilder
         }
 
         if (validatedResource.modifiers().contains(IS_STREAMING_RESPONSE) && !allowStreamingResult) {
-            throw new ValidatorException("%s is only allowed for @%s".formatted(ApiStreamResponse.class.getSimpleName(), ApiGet.class.getSimpleName()));
+            throw new ValidatorException("%s is only allowed for @%s or @%s".formatted(ApiStreamResponse.class.getSimpleName(), ApiGet.class.getSimpleName(), ApiCreate.class.getSimpleName()));
         }
 
         if (validatedResource.modifiers().contains(IS_MULTIPART_FORM)) {

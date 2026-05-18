@@ -111,7 +111,7 @@ class JaxrsResourceBuilder
             case LIST, DELETE -> methodBuilder.produces(APPLICATION_JSON_TYPE);
             case CREATE, UPDATE -> {
                 boolean isMultiPartForm = method.requestBody().map(requestBody -> requestBody.modifiers().contains(IS_MULTIPART_FORM)).orElse(false);
-                methodBuilder.consumes(isMultiPartForm ? MULTIPART_FORM_DATA_TYPE : APPLICATION_JSON_TYPE).produces(APPLICATION_JSON_TYPE);
+                methodBuilder.consumes(isMultiPartForm ? MULTIPART_FORM_DATA_TYPE : APPLICATION_JSON_TYPE).produces(getResponseType(method.returnType()));
             }
         }
         methodBuilder.handledBy(service.serviceClass(), method.method());
