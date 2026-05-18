@@ -7,6 +7,7 @@ import io.airlift.log.Logger;
 import io.airlift.mcp.ErrorHandler;
 import io.airlift.mcp.McpClientException;
 import io.airlift.mcp.McpException;
+import io.airlift.mcp.messages.MessageWriter;
 import io.airlift.mcp.model.JsonRpcErrorCode;
 import io.airlift.mcp.model.JsonRpcErrorDetail;
 import io.airlift.mcp.model.JsonRpcMessage;
@@ -108,10 +109,10 @@ public class ErrorHandlerImpl
             throw new McpException(e, error);
         }
 
-        MessageWriterImpl messageWriter = (MessageWriterImpl) request.getAttribute(MESSAGE_WRITER_ATTRIBUTE);
+        MessageWriter messageWriter = (MessageWriter) request.getAttribute(MESSAGE_WRITER_ATTRIBUTE);
         if ((messageWriter != null) && messageWriter.hasBeenUpgraded()) {
             messageWriter.write(rpcResponseJson);
-            messageWriter.flushMessages();
+            messageWriter.flush();
         }
         else if (!response.isCommitted()) {
             writeResponseError(response, rpcResponseJson, rpcResponse, isClientError);

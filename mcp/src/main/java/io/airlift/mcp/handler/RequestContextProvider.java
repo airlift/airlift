@@ -1,6 +1,7 @@
 package io.airlift.mcp.handler;
 
 import io.airlift.mcp.McpRequestContext;
+import io.airlift.mcp.messages.MessageWriter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 

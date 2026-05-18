@@ -9,6 +9,7 @@ import io.airlift.log.Logger;
 import io.airlift.mcp.McpEntities;
 import io.airlift.mcp.McpIdentity;
 import io.airlift.mcp.McpMetadata;
+import io.airlift.mcp.messages.MessageWriter;
 import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.CompleteReference;
 import io.airlift.mcp.model.CompleteRequest;
@@ -104,7 +105,7 @@ public class SessionlessOperations
 
         log.debug("Processing MCP request: %s, session: %s", method, request.getHeader(HEADER_SESSION_ID));
 
-        MessageWriterImpl messageWriter = new MessageWriterImpl(response);
+        MessageWriter messageWriter = MessageWriter.newMessageWriter(response);
         request.setAttribute(MESSAGE_WRITER_ATTRIBUTE, messageWriter);
 
         RequestContextImpl requestContext = new RequestContextImpl(jsonMapper, Optional.empty(), request, response, messageWriter, authenticated);
@@ -128,7 +129,7 @@ public class SessionlessOperations
         try {
             JsonRpcResponse<?> rpcResponse = new JsonRpcResponse<>(requestId, Optional.empty(), Optional.of(result));
             messageWriter.write(jsonMapper.writeValueAsString(rpcResponse));
-            messageWriter.flushMessages();
+            messageWriter.flush();
         }
         catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);

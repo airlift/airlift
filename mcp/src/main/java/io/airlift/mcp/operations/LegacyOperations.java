@@ -13,7 +13,9 @@ import io.airlift.mcp.McpConfig;
 import io.airlift.mcp.McpEntities;
 import io.airlift.mcp.McpIdentity;
 import io.airlift.mcp.McpMetadata;
-import io.airlift.mcp.SentMessages;
+import io.airlift.mcp.messages.MessageWriter;
+import io.airlift.mcp.messages.ResumableMessageWriter;
+import io.airlift.mcp.messages.SentMessages;
 import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.CancelledNotification;
 import io.airlift.mcp.model.CompleteReference;
@@ -56,6 +58,7 @@ import java.util.function.BiConsumer;
 import static io.airlift.http.server.tracing.TracingServletFilter.updateRequestSpan;
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.McpModule.MCP_SERVER_ICONS;
+import static io.airlift.mcp.messages.MessageWriter.newResumableMessageWriter;
 import static io.airlift.mcp.model.Constants.HEADER_LAST_EVENT_ID;
 import static io.airlift.mcp.model.Constants.HEADER_SESSION_ID;
 import static io.airlift.mcp.model.Constants.MCP_SESSION_ID;
@@ -159,7 +162,7 @@ public class LegacyOperations
 
         validateSession(request, rpcRequest);
 
-        MessageWriterImpl messageWriter = new MessageWriterImpl(response);
+        ResumableMessageWriter messageWriter = newResumableMessageWriter(response);
         request.setAttribute(MESSAGE_WRITER_ATTRIBUTE, messageWriter);
 
         RequestContextImpl requestContext = new RequestContextImpl(jsonMapper, sessionController, request, response, messageWriter, authenticated);
@@ -186,7 +189,7 @@ public class LegacyOperations
         try {
             JsonRpcResponse<?> rpcResponse = new JsonRpcResponse<>(requestId, Optional.empty(), Optional.of(result));
             messageWriter.write(jsonMapper.writeValueAsString(rpcResponse));
-            messageWriter.flushMessages();
+            messageWriter.flush();
         }
         catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);
@@ -380,7 +383,7 @@ public class LegacyOperations
         Stopwatch timeoutStopwatch = Stopwatch.createStarted();
         Stopwatch pingStopwatch = Stopwatch.createStarted();
 
-        MessageWriterImpl messageWriter = new MessageWriterImpl(response);
+        ResumableMessageWriter messageWriter = MessageWriter.newResumableMessageWriter(response);
         RequestContextImpl requestContext = new RequestContextImpl(jsonMapper, Optional.of(sessionController), request, response, messageWriter, authenticated);
 
         Optional.ofNullable(request.getHeader(HEADER_LAST_EVENT_ID))
@@ -417,25 +420,18 @@ public class LegacyOperations
         }
     }
 
-    private void replaySentMessages(SessionController sessionController, SessionId sessionId, String lastEventId, MessageWriterImpl messageWriter)
+    private void replaySentMessages(SessionController sessionController, SessionId sessionId, String lastEventId, ResumableMessageWriter messageWriter)
     {
         sessionController.getSessionValue(sessionId, SENT_MESSAGES)
                 .ifPresent(sentMessages -> {
-                    boolean found = false;
-                    for (SentMessages.SentMessage sentMessage : sentMessages.messages()) {
-                        if (found) {
-                            log.info("Sending resumable messages to session %s", sessionId);
-                            messageWriter.internalWriteMessage(sentMessage.id(), sentMessage.data());
-                        }
-                        else {
-                            found = sentMessage.id().equals(lastEventId);
-                        }
+                    boolean found = messageWriter.writeSentMessages(sentMessages, lastEventId);
+                    if (found) {
+                        log.info("Sending resumable messages to session %s", sessionId);
                     }
-                    messageWriter.flushMessages();
                 });
     }
 
-    private void checkSaveSentMessages(SessionController sessionController, SessionId sessionId, MessageWriterImpl messageWriter)
+    private void checkSaveSentMessages(SessionController sessionController, SessionId sessionId, ResumableMessageWriter messageWriter)
     {
         List<SentMessages.SentMessage> sentMessages = messageWriter.takeSentMessages();
         if (sentMessages.isEmpty()) {
