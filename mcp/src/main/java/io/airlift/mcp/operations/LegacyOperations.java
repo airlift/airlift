@@ -54,7 +54,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.BiConsumer;
 
 import static io.airlift.http.server.tracing.TracingServletFilter.updateRequestSpan;
 import static io.airlift.mcp.McpException.exception;
@@ -105,12 +104,13 @@ public class LegacyOperations
 {
     private static final Logger log = Logger.get(LegacyOperations.class);
 
+    private static final Duration EVENT_STREAMING_SLEEP = Duration.ofSeconds(15);
+
     private final McpMetadataMapper metadata;
     private final JsonMapper jsonMapper;
     private final Optional<SessionController> sessionController;
     private final LegacyCancellationController cancellationController;
     private final boolean httpGetEventsEnabled;
-    private final Duration streamingPingThreshold;
     private final Duration streamingTimeout;
     private final int maxResumableMessages;
     private final LegacyVersionsController versionsController;
@@ -144,7 +144,6 @@ public class LegacyOperations
         this.operationsCommon = requireNonNull(operationsCommon, "operationsCommon is null");
 
         httpGetEventsEnabled = mcpConfig.isHttpGetEventsEnabled();
-        streamingPingThreshold = mcpConfig.getEventStreamingPingThreshold().toJavaTime();
         streamingTimeout = mcpConfig.getEventStreamingTimeout().toJavaTime();
         maxResumableMessages = mcpConfig.getMaxResumableMessages();
         sessionTimeout = mcpConfig.getDefaultSessionTimeout().toJavaTime();
@@ -170,13 +169,20 @@ public class LegacyOperations
 
         Object result = switch (method) {
             case METHOD_INITIALIZE -> handleInitialize(requestContext, operationsCommon.convertParams(rpcRequest, InitializeRequest.class));
-            case METHOD_TOOLS_LIST -> withManagement(requestContext, requestId, () -> operationsCommon.listTools(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class)));
-            case METHOD_TOOLS_CALL -> withManagement(requestContext, requestId, () -> operationsCommon.callTool(requestContext, operationsCommon.convertParams(rpcRequest, CallToolRequest.class)));
-            case METHOD_PROMPT_LIST -> withManagement(requestContext, requestId, () -> operationsCommon.listPrompts(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class)));
-            case METHOD_PROMPT_GET -> withManagement(requestContext, requestId, () -> operationsCommon.getPrompt(requestContext, operationsCommon.convertParams(rpcRequest, GetPromptRequest.class)));
-            case METHOD_RESOURCES_LIST -> withManagement(requestContext, requestId, () -> operationsCommon.listResources(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class)));
-            case METHOD_RESOURCES_TEMPLATES_LIST -> withManagement(requestContext, requestId, () -> operationsCommon.listResourceTemplates(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class)));
-            case METHOD_RESOURCES_READ -> withManagement(requestContext, requestId, () -> operationsCommon.readResources(requestContext, operationsCommon.convertParams(rpcRequest, ReadResourceRequest.class)));
+            case METHOD_TOOLS_LIST ->
+                    withManagement(requestContext, requestId, () -> operationsCommon.listTools(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class)));
+            case METHOD_TOOLS_CALL ->
+                    withManagement(requestContext, requestId, () -> operationsCommon.callTool(requestContext, operationsCommon.convertParams(rpcRequest, CallToolRequest.class)));
+            case METHOD_PROMPT_LIST ->
+                    withManagement(requestContext, requestId, () -> operationsCommon.listPrompts(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class)));
+            case METHOD_PROMPT_GET ->
+                    withManagement(requestContext, requestId, () -> operationsCommon.getPrompt(requestContext, operationsCommon.convertParams(rpcRequest, GetPromptRequest.class)));
+            case METHOD_RESOURCES_LIST ->
+                    withManagement(requestContext, requestId, () -> operationsCommon.listResources(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class)));
+            case METHOD_RESOURCES_TEMPLATES_LIST ->
+                    withManagement(requestContext, requestId, () -> operationsCommon.listResourceTemplates(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class)));
+            case METHOD_RESOURCES_READ ->
+                    withManagement(requestContext, requestId, () -> operationsCommon.readResources(requestContext, operationsCommon.convertParams(rpcRequest, ReadResourceRequest.class)));
             case METHOD_COMPLETION_COMPLETE -> operationsCommon.completionComplete(requestContext, operationsCommon.convertParams(rpcRequest, CompleteRequest.class));
             case METHOD_LOGGING_SET_LEVEL -> handleSetLoggingLevel(requestContext, operationsCommon.convertParams(rpcRequest, SetLevelRequest.class));
             case METHOD_RESOURCES_SUBSCRIBE -> handleResourcesSubscribe(requestContext, operationsCommon.convertParams(rpcRequest, SubscribeRequest.class));
@@ -385,7 +391,6 @@ public class LegacyOperations
         SessionId sessionId = requireSessionId(request);
 
         Stopwatch timeoutStopwatch = Stopwatch.createStarted();
-        Stopwatch pingStopwatch = Stopwatch.createStarted();
 
         ResumableMessageWriter messageWriter = newResumableMessageWriter(response);
         RequestContextImpl requestContext = new RequestContextImpl(jsonMapper, Optional.of(sessionController), request, response, messageWriter, authenticated);
@@ -393,28 +398,29 @@ public class LegacyOperations
         Optional.ofNullable(request.getHeader(HEADER_LAST_EVENT_ID))
                 .ifPresent(lastEventId -> replaySentMessages(sessionController, sessionId, lastEventId, messageWriter));
 
+        boolean firstTime = true;
         while (timeoutStopwatch.elapsed().compareTo(streamingTimeout) < 0) {
             if (!sessionController.validateSession(sessionId)) {
                 log.warn("Session validation failed for %s".formatted(sessionId));
                 break;
             }
 
-            BiConsumer<String, Optional<Object>> notifier = (method, params) -> {
-                requestContext.sendMessage(method, params);
-
-                pingStopwatch.reset().start();
-            };
+            if (firstTime) {
+                firstTime = false;
+            }
+            else {
+                requestContext.sendMessage(METHOD_PING, Optional.empty());
+            }
 
             versionsController.reconcileVersions(requestContext);
 
             checkSaveSentMessages(sessionController, sessionId, messageWriter);
 
-            if (pingStopwatch.elapsed().compareTo(streamingPingThreshold) >= 0) {
-                notifier.accept(METHOD_PING, Optional.empty());
-            }
-
             try {
-                Thread.sleep(streamingPingThreshold.toMillis());
+                long remainingMillis = streamingTimeout.toMillis() - timeoutStopwatch.elapsed().toMillis();
+                if (remainingMillis > 0) {
+                    Thread.sleep(Math.min(EVENT_STREAMING_SLEEP.toMillis(), remainingMillis));
+                }
             }
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();

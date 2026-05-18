@@ -13,7 +13,6 @@ public class McpConfig
     private int defaultPageSize = 25;
     private Duration defaultSessionTimeout = new Duration(15, MINUTES);
     private boolean httpGetEventsEnabled = true;
-    private Duration eventStreamingPingThreshold = new Duration(15, SECONDS);
     private Duration eventStreamingTimeout = new Duration(5, MINUTES);
     private Duration cancellationCheckInterval = new Duration(1, SECONDS);
     private Duration resourceSubscriptionCachePeriod = new Duration(1, MINUTES);
@@ -55,19 +54,6 @@ public class McpConfig
     public McpConfig setHttpGetEventsEnabled(boolean httpGetEventsEnabled)
     {
         this.httpGetEventsEnabled = httpGetEventsEnabled;
-        return this;
-    }
-
-    @MinDuration("1ms")
-    public Duration getEventStreamingPingThreshold()
-    {
-        return eventStreamingPingThreshold;
-    }
-
-    @Config("mcp.event-streaming.ping-threshold")
-    public McpConfig setEventStreamingPingThreshold(Duration eventStreamingPingThreshold)
-    {
-        this.eventStreamingPingThreshold = eventStreamingPingThreshold;
         return this;
     }
 
