@@ -8,5 +8,5 @@ public enum ApiOpenApiTrait
      * Note that this will cause the generated OpenAPI to not support highly recursive polymorphic schemas,
      * so it should only be used when necessary to work around tooling bugs.
      */
-    USE_ONE_OF_DISCRIMINATORS,
+    USE_ONE_OF_DISCRIMINATORS
 }
