@@ -3,21 +3,16 @@ package io.airlift.mcp.operations;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Suppliers;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import io.airlift.mcp.McpIdentity.Authenticated;
 import io.airlift.mcp.McpRequestContext;
 import io.airlift.mcp.messages.MessageWriter;
 import io.airlift.mcp.model.InitializeRequest.ClientCapabilities;
-import io.airlift.mcp.model.JsonRpcErrorDetail;
 import io.airlift.mcp.model.JsonRpcRequest;
 import io.airlift.mcp.model.JsonRpcResponse;
-import io.airlift.mcp.model.ListRootsResult;
 import io.airlift.mcp.model.LoggingLevel;
 import io.airlift.mcp.model.LoggingMessageNotification;
 import io.airlift.mcp.model.ProgressNotification;
 import io.airlift.mcp.model.Protocol;
-import io.airlift.mcp.model.Root;
 import io.airlift.mcp.sessions.BlockingResult;
 import io.airlift.mcp.sessions.BlockingResult.Fulfilled;
 import io.airlift.mcp.sessions.Session;
@@ -29,17 +24,14 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.List;
 import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
-import static com.google.common.base.Throwables.getRootCause;
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.model.Constants.MCP_SESSION_ID;
-import static io.airlift.mcp.model.Constants.METHOD_ROOTS_LIST;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_MESSAGE;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_PROGRESS;
 import static io.airlift.mcp.model.JsonRpcRequest.buildNotification;
@@ -48,7 +40,6 @@ import static io.airlift.mcp.model.Protocol.LATEST_PROTOCOL;
 import static io.airlift.mcp.sessions.SessionValueKey.CLIENT_CAPABILITIES;
 import static io.airlift.mcp.sessions.SessionValueKey.LOGGING_LEVEL;
 import static io.airlift.mcp.sessions.SessionValueKey.PROTOCOL;
-import static io.airlift.mcp.sessions.SessionValueKey.ROOTS;
 import static io.airlift.mcp.sessions.SessionValueKey.serverToClientResponseKey;
 import static java.util.Objects.requireNonNull;
 
@@ -155,7 +146,6 @@ class RequestContextImpl
         return session;
     }
 
-    @SuppressWarnings("SwitchStatementWithTooFewBranches")
     @Override
     public void sendProgress(double progress, double total, String message)
     {
@@ -232,44 +222,6 @@ class RequestContextImpl
         throw new TimeoutException("Timed out waiting %s for client to respond".formatted(timeout));
     }
 
-    @SuppressWarnings("ThrowableNotThrown")
-    @Override
-    public List<Root> requestRoots(Duration timeout, Duration pollInterval)
-            throws InterruptedException, TimeoutException
-    {
-        SessionController localSessionController = sessionController.orElseThrow(() -> new IllegalStateException("Sessions not enabled"));
-        SessionId sessionId = requireSessionId(request);
-
-        Optional<List<Root>> maybeRoots = localSessionController.getSessionValue(sessionId, ROOTS)
-                .map(ListRootsResult::roots);
-
-        try {
-            return maybeRoots.or(() -> localSessionController.getSessionValue(sessionId, CLIENT_CAPABILITIES).map(clientCapabilities -> {
-                if (clientCapabilities.roots().isPresent()) {
-                    try {
-                        return updateRoots(timeout, pollInterval, sessionId);
-                    }
-                    catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        throw new RuntimeException(e);
-                    }
-                    catch (TimeoutException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-                return ImmutableList.of();
-            })).orElseGet(ImmutableList::of);
-        }
-        catch (Exception e) {
-            switch (getRootCause(e)) {
-                case TimeoutException timeoutException -> throw timeoutException;
-                case InterruptedException interruptedException -> throw interruptedException;
-                case RuntimeException runtimeException -> throw runtimeException;
-                case Throwable throwable -> throw new RuntimeException(throwable);
-            }
-        }
-    }
-
     static SessionId requireSessionId(HttpServletRequest request)
     {
         return optionalSessionId(request).orElseThrow(() -> exception("Missing %s header in request".formatted(MCP_SESSION_ID)));
@@ -279,25 +231,6 @@ class RequestContextImpl
     {
         return Optional.ofNullable(request.getHeader(MCP_SESSION_ID))
                 .map(SessionId::new);
-    }
-
-    private List<Root> updateRoots(Duration timeout, Duration pollInterval, SessionId sessionId)
-            throws InterruptedException, TimeoutException
-    {
-        JsonRpcResponse<ListRootsResult> newRoots = serverToClientRequest(METHOD_ROOTS_LIST, ImmutableMap.of(), ListRootsResult.class, timeout, pollInterval);
-
-        if (newRoots.error().isPresent()) {
-            JsonRpcErrorDetail error = newRoots.error().orElseThrow();
-            throw exception(error.code(), error.message());
-        }
-
-        if (newRoots.result().isPresent()) {
-            ListRootsResult listRootsResult = newRoots.result().orElseThrow();
-            sessionController.ifPresent(controller -> controller.setSessionValue(sessionId, ROOTS, listRootsResult));
-            return listRootsResult.roots();
-        }
-
-        return ImmutableList.of();
     }
 
     private void internalSendRequest(JsonRpcRequest<?> rpcRequest)
