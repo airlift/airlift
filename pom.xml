@@ -316,6 +316,12 @@
             </dependency>
 
             <dependency>
+                <groupId>io.github.wasabithumb</groupId>
+                <artifactId>jtoml-all</artifactId>
+                <version>1.5.2</version>
+            </dependency>
+
+            <dependency>
                 <groupId>io.jsonwebtoken</groupId>
                 <artifactId>jjwt-api</artifactId>
                 <version>${dep.jjwt.version}</version>
@@ -382,11 +388,6 @@
                 </exclusions>
             </dependency>
 
-            <dependency>
-                <groupId>org.tomlj</groupId>
-                <artifactId>tomlj</artifactId>
-                <version>1.1.1</version>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 

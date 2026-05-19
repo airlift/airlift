@@ -19,12 +19,12 @@ import io.airlift.configuration.TomlConfiguration;
 import io.airlift.spi.secrets.SecretProvider;
 import io.airlift.spi.secrets.SecretProviderFactory;
 import org.junit.jupiter.api.Test;
-import org.tomlj.Toml;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
+import static io.github.wasabithumb.jtoml.JToml.jToml;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 final class TestSecretsPluginManager
@@ -44,7 +44,7 @@ final class TestSecretsPluginManager
     {
         Path configPluginDirectory = Files.createTempDirectory("config-plugins");
         SecretsPluginManager configurationPluginManager = new SecretsPluginManager(
-                new TomlConfiguration(Toml.parse(
+                new TomlConfiguration(jToml().readFromString(
                         """
                         secrets-plugins-dir="%s"
 
@@ -62,7 +62,7 @@ final class TestSecretsPluginManager
     {
         Path configPluginDirectory = Files.createTempDirectory("config-plugins");
         SecretsPluginManager configurationPluginManager = new SecretsPluginManager(
-                new TomlConfiguration(Toml.parse(
+                new TomlConfiguration(jToml().readFromString(
                         """
                         secrets-plugins-dir="%s"
                         """.formatted(configPluginDirectory.toAbsolutePath()))));
@@ -79,7 +79,7 @@ final class TestSecretsPluginManager
     {
         Path configPluginDirectory = Files.createTempDirectory("config-plugins");
         SecretsPluginManager configurationPluginManager = new SecretsPluginManager(
-                new TomlConfiguration(Toml.parse(
+                new TomlConfiguration(jToml().readFromString(
                         """
                         secrets-plugins-dir="%s"
 

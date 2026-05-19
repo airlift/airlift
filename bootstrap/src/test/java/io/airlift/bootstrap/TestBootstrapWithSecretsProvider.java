@@ -67,7 +67,7 @@ final class TestBootstrapWithSecretsProvider
 
         File configurationResolverFile = createConfigurationResolverFile(
                 """
-                secrets-plugins-dir="%s
+                secrets-plugins-dir="%s"
 
                 [env]
                 secrets-provider.name="env"
@@ -92,7 +92,7 @@ final class TestBootstrapWithSecretsProvider
 
         File configurationResolverFile = createConfigurationResolverFile(
                 """
-                secrets-plugins-dir="%s
+                secrets-plugins-dir="%s"
 
                 [multi]
                 secrets-provider.name="env"
