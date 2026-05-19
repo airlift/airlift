@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
+import static io.github.wasabithumb.jtoml.JToml.jToml;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -47,6 +48,24 @@ final class TestTomlConfiguration
     }
 
     @Test
+    void testTomlNamespaceWithEmptyTables()
+    {
+        TomlConfiguration tomlConfiguration = new TomlConfiguration(jToml().readFromString(
+                """
+                title = "TOML Example"
+
+                [empty]
+
+                [parent.child]
+                value = 1
+
+                [[servers]]
+                ip = "10.0.0.1"
+                """));
+        assertThat(tomlConfiguration.getNamespaces()).isEqualTo(ImmutableSet.of("empty", "parent"));
+    }
+
+    @Test
     void testTomlNamespaceConfiguration()
     {
         TomlConfiguration tomlConfiguration = TomlConfiguration.createTomlConfiguration(new File(Resources.getResource("configuration.toml").getPath()));
@@ -59,10 +78,31 @@ final class TestTomlConfiguration
     }
 
     @Test
+    void testTomlNamespaceConfigurationWithNestedValues()
+    {
+        TomlConfiguration tomlConfiguration = TomlConfiguration.createTomlConfiguration(
+                new File(Resources.getResource("configuration.toml").getPath()));
+        assertThat(tomlConfiguration.getNamespaceConfiguration("database")).isEqualTo(ImmutableMap.of(
+                "data", "delta,phi,3.14",
+                "enabled", "true",
+                "ports", "8000,8001,8002",
+                "temp_targets.case", "72.0",
+                "temp_targets.cpu", "79.5"));
+    }
+
+    @Test
     void testTomlWithInvalidNamespace()
     {
         TomlConfiguration tomlConfiguration = TomlConfiguration.createTomlConfiguration(new File(Resources.getResource("configuration.toml").getPath()));
         assertThatThrownBy(() -> tomlConfiguration.getNamespaceConfiguration("invalid"))
                 .hasMessageContaining("Namespace invalid not found");
+    }
+
+    @Test
+    void testTomlWithNonTableNamespace()
+    {
+        TomlConfiguration tomlConfiguration = new TomlConfiguration(jToml().readFromString("invalid = true"));
+        assertThatThrownBy(() -> tomlConfiguration.getNamespaceConfiguration("invalid"))
+                .hasMessageContaining("Namespace invalid is not a TOML table");
     }
 }
