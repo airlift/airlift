@@ -32,6 +32,7 @@ import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 import static io.airlift.mcp.reflection.ReflectionHelper.listArgument;
+import static io.airlift.mcp.reflection.ReflectionHelper.schemaType;
 import static java.util.Objects.requireNonNull;
 
 public class JsonSchemaBuilder
@@ -117,7 +118,7 @@ public class JsonSchemaBuilder
         return buildObject(description, (properties, required) -> parameters.stream()
                 .flatMap(methodParameter -> (methodParameter instanceof ObjectParameter objectParameter) ? Stream.of(objectParameter) : Stream.empty())
                 .forEach(objectParameter -> {
-                    ObjectNode objectNode = generator.generateSchema(objectParameter.genericType());
+                    ObjectNode objectNode = generator.generateSchema(schemaType(objectParameter));
                     objectParameter.description().ifPresent(value -> objectNode.put("description", value));
                     properties.set(objectParameter.name(), objectNode);
 

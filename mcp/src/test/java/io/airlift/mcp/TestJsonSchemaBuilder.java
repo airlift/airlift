@@ -9,6 +9,8 @@ import io.airlift.mcp.reflection.MethodParameter;
 import io.airlift.mcp.reflection.MethodParameter.ObjectParameter;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.List;
@@ -294,6 +296,39 @@ public class TestJsonSchemaBuilder
     }
 
     @Test
+    public void testBuildWithOptionalMethodParametersUsesValueSchema()
+    {
+        List<MethodParameter> parameters = ImmutableList.of(
+                new ObjectParameter("requiredName", String.class, String.class, Optional.empty(), Optional.empty(), true),
+                new ObjectParameter("label", Optional.class, optionalParameterType(0), Optional.of("Optional label"), Optional.empty(), false),
+                new ObjectParameter("tags", Optional.class, optionalParameterType(1), Optional.empty(), Optional.empty(), false),
+                new ObjectParameter("attributes", Optional.class, optionalParameterType(2), Optional.empty(), Optional.empty(), false));
+
+        ObjectNode schema = jsonSchemaBuilder.build(Optional.empty(), parameters);
+        ObjectNode properties = (ObjectNode) schema.get("properties");
+
+        ObjectNode labelSchema = (ObjectNode) properties.get("label");
+        assertThat(labelSchema.get("type").asText()).isEqualTo("string");
+        assertThat(labelSchema.has("properties")).isFalse();
+        assertThat(labelSchema.get("description").asText()).isEqualTo("Optional label");
+
+        ObjectNode tagsSchema = (ObjectNode) properties.get("tags");
+        assertThat(tagsSchema.get("type").asText()).isEqualTo("array");
+        assertThat(tagsSchema.has("properties")).isFalse();
+        assertThat(tagsSchema.get("items").get("type").asText()).isEqualTo("string");
+
+        ObjectNode attributesSchema = (ObjectNode) properties.get("attributes");
+        assertThat(attributesSchema.get("type").asText()).isEqualTo("object");
+        assertThat(attributesSchema.has("properties")).isFalse();
+
+        ArrayNode required = (ArrayNode) schema.get("required");
+        List<String> requiredFields = StreamSupport.stream(required.spliterator(), false)
+                .map(JsonNode::asText)
+                .toList();
+        assertThat(requiredFields).containsExactly("requiredName");
+    }
+
+    @Test
     public void testBuildWithMethodParametersAndDescription()
     {
         List<MethodParameter> parameters = ImmutableList.of(
@@ -365,5 +400,23 @@ public class TestJsonSchemaBuilder
     {
         ObjectNode objectNode = jsonSchemaBuilder.build(description, type);
         assertThat(objectNode.toString()).isEqualTo(expected);
+    }
+
+    @SuppressWarnings("unused")
+    private static void optionalParameterTypes(
+            Optional<String> label,
+            Optional<List<String>> tags,
+            Optional<Map<String, String>> attributes)
+    {}
+
+    private static Type optionalParameterType(int index)
+    {
+        try {
+            Method method = TestJsonSchemaBuilder.class.getDeclaredMethod("optionalParameterTypes", Optional.class, Optional.class, Optional.class);
+            return method.getGenericParameterTypes()[index];
+        }
+        catch (ReflectiveOperationException e) {
+            throw new AssertionError(e);
+        }
     }
 }

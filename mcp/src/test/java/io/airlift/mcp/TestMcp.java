@@ -372,26 +372,33 @@ public abstract class TestMcp
     public void testToolEmbeddedStructuredContent()
     {
         ListToolsResult listToolsResult = client1.mcpClient().listTools();
-        assertThat(listToolsResult.tools())
-                .filteredOn(tool -> tool.name().equals("addFirstTwoAndAllThree"))
-                .hasSize(1)
-                .first()
-                .extracting(Tool::outputSchema)
-                .satisfies(outputSchema -> {
-                    assertThat(outputSchema.get("type")).isEqualTo("object");
+        Tool addFirstTwoAndAllThree = listToolsResult.tools().stream()
+                .filter(tool -> tool.name().equals("addFirstTwoAndAllThree"))
+                .findFirst()
+                .orElseThrow();
 
-                    assertThat(outputSchema.get("required"))
-                            .isNotNull()
-                            .asInstanceOf(type(List.class))
-                            .satisfies(list -> assertThat(list).containsExactlyInAnyOrder("firstTwo", "allThree"));
+        assertThat(addFirstTwoAndAllThree.inputSchema().required()).containsExactlyInAnyOrder("a", "b");
+        Map<String, Object> inputProperties = addFirstTwoAndAllThree.inputSchema().properties();
+        assertThat(inputProperties.keySet()).containsExactlyInAnyOrder("a", "b", "c");
 
-                    assertThat(outputSchema.get("properties")).isNotNull();
-                    Map<String, Object> properties = (Map<String, Object>) outputSchema.get("properties");
-                    assertThat(properties.keySet()).containsExactlyInAnyOrder("firstTwo", "allThree");
+        Map<String, Object> optionalParameterSchema = (Map<String, Object>) inputProperties.get("c");
+        assertThat(optionalParameterSchema.get("type")).isEqualTo("integer");
+        assertThat(optionalParameterSchema).doesNotContainKey("properties");
 
-                    assertThat(((Map<String, Object>) properties.get("firstTwo")).get("type")).isEqualTo("integer");
-                    assertThat(((Map<String, Object>) properties.get("allThree")).get("type")).isEqualTo("integer");
-                });
+        Map<String, Object> outputSchema = addFirstTwoAndAllThree.outputSchema();
+        assertThat(outputSchema.get("type")).isEqualTo("object");
+
+        assertThat(outputSchema.get("required"))
+                .isNotNull()
+                .asInstanceOf(type(List.class))
+                .satisfies(list -> assertThat(list).containsExactlyInAnyOrder("firstTwo", "allThree"));
+
+        assertThat(outputSchema.get("properties")).isNotNull();
+        Map<String, Object> properties = (Map<String, Object>) outputSchema.get("properties");
+        assertThat(properties.keySet()).containsExactlyInAnyOrder("firstTwo", "allThree");
+
+        assertThat(((Map<String, Object>) properties.get("firstTwo")).get("type")).isEqualTo("integer");
+        assertThat(((Map<String, Object>) properties.get("allThree")).get("type")).isEqualTo("integer");
 
         CallToolRequest callToolRequest = new CallToolRequest("addFirstTwoAndAllThree", ImmutableMap.of("a", 1, "b", 2, "c", 3));
         CallToolResult twoAndThreeCallToolResult = client1.mcpClient().callTool(callToolRequest);
