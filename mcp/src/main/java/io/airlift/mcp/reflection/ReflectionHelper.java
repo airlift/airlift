@@ -39,6 +39,7 @@ import java.util.function.Predicate;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static com.google.common.base.Verify.verify;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
@@ -179,6 +180,16 @@ public interface ReflectionHelper
         }
 
         return Optional.empty();
+    }
+
+    static Type schemaType(ObjectParameter objectParameter)
+    {
+        if (Optional.class.equals(objectParameter.rawType())) {
+            verify(!objectParameter.required(), "Optional parameter must not be required: %s", objectParameter.name());
+            return optionalArgument(objectParameter.genericType()).orElse(objectParameter.genericType());
+        }
+
+        return objectParameter.genericType();
     }
 
     static Class<?> requiredArgument(Type type)
