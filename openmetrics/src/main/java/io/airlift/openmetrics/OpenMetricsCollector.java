@@ -1,0 +1,326 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.airlift.openmetrics;
+
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.CharMatcher;
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
+import com.google.common.collect.ImmutableList;
+import com.google.inject.Inject;
+import io.airlift.log.Logger;
+import io.airlift.node.NodeInfo;
+import io.airlift.openmetrics.types.CompositeMetric;
+import io.airlift.openmetrics.types.Counter;
+import io.airlift.openmetrics.types.Gauge;
+import io.airlift.openmetrics.types.Metric;
+import io.airlift.openmetrics.types.Summary;
+import io.airlift.stats.CounterStat;
+import io.airlift.stats.TimeDistribution;
+import org.weakref.jmx.MBeanExporter;
+import org.weakref.jmx.ManagedClass;
+
+import javax.management.InstanceNotFoundException;
+import javax.management.IntrospectionException;
+import javax.management.JMException;
+import javax.management.MBeanAttributeInfo;
+import javax.management.MBeanInfo;
+import javax.management.MBeanServer;
+import javax.management.MalformedObjectNameException;
+import javax.management.ObjectName;
+import javax.management.ReflectionException;
+import javax.management.openmbean.CompositeData;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+
+import static com.google.common.collect.ImmutableList.toImmutableList;
+import static java.util.Objects.requireNonNull;
+
+/**
+ * Collects the structured OpenMetrics values rendered by {@link MetricsResource}.
+ */
+public class OpenMetricsCollector
+{
+    private static final Logger log = Logger.get(OpenMetricsCollector.class);
+    private static final String ATTRIBUTE_SEPARATOR = "_ATTRIBUTE_";
+    private static final String TYPE_SEPARATOR = "_TYPE_";
+    private static final String NAME_SEPARATOR = "_NAME_";
+    private static final CharMatcher NON_ALLOWED_LABEL_CHARACTERS = CharMatcher
+            .inRange('a', 'z')
+            .or(CharMatcher.inRange('A', 'Z'))
+            .or(CharMatcher.inRange('0', '9'))
+            .or(CharMatcher.anyOf("_"))
+            .negate()
+            .precomputed();
+
+    private final MBeanServer mbeanServer;
+    private final MBeanExporter mbeanExporter;
+    private final List<ObjectName> allMetricsObjectNames;
+    private final Map<String, String> labels;
+
+    @Inject
+    public OpenMetricsCollector(MBeanServer mbeanServer, MBeanExporter mbeanExporter, MetricsConfig metricsConfig, NodeInfo nodeInfo)
+    {
+        this.mbeanServer = requireNonNull(mbeanServer, "mbeanServer is null");
+        this.mbeanExporter = requireNonNull(mbeanExporter, "mbeanExporter is null");
+        requireNonNull(metricsConfig, "metricsConfig is null");
+        requireNonNull(nodeInfo, "nodeInfo is null");
+        this.allMetricsObjectNames = metricsConfig.getJmxObjectNames();
+        this.labels = nodeInfo.getAnnotations();
+    }
+
+    public List<Metric> collect()
+    {
+        ImmutableList.Builder<Metric> metrics = ImmutableList.builder();
+        metrics.addAll(getManagedMetrics());
+        for (ObjectName metricObjectNames : allMetricsObjectNames) {
+            mbeanServer.queryNames(metricObjectNames, null).forEach(objectName -> metrics.addAll(inferAttributesForObjectName(objectName)));
+        }
+        return metrics.build();
+    }
+
+    public List<Metric> collect(List<String> filters)
+    {
+        if (filters == null || filters.isEmpty()) {
+            return collect();
+        }
+
+        ImmutableList.Builder<Metric> metrics = ImmutableList.builder();
+        Supplier<List<Metric>> managedMetrics = Suppliers.memoize(this::getManagedMetrics);
+        for (String metricName : filters) {
+            findMetric(managedMetrics, metricName).ifPresent(metrics::add);
+        }
+        return metrics.build();
+    }
+
+    public Optional<Metric> findMetric(String metricName)
+    {
+        return findMetric(Suppliers.memoize(this::getManagedMetrics), metricName);
+    }
+
+    private Set<ObjectName> objectNamesFromMetricName(String metricName)
+            throws MalformedObjectNameException
+    {
+        int nameStart = metricName.indexOf(NAME_SEPARATOR);
+        int typeStart = metricName.indexOf(TYPE_SEPARATOR);
+        int attributeStart = metricName.indexOf(ATTRIBUTE_SEPARATOR);
+
+        String domain;
+
+        if (nameStart != -1) {
+            domain = metricName.substring(0, nameStart).replace("_", ".");
+        }
+        else if (typeStart != -1) {
+            domain = metricName.substring(0, typeStart).replace("_", ".");
+        }
+        else {
+            domain = metricName.substring(0, attributeStart).replace("_", ".");
+        }
+
+        StringBuilder objectNameBuilder = new StringBuilder(domain).append(":");
+
+        if (nameStart != -1) {
+            objectNameBuilder.append("name=")
+                    .append(metricName, nameStart + NAME_SEPARATOR.length(), typeStart == -1 ? attributeStart : typeStart)
+                    .append(",");
+        }
+        if (typeStart != -1) {
+            objectNameBuilder.append("type=")
+                    .append(metricName.substring(typeStart + TYPE_SEPARATOR.length(), attributeStart).replace("_", "$"))
+                    .append(",");
+        }
+
+        return mbeanServer.queryNames(ObjectName.getInstance(objectNameBuilder.append("*").toString()), null);
+    }
+
+    private String attributeNameFromMetricName(String metricName)
+    {
+        int attributeNameStart = metricName.indexOf(ATTRIBUTE_SEPARATOR);
+        if (attributeNameStart == -1) {
+            throw new RuntimeException("Metric name invalid, no attribute separator %s".formatted(metricName));
+        }
+        return metricName.substring(attributeNameStart + ATTRIBUTE_SEPARATOR.length()).replace("_", ".");
+    }
+
+    private String mBeanNameToMetricName(ObjectName objectName, String attributeName)
+    {
+        if (objectName.getDomain().contains("_")) {
+            log.warn("Unable to expose JMX metric with domain name %s, package names with underscores are unsupported.", objectName.getDomain());
+            throw new RuntimeException("Bad domain name %s".formatted(objectName.getDomain()));
+        }
+
+        StringBuilder metricNameBuilder = new StringBuilder("JMX_")
+                .append(objectName.getDomain());
+
+        if (objectName.getKeyProperty("name") != null) {
+            metricNameBuilder.append(NAME_SEPARATOR)
+                    .append(objectName.getKeyProperty("name"));
+        }
+
+        if (objectName.getKeyProperty("type") != null) {
+            metricNameBuilder.append(TYPE_SEPARATOR)
+                    .append(objectName.getKeyProperty("type"));
+        }
+
+        metricNameBuilder.append(ATTRIBUTE_SEPARATOR)
+                .append(attributeName);
+
+        return sanitizeMetricName(metricNameBuilder.toString());
+    }
+
+    private Optional<Metric> findMetric(Supplier<List<Metric>> managedMetricsSupplier, String metricName)
+    {
+        if (metricName.startsWith("JMX_")) {
+            final String jmxMetricName = metricName.substring(4);
+            try {
+                String attributeName = attributeNameFromMetricName(jmxMetricName);
+                return objectNamesFromMetricName(jmxMetricName).stream()
+                        .map(objectName -> getMetric(objectName, attributeName, jmxMetricName, ""))
+                        .flatMap(Optional::stream)
+                        .findFirst();
+            }
+            catch (MalformedObjectNameException e) {
+                log.warn(e, "Unable to retrieve metric %s.", metricName);
+                return Optional.empty();
+            }
+        }
+        else {
+            return managedMetricsSupplier.get()
+                    .stream()
+                    .filter(metric -> metric.metricName().equals(metricName))
+                    .findFirst();
+        }
+    }
+
+    private Optional<Metric> getMetric(ObjectName objectName, String attributeName, String metricName, String description)
+    {
+        try {
+            Object attributeValue = mbeanServer.getAttribute(objectName, attributeName);
+            return switch (attributeValue) {
+                case Number number -> Optional.of(Gauge.from(metricName, number, labels, description));
+                case CompositeData compositeData -> Optional.of(CompositeMetric.from(metricName, compositeData, labels, description));
+                case null, default -> Optional.empty();
+            };
+        }
+        catch (JMException ex) {
+            log.debug(ex, "Unable to get metric for ObjectName %s and Attribute %s.", objectName.getCanonicalName(), attributeName);
+            return Optional.empty();
+        }
+    }
+
+    private List<Metric> inferAttributesForObjectName(ObjectName objectName)
+    {
+        List<Metric> metrics = new ArrayList<>();
+        try {
+            MBeanInfo mbeanInfo = mbeanServer.getMBeanInfo(objectName);
+            for (MBeanAttributeInfo mBeanAttributeInfo : mbeanInfo.getAttributes()) {
+                String attributeName = mBeanAttributeInfo.getName();
+                String description = mBeanAttributeInfo.getDescription();
+                try {
+                    getMetric(objectName, attributeName, mBeanNameToMetricName(objectName, attributeName), description)
+                            .ifPresent(metrics::add);
+                }
+                catch (RuntimeException e) {
+                    log.debug(e, "Unable to get Metric for ObjectName %s and Attribute %s, skipping", objectName.getCanonicalName(), attributeName);
+                }
+            }
+        }
+        catch (InstanceNotFoundException | IntrospectionException | ReflectionException e) {
+            log.debug(e, "Unable to get MBeanInfo for object %s, skipping", objectName.getCanonicalName());
+        }
+        return metrics;
+    }
+
+    @VisibleForTesting
+    static String sanitizeMetricName(String name)
+    {
+        return NON_ALLOWED_LABEL_CHARACTERS.collapseFrom(name, '_');
+    }
+
+    private List<Metric> getMetricsRecursively(String prefix, ManagedClass managedClass)
+    {
+        String metricName = sanitizeMetricName(prefix);
+
+        ImmutableList.Builder<Metric> metrics = ImmutableList.builder();
+
+        for (String attributeName : managedClass.getAttributeNames()) {
+            try {
+                String metricAndAttribute = managedClass.isAttributeFlatten(attributeName) ? metricName : metricName + "_" + attributeName;
+                String attributeDescription = managedClass.getAttributeDescription(attributeName);
+
+                if (managedClass.getChildren().get(attributeName) instanceof ManagedClass child) {
+                    // The managed class is directly translatable to an openmetrics type, don't recurse any further
+                    Optional<Metric> metricFromTarget = getMetricFromTarget(child, metricAndAttribute, attributeDescription);
+                    if (metricFromTarget.isPresent()) {
+                        metrics.add(metricFromTarget.orElseThrow());
+                    }
+                    else {
+                        // Recurse this nested child
+                        metrics.addAll(getMetricsRecursively(metricAndAttribute, child));
+                    }
+                }
+                else {
+                    // Attempt to infer a numeric gauge
+                    Object attributeValue = managedClass.invokeAttribute(attributeName);
+                    if (attributeValue instanceof Number) {
+                        metrics.add(Gauge.from(metricAndAttribute, (Number) attributeValue, labels, attributeDescription));
+                    }
+                    if (attributeValue instanceof Boolean) {
+                        metrics.add(Gauge.from(metricAndAttribute, (Boolean) attributeValue ? 1 : 0, labels, attributeDescription));
+                    }
+                }
+            }
+            catch (ReflectiveOperationException e) {
+                log.debug("Unable to invoke getter for managed attribute : " + attributeName);
+            }
+        }
+
+        return metrics.build();
+    }
+
+    private Optional<Metric> getMetricFromTarget(ManagedClass managedClass, String metricName, String description)
+    {
+        Object target;
+        try {
+            target = managedClass.getTarget();
+        }
+        catch (IllegalStateException ignored) {
+            return Optional.empty();
+        }
+
+        if (target instanceof CounterStat counterStat) {
+            return Optional.of(Counter.from(metricName, counterStat, labels, description));
+        }
+
+        if (target instanceof TimeDistribution timeDistribution) {
+            return Optional.of(Summary.from(metricName, timeDistribution, labels, description));
+        }
+
+        return Optional.empty();
+    }
+
+    private List<Metric> getManagedMetrics()
+    {
+        Map<String, ManagedClass> managedClasses = this.mbeanExporter.getManagedClasses();
+
+        return managedClasses.entrySet().stream()
+                .map(entry -> getMetricsRecursively(entry.getKey(), entry.getValue()))
+                .flatMap(List::stream)
+                .collect(toImmutableList());
+    }
+}

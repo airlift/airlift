@@ -19,6 +19,7 @@ import com.google.inject.Module;
 import java.lang.annotation.Annotation;
 import java.util.Optional;
 
+import static com.google.inject.Scopes.SINGLETON;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
 import static java.util.Objects.requireNonNull;
@@ -42,6 +43,7 @@ public class JmxOpenMetricsModule
     public void configure(Binder binder)
     {
         configBinder(binder).bindConfig(MetricsConfig.class);
+        binder.bind(OpenMetricsCollector.class).in(SINGLETON);
         annotation
                 .map(value -> jaxrsBinder(binder, value))
                 .orElseGet(() -> jaxrsBinder(binder))
