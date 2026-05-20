@@ -1,4 +1,4 @@
-package io.airlift.mcp.operations;
+package io.airlift.mcp.operations.legacy;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.json.JsonMapper;
@@ -36,8 +36,8 @@ import static io.airlift.mcp.model.Constants.NOTIFICATION_RESOURCES_UPDATED;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_TOOLS_LIST_CHANGED;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
 import static io.airlift.mcp.model.JsonRpcErrorCode.RESOURCE_NOT_FOUND;
-import static io.airlift.mcp.sessions.SessionValueKey.RESOURCE_VERSIONS;
-import static io.airlift.mcp.sessions.SessionValueKey.SYSTEM_LIST_VERSIONS;
+import static io.airlift.mcp.operations.legacy.sessions.SessionValueKey.RESOURCE_VERSIONS;
+import static io.airlift.mcp.operations.legacy.sessions.SessionValueKey.SYSTEM_LIST_VERSIONS;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Map.entry;
 import static java.util.Objects.requireNonNull;

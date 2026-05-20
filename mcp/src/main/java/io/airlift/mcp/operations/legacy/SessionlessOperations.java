@@ -1,4 +1,4 @@
-package io.airlift.mcp.operations;
+package io.airlift.mcp.operations.legacy;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.json.JsonMapper;
@@ -29,6 +29,7 @@ import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.model.SubscribeListChanged;
 import io.airlift.mcp.model.Tool;
+import io.airlift.mcp.operations.Operations;
 import io.airlift.mcp.reflection.IconHelper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -59,7 +60,7 @@ import static io.airlift.mcp.model.Constants.NOTIFICATION_INITIALIZED;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_ROOTS_LIST_CHANGED;
 import static io.airlift.mcp.model.JsonRpcErrorCode.METHOD_NOT_FOUND;
 import static io.airlift.mcp.model.Protocol.LATEST_PROTOCOL;
-import static io.airlift.mcp.operations.OperationsCommon.supportsIcons;
+import static io.airlift.mcp.operations.legacy.OperationsCommon.supportsIcons;
 import static io.opentelemetry.semconv.incubating.McpIncubatingAttributes.MCP_METHOD_NAME;
 import static io.opentelemetry.semconv.incubating.McpIncubatingAttributes.MCP_PROTOCOL_VERSION;
 import static jakarta.servlet.http.HttpServletResponse.SC_ACCEPTED;

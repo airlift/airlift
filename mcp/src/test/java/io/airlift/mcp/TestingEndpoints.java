@@ -28,7 +28,7 @@ import io.airlift.mcp.model.ResourceTemplateValues;
 import io.airlift.mcp.model.Role;
 import io.airlift.mcp.model.StructuredContentResult;
 import io.airlift.mcp.model.Tool;
-import io.airlift.mcp.operations.LegacyServerToClientRequest;
+import io.airlift.mcp.operations.legacy.LegacyServerToClientRequest;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.time.Duration;

@@ -1,4 +1,4 @@
-package io.airlift.mcp.sessions;
+package io.airlift.mcp.operations.legacy.sessions;
 
 import com.google.common.base.Stopwatch;
 
@@ -6,8 +6,8 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.function.Predicate;
 
-import static io.airlift.mcp.sessions.BlockingResult.fulfilled;
-import static io.airlift.mcp.sessions.BlockingResult.timedOut;
+import static io.airlift.mcp.operations.legacy.sessions.BlockingResult.fulfilled;
+import static io.airlift.mcp.operations.legacy.sessions.BlockingResult.timedOut;
 
 public class SessionConditionUtil
 {
