@@ -164,6 +164,11 @@ public class McpModule
                 .build();
     }
 
+    public interface LegacyBuilder
+    {
+        Builder withSessions(Consumer<LinkedBindingBuilder<SessionController>> sessionControllerBinding);
+    }
+
     public static class Builder
     {
         private final ImmutableSet.Builder<Class<?>> classes = ImmutableSet.builder();
@@ -203,14 +208,16 @@ public class McpModule
             return this;
         }
 
-        public Builder withSessions(Consumer<LinkedBindingBuilder<SessionController>> sessionControllerBinding)
+        public LegacyBuilder withLegacyBindings()
         {
-            checkState(storageControllerBinding.isPresent(), "Storage controller binding is required for session support");
-            checkArgument(this.sessionControllerBinding.isEmpty(), "Session controller binding is already set");
+            return sessionControllerBinding -> {
+                checkState(Builder.this.storageControllerBinding.isPresent(), "Storage controller binding is required for session support");
+                checkArgument(Builder.this.sessionControllerBinding.isEmpty(), "Session controller binding is already set");
 
-            this.sessionControllerBinding = Optional.of(sessionControllerBinding);
-            operationsBinding = binding -> binding.to(LegacyOperations.class).in(SINGLETON);
-            return this;
+                Builder.this.sessionControllerBinding = Optional.of(sessionControllerBinding);
+                Builder.this.operationsBinding = binding -> binding.to(LegacyOperations.class).in(SINGLETON);
+                return Builder.this;
+            };
         }
 
         public Builder withCapabilityFilter(Consumer<LinkedBindingBuilder<McpCapabilityFilter>> filterBinding)
