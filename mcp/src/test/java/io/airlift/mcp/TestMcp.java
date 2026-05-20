@@ -163,7 +163,7 @@ public abstract class TestMcp
                     .addIcon("google", binding -> binding.toInstance(new Icon("https://www.gstatic.com/images/branding/searchlogo/ico/favicon.ico")))
                     .withAllInClass(TestingEndpoints.class);
             if (mode != Mode.SESSIONLESS) {
-                builder = builder.withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON));
+                builder = builder.withLegacyBindings().withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON));
             }
             return builder.build();
         };
