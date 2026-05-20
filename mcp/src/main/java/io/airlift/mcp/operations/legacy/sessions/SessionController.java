@@ -1,4 +1,4 @@
-package io.airlift.mcp.sessions;
+package io.airlift.mcp.operations.legacy.sessions;
 
 import io.airlift.mcp.McpIdentity;
 
@@ -8,7 +8,7 @@ import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
-import static io.airlift.mcp.sessions.SessionConditionUtil.waitForCondition;
+import static io.airlift.mcp.operations.legacy.sessions.SessionConditionUtil.waitForCondition;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public interface SessionController

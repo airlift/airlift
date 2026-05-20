@@ -12,7 +12,7 @@ import io.airlift.jaxrs.JaxrsModule;
 import io.airlift.json.JsonModule;
 import io.airlift.log.Logger;
 import io.airlift.mcp.model.Icon;
-import io.airlift.mcp.sessions.StandardSessionController;
+import io.airlift.mcp.operations.legacy.sessions.StandardSessionController;
 import io.airlift.mcp.storage.MemoryStorageController;
 import io.airlift.node.NodeModule;
 

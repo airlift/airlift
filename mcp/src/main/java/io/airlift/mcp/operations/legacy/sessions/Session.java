@@ -1,4 +1,4 @@
-package io.airlift.mcp.sessions;
+package io.airlift.mcp.operations.legacy.sessions;
 
 import java.time.Duration;
 import java.util.Optional;

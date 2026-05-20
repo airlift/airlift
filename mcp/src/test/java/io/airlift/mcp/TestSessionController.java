@@ -1,11 +1,11 @@
 package io.airlift.mcp;
 
 import io.airlift.mcp.McpIdentity.Authenticated;
-import io.airlift.mcp.sessions.BlockingResult;
-import io.airlift.mcp.sessions.BlockingResult.TimedOut;
-import io.airlift.mcp.sessions.SessionController;
-import io.airlift.mcp.sessions.SessionId;
-import io.airlift.mcp.sessions.SessionValueKey;
+import io.airlift.mcp.operations.legacy.sessions.BlockingResult;
+import io.airlift.mcp.operations.legacy.sessions.BlockingResult.TimedOut;
+import io.airlift.mcp.operations.legacy.sessions.SessionController;
+import io.airlift.mcp.operations.legacy.sessions.SessionId;
+import io.airlift.mcp.operations.legacy.sessions.SessionValueKey;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;

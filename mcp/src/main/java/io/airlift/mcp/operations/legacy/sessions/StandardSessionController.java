@@ -1,4 +1,4 @@
-package io.airlift.mcp.sessions;
+package io.airlift.mcp.operations.legacy.sessions;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.json.JsonMapper;
@@ -18,7 +18,7 @@ import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
-import static io.airlift.mcp.sessions.SessionConditionUtil.waitForCondition;
+import static io.airlift.mcp.operations.legacy.sessions.SessionConditionUtil.waitForCondition;
 import static java.util.Objects.requireNonNull;
 
 public class StandardSessionController

@@ -1,4 +1,4 @@
-package io.airlift.mcp.operations;
+package io.airlift.mcp.operations.legacy;
 
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableList;
@@ -32,6 +32,7 @@ import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.model.Tool;
+import io.airlift.mcp.operations.PaginationUtil;
 
 import java.util.List;
 import java.util.Optional;
@@ -53,7 +54,7 @@ public class OperationsCommon
     private final JsonMapper jsonMapper;
 
     @Inject
-    public OperationsCommon(McpEntities entities, McpConfig mcpConfig, JsonMapper jsonMapper)
+    OperationsCommon(McpEntities entities, McpConfig mcpConfig, JsonMapper jsonMapper)
     {
         this.entities = requireNonNull(entities, "entities is null");
         this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");

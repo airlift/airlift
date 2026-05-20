@@ -3,6 +3,10 @@ package io.airlift.mcp.operations;
 import com.google.inject.Binder;
 import com.google.inject.Module;
 import io.airlift.mcp.ErrorHandler;
+import io.airlift.mcp.operations.legacy.LegacyCancellationController;
+import io.airlift.mcp.operations.legacy.LegacyServerToClientRequest;
+import io.airlift.mcp.operations.legacy.LegacyVersionsController;
+import io.airlift.mcp.operations.legacy.OperationsCommon;
 
 import static com.google.inject.Scopes.SINGLETON;
 import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;

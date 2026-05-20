@@ -27,7 +27,7 @@ import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.ResourceTemplateValues;
 import io.airlift.mcp.model.Role;
-import io.airlift.mcp.operations.LegacyServerToClientRequest;
+import io.airlift.mcp.operations.legacy.LegacyServerToClientRequest;
 
 import java.time.Duration;
 import java.util.List;

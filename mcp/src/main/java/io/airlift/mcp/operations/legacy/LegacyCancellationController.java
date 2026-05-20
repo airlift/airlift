@@ -1,4 +1,4 @@
-package io.airlift.mcp.operations;
+package io.airlift.mcp.operations.legacy;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Supplier;
@@ -6,12 +6,12 @@ import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import io.airlift.log.Logger;
 import io.airlift.mcp.McpConfig;
-import io.airlift.mcp.sessions.BlockingResult.EmptyFulfilled;
-import io.airlift.mcp.sessions.BlockingResult.Fulfilled;
-import io.airlift.mcp.sessions.BlockingResult.TimedOut;
-import io.airlift.mcp.sessions.SessionController;
-import io.airlift.mcp.sessions.SessionId;
-import io.airlift.mcp.sessions.SessionValueKey;
+import io.airlift.mcp.operations.legacy.sessions.BlockingResult.EmptyFulfilled;
+import io.airlift.mcp.operations.legacy.sessions.BlockingResult.Fulfilled;
+import io.airlift.mcp.operations.legacy.sessions.BlockingResult.TimedOut;
+import io.airlift.mcp.operations.legacy.sessions.SessionController;
+import io.airlift.mcp.operations.legacy.sessions.SessionId;
+import io.airlift.mcp.operations.legacy.sessions.SessionValueKey;
 import jakarta.annotation.PreDestroy;
 
 import java.time.Duration;

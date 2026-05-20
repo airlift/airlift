@@ -1,4 +1,4 @@
-package io.airlift.mcp.operations;
+package io.airlift.mcp.operations.legacy;
 
 import io.airlift.mcp.McpRequestContext;
 import io.airlift.mcp.model.JsonRpcResponse;
