@@ -1,4 +1,4 @@
-package io.airlift.mcp.sessions;
+package io.airlift.mcp.operations.legacy.sessions;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -14,10 +14,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
-import static io.airlift.mcp.sessions.SessionValueKey.CLIENT_CAPABILITIES;
-import static io.airlift.mcp.sessions.SessionValueKey.PROTOCOL;
-import static io.airlift.mcp.sessions.SessionValueKey.RESOURCE_VERSIONS;
-import static io.airlift.mcp.sessions.SessionValueKey.SYSTEM_LIST_VERSIONS;
+import static io.airlift.mcp.operations.legacy.sessions.SessionValueKey.CLIENT_CAPABILITIES;
+import static io.airlift.mcp.operations.legacy.sessions.SessionValueKey.PROTOCOL;
+import static io.airlift.mcp.operations.legacy.sessions.SessionValueKey.RESOURCE_VERSIONS;
+import static io.airlift.mcp.operations.legacy.sessions.SessionValueKey.SYSTEM_LIST_VERSIONS;
 import static java.util.Objects.requireNonNull;
 
 public class CachingSessionController
