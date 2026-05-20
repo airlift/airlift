@@ -60,7 +60,7 @@ public class TestSentMessages
         testingServer = new TestingServer(ImmutableMap.of(), Optional.empty(), builder -> builder
                 .withIdentityMapper(TestingIdentity.class, binding -> binding.to(TestingIdentityMapper.class).in(SINGLETON))
                 .withStorage(binding -> binding.to(MemoryStorageController.class).in(SINGLETON))
-                .withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON))
+                .withLegacyBindings().withSessions(binding -> binding.to(StandardSessionController.class).in(SINGLETON))
                 .addIcon("google", binding -> binding.toInstance(new Icon("https://www.gstatic.com/images/branding/searchlogo/ico/favicon.ico")))
                 .withAllInClass(TestingEndpoints.class)
                 .build());
