@@ -40,4 +40,8 @@ public interface Constants
     String MCP_IDENTITY_ATTRIBUTE = Constants.class.getName() + ".identity";
     String RPC_MESSAGE_ATTRIBUTE = Constants.class.getName() + ".message";
     String MESSAGE_WRITER_ATTRIBUTE = Constants.class.getName() + ".messageWriter";
+
+    String SKILL_MIME_TYPE = "text/markdown";
+    String SKILL_INDEX_URI = "skill://index.json";
+    String SKILL_MD_FILE = "SKILL.md";
 }
