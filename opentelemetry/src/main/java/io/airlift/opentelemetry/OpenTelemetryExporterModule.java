@@ -4,11 +4,17 @@ import com.google.inject.Binder;
 import com.google.inject.Module;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import io.opentelemetry.exporter.otlp.http.logs.OtlpHttpLogRecordExporter;
+import io.opentelemetry.exporter.otlp.http.logs.OtlpHttpLogRecordExporterBuilder;
 import io.opentelemetry.exporter.otlp.http.metrics.OtlpHttpMetricExporter;
+import io.opentelemetry.exporter.otlp.http.metrics.OtlpHttpMetricExporterBuilder;
 import io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporter;
+import io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporterBuilder;
 import io.opentelemetry.exporter.otlp.logs.OtlpGrpcLogRecordExporter;
+import io.opentelemetry.exporter.otlp.logs.OtlpGrpcLogRecordExporterBuilder;
 import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporter;
+import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporterBuilder;
 import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
+import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporterBuilder;
 import io.opentelemetry.sdk.common.InternalTelemetryVersion;
 import io.opentelemetry.sdk.logs.LogRecordProcessor;
 import io.opentelemetry.sdk.logs.export.BatchLogRecordProcessor;
@@ -23,7 +29,13 @@ import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessorBuilder;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Path;
+import java.util.function.BiConsumer;
+
 import static io.airlift.configuration.ConfigBinder.configBinder;
+import static java.nio.file.Files.readAllBytes;
 
 public class OpenTelemetryExporterModule
         implements Module
@@ -49,11 +61,19 @@ public class OpenTelemetryExporterModule
     static SpanExporter createSpanExporter(OpenTelemetryExporterConfig config)
     {
         return switch (config.getProtocol()) {
-            case GRPC -> OtlpGrpcSpanExporter.builder()
-                    .setEndpoint(config.getEndpoint())
+            case GRPC -> configureTls(
+                    config,
+                    OtlpGrpcSpanExporter.builder()
+                            .setEndpoint(config.getEndpoint()),
+                    OtlpGrpcSpanExporterBuilder::setTrustedCertificates,
+                    OtlpGrpcSpanExporterBuilder::setClientTls)
                     .build();
-            case HTTP_PROTOBUF -> OtlpHttpSpanExporter.builder()
-                    .setEndpoint(config.getEndpoint())
+            case HTTP_PROTOBUF -> configureTls(
+                    config,
+                    OtlpHttpSpanExporter.builder()
+                            .setEndpoint(config.getEndpoint()),
+                    OtlpHttpSpanExporterBuilder::setTrustedCertificates,
+                    OtlpHttpSpanExporterBuilder::setClientTls)
                     .build();
         };
     }
@@ -69,11 +89,19 @@ public class OpenTelemetryExporterModule
     static MetricExporter createMetricExporter(OpenTelemetryExporterConfig config)
     {
         return switch (config.getProtocol()) {
-            case GRPC -> OtlpGrpcMetricExporter.builder()
-                    .setEndpoint(config.getEndpoint())
+            case GRPC -> configureTls(
+                    config,
+                    OtlpGrpcMetricExporter.builder()
+                            .setEndpoint(config.getEndpoint()),
+                    OtlpGrpcMetricExporterBuilder::setTrustedCertificates,
+                    OtlpGrpcMetricExporterBuilder::setClientTls)
                     .build();
-            case HTTP_PROTOBUF -> OtlpHttpMetricExporter.builder()
-                    .setEndpoint(config.getEndpoint())
+            case HTTP_PROTOBUF -> configureTls(
+                    config,
+                    OtlpHttpMetricExporter.builder()
+                            .setEndpoint(config.getEndpoint()),
+                    OtlpHttpMetricExporterBuilder::setTrustedCertificates,
+                    OtlpHttpMetricExporterBuilder::setClientTls)
                     .build();
         };
     }
@@ -93,12 +121,56 @@ public class OpenTelemetryExporterModule
     static LogRecordExporter createLogRecordExporter(OpenTelemetryExporterConfig config)
     {
         return switch (config.getProtocol()) {
-            case GRPC -> OtlpGrpcLogRecordExporter.builder()
-                    .setEndpoint(config.getEndpoint())
+            case GRPC -> configureTls(
+                    config,
+                    OtlpGrpcLogRecordExporter.builder()
+                            .setEndpoint(config.getEndpoint()),
+                    OtlpGrpcLogRecordExporterBuilder::setTrustedCertificates,
+                    OtlpGrpcLogRecordExporterBuilder::setClientTls)
                     .build();
-            case HTTP_PROTOBUF -> OtlpHttpLogRecordExporter.builder()
-                    .setEndpoint(config.getEndpoint())
+            case HTTP_PROTOBUF -> configureTls(
+                    config,
+                    OtlpHttpLogRecordExporter.builder()
+                            .setEndpoint(config.getEndpoint()),
+                    OtlpHttpLogRecordExporterBuilder::setTrustedCertificates,
+                    OtlpHttpLogRecordExporterBuilder::setClientTls)
                     .build();
         };
+    }
+
+    private static <T> T configureTls(
+            OpenTelemetryExporterConfig config,
+            T builder,
+            BiConsumer<T, byte[]> trustedCertificatesSetter,
+            ClientTlsSetter<T> clientTlsSetter)
+    {
+        config.getTrustedCertificatesPath()
+                .map(OpenTelemetryExporterModule::readFile)
+                .ifPresent(trustedCertificates -> trustedCertificatesSetter.accept(builder, trustedCertificates));
+
+        if (config.getClientCertificatePath().isPresent() && config.getClientKeyPath().isPresent()) {
+            clientTlsSetter.accept(
+                    builder,
+                    readFile(config.getClientKeyPath().orElseThrow()),
+                    readFile(config.getClientCertificatePath().orElseThrow()));
+        }
+
+        return builder;
+    }
+
+    private static byte[] readFile(Path path)
+    {
+        try {
+            return readAllBytes(path);
+        }
+        catch (IOException e) {
+            throw new UncheckedIOException("Failed to read OpenTelemetry TLS file: " + path, e);
+        }
+    }
+
+    @FunctionalInterface
+    private interface ClientTlsSetter<T>
+    {
+        void accept(T builder, byte[] privateKeyPem, byte[] certificatePem);
     }
 }
