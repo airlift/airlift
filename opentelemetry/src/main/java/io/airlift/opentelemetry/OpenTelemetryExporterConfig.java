@@ -2,12 +2,15 @@ package io.airlift.opentelemetry;
 
 import io.airlift.configuration.Config;
 import io.airlift.configuration.LegacyConfig;
+import io.airlift.configuration.validation.FileExists;
 import io.airlift.units.Duration;
 import io.airlift.units.MinDuration;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 
+import java.nio.file.Path;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -22,6 +25,9 @@ public class OpenTelemetryExporterConfig
     private Optional<@Min(1) Integer> logMaxExportBatchSize = Optional.empty();
     private Optional<@Min(1) Integer> logMaxQueueSize = Optional.empty();
     private Optional<@MinDuration("1ms") Duration> logScheduleDelay = Optional.empty();
+    private Optional<Path> trustedCertificatesPath = Optional.empty();
+    private Optional<Path> clientCertificatePath = Optional.empty();
+    private Optional<Path> clientKeyPath = Optional.empty();
 
     @NotNull
     @Pattern(regexp = "^(http|https)://.*$", message = "must start with http:// or https://")
@@ -152,5 +158,47 @@ public class OpenTelemetryExporterConfig
     {
         this.logScheduleDelay = Optional.ofNullable(logScheduleDelay);
         return this;
+    }
+
+    public Optional<@FileExists Path> getTrustedCertificatesPath()
+    {
+        return trustedCertificatesPath;
+    }
+
+    @Config("otel.exporter.tls.trusted-certificates-path")
+    public OpenTelemetryExporterConfig setTrustedCertificatesPath(Path trustedCertificatesPath)
+    {
+        this.trustedCertificatesPath = Optional.ofNullable(trustedCertificatesPath);
+        return this;
+    }
+
+    public Optional<@FileExists Path> getClientCertificatePath()
+    {
+        return clientCertificatePath;
+    }
+
+    @Config("otel.exporter.tls.client-certificate-path")
+    public OpenTelemetryExporterConfig setClientCertificatePath(Path clientCertificatePath)
+    {
+        this.clientCertificatePath = Optional.ofNullable(clientCertificatePath);
+        return this;
+    }
+
+    public Optional<@FileExists Path> getClientKeyPath()
+    {
+        return clientKeyPath;
+    }
+
+    @Config("otel.exporter.tls.client-key-path")
+    public OpenTelemetryExporterConfig setClientKeyPath(Path clientKeyPath)
+    {
+        this.clientKeyPath = Optional.ofNullable(clientKeyPath);
+        return this;
+    }
+
+    @AssertTrue(message = "client certificate and key paths must be set together")
+    public boolean isClientTlsValid()
+    {
+        return clientCertificatePath.isPresent() == clientKeyPath.isPresent();
     }
 }
