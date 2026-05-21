@@ -197,6 +197,7 @@ A browser should open with the MCP Inspector tool. Set the "Transport Type" to
     - [Resource](src/main/java/io/airlift/mcp/model/Resource.java) - the source resource being read
     - [ReadResourceRequest](src/main/java/io/airlift/mcp/model/ReadResourceRequest.java)
 - Returns either:
+    - `String`
     - [ResourceContents](src/main/java/io/airlift/mcp/model/ResourceContents.java)
     - [List&lt;ResourceContents&gt;](src/main/java/io/airlift/mcp/model/ResourceContents.java)
 
@@ -210,6 +211,7 @@ A browser should open with the MCP Inspector tool. Set the "Transport Type" to
     - [ReadResourceRequest](src/main/java/io/airlift/mcp/model/ReadResourceRequest.java)
     - [ResourceTemplateValues](src/main/java/io/airlift/mcp/model/ResourceTemplateValues.java)
 - Returns either:
+    - `String`
     - [ResourceContents](src/main/java/io/airlift/mcp/model/ResourceContents.java)
     - [List&lt;ResourceContents&gt;](src/main/java/io/airlift/mcp/model/ResourceContents.java)
 

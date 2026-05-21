@@ -24,6 +24,7 @@ import static io.airlift.mcp.reflection.Predicates.isResourceTemplateValues;
 import static io.airlift.mcp.reflection.Predicates.isSourceResourceTemplate;
 import static io.airlift.mcp.reflection.Predicates.returnsResourceContents;
 import static io.airlift.mcp.reflection.Predicates.returnsResourceContentsList;
+import static io.airlift.mcp.reflection.Predicates.returnsString;
 import static io.airlift.mcp.reflection.ReflectionHelper.validate;
 import static io.airlift.mcp.reflection.ResourceHandlerProvider.mapResult;
 import static java.lang.Double.isNaN;
@@ -38,6 +39,8 @@ public class ResourceTemplateHandlerProvider
     private final List<MethodParameter> parameters;
     private final boolean resultIsSingleContent;
     private final List<String> icons;
+    private final String resourceMimeType;
+    private final String resourceName;
     private Injector injector;
     private JsonMapper jsonMapper;
 
@@ -47,8 +50,10 @@ public class ResourceTemplateHandlerProvider
         this.method = requireNonNull(method, "method is null");
         this.parameters = ImmutableList.copyOf(parameters);
         icons = ImmutableList.copyOf(mcpResourceTemplate.icons());
+        resourceName = mcpResourceTemplate.name();
+        resourceMimeType = mcpResourceTemplate.mimeType();
 
-        validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isReadResourceRequest).or(isSourceResourceTemplate).or(isResourceTemplateValues), returnsResourceContents.or(returnsResourceContentsList));
+        validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isReadResourceRequest).or(isSourceResourceTemplate).or(isResourceTemplateValues), returnsString.or(returnsResourceContents).or(returnsResourceContentsList));
         this.resultIsSingleContent = returnsResourceContents.test(method);
 
         this.resourceTemplate = buildResourceTemplate(
@@ -84,7 +89,7 @@ public class ResourceTemplateHandlerProvider
                     .withReadResourceTemplateRequest(sourceResourceTemplate, readResourceRequest)
                     .withResourceTemplateValues(resourceTemplateValues)
                     .invoke();
-            return mapResult(method, result, resultIsSingleContent);
+            return mapResult(resourceName, readResourceRequest.uri(), resourceMimeType, method, result, resultIsSingleContent);
         };
 
         return new ResourceTemplateEntry(resourceTemplate.withIcons(iconHelper.mapIcons(icons)), resourceTemplateHandler);

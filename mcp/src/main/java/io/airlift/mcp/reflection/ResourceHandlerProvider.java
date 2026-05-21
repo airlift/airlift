@@ -27,6 +27,7 @@ import static io.airlift.mcp.reflection.Predicates.isReadResourceRequest;
 import static io.airlift.mcp.reflection.Predicates.isSourceResource;
 import static io.airlift.mcp.reflection.Predicates.returnsResourceContents;
 import static io.airlift.mcp.reflection.Predicates.returnsResourceContentsList;
+import static io.airlift.mcp.reflection.Predicates.returnsString;
 import static io.airlift.mcp.reflection.ReflectionHelper.validate;
 import static java.lang.Double.isNaN;
 import static java.util.Objects.requireNonNull;
@@ -40,6 +41,9 @@ public class ResourceHandlerProvider
     private final List<MethodParameter> parameters;
     private final boolean resultIsSingleContent;
     private final List<String> icons;
+    private final String resourceName;
+    private final String resourceMimeType;
+    private final String resourceUri;
     private Injector injector;
     private JsonMapper jsonMapper;
 
@@ -48,9 +52,12 @@ public class ResourceHandlerProvider
         this.clazz = requireNonNull(clazz, "clazz is null");
         this.method = requireNonNull(method, "method is null");
         this.parameters = ImmutableList.copyOf(parameters);
+        resourceName = mcpResource.name();
+        resourceMimeType = mcpResource.mimeType();
+        resourceUri = mcpResource.uri();
         icons = ImmutableList.copyOf(mcpResource.icons());
 
-        validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isReadResourceRequest).or(isSourceResource), returnsResourceContents.or(returnsResourceContentsList));
+        validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isReadResourceRequest).or(isSourceResource), returnsString.or(returnsResourceContents).or(returnsResourceContentsList));
         resultIsSingleContent = returnsResourceContents.test(method);
 
         resource = buildResource(
@@ -86,17 +93,21 @@ public class ResourceHandlerProvider
             Object result = methodInvoker.builder(requestContext)
                     .withReadResourceRequest(sourceResource, readResourceRequest)
                     .invoke();
-            return mapResult(method, result, resultIsSingleContent);
+            return mapResult(resourceName, resourceUri, resourceMimeType, method, result, resultIsSingleContent);
         };
 
         return new ResourceEntry(resource.withIcons(iconHelper.mapIcons(icons)), resourceHandler);
     }
 
     @SuppressWarnings("unchecked")
-    static List<ResourceContents> mapResult(Method method, Object result, boolean resultIsSingleContent)
+    static List<ResourceContents> mapResult(String name, String uri, String mimeType, Method method, Object result, boolean resultIsSingleContent)
     {
         if (result == null) {
             throw exception(INTERNAL_ERROR, "ResourceHandler %s returned null".formatted(method.getName()));
+        }
+
+        if (result instanceof String resultStr) {
+            return ImmutableList.of(new ResourceContents(name, uri, mimeType, resultStr));
         }
 
         if (resultIsSingleContent) {
