@@ -4,7 +4,7 @@ import io.airlift.mcp.model.ResourceTemplate;
 
 import static java.util.Objects.requireNonNull;
 
-public record ResourceTemplateEntry(ResourceTemplate resourceTemplate, ResourceTemplateHandler handler)
+public record ResourceTemplateEntry(ResourceTemplate resourceTemplate, ResourceTemplateHandler handler, boolean isSkill)
 {
     public ResourceTemplateEntry
     {

@@ -306,7 +306,7 @@ public class LegacyOperations
                 .orElse(thisMetadata.implementation());
         Implementation localImplementation = supportsIcons(protocol) ? serverImplementation : serverImplementation.simpleForm();
 
-        return new InitializeResult(protocol.value(), serverCapabilities, localImplementation, thisMetadata.instructions());
+        return new InitializeResult(protocol.value(), serverCapabilities, localImplementation, thisMetadata.adjustedInstructions(entities.hasSkills(requestContext)));
     }
 
     private Object handleSetLoggingLevel(RequestContextImpl requestContext, SetLevelRequest setLevelRequest)

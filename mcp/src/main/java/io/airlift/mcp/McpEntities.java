@@ -56,15 +56,17 @@ public interface McpEntities
 
     void removePrompt(String promptName);
 
-    void addResource(Resource resource, ResourceHandler handler);
+    void addResource(Resource resource, ResourceHandler handler, boolean isSkill);
 
     void removeResource(String resourceUri);
 
-    void addResourceTemplate(ResourceTemplate resourceTemplate, ResourceTemplateHandler handler);
+    void addResourceTemplate(ResourceTemplate resourceTemplate, ResourceTemplateHandler handler, boolean isSkill);
 
     void removeResourceTemplate(String uriTemplate);
 
     void addCompletion(CompleteReference reference, CompletionHandler handler);
 
     void removeCompletion(CompleteReference reference);
+
+    boolean hasSkills(McpRequestContext requestContext);
 }

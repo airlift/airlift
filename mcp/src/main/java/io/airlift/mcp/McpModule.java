@@ -74,6 +74,8 @@ import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.json.JsonBinder.jsonBinder;
 import static io.airlift.json.JsonSubTypeBinder.jsonSubTypeBinder;
 import static io.airlift.mcp.reflection.ReflectionHelper.forAllInClass;
+import static io.airlift.mcp.reflection.SkillsHelper.resourceFromSkill;
+import static io.airlift.mcp.reflection.SkillsHelper.resourceTemplateFromSkillTemplate;
 import static java.util.Objects.requireNonNull;
 
 public class McpModule
@@ -278,15 +280,19 @@ public class McpModule
                         prompts.add(new PromptHandlerProvider(mcpPrompt, clazz, method, parameters)));
 
                 forAllInClass(clazz, McpResource.class, identityClass, (mcpResource, method, parameters) ->
-                        resources.add(new ResourceHandlerProvider(mcpResource, clazz, method, parameters)));
-
+                        resources.add(new ResourceHandlerProvider(mcpResource, clazz, method, parameters, false)));
                 forAllInClass(clazz, McpResourceTemplate.class, identityClass, (mcpResourceTemplate, method, parameters) ->
-                        resourceTemplates.add(new ResourceTemplateHandlerProvider(mcpResourceTemplate, clazz, method, parameters)));
+                        resourceTemplates.add(new ResourceTemplateHandlerProvider(mcpResourceTemplate, clazz, method, parameters, false)));
 
                 forAllInClass(clazz, McpPromptCompletion.class, identityClass, (mcpPromptCompletion, method, parameters) ->
                         completions.add(new CompletionHandlerProvider(mcpPromptCompletion, clazz, method, parameters)));
                 forAllInClass(clazz, McpResourceTemplateCompletion.class, identityClass, (mcpResourceCompletion, method, parameters) ->
                         completions.add(new CompletionHandlerProvider(mcpResourceCompletion, clazz, method, parameters)));
+
+                forAllInClass(clazz, McpSkill.class, identityClass, (mcpSkill, method, parameters) ->
+                        resources.add(new ResourceHandlerProvider(resourceFromSkill(mcpSkill), clazz, method, parameters, true)));
+                forAllInClass(clazz, McpSkillTemplate.class, identityClass, (mcpSkillTemplate, method, parameters) ->
+                        resourceTemplates.add(new ResourceTemplateHandlerProvider(resourceTemplateFromSkillTemplate(mcpSkillTemplate), clazz, method, parameters, true)));
             });
 
             Set<Provider<ToolEntry>> localTools = tools.build();

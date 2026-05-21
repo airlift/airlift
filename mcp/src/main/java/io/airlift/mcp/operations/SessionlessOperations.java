@@ -164,7 +164,7 @@ public class SessionlessOperations
                 .orElse(thisMetadata.implementation());
         Implementation localImplementation = supportsIcons(protocol) ? serverImplementation : serverImplementation.simpleForm();
 
-        return new InitializeResult(protocol.value(), serverCapabilities, localImplementation, thisMetadata.instructions());
+        return new InitializeResult(protocol.value(), serverCapabilities, localImplementation, thisMetadata.adjustedInstructions(entities.hasSkills(requestContext)));
     }
 
     @Override

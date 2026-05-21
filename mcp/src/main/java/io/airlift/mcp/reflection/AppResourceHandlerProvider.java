@@ -92,7 +92,7 @@ public class AppResourceHandlerProvider
 
         this.resourceContentsSupplier = () -> ImmutableList.of(new ResourceContents(resource.uri(), resource.uri(), resource.mimeType(), contentSupplier.get()).withMeta(meta.build()));
 
-        return new ResourceEntry(resource, this);
+        return new ResourceEntry(resource, this, false);
     }
 
     @Override
