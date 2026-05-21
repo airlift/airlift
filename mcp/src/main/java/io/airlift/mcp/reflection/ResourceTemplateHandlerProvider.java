@@ -40,11 +40,12 @@ public class ResourceTemplateHandlerProvider
     private final boolean resultIsSingleContent;
     private final List<String> icons;
     private final String resourceMimeType;
+    private final boolean isSkill;
     private final String resourceName;
     private Injector injector;
     private JsonMapper jsonMapper;
 
-    public ResourceTemplateHandlerProvider(McpResourceTemplate mcpResourceTemplate, Class<?> clazz, Method method, List<MethodParameter> parameters)
+    public ResourceTemplateHandlerProvider(McpResourceTemplate mcpResourceTemplate, Class<?> clazz, Method method, List<MethodParameter> parameters, boolean isSkill)
     {
         this.clazz = requireNonNull(clazz, "clazz is null");
         this.method = requireNonNull(method, "method is null");
@@ -52,6 +53,7 @@ public class ResourceTemplateHandlerProvider
         icons = ImmutableList.copyOf(mcpResourceTemplate.icons());
         resourceName = mcpResourceTemplate.name();
         resourceMimeType = mcpResourceTemplate.mimeType();
+        this.isSkill = isSkill;
 
         validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isReadResourceRequest).or(isSourceResourceTemplate).or(isResourceTemplateValues), returnsString.or(returnsResourceContents).or(returnsResourceContentsList));
         this.resultIsSingleContent = returnsResourceContents.test(method);
@@ -92,7 +94,7 @@ public class ResourceTemplateHandlerProvider
             return mapResult(resourceName, readResourceRequest.uri(), resourceMimeType, method, result, resultIsSingleContent);
         };
 
-        return new ResourceTemplateEntry(resourceTemplate.withIcons(iconHelper.mapIcons(icons)), resourceTemplateHandler);
+        return new ResourceTemplateEntry(resourceTemplate.withIcons(iconHelper.mapIcons(icons)), resourceTemplateHandler, isSkill);
     }
 
     private static ResourceTemplate buildResourceTemplate(String name, String uriTemplate, String mimeType, String descriptionOrEmpty, Role[] audience, double priority)

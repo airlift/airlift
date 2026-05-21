@@ -41,13 +41,14 @@ public class ResourceHandlerProvider
     private final List<MethodParameter> parameters;
     private final boolean resultIsSingleContent;
     private final List<String> icons;
+    private final boolean isSkill;
     private final String resourceName;
     private final String resourceMimeType;
     private final String resourceUri;
     private Injector injector;
     private JsonMapper jsonMapper;
 
-    public ResourceHandlerProvider(McpResource mcpResource, Class<?> clazz, Method method, List<MethodParameter> parameters)
+    public ResourceHandlerProvider(McpResource mcpResource, Class<?> clazz, Method method, List<MethodParameter> parameters, boolean isSkill)
     {
         this.clazz = requireNonNull(clazz, "clazz is null");
         this.method = requireNonNull(method, "method is null");
@@ -56,13 +57,14 @@ public class ResourceHandlerProvider
         resourceMimeType = mcpResource.mimeType();
         resourceUri = mcpResource.uri();
         icons = ImmutableList.copyOf(mcpResource.icons());
+        this.isSkill = isSkill;
 
         validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isReadResourceRequest).or(isSourceResource), returnsString.or(returnsResourceContents).or(returnsResourceContentsList));
         resultIsSingleContent = returnsResourceContents.test(method);
 
         resource = buildResource(
                 mcpResource.name(),
-                mcpResource.uri(),
+                resourceUri,
                 mcpResource.mimeType(),
                 mcpResource.description(),
                 mcpResource.size(),
@@ -96,7 +98,7 @@ public class ResourceHandlerProvider
             return mapResult(resourceName, resourceUri, resourceMimeType, method, result, resultIsSingleContent);
         };
 
-        return new ResourceEntry(resource.withIcons(iconHelper.mapIcons(icons)), resourceHandler);
+        return new ResourceEntry(resource.withIcons(iconHelper.mapIcons(icons)), resourceHandler, isSkill);
     }
 
     @SuppressWarnings("unchecked")

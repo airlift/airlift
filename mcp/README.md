@@ -27,6 +27,7 @@ variations of MCP servers defined by the standard. This module supports:
 - Elicitation [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/client/elicitation)
 - Sampling [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/client/sampling)
 - Roots [(see spec)](https://modelcontextprotocol.io/specification/2025-11-25/client/roots)
+- MCP Skills (upcoming protocol extension)
 
 This module does not currently support:
 
@@ -248,3 +249,9 @@ automatically create the MCP UI resource. You can refer to the same MCP app URI 
 `resourceUri` and `sourcePath` are the same. `sourcePath` refers to the path in your application of the compiled/built
 app HTML file. See the examples for more details: [MapApp](src/test/java/io/airlift/mcp/MapApp.java) 
 and [DebugApp](src/test/java/io/airlift/mcp/DebugApp.java).
+
+## Skills
+
+The upcoming MCP Skills spec is supported via `@McpSkill` and `@McpSkillTemplate` annotations. These annotations mark
+a method as returning MCP Skills. These are generated as normal MCP resources but marked as being Skills so that they
+are listed in the skills index and MCP server instructions.

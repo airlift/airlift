@@ -92,6 +92,7 @@ import static io.airlift.http.client.Request.Builder.prepareGet;
 import static io.airlift.http.client.Request.Builder.preparePost;
 import static io.airlift.http.client.StatusResponseHandler.createStatusResponseHandler;
 import static io.airlift.json.JsonCodec.jsonCodec;
+import static io.airlift.mcp.McpMetadata.SKILLS_INSTRUCTIONS;
 import static io.airlift.mcp.TestMcp.Mode.SESSIONLESS;
 import static io.airlift.mcp.TestingClient.buildClient;
 import static io.airlift.mcp.TestingIdentityMapper.ERRORED_IDENTITY;
@@ -99,6 +100,8 @@ import static io.airlift.mcp.TestingIdentityMapper.EXPECTED_IDENTITY;
 import static io.airlift.mcp.TestingIdentityMapper.IDENTITY_HEADER;
 import static io.airlift.mcp.model.Constants.MCP_SESSION_ID;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_CANCELLED;
+import static io.airlift.mcp.model.Constants.SKILL_INDEX_URI;
+import static io.airlift.mcp.model.Constants.SKILL_MIME_TYPE;
 import static io.modelcontextprotocol.spec.McpSchema.ErrorCodes.RESOURCE_NOT_FOUND;
 import static io.modelcontextprotocol.spec.McpSchema.LoggingLevel.ALERT;
 import static io.modelcontextprotocol.spec.McpSchema.LoggingLevel.DEBUG;
@@ -490,7 +493,7 @@ public abstract class TestMcp
         ListResourcesResult listResourcesResult = client1.mcpClient().listResources();
         assertThat(listResourcesResult.resources())
                 .extracting(Resource::name)
-                .containsExactlyInAnyOrder("example1", "example2");
+                .containsExactlyInAnyOrder("example1", "example2", "my-test-skill", "skill://index.json");
 
         ReadResourceRequest readResourceRequest = new ReadResourceRequest("file://example2.txt");
         ReadResourceResult readResourceResult = client1.mcpClient().readResource(readResourceRequest);
@@ -730,6 +733,26 @@ public abstract class TestMcp
                 .asInstanceOf(type(TextContent.class))
                 .extracting(TextContent::text)
                 .isEqualTo("Hello, " + client1.name() + " " + client1.name() + "sky!");
+    }
+
+    @Test
+    public void testSkills()
+    {
+        String serverInstructions = client1.mcpClient().getServerInstructions();
+        assertThat(serverInstructions).contains(SKILLS_INSTRUCTIONS);
+
+        TextResourceContents expectedContents = new TextResourceContents(
+                SKILL_INDEX_URI,
+                "application/json",
+                "{\"$schema\":\"https://schemas.agentskills.io/discovery/0.2.0/schema.json\",\"skills\":[{\"name\":\"my-test-skill\",\"type\":\"skill-md\",\"url\":\"skill://a/b/c/my-test-skill/SKILL.md\",\"description\":\"An example skill.\"},{\"name\":\"my-test-skill-template\",\"type\":\"mcp-resource-template\",\"url\":\"skill://a/{name}/my-test-skill-template/SKILL.md\",\"description\":\"An example skill template.\"}]}",
+                null);
+
+        ReadResourceResult readResourceResult = client1.mcpClient().readResource(new Resource(SKILL_INDEX_URI, SKILL_INDEX_URI, SKILL_INDEX_URI, "", SKILL_MIME_TYPE, null, null, null));
+        assertThat(readResourceResult.contents())
+                .hasSize(1)
+                .first()
+                .asInstanceOf(type(TextResourceContents.class))
+                .isEqualTo(expectedContents);
     }
 
     private AbstractCollectionAssert<?, Collection<? extends String>, String, ObjectAssert<String>> assertChanges(BlockingQueue<String> changes, int qty)

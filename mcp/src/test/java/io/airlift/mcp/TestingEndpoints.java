@@ -24,6 +24,7 @@ import io.airlift.mcp.model.Prompt;
 import io.airlift.mcp.model.ReadResourceRequest;
 import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceContents;
+import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.model.ResourceTemplateValues;
 import io.airlift.mcp.model.Role;
 import io.airlift.mcp.model.StructuredContentResult;
@@ -41,6 +42,7 @@ import java.util.concurrent.TimeoutException;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.mcp.McpException.exception;
+import static io.airlift.mcp.McpSkillBuilder.mcpSkillBuilder;
 import static io.airlift.mcp.model.ElicitResult.Action.ACCEPT;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -155,6 +157,22 @@ public class TestingEndpoints
         return ImmutableList.of(new ResourceContents(request.uri(), request.uri(), "text/plain", "ID is: " + id));
     }
 
+    @McpSkill(name = "my-test-skill", parentPath = {"a", "b", "c"}, description = "An example skill.")
+    public String testSkill(Resource resource)
+    {
+        return mcpSkillBuilder(resource)
+                .addContent("Blah blah blah")
+                .buildSkill();
+    }
+
+    @McpSkillTemplate(name = "my-test-skill-template", uriTemplateParts = {"a", "{name}"}, description = "An example skill template.")
+    public String testSkillTemplate(ResourceTemplate resourceTemplate, ResourceTemplateValues resourceTemplateValues)
+    {
+        return mcpSkillBuilder(resourceTemplate)
+                .addContent(resourceTemplateValues.templateValues().getOrDefault("name", "n/a"))
+                .buildSkill();
+    }
+
     @McpResourceTemplateCompletion(uriTemplate = "file://{id}.template")
     public List<String> example1ResourceCompletions(CompleteArgument argument)
     {
@@ -254,7 +272,7 @@ public class TestingEndpoints
                                 firstResource.resource().size(),
                                 firstResource.resource().annotations(),
                                 firstResource.resource().icons());
-                        entities.addResource(alteredResource, firstResource.handler());
+                        entities.addResource(alteredResource, firstResource.handler(), firstResource.isSkill());
                     }
 
                     default -> throw new IllegalArgumentException("Unknown system session version name: " + name);

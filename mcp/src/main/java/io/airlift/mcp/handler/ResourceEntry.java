@@ -4,7 +4,7 @@ import io.airlift.mcp.model.Resource;
 
 import static java.util.Objects.requireNonNull;
 
-public record ResourceEntry(Resource resource, ResourceHandler handler)
+public record ResourceEntry(Resource resource, ResourceHandler handler, boolean isSkill)
 {
     public ResourceEntry
     {

@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.inject.Scopes.SINGLETON;
 import static io.airlift.mcp.TestingClient.buildClient;
+import static io.airlift.mcp.model.Constants.SKILL_INDEX_URI;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 
@@ -69,9 +70,10 @@ public class TestMcpPagination
                 .map(promptEntry -> promptEntry.prompt().name())
                 .collect(toImmutableList());
 
-        resources = testingServer.injector().getInstance(Key.get(new TypeLiteral<Set<ResourceEntry>>() {}))
+        Stream<String> resourcesStream = testingServer.injector().getInstance(Key.get(new TypeLiteral<Set<ResourceEntry>>() {}))
                 .stream()
-                .map(resourceEntry -> resourceEntry.resource().name())
+                .map(resourceEntry -> resourceEntry.resource().name());
+        resources = Stream.concat(resourcesStream, Stream.of(SKILL_INDEX_URI))
                 .collect(toImmutableList());
 
         resourcesTemplates = testingServer.injector().getInstance(Key.get(new TypeLiteral<Set<ResourceTemplateEntry>>() {}))
