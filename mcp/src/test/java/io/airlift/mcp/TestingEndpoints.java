@@ -143,9 +143,9 @@ public class TestingEndpoints
     }
 
     @McpResource(name = "example2", uri = "file://example2.txt", description = "This is example2 resource.", mimeType = "text/plain")
-    public ResourceContents example2Resource()
+    public String example2Resource()
     {
-        return new ResourceContents("foo2", "file://example2.txt", "text/plain", example2Content);
+        return example2Content;
     }
 
     @McpResourceTemplate(name = "template", uriTemplate = "file://{id}.template", description = "This is a resource template", mimeType = "text/plain", icons = "google")
