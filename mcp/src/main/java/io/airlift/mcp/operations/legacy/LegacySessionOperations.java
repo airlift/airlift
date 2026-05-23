@@ -82,6 +82,7 @@ import static io.airlift.mcp.model.Constants.NOTIFICATION_ROOTS_LIST_CHANGED;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
 import static io.airlift.mcp.model.JsonRpcErrorCode.METHOD_NOT_FOUND;
 import static io.airlift.mcp.model.Protocol.LATEST_PROTOCOL;
+import static io.airlift.mcp.operations.Operations.convertParams;
 import static io.airlift.mcp.operations.legacy.OperationsCommon.supportsIcons;
 import static io.airlift.mcp.operations.legacy.sessions.SessionValueKey.CLIENT_CAPABILITIES;
 import static io.airlift.mcp.operations.legacy.sessions.SessionValueKey.LOGGING_LEVEL;
@@ -168,18 +169,18 @@ public class LegacySessionOperations
         LegacyRequestContextImpl requestContext = new LegacyRequestContextImpl(jsonMapper, sessionController, request, response, messageWriter, authenticated);
 
         Object result = switch (method) {
-            case METHOD_INITIALIZE -> handleInitialize(requestContext, operationsCommon.convertParams(rpcRequest, InitializeRequest.class));
-            case METHOD_TOOLS_LIST -> withManagement(requestContext, requestId, () -> operationsCommon.listTools(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class)));
-            case METHOD_TOOLS_CALL -> withManagement(requestContext, requestId, () -> operationsCommon.callTool(requestContext, operationsCommon.convertParams(rpcRequest, CallToolRequest.class)));
-            case METHOD_PROMPT_LIST -> withManagement(requestContext, requestId, () -> operationsCommon.listPrompts(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class)));
-            case METHOD_PROMPT_GET -> withManagement(requestContext, requestId, () -> operationsCommon.getPrompt(requestContext, operationsCommon.convertParams(rpcRequest, GetPromptRequest.class)));
-            case METHOD_RESOURCES_LIST -> withManagement(requestContext, requestId, () -> operationsCommon.listResources(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class)));
-            case METHOD_RESOURCES_TEMPLATES_LIST -> withManagement(requestContext, requestId, () -> operationsCommon.listResourceTemplates(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class)));
-            case METHOD_RESOURCES_READ -> withManagement(requestContext, requestId, () -> operationsCommon.readResources(requestContext, operationsCommon.convertParams(rpcRequest, ReadResourceRequest.class)));
-            case METHOD_COMPLETION_COMPLETE -> operationsCommon.completionComplete(requestContext, operationsCommon.convertParams(rpcRequest, CompleteRequest.class));
-            case METHOD_LOGGING_SET_LEVEL -> handleSetLoggingLevel(requestContext, operationsCommon.convertParams(rpcRequest, SetLevelRequest.class));
-            case METHOD_RESOURCES_SUBSCRIBE -> handleResourcesSubscribe(requestContext, operationsCommon.convertParams(rpcRequest, SubscribeRequest.class));
-            case METHOD_RESOURCES_UNSUBSCRIBE -> handleResourcesUnsubscribe(requestContext, operationsCommon.convertParams(rpcRequest, SubscribeRequest.class));
+            case METHOD_INITIALIZE -> handleInitialize(requestContext, convertParams(jsonMapper, rpcRequest, InitializeRequest.class));
+            case METHOD_TOOLS_LIST -> withManagement(requestContext, requestId, () -> operationsCommon.listTools(requestContext, convertParams(jsonMapper, rpcRequest, ListRequest.class)));
+            case METHOD_TOOLS_CALL -> withManagement(requestContext, requestId, () -> operationsCommon.callTool(requestContext, convertParams(jsonMapper, rpcRequest, CallToolRequest.class)));
+            case METHOD_PROMPT_LIST -> withManagement(requestContext, requestId, () -> operationsCommon.listPrompts(requestContext, convertParams(jsonMapper, rpcRequest, ListRequest.class)));
+            case METHOD_PROMPT_GET -> withManagement(requestContext, requestId, () -> operationsCommon.getPrompt(requestContext, convertParams(jsonMapper, rpcRequest, GetPromptRequest.class)));
+            case METHOD_RESOURCES_LIST -> withManagement(requestContext, requestId, () -> operationsCommon.listResources(requestContext, convertParams(jsonMapper, rpcRequest, ListRequest.class)));
+            case METHOD_RESOURCES_TEMPLATES_LIST -> withManagement(requestContext, requestId, () -> operationsCommon.listResourceTemplates(requestContext, convertParams(jsonMapper, rpcRequest, ListRequest.class)));
+            case METHOD_RESOURCES_READ -> withManagement(requestContext, requestId, () -> operationsCommon.readResources(requestContext, convertParams(jsonMapper, rpcRequest, ReadResourceRequest.class)));
+            case METHOD_COMPLETION_COMPLETE -> operationsCommon.completionComplete(requestContext, convertParams(jsonMapper, rpcRequest, CompleteRequest.class));
+            case METHOD_LOGGING_SET_LEVEL -> handleSetLoggingLevel(requestContext, convertParams(jsonMapper, rpcRequest, SetLevelRequest.class));
+            case METHOD_RESOURCES_SUBSCRIBE -> handleResourcesSubscribe(requestContext, convertParams(jsonMapper, rpcRequest, SubscribeRequest.class));
+            case METHOD_RESOURCES_UNSUBSCRIBE -> handleResourcesUnsubscribe(requestContext, convertParams(jsonMapper, rpcRequest, SubscribeRequest.class));
             case METHOD_PING -> ImmutableMap.of();
             default -> throw exception(METHOD_NOT_FOUND, "Unknown method: " + method);
         };
@@ -206,7 +207,7 @@ public class LegacySessionOperations
 
         switch (rpcRequest.method()) {
             case NOTIFICATION_INITIALIZED -> {} // ignore
-            case NOTIFICATION_CANCELLED -> handleRpcCancellation(request, operationsCommon.convertParams(rpcRequest, CancelledNotification.class));
+            case NOTIFICATION_CANCELLED -> handleRpcCancellation(request, convertParams(jsonMapper, rpcRequest, CancelledNotification.class));
             case NOTIFICATION_ROOTS_LIST_CHANGED -> handleRpcRootsChanged(request);
             default -> log.warn("Unknown MCP notification method: %s", rpcRequest.method());
         }
