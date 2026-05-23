@@ -100,10 +100,10 @@ import static jakarta.servlet.http.HttpServletResponse.SC_OK;
 import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
 import static java.util.Objects.requireNonNull;
 
-public class LegacyOperations
+public class LegacySessionOperations
         implements Operations
 {
-    private static final Logger log = Logger.get(LegacyOperations.class);
+    private static final Logger log = Logger.get(LegacySessionOperations.class);
 
     private static final Duration EVENT_STREAMING_SLEEP = Duration.ofSeconds(15);
 
@@ -122,7 +122,7 @@ public class LegacyOperations
     private final McpEntities entities;
 
     @Inject
-    public LegacyOperations(
+    public LegacySessionOperations(
             McpMetadataMapper metadata,
             JsonMapper jsonMapper,
             Optional<SessionController> sessionController,
