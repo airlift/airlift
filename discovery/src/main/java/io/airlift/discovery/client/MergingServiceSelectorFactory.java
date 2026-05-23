@@ -21,6 +21,7 @@ public class MergingServiceSelectorFactory
     @Override
     public ServiceSelector createServiceSelector(String type, ServiceSelectorConfig selectorConfig)
     {
+        selectorConfig = selectorConfig.setPool(nodeInfo.getPool());
         ServiceSelector selector = selectorFactory.createServiceSelector(type, selectorConfig);
         return new MergingServiceSelector(selector, announcer, nodeInfo);
     }
