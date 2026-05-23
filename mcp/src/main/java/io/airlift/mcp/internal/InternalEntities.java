@@ -40,6 +40,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
+import static java.util.Comparator.comparing;
 import static java.util.Objects.requireNonNull;
 
 public class InternalEntities
@@ -136,6 +137,7 @@ public class InternalEntities
         return tools.values()
                 .stream()
                 .map(ToolEntry::tool)
+                .sorted(comparing(Tool::name))
                 .filter(tool -> capabilityFilter.isAllowed(requestContext.identity(), tool))
                 .collect(toImmutableList());
     }
@@ -163,6 +165,7 @@ public class InternalEntities
         return prompts.values()
                 .stream()
                 .map(PromptEntry::prompt)
+                .sorted(comparing(Prompt::name))
                 .filter(prompt -> capabilityFilter.isAllowed(requestContext.identity(), prompt))
                 .collect(toImmutableList());
     }
@@ -190,6 +193,7 @@ public class InternalEntities
         return resources.values()
                 .stream()
                 .map(ResourceEntry::resource)
+                .sorted(comparing(Resource::name))
                 .filter(resource -> capabilityFilter.isAllowed(requestContext.identity(), resource))
                 .collect(toImmutableList());
     }
@@ -217,6 +221,7 @@ public class InternalEntities
         return resourceTemplates.values()
                 .stream()
                 .map(ResourceTemplateEntry::resourceTemplate)
+                .sorted(comparing(ResourceTemplate::name))
                 .filter(resourceTemplate -> capabilityFilter.isAllowed(requestContext.identity(), resourceTemplate))
                 .collect(toImmutableList());
     }
@@ -227,6 +232,7 @@ public class InternalEntities
         return completions.values()
                 .stream()
                 .map(CompletionEntry::reference)
+                .sorted(comparing(CompleteReference::sortValue))
                 .filter(completeReference -> capabilityFilter.isAllowed(requestContext.identity(), completeReference))
                 .collect(toImmutableList());
     }

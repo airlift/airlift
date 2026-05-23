@@ -24,11 +24,10 @@ import io.airlift.mcp.model.OptionalBoolean;
 import io.airlift.mcp.model.Prompt;
 import io.airlift.mcp.model.Protocol;
 import io.airlift.mcp.model.ReadResourceRequest;
-import io.airlift.mcp.model.ReadResourceResult;
 import io.airlift.mcp.model.Resource;
-import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.model.Tool;
+import io.airlift.mcp.operations.OperationsImpl;
 import io.airlift.mcp.operations.PaginationUtil;
 
 import java.util.List;
@@ -36,12 +35,9 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static io.airlift.http.server.tracing.TracingServletFilter.updateRequestSpan;
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
-import static io.airlift.mcp.model.JsonRpcErrorCode.RESOURCE_NOT_FOUND;
 import static io.airlift.mcp.model.Protocol.PROTOCOL_MCP_2025_06_18;
-import static io.opentelemetry.semconv.incubating.McpIncubatingAttributes.MCP_RESOURCE_URI;
 import static java.util.Objects.requireNonNull;
 
 public class OperationsCommon
@@ -125,12 +121,7 @@ public class OperationsCommon
 
     Object readResources(LegacyRequestContextImpl requestContext, ReadResourceRequest readResourceRequest)
     {
-        updateRequestSpan(requestContext.request(), span -> span.setAttribute(MCP_RESOURCE_URI, readResourceRequest.uri()));
-
-        List<ResourceContents> resourceContents = entities.readResourceContents(requestContext.withProgressToken(progressToken(readResourceRequest)), readResourceRequest)
-                .orElseThrow(() -> exception(RESOURCE_NOT_FOUND, "Resource not found: " + readResourceRequest.uri()));
-
-        return new ReadResourceResult(resourceContents);
+        return OperationsImpl.readResources(entities, requestContext.withProgressToken(progressToken(readResourceRequest)), readResourceRequest);
     }
 
     CompleteResult completionComplete(LegacyRequestContextImpl requestContext, CompleteRequest completeRequest)

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
+import io.airlift.log.Logger;
 import io.airlift.mcp.ErrorHandler;
 import io.airlift.mcp.McpIdentity;
 import io.airlift.mcp.McpIdentity.Authenticated;
@@ -26,7 +27,7 @@ import static com.google.common.net.HttpHeaders.WWW_AUTHENTICATE;
 import static io.airlift.mcp.McpException.exception;
 import static io.airlift.mcp.model.Constants.MCP_IDENTITY_ATTRIBUTE;
 import static io.airlift.mcp.model.Constants.RPC_MESSAGE_ATTRIBUTE;
-import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_REQUEST;
+import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
 import static io.airlift.mcp.model.JsonRpcErrorCode.PARSE_ERROR;
 import static jakarta.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
 import static jakarta.servlet.http.HttpServletResponse.SC_FORBIDDEN;
@@ -37,7 +38,6 @@ import static jakarta.ws.rs.HttpMethod.GET;
 import static jakarta.ws.rs.HttpMethod.POST;
 import static jakarta.ws.rs.core.HttpHeaders.ACCEPT;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
-import static jakarta.ws.rs.core.MediaType.SERVER_SENT_EVENTS;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Locale.ROOT;
 import static java.util.Objects.requireNonNull;
@@ -46,6 +46,8 @@ import static java.util.stream.Collectors.joining;
 public class InternalFilter
         extends HttpFilter
 {
+    private static final Logger log = Logger.get(InternalFilter.class);
+
     private static final Set<String> ALLOWED_HTTP_METHODS = ImmutableSet.of("GET", "POST", "DELETE");
 
     private final McpMetadataMapper metadata;
@@ -99,6 +101,17 @@ public class InternalFilter
             }
         }
         catch (Throwable throwable) {
+            if (request.getAttribute(RPC_MESSAGE_ATTRIBUTE) == null) {
+                try {
+                    Object message = readBody(request);
+                    if (message instanceof JsonRpcRequest<?> rpcRequest) {
+                        request.setAttribute(RPC_MESSAGE_ATTRIBUTE, rpcRequest);
+                    }
+                }
+                catch (Exception e) {
+                    log.warn(e, "Error reading request body");
+                }
+            }
             errorHandler.handleException(request, response, throwable);
         }
     }
@@ -120,35 +133,40 @@ public class InternalFilter
             throws Exception
     {
         String accept = request.getHeader(ACCEPT);
-        if (accept == null || !(accept.contains(APPLICATION_JSON) && accept.contains(SERVER_SENT_EVENTS))) {
-            throw exception(INVALID_REQUEST, "Both application/json and text/event-stream required in Accept header");
+        if (accept == null || !(accept.contains(APPLICATION_JSON))) {    // TODO
+            throw exception(INVALID_PARAMS, "application/json is required in Accept header");
         }
 
         response.setContentType(APPLICATION_JSON);
         response.setCharacterEncoding(UTF_8.name());
 
+        Object message = readBody(request);
+        switch (message) {
+            case JsonRpcRequest<?> rpcRequest when (rpcRequest.id() != null) -> {
+                request.setAttribute(RPC_MESSAGE_ATTRIBUTE, rpcRequest);
+                operations.handleRpcRequest(request, response, authenticated, rpcRequest);
+            }
+
+            case JsonRpcRequest<?> rpcRequest -> {
+                request.setAttribute(RPC_MESSAGE_ATTRIBUTE, rpcRequest);
+                operations.handleRpcNotification(request, response, authenticated, rpcRequest);
+            }
+
+            case JsonRpcResponse<?> rpcResponse -> {
+                request.setAttribute(RPC_MESSAGE_ATTRIBUTE, rpcResponse);
+                operations.handleRpcResponse(request, response, authenticated, rpcResponse);
+            }
+
+            default -> throw exception(SC_BAD_REQUEST, "The server accepts either requests or notifications");
+        }
+    }
+
+    private Object readBody(HttpServletRequest request)
+            throws Exception
+    {
         try (BufferedReader reader = request.getReader()) {
             String body = reader.lines().collect(joining("\n"));
-
-            Object message = deserializeJsonRpcMessage(body);
-            switch (message) {
-                case JsonRpcRequest<?> rpcRequest when (rpcRequest.id() != null) -> {
-                    request.setAttribute(RPC_MESSAGE_ATTRIBUTE, rpcRequest);
-                    operations.handleRpcRequest(request, response, authenticated, rpcRequest);
-                }
-
-                case JsonRpcRequest<?> rpcRequest -> {
-                    request.setAttribute(RPC_MESSAGE_ATTRIBUTE, rpcRequest);
-                    operations.handleRpcNotification(request, response, authenticated, rpcRequest);
-                }
-
-                case JsonRpcResponse<?> rpcResponse -> {
-                    request.setAttribute(RPC_MESSAGE_ATTRIBUTE, rpcResponse);
-                    operations.handleRpcResponse(request, response, authenticated, rpcResponse);
-                }
-
-                default -> throw exception(SC_BAD_REQUEST, "The server accepts either requests or notifications");
-            }
+            return deserializeJsonRpcMessage(body);
         }
     }
 

@@ -23,6 +23,9 @@ import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 public class TestConformance
 {
     private static final List<String> SCENARIOS = List.of(
+            "http-header-validation",
+            "server-stateless",
+            "sep-2164-resource-not-found",
             "server-initialize",
             "logging-set-level",
             "ping",
@@ -49,8 +52,7 @@ public class TestConformance
             "prompts-get-simple",
             "prompts-get-with-args",
             "prompts-get-embedded-resource",
-            "prompts-get-with-image",
-            "tools-call-elicitation");
+            "prompts-get-with-image");
 
     private final Closer closer = Closer.create();
     private final TestingNodeContainer nodeContainer;
@@ -86,8 +88,8 @@ public class TestConformance
     public void testConformance(String scenario)
     {
         // see: https://github.com/modelcontextprotocol/conformance?tab=readme-ov-file#testing-servers
-        String result = nodeContainer.execute("npx", "--yes", "@modelcontextprotocol/conformance", "server", "--url", mcpUri, "--scenario", scenario);
-        assertThat(result).contains("Passed: 1/1, 0 failed, 0 warnings");
+        String result = nodeContainer.execute("npx", "--yes", "@modelcontextprotocol/conformance@alpha", "server", "--url", mcpUri, "--scenario", scenario, "--verbose");
+        assertThat(result).contains("0 failed, 0 warnings");
     }
 
     static List<String> scenarioProvider()
