@@ -14,7 +14,7 @@ public class LegacyServerToClientRequest
     public <R> JsonRpcResponse<R> serverToClientRequest(McpRequestContext requestContext, String method, Object params, Class<R> responseType, Duration timeout, Duration pollInterval)
             throws InterruptedException, TimeoutException
     {
-        if (requestContext instanceof RequestContextImpl requestContextImpl) {
+        if (requestContext instanceof LegacyRequestContextImpl requestContextImpl) {
             return requestContextImpl.serverToClientRequest(method, params, responseType, timeout, pollInterval);
         }
 
