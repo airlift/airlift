@@ -369,34 +369,41 @@ public class HttpServer
     private ConnectionFactory[] insecureFactories(HttpServerConfig config, HttpConfiguration httpConfiguration)
     {
         HttpConnectionFactory http1 = new HttpConnectionFactory(httpConfiguration);
-        HTTP2CServerConnectionFactory http2c = new HTTP2CServerConnectionFactory(httpConfiguration);
-        http2c.setInitialSessionRecvWindow(toIntExact(config.getHttp2InitialSessionReceiveWindowSize().toBytes()));
-        http2c.setInitialStreamRecvWindow(toIntExact(config.getHttp2InitialStreamReceiveWindowSize().toBytes()));
-        http2c.setMaxConcurrentStreams(config.getHttp2MaxConcurrentStreams());
-        http2c.setInputBufferSize(toIntExact(config.getHttp2InputBufferSize().toBytes()));
-        http2c.setStreamIdleTimeout(config.getHttp2StreamIdleTimeout().toMillis());
-        http2c.setRateControlFactory(new RateControl.Factory() {}); // disable rate control
 
-        return new ConnectionFactory[] {http1, http2c};
+        if (config.isHttp2Enabled()) {
+            HTTP2CServerConnectionFactory http2c = new HTTP2CServerConnectionFactory(httpConfiguration);
+            http2c.setInitialSessionRecvWindow(toIntExact(config.getHttp2InitialSessionReceiveWindowSize().toBytes()));
+            http2c.setInitialStreamRecvWindow(toIntExact(config.getHttp2InitialStreamReceiveWindowSize().toBytes()));
+            http2c.setMaxConcurrentStreams(config.getHttp2MaxConcurrentStreams());
+            http2c.setInputBufferSize(toIntExact(config.getHttp2InputBufferSize().toBytes()));
+            http2c.setStreamIdleTimeout(config.getHttp2StreamIdleTimeout().toMillis());
+            http2c.setRateControlFactory(new RateControl.Factory() {}); // disable rate control
+            return new ConnectionFactory[] {http1, http2c};
+        }
+
+        return new ConnectionFactory[] {http1};
     }
 
     private ConnectionFactory[] secureFactories(HttpServerConfig config, HttpConfiguration httpsConfiguration, SslContextFactory.Server server)
     {
         ConnectionFactory http1 = new HttpConnectionFactory(httpsConfiguration);
-        ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
-        alpn.setDefaultProtocol(http1.getProtocol());
 
-        SslConnectionFactory tls = new SslConnectionFactory(server, alpn.getProtocol());
+        if (config.isHttp2Enabled()) {
+            ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
+            alpn.setDefaultProtocol(http1.getProtocol());
+            SslConnectionFactory tls = new SslConnectionFactory(server, alpn.getProtocol());
+            HTTP2ServerConnectionFactory http2 = new HTTP2ServerConnectionFactory(httpsConfiguration);
+            http2.setInitialSessionRecvWindow(toIntExact(config.getHttp2InitialSessionReceiveWindowSize().toBytes()));
+            http2.setInitialStreamRecvWindow(toIntExact(config.getHttp2InitialStreamReceiveWindowSize().toBytes()));
+            http2.setMaxConcurrentStreams(config.getHttp2MaxConcurrentStreams());
+            http2.setInputBufferSize(toIntExact(config.getHttp2InputBufferSize().toBytes()));
+            http2.setStreamIdleTimeout(config.getHttp2StreamIdleTimeout().toMillis());
+            http2.setRateControlFactory(new RateControl.Factory() {}); // disable rate control
+            return new ConnectionFactory[] {tls, alpn, http2, http1};
+        }
 
-        HTTP2ServerConnectionFactory http2 = new HTTP2ServerConnectionFactory(httpsConfiguration);
-        http2.setInitialSessionRecvWindow(toIntExact(config.getHttp2InitialSessionReceiveWindowSize().toBytes()));
-        http2.setInitialStreamRecvWindow(toIntExact(config.getHttp2InitialStreamReceiveWindowSize().toBytes()));
-        http2.setMaxConcurrentStreams(config.getHttp2MaxConcurrentStreams());
-        http2.setInputBufferSize(toIntExact(config.getHttp2InputBufferSize().toBytes()));
-        http2.setStreamIdleTimeout(config.getHttp2StreamIdleTimeout().toMillis());
-        http2.setRateControlFactory(new RateControl.Factory() {}); // disable rate control
-
-        return new ConnectionFactory[] {tls, alpn, http2, http1};
+        SslConnectionFactory tls = new SslConnectionFactory(server, http1.getProtocol());
+        return new ConnectionFactory[] {tls, http1};
     }
 
     private static void setSecureRequestCustomizer(HttpConfiguration configuration)
