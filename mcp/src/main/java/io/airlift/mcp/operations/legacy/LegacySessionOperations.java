@@ -41,7 +41,6 @@ import io.airlift.mcp.model.SetLevelRequest;
 import io.airlift.mcp.model.SubscribeListChanged;
 import io.airlift.mcp.model.SubscribeRequest;
 import io.airlift.mcp.model.Tool;
-import io.airlift.mcp.operations.Operations;
 import io.airlift.mcp.operations.legacy.sessions.SessionController;
 import io.airlift.mcp.operations.legacy.sessions.SessionId;
 import io.airlift.mcp.operations.legacy.sessions.SessionValueKey;
@@ -101,7 +100,7 @@ import static jakarta.ws.rs.core.Response.Status.NOT_FOUND;
 import static java.util.Objects.requireNonNull;
 
 public class LegacySessionOperations
-        implements Operations
+        implements LegacyOperations
 {
     private static final Logger log = Logger.get(LegacySessionOperations.class);
 
