@@ -1,5 +1,7 @@
 package io.airlift.mcp.operations;
 
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.google.common.collect.ImmutableMap;
 import io.airlift.mcp.McpIdentity.Authenticated;
 import io.airlift.mcp.model.JsonRpcRequest;
 import io.airlift.mcp.model.JsonRpcResponse;
@@ -17,4 +19,10 @@ public interface Operations
     void handleRcpDeleteRequest(HttpServletRequest request, HttpServletResponse response, Authenticated<?> authenticated);
 
     void handleRpcGetRequest(HttpServletRequest request, HttpServletResponse response, Authenticated<?> authenticated);
+
+    static <T> T convertParams(JsonMapper jsonMapper, JsonRpcRequest<?> rpcRequest, Class<T> clazz)
+    {
+        Object value = rpcRequest.params().map(v -> (Object) v).orElseGet(ImmutableMap::of);
+        return jsonMapper.convertValue(value, clazz);
+    }
 }
