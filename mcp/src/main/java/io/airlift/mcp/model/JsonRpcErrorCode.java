@@ -11,8 +11,10 @@ public enum JsonRpcErrorCode
 {
     // SDK error codes
     CONNECTION_CLOSED(-32000),
-    REQUEST_TIMEOUT(-32001),
+    REQUEST_TIMEOUT(-32070),
+    HEADER_MISMATCH(-32020),
     RESOURCE_NOT_FOUND(-32002),
+    UNSUPPORTED_PROTOCOL(-32004),
 
     // Standard JSON-RPC error codes
     PARSE_ERROR(-32700),

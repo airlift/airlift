@@ -102,7 +102,7 @@ import static io.airlift.mcp.model.Constants.MCP_SESSION_ID;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_CANCELLED;
 import static io.airlift.mcp.model.Constants.SKILL_INDEX_URI;
 import static io.airlift.mcp.model.Constants.SKILL_MIME_TYPE;
-import static io.modelcontextprotocol.spec.McpSchema.ErrorCodes.RESOURCE_NOT_FOUND;
+import static io.modelcontextprotocol.spec.McpSchema.ErrorCodes.INVALID_PARAMS;
 import static io.modelcontextprotocol.spec.McpSchema.LoggingLevel.ALERT;
 import static io.modelcontextprotocol.spec.McpSchema.LoggingLevel.DEBUG;
 import static io.modelcontextprotocol.spec.McpSchema.LoggingLevel.EMERGENCY;
@@ -237,7 +237,7 @@ public abstract class TestMcp
         FullJsonResponseHandler.JsonResponse<Object> response = httpClient.execute(request, createFullJsonResponseHandler(jsonCodecFactory.jsonCodec(new TypeToken<>() {})));
         assertThat(response.getStatusCode()).isEqualTo(400);
         assertThat(response.getResponseBody())
-                .contains("\"message\":\"Both application/json and text/event-stream required in Accept header\"");
+                .contains("\"message\":\"application/json is required in Accept header\"");
 
         // nonsensical object in body
         request = preparePost().setUri(uri)
@@ -518,7 +518,7 @@ public abstract class TestMcp
 
         ReadResourceRequest badReadResourceRequest = ReadResourceRequest.builder("file://not-a-template").build();
         assertThatThrownBy(() -> client1.mcpClient().readResource(badReadResourceRequest))
-                .satisfies(e -> assertMcpError(e, RESOURCE_NOT_FOUND, "Resource not found: file://not-a-template"));
+                .satisfies(e -> assertMcpError(e, INVALID_PARAMS, "Resource not found: file://not-a-template"));
     }
 
     @Test

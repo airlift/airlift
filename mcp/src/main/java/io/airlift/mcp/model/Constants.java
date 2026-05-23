@@ -22,6 +22,7 @@ public interface Constants
     String METHOD_ROOTS_LIST = "roots/list";
     String METHOD_SAMPLING_CREATE_MESSAGE = "sampling/createMessage";
     String METHOD_ELICITATION_CREATE = "elicitation/create";
+    String METHOD_SERVER_DISCOVER = "server/discover";
 
     String NOTIFICATION_INITIALIZED = "notifications/initialized";
     String NOTIFICATION_PROGRESS = "notifications/progress";
@@ -36,6 +37,14 @@ public interface Constants
     String HEADER_SESSION_ID = "Mcp-Session-Id";
     String HEADER_PROTOCOL_VERSION = "MCP-Protocol-Version";
     String HEADER_LAST_EVENT_ID = "Last-Event-ID";
+    String HEADER_MCP_METHOD = "MCP-Method";
+    String HEADER_MCP_NAME = "MCP-Name";
+
+    String METADATA_PROTOCOL_VERSION = "io.modelcontextprotocol/protocolVersion";
+    String METADATA_CLIENT_INFO = "io.modelcontextprotocol/clientInfo";
+    String METADATA_CLIENT_CAPABILITIES = "io.modelcontextprotocol/clientCapabilities";
+    String METADATA_CLIENT_LOG_LEVEL = "io.modelcontextprotocol/logLevel";
+    String METADATA_PROGRESS_TOKEN = "progressToken";
 
     String MCP_IDENTITY_ATTRIBUTE = Constants.class.getName() + ".identity";
     String RPC_MESSAGE_ATTRIBUTE = Constants.class.getName() + ".message";
