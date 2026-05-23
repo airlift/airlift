@@ -190,7 +190,7 @@ public class MethodInvoker
                 catch (Throwable e) {
                     Throwable rootCause = Throwables.getRootCause(e);
                     throw switch (rootCause) {
-                        case McpException mcpException -> new McpClientException(mcpException);
+                        case McpException mcpException -> mcpException.isSelfContained() ? mcpException : new McpClientException(mcpException);
                         case RuntimeException runtimeException -> new McpClientException(exception(runtimeException));
                         case InvocationTargetException invocationTargetException -> {
                             Throwable targetException = invocationTargetException.getTargetException();
