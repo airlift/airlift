@@ -29,7 +29,6 @@ import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.model.SubscribeListChanged;
 import io.airlift.mcp.model.Tool;
-import io.airlift.mcp.operations.Operations;
 import io.airlift.mcp.reflection.IconHelper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -70,7 +69,7 @@ import static jakarta.servlet.http.HttpServletResponse.SC_OK;
 import static java.util.Objects.requireNonNull;
 
 public class SessionlessOperations
-        implements Operations
+        implements LegacyOperations
 {
     private static final Logger log = Logger.get(LegacyCancellationController.class);
 
