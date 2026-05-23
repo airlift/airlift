@@ -2,6 +2,7 @@ package io.airlift.mcp.reflection;
 
 import io.airlift.mcp.McpDefaultValue;
 import io.airlift.mcp.McpDescription;
+import io.airlift.mcp.McpException;
 import io.airlift.mcp.McpRequestContext;
 import io.airlift.mcp.model.CallToolRequest;
 import io.airlift.mcp.model.CompleteRequest.CompleteArgument;
@@ -42,6 +43,8 @@ import java.util.stream.Stream;
 import static com.google.common.base.Verify.verify;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.mcp.McpException.exception;
+import static io.airlift.mcp.model.Constants.MCP_IDENTITY_ATTRIBUTE;
+import static io.airlift.mcp.model.JsonRpcErrorCode.INTERNAL_ERROR;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INVALID_PARAMS;
 import static io.airlift.mcp.reflection.ReflectionHelper.parseParameters;
 
@@ -123,6 +126,16 @@ public interface ReflectionHelper
                     return new ObjectParameter(parameter.getName(), parameter.getType(), genericType, description, defaultValue, !Optional.class.isAssignableFrom(parameter.getType()));
                 })
                 .collect(toImmutableList());
+    }
+
+    static Object retrieveIdentityValue(HttpServletRequest request)
+            throws McpException
+    {
+        Object identity = request.getAttribute(MCP_IDENTITY_ATTRIBUTE);
+        if (identity == null) {
+            throw exception(INTERNAL_ERROR, "Error in request processing. MCP identity not found.");
+        }
+        return identity;
     }
 
     interface InClassConsumer<A extends Annotation>

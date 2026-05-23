@@ -29,6 +29,7 @@ import io.airlift.mcp.model.Role;
 import io.airlift.mcp.model.Root;
 import io.airlift.mcp.model.StructuredContentResult;
 import io.airlift.mcp.model.Tool;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.time.Duration;
 import java.util.List;
@@ -54,6 +55,7 @@ public class TestingEndpoints
     private final Set<PromptEntry> prompts;
     private final Set<ResourceEntry> resources;
     private final SleepToolController sleepToolController;
+    private final McpIdentitySupplier<TestingIdentity> testingIdentitySupplier;
     private volatile String example2Content = "This is the content of file://example2.txt";
     private volatile String example1Content = "This is the content of file://example1.txt";
 
@@ -63,7 +65,8 @@ public class TestingEndpoints
             Set<ToolEntry> tools,
             Set<PromptEntry> prompts,
             Set<ResourceEntry> resources,
-            SleepToolController sleepToolController)
+            SleepToolController sleepToolController,
+            McpIdentitySupplier<TestingIdentity> testingIdentitySupplier)
     {
         this.entities = requireNonNull(entities, "entities is null");
 
@@ -71,11 +74,15 @@ public class TestingEndpoints
         this.prompts = ImmutableSet.copyOf(prompts);
         this.resources = ImmutableSet.copyOf(resources);
         this.sleepToolController = requireNonNull(sleepToolController, "sleepToolController is null");
+        this.testingIdentitySupplier = requireNonNull(testingIdentitySupplier, "testingIdentitySupplier is null");
     }
 
     @McpTool(name = "add", description = "Add two numbers", icons = "google")
-    public int add(TestingIdentity testingIdentity, int a, int b)
+    public int add(HttpServletRequest request, TestingIdentity testingIdentity, int a, int b)
     {
+        // opportunistic test. Not related to the "add" tool, but we can test testingIdentitySupplier here
+        assertThat(testingIdentity).isEqualTo(testingIdentitySupplier.get(request));
+
         assertThat(testingIdentity.name()).isEqualTo("Mr. Tester");
 
         return a + b;
