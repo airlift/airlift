@@ -11,6 +11,8 @@ import com.github.victools.jsonschema.generator.SchemaGeneratorConfig;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
 import com.github.victools.jsonschema.generator.SchemaVersion;
 import com.google.common.collect.ImmutableSet;
+import com.google.inject.Inject;
+import com.google.inject.Provider;
 import io.airlift.json.JsonMapperProvider;
 import io.airlift.mcp.McpDescription;
 import io.airlift.mcp.reflection.MethodParameter;
@@ -39,13 +41,13 @@ public class JsonSchemaBuilder
 {
     private static final JsonMapper defaultJsonMapper = new JsonMapperProvider().get();
 
-    private static final SchemaGenerator defaultGenerator;
+    private static final SchemaBuilder defaultSchemaBuilder;
 
     static {
-        defaultGenerator = buildGenerator(defaultJsonMapper);
+        defaultSchemaBuilder = buildDefaultSchemaBuilder(defaultJsonMapper);
     }
 
-    private static SchemaGenerator buildGenerator(JsonMapper mapper)
+    public static SchemaBuilder buildDefaultSchemaBuilder(JsonMapper mapper)
     {
         SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(SchemaVersion.DRAFT_2020_12, OptionPreset.PLAIN_JSON)
                 .withObjectMapper(mapper)
@@ -60,7 +62,7 @@ public class JsonSchemaBuilder
                     return !isOptional && !isOptionalInt && !isOptionalLong && !isOptionalDouble;
                 });
         SchemaGeneratorConfig config = configBuilder.build();
-        return new SchemaGenerator(config);
+        return new SchemaGenerator(config)::generateSchema;
     }
 
     private static String findDescription(FieldScope target)
@@ -95,22 +97,51 @@ public class JsonSchemaBuilder
             .build();
 
     private final JsonMapper jsonMapper;
-    private final SchemaGenerator generator;
+    private final SchemaBuilder schemaBuilder;
+
+    public interface SchemaBuilder
+    {
+        ObjectNode generateSchema(Type type);
+    }
+
+    public static class DefaultSchemaBuilderProvider
+            implements Provider<SchemaBuilder>
+    {
+        private final JsonMapper jsonMapper;
+
+        @Inject
+        public DefaultSchemaBuilderProvider(JsonMapper jsonMapper)
+        {
+            this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
+        }
+
+        @Override
+        public SchemaBuilder get()
+        {
+            return buildDefaultSchemaBuilder(jsonMapper);
+        }
+    }
+
+    public static SchemaBuilder defaultSchemaBuilder()
+    {
+        return defaultSchemaBuilder;
+    }
 
     public JsonSchemaBuilder()
     {
-        this(defaultJsonMapper, defaultGenerator);
+        this(defaultJsonMapper, defaultSchemaBuilder);
     }
 
     public JsonSchemaBuilder(JsonMapper jsonMapper)
     {
-        this(jsonMapper, buildGenerator(jsonMapper));
+        this(jsonMapper, buildDefaultSchemaBuilder(jsonMapper));
     }
 
-    private JsonSchemaBuilder(JsonMapper jsonMapper, SchemaGenerator generator)
+    @Inject
+    public JsonSchemaBuilder(JsonMapper jsonMapper, SchemaBuilder schemaBuilder)
     {
         this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
-        this.generator = requireNonNull(generator, "generator is null");
+        this.schemaBuilder = requireNonNull(schemaBuilder, "schemaBuilder is null");
     }
 
     public ObjectNode build(Optional<String> description, List<MethodParameter> parameters)
@@ -118,7 +149,7 @@ public class JsonSchemaBuilder
         return buildObject(description, (properties, required) -> parameters.stream()
                 .flatMap(methodParameter -> (methodParameter instanceof ObjectParameter objectParameter) ? Stream.of(objectParameter) : Stream.empty())
                 .forEach(objectParameter -> {
-                    ObjectNode objectNode = generator.generateSchema(schemaType(objectParameter));
+                    ObjectNode objectNode = schemaBuilder.generateSchema(schemaType(objectParameter));
                     objectParameter.description().ifPresent(value -> objectNode.put("description", value));
                     properties.set(objectParameter.name(), objectNode);
 
@@ -135,7 +166,7 @@ public class JsonSchemaBuilder
 
     public ObjectNode build(Optional<String> description, Class<?> type)
     {
-        ObjectNode objectNode = generator.generateSchema(type);
+        ObjectNode objectNode = schemaBuilder.generateSchema(type);
         description.ifPresent(value -> objectNode.put("description", value));
         addSchemaVersion(objectNode);
         return objectNode;

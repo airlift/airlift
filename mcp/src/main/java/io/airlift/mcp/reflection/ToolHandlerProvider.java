@@ -50,7 +50,7 @@ import static java.util.Objects.requireNonNull;
 public class ToolHandlerProvider
         implements Provider<ToolEntry>
 {
-    private final Tool tool;
+    private final McpTool mcpTool;
     private final Class<?> clazz;
     private final Method method;
     private final List<MethodParameter> parameters;
@@ -63,6 +63,7 @@ public class ToolHandlerProvider
 
     public ToolHandlerProvider(McpTool mcpTool, Class<?> clazz, Method method, List<MethodParameter> parameters, Map<String, AppContent> apps, Consumer<Provider<ResourceEntry>> resourceHandlerConsumer)
     {
+        this.mcpTool = requireNonNull(mcpTool, "mcpTool is null");
         this.clazz = requireNonNull(clazz, "clazz is null");
         this.method = requireNonNull(method, "method is null");
         this.parameters = ImmutableList.copyOf(parameters);
@@ -71,8 +72,6 @@ public class ToolHandlerProvider
         this.resourceHandlerConsumer = requireNonNull(resourceHandlerConsumer, "resourceHandlerConsumer is null");
 
         validate(method, parameters, isHttpRequestOrContext.or(isIdentity).or(isObject).or(isCallToolRequest), returnsAnything);
-
-        tool = buildTool(mcpTool, method, parameters);
 
         if (void.class.equals(method.getReturnType())) {
             returnType = ReturnType.VOID;
@@ -140,6 +139,8 @@ public class ToolHandlerProvider
             };
         };
 
+        JsonSchemaBuilder jsonSchemaBuilder = injector.getInstance(JsonSchemaBuilder.class);
+        Tool tool = buildTool(mcpTool, method, parameters, jsonSchemaBuilder);
         return new ToolEntry(tool.withIcons(iconHelper.mapIcons(icons)), toolHandler);
     }
 
@@ -148,7 +149,7 @@ public class ToolHandlerProvider
         return new CallToolResult(result.content(), result.structuredContent().map(StructuredContent::new), result.isError(), Optional.empty());
     }
 
-    private Tool buildTool(McpTool tool, Method method, List<MethodParameter> parameters)
+    private Tool buildTool(McpTool tool, Method method, List<MethodParameter> parameters, JsonSchemaBuilder jsonSchemaBuilder)
     {
         Optional<String> description = tool.description().isEmpty() ? Optional.empty() : Optional.of(tool.description());
         Optional<String> title = tool.title().isEmpty() ? Optional.empty() : Optional.of(tool.title());
@@ -165,18 +166,15 @@ public class ToolHandlerProvider
             outputSchema = Optional.empty();
         }
         else if (StructuredContentResult.class.isAssignableFrom(method.getReturnType())) {
-            JsonSchemaBuilder jsonSchemaBuilder = new JsonSchemaBuilder();
             outputSchema = Optional.of(jsonSchemaBuilder.build(description, requiredArgument(method.getGenericReturnType())));
         }
         else if (method.getReturnType().isRecord()) {
-            JsonSchemaBuilder jsonSchemaBuilder = new JsonSchemaBuilder();
             outputSchema = Optional.of(jsonSchemaBuilder.build(description, method.getReturnType()));
         }
         else {
             outputSchema = Optional.empty();
         }
 
-        JsonSchemaBuilder jsonSchemaBuilder = new JsonSchemaBuilder();
         ObjectNode jsonSchema = jsonSchemaBuilder.build(description, parameters);
 
         return applyApp(new Tool(tool.name(), description, title, jsonSchema, outputSchema, toolAnnotations), tool);
