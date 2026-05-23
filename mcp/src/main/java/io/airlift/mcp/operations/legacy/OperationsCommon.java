@@ -1,8 +1,6 @@
 package io.airlift.mcp.operations.legacy;
 
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import io.airlift.mcp.McpClientException;
 import io.airlift.mcp.McpConfig;
@@ -16,7 +14,6 @@ import io.airlift.mcp.model.CompleteResult;
 import io.airlift.mcp.model.Content.TextContent;
 import io.airlift.mcp.model.GetPromptRequest;
 import io.airlift.mcp.model.GetPromptResult;
-import io.airlift.mcp.model.JsonRpcRequest;
 import io.airlift.mcp.model.ListPromptsResult;
 import io.airlift.mcp.model.ListRequest;
 import io.airlift.mcp.model.ListResourceTemplatesResult;
@@ -51,13 +48,11 @@ public class OperationsCommon
 {
     private final McpEntities entities;
     private final PaginationUtil paginationUtil;
-    private final JsonMapper jsonMapper;
 
     @Inject
-    OperationsCommon(McpEntities entities, McpConfig mcpConfig, JsonMapper jsonMapper)
+    OperationsCommon(McpEntities entities, McpConfig mcpConfig)
     {
         this.entities = requireNonNull(entities, "entities is null");
-        this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
 
         paginationUtil = new PaginationUtil(mcpConfig);
     }
@@ -65,12 +60,6 @@ public class OperationsCommon
     static boolean supportsIcons(Protocol protocol)
     {
         return protocol != PROTOCOL_MCP_2025_06_18;
-    }
-
-    <T> T convertParams(JsonRpcRequest<?> rpcRequest, Class<T> clazz)
-    {
-        Object value = rpcRequest.params().map(v -> (Object) v).orElseGet(ImmutableMap::of);
-        return jsonMapper.convertValue(value, clazz);
     }
 
     ListToolsResult listTools(LegacyRequestContextImpl requestContext, ListRequest listRequest)

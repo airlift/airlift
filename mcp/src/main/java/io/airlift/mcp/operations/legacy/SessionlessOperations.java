@@ -59,6 +59,7 @@ import static io.airlift.mcp.model.Constants.NOTIFICATION_INITIALIZED;
 import static io.airlift.mcp.model.Constants.NOTIFICATION_ROOTS_LIST_CHANGED;
 import static io.airlift.mcp.model.JsonRpcErrorCode.METHOD_NOT_FOUND;
 import static io.airlift.mcp.model.Protocol.LATEST_PROTOCOL;
+import static io.airlift.mcp.operations.Operations.convertParams;
 import static io.airlift.mcp.operations.legacy.OperationsCommon.supportsIcons;
 import static io.opentelemetry.semconv.incubating.McpIncubatingAttributes.MCP_METHOD_NAME;
 import static io.opentelemetry.semconv.incubating.McpIncubatingAttributes.MCP_PROTOCOL_VERSION;
@@ -113,15 +114,15 @@ public class SessionlessOperations
         LegacyRequestContextImpl requestContext = new LegacyRequestContextImpl(jsonMapper, Optional.empty(), request, response, messageWriter, authenticated);
 
         Object result = switch (method) {
-            case METHOD_INITIALIZE -> handleInitialize(requestContext, operationsCommon.convertParams(rpcRequest, InitializeRequest.class));
-            case METHOD_TOOLS_LIST -> operationsCommon.listTools(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class));
-            case METHOD_TOOLS_CALL -> operationsCommon.callTool(requestContext, operationsCommon.convertParams(rpcRequest, CallToolRequest.class));
-            case METHOD_PROMPT_LIST -> operationsCommon.listPrompts(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class));
-            case METHOD_PROMPT_GET -> operationsCommon.getPrompt(requestContext, operationsCommon.convertParams(rpcRequest, GetPromptRequest.class));
-            case METHOD_RESOURCES_LIST -> operationsCommon.listResources(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class));
-            case METHOD_RESOURCES_TEMPLATES_LIST -> operationsCommon.listResourceTemplates(requestContext, operationsCommon.convertParams(rpcRequest, ListRequest.class));
-            case METHOD_RESOURCES_READ -> operationsCommon.readResources(requestContext, operationsCommon.convertParams(rpcRequest, ReadResourceRequest.class));
-            case METHOD_COMPLETION_COMPLETE -> operationsCommon.completionComplete(requestContext, operationsCommon.convertParams(rpcRequest, CompleteRequest.class));
+            case METHOD_INITIALIZE -> handleInitialize(requestContext, convertParams(jsonMapper, rpcRequest, InitializeRequest.class));
+            case METHOD_TOOLS_LIST -> operationsCommon.listTools(requestContext, convertParams(jsonMapper, rpcRequest, ListRequest.class));
+            case METHOD_TOOLS_CALL -> operationsCommon.callTool(requestContext, convertParams(jsonMapper, rpcRequest, CallToolRequest.class));
+            case METHOD_PROMPT_LIST -> operationsCommon.listPrompts(requestContext, convertParams(jsonMapper, rpcRequest, ListRequest.class));
+            case METHOD_PROMPT_GET -> operationsCommon.getPrompt(requestContext, convertParams(jsonMapper, rpcRequest, GetPromptRequest.class));
+            case METHOD_RESOURCES_LIST -> operationsCommon.listResources(requestContext, convertParams(jsonMapper, rpcRequest, ListRequest.class));
+            case METHOD_RESOURCES_TEMPLATES_LIST -> operationsCommon.listResourceTemplates(requestContext, convertParams(jsonMapper, rpcRequest, ListRequest.class));
+            case METHOD_RESOURCES_READ -> operationsCommon.readResources(requestContext, convertParams(jsonMapper, rpcRequest, ReadResourceRequest.class));
+            case METHOD_COMPLETION_COMPLETE -> operationsCommon.completionComplete(requestContext, convertParams(jsonMapper, rpcRequest, CompleteRequest.class));
             case METHOD_PING -> ImmutableMap.of();
             default -> throw exception(METHOD_NOT_FOUND, "Unknown method: " + method);
         };
