@@ -19,12 +19,10 @@ public interface McpRequestContext
 
     ClientCapabilities clientCapabilities();
 
-    // NOTE - may not be supported depending on how you've configured MCP - see the README regarding Sessions and Storage
     default void sendLog(LoggingLevel level, String message)
     {
         sendLog(level, Optional.empty(), Optional.of(message));
     }
 
-    // NOTE - may not be supported depending on how you've configured MCP - see the README regarding Sessions and Storage
     void sendLog(LoggingLevel level, Optional<String> logger, Optional<Object> data);
 }

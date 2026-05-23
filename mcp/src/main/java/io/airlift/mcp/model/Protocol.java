@@ -11,7 +11,8 @@ import static java.util.Objects.requireNonNull;
 public enum Protocol
 {
     PROTOCOL_MCP_2025_06_18("2025-06-18"),
-    PROTOCOL_MCP_2025_11_25("2025-11-25");
+    PROTOCOL_MCP_2025_11_25("2025-11-25"),
+    PROTOCOL_MCP_2026_DRAFT_V1("DRAFT-2026-v1");
 
     public static final Protocol LATEST_PROTOCOL = PROTOCOL_MCP_2025_11_25;
 

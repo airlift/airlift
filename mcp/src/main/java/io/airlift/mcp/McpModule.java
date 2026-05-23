@@ -40,6 +40,9 @@ import io.airlift.mcp.model.JsonSchemaBuilder.DefaultSchemaBuilderProvider;
 import io.airlift.mcp.model.JsonSchemaBuilder.SchemaBuilder;
 import io.airlift.mcp.operations.Operations;
 import io.airlift.mcp.operations.OperationsModule;
+import io.airlift.mcp.operations.OperationsSelector;
+import io.airlift.mcp.operations.ValidationMode;
+import io.airlift.mcp.operations.legacy.LegacyOperations;
 import io.airlift.mcp.operations.legacy.LegacySessionOperations;
 import io.airlift.mcp.operations.legacy.SessionlessOperations;
 import io.airlift.mcp.operations.legacy.sessions.CachingSessionController;
@@ -96,9 +99,10 @@ public class McpModule
     private final Map<String, Consumer<LinkedBindingBuilder<Icon>>> icons;
     private final Set<String> serverIcons;
     private final Optional<Consumer<LinkedBindingBuilder<StorageController>>> storageControllerBinding;
-    private final Consumer<LinkedBindingBuilder<Operations>> operationsBinding;
+    private final Consumer<LinkedBindingBuilder<LegacyOperations>> legacyOperationsBinding;
     private final Optional<Class<? extends Annotation>> filterBindingAnnotation;
     private final Consumer<LinkedBindingBuilder<SchemaBuilder>> schemaBuilderBinding;
+    private final ValidationMode validationMode;
 
     public static Builder builder()
     {
@@ -119,9 +123,10 @@ public class McpModule
             Map<String, Consumer<LinkedBindingBuilder<Icon>>> icons,
             Set<String> serverIcons,
             Optional<Consumer<LinkedBindingBuilder<StorageController>>> storageControllerBinding,
-            Consumer<LinkedBindingBuilder<Operations>> operationsBinding,
+            Consumer<LinkedBindingBuilder<LegacyOperations>> legacyOperationsBinding,
             Optional<Class<? extends Annotation>> filterBindingAnnotation,
-            Consumer<LinkedBindingBuilder<SchemaBuilder>> schemaBuilderBinding)
+            Consumer<LinkedBindingBuilder<SchemaBuilder>> schemaBuilderBinding,
+            ValidationMode validationMode)
     {
         this.metadataBinding = requireNonNull(metadataBinding, "metadataBinding is null");
         this.identityMapperBinding = requireNonNull(identityMapperBinding, "identityMapperBinding is null");
@@ -136,9 +141,10 @@ public class McpModule
         this.icons = ImmutableMap.copyOf(icons);
         this.serverIcons = ImmutableSet.copyOf(serverIcons);
         this.storageControllerBinding = requireNonNull(storageControllerBinding, "storageControllerBinding is null");
-        this.operationsBinding = requireNonNull(operationsBinding, "operationsBinding is null");
+        this.legacyOperationsBinding = requireNonNull(legacyOperationsBinding, "legacyOperationsBinding is null");
         this.filterBindingAnnotation = requireNonNull(filterBindingAnnotation, "filterBindingAnnotation is null");
         this.schemaBuilderBinding = requireNonNull(schemaBuilderBinding, "schemaBuilderBinding is null");
+        this.validationMode = requireNonNull(validationMode, "validationMode is null");
     }
 
     record IdentityMapperBinding(Class<?> identityType, Consumer<AnnotatedBindingBuilder<McpIdentityMapper>> identityMapperBinding)
@@ -181,9 +187,10 @@ public class McpModule
         private Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding = Optional.empty();
         private Optional<Consumer<LinkedBindingBuilder<McpCapabilityFilter>>> capabilityFilterBinding = Optional.empty();
         private Optional<Consumer<LinkedBindingBuilder<StorageController>>> storageControllerBinding = Optional.empty();
-        private Consumer<LinkedBindingBuilder<Operations>> operationsBinding = binding -> binding.to(SessionlessOperations.class).in(SINGLETON);
+        private Consumer<LinkedBindingBuilder<LegacyOperations>> legacyOperationsBinding = binding -> binding.to(SessionlessOperations.class).in(SINGLETON);
         private Optional<Class<? extends Annotation>> filterBindingAnnotation = Optional.empty();
         private Optional<Consumer<LinkedBindingBuilder<SchemaBuilder>>> schemaBuilderBinding = Optional.empty();
+        private ValidationMode validationMode = ValidationMode.LENIENT;
 
         private Builder() {}
 
@@ -217,7 +224,7 @@ public class McpModule
                 checkArgument(Builder.this.sessionControllerBinding.isEmpty(), "Session controller binding is already set");
 
                 Builder.this.sessionControllerBinding = Optional.of(sessionControllerBinding);
-                Builder.this.operationsBinding = binding -> binding.to(LegacySessionOperations.class).in(SINGLETON);
+                Builder.this.legacyOperationsBinding = binding -> binding.to(LegacySessionOperations.class).in(SINGLETON);
                 return Builder.this;
             };
         }
@@ -262,6 +269,12 @@ public class McpModule
         public Builder withServerIcons(Collection<String> iconNames)
         {
             serverIcons.addAll(iconNames);
+            return this;
+        }
+
+        public Builder withStrictValidation()
+        {
+            validationMode = ValidationMode.STRICT;
             return this;
         }
 
@@ -326,9 +339,10 @@ public class McpModule
                     icons.build(),
                     serverIcons.build(),
                     storageControllerBinding,
-                    operationsBinding,
+                    legacyOperationsBinding,
                     filterBindingAnnotation,
-                    localSchemaBuilderBinding);
+                    localSchemaBuilderBinding,
+                    validationMode);
         }
     }
 
@@ -337,7 +351,9 @@ public class McpModule
     {
         metadataBinding.accept(binder.bind(McpMetadataMapper.class));
         storageControllerBinding.ifPresent(binding -> binding.accept(binder.bind(StorageController.class)));
-        operationsBinding.accept(binder.bind(Operations.class));
+        legacyOperationsBinding.accept(binder.bind(LegacyOperations.class));
+        binder.bind(Operations.class).to(OperationsSelector.class).in(SINGLETON);
+        binder.bind(ValidationMode.class).toInstance(validationMode);
 
         configBinder(binder).bindConfig(McpConfig.class);
 
