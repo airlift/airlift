@@ -33,6 +33,9 @@ import io.airlift.mcp.model.Content.TextContent;
 import io.airlift.mcp.model.Icon;
 import io.airlift.mcp.model.JsonRpcMessage;
 import io.airlift.mcp.model.JsonRpcMessageDeserializer;
+import io.airlift.mcp.model.JsonSchemaBuilder;
+import io.airlift.mcp.model.JsonSchemaBuilder.DefaultSchemaBuilderProvider;
+import io.airlift.mcp.model.JsonSchemaBuilder.SchemaBuilder;
 import io.airlift.mcp.operations.LegacyOperations;
 import io.airlift.mcp.operations.Operations;
 import io.airlift.mcp.operations.OperationsModule;
@@ -89,6 +92,7 @@ public class McpModule
     private final Optional<Consumer<LinkedBindingBuilder<StorageController>>> storageControllerBinding;
     private final Consumer<LinkedBindingBuilder<Operations>> operationsBinding;
     private final Optional<Class<? extends Annotation>> filterBindingAnnotation;
+    private final Consumer<LinkedBindingBuilder<SchemaBuilder>> schemaBuilderBinding;
 
     public static Builder builder()
     {
@@ -110,7 +114,8 @@ public class McpModule
             Set<String> serverIcons,
             Optional<Consumer<LinkedBindingBuilder<StorageController>>> storageControllerBinding,
             Consumer<LinkedBindingBuilder<Operations>> operationsBinding,
-            Optional<Class<? extends Annotation>> filterBindingAnnotation)
+            Optional<Class<? extends Annotation>> filterBindingAnnotation,
+            Consumer<LinkedBindingBuilder<SchemaBuilder>> schemaBuilderBinding)
     {
         this.metadataBinding = requireNonNull(metadataBinding, "metadataBinding is null");
         this.identityMapperBinding = requireNonNull(identityMapperBinding, "identityMapperBinding is null");
@@ -127,6 +132,7 @@ public class McpModule
         this.storageControllerBinding = requireNonNull(storageControllerBinding, "storageControllerBinding is null");
         this.operationsBinding = requireNonNull(operationsBinding, "operationsBinding is null");
         this.filterBindingAnnotation = requireNonNull(filterBindingAnnotation, "filterBindingAnnotation is null");
+        this.schemaBuilderBinding = requireNonNull(schemaBuilderBinding, "schemaBuilderBinding is null");
     }
 
     record IdentityMapperBinding(Class<?> identityType, Consumer<AnnotatedBindingBuilder<McpIdentityMapper>> identityMapperBinding)
@@ -166,6 +172,7 @@ public class McpModule
         private Optional<Consumer<LinkedBindingBuilder<StorageController>>> storageControllerBinding = Optional.empty();
         private Consumer<LinkedBindingBuilder<Operations>> operationsBinding = binding -> binding.to(SessionlessOperations.class).in(SINGLETON);
         private Optional<Class<? extends Annotation>> filterBindingAnnotation = Optional.empty();
+        private Optional<Consumer<LinkedBindingBuilder<SchemaBuilder>>> schemaBuilderBinding = Optional.empty();
 
         private Builder() {}
 
@@ -224,6 +231,14 @@ public class McpModule
             return this;
         }
 
+        public Builder withSchemaBuilder(Consumer<LinkedBindingBuilder<SchemaBuilder>> schemaBuilderBinding)
+        {
+            checkArgument(this.schemaBuilderBinding.isEmpty(), "Schema builder binding is already set");
+
+            this.schemaBuilderBinding = Optional.of(schemaBuilderBinding);
+            return this;
+        }
+
         public Builder addIcon(String name, Consumer<LinkedBindingBuilder<Icon>> binding)
         {
             icons.put(name, binding);
@@ -278,6 +293,7 @@ public class McpModule
 
             IdentityMapperBinding localIdentityMapperBinding = identityMapperBinding.orElseThrow(() -> new IllegalStateException("Identity mapper binding is required"));
             Consumer<LinkedBindingBuilder<McpMetadata>> localMetadataBinding = metadataBinding.orElseGet(() -> binding -> binding.toInstance(McpMetadata.DEFAULT));
+            Consumer<LinkedBindingBuilder<SchemaBuilder>> localSchemaBuilderBinding = schemaBuilderBinding.orElseGet(() -> binding -> binding.toProvider(DefaultSchemaBuilderProvider.class));
 
             return new McpModule(
                     localMetadataBinding,
@@ -294,7 +310,8 @@ public class McpModule
                     serverIcons.build(),
                     storageControllerBinding,
                     operationsBinding,
-                    filterBindingAnnotation);
+                    filterBindingAnnotation,
+                    localSchemaBuilderBinding);
         }
     }
 
@@ -324,9 +341,16 @@ public class McpModule
         bindSessions(binder);
         bindCapabilityFilter(binder);
         bindIcons(binder);
+        bindSchemaBuilder(binder);
 
         binder.install(new InternalMcpModule(filterBindingAnnotation));
         binder.install(new OperationsModule());
+    }
+
+    private void bindSchemaBuilder(Binder binder)
+    {
+        schemaBuilderBinding.accept(binder.bind(SchemaBuilder.class));
+        binder.bind(JsonSchemaBuilder.class).in(SINGLETON);
     }
 
     private void bindIdentityMapper(Binder binder)
