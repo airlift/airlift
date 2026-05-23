@@ -20,6 +20,8 @@ import io.airlift.mcp.model.ElicitRequestForm;
 import io.airlift.mcp.model.ElicitResult;
 import io.airlift.mcp.model.GetPromptResult;
 import io.airlift.mcp.model.GetPromptResult.PromptMessage;
+import io.airlift.mcp.model.InitializeRequest.ClientCapabilities;
+import io.airlift.mcp.model.InitializeRequest.Sampling;
 import io.airlift.mcp.model.JsonRpcResponse;
 import io.airlift.mcp.model.JsonSchemaBuilder;
 import io.airlift.mcp.model.OptionalBoolean;
@@ -36,7 +38,9 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.concurrent.TimeoutException;
 
+import static io.airlift.mcp.McpException.clientCapabilityError;
 import static io.airlift.mcp.McpException.exception;
+import static io.airlift.mcp.model.Constants.METADATA_CLIENT_LOG_LEVEL;
 import static io.airlift.mcp.model.Constants.METHOD_ELICITATION_CREATE;
 import static io.airlift.mcp.model.Constants.METHOD_SAMPLING_CREATE_MESSAGE;
 import static io.airlift.mcp.model.LoggingLevel.INFO;
@@ -141,6 +145,31 @@ public class ConformanceEndpoints
         JsonRpcResponse<ElicitResult> response = serverToClientRequest.serverToClientRequest(requestContext, METHOD_ELICITATION_CREATE, elicitRequestForm, ElicitResult.class, Duration.ofMinutes(5), Duration.ofSeconds(1));
         return response.result().map(result -> "User response: action=%s, content=%s".formatted(result.action(), mapToJson(result.content())))
                 .orElse("No response");
+    }
+
+    @McpTool(name = "test_missing_capability", description = "Test tool requiring sampling")
+    public String testMissingCapability(McpRequestContext requestContext)
+    {
+        if (requestContext.clientCapabilities().sampling().isEmpty()) {
+            throw clientCapabilityError(new ClientCapabilities(Optional.empty(), Optional.of(new Sampling()), Optional.empty(), Optional.empty()));
+        }
+        return "Success";
+    }
+
+    @McpTool(name = "test_streaming_elicitation", description = "Diagnostic tool validating response progress streams")
+    public String testStreamingElicitation(McpRequestContext requestContext)
+    {
+        requestContext.sendProgress(50, 100, "Starting elicitation");
+        return "Streaming complete";
+    }
+
+    @McpTool(name = "test_logging_tool", description = "Diagnostic logging validator tool")
+    public String testLoggingTool(McpRequestContext requestContext, CallToolRequest request)
+    {
+        if (request.meta().isPresent() && request.meta().orElseThrow().containsKey(METADATA_CLIENT_LOG_LEVEL)) {
+            requestContext.sendLog(INFO, "Diagnostic trace logging activated");
+        }
+        return "Logging evaluated";
     }
 
     private String mapToJson(Optional<Map<String, Object>> map)
