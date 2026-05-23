@@ -66,7 +66,6 @@ import static com.google.inject.multibindings.OptionalBinder.newOptionalBinder;
 import static io.airlift.configuration.ConfigBinder.configBinder;
 import static io.airlift.json.JsonBinder.jsonBinder;
 import static io.airlift.json.JsonSubTypeBinder.jsonSubTypeBinder;
-import static io.airlift.mcp.McpMetadata.DEFAULT;
 import static io.airlift.mcp.reflection.ReflectionHelper.forAllInClass;
 import static java.util.Objects.requireNonNull;
 
@@ -75,7 +74,7 @@ public class McpModule
 {
     public static final String MCP_SERVER_ICONS = "mcp-server-icons";
 
-    private final McpMetadata metadata;
+    private final Consumer<LinkedBindingBuilder<McpMetadata>> metadataBinding;
     private final IdentityMapperBinding identityMapperBinding;
     private final Set<Class<?>> classes;
     private final Set<Provider<ToolEntry>> tools;
@@ -97,7 +96,7 @@ public class McpModule
     }
 
     private McpModule(
-            McpMetadata metadata,
+            Consumer<LinkedBindingBuilder<McpMetadata>> metadataBinding,
             IdentityMapperBinding identityMapperBinding,
             Set<Class<?>> classes,
             Set<Provider<ToolEntry>> tools,
@@ -113,7 +112,7 @@ public class McpModule
             Consumer<LinkedBindingBuilder<Operations>> operationsBinding,
             Optional<Class<? extends Annotation>> filterBindingAnnotation)
     {
-        this.metadata = requireNonNull(metadata, "metadata is null");
+        this.metadataBinding = requireNonNull(metadataBinding, "metadataBinding is null");
         this.identityMapperBinding = requireNonNull(identityMapperBinding, "identityMapperBinding is null");
         this.classes = ImmutableSet.copyOf(classes);
         this.tools = ImmutableSet.copyOf(tools);
@@ -161,7 +160,7 @@ public class McpModule
         private final ImmutableMap.Builder<String, Consumer<LinkedBindingBuilder<Icon>>> icons = ImmutableMap.builder();
         private final ImmutableSet.Builder<String> serverIcons = ImmutableSet.builder();
         private Optional<IdentityMapperBinding> identityMapperBinding = Optional.empty();
-        private McpMetadata metadata = DEFAULT;
+        private Optional<Consumer<LinkedBindingBuilder<McpMetadata>>> metadataBinding = Optional.empty();
         private Optional<Consumer<LinkedBindingBuilder<SessionController>>> sessionControllerBinding = Optional.empty();
         private Optional<Consumer<LinkedBindingBuilder<McpCapabilityFilter>>> capabilityFilterBinding = Optional.empty();
         private Optional<Consumer<LinkedBindingBuilder<StorageController>>> storageControllerBinding = Optional.empty();
@@ -170,16 +169,18 @@ public class McpModule
 
         private Builder() {}
 
-        public Builder withMetadata(McpMetadata metadata)
-        {
-            this.metadata = requireNonNull(metadata, "metadata is null");
-            return this;
-        }
-
         public Builder withAllInClass(Class<?> clazz)
         {
             classes.add(clazz);
 
+            return this;
+        }
+
+        public Builder withMetadata(Consumer<LinkedBindingBuilder<McpMetadata>> metadataBinding)
+        {
+            checkArgument(this.metadataBinding.isEmpty(), "Metadata binding is already set");
+
+            this.metadataBinding = Optional.of(metadataBinding);
             return this;
         }
 
@@ -276,9 +277,10 @@ public class McpModule
             Set<Provider<CompletionEntry>> localCompletions = completions.build();
 
             IdentityMapperBinding localIdentityMapperBinding = identityMapperBinding.orElseThrow(() -> new IllegalStateException("Identity mapper binding is required"));
+            Consumer<LinkedBindingBuilder<McpMetadata>> localMetadataBinding = metadataBinding.orElseGet(() -> binding -> binding.toInstance(McpMetadata.DEFAULT));
 
             return new McpModule(
-                    metadata,
+                    localMetadataBinding,
                     localIdentityMapperBinding,
                     classesSet,
                     localTools,
@@ -299,7 +301,7 @@ public class McpModule
     @Override
     public void configure(Binder binder)
     {
-        binder.bind(McpMetadata.class).toInstance(metadata);
+        metadataBinding.accept(binder.bind(McpMetadata.class));
         storageControllerBinding.ifPresent(binding -> binding.accept(binder.bind(StorageController.class)));
         operationsBinding.accept(binder.bind(Operations.class));
 
