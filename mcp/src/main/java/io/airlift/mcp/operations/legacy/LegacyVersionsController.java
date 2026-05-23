@@ -61,18 +61,18 @@ public class LegacyVersionsController
                 .build();
     }
 
-    void initializeSessionVersions(RequestContextImpl requestContext)
+    void initializeSessionVersions(LegacyRequestContextImpl requestContext)
     {
         if (requestContext.session().isValid()) {
             requestContext.session().setValue(SYSTEM_LIST_VERSIONS, buildSystemListVersions(requestContext));
         }
     }
 
-    void resourcesSubscribe(RequestContextImpl requestContext, SubscribeRequest subscribeRequest)
+    void resourcesSubscribe(LegacyRequestContextImpl requestContext, SubscribeRequest subscribeRequest)
     {
         String version = readResourceVersion(requestContext, subscribeRequest.uri(), true);
 
-        if (!(requestContext instanceof RequestContextImpl internalRequestContext) || !internalRequestContext.session().isValid()) {
+        if (!(requestContext instanceof LegacyRequestContextImpl internalRequestContext) || !internalRequestContext.session().isValid()) {
             throw exception(INVALID_REQUEST, "Invalid session - cannot subscribe to resource updates");
         }
 
@@ -83,7 +83,7 @@ public class LegacyVersionsController
         });
     }
 
-    void resourcesUnsubscribe(RequestContextImpl requestContext, String uri)
+    void resourcesUnsubscribe(LegacyRequestContextImpl requestContext, String uri)
     {
         if (!requestContext.session().isValid()) {
             throw exception(INVALID_REQUEST, "Invalid session - cannot unsubscribe to resource updates");
@@ -98,7 +98,7 @@ public class LegacyVersionsController
 
     private record Notification(String message, Optional<Object> params) {}
 
-    void reconcileVersions(RequestContextImpl requestContext)
+    void reconcileVersions(LegacyRequestContextImpl requestContext)
     {
         if (!requestContext.session().isValid()) {
             return;
@@ -115,7 +115,7 @@ public class LegacyVersionsController
         notifications.forEach(notification -> requestContext.sendMessage(notification.message, notification.params));
     }
 
-    private void reconcileSystemListVersions(RequestContextImpl requestContext, List<Notification> notifications)
+    private void reconcileSystemListVersions(LegacyRequestContextImpl requestContext, List<Notification> notifications)
     {
         // pre-check against current value which should be cached in memory via CachingSessionController
         SystemListVersions currentSystemListVersions = buildSystemListVersions(requestContext);
@@ -145,7 +145,7 @@ public class LegacyVersionsController
         }
     }
 
-    private void reconcileResourceSubscriptions(RequestContextImpl requestContext, List<Notification> notifications)
+    private void reconcileResourceSubscriptions(LegacyRequestContextImpl requestContext, List<Notification> notifications)
     {
         // will likely be cached/in-memory via CachingSessionController
         Map<String, String> currentSubscriptions = requestContext.session().getValue(RESOURCE_VERSIONS)

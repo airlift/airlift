@@ -111,7 +111,7 @@ public class SessionlessOperations
         MessageWriter messageWriter = newMessageWriter(response);
         request.setAttribute(MESSAGE_WRITER_ATTRIBUTE, messageWriter);
 
-        RequestContextImpl requestContext = new RequestContextImpl(jsonMapper, Optional.empty(), request, response, messageWriter, authenticated);
+        LegacyRequestContextImpl requestContext = new LegacyRequestContextImpl(jsonMapper, Optional.empty(), request, response, messageWriter, authenticated);
 
         Object result = switch (method) {
             case METHOD_INITIALIZE -> handleInitialize(requestContext, operationsCommon.convertParams(rpcRequest, InitializeRequest.class));
@@ -139,7 +139,7 @@ public class SessionlessOperations
         }
     }
 
-    private InitializeResult handleInitialize(RequestContextImpl requestContext, InitializeRequest initializeRequest)
+    private InitializeResult handleInitialize(LegacyRequestContextImpl requestContext, InitializeRequest initializeRequest)
     {
         Protocol protocol = Protocol.of(initializeRequest.protocolVersion())
                 .orElse(LATEST_PROTOCOL);
