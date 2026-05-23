@@ -31,7 +31,6 @@ import io.airlift.mcp.reflection.MethodParameter.ReadResourceRequestParameter;
 import io.airlift.mcp.reflection.MethodParameter.ResourceTemplateValuesParameter;
 import io.airlift.mcp.reflection.MethodParameter.SourceResourceParameter;
 import io.airlift.mcp.reflection.MethodParameter.SourceResourceTemplateParameter;
-import jakarta.servlet.http.HttpServletRequest;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -44,7 +43,6 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 import static io.airlift.mcp.McpException.exception;
-import static io.airlift.mcp.model.Constants.MCP_IDENTITY_ATTRIBUTE;
 import static io.airlift.mcp.model.JsonRpcErrorCode.INTERNAL_ERROR;
 import static java.util.Objects.requireNonNull;
 
@@ -180,7 +178,7 @@ public class MethodInvoker
                                 case SourceResourceTemplateParameter _ -> sourceResourceTemplate.orElseThrow(() -> new IllegalStateException("SourceResourceTemplate is required"));
                                 case ReadResourceRequestParameter _ -> readResourceRequest.orElseThrow(() -> new IllegalStateException("ReadResourceRequest is required"));
                                 case ResourceTemplateValuesParameter _ -> resourceTemplateValues.orElseThrow(() -> new IllegalStateException("ResourceTemplateValues is required"));
-                                case IdentityParameter _ -> retrieveIdentityValue(requestContext.request());
+                                case IdentityParameter _ -> ReflectionHelper.retrieveIdentityValue(requestContext.request());
                                 case CompleteArgumentParameter _ -> completeArgument.orElseThrow(() -> new IllegalStateException("CompleteArgument is required"));
                                 case CompleteContextParameter _ -> completeContext.orElseThrow(() -> new IllegalStateException("CompleteContext is required"));
                                 case ObjectParameter objectParameter -> valueForObjectParameter(arguments, objectParameter);
@@ -223,15 +221,5 @@ public class MethodInvoker
         }
 
         return value;
-    }
-
-    private static Object retrieveIdentityValue(HttpServletRequest request)
-            throws McpException
-    {
-        Object identity = request.getAttribute(MCP_IDENTITY_ATTRIBUTE);
-        if (identity == null) {
-            throw exception(INTERNAL_ERROR, "Error in request processing. MCP identity not found.");
-        }
-        return identity;
     }
 }

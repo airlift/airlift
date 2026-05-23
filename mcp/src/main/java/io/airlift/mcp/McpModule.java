@@ -7,12 +7,14 @@ import com.google.inject.Binder;
 import com.google.inject.Key;
 import com.google.inject.Module;
 import com.google.inject.Provider;
+import com.google.inject.TypeLiteral;
 import com.google.inject.binder.AnnotatedBindingBuilder;
 import com.google.inject.binder.LinkedBindingBuilder;
 import com.google.inject.multibindings.MapBinder;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.multibindings.OptionalBinder;
 import com.google.inject.name.Names;
+import com.google.inject.util.Types;
 import io.airlift.json.JsonSubType;
 import io.airlift.json.JsonSubTypeBinder;
 import io.airlift.mcp.handler.CompletionEntry;
@@ -45,6 +47,7 @@ import io.airlift.mcp.reflection.CompletionHandlerProvider;
 import io.airlift.mcp.reflection.IconHelper;
 import io.airlift.mcp.reflection.IdentityMapperMetadata;
 import io.airlift.mcp.reflection.PromptHandlerProvider;
+import io.airlift.mcp.reflection.ReflectionHelper;
 import io.airlift.mcp.reflection.ResourceHandlerProvider;
 import io.airlift.mcp.reflection.ResourceTemplateHandlerProvider;
 import io.airlift.mcp.reflection.ToolHandlerProvider;
@@ -54,6 +57,7 @@ import io.airlift.mcp.sessions.SessionController;
 import io.airlift.mcp.storage.StorageController;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.ParameterizedType;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -264,9 +268,9 @@ public class McpModule
             ImmutableSet.Builder<Provider<ResourceTemplateEntry>> resourceTemplates = ImmutableSet.builder();
             ImmutableSet.Builder<Provider<CompletionEntry>> completions = ImmutableSet.builder();
 
-            classesSet.forEach(clazz -> {
-                Optional<? extends Class<?>> identityClass = identityMapperBinding.map(IdentityMapperBinding::identityType);
+            Optional<? extends Class<?>> identityClass = identityMapperBinding.map(IdentityMapperBinding::identityType);
 
+            classesSet.forEach(clazz -> {
                 forAllInClass(clazz, McpTool.class, identityClass, (mcpTool, method, parameters) ->
                         tools.add(new ToolHandlerProvider(mcpTool, clazz, method, parameters, apps, resources::add)));
 
@@ -353,10 +357,16 @@ public class McpModule
         binder.bind(JsonSchemaBuilder.class).in(SINGLETON);
     }
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
     private void bindIdentityMapper(Binder binder)
     {
         identityMapperBinding.identityMapperBinding.accept(binder.bind(McpIdentityMapper.class));
         binder.bind(IdentityMapperMetadata.class).toInstance(new IdentityMapperMetadata(identityMapperBinding.identityType));
+
+        ParameterizedType identitySupplierType = Types.newParameterizedType(McpIdentitySupplier.class, identityMapperBinding.identityType);
+        TypeLiteral identitySupplierTypeLiteral = TypeLiteral.get(identitySupplierType);
+        McpIdentitySupplier<?> supplier = request -> identityMapperBinding.identityType.cast(ReflectionHelper.retrieveIdentityValue(request));
+        binder.bind(identitySupplierTypeLiteral).toInstance(supplier);
     }
 
     private void bindIcons(Binder binder)
