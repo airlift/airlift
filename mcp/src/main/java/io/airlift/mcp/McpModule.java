@@ -40,7 +40,7 @@ import io.airlift.mcp.model.JsonSchemaBuilder.DefaultSchemaBuilderProvider;
 import io.airlift.mcp.model.JsonSchemaBuilder.SchemaBuilder;
 import io.airlift.mcp.operations.Operations;
 import io.airlift.mcp.operations.OperationsModule;
-import io.airlift.mcp.operations.legacy.LegacyOperations;
+import io.airlift.mcp.operations.legacy.LegacySessionOperations;
 import io.airlift.mcp.operations.legacy.SessionlessOperations;
 import io.airlift.mcp.operations.legacy.sessions.CachingSessionController;
 import io.airlift.mcp.operations.legacy.sessions.ForSessionCaching;
@@ -215,7 +215,7 @@ public class McpModule
                 checkArgument(Builder.this.sessionControllerBinding.isEmpty(), "Session controller binding is already set");
 
                 Builder.this.sessionControllerBinding = Optional.of(sessionControllerBinding);
-                Builder.this.operationsBinding = binding -> binding.to(LegacyOperations.class).in(SINGLETON);
+                Builder.this.operationsBinding = binding -> binding.to(LegacySessionOperations.class).in(SINGLETON);
                 return Builder.this;
             };
         }
