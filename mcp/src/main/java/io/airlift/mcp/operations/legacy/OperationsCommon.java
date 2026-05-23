@@ -73,7 +73,7 @@ public class OperationsCommon
         return jsonMapper.convertValue(value, clazz);
     }
 
-    ListToolsResult listTools(RequestContextImpl requestContext, ListRequest listRequest)
+    ListToolsResult listTools(LegacyRequestContextImpl requestContext, ListRequest listRequest)
     {
         List<Tool> localTools = entities.tools(requestContext)
                 .stream()
@@ -82,7 +82,7 @@ public class OperationsCommon
         return paginationUtil.paginate(listRequest, localTools, Tool::name, ListToolsResult::new);
     }
 
-    CallToolResult callTool(RequestContextImpl requestContext, CallToolRequest callToolRequest)
+    CallToolResult callTool(LegacyRequestContextImpl requestContext, CallToolRequest callToolRequest)
     {
         entities.validateToolAllowed(requestContext, callToolRequest.name());
 
@@ -97,7 +97,7 @@ public class OperationsCommon
         }
     }
 
-    ListPromptsResult listPrompts(RequestContextImpl requestContext, ListRequest listRequest)
+    ListPromptsResult listPrompts(LegacyRequestContextImpl requestContext, ListRequest listRequest)
     {
         List<Prompt> localPrompts = entities.prompts(requestContext)
                 .stream()
@@ -106,7 +106,7 @@ public class OperationsCommon
         return paginationUtil.paginate(listRequest, localPrompts, Prompt::name, ListPromptsResult::new);
     }
 
-    GetPromptResult getPrompt(RequestContextImpl requestContext, GetPromptRequest getPromptRequest)
+    GetPromptResult getPrompt(LegacyRequestContextImpl requestContext, GetPromptRequest getPromptRequest)
     {
         entities.validatePromptAllowed(requestContext, getPromptRequest.name());
 
@@ -116,7 +116,7 @@ public class OperationsCommon
         return promptEntry.promptHandler().getPrompt(requestContext.withProgressToken(progressToken(getPromptRequest)), getPromptRequest);
     }
 
-    ListResourcesResult listResources(RequestContextImpl requestContext, ListRequest listRequest)
+    ListResourcesResult listResources(LegacyRequestContextImpl requestContext, ListRequest listRequest)
     {
         List<Resource> localResources = entities.resources(requestContext)
                 .stream()
@@ -125,7 +125,7 @@ public class OperationsCommon
         return paginationUtil.paginate(listRequest, localResources, Resource::name, ListResourcesResult::new);
     }
 
-    ListResourceTemplatesResult listResourceTemplates(RequestContextImpl requestContext, ListRequest listRequest)
+    ListResourceTemplatesResult listResourceTemplates(LegacyRequestContextImpl requestContext, ListRequest listRequest)
     {
         List<ResourceTemplate> localResourceTemplates = entities.resourceTemplates(requestContext)
                 .stream()
@@ -134,7 +134,7 @@ public class OperationsCommon
         return paginationUtil.paginate(listRequest, localResourceTemplates, ResourceTemplate::name, ListResourceTemplatesResult::new);
     }
 
-    Object readResources(RequestContextImpl requestContext, ReadResourceRequest readResourceRequest)
+    Object readResources(LegacyRequestContextImpl requestContext, ReadResourceRequest readResourceRequest)
     {
         updateRequestSpan(requestContext.request(), span -> span.setAttribute(MCP_RESOURCE_URI, readResourceRequest.uri()));
 
@@ -144,7 +144,7 @@ public class OperationsCommon
         return new ReadResourceResult(resourceContents);
     }
 
-    CompleteResult completionComplete(RequestContextImpl requestContext, CompleteRequest completeRequest)
+    CompleteResult completionComplete(LegacyRequestContextImpl requestContext, CompleteRequest completeRequest)
     {
         return entities.completionEntry(requestContext, completeRequest.ref())
                 .map(completionEntry -> completionEntry.handler().complete(requestContext.withProgressToken(progressToken(completeRequest)), completeRequest))

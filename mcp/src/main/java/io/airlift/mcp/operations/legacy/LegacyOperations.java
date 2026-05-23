@@ -166,7 +166,7 @@ public class LegacyOperations
         ResumableMessageWriter messageWriter = newResumableMessageWriter(response);
         request.setAttribute(MESSAGE_WRITER_ATTRIBUTE, messageWriter);
 
-        RequestContextImpl requestContext = new RequestContextImpl(jsonMapper, sessionController, request, response, messageWriter, authenticated);
+        LegacyRequestContextImpl requestContext = new LegacyRequestContextImpl(jsonMapper, sessionController, request, response, messageWriter, authenticated);
 
         Object result = switch (method) {
             case METHOD_INITIALIZE -> handleInitialize(requestContext, operationsCommon.convertParams(rpcRequest, InitializeRequest.class));
@@ -263,7 +263,7 @@ public class LegacyOperations
                 .map(SessionId::new);
     }
 
-    private InitializeResult handleInitialize(RequestContextImpl requestContext, InitializeRequest initializeRequest)
+    private InitializeResult handleInitialize(LegacyRequestContextImpl requestContext, InitializeRequest initializeRequest)
     {
         Protocol protocol = Protocol.of(initializeRequest.protocolVersion())
                 .orElse(LATEST_PROTOCOL);
@@ -272,7 +272,7 @@ public class LegacyOperations
 
         boolean sessionsEnabled = sessionController.map(controller -> {
             SessionId sessionId = controller.createSession(requestContext.identity(), Optional.of(sessionTimeout));
-            RequestContextImpl localRequestContext = requestContext.withSessionId(sessionId);
+            LegacyRequestContextImpl localRequestContext = requestContext.withSessionId(sessionId);
 
             localRequestContext.response().addHeader(MCP_SESSION_ID, sessionId.id());
 
@@ -310,13 +310,13 @@ public class LegacyOperations
         return new InitializeResult(protocol.value(), serverCapabilities, localImplementation, thisMetadata.adjustedInstructions(entities.hasSkills(requestContext)));
     }
 
-    private Object handleSetLoggingLevel(RequestContextImpl requestContext, SetLevelRequest setLevelRequest)
+    private Object handleSetLoggingLevel(LegacyRequestContextImpl requestContext, SetLevelRequest setLevelRequest)
     {
         requestContext.session().setValue(LOGGING_LEVEL, setLevelRequest.level());
         return ImmutableMap.of();
     }
 
-    private Object handleResourcesSubscribe(RequestContextImpl requestContext, SubscribeRequest subscribeRequest)
+    private Object handleResourcesSubscribe(LegacyRequestContextImpl requestContext, SubscribeRequest subscribeRequest)
     {
         updateRequestSpan(requestContext.request(), span -> span.setAttribute(MCP_RESOURCE_URI, subscribeRequest.uri()));
 
@@ -329,7 +329,7 @@ public class LegacyOperations
         return ImmutableMap.of();
     }
 
-    private Object handleResourcesUnsubscribe(RequestContextImpl requestContext, SubscribeRequest subscribeRequest)
+    private Object handleResourcesUnsubscribe(LegacyRequestContextImpl requestContext, SubscribeRequest subscribeRequest)
     {
         updateRequestSpan(requestContext.request(), span -> span.setAttribute(MCP_RESOURCE_URI, subscribeRequest.uri()));
 
@@ -361,7 +361,7 @@ public class LegacyOperations
         });
     }
 
-    private Object withManagement(RequestContextImpl requestContext, Object requestId, Supplier<Object> supplier)
+    private Object withManagement(LegacyRequestContextImpl requestContext, Object requestId, Supplier<Object> supplier)
     {
         if (sessionController.isEmpty()) {
             return supplier.get();
@@ -387,7 +387,7 @@ public class LegacyOperations
         Stopwatch timeoutStopwatch = Stopwatch.createStarted();
 
         ResumableMessageWriter messageWriter = newResumableMessageWriter(response);
-        RequestContextImpl requestContext = new RequestContextImpl(jsonMapper, Optional.of(sessionController), request, response, messageWriter, authenticated);
+        LegacyRequestContextImpl requestContext = new LegacyRequestContextImpl(jsonMapper, Optional.of(sessionController), request, response, messageWriter, authenticated);
 
         Optional.ofNullable(request.getHeader(HEADER_LAST_EVENT_ID))
                 .ifPresent(lastEventId -> replaySentMessages(sessionController, sessionId, lastEventId, messageWriter));
