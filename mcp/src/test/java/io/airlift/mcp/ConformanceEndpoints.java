@@ -25,7 +25,6 @@ import io.airlift.mcp.model.GetPromptResult;
 import io.airlift.mcp.model.GetPromptResult.PromptMessage;
 import io.airlift.mcp.model.InputRequests;
 import io.airlift.mcp.model.InputResponses;
-import io.airlift.mcp.model.JsonRpcResponse;
 import io.airlift.mcp.model.JsonSchemaBuilder;
 import io.airlift.mcp.model.ListRootsResult;
 import io.airlift.mcp.model.OptionalBoolean;
@@ -35,14 +34,11 @@ import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.ResourceTemplateValues;
 import io.airlift.mcp.model.Role;
 import io.airlift.mcp.model.Tool;
-import io.airlift.mcp.operations.legacy.LegacyServerToClientRequest;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
-import java.util.concurrent.TimeoutException;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.airlift.mcp.McpException.exception;
@@ -60,14 +56,12 @@ public class ConformanceEndpoints
     private static final String TEST_AUDIO_BASE64 = "UklGRiYAAABXQVZFZm10IBAAAAABAAEAQB8AAAB9AAACABAAZGF0YQIAAAA=";
 
     private final JsonMapper jsonMapper;
-    private final LegacyServerToClientRequest serverToClientRequest;
     private final McpEntities entities;
 
     @Inject
-    public ConformanceEndpoints(JsonMapper jsonMapper, LegacyServerToClientRequest serverToClientRequest, McpEntities entities)
+    public ConformanceEndpoints(JsonMapper jsonMapper, McpEntities entities)
     {
         this.jsonMapper = requireNonNull(jsonMapper, "jsonMapper is null");
-        this.serverToClientRequest = requireNonNull(serverToClientRequest, "serverToClientRequest is null");
         this.entities = requireNonNull(entities, "entities is null");
     }
 
@@ -134,26 +128,35 @@ public class ConformanceEndpoints
     }
 
     @McpTool(name = "test_sampling", description = "Tests server-initiated sampling (LLM completion request)")
-    public String testSampling(McpRequestContext requestContext, @McpDescription("The prompt to send to the LLM") String prompt)
-            throws InterruptedException, TimeoutException
+    public CallToolResult testSampling(@McpDescription("The prompt to send to the LLM") String prompt, InputResponses inputResponses)
     {
-        CreateMessageRequest createMessageRequest = new CreateMessageRequest(Role.USER, new TextContent(prompt), 100);
-        JsonRpcResponse<CreateMessageResult> response = serverToClientRequest.serverToClientRequest(requestContext, METHOD_SAMPLING_CREATE_MESSAGE, createMessageRequest, CreateMessageResult.class, Duration.ofMinutes(1), Duration.ofSeconds(1));
-        String responseText = response.result().map(messageResult -> (messageResult.content() instanceof TextContent textContent) ? textContent.text() : "No response").orElse("No response");
-        return "LLM response: " + responseText;
+        return inputResponses.mapResponse(jsonMapper, "test", CreateMessageResult.class)
+                .map(messageResult -> {
+                    String responseText = (messageResult.content() instanceof TextContent textContent) ? textContent.text() : "No response";
+                    return new CallToolResult(new TextContent("LLM response: " + responseText));
+                })
+                .orElseGet(() -> {
+                    CreateMessageRequest createMessageRequest = new CreateMessageRequest(Role.USER, new TextContent(prompt), 100);
+                    return CallToolResult.inputRequestsBuilder()
+                            .add("test", METHOD_SAMPLING_CREATE_MESSAGE, createMessageRequest)
+                            .build();
+                });
     }
 
     public record TestElicitation(String response) {}
 
     @McpTool(name = "test_elicitation", description = "Tests server-initiated elicitation (user input request)")
-    public String testElicitation(McpRequestContext requestContext, @McpDescription("The message to show the user") String message)
-            throws InterruptedException, TimeoutException
+    public CallToolResult testElicitation(@McpDescription("The message to show the user") String message, InputResponses inputResponses)
     {
-        ObjectNode schema = new JsonSchemaBuilder().build(Optional.of("User's response"), TestElicitation.class);
-        ElicitRequestForm elicitRequestForm = new ElicitRequestForm(message, schema);
-        JsonRpcResponse<ElicitResult> response = serverToClientRequest.serverToClientRequest(requestContext, METHOD_ELICITATION_CREATE, elicitRequestForm, ElicitResult.class, Duration.ofMinutes(5), Duration.ofSeconds(1));
-        return response.result().map(result -> "User response: action=%s, content=%s".formatted(result.action(), mapToJson(result.content())))
-                .orElse("No response");
+        return inputResponses.mapResponse(jsonMapper, "test", ElicitResult.class)
+                .map(result -> new CallToolResult(new TextContent("User response: action=%s, content=%s".formatted(result.action(), mapToJson(result.content())))))
+                .orElseGet(() -> {
+                    ObjectNode schema = new JsonSchemaBuilder().build(Optional.of("User's response"), TestElicitation.class);
+                    ElicitRequestForm elicitRequestForm = new ElicitRequestForm(message, schema);
+                    return CallToolResult.inputRequestsBuilder()
+                            .add("test", METHOD_ELICITATION_CREATE, elicitRequestForm)
+                            .build();
+                });
     }
 
     private String mapToJson(Optional<Map<String, Object>> map)
