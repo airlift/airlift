@@ -47,12 +47,14 @@ import io.airlift.mcp.model.Resource;
 import io.airlift.mcp.model.ResourceContents;
 import io.airlift.mcp.model.ResourceTemplate;
 import io.airlift.mcp.model.SubscribeListChanged;
+import io.airlift.mcp.model.SubscriptionNotifications;
 import io.airlift.mcp.model.Tool;
 import io.airlift.mcp.reflection.IconHelper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.UncheckedIOException;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -72,6 +74,7 @@ import static io.airlift.mcp.model.Constants.METHOD_RESOURCES_LIST;
 import static io.airlift.mcp.model.Constants.METHOD_RESOURCES_READ;
 import static io.airlift.mcp.model.Constants.METHOD_RESOURCES_TEMPLATES_LIST;
 import static io.airlift.mcp.model.Constants.METHOD_SERVER_DISCOVER;
+import static io.airlift.mcp.model.Constants.METHOD_SUBSCRIPTIONS_LISTEN;
 import static io.airlift.mcp.model.Constants.METHOD_TOOLS_CALL;
 import static io.airlift.mcp.model.Constants.METHOD_TOOLS_LIST;
 import static io.airlift.mcp.model.JsonRpcErrorCode.HEADER_MISMATCH;
@@ -99,6 +102,8 @@ public class OperationsImpl
     private final Set<String> serverIcons;
     private final McpEntities entities;
     private final PaginationUtil paginationUtil;
+    private final Duration resourceSubscriptionCachePeriod;
+    private final Duration streamingTimeout;
 
     @Inject
     OperationsImpl(
@@ -116,6 +121,8 @@ public class OperationsImpl
         this.entities = requireNonNull(entities, "entities is null");
 
         paginationUtil = new PaginationUtil(mcpConfig);
+        resourceSubscriptionCachePeriod = mcpConfig.getResourceSubscriptionCachePeriod().toJavaTime();
+        streamingTimeout = mcpConfig.getEventStreamingTimeout().toJavaTime();
     }
 
     public record MetaOnly(Optional<Map<String, Object>> meta)
@@ -163,6 +170,7 @@ public class OperationsImpl
             case METHOD_RESOURCES_READ -> readResources(requestContext, metadata, convertParams(jsonMapper, rpcRequest, ReadResourceRequest.class));
             case METHOD_COMPLETION_COMPLETE -> completionComplete(requestContext, convertParams(jsonMapper, rpcRequest, CompleteRequest.class));
             case METHOD_SERVER_DISCOVER -> serverDiscover(requestContext, metadata, requestMetadata);
+            case METHOD_SUBSCRIPTIONS_LISTEN -> subscriptionsList(requestContext, requestId, convertParams(jsonMapper, rpcRequest, SubscriptionNotifications.class));
             default -> throw exception(METHOD_NOT_FOUND, "Unknown method: " + method);
         };
 
@@ -201,6 +209,14 @@ public class OperationsImpl
     public void handleRpcGetRequest(HttpServletRequest request, HttpServletResponse response, McpIdentity.Authenticated<?> authenticated)
     {
         response.setStatus(SC_METHOD_NOT_ALLOWED);
+    }
+
+    private Object subscriptionsList(RequestContextImpl requestContext, Object requestId, SubscriptionNotifications subscriptionNotifications)
+    {
+        SubscriptionLoop subscriptionLoop = new SubscriptionLoop(jsonMapper, requestId, entities, requestContext, subscriptionNotifications.notifications(), streamingTimeout, resourceSubscriptionCachePeriod);
+        subscriptionLoop.run();
+
+        return ImmutableMap.of();
     }
 
     public static ReadResourceResult readResources(McpEntities entities, McpRequestContext requestContext, ReadResourceRequest readResourceRequest)
