@@ -18,7 +18,9 @@ public record ReadResourceResult(
         Optional<String> requestState,
         Optional<Map<String, InputRequest>> inputRequests,
         Optional<Map<String, Object>> meta)
-        implements CacheableResult, InputRequests, Meta
+        implements CacheableResult,
+                   InputRequests,
+                   Meta
 {
     public static InputRequests.Builder<ReadResourceResult> inputRequestsBuilder()
     {

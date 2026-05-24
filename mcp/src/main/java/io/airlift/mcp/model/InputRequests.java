@@ -7,7 +7,9 @@ import java.util.Map;
 import java.util.Optional;
 
 public sealed interface InputRequests
-        permits CallToolResult, GetPromptResult, ReadResourceResult
+        permits CallToolResult,
+                GetPromptResult,
+                ReadResourceResult
 {
     @JsonProperty
     Optional<ResultType> resultType();
